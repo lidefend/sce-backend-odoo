@@ -714,6 +714,16 @@ local.clean.health: guard.prod.forbid local.clean.require_env
 	  LOCAL_CLEAN_HEALTH_MODULES="$(LOCAL_CLEAN_HEALTH_MODULES)" \
 	  bash scripts/dev/local_environment_health.sh clean
 
+# Required feature environment plus explicitly optional lanes; strict all-profile status remains below.
+.PHONY: local.env.readiness verify.local.env.readiness.unit
+verify.local.env.readiness.unit: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_local_environment_readiness.py
+
+local.env.readiness: guard.prod.forbid
+	@python3 scripts/dev/local_environment_readiness.py --root "$(ROOT_DIR)" \
+	  --dev-env "$(LOCAL_DEV_ENV_FILE)" --sample-env "$(LOCAL_SAMPLE_ENV_FILE)" \
+	  --clean-env "$(LOCAL_CLEAN_ENV_FILE)"
+
 local.env.status: guard.prod.forbid
 	@status=0; \
 	if [ -f "$(LOCAL_DEV_ENV_FILE)" ]; then \

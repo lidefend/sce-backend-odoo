@@ -18,7 +18,7 @@ guard_demo_data_scope
 
 printf '[local.dev.demo.authority] verify db=%s\n' "$DB_NAME"
 
-compose_dev run --rm -T \
+compose_dev run --rm -T --no-deps \
   -e DB_NAME \
   -e SC_ENVIRONMENT \
   -e SC_ALLOW_DEMO_DATA \

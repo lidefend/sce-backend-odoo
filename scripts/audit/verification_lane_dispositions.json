@@ -1297,11 +1297,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "local.clean.health": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/local_development_environment_v1.md。登记待接线或退役，B3 按族处理。"
-    },
     "local.clean.install": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
