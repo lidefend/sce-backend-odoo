@@ -31,7 +31,8 @@
     "addons/smart_construction_core/models/support/team_loan_deduction_workspace.py",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
-    "docs/engineering_convergence/split_plan_queue.md"
+    "docs/engineering_convergence/split_plan_queue.md",
+    "scripts/ci/personal_data_false_positives.json"
   ],
   "environment": {
     "kind": "offline",
@@ -147,6 +148,13 @@
       "command": "make ci.local.quick; GitHub backend_test_suite and candidate required checks",
       "status": "not_run",
       "reason": "dirty candidate; freeze preparation next"
+    },
+    {
+      "layer": "L1",
+      "command": "make security.personal_data_scan repository.clean_history.scan",
+      "status": "passed",
+      "log": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-synthetic-registration.log",
+      "sha256": "f442c397b26be05cf8eb75df75f55a24ffaae57332287008502cd2cda74a3de9"
     }
   ],
   "evidence_index": {
@@ -336,5 +344,15 @@
     "L3": "not required: no manifest, schema, ACL or XML changes; Python methods/declarations loaded by fresh governed test process",
     "L4": "not required: frontend test-only edits; P1 action return dispatch asserted under real published standard and actual role identity, no renderer/layout changes",
     "reuse": "P0 lifecycle79, core amount5, domain6, finance transactional53+corrected1, payment capability/tender and fixture classes retain earlier unaffected method outcomes. CI modules not reduced; complete remote14-module fresh-install suite mandatory."
+  },
+  "freeze_recovery": {
+    "failed_candidate": "c09c8645e26907b0fae1996683b19e769e1ba78d",
+    "cause": "PD003/RH018 exact blob registration expired after fixture edits; two synthetic values proven unchanged from registered main blobs",
+    "changed_inputs": [
+      "scripts/ci/personal_data_false_positives.json"
+    ],
+    "unchanged_inputs": "all product/test/workflow source and generated reports; retain prior affected behavior and generated preparation",
+    "targeted_result": "security.personal_data_scan and repository.clean_history.scan PASS; independent exact-blob review PASS",
+    "next": "commit registry and run update, refreeze, exact-head Quick"
   }
 }
