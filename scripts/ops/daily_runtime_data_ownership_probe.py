@@ -39,7 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import daily_runtime_duty_identity as duty_identity  # noqa: E402
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
 REMOTE_TMP = "/tmp/sc-daily-data-ownership-probe.py"
-DEFAULT_DATABASE = "sc_demo"
+DEFAULT_DATABASE = ""
 DECLARATIONS = ROOT / "scripts/verify/data_scope_declarations.json"
 CEILING_XML = ROOT / "addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml"
 HANDWRITTEN_XML = ROOT / "addons/smart_construction_core/security/sc_record_rules.xml"
@@ -286,6 +286,7 @@ for model_name in sorted(set(unset_rows) | set(unset_rows_sql)):
     }
 
 payload = {
+    "database": env.cr.dbname,
     "declared_models": len(declared),
     "scanned_models": scanned,
     "unmapped_anchor_models": unmapped,
@@ -326,13 +327,15 @@ def ssh(ssh_host, remote_command, *, input_bytes=None):
     )
 
 
-def remote_make(ssh_host, database, target, *, stdin_path=None):
-    redirect = f" < {shlex.quote(stdin_path)}" if stdin_path else ""
-    command = (
-        f"cd {shlex.quote(REMOTE_ROOT)} && "
-        f"make ENV=dev ENV_FILE=.env.dev DB_NAME={shlex.quote(database)} {target}{redirect}"
-    )
-    return ssh(ssh_host, command)
+def remote_shell(ssh_host, binding, *, stdin_path):
+    """Read the carrier through the *bound duty's own* application container.
+
+    The probe is read-only, but reading the wrong cluster is still a wrong
+    answer: the deployed checkout's ``make ... DB_NAME=x odoo.shell.exec``
+    resolves its target from a bare database name, and the rebuilt demo duty and
+    the preserved pre-governance source both answer to ``sc_demo``.
+    """
+    return ssh(ssh_host, duty_identity.odoo_shell_command(binding, program_path=stdin_path))
 
 
 def decode(result):
@@ -430,7 +433,8 @@ def expected_semantics(declaration):
     return expected
 
 
-def probe(expected_sha, database, ssh_host):
+def probe(expected_sha, binding, ssh_host):
+    database = str(binding["database"])
     if not FULL_SHA.fullmatch(expected_sha or ""):
         raise ProbeError("expected SHA must be a full lowercase commit identity")
     if not DATABASE_NAME.fullmatch(database or ""):
@@ -461,12 +465,17 @@ def probe(expected_sha, database, ssh_host):
     upload = ssh(ssh_host, f"cat > {shlex.quote(REMOTE_TMP)}", input_bytes=program)
     if upload.returncode:
         raise ProbeError(f"remote program upload failed: {decode(upload)[:400]}")
-    executed = remote_make(ssh_host, database, "odoo.shell.exec", stdin_path=REMOTE_TMP)
+    executed = remote_shell(ssh_host, binding, stdin_path=REMOTE_TMP)
     ssh(ssh_host, f"rm -f {shlex.quote(REMOTE_TMP)}")
     output = decode(executed)
     payload = marker_payload(output)
     if payload is None:
         raise ProbeError(f"no readback payload in the odoo-shell output: {output[-800:]}")
+    landed = str(payload.get("database") or "")
+    if landed != database:
+        raise ProbeError(
+            f"the probe ran in database {landed or '<unknown>'}, not the bound {database}"
+        )
     return expected, payload, remote_head
 
 
@@ -670,7 +679,7 @@ def main():
     try:
         binding = bind_target(options)
         expected, payload, remote_head = probe(
-            options.expected_sha, binding["database"], options.ssh_host,
+            options.expected_sha, binding, options.ssh_host,
         )
         verdict = evaluate(expected, payload)
     except ProbeError as error:
@@ -681,7 +690,7 @@ def main():
         "schema": "daily.runtime.data_ownership.probe.v1",
         "expected_sha": options.expected_sha,
         "remote_head": remote_head,
-        "database": options.database,
+        "database": binding["database"],
         "ssh_host": options.ssh_host,
         "database_binding": binding,
         "writes": False,

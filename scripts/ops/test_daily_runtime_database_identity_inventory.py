@@ -116,7 +116,10 @@ class ProgramTests(unittest.TestCase):
     def test_program_uses_the_governed_shell_entry(self):
         self.assertEqual(module.REMOTE_ROOT, "/opt/projects/repos/sce-product-odoo")
         source = Path(SCRIPT).read_text(encoding="utf-8")
-        self.assertIn("odoo.shell.exec", source)
+        # The catalog must be read from the bound duty's own container through the
+        # shared duty-bound entry, never from a bare database name routed by hand.
+        self.assertIn("duty_identity.odoo_shell_command", source)
+        self.assertNotIn("odoo.shell.exec", source)
         self.assertIn("git rev-parse HEAD", source)
 
 

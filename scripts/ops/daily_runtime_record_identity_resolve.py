@@ -9,10 +9,12 @@ is recreated, so a previously captured numeric id becomes stale silently.
 The deployed daily runtime is an external revision whose checkout carries the
 resolver that was current when it was deployed. This entry therefore drives the
 *working tree's* governed resolver through the existing ``make odoo.shell.exec``
-entry: the resolver source is sent on the standard input of the already governed
-shell carrier, so the deployed runtime executes exactly the branch's resolver
-without rewriting the deployed checkout, restarting the service, or touching any
-credential file.
+entry: the resolver source is sent on the standard input of the duty-bound shell
+carrier, so that carrier executes exactly the branch's resolver without
+rewriting a deployed checkout, restarting the service, or touching any
+credential file.  A database *name* is not the target: the rebuilt demo duty and
+the preserved pre-governance source both answer to ``sc_demo``, so the command
+names the compose project the declaration binds instead of a bare ``DB_NAME``.
 
 It writes only the resolved-identity artifact plus its own report, and it writes
 the artifact in the canonical governed envelope (``schema``/``producer``/
@@ -36,12 +38,19 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import daily_runtime_duty_identity as duty_identity  # noqa: E402
+
 RESOLVER = ROOT / "scripts" / "verify" / "frontend_delivery_hardening_runtime_ids.py"
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
-DEFAULT_DATABASE = "sc_demo"
+REMOTE_TMP = "/tmp/sc-daily-record-identity-resolve.py"
+DEFAULT_DATABASE = ""
 CONFIRMATION = "RESOLVE_DAILY_SC_DEMO_RECORD_IDENTITY"
 SCHEMA = "acceptance.record_identity_resolution.v1"
 PAYLOAD_PREFIX = "FRONTEND_DELIVERY_HARDENING_TARGETS_JSON="
+LANDED_PREFIX = "RECORD_IDENTITY_DATABASE="
+#: The resolver reads its own governance inputs from the process environment.
+RESOLVER_ENV = {"SC_ENVIRONMENT": "dev", "SC_ALLOW_DEMO_DATA": "1"}
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 DATABASE_NAME = re.compile(r"^[A-Za-z0-9_]+$")
@@ -104,12 +113,24 @@ def resolver_program() -> bytes:
     return program
 
 
-def remote_command(database: str) -> str:
-    """Return the governed remote shell entry that carries the resolver."""
-    return (
-        "cd %s && SC_ENVIRONMENT=dev SC_ALLOW_DEMO_DATA=1 "
-        "make ENV=dev ENV_FILE=.env.dev DB_NAME=%s odoo.shell.exec"
-        % (shlex.quote(REMOTE_ROOT), shlex.quote(database))
+def carrier_program() -> bytes:
+    """The resolver verbatim, plus the landed-database probe the lane asserts.
+
+    The resolver is executed exactly as this working tree ships it; the probe is
+    appended so the entry can prove *which* carrier answered.  A database name is
+    not a target identity: the rebuilt demo duty and the preserved pre-governance
+    source both answer to ``sc_demo``.
+    """
+    return resolver_program() + (
+        '\nprint("%s%%s" %% env.cr.dbname)\n' % LANDED_PREFIX
+    ).encode("utf-8")
+
+
+def remote_shell(ssh_host, binding, *, stdin_path):
+    """Run the resolver inside the *bound duty's own* application container."""
+    return ssh(
+        ssh_host,
+        duty_identity.odoo_shell_command(binding, program_path=stdin_path, env=RESOLVER_ENV),
     )
 
 
@@ -166,7 +187,8 @@ def preflight(expected_sha, database, ssh_host):
         raise ResolveError("governed resolver is missing: %s" % RESOLVER)
 
 
-def resolve(expected_sha, database, ssh_host, base_url, output_path, report_path):
+def resolve(expected_sha, binding, ssh_host, base_url, output_path, report_path):
+    database = str(binding["database"])
     preflight(expected_sha, database, ssh_host)
 
     head = ssh(ssh_host, "cd %s && git rev-parse HEAD" % shlex.quote(REMOTE_ROOT))
@@ -187,11 +209,22 @@ def resolve(expected_sha, database, ssh_host, base_url, output_path, report_path
         if served_database and served_database != database:
             raise ResolveError("served database %s != declared %s" % (served_database, database))
 
-    program = resolver_program()
-    applied = ssh(ssh_host, remote_command(database), input_bytes=program)
+    upload = ssh(ssh_host, "cat > %s" % shlex.quote(REMOTE_TMP), input_bytes=carrier_program())
+    if upload.returncode:
+        raise ResolveError("remote resolver upload failed: %s" % decode(upload)[:400])
+    applied = remote_shell(ssh_host, binding, stdin_path=REMOTE_TMP)
+    ssh(ssh_host, "rm -f %s" % shlex.quote(REMOTE_TMP))
     output = decode(applied)
     if applied.returncode:
         raise ResolveError("daily record identity resolution failed: %s" % output[-1200:])
+    landed = ""
+    for line in output.splitlines():
+        if line.startswith(LANDED_PREFIX):
+            landed = line[len(LANDED_PREFIX):].strip()
+    if landed != database:
+        raise ResolveError(
+            "the resolver ran in database %s, not the bound %s" % (landed or "<unknown>", database)
+        )
     targets = parse_payload(output)
 
     documented = envelope(targets, expected_sha)
@@ -209,6 +242,8 @@ def resolve(expected_sha, database, ssh_host, base_url, output_path, report_path
         "remote_head": remote_head,
         "expected_sha": expected_sha,
         "database": database,
+        "database_binding": binding,
+        "landed_database": landed,
         "served_revision": served_revision,
         "served_database": served_database,
         "resolver": str(RESOLVER.relative_to(ROOT)),
@@ -224,9 +259,27 @@ def resolve(expected_sha, database, ssh_host, base_url, output_path, report_path
     return evidence
 
 
+def bind_target(options, *, instances_reader=None) -> dict:
+    """Bind the target duty, its cluster, its database and its storage, or stop.
+
+    The browser lanes bind the identity of one served carrier; a name two
+    carriers share would bind whichever one happened to answer.
+    """
+    try:
+        reader = instances_reader
+        if reader is None:
+            reader = duty_identity.ssh_instances_reader(options.ssh_host)
+        return duty_identity.bind_duty_database(
+            getattr(options, "duty", ""), options.database, instances_reader=reader,
+        )
+    except duty_identity.DutyIdentityError as error:
+        raise ResolveError(str(error))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
+    parser.add_argument("--duty", default="", help="the declared duty this entry binds; a database name alone is not a target identity")
     parser.add_argument("--database", default=DEFAULT_DATABASE)
     parser.add_argument("--ssh-host", required=True)
     parser.add_argument("--base-url", default="")
@@ -237,9 +290,10 @@ def main():
     try:
         if (os.environ.get("CONFIRM_DAILY_RUNTIME_RECORD_IDENTITY") or "") != CONFIRMATION:
             raise ResolveError("exact daily runtime record identity confirmation is required")
+        binding = bind_target(options)
         evidence = resolve(
             options.expected_sha,
-            options.database,
+            binding,
             options.ssh_host,
             options.base_url,
             options.output,

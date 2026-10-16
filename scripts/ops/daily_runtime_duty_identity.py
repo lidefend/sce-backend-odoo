@@ -489,7 +489,57 @@ def carrier_binding(carrier: dict, *, bound_by: str) -> dict:
         "compose_project": carrier["compose_project"],
         "database_container": carrier["database_container"],
         "database_volume": carrier["database_volume"],
+        "odoo_container": odoo_container_of(carrier["compose_project"]),
     }
+
+
+def odoo_container_of(compose_project: str) -> str:
+    """The application container of one compose project, by the same rule the compiler uses.
+
+    A duty's application is addressed through its *own* compose project, never
+    through a remembered container name: the pre-governance cluster and the
+    rebuilt demo carrier are two projects, and a name remembered from one would
+    silently reach into the other.
+    """
+    return "%s-odoo-1" % (compose_project,)
+
+
+#: The application container's own Odoo configuration and the flags a
+#: non-serving shell needs.  A duty-scoped write runs inside the *bound duty's
+#: own* application container, because a database name is not a target: the
+#: rebuilt demo carrier and the preserved historic source both answer to
+#: ``sc_demo``, and a command that named only the database would run in
+#: whichever cluster happened to serve that name -- for the demo that is the
+#: preserved pre-governance cluster, which the owner ruling protects from every
+#: governed write.
+ODOO_CONF_PATH = "/var/lib/odoo/odoo.conf"
+ODOO_SHELL_FLAGS = ("--no-http", "--workers=0", "--max-cron-threads=0")
+
+
+def odoo_shell_command(binding: dict, *, program_path: str = "",
+                       odoo_conf: str = ODOO_CONF_PATH,
+                       env: dict | None = None) -> str:
+    """The shell command that runs an Odoo shell inside the bound duty's container.
+
+    Nothing here comes from a working directory, an environment file or a
+    remembered container name: the target is the bound duty's own application,
+    named by the declaration's compose project.  ``env`` passes the few inputs a
+    program reads from the process environment without touching anything the
+    container already declares, and ``program_path`` feeds the program on stdin
+    so the entry does not depend on which shell the remote host happens to
+    start.
+    """
+    parts = ["docker", "exec", "-i"]
+    for key, value in sorted((env or {}).items()):
+        parts += ["-e", "%s=%s" % (key, value)]
+    parts += [
+        binding["odoo_container"],
+        "odoo", "shell", "-c", odoo_conf, "-d", binding["database"],
+    ] + list(ODOO_SHELL_FLAGS)
+    command = " ".join(shlex.quote(part) for part in parts)
+    if program_path:
+        command = "%s < %s" % (command, shlex.quote(program_path))
+    return command
 
 
 def bind_duty_database(duty_name, database, path: Path | None = None, *, instances_reader=None,

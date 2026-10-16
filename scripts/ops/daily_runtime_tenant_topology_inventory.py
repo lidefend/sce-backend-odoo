@@ -49,7 +49,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import daily_runtime_duty_identity as duty_identity  # noqa: E402
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
 REMOTE_TMP = "/tmp/sc-daily-tenant-topology.py"
-DEFAULT_DATABASE = "sc_demo"
+DEFAULT_DATABASE = ""
 DEFAULT_DATABASES = ("sc_demo", "sc_odoo", "sc_platform_core")
 MARKER = "DAILY_TENANT_TOPOLOGY="
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -185,6 +185,7 @@ for name in DATABASES:
 
 print(MARKER + json.dumps({
     "databases": DATABASES,
+    "shell_database": env.cr.dbname,
     "observation": observation,
     "writes": False,
 }, ensure_ascii=False, sort_keys=True))
@@ -223,14 +224,14 @@ def marker_payload(output):
     return None
 
 
-def remote_make(ssh_host, database, target, *, stdin_path):
-    command = (
-        "cd " + shlex.quote(REMOTE_ROOT)
-        + " && make --no-print-directory " + target
-        + " DB_NAME=" + shlex.quote(database)
-        + " < " + shlex.quote(stdin_path)
-    )
-    return ssh(ssh_host, command)
+def remote_shell(ssh_host, binding, *, stdin_path):
+    """Read the topology through the *bound duty's own* application container.
+
+    A database *name* is not a target identity: the rebuilt demo duty and the
+    preserved pre-governance source both answer to ``sc_demo``, so the carrier
+    comes from the declaration's compose project instead of a bare ``DB_NAME``.
+    """
+    return ssh(ssh_host, duty_identity.odoo_shell_command(binding, program_path=stdin_path))
 
 
 def parse_databases(value):
@@ -253,7 +254,8 @@ def product_modules(customer_module=""):
     return modules
 
 
-def inventory(expected_sha, database, ssh_host, databases, *, customer_module=""):
+def inventory(expected_sha, binding, ssh_host, databases, *, customer_module=""):
+    database = str(binding["database"])
     """Read the tenant topology of the declared databases.
 
     ``customer_module`` is the tenant's own customer addon, named by the caller.
@@ -292,12 +294,17 @@ def inventory(expected_sha, database, ssh_host, databases, *, customer_module=""
     upload = ssh(ssh_host, f"cat > {shlex.quote(REMOTE_TMP)}", input_bytes=program)
     if upload.returncode:
         raise InventoryError(f"remote program upload failed: {decode(upload)[:400]}")
-    executed = remote_make(ssh_host, database, "odoo.shell.exec", stdin_path=REMOTE_TMP)
+    executed = remote_shell(ssh_host, binding, stdin_path=REMOTE_TMP)
     ssh(ssh_host, f"rm -f {shlex.quote(REMOTE_TMP)}")
     payload = marker_payload(decode(executed))
     if payload is None:
         raise InventoryError(
             f"no readback payload in the odoo-shell output: {decode(executed)[-800:]}"
+        )
+    landed = str(payload.get("shell_database") or "")
+    if landed != database:
+        raise InventoryError(
+            f"the shell ran in database {landed or '<unknown>'}, not the bound {database}"
         )
     return payload, remote_head
 
@@ -459,7 +466,7 @@ def main():
         binding = bind_target(options)
         databases = parse_databases(options.databases)
         payload, remote_head = inventory(
-            options.expected_sha, binding["database"], options.ssh_host, databases,
+            options.expected_sha, binding, options.ssh_host, databases,
             customer_module=options.customer_module,
         )
         verdict = evaluate(databases, payload)
@@ -473,7 +480,7 @@ def main():
         "remote_head": remote_head,
         "ssh_host": options.ssh_host,
         "database_binding": binding,
-        "opened_database": options.database,
+        "opened_database": binding["database"],
         "declared_databases": list(databases),
         "declared_customer_module": options.customer_module,
         "writes": False,

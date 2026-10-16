@@ -792,7 +792,13 @@ daily.runtime.frontend.build: guard.prod.forbid verify.daily.runtime.frontend.bu
 # governed `make odoo.shell.exec` entry and proves it with the existing read-only
 # `make prod.guard.mail_from` guard. It writes only mail-sender configuration.
 .PHONY: daily.runtime.mail_sender.prepare verify.daily.runtime.mail_sender.prepare
-DAILY_RUNTIME_DATABASE ?= sc_demo
+# Empty on purpose: a database name no longer identifies a target.  Every
+# governed daily-runtime entry binds a declared duty through
+# ``DAILY_RUNTIME_DUTY`` and the rebuilt demo carrier and the preserved
+# pre-governance source both answer to ``sc_demo``.  An explicit value
+# stays available to a deliberate cross-carrier audit, and the tools
+# refuse it when a duty would have to be guessed.
+DAILY_RUNTIME_DATABASE ?=
 # Which declared duty a read-only daily-runtime inventory binds to. The owner
 # ruling of 2026-10-16 makes a database *name* insufficient: the rebuilt demo
 # carrier and the preserved historic source both carry ``sc_demo``, so an entry
@@ -814,10 +820,12 @@ verify.daily.runtime.mail_sender.prepare: guard.prod.forbid
 
 daily.runtime.mail_sender.prepare: guard.prod.forbid verify.daily.runtime.mail_sender.prepare
 	@test "$${CONFIRM_DAILY_RUNTIME_MAIL_SENDER_PREPARE:-}" = "PREPARE_DAILY_RUNTIME_OUTGOING_MAIL_SENDER" || { echo "exact daily runtime mail-sender preparation confirmation is required" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_mail_sender_prepare.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--sender "$(DAILY_RUNTIME_MAIL_SENDER_FROM)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--base-url "$(DAILY_RUNTIME_MAIL_SENDER_BASE_URL)" \
 		--report "$(DAILY_RUNTIME_MAIL_SENDER_REPORT)"
@@ -843,9 +851,11 @@ verify.daily.runtime.data_space.onboard: guard.prod.forbid
 	@python3 -m unittest scripts.ops.test_daily_runtime_data_space_onboard
 
 daily.runtime.data_space.onboard.plan: guard.prod.forbid verify.daily.runtime.data_space.onboard
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_data_space_onboard.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--role "$(DAILY_RUNTIME_DATA_SPACE_ROLE)" \
 		--tenant-key "$(DAILY_RUNTIME_DATA_SPACE_TENANT_KEY)" \
@@ -855,9 +865,11 @@ daily.runtime.data_space.onboard.plan: guard.prod.forbid verify.daily.runtime.da
 
 daily.runtime.data_space.onboard: guard.prod.forbid verify.daily.runtime.data_space.onboard
 	@test "$${CONFIRM_DAILY_RUNTIME_DATA_SPACE_ONBOARD:-}" = "ONBOARD_DAILY_RUNTIME_DEMO_DATA_SPACE" || { echo "exact daily runtime data-space onboarding confirmation is required" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_data_space_onboard.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--role "$(DAILY_RUNTIME_DATA_SPACE_ROLE)" \
 		--tenant-key "$(DAILY_RUNTIME_DATA_SPACE_TENANT_KEY)" \
@@ -874,9 +886,11 @@ verify.daily.runtime.database.identity.inventory: guard.prod.forbid
 
 daily.runtime.database.identity.inventory: guard.prod.forbid verify.daily.runtime.database.identity.inventory
 	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" || { echo "DAILY_RUNTIME_EXPECTED_SHA must be the deployed runtime source revision" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_database_identity_inventory.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--report "$(DAILY_RUNTIME_DATABASE_IDENTITY_REPORT)"
 
@@ -1266,9 +1280,11 @@ verify.daily.runtime.nav_pro_fixture.prepare: guard.prod.forbid
 daily.runtime.nav_pro_fixture.prepare: guard.prod.forbid verify.daily.runtime.nav_pro_fixture.prepare
 	@test "$${CONFIRM_DAILY_RUNTIME_NAV_PRO_FIXTURE:-}" = "PROVISION_DAILY_SC_DEMO_NAV_PRO_FIXTURE" || { echo "exact daily runtime nav_pro fixture confirmation is required" >&2; exit 2; }
 	@test -n "$${NAV_PRO_PASSWORD:-}" || { echo "NAV_PRO_PASSWORD must be supplied through the environment" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_nav_pro_fixture_prepare.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--base-url "$(DAILY_RUNTIME_NAV_PRO_FIXTURE_BASE_URL)" \
 		--password "$${NAV_PRO_PASSWORD}" \
@@ -1292,9 +1308,11 @@ verify.daily.runtime.record_identity.resolve: guard.prod.forbid
 
 daily.runtime.record_identity.resolve: guard.prod.forbid verify.daily.runtime.record_identity.resolve
 	@test "$${CONFIRM_DAILY_RUNTIME_RECORD_IDENTITY:-}" = "RESOLVE_DAILY_SC_DEMO_RECORD_IDENTITY" || { echo "exact daily runtime record identity confirmation is required" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_record_identity_resolve.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--base-url "$(DAILY_RUNTIME_RECORD_IDENTITY_BASE_URL)" \
 		--output "$(ACCEPTANCE_RECORD_RESOLUTION)" \

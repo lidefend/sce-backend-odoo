@@ -18,8 +18,9 @@ applied to active internal accounts that carry no address.
 
 This entry writes exactly one declared sender identity through the existing
 governed ``make odoo.shell.exec`` entry (stdin Python -- never an ad-hoc docker
-exec), then proves it with the existing read-only ``make prod.guard.mail_from``
-guard. It writes only outgoing-mail sender configuration: ``ir.mail_server.smtp_user``,
+exec), then proves it with the same read-only
+``scripts/prod/guard_mail_from.py`` program run inside that same bound
+carrier. It writes only outgoing-mail sender configuration: ``ir.mail_server.smtp_user``,
 ``ir.config_parameter`` ``mail.default.from``, ``res.company.email`` and the
 ``res.partner.email`` of active internal accounts that had none. It never
 overwrites an existing address, and never touches the code tree, schema, volumes,
@@ -41,9 +42,14 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import daily_runtime_duty_identity as duty_identity  # noqa: E402
+
+
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
 REMOTE_TMP = "/tmp/sc-daily-mail-sender-prepare.py"
-DEFAULT_DATABASE = "sc_demo"
+REMOTE_GUARD_TMP = "/tmp/sc-daily-guard-mail-from.py"
+GUARD_PROGRAM = ROOT / "scripts" / "prod" / "guard_mail_from.py"
 CONFIRMATION = "PREPARE_DAILY_RUNTIME_OUTGOING_MAIL_SENDER"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
@@ -66,6 +72,7 @@ def odoo_shell_program(sender: str) -> str:
         "    if 'env' not in globals():\n"
         "        print('ERROR: Odoo env not found. Run via odoo shell.', file=sys.stderr)\n"
         "        raise SystemExit(1)\n"
+        "    print('PREPARE_MAIL_SENDER database=%s' % env.cr.dbname)\n"
         "    MailServer = env['ir.mail_server'].sudo()\n"
         "    server = MailServer.search([('active', '=', True)], order='sequence,id', limit=1)\n"
         "    if not server:\n"
@@ -160,13 +167,63 @@ def ssh(ssh_host: str, remote_command: str, *, input_bytes: bytes | None = None)
     )
 
 
-def remote_make(ssh_host: str, database: str, target: str, *, stdin_path: str | None = None) -> subprocess.CompletedProcess:
-    redirect = f" < {shlex.quote(stdin_path)}" if stdin_path else ""
-    command = (
-        f"cd {shlex.quote(REMOTE_ROOT)} && "
-        f"make ENV=dev ENV_FILE=.env.dev DB_NAME={shlex.quote(database)} {target}{redirect}"
-    )
-    return ssh(ssh_host, command)
+def bind_target(options, *, instances_reader=None) -> dict:
+    """Bind the target duty, its cluster, its database and its storage, or stop.
+
+    A database *name* is not a target identity.  The rebuilt demo carrier and the
+    preserved pre-governance source both answer to ``sc_demo``, so an entry that
+    received only ``--database`` used to configure whichever cluster happened to
+    serve that name -- before the 2026-10-16 ruling, the historic source the
+    owner protects from every governed write.  Naming the duty is the strong
+    form and is what the entry now requires.
+    """
+    try:
+        reader = instances_reader
+        if reader is None:
+            reader = duty_identity.ssh_instances_reader(options.ssh_host)
+        return duty_identity.bind_duty_database(
+            getattr(options, "duty", ""), options.database, instances_reader=reader,
+        )
+    except duty_identity.DutyIdentityError as error:
+        raise PrepareError(str(error))
+
+
+def remote_shell(ssh_host: str, binding: dict, *, stdin_path: str | None = None) -> subprocess.CompletedProcess:
+    """Run the program inside the *bound duty's own* application container.
+
+    The container comes from the declaration's compose project, so the write
+    cannot land in another project that happens to serve a database of the same
+    name.  ``cd`` is not needed: the target is an explicit container, not the
+    shell's working tree.
+    """
+    return ssh(ssh_host, duty_identity.odoo_shell_command(binding, program_path=stdin_path or ""))
+
+
+def remote_guard(ssh_host: str, binding: dict, *,
+                guard_program: Path = GUARD_PROGRAM,
+                remote_tmp: str = REMOTE_GUARD_TMP) -> subprocess.CompletedProcess:
+    """Prove the written sender inside the *bound duty's own* carrier.
+
+    The read-only guard used to be reached through the deployed checkout's
+    ``make prod.guard.mail_from``, which resolves its target from a bare
+    ``DB_NAME``.  That name is exactly what stopped identifying a target once the
+    rebuilt demo duty and the preserved pre-governance source both answered to
+    ``sc_demo``: the guard could have passed against the other cluster.  Running
+    the same program through the bound container proves the carrier the entry
+    actually wrote.
+    """
+    try:
+        program = guard_program.read_bytes()
+        compile(program.decode("utf-8"), str(guard_program), "exec")
+    except (OSError, SyntaxError, UnicodeDecodeError) as error:
+        raise PrepareError(f"the read-only mail_from guard is not usable: {error}")
+    upload = ssh(ssh_host, f"cat > {shlex.quote(remote_tmp)}", input_bytes=program)
+    if upload.returncode:
+        raise PrepareError(f"remote guard upload failed: {decode(upload)[:400]}")
+    try:
+        return remote_shell(ssh_host, binding, stdin_path=remote_tmp)
+    finally:
+        ssh(ssh_host, f"rm -f {shlex.quote(remote_tmp)}")
 
 
 def decode(result: subprocess.CompletedProcess) -> str:
@@ -196,7 +253,8 @@ def preflight(expected_sha: str, sender: str, database: str, ssh_host: str) -> N
         raise PrepareError("must run from the governed repository")
 
 
-def prepare(expected_sha: str, sender: str, database: str, ssh_host: str, base_url: str) -> dict[str, object]:
+def prepare(expected_sha: str, sender: str, binding: dict, ssh_host: str, base_url: str) -> dict[str, object]:
+    database = str(binding["database"])
     preflight(expected_sha, sender, database, ssh_host)
 
     head = ssh(ssh_host, f"cd {shlex.quote(REMOTE_ROOT)} && git rev-parse HEAD")
@@ -211,12 +269,12 @@ def prepare(expected_sha: str, sender: str, database: str, ssh_host: str, base_u
     if upload.returncode:
         raise PrepareError(f"remote program upload failed: {decode(upload)[:400]}")
 
-    applied = remote_make(ssh_host, database, "odoo.shell.exec", stdin_path=REMOTE_TMP)
+    applied = remote_shell(ssh_host, binding, stdin_path=REMOTE_TMP)
     cleanup = ssh(ssh_host, f"rm -f {shlex.quote(REMOTE_TMP)}")
     if applied.returncode:
         raise PrepareError(f"odoo-shell mail-sender preparation failed: {decode(applied)[:800]}")
 
-    guard = remote_make(ssh_host, database, "prod.guard.mail_from")
+    guard = remote_guard(ssh_host, binding)
     guard_text = decode(guard)
 
     identity = served_identity(base_url)
@@ -230,6 +288,7 @@ def prepare(expected_sha: str, sender: str, database: str, ssh_host: str, base_u
         "remote_head": remote_head,
         "expected_sha": expected_sha,
         "database": database,
+        "database_binding": binding,
         "sender": sender,
         "odoo_shell_output": decode(applied).splitlines()[-12:],
         "guard_rc": guard.returncode,
@@ -239,7 +298,15 @@ def prepare(expected_sha: str, sender: str, database: str, ssh_host: str, base_u
         "cleanup_rc": cleanup.returncode,
     }
 
-    if guard.returncode != 0 or "GUARD: PASS" not in guard_text:
+    landed = ""
+    for line in decode(applied).splitlines():
+        if line.startswith("PREPARE_MAIL_SENDER database="):
+            landed = line.split("=", 1)[1].strip()
+    evidence["landed_database"] = landed
+    if landed != database:
+        evidence["status"] = "FAIL"
+        evidence["reason"] = "the odoo shell did not land in the bound database %s" % (database,)
+    elif guard.returncode != 0 or "GUARD: PASS" not in guard_text:
         evidence["status"] = "FAIL"
         evidence["reason"] = "read-only mail_from guard did not pass"
     elif base_url and served_database and served_database != database:
@@ -255,7 +322,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--sender", required=True)
-    parser.add_argument("--database", default=DEFAULT_DATABASE)
+    parser.add_argument("--duty", default="", help="the declared duty this entry binds; a database name alone is not a target identity")
+    parser.add_argument("--database", default="")
     parser.add_argument("--ssh-host", required=True)
     parser.add_argument("--base-url", default="")
     parser.add_argument("--report", required=True)
@@ -264,8 +332,9 @@ def main() -> int:
     try:
         if (os.environ.get("CONFIRM_DAILY_RUNTIME_MAIL_SENDER_PREPARE") or "") != CONFIRMATION:
             raise PrepareError("exact daily runtime mail-sender preparation confirmation is required")
+        binding = bind_target(options)
         evidence = prepare(
-            options.expected_sha, options.sender, options.database, options.ssh_host, options.base_url,
+            options.expected_sha, options.sender, binding, options.ssh_host, options.base_url,
         )
     except PrepareError as error:
         print(f"[daily.runtime.mail_sender.prepare] BLOCKED {error}", file=sys.stderr)

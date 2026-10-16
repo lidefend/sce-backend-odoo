@@ -45,9 +45,12 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import daily_runtime_duty_identity as duty_identity  # noqa: E402
+
+
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
 REMOTE_TMP = "/tmp/sc-daily-data-space-onboard.py"
-DEFAULT_DATABASE = "sc_demo"
 DEFAULT_ROLE = "platform_internal_demo"
 DEFAULT_TENANT_KEY = "sc-demo-main"
 CONFIRMATION = "ONBOARD_DAILY_RUNTIME_DEMO_DATA_SPACE"
@@ -175,13 +178,34 @@ def ssh(ssh_host, remote_command, *, input_bytes=None):
     )
 
 
-def remote_make(ssh_host, database, target, *, stdin_path=None):
-    redirect = f" < {shlex.quote(stdin_path)}" if stdin_path else ""
-    command = (
-        f"cd {shlex.quote(REMOTE_ROOT)} && "
-        f"make ENV=dev ENV_FILE=.env.dev DB_NAME={shlex.quote(database)} {target}{redirect}"
-    )
-    return ssh(ssh_host, command)
+def bind_target(options, *, instances_reader=None):
+    """Bind the target duty, its cluster, its database and its storage, or stop.
+
+    A database *name* is not a target identity.  The rebuilt demo carrier and the
+    preserved pre-governance source both answer to ``sc_demo``, so an entry that
+    received only ``--database`` used to onboard whichever cluster happened to
+    serve that name -- before the 2026-10-16 ruling, the historic source the
+    owner protects from every governed write.
+    """
+    try:
+        reader = instances_reader
+        if reader is None:
+            reader = duty_identity.ssh_instances_reader(options.ssh_host)
+        return duty_identity.bind_duty_database(
+            getattr(options, "duty", ""), options.database, instances_reader=reader,
+        )
+    except duty_identity.DutyIdentityError as error:
+        raise OnboardError(str(error))
+
+
+def remote_shell(ssh_host, binding, *, stdin_path=None):
+    """Run the program inside the *bound duty's own* application container.
+
+    The container comes from the declaration's compose project, so the write
+    cannot land in another project that happens to serve a database of the same
+    name.
+    """
+    return ssh(ssh_host, duty_identity.odoo_shell_command(binding, program_path=stdin_path or ""))
 
 
 def decode(result):
@@ -213,7 +237,8 @@ def preflight(expected_sha, database, ssh_host, role, tenant_key):
         raise OnboardError("must run from the governed repository")
 
 
-def onboard(expected_sha, database, ssh_host, role, tenant_key, base_url, apply):
+def onboard(expected_sha, binding, ssh_host, role, tenant_key, base_url, apply):
+    database = str(binding["database"])
     preflight(expected_sha, database, ssh_host, role, tenant_key)
 
     head = ssh(ssh_host, f"cd {shlex.quote(REMOTE_ROOT)} && git rev-parse HEAD")
@@ -228,7 +253,7 @@ def onboard(expected_sha, database, ssh_host, role, tenant_key, base_url, apply)
     if upload.returncode:
         raise OnboardError(f"remote program upload failed: {decode(upload)[:400]}")
 
-    executed = remote_make(ssh_host, database, "odoo.shell.exec", stdin_path=REMOTE_TMP)
+    executed = remote_shell(ssh_host, binding, stdin_path=REMOTE_TMP)
     cleanup = ssh(ssh_host, f"rm -f {shlex.quote(REMOTE_TMP)}")
     output = decode(executed)
     payload = marker_payload(output)
@@ -241,6 +266,7 @@ def onboard(expected_sha, database, ssh_host, role, tenant_key, base_url, apply)
         "remote_head": remote_head,
         "expected_sha": expected_sha,
         "database": database,
+        "database_binding": binding,
         "declared_role": role,
         "tenant_key": tenant_key,
         "applied": bool(apply),
@@ -253,7 +279,13 @@ def onboard(expected_sha, database, ssh_host, role, tenant_key, base_url, apply)
         evidence["served_revision"] = str(served.get("git_sha") or served.get("source_revision") or "")
         evidence["served_database"] = str(served.get("database") or "")
 
-    if not apply:
+    if str(payload.get("database") or "") != database:
+        evidence["status"] = "FAIL"
+        evidence["reason"] = (
+            "the odoo shell landed in database %r, not the bound %r"
+            % (payload.get("database"), database)
+        )
+    elif not apply:
         evidence["status"] = "PLAN"
     elif executed.returncode != 0:
         evidence["status"] = "FAIL"
@@ -279,7 +311,8 @@ def served_identity(base_url):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
-    parser.add_argument("--database", default=DEFAULT_DATABASE)
+    parser.add_argument("--duty", default="", help="the declared duty this entry binds; a database name alone is not a target identity")
+    parser.add_argument("--database", default="")
     parser.add_argument("--ssh-host", required=True)
     parser.add_argument("--role", default=DEFAULT_ROLE)
     parser.add_argument("--tenant-key", default=DEFAULT_TENANT_KEY)
@@ -292,8 +325,9 @@ def main():
     try:
         if apply and (os.environ.get("CONFIRM_DAILY_RUNTIME_DATA_SPACE_ONBOARD") or "") != CONFIRMATION:
             raise OnboardError("exact daily runtime data-space onboarding confirmation is required")
+        binding = bind_target(options)
         evidence = onboard(
-            options.expected_sha, options.database, options.ssh_host,
+            options.expected_sha, binding, options.ssh_host,
             options.role, options.tenant_key, options.base_url, apply,
         )
     except OnboardError as error:

@@ -42,7 +42,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import daily_runtime_duty_identity as duty_identity  # noqa: E402
 REMOTE_TMP = "/tmp/sc-daily-routing-inventory.py"
-DEFAULT_DATABASE = "sc_demo"
+DEFAULT_DATABASE = ""
 MARKER = "DAILY_ROUTING_INVENTORY="
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
