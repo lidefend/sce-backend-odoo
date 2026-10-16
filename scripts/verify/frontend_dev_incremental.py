@@ -244,6 +244,41 @@ RULES = (
     ), (
         "verify.daily.runtime.lifecycle_fixture.prepare",
     )),
+    # The remaining daily-runtime duty tools each own a non-zero unit target.
+    # The 2026-10-16 duty-binding change edited five of them plus their tests and
+    # the inner loop could only report `unmappedPathCount=10`: a whole set of
+    # governed tools whose L2 layer was selected by hand or not at all. Each one
+    # routes to the lane that actually executes it.
+    Rule((
+        "scripts/ops/daily_runtime_mail_sender_prepare.py",
+        "scripts/ops/test_daily_runtime_mail_sender_prepare.py",
+    ), (
+        "verify.daily.runtime.mail_sender.prepare",
+    )),
+    Rule((
+        "scripts/ops/daily_runtime_data_space_onboard.py",
+        "scripts/ops/test_daily_runtime_data_space_onboard.py",
+    ), (
+        "verify.daily.runtime.data_space.onboard",
+    )),
+    Rule((
+        "scripts/ops/daily_runtime_database_identity_inventory.py",
+        "scripts/ops/test_daily_runtime_database_identity_inventory.py",
+    ), (
+        "verify.daily.runtime.database.identity.inventory",
+    )),
+    Rule((
+        "scripts/ops/daily_runtime_nav_pro_fixture_prepare.py",
+        "scripts/ops/test_daily_runtime_nav_pro_fixture_prepare.py",
+    ), (
+        "verify.daily.runtime.nav_pro_fixture.prepare",
+    )),
+    Rule((
+        "scripts/ops/daily_runtime_record_identity_resolve.py",
+        "scripts/ops/test_daily_runtime_record_identity_resolve.py",
+    ), (
+        "verify.daily.runtime.record_identity.resolve",
+    )),
     Rule((
         "scripts/ops/daily_runtime_published_face_converge.py",
         "scripts/ops/test_daily_runtime_published_face_converge.py",
@@ -254,6 +289,7 @@ RULES = (
     # declaration drives; its test file was unmapped while the entry itself was
     # claimed by the identity rule, so a test-only edit selected nothing.
     Rule((
+        "scripts/ops/daily_runtime_database_duty.py",
         "scripts/ops/test_daily_runtime_database_duty.py",
     ), (
         "verify.daily.runtime.database.duty",
