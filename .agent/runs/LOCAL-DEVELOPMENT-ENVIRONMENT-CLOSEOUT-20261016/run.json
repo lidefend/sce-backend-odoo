@@ -15,7 +15,12 @@
     "scripts/dev/local_environment_readiness.py",
     "scripts/verify/test_local_environment_readiness.py",
     "scripts/verify/frontend_dev_incremental.py",
-    "scripts/dev/local_dev_demo_authority_verify.sh"
+    "scripts/dev/local_dev_demo_authority_verify.sh",
+    ".agent/runs/DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY/run.json",
+    "docs/ops/iterations/daily_acceptance_lane_selfconsistency_original_record.md",
+    "docs/audit/test_coverage_registry/",
+    "docs/engineering_convergence/",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -52,7 +57,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Local environment batch is complete. Preserve isolated branch for reviewed integration; use make local.env.readiness in this worktree. No further runtime mutation required.",
+  "next_exact_step": "Prepare generated evidence, freeze, Quick, independent final review, archive and protected GitHub PR merge",
   "results": [
     {
       "layer": "L1",
@@ -133,5 +138,11 @@
     "mainline_integration": "not_run",
     "daily_deployment": "not_in_scope",
     "customer_product_acceptance": "not_in_scope"
+  },
+  "integration": {
+    "authorization": "Owner explicitly requested direct mainline integration, other executors continue untouched",
+    "earliest_failure": "freeze.prepare agent ledger: historical completed run referenced ignored .runtime/pr file missing on fresh checkout",
+    "repair": "Track original unchanged historical record and repoint run; preserve historical results; no guard relaxation",
+    "next": "Prepare generated evidence, freeze, Quick, independent final review, archive and protected GitHub PR merge"
   }
 }

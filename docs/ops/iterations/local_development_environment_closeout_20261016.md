@@ -48,3 +48,7 @@ For linked worktrees, these existing env variables point at the primary checkout
 13 readiness/actual authority wiring tests; 36 existing lifecycle tests; 30 incremental planner tests passed. L1 passed. B independent review closed both the wrong-profile success defect and whitespace-export parsing bypass, and verified dependency mapping. Exact commands/original logs live in the run index.
 
 No remote deployment, customer data transfer, global cleanup or mandatory sample provisioning. No frozen Quick or whole browser matrix was needed for this local batch. Mainline integration remains pending; use the isolated branch until integrated. Daily server and customer module work continue independently.
+
+## Authorized mainline integration
+
+Owner requested protected mainline integration after local completion. Finalization exposed one historical ledger record pointing at an ignored .runtime/pr file absent from clean linked checkouts. The original file is preserved byte-for-byte as docs/ops/iterations/daily_acceptance_lane_selfconsistency_original_record.md and its completed run points there; no historical validation is invented or rerun. Generated reports, exact-head Quick, independent review and remote required checks follow. Earlier not_run statements describe the local iteration stage, not the selected integration lane. No further database or remote application mutation is needed.
