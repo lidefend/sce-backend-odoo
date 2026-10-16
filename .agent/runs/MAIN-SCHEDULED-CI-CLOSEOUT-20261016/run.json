@@ -1,0 +1,340 @@
+{
+  "schema_version": 1,
+  "id": "MAIN-SCHEDULED-CI-CLOSEOUT-20261016",
+  "branch": "fix/main-scheduled-ci-closeout-20261016",
+  "baseline_sha": "41c7a9dd4c6a854dc344ca1d7f4033186f66c35a",
+  "status": "active",
+  "goal": ".agent/goals/MAIN-SCHEDULED-CI-CLOSEOUT-20261016.yaml",
+  "record": "docs/ops/iterations/main_scheduled_ci_closeout_20261016.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MAIN-SCHEDULED-CI-CLOSEOUT-20261016.yaml",
+    ".agent/runs/MAIN-SCHEDULED-CI-CLOSEOUT-20261016/run.json",
+    "docs/ops/iterations/main_scheduled_ci_closeout_20261016.md",
+    "frontend/apps/web/scripts/contract_consumption_verdicts_test.ts",
+    "frontend/apps/web/scripts/hierarchical_worksheet_load_stage_test.ts",
+    "frontend/apps/web/scripts/native_action_notification_test.ts",
+    "addons/smart_construction_core/tests/",
+    "demo_addons/smart_construction_demo/tests/",
+    ".github/workflows/backend_test_suite.yml",
+    "scripts/verify/",
+    "scripts/test/test.sh",
+    "scripts/test/test_safe.sh",
+    "scripts/ci/orm_result_guard.sh",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "addons/smart_construction_core/core_extension_policy_maps.py",
+    "addons/smart_construction_bundle/tests/",
+    "addons/smart_construction_core/models/support/context_workspace_entry_authority.py",
+    "addons/smart_construction_core/models/support/current_account_workspace.py",
+    "addons/smart_construction_core/models/support/company_project_refund_workspace.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "addons/smart_construction_core/models/support/team_loan_deduction_workspace.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing governed local and GitHub CI entries; no daily runtime writes"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Commit reviewed generated evidence and owned source; run one clean exact-head Quick; independent frozen review and external archive; publish PR and full isolated backend suite.",
+  "source_runs": [
+    38818510036,
+    38811434965,
+    38811625754
+  ],
+  "diagnostic_results": {
+    "classification": "stale fixture/schema expectations and P1 contextual action carrier product defect; no ACL/lifecycle/release bypass",
+    "original_failures": "85 named test failures/errors from original backend log; setup failures also resolved by explicit registered-company fixture. Original full backend 30 failures/59 errors; demo1 failure.",
+    "latest": "All named original failures have subsequent successful method observations. Final uncovered13/13 incl demo11, race1 with cleanup, exclusive-role14 actions1; ambiguity1/1, legacy identity1/1. Earlier scoped successes reused only outside changed methods; remote full suite remains mandatory.",
+    "cleanup": "One owned concurrent fixture committed before cleanup FK failure. Recovery used precise ids and UUID registration assertions; recovery1/1, final race cleanup passed. Temporary diagnostic methods removed. Persistent runtime identity unchanged.",
+    "exclusions": "Four unchanged independently committed funding/finance race tests not repeated on persistent local DB; mandatory full isolated remote module suite includes them. No remote-success claim."
+  },
+  "product_boundary": {
+    "Formal Product Layer": "P1",
+    "Layer Target": "industry contextual route declarations",
+    "Module": "smart_construction_core; smart_construction_bundle integration tests",
+    "Standard vs User-Specific": "standard construction workspace dispatch",
+    "Why Here": "Released workspaces declare their existing handling actions under the workspace menu carrier in the existing role authority mechanism.",
+    "Why Not Elsewhere": "No frontend inference, no P0 release bypass, no P2 identities, no new visible menus.",
+    "Blast Radius": "Three context workspaces; finance, project and exclusive business-full roles; fourteen action/menu pairs. No visible menu expansion."
+  },
+  "validation_results": [
+    {
+      "layer": "L1",
+      "command": "pnpm --dir frontend/apps/web lint",
+      "status": "passed",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-lint.log",
+        "sha256": "a20af11b284a998db5d96df2c9e03c8879d78eb11e401f49b9c9197b4479530a"
+      },
+      "stage_head": "41c7a9dd4c6a854dc344ca1d7f4033186f66c35a",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-iteration-final.log",
+        "sha256": "916e2097d2fec85fb7fc426a0664c6f1007c7611d2085998a19ad5a0a43294e6"
+      },
+      "stage_head": "41c7a9dd4c6a854dc344ca1d7f4033186f66c35a",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.ci.scheduled_gates verify.orm.guard.self_test",
+      "status": "passed",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-ci-guards-final.log",
+        "sha256": "840eb168aa3cce42381fdd0d946f0a9dba4bccf805d3e4178bfd9eea451f02b4"
+      },
+      "orm_selftests": 31
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.local.env.readiness.unit",
+      "status": "passed",
+      "test_count": 15,
+      "evidence": "original targeted log; no runner source changes since pass"
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.frontend.role_surface_exposure_declaration.guard verify.construction.create_defaults.unit",
+      "status": "passed",
+      "test_count": 25,
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-p1-declaration-final.log",
+        "sha256": "bd23fe07cb54efc26cb7a136fd5e7739ca8eb7345d0d671d3c9e8484a09917c9"
+      }
+    },
+    {
+      "layer": "L2",
+      "command": "make local.dev.test MODULE=smart_construction_core,smart_construction_bundle,smart_construction_demo TEST_TAGS=/smart_construction_core:TestP1PaymentRequestConcurrency,/smart_construction_bundle:TestWorkspaceExclusiveRoleRoutes,/smart_construction_demo:TestDemoShowcaseGate",
+      "status": "passed",
+      "test_count": 13,
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-final-uncovered.log",
+        "sha256": "5f8a4c77c35a0819e153cd23a65682e821730abe5e8771fad9b68e8497cffdcf"
+      }
+    },
+    {
+      "layer": "L2",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestContextWorkspaceNativeLowcode.test_a_carrier_fails_closed_when_the_authority_offers_several_routes",
+      "status": "passed",
+      "test_count": 1,
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-final-two-contracts.log",
+        "sha256": "5a2a6cc8e4f34f68c0e7e5915a2aac9099005089878b60ec09ce3263f2bbd0b6"
+      },
+      "note": "second requested method selector unmatched; only this one actually executed, no result claimed for absent selector"
+    },
+    {
+      "layer": "L2",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestP1FinanceProjectionAuthority.test_partial_legacy_payment_identity_is_quarantined_without_relation_guessing",
+      "status": "passed",
+      "test_count": 1,
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-final-legacy-identity.log",
+        "sha256": "beb67b4a909b6702b17bb8ca8899a82cc898d4906bdcc7cee0d62a8362275bff"
+      }
+    },
+    {
+      "layer": "L5",
+      "command": "make ci.local.quick; GitHub backend_test_suite and candidate required checks",
+      "status": "not_run",
+      "reason": "dirty candidate; freeze preparation next"
+    }
+  ],
+  "evidence_index": {
+    "sce-scheduled-orm-third.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-orm-third.log",
+      "sha256": "b7c7a4dea9dab107e96d4d94e941c36fe5fb1039fcbab5243dd0ed95dd4be654"
+    },
+    "sce-scheduled-workspace-contextual.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-workspace-contextual.log",
+      "sha256": "3acbaa783f166a7649e571aa232dca1df386f7bbf8c627824cc1f2a894642a9b"
+    },
+    "sce-scheduled-workspace-denials.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-workspace-denials.log",
+      "sha256": "0694535b673b271a4d8d08c9801a80c44a354703981bb9e4f051322217d1d9e9"
+    },
+    "sce-scheduled-p1-transactional.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-p1-transactional.log",
+      "sha256": "1af4c2c877845e1b903397c512ec5f4b6b0a1fbb828d272c48a20c74e6f9de4a"
+    },
+    "sce-scheduled-business-fixtures.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-business-fixtures.log",
+      "sha256": "97773569f722db44c81b6d3c3d6ffc0f0d0c9239496213ea791f7741791c5d80"
+    },
+    "sce-scheduled-declared-policy.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-declared-policy.log",
+      "sha256": "e530da58d3c5f31ccae4adbd82284623ec3b536042f252d042b9b469d2d288d3"
+    },
+    "sce-scheduled-workspace-all-routes.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-workspace-all-routes.log",
+      "sha256": "38445af7c5dfe7a1e5755a1854c74691ed36cadf1655a63550ae0980095e1ac0"
+    },
+    "sce-scheduled-resume.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-resume.log",
+      "sha256": "2d655e9d6ab47d6ad0b097e35c987fffc43f0a8e6f8fe709fce2d961a401cda9"
+    },
+    "sce-scheduled-iteration-current.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-iteration-current.log",
+      "sha256": "96497ffd36fc021f96d59364d9d41bfe42d53d9a70e21ae7c70c0b0fb643706a"
+    },
+    "sce-scheduled-final-uncovered.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-final-uncovered.log",
+      "sha256": "5f8a4c77c35a0819e153cd23a65682e821730abe5e8771fad9b68e8497cffdcf"
+    },
+    "sce-scheduled-iteration-final.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-iteration-final.log",
+      "sha256": "916e2097d2fec85fb7fc426a0664c6f1007c7611d2085998a19ad5a0a43294e6"
+    },
+    "sce-scheduled-state-refined-valid-tags.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-state-refined-valid-tags.log",
+      "sha256": "b22a26b62d7ce35224faf685985cbc35edea77b464dd79d42610c839a881ba20"
+    },
+    "sce-scheduled-state-refined.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-state-refined.log",
+      "sha256": "7d499dd7a05feecc5b2d7d70b180d64d1db38859f57d39f1c61339b5ee04a120"
+    },
+    "sce-scheduled-lifecycle.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-lifecycle.log",
+      "sha256": "b942b233f6215373f4a22c0f9a86ff522da9aedd214ed965f04466aeea4d13b2"
+    },
+    "sce-scheduled-owner-prerequisites.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-owner-prerequisites.log",
+      "sha256": "d9d59e13c39c03b1436c508393264e5b32b42411198ac1bc225e89402cea473e"
+    },
+    "sce-scheduled-owning-guards.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-owning-guards.log",
+      "sha256": "be81754fbd66290ff20992597e66e2f33b9232b357382b0c6de1c74ac54944a3"
+    },
+    "sce-scheduled-concurrency-dependencies.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-concurrency-dependencies.log",
+      "sha256": "12ab4f71d947913390a8155713b0cdcd2e7c46b6ebe380e0bcc317569759479c"
+    },
+    "sce-scheduled-concurrency-recovery-final.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-concurrency-recovery-final.log",
+      "sha256": "c75a654a2aa9eaa0093a79ae1d98132e104585605ceb8149538135b308a0b0b3"
+    },
+    "sce-scheduled-final-legacy-identity.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-final-legacy-identity.log",
+      "sha256": "beb67b4a909b6702b17bb8ca8899a82cc898d4906bdcc7cee0d62a8362275bff"
+    },
+    "sce-scheduled-workspace-role.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-workspace-role.log",
+      "sha256": "0973bad1e9f6ef7e495aada2a1f896b722428db0c2ed2258ee1e6ce508910284"
+    },
+    "sce-scheduled-p1-capability.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-p1-capability.log",
+      "sha256": "2bb113232f15a4a1e23fefb484720a2b94a3d1e083860850f85f2d19f5007e81"
+    },
+    "sce-scheduled-notification.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-notification.log",
+      "sha256": "76554279270dd5a8827e487ac47f399a3c20de3118c9f35dbf6cbd6a0ef70fbd"
+    },
+    "sce-scheduled-orm-first.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-orm-first.log",
+      "sha256": "2326e82c346c032ccca09c269ceff6530b293ee9c0c671350bc625991b735372"
+    },
+    "sce-scheduled-concurrency-recovery.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-concurrency-recovery.log",
+      "sha256": "ca10d0b2c31dc908be55e77ea4d14ae7c05484fb494d009f1cb1fa9f7e3686c4"
+    },
+    "sce-scheduled-state-consolidated.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-state-consolidated.log",
+      "sha256": "a3fe7c0a42033c4e7a1bcdd09dcdc363dd0ccdd26f06fd33e79fecfb6bb2f486"
+    },
+    "sce-scheduled-lint.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-lint.log",
+      "sha256": "a20af11b284a998db5d96df2c9e03c8879d78eb11e401f49b9c9197b4479530a"
+    },
+    "sce-scheduled-concurrency-recovery-properties.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-concurrency-recovery-properties.log",
+      "sha256": "62f179400fee5ff2b8def78042a3feff27d90efce27ffb20afa1a30f6f9089bb"
+    },
+    "sce-scheduled-iteration.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-iteration.log",
+      "sha256": "d710487501b51e18c26e32a3e2a87ea3f2b1419e2ad1d64136c7dcb7d2a8ccd2"
+    },
+    "sce-scheduled-team-workspace.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-team-workspace.log",
+      "sha256": "e7105787c077a80fc194eccc00fa022015f9051afec4f0a3cad3749bf616fac1"
+    },
+    "sce-scheduled-fixture-tax-release.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-fixture-tax-release.log",
+      "sha256": "cd2a0a64e20e70ddbe83277dfa9b8f39316cdb0d918b323c3742f0ce2b257498"
+    },
+    "sce-scheduled-gates.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-gates.log",
+      "sha256": "5a438b7172b6e4ddc45e48ef37ce12df3e289c9f39f6f39c4b817476318532b9"
+    },
+    "sce-scheduled-final-two-contracts.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-final-two-contracts.log",
+      "sha256": "5a2a6cc8e4f34f68c0e7e5915a2aac9099005089878b60ec09ce3263f2bbd0b6"
+    },
+    "sce-scheduled-orm-second.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-orm-second.log",
+      "sha256": "f530d229993e6365438c814f345031540ecbe8106f894fc43544fcd227e518e5"
+    },
+    "sce-scheduled-p1-declaration-final.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-p1-declaration-final.log",
+      "sha256": "bd23fe07cb54efc26cb7a136fd5e7739ca8eb7345d0d671d3c9e8484a09917c9"
+    },
+    "sce-scheduled-concurrency-recovery-tax.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-concurrency-recovery-tax.log",
+      "sha256": "c7522ebcfb695506c54956beaf202a02a126bb41c283c7be69e268ee8424406e"
+    },
+    "sce-scheduled-concurrency-bounded.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-concurrency-bounded.log",
+      "sha256": "779956bb3067c290ebb29df1c318d0cca9be77cd4a9951a9e54c2f25db37617b"
+    },
+    "sce-scheduled-concurrency-recovery-complete.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-concurrency-recovery-complete.log",
+      "sha256": "4946f11a926f4b9c3a8f9a09cf099c7c59417b813809227b8bf61bd88b72a26c"
+    },
+    "sce-scheduled-ci-guards-final.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-ci-guards-final.log",
+      "sha256": "840eb168aa3cce42381fdd0d946f0a9dba4bccf805d3e4178bfd9eea451f02b4"
+    },
+    "sce-scheduled-fixtures-refined.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-fixtures-refined.log",
+      "sha256": "a3e4d398ea913365f32e5f327c44aac9ff613bba1d64eb86fc6a12d850aef94d"
+    },
+    "sce-scheduled-concurrency-recovery-ordered.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-concurrency-recovery-ordered.log",
+      "sha256": "aa8febfdebbe65d1eac82dea2d7d1a688fa97ea7dbc0daa19635b6c9a24179a3"
+    },
+    "sce-scheduled-concurrency-cleanup.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-concurrency-cleanup.log",
+      "sha256": "177423497c365e394de3b2856571416f5435afe70d28157c71e4663f3dbd55c6"
+    },
+    "sce-scheduled-frontend-targeted.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-frontend-targeted.log",
+      "sha256": "692694f644cb737a4155cfeb94986712316ac75bc2233c53e314e037f8361cca"
+    },
+    "sce-ci-38811625754.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-38811625754.log",
+      "sha256": "f70279e76cf4b87215e40dfa6f7681365520d16c80cb1ac14bc31008ca9922e5"
+    },
+    "sce-ci-38811434965.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-38811434965.log",
+      "sha256": "a77930611946cc22f1ef959d1c396524aeb69d94f5b881fb03a24310fb8f2030"
+    },
+    "sce-ci-38818510036.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-38818510036.log",
+      "sha256": "3e0409f8628e7c045ca48429cc8208a4621c23c80205d8400da329fa9069c787"
+    }
+  },
+  "validation_scope": {
+    "runtime": "make local.dev.test; registered sc-local-dev/sc_dev_demo; canonical env from primary checkout; serialized DB calls",
+    "L3": "not required: no manifest, schema, ACL or XML changes; Python methods/declarations loaded by fresh governed test process",
+    "L4": "not required: frontend test-only edits; P1 action return dispatch asserted under real published standard and actual role identity, no renderer/layout changes",
+    "reuse": "P0 lifecycle79, core amount5, domain6, finance transactional53+corrected1, payment capability/tender and fixture classes retain earlier unaffected method outcomes. CI modules not reduced; complete remote14-module fresh-install suite mandatory."
+  }
+}

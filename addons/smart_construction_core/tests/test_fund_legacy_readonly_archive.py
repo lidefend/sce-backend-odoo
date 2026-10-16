@@ -5,7 +5,8 @@ from lxml import etree
 from psycopg2 import IntegrityError
 
 from odoo.exceptions import AccessError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 
 SOURCE_MODEL = "online_old_legacy_direct:direct_acceptance"
@@ -14,7 +15,7 @@ RECHARGE_TABLE = "direct_acceptance:充值登记"
 
 
 @tagged("post_install", "-at_install", "sc_gate", "sc_perm", "fund_legacy_archive")
-class TestFundLegacyReadonlyArchive(TransactionCase):
+class TestFundLegacyReadonlyArchive(BusinessTransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

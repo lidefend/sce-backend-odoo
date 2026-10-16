@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 from odoo.exceptions import AccessError, UserError, ValidationError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 from ..models.support import operating_metrics as opm
 
 
 @tagged("post_install", "-at_install", "sc_gate")
-class TestP0LedgerGate(TransactionCase):
+class TestP0LedgerGate(BusinessTransactionCase):
     """P0 gate for ledger creation and enforcement."""
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        company = cls.env.ref("base.main_company")
+        company = cls.env.company
         ctx = dict(
             cls.env.context,
             mail_create_nosubscribe=True,
@@ -318,12 +319,13 @@ class TestP0LedgerGate(TransactionCase):
 
 
 @tagged("post_install", "-at_install", "sc_gate", "core_payment_amount_semantics")
-class TestCorePaymentAmountSemantics(TransactionCase):
+class TestCorePaymentAmountSemantics(BusinessTransactionCase):
+    approval_models = ("payment.request",)
     """T1-B matrix: reservation, ledger actual paid, and contract actual paid."""
 
     def setUp(self):
         super().setUp()
-        self.company = self.env.ref("base.main_company")
+        self.company = self.env.company
         self.currency = self.company.currency_id
         self.partner = self.env["res.partner"].create(
             {
@@ -358,7 +360,7 @@ class TestCorePaymentAmountSemantics(TransactionCase):
             or self.env.ref("base.cn")
         )
         group = self._model("account.tax.group", company).search(
-            [("company_id", "=", company.id), ("country_id", "=", country.id)],
+            [("company_id", "=", company.id), ("country_id", "=", country.id), ("name", "!=", "合同税率")],
             limit=1,
         )
         if not group:
@@ -417,7 +419,7 @@ class TestCorePaymentAmountSemantics(TransactionCase):
         project = project or settlement.project_id
         contract = contract if contract is not None else settlement.contract_id
         currency = currency or settlement.currency_id
-        return self._model("payment.request", project.company_id).with_context(
+        request = self._model("payment.request", project.company_id).with_context(
             payment_soft_gate=True
         ).create(
             {
@@ -429,9 +431,15 @@ class TestCorePaymentAmountSemantics(TransactionCase):
                 "settlement_id": settlement.id,
                 "currency_id": currency.id,
                 "amount": amount,
-                "state": state,
+                "state": "draft",
             }
         )
+
+        if state != "draft":
+            self.assertEqual(state, "submit", "this amount fixture only prepares submitted requests")
+            request.action_submit()
+            self.assertEqual(request.state, "submit")
+        return request
 
     def _contract_paid(self):
         self.contract.invalidate_recordset(["paid_amount"])
@@ -633,6 +641,8 @@ class TestCorePaymentAmountSemantics(TransactionCase):
                 "country_id": self.env.ref("base.cn").id,
             }
         )
+        self.register_business_company(company)
+        self.env["sc.approval.policy"].search([("company_id", "=", self.company.id), ("target_model", "=", "payment.request")], limit=1).copy({"company_id": company.id, "code": "synthetic_secondary_payment", "step_ids": [(0, 0, {"name": "Secondary company approval", "approval_scope_key": "executive", "approve_group_id": self.env.ref("smart_construction_core.group_sc_role_executive").id})]})
         project_2 = self._project("T1-B Company 2 Project", company)
         partner_2 = self.env["res.partner"].create({"name": "T1-B Company 2 Vendor"})
         contract_2 = self._contract("T1-B Company 2 Contract", project_2, partner_2, company, self.currency)

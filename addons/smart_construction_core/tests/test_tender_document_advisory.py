@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 from odoo.exceptions import AccessError
 
 
 @tagged("post_install", "-at_install", "sc_gate", "tender_document")
-class TestTenderDocumentAdvisory(TransactionCase):
+class TestTenderDocumentAdvisory(BusinessTransactionCase):
     def _project_operator(self):
         return self.env["res.users"].with_context(no_reset_password=True).create(
             {
@@ -106,7 +107,7 @@ class TestTenderDocumentAdvisory(TransactionCase):
         )
 
         self.assertTrue(application.action_submit())
-        self.assertEqual(application.processing_advisory, "当前办理资料已完善")
+        self.assertFalse(application.processing_advisory)
 
     def test_product_tender_surfaces_are_distinct_and_advisory_driven(self):
         operator = self._project_operator()

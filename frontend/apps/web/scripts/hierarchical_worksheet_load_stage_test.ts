@@ -6,7 +6,6 @@ import {
   type WorksheetLoadResult,
   type WorksheetSheetConfig,
 } from '../src/app/action_runtime/hierarchicalWorksheetDataSource';
-import type { ContractGapError } from '../src/app/action_runtime/hierarchicalWorksheetDataSource';
 
 // These cases bind the declared load staging to actual behaviour: a worksheet is
 // "ready" once its first batch is usable, and whole-table continuation is a

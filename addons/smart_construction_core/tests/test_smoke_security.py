@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 
 @tagged("post_install", "-at_install", "smoke", "sc_smoke", "smoke_security")
-class TestSmokeSecurity(TransactionCase):
+class TestSmokeSecurity(BusinessTransactionCase):
 
     @classmethod
     def setUpClass(cls):
@@ -33,7 +34,7 @@ class TestSmokeSecurity(TransactionCase):
             cls.env.ref("smart_construction_core.group_sc_cap_finance_manager"),
             cls.env.ref("smart_construction_core.group_sc_cap_settlement_manager"),
         ]
-        company = cls.env.ref("base.main_company")
+        company = cls.env.company
         cls.finance_user = cls.env["res.users"].with_context(no_reset_password=True).create({
             "name": "Smoke Finance",
             "login": "smoke_fin",

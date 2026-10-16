@@ -3,18 +3,38 @@ import base64
 
 from odoo import fields
 from odoo.exceptions import AccessError, UserError, ValidationError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 from odoo.addons.smart_construction_core.models.support.state_machine import ScStateMachine
 
 
 @tagged("post_install", "-at_install", "sc_gate", "p0_state")
-class TestP0StateClosure(TransactionCase):
+class TestP0StateClosure(BusinessTransactionCase):
+    approval_models = ("sc.general.contract", "project.material.plan", "construction.contract", "payment.request", "sc.settlement.order", "purchase.order", "sc.expense.claim")
+
     def setUp(self):
         super().setUp()
         self.env.user.groups_id = [(4, self.env.ref("smart_construction_core.group_sc_cap_project_manager").id)]
-        self.company = self.env.ref("base.main_company")
+        self.company = self.env.company
         self.uom_unit = self.env.ref("uom.product_uom_unit")
+
+    def _approved_payment_fixture(self, values):
+        """Prepare the preceding request through its real submission/approval path."""
+        values = dict(values, state="draft")
+        project = self.env["project.project"].browse(values["project_id"])
+        partner = self.env["res.partner"].browse(values["partner_id"])
+        if not values.get("contract_id") and not values.get("settlement_id"):
+            contract = self._create_income_contract(project, partner) if values["type"] == "receive" else self._create_contract(project, partner)
+            values["contract_id"] = contract.id
+        request = self.env["payment.request"].create(values)
+        reviewer = self._create_finance_user("synthetic_request_reviewer_%s" % request.id)
+        self.env.ref("smart_construction_core.group_sc_role_executive").write({"users": [(4, reviewer.id)]})
+        request.action_submit()
+        if request.state == "submit":
+            self._complete_tier_validation(request, reviewer)
+        self.assertEqual(request.state, "approved")
+        return request
 
     def _complete_tier_validation(self, record, user):
         reviewer_groups = record.review_ids.mapped("reviewer_group_id")
@@ -68,6 +88,7 @@ class TestP0StateClosure(TransactionCase):
         return self.env["res.partner"].create({"name": name})
 
     def _create_tax(self, name="P0 VAT 9%", tax_use="purchase"):
+        group = self.env["account.tax.group"].create({"name": "Synthetic VAT", "company_id": self.company.id, "country_id": self.env.ref("base.cn").id})
         return self.env["account.tax"].create(
             {
                 "name": name,
@@ -75,6 +96,8 @@ class TestP0StateClosure(TransactionCase):
                 "amount_type": "percent",
                 "type_tax_use": tax_use,
                 "price_include": False,
+                "tax_group_id": group.id,
+                "country_id": self.env.ref("base.cn").id,
                 "company_id": self.company.id,
             }
         )
@@ -382,7 +405,7 @@ class TestP0StateClosure(TransactionCase):
         settlement = self._create_settlement_order(project, partner, contract, amount=100.0, state="approve")
         finance_manager = self._create_finance_manager("p0_finance_manager_payment_execution")
 
-        pr = self.env["payment.request"].sudo().create(
+        pr = self._approved_payment_fixture(
             {
                 "name": "P0 PR Payment Execution",
                 "type": "pay",
@@ -645,7 +668,7 @@ class TestP0StateClosure(TransactionCase):
         partner = self._create_partner()
         contract = self._create_income_contract(project, partner)
 
-        pr = self.env["payment.request"].sudo().create(
+        pr = self._approved_payment_fixture(
             {
                 "name": "P0 Receive Request",
                 "type": "receive",
@@ -693,7 +716,7 @@ class TestP0StateClosure(TransactionCase):
         settlement = self._create_settlement_order(project, partner, contract, amount=100.0, state="approve")
         finance_manager = self._create_finance_manager("p0_finance_manager_payment_execution_block")
 
-        pr = self.env["payment.request"].sudo().create(
+        pr = self._approved_payment_fixture(
             {
                 "name": "P0 PR Payment Execution Block",
                 "type": "pay",
@@ -742,7 +765,7 @@ class TestP0StateClosure(TransactionCase):
         partner = self._create_partner()
         contract = self._create_income_contract(project, partner)
 
-        pr = self.env["payment.request"].sudo().create(
+        pr = self._approved_payment_fixture(
             {
                 "name": "P0 Receive Request Block",
                 "type": "receive",
@@ -787,7 +810,7 @@ class TestP0StateClosure(TransactionCase):
         self._enable_funding(project, cap=1000.0)
         settlement = self._create_settlement_order(project, partner, contract, amount=100.0, state="approve")
 
-        pr = self.env["payment.request"].sudo().create(
+        pr = self._approved_payment_fixture(
             {
                 "name": "P0 Expense Payment Request",
                 "type": "pay",
@@ -966,7 +989,7 @@ class TestP0StateClosure(TransactionCase):
     def test_treasury_reconciliation_requires_zero_difference_and_ledger(self):
         project = self._create_project("P0 Project Treasury Reconcile", with_boq=True)
         partner = self._create_partner()
-        request = self.env["payment.request"].sudo().create(
+        request = self._approved_payment_fixture(
             {
                 "name": "P0 Treasury Receive",
                 "type": "receive",
@@ -1006,7 +1029,7 @@ class TestP0StateClosure(TransactionCase):
     def test_treasury_reconciliation_blocks_unbalanced_difference(self):
         project = self._create_project("P0 Project Treasury Reconcile Block", with_boq=True)
         partner = self._create_partner()
-        request = self.env["payment.request"].sudo().create(
+        request = self._approved_payment_fixture(
             {
                 "name": "P0 Treasury Receive Block",
                 "type": "receive",
@@ -1046,7 +1069,7 @@ class TestP0StateClosure(TransactionCase):
     def test_treasury_reconciliation_blocks_invalid_state_jump_or_late_cancel(self):
         project = self._create_project("P0 Project Treasury Reconcile State Block", with_boq=True)
         partner = self._create_partner()
-        request = self.env["payment.request"].sudo().create(
+        request = self._approved_payment_fixture(
             {
                 "name": "P0 Treasury Receive State Block",
                 "type": "receive",
@@ -3490,7 +3513,7 @@ class TestP0StateClosure(TransactionCase):
         self._enable_funding(project, cap=1000.0)
         settlement = self._create_settlement_order(project, partner, contract, amount=100.0, state="approve")
 
-        self.env["payment.request"].sudo().create(
+        self._approved_payment_fixture(
             {
                 "name": "P0 PR Linked",
                 "type": "pay",
@@ -3507,7 +3530,7 @@ class TestP0StateClosure(TransactionCase):
 
 
 @tagged("post_install", "-at_install", "sc_gate", "p0_state")
-class TestDeclaredStateTableIsTheOnlyStateWriter(TransactionCase):
+class TestDeclaredStateTableIsTheOnlyStateWriter(BusinessTransactionCase):
     """The declared table must be the only writer of a record lifecycle.
 
     Before this guard the legal edges lived in the per-action
@@ -3522,7 +3545,7 @@ class TestDeclaredStateTableIsTheOnlyStateWriter(TransactionCase):
         self.env.user.groups_id = [
             (4, self.env.ref("smart_construction_core.group_sc_cap_project_manager").id)
         ]
-        self.company = self.env.ref("base.main_company")
+        self.company = self.env.company
         owner = self.env["res.partner"].create({"name": "State Fact Owner"})
         self.project = self.env["project.project"].create(
             {

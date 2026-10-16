@@ -203,6 +203,7 @@ jobs:
 
       - name: Run backend test suite per module
         run: |
+          source scripts/ci/orm_result_guard.sh
           set -uo pipefail
           # GitHub runs this step with bash -e (errexit). Leaving errexit on
           # aborts the step on the first failing module, silently skips every
@@ -275,11 +276,10 @@ jobs:
               fi
               echo "::warning::backend suite process exited ${module_status} for ${module}; retrying once with isolated database"
             done
-            if [ "${module_status}" -ne 0 ]; then
-              echo "::error::backend suite failed for module ${module}"
-              failed=1
-            elif ! grep -Eq '0 failed, 0 error\(s\) of [1-9][0-9]* tests when loading database' "${module_log}"; then
-              echo "::error::backend suite collected zero tests for module ${module}"
+            orm_expect_identity="odoo.addons.${module}.tests."
+            orm_expect_database="${attempt_db}"
+            if ! evaluate_orm_outcome "${module_status}" "${module_log}"; then
+              echo "::error::backend suite failed execution/count/identity guard for module ${module}"
               failed=1
             fi
           done

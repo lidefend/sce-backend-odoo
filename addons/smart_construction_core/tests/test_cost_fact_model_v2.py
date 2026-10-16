@@ -5,12 +5,13 @@ import runpy
 
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.modules.module import get_module_path
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 from odoo.tools.safe_eval import safe_eval
 
 
 @tagged("post_install", "-at_install", "sc_gate", "cost_fact_v2")
-class TestCostFactModelV2(TransactionCase):
+class TestCostFactModelV2(BusinessTransactionCase):
     def setUp(self):
         super().setUp()
         self.project = self.env["project.project"].create(

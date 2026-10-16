@@ -80,7 +80,10 @@ class BackendTestSuiteStepIntegrityTest(unittest.TestCase):
 
     def test_step_keeps_the_zero_test_guard(self) -> None:
         step = self._step()
-        self.assertIn("0 failed, 0 error\\(s\\) of [1-9][0-9]* tests", step)
+        self.assertIn('source scripts/ci/orm_result_guard.sh', step)
+        self.assertIn('if ! evaluate_orm_outcome "${module_status}" "${module_log}"; then', step)
+        self.assertIn('orm_expect_identity="odoo.addons.${module}.tests."', step)
+        self.assertIn('orm_expect_database="${attempt_db}"', step)
 
 
 if __name__ == "__main__":

@@ -304,7 +304,8 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         # the count and satisfy the identity pin without the test running.
         self.assertIn("odoo\\.addons\\.[[:alnum:]_.]+: Starting ", guard)
         self.assertNotIn("grep -c 'Starting '", guard)
-        self.assertIn('grep -qF -- "${token}"', guard)
+        self.assertIn('grep -F -- "${token}" >/dev/null', guard)
+        self.assertNotIn('grep -qF -- "${token}"', guard)
         self.assertIn("odoo.service.server: Starting post tests", guard)
         self.assertIn("return 4", guard)
         self.assertIn("return 5", guard)

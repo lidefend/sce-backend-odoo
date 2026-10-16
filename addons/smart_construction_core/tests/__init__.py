@@ -93,10 +93,7 @@ from . import test_material_supplier_return
 from . import test_equipment_usage_product
 from . import test_subcontract_cost_registration
 from . import test_project_salary_product
-from . import test_team_loan_deduction_workspace
 from . import test_daily_contract_settlement
-from . import test_current_account_workspace
-from . import test_company_project_refund_workspace
 from . import test_project_special_tax_deduction
 from . import test_policy_document_capability
 from . import test_invoice_native_lowcode

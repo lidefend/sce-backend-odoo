@@ -6,8 +6,8 @@
     "gated": 4,
     "on_demand": 22,
     "unwired": 143,
-    "odoo_tag_declarations": 379,
-    "gated_declarations": 89,
+    "odoo_tag_declarations": 380,
+    "gated_declarations": 90,
     "uncovered_declarations": 290,
     "ci_unit_scripts": 14,
     "ci_unit_scripts_wired": 14,
@@ -18,19 +18,21 @@
       "group": "sc_gate",
       "status": "gated",
       "kind": "odoo_tag",
-      "declarations": 61,
+      "declarations": 62,
       "files": [
         "addons/sc_norm_engine/tests/test_boq_norm_link.py",
         "addons/smart_construction_acceptance_fixture/tests/test_acceptance_fixture_guard.py",
         "addons/smart_construction_acceptance_fixture/tests/test_execution_freeze.py",
         "addons/smart_construction_bootstrap/tests/test_locale_baseline.py",
+        "addons/smart_construction_bundle/tests/test_company_project_refund_workspace.py",
+        "addons/smart_construction_bundle/tests/test_current_account_workspace.py",
         "addons/smart_construction_bundle/tests/test_startup_delivery_identity.py",
+        "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py",
+        "addons/smart_construction_bundle/tests/test_workspace_role_routes.py",
         "addons/smart_construction_core/tests/test_acl_matrix_gate.py",
         "addons/smart_construction_core/tests/test_action_groups_gate.py",
-        "addons/smart_construction_core/tests/test_company_project_refund_workspace.py",
         "addons/smart_construction_core/tests/test_cost_fact_concurrency_v2.py",
         "addons/smart_construction_core/tests/test_cost_fact_model_v2.py",
-        "addons/smart_construction_core/tests/test_current_account_workspace.py",
         "addons/smart_construction_core/tests/test_daily_contract_settlement.py",
         "addons/smart_construction_core/tests/test_data_permission_surface.py",
         "addons/smart_construction_core/tests/test_equipment_usage_product.py",
@@ -67,7 +69,6 @@
         "addons/smart_construction_core/tests/test_social_fund_capability.py",
         "addons/smart_construction_core/tests/test_subcontract_cost_registration.py",
         "addons/smart_construction_core/tests/test_tax_filing.py",
-        "addons/smart_construction_core/tests/test_team_loan_deduction_workspace.py",
         "addons/smart_construction_core/tests/test_tender_document_advisory.py",
         "addons/smart_construction_core/tests/test_tier_action_groups_union.py",
         "addons/smart_construction_core/tests/test_variation_change_chain.py",
@@ -656,7 +657,7 @@
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
-        "addons/smart_construction_core/tests/test_company_project_refund_workspace.py"
+        "addons/smart_construction_bundle/tests/test_company_project_refund_workspace.py"
       ],
       "owner": "construction-product",
       "evidence": [],
@@ -740,7 +741,7 @@
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
-        "addons/smart_construction_core/tests/test_current_account_workspace.py"
+        "addons/smart_construction_bundle/tests/test_current_account_workspace.py"
       ],
       "owner": "construction-product",
       "evidence": [],
@@ -2042,7 +2043,7 @@
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
-        "addons/smart_construction_core/tests/test_team_loan_deduction_workspace.py"
+        "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py"
       ],
       "owner": "construction-product",
       "evidence": [],

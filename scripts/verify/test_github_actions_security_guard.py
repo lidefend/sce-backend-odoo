@@ -278,8 +278,8 @@ jobs:
 
             workflow.write_text(
                 source.replace(
-                    "elif ! grep -Eq '0 failed, 0 error\\(s\\) of [1-9][0-9]* tests when loading database' \"${module_log}\"; then\n",
-                    "elif false; then\n",
+                     'if ! evaluate_orm_outcome "${module_status}" "${module_log}"; then\n' ,
+                    "if false; then\n",
                     1,
                 ),
                 encoding="utf-8",

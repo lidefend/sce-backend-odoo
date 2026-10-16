@@ -170,8 +170,10 @@ def scan(root: Path) -> list[Finding]:
                 'attempt_db="${module_db}_retry1"',
                 '[[ ! "${module_status}" =~ ^(137|139)$ ]]',
                 'retrying once with isolated database',
-                "0 failed, 0 error\\(s\\) of [1-9][0-9]* tests when loading database",
-                "backend suite collected zero tests for module ${module}",
+                "source scripts/ci/orm_result_guard.sh",
+                'orm_expect_identity="odoo.addons.${module}.tests."',
+                'orm_expect_database="${attempt_db}"',
+                'if ! evaluate_orm_outcome "${module_status}" "${module_log}"; then',
             )
             if any(item not in text for item in test_routing_requirements):
                 findings.add(Finding("GA020", relative, "BACKEND_SUITE_TEST_ROUTING_NOT_FAIL_CLOSED"))

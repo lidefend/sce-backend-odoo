@@ -3,7 +3,8 @@
 import base64
 
 from odoo.exceptions import AccessError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 from odoo.addons.smart_construction_core.handlers.payment_request_approval import (
     PaymentRequestSubmitHandler,
@@ -11,7 +12,8 @@ from odoo.addons.smart_construction_core.handlers.payment_request_approval impor
 
 
 @tagged("sc_smoke", "payment_request_permission")
-class TestPaymentRequestPermission(TransactionCase):
+class TestPaymentRequestPermission(BusinessTransactionCase):
+    approval_models = ("payment.request",)
     def _create_user(self, *, login: str, group_xmlids: list[str]):
         groups = []
         for xmlid in group_xmlids:

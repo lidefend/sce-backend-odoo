@@ -1227,6 +1227,11 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
             "context_requirements": {"required_query": ["project_id"]},
         }
         model_class = type(workspace)
+        # This generic boundary has no declared carrier. Concrete workspace
+        # declarations are covered by the bundle's published-route tests.
+        carrier = patch.object(model_class, "_sc_dispatch_menu_xmlid", "")
+        carrier.start()
+        self.addCleanup(carrier.stop)
         with patch.object(model_class, "_sc_route_authority", lambda self: [exact, other]):
             with self.assertRaises(UserError) as caught:
                 workspace._sc_entry_menu_id(target_action, "sc.financing.loan", label="借款登记")

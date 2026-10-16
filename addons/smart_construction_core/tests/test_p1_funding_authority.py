@@ -11,11 +11,13 @@ from odoo import SUPERUSER_ID, api
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.modules.module import get_module_path
 from odoo.modules.registry import Registry
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 
 @tagged("post_install", "-at_install", "sc_gate", "p1_funding_authority")
-class TestP1FundingAuthority(TransactionCase):
+class TestP1FundingAuthority(BusinessTransactionCase):
+    approval_models = ("payment.request",)
     def test_native_guidance_field_metadata_and_effective_views(self):
         from lxml import etree
 
@@ -100,6 +102,8 @@ class TestP1FundingAuthority(TransactionCase):
                 "name": f"{label}测试税率", "amount": 0.0,
                 "amount_type": "percent", "type_tax_use": tax_use,
                 "company_id": self.env.company.id,
+                "country_id": self.env.ref("base.cn").id,
+                "tax_group_id": self.env["account.tax.group"].create({"name": "Synthetic funding VAT", "company_id": self.env.company.id, "country_id": self.env.ref("base.cn").id}).id,
             })
         contract = self.env["construction.contract"].create({
             "subject": f"{label}合同", "type": direction,
