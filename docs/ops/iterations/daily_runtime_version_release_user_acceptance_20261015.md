@@ -2453,3 +2453,49 @@ PASS、`verify.test.coverage.registry` PASS，以及两份登记的程序化比�
 而唯一满足它的方式（改写已发布历史）已被明确禁止。可满足且被强制的边界仍是**工作树／HEAD 干净**，
 本候选不引入新的暴露类别。若日后要求产品仓库历史同样干净，须先接线该暴露审计并取得单独裁定；
 本轮两项都不做，也不隐去这条事实。
+
+## 2026-10-16：主线集成结果（PR #666，squash 合并）
+
+客户身份迁出产品树这一批（本节上半部分）的冻结候选 `6590a433` 经受保护 PR 流程合入 `main`，
+未改写任何已发布历史。
+
+| 项 | 值 |
+|---|---|
+| PR | [#666](https://github.com/lidefend/sce-backend-odoo/pull/666) |
+| 目标分支 | `main` |
+| 冻结 HEAD | `6590a4333834f17312712c90715bcf265e4f298b` |
+| 合并方式 | squash |
+| 合并提交 | `04c6a1292c33b923abc666bc1444c869372081b3` |
+| 合并时间 | 2026-10-16T00:19:33Z |
+| 权威远端 | `https://github.com/lidefend/sce-backend-odoo.git` |
+
+远端必需门禁全部绑定在该冻结 HEAD 的最新源提交上并通过：
+
+| 门禁 | 结果 |
+|---|---|
+| `public_guard` | success 1m3s |
+| `merge_policy_gate` | success 7s |
+| `professional_quality_gate` | success 5m39s |
+| `frontend_release_gate` | success 10s |
+| `release_candidate_gate` | success 4s |
+
+本地 Quick 也绑定同一冻结 HEAD（8/8 分片、`producer=atomic-ci-local-quick-runner-v2`、`schema_version=3`）。
+合并走受管入口 `make pr.merge.prep PR=666` → `make pr.merge PR=666 EXPECTED_HEAD=6590a433…`；
+`local_quick_gate` 复用该回执，未重跑套件。
+
+回读：`origin/main == 04c6a1292c33b923abc666bc1444c869372081b3`，且 `git diff --stat origin/main 6590a433`
+为空，即合并树与冻结树逐字节一致。
+
+**这不是部署。** 未发布版本、未升级任何目标环境、未迁移任何数据；合并本身不触发产品部署。
+
+分支续接：PR #666 为 squash 合并，本分支已不再是 `main` 的祖先。下一个候选之前必须把本分支同步到
+`04c6a129`（受管入口 `make workspace.branch.sync-main`），或从 `main` 另切新分支；
+否则后续 PR 会重复呈现已合并的 diff。
+
+### 阶段口径
+
+- 可声明：**批次验收完成** + **主线集成完成**（PR #666 已合并，必需门禁在精确 HEAD 全部通过）。
+- 未完成：**版本发布**、**产品交付**。合并不等于部署。
+- 下一精确步骤：把载荷陈旧（声明 `customer_module_version=17.0.2.7.0` 对已安装 `17.0.2.8.0` →
+  `TPV1_CUSTOMER_ADAPTER_INCOMPATIBLE`）交给用户模块重新出包、签名、重批；产品仓库不放宽适配器。
+  之后进行客户开发租户的数据对账（12386 / 6322 / 29 / 6035）与业务闭环验收。

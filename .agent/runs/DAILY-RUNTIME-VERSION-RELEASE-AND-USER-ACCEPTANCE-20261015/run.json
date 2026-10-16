@@ -287,7 +287,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "(1) B-line read-only independent review of this batch: APPROVE, no S1/S2, two document S3 closed in this batch and one recorded as hardening only; (2) re-run freeze preparation and the one exact-head Quick, then push to GitHub and let the remote gates decide merge readiness; (3) hand the payload staleness to the user-module delivery (re-emit at the installed version, re-sign, re-approve) and do not widen the adapter; (4) after that, the customer development tenant's data reconciliation and business acceptance. No step may be replaced by writing the model directly, fabricating an approval, reusing admin or relaxing a mechanism.",
+  "next_exact_step": "(1) synchronise this branch onto origin/main 04c6a129 before any further candidate, because PR #666 was squash-merged and the branch is no longer an ancestor of main; (2) hand the payload staleness to the user-module delivery (re-emit at the installed version, re-sign, re-approve) and do not widen the adapter; (3) after that, the customer development tenant's data reconciliation (12386 / 6322 / 29 / 6035) and business acceptance. No step may be replaced by writing the model directly, fabricating an approval, reusing admin or relaxing a mechanism.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -3408,5 +3408,27 @@
     ],
     "stage_status": "Batch acceptance only. Mainline integration, version release and product delivery are not claimed.",
     "evidence": "The review ran as a separate read-only executor against the frozen head; the findings are summarised here and the raw transcript stays outside the product tree."
+  },
+  "mainline_integration_20261016": {
+    "pr": 666,
+    "url": "https://github.com/lidefend/sce-backend-odoo/pull/666",
+    "base": "main",
+    "head_branch": "fix/data-ownership-visibility-recovery-20261015",
+    "frozen_head": "6590a4333834f17312712c90715bcf265e4f298b",
+    "merge_method": "squash",
+    "merge_commit": "04c6a1292c33b923abc666bc1444c869372081b3",
+    "merged_at": "2026-10-16T00:19:33Z",
+    "authoritative_remote": "https://github.com/lidefend/sce-backend-odoo.git",
+    "required_gates_on_the_exact_head": {
+      "public_guard": "success 1m3s",
+      "merge_policy_gate": "success 7s",
+      "professional_quality_gate": "success 5m39s",
+      "frontend_release_gate": "success 10s",
+      "release_candidate_gate": "success 4s"
+    },
+    "local_quick_evidence": "the merge gate reused the exact-head ci.local.quick receipt for 6590a433 instead of re-running the suite",
+    "readback": "origin/main == 04c6a1292c33b923abc666bc1444c869372081b3; git diff --stat origin/main 6590a433 is empty, so the merged tree equals the frozen tree",
+    "not_a_deployment": "A merge is not a deployment. No version was released, no target environment was upgraded and no data was migrated in this step.",
+    "branch_continuation": "PR #666 was squash-merged, so this branch is no longer an ancestor of main. Before the next candidate it must synchronise onto 04c6a129 (governed entry make workspace.branch.sync-main) or a fresh branch must be cut from main; otherwise a follow-up PR would re-present the already-merged diff."
   }
 }
