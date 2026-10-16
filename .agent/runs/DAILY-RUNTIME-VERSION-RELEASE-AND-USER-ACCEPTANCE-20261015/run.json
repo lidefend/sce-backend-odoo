@@ -32,7 +32,10 @@
     "The three declared Step B gaps stay preconditions for the first write to sc_odoo or sc_platform_core: the cluster reports data_checksums=off, no amcheck index verification has run, and neither database has a paired recovery point. sc_platform_control is a fresh cluster and inherited data_checksums=off; enabling checksums would need a rebuild, so the decision is recorded rather than assumed.",
     "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending.",
     "CLOSED 2026-10-16 in this run (was: the frozen candidate's Quick failed on verify.test.coverage.registry because the platform_maintenance_access and tenant_payload_operator tags had no registry disposition; the same two lines are in the preserved earlier Quick failure, so this was pre-existing and previously masked by the product-tree boundary violation). Both entries are now dispositioned against their real on-demand ORM gates, the tracked coverage snapshot is re-exported, and the gate passes. See coverage_registry_gap_20261016.",
-    "CLOSED 2026-10-16 in this run (was: audit.verification.lane_coverage.check denied the frozen candidate because two make targets stayed registered as dead surface after the coverage registry named them). Both registrations were removed through the reasoned unregister path and the frozen baseline now holds. See coverage_registry_gap_20261016.follow_on."
+    "CLOSED 2026-10-16 in this run (was: audit.verification.lane_coverage.check denied the frozen candidate because two make targets stayed registered as dead surface after the coverage registry named them). Both registrations were removed through the reasoned unregister path and the frozen baseline now holds. See coverage_registry_gap_20261016.follow_on.",
+    "OPEN 2026-10-16 (new, pre-import baseline): the customer duty's continuity baseline fails closed on one unreferenced 0-byte filestore object (a mirror-shaped 'checklist' subtree that no governed code writes), while every referenced attachment file is present (missing_files 0, 0 import batches, 0 projects/contracts/payments). The assertion 'distinct_store_fnames == file_count' is stricter than the property it protects because orphan files are normal in Odoo. Owner decision requested: scope the fatal assertion to missing files, or keep fail-closed and remove the residue through a managed P4 cleanup. See pre_import_readonly_checks_20261016.",
+    "OPEN 2026-10-16 (new, evidence limit): the record-level isolation pair (a legitimate role sees an owned object, an unauthorized subject does not) is not producible in this duty yet - the face issues a bearer token with no web session, the declared operator has no stored password or API key by design, and the customer database holds no business record. Credential, route, catalog and network isolation were verified instead; an empty database returning no rows is not accepted as isolation evidence. See pre_import_readonly_checks_20261016.",
+    "OPEN 2026-10-16 (new, approval identity): the approver credential file was cleared (credentials directory empty, last modified 06:13), so the next approval cannot be driven non-interactively from it and needs the owner's real approval identity through the authentication entry. The temporary import grant itself is fully revoked with no residual credential."
   ],
   "branch": "fix/daily-runtime-identity-relocation-closeout-20261016",
   "checks": {
@@ -287,7 +290,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "(1) hand the payload staleness to the user-module delivery (re-emit at the installed version, re-sign, re-approve) and do not widen the adapter; (2) after that, the customer development tenant's data reconciliation (12386 / 6322 / 29 / 6035) and business acceptance. No step may be replaced by writing the model directly, fabricating an approval, reusing admin or relaxing a mechanism.",
+  "next_exact_step": "(1) The only external dependency is a signed payload re-emitted against the exact module build this tenant runs (<customer-module> 17.0.2.8.0); it must carry the build identity, the new checksum and the signature basis rather than a bumped version string. (2) When it arrives, and only then: verify delivery identity and signature -> read-only compatibility pre-check (including whether the declared-module drift smart_core 17.0.1.1.14 vs 17.0.1.1.15 must be closed first) -> a real approval bound to the new checksum -> final plan -> import -> verify/reconcile -> revoke the temporary grant -> independent review. (3) The continuity assertion's orphan-file strictness and the stray 0-byte residue await an owner decision; nothing was deleted or relaxed. (4) Branch retirement stays suspended and the three bookkeeping commits ride with the next real product candidate. No step may be replaced by writing the model directly, fabricating an approval, reusing admin or relaxing a mechanism.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -3470,5 +3473,81 @@
       "verified_here": "Read-only only: the retirement gate above, verify.tenant.product_payload_boundary PASS (files=8341), and this candidate's own pending history containing 0 commits that touch any customer identity token."
     },
     "not_a_deployment": "No version was released, no target environment was upgraded and no data was migrated in these closeout attempts."
+  },
+  "pre_import_readonly_checks_20261016": {
+    "purpose": "Owner scoped this turn to three read-only checks with a stated purpose and then a stop while the user-module delivery re-emits the signed payload. Nothing was widened: the failing payload plan was not re-run (its inputs are unchanged), no new repository/menu/environment inventory was taken, no database was written and no guard was relaxed.",
+    "window": {
+      "head": "40d011a127b1fa93823187ed2fc0d87a72f97f1c",
+      "deployment_tool_sha": "40d011a127b1fa93823187ed2fc0d87a72f97f1c",
+      "published_face_revision": "b80841059b196f66487f4b598d90d3b0662476b4",
+      "product_version": "1.0.0-rc.20",
+      "mode": "read_only",
+      "database_writes": 0
+    },
+    "check_1_pre_import_baseline": {
+      "entry": "make daily.runtime.duty.recovery.remote_baseline DAILY_CANDIDATE_SSH_HOST=<daily-host>",
+      "result": "EXIT=2 with DAILY_CANDIDATE_DATA_CONTINUITY_ERROR=attachment/filestore inventory differs. The check is correct to fail closed: it compares distinct_store_fnames (385) with filestore.file_count (386).",
+      "database_is_not_empty_and_is_not_required_to_be": "Counted read-only with the duty's maintenance role: res_company 1, res_users 6, ir_module_module 677, ir_attachment 466 rows / 465 with a store name / 385 distinct store names, project_project 0, construction_contract 0, payment_request 0. This is initialization, not migration: there is no source record, no business fact and no import batch yet.",
+      "import_batch": "sc.tenant.payload.import.batch holds 0 rows, so no import has ever run in this duty. The 12386 / 6322 / 29 / 6035 reconciliation has nothing to reconcile yet and cannot be used as a pre-import source count.",
+      "installed_declared_set": [
+        "base 17.0.1.3 installed",
+        "smart_core 17.0.1.1.14 installed",
+        "smart_construction_core 17.0.0.171 installed",
+        "<customer-module> 17.0.2.8.0 installed",
+        "three <customer-module> history/legacy modules uninstalled"
+      ],
+      "declared_set_drift": "The delivered tree declares smart_core 17.0.1.1.15 while this duty still has 17.0.1.1.14 installed, so the governed declared-module upgrade (implemented and registered in duty_module_upgrade_phase_20261016, never run in the target environment) has not been run on this duty either. Whether the payload import requires it is a compatibility fact the read-only pre-check must establish; it is not assumed here and it is not claimed to block the payload.",
+      "attachment_filestore_delta": "Every referenced store name has its file (missing_files 0, attachments_missing_their_file []). Exactly one file is unreferenced: a 0-byte object under a mirror-shaped subtree, characterized below. No 'non-empty' state was judged wrong and the whole database was not required to be zero.",
+      "stray_object": {
+        "path": "filestore/<customer-tenant-db>/checklist/<shard>/<sha1>",
+        "size_bytes": 0,
+        "mtime": "2026-10-16 04:49:10.694 +0800",
+        "same_inode_host_and_container": true,
+        "inode": "3299863 (identical from the host volume path and from inside the application container, so it is not a duplicate-mount artifact)",
+        "owner": "uid 101 / gid 101 = the application user inside the container",
+        "referenced_by_any_attachment": false,
+        "rows_referencing_a_checklist_path": 0,
+        "sha_is_a_real_attachment": "The same sha is the native store name of five res.partner id 7 image variants (image_1920/1024/512/256/128) whose create_date is 2026-10-15 20:49:10.396 UTC - the same second as the stray file's mtime. Their native file is present at <shard>/<sha>.",
+        "subtree_shape": "'checklist' is a structural mirror of the filestore root: it contains exactly the same 201 shard names, its directories were created 2026-10-15 17:33 (the tenant initialization window) and all of them are empty except the one 0-byte file.",
+        "writer_search": "No governed tree writes that path: the product repository (addons, scripts, make), the delivered customer module tree, the deployment-tools tree and the host cron/systemd surface contain no code creating a checklist filestore subtree - the word appears only as a document/guard term. The only host cron is an ACME renewal (04:40 daily, 'Successful').",
+        "instant_of_write": "The application log for the write instant contains no module install/upgrade and no error - only the container's own 10 s /web/login healthcheck. The container started 2026-10-15T20:47:31Z with RestartCount 0.",
+        "classification": "Not initialization data and not a business fact: it is unreferenced, 0-byte residue inside a tree that no governed code writes. Its producer is outside the governed product/ops surface; the origin is not proven by evidence and is recorded as unresolved rather than guessed."
+      },
+      "mechanism_finding_registered_not_fixed": "The continuity assertion 'distinct_store_fnames == file_count' equates continuity with 'no orphan files at all'. Orphan filestore files are normal in Odoo (a rolled-back transaction leaves them), so the assertion is stricter than the property it is meant to protect; the property that actually holds here is missing_files == 0. Owner decision requested: either scope the fatal assertion to missing files and report orphans as a non-fatal count, or keep fail-closed and remove the residue through a managed P4 cleanup with this drift registered. Nothing was deleted, no guard was edited and no database was written while establishing this."
+    },
+    "check_2_isolation_negatives": {
+      "faces": "Three duties read back on their own ports, each reporting its own database through /api/runtime-version and the same published revision and product version. No face serves another duty's database.",
+      "session_credential_is_duty_bound": "The bootstrap secret is bound to its duty: another duty's secret is refused with 401 AUTH_REQUIRED 'invalid bootstrap secret' on every face (all six crossing combinations), and the three declared secrets are distinct. This is a real negative using each duty's own legitimate entry, not an administrator bypass.",
+      "enumeration_and_anonymous_ops": "POST /web/database/list is answered with odoo.exceptions.AccessDenied on all three faces (no database enumeration), and anonymous GET /api/ops/tenants is 403 on all three.",
+      "foreign_db_name_is_not_a_routing_decision": "A database name that exists nowhere is accepted by session.bootstrap (200), and the response carries no database field, so a payload db name cannot be shown to move a session. Recorded as a probe limit with its reason - the bootstrap issues a bearer token, so /web/session/get_session_info answers SessionExpiredException and the bound database cannot be read back that way. No fact shows a session bound to a foreign database, and the duty-bound secret above is the positive control.",
+      "cluster_role_isolation": "Each duty cluster's pg_roles contains only its own application and maintenance roles; no other duty's roles are present in any of the three clusters.",
+      "network_and_port_isolation": "The three duties run on separate compose networks: from the customer application container the other two duties' database containers do not resolve (gaierror) while its own resolves. No duty publishes a database port on the host.",
+      "not_provable_yet_registered": "The record-level pair 'a legitimate role sees an owned object and an unauthorized subject does not' cannot be produced now: the customer face's bootstrap session is a bearer token with no web session, the declared operator holds no stored password and no API key by design, and the customer database holds no business record yet (0 projects / contracts / payments), so there is no existing owned object to discriminate on and creating one or a credential is outside this scope. An empty database returning no rows is explicitly not treated as evidence of isolation."
+    },
+    "check_3_authorization_and_credential_state": {
+      "ledger": "Read back through the platform's own read entry (the approver credential file is gone, so the duty bootstrap session was used): five records, all terminal - revoked, rejected, expired, revoked, revoked. No window is open.",
+      "all_records_bound_to_the_superseded_subject": "Every record carries the superseded subject checksum f1adc6fb..., so no existing record can authorize a new payload even if one were open. A new approval must bind the new payload checksum.",
+      "approver_credential": "The approver credential file no longer exists - the credentials directory is empty and was last modified 2026-10-16 06:13 - so no credential material was left behind. Consequence registered: a fresh approval cannot be driven non-interactively from that file and needs the owner's real approval identity through the authentication entry.",
+      "temporary_import_permission_fully_revoked": "Operator readback (writes 0): the declared operator exists and is active in company 1 with is_importer=false, importer group membership 0, no implied closure, import_batch_count 0, no stored password, no native API key and is_data_operator=false. The temporary grant is fully revoked with no residual credential, so no cleanup was left pending for this turn.",
+      "released_edition_still_carried": "The customer duty still carries its own released construction.standard snapshot (id 2, version daily-navigation-standard-<published-revision>); it owns an effective snapshot and did not gain platform release authority."
+    },
+    "evidence": {
+      "log_dir": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/pre-import-readonly-20261016",
+      "files": [
+        "duty-recovery-baseline.log (the failing baseline)",
+        "attachment-presence.json, filestore-diff.json, filestore-detail2.json, filestore-odd-dirs.log",
+        "attachment_reference_probe.py, attachment-reference.json (is the stray object referenced?)",
+        "pre_import_baseline_readback.py, pre-import-baseline.json (counts, batches, installed set)",
+        "isolation_negative_probe.py, isolation-negatives.json",
+        "isolation_negative_probe2.py, isolation-negatives-2.json",
+        "isolation_session_binding_probe.py, isolation-session-binding.json",
+        "isolation_credential_crossing_probe.py, isolation-credential-crossing.json",
+        "maintenance_ledger_readback.py, maintenance-ledger-readback.log",
+        "operator-readback.log"
+      ],
+      "retention": "untracked evidence storage; no credential value and no business row content appears in any of them"
+    },
+    "unique_external_dependency": "A signed payload re-emitted against the exact module build this tenant runs (<customer-module> 17.0.2.8.0), carrying the build SHA/digest, the compatibility declaration, the new checksum and the signature basis, plus the model/source/count definitions for 12386 and its three components, the expected amount/relation/attachment reconciliation, and the idempotence, failure-recovery and migration preconditions. Counts must follow the signed payload's own declaration; a difference is explained, never reconciled by editing acceptance numbers.",
+    "status": "Three read-only checks complete; nothing else was widened and no plan was re-run. One owner decision is requested (the continuity assertion's orphan-file strictness) and one probe limit is registered (the record-level role pair). The import chain stays stopped on the payload, and the payload was not accepted, the adapter was not relaxed and no approval was fabricated."
   }
 }
