@@ -689,5 +689,90 @@ class FilestoreClassificationTests(unittest.TestCase):
             source["referenced_body_content_digest"],
         )
 
+
+class StdinFedRunnerTests(unittest.TestCase):
+    """A runner that feeds a program through stdin has to attach that stdin.
+
+    ``docker run`` only connects stdin with ``-i``. Without it the program is
+    never delivered, the command still exits 0, and stdout is empty -- so the
+    drill's volume scan reported "no inventory" instead of a filestore, and the
+    only reason it was caught at all is that the parser is fail-closed. The
+    behaviour test below covers the one runner that exists today; the structural
+    test covers the next one somebody adds.
+    """
+
+    def test_volume_filestore_scan_attaches_stdin_to_its_runner(self):
+        contract = {
+            "filestore_root": "/var/lib/odoo/filestore",
+            "filestore_scope": "sc_demo",
+        }
+        captured = {}
+
+        def fake_run(args, *, input_bytes=None, check=True):
+            captured["args"] = list(args)
+            captured["input"] = input_bytes
+            return b'{"files": [], "irregular": []}'
+
+        with mock.patch.object(CONTINUITY, "_run", side_effect=fake_run):
+            scan = CONTINUITY._scan_volume_filestore(
+                contract, image="sha256:deadbeef", volume="sc_demo_odoo_data"
+            )
+
+        self.assertEqual(scan, {"files": [], "irregular": []})
+        self.assertEqual(
+            captured["input"], CONTINUITY.FILESTORE_SCAN.encode("utf-8")
+        )
+        args = captured["args"]
+        self.assertIn("run", args)
+        self.assertIn("-i", args)
+        self.assertNotIn("-d", args)
+        # The scan program is positional stdin for the entrypoint, so the mount
+        # and the program have to reach the same argv.
+        self.assertEqual(args[-2], "-")
+        self.assertEqual(args[-1], "/var/lib/odoo/filestore/sc_demo")
+        self.assertEqual(
+            args[args.index("-v") + 1], "sc_demo_odoo_data:/var/lib/odoo/filestore:ro"
+        )
+
+    def test_every_stdin_fed_docker_runner_attaches_its_stdin(self):
+        source = (
+            ROOT / "scripts/ops/daily_candidate_data_continuity.py"
+        ).read_text()
+        checked: list[str] = []
+        for node in ast.walk(ast.parse(source)):
+            if not isinstance(node, ast.Call) or not node.args:
+                continue
+            name = getattr(node.func, "id", None)
+            if name not in {"_run", "_run_from_file"}:
+                continue
+            feeds_stdin = name == "_run_from_file"
+            for keyword in node.keywords:
+                if keyword.arg != "input_bytes":
+                    continue
+                value = keyword.value
+                if isinstance(value, ast.Constant) and value.value is None:
+                    continue
+                feeds_stdin = True
+            if not feeds_stdin:
+                continue
+            literal = node.args[0]
+            if not isinstance(literal, ast.List):
+                continue
+            values = [
+                element.value
+                for element in literal.elts
+                if isinstance(element, ast.Constant)
+            ]
+            if "docker" not in values or "run" not in values:
+                continue
+            where = f"{name} at line {node.lineno}"
+            self.assertIn("-i", values, f"{where} feeds stdin to docker run without -i")
+            self.assertNotIn("-d", values, f"{where} detaches docker run while feeding stdin")
+            checked.append(where)
+        # The drill's volume scan and its filestore extraction both qualify; a
+        # guard that scans nothing would pass for the wrong reason.
+        self.assertGreaterEqual(len(checked), 2, checked)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

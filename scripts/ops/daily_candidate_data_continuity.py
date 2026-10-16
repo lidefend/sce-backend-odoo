@@ -523,6 +523,11 @@ def _scan_volume_filestore(contract: dict, *, image: str, volume: str) -> dict:
             "docker",
             "run",
             "--rm",
+            # ``-i`` is not optional here: the scan program is delivered through
+            # stdin, and a detached ``docker run`` without it never receives the
+            # program, exits 0 with empty stdout, and looks like a scan that
+            # returned no inventory.
+            "-i",
             "--pull",
             "never",
             "--network",
