@@ -1386,7 +1386,11 @@ class EvaluationTests(unittest.TestCase):
         self.assertTrue(verdict["public_cannot_connect"])
 
     def test_a_closed_declared_gap_is_detected(self):
-        declaration = self.declaration()
+        # The 2026-10-16 rebuild closed the only gap the shipped declaration
+        # carried, so the demo duty no longer *is* the gap shape. The rule stays
+        # proven by asking for that shape explicitly instead of reading it off
+        # whichever duty currently happens to be in it.
+        declaration = as_declared_gap(self.declaration(), "demo")
         cluster = {"present": True, "running": True, "system_identifier": "7597381856873586726",
                    "data_volume_owner": "sc_dev_db_data", "project": "sc-backend-odoo-dev",
                    "config_files": "", "error": ""}

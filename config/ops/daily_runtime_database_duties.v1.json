@@ -106,13 +106,13 @@
         "compose_project": "sc-demo-dev",
         "data_volume": "sc_demo_db_data",
         "maintenance_role": "sc_demo_maintenance",
-        "system_identifier": ""
+        "system_identifier": "7697127891101417510"
       },
       "custody": {
-        "database_present": false,
-        "database_role_present": false,
-        "role_compliance": "to_be_created",
-        "service_face": "to_be_initialized"
+        "database_present": true,
+        "database_role_present": true,
+        "role_compliance": "compliant",
+        "service_face": "initialized"
       },
       "storage": {
         "compose_project": "sc-demo-dev",
