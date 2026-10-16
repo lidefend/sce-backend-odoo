@@ -2635,3 +2635,42 @@ origin/main still binds <merged branch> in .agent/active-runs.json
 以上为**内部工具与环境缺陷修复**，可构成正常产品候选；不是发布，也不是产品交付。客户数据迁移、
 版本发布与产品验收**均未完成**。两项关闭后，剩余外部依赖收敛为：**兼容新签名载荷及对应真实审批**。
 在载荷到达前不推进导入、不重复空库隔离查询。分支退役仍挂起，待主线解除台账绑定后再执行。
+
+### 5. 冻结候选早期门禁修复（2026-10-16）
+
+候选 `6adb56ff8184` 的第一次 exact-head Quick **未出 receipt**，在两个便宜门禁上失败。两处都是本分支已经带入的
+真实缺陷，不是误报；都已按最小范围修掉，没有放宽任何守卫，也没有改动产品语义。
+
+**5.1 `verify.product.release.version`（shard 5/7）**
+
+```text
+FAIL - product version duplicated outside VERSION:
+ ['.agent/runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/run.json']
+```
+
+由 `e8a7ad86` 记录只读观测窗口时写入的字面量引入。该守卫要求产品版本只有一个来源（`VERSION` 加上唯一声明派生观测）；
+台账再复制一份字面量就变成第二个权威，正是单一来源规则要挡的漂移——同类重复在更早的 run 台账里已经被这条守卫抓到过。
+修法：改为 `product_version_source: VERSION` 加一条说明，与其它 run 台账既有约定一致。
+复核：`verify.product.release.version PASS version=1.0.0-rc.20 duplicates=0 derived_observations=1`（11 + 10 tests OK）。
+
+**5.2 `audit.verification.lane_coverage.check`（shard 0/7）**
+
+```text
+DENY verification surface grew: stale_target_dispositions: 1 > frozen baseline 0
+  (verify.daily.duty.recovery)
+```
+
+连续性批次给 `scripts/verify/frontend_dev_incremental.py` 新增的映射命名了 `verify.daily.duty.recovery`，
+该 target 因此离开零引用集合，而它的登记仍写着“未接入任何自动化 lane”，登记陈述失效——正是该检查存在的意义：
+登记不能腐化成永久白名单。修法：走 reasoned unregister 路径（`--unregister-target` 带理由）移除；
+该路径在 target 仍为零引用时会拒绝，因此不能用来掩盖真实发现。
+复核：`audit.verification.lane_coverage.check PASS surface within the frozen baseline`，`audit.verification.lane_coverage.test OK`。
+
+**有意未做**：没有用 `--write-baseline` 重写冻结基线。当前实测 **783** 条零引用目标、配额 **786**，
+冻结身份集合里仍留着 3 个其实已不再零引用的名字（`verify.daily.duty.recovery` 及更早批次关闭的两个
+`verify.smart_core.*.orm`）。重写会把一个与本批次无关的 `+1` target 定义（recorded `2335 → 2336`）一并卷进来，
+所以收紧留给拥有该漂移的批次，登记为后续项。配额在此期间**不可被利用**：任何不在冻结身份集合内的新名字都会直接 FAIL，
+数量变化掩盖不了身份替换。
+
+**候选状态**：`6adb56ff8184` 无 receipt。两处修完后重新冻结，只重跑**一次** exact-head Quick；
+分片遇首个失败即停，所以 shard 0 与 shard 5 的其余前置由这次重跑证明，不在文档里代替断言。

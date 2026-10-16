@@ -208,6 +208,20 @@ RULES = (
     ), (
         "verify.daily.duty.recovery",
     )),
+    # The verification-lane registries decide which dead surface is an accounted
+    # allowance and which divergence still blocks. Editing the instrument, its
+    # tests, its frozen baseline, its dispositions or its exemptions has to route
+    # to that lane's own non-zero target: a registration that stops being true is
+    # a defect of this file set, and it is only reported by that gate.
+    Rule((
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json",
+    ), (
+        "verify.verification.lane_coverage",
+    )),
 )
 FALLBACK_TARGET = "verify.frontend.typecheck.strict"
 FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "fingerprint")
