@@ -7,3 +7,4 @@ from . import test_team_loan_deduction_workspace
 from . import test_workspace_role_routes
 
 from . import test_missing_record_contract
+from . import test_startup_performance_contract

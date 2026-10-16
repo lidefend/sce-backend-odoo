@@ -35,6 +35,7 @@ from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import (
 from odoo.addons.smart_core.handlers.form_field_configuration import register_form_field_label_override
 from odoo.addons.smart_core.utils.contract_governance import (
     register_capability_group_profile,
+    register_formal_list_lock,
     register_legacy_delete_only_model,
     register_legacy_field_presentation,
     register_legacy_kanban_row_action,
@@ -1401,6 +1402,21 @@ def _user_confirmed_formal_list_action_ids(env):
         if rec and rec.exists():
             ids.add(int(rec.id))
     return ids
+
+
+# The same declaration the contract finalize hook enforces is published to the
+# P0 registry, so the list-preference projection reports one verdict for the
+# surface instead of a second, more permissive one.  Resolved by external id at
+# read time; the industry layer owns the set, P0 only reads it.
+register_formal_list_lock({
+    "declaration_key": "user_confirmed_formal_list_lock",
+    "action_xmlids": sorted(USER_CONFIRMED_FORMAL_LIST_ACTION_XMLIDS),
+    "scope": "ui_only",
+    "allow_visibility": False,
+    "allow_order": False,
+    "allow_width": False,
+    "source": "smart_construction_core.user_confirmed_formal_list_lock",
+})
 
 
 def smart_core_finalize_projected_contract_data(env, data, context):
