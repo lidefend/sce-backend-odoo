@@ -193,6 +193,21 @@ RULES = (
         "verify.tenant.product_payload_boundary",
         "verify.daily.runtime.duty.identity.unit",
     )),
+    # The duty recovery tool decides whether a duty's database and its filestore
+    # still form one recoverable pair. It classifies attachment bodies, Odoo's
+    # empty garbage-collection markers and unexplained files separately, because
+    # comparing "files on disk" with "distinct store_fname" cannot tell a broken
+    # attachment from a marker `_mark_for_gc` is supposed to leave behind. Editing
+    # the tool, its contract or its tests has to route to its own non-zero target;
+    # otherwise a semantic regression there is only reported at the frozen
+    # candidate, which is exactly what happened on 2026-10-16.
+    Rule((
+        "scripts/ops/daily_candidate_data_continuity.py",
+        "scripts/ops/test_daily_candidate_data_continuity.py",
+        "scripts/ops/daily_candidate_data_continuity_contract_v1.json",
+    ), (
+        "verify.daily.duty.recovery",
+    )),
 )
 FALLBACK_TARGET = "verify.frontend.typecheck.strict"
 FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "fingerprint")

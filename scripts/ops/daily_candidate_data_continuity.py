@@ -386,44 +386,315 @@ def _assert_restored_sentinels(restored: dict, expected: dict) -> None:
         raise ContinuityError("restored relationship sentinel differs")
 
 
-def _filestore_inventory(contract: dict, *, container: str | None = None) -> dict:
-    database = contract["filestore_scope"]
-    root = contract["filestore_root"]
-    script = (
-        f"set -eu; cd '{root}/{database}'; "
-        "count=$(find . -type f -printf '%P\\n' | sort -u | wc -l); "
-        "bytes=$(find . -type f -printf '%s\\n' | awk '{s+=$1} END {print s+0}'); "
-        "paths=$(find . -type f -printf '%P\\n' | sort -u | sha256sum | cut -d' ' -f1); "
-        "content=$(find . -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1); "
-        "printf '%s|%s|%s|%s\\n' \"$count\" \"$bytes\" \"$paths\" \"$content\""
+def _sha256_lines(lines: list[str]) -> str:
+    digest = hashlib.sha256()
+    for line in lines:
+        digest.update(line.encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def _attachment_store_rows(
+    contract: dict,
+    *,
+    container: str | None = None,
+    role: str | None = None,
+) -> list[tuple[str, str]]:
+    """The live ``store_fname``/``checksum`` pairs this duty's database declares.
+
+    ``checksum`` is Odoo's own content digest (sha1 in 17.0) and the store name
+    is derived from it, so the pair is what makes "the referenced file exists"
+    and "the referenced file still holds the rows' content" two separate facts.
+    """
+    rows = _psql(
+        contract,
+        "SELECT store_fname || '|' || COALESCE(checksum, '') FROM ir_attachment "
+        "WHERE store_fname IS NOT NULL AND btrim(store_fname) <> '' "
+        "ORDER BY store_fname;",
+        container=container,
+        role=role,
     )
+    parsed: list[tuple[str, str]] = []
+    for line in rows.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        fname, _, checksum = line.partition("|")
+        parsed.append((fname, checksum))
+    return parsed
+
+
+#: Odoo 17 ``_mark_for_gc`` writes an *empty* file under ``filestore/<db>/checklist``
+#: for every store name it wants the filestore garbage collection to consider. That
+#: file is a maintenance marker, not an attachment body: it is never referenced by
+#: ``ir_attachment.store_fname`` and it must not be counted as an attachment orphan.
+#: ``_file_write`` creates it for every successfully written file (so an aborted
+#: transaction still leaves a marker beside its body) and ``_file_delete`` creates it
+#: when a row is dropped. The scan therefore classifies by that exact shape instead
+#: of by subtracting one total from another.
+CHECKLIST_DIRECTORY = "checklist"
+STORE_FNAME = re.compile(r"[0-9a-f]{2,3}/[0-9a-f]{40}")
+
+FILESTORE_SCAN = r"""
+import hashlib, json, os, stat, sys
+
+root = sys.argv[1]
+files = []
+irregular = []
+
+
+def irregular_kind(path):
+    mode = os.lstat(path).st_mode
+    if stat.S_ISLNK(mode):
+        return "symlink"
+    if stat.S_ISSOCK(mode):
+        return "socket"
+    if stat.S_ISFIFO(mode):
+        return "fifo"
+    if stat.S_ISBLK(mode):
+        return "block_device"
+    if stat.S_ISCHR(mode):
+        return "char_device"
+    return "other"
+
+
+if os.path.isdir(root):
+    for base, dirs, names in os.walk(root):
+        for name in sorted(dirs):
+            full = os.path.join(base, name)
+            if os.path.islink(full):
+                irregular.append(
+                    {"path": os.path.relpath(full, root), "kind": "symlink"}
+                )
+        dirs[:] = sorted(
+            name for name in dirs if not os.path.islink(os.path.join(base, name))
+        )
+        for name in sorted(names):
+            full = os.path.join(base, name)
+            relative = os.path.relpath(full, root)
+            if not stat.S_ISREG(os.lstat(full).st_mode):
+                irregular.append({"path": relative, "kind": irregular_kind(full)})
+                continue
+            try:
+                size = os.path.getsize(full)
+                digest = hashlib.sha1()
+                with open(full, "rb") as stream:
+                    for chunk in iter(lambda: stream.read(1 << 20), b""):
+                        digest.update(chunk)
+            except OSError as error:
+                irregular.append(
+                    {"path": relative, "kind": "unreadable", "detail": str(error)[:120]}
+                )
+                continue
+            files.append({"path": relative, "size": size, "sha1": digest.hexdigest()})
+
+files.sort(key=lambda row: row["path"])
+irregular.sort(key=lambda row: row["path"])
+print(json.dumps(
+    {"root": root, "root_present": os.path.isdir(root), "files": files, "irregular": irregular},
+    sort_keys=True,
+))
+"""
+
+
+def _scan_filestore(contract: dict, *, container: str | None = None) -> dict:
+    """Read the duty's own filestore tree without writing anywhere."""
+    root = f"{contract['filestore_root']}/{contract['filestore_scope']}"
     output = _run(
         [
             "docker",
             "exec",
+            "-i",
             container or contract["odoo_container"],
-            "sh",
-            "-c",
-            script,
-        ]
-    ).decode().strip()
-    count, size, paths, content = output.split("|")
+            "python3",
+            "-",
+            root,
+        ],
+        input_bytes=FILESTORE_SCAN.encode("utf-8"),
+    )
+    return _parse_filestore_scan(output)
+
+
+def _scan_volume_filestore(contract: dict, *, image: str, volume: str) -> dict:
+    """Scan a filestore that only exists inside a detached volume."""
+    root = f"{contract['filestore_root']}/{contract['filestore_scope']}"
+    output = _run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--pull",
+            "never",
+            "--network",
+            "none",
+            "--user",
+            "0:0",
+            "-v",
+            f"{volume}:{contract['filestore_root']}:ro",
+            "--entrypoint",
+            "python3",
+            image,
+            "-",
+            root,
+        ],
+        input_bytes=FILESTORE_SCAN.encode("utf-8"),
+    )
+    return _parse_filestore_scan(output)
+
+
+def _parse_filestore_scan(output: bytes) -> dict:
+    text = output.decode(errors="replace").strip()
+    try:
+        scan = json.loads(text.splitlines()[-1])
+    except (IndexError, json.JSONDecodeError) as exc:
+        raise ContinuityError("filestore scan did not return its inventory") from exc
+    if not isinstance(scan, dict) or not isinstance(scan.get("files"), list):
+        raise ContinuityError("filestore scan returned a malformed inventory")
+    return scan
+
+
+def _filestore_aggregate(scan: dict) -> dict:
+    files = scan["files"]
     return {
-        "file_count": int(count),
-        "total_bytes": int(size),
-        "path_digest": paths,
-        "content_path_digest": content,
+        "file_count": len(files),
+        "total_bytes": sum(int(row["size"]) for row in files),
+        "path_digest": _sha256_lines(sorted(row["path"] for row in files)),
+        "content_path_digest": _sha256_lines(
+            sorted(
+                f"{row['path']}\t{row['size']}\t{row['sha1']}" for row in files
+            )
+        ),
     }
+
+
+def _classify_filestore(scan: dict, store_rows: list[tuple[str, str]]) -> dict:
+    """Separate attachment bodies, GC markers and unexplained entries.
+
+    Three classes, and nothing is excluded by directory name alone:
+
+    * ``body`` -- the relative path is a live ``store_fname``. It has to exist,
+      and its content digest has to equal both the store name and the row's own
+      ``checksum``; either mismatch is a real attachment defect.
+    * ``maintenance marker`` -- an empty file under ``checklist`` whose relative
+      path has the store-name shape Odoo's ``_mark_for_gc`` writes. Counted on
+      its own and kept; it is not an attachment orphan.
+    * ``unknown`` -- everything else, including unreferenced files that merely
+      look like store names, non-empty checklist entries, and any non-regular
+      entry. These keep failing the guard so they get investigated.
+    """
+    referenced = {fname: checksum for fname, checksum in store_rows}
+    present = set()
+    bodies: list[str] = []
+    markers: list[str] = []
+    missing: list[str] = []
+    mismatched: list[dict] = []
+    unknown: list[dict] = []
+    body_content: list[str] = []
+    for row in scan["files"]:
+        path = row["path"]
+        present.add(path)
+        if path in referenced:
+            if not STORE_FNAME.fullmatch(path) or path.rsplit("/", 1)[-1] != row["sha1"]:
+                mismatched.append(
+                    {
+                        "path": path,
+                        "reason": "store name is not the content digest",
+                        "file_sha1": row["sha1"],
+                    }
+                )
+                continue
+            expected = referenced[path]
+            if expected and expected != row["sha1"]:
+                mismatched.append(
+                    {
+                        "path": path,
+                        "reason": "file content differs from the recorded checksum",
+                        "database_checksum": expected,
+                        "file_sha1": row["sha1"],
+                    }
+                )
+                continue
+            bodies.append(path)
+            body_content.append(f"{path}\t{row['sha1']}")
+        elif (
+            path.startswith(CHECKLIST_DIRECTORY + "/")
+            and int(row["size"]) == 0
+            and STORE_FNAME.fullmatch(path[len(CHECKLIST_DIRECTORY) + 1 :])
+        ):
+            markers.append(path)
+        else:
+            unknown.append(
+                {"path": path, "size": int(row["size"]), "reason": "unreferenced file"}
+            )
+    for fname in referenced:
+        if fname not in present:
+            missing.append(fname)
+    for row in scan.get("irregular") or []:
+        unknown.append(
+            {
+                "path": str(row.get("path")),
+                "reason": "non-regular entry (%s)" % (row.get("kind"),),
+            }
+        )
+    return {
+        "referenced_attachment_count": len(referenced),
+        "referenced_body_count": len(bodies),
+        "maintenance_marker_count": len(markers),
+        "unknown_entry_count": len(unknown),
+        "missing_count": len(missing),
+        "checksum_mismatch_count": len(mismatched),
+        "missing_store_fnames": sorted(missing)[:20],
+        "checksum_mismatches": mismatched[:20],
+        "unknown_entries": unknown[:20],
+        "referenced_body_path_digest": _sha256_lines(sorted(bodies)),
+        "referenced_body_content_digest": _sha256_lines(sorted(body_content)),
+        "maintenance_marker_digest": _sha256_lines(sorted(markers)),
+    }
+
+
+def _assert_filestore_inventory(inventory: dict) -> None:
+    """Fail closed on the three ways a filestore can stop being that database's.
+
+    The assertions are separate on purpose: "every referenced attachment is
+    present and readable with its recorded content" and "nothing unexplained
+    sits in the tree" are different facts, and a version that only compares two
+    totals cannot tell them apart.
+    """
+    if inventory["missing_count"]:
+        raise ContinuityError(
+            "referenced attachment files are missing: %d" % inventory["missing_count"]
+        )
+    if inventory["checksum_mismatch_count"]:
+        raise ContinuityError(
+            "referenced attachment content does not match its recorded checksum: %d"
+            % inventory["checksum_mismatch_count"]
+        )
+    if inventory["unknown_entry_count"]:
+        raise ContinuityError(
+            "unknown filestore entries: %d" % inventory["unknown_entry_count"]
+        )
+
+
+def _read_filestore(
+    contract: dict,
+    *,
+    container: str | None = None,
+    role: str | None = None,
+) -> tuple[dict, dict]:
+    scan = _scan_filestore(contract, container=container)
+    if not scan.get("root_present"):
+        raise ContinuityError("filestore scope directory is unavailable")
+    aggregate = _filestore_aggregate(scan)
+    inventory = _classify_filestore(
+        scan, _attachment_store_rows(contract, container=container, role=role)
+    )
+    return aggregate, inventory
 
 
 def baseline(contract: dict) -> dict:
     runtime = _assert_runtime(contract)
     sentinels = _sentinels(contract)
-    filestore = _filestore_inventory(contract)
-    attachment_files_match = (
-        sentinels["attachments"]["distinct_store_fnames"]
-        == filestore["file_count"]
-    )
+    filestore, attachment_inventory = _read_filestore(contract)
     payload = {
         "schema_version": contract["schema_version"],
         "generated_at": _utc(),
@@ -433,11 +704,10 @@ def baseline(contract: dict) -> dict:
         "runtime": runtime,
         "sentinels": sentinels,
         "filestore": filestore,
-        "distinct_attachment_files_match": attachment_files_match,
+        "attachment_inventory": attachment_inventory,
         "database_writes": 0,
     }
-    if not attachment_files_match:
-        raise ContinuityError("attachment/filestore inventory differs")
+    _assert_filestore_inventory(attachment_inventory)
     return payload
 
 
@@ -540,6 +810,7 @@ def backup(contract: dict) -> Path:
             before["sentinels"]["attachments"]
             == after["sentinels"]["attachments"]
             and before["filestore"] == after["filestore"]
+            and before["attachment_inventory"] == after["attachment_inventory"]
         )
         if not pair_stable:
             raise ContinuityError("attachment pair changed during capture; retry required")
@@ -565,6 +836,7 @@ def backup(contract: dict) -> Path:
                 contract, before["sentinels"], after["sentinels"]
             ),
             "filestore": after["filestore"],
+            "attachment_inventory": after["attachment_inventory"],
             "pair_stable_during_capture": True,
             "database_bytes": dump.stat().st_size,
             "filestore_bytes": archive.stat().st_size,
@@ -605,6 +877,13 @@ def validate_backup(
         or not contract["backup_id"].fullmatch(str(manifest.get("backup_set_id") or ""))
     ):
         raise ContinuityError("backup manifest identity contract failed")
+    inventory = manifest.get("attachment_inventory")
+    if not isinstance(inventory, dict):
+        raise ContinuityError("backup manifest carries no attachment inventory")
+    if inventory.get("missing_count") or inventory.get("checksum_mismatch_count"):
+        raise ContinuityError("backup was captured with a broken attachment pair")
+    if inventory.get("unknown_entry_count"):
+        raise ContinuityError("backup was captured with unexplained filestore entries")
     checksums = manifest.get("checksums") or {}
     for name in ("database.dump", "filestore.tar.gz"):
         path = directory / name
@@ -749,49 +1028,53 @@ def restore_drill(contract: dict, directory: Path) -> dict:
         _assert_restored_sentinels(
             restored_sentinels, manifest["recovery_expectations"]
         )
-        inventory_script = (
-            f"set -eu; cd '{contract['filestore_root']}/{contract['database']}'; "
-            "count=$(find . -type f -printf '%P\\n' | sort -u | wc -l); "
-            "bytes=$(find . -type f -printf '%s\\n' | awk '{s+=$1} END {print s+0}'); "
-            "paths=$(find . -type f -printf '%P\\n' | sort -u | sha256sum | cut -d' ' -f1); "
-            "content=$(find . -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1); "
-            "printf '%s|%s|%s|%s\\n' \"$count\" \"$bytes\" \"$paths\" \"$content\""
+        restored_scan = _scan_volume_filestore(
+            contract, image=runtime["odoo_image_id"], volume=fs_volume
         )
-        raw = _run(
-            [
-                "docker",
-                "run",
-                "--rm",
-                "--pull",
-                "never",
-                "--network",
-                "none",
-                "--user",
-                "0:0",
-                "-v",
-                f"{fs_volume}:{contract['filestore_root']}:ro",
-                "--entrypoint",
-                "sh",
-                runtime["odoo_image_id"],
-                "-c",
-                inventory_script,
-            ]
-        ).decode().strip()
-        count, size, paths, content = raw.split("|")
-        restored_filestore = {
-            "file_count": int(count),
-            "total_bytes": int(size),
-            "path_digest": paths,
-            "content_path_digest": content,
-        }
+        restored_filestore = _filestore_aggregate(restored_scan)
+        restored_inventory = _classify_filestore(
+            restored_scan,
+            _attachment_store_rows(contract, container=db_container, role=DRILL_ROLE),
+        )
+        source_inventory = manifest["attachment_inventory"]
+        if restored_inventory["missing_count"] or restored_inventory["checksum_mismatch_count"]:
+            raise ContinuityError(
+                "restored filestore is missing or corrupt for a referenced attachment"
+            )
+        if restored_inventory["unknown_entry_count"]:
+            raise ContinuityError("restored filestore contains unexplained entries")
         if restored_filestore != manifest["filestore"]:
-            raise ContinuityError("restored filestore sentinels differ")
+            raise ContinuityError("restored filestore inventory differs from the source")
+        # Two separate closures, because they can fail independently: every
+        # referenced attachment is back, and the bytes that came back are the
+        # bytes that went in. A single count comparison proves neither.
+        if restored_inventory["referenced_body_count"] != source_inventory["referenced_body_count"]:
+            raise ContinuityError(
+                "restored filestore does not hold every referenced attachment"
+            )
+        if (
+            restored_inventory["referenced_body_content_digest"]
+            != source_inventory["referenced_body_content_digest"]
+        ):
+            raise ContinuityError(
+                "restored attachment content differs from the source"
+            )
+        if (
+            restored_inventory["maintenance_marker_digest"]
+            != source_inventory["maintenance_marker_digest"]
+        ):
+            raise ContinuityError(
+                "restored filestore maintenance markers differ from the source"
+            )
         return {
             "schema_version": contract["schema_version"],
             "backup_set_id": manifest["backup_set_id"],
             "isolated_restore_pass": True,
             "database_restore_pass": True,
             "filestore_restore_pass": True,
+            "all_attachments_present": True,
+            "restored_content_matches_source": True,
+            "maintenance_markers_preserved": True,
             "sentinel_comparison_pass": True,
             "network_egress": "internal_only",
             "duration_seconds": int(time.monotonic() - started),

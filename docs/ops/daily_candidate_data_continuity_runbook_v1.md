@@ -48,9 +48,33 @@ of stable numeric record IDs, database UUID and irreversible relation/path/
 content digests. It does not emit business field values, credentials or
 attachment names.
 
-`ir_attachment` rows can legitimately share one `store_fname`; compare distinct
-non-empty `store_fname` values to physical files, not the raw attachment row
-count.
+### Attachment/filestore continuity semantics
+
+The guard classifies the filestore tree instead of comparing two totals.
+`ir_attachment` rows can legitimately share one `store_fname`, so "files on
+disk" is not "distinct `store_fname` values plus nothing else".
+
+- **Attachment body** — the relative path is a live `store_fname`. It must
+  exist, be readable, and its content digest must equal both the store name and
+  the row's own `checksum` (Odoo 17 derives the store name from that digest).
+  A missing, unreadable or diverging body blocks.
+- **Maintenance marker** — an empty file under `<db>/checklist` whose relative
+  path has the `<2 or 3 hex>/<40 hex>` store-name shape. Odoo 17's
+  `_mark_for_gc()` writes it for every written and every deleted store name so
+  the filestore garbage collection can find the file; `_file_write()` creates it
+  even when the transaction later aborts. It is not an attachment body, is never
+  referenced by `store_fname`, is counted separately, and is kept — never
+  deleted to make a check pass.
+- **Unknown** — everything else: an unreferenced file that merely looks like a
+  store name, a non-empty or badly named `checklist` entry, and any symlink,
+  fifo, socket or device. These keep blocking so they are investigated.
+  Excluding a directory by name is not a classification.
+
+The two closures are asserted separately at restore: every referenced
+attachment came back (`referenced_body_count`, no missing/corrupt body) and the
+restored bytes are the source bytes
+(`referenced_body_content_digest`, plus the marker digest). A single count
+comparison proves neither.
 
 ## Paired backup
 
