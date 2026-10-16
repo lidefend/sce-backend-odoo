@@ -43,15 +43,22 @@
     "docs/engineering_convergence/test_inventory_summary.md",
     ".github/workflows/demo-ci.yml",
     ".github/workflows/sc_smoke.yml",
-    ".github/workflows/infra-stage-gate.yml"
+    ".github/workflows/infra-stage-gate.yml",
+    "addons/smart_construction_core/views/menu_product_cost_wave1.xml",
+    "config/frontend/authoritative_navigation.json",
+    "frontend/apps/web/scripts/frontend_product_maturity_audit.mjs",
+    "config/frontend/role_surface_exposure_declarations_v1.json",
+    "docs/product/frontend_business_entry_acceptance_v1.csv"
   ],
   "environment": {
     "kind": "offline",
     "authority": "existing governed local and GitHub CI entries; no daily runtime writes"
   },
   "checks": {},
-  "blockers": [],
-  "next_exact_step": "Apply owner GitHub-hosted-only runner policy; targeted policy tests then freeze/Quick/publish; verify selected backend run on hosted runner, no manual full duplicate.",
+  "blockers": [
+    "Remote current b5 navigation failed; fixed dirty candidate verified locally, new exact-head hosted checks pending."
+  ],
+  "next_exact_step": "Freeze after scoped navigation recovery; independent review, exact-head Quick and archive; publish PR669 candidate and required hosted checks.",
   "source_runs": [
     38818510036,
     38811434965,
@@ -166,6 +173,46 @@
       "status": "passed",
       "log": "artifacts/main-scheduled-ci-closeout-20261016/sce-scheduled-synthetic-registration.log",
       "sha256": "f442c397b26be05cf8eb75df75f55a24ffaae57332287008502cd2cda74a3de9"
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.frontend.release_navigation_policy.guard",
+      "status": "passed",
+      "test_count": 23,
+      "stage_head": "d0fcb7b1d6f6232b0f89c18e2ae56965ea050e51",
+      "dirty": true,
+      "log": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-navigation-static.log",
+      "sha256": "8621511f91efc89e50d2902fadc7ccaac9a226d2e0d24d877181acaeda9f22f1"
+    },
+    {
+      "layer": "L2",
+      "command": "python3 scripts/verify/test_frontend_release_audit.py",
+      "status": "passed",
+      "test_count": 5,
+      "stage_head": "d0fcb7b1d6f6232b0f89c18e2ae56965ea050e51",
+      "dirty": true,
+      "log": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-navigation-release-unit.log",
+      "sha256": "d03ce458f2a6cd2b4f27522f3aacad03ce1872c028853507c3ad02ca621bdcad"
+    },
+    {
+      "layer": "L3",
+      "command": "make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core",
+      "status": "passed",
+      "test_count": null,
+      "stage_head": "d0fcb7b1d6f6232b0f89c18e2ae56965ea050e51",
+      "dirty": true,
+      "log": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-navigation-upgrade.log",
+      "sha256": "d74a3a1e6d0d63c8253fce8893a3380505629be0fc89aba3711bb8d968e13427"
+    },
+    {
+      "layer": "L2",
+      "command": "make local.dev.test MODULE=smart_construction_core,smart_construction_bundle TEST_TAGS=<new three-role navigation and three affected role contract methods>",
+      "status": "passed",
+      "test_count": 4,
+      "stage_head": "d0fcb7b1d6f6232b0f89c18e2ae56965ea050e51",
+      "dirty": true,
+      "log": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-navigation-runtime.log",
+      "sha256": "68b9deac38a6568f16467cd2abd471ed69e1dc225927c5c763e7f539a088924c"
     }
   ],
   "evidence_index": {
@@ -368,8 +415,8 @@
   },
   "validation_scope": {
     "runtime": "make local.dev.test; registered sc-local-dev/sc_dev_demo; canonical env from primary checkout; serialized DB calls",
-    "L3": "not required: no manifest, schema, ACL or XML changes; Python methods/declarations loaded by fresh governed test process",
-    "L4": "not required: frontend test-only edits; P1 action return dispatch asserted under real published standard and actual role identity, no renderer/layout changes",
+    "L3": "Native budget menu XML changed; governed upgrade and authority readback passed after paired snapshot.",
+    "L4": "Remote frontend full release lane required on new candidate; do not reuse b5 failed navigation.",
     "reuse": "P0 lifecycle79, core amount5, domain6, finance transactional53+corrected1, payment capability/tender and fixture classes retain earlier unaffected method outcomes. CI modules not reduced; complete remote14-module fresh-install suite mandatory."
   },
   "freeze_recovery": {
@@ -422,5 +469,13 @@
     "validation": "runner policy guard negative test and workflow contracts; backend real run required on hosted runner",
     "superseded_candidate": "b5a4647c01f7cba49e1f230deb85d67527077568",
     "invalidation": "Runner identity changes invalidate remote runtime observations, not source-level behavior tests"
+  },
+  "navigation_recovery": {
+    "head": "d0fcb7b1d6f6232b0f89c18e2ae56965ea050e51",
+    "layer": "P1 native menu/role declarations; P4 audit",
+    "reason": "Restore existing read capabilities through formally released replacement menus, validate explicit scene identities against backend authority. No model ACL expansion.",
+    "affected": "owner/project_member/pm replacement menu identities; finance home scene; browser navigation audit",
+    "validation": "L1 declarations and negative tests; L2 role/navigation runtime; L3 native menu upgrade required; L4 affected remote browser; L5 new clean candidate required.",
+    "runtime": "4 test methods passed, three real role subcases with released navigation and owner write denial; XML upgrade and authority readback passed."
   }
 }

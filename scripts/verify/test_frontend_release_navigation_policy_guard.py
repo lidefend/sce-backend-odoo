@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from scripts.verify.frontend_release_navigation_policy_guard import ROLE_MAP, validate
+from scripts.verify.frontend_release_navigation_policy_guard import ROLE_MAP, validate, validate_formal_targets
 
 
 def _fixture():
@@ -78,6 +78,24 @@ class ReleaseNavigationPolicyGuardTest(unittest.TestCase):
         policies["pm"]["primary_menu_xmlids"] = [legacy_menu]
         errors = validate(manifest, policies)
         self.assertTrue(any(formal_menu in row and legacy_menu in row for row in errors))
+
+    def test_formal_targets_reject_retired_identity_even_when_role_and_manifest_agree(self):
+        manifest, _ = _fixture()
+        self.assertTrue(validate_formal_targets(manifest, {"menu_groups": []}, {}))
+
+    def test_scene_route_must_match_product_and_backend_scene_map(self):
+        menu = "x.home"
+        target = {"menu_xmlid": menu, "action_xmlid": "", "model": "", "enabled": True,
+                  "release_state": "released", "entry_target_policy": "scene_entry",
+                  "scene_key": "workspace.home", "route": "/s/workspace.home"}
+        product = {"menu_groups": [{"menus": [target]}]}
+        manifest = {"roles": {"owner": {"browser_leaf_keys": [menu + "||"]}},
+                    "scene_targets": {menu: {"scene_key": "workspace.home", "route": "/s/workspace.home"}}}
+        self.assertEqual(validate_formal_targets(manifest, product, {menu: "workspace.home"}), [])
+        self.assertTrue(validate_formal_targets(manifest, product, {menu: "other"}))
+        manifest["scene_targets"][menu]["route"] = "/s/other"
+        self.assertTrue(validate_formal_targets(manifest, product, {menu: "workspace.home"}))
+
 
 
 if __name__ == "__main__":

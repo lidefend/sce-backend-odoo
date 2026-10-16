@@ -114,3 +114,37 @@ image references retain their immutable digests but use official origins rather
 than domestic runner-specific mirrors. No daily deployment resources change.
 The backend remote result must come from the newly frozen hosted candidate;
 previous runner observations cannot prove this execution environment.
+
+## Navigation failure discovered by the full remote lane
+
+Remote b5a4647c frontend run 38854098601 passed all 28 observed page identities
+but failed navigation comparison. The prior 605c frontend run skipped the full
+surface command; it is not evidence of the same browser layer passing.
+
+P1 fixes restore existing role business capabilities through formally released
+replacement menu identities: owner daily contract; project-member/PM daily-contract
+deduplication; PM income/expense settlement and budget. Native budget menu restores
+its predecessor's cost_read group without changing model ACLs. Its two contextual
+budget actions follow the same replacement carrier. Conflicting exposure records
+are updated only for these identities; finance/executive remain explicitly narrowed.
+The budget acceptance row's previous visibility evidence is invalidated, not reused.
+
+P4 fixes bind browser expectations to the formal menu policy and explicit backend
+scene map. A scene without action/model must match its declared menu and exact route;
+arbitrary missing action/model still fails. The release summary now includes the
+navigation failures, not just page failures. Formal-target negative tests reject
+stale identities even if role policy and expected manifest agree with each other.
+
+Affected validation: role policy/exposure and navigation-audit pure tests; new
+bundle real released-navigation test for three roles plus existing affected role
+contract tests; native XML module upgrade on registered sc-local-dev/sc_dev_demo.
+No daily server, customer library, new environment or frontend rendering change.
+Local paired recovery point: artifacts/local-dev/snapshots/20261016T053115Z.
+The upgrade initially refused the default fast-mode guard before execution; the
+XML change justified CODEX_NEED_UPGRADE=1/CODEX_MODULES=smart_construction_core.
+
+The d0fcb7b1 Quick executed its checks successfully but issued no receipt because
+another worktree committed while the trusted all-reference scan snapshot was live.
+Do not reuse it as a delivery pass. This new product candidate requires final
+validation after owning-layer defects are closed; unchanged earlier evidence remains
+indexed in the run. Shared-reference concurrency is not bypassed.

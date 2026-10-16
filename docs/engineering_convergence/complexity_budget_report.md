@@ -94,7 +94,7 @@ Generated from repository source files. This report is informational during the 
 | 1432 | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1421 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
-| 1403 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
+| 1401 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1398 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1396 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1389 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
@@ -285,7 +285,7 @@ Generated from repository source files. This report is informational during the 
 | 1432 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1421 | warning | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
-| 1403 | warning | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
+| 1401 | warning | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1398 | warning | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1396 | warning | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1389 | warning | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
