@@ -94,6 +94,29 @@ ROLE_SURFACE_OVERRIDES = {
             "construction.税务中心",
             "construction.人事行政",
         ],
+        "contextual_action_authorities": [
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
+                "action_xmlid": "smart_construction_core.action_sc_financing_loan_contractor_project_borrow",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "project.workspace_handling_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
+                "action_xmlid": "smart_construction_core.action_sc_expense_claim_deduction_bill",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "project.workspace_handling_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
+                "action_xmlid": "smart_construction_core.action_sc_finance_project_counterparty_position",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "project.workspace_handling_route"
+            },
+        ],
     },
     "business_full": {
         "label": "业务全功能",
@@ -115,6 +138,106 @@ ROLE_SURFACE_OVERRIDES = {
         "model_blocklist": [],
         "model_prefix_blocklist": [],
         "group_key_blocklist": [],
+        "contextual_action_authorities": [
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+                "action_xmlid": "smart_construction_core.action_sc_financing_loan_project_borrow_company",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+                "action_xmlid": "smart_construction_core.action_sc_expense_claim_project_repay_company",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+                "action_xmlid": "smart_construction_core.action_sc_financing_loan_contractor_project_borrow",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+                "action_xmlid": "smart_construction_core.action_sc_expense_claim_contractor_project_repay",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+                "action_xmlid": "smart_construction_core.action_sc_fund_account_between_user",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
+                "action_xmlid": "smart_construction_core.action_sc_expense_claim_deduction_paid_refund",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
+                "action_xmlid": "smart_construction_core.action_sc_bid_deposit_return",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
+                "action_xmlid": "smart_construction_core.action_sc_contract_deposit_return",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
+                "action_xmlid": "smart_construction_core.action_sc_self_funding_registration_refund",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+                "action_xmlid": "smart_construction_core.action_sc_finance_project_counterparty_position",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_ledger_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
+                "action_xmlid": "smart_construction_core.action_sc_finance_project_counterparty_position",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_ledger_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
+                "action_xmlid": "smart_construction_core.action_sc_financing_loan_contractor_project_borrow",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "project.workspace_handling_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
+                "action_xmlid": "smart_construction_core.action_sc_expense_claim_deduction_bill",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "project.workspace_handling_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
+                "action_xmlid": "smart_construction_core.action_sc_finance_project_counterparty_position",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "project.workspace_handling_route"
+            },
+        ],
     },
     "business_config_admin": {
         "label": "业务配置管理员",
@@ -346,6 +469,27 @@ ROLE_SURFACE_OVERRIDES = {
                 },
                 "source": "nav_policy_01.pm.contract_relation",
             },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
+                "action_xmlid": "smart_construction_core.action_sc_financing_loan_contractor_project_borrow",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "project.workspace_handling_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
+                "action_xmlid": "smart_construction_core.action_sc_expense_claim_deduction_bill",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "project.workspace_handling_route"
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
+                "action_xmlid": "smart_construction_core.action_sc_finance_project_counterparty_position",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "project.workspace_handling_route"
+            },
         ],
         "menu_blocklist_xmlids": ["smart_construction_core.menu_sc_project_manage"],
     },
@@ -446,6 +590,86 @@ ROLE_SURFACE_OVERRIDES = {
                 "allowed_operation": "read",
                 "required_capability": "menu_action_read",
                 "source": "finance.invoice_input_report_contextual_route",
+            },
+            # Handling routes belong to their released workspace carrier,
+            # not to the unpublished standalone navigation leaf. Model ACLs and
+            # the workspace publication gate still decide availability.
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+                "action_xmlid": "smart_construction_core.action_sc_financing_loan_project_borrow_company",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route",
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+                "action_xmlid": "smart_construction_core.action_sc_expense_claim_project_repay_company",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route",
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+                "action_xmlid": "smart_construction_core.action_sc_financing_loan_contractor_project_borrow",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route",
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+                "action_xmlid": "smart_construction_core.action_sc_expense_claim_contractor_project_repay",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route",
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+                "action_xmlid": "smart_construction_core.action_sc_fund_account_between_user",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route",
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
+                "action_xmlid": "smart_construction_core.action_sc_expense_claim_deduction_paid_refund",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route",
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
+                "action_xmlid": "smart_construction_core.action_sc_bid_deposit_return",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route",
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
+                "action_xmlid": "smart_construction_core.action_sc_contract_deposit_return",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route",
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
+                "action_xmlid": "smart_construction_core.action_sc_self_funding_registration_refund",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_handling_route",
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+                "action_xmlid": "smart_construction_core.action_sc_finance_project_counterparty_position",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_ledger_route",
+            },
+            {
+                "menu_xmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
+                "action_xmlid": "smart_construction_core.action_sc_finance_project_counterparty_position",
+                "allowed_operation": "read",
+                "required_capability": "menu_action_read",
+                "source": "finance.workspace_ledger_route",
             },
         ],
         "denied_menu_xmlids": [],

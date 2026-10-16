@@ -129,6 +129,12 @@ class ScContextWorkspaceEntryAuthority(models.AbstractModel):
             menu_id = int(entry.get("menu_id") or 0)
             if menu_id:
                 menus.add(menu_id)
+        carrier_xmlid = getattr(self, "_sc_dispatch_menu_xmlid", "")
+        if carrier_xmlid:
+            carrier = self.env.ref(carrier_xmlid, raise_if_not_found=False)
+            # A workspace declares its carrier; it never borrows another
+            # workspace's published route even when both use the same action.
+            return [carrier.id] if carrier and carrier.id in menus else []
         return sorted(menus)
 
     def _sc_entry_menu_id(self, action_id, model_name="", label=""):

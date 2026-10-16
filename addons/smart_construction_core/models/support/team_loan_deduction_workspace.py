@@ -9,6 +9,7 @@ class ScTeamLoanDeductionWorkspace(models.TransientModel):
     _name = "sc.team.loan.deduction.workspace"
     _inherit = ["sc.context.workspace.entry.authority"]
     _description = "班组借扣款办理工作台"
+    _sc_dispatch_menu_xmlid = "smart_construction_core.menu_sc_product_team_loan_deduction_v1"
 
     project_id = fields.Many2one("project.project", string="项目", required=True)
     partner_id = fields.Many2one("res.partner", string="班组/承包人", required=True)

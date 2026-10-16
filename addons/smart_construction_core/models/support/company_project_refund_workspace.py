@@ -9,6 +9,7 @@ class ScCompanyProjectRefundWorkspace(models.TransientModel):
     _name = "sc.company.project.refund.workspace"
     _inherit = ["sc.context.workspace.entry.authority"]
     _description = "公司与项目退款办理工作台"
+    _sc_dispatch_menu_xmlid = "smart_construction_core.menu_sc_product_company_project_refund_v1"
 
     project_id = fields.Many2one("project.project", string="项目", required=True)
     partner_id = fields.Many2one("res.partner", string="退款方/收款方", help='建议选择退款方/收款方，便于责任与资金台账归集')
