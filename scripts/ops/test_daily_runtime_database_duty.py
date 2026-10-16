@@ -1165,6 +1165,36 @@ class EvaluationTests(unittest.TestCase):
         self.assertTrue(verdict["cluster_container_state_matches_declaration"])
         self.assertTrue(verdict["custody_absent_as_declared"])
 
+    def test_a_duty_entry_that_raised_is_never_a_pass(self):
+        """A salvaged error is a verdict, not a footnote.
+
+        The 2026-10-16 rebuild reported ``applied: true`` and ``PASS`` for a duty
+        the carrier had refused: the error was recorded beside the readback, but
+        nothing turned it into an assertion, and the single remaining assertion
+        ("the custody is absent as declared") was true of the very fact that
+        nothing had been created.
+        """
+        declaration = prospective(self.declaration(), "demo")
+        duty = picked(declaration, "demo")
+        observation = self.observe(
+            duty, error="RuntimeError: DAILY_DUTY_CREDENTIAL_IDENTITY_DRIFT:DB_USER:demo")
+        verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            duty, observation, declaration, phase="apply")}
+        self.assertFalse(verdict["duty_entry_completed_without_an_error"])
+        self.assertNotIn("custody_absent_as_declared", verdict)
+
+    def test_a_creating_apply_that_lands_no_custody_is_not_a_pass(self):
+        """Absence matches a to-be-created declaration only before it is created."""
+        declaration = prospective(self.declaration(), "demo")
+        duty = picked(declaration, "demo")
+        applied = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            duty, self.observe(duty), declaration, phase="apply")}
+        self.assertFalse(applied["created_duty_landed_the_declared_custody"])
+        self.assertNotIn("custody_absent_as_declared", applied)
+        planned = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            duty, self.observe(duty), declaration, phase="plan")}
+        self.assertTrue(planned["custody_absent_as_declared"])
+
     def test_an_unexpectedly_present_cluster_fails(self):
         declaration = prospective(self.declaration(), "platform_control")
         cluster = {"present": True, "running": True, "system_identifier": "",
@@ -1251,6 +1281,81 @@ class EvaluationTests(unittest.TestCase):
         self.assertFalse(verdict["stack_environment_matches_declaration"])
         self.assertFalse(verdict["stack_environment_has_no_unresolved_placeholder"])
         self.assertFalse(verdict["stack_secret_material_is_not_world_readable"])
+        self.assertFalse(verdict["stack_was_created_from_the_reviewed_definition"])
+
+    def test_a_staged_service_start_is_judged_by_its_steps(self):
+        """The initialize phase starts services in stages, not with one return code.
+
+        ``initialize`` waits for the cluster services and only then starts the
+        application, so its start entry is a list of per-stage steps while the
+        ``stack`` phase's entry is a single ``start_cluster`` return code.
+        Reading only ``returncode`` judged the initialize phase's own step list
+        as "not created from the reviewed definition" for ever, and on
+        2026-10-16 that reported a duty whose services had in fact started as a
+        failed one. Both shapes are the entry's own output, so both are read; a
+        step list that reports a failure, and one that reports nothing started,
+        still fail.
+        """
+        declaration = prospective(self.declaration(), "platform_control")
+        row = picked(declaration, "platform_control")
+        stack = {
+            "skipped": None, "compose_path": "/ops/duty-stack-abc.yml",
+            "env_mode": "0o600", "credentials_mode": "0o600",
+            "unresolved_placeholders": [],
+            "start": {"returncode": 0, "error": ""},
+            "env_keys": {
+                "DUTY_NAME": row["duty"],
+                "COMPOSE_PROJECT_NAME": row["cluster"]["compose_project"],
+                "DB_NAME": row["database"],
+                "DB_USER": row["database_role"],
+                "DB_MAINTENANCE_USER": row["cluster"]["maintenance_role"],
+                "DB_DATA": row["cluster"]["data_volume"],
+                "REDIS_DATA": row["storage"]["redis_data_volume"],
+                "ODOO_DATA": row["storage"]["odoo_data_volume"],
+                "ODOO_DBFILTER": row["dbfilter"],
+                "ODOO_PORT": str(row["routing"]["odoo_loopback_port"]),
+                "NGINX_PORT": str(row["routing"]["nginx_host_port"]),
+                "LIST_DB": "false",
+                "SC_ALLOW_DEMO_DATA": (
+                    "1" if row["data_purpose"] == "demo" else "0"
+                ),
+            },
+        }
+        cluster = {"present": True, "running": True, "system_identifier": "",
+                   "data_volume_owner": "sc_platform_control_db_data",
+                   "project": "sc-platform-control-dev",
+                   "config_files": "/ops/duty-stack-abc.yml", "error": ""}
+        custody = {"database_present": False, "database_owner": "", "allow_connections": True,
+                   "role_present": False, "role_superuser": None, "role_createdb": None,
+                   "role_createrole": None, "role_canlogin": None, "public_connects": None,
+                   "public_schema_create": None, "database_role_connects": None, "error": ""}
+
+        def verdict_for(start):
+            staged = copy.deepcopy(stack)
+            staged["start"] = start
+            return {a["id"]: a["passed"] for a in duty_entry.evaluate(
+                row, {"duty": row["duty"], "cluster": cluster, "custody": custody,
+                      "stack": staged},
+                declaration)}
+
+        verdict = verdict_for({
+            "declared": ["db", "redis", "odoo", "nginx"],
+            "steps": [{"stage": "cluster", "returncode": 0},
+                      {"stage": "application", "returncode": 0}],
+        })
+        self.assertTrue(verdict["stack_was_created_from_the_reviewed_definition"])
+
+        verdict = verdict_for({
+            "declared": ["db", "redis", "odoo", "nginx"],
+            "steps": [{"stage": "cluster", "returncode": 0},
+                      {"stage": "application", "returncode": 1}],
+        })
+        self.assertFalse(verdict["stack_was_created_from_the_reviewed_definition"])
+
+        verdict = verdict_for({"declared": ["db", "redis", "odoo", "nginx"], "steps": []})
+        self.assertFalse(verdict["stack_was_created_from_the_reviewed_definition"])
+
+        verdict = verdict_for({"returncode": 1, "error": "boom"})
         self.assertFalse(verdict["stack_was_created_from_the_reviewed_definition"])
 
     def test_a_compliant_duty_must_show_least_privilege(self):
@@ -2499,6 +2604,79 @@ class ApplicationCredentialTests(unittest.TestCase):
         self.assertEqual(facts["credential_adopted_from"], source)
         self.assertEqual(facts["credentials_mode"], "0o600")
         self.assertEqual(mode, 0o600)
+
+    def rebuilt_demo_duty(self, duty):
+        """The demo duty as the 2026-10-16 rebuild declares it.
+
+        The legacy carrier and the rebuilt duty share the duty *name*, not the
+        carrier: the rebuilt one names its own cluster, its own application role
+        and its own maintenance role, so it creates the credential it uses.
+        """
+        duty = copy.deepcopy(duty)
+        duty.pop("credential_source")
+        duty["database_role"] = "sc_demo_app"
+        duty["cluster"]["compose_project"] = "sc-demo-dev"
+        duty["cluster"]["container"] = "sc-demo-dev-db-1"
+        duty["cluster"]["maintenance_role"] = "sc_demo_maintenance"
+        return duty
+
+    def test_a_foreign_carrier_file_is_never_adopted_or_overwritten(self):
+        """One duty name may not become two carriers' environment file.
+
+        ``demo.env`` still belongs to ``sc-backend-odoo-dev`` and still owns the
+        surviving cluster's role password. Adopting it would refuse the rebuild
+        for ever; overwriting it would destroy a credential the protected
+        historic source still needs and render a duty the legacy route does not
+        revive from. The file is therefore left byte-identical and the rebuilt
+        duty is rendered into its carrier-qualified name.
+        """
+        with tempfile.TemporaryDirectory() as root:
+            duty = self.rebuilt_demo_duty(self.duty(os.path.join(root, "absent.env")))
+            legacy = ("DUTY_NAME=demo\nCOMPOSE_PROJECT_NAME=sc-backend-odoo-dev\n"
+                      "DB_NAME=sc_demo\nDB_USER=odoo\nDB_MAINTENANCE_USER=odoo\n"
+                      "DB_PASSWORD=%s\n" % ("f" * 64,))
+
+            def run(namespace, ops_root):
+                path = os.path.join(ops_root, "demo.env")
+                with open(path, "w") as stream:
+                    stream.write(legacy)
+                os.chmod(path, 0o600)
+                with open(path, "rb") as stream:
+                    before = stream.read()
+                facts = namespace["materialise_stack_files"](duty)
+                with open(path, "rb") as stream:
+                    after = stream.read()
+                return facts, before, after
+
+            facts, before, after = self.carrier(run)
+        self.assertEqual(before, after, "the legacy carrier's file must not be touched")
+        self.assertEqual(os.path.basename(facts["env_path"]), "sc-demo-dev.env")
+        self.assertEqual(os.path.basename(facts["credentials_path"]), "sc-demo-dev.env")
+        self.assertTrue(facts["credentials_created"])
+        self.assertEqual(facts["credentials_mode"], "0o600")
+        self.assertEqual(facts["env_mode"], "0o600")
+
+    def test_a_file_that_claims_this_carrier_but_drifts_still_refuses(self):
+        """Carrier identity resolves the file; it never excuses a drifted one.
+
+        A file that names *this* carrier is this duty's own file, so an identity
+        key that disagrees with the declaration is a drift to refuse, not a
+        second carrier to route around.
+        """
+        with tempfile.TemporaryDirectory() as root:
+            duty = self.rebuilt_demo_duty(self.duty(os.path.join(root, "absent.env")))
+
+            def run(namespace, ops_root):
+                path = os.path.join(ops_root, "sc-demo-dev.env")
+                with open(path, "w") as stream:
+                    stream.write("COMPOSE_PROJECT_NAME=sc-demo-dev\nDB_USER=odoo\n")
+                os.chmod(path, 0o600)
+                return namespace["duty_credentials"](duty)
+
+            with self.assertRaises(RuntimeError) as raised:
+                self.carrier(run)
+        self.assertIn("IDENTITY_DRIFT", str(raised.exception))
+
 
     def test_a_duty_that_creates_its_own_role_still_generates_its_own_secret(self):
         """Adoption is not a general escape hatch: no source, no adoption."""

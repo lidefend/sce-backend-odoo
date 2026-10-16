@@ -1071,7 +1071,30 @@ def read_env_file(path):
 
 
 def credentials_path(duty):
-    return os.path.join(OPS_ROOT, duty["duty"] + ".env")
+    """The one governed environment/credential file of one duty.
+
+    A duty's file is normally named after the duty, but the *carrier* decides
+    whether an existing file may be adopted. On 2026-10-16 the rebuilt demo duty
+    and the pre-governance demo carrier were both called ``demo``: the legacy
+    file ``demo.env`` still declares ``COMPOSE_PROJECT_NAME=sc-backend-odoo-dev``
+    and still owns the surviving cluster's role password. Rendering the rebuilt
+    duty into that name would destroy a credential the historic source needs and
+    would hand one duty the route of a cluster it does not own, so a file that
+    declares another carrier is never read, adopted or written; the rebuilt duty
+    uses the carrier-qualified name instead. A file without a carrier marker is
+    still this duty's own file, and a drift in its identity keys still refuses.
+    """
+    declared = str((duty.get("cluster") or {}).get("compose_project") or "")
+    canonical = os.path.join(OPS_ROOT, duty["duty"] + ".env")
+    if not declared:
+        return canonical
+    qualified = os.path.join(OPS_ROOT, declared + ".env")
+    if os.path.exists(qualified):
+        return qualified
+    owner = read_env_file(canonical).get("COMPOSE_PROJECT_NAME", "")
+    if owner and owner != declared:
+        return qualified
+    return canonical
 
 
 def credential_source(duty):
@@ -1236,7 +1259,10 @@ def materialise_stack_files(duty):
         write_file(compose_path, compose_text)
     superseded = prune_superseded_stack_files(OPS_ROOT, compose_path)
     credentials, credential_path, created = duty_credentials(duty)
-    env_path = os.path.join(OPS_ROOT, duty["duty"] + ".env")
+    # One file, one name: the rendered environment and the governed credential
+    # material are the same file, so it is resolved once by carrier identity
+    # instead of being derived a second time from the duty name.
+    env_path = credential_path
     rendered = render_env(duty, credentials)
     if read_text(env_path) != rendered:
         write_file(env_path, rendered)
@@ -1271,7 +1297,7 @@ def compose_base(duty):
         "docker", "compose",
         "-f", stack_compose_path(),
         "--project-name", duty["cluster"]["compose_project"],
-        "--env-file", os.path.join(OPS_ROOT, duty["duty"] + ".env"),
+        "--env-file", credentials_path(duty),
     ]
 
 
@@ -2225,6 +2251,26 @@ def remote_duties(ssh_host, payload, *, remote_head=None):
 # ----------------------------------------------------------------------
 # evaluation
 # ----------------------------------------------------------------------
+def start_reached_every_declared_service(start):
+    """Whether a start entry actually brought up what it was asked to start.
+
+    The stack is brought up through two different shapes. ``stack``/``all`` start
+    the cluster only, with :func:`start_cluster`, which returns one command and
+    one return code. ``initialize``/``refresh`` start the declared services, with
+    :func:`start_services`, which returns one step per stage because the cluster
+    services have to be waited for before the first boot can be installed into.
+    Reading only ``returncode`` made the initialize phase judge a step list it
+    never produced, so a duty whose services did start was reported as "not
+    created from the reviewed definition" for ever. The shape is resolved here,
+    and an entry that reports no successful step is not a passed start: an empty
+    step list means nothing was started, which is not the same as success.
+    """
+    steps = start.get("steps")
+    if steps is not None:
+        return bool(steps) and all(step.get("returncode") == 0 for step in steps)
+    return start.get("returncode") == 0
+
+
 def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, upgrade=False,
              seed=False):
     """Return the per-duty assertions that decide the verdict.
@@ -2244,6 +2290,19 @@ def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, 
 
     def add(identifier, passed, detail):
         assertions.append({"id": identifier, "passed": bool(passed), "detail": detail})
+
+    if str(observation.get("error") or "").strip():
+        # An entry that raised is not an entry whose outcome is "as declared".
+        # The 2026-10-16 rebuild proved the shape: the carrier refused the
+        # credential identity, wrote nothing, and the verdict still said PASS
+        # because the only remaining assertion ("the custody is absent as
+        # declared") was true of the very fact that nothing had been created.
+        # A salvaged error is therefore its own failing assertion, and the rest
+        # of the duty is not judged against facts a failed entry never reached.
+        add("duty_entry_completed_without_an_error", False,
+            {"error": observation.get("error"),
+             "readback_error": observation.get("readback_error", "")})
+        return assertions
 
     declared_compliance = declared_custody.get("role_compliance")
     wants_creation = declared_compliance == "to_be_created"
@@ -2308,14 +2367,24 @@ def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, 
                  "credentials_mode": stack.get("credentials_mode")})
             start = stack.get("start") or {}
             add("stack_was_created_from_the_reviewed_definition",
-                start.get("returncode") == 0
+                start_reached_every_declared_service(start)
                 and stack.get("compose_path", "") in (cluster.get("config_files") or ""),
-                {"start_returncode": start.get("returncode"), "start_error": start.get("error"),
+                {"start_returncode": start.get("returncode"),
+                 "start_steps": [step.get("returncode") for step in (start.get("steps") or [])],
+                 "start_error": start.get("error"),
                  "compose_path": stack.get("compose_path"),
                  "container_config_files": cluster.get("config_files")})
     if not (cluster.get("present") and cluster.get("running")):
-        add("custody_absent_as_declared", wants_creation or not declared_custody.get("database_present"),
-            {"declared_database_present": declared_custody.get("database_present"), "phase": phase})
+        if creation_expected:
+            # A creating phase that reports the duty still absent did not do what
+            # it was asked to do. "Absent" only matches a to-be-created
+            # declaration while nothing was supposed to create it.
+            add("created_duty_landed_the_declared_custody", False,
+                {"present": cluster.get("present"), "running": cluster.get("running"),
+                 "error": cluster.get("error"), "phase": phase})
+        else:
+            add("custody_absent_as_declared", not declared_custody.get("database_present"),
+                {"declared_database_present": declared_custody.get("database_present"), "phase": phase})
         return assertions
 
     if creation_expected:
