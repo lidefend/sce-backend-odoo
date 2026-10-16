@@ -55,3 +55,5 @@ from . import test_data_space_identity_enrollment
 from . import test_data_space_uncached_membership
 from . import test_dictionary_scope_delivery
 from . import test_platform_database_governance_orm
+from . import test_tenant_payload_operator_lifecycle
+from . import test_platform_maintenance_access_http

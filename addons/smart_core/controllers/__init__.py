@@ -1,4 +1,5 @@
 from . import intent_dispatcher
+from . import platform_maintenance_access_controller
 from . import platform_menu_api
 from . import platform_ops_controller
 from . import runtime_version

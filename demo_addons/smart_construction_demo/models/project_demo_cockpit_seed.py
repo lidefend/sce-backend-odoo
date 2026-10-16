@@ -17,6 +17,9 @@ class ProjectDemoCockpitSeed(models.Model):
     # a payment on a 保修/关闭 project, so the showcase must not try to create
     # such a fact there.
     _DEMO_PAYMENT_BLOCKED_LIFECYCLES = ("warranty", "closed")
+    # ``project.project._ensure_operation_allowed`` blocks 记载成本台账 in these
+    # lifecycle states; the seed must respect the same guard.
+    _DEMO_COST_BLOCKED_LIFECYCLES = ("paused", "closed")
     _OFFICIAL_SAMPLE_PROFILES = {
         "展厅-智慧园区运营中心": {
             "profile": "execution",
@@ -173,6 +176,8 @@ class ProjectDemoCockpitSeed(models.Model):
 
     @api.model
     def _sc_demo_seed_contracts(self, project, partner, contract_model, contract_line_model):
+        from ..tools.scenario_loader import drive_seeded_record
+
         marker = self._DEMO_COCKPIT_MARKER
         existing = contract_model.search_count(
             [("project_id", "=", project.id), ("subject", "ilike", marker)]
@@ -204,11 +209,22 @@ class ProjectDemoCockpitSeed(models.Model):
                 }
             )
             if contract.state in ("draft", "confirmed"):
-                contract.action_set_running()
+                # The contract only reaches 执行中 through its own 确认 and
+                # 执行中 actions, with the declared approval seat deciding the
+                # submission; a direct state write would skip that guard.
+                drive_seeded_record(self.env, contract, "running")
 
     @api.model
     def _sc_demo_seed_cost_ledger(self, project, partner, cost_code, cost_ledger_model):
+        """Seed cost facts only where the product allows them.
+
+        ``project.cost.ledger.create`` refuses 记载成本台账 on a project that is
+        停工/关闭, so a showcase project parked in one of those states gets no
+        cost samples: that is the product's rule, not a demo exception.
+        """
         if not cost_code:
+            return
+        if project.lifecycle_state in self._DEMO_COST_BLOCKED_LIFECYCLES:
             return
 
         marker = self._DEMO_COCKPIT_MARKER

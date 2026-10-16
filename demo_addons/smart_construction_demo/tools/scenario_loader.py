@@ -476,6 +476,10 @@ _DEMO_LIFECYCLE_CHAINS = {
     ("sc.contract.event", "approved"): ("action_submit",),
     ("sc.contract.event", "done"): ("action_submit", "action_done"),
     ('sc.general.contract', 'signed'): ('action_confirm', 'action_signed'),
+    # The project contract promotes draft -> confirmed only from its own
+    # 确认 action, so the approved submission is consumed by that action
+    # before 执行中 is requested; nothing writes the state field directly.
+    ('construction.contract', 'running'): ('action_confirm', 'action_confirm', 'action_set_running'),
     ('sc.quality.issue', 'submitted'): ('action_submit',),
     ('sc.hazard.source', 'controlled'): ('action_report', 'action_control'),
     ('sc.safety.issue', 'submitted'): ('action_submit',),
@@ -742,6 +746,8 @@ _DEMO_LIFECYCLE_ACTION_ACTORS = {
     ("tender.guarantee", "action_confirm"): "user_sc_project_user",
     ("sc.expense.claim", "write"): "user_sc_fin_01",
     ('sc.general.contract', 'action_confirm'): 'user_sc_contract_user_cap',
+    ('construction.contract', 'action_confirm'): 'user_sc_contract_manager_cap',
+    ('construction.contract', 'action_set_running'): 'user_sc_contract_manager_cap',
     ('sc.general.contract', 'action_signed'): 'user_sc_contract_user_cap',
     ('sc.quality.issue', 'action_submit'): 'user_sc_project_user',
     ('sc.safety.issue', 'action_submit'): 'user_sc_project_user',
@@ -783,6 +789,38 @@ def _demo_action_record(env, record, action, actor_xmlid=None):
     return acting
 
 
+def drive_seeded_record(env, record, target: str, *, actors=None):
+    """Drive one seeded record to its declared state through public actions.
+
+    The action chain, the acting seats and the approval seats all come from the
+    demo's own declarations, so a scenario that seeds a business document
+    cannot reach a terminal state behind an approval guard: it submits, the
+    declared seat approves, and only then does the handling action run. A
+    record already at (or past) the target is returned untouched, so a reload
+    never replays an approval.
+    """
+    actors = actors or {}
+    state_field = getattr(record, "_state_field", "state")
+    chain = _DEMO_LIFECYCLE_CHAINS.get((record._name, target))
+    if not chain:
+        raise ValueError(
+            "demo lifecycle: no action chain for %s -> %s" % (record._name, target)
+        )
+    for method_name in chain:
+        if record[state_field] == target:
+            break
+        acting = _demo_action_record(env, record, method_name, actors.get(method_name))
+        getattr(acting, method_name)()
+        record.invalidate_recordset()
+        _demo_finish_reviews(env, record)
+    if record[state_field] != target:
+        raise ValueError(
+            "demo lifecycle: %s stayed at %s, expected %s after %s"
+            % (record, record[state_field], target, chain)
+        )
+    return record
+
+
 def _advance_scenario_lifecycle(env, scenario: str) -> None:
     """Drive seeded records from their legal draft create() to the shown state.
 
@@ -819,13 +857,16 @@ def _advance_scenario_lifecycle(env, scenario: str) -> None:
                 raise ValueError(
                     f"demo lifecycle: no action chain for {record._name} -> {target} ({xmlid})"
                 )
-            for method_name in chain:
-                if record[state_field] == target:
-                    break
-                acting = _demo_action_record(env, record, method_name, _DEMO_LIFECYCLE_REVIEWER.get((xmlid, method_name)))
-                getattr(acting, method_name)()
-                record.invalidate_recordset()
-                _demo_finish_reviews(env, record)
+            drive_seeded_record(
+                env,
+                record,
+                target,
+                actors={
+                    method: seat
+                    for (record_xmlid, method), seat in _DEMO_LIFECYCLE_REVIEWER.items()
+                    if record_xmlid == xmlid
+                },
+            )
         if record[state_field] != target:
             raise ValueError(
                 "demo lifecycle: %s stayed at %s, expected %s after %s"

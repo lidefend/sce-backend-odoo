@@ -172,6 +172,27 @@ RULES = (
     ), (
         "verify.form_container_presentation.guard",
     )),
+    # The product tree may not carry a customer identity; the governed duty
+    # binding under ops_root replaces it, and the customer side of it was last
+    # detected at the frozen candidate instead of in the inner loop. Editing the
+    # declaration, the resolver, the duty entry that consumes it, the delivered
+    # customer-addon tree, the recovery contract, the duty stack surface or the
+    # boundary guard itself therefore routes to the boundary guard and the
+    # resolver's own unit target.
+    Rule((
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "config/ops/daily_runtime_duty_stack",
+        "scripts/ops/daily_runtime_duty_identity.py",
+        "scripts/ops/daily_runtime_database_duty.py",
+        "scripts/ops/daily_runtime_tenant_topology_inventory.py",
+        "scripts/ops/daily_runtime_tenant_addons_deliver.py",
+        "scripts/ops/daily_runtime_tenant_recovery_contract_v1.json",
+        "scripts/ops/test_daily_runtime_duty_identity.py",
+        "scripts/verify/tenant_product_payload_boundary_guard.py",
+    ), (
+        "verify.tenant.product_payload_boundary",
+        "verify.daily.runtime.duty.identity.unit",
+    )),
 )
 FALLBACK_TARGET = "verify.frontend.typecheck.strict"
 FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "fingerprint")

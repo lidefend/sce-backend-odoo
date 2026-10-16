@@ -1,0 +1,137 @@
+{
+  "schema": "daily.runtime.database_duties.instances.v1",
+  "authority": "docs/governance/database_architecture_policy.md",
+  "owner_ruling": "synthetic fixture only: no real tenant binding is recorded here",
+  "note": "Synthetic duty-instance document used by the ops unit tests. Every value is an example identity (tenant_key 'sample'), and the customer addon it names is the sample addon the boundary guard already treats as a placeholder. The concrete binding of a real tenant is written by the governed entry into the managed directory under ops_root, never into this tree.",
+  "duties": [
+    {
+      "duty": "customer_tenant_dev",
+      "database": "sc_tenant_sample_dev",
+      "database_role": "sc_tenant_sample_dev_app",
+      "dbfilter": "^sc_tenant_sample_dev$",
+      "environment_id": "daily-dev-sample",
+      "tenant_key": "sample",
+      "data_purpose": "customer",
+      "edition": {
+        "carrier": "effective_release_snapshot",
+        "allowed_product_keys": [
+          "construction.standard"
+        ],
+        "version_prefix": "daily-navigation"
+      },
+      "payload_operator": {
+        "carrier": "unified_onboarding_service_identity",
+        "identity_type": "external_xmlid",
+        "identity_key": "smart_core.svc_tenant_payload_operator_sample",
+        "login": "svc-tenant-payload-operator-sample",
+        "name": "Tenant payload operator (sample, dev)",
+        "company_xmlid": "base.main_company",
+        "tenant_key": "sample",
+        "authorization_basis": "synthetic fixture: no authorization is claimed",
+        "expected_account_groups": [
+          "base.group_user"
+        ],
+        "forbidden_account_groups": [
+          "base.group_system",
+          "base.group_erp_manager",
+          "base.group_allow_export",
+          "smart_core.group_smart_core_admin",
+          "smart_core.group_smart_core_security_admin",
+          "smart_core.group_smart_core_business_config_admin",
+          "smart_core.group_smart_core_data_operator"
+        ],
+        "import_capability": "migrate",
+        "customer_modules": [
+          "sce_customer_sample"
+        ],
+        "contract": {
+          "direct_grant_targets": [
+            "smart_core.group_smart_core_tenant_payload_importer"
+          ],
+          "transitive_implied_closure": [],
+          "required_existing_groups": [
+            "base.group_user"
+          ],
+          "expected_direct_grant_additions": [
+            "smart_core.group_smart_core_tenant_payload_importer"
+          ],
+          "expected_effective_group_additions": [
+            "smart_core.group_smart_core_tenant_payload_importer"
+          ],
+          "expected_undeclared_group_additions": [],
+          "grant_scope_version": 3,
+          "expected_company_scope": 1
+        }
+      },
+      "cluster": {
+        "container": "sc-tenant-sample-dev-db-1",
+        "compose_project": "sc-tenant-sample-dev",
+        "data_volume": "sc_tenant_sample_dev_db_data",
+        "maintenance_role": "sc_tenant_sample_dev_maintenance",
+        "system_identifier": "7696799327921901606"
+      },
+      "custody": {
+        "database_present": true,
+        "database_role_present": true,
+        "role_compliance": "compliant",
+        "service_face": "initialized"
+      },
+      "storage": {
+        "compose_project": "sc-tenant-sample-dev",
+        "odoo_data_volume": "sc_tenant_sample_dev_odoo_data",
+        "redis_data_volume": "sc_tenant_sample_dev_redis_data",
+        "filestore_scope": "sc_tenant_sample_dev",
+        "session_namespace": "sc_tenant_sample_dev",
+        "backup_namespace": "/data/backups/daily-tenant-sample-dev"
+      },
+      "routing": {
+        "nginx_host_port": 18090,
+        "odoo_loopback_port": 18091,
+        "list_db": false
+      },
+      "section_11": {
+        "TARGET_DATABASE_ROLE": "customer_tenant",
+        "TARGET_TENANT_ID": "sample",
+        "TARGET_ENVIRONMENT_ID": "daily-dev-sample",
+        "IS_PLATFORM_CONTROL_DATABASE": false,
+        "IS_INDUSTRY_CATALOG_DATABASE": false,
+        "IS_CUSTOMER_TENANT_DATABASE": true,
+        "IS_ISOLATED_REHEARSAL_DATABASE": false,
+        "CUSTOMER_BUSINESS_DATA_ALLOWED": true,
+        "FIXTURE_ALLOWED": false,
+        "EXACT_DATABASE_FILTER_CONFIRMED": true,
+        "FILESTORE_IDENTITY_CONFIRMED": true
+      },
+      "stack": {
+        "compose_file": "config/ops/daily_runtime_duty_stack.yml",
+        "env_template": "config/ops/daily_runtime_duty_stack.env",
+        "runtime_env": "dev",
+        "odoo_image": "odoo17-odoo:latest",
+        "postgres_image": "postgres:15",
+        "product_root": "/opt/projects/repos/sce-product-odoo",
+        "frontend_dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
+        "demo_addons_root": "/opt/projects/runtime-addons-empty",
+        "customer_addons_root": "/opt/sce/tenant-addons/daily/1111111111111111111111111111111111111111",
+        "services": [
+          "db",
+          "redis",
+          "odoo",
+          "nginx"
+        ],
+        "modules": [
+          "sc_norm_engine",
+          "smart_construction_bootstrap",
+          "smart_core",
+          "smart_scene",
+          "smart_construction_core",
+          "smart_construction_portal",
+          "smart_construction_scene",
+          "smart_license_core",
+          "smart_construction_bundle",
+          "smart_construction_seed",
+          "sce_customer_sample"
+        ]
+      }
+    }
+  ]
+}

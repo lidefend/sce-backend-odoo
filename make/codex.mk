@@ -763,6 +763,11 @@ DAILY_RUNTIME_FRONTEND_BUILD_DATABASE ?= sc_demo
 DAILY_RUNTIME_FRONTEND_BUILD_BASE_URL ?= http://127.0.0.1:18081
 DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT ?= .runtime/final-acceptance/daily-deployed/frontend-build.json
 DAILY_RUNTIME_FRONTEND_BUILD_REPORT ?= $(DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT)
+# The platform-admin database is a governance fact, so the build input is derived
+# from the same duty declaration the duty entry validates instead of being typed
+# a second time here: two hand-maintained copies of the authority the
+# platform-admin entry mounts would be two dialects of the same fact.
+DAILY_RUNTIME_FRONTEND_BUILD_PLATFORM_ADMIN_DB ?= $(shell python3 -c 'import json; print(json.load(open("config/ops/daily_runtime_database_duties.v1.json"))["platform_admin_database"])')
 
 verify.daily.runtime.frontend.build: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/daily_runtime_frontend_build_align.py scripts/ops/test_daily_runtime_frontend_build_align.py
@@ -777,6 +782,7 @@ daily.runtime.frontend.build: guard.prod.forbid verify.daily.runtime.frontend.bu
 		--env-file "$(DAILY_RUNTIME_ENV_FILE)" \
 		--database "$(DAILY_RUNTIME_FRONTEND_BUILD_DATABASE)" \
 		--base-url "$(DAILY_RUNTIME_FRONTEND_BUILD_BASE_URL)" \
+		--platform-admin-database "$(DAILY_RUNTIME_FRONTEND_BUILD_PLATFORM_ADMIN_DB)" \
 		--receipt "$(DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT)" \
 		--report "$(DAILY_RUNTIME_FRONTEND_BUILD_REPORT)"
 
@@ -846,6 +852,326 @@ daily.runtime.data_space.onboard: guard.prod.forbid verify.daily.runtime.data_sp
 		--tenant-key "$(DAILY_RUNTIME_DATA_SPACE_TENANT_KEY)" \
 		--base-url "$(DAILY_RUNTIME_MAIL_SENDER_BASE_URL)" \
 		--report "$(DAILY_RUNTIME_DATA_SPACE_REPORT)"
+
+
+.PHONY: verify.daily.runtime.database.identity.inventory daily.runtime.database.identity.inventory
+DAILY_RUNTIME_DATABASE_IDENTITY_REPORT ?= .runtime/final-acceptance/daily-deployed/database-identity-inventory.json
+
+verify.daily.runtime.database.identity.inventory: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_database_identity_inventory.py scripts/ops/test_daily_runtime_database_identity_inventory.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_database_identity_inventory
+
+daily.runtime.database.identity.inventory: guard.prod.forbid verify.daily.runtime.database.identity.inventory
+	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" || { echo "DAILY_RUNTIME_EXPECTED_SHA must be the deployed runtime source revision" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_database_identity_inventory.py \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--report "$(DAILY_RUNTIME_DATABASE_IDENTITY_REPORT)"
+
+
+# The identity inventory answers the cluster question. The tenant topology
+# inventory answers the tenant question: which registration (and declared
+# data purpose) exists in each database, which product-line revision each
+# database has installed, and how many business rows each model carries per
+# owning company -- including rows no company owns. A database *name* is not
+# evidence about what it carries, so this is what the section 11 role binding
+# reads before a database task may write. It also checks two invariants that
+# must hold whatever the operator binds: a kernel-only database carries no
+# business rows, and every company that owns rows is registered with an explicit
+# purpose. Read-only; `--report` only writes a local file.
+.PHONY: verify.daily.runtime.tenant.topology.inventory daily.runtime.tenant.topology.inventory
+DAILY_RUNTIME_TENANT_TOPOLOGY_REPORT ?= .runtime/final-acceptance/daily-deployed/tenant-topology-inventory.json
+DAILY_RUNTIME_TOPOLOGY_DATABASES ?= sc_demo,sc_odoo,sc_platform_core,sc_platform_control
+# The tenant's own customer addon, when the tenant declares one. Absent means the
+# database installs the product line only; the module name itself is never
+# carried by this tree.
+DAILY_RUNTIME_TOPOLOGY_CUSTOMER_MODULE ?=
+
+verify.daily.runtime.tenant.topology.inventory: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_tenant_topology_inventory.py scripts/ops/test_daily_runtime_tenant_topology_inventory.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_tenant_topology_inventory
+
+daily.runtime.tenant.topology.inventory: guard.prod.forbid verify.daily.runtime.tenant.topology.inventory
+	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" || { echo "DAILY_RUNTIME_EXPECTED_SHA must be the deployed runtime source revision" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_tenant_topology_inventory.py \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
+		--databases "$(DAILY_RUNTIME_TOPOLOGY_DATABASES)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		$(if $(DAILY_RUNTIME_TOPOLOGY_CUSTOMER_MODULE),--customer-module "$(DAILY_RUNTIME_TOPOLOGY_CUSTOMER_MODULE)") \
+		--report "$(DAILY_RUNTIME_TENANT_TOPOLOGY_REPORT)"
+
+
+# The identity inventory answers the cluster question and the tenant topology
+# inventory answers the tenant question. This entry answers the routing question:
+# which running Odoo instance serves which database, with which exact filter,
+# which published host port and which data volume, and how many live postmasters
+# own one cluster data directory. The policy makes a tenant environment a whole
+# lifecycle unit and forbids proving isolation by renaming a container or moving
+# a port, so the role binding needs the routing fact too. Read-only; `--report`
+# only writes a local file.
+.PHONY: verify.daily.runtime.routing.inventory daily.runtime.routing.inventory
+DAILY_RUNTIME_ROUTING_REPORT ?= .runtime/final-acceptance/daily-deployed/routing-inventory.json
+DAILY_RUNTIME_ROUTING_CLUSTER_CONTAINER ?= sc-backend-odoo-dev-db-1
+DAILY_RUNTIME_RETIRED_STACKS ?= config/ops/daily_runtime_retired_stacks.v1.json
+
+verify.daily.runtime.routing.inventory: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_routing_inventory.py scripts/ops/test_daily_runtime_routing_inventory.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_routing_inventory
+
+daily.runtime.routing.inventory: guard.prod.forbid verify.daily.runtime.routing.inventory
+	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" || { echo "DAILY_RUNTIME_EXPECTED_SHA must be the deployed runtime source revision" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_routing_inventory.py \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--cluster-container "$(DAILY_RUNTIME_ROUTING_CLUSTER_CONTAINER)" \
+		--retired-stacks "$(DAILY_RUNTIME_RETIRED_STACKS)" \
+		--report "$(DAILY_RUNTIME_ROUTING_REPORT)"
+
+
+# One retired stack that is running again is a second writer on a shared data
+# volume. The leftovers cannot be removed with `docker stop`: the database
+# container declares StopSignal=SIGINT, which PostgreSQL documents as *Fast
+# Shutdown* -- the orphan would write a shutdown checkpoint into the WAL the
+# surviving live postmaster is using. The reviewed method is the documented
+# *Immediate Shutdown* (SIGQUIT, no checkpoint), and redis is stopped without a
+# shutdown handler because a graceful Redis stop writes RDB/AOF into the shared
+# volume. The entry freezes container/log/volume identity evidence on the host
+# before the first state change, never removes a container, volume or WAL file,
+# and never runs `pg_resetwal`. The plan is read-only; apply additionally needs
+# the exact confirmation token and the digest of the reviewed plan.
+.PHONY: verify.daily.runtime.legacy_stack.retire daily.runtime.legacy_stack.retire.plan daily.runtime.legacy_stack.retire.apply
+DAILY_RUNTIME_LEGACY_RETIRE_EVIDENCE_ROOT ?= /opt/projects/backups/daily-runtime-legacy-retire
+DAILY_RUNTIME_LEGACY_RETIRE_PLAN_REPORT ?= .runtime/final-acceptance/daily-deployed/legacy-stack-retire-plan.json
+DAILY_RUNTIME_LEGACY_RETIRE_APPLY_REPORT ?= .runtime/final-acceptance/daily-deployed/legacy-stack-retire-apply.json
+DAILY_RUNTIME_LEGACY_RETIRE_PLAN_DIGEST ?=
+DAILY_RUNTIME_LEGACY_EXPECTED_SHA_FLAG ?= $(if $(DAILY_RUNTIME_EXPECTED_SHA),--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)")
+
+verify.daily.runtime.legacy_stack.retire: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_legacy_stack_retire.py scripts/ops/test_daily_runtime_legacy_stack_retire.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_legacy_stack_retire
+
+daily.runtime.legacy_stack.retire.plan: guard.prod.forbid verify.daily.runtime.legacy_stack.retire
+	@python3 scripts/ops/daily_runtime_legacy_stack_retire.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_RETIRED_STACKS)" \
+		--evidence-root "$(DAILY_RUNTIME_LEGACY_RETIRE_EVIDENCE_ROOT)" \
+		$(DAILY_RUNTIME_LEGACY_EXPECTED_SHA_FLAG) \
+		--report "$(DAILY_RUNTIME_LEGACY_RETIRE_PLAN_REPORT)"
+
+daily.runtime.legacy_stack.retire.apply: guard.prod.forbid verify.daily.runtime.legacy_stack.retire
+	@test "$${SC_CONFIRM_DAILY_RUNTIME_LEGACY_STACK_RETIRE:-}" = "RETIRE_DAILY_RUNTIME_LEGACY_STACK" || { echo "SC_CONFIRM_DAILY_RUNTIME_LEGACY_STACK_RETIRE=RETIRE_DAILY_RUNTIME_LEGACY_STACK is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_LEGACY_RETIRE_PLAN_DIGEST)" || { echo "DAILY_RUNTIME_LEGACY_RETIRE_PLAN_DIGEST must be the digest of the reviewed plan" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_legacy_stack_retire.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_RETIRED_STACKS)" \
+		--evidence-root "$(DAILY_RUNTIME_LEGACY_RETIRE_EVIDENCE_ROOT)" \
+		$(DAILY_RUNTIME_LEGACY_EXPECTED_SHA_FLAG) \
+		--apply \
+		--expect-plan-digest "$(DAILY_RUNTIME_LEGACY_RETIRE_PLAN_DIGEST)" \
+		--report "$(DAILY_RUNTIME_LEGACY_RETIRE_APPLY_REPORT)"
+
+
+# The owner ruling of 2026-10-15 makes every daily database a declared duty: a
+# role, a tenant, an environment, a storage namespace and one exact route, with
+# "one data directory, one writer" as a fail-closed property rather than a
+# convention. This entry is the ops-tool half of that rule. It renders the
+# reviewed duty stack definition, creates the application role plus its database
+# inside the duty's own cluster, and proves the custody facts from the cluster
+# catalog. It never registers a lifecycle state (the platform model owns
+# registration) and never installs or upgrades a module. A duty whose declaration
+# still says "to be created" is the only shape this entry may mutate: an existing
+# duty is observed, never re-rendered or restarted. The plan is read-only and
+# writes one local file; apply additionally needs the confirmation token and the
+# digest of the reviewed declaration, so an unreviewed edit cannot provision.
+.PHONY: verify.daily.runtime.database.duty verify.daily.runtime.duty.identity.unit daily.runtime.database.duty.plan daily.runtime.database.duty.apply
+DAILY_RUNTIME_DATABASE_DUTY_DECLARATION ?= config/ops/daily_runtime_database_duties.v1.json
+DAILY_RUNTIME_DATABASE_DUTY_PLAN_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-plan.json
+DAILY_RUNTIME_DATABASE_DUTY_APPLY_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-apply.json
+DAILY_RUNTIME_DATABASE_DUTY_INITIALIZE_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-initialize.json
+DAILY_RUNTIME_DATABASE_DUTY_REFRESH_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-refresh.json
+DAILY_RUNTIME_DATABASE_DUTY_UPGRADE_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-upgrade.json
+DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST ?=
+DAILY_RUNTIME_DATABASE_DUTY_SELECTION ?=
+DAILY_RUNTIME_DATABASE_DUTY_PHASE ?= all
+DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG ?= $(if $(DAILY_RUNTIME_EXPECTED_SHA),--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)")
+DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS ?= $(foreach duty,$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION),--duty "$(duty)")
+
+# The resolver's own refusals and the customer-binding write path. The product
+# tree may not carry a customer identity, so the concrete binding lives 0600
+# under ops_root, and both the merge and the write have to be proven without a
+# host. This target is the non-zero check the frontend_dev_incremental mapping
+# routes those files to, so an in-place edit of the declaration or the resolver
+# stops in the inner loop instead of at the frozen candidate.
+verify.daily.runtime.duty.identity.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_duty_identity.py scripts/ops/daily_runtime_database_duty.py scripts/ops/test_daily_runtime_duty_identity.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_duty_identity
+
+verify.daily.runtime.database.duty: guard.prod.forbid verify.daily.runtime.duty.identity.unit
+	@python3 -m py_compile scripts/ops/daily_runtime_database_duty.py scripts/ops/test_daily_runtime_database_duty.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_database_duty
+
+daily.runtime.database.duty.plan: guard.prod.forbid verify.daily.runtime.database.duty
+	@python3 scripts/ops/daily_runtime_database_duty.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
+		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
+		--report "$(DAILY_RUNTIME_DATABASE_DUTY_PLAN_REPORT)"
+
+daily.runtime.database.duty.apply: guard.prod.forbid verify.daily.runtime.database.duty
+	@test "$${SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY:-}" = "PROVISION_DAILY_RUNTIME_DATABASE_DUTY" || { echo "SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY=PROVISION_DAILY_RUNTIME_DATABASE_DUTY is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST must be the digest of the reviewed declaration" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_database_duty.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
+		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
+		--apply \
+		--phase "$(DAILY_RUNTIME_DATABASE_DUTY_PHASE)" \
+		--expect-declaration-digest "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" \
+		--report "$(DAILY_RUNTIME_DATABASE_DUTY_APPLY_REPORT)"
+
+# The application face of an existing duty is a separate mutation from creating
+# its cluster: it brings up exactly the services the duty declares and installs
+# exactly the module set the duty declares, with demo data always off. It is the
+# only phase allowed to touch a duty that already exists, and only when the
+# declaration still says ``service_face=to_be_initialized`` -- the declaration
+# the owner ruling requires instead of an ops tool choosing a module set. The
+# control-plane minimum is therefore a governance decision recorded in
+# `config/ops/daily_runtime_database_duties.v1.json`, not an argument here.
+.PHONY: daily.runtime.database.duty.initialize
+daily.runtime.database.duty.initialize: guard.prod.forbid verify.daily.runtime.database.duty
+	@test "$${SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY:-}" = "PROVISION_DAILY_RUNTIME_DATABASE_DUTY" || { echo "SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY=PROVISION_DAILY_RUNTIME_DATABASE_DUTY is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST must be the digest of the reviewed declaration" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_database_duty.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
+		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
+		--apply \
+		--phase initialize \
+		--expect-declaration-digest "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" \
+		--report "$(DAILY_RUNTIME_DATABASE_DUTY_INITIALIZE_REPORT)"
+
+
+# A duty that already serves keeps the stack it was created from. That is
+# correct until the *reviewed* stack definition changes: the container then
+# reads an environment the declaration no longer names, and the disagreement is
+# invisible because the duty still reports itself healthy. This entry re-renders
+# the reviewed definition into exactly the selected, already-serving duties and
+# recreates their declared services, so the running container is observed to
+# read the declared runtime environment. It creates no cluster object, installs
+# no module and never touches a duty that is not declared as serving.
+.PHONY: daily.runtime.database.duty.refresh
+daily.runtime.database.duty.refresh: guard.prod.forbid verify.daily.runtime.database.duty
+	@test "$${SC_CONFIRM_DAILY_RUNTIME_DUTY_REFRESH:-}" = "REFRESH_DAILY_RUNTIME_DUTY_STACK_AND_APPLICATION" || { echo "SC_CONFIRM_DAILY_RUNTIME_DUTY_REFRESH=REFRESH_DAILY_RUNTIME_DUTY_STACK_AND_APPLICATION is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_SELECTION must name the duties to refresh" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST must be the digest of the reviewed declaration" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_database_duty.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
+		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
+		--apply \
+		--phase refresh \
+		--expect-declaration-digest "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" \
+		--report "$(DAILY_RUNTIME_DATABASE_DUTY_REFRESH_REPORT)"
+
+
+# An upgrade rewrites the declared module set of a duty that already serves from
+# the deployed source tree, which makes it the only phase that runs the declared
+# modules' migrations -- so it names its own token instead of inheriting the
+# refresh one and reading as a re-render. It takes no module argument of its own:
+# the set comes from the reviewed declaration, the same set ``initialize``
+# installs. Before it writes, the entry captures and *verifies* a pre-upgrade
+# recovery point inside the duty's own declared backup namespace, and it refuses
+# a duty whose bootstrap never finished installing ``base``.
+.PHONY: daily.runtime.database.duty.upgrade
+daily.runtime.database.duty.upgrade: guard.prod.forbid verify.daily.runtime.database.duty
+	@test "$${SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE:-}" = "UPGRADE_DAILY_RUNTIME_DUTY_DECLARED_MODULES" || { echo "SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE=UPGRADE_DAILY_RUNTIME_DUTY_DECLARED_MODULES is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_SELECTION must name the duties to upgrade" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST must be the digest of the reviewed declaration" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_database_duty.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
+		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
+		--apply \
+		--phase upgrade \
+		--expect-declaration-digest "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" \
+		--report "$(DAILY_RUNTIME_DATABASE_DUTY_UPGRADE_REPORT)"
+
+
+# The daily runtime serves a customer tenant duty from a *customer* addons tree
+# (P2 content owned by the customer delivery repository), so that tree has to
+# reach the governed daily namespace before any install can be reviewed. This
+# entry delivers one exact customer commit into `/opt/sce/tenant-addons/daily`
+# read-only and content-addressed, and proves the delivered tree equals the
+# archive that was sent. The read-only plan is the default; only `--apply` writes.
+.PHONY: verify.daily.runtime.tenant.addons daily.runtime.tenant.addons.plan daily.runtime.tenant.addons.deliver
+DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY ?=
+DAILY_RUNTIME_TENANT_SHA ?=
+# The modules the reviewed customer commit must carry, space separated. The
+# product tree ships no customer module name: naming one here would deliver that
+# tenant's identity to every tenant that reads the tree, so the operator names
+# the modules and the entry refuses an empty list.
+DAILY_RUNTIME_TENANT_MODULES ?=
+DAILY_RUNTIME_TENANT_ADDONS_REPORT ?= .runtime/final-acceptance/daily-deployed/tenant-addons-delivery.json
+
+verify.daily.runtime.tenant.addons: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_tenant_addons_deliver.py scripts/ops/test_daily_runtime_tenant_addons_deliver.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_tenant_addons_deliver
+
+daily.runtime.tenant.addons.plan: guard.prod.forbid verify.daily.runtime.tenant.addons
+	@test -n "$(DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY)" || { echo "DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_TENANT_SHA)" || { echo "DAILY_RUNTIME_TENANT_SHA must be the reviewed exact customer commit" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_TENANT_MODULES)" || { echo "DAILY_RUNTIME_TENANT_MODULES must name the modules the reviewed commit carries" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_tenant_addons_deliver.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--customer-repository "$(DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY)" \
+		--tenant-sha "$(DAILY_RUNTIME_TENANT_SHA)" \
+		$(foreach module,$(DAILY_RUNTIME_TENANT_MODULES),--require-module "$(module)") \
+		--report "$(DAILY_RUNTIME_TENANT_ADDONS_REPORT)"
+
+daily.runtime.tenant.addons.deliver: guard.prod.forbid verify.daily.runtime.tenant.addons
+	@test -n "$(DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY)" || { echo "DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_TENANT_SHA)" || { echo "DAILY_RUNTIME_TENANT_SHA must be the reviewed exact customer commit" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_TENANT_MODULES)" || { echo "DAILY_RUNTIME_TENANT_MODULES must name the modules the reviewed commit carries" >&2; exit 2; }
+	@test "$${SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS:-}" = "DELIVER_EXACT_DAILY_RUNTIME_TENANT_ADDONS" || { echo "SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS=DELIVER_EXACT_DAILY_RUNTIME_TENANT_ADDONS is required" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_tenant_addons_deliver.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--customer-repository "$(DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY)" \
+		--tenant-sha "$(DAILY_RUNTIME_TENANT_SHA)" \
+		$(foreach module,$(DAILY_RUNTIME_TENANT_MODULES),--require-module "$(module)") \
+		--apply \
+		--report "$(DAILY_RUNTIME_TENANT_ADDONS_REPORT)"
+
+# Every declared model is bounded by `user._sc_data_company_ids()`, which reads
+# the declared environment role and `sc.tenant.company.registration`. A business
+# row whose owning company was never registered, or whose model declares that an
+# owner is mandatory, is therefore invisible to *every* principal — including
+# administrators. This entry records that fact read-only through the same
+# governed remote carrier: it scans every declared model, records which rules are
+# actually installed, and asserts the observation against this checkout's
+# declarations. It never writes a business row; `--report` only writes a local
+# file. A zero exit code is not the verdict; the report's `assertions` block is.
+.PHONY: verify.daily.runtime.data_ownership.probe daily.runtime.data_ownership.probe
+DAILY_RUNTIME_DATA_OWNERSHIP_REPORT ?= .runtime/final-acceptance/daily-deployed/data-ownership-probe.json
+
+verify.daily.runtime.data_ownership.probe: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_data_ownership_probe.py scripts/ops/test_daily_runtime_data_ownership_probe.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_data_ownership_probe
+
+daily.runtime.data_ownership.probe: guard.prod.forbid verify.daily.runtime.data_ownership.probe
+	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" || { echo "DAILY_RUNTIME_EXPECTED_SHA must be the deployed runtime source revision" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_data_ownership_probe.py \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--report "$(DAILY_RUNTIME_DATA_OWNERSHIP_REPORT)"
 
 
 # The project-lifecycle browser acceptance walks a dedicated fixture carrier from

@@ -1,0 +1,77 @@
+{
+  "schema": "daily.runtime.retired_stacks.v1",
+  "host": "sc-root",
+  "authority": "Owner ruling 2026-10-15: dispose of the shared PGDATA two-writer risk before continuing the three-database build; the leftover sc-backend-odoo-prod db/redis pair is retired through a governed entry, not an ad-hoc docker stop.",
+  "purpose": "Single declaration of the leftover stack that must stay stopped. The routing inventory refuses the daily runtime while a container listed here is running, and refuses while two live postmasters own one cluster data directory.",
+  "survivor": {
+    "description": "the live daily development stack that keeps the shared volumes",
+    "containers": [
+      "sc-backend-odoo-dev-db-1",
+      "sc-backend-odoo-dev-redis-1"
+    ],
+    "probes": [
+      {
+        "name": "live_postmaster_facts",
+        "argv": ["docker", "exec", "sc-backend-odoo-dev-db-1", "psql", "-U", "odoo", "-d", "postgres", "-Atc", "SELECT pg_postmaster_start_time(), pg_is_in_recovery(), pg_current_wal_lsn(), system_identifier FROM pg_control_system()"]
+      },
+      {
+        "name": "live_cluster_databases",
+        "argv": ["docker", "exec", "sc-backend-odoo-dev-db-1", "psql", "-U", "odoo", "-d", "postgres", "-Atc", "SELECT datname FROM pg_database WHERE datistemplate = false ORDER BY datname"]
+      },
+      {
+        "name": "live_cluster_checkpoint",
+        "argv": ["docker", "exec", "sc-backend-odoo-dev-db-1", "psql", "-U", "odoo", "-d", "postgres", "-Atc", "SELECT checkpoint_time, checkpoint_lsn, timeline_id FROM pg_control_checkpoint()"]
+      },
+      {
+        "name": "live_postmaster_pid_file",
+        "argv": ["sh", "-c", "cat /var/lib/docker/volumes/sc_dev_db_data/_data/postmaster.pid"]
+      },
+      {
+        "name": "live_redis_persistence",
+        "argv": ["docker", "exec", "sc-backend-odoo-dev-redis-1", "redis-cli", "info", "persistence"]
+      },
+      {
+        "name": "live_redis_clients",
+        "argv": ["docker", "exec", "sc-backend-odoo-dev-redis-1", "redis-cli", "client", "list"]
+      }
+    ]
+  },
+  "stacks": [
+    {
+      "compose_project": "sc-backend-odoo-prod",
+      "legacy_checkout": "/opt/projects/repos/sce-backend-odoo",
+      "compose_files": ["docker-compose.yml"],
+      "why_retired": "second live postmaster on sc_dev_db_data and a second redis writer on sc_dev_redis_data, with no application consumer; proven by two distinct pg_postmaster_start_time() values on one shared pg_control inode.",
+      "containers": [
+        {
+          "name": "sc-backend-odoo-prod-db-1",
+          "id": "e37d48747997",
+          "kind": "postgres",
+          "shared_volume": "sc_dev_db_data",
+          "mount_destination": "/var/lib/postgresql/data"
+        },
+        {
+          "name": "sc-backend-odoo-prod-redis-1",
+          "id": "2193b4da1469",
+          "kind": "redis",
+          "shared_volume": "sc_dev_redis_data",
+          "mount_destination": "/data"
+        },
+        {
+          "name": "sc-backend-odoo-prod-odoo-1",
+          "id": "1e98ca9bb863",
+          "kind": "idle",
+          "shared_volume": "sc_dev_odoo_data",
+          "mount_destination": "/var/lib/odoo"
+        },
+        {
+          "name": "sc-backend-odoo-prod-nginx-1",
+          "id": "9d10e2d526e1",
+          "kind": "idle",
+          "shared_volume": "",
+          "mount_destination": ""
+        }
+      ]
+    }
+  ]
+}

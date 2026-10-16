@@ -1,0 +1,43 @@
+{
+  "schema_version": "daily_runtime_tenant_recovery.v1",
+  "duty": "customer_tenant_dev",
+  "task_id": "DAILY-RUNTIME-TENANT-RECOVERY-01",
+  "environment_class": "DAILY_RUNTIME_TENANT_ENVIRONMENT",
+  "data_authority": "CUSTOMER_TENANT",
+  "source_repository": "/opt/projects/repos/sce-product-odoo",
+  "sentinel_tables": [
+    "res_company",
+    "res_users",
+    "project_project",
+    "construction_contract",
+    "payment_request",
+    "ir_attachment",
+    "ir_module_module"
+  ],
+  "sample_tables": [
+    "project_project",
+    "construction_contract",
+    "payment_request",
+    "ir_attachment"
+  ],
+  "relation_sample": {
+    "table": "payment_request",
+    "columns": [
+      "project_id",
+      "contract_id"
+    ],
+    "limit": 100
+  },
+  "upgrade_contract": {
+    "database_migration_declared": true,
+    "versioned_migration_required": true,
+    "clone_rehearsal_required": true,
+    "paired_backup_required": true,
+    "fixture_write_allowed": false,
+    "demo_data_write_allowed": false,
+    "database_recreate_required": false,
+    "filestore_recreate_required": false
+  },
+  "identity_source": "config/ops/daily_runtime_database_duties.v1.json",
+  "identity_note": "Runtime identity (database, application role, cluster, volumes, filestore scope, backup namespace, backup id prefix) is resolved from the duty declaration. Any concrete value restated here is an assertion and a mismatch is a stop; the concrete customer binding itself lives in the managed duty-instance document, not in this product tree."
+}

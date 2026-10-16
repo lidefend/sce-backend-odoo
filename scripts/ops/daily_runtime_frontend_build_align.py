@@ -47,6 +47,11 @@ DEFAULT_ENV_NAME = "dev"
 DEFAULT_ENV_FILE = ".env.dev"
 DEFAULT_DATABASE = "sc_demo"
 DEFAULT_BASE_URL = "http://127.0.0.1:18081"
+#: The frontend bakes its platform-admin authority at build time. The value is
+#: not a build preference: it is derived from the governed duty declaration, and
+#: the served bundle is what actually moves the platform-admin entry.
+PLATFORM_ADMIN_KEY = "VITE_PLATFORM_ADMIN_DB"
+DATABASE_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 DEFAULT_RECEIPT = ".runtime/final-acceptance/daily-deployed/frontend-build.json"
 CONFIRMATION = "BUILD_AND_DECLARE_DAILY_RUNTIME_FRONTEND_AT_DEPLOYED_HEAD"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -64,7 +69,7 @@ import fcntl, json, os, re, shutil, subprocess, sys, time, urllib.request
 from pathlib import Path
 
 (expected_sha, env_name, env_file, database, base_url, remote_root,
- fingerprint_hint, entry_hint) = sys.argv[1:9]
+ fingerprint_hint, entry_hint, platform_admin_database) = sys.argv[1:10]
 
 tag = "[daily.runtime.frontend.build]"
 fixed_root = Path("/opt/projects/repos/sce-product-odoo")
@@ -72,6 +77,7 @@ root = Path(remote_root)
 full_sha = re.compile(r"^[0-9a-f]{40}$")
 full_fp = re.compile(r"^[0-9a-f]{64}$")
 entry_re = re.compile(r'src="/assets/(index-[^"?]+\.js)"')
+platform_admin_key = "VITE_PLATFORM_ADMIN_DB"
 
 if root != fixed_root or not root.is_dir():
     raise SystemExit(tag + " BLOCKED invalid remote repository")
@@ -85,6 +91,8 @@ state = {
     "expected_sha": expected_sha, "head": "", "reused": False, "rebuilt": False,
     "fingerprint": "", "entry_asset": "", "env_file": str(env_path),
     "env_written": False, "backup_path": "", "restarted": False,
+    "platform_admin_database": platform_admin_database,
+    "platform_admin_written": False, "platform_admin_baked": False,
     "rolled_back": False, "served": None, "served_entry_asset": "",
     "dist_dir": str(dist_dir), "remote_root": str(root),
     "build_tail": "", "fingerprint_tail": "", "restart_tail": "",
@@ -117,6 +125,57 @@ def env_single(key):
     if len(values) != 1:
         return None
     return values[0]
+
+def env_write_line(key, value):
+    """Declare one env line, keeping a single backup for rollback.
+
+    Two authorities must not drift, so this is the only writer: a value that a
+    build *consumes* has to be declared before the build runs, and a value that
+    only records the build's outcome is declared after it. The backup is taken
+    once, so a rollback restores the file as it was before either write.
+    """
+    rows = env_rows()
+    key_rows = [i for i, row in enumerate(rows) if row.startswith(key + "=")]
+    if len(key_rows) > 1:
+        blocked("env file must declare at most one " + key)
+    target = key + "=" + value
+    if len(key_rows) == 1 and rows[key_rows[0]] == target:
+        return False
+    if not state["backup_path"]:
+        state["backup_path"] = str(env_path) + ".bak"
+        shutil.copy2(env_path, state["backup_path"])
+    if key_rows:
+        rows[key_rows[0]] = target
+    else:
+        rows.append(target)
+    env_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    os.chmod(env_path, 0o600)
+    if env_single(key) != value:
+        shutil.copy2(state["backup_path"], env_path)
+        blocked("env write not verified; restored")
+    state["env_written"] = True
+    return True
+
+def restore_env():
+    if state["env_written"] and state["backup_path"]:
+        shutil.copy2(state["backup_path"], env_path)
+
+def baked_admin():
+    """Whether the built bundle really carries the declared authority.
+
+    The env line says what the *next* build should bake; only the artifact says
+    what the *served* bundle carries. A bundle built before the switch would
+    still mount the previous database, so the two facts are read separately.
+    """
+    for path in sorted(dist_dir.rglob("*")):
+        if path.suffix not in (".js", ".mjs", ".css") or not path.is_file():
+            continue
+        try:
+            if platform_admin_database in path.read_text(encoding="utf-8", errors="replace"):
+                return True
+        except OSError:
+            continue
+    return False
 
 def readback():
     try:
@@ -208,6 +267,10 @@ with lock_path.open("a+b") as lock:
     if disk_fp_path.is_file():
         disk_fp = disk_fp_path.read_text(encoding="utf-8").strip()
 
+    declared_admin = env_single(platform_admin_key)
+    if declared_admin is None:
+        blocked("env file must declare exactly one " + platform_admin_key)
+
     reused = bool(
         fingerprint_hint and full_fp.fullmatch(fingerprint_hint)
         and entry_hint and entry_re.fullmatch('src="/assets/%s"' % entry_hint)
@@ -217,6 +280,8 @@ with lock_path.open("a+b") as lock:
         and declared == fingerprint_hint
         and disk_fp == fingerprint_hint
         and entry_before == entry_hint
+        and declared_admin == platform_admin_database
+        and baked_admin()
     )
     if reused:
         state["reused"] = True
@@ -225,51 +290,52 @@ with lock_path.open("a+b") as lock:
         emit("PASS")
         sys.exit(0)
 
+    # The bundle bakes its platform-admin authority, so the declaration has to
+    # be in the build input *before* the build: writing it afterwards would
+    # leave the served bundle mounting the previous database while the file
+    # claims the new one, which is the drift this entry exists to prevent.
+    state["platform_admin_written"] = env_write_line(
+        platform_admin_key, platform_admin_database
+    )
+
     code, build_tail = build()
     state["rebuilt"] = True
     state["build_tail"] = build_tail[-1200:]
     if code:
+        restore_env()
+        restart()
         blocked("governed frontend build failed")
 
     code, fingerprint, fingerprint_tail = fingerprint(dist_dir)
     state["fingerprint"] = fingerprint
     state["fingerprint_tail"] = fingerprint_tail[-600:]
     if code or not full_fp.fullmatch(fingerprint):
+        restore_env()
+        restart()
         blocked("frontend build fingerprint is invalid")
 
     index_path = dist_dir / "index.html"
     entry = entry_of(index_path.read_text(encoding="utf-8") if index_path.is_file() else "")
     state["entry_asset"] = entry
     if not entry:
+        restore_env()
+        restart()
         blocked("built index.html does not declare an entry asset")
 
-    rows = env_rows()
-    key_rows = [i for i, row in enumerate(rows) if row.startswith("FRONTEND_BUILD_SHA256=")]
-    if len(key_rows) > 1:
-        blocked("env file must declare at most one FRONTEND_BUILD_SHA256")
-    target = "FRONTEND_BUILD_SHA256=" + fingerprint
-    changed = not key_rows or rows[key_rows[0]] != target
-    if changed:
-        backup_path = str(env_path) + ".bak"
-        state["backup_path"] = backup_path
-        shutil.copy2(env_path, backup_path)
-        if key_rows:
-            rows[key_rows[0]] = target
-        else:
-            rows.append(target)
-        env_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
-        os.chmod(env_path, 0o600)
-        if target not in env_rows():
-            shutil.copy2(backup_path, env_path)
-            blocked("env write not verified; restored")
-        state["env_written"] = True
+    state["platform_admin_baked"] = baked_admin()
+    if not state["platform_admin_baked"]:
+        restore_env()
+        restart()
+        blocked("the built bundle does not bake the declared platform-admin database")
+
+    env_write_line("FRONTEND_BUILD_SHA256", fingerprint)
 
     code, restart_tail = restart()
     state["restarted"] = True
     state["restart_tail"] = restart_tail[-600:]
     if code:
-        if changed:
-            shutil.copy2(state["backup_path"], env_path)
+        if state["env_written"]:
+            restore_env()
             restart()
         blocked("governed restart failed")
 
@@ -293,9 +359,10 @@ with lock_path.open("a+b") as lock:
         and served.get("frontend_build_sha256") == fingerprint
         and served_entry == entry
         and asset_code == 200
+        and state["platform_admin_baked"]
     )
-    if not ok and changed:
-        shutil.copy2(state["backup_path"], env_path)
+    if not ok and state["env_written"]:
+        restore_env()
         restart()
         state["rolled_back"] = True
     emit("PASS" if ok else "BLOCKED")
@@ -311,6 +378,7 @@ def remote_command(
     base_url: str,
     fingerprint_hint: str,
     entry_hint: str,
+    platform_admin_database: str,
 ) -> str:
     return " ".join(
         shlex.quote(item)
@@ -326,17 +394,22 @@ def remote_command(
             REMOTE_ROOT,
             fingerprint_hint,
             entry_hint,
+            platform_admin_database,
         )
     )
 
 
-def preflight(expected_sha: str, ssh_host: str) -> None:
+def preflight(expected_sha: str, ssh_host: str, platform_admin_database: str) -> None:
     if os.environ.get("CONFIRM_DAILY_RUNTIME_FRONTEND_BUILD") != CONFIRMATION:
         raise BuildError("exact daily runtime frontend build confirmation is required")
     if not FULL_SHA.fullmatch(expected_sha or ""):
         raise BuildError("expected revision must be a full lowercase commit SHA")
     if not SSH_HOST.fullmatch(ssh_host or ""):
         raise BuildError("ssh host must be a configured host alias")
+    if not DATABASE_NAME.fullmatch(platform_admin_database or ""):
+        raise BuildError(
+            "the platform-admin database must be the declared duty database name"
+        )
 
 
 def reuse_hint(receipt_path: str, expected_sha: str) -> tuple[str, str]:
@@ -373,8 +446,9 @@ def align(
     base_url: str,
     fingerprint_hint: str,
     entry_hint: str,
+    platform_admin_database: str,
 ) -> dict[str, object]:
-    preflight(expected_sha, ssh_host)
+    preflight(expected_sha, ssh_host, platform_admin_database)
     command = [
         "ssh",
         "-o",
@@ -394,6 +468,7 @@ def align(
             base_url,
             fingerprint_hint,
             entry_hint,
+            platform_admin_database,
         ),
     ]
     result = run(command)
@@ -420,6 +495,8 @@ def align(
         or not isinstance(served, dict)
         or served.get("git_sha") != expected_sha
         or served.get("frontend_build_sha256") != evidence.get("fingerprint")
+        or evidence.get("platform_admin_database") != platform_admin_database
+        or evidence.get("platform_admin_baked") is not True
     ):
         raise BuildError("remote daily frontend build evidence differs")
     return evidence
@@ -433,6 +510,7 @@ def main() -> int:
     parser.add_argument("--env-file", default=DEFAULT_ENV_FILE)
     parser.add_argument("--database", default=DEFAULT_DATABASE)
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
+    parser.add_argument("--platform-admin-database", required=True)
     parser.add_argument("--receipt", default=DEFAULT_RECEIPT)
     parser.add_argument("--report", required=True)
     args = parser.parse_args()
@@ -447,6 +525,7 @@ def main() -> int:
             args.base_url,
             fingerprint_hint,
             entry_hint,
+            args.platform_admin_database,
         )
     except BuildError as exc:
         raise SystemExit(f"[daily.runtime.frontend.build] BLOCKED: {exc}") from exc

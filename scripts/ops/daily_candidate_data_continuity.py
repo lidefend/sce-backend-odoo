@@ -17,6 +17,7 @@ import secrets
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 import time
 from datetime import datetime, timezone
@@ -24,14 +25,24 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import daily_runtime_duty_identity as duty_identity  # noqa: E402
+
 DEFAULT_CONTRACT = Path(__file__).with_name(
     "daily_candidate_data_continuity_contract_v1.json"
 )
 ARTIFACTS = ("database.dump", "filestore.tar.gz", "manifest.json")
 CHECKSUM_FILE = "SHA256SUMS"
-BACKUP_ID = re.compile(r"^sc_demo-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$")
+BACKUP_ID_PATTERN = r"{prefix}-[0-9]{{8}}T[0-9]{{6}}Z-[0-9a-f]{{8}}"
 DRILL_PREFIX = "sc-daily-continuity-drill-"
 CONFIRMATION = "BACKUP_DAILY_CANDIDATE_PAIRED_STATE"
+RESTORE_CONFIRMATION = "RESTORE_ISOLATED_COPY"
+DEFAULT_RESTORE_EVIDENCE = "/tmp/daily-candidate-continuity-restore.json"
+SAFE_IDENTIFIER = duty_identity.SAFE_IDENTIFIER
+FILESTORE_ROOT = duty_identity.FILESTORE_ROOT
+DATABASE_MOUNT = duty_identity.DATABASE_MOUNT
+ODOO_DATA_MOUNT = duty_identity.ODOO_DATA_MOUNT
+DRILL_ROLE = duty_identity.DRILL_ROLE
 
 
 class ContinuityError(RuntimeError):
@@ -42,27 +53,52 @@ def _utc() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _load_duties() -> dict:
+    """Read the shared authority for which database each duty owns."""
+    try:
+        return duty_identity.load_duties()
+    except duty_identity.DutyIdentityError as exc:
+        raise ContinuityError(str(exc)) from exc
+
+
+def _duty_identity(duty: dict) -> dict:
+    """Resolve runtime identity through the one shared resolver."""
+    try:
+        return duty_identity.duty_identity(duty)
+    except duty_identity.DutyIdentityError as exc:
+        raise ContinuityError(str(exc)) from exc
+
+
 def _load_contract(path: Path) -> dict:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise ContinuityError("continuity contract is missing or invalid") from exc
-    required = {
-        "environment_class": "DAILY_CANDIDATE_ENVIRONMENT",
-        "compose_project": "sc-backend-odoo-dev",
-        "database": "sc_demo",
-        "database_container": "sc-backend-odoo-dev-db-1",
-        "odoo_container": "sc-backend-odoo-dev-odoo-1",
-        "database_volume": "sc_dev_db_data",
-        "odoo_data_volume": "sc_dev_odoo_data",
-        "filestore_root": "/var/lib/odoo/filestore",
-        "source_repository": "/opt/projects/repos/sce-backend-odoo",
-        "backup_root": "/data/backups/daily_candidate",
-    }
-    for key, expected in required.items():
-        if payload.get(key) != expected:
+    if not isinstance(payload, dict):
+        raise ContinuityError("continuity contract is not an object")
+    name = payload.get("duty")
+    if not isinstance(name, str) or not name:
+        raise ContinuityError("continuity contract must name its duty")
+    duties = _load_duties()
+    if name not in duties:
+        raise ContinuityError(f"continuity contract names an undeclared duty: {name}")
+    identity = _duty_identity(duties[name])
+    for key, value in identity.items():
+        stated = payload.get(key)
+        if stated is not None and stated != value:
             raise ContinuityError(f"contract identity mismatch: {key}")
-    return payload
+    prefix = payload.get("backup_id_prefix") or identity["database"]
+    if not SAFE_IDENTIFIER.fullmatch(str(prefix)):
+        raise ContinuityError("backup id prefix is not a safe identifier")
+    repository = payload.get("source_repository")
+    if not isinstance(repository, str) or not repository.startswith("/"):
+        raise ContinuityError("contract identity mismatch: source_repository")
+    contract = dict(payload)
+    contract.update(identity)
+    contract["backup_id_prefix"] = prefix
+    contract["backup_id"] = re.compile(BACKUP_ID_PATTERN.format(prefix=re.escape(prefix)))
+    contract.setdefault("task_id", "DAILY-DATA-CONTINUITY-BASELINE-01")
+    return contract
 
 
 def _run(
@@ -144,9 +180,9 @@ def _assert_runtime(contract: dict) -> dict:
     odoo_mounts = {
         (row.get("Name"), row.get("Destination")) for row in odoo.get("Mounts", [])
     }
-    if (contract["database_volume"], "/var/lib/postgresql/data") not in db_mounts:
+    if (contract["database_volume"], DATABASE_MOUNT) not in db_mounts:
         raise ContinuityError("candidate database volume identity mismatch")
-    if (contract["odoo_data_volume"], "/var/lib/odoo") not in odoo_mounts:
+    if (contract["odoo_data_volume"], ODOO_DATA_MOUNT) not in odoo_mounts:
         raise ContinuityError("candidate Odoo data volume identity mismatch")
     repository = Path(contract["source_repository"])
     if not repository.is_dir():
@@ -168,7 +204,13 @@ def _assert_runtime(contract: dict) -> dict:
     }
 
 
-def _psql(contract: dict, sql: str, *, container: str | None = None) -> str:
+def _psql(
+    contract: dict,
+    sql: str,
+    *,
+    container: str | None = None,
+    role: str | None = None,
+) -> str:
     output = _run(
         [
             "docker",
@@ -177,7 +219,7 @@ def _psql(contract: dict, sql: str, *, container: str | None = None) -> str:
             "psql",
             "-X",
             "-U",
-            "odoo",
+            role or contract["database_role"],
             "-d",
             contract["database"],
             "-At",
@@ -190,7 +232,12 @@ def _psql(contract: dict, sql: str, *, container: str | None = None) -> str:
     return output.decode().strip()
 
 
-def _attachment_watermark(contract: dict, *, container: str | None = None) -> dict:
+def _attachment_watermark(
+    contract: dict,
+    *,
+    container: str | None = None,
+    role: str | None = None,
+) -> dict:
     row = _psql(
         contract,
         """
@@ -200,6 +247,7 @@ def _attachment_watermark(contract: dict, *, container: str | None = None) -> di
          WHERE store_fname IS NOT NULL AND btrim(store_fname) <> '';
         """,
         container=container,
+        role=role,
     )
     count, distinct_count, digest = row.split("|")
     return {
@@ -209,47 +257,72 @@ def _attachment_watermark(contract: dict, *, container: str | None = None) -> di
     }
 
 
-def _sentinels(contract: dict, *, container: str | None = None) -> dict:
-    tables = contract["sentinel_tables"]
+def _relation_sample_sql(contract: dict) -> tuple[str, str]:
+    """Build the relationship sentinel from the duty's own declaration."""
+    sample = contract.get("relation_sample")
+    if not isinstance(sample, dict):
+        raise ContinuityError("contract lacks its relationship sample")
+    table = sample.get("table")
+    columns = sample.get("columns")
+    limit = sample.get("limit")
+    if not isinstance(table, str) or not SAFE_IDENTIFIER.fullmatch(table):
+        raise ContinuityError("invalid relationship sample table")
+    if not isinstance(columns, list) or not columns:
+        raise ContinuityError("invalid relationship sample columns")
+    for column in columns:
+        if not isinstance(column, str) or not SAFE_IDENTIFIER.fullmatch(column):
+            raise ContinuityError("invalid relationship sample column")
+    if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 1000:
+        raise ContinuityError("invalid relationship sample limit")
+    projected = " || ':' || ".join(
+        [f"id::text"] + [f"COALESCE({column}::text, '')" for column in columns]
+    )
+    sql = (
+        f"SELECT md5(COALESCE(string_agg({projected}, ',' ORDER BY id), '')) "
+        f"FROM (SELECT id, {', '.join(columns)} FROM {table} "
+        f"ORDER BY id LIMIT {limit}) sample;"
+    )
+    return f"{table}_relation_sample_digest", sql
+
+
+def _sentinels(
+    contract: dict,
+    *,
+    container: str | None = None,
+    role: str | None = None,
+) -> dict:
+    key, sql = _relation_sample_sql(contract)
     counts = {}
-    for table in tables:
-        if not re.fullmatch(r"[a-z][a-z0-9_]+", table):
+    for table in contract["sentinel_tables"]:
+        if not SAFE_IDENTIFIER.fullmatch(table):
             raise ContinuityError("invalid sentinel table name")
         value = _psql(
             contract,
             f"SELECT CASE WHEN to_regclass('public.{table}') IS NULL "
             f"THEN '-1' ELSE (SELECT count(*)::text FROM {table}) END;",
             container=container,
+            role=role,
         )
         counts[table] = int(value)
     samples = {}
     for table in contract["sample_tables"]:
-        if not re.fullmatch(r"[a-z][a-z0-9_]+", table):
+        if not SAFE_IDENTIFIER.fullmatch(table):
             raise ContinuityError("invalid sample table name")
         value = _psql(
             contract,
             f"SELECT COALESCE(string_agg(id::text, ',' ORDER BY id), '') "
             f"FROM (SELECT id FROM {table} ORDER BY id LIMIT 5) sample;",
             container=container,
+            role=role,
         )
         samples[table] = [int(item) for item in value.split(",") if item]
-    relation_digest = _psql(
-        contract,
-        """
-        SELECT md5(COALESCE(string_agg(
-            id::text || ':' || COALESCE(project_id::text, '') || ':' ||
-            COALESCE(contract_id::text, ''), ',' ORDER BY id
-        ), ''))
-        FROM (SELECT id, project_id, contract_id
-                FROM payment_request ORDER BY id LIMIT 100) sample;
-        """,
-        container=container,
-    )
+    relation_digest = _psql(contract, sql, container=container, role=role)
     database_uuid = _psql(
         contract,
         "SELECT COALESCE((SELECT value FROM ir_config_parameter "
         "WHERE key='database.uuid' LIMIT 1), '');",
         container=container,
+        role=role,
     )
     if not database_uuid:
         raise ContinuityError("candidate database UUID is unavailable")
@@ -257,14 +330,20 @@ def _sentinels(contract: dict, *, container: str | None = None) -> dict:
         "database_uuid": database_uuid,
         "table_counts": counts,
         "stable_sample_ids": samples,
-        "payment_request_relation_sample_digest": relation_digest,
-        "attachments": _attachment_watermark(contract, container=container),
+        key: relation_digest,
+        "attachments": _attachment_watermark(contract, container=container, role=role),
     }
 
 
-def _recovery_expectations(before: dict, after: dict) -> dict:
+def _relation_digest_key(contract: dict) -> str:
+    key, _ = _relation_sample_sql(contract)
+    return key
+
+
+def _recovery_expectations(contract: dict, before: dict, after: dict) -> dict:
     if before["database_uuid"] != after["database_uuid"]:
         raise ContinuityError("database UUID changed during capture")
+    key = _relation_digest_key(contract)
     ranges = {}
     for table, before_count in before["table_counts"].items():
         after_count = after["table_counts"][table]
@@ -278,20 +357,20 @@ def _recovery_expectations(before: dict, after: dict) -> dict:
             set(before_ids) & set(after["stable_sample_ids"][table])
         )
     relation_digest = (
-        before["payment_request_relation_sample_digest"]
-        if before["payment_request_relation_sample_digest"]
-        == after["payment_request_relation_sample_digest"]
-        else None
+        before[key] if before[key] == after[key] else None
     )
     return {
         "database_uuid": before["database_uuid"],
+        "relation_digest_key": key,
         "table_count_ranges": ranges,
         "stable_sample_ids": stable_samples,
-        "stable_payment_request_relation_sample_digest": relation_digest,
+        f"stable_{key}": relation_digest,
     }
 
 
 def _assert_restored_sentinels(restored: dict, expected: dict) -> None:
+    expected = dict(expected)
+    expected.setdefault("relation_digest_key", "payment_request_relation_sample_digest")
     if restored["database_uuid"] != expected["database_uuid"]:
         raise ContinuityError("restored database UUID differs")
     for table, limits in expected["table_count_ranges"].items():
@@ -301,16 +380,14 @@ def _assert_restored_sentinels(restored: dict, expected: dict) -> None:
     for table, required_ids in expected["stable_sample_ids"].items():
         if not set(required_ids).issubset(restored["stable_sample_ids"][table]):
             raise ContinuityError(f"restored stable sample differs: {table}")
-    relation_digest = expected["stable_payment_request_relation_sample_digest"]
-    if (
-        relation_digest is not None
-        and restored["payment_request_relation_sample_digest"] != relation_digest
-    ):
+    key = expected["relation_digest_key"]
+    relation_digest = expected[f"stable_{key}"]
+    if relation_digest is not None and restored[key] != relation_digest:
         raise ContinuityError("restored relationship sentinel differs")
 
 
 def _filestore_inventory(contract: dict, *, container: str | None = None) -> dict:
-    database = contract["database"]
+    database = contract["filestore_scope"]
     root = contract["filestore_root"]
     script = (
         f"set -eu; cd '{root}/{database}'; "
@@ -366,7 +443,7 @@ def baseline(contract: dict) -> dict:
 
 def _safe_backup_root(contract: dict) -> Path:
     root = Path(contract["backup_root"])
-    if root != Path("/data/backups/daily_candidate") or not root.is_absolute():
+    if not root.is_absolute() or root.parent != Path("/data/backups"):
         raise ContinuityError("backup root identity mismatch")
     if not root.exists():
         root.mkdir(mode=0o700, parents=False)
@@ -410,10 +487,11 @@ def backup(contract: dict) -> Path:
     runtime = _assert_runtime(contract)
     root = _safe_backup_root(contract)
     identifier = (
-        f"sc_demo-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-"
+        f"{contract['backup_id_prefix']}-"
+        f"{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-"
         f"{secrets.token_hex(4)}"
     )
-    if not BACKUP_ID.fullmatch(identifier):
+    if not contract["backup_id"].fullmatch(identifier):
         raise ContinuityError("backup identifier is invalid")
     final = root / identifier
     previous_umask = os.umask(0o077)
@@ -431,7 +509,7 @@ def backup(contract: dict) -> Path:
                 contract["database_container"],
                 "pg_dump",
                 "-U",
-                "odoo",
+                contract["database_role"],
                 "-d",
                 contract["database"],
                 "-Fc",
@@ -448,7 +526,7 @@ def backup(contract: dict) -> Path:
                 contract["filestore_root"],
                 "-czf",
                 "-",
-                contract["database"],
+                contract["filestore_scope"],
             ],
             archive,
         )
@@ -484,7 +562,7 @@ def backup(contract: dict) -> Path:
             "sentinels_before": before["sentinels"],
             "sentinels_after": after["sentinels"],
             "recovery_expectations": _recovery_expectations(
-                before["sentinels"], after["sentinels"]
+                contract, before["sentinels"], after["sentinels"]
             ),
             "filestore": after["filestore"],
             "pair_stable_during_capture": True,
@@ -524,7 +602,7 @@ def validate_backup(
         or manifest.get("environment_class") != contract["environment_class"]
         or manifest.get("backup_status") != "complete"
         or manifest.get("pair_stable_during_capture") is not True
-        or not BACKUP_ID.fullmatch(str(manifest.get("backup_set_id") or ""))
+        or not contract["backup_id"].fullmatch(str(manifest.get("backup_set_id") or ""))
     ):
         raise ContinuityError("backup manifest identity contract failed")
     checksums = manifest.get("checksums") or {}
@@ -575,7 +653,7 @@ def _wait_postgres(container: str) -> None:
 
 
 def restore_drill(contract: dict, directory: Path) -> dict:
-    if os.environ.get("CONFIRM_DAILY_CANDIDATE_RESTORE_DRILL") != "RESTORE_ISOLATED_COPY":
+    if os.environ.get("CONFIRM_DAILY_CANDIDATE_RESTORE_DRILL") != RESTORE_CONFIRMATION:
         raise ContinuityError("isolated restore drill confirmation is required")
     manifest = validate_backup(contract, directory, strict_permissions=True)
     runtime = _assert_runtime(contract)
@@ -665,7 +743,9 @@ def restore_drill(contract: dict, directory: Path) -> dict:
             ],
             directory / "filestore.tar.gz",
         )
-        restored_sentinels = _sentinels(contract, container=db_container)
+        restored_sentinels = _sentinels(
+            contract, container=db_container, role=DRILL_ROLE
+        )
         _assert_restored_sentinels(
             restored_sentinels, manifest["recovery_expectations"]
         )
@@ -730,7 +810,9 @@ def restore_drill(contract: dict, directory: Path) -> dict:
 
 def closeout(contract: dict, directory: Path) -> dict:
     manifest = validate_backup(contract, directory, strict_permissions=True)
-    restore_path = Path("/tmp/daily-candidate-continuity-restore.json")
+    restore_path = Path(
+        os.environ.get("DAILY_CONTINUITY_RESTORE_EVIDENCE", DEFAULT_RESTORE_EVIDENCE)
+    )
     try:
         restore = json.loads(restore_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
@@ -742,6 +824,9 @@ def closeout(contract: dict, directory: Path) -> dict:
     ):
         raise ContinuityError("isolated restore evidence does not close this backup")
     current = baseline(contract)
+    upgrade = contract.get("upgrade_contract")
+    if not isinstance(upgrade, dict):
+        upgrade = {}
     before_runtime = manifest["runtime"]
     for key in (
         "database_container_id",
@@ -771,7 +856,8 @@ def closeout(contract: dict, directory: Path) -> dict:
         raise ContinuityError("closeout evidence already exists")
     payload = {
         "schema_version": contract["schema_version"],
-        "task_id": "DAILY-DATA-CONTINUITY-BASELINE-01",
+        "task_id": contract["task_id"],
+        "duty": contract["duty"],
         "environment_class": contract["environment_class"],
         "data_authority": contract["data_authority"],
         "database": contract["database"],
@@ -786,12 +872,19 @@ def closeout(contract: dict, directory: Path) -> dict:
         "candidate_runtime_unchanged": True,
         "candidate_database_writes_by_tool": 0,
         "temporary_resources_removed": True,
-        "demo_module_installed": False,
-        "fixture_write_allowed": False,
-        "demo_data_write_allowed": False,
-        "database_recreate_required": False,
-        "filestore_recreate_required": False,
-        "legacy_20260715_backup_assessment": "STRUCTURALLY_READABLE_BUT_UNGOVERNED_NO_MANIFEST",
+        "duty_data_purpose": contract["data_purpose"],
+        "fixture_write_allowed": bool(
+            upgrade.get("fixture_write_allowed", False)
+        ),
+        "demo_data_write_allowed": bool(
+            upgrade.get("demo_data_write_allowed", False)
+        ),
+        "database_recreate_required": bool(
+            upgrade.get("database_recreate_required", False)
+        ),
+        "filestore_recreate_required": bool(
+            upgrade.get("filestore_recreate_required", False)
+        ),
         "current_runtime": current["runtime"],
         "generated_at": _utc(),
         "result": "PASS_DAILY_DATA_CONTINUITY_BASELINE",

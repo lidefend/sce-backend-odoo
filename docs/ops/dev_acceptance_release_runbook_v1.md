@@ -104,7 +104,7 @@ filestore.
    database-specific numeric id cannot masquerade as product coverage.
    The evidence artifact must remain `artifacts/backend/dev_acceptance_release_probe.json`,
    the frontend output must remain `./frontend/apps/web/dist-dev`,
-   `VITE_PLATFORM_ADMIN_DB` must remain `sc_platform_core`, and Vite build or
+   `VITE_PLATFORM_ADMIN_DB` must remain `sc_platform_control`, and Vite build or
    runtime overrides must stay unset.
    `DB_NAME` must not be passed as a make command-line variable on this
    entrypoint. The target runs `env.matrix.check`, which resolves DB-name

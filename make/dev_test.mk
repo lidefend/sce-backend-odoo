@@ -2949,6 +2949,32 @@ verify.platform.database.governance.guard: guard.prod.forbid
 	@python3 scripts/verify/platform_database_governance_guard.py
 	@python3 -m unittest scripts.verify.test_platform_database_governance
 
+# The narrow signed-payload import operator is a platform mechanism: the
+# platform owns its account lifecycle and the customer module must not create
+# platform operators. The pure layer proves the three refusals (no
+# administrator group, no takeover, no fabricated approval); the ORM lane owns
+# the persisted effects against the registered local runtime.
+.PHONY: verify.smart_core.tenant_payload_operator.policy
+verify.smart_core.tenant_payload_operator.policy: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/security/tenant_payload_operator_policy.py addons/smart_core/security/tenant_payload_operator.py scripts/verify/test_tenant_payload_operator_policy.py
+	@python3 -m unittest scripts.verify.test_tenant_payload_operator_policy
+
+.PHONY: verify.smart_core.tenant_payload_operator.orm
+verify.smart_core.tenant_payload_operator.orm: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_core TEST_TAGS=tenant_payload_operator test.safe
+
+# The maintenance authorization flow is a product capability, not a shell
+# substitute: the request, decision, revoke and readback entries are exercised
+# through the HTTP controller, and the service side must reject a self-approval,
+# a body that names its own approver and a principal without the control-plane
+# security role. Pinned to the fixed test tag so a run that collects zero tests
+# cannot pass.
+.PHONY: verify.smart_core.platform_maintenance_access.orm
+verify.smart_core.platform_maintenance_access.orm: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_core TEST_TAGS=platform_maintenance_access test.safe
+
 # Offline adapter and demo identity checks; these never authorize a database write.
 .PHONY: verify.platform.database.lifecycle.unit verify.demo.lifecycle.unit
 verify.platform.database.lifecycle.unit: guard.prod.forbid

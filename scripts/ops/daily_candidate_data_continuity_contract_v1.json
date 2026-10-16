@@ -1,9 +1,13 @@
 {
   "schema_version": "daily_candidate_data_continuity.v1",
+  "duty": "demo",
+  "task_id": "DAILY-DATA-CONTINUITY-BASELINE-01",
   "environment_class": "DAILY_CANDIDATE_ENVIRONMENT",
   "data_authority": "CANDIDATE",
   "compose_project": "sc-backend-odoo-dev",
   "database": "sc_demo",
+  "database_role": "odoo",
+  "backup_id_prefix": "sc_demo",
   "database_container": "sc-backend-odoo-dev-db-1",
   "odoo_container": "sc-backend-odoo-dev-odoo-1",
   "database_volume": "sc_dev_db_data",
@@ -32,6 +36,14 @@
     "payment_request",
     "ir_attachment"
   ],
+  "relation_sample": {
+    "table": "payment_request",
+    "columns": [
+      "project_id",
+      "contract_id"
+    ],
+    "limit": 100
+  },
   "data_classes": {
     "database_and_filestore": "CANDIDATE",
     "legacy_source": "LEGACY_SOURCE",

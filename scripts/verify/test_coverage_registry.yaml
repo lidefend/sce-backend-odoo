@@ -15,10 +15,10 @@ entries:
   owner: construction-product
   dispose: class-selected
   gate: 'make:acceptance.frontend.fixture_orm :: acceptance_fixture_execution_freeze test.safe'
-  reason: Now wired to the acceptance carrier's own ORM entry, which runs the tag on the managed
-    acceptance profile/database and fails closed on a missing summary or zero tests
-    (scripts/test/frontend_acceptance_fixture_orm.sh). Kept on-demand because it is invoked by the
-    acceptance worktree rather than a recurring PR/scheduled workflow.
+  reason: Now wired to the acceptance carrier's own ORM entry, which runs the tag on the managed acceptance
+    profile/database and fails closed on a missing summary or zero tests (scripts/test/frontend_acceptance_fixture_orm.sh).
+    Kept on-demand because it is invoked by the acceptance worktree rather than a recurring PR/scheduled
+    workflow.
 - group: acceptance_fixture_gate
   kind: odoo_tag
   status: unwired
@@ -269,8 +269,8 @@ entries:
   gate: 'make:verify.local.dev.data_space_boundary.orm :: data_space_boundary'
   reason: smart_core data-space registration boundary coverage added by FE-CONTRACT-RUNTIME-02 (P0 kernel).
     It asserts the persisted registration and tenant-space boundary, not whole-product data rule acceptance.
-    Reachable through the governed ORM entry verify.local.dev.data_space_boundary.orm, which pins the fixed
-    test tag so a zero-collection run cannot pass; no recurring workflow selects it yet.
+    Reachable through the governed ORM entry verify.local.dev.data_space_boundary.orm, which pins the
+    fixed test tag so a zero-collection run cannot pass; no recurring workflow selects it yet.
 - group: data_space_business_data_ownership
   kind: odoo_tag
   status: on-demand
@@ -298,6 +298,13 @@ entries:
     a tools.ormcache helper instead of the persisted relation, so an out-of-band grant or revocation was
     invisible to a long-lived worker. Reachable only through a hand-invoked ORM entry; no recurring workflow
     selects this group yet.
+- group: demo_action_roles
+  kind: odoo_tag
+  status: on-demand
+  owner: demo-team
+  dispose: class-selected
+  gate: 'make:verify.local.dev.demo_action_roles.orm :: demo_action_roles local.dev.test'
+  reason: Fixed local.dev module and tag selection; manually invoked ORM coverage, not recurring CI.
 - group: demo_gate
   kind: odoo_tag
   status: unwired
@@ -306,6 +313,13 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: demo_loaded_chains
+  kind: odoo_tag
+  status: on-demand
+  owner: demo-team
+  dispose: class-selected
+  gate: 'make:verify.local.dev.demo_loaded_chains.orm :: demo_loaded_chains local.dev.test'
+  reason: Fixed local.dev module and tag selection; manually invoked ORM coverage, not recurring CI.
 - group: dictionary_scope_delivery
   kind: odoo_tag
   status: on-demand
@@ -636,6 +650,14 @@ entries:
   owner: platform-team
   dispose: class-selected
   gate: 'make:verify.local.dev.platform_database_governance.orm :: platform_database_governance test.safe'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: platform_maintenance_access
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.smart_core.platform_maintenance_access.orm :: platform_maintenance_access test.safe'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: policy_document
@@ -1176,6 +1198,14 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: tenant_payload_operator
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.smart_core.tenant_payload_operator.orm :: tenant_payload_operator test.safe'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: tender_award_fact
   kind: odoo_tag
   status: unwired
@@ -1306,19 +1336,3 @@ entries:
   gate: 'make:verify.workflow_contract.backend :: /TestWorkflowContractBackend (class selection)'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.
-
-- group: demo_action_roles
-  kind: odoo_tag
-  status: on-demand
-  owner: demo-team
-  dispose: class-selected
-  gate: 'make:verify.local.dev.demo_action_roles.orm :: demo_action_roles local.dev.test'
-  reason: Fixed local.dev module and tag selection; manually invoked ORM coverage, not recurring CI.
-
-- group: demo_loaded_chains
-  kind: odoo_tag
-  status: on-demand
-  owner: demo-team
-  dispose: class-selected
-  gate: 'make:verify.local.dev.demo_loaded_chains.orm :: demo_loaded_chains local.dev.test'
-  reason: Fixed local.dev module and tag selection; manually invoked ORM coverage, not recurring CI.

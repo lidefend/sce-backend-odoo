@@ -131,3 +131,62 @@ database UUID, aggregate count floors, selected technical sample IDs and
 relations, attachment readability, existing active-user state, company/role
 boundaries, and orphan statistics. Do not demand a globally static database
 while users and background jobs remain active.
+
+## Duty-scoped recovery points (`daily.runtime.duty.recovery.*`)
+
+A duty is one database with exactly one owner: the platform control plane, the
+demo, or one customer development tenant. Each duty needs its own paired
+recovery point before its first business-data write.
+
+Identity for these entries has exactly one owner:
+`config/ops/daily_runtime_database_duties.v1.json`. The tool derives the
+compose project, containers, volumes, application role, filestore scope,
+backup namespace and exact database filter from that declaration, and a duty
+contract may only carry assertion configuration (sentinel tables, sample
+tables, relationship sample, backup-id prefix, task id). A contract that
+restates a conflicting identity is refused, so there is no second source of
+truth for "which database is this".
+
+The tenant contract is
+`scripts/ops/daily_runtime_tenant_recovery_contract_v1.json`, bound to duty
+`customer_tenant_dev`. The concrete database, application role, compose project,
+routing and backup namespace of that duty come from the duty declaration
+(`config/ops/daily_runtime_database_duties.v1.json` plus the managed instance
+document under its `ops_root`) and are never restated here: this runbook ships
+with the product, and a duty binding belongs to the environment that is being
+served. This entry is remote-only: the duty storage namespaces exist on the
+daily server, not in the local iteration profile.
+
+```bash
+make daily.runtime.duty.recovery.remote_baseline \
+  DAILY_CANDIDATE_SSH_HOST=sc-root
+
+make daily.runtime.duty.recovery.remote_backup \
+  DAILY_CANDIDATE_SSH_HOST=sc-root \
+  CONFIRM_DAILY_CANDIDATE_BACKUP=BACKUP_DAILY_CANDIDATE_PAIRED_STATE
+
+make daily.runtime.duty.recovery.remote_validate \
+  DAILY_CANDIDATE_SSH_HOST=sc-root \
+  DAILY_DUTY_RECOVERY_DIR_PATTERN=<the selected duty's recovery directory pattern, as declared for that duty> \
+  DAILY_DUTY_RECOVERY_BACKUP_DIR=<the duty backup namespace>/<backup set id, as read back from the baseline step>
+
+make daily.runtime.duty.recovery.remote_restore_drill \
+  DAILY_CANDIDATE_SSH_HOST=sc-root \
+  DAILY_DUTY_RECOVERY_DIR_PATTERN=<the selected duty's recovery directory pattern, as declared for that duty> \
+  DAILY_DUTY_RECOVERY_BACKUP_DIR=<the duty backup namespace>/<backup set id, as read back from the baseline step> \
+  CONFIRM_DAILY_CANDIDATE_RESTORE_DRILL=RESTORE_ISOLATED_COPY
+```
+
+Both variables are required and fail closed: the entry refuses an empty
+`DAILY_DUTY_RECOVERY_DIR_PATTERN` and refuses a `DAILY_DUTY_RECOVERY_BACKUP_DIR`
+that does not match that pattern, so a duty's backup set cannot be pointed at
+another duty's directory.
+
+The remote tool tree is installed from one immutable commit, so these targets
+refuse a dirty worktree; commit the reviewed tool revision first. The
+confirmation tokens are read from the environment, never from stdin. The drill
+runs in `sc-daily-continuity-drill-*` temporary resources labeled
+`sc.daily-continuity=true`, uses the drill instance's own role, and never
+writes to the live duty cluster. This runbook authorizes no write to the live
+duty database: capture, validate and drill stay separate steps with their own
+exact inputs.

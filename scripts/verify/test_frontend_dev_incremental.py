@@ -138,6 +138,29 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                 )
 
+    def test_customer_identity_boundary_change_routes_to_its_guards(self) -> None:
+        # The product tree may not carry a customer identity; the governed duty
+        # binding under ops_root replaces it. The customer side of that boundary
+        # was last found at the frozen candidate, after the whole batch had been
+        # reviewed, so editing any file that decides the boundary routes to the
+        # boundary guard and the resolver's own unit target instead.
+        for path in (
+            "config/ops/daily_runtime_database_duties.v1.json",
+            "config/ops/daily_runtime_duty_stack.env",
+            "config/ops/daily_runtime_duty_stack.yml",
+            "scripts/ops/daily_runtime_duty_identity.py",
+            "scripts/ops/daily_runtime_database_duty.py",
+            "scripts/ops/daily_runtime_tenant_topology_inventory.py",
+            "scripts/ops/daily_runtime_tenant_addons_deliver.py",
+            "scripts/ops/daily_runtime_tenant_recovery_contract_v1.json",
+            "scripts/ops/test_daily_runtime_duty_identity.py",
+            "scripts/verify/tenant_product_payload_boundary_guard.py",
+        ):
+            with self.subTest(path=path):
+                targets = select_targets([path])
+                self.assertIn("verify.tenant.product_payload_boundary", targets)
+                self.assertIn("verify.daily.runtime.duty.identity.unit", targets)
+
     def test_planner_change_routes_to_the_planner_behaviour_lock(self) -> None:
         # The planner code, its lock and the makefile that defines the target
         # names are one contract. Without this route a renamed target turns
