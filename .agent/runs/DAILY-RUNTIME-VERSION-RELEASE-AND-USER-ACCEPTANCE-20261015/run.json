@@ -3451,5 +3451,24 @@
     "not_a_deployment": "A branch replay and a bookkeeping commit are not a deployment.",
     "ledger_rebinding": "This run's own branch binding was moved from the merged branch to the new branch and baseline_sha was aligned to the exact main it was replayed onto, because the resume entry requires run.branch to equal the checked-out branch and baseline_sha to be an ancestor of HEAD. Without the rebinding make agent.run.resume reported unregistered and then run schema or branch mismatch.",
     "receipt_consequence": "Local check receipts under .runtime/agent-runs/<run>/ bind the branch name, so after the ledger rebinding every existing receipt for this run reports receipt identity mismatch (stale) while none of their declared inputs changed: the replay preserved the stable patch identity. They are advisory iteration receipts, not delivery gates, and they are re-recorded under the new branch identity by make agent.run.record when the next candidate on this branch actually needs them; they are not re-run now, because re-recording would buy no new coverage for a bookkeeping-only candidate."
+  },
+  "closeout_attempts_20261016": {
+    "branch_retirement": {
+      "entry": "make branch.cleanup.feature CLEAN_BRANCH=<merged branch> CLEAN_BRANCH_REMOTE=origin EXPECTED_BRANCH_SHA=6590a4333834f17312712c90715bcf265e4f298b EXPECTED_MAIN_SHA=04c6a1292c33b923abc666bc1444c869372081b3",
+      "result": "REFUSED before any deletion, exactly as designed: the exact-head merged PR check PASSed, then the entry stopped at 'origin/main still binds <merged branch> in .agent/active-runs.json'. Neither the remote ref nor the local ref was touched; nothing was force-pushed.",
+      "precondition_prepared": "The merged branch's local ref was aligned to its reviewed and published SHA 6590a433 so that local, remote and reviewed identity agree. The superseded local commit 5df3e09d is not lost: its content is c7591535 on the new branch and it is inside the recovery bundle.",
+      "when_it_can_run": "Only after the run-ledger rebinding reaches main through an ordinary merged PR (the next product candidate on this branch). A standalone bookkeeping PR cannot clear the binding, because pr.merge.local_quick_gate refuses a candidate whose diff is confined to .agent/ and docs/.",
+      "why_the_binding_check_exists": "A retired branch must never stay bound in the run index, or the next closeout pays a whole freeze plus Quick cycle to clear bookkeeping it did not create."
+    },
+    "tenant_data_reconciliation": {
+      "requested": "the customer development tenant's data reconciliation (12386 / 6322 / 29 / 6035) plus business acceptance",
+      "result": "cannot start: blocked outside this repository, not skipped by choice",
+      "blocker": "No payload exists for the module version this tenant actually runs, so the signed-payload plan and import stop at TPV1_CUSTOMER_ADAPTER_INCOMPATIBLE before any ownership decision is taken. The only daily module trees ever delivered are 17.0.2.6.0 and 17.0.2.8.0, while every payload in the store declares 17.0.2.6.0 or 17.0.2.7.0.",
+      "not_retried": "The failing payload plan was not re-run: its inputs are unchanged and retrying an unchanged failure yields no new result. What changes the outcome is a payload re-emitted and re-signed at the installed module version, which is customer/user-module delivery (P2/P4) work.",
+      "approval_state": "The maintenance approval is bound to the stale payload checksum and its window ends 2026-10-16 08:43:20 CST, about ten minutes after this check (08:32 CST); a new approval bound to the new checksum is required regardless.",
+      "ownership_unchanged": "The product repository must not invent a customer-specific backfill, must not default ownership and must not relax the adapter to let a stale payload pass.",
+      "verified_here": "Read-only only: the retirement gate above, verify.tenant.product_payload_boundary PASS (files=8341), and this candidate's own pending history containing 0 commits that touch any customer identity token."
+    },
+    "not_a_deployment": "No version was released, no target environment was upgraded and no data was migrated in these closeout attempts."
   }
 }
