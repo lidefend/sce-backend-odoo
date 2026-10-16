@@ -902,3 +902,130 @@ run（`sce-r5-contract-request-probe-7.log`）。
 保留禁止列/锁定列/切公司/撤权/保存竞争反例；其后才做 R6（独立复核、冻结、交付门禁、精确 HEAD Quick、受保护 PR）。
 miss 路径双重复制与 gc 停止项继续独立登记。仍 dirty，未冻结/未提交/未推送/未部署，不提前 Quick、不扩浏览器矩阵、
 不宣布整体收口。
+
+### R6 前置：系统性能基线建立（2026-10-16，接力执行器）
+
+证据只维护于同一 run 的 `backend_runtime_investigation.system_performance_baseline`，不新开台账。身份未变
+（写树 `/home/lidefend/workspace/sce-backend-odoo-local-env`；主 checkout 只读）。本轮**未改动任何 P0–P3 产品文件**，
+只增加 P4 采集/归一化载体，因此不触发产品契约快照与浏览器影响面重跑。
+
+**（1）目标。** 把分散的性能记录收敛为「可复测、身份完整、缺口诚实」的正式基线载体，覆盖规则要求的三个互不替代
+的验收层（受控回归 / 日常体验 / 上线容量），并明确哪些层当前**尚未**达标。
+
+**（2）载体（新增，全部 P4）。**
+
+| 文件 | 作用 |
+| --- | --- |
+| `scripts/verify/system_performance_baseline.py` | 唯一归一化引擎，schema `system-performance-baseline/v1` |
+| `scripts/verify/test_system_performance_baseline.py` | 单元测试，经 `make verify.system.performance.baseline.unit` 执行（23 tests） |
+| `scripts/verify/local_dev_performance_baseline.sh` | 受管采集包装，只复用登记的 `local.dev.*` 运行身份 |
+| `scripts/ops/local_dev_performance_identity.py` | 只读身份采集器（docker / env-file），不写运行环境 |
+| `make/dev.mk` | 新增 `local.dev.runtime.performance.baseline`、`verify.system.performance.baseline.unit` |
+| `docs/ops/audit/system_performance_baseline.md` | 记录生成视图（生成物，非手改） |
+
+**（3）归一化铁律（由单测固定，不由人保证）。** 缺计时记为缺口而非零值（`unknown_is_gap_never_zero`）；
+嵌套阶段永不相加（`stage_sum_forbidden`）；样本观察数与保留数不相等即断言失败、不静默丢样本；
+17 个必备身份字段可解则记 provenance、不可解为显式 gap，有 gap 即 `status=incomplete`；
+三层互不替代，`daily_experience` 恒 `not_run`、`capacity` 恒 `target_unresolved`，直到各自身份被核定。
+identity 按探针声明的产品 sha256 与当前 worktree 比对，只有 `match` 才进入受控回归层。
+
+**（4）本轮实测（受管入口一次运行，EXIT 0）。**
+
+- 记录：`artifacts/backend/system_performance_baseline.json`，`--strict` EXIT 0，
+  `status=baseline`、`gaps=0`、样本 `11/11`（观察数 = 保留数）。
+- SLA 三层 p95 / payload：`system.init` 617.39ms / 238317B，`ui.contract` 795.44ms / 621388B，
+  `execute_button` 24.44ms / 683B；预算 8000/5000/3000ms 与 3.5MB/3.5MB/600KB，**均达标**。
+  （`execute_button` 状态为 403 的权限路径探针，`sample_note` 已注明，属混合结果。）
+- `observe` web_startup：进程首次 1807.65ms / 3006 SQL；随后 5 次 373.40–499.59ms / 各 629 SQL。
+  首次样本已声明最大阶段 `build_nav` 1321ms、`finalize_startup_surface` 268ms。
+- `contract_profile` action_open：首样本 3831.67ms / 1040 SQL（含进程首次代码翻译加载），热样本 256.70ms / 22 SQL。
+- 前端产物：`frontend_index_sha256` 与 nginx 实际服务的 `served_index_sha256` 一致（`dist` 与线上不一致 = false）。
+- 可见规模：project.project 15 / payment.request 67 / construction.contract 54；company 1。
+- 环境身份：compose `sc-local-dev` / db `sc_dev_demo` / principal `user_demo_role_finance`（uid 45, company 1）/
+  action 878 / `odoo17-odoo:latest` 容器 `ec95a747…` / 18 CPU，无 CPU、内存限额。
+
+**（5）三层状态（本轮必答项，不许含糊）。**
+
+| 层 | 状态 | 理由 |
+| --- | --- | --- |
+| 受控回归 | `passed` | 2 个带计时的 entry（observe / contract-profile）产品哈希 `identity_match=match` |
+| 日常体验 | `not_run` | 需绑定部署、前端产物、真实网络路径与代表性角色/数据规模 |
+| 上线容量 | `target_unresolved` | 目标并发、数据规模、吞吐与错误预算尚未核定 |
+
+`platform-sla-guard/v1` 不声明产品哈希，故 `sla-guard.json` 的层身份恒为 `unknown`，属设计而非缺口；
+这一点同时说明**「守卫 PASS」不等于基线完整**。
+
+**（6）限制（登记，不掩盖）。** 单 principal / 单 action（878）/ 单页，不是全产品基线；仅进程内观测，
+不含 HTTP、浏览器、认证、SLO 或容量；阶段为声明的嵌套阶段，数值不可相加；记录身份绑定采集时的 dirty worktree，
+交付前必须重冻结；`permission` 与 `cache_identity` 两类探针**本轮未采集**，同一入口用
+`PRODUCT_PERFORMANCE_BASELINE_SOURCES=` 追加即可，不另造入口。
+
+**（7）验证。** `make ci.local.iteration` PASS（dirty，`coverage=L1_only`，`receipt=none`，`outside_scope=[]`）；
+`make verify.system.performance.baseline.unit` 23 tests PASS（含正例达 `baseline`、反例记 gap 或 fail-closed）；
+`make verify.agent.ledger.unit` 15 tests PASS。本轮同时补齐 run `scope`：新增 `docs/ops/audit/platform_sla_report.md`、
+`docs/ops/audit/system_performance_baseline.md`、`scripts/ops/local_dev_performance_identity.py`（此前落 `outside_scope`）。
+
+按影响面选定的 L2 定向用例另加两项：`make verify.local.env.readiness.unit`（新增采集器直接依赖受管 `local.dev.*`
+环境身份）15 tests PASS；`make verify.frontend.dev.incremental.unit`（要求 L2 的计划器本体）30 tests PASS。
+计划器列出的 `verify.frontend.*` 目标来自相对基线 `41c7a9dd` 的**累计** dirty 差异，本轮未改任何前端或产品文件，
+其输入未变，因此按影响面复用而非重跑；本轮不含产品面改动，不扩浏览器矩阵。
+
+**（8）下一步与边界。** 受控回归基线载体已建立，但**整体性能未收口**：日常体验层 `not_run`、容量层
+`target_unresolved`，不能据此宣布达标。R6 仍为：提交本轮台账与载体 → 重冻结完整 tracked+untracked 指纹（旧
+`f758779d…` 绑定 `0af04237`，已被新增文件作废）→ 一次精确 HEAD `make ci.local.quick` → 独立复核与外部归档 →
+`pr.push`。R3 缓存复制、R4 权限耗时、关系弹窗列派生等既有候选保持独立登记。仍 dirty，未提交、未推送、
+未部署、未宣布主线集成或产品验收。
+
+### R6：热路径缓存读取隔离克隆（P0，2026-10-16，接力执行器）
+
+证据只维护于同一 run 的 `backend_runtime_investigation.warm_cache_clone_optimization`，不新开台账。身份未变
+（写树 `/home/lidefend/workspace/sce-backend-odoo-local-env`，分支 `fix/main-scheduled-ci-closeout-20261016`）。
+
+**（1）职责边界。** 正式产品层 P0 平台内核产品；层目标 `addons/smart_core/utils/load_contract_response_cache.py`
+的 `LoadContractResponseCache.get()` 读取隔离克隆；模块 `smart_core`；平台机制，不含行业/客户语义。
+在此层是因为契约响应缓存与它的读取隔离契约属于平台契约运行时；实测成本来自 `copy.deepcopy` 在缓存所存的
+JSON 形状 payload 上的逐对象分派。不在别处：**不做模型特判、不改前端、不放宽权限、不扩大缓存或 TTL**；
+对缓存所存 payload 必须与 `copy.deepcopy` 行为一致。
+
+**（2）改动。** `get()` 由 `copy.deepcopy(response)` 改为 `isolated_clone(response)`。`isolated_clone` 直接以同一套
+memo 记账克隆 `dict`/`list`（共享子对象在副本中保持共享，与 `deepcopy` 完全一致），原子标量
+（`None`/`str`/`bool`/`int`/`float`）原样返回，其余类型（tuple/set/bytes/子类/自定义对象）**连同同一 memo 委托
+`copy.deepcopy`**，因此元组、集合、自引用等语义不变。
+
+**（3）隔离不可删。** 调用方 `handlers/ui_contract_v2.py` 会就地改写取回的图（R3 已在此处删掉第二次复制），
+若返回共享引用就会把请求内写入泄漏进缓存。本轮只换等价克隆实现，**隔离契约本身不变**。
+
+**（4）A/B 实测（受管 `local.dev.runtime.contract_request.probe`，uid45/company1，action 878 / menu 559 / `ui.contract.v2`，每组 n=12）。**
+身份绑定：探针身份集合中唯一变化的文件就是 `utils/load_contract_response_cache.py`
+（前 `d5ce5896…d13`，与 HEAD blob `0af04237` 逐字节相同 → 后 `1ed6ffad…c0a`），其余 5 个身份哈希前后一致。
+
+| 指标 | before | after | 说明 |
+| --- | --- | --- | --- |
+| hot dispatch median / p95 | 88.759 / 201.688 ms | 69.945 / 180.963 ms | median −18.814 ms |
+| hot gc-off dispatch median | 84.319 ms | 66.835 ms | 配对进程内对照，去掉一次性 GC 后同样 −17.484 ms |
+| hot lookup median | 63 ms | 43 ms | −20 ms |
+| `CONTRACT_PROJECTION_HOT_CACHE.get`（该样本） | 39.963 ms | 20.707 ms | 直接阶段归因 |
+| hot `deepcopy_sites` | `{convert_to_record:25, load_contract_response_cache.py:get:1}` | `{convert_to_record:25}` | 缓存克隆点消失（26→25） |
+| hot SQL / bytes / `cache_identity_ref` | 25 / 113916 / `11e770c4b2ae` | 25 / 113916 / `11e770c4b2ae` | 不变 |
+| cold_rebuild dispatch | 207.125 ms | 203.978 ms | 无退化 |
+| r3_removed_copy（contract / source_contract） | 1.833–2.081 / 17.242–18.371 ms | 1.792–2.347 / 16.153–18.850 ms | 运行噪声内 |
+
+**（5）等价性与语义。** `make verify.business_config.formal_list.unit` 234 tests PASS（146+21+62+5）；新增
+`TestIsolatedCloneStaysDeepcopyEquivalent` 6 例：与 `deepcopy` 等值且 JSON 序列化一致、共享别名保持一致、
+嵌套写入不回流源图、set/tuple/bytes/OrderedDict/complex 委托 `deepcopy` 且类型一致（原子元组保持同一对象）、
+自引用图、热读路径对 JSON payload **从不回退调用 `copy.deepcopy`**。运行面：响应字节、缓存身份、SQL 数、
+权限耗时前后一致，唯一行为变化是少一次容器图深拷贝。
+
+**（6）限制与残留（登记，不掩盖）。** 单 principal / 单 action / 单请求、进程内观测，非 HTTP/浏览器/认证/SLO/容量；
+`acceptance_pass=false` 是有界观测设计而非门禁结论；记录绑定 dirty worktree，交付前须重冻结；A/B 为同环境配对比较，
+不是总体基准。**残留**：miss 路径仍对同一图深拷贝两次（cold_rebuild `deepcopy_sites` 仍见
+`load_contract_response_cache.py:<lambda>:1`），已登记、本轮不修、也未证明是关键成本。
+
+**（7）验证。** `make ci.local.iteration` PASS（dirty，`coverage=L1_only`，`receipt=none`，`outside_scope=[]`）；
+`make verify.agent.ledger.unit` 15 tests PASS（新嵌套键与 7 条新增 `validation_results`、7 条新增
+`evidence_index` 哈希使 run 保持自洽）；`make local.dev.runtime.cache_identity.probe` verdict 全 true。
+
+**（8）结论口径。** 本轮热路径取得约 18–19 ms/请求的**受控回归**收益，且等价性由单测固定；但这只是有界观测，
+**整体性能未收口**（日常体验层 `not_run`、容量层 `target_unresolved`）。批次结论为「批次验收完成」，不代表
+主线集成、部署或产品交付。R6 交付仍为：提交台账/载体/P0 改动 → 重冻结完整 tracked+untracked 指纹 → 一次精确
+HEAD `make ci.local.quick` → 独立复核与外部归档 → `pr.push`。

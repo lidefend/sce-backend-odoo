@@ -1,6 +1,7 @@
 # 运行时性能正式基线与上线阻断规则
 
-状态：建立中，尚未验收。所有者于 2026-10-16 明确：历史性能记录为实验；实际体验已慢，必须优化才能上线。
+状态：受控回归基线已具备载体（本轮），整体仍未验收：日常体验层 `not_run`、上线容量层
+`target_unresolved`。所有者于 2026-10-16 明确：历史性能记录为实验；实际体验已慢，必须优化才能上线。
 当前执行与证据索引唯一入口：`.agent/runs/MAIN-SCHEDULED-CI-CLOSEOUT-20261016/run.json`。
 
 ## 目标与职责
@@ -52,11 +53,29 @@ SQL/函数耗时不相加冒充端到端耗时；嵌套阶段/并行请求不得
 共享环境缓存制造冷态；冷态只在受管隔离生命周期内建立。暖态给出预热次数，不删除
 慢样本或失败样本，也不反复重跑直到偶然通过。
 
+## 本轮载体（受控回归）
+
+本轮只增加 P4 采集/归一化载体，未改动任何 P0–P3 产品语义：
+
+- 唯一归一化入口 `scripts/verify/system_performance_baseline.py`（schema
+  `system-performance-baseline/v1`），单测 `scripts/verify/test_system_performance_baseline.py`
+  经 `make verify.system.performance.baseline.unit` 执行。缺计时记为缺口而非零值；
+  嵌套阶段永不相加（`stage_sum_forbidden`）；样本观察数与保留数不相等即断言失败。
+- 受管采集包装 `scripts/verify/local_dev_performance_baseline.sh` 只复用登记的
+  `local.dev.*` 运行身份，身份只读采集器为 `scripts/ops/local_dev_performance_identity.py`。
+- 采集入口 `make local.dev.runtime.performance.baseline`。本轮记录
+  `artifacts/backend/system_performance_baseline.json` 为 `status=baseline`、`gaps=0`、
+  样本 11/11，三层状态 `controlled_regression=passed` / `daily_experience=not_run` /
+  `capacity=target_unresolved`；生成视图 `docs/ops/audit/system_performance_baseline.md`。
+- 该记录绑定采集时的 worktree 身份（dirty），只用于受控回归与阶段定位，不构成浏览器、
+  SLO、容量或生产验收，也不能替代日常体验层或容量层。
+
 ## 本批实施顺序
 
 1. 保全旧失败及原始环境，列出不可比原因。完成：原始证据可读且哈希绑定。
 2. P4 补逐样本分段采集，保留原操作边界。完成：非零正负测试；无凭据、请求参数或
    业务正文输出；缺计时不能生成零值；异常不吞。再进入受管有限样本观测。
+   本轮状态：采集与归一化载体已建立，见「本轮载体（受控回归）」。
 3. 复用 `local.dev.runtime.performance.observe` 作后端定位，以及既有
    `verify.frontend.delivery_hardening.release.performance_probe` 作浏览器测量。
    前者不是浏览器/上线验收；后者必须通过已登记profile的身份和fixture前置。

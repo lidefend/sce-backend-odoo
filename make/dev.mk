@@ -1319,3 +1319,29 @@ local.dev.runtime.contract_request.probe: guard.prod.forbid local.dev.ready
 	  PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID="$(PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID)" \
 	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  odoo.shell.exec < scripts/verify/local_dev_runtime_contract_request_probe.py
+
+# P4 system performance baseline. One bounded capture on the registered
+# sc-local-dev / sc_dev_demo profile; reuses the existing governed probes and
+# normalizes their payloads once into artifacts/backend/system_performance_baseline.json
+# and docs/ops/audit/system_performance_baseline.md. It starts no environment and
+# never writes product code; missing identity is reported as an explicit gap.
+# PRODUCT_PERFORMANCE_BASELINE_SOURCES selects the bounded capture set, for example
+# "sla,observe" (default) or "sla,observe,contract_profile,permission,cache_identity".
+.PHONY: local.dev.runtime.performance.baseline
+local.dev.runtime.performance.baseline: guard.prod.forbid local.dev.ready
+	@if [ "$(DB_NAME)" != "sc_dev_demo" ] || [ "$(COMPOSE_PROJECT_NAME)" != "sc-local-dev" ]; then \
+	  echo "❌ baseline capture requires the registered sc-local-dev/sc_dev_demo profile"; \
+	  exit 2; \
+	fi
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  MAKE="$(MAKE)" PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID="$(PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID)" \
+	  PRODUCT_PERFORMANCE_BASELINE_SOURCES="$(if $(PRODUCT_PERFORMANCE_BASELINE_SOURCES),$(PRODUCT_PERFORMANCE_BASELINE_SOURCES),sla,observe)" \
+	  PRODUCT_PERFORMANCE_BASELINE_STRICT="$(PRODUCT_PERFORMANCE_BASELINE_STRICT)" \
+	  bash scripts/verify/local_dev_performance_baseline.sh
+
+# Non-zero unit tests for the baseline normalizer: positive cases must reach a
+# complete baseline; negative cases must register a gap or fail closed.
+.PHONY: verify.system.performance.baseline.unit
+verify.system.performance.baseline.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/system_performance_baseline.py scripts/verify/test_system_performance_baseline.py scripts/ops/local_dev_performance_identity.py
+	@python3 -m unittest scripts.verify.test_system_performance_baseline
