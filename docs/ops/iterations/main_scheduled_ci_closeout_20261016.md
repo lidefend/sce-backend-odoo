@@ -201,3 +201,11 @@ B 退出条件：外部执行器提供精确包身份、上述八组义务的替
 ### 后续交付探针绑定修复
 
 `ac8987fd` 远端 backend_impact_suite 已通过；frontend_release_gate `38858302924` 在导航之后的交付强化阶段拒绝旧结算菜单。P4 resolver 改绑已发布的 `menu_sc_p1_expense_settlement`，动作不变。现有 release_navigation_policy guard 对 resolver 的全部实际 `target()` 调用解析菜单/动作，与正式 standard 发布声明核对；空集合、动态未声明、退役/停用菜单、缺动作或动作错配均失败。13 项导航测试、16 项曝光声明测试、26 项 hardening 测试通过。仅探针输入变化，无模型升级；下一冻结候选交给既有远端 frontend 门禁，不另跑手工全矩阵。旧后端成功不是新 SHA 的合并资格。
+
+### 所有者耗时核查：质量调度串行缺陷
+
+run `38858302942` 实际成功，总约30分钟。后端套件13m50完成后才启动质量worker，其中 chatter 专用ORM4m47、settlement专用ORM2m45、静态/报告/轻量测试5m18。后端使用sc_smoke/sc_gate，不能以重名模块为由删去两项专用ORM。真正的问题是独立runner之间被needs串行化；同worker内部artifact写入仍需串行。
+
+本轮P4修复：重活改名professional_quality_checks仅依赖授权，与backend_impact_suite并行；保留原受保护professional_quality_gate名称作为轻量汇总，强制核验授权、后端选择、质量worker和Python3.10兼容性。Python兼容性原来未进入该汇总，现push应skipped、其他授权事件应success；失败、取消、非预期skip、缺值全部拒绝。重活采用可取消条件，汇总保持事件/身份约束及失败结果可达；工作流取消仍不产生合并资格。现有测试和job内串行步骤不减少。
+
+工作流16测试（新增100种质量/Python/事件结果组合实际运行shell）、impact15、安全17通过。旧冻结adc69935已完成Quick并签发回执，但调度修改使其回执不再满足新候选发布；仅保留输入未变的产品行为证据，重新冻结的理由是所有者新要求及已证实调度缺陷。实际加速待新远端run，不以理论并行宣称实测。

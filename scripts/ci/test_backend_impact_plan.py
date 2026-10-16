@@ -115,7 +115,7 @@ class ImpactSelectionTest(unittest.TestCase):
     def test_required_check_depends_on_runtime_and_rejects_failure(self):
         text = (planner.ROOT / '.github/workflows/professional_quality_gate.yml').read_text()
         job = text.split('  professional_quality_gate:\n', 1)[1]
-        self.assertIn('needs: [professional_authorization, backend_impact_suite]', job)
+        self.assertIn('needs: [professional_authorization, backend_impact_suite, professional_quality_checks, python310_runtime_compatibility]', job)
         self.assertIn('always() &&', job)
         condition = job.split('runs-on:', 1)[0]
         self.assertNotIn("needs.professional_authorization.result == 'success'", condition)

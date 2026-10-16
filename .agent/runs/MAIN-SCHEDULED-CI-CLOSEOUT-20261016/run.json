@@ -60,7 +60,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Commit final generated preparation; freeze current fingerprint; exact-head Quick, independent readback, archive, then governed PR669 push/dispatch.",
+  "next_exact_step": "Prepare and freeze scheduling-only follow-up; exact Quick/review/archive then publish PR669; compare remote overlap and outcomes.",
   "source_runs": [
     38818510036,
     38811434965,
@@ -459,6 +459,26 @@
     "sce-ci-converged-freeze.log": {
       "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-converged-freeze.log",
       "sha256": "8e4213cd390ed8b75162d2d5e7c96a3881f32cd0cc88de9971ef30618940a032"
+    },
+    "sce-quality-parallel-tests.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-quality-parallel-tests.log",
+      "sha256": "9d20e52f918fbf9cf3e3096fd855a4381c77e0440ee5f4798f762ed0f568acd8"
+    },
+    "sce-ci-converged-quick.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-converged-quick.log",
+      "sha256": "df5288bfc56e96b96a31c4e48d272bb44c4809113bdb761f84ae0e2dd92b09b7"
+    },
+    "sce-quality-running.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-quality-running.log",
+      "sha256": "1b254a0d5eba60b6283cd454330714446fc397abf6f1c9a1778eb301213dae64"
+    },
+    "sce-quality-parallel-iteration.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-quality-parallel-iteration.log",
+      "sha256": "52a44d0b871b7bcbe067df7ef5d4fcfbf6d98d95ddb95c546ebe5a8c7fea216f"
+    },
+    "sce-quality-parallel-freeze.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-quality-parallel-freeze.log",
+      "sha256": "d6dc8b0ffce212713f148ffba005b53b294cbc7ba8cd657b134488d94804b3b5"
     }
   },
   "validation_scope": {
@@ -570,5 +590,30 @@
     "review": "local_env_review: no blocker; exact frozen identity pending",
     "previous_navigation": "ac8987 remote actual32/expected32/matched32 PASS",
     "freeze_prepare": "passed; generated inventory reviewed; source/call-chain changes only"
+  },
+  "quality_parallel_recovery": {
+    "layer": "P4",
+    "trigger": "Owner requested actual quality CI duration and configuration audit",
+    "observed_run": 38858302942,
+    "observed_result": "success",
+    "seconds": {
+      "backend": 830,
+      "chatter": 287,
+      "settlement": 165,
+      "static_reports_tests": 318
+    },
+    "cause": "quality worker unnecessarily waits for independent backend runner; python310 job not included in required aggregate",
+    "change": "parallel workers depend only on authorization; stable protected check aggregates auth/backend/quality/python results; heavy work cancels; existing assertions and per-worker serialization unchanged",
+    "tests": {
+      "workflow": 16,
+      "impact": 15,
+      "security": 17,
+      "quality_truth_table_combinations": 100
+    },
+    "reuse": "adc69935 exact Quick PASS; new workflow invalidates delivery receipt and remote evidence, not unchanged product/browser/fixture behavior",
+    "deployment": "none",
+    "external_P2": "eight groups still pending",
+    "review": "local_env_review: exact step comparison unchanged heavy checks and original backend verdict; no blocker",
+    "freeze_prepare": "passed"
   }
 }

@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -127,7 +129,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         an ``if: false`` guard cannot satisfy it by matching text.
         """
         workflow = yaml.safe_load(self.text("professional_quality_gate.yml"))
-        steps = workflow["jobs"]["professional_quality_gate"]["steps"]
+        steps = workflow["jobs"]["professional_quality_checks"]["steps"]
         names = [step.get("name") for step in steps]
         pin_name = "Install pinned Node.js runtime for the syntax sweep"
         self.assertEqual(names.count(pin_name), 1, "the sweep job must pin the node runtime once")
@@ -449,6 +451,41 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             if path.is_file() and path.suffix in {".yml", ".yaml"}
         ]
         self.assertEqual(duplicated, [])
+
+
+class ParallelQualityExecutionTest(unittest.TestCase):
+    def jobs(self):
+        return yaml.safe_load((ROOT / '.github/workflows/professional_quality_gate.yml').read_text())['jobs']
+
+    def test_independent_work_is_parallel_and_protected_name_is_unique(self):
+        jobs = self.jobs()
+        self.assertEqual(jobs['professional_quality_checks']['needs'], 'professional_authorization')
+        self.assertEqual(jobs['backend_impact_suite']['needs'], 'professional_authorization')
+        self.assertEqual(set(jobs['professional_quality_gate']['needs']), {
+            'professional_authorization', 'backend_impact_suite',
+            'professional_quality_checks', 'python310_runtime_compatibility'})
+        self.assertEqual(sum(job.get('name') == 'professional_quality_gate' for job in jobs.values()), 1)
+        self.assertIn('!cancelled()', jobs['professional_quality_checks']['if'])
+        self.assertIn("needs.professional_authorization.result == 'success'", jobs['professional_quality_checks']['if'])
+        self.assertIn('always() && !cancelled()', jobs['professional_quality_gate']['if'])
+        self.assertNotIn('always()', jobs['professional_quality_checks']['if'])
+        self.assertTrue(all('checkout' not in step.get('name', '').lower()
+                            for step in jobs['professional_quality_gate']['steps']))
+
+    def test_actual_aggregate_script_rejects_missing_failed_cancelled_and_skipped(self):
+        steps = self.jobs()['professional_quality_gate']['steps']
+        step = next(s for s in steps if s['name'] == 'Enforce quality and compatibility execution')
+        self.assertEqual(step['env']['QUALITY_RESULT'], '${{ needs.professional_quality_checks.result }}')
+        self.assertEqual(step['env']['PYTHON_RESULT'], '${{ needs.python310_runtime_compatibility.result }}')
+        for event in ('pull_request', 'schedule', 'workflow_dispatch', 'push'):
+            for quality in ('success', 'failure', 'cancelled', 'skipped', ''):
+                for python in ('success', 'failure', 'cancelled', 'skipped', ''):
+                    with self.subTest(event=event, quality=quality, python=python):
+                        expected = quality == 'success' and python == ('skipped' if event == 'push' else 'success')
+                        result = subprocess.run(['bash', '-c', step['run']],
+                            env={**os.environ, 'EVENT_NAME': event, 'QUALITY_RESULT': quality, 'PYTHON_RESULT': python},
+                            capture_output=True, text=True)
+                        self.assertEqual(result.returncode == 0, expected)
 
 
 if __name__ == "__main__":

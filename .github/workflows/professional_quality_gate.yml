@@ -160,11 +160,11 @@ jobs:
           test "${status}" -ne 0
           grep -F "ENV=prod is required" <<<"${output}"
 
-  professional_quality_gate:
-    name: professional_quality_gate
-    needs: [professional_authorization, backend_impact_suite]
+  professional_quality_checks:
+    name: professional_quality_checks
+    needs: professional_authorization
     if: >-
-      always() &&
+      !cancelled() && needs.professional_authorization.result == 'success' &&
       (github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') &&
       github.repository == 'lidefend/sce-backend-odoo' &&
       ((github.event_name == 'pull_request' &&
@@ -194,24 +194,6 @@ jobs:
         working-directory: ${{ github.workspace }}
 
     steps:
-      - name: Enforce affected backend execution
-        env:
-          AUTHORIZATION_RESULT: ${{ needs.professional_authorization.result }}
-          IMPACT_REQUIRED: ${{ needs.professional_authorization.outputs.backend_impact_required }}
-          EVENT_NAME: ${{ github.event_name }}
-          IMPACT_RESULT: ${{ needs.backend_impact_suite.result }}
-        run: |
-          set -euo pipefail
-          test "${AUTHORIZATION_RESULT}" = success
-          if [ "${EVENT_NAME}" = pull_request ]; then
-            test "${IMPACT_REQUIRED}" = true || test "${IMPACT_REQUIRED}" = false
-          fi
-          if [ "${IMPACT_REQUIRED}" = "true" ]; then
-            test "${IMPACT_RESULT}" = success
-          else
-            test "${IMPACT_RESULT}" = skipped
-          fi
-
       - name: Checkout exact authoritative GitHub commit
         run: |
           set -euo pipefail
@@ -395,3 +377,55 @@ jobs:
       - name: Clean isolated runner state
         if: always()
         run: bash scripts/ci/self_hosted_runner_cleanup.sh
+
+  # Keep the protected check name stable. Independent runners execute in parallel;
+  # only this small verdict waits for all required evidence.
+  professional_quality_gate:
+    name: professional_quality_gate
+    needs: [professional_authorization, backend_impact_suite, professional_quality_checks, python310_runtime_compatibility]
+    if: >-
+      always() && !cancelled() &&
+      (github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') &&
+      github.repository == 'lidefend/sce-backend-odoo' &&
+      ((github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'push' &&
+      github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' &&
+      github.actor == github.repository_owner) ||
+      (github.event_name == 'schedule' &&
+      github.ref == 'refs/heads/main'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Enforce affected backend execution
+        env:
+          AUTHORIZATION_RESULT: ${{ needs.professional_authorization.result }}
+          IMPACT_REQUIRED: ${{ needs.professional_authorization.outputs.backend_impact_required }}
+          EVENT_NAME: ${{ github.event_name }}
+          IMPACT_RESULT: ${{ needs.backend_impact_suite.result }}
+        run: |
+          set -euo pipefail
+          test "${AUTHORIZATION_RESULT}" = success
+          if [ "${EVENT_NAME}" = pull_request ]; then
+            test "${IMPACT_REQUIRED}" = true || test "${IMPACT_REQUIRED}" = false
+          fi
+          if [ "${IMPACT_REQUIRED}" = "true" ]; then
+            test "${IMPACT_RESULT}" = success
+          else
+            test "${IMPACT_RESULT}" = skipped
+          fi
+
+      - name: Enforce quality and compatibility execution
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          QUALITY_RESULT: ${{ needs.professional_quality_checks.result }}
+          PYTHON_RESULT: ${{ needs.python310_runtime_compatibility.result }}
+        run: |
+          set -euo pipefail
+          test "${QUALITY_RESULT}" = success
+          if [ "${EVENT_NAME}" = push ]; then
+            test "${PYTHON_RESULT}" = skipped
+          else
+            test "${PYTHON_RESULT}" = success
+          fi

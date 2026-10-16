@@ -196,8 +196,8 @@ Generated from repository source files. This report is informational during the 
 | 802 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 488 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
+| 431 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 423 | Shell script | `scripts/demo/verify.sh` |
-| 397 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 356 | Shell script | `scripts/ops/git_safe_push.sh` |
 | 355 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 345 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
