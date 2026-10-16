@@ -20,7 +20,8 @@
     "docs/ops/iterations/daily_acceptance_lane_selfconsistency_original_record.md",
     "docs/audit/test_coverage_registry/",
     "docs/engineering_convergence/",
-    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "scripts/audit/verification_lane_dispositions.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -143,6 +144,16 @@
     "authorization": "Owner explicitly requested direct mainline integration, other executors continue untouched",
     "earliest_failure": "freeze.prepare agent ledger: historical completed run referenced ignored .runtime/pr file missing on fresh checkout",
     "repair": "Track original unchanged historical record and repoint run; preserve historical results; no guard relaxation",
-    "next": "Prepare generated evidence, freeze, Quick, independent final review, archive and protected GitHub PR merge"
+    "next": "Prepare generated evidence, freeze, Quick, independent final review, archive and protected GitHub PR merge",
+    "second_failure": "Exact Quick found new readiness target without execution reference and stale local.clean.health zero-reference disposition; add actual Make wiring regression test and reasoned unregister, preserve baseline",
+    "targeted_recovery": {
+      "readiness_tests": 14,
+      "planner_tests": 30,
+      "lane_coverage": "passed, baseline unchanged",
+      "freeze_prepare": "passed",
+      "log": "/tmp/sce-local-env-freeze-wiring.log",
+      "review": "B no open S0-S2",
+      "runtime_reuse": "source runtime implementation unchanged; only test/map/disposition/metadata differ"
+    }
   }
 }

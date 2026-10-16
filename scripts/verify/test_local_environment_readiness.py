@@ -104,6 +104,30 @@ class LocalReadinessTest(unittest.TestCase):
         self.assertFalse(evaluate([{'status':'passed'}, {'status':'not_prepared'}, {'status':'failed'}]))
 
 
+class ReadinessMakeWiringTest(unittest.TestCase):
+    def test_governed_make_entry_passes_all_profile_authorities(self):
+        repository = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fake_bin = root / 'bin'
+            fake_bin.mkdir()
+            python = fake_bin / 'python3'
+            python.write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$TRACE"\n')
+            python.chmod(0o755)
+            harness = root / 'Makefile'
+            harness.write_text(f'include {repository}/make/dev.mk\nguard.prod.forbid:\n\t@:\n')
+            trace = root / 'trace'
+            env_files = {name: root / f'{name}.env' for name in ('dev', 'sample', 'clean')}
+            args = ['make', '--no-print-directory', '-f', str(harness), 'local.env.readiness', f'ROOT_DIR={repository}']
+            args += [f'LOCAL_{name.upper()}_ENV_FILE={path}' for name, path in env_files.items()]
+            result = subprocess.run(args, cwd=repository, env={**os.environ, 'PATH':str(fake_bin)+os.pathsep+os.environ['PATH'], 'TRACE':str(trace)}, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            actual = trace.read_text().splitlines()
+            self.assertEqual(actual[:3], ['scripts/dev/local_environment_readiness.py', '--root', str(repository)])
+            for name, path in env_files.items():
+                self.assertEqual(actual[actual.index(f'--{name}-env')+1], str(path))
+
+
 class AuthorityProbeNoDependencyMutationTest(unittest.TestCase):
     def test_actual_shell_entry_does_not_start_or_recreate_dependencies(self):
         script = Path(__file__).resolve().parents[2] / 'scripts/dev/local_dev_demo_authority_verify.sh'
