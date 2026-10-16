@@ -21,7 +21,7 @@
     "disposition": "Registered as findings of this run; not resolved in the three-database step. They belong to the fact-source unification goal and keep it open.",
     "guard_defect": "sc_data_scope_rule_coverage_guard.record_is_global treats groups=[(5,0,0)] as group-scoped although Odoo treats it as global, so three hand-written payroll global rules are invisible to the guard"
   },
-  "baseline_sha": "10bf72ef4bb060556bd2844598b58f9806392d34",
+  "baseline_sha": "04c6a1292c33b923abc666bc1444c869372081b3",
   "blockers": [
     "CLOSED 2026-10-16 in this run (was: the maintenance access for <customer-tenant-db> could not be requested and approved). The named approver lidefend is now a verified platform security administrator with an account, and the approval was driven end to end over the product HTTP entry: request by the platform administrator admin, approval by lidefend, state approved, window 2026-10-16 08:43:20 CST. The decision was taken by the product capability, not by a one-off shell. See maintenance_approval_execution_20261016 and maintenance_access_real_runtime_negatives_20261016.",
     "CLOSED 2026-10-16 in this run (was: the daily runtime published face still ran SC_SOURCE_REVISION=10bf72ef). Two candidate bundle deployments converged the published face and the duty refresh then read all three faces back at b80841059b196f66487f4b598d90d3b0662476b4, so the routes added on this branch are mounted. See duty_stack_runtime_environment_forwarding_20261016.",
@@ -32,9 +32,15 @@
     "The three declared Step B gaps stay preconditions for the first write to sc_odoo or sc_platform_core: the cluster reports data_checksums=off, no amcheck index verification has run, and neither database has a paired recovery point. sc_platform_control is a fresh cluster and inherited data_checksums=off; enabling checksums would need a rebuild, so the decision is recorded rather than assumed.",
     "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending.",
     "CLOSED 2026-10-16 in this run (was: the frozen candidate's Quick failed on verify.test.coverage.registry because the platform_maintenance_access and tenant_payload_operator tags had no registry disposition; the same two lines are in the preserved earlier Quick failure, so this was pre-existing and previously masked by the product-tree boundary violation). Both entries are now dispositioned against their real on-demand ORM gates, the tracked coverage snapshot is re-exported, and the gate passes. See coverage_registry_gap_20261016.",
-    "CLOSED 2026-10-16 in this run (was: audit.verification.lane_coverage.check denied the frozen candidate because two make targets stayed registered as dead surface after the coverage registry named them). Both registrations were removed through the reasoned unregister path and the frozen baseline now holds. See coverage_registry_gap_20261016.follow_on."
+    "CLOSED 2026-10-16 in this run (was: audit.verification.lane_coverage.check denied the frozen candidate because two make targets stayed registered as dead surface after the coverage registry named them). Both registrations were removed through the reasoned unregister path and the frozen baseline now holds. See coverage_registry_gap_20261016.follow_on.",
+    "CLOSED 2026-10-16 in this run (was: the customer duty's continuity baseline fails closed on one unreferenced 0-byte filestore object). The object is a native Odoo 17 attachment garbage-collection marker: _mark_for_gc writes an empty file under filestore/<db>/checklist/<store name> for every written or deleted store name, it is never referenced by ir_attachment.store_fname, and the list of those files is exactly what the filestore GC walks. It was classified as a maintenance marker and kept; nothing was deleted and no assertion was relaxed. The guard now separates attachment bodies, maintenance markers and unknown entries and blocks only on a missing/corrupt body or an unexplained file. See attachment_filestore_semantics_20261016.",
+    "OPEN 2026-10-16 (new, evidence limit): the record-level isolation pair (a legitimate role sees an owned object, an unauthorized subject does not) is not producible in this duty yet - the face issues a bearer token with no web session, the declared operator has no stored password or API key by design, and the customer database holds no business record. Credential, route, catalog and network isolation were verified instead; an empty database returning no rows is not accepted as isolation evidence. See pre_import_readonly_checks_20261016.",
+    "OPEN 2026-10-16 (new, approval identity): the approver credential file was cleared (credentials directory empty, last modified 06:13), so the next approval cannot be driven non-interactively from it and needs the owner's real approval identity through the authentication entry. The temporary import grant itself is fully revoked with no residual credential.",
+    "CLOSED 2026-10-16 in this run (declared-module drift): the customer duty database installed smart_core 17.0.1.1.14 while the deployed tree declares 17.0.1.1.15. It was closed through the governed upgrade entry, which captured and verified a pre-upgrade recovery point first, then upgraded the duty's declared module set and read it back. The database now reports smart_core 17.0.1.1.15 installed and carries the five maintenance-access columns PR #666 added, so this was a real schema gap and not a version string. The payload interface version was unchanged by the bump, so no payload re-authoring is caused by it. See smart_core_version_drift_20261016.",
+    "CLOSED 2026-10-16 in this run (frozen-candidate early gate): the first exact-head Quick of candidate 6adb56ff8184 failed verify.product.release.version because this run's own ledger copied the product-version literal, making the ledger a second authority for a value that must have exactly one source. The literal was replaced with a reference to VERSION (the same convention the other ledgers use) and the guard now passes with duplicates=0. See frozen_candidate_early_gate_fixes_20261016.failure_1_product_version_duplication.",
+    "CLOSED 2026-10-16 in this run (frozen-candidate early gate): the same Quick failed audit.verification.lane_coverage.check with stale_target_dispositions 1 > 0, because the continuity batch's new frontend_dev_incremental rule names verify.daily.duty.recovery and the target therefore stopped being zero-reference while its disposition still claimed it was not wired to any lane. The stale registration was removed through the reasoned unregister path (which refuses while the target is still zero-reference), and the check passes. The frozen allowance was deliberately not rewritten: see frozen_candidate_early_gate_fixes_20261016.failure_2_stale_zero_reference_disposition."
   ],
-  "branch": "fix/data-ownership-visibility-recovery-20261015",
+  "branch": "fix/daily-runtime-identity-relocation-closeout-20261016",
   "checks": {
     "business_entry_matrix_browser": {
       "inputs": [
@@ -287,7 +293,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "(1) B-line read-only independent review of this batch: APPROVE, no S1/S2, two document S3 closed in this batch and one recorded as hardening only; (2) re-run freeze preparation and the one exact-head Quick, then push to GitHub and let the remote gates decide merge readiness; (3) hand the payload staleness to the user-module delivery (re-emit at the installed version, re-sign, re-approve) and do not widen the adapter; (4) after that, the customer development tenant's data reconciliation and business acceptance. No step may be replaced by writing the model directly, fabricating an approval, reusing admin or relaxing a mechanism.",
+  "next_exact_step": " STATUS 2026-10-16: the two frozen-candidate early gates (duplicated product-version literal in this ledger, stale zero-reference disposition) are fixed and re-verified; the candidate is re-frozen and exactly one exact-head Quick is re-run before the candidate is pushed. After this closure the only external dependency is a signed payload re-emitted against the exact module build this tenant runs (<customer-module> 17.0.2.8.0); it must carry the build identity, the new checksum and the signature basis rather than a bumped version string. (1) The declared-module drift is closed, so the platform side of that compatibility basis is settled: the customer duty runs smart_core 17.0.1.1.15 from the deployed tree at b80841059b19. (2) The attachment/filestore continuity guard is settled by storage semantics; the customer duty's continuity baseline still has to be re-run against the fixed guard at the frozen candidate, together with the payload, and that re-run is a frozen-candidate activity rather than a step to repeat now. (3) When the payload arrives, and only then: verify delivery identity and signature -> read-only compatibility pre-check -> a real approval bound to the new checksum -> final plan -> import -> verify/reconcile -> revoke the temporary grant -> independent review. (4) Branch retirement stays suspended and the bookkeeping commits ride with the next real product candidate. Nothing here advances the import, repeats the empty-database isolation query or claims product delivery. No step may be replaced by writing the model directly, fabricating an approval, reusing admin or relaxing a mechanism.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -312,8 +318,19 @@
     "addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml",
     "addons/smart_construction_core/security/sc_record_rules.xml",
     "addons/smart_construction_core/services/business_data_ownership.py",
+    "addons/smart_core/__manifest__.py",
+    "addons/smart_core/controllers/__init__.py",
+    "addons/smart_core/controllers/platform_maintenance_access_controller.py",
+    "addons/smart_core/controllers/platform_ops_controller.py",
+    "addons/smart_core/data/tenant/database_strategy.v1.json",
     "addons/smart_core/models/platform_database_registry.py",
+    "addons/smart_core/security/database_governance.py",
+    "addons/smart_core/security/tenant_payload_operator.py",
+    "addons/smart_core/security/tenant_payload_operator_policy.py",
+    "addons/smart_core/tests/__init__.py",
     "addons/smart_core/tests/test_platform_database_governance_orm.py",
+    "addons/smart_core/tests/test_platform_maintenance_access_http.py",
+    "addons/smart_core/tests/test_tenant_payload_operator_lifecycle.py",
     "config/frontend/role_surface_exposure_declarations_v1.json",
     "config/ops/daily_runtime_database_duties.v1.json",
     "config/ops/daily_runtime_duty_stack.env",
@@ -378,6 +395,7 @@
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/governance/database_architecture_policy.md",
     "docs/ops/codex_execution_allowlist.md",
+    "docs/ops/daily_candidate_data_continuity_runbook_v1.md",
     "docs/ops/dev_acceptance_release_runbook_v1.md",
     "docs/ops/environment_tiers_unified_runbook_v1.md",
     "docs/ops/iterations/",
@@ -386,21 +404,36 @@
     "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
     "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
     "make/codex.mk",
+    "make/daily_candidate.mk",
     "make/dev.mk",
     "make/dev_test.mk",
     "make/guards.mk",
+    "scripts/audit/test_verification_lane_coverage.py",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_coverage.py",
+    "scripts/audit/verification_lane_dispositions.json",
     "scripts/demo/load_full.sh",
     "scripts/dev/local_sample_env_prepare.sh",
     "scripts/mod/upgrade.sh",
     "scripts/ops/archive_worktree_delivery_evidence.py",
+    "scripts/ops/daily_candidate_data_continuity.py",
+    "scripts/ops/daily_candidate_data_continuity_contract_v1.json",
     "scripts/ops/daily_runtime_data_ownership_probe.py",
     "scripts/ops/daily_runtime_data_ownership_repair_plan.py",
     "scripts/ops/daily_runtime_database_duty.py",
     "scripts/ops/daily_runtime_database_identity_inventory.py",
+    "scripts/ops/daily_runtime_duty_database_registration.py",
+    "scripts/ops/daily_runtime_duty_edition_release.py",
+    "scripts/ops/daily_runtime_duty_identity.py",
+    "scripts/ops/daily_runtime_duty_operator_grant.py",
+    "scripts/ops/daily_runtime_duty_payload.py",
     "scripts/ops/daily_runtime_frontend_build_align.py",
     "scripts/ops/daily_runtime_legacy_stack_retire.py",
+    "scripts/ops/daily_runtime_platform_security_admin_bootstrap.py",
+    "scripts/ops/daily_runtime_platform_security_admin_credential.py",
     "scripts/ops/daily_runtime_routing_inventory.py",
     "scripts/ops/daily_runtime_tenant_addons_deliver.py",
+    "scripts/ops/daily_runtime_tenant_recovery_contract_v1.json",
     "scripts/ops/daily_runtime_tenant_topology_inventory.py",
     "scripts/ops/daily_runtime_three_database_closure.py",
     "scripts/ops/dev_acceptance_release_probe.py",
@@ -410,21 +443,32 @@
     "scripts/ops/platform_database_register.py",
     "scripts/ops/platform_database_rehearsal.py",
     "scripts/ops/platform_database_rehearsal_runtime.py",
+    "scripts/ops/platform_security_admin_bootstrap.py",
+    "scripts/ops/platform_security_admin_credential.py",
+    "scripts/ops/test_daily_candidate_data_continuity.py",
     "scripts/ops/test_daily_runtime_data_ownership_probe.py",
     "scripts/ops/test_daily_runtime_data_ownership_repair_plan.py",
     "scripts/ops/test_daily_runtime_database_duty.py",
     "scripts/ops/test_daily_runtime_database_identity_inventory.py",
+    "scripts/ops/test_daily_runtime_duty_database_registration.py",
+    "scripts/ops/test_daily_runtime_duty_edition_release.py",
+    "scripts/ops/test_daily_runtime_duty_operator_grant.py",
+    "scripts/ops/test_daily_runtime_duty_payload.py",
     "scripts/ops/test_daily_runtime_frontend_build_align.py",
     "scripts/ops/test_daily_runtime_legacy_stack_retire.py",
+    "scripts/ops/test_daily_runtime_platform_security_admin_bootstrap.py",
     "scripts/ops/test_daily_runtime_routing_inventory.py",
     "scripts/ops/test_daily_runtime_tenant_addons_deliver.py",
     "scripts/ops/test_daily_runtime_tenant_topology_inventory.py",
     "scripts/ops/test_daily_runtime_three_database_closure.py",
+    "scripts/ops/test_platform_security_admin_bootstrap.py",
+    "scripts/ops/test_platform_security_admin_credential.py",
     "scripts/ops/test_safe_worktree_cleanup.py",
     "scripts/test/test_safe.sh",
     "scripts/verify/daily_dev_acceptance_env_guard.py",
     "scripts/verify/data_scope_declarations.json",
     "scripts/verify/environment_topology_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/platform_database_governance_guard.py",
     "scripts/verify/role_surface_exposure_declaration_guard.py",
     "scripts/verify/sc_data_scope_ceiling_generate.py",
@@ -438,45 +482,8 @@
     "scripts/verify/test_role_surface_exposure_declaration_guard.py",
     "scripts/verify/test_sc_data_scope_ceiling_generate.py",
     "scripts/verify/test_sc_data_scope_rule_coverage_guard.py",
-    "scripts/verify/test_test_coverage_registry_audit.py",
-    "docs/ops/daily_candidate_data_continuity_runbook_v1.md",
-    "make/daily_candidate.mk",
-    "scripts/ops/daily_candidate_data_continuity.py",
-    "scripts/ops/daily_candidate_data_continuity_contract_v1.json",
-    "scripts/ops/daily_runtime_tenant_recovery_contract_v1.json",
-    "scripts/ops/test_daily_candidate_data_continuity.py",
-    "scripts/ops/daily_runtime_duty_identity.py",
-    "scripts/ops/daily_runtime_duty_payload.py",
-    "scripts/ops/test_daily_runtime_duty_payload.py",
-    "scripts/ops/daily_runtime_duty_edition_release.py",
-    "scripts/ops/test_daily_runtime_duty_edition_release.py",
-    "scripts/ops/daily_runtime_duty_operator_grant.py",
-    "scripts/ops/test_daily_runtime_duty_operator_grant.py",
-    "addons/smart_core/__manifest__.py",
-    "addons/smart_core/security/tenant_payload_operator.py",
-    "addons/smart_core/security/tenant_payload_operator_policy.py",
-    "addons/smart_core/tests/__init__.py",
-    "addons/smart_core/tests/test_tenant_payload_operator_lifecycle.py",
     "scripts/verify/test_tenant_payload_operator_policy.py",
-    "scripts/ops/daily_runtime_duty_database_registration.py",
-    "scripts/ops/test_daily_runtime_duty_database_registration.py",
-    "addons/smart_core/controllers/__init__.py",
-    "addons/smart_core/controllers/platform_maintenance_access_controller.py",
-    "addons/smart_core/controllers/platform_ops_controller.py",
-    "addons/smart_core/data/tenant/database_strategy.v1.json",
-    "addons/smart_core/security/database_governance.py",
-    "addons/smart_core/tests/test_platform_maintenance_access_http.py",
-    "scripts/ops/daily_runtime_platform_security_admin_bootstrap.py",
-    "scripts/ops/platform_security_admin_bootstrap.py",
-    "scripts/ops/test_daily_runtime_platform_security_admin_bootstrap.py",
-    "scripts/ops/test_platform_security_admin_bootstrap.py",
-    "scripts/audit/verification_lane_baseline.json",
-    "scripts/audit/verification_lane_coverage.py",
-    "scripts/audit/verification_lane_dispositions.json",
-    "scripts/audit/test_verification_lane_coverage.py",
-    "scripts/ops/daily_runtime_platform_security_admin_credential.py",
-    "scripts/ops/platform_security_admin_credential.py",
-    "scripts/ops/test_platform_security_admin_credential.py"
+    "scripts/verify/test_test_coverage_registry_audit.py"
   ],
   "status": "active",
   "step_d_customer_recovery_point_20261015": {
@@ -3408,5 +3415,284 @@
     ],
     "stage_status": "Batch acceptance only. Mainline integration, version release and product delivery are not claimed.",
     "evidence": "The review ran as a separate read-only executor against the frozen head; the findings are summarised here and the raw transcript stays outside the product tree."
+  },
+  "mainline_integration_20261016": {
+    "pr": 666,
+    "url": "https://github.com/lidefend/sce-backend-odoo/pull/666",
+    "base": "main",
+    "head_branch": "fix/data-ownership-visibility-recovery-20261015",
+    "frozen_head": "6590a4333834f17312712c90715bcf265e4f298b",
+    "merge_method": "squash",
+    "merge_commit": "04c6a1292c33b923abc666bc1444c869372081b3",
+    "merged_at": "2026-10-16T00:19:33Z",
+    "authoritative_remote": "https://github.com/lidefend/sce-backend-odoo.git",
+    "required_gates_on_the_exact_head": {
+      "public_guard": "success 1m3s",
+      "merge_policy_gate": "success 7s",
+      "professional_quality_gate": "success 5m39s",
+      "frontend_release_gate": "success 10s",
+      "release_candidate_gate": "success 4s"
+    },
+    "local_quick_evidence": "the merge gate reused the exact-head ci.local.quick receipt for 6590a433 instead of re-running the suite",
+    "readback": "origin/main == 04c6a1292c33b923abc666bc1444c869372081b3; git diff --stat origin/main 6590a433 is empty, so the merged tree equals the frozen tree",
+    "not_a_deployment": "A merge is not a deployment. No version was released, no target environment was upgraded and no data was migrated in this step.",
+    "branch_continuation": "PR #666 was squash-merged, so this branch is no longer an ancestor of main. Before the next candidate it must synchronise onto 04c6a129 (governed entry make workspace.branch.sync-main) or a fresh branch must be cut from main; otherwise a follow-up PR would re-present the already-merged diff."
+  },
+  "branch_replay_after_squash_20261016": {
+    "supersedes": "mainline_integration_20261016.branch_continuation (the requirement recorded there was executed here)",
+    "reason": "PR #666 was squash-merged, so the delivery branch was no longer an ancestor of main. The governed sync entry refuses a published branch name, and the already-published branch ref must not be rewritten, so a new unpublished branch was cut from the same head and the single responsibility commit after the merged dependency head was replayed onto exact main.",
+    "previous_branch": "fix/data-ownership-visibility-recovery-20261015",
+    "previous_branch_state": "published and left untouched at 6590a4333834f17312712c90715bcf265e4f298b; PR #666 MERGED and closed; no force push and no ref move.",
+    "new_branch": "fix/daily-runtime-identity-relocation-closeout-20261016",
+    "entry": "make workspace.branch.sync-main WORKSPACE_BRANCH_SYNC_ROOT=<root> EXPECTED_BRANCH=<new branch> EXPECTED_HEAD=5df3e09de37f773e7812d9f4a5ae53e51b05bc3b EXPECTED_OLD_BASE=10bf72ef4bb060556bd2844598b58f9806392d34 EXPECTED_MAIN=04c6a1292c33b923abc666bc1444c869372081b3 DEPENDENCY_PR=666 DEPENDENCY_HEAD=6590a4333834f17312712c90715bcf265e4f298b DEPENDENCY_MERGE=04c6a1292c33b923abc666bc1444c869372081b3 CONFIRM_WORKSPACE_BRANCH_SYNC=REBASE_UNPUBLISHED_BRANCH_ON_EXACT_MAIN",
+    "expected_old_base": "10bf72ef4bb060556bd2844598b58f9806392d34",
+    "expected_main": "04c6a1292c33b923abc666bc1444c869372081b3",
+    "old_head": "5df3e09de37f773e7812d9f4a5ae53e51b05bc3b",
+    "new_head": "c75915356bc43eadf1bf27ea3115a4c13ac31b47",
+    "replay_base": "6590a4333834f17312712c90715bcf265e4f298b",
+    "result": "PASS, zero conflicts, generated_evidence_invalidated=none",
+    "recovery_bundle": ".git/codex-recovery/branch-sync/fix-daily-runtime-identity-relocation-closeout-20261016-5df3e09de37f773e7812d9f4a5ae53e51b05bc3b.bundle",
+    "verification": "origin/main is an ancestor of the new head; git rev-list --count origin/main..HEAD is 1; the stable patch identity of origin/main..HEAD equals that of 6590a433..5df3e09d (6ffa16de11accb91338eb30a671e608817407c4f); the tree difference against main is confined to this run's ledger and iteration record.",
+    "no_published_history_rewritten": "The new branch carries a new name. The previously published branch ref was neither moved nor force-pushed, and the recovery bundle stays inside .git so the pre-replay head is locally verifiable.",
+    "candidate_disposition": "This commit is bookkeeping (a run-ledger and iteration-record change). A standalone pull request for it would be denied by pr.merge.local_quick_gate, which refuses a candidate whose diff against the merge base is confined to .agent/ and docs/. It therefore stays local and rides along with the next product candidate on this branch, as that gate directs, rather than buying a full suite run for zero new coverage.",
+    "not_a_deployment": "A branch replay and a bookkeeping commit are not a deployment.",
+    "ledger_rebinding": "This run's own branch binding was moved from the merged branch to the new branch and baseline_sha was aligned to the exact main it was replayed onto, because the resume entry requires run.branch to equal the checked-out branch and baseline_sha to be an ancestor of HEAD. Without the rebinding make agent.run.resume reported unregistered and then run schema or branch mismatch.",
+    "receipt_consequence": "Local check receipts under .runtime/agent-runs/<run>/ bind the branch name, so after the ledger rebinding every existing receipt for this run reports receipt identity mismatch (stale) while none of their declared inputs changed: the replay preserved the stable patch identity. They are advisory iteration receipts, not delivery gates, and they are re-recorded under the new branch identity by make agent.run.record when the next candidate on this branch actually needs them; they are not re-run now, because re-recording would buy no new coverage for a bookkeeping-only candidate."
+  },
+  "closeout_attempts_20261016": {
+    "branch_retirement": {
+      "entry": "make branch.cleanup.feature CLEAN_BRANCH=<merged branch> CLEAN_BRANCH_REMOTE=origin EXPECTED_BRANCH_SHA=6590a4333834f17312712c90715bcf265e4f298b EXPECTED_MAIN_SHA=04c6a1292c33b923abc666bc1444c869372081b3",
+      "result": "REFUSED before any deletion, exactly as designed: the exact-head merged PR check PASSed, then the entry stopped at 'origin/main still binds <merged branch> in .agent/active-runs.json'. Neither the remote ref nor the local ref was touched; nothing was force-pushed.",
+      "precondition_prepared": "The merged branch's local ref was aligned to its reviewed and published SHA 6590a433 so that local, remote and reviewed identity agree. The superseded local commit 5df3e09d is not lost: its content is c7591535 on the new branch and it is inside the recovery bundle.",
+      "when_it_can_run": "Only after the run-ledger rebinding reaches main through an ordinary merged PR (the next product candidate on this branch). A standalone bookkeeping PR cannot clear the binding, because pr.merge.local_quick_gate refuses a candidate whose diff is confined to .agent/ and docs/.",
+      "why_the_binding_check_exists": "A retired branch must never stay bound in the run index, or the next closeout pays a whole freeze plus Quick cycle to clear bookkeeping it did not create."
+    },
+    "tenant_data_reconciliation": {
+      "requested": "the customer development tenant's data reconciliation (12386 / 6322 / 29 / 6035) plus business acceptance",
+      "result": "cannot start: blocked outside this repository, not skipped by choice",
+      "blocker": "No payload exists for the module version this tenant actually runs, so the signed-payload plan and import stop at TPV1_CUSTOMER_ADAPTER_INCOMPATIBLE before any ownership decision is taken. The only daily module trees ever delivered are 17.0.2.6.0 and 17.0.2.8.0, while every payload in the store declares 17.0.2.6.0 or 17.0.2.7.0.",
+      "not_retried": "The failing payload plan was not re-run: its inputs are unchanged and retrying an unchanged failure yields no new result. What changes the outcome is a payload re-emitted and re-signed at the installed module version, which is customer/user-module delivery (P2/P4) work.",
+      "approval_state": "The maintenance approval is bound to the stale payload checksum and its window ends 2026-10-16 08:43:20 CST, about ten minutes after this check (08:32 CST); a new approval bound to the new checksum is required regardless.",
+      "ownership_unchanged": "The product repository must not invent a customer-specific backfill, must not default ownership and must not relax the adapter to let a stale payload pass.",
+      "verified_here": "Read-only only: the retirement gate above, verify.tenant.product_payload_boundary PASS (files=8341), and this candidate's own pending history containing 0 commits that touch any customer identity token."
+    },
+    "not_a_deployment": "No version was released, no target environment was upgraded and no data was migrated in these closeout attempts."
+  },
+  "pre_import_readonly_checks_20261016": {
+    "purpose": "Owner scoped this turn to three read-only checks with a stated purpose and then a stop while the user-module delivery re-emits the signed payload. Nothing was widened: the failing payload plan was not re-run (its inputs are unchanged), no new repository/menu/environment inventory was taken, no database was written and no guard was relaxed.",
+    "window": {
+      "head": "40d011a127b1fa93823187ed2fc0d87a72f97f1c",
+      "deployment_tool_sha": "40d011a127b1fa93823187ed2fc0d87a72f97f1c",
+      "published_face_revision": "b80841059b196f66487f4b598d90d3b0662476b4",
+      "product_version_source": "VERSION",
+      "product_version_note": "the runtime readback product version equals the single-source VERSION file; the literal is intentionally not duplicated here because verify.product.release.version enforces exactly one occurrence (VERSION plus the one declared derived observation)",
+      "mode": "read_only",
+      "database_writes": 0
+    },
+    "check_1_pre_import_baseline": {
+      "entry": "make daily.runtime.duty.recovery.remote_baseline DAILY_CANDIDATE_SSH_HOST=<daily-host>",
+      "result": "EXIT=2 with DAILY_CANDIDATE_DATA_CONTINUITY_ERROR=attachment/filestore inventory differs. The check is correct to fail closed: it compares distinct_store_fnames (385) with filestore.file_count (386).",
+      "database_is_not_empty_and_is_not_required_to_be": "Counted read-only with the duty's maintenance role: res_company 1, res_users 6, ir_module_module 677, ir_attachment 466 rows / 465 with a store name / 385 distinct store names, project_project 0, construction_contract 0, payment_request 0. This is initialization, not migration: there is no source record, no business fact and no import batch yet.",
+      "import_batch": "sc.tenant.payload.import.batch holds 0 rows, so no import has ever run in this duty. The 12386 / 6322 / 29 / 6035 reconciliation has nothing to reconcile yet and cannot be used as a pre-import source count.",
+      "installed_declared_set": [
+        "base 17.0.1.3 installed",
+        "smart_core 17.0.1.1.14 installed",
+        "smart_construction_core 17.0.0.171 installed",
+        "<customer-module> 17.0.2.8.0 installed",
+        "three <customer-module> history/legacy modules uninstalled"
+      ],
+      "declared_set_drift": "The delivered tree declares smart_core 17.0.1.1.15 while this duty still has 17.0.1.1.14 installed, so the governed declared-module upgrade (implemented and registered in duty_module_upgrade_phase_20261016, never run in the target environment) has not been run on this duty either. Whether the payload import requires it is a compatibility fact the read-only pre-check must establish; it is not assumed here and it is not claimed to block the payload.",
+      "attachment_filestore_delta": "Every referenced store name has its file (missing_files 0, attachments_missing_their_file []). Exactly one file is unreferenced: a 0-byte object under a mirror-shaped subtree, characterized below. No 'non-empty' state was judged wrong and the whole database was not required to be zero.",
+      "stray_object": {
+        "path": "filestore/<customer-tenant-db>/checklist/<shard>/<sha1>",
+        "size_bytes": 0,
+        "mtime": "2026-10-16 04:49:10.694 +0800",
+        "same_inode_host_and_container": true,
+        "inode": "3299863 (identical from the host volume path and from inside the application container, so it is not a duplicate-mount artifact)",
+        "owner": "uid 101 / gid 101 = the application user inside the container",
+        "referenced_by_any_attachment": false,
+        "rows_referencing_a_checklist_path": 0,
+        "sha_is_a_real_attachment": "The same sha is the native store name of five res.partner id 7 image variants (image_1920/1024/512/256/128) whose create_date is 2026-10-15 20:49:10.396 UTC - the same second as the stray file's mtime. Their native file is present at <shard>/<sha>.",
+        "subtree_shape": "'checklist' is a structural mirror of the filestore root: it contains exactly the same 201 shard names, its directories were created 2026-10-15 17:33 (the tenant initialization window) and all of them are empty except the one 0-byte file.",
+        "writer_search": "No governed tree writes that path: the product repository (addons, scripts, make), the delivered customer module tree, the deployment-tools tree and the host cron/systemd surface contain no code creating a checklist filestore subtree - the word appears only as a document/guard term. The only host cron is an ACME renewal (04:40 daily, 'Successful').",
+        "instant_of_write": "The application log for the write instant contains no module install/upgrade and no error - only the container's own 10 s /web/login healthcheck. The container started 2026-10-15T20:47:31Z with RestartCount 0.",
+        "classification": "Not initialization data and not a business fact: it is unreferenced, 0-byte residue inside a tree that no governed code writes. Its producer is outside the governed product/ops surface; the origin is not proven by evidence and is recorded as unresolved rather than guessed."
+      },
+      "mechanism_finding_registered_not_fixed": "The continuity assertion 'distinct_store_fnames == file_count' equates continuity with 'no orphan files at all'. Orphan filestore files are normal in Odoo (a rolled-back transaction leaves them), so the assertion is stricter than the property it is meant to protect; the property that actually holds here is missing_files == 0. Owner decision requested: either scope the fatal assertion to missing files and report orphans as a non-fatal count, or keep fail-closed and remove the residue through a managed P4 cleanup with this drift registered. Nothing was deleted, no guard was edited and no database was written while establishing this."
+    },
+    "check_2_isolation_negatives": {
+      "faces": "Three duties read back on their own ports, each reporting its own database through /api/runtime-version and the same published revision and product version. No face serves another duty's database.",
+      "session_credential_is_duty_bound": "The bootstrap secret is bound to its duty: another duty's secret is refused with 401 AUTH_REQUIRED 'invalid bootstrap secret' on every face (all six crossing combinations), and the three declared secrets are distinct. This is a real negative using each duty's own legitimate entry, not an administrator bypass.",
+      "enumeration_and_anonymous_ops": "POST /web/database/list is answered with odoo.exceptions.AccessDenied on all three faces (no database enumeration), and anonymous GET /api/ops/tenants is 403 on all three.",
+      "foreign_db_name_is_not_a_routing_decision": "A database name that exists nowhere is accepted by session.bootstrap (200), and the response carries no database field, so a payload db name cannot be shown to move a session. Recorded as a probe limit with its reason - the bootstrap issues a bearer token, so /web/session/get_session_info answers SessionExpiredException and the bound database cannot be read back that way. No fact shows a session bound to a foreign database, and the duty-bound secret above is the positive control.",
+      "cluster_role_isolation": "Each duty cluster's pg_roles contains only its own application and maintenance roles; no other duty's roles are present in any of the three clusters.",
+      "network_and_port_isolation": "The three duties run on separate compose networks: from the customer application container the other two duties' database containers do not resolve (gaierror) while its own resolves. No duty publishes a database port on the host.",
+      "not_provable_yet_registered": "The record-level pair 'a legitimate role sees an owned object and an unauthorized subject does not' cannot be produced now: the customer face's bootstrap session is a bearer token with no web session, the declared operator holds no stored password and no API key by design, and the customer database holds no business record yet (0 projects / contracts / payments), so there is no existing owned object to discriminate on and creating one or a credential is outside this scope. An empty database returning no rows is explicitly not treated as evidence of isolation."
+    },
+    "check_3_authorization_and_credential_state": {
+      "ledger": "Read back through the platform's own read entry (the approver credential file is gone, so the duty bootstrap session was used): five records, all terminal - revoked, rejected, expired, revoked, revoked. No window is open.",
+      "all_records_bound_to_the_superseded_subject": "Every record carries the superseded subject checksum f1adc6fb..., so no existing record can authorize a new payload even if one were open. A new approval must bind the new payload checksum.",
+      "approver_credential": "The approver credential file no longer exists - the credentials directory is empty and was last modified 2026-10-16 06:13 - so no credential material was left behind. Consequence registered: a fresh approval cannot be driven non-interactively from that file and needs the owner's real approval identity through the authentication entry.",
+      "temporary_import_permission_fully_revoked": "Operator readback (writes 0): the declared operator exists and is active in company 1 with is_importer=false, importer group membership 0, no implied closure, import_batch_count 0, no stored password, no native API key and is_data_operator=false. The temporary grant is fully revoked with no residual credential, so no cleanup was left pending for this turn.",
+      "released_edition_still_carried": "The customer duty still carries its own released construction.standard snapshot (id 2, version daily-navigation-standard-<published-revision>); it owns an effective snapshot and did not gain platform release authority."
+    },
+    "evidence": {
+      "log_dir": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/pre-import-readonly-20261016",
+      "files": [
+        "duty-recovery-baseline.log (the failing baseline)",
+        "attachment-presence.json, filestore-diff.json, filestore-detail2.json, filestore-odd-dirs.log",
+        "attachment_reference_probe.py, attachment-reference.json (is the stray object referenced?)",
+        "pre_import_baseline_readback.py, pre-import-baseline.json (counts, batches, installed set)",
+        "isolation_negative_probe.py, isolation-negatives.json",
+        "isolation_negative_probe2.py, isolation-negatives-2.json",
+        "isolation_session_binding_probe.py, isolation-session-binding.json",
+        "isolation_credential_crossing_probe.py, isolation-credential-crossing.json",
+        "maintenance_ledger_readback.py, maintenance-ledger-readback.log",
+        "operator-readback.log"
+      ],
+      "retention": "untracked evidence storage; no credential value and no business row content appears in any of them"
+    },
+    "unique_external_dependency": "A signed payload re-emitted against the exact module build this tenant runs (<customer-module> 17.0.2.8.0), carrying the build SHA/digest, the compatibility declaration, the new checksum and the signature basis, plus the model/source/count definitions for 12386 and its three components, the expected amount/relation/attachment reconciliation, and the idempotence, failure-recovery and migration preconditions. Counts must follow the signed payload's own declaration; a difference is explained, never reconciled by editing acceptance numbers.",
+    "status": "Three read-only checks complete; nothing else was widened and no plan was re-run. One owner decision is requested (the continuity assertion's orphan-file strictness) and one probe limit is registered (the record-level role pair). The import chain stays stopped on the payload, and the payload was not accepted, the adapter was not relaxed and no approval was fabricated."
+  },
+  "attachment_filestore_semantics_20261016": {
+    "case": "the pre-import continuity baseline of the customer duty failed closed on one unreferenced 0-byte filestore object",
+    "owner_ruling": "do not relax the guard globally and do not delete the file to make a check pass; classify the object by the running Odoo storage semantics first",
+    "task_1_code_basis": {
+      "implementation_read_from": "the customer duty odoo container's own odoo package, read-only",
+      "odoo_release": "17.0-20251222 17.0",
+      "facts": [
+        "_mark_for_gc writes an empty file at filestore/<db>/checklist/<store_fname>",
+        "_file_write creates it for every written store name and _file_delete creates it for every removed one",
+        "_gc_file_store_unsafe walks that directory and unlinks every marker name that is not in the live store_fname set, then removes the marker",
+        "_get_path derives the store name from the content digest (checksum algorithm sha1)",
+        "the product addons tree ships no ir.attachment storage extension, so the stock implementation is authoritative"
+      ],
+      "database_readback": {
+        "rows_with_that_store_name": 5,
+        "checksum_matches": 5,
+        "store_name_not_checksum_shaped": 0,
+        "attachments_total": 466,
+        "store_fname_nonempty": 465
+      },
+      "classified_object": "checklist/<40-hex sha> -- 0 bytes, store-name shaped, under checklist: a native maintenance marker, not an attachment orphan",
+      "act_honoured": "nothing was deleted; no directory-level exclusion was added"
+    },
+    "task_2_guard_fix": {
+      "removed": "_filestore_inventory() and the baseline assertion distinct_store_fnames == file_count",
+      "added": "a read-only semantic scan of the duty's own filestore that classifies body / maintenance marker / unknown and asserts each closure separately",
+      "blocking_rules": [
+        "a referenced attachment that is missing, unreadable, or whose content differs from the recorded checksum blocks",
+        "an empty checklist/<store-name shaped> entry is a maintenance marker: counted separately, kept, never deleted",
+        "everything else blocks: an unreferenced store-shaped file, a non-empty or badly named checklist entry, and any symlink/fifo/socket/device"
+      ],
+      "restore_closures": [
+        "all_attachments_present (referenced_body_count plus no missing or corrupt body)",
+        "restored_content_matches_source (referenced_body_content_digest)",
+        "maintenance_markers_preserved (maintenance_marker_digest)"
+      ],
+      "counter_examples_proven": [
+        "a legal empty GC marker is not reported as an orphan",
+        "a non-empty file at the same checklist position cannot escape as a marker",
+        "a missing referenced attachment still fails",
+        "a content/checksum divergence still fails",
+        "an unknown extra file still fails",
+        "a count-only comparison would pass two single-body filestores that hold different content"
+      ]
+    },
+    "files": [
+      "scripts/ops/daily_candidate_data_continuity.py",
+      "scripts/ops/test_daily_candidate_data_continuity.py",
+      "docs/ops/daily_candidate_data_continuity_runbook_v1.md",
+      "scripts/verify/frontend_dev_incremental.py"
+    ],
+    "early_check_mapping": "scripts/verify/frontend_dev_incremental.py now routes the tool, its tests and its contract to verify.daily.duty.recovery; the plan's unmappedPathCount went from 2 to 0",
+    "verification": {
+      "target": "verify.daily.duty.recovery",
+      "tests": 39,
+      "status": "passed",
+      "exit": 0
+    },
+    "not_a_pass": "this closes the guard defect only; the customer duty's continuity baseline has not been re-run against the fixed guard and no import has happened",
+    "evidence": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/attachment-storage-semantics-20261016/ and .../pre-import-readonly-20261016/"
+  },
+  "smart_core_version_drift_20261016": {
+    "case": "the customer duty database installed smart_core 17.0.1.1.14 while the deployed source tree declares 17.0.1.1.15",
+    "impact_analysis": {
+      "three_way": {
+        "runtime_code": "/opt/projects/repos/sce-product-odoo/addons at b80841059b19 -> smart_core manifest 17.0.1.1.15",
+        "delivery_tree": "the customer addons tree bfbc736c delivers <customer-module> 17.0.2.8.0 and carries no smart_core",
+        "database_installed": "customer_tenant_dev smart_core 17.0.1.1.14; platform_control and demo were already 17.0.1.1.15"
+      },
+      "delta_content": "PR #666 added five columns to the existing sc.platform.maintenance.access model (evidence_reference, operator_identity_key, subject_checksum, authorized_operations, decision_note), two controllers, two security service modules and one data file that is read on demand; it changed no ACL, no record rule, no manifest data XML and no post_init_hook",
+      "migration_dir": "none: addons/smart_core/migrations has no 17.0.1.1.15 directory",
+      "payload_interface": "PRODUCT_INTERFACE_VERSION stayed \"1\", so the platform bump does not invalidate a payload's product_interface_version; the payload blocker remains the customer module version only",
+      "version_field_only_forbidden": "honoured: no version column was edited by hand",
+      "single_drift_point": "every other declared module matched (the differing raw values for smart_scene 1.0.0 / smart_license_core 0.1.0 / smart_construction_bundle 0.1.1 are Odoo's series-prefixed forms 17.0.1.0.0 / 17.0.0.1.0 / 17.0.0.1.1, not drift)"
+    },
+    "recovery_preparation": {
+      "entry": "make daily.runtime.database.duty.upgrade captures and verifies a pre-upgrade point inside the duty's own backup namespace before it writes",
+      "declaration_digest": "7103947eb771ded352a10e7f4b92f265222dcdc0bc52408b99e79638e93509f4",
+      "expected_sha": "b80841059b196f66487f4b598d90d3b0662476b4"
+    },
+    "execution": {
+      "entry": "make daily.runtime.database.duty.upgrade",
+      "selection": "customer_tenant_dev",
+      "phase": "upgrade",
+      "status": "PASS",
+      "recovery_point": {
+        "verified": true,
+        "bytes": 11269872,
+        "restore_entries": 23011,
+        "sha256": "077c2810b7462c976434e2fed984e8a14585d458be642a15a6ad64e16c13a27d"
+      },
+      "assertions": [
+        "a_verified_recovery_point_precedes_the_upgrade",
+        "the_declared_module_upgrade_completed"
+      ],
+      "declared_modules": "the eleven modules the duty declares, upgraded as one set (the entry takes no module argument)",
+      "report": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/smart-core-upgrade-20261016.json"
+    },
+    "readback": {
+      "smart_core": "17.0.1.1.15 installed",
+      "base": "17.0.1.3 installed",
+      "maintenance_access_columns": [
+        "approved_by",
+        "authorized_operations",
+        "capability",
+        "decision_note",
+        "evidence_reference",
+        "operator_identity_key",
+        "registration_id",
+        "subject_checksum",
+        "valid_from",
+        "valid_until"
+      ],
+      "installed_total": 78,
+      "note": "the five new columns are present after the upgrade and were absent before, so this was a real schema gap rather than a cosmetic version mismatch"
+    },
+    "not_needing_change": "the two shipped tests that hardcode 17.0.1.1.14 (scripts/ops/test_daily_runtime_tenant_topology_inventory.py, scripts/verify/test_contract_supply_chain_attestation.py) are synthetic fixtures, not runtime assertions",
+    "evidence": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/smart-core-drift-before-20261016.json, smart-core-drift-after-20261016.json, smart-core-drift-plan-20261016.json, smart-core-upgrade-20261016.json"
+  },
+  "frozen_candidate_early_gate_fixes_20261016": {
+    "purpose": "The first exact-head Quick of frozen candidate 6adb56ff8184 failed on two cheap gates before any product behaviour ran. Both were real defects already carried by this branch, not false positives. Both are fixed here; no product semantics were touched and no guard was relaxed.",
+    "failure_1_product_version_duplication": {
+      "gate": "verify.product.release.version (ci.local.quick shard 5/7)",
+      "finding": "FAIL - product version duplicated outside VERSION: ['.agent/runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/run.json']",
+      "introduced_by": "e8a7ad86, which recorded the read-only observation window with a literal product_version value",
+      "why_it_is_a_defect": "The guard enforces exactly one occurrence of the product version (VERSION plus its one declared derived observation). A bookkeeping ledger that copies the literal becomes a second authority for the version, which is the drift the single-source rule exists to prevent; the same rule had already caught this class of duplication in earlier run ledgers.",
+      "fix": "the literal was replaced with product_version_source=VERSION plus an explicit note, matching the convention the other run ledgers already use",
+      "verified": "make verify.product.release.version PASS version=1.0.0-rc.20 duplicates=0 derived_observations=1 (11 + 10 tests OK)"
+    },
+    "failure_2_stale_zero_reference_disposition": {
+      "gate": "audit.verification.lane_coverage.check (ci.local.quick shard 0/7)",
+      "finding": "DENY verification surface grew: stale_target_dispositions: 1 > frozen baseline 0 (verify.daily.duty.recovery)",
+      "cause": "the attachment-continuity batch added a frontend_dev_incremental rule that names verify.daily.duty.recovery, so the target left the zero-reference set and its disposition statement ('needs a local duty environment, not wired to any lane') became false",
+      "fix": "removed through the reasoned unregister path (--unregister-target with a recorded reason). The tool refuses that path while the target is still zero-reference, so it cannot be used to silence a live finding.",
+      "verified": "audit.verification.lane_coverage.check PASS surface within the frozen baseline; audit.verification.lane_coverage.test OK",
+      "deliberately_not_done": "The frozen allowance was not rewritten with --write-baseline in this batch. Measured surface is now 783 zero-reference targets against an allowance of 786, and the frozen identity set still carries three names that are no longer zero-reference: verify.daily.duty.recovery plus the two verify.smart_core.*.orm targets closed by an earlier batch. A rewrite would also fold an unrelated +1 target definition (recorded 2335 -> 2336) into this bugfix batch, so the tightening is left to the batch that owns that drift. The allowance is not exploitable meanwhile: the check fails on any name that is not already inside the frozen identity set.",
+      "follow_up": "tighten max_targets_zero_reference and the frozen identity set with --write-baseline in the batch that owns the newly defined target"
+    },
+    "quick_state": "No receipt was issued for 6adb56ff8184. Both gates above are fixed in the commits that follow, the candidate is re-frozen, and exactly one exact-head Quick is re-run. Because each shard stops at its first failure, the remaining prerequisites of shard 0 and shard 5 were not reached; they are validated by that re-run rather than asserted here."
   }
 }

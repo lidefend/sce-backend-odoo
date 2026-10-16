@@ -2453,3 +2453,224 @@ PASS、`verify.test.coverage.registry` PASS，以及两份登记的程序化比�
 而唯一满足它的方式（改写已发布历史）已被明确禁止。可满足且被强制的边界仍是**工作树／HEAD 干净**，
 本候选不引入新的暴露类别。若日后要求产品仓库历史同样干净，须先接线该暴露审计并取得单独裁定；
 本轮两项都不做，也不隐去这条事实。
+
+## 2026-10-16：主线集成结果（PR #666，squash 合并）
+
+客户身份迁出产品树这一批（本节上半部分）的冻结候选 `6590a433` 经受保护 PR 流程合入 `main`，
+未改写任何已发布历史。
+
+| 项 | 值 |
+|---|---|
+| PR | [#666](https://github.com/lidefend/sce-backend-odoo/pull/666) |
+| 目标分支 | `main` |
+| 冻结 HEAD | `6590a4333834f17312712c90715bcf265e4f298b` |
+| 合并方式 | squash |
+| 合并提交 | `04c6a1292c33b923abc666bc1444c869372081b3` |
+| 合并时间 | 2026-10-16T00:19:33Z |
+| 权威远端 | `https://github.com/lidefend/sce-backend-odoo.git` |
+
+远端必需门禁全部绑定在该冻结 HEAD 的最新源提交上并通过：
+
+| 门禁 | 结果 |
+|---|---|
+| `public_guard` | success 1m3s |
+| `merge_policy_gate` | success 7s |
+| `professional_quality_gate` | success 5m39s |
+| `frontend_release_gate` | success 10s |
+| `release_candidate_gate` | success 4s |
+
+本地 Quick 也绑定同一冻结 HEAD（8/8 分片、`producer=atomic-ci-local-quick-runner-v2`、`schema_version=3`）。
+合并走受管入口 `make pr.merge.prep PR=666` → `make pr.merge PR=666 EXPECTED_HEAD=6590a433…`；
+`local_quick_gate` 复用该回执，未重跑套件。
+
+回读：`origin/main == 04c6a1292c33b923abc666bc1444c869372081b3`，且 `git diff --stat origin/main 6590a433`
+为空，即合并树与冻结树逐字节一致。
+
+**这不是部署。** 未发布版本、未升级任何目标环境、未迁移任何数据；合并本身不触发产品部署。
+
+分支续接：PR #666 为 squash 合并，本分支已不再是 `main` 的祖先。下一个候选之前必须把本分支同步到
+`04c6a129`（受管入口 `make workspace.branch.sync-main`），或从 `main` 另切新分支；
+否则后续 PR 会重复呈现已合并的 diff。
+
+### 阶段口径
+
+- 可声明：**批次验收完成** + **主线集成完成**（PR #666 已合并，必需门禁在精确 HEAD 全部通过）。
+- 未完成：**版本发布**、**产品交付**。合并不等于部署。
+- 下一精确步骤：把载荷陈旧（声明 `customer_module_version=17.0.2.7.0` 对已安装 `17.0.2.8.0` →
+  `TPV1_CUSTOMER_ADAPTER_INCOMPATIBLE`）交给用户模块重新出包、签名、重批；产品仓库不放宽适配器。
+  之后进行客户开发租户的数据对账（12386 / 6322 / 29 / 6035）与业务闭环验收。
+
+### 分支重放（squash 续接，2026-10-16）
+
+PR #666 以 squash 合入后，`fix/data-ownership-visibility-recovery-20261015` 已不再是 `main` 的祖先；
+该分支远端已发布，治理规则禁止改写已发布历史，受管同步入口也按设计**拒绝已发布的同名分支**。
+因此按既有先例另建未发布分支，并用入口的依赖模式只重放依赖合并点之后的责任提交：
+
+| 项 | 值 |
+|---|---|
+| 新分支 | `fix/daily-runtime-identity-relocation-closeout-20261016` |
+| 实际共同祖先（`EXPECTED_OLD_BASE`） | `10bf72ef4bb060556bd2844598b58f9806392d34` |
+| 重放基线（`DEPENDENCY_HEAD` / `replay_base`） | `6590a4333834f17312712c90715bcf265e4f298b` |
+| 目标 `main`（`DEPENDENCY_MERGE` / `EXPECTED_MAIN`） | `04c6a1292c33b923abc666bc1444c869372081b3` |
+| 重放前 HEAD | `5df3e09de37f773e7812d9f4a5ae53e51b05bc3b` |
+| 重放后 HEAD | `c75915356bc43eadf1bf27ea3115a4c13ac31b47` |
+
+入口 PASS、零冲突、`generated_evidence_invalidated=none`，并留下恢复 bundle。验证：`origin/main` 是
+新 HEAD 的祖先；`git rev-list --count origin/main..HEAD` 为 **1**；`origin/main..HEAD` 的稳定 patch
+身份与 `6590a433..5df3e09d` 相同（`6ffa16de11accb91338eb30a671e608817407c4f`）；相对 main 的树差异
+仅限本 run 台账与本章记录。旧分支引用**未被移动、未被强推**。
+
+同时把 `.agent/active-runs.json` 的绑定由旧分支改到新分支（解除旧绑定），否则新分支下
+`make agent.run.resume` 会报 `unregistered`（已实测）。
+
+**本候选的处置**：该提交是 bookkeeping（run 台账 + 迭代记录）。`pr.merge.local_quick_gate` 会拒绝
+“相对 merge base 仅改 `.agent/` 与 `docs/`”的独立候选（exit 13），因此它**不单独开 PR**，按该门禁
+自身的指引随下一个产品候选同行，而不是为零新增覆盖付一次完整套件。
+
+身份改绑的另一项后果：本 run 的本地 receipt 绑定分支名，因此全部报 `receipt identity mismatch`（stale），
+而它们声明的输入并未改变（重放保持了稳定 patch 身份）。这些是迭代期咨询性回执、不是交付门禁，
+将在下一个候选真正需要时由 `make agent.run.record` 在新分支身份下重录，现在不为 bookkeeping 候选重跑。
+
+### 收口尝试：退役与租户对账（2026-10-16）
+
+**已合并分支的退役——被入口按设计拒绝（未动任何引用）。** 走 `make branch.cleanup.feature`：
+先通过“精确 HEAD 已合并 PR”核对，随后停在
+
+```
+origin/main still binds <merged branch> in .agent/active-runs.json
+```
+
+即 `origin/main` 仍在 run 索引里绑定该分支，须由**普通已合并 PR** 先解除绑定；退役一个仍被绑定的分支
+会让下一个收口批次为不是自己制造的台账付掉一整轮 freeze + Quick。远端与本地引用都未被改动，也没有强推。
+为让本地/远端/已评审身份一致，已把该分支本地引用对齐到其已评审且已发布的 `6590a433`；被取代的本地提交
+`5df3e09d` 没有丢失（内容即 `c7591535`，并留在恢复 bundle 里）。
+
+退役因此安排在**下一个产品候选合并之后**：独立 bookkeeping PR 无法解除该绑定，因为
+`pr.merge.local_quick_gate` 拒绝仅改 `.agent/` 与 `docs/` 的候选。
+
+**客户开发租户的数据对账——本仓库无法启动。** 对账目标是客户模块自身版本化迁移的
+`expected_records=12386`（及 6322 / 29 / 6035 分项）。该迁移**尚未运行**，而签名载荷的 plan/import 在
+任何归属判断之前就停在 `TPV1_CUSTOMER_ADAPTER_INCOMPATIBLE`：该租户实际运行的模块版本**没有对应载荷**——
+历次交付的 daily 模块树只有 17.0.2.6.0 与 17.0.2.8.0，而载荷库中每个载荷都只声明 17.0.2.6.0 或 17.0.2.7.0。
+`_validate_adapter`（代码↔载荷）与 `_assert_customer_module`（已安装记录↔载荷）两个检查各有职责，
+因此**放宽适配器**等于让产品接受一份针对从未交付过的模块构建编写的载荷，产品仓库不做。
+
+失败的 plan **未重跑**：输入未变，重试未变的失败不产生新结论；改变结果的只能是客户/用户模块交付方
+（P2/P4）在已安装版本上重新出包并签名。另：维护授权绑定的是**陈旧校验和**，窗口在
+2026-10-16 08:43:20 CST 到期（本次核对为 08:32 CST），所以无论如何都要重新申请与批准一条绑定新校验和的授权。
+
+本轮在本仓库的只读核对：退役门禁（上文）、`verify.tenant.product_payload_boundary` PASS（`files=8341`），
+以及本候选自身待推送历史中命中客户身份的提交数 **0**。
+
+**口径**：以上均为收口尝试与阻断事实，**不是**发布，也不是产品交付；未升级任何目标环境、未迁移任何数据。
+
+## 2026-10-16：附件连续性语义修复 + `smart_core` 声明漂移收口（两项内部问题）
+
+所有者裁定：**不把当前状态归结为“只等新载荷”**；附件连续性判定与模块版本漂移属于本轮必须关闭的内部问题。
+附件那一个文件**既不整体放宽为非致命，也不删除换通过**，先按 Odoo 存储语义分类；模块漂移**先影响分析和
+恢复准备，再走既有受管入口升级**，且**禁止只改版本字段伪装一致**。
+
+### 1. 附件对象定性：原生 GC 标记（Task 1）
+
+只读读取该 duty 自身运行镜像内的实现（`odoo.release = 17.0-20251222 17.0`），产品 addons 树**没有任何**
+`ir.attachment` 存储扩展或 `_mark_for_gc` 覆写，因此以原生实现为准：
+
+- `_mark_for_gc(fname)`：`full_path = os.path.join(self._full_path('checklist'), fname)`，
+  `open(full_path,'ab').close()` → **0 字节空标记**。
+- `_file_write` 写正文后调用它（事务后续回滚也留下标记）；`_file_delete` 只调用它。
+- `_gc_file_store_unsafe` 遍历 `filestore/checklist`，把不在存活 `store_fname` 集合中的标记名 `unlink`，最后删标记自身。
+- `_get_path`：店名即内容摘要（`checksum` 算法 sha1）；`ir_attachment.location` 未设置（默认 `file`）。
+- 只读 SQL：该店名 `rows=5`、`checksum_matches=5`、`store_fname` 非摘要形状 `=0`；`attachments_total=466`。
+
+结论：`checklist/81/81e68e…be032` 是**原生维护标记**，不是附件孤儿；**未删除、未放宽守卫**。
+
+### 2. P4 连续性守卫改为语义分类（Task 2）
+
+`scripts/ops/daily_candidate_data_continuity.py` 删除 `_filestore_inventory()` 与 baseline 里
+`distinct_store_fnames == file_count` 这条比数字的断言，改为只读扫描 duty 自己的 filestore 并三分类：
+
+- **附件正文**：相对路径是存活 `store_fname`，必须存在，且**文件内容摘要 = 店名 = 该行 `checksum`**；缺失、不可读、不一致 → 阻断。
+- **维护标记**：`checklist/` 下、0 字节、`<2–3 hex>/<40 hex>` 店名形状 → **单独计数、保留、不触发清理**。
+- **未知**：其余全部（未被引用的“像店名”文件、非空或形状不对的 `checklist` 条目、symlink/fifo/socket/device）→ **继续阻断**。
+  按目录名整块排除不算分类。
+
+恢复演练把两个闭包**分开断言**：`all_attachments_present`（正文数量 + 无缺失/损坏）、
+`restored_content_matches_source`（正文内容摘要）、`maintenance_markers_preserved`（标记摘要）；单一数量比较两者都证不了。
+`backup`/`validate_backup` 也带上 `attachment_inventory`，并拒绝在“坏对”上捕获的备份。
+定向测试 `verify.daily.duty.recovery` → **Ran 39 tests OK**；反例覆盖：合法空标记不误报、同位置非空文件不能逃、
+坏形状/非 `checklist`/未引用 → unknown、缺失/损坏/店名≠内容摘要仍失败、以及**数量相同但内容不同必须区分**。
+`scripts/verify/frontend_dev_incremental.py` 新增映射，把该工具/测试/契约路由到 `verify.daily.duty.recovery`
+（plan 的 `unmappedPathCount` 由 2 归 0）。
+
+### 3. `smart_core` 声明漂移与受管升级（Task 3）
+
+三面核对（运行代码 / 交付树 / 数据库安装记录）：
+
+| duty | 代码（部署树 `b80841059b19`） | 数据库安装 | 判定 |
+|---|---|---|---|
+| platform_control | `smart_core 17.0.1.1.15` | `17.0.1.1.15` | 一致 |
+| demo | `17.0.1.1.15` | `17.0.1.1.15` | 一致 |
+| customer_tenant_dev | `17.0.1.1.15` | **`17.0.1.1.14`** | **漂移** |
+
+其余声明模块逐项一致；`smart_scene 1.0.0` / `smart_license_core 0.1.0` / `smart_construction_bundle 0.1.1`
+与库中 `17.0.1.0.0` / `17.0.0.1.0` / `17.0.0.1.1` 的差异只是 Odoo 的系列前缀归一，不是漂移。
+
+影响分析：PR #666 给既有 `sc.platform.maintenance.access` 增加 5 个字段（`evidence_reference`、
+`operator_identity_key`、`subject_checksum`、`authorized_operations`、`decision_note`），另加 2 个 controller、
+2 个 security 服务模块与 1 个按需读取的 data 文件；**无** ACL/记录规则/manifest data XML/post_init 变更，
+**无** `migrations/17.0.1.1.15/`。`PRODUCT_INTERFACE_VERSION` 仍为 `"1"`，因此该 bump **不会**使载荷的
+产品接口版本失效——载荷阻断仍只是客户模块版本本身（`17.0.2.7.0` vs `17.0.2.8.0`）。
+
+恢复准备与执行：走 `make daily.runtime.database.duty.upgrade`（声明 digest `7103947e…`，
+`--expected-sha b80841059b19`），该入口在写入前**先捕获并校验**一个 pre-upgrade 恢复点
+（该 duty 自己的 backup namespace，11269872 字节、`pg_restore --list` 23011 项、sha256 `077c2810…`），
+再对声明的 11 个模块整体 `-u`，随后重启并回读。结果 `status=PASS`，断言
+`a_verified_recovery_point_precedes_the_upgrade` 与 `the_declared_module_upgrade_completed` 均通过；
+回读：`smart_core = 17.0.1.1.15 installed`、`base = 17.0.1.3`，且库中 `sc_platform_maintenance_access`
+已带上 5 个新列（升级前没有）——所以这是**真实的 schema 缺口**，不是版本字符串问题。
+两个硬编码 `17.0.1.1.14` 的测试是合成夹具而非运行期断言，无需改动；没有为了“对齐”改任何版本字段。
+
+### 4. 口径
+
+以上为**内部工具与环境缺陷修复**，可构成正常产品候选；不是发布，也不是产品交付。客户数据迁移、
+版本发布与产品验收**均未完成**。两项关闭后，剩余外部依赖收敛为：**兼容新签名载荷及对应真实审批**。
+在载荷到达前不推进导入、不重复空库隔离查询。分支退役仍挂起，待主线解除台账绑定后再执行。
+
+### 5. 冻结候选早期门禁修复（2026-10-16）
+
+候选 `6adb56ff8184` 的第一次 exact-head Quick **未出 receipt**，在两个便宜门禁上失败。两处都是本分支已经带入的
+真实缺陷，不是误报；都已按最小范围修掉，没有放宽任何守卫，也没有改动产品语义。
+
+**5.1 `verify.product.release.version`（shard 5/7）**
+
+```text
+FAIL - product version duplicated outside VERSION:
+ ['.agent/runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/run.json']
+```
+
+由 `e8a7ad86` 记录只读观测窗口时写入的字面量引入。该守卫要求产品版本只有一个来源（`VERSION` 加上唯一声明派生观测）；
+台账再复制一份字面量就变成第二个权威，正是单一来源规则要挡的漂移——同类重复在更早的 run 台账里已经被这条守卫抓到过。
+修法：改为 `product_version_source: VERSION` 加一条说明，与其它 run 台账既有约定一致。
+复核：`verify.product.release.version PASS version=1.0.0-rc.20 duplicates=0 derived_observations=1`（11 + 10 tests OK）。
+
+**5.2 `audit.verification.lane_coverage.check`（shard 0/7）**
+
+```text
+DENY verification surface grew: stale_target_dispositions: 1 > frozen baseline 0
+  (verify.daily.duty.recovery)
+```
+
+连续性批次给 `scripts/verify/frontend_dev_incremental.py` 新增的映射命名了 `verify.daily.duty.recovery`，
+该 target 因此离开零引用集合，而它的登记仍写着“未接入任何自动化 lane”，登记陈述失效——正是该检查存在的意义：
+登记不能腐化成永久白名单。修法：走 reasoned unregister 路径（`--unregister-target` 带理由）移除；
+该路径在 target 仍为零引用时会拒绝，因此不能用来掩盖真实发现。
+复核：`audit.verification.lane_coverage.check PASS surface within the frozen baseline`，`audit.verification.lane_coverage.test OK`。
+
+**有意未做**：没有用 `--write-baseline` 重写冻结基线。当前实测 **783** 条零引用目标、配额 **786**，
+冻结身份集合里仍留着 3 个其实已不再零引用的名字（`verify.daily.duty.recovery` 及更早批次关闭的两个
+`verify.smart_core.*.orm`）。重写会把一个与本批次无关的 `+1` target 定义（recorded `2335 → 2336`）一并卷进来，
+所以收紧留给拥有该漂移的批次，登记为后续项。配额在此期间**不可被利用**：任何不在冻结身份集合内的新名字都会直接 FAIL，
+数量变化掩盖不了身份替换。
+
+**候选状态**：`6adb56ff8184` 无 receipt。两处修完后重新冻结，只重跑**一次** exact-head Quick；
+分片遇首个失败即停，所以 shard 0 与 shard 5 的其余前置由这次重跑证明，不在文档里代替断言。

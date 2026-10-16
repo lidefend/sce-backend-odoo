@@ -121,6 +121,17 @@ class BackupContractTests(unittest.TestCase):
                 "database.dump": CONTINUITY._sha(directory / "database.dump"),
                 "filestore.tar.gz": CONTINUITY._sha(directory / "filestore.tar.gz"),
             },
+            "attachment_inventory": {
+                "referenced_attachment_count": 1,
+                "referenced_body_count": 1,
+                "maintenance_marker_count": 1,
+                "unknown_entry_count": 0,
+                "missing_count": 0,
+                "checksum_mismatch_count": 0,
+                "referenced_body_path_digest": "0" * 64,
+                "referenced_body_content_digest": "0" * 64,
+                "maintenance_marker_digest": "0" * 64,
+            },
         }
         CONTINUITY._write_json(directory / "manifest.json", manifest)
         CONTINUITY._write_checksums(directory)
@@ -448,6 +459,149 @@ class DutyIdentityTests(unittest.TestCase):
                 '--contract "$(DAILY_DUTY_RECOVERY_CONTRACT_PATH)"', body, target
             )
 
+
+class FilestoreClassificationTests(unittest.TestCase):
+    """The filestore guard separates bodies, GC markers and unexplained files.
+
+    Odoo 17 writes an empty ``filestore/<db>/checklist/<store name>`` marker from
+    ``_mark_for_gc`` for every written or deleted store name, so a marker is a
+    maintenance artifact and not an attachment orphan. The guard may therefore
+    not compare "files on disk" with "distinct store_fname"; it has to classify.
+    """
+
+    BODY_A = "ab/abcdef0123456789abcdef0123456789abcdef01"
+    BODY_B = "cd/cdef0123456789abcdef0123456789abcdef0123"
+
+    def _scan(self, files, irregular=()):
+        return {
+            "root": "/var/lib/odoo/filestore/sc_demo",
+            "root_present": True,
+            "files": [
+                {"path": path, "size": size, "sha1": digest}
+                for path, size, digest in files
+            ],
+            "irregular": [{"path": path, "kind": kind} for path, kind in irregular],
+        }
+
+    def _rows(self, *paths):
+        return [(path, path.rsplit("/", 1)[-1]) for path in paths]
+
+    def test_legal_gc_marker_is_not_an_orphan(self):
+        scan = self._scan(
+            [
+                (self.BODY_A, 12, self.BODY_A.rsplit("/", 1)[-1]),
+                ("checklist/" + self.BODY_A, 0, ""),
+            ]
+        )
+        report = CONTINUITY._classify_filestore(scan, self._rows(self.BODY_A))
+        self.assertEqual(report["referenced_body_count"], 1)
+        self.assertEqual(report["maintenance_marker_count"], 1)
+        self.assertEqual(report["unknown_entry_count"], 0)
+        self.assertEqual(report["missing_count"], 0)
+        CONTINUITY._assert_filestore_inventory(report)
+
+    def test_non_empty_checklist_entry_cannot_escape_as_a_marker(self):
+        scan = self._scan(
+            [
+                (self.BODY_A, 12, self.BODY_A.rsplit("/", 1)[-1]),
+                ("checklist/" + self.BODY_A, 4, ""),
+            ]
+        )
+        report = CONTINUITY._classify_filestore(scan, self._rows(self.BODY_A))
+        self.assertEqual(report["maintenance_marker_count"], 0)
+        self.assertEqual(report["unknown_entry_count"], 1)
+        with self.assertRaisesRegex(CONTINUITY.ContinuityError, "unknown filestore entries"):
+            CONTINUITY._assert_filestore_inventory(report)
+
+    def test_checklist_entry_without_a_store_name_shape_is_unknown(self):
+        for path in ("checklist/notes.txt", "checklist/xx/not-a-sha", "checklist/ab/../ab"):
+            with self.subTest(path=path):
+                scan = self._scan([(path, 0, "")])
+                report = CONTINUITY._classify_filestore(scan, [])
+                self.assertEqual(report["maintenance_marker_count"], 0, path)
+                self.assertEqual(report["unknown_entry_count"], 1, path)
+
+    def test_marker_shape_outside_the_checklist_is_unknown(self):
+        scan = self._scan([(self.BODY_A, 0, "")])
+        report = CONTINUITY._classify_filestore(scan, [])
+        self.assertEqual(report["unknown_entry_count"], 1)
+        self.assertEqual(report["maintenance_marker_count"], 0)
+
+    def test_unreferenced_store_shaped_file_is_unknown(self):
+        scan = self._scan([(self.BODY_B, 9, self.BODY_B.rsplit("/", 1)[-1])])
+        report = CONTINUITY._classify_filestore(scan, self._rows(self.BODY_A))
+        self.assertEqual(report["unknown_entry_count"], 1)
+        self.assertEqual(report["missing_count"], 1)
+        with self.assertRaisesRegex(CONTINUITY.ContinuityError, "missing"):
+            CONTINUITY._assert_filestore_inventory(report)
+
+    def test_missing_referenced_attachment_fails(self):
+        scan = self._scan([])
+        report = CONTINUITY._classify_filestore(scan, self._rows(self.BODY_A))
+        self.assertEqual(report["missing_count"], 1)
+        with self.assertRaisesRegex(CONTINUITY.ContinuityError, "missing"):
+            CONTINUITY._assert_filestore_inventory(report)
+
+    def test_corrupted_attachment_content_fails(self):
+        scan = self._scan([(self.BODY_A, 12, "0" * 40)])
+        report = CONTINUITY._classify_filestore(scan, self._rows(self.BODY_A))
+        self.assertEqual(report["checksum_mismatch_count"], 1)
+        with self.assertRaisesRegex(CONTINUITY.ContinuityError, "checksum"):
+            CONTINUITY._assert_filestore_inventory(report)
+
+    def test_store_name_that_is_not_the_content_digest_fails(self):
+        # The name is the row's store_fname, but the bytes under it hash to
+        # something else: the row would silently serve the wrong content.
+        scan = self._scan([(self.BODY_A, 12, "1" * 40)])
+        report = CONTINUITY._classify_filestore(
+            scan, [(self.BODY_A, "1" * 40)]
+        )
+        self.assertEqual(report["checksum_mismatch_count"], 1)
+        self.assertEqual(report["referenced_body_count"], 0)
+
+    def test_non_regular_entry_is_unknown(self):
+        scan = self._scan(
+            [(self.BODY_A, 12, self.BODY_A.rsplit("/", 1)[-1])],
+            irregular=[("ab/sneaky", "symlink")],
+        )
+        report = CONTINUITY._classify_filestore(scan, self._rows(self.BODY_A))
+        self.assertEqual(report["unknown_entry_count"], 1)
+        with self.assertRaisesRegex(CONTINUITY.ContinuityError, "unknown filestore entries"):
+            CONTINUITY._assert_filestore_inventory(report)
+
+    def test_clean_pair_is_accepted_and_digests_are_order_independent(self):
+        raw = [
+            (self.BODY_B, 9, self.BODY_B.rsplit("/", 1)[-1]),
+            ("checklist/" + self.BODY_A, 0, ""),
+            (self.BODY_A, 12, self.BODY_A.rsplit("/", 1)[-1]),
+            ("checklist/" + self.BODY_B, 0, ""),
+        ]
+        rows = self._rows(self.BODY_A, self.BODY_B)
+        report = CONTINUITY._classify_filestore(self._scan(raw), rows)
+        shuffled = CONTINUITY._classify_filestore(
+            self._scan(list(reversed(raw))), list(reversed(rows))
+        )
+        CONTINUITY._assert_filestore_inventory(report)
+        self.assertEqual(report, shuffled)
+        self.assertEqual(report["referenced_body_count"], 2)
+        self.assertEqual(report["maintenance_marker_count"], 2)
+
+    def test_restore_content_closure_is_not_a_count_comparison(self):
+        # One body on each side, but not the same body: a count-only assertion
+        # ("one referenced attachment came back") would pass and miss this.
+        source = CONTINUITY._classify_filestore(
+            self._scan([(self.BODY_A, 12, self.BODY_A.rsplit("/", 1)[-1])]),
+            self._rows(self.BODY_A),
+        )
+        restored = CONTINUITY._classify_filestore(
+            self._scan([(self.BODY_B, 12, self.BODY_B.rsplit("/", 1)[-1])]),
+            self._rows(self.BODY_B),
+        )
+        self.assertEqual(restored["referenced_body_count"], source["referenced_body_count"])
+        self.assertNotEqual(
+            restored["referenced_body_content_digest"],
+            source["referenced_body_content_digest"],
+        )
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
