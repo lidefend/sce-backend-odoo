@@ -3,6 +3,7 @@
 from odoo.http import request
 from odoo import api, SUPERUSER_ID
 import logging
+import time
 from typing import Optional, Type, Dict, Any, Tuple
 import odoo
 from .base_handler import BaseIntentHandler
@@ -98,7 +99,7 @@ def _build_envs(params: Dict[str, Any], add_ctx: Dict[str, Any], intent: str = "
     except Exception:
         cr.close()
         raise
-def _dispatch(intent: str, params: dict, context: dict, meta: Optional[Dict[str, Any]] = None):
+def _dispatch(intent: str, params: dict, context: dict, meta: Optional[Dict[str, Any]] = None, observe=None):
     """
     统一分发：显式依据 params.db 选择环境，合并 context，实例化 Handler 并调用。
     """
@@ -112,12 +113,23 @@ def _dispatch(intent: str, params: dict, context: dict, meta: Optional[Dict[str,
         ",".join(sorted(str(key) for key in (params or {}))) or "-",
     )
     
+    phase_start = time.perf_counter()
+
+    def mark(name):
+        nonlocal phase_start
+        now = time.perf_counter()
+        if observe is not None:
+            observe(name, (now - phase_start) * 1000)
+        phase_start = now
+
     handler_cls = resolve_handler(intent)
+    mark("resolve")
     if not handler_cls:
         return {"ok": False, "error": {"code": 404, "message": f"Unknown intent: {intent}"}}
 
     # 1) 构造 env / su_env（必要时切库）
     env, su_env, extra_cr = _build_envs(params or {}, context or {}, intent=intent)
+    mark("environment")
     dispatch_succeeded = False
     dispatch_result = None
     try:
@@ -149,10 +161,12 @@ def _dispatch(intent: str, params: dict, context: dict, meta: Optional[Dict[str,
         if denied:
             return denied
         # 3) 统一把参数传给 run（BaseIntentHandler.run 会转调 handle(payload, ctx)）
+        mark("prepare_handler")
         result = handler.run(
             payload=payload_envelope,
             ctx=context or {},
         )
+        mark("handler_run")
         dispatch_result = result
         dispatch_succeeded = result_is_success(result)
         return result
@@ -170,11 +184,12 @@ def _dispatch(intent: str, params: dict, context: dict, meta: Optional[Dict[str,
             except Exception:
                 _logger.exception("[intent] close cursor failed (db=%s)", env.cr.dbname)
 
-def route_intent_payload(payload: dict, ctx) -> dict:
+def route_intent_payload(payload: dict, ctx, observe=None) -> dict:
     """
     控制器调用的统一入口。
     payload: { "intent": "...", "params": {...}, "context": {...}, "meta": {...} }
     """
+    started = time.perf_counter()
     # Load extension modules once (if configured)
     try:
         load_extensions(request.env, HANDLER_REGISTRY)
@@ -192,4 +207,7 @@ def route_intent_payload(payload: dict, ctx) -> dict:
                       intent, db, ",".join(sorted(params.keys())) if params else "-")
     except Exception:
         pass
+    if observe is not None:
+        observe("extension_and_envelope", (time.perf_counter() - started) * 1000)
+        return _dispatch(intent, params, context, meta, observe=observe)
     return _dispatch(intent, params, context, meta)

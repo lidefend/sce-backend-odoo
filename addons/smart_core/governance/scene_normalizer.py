@@ -77,7 +77,7 @@ class SceneNormalizer:
         warnings = diagnostics.get("normalize_warnings") if isinstance(diagnostics, dict) else []
         resolve_errors = diagnostics.get("resolve_errors") if isinstance(diagnostics, dict) else []
         targets = nav_targets if isinstance(nav_targets, dict) else _index_nav_scene_targets(nav_tree)
-        _normalize_scene_targets(env, scenes, targets, resolve_errors)
+        scenes = _normalize_scene_targets(env, scenes, targets, resolve_errors)
         _sync_nav_scene_keys(nav_tree, scenes, warnings)
         return scenes
 
@@ -148,6 +148,41 @@ def _resolve_xmlid(env, xmlid: str | None) -> int | None:
     return _resolve_action_id(env, xmlid)
 
 
+def _resolve_xmlids_batch(env, xmlids):
+    """Resolve native refs with one existence query per model, without sudo.
+
+    Like env.ref, existence is not a permission decision. Model/operation
+    authorization stays with its existing owner. An unresolved batch falls
+    back to the original single-reference resolver at the caller.
+    """
+    resolved = {}
+    by_model = {}
+    result = {}
+    try:
+        model_data = env["ir.model.data"]
+        for xmlid in dict.fromkeys(ref for ref in xmlids if isinstance(ref, str) and ref):
+            try:
+                model, record_id = model_data._xmlid_to_res_model_res_id(xmlid, raise_if_not_found=False)
+            except Exception:
+                continue
+            if not model or not record_id:
+                result[xmlid] = None
+                continue
+            resolved[xmlid] = (model, record_id)
+            by_model.setdefault(model, set()).add(record_id)
+        for model, ids in by_model.items():
+            try:
+                existing = set(env[model].browse(sorted(ids)).exists().ids)
+            except Exception:
+                continue
+            for xmlid, (ref_model, record_id) in resolved.items():
+                if ref_model == model:
+                    result[xmlid] = int(record_id) if record_id in existing else None
+        return result
+    except Exception:
+        return {}
+
+
 def _index_nav_scene_targets(nodes):
     targets = {}
 
@@ -205,6 +240,18 @@ def _append_act_url_deprecations(nodes, warnings):
 
 
 def _normalize_scene_targets(env, scenes, nav_targets, resolve_errors):
+    # Collecting batch references must not consume a one-shot input before
+    # normalization (or the caller's subsequent navigation synchronization).
+    if not isinstance(scenes, (list, tuple)):
+        scenes = list(scenes)
+    refs = []
+    for scene in scenes:
+        if not (scene.get("code") or scene.get("key")):
+            continue
+        target = scene.get("target") or {}
+        refs.extend((target.get("action_xmlid") or target.get("actionXmlid"),
+                     target.get("menu_xmlid") or target.get("menuXmlid")))
+    resolved_refs = _resolve_xmlids_batch(env, refs)
     for scene in scenes:
         scene_key = scene.get("code") or scene.get("key")
         if not scene_key:
@@ -215,7 +262,7 @@ def _normalize_scene_targets(env, scenes, nav_targets, resolve_errors):
         action_xmlid = target.get("action_xmlid") or target.get("actionXmlid")
         menu_xmlid = target.get("menu_xmlid") or target.get("menuXmlid")
         if action_xmlid:
-            action_id = _resolve_xmlid(env, action_xmlid)
+            action_id = resolved_refs[action_xmlid] if isinstance(action_xmlid, str) and action_xmlid in resolved_refs else _resolve_xmlid(env, action_xmlid)
             if action_id:
                 current_action_id = int(target.get("action_id") or 0)
                 if current_action_id and current_action_id != action_id:
@@ -241,7 +288,7 @@ def _normalize_scene_targets(env, scenes, nav_targets, resolve_errors):
                     message="action_xmlid not found",
                 )
         if menu_xmlid:
-            menu_id = _resolve_xmlid(env, menu_xmlid)
+            menu_id = resolved_refs[menu_xmlid] if isinstance(menu_xmlid, str) and menu_xmlid in resolved_refs else _resolve_xmlid(env, menu_xmlid)
             if menu_id:
                 current_menu_id = int(target.get("menu_id") or 0)
                 if current_menu_id and current_menu_id != menu_id:

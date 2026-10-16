@@ -90,7 +90,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-16-authoritative-record-preflight"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-16-owned-source-handoff"
 
 
 # --- Declared form surfaces -------------------------------------------------
@@ -466,9 +466,6 @@ class UiContractV2Handler(BaseIntentHandler):
             columns = list(fact_columns)
         if not columns:
             return
-        pref = profile.get("preference_policy") if isinstance(profile.get("preference_policy"), dict) else {}
-        if pref.get("allow_order") is not False:
-            columns = self._merge_user_list_preference_columns(source_contract, columns)
         locked_profile = deepcopy(profile)
         profile_labels = locked_profile.get("column_labels") if isinstance(locked_profile.get("column_labels"), dict) else {}
         locked_profile["column_labels"] = self._apply_legacy_visible_business_labels(
@@ -504,45 +501,6 @@ class UiContractV2Handler(BaseIntentHandler):
         source_authority = profile_projection.get("sourceAuthority") if isinstance(profile_projection, dict) else {}
         if isinstance(source_authority, dict):
             source_authority["source_key"] = "list_profile.business_config_contract_authoritative"
-
-    def _merge_user_list_preference_columns(self, source_contract: dict[str, Any], columns: list[str]) -> list[str]:
-        profile = source_contract.get("list_profile") if isinstance(source_contract.get("list_profile"), dict) else {}
-        preference = profile.get("preference_policy") if isinstance(profile.get("preference_policy"), dict) else {}
-        if preference.get("allow_order") is False:
-            return columns
-        action_id = self._source_action_id(source_contract)
-        if action_id <= 0 or "sc.user.view.preference" not in self.env:
-            return columns
-        model_name = self._source_model_name(source_contract)
-        authoritative_columns = set(columns)
-        try:
-            rec = self.env["sc.user.view.preference"].sudo().search(
-                [
-                    ("user_id", "=", self.env.user.id),
-                    ("preference_key", "=", "list_columns"),
-                    ("view_type", "in", ["list", "tree"]),
-                    ("action_id", "=", action_id),
-                ],
-                order="id desc",
-                limit=1,
-            )
-        except Exception:
-            _logger.debug("ui.contract.v2 user list preference lookup skipped", exc_info=True)
-            return columns
-        value = rec.value_json if rec and isinstance(getattr(rec, "value_json", None), dict) else {}
-        preferred = []
-        for key in ("visible_columns", "column_order"):
-            rows = value.get(key) if isinstance(value.get(key), list) else []
-            for raw in rows:
-                name = str(raw or "").strip()
-                if not name or name in preferred:
-                    continue
-                if name not in authoritative_columns:
-                    continue
-                preferred.append(name)
-        if not preferred:
-            return columns
-        return [*preferred, *[name for name in columns if name not in preferred]]
 
     def handle(self, payload: Optional[Dict[str, Any]] = None, ctx: Optional[Dict[str, Any]] = None):
         try:
@@ -661,7 +619,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 namespace=(
                     "ui.contract.v2.native_form_projection.v1"
                     if native_form_source
-                    else "ui.contract.v2.source"
+                    else "ui.contract.v2.source.single-assembly.v1"
                 ),
                 params=base_params,
                 model_name=cache_model,
@@ -706,8 +664,15 @@ class UiContractV2Handler(BaseIntentHandler):
             projection_cache_reason = "native_form_source_type_mismatch"
         cache_lookup_ready_at = time.monotonic()
         if cached_source is not None:
-            ui_data = deepcopy(cached_source.get("ui_data") or {})
-            ui_meta = deepcopy(cached_source.get("ui_meta") or {})
+            # ``cached_source`` is already an exclusively owned object graph: the
+            # hot path comes from ``CONTRACT_PROJECTION_HOT_CACHE.get`` which
+            # deep-copies on read, and the persisted path comes from
+            # ``get_runtime_source_asset`` which rebuilds the payload with
+            # ``json.loads``. This request owns it, so it is mutated in place
+            # here; the cache entry stays isolated and the newly assembled
+            # snapshot below is copied by its own producer.
+            ui_data = cached_source.get("ui_data") or {}
+            ui_meta = cached_source.get("ui_meta") or {}
             ui_meta.pop("trace_id", None)
             ui_meta.pop("request_id", None)
         else:
@@ -837,8 +802,12 @@ class UiContractV2Handler(BaseIntentHandler):
         ):
             projection_cache_status = "hot"
             projection_cache_reason = "assembled_v2_hot_cache_hit"
-            source_contract = deepcopy(assembled_cached["source_contract"])
-            contract_v2 = deepcopy(assembled_cached["contract"])
+            # ``_assembled_v2`` only exists in the process-local hot cache and
+            # shares the same exclusively owned graph as ``cached_source``; both
+            # objects are discarded after this request, so sealing below may
+            # mutate them without any second copy.
+            source_contract = assembled_cached["source_contract"]
+            contract_v2 = assembled_cached["contract"]
             contract_v2 = _authority.seal_runtime_contract(
                 self,
                 contract_v2,
@@ -1124,10 +1093,10 @@ class UiContractV2Handler(BaseIntentHandler):
         )
         contract_trimmed_at = time.monotonic()
         if not runtime_record_id and not is_create_request and cache_key and source_token:
-            CONTRACT_PROJECTION_HOT_CACHE.put(
+            CONTRACT_PROJECTION_HOT_CACHE.put_generated(
                 cache_key,
                 source_token,
-                {
+                lambda: {
                     "source_type": runtime_source_type,
                     "ui_data": deepcopy(ui_data),
                     "ui_meta": {
@@ -3299,10 +3268,10 @@ class UiContractV2Handler(BaseIntentHandler):
         if not columns:
             return
 
-        # Configured columns meet final product constraints before personal order.
-        # The final enforcement step applies allowed preferences exactly once.
-        if not direct_orchestration_columns:
-            columns = self._merge_user_list_preference_columns(source_contract, columns)
+        # Configured columns are the declared order only. The stored personal
+        # preference is applied exactly once, by the frontend consumer, against
+        # the declared preference_policy below; the server never reorders the
+        # declared contract with a user choice.
         labels = profile.get("column_labels") if isinstance(profile.get("column_labels"), dict) else {}
         view_column_labels = {}
         for row in [*raw_columns, *tree_schema_rows]:
@@ -4299,8 +4268,13 @@ class UiContractV2Handler(BaseIntentHandler):
         ui_params: dict[str, Any],
         ctx: Optional[Dict[str, Any]],
     ) -> tuple[dict[str, Any], dict[str, Any]]:
-        entry = ui_data.get("entry") if isinstance(ui_data.get("entry"), dict) else {}
-        model = str(entry.get("model") or ui_data.get("model") or "").strip()
+        # Only menu-entry references need dereferencing. action/model/view
+        # sources already contain the authoritative assembled page. Rebuilding
+        # them as a model page both duplicates assembly and loses action scope.
+        entry = ui_data.get("entry")
+        if ui_data.get("subject") != "menu" or not isinstance(entry, dict):
+            return ui_data, ui_meta
+        model = str(entry.get("model") or "").strip()
         view_type = str(
             entry.get("view_type")
             or entry.get("viewType")

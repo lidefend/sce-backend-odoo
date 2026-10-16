@@ -22,6 +22,13 @@ class _BaseIntentHandler:
         self.payload = payload or {}
 
 
+class _ForbiddenPreferenceModel:
+    """Any access proves V2 re-applied a stored personal list preference."""
+
+    def __getattr__(self, name):
+        raise AssertionError(f"ui.contract.v2 must not read stored user preferences: {name}")
+
+
 def _install_module(name, **attrs):
     module = types.ModuleType(name)
     for key, value in attrs.items():
@@ -2160,8 +2167,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         handler = self.module.UiContractV2Handler(env=_Env({
             "ui.business.config.contract": _ConfigModel(),
+            "sc.user.view.preference": _ForbiddenPreferenceModel(),
         }))
-        handler._merge_user_list_preference_columns = lambda *_: self.fail("personal order must wait for final product constraints")
         source_contract = {
             "action_id": 856,
             "model": "sc.demo",
@@ -3122,8 +3129,9 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(profile["sourceAuthority"]["source_key"], "list_profile.business_config_contract_authoritative")
 
     def test_business_list_config_preserves_explicit_preference_constraints(self):
-        handler = self.module.UiContractV2Handler(env=object())
-        handler._merge_user_list_preference_columns = lambda *_: self.fail("locked order cannot consume personal preferences")
+        handler = self.module.UiContractV2Handler(
+            env={"sc.user.view.preference": _ForbiddenPreferenceModel()}
+        )
         source = {"list_profile": {
             "columns": ["name", "amount"], "fact_columns": ["name", "amount"],
             "column_policy": {"reason": "business_list_config_contract_authoritative"},
@@ -3138,6 +3146,31 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertFalse(policy["allow_width"])
         self.assertEqual(policy["locked_columns"], ["name", "amount"])
         self.assertEqual(policy["must_request_columns"], ["name", "amount"])
+
+    def test_business_list_config_projection_never_reorders_with_stored_preference(self):
+        handler = self.module.UiContractV2Handler(
+            env={"sc.user.view.preference": _ForbiddenPreferenceModel()}
+        )
+        source_contract = {
+            "action_id": 856,
+            "model": "sc.demo",
+            "list_profile": {
+                "columns": ["name", "source_created_by"],
+                "fact_columns": ["name", "source_created_by"],
+                "column_policy": {
+                    "mode": "strict",
+                    "reason": "business_list_config_contract_authoritative",
+                },
+            },
+        }
+        contract = {"layoutContract": {"listProfile": {"columns": ["name", "source_created_by"]}}}
+
+        handler._enforce_business_list_config_projection(contract, source_contract)
+
+        profile = contract["layoutContract"]["listProfile"]
+        self.assertEqual(profile["columns"], ["name", "source_created_by"])
+        self.assertTrue(profile["preference_policy"]["allow_order"])
+        self.assertEqual(profile["preference_policy"]["must_request_columns"], ["name", "source_created_by"])
 
     def test_business_list_config_projection_preserves_native_collection_presentation(self):
         handler = self.module.UiContractV2Handler(env=object())
@@ -5548,6 +5581,46 @@ class ProjectionEnvironmentAuthorityTest(unittest.TestCase):
                 self.assertEqual(actor.context, context)
                 self.assertEqual(metadata.context, context)
 
+    def test_assembled_page_is_not_dispatched_again_as_model(self):
+        from unittest.mock import patch
+        handler = self.handler_module.UiContractV2Handler(env=self.business, su_env=self.metadata)
+        for subject in ("action", "model", "view", "action.form"):
+            with self.subTest(subject=subject):
+                page = {"subject": subject, "entry": {"model": "other.record"}, "model": "example.record", "views": {"tree": {"columns": ["name"]}},
+                        "permissions": {"write": False}, "action_id": 91,
+                        "head": {"domain": [["state", "=", "draft"]]}}
+                meta = {"subject": subject}
+                with patch.object(self.handler_module, "UiContractHandler", side_effect=AssertionError("duplicate assembly")):
+                    data, actual_meta = handler._resolve_entry_contract(page, meta, {"action_id": 91}, {})
+                self.assertIs(data, page)
+                self.assertIs(actual_meta, meta)
+
+    def test_entry_without_target_never_uses_top_level_model_as_authority(self):
+        from unittest.mock import patch
+        handler = self.handler_module.UiContractV2Handler(env=self.business, su_env=self.metadata)
+        for entry in (None, {}, {"model": ""}):
+            page = {"subject": "menu", "entry": entry, "model": "example.record"}
+            with patch.object(self.handler_module, "UiContractHandler", side_effect=AssertionError("inferred target")):
+                data, _ = handler._resolve_entry_contract(page, {}, {}, {})
+            self.assertIs(data, page)
+
+    def test_menu_reference_keeps_action_bound_view_and_context(self):
+        from unittest.mock import MagicMock, patch
+        handler = self.handler_module.UiContractV2Handler(env=self.business, su_env=self.metadata)
+        source = {"subject": "menu", "menu_id": 71, "action": {"id": 91},
+                  "entry": {"model": "example.record", "view_type": "kanban"},
+                  "view_ids_by_type": {"kanban": 123}}
+        resolved = {"model": "example.record", "views": {"kanban": {"columns": []}}}
+        downstream = MagicMock()
+        downstream.return_value.handle.return_value = {"ok": True, "data": resolved, "meta": {"subject": "model"}}
+        with patch.object(self.handler_module, "UiContractHandler", downstream):
+            data, meta = handler._resolve_entry_contract(source, {}, {"lang": "zh_CN"}, {})
+        self.assertIs(data, resolved)
+        self.assertEqual(meta["entry_subject"], "menu")
+        params = downstream.return_value.handle.call_args.args[0]
+        self.assertEqual(params, {"op": "model", "model": "example.record", "view_type": "kanban",
+                                  "action_id": 91, "menu_id": 71, "view_id": 123, "lang": "zh_CN"})
+
     def test_entry_resolution_preserves_environment_authorities(self):
         from unittest.mock import MagicMock
         handler = self.handler_module.UiContractV2Handler(env=self.business, su_env=self.metadata)
@@ -5558,7 +5631,7 @@ class ProjectionEnvironmentAuthorityTest(unittest.TestCase):
         try:
             for elevated in (True, False):
                 self.metadata.su = elevated
-                handler._resolve_entry_contract({"entry": {"model": "example.record"}}, {}, {}, {})
+                handler._resolve_entry_contract({"subject": "menu", "entry": {"model": "example.record"}}, {}, {}, {})
                 actor = downstream.call_args.args[0]
                 metadata = downstream.call_args.kwargs["su_env"]
                 self.assertEqual((actor.uid, actor.su), (32, False))
@@ -5652,7 +5725,7 @@ class ProjectionEnvironmentAuthorityTest(unittest.TestCase):
         original = self.handler_module.UiContractHandler
         self.handler_module.UiContractHandler = downstream
         try:
-            handler._resolve_entry_contract({"entry": {"model": "example.record"}}, {}, {}, {})
+            handler._resolve_entry_contract({"subject": "menu", "entry": {"model": "example.record"}}, {}, {}, {})
             actor = downstream.call_args.args[0]
             self.assertTrue(actor.context["contract_projection_readonly"])
             self.assertEqual(actor.context["lang"], "zh_CN")

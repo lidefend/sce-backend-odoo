@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
+import ast
+import copy
 import importlib.util
 import os
+import tempfile
+import time
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -48,6 +52,58 @@ class TestLoadContractResponseCache(unittest.TestCase):
             self.cache.get("user-page", "source-v1")["data"]["views"],
             ["form"],
         )
+
+    def test_put_isolates_caller_owned_input(self):
+        source = {"data": {"columns": ["name"]}}
+        self.cache.put("page", "source", source)
+        source["data"]["columns"].append("secret")
+        self.assertEqual(self.cache.get("page", "source")["data"]["columns"], ["name"])
+
+    def test_handler_generated_snapshot_keeps_component_and_request_isolation(self):
+        # Execute the real handler call, not a test-side imitation of its payload.
+        source_path = MODULE_PATH.parents[1] / "handlers" / "ui_contract_v2.py"
+        tree = ast.parse(source_path.read_text())
+        calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
+                 and isinstance(node.func, ast.Attribute)
+                 and node.func.attr == "put_generated"]
+        self.assertEqual(len(calls), 1)
+        shared = {"columns": ["name"]}
+        metadata = {"policy": shared, "trace_id": "request-only", "request_id": "request-only"}
+        namespace = {
+            "CONTRACT_PROJECTION_HOT_CACHE": self.cache,
+            "cache_key": "page", "source_token": "source",
+            "runtime_source_type": "native", "ui_data": shared,
+            "ui_meta": metadata, "ASSEMBLED_CONTRACT_CACHE_VERSION": "test",
+            "client_type": "web", "delivery_profile": "full",
+            "limit_params": {"limit": 20}, "contract_v2": shared,
+            "source_contract": shared, "deepcopy": copy.deepcopy,
+        }
+        with patch.object(TARGET.copy, "deepcopy", wraps=copy.deepcopy) as copied:
+            eval(compile(ast.Expression(calls[0]), str(source_path), "eval"), namespace)
+            # The producer owns copying; the cache must not recopy the snapshot.
+            self.assertEqual(copied.call_count, 0)
+        expected = self.cache.get("page", "source")
+        shared["columns"].append("late-mutation")
+        metadata["extra"] = "late-metadata"
+        self.assertEqual(self.cache.get("page", "source"), expected)
+        first = self.cache.get("page", "source")
+        self.assertNotIn("trace_id", first["ui_meta"])
+        self.assertNotIn("request_id", first["ui_meta"])
+        first["ui_data"]["columns"].append("request-mutation")
+        self.assertEqual(first["_assembled_v2"]["contract"]["columns"], ["name"])
+        self.assertEqual(first["_assembled_v2"]["source_contract"]["columns"], ["name"])
+        self.assertEqual(first["ui_meta"]["policy"]["columns"], ["name"])
+        self.assertEqual(self.cache.get("page", "source"), expected)
+
+    def test_generated_snapshot_failure_does_not_replace_valid_entry(self):
+        self.cache.put("page", "source", {"value": "original"})
+        def fail():
+            raise ValueError("assembly failed")
+        with self.assertRaises(ValueError):
+            self.cache.put_generated("page", "source", fail)
+        self.assertEqual(self.cache.get("page", "source"), {"value": "original"})
+        self.cache.put_generated("page", "source", lambda: None)
+        self.assertEqual(self.cache.get("page", "source"), {"value": "original"})
 
     def test_source_change_invalidates_entry(self):
         self.cache.put("user-page", "source-v1", {"status": "success"})
@@ -219,6 +275,135 @@ class TestFieldPolicyProjectionSourceToken(unittest.TestCase):
         self.assertNotEqual(baseline, visible)
         self.assertNotEqual(baseline, renamed)
         self.assertNotEqual(baseline, removed)
+
+
+class TestContractCodeFingerprintIdentity(unittest.TestCase):
+    """The persisted runtime source asset has no expiry, so the source token
+    must follow code identity by itself: a content rewrite that keeps
+    ``mtime_ns`` and ``size`` equal (the pre-fix identity row) must still change
+    ``contract_code_fingerprint`` or the old source contract stays served."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.root = Path(self._tmp.name)
+        self._saved = TARGET._CODE_FINGERPRINT_CACHE["value"]
+        self.addCleanup(self._restore_fingerprint_cache)
+
+    def _restore_fingerprint_cache(self):
+        TARGET._CODE_FINGERPRINT_CACHE["value"] = self._saved
+
+    def _fingerprint(self):
+        TARGET._CODE_FINGERPRINT_CACHE["value"] = None
+        with patch.dict(os.environ, {"SC_SOURCE_ADDONS_ROOT": str(self.root)}, clear=False):
+            return TARGET.contract_code_fingerprint()
+
+    def test_same_size_same_mtime_content_change_changes_the_fingerprint(self):
+        target = self.root / "contract_under_test.py"
+        target.write_text("VALUE = 'aaaa'\n", encoding="utf-8")
+        before = target.stat()
+        first = self._fingerprint()
+
+        # Advance past the coarse ctime tick, then rewrite the same byte length
+        # and restore mtime so only the content (and ctime) differ.
+        time.sleep(0.05)
+        target.write_text("VALUE = 'bbbb'\n", encoding="utf-8")
+        os.utime(target, ns=(before.st_atime_ns, before.st_mtime_ns))
+        after = target.stat()
+
+        self.assertEqual(after.st_size, before.st_size)
+        self.assertEqual(after.st_mtime_ns, before.st_mtime_ns)
+        self.assertNotEqual(after.st_ctime_ns, before.st_ctime_ns)
+
+        second = self._fingerprint()
+        self.assertNotEqual(
+            first,
+            second,
+            "a same-size content rewrite with a restored mtime must change the code fingerprint",
+        )
+
+
+class TestHandlerHandOffOwnsTheGetCopy(unittest.TestCase):
+    """``ui_contract_v2`` mutates the cached source it gets in place (R3 removed
+    a second copy there). That is only safe while the accessor already returns a
+    fully disjoint graph; these bind that premise and stop the redundant copy
+    from silently coming back."""
+
+    def setUp(self):
+        self.cache = TARGET.LoadContractResponseCache(max_entries=4, ttl_seconds=30.0)
+
+    @staticmethod
+    def _payload():
+        return {
+            "source_type": "runtime_intent",
+            "ui_data": {
+                "fields": {
+                    "project_id": {
+                        "relation_entry": {"search_dialog": {"columns": ["name"]}}
+                    }
+                }
+            },
+            "ui_meta": {"intent": "ui.contract"},
+            "_assembled_v2": {
+                "cache_version": "v",
+                "contract": {"columns": ["a"]},
+                "source_contract": {"columns": ["a"]},
+            },
+        }
+
+    def test_handler_does_not_recopy_the_exclusively_owned_cached_source(self):
+        source_path = MODULE_PATH.parents[1] / "handlers" / "ui_contract_v2.py"
+        tree = ast.parse(source_path.read_text())
+        offenders = []
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not node.args:
+                continue
+            func = node.func
+            if isinstance(func, ast.Name) and func.id == "deepcopy":
+                argument = ast.unparse(node.args[0])
+                if argument.startswith(("cached_source", "assembled_cached")):
+                    offenders.append(argument)
+        self.assertEqual(
+            offenders,
+            [],
+            "the handler must not copy again after get()/get_runtime_source_asset() "
+            "already returned an exclusively owned graph",
+        )
+
+    def test_in_place_hand_off_of_the_get_copy_never_reaches_the_entry(self):
+        self.cache.put("page", "source", self._payload())
+        stored = self.cache.get("page", "source")
+
+        cached_source = self.cache.get("page", "source")
+        entry = self.cache._entries["page"][2]
+        self.assertIsNot(cached_source, entry)
+        self.assertIsNot(cached_source["ui_data"], entry["ui_data"])
+        self.assertIsNot(
+            cached_source["_assembled_v2"]["contract"],
+            entry["_assembled_v2"]["contract"],
+        )
+
+        # handler-style hand-off: assign the get() graph, then mutate in place
+        ui_data = cached_source["ui_data"]
+        ui_meta = cached_source["ui_meta"]
+        ui_data["fields"]["project_id"]["relation_entry"]["search_dialog"]["columns"].append(
+            "late-request-value"
+        )
+        ui_meta["trace_id"] = "request-only"
+        contract_v2 = cached_source["_assembled_v2"]["contract"]
+        contract_v2["columns"].append("sealed")
+        source_contract = cached_source["_assembled_v2"]["source_contract"]
+        source_contract["columns"].append("sealed")
+
+        after = self.cache.get("page", "source")
+        self.assertEqual(
+            after["ui_data"]["fields"]["project_id"]["relation_entry"]["search_dialog"]["columns"],
+            ["name"],
+        )
+        self.assertEqual(after["_assembled_v2"]["contract"]["columns"], ["a"])
+        self.assertEqual(after["_assembled_v2"]["source_contract"]["columns"], ["a"])
+        self.assertNotIn("trace_id", after["ui_meta"])
+        self.assertEqual(after, stored)
 
 
 if __name__ == "__main__":

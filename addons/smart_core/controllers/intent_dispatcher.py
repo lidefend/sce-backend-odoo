@@ -286,6 +286,16 @@ class IntentDispatcher(http.Controller):
     @http.route('/api/v1/intent', type='http', auth='public', methods=['POST', 'OPTIONS'], csrf=False)
     def handle_intent(self, **kwargs):
         ts0 = time.time()
+        phase_start = time.perf_counter()
+        phase_times = []
+        dispatch_times = []
+
+        def mark_phase(name):
+            nonlocal phase_start
+            now = time.perf_counter()
+            phase_times.append((name, (now - phase_start) * 1000))
+            phase_start = now
+
         headers = request.httprequest.headers
         trace_id = get_trace_id(headers)
         intent_name = None  # 便于异常日志打印
@@ -440,6 +450,7 @@ class IntentDispatcher(http.Controller):
             if hdr.get("X-Configuration-Preview"):
                 context_in["business_config_preview_token"] = hdr.get("X-Configuration-Preview")
             # ---------- 统一上下文 ----------
+            mark_phase("request_prepare")
             ctx = RequestContext.from_payload(payload)
             setattr(ctx, "trace_id", trace_id)
             setattr(ctx, "is_anonymous", is_anon)
@@ -453,6 +464,7 @@ class IntentDispatcher(http.Controller):
                 ",".join(sorted(params.keys())) if params else "-"
             )
 
+            mark_phase("context_auth")
             # ---------- 权限校验 ----------
             skip_auth = is_anon and is_anonymous_allowed_intent(intent_name)
             if intent_name == "session.bootstrap":
@@ -460,8 +472,13 @@ class IntentDispatcher(http.Controller):
             if not skip_auth:
                 check_intent_permission(ctx)
 
+            mark_phase("permission")
             # ---------- 分发（关键：传递正确的 ctx） ----------
-            raw_result = route_intent_payload(payload, ctx=ctx)
+            raw_result = route_intent_payload(
+                payload, ctx=ctx,
+                observe=lambda name, duration: dispatch_times.append(("dispatch_" + name, duration)),
+            )
+            mark_phase("dispatch")
 
             # Handler 若直接返回 Response：补 CORS 后原样返回
             if _is_response(raw_result):
@@ -538,7 +555,15 @@ class IntentDispatcher(http.Controller):
                     _logger.exception("intent rollback failed: intent=%s trace=%s", intent_name, trace_id)
                     return _error_response(INTERNAL_ERROR, "内部错误", 500, trace_id, intent_name=intent_name)
 
-            return request.make_json_response(result, status=status, headers=headers)
+            mark_phase("response_policy_transaction")
+            response = request.make_json_response(result, status=status, headers=headers)
+            mark_phase("json_response")
+            # Normal JSON path only: numeric execution timings, no payload or identity.
+            # This excludes Odoo ingress/worker waiting and socket transmission.
+            response.headers["Server-Timing"] = ", ".join(
+                f"{name};dur={duration:.3f}" for name, duration in phase_times + dispatch_times
+            )
+            return response
         except AccessDenied:
             _rollback_request_env(intent_name, trace_id)
             return _error_response(AUTH_REQUIRED, "认证失败或 token 无效", 401, trace_id, intent_name=intent_name)

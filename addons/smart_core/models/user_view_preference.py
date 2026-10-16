@@ -53,5 +53,10 @@ class ScUserViewPreference(models.Model):
         except (TypeError, ValueError):
             action = 0
         model = str(model_name or "").strip()
-        target = f"action:{action}" if action > 0 else f"model:{model or 'unknown'}"
+        if action <= 0 and not model:
+            # A preference scope must always bind to an authoritative identity.
+            # Refuse here rather than persisting the legacy ``model:unknown``
+            # sentinel, which would let unrelated surfaces collide on one row.
+            raise ValueError("preference scope requires an action_id or model")
+        target = f"action:{action}" if action > 0 else f"model:{model}"
         return f"{self.UI_ONLY_SCOPE_PREFIX}{key}:{view}:{target}"

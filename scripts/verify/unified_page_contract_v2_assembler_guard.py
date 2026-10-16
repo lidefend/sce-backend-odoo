@@ -28,13 +28,20 @@ P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_p
 # the version literal the handler serves to a digest of the code that produces
 # the assembled contract; on drift this guard fails closed and the author
 # re-pins both values deliberately instead of the cache hiding the change.
-ASSEMBLED_CACHE_VERSION = "ui-contract-v2-2026-10-16-authoritative-record-preflight"
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-2026-10-16-owned-source-handoff"
 ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
 ASSEMBLED_CACHE_INPUTS = (
     ASSEMBLED_CACHE_HANDLER,
     "addons/smart_core/core/unified_page_contract_v2_assembler.py",
     "addons/smart_core/handlers/ui_contract_v2_projection.py",
     "addons/smart_core/core/unified_page_contract_v2_client.py",
+    # The v2 handler assembles the page through ``PageAssembler`` itself: business
+    # category policy, relation entry contracts and the relation search-dialog
+    # materialization are injected into the contract before it is assembled and
+    # cached, so an edit there changes the served assembled contract. The
+    # pre-assembly source contract is a different layer, covered by the persisted
+    # runtime source asset token instead of this assembly-code fingerprint.
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
     # The assembler resolves component keys through the contract registry, so the
     # resolver and its generated carrier决定 assembled contract 的组件键。它们是运行时
     # 输入，必须一并纳入指纹；否则声明改动会留下被缓存的旧装配。
@@ -54,7 +61,7 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/utils/contract_governance_list_surface.py",
     "addons/smart_core/utils/contract_governance_user_surface.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "4cc7899310f7541ac5244dba4ef92b79a4a5dbd21e11606119493fefe404fe9f"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "6448bf854054cf9d8b3d744bc3d638593ca6231920c4cd99a35222db2f0ea443"
 
 
 def _assembled_cache_digest() -> str:

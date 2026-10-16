@@ -796,7 +796,10 @@ import CollectionFilterChip from '../components/product-list/CollectionFilterChi
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import DashboardPattern from '../components/product-page-patterns/DashboardPattern.vue';
 import { contractContentLayoutMode, resolveContentLayoutMode } from '../components/design-system/pageWidth';
-import { getUserViewPreference, setUserViewPreference } from '../api/preferences';
+import { getUserViewPreference, setUserViewPreference, type ListColumnPreference } from '../api/preferences';
+import { readStoredListPreference, projectStoredListPreference } from '../app/runtime/listPreferenceProjection';
+import { createScopedPreferenceRuntime, enqueuePreferenceWrite } from '../app/runtime/scopedPreferenceRuntime';
+import { currentContextEpoch } from '../app/contextEpoch';
 import { executeButton } from '../api/executeButton';
 import { trackUsageEvent } from '../api/usage';
 import { resolveAction } from '../app/resolvers/actionResolver';
@@ -3054,7 +3057,6 @@ function handleListPageLimitChange(limit: number): void {
   void requestLoadPage();
 }
 
-let listColumnPreferenceLoadSeq = 0;
 let listColumnSaveSeq = 0;
 let listColumnSaveQueue: Promise<void> = Promise.resolve();
 let listColumnSaveStatusTimer: number | null = null;
@@ -3075,59 +3077,62 @@ function setListColumnSaveStatus(status: 'idle' | 'saving' | 'saved' | 'error') 
   }
 }
 
-async function loadListColumnPreference(): Promise<void> {
-  const seq = ++listColumnPreferenceLoadSeq;
-  const scope = listColumnPreferenceScope.value;
-  if (!scope.action_id && !scope.model) {
-    listColumnVisibility.value = {};
-    listColumnOrder.value = [];
-    listColumnWidths.value = {};
-    return;
-  }
-  try {
-    const result = await getUserViewPreference(scope);
-    if (seq !== listColumnPreferenceLoadSeq) return;
-    const preference = result.preference || {};
-    const visible = Array.isArray(preference.visible_columns) ? preference.visible_columns.map((item) => String(item || '').trim()).filter(Boolean) : [];
-    const hidden = Array.isArray(preference.hidden_columns) ? preference.hidden_columns.map((item) => String(item || '').trim()).filter(Boolean) : [];
-    const columnOrder = Array.isArray(preference.column_order) ? preference.column_order.map((item) => String(item || '').trim()).filter(Boolean) : [];
-    const columnWidthsRaw = preference.column_widths && typeof preference.column_widths === 'object' ? preference.column_widths as Record<string, unknown> : {};
-    const columnWidths = Object.entries(columnWidthsRaw).reduce<Record<string, number>>((acc, [name, width]) => {
-      const normalizedName = String(name || '').trim();
-      const normalizedWidth = normalizeListColumnWidth(width);
-      if (normalizedName && normalizedWidth) acc[normalizedName] = normalizedWidth;
-      return acc;
-    }, {});
-    const preferencePolicy = listProfile.value?.preference_policy || {};
-    const allowVisibility = preferencePolicy.allow_visibility !== false;
-    const allowOrder = preferencePolicy.allow_order !== false;
-    const allowWidth = preferencePolicy.allow_width !== false;
-    const lockedColumns = new Set(
-      (Array.isArray(preferencePolicy.locked_columns) ? preferencePolicy.locked_columns : [])
-        .map((item) => String(item || '').trim())
-        .filter(Boolean),
-    );
-    const next: Record<string, boolean> = {};
-    if (allowVisibility) {
-      visible.forEach((name) => { next[name] = true; });
-      hidden.forEach((name) => {
-        if (!lockedColumns.has(name)) {
-          next[name] = false;
-        }
-      });
-    }
-    listColumnVisibility.value = next;
-    listColumnOrder.value = allowOrder ? columnOrder : [];
-    listColumnWidths.value = allowWidth ? columnWidths : {};
-  } catch (err) {
-    if (seq === listColumnPreferenceLoadSeq) {
-      listColumnVisibility.value = {};
-      listColumnOrder.value = [];
-      listColumnWidths.value = {};
-    }
-    console.warn('[list-columns] failed to load preference', err);
-  }
+function listColumnPreferenceAuthorityIdentity() {
+  return JSON.stringify([currentContextEpoch(), session.user?.id, session.recordContext, session.roleSurface]);
 }
+
+function clearListColumnPreference() {
+  setListColumnSaveStatus('idle');
+  listColumnVisibility.value = {};
+  listColumnOrder.value = [];
+  listColumnWidths.value = {};
+}
+
+function applyListColumnPreference(stored: ListColumnPreference) {
+  const preference = projectStoredListPreference(stored, listProfile.value?.preference_policy, listColumnOptions.value.map(column => column.name));
+  const visible = Array.isArray(preference.visible_columns) ? preference.visible_columns.map((item) => String(item || '').trim()).filter(Boolean) : [];
+  const hidden = Array.isArray(preference.hidden_columns) ? preference.hidden_columns.map((item) => String(item || '').trim()).filter(Boolean) : [];
+  const columnOrder = Array.isArray(preference.column_order) ? preference.column_order.map((item) => String(item || '').trim()).filter(Boolean) : [];
+  const columnWidthsRaw = preference.column_widths && typeof preference.column_widths === 'object' ? preference.column_widths as Record<string, unknown> : {};
+  const columnWidths = Object.entries(columnWidthsRaw).reduce<Record<string, number>>((acc, [name, width]) => {
+    const normalizedName = String(name || '').trim();
+    const normalizedWidth = normalizeListColumnWidth(width);
+    if (normalizedName && normalizedWidth) acc[normalizedName] = normalizedWidth;
+    return acc;
+  }, {});
+  const preferencePolicy = listProfile.value?.preference_policy || {};
+  const allowVisibility = preferencePolicy.allow_visibility !== false;
+  const allowOrder = preferencePolicy.allow_order !== false;
+  const allowWidth = preferencePolicy.allow_width !== false;
+  const lockedColumns = new Set(
+    (Array.isArray(preferencePolicy.locked_columns) ? preferencePolicy.locked_columns : [])
+      .map((item) => String(item || '').trim())
+      .filter(Boolean),
+  );
+  const next: Record<string, boolean> = {};
+  if (allowVisibility) {
+    visible.forEach((name) => { next[name] = true; });
+    hidden.forEach((name) => {
+      if (!lockedColumns.has(name)) {
+        next[name] = false;
+      }
+    });
+  }
+  listColumnVisibility.value = next;
+  listColumnOrder.value = allowOrder ? columnOrder : [];
+  listColumnWidths.value = allowWidth ? columnWidths : {};
+}
+
+const listColumnPreferenceRuntime = createScopedPreferenceRuntime({
+  waitForWrites: () => listColumnSaveQueue.catch(() => {}),
+  load: async (scope: typeof listColumnPreferenceScope.value) => {
+    const result = await getUserViewPreference(scope, 'stored');
+    return readStoredListPreference(result);
+  },
+  apply: applyListColumnPreference,
+  clear: clearListColumnPreference,
+  onError: (err) => setError(err instanceof Error ? err : new Error(String(err)), String(err)),
+});
 
 function normalizeListColumnWidth(value: unknown) {
   const parsed = Number(value || 0);
@@ -3191,18 +3196,23 @@ async function handleListColumnWidthsChange(payload: { columnWidths: Record<stri
 async function persistListColumnPreference(errorMessage: string): Promise<void> {
   const saveSeq = ++listColumnSaveSeq;
   const preference = buildListColumnPreference(listColumnVisibility.value, listColumnOrder.value, listColumnWidths.value);
+  listColumnPreferenceRuntime.edit(preference);
+  const owner = listColumnPreferenceRuntime.capture();
   setListColumnSaveStatus('saving');
-  const request = listColumnSaveQueue.catch(() => {}).then(async () => {
-    await setUserViewPreference(listColumnPreferenceScope.value, preference);
-  });
+  const authority = listColumnPreferenceAuthorityIdentity();
+  const request = enqueuePreferenceWrite(
+    listColumnSaveQueue,
+    () => setUserViewPreference(owner.scope, preference),
+    () => listColumnPreferenceAuthorityIdentity() === authority,
+  );
   listColumnSaveQueue = request;
   try {
     await request;
-    if (saveSeq === listColumnSaveSeq) {
+    if (owner.isCurrent() && saveSeq === listColumnSaveSeq) {
       setListColumnSaveStatus('saved');
     }
   } catch (err) {
-    if (saveSeq === listColumnSaveSeq) {
+    if (owner.isCurrent() && saveSeq === listColumnSaveSeq) {
       setListColumnSaveStatus('error');
     }
     console.warn(errorMessage, err);
@@ -3240,13 +3250,19 @@ async function handleToggleRecordFavorite(row: Record<string, unknown>, field: s
 }
 
 watch(
-  () => [
-    listColumnPreferenceScope.value.action_id || 0,
-    listColumnPreferenceScope.value.model || '',
-    listColumnOptions.value.map((column) => column.name).join(','),
-  ].join('|'),
-  () => {
-    void loadListColumnPreference();
+  () => ({
+    identity: isComponentActive.value ? JSON.stringify([
+      listColumnPreferenceScope.value,
+      listColumnPreferenceAuthorityIdentity(),
+    ]) : '',
+    scope: { ...listColumnPreferenceScope.value },
+    contractKey: listProfile.value ? JSON.stringify([
+      listColumnOptions.value.map((column) => column.name),
+      listProfile.value.preference_policy,
+    ]) : null,
+  }),
+  ({ identity, scope, contractKey }) => {
+    listColumnPreferenceRuntime.sync(scope.action_id || scope.model ? identity : '', scope, contractKey);
   },
   { immediate: true },
 );

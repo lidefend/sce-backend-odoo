@@ -464,6 +464,8 @@ export interface ApiDataListResult {
 }
 
 export interface UserViewPreferenceContract {
+  projection?: 'stored';
+  policy_source?: 'current_page_contract';
   scope_key?: string;
   preference?: {
     visible_columns?: string[];

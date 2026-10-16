@@ -24,7 +24,6 @@ REQUIRED_METHODS = [
     "_resolve_entry_contract",
     "_inject_action_window_contract",
     "_inject_business_category_form_policy",
-    "_merge_user_list_preference_columns",
     "_form_structure_governance",
     "_merge_business_list_profile",
     "_hydrate_record_snapshot",
@@ -158,6 +157,16 @@ def main() -> int:
         ]:
             if token not in handler:
                 errors.append(f"ui_contract_v2.py missing orchestration token: {token}")
+        # The stored personal list preference is applied exactly once, by the
+        # frontend consumer, against the declared preference_policy. The V2
+        # handler must stay declaration-only and never reorder the contract
+        # with a user's stored choice.
+        for forbidden in ["sc.user.view.preference", "user.view.preference"]:
+            if forbidden in handler:
+                errors.append(
+                    "ui_contract_v2.py must not read stored user preferences; "
+                    f"found: {forbidden}"
+                )
 
     if adapters:
         for token in [

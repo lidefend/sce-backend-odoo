@@ -95,13 +95,18 @@ export function resolveResponsiveListColumns(options: {
   };
 }
 
+/** An explicitly empty authorized collection must never revive fallback fields. */
+export function resolveListColumnChoices<T>(declared: T[] | undefined, fallback: () => T[]): T[] {
+  return Array.isArray(declared) ? declared : fallback();
+}
+
 export function resolveEnabledListColumns(
-  columns: ListColumnVisibilityOption[],
+  columns: ListColumnVisibilityOption[] | undefined,
   fallbackColumns: string[],
   visibility: Record<string, boolean> = {},
 ) {
-  const source = columns.length ? columns.map((column) => column.name) : fallbackColumns;
-  const defaults = new Map(columns.map((column) => [column.name, column.defaultVisible !== false]));
+  const source = Array.isArray(columns) ? columns.map((column) => column.name) : fallbackColumns;
+  const defaults = new Map((columns || []).map((column) => [column.name, column.defaultVisible !== false]));
   const enabled = source.filter((name) => {
     if (Object.prototype.hasOwnProperty.call(visibility, name)) return visibility[name] === true;
     return defaults.get(name) !== false;

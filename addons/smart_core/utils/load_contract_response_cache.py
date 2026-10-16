@@ -42,11 +42,26 @@ class LoadContractResponseCache:
     def put(self, cache_key, source_token, response):
         if not cache_key or not source_token or not isinstance(response, dict):
             return
+        self.put_generated(cache_key, source_token, lambda: copy.deepcopy(response))
+
+    def put_generated(self, cache_key, source_token, snapshot_factory):
+        """Store a newly built, exclusively owned snapshot without copying twice.
+
+        Internal producers must copy every externally mutable component and must
+        not retain the returned snapshot. Ordinary callers use ``put`` instead.
+        The factory runs under the cache lock, preserving ordering with clear().
+        ``get`` still returns an isolated copy on every read.
+        """
+        if not cache_key or not source_token:
+            return
         with self._lock:
+            response = snapshot_factory()
+            if not isinstance(response, dict):
+                return
             self._entries[cache_key] = (
                 self._clock(),
                 source_token,
-                copy.deepcopy(response),
+                response,
             )
             self._entries.move_to_end(cache_key)
             while len(self._entries) > self.max_entries:
@@ -125,12 +140,16 @@ def contract_code_fingerprint() -> str:
     环境变量，纯 Python/XML 代码改动不会改变它们，导致旧契约缓存被继续命中。
     这里对受管源码根下的 .py/.xml 文件做聚合指纹；
     代码改动后重启进程会重算指纹，token 变化使旧缓存立即失效。
+    ``mtime_ns + size`` 在内容就地改写、尺寸与时戳被复原时不会变化，而持久化的
+    runtime source asset 没有 TTL，此时旧源码契约会被继续命中；因此身份行取
+    ``path + mtime_ns + ctime_ns + size``——任何内容写入都会推进 ctime
+    （``utime`` 同样会），故同一 (mtime, size) 下的内容变化仍然改变 token。
     指纹按进程缓存，首次计算后 O(1) 命中。
     """
     with _CODE_FINGERPRINT_LOCK:
         if _CODE_FINGERPRINT_CACHE["value"]:
             return _CODE_FINGERPRINT_CACHE["value"]
-        rows: list[tuple[str, int, int]] = []
+        rows: list[tuple[str, int, int, int]] = []
         root = os.getenv("SC_SOURCE_ADDONS_ROOT", _CODE_FINGERPRINT_ROOT)
         if os.path.isdir(root):
             for dirpath, dirnames, filenames in os.walk(root):
@@ -146,7 +165,7 @@ def contract_code_fingerprint() -> str:
                         stat = os.stat(full)
                     except OSError:
                         continue
-                    rows.append((full, stat.st_mtime_ns, stat.st_size))
+                    rows.append((full, stat.st_mtime_ns, stat.st_ctime_ns, stat.st_size))
         digest = hashlib.sha256()
         for row in sorted(rows):
             digest.update(repr(row).encode("utf-8", "replace"))

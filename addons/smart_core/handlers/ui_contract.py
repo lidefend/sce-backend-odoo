@@ -259,10 +259,34 @@ class UiContractHandler(BaseIntentHandler):
             return False
         return self.request is not None
 
+    def read_list_preference_profile(self, payload):
+        """Internal projection: return the finalized profile, never a partial page.
+
+        Unused relation dialog UI is not an input to list preference policy. Main
+        model fields, relation permissions, hierarchy dialog dependencies and
+        extension finalization still run.
+        This purpose is deliberately not accepted from payload or env context.
+        """
+        from ..core.intent_execution_result import adapt_handler_result
+
+        previous = getattr(self, "_list_preference_projection", False)
+        self._list_preference_projection = True
+        try:
+            result = adapt_handler_result(self.handle(payload))
+            if not isinstance(result, dict) or result.get("ok") is False:
+                return None
+            data = result.get("data")
+            profile = data.get("list_profile") if isinstance(data, dict) else None
+            return profile if isinstance(profile, dict) else None
+        finally:
+            self._list_preference_projection = previous
+
     def _build_dispatcher(self, ctx):
         runtime_ctx = dict(ctx or {})
         runtime_env = api.Environment(self.env.cr, self.env.user.id, runtime_ctx)
         runtime_su_env = api.Environment(self.env.cr, SUPERUSER_ID, runtime_ctx)
+        if getattr(self, "_list_preference_projection", False):
+            return ActionDispatcher(runtime_env, runtime_su_env, include_relation_search_dialogs=False)
         return ActionDispatcher(runtime_env, runtime_su_env)
 
     def _dispatch_model_contract(
@@ -612,6 +636,7 @@ class UiContractHandler(BaseIntentHandler):
                             head["context"] = _safe_eval_or(action.context, {})
                         data["head"] = head
                     _restrict_form_action_surface(data, render_profile=render_profile)
+                self._retain_entry_route_identity(data, p)
                 return self._finalize_projected_contract(
                     data=data,
                     view_type="form",
@@ -622,12 +647,15 @@ class UiContractHandler(BaseIntentHandler):
 
         # 统一服务的 action 分发
         p2 = {"subject":"action","action_id": action_id, "with_data": False}
+        if view_id:
+            p2["view_id"] = view_id
         if requested_view_type:
             p2["view_type"] = requested_view_type
         menu_id = self._get_param(p, "menu_id", "menuId")
         if menu_id:
             p2["menu_id"] = menu_id
         data, versions = self._build_dispatcher(ctx).dispatch(p2)
+        self._retain_entry_route_identity(data, p)
         return self._finalize_projected_contract(
             data=data,
             view_type=requested_view_type or None,
@@ -635,6 +663,17 @@ class UiContractHandler(BaseIntentHandler):
             subject="action",
             meta={"action_id": action_id},
         )
+
+    def _retain_entry_route_identity(self, data, params):
+        """Preserve declared route provenance; never infer permissions from it."""
+        if not isinstance(data, dict):
+            return
+        for key, alias in (("scene_key", "sceneKey"), ("menu_xmlid", "menuXmlid")):
+            value = str(self._get_param(params, key, alias) or "").strip()
+            if value:
+                data[key] = value
+                if isinstance(data.get("head"), dict):
+                    data["head"][key] = value
 
     # ---------------- 工具 ----------------
     def _read_if_none_match(self, p) -> str:

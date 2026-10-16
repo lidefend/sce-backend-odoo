@@ -1,16 +1,6 @@
 # -*- coding: utf-8 -*-
 from ..core.base_handler import BaseIntentHandler
-
-
-USER_CONFIRMED_FORMAL_LIST_ACTION_IDS = {
-    506, 525, 529, 530, 531, 545, 549, 565, 566, 615,
-    642, 644, 645, 646, 647, 669, 701, 751, 752, 753,
-    754, 756, 757, 758, 759, 761, 762, 764, 768, 769,
-    770, 771, 772, 773, 776, 777, 778, 779, 780, 781,
-    782, 783, 784, 786, 787, 805, 814, 841, 859, 862,
-    868, 869, 871, 901, 902, 906, 907, 935, 936, 949,
-    963, 964,
-}
+from ..core.list_preference_policy import ListPreferencePolicy, ListPreferencePolicyError
 
 
 class UserViewPreferenceGetHandler(BaseIntentHandler):
@@ -52,43 +42,6 @@ class UserViewPreferenceGetHandler(BaseIntentHandler):
         text = str(raw).strip()
         return text or default, None
 
-    def _scope_key(self, params):
-        Preference = self.env["sc.user.view.preference"]
-        preference_key = Preference.normalize_preference_key(params.get("preference_key"))
-        view_type, view_type_error = self._text_param(params, "view_type", default="list")
-        if view_type_error:
-            return "", view_type_error
-        action_id, action_error = self._read_positive_int(params.get("action_id"), "action_id")
-        if action_error:
-            return "", action_error
-        model_name, model_error = self._text_param(params, ("model", "model_name"))
-        if model_error:
-            return "", model_error
-        return Preference.build_scope_key(
-            preference_key=preference_key,
-            view_type=view_type,
-            action_id=action_id,
-            model_name=model_name,
-        ), None
-
-    def _legacy_scope_key(self, params):
-        preference_key = self.env["sc.user.view.preference"].normalize_preference_key(params.get("preference_key"))
-        view_type, view_type_error = self._text_param(params, "view_type", default="list")
-        if view_type_error:
-            return "", view_type_error
-        action_id, action_error = self._read_positive_int(params.get("action_id"), "action_id")
-        if action_error:
-            return "", action_error
-        model_name, model_error = self._text_param(params, ("model", "model_name"))
-        if model_error:
-            return "", model_error
-        target = f"action:{action_id}" if action_id else f"model:{model_name or 'unknown'}"
-        return f"{preference_key}:{view_type}:{target}", None
-
-    def _positive_int(self, value):
-        result, _error = self._read_positive_int(value, "value")
-        return result
-
     def _read_positive_int(self, value, field_name):
         if value in (None, False, ""):
             return 0, None
@@ -102,6 +55,40 @@ class UserViewPreferenceGetHandler(BaseIntentHandler):
 
     def _err(self, code, message):
         return {"ok": False, "error": {"code": code, "message": message}, "code": code, "meta": self._source_meta()}
+
+    def _identity(self, params):
+        """Resolve the authoritative ``(model, action)`` identity or refuse.
+
+        A caller-supplied model that disagrees with the action's declared
+        ``res_model`` is refused, so a preference can never be stored under a
+        mismatched identity. A model supplied alone must exist in the registry.
+        """
+        action_id, action_error = self._read_positive_int(params.get("action_id"), "action_id")
+        if action_error:
+            return "", 0, action_error
+        model_name, model_error = self._text_param(params, ("model", "model_name"))
+        if model_error:
+            return "", 0, model_error
+        resolved, identity_error = ListPreferencePolicy.resolve_identity(
+            self.env, action_id=action_id, model_name=model_name,
+        )
+        if identity_error:
+            code, message = identity_error
+            return "", 0, self._err(int(code), message)
+        return resolved, action_id, None
+
+    def _scope_key(self, params, *, action_id=0, model_name=""):
+        Preference = self.env["sc.user.view.preference"]
+        preference_key = Preference.normalize_preference_key(params.get("preference_key"))
+        view_type, view_type_error = self._text_param(params, "view_type", default="list")
+        if view_type_error:
+            return "", view_type_error
+        return Preference.build_scope_key(
+            preference_key=preference_key,
+            view_type=view_type,
+            action_id=action_id,
+            model_name=model_name,
+        ), None
 
     def _sanitize_list(self, value, *, max_size=80):
         if not isinstance(value, list):
@@ -161,51 +148,19 @@ class UserViewPreferenceGetHandler(BaseIntentHandler):
             }
         return {}
 
-    def _resolve_list_profile_contract(self, *, action_id=0, model_name="", view_type="list"):
-        try:
-            from .ui_contract import UiContractHandler
-            from ..core.intent_execution_result import adapt_handler_result
+    def _resolve_list_preference_policy(self, *, action_id=0, model_name="", view_type="list"):
+        """Declared policy projection; no page assembler and no empty fallback.
 
-            ui_payload = {
-                "params": {
-                    "op": "action_open" if int(action_id or 0) > 0 else "model",
-                    "action_id": int(action_id or 0),
-                    "model": str(model_name or "").strip(),
-                    "view_type": str(view_type or "list").strip() or "list",
-                    "source_mode": "backend_internal",
-                    "contract_surface": "user",
-                }
-            }
-            result = adapt_handler_result(UiContractHandler(env=self.env).handle(ui_payload))
-            data = result.get("data") if isinstance(result, dict) else {}
-            if isinstance(data, dict):
-                list_profile = data.get("list_profile")
-                if isinstance(list_profile, dict):
-                    return list_profile
-        except Exception:
-            pass
-
-        svc = self.env.get("app.contract.service") if hasattr(self.env, "get") else None
-        if not svc:
-            return {}
-        try:
-            scoped = svc.with_context(dict(self.env.context or {}))
-            result = scoped.generate_contract(
-                model_name=str(model_name or "").strip(),
-                view_type=str(view_type or "list").strip() or "list",
-                include_parts={"view", "action", "permission", "model"},
-                force_refresh=False,
-                client_version="",
-                menu_id=0,
-                action_id=int(action_id or 0),
-            ) or {}
-            data = result.get("data") if isinstance(result, dict) else {}
-            if not isinstance(data, dict):
-                return {}
-            list_profile = data.get("list_profile")
-            return list_profile if isinstance(list_profile, dict) else {}
-        except Exception:
-            return {}
+        Raises :class:`ListPreferencePolicyError` when the surface declares no
+        resolvable list policy, so the caller refuses instead of proceeding with
+        an empty policy.
+        """
+        return ListPreferencePolicy.project(
+            self.env,
+            model_name=model_name,
+            action_id=action_id,
+            view_type=view_type,
+        )
 
     def _apply_list_preference_policy(self, payload, *, list_profile, action_id=0, model_name=""):
         value = payload if isinstance(payload, dict) else {}
@@ -218,10 +173,6 @@ class UserViewPreferenceGetHandler(BaseIntentHandler):
         allow_order = policy.get("allow_order") is not False
         allow_width = policy.get("allow_width") is not False
         locked = set(self._sanitize_list(policy.get("locked_columns"), max_size=200))
-        must_request = set(self._sanitize_list(policy.get("must_request_columns"), max_size=200))
-        formal_locked = int(action_id or 0) in USER_CONFIRMED_FORMAL_LIST_ACTION_IDS
-        if formal_locked:
-            must_request.update(columns or fact_columns)
         # Scope boundary:
         # - fact_columns / must_request_columns: data request contract only
         # - locked_columns: UI visibility constraint
@@ -281,8 +232,10 @@ class UserViewPreferenceGetHandler(BaseIntentHandler):
                 "allow_order": policy.get("allow_order") is not False,
                 "allow_width": policy.get("allow_width") is not False,
                 "locked_columns": locked_columns,
+                "locked": bool(policy.get("locked")),
                 "must_request_columns": self._sanitize_list(policy.get("must_request_columns"), max_size=200),
             },
+            "policy_declarations": self._sanitize_list(profile.get("policy_declarations"), max_size=20),
         }
 
     def _source_meta(self):
@@ -296,35 +249,46 @@ class UserViewPreferenceGetHandler(BaseIntentHandler):
         params = self._params(payload or self.payload)
         if not isinstance(params, dict):
             return self._err(400, "params 无效")
-        scope_key, scope_error = self._scope_key(params)
+        projection = params.get("projection", "effective")
+        if projection not in ("effective", "stored"):
+            return self._err(400, "projection 无效")
+        model_name, action_id, identity_error = self._identity(params)
+        if identity_error:
+            return identity_error
+        scope_key, scope_error = self._scope_key(params, action_id=action_id, model_name=model_name)
         if scope_error:
             return scope_error
-        legacy_scope_key, legacy_error = self._legacy_scope_key(params)
-        if legacy_error:
-            return legacy_error
         Preference = self.env["sc.user.view.preference"]
         record = Preference.search([
             ("user_id", "=", self.env.uid),
             ("scope_key", "=", scope_key),
         ], limit=1)
-        if not record and legacy_scope_key != scope_key:
-            record = Preference.search([
-                ("user_id", "=", self.env.uid),
-                ("scope_key", "=", legacy_scope_key),
-            ], limit=1)
         preference_key = Preference.normalize_preference_key(params.get("preference_key"))
+        if projection == "stored":
+            # Storage facts are not effective permissions. The caller must
+            # consume the current page's declared policy before applying them.
+            # This branch must never compile a page or resolve a list profile.
+            return {
+                "ok": True,
+                "data": {
+                    "scope_key": scope_key,
+                    "projection": "stored",
+                    "policy_source": "current_page_contract",
+                    "preference": self._sanitize_preference(
+                        preference_key, record.value_json if record else {},
+                    ),
+                },
+                "meta": {"intent": self.INTENT_TYPE, "version": self.VERSION, **self._source_meta()},
+            }
         list_profile = {}
-        action_id = 0
-        model_name = ""
         if preference_key == "list_columns":
-            action_id, _ = self._read_positive_int(params.get("action_id"), "action_id")
-            model_name, _ = self._text_param(params, ("model", "model_name"))
             view_type, _ = self._text_param(params, "view_type", default="list")
-            list_profile = self._resolve_list_profile_contract(
-                action_id=action_id,
-                model_name=model_name,
-                view_type=view_type,
-            )
+            try:
+                list_profile = self._resolve_list_preference_policy(
+                    action_id=action_id, model_name=model_name, view_type=view_type,
+                )
+            except ListPreferencePolicyError as exc:
+                return self._err(exc.code, exc.message)
         value = self._sanitize_preference(preference_key, record.value_json if record else {})
         if preference_key == "list_columns":
             value = self._apply_list_preference_policy(value, list_profile=list_profile, action_id=action_id, model_name=model_name)
@@ -357,30 +321,29 @@ class UserViewPreferenceSetHandler(UserViewPreferenceGetHandler):
         params = self._params(payload or self.payload)
         if not isinstance(params, dict):
             return self._err(400, "params 无效")
-        scope_key, scope_error = self._scope_key(params)
+        model_name, action_id, identity_error = self._identity(params)
+        if identity_error:
+            return identity_error
+        scope_key, scope_error = self._scope_key(params, action_id=action_id, model_name=model_name)
         if scope_error:
             return scope_error
-        preference_key = self.env["sc.user.view.preference"].normalize_preference_key(params.get("preference_key"))
+        concern = self.env["sc.user.view.preference"]
+        preference_key = concern.normalize_preference_key(params.get("preference_key"))
         view_type, view_type_error = self._text_param(params, "view_type", default="list")
         if view_type_error:
             return view_type_error
-        action_id, action_error = self._read_positive_int(params.get("action_id"), "action_id")
-        if action_error:
-            return action_error
-        model_name, model_error = self._text_param(params, ("model", "model_name"))
-        if model_error:
-            return model_error
         value = self._sanitize_preference(preference_key, params.get("preference"))
         list_profile = {}
         if preference_key == "list_columns":
-            list_profile = self._resolve_list_profile_contract(
-                action_id=action_id,
-                model_name=model_name,
-                view_type=view_type,
-            )
+            try:
+                list_profile = self._resolve_list_preference_policy(
+                    action_id=action_id, model_name=model_name, view_type=view_type,
+                )
+            except ListPreferencePolicyError as exc:
+                # Refuse before any write: no declared policy means no legal value.
+                return self._err(exc.code, exc.message)
             value = self._apply_list_preference_policy(value, list_profile=list_profile, action_id=action_id, model_name=model_name)
-        Preference = self.env["sc.user.view.preference"]
-        record = Preference.search([
+        record = concern.search([
             ("user_id", "=", self.env.uid),
             ("scope_key", "=", scope_key),
         ], limit=1)
@@ -396,7 +359,7 @@ class UserViewPreferenceSetHandler(UserViewPreferenceGetHandler):
         if record:
             record.write(vals)
         else:
-            record = Preference.create(vals)
+            record = concern.create(vals)
         return {
             "ok": True,
             "data": {

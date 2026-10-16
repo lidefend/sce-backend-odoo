@@ -1,0 +1,27 @@
+{
+  "action": null,
+  "case": "user_view_preference_get_resolved_intent_admin",
+  "error": null,
+  "execute_error": null,
+  "execute_result": null,
+  "fallback": false,
+  "meta_fields": null,
+  "model": null,
+  "op": "intent.invoke",
+  "record": null,
+  "record_error": null,
+  "snapshot_schema_version": "1.0.0",
+  "ui_contract": null,
+  "ui_contract_raw": {
+    "preference": {
+      "column_order": [],
+      "column_widths": {},
+      "hidden_columns": [],
+      "visible_columns": []
+    },
+    "scope_key": "ui:list_columns:list:model:res.partner"
+  },
+  "user": "admin",
+  "user_fallback": null,
+  "view_type": null
+}
