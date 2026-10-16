@@ -104,6 +104,19 @@ RULES = (
     ), (
         "verify.frontend.dev.incremental.unit",
     )),
+    # The baseline-backed iteration policy guard is the authority for the
+    # governed make lanes: it asserts that each lane still declares the targets
+    # the execution policy depends on. Editing one of those lanes without
+    # re-running it let a changed entry point go unchecked, and the lane was
+    # reported as an unmapped path that demanded a hand-picked L2 target.
+    Rule((
+        "make/codex.mk",
+        "make/runtime_ops.mk",
+        "make/dev.mk",
+        "make/ci.mk",
+    ), (
+        "verify.baseline.iteration.execution.policy",
+    )),
     Rule(("/pages/contractForm/", "/components/template/"), (
         "verify.frontend.canonical_form_presenter.unit",
         "verify.frontend.primitive_adapter.unit",
@@ -192,6 +205,66 @@ RULES = (
     ), (
         "verify.tenant.product_payload_boundary",
         "verify.daily.runtime.duty.identity.unit",
+    )),
+    # The daily-runtime read-only inventories and the governed stand-down entry
+    # each carry their own non-zero unit target. Editing one of those tools, its
+    # tests, or the declaration it consumes used to fall through to
+    # "unmapped", so the inner loop could only recommend the target by hand --
+    # which is exactly how a layered run silently loses its L2 layer. Each tool
+    # routes to its own target only; routing them as one group would recommend
+    # four unrelated lanes for a one-file edit.
+    Rule((
+        "scripts/ops/daily_runtime_legacy_stack_retire.py",
+        "scripts/ops/test_daily_runtime_legacy_stack_retire.py",
+        "config/ops/daily_runtime_retired_stacks.v1.json",
+    ), (
+        "verify.daily.runtime.legacy_stack.retire",
+    )),
+    Rule((
+        "scripts/ops/daily_runtime_routing_inventory.py",
+        "scripts/ops/test_daily_runtime_routing_inventory.py",
+    ), (
+        "verify.daily.runtime.routing.inventory",
+    )),
+    Rule((
+        "scripts/ops/daily_runtime_tenant_topology_inventory.py",
+        "scripts/ops/test_daily_runtime_tenant_topology_inventory.py",
+    ), (
+        "verify.daily.runtime.tenant.topology.inventory",
+    )),
+    Rule((
+        "scripts/ops/daily_runtime_data_ownership_probe.py",
+        "scripts/ops/test_daily_runtime_data_ownership_probe.py",
+    ), (
+        "verify.daily.runtime.data_ownership.probe",
+    )),
+    Rule((
+        "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
+        "scripts/ops/test_daily_runtime_lifecycle_fixture_prepare.py",
+    ), (
+        "verify.daily.runtime.lifecycle_fixture.prepare",
+    )),
+    Rule((
+        "scripts/ops/daily_runtime_published_face_converge.py",
+        "scripts/ops/test_daily_runtime_published_face_converge.py",
+    ), (
+        "verify.daily.runtime.published_face.converge",
+    )),
+    # The duty entry's own suite is the behavior lock of the phase machinery the
+    # declaration drives; its test file was unmapped while the entry itself was
+    # claimed by the identity rule, so a test-only edit selected nothing.
+    Rule((
+        "scripts/ops/test_daily_runtime_database_duty.py",
+    ), (
+        "verify.daily.runtime.database.duty",
+    )),
+    # The Odoo config renderer is consumed by the duty stack and by the release
+    # lane; its own test runs inside `test.unit`, which is the layer that would
+    # actually catch a broken render.
+    Rule((
+        "scripts/render_odoo_conf.py",
+    ), (
+        "test.unit",
     )),
     # The duty recovery tool decides whether a duty's database and its filestore
     # still form one recoverable pair. It classifies attachment bodies, Odoo's

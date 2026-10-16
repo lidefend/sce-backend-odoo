@@ -293,7 +293,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": " STATUS 2026-10-16: the candidate was merged as PR #667 (main b966d66a0c4132e7b2c75e497fec5bf2207d44d6) and mainline integration for it is complete; the run continues on the unpublished branch fix/daily-runtime-payload-import-closeout-20261016. The two frozen-candidate early gates (duplicated product-version literal in this ledger, stale zero-reference disposition) are fixed and re-verified; the candidate is re-frozen and exactly one exact-head Quick is re-run before the candidate is pushed. After this closure the only external dependency is a signed payload re-emitted against the exact module build this tenant runs (<customer-module> 17.0.2.8.0); it must carry the build identity, the new checksum and the signature basis rather than a bumped version string. (1) The declared-module drift is closed, so the platform side of that compatibility basis is settled: the customer duty runs smart_core 17.0.1.1.15 from the deployed tree at b80841059b19. (2) The attachment/filestore continuity guard is settled by storage semantics; the customer duty's continuity baseline still has to be re-run against the fixed guard at the frozen candidate, together with the payload, and that re-run is a frozen-candidate activity rather than a step to repeat now. (3) When the payload arrives, and only then: verify delivery identity and signature -> read-only compatibility pre-check -> a real approval bound to the new checksum -> final plan -> import -> verify/reconcile -> revoke the temporary grant -> independent review. (4) Branch retirement stays suspended and the bookkeeping commits ride with the next real product candidate. Nothing here advances the import, repeats the empty-database isolation query or claims product delivery. No step may be replaced by writing the model directly, fabricating an approval, reusing admin or relaxing a mechanism.",
+  "next_exact_step": "STATUS 2026-10-16 (demo carrier rebuild authorized; D1=A1, D2=formal demo module, D3=preserve the historic source, D4=revalidate by dependency). Steps 1 and 2 are complete locally: the rebuilt carrier is declared, the five read-only entries bind by duty, the governed make lanes now forward that duty, the routing lane no longer defaults to the historic container, the targeted non-zero L2 layer and ci.local.iteration are green, both read-only plans were re-read with the binding wired (duty plan PASS with declaration digest dd4bad27..., retire plan PLAN with failing_guards []), and a live read-only probe proved a bare database name is refused while duty=demo reads the declared carrier sc-demo-dev-db-1. No host write has been made. NEXT: commit the two reviewed change sets, obtain the independent read-only review against that exact candidate, and only then create the sc-demo-dev cluster (daily.runtime.database.duty.apply with the reviewed declaration digest), initialize it, seed it through the product's own demo chain, stand the legacy publisher down with daily.runtime.legacy_stack.retire.apply, and switch 18081/8070 with the maintenance state as the failure default. See demo_carrier_rebuild_20261016.duty_binding_wiring_20261016.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -429,8 +429,10 @@
     "scripts/ops/daily_runtime_duty_payload.py",
     "scripts/ops/daily_runtime_frontend_build_align.py",
     "scripts/ops/daily_runtime_legacy_stack_retire.py",
+    "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
     "scripts/ops/daily_runtime_platform_security_admin_bootstrap.py",
     "scripts/ops/daily_runtime_platform_security_admin_credential.py",
+    "scripts/ops/daily_runtime_published_face_converge.py",
     "scripts/ops/daily_runtime_routing_inventory.py",
     "scripts/ops/daily_runtime_tenant_addons_deliver.py",
     "scripts/ops/daily_runtime_tenant_recovery_contract_v1.json",
@@ -445,6 +447,7 @@
     "scripts/ops/platform_database_rehearsal_runtime.py",
     "scripts/ops/platform_security_admin_bootstrap.py",
     "scripts/ops/platform_security_admin_credential.py",
+    "scripts/ops/synthetic_duty_instances.sample.json",
     "scripts/ops/test_daily_candidate_data_continuity.py",
     "scripts/ops/test_daily_runtime_data_ownership_probe.py",
     "scripts/ops/test_daily_runtime_data_ownership_repair_plan.py",
@@ -452,11 +455,14 @@
     "scripts/ops/test_daily_runtime_database_identity_inventory.py",
     "scripts/ops/test_daily_runtime_duty_database_registration.py",
     "scripts/ops/test_daily_runtime_duty_edition_release.py",
+    "scripts/ops/test_daily_runtime_duty_identity.py",
     "scripts/ops/test_daily_runtime_duty_operator_grant.py",
     "scripts/ops/test_daily_runtime_duty_payload.py",
     "scripts/ops/test_daily_runtime_frontend_build_align.py",
     "scripts/ops/test_daily_runtime_legacy_stack_retire.py",
+    "scripts/ops/test_daily_runtime_lifecycle_fixture_prepare.py",
     "scripts/ops/test_daily_runtime_platform_security_admin_bootstrap.py",
+    "scripts/ops/test_daily_runtime_published_face_converge.py",
     "scripts/ops/test_daily_runtime_routing_inventory.py",
     "scripts/ops/test_daily_runtime_tenant_addons_deliver.py",
     "scripts/ops/test_daily_runtime_tenant_topology_inventory.py",
@@ -464,6 +470,7 @@
     "scripts/ops/test_platform_security_admin_bootstrap.py",
     "scripts/ops/test_platform_security_admin_credential.py",
     "scripts/ops/test_safe_worktree_cleanup.py",
+    "scripts/render_odoo_conf.py",
     "scripts/test/test_safe.sh",
     "scripts/verify/daily_dev_acceptance_env_guard.py",
     "scripts/verify/data_scope_declarations.json",
@@ -476,6 +483,7 @@
     "scripts/verify/test_coverage_registry.yaml",
     "scripts/verify/test_coverage_registry_audit.py",
     "scripts/verify/test_daily_acceptance_fixture_lane.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/test_local_development_lifecycle.py",
     "scripts/verify/test_platform_database_lifecycle_entry.py",
     "scripts/verify/test_platform_database_rehearsal.py",
@@ -3747,6 +3755,226 @@
       "version_release": "not done; merging does not deploy",
       "product_delivery": "not done",
       "customer_data_migration": "not run"
+    }
+  },
+  "demo_mechanism_gap_table_20261016": {
+    "authority": "owner dispatch 2026-10-16: drive platform-wide mechanism closure along the demo data line while the user module prepares a compatible signed payload in parallel; the two lines prove different things and neither substitutes for the other. Order given: produce the precise gap table and confirm the demo data provenance first, then execute only the uncovered cases whose prerequisites are met; end the line if there is no real gap rather than adding features or rerunning a matrix to stay busy.",
+    "step_1_demo_data_identity": {
+      "case": "the owner required the demo data identity to be checked and not skipped: only data whose source is proven synthetic/demo may be used, unproven-origin rows must not be relabelled as demo, and validation must not be used as a reason to read real customer data.",
+      "finding": "NOT a pure demo carrier. The daily demo duty serves sc_demo, whose main business volume is the customer's real historical production data, and the demo module the duty name promises is not part of the declared set.",
+      "evidence": [
+        "docs/ops/user_data_production_boundary_v1.md records the same figures for the source daily database it recovered from -- payment request 34,897, payment execution 38,565, ledger 12,194, attachments 609,258 under the physical fingerprint -- and states that the original daily database stays read-only and is not authorized to be modified, copied, cleaned or renamed into a customer production database",
+        "the pre-build daily inventory (.runtime/final-acceptance/daily-deployed/tenant-topology-inventory.json) observes sc_demo with company 1 carrying payment.request 34,897, construction.contract 12,672, project.project 927 and 12,194 payment.ledger rows owned by no company, 81 installed modules including the customer module at 17.0.2.8.0",
+        "the demo duty declares only smart_core and smart_construction_core, so the demo module is absent from its own declared module set",
+        "company 1's platform registration says data_purpose='demo', but it was ADOPTED with database_already_owns_registration=true: the platform never relabelled it"
+      ],
+      "consequence": "on this duty the demo line has no lawful carrier for product-behaviour acceptance. Company 1's volume is proven to be the customer's production data, so it may not stand in as demo data; companies 21 and 22 are the acceptance-fixture carriers registered with purpose 'test'. Mechanism acceptance does not depend on row provenance and can continue on the duty itself.",
+      "not_done": "nothing was relabelled, no business row was read to reach this determination beyond the already-registered inventory, and sc_demo was not written to."
+    },
+    "step_2_mechanism_gap_table": {
+      "methods": "read from existing evidence first; only the cases whose prerequisites were met were executed, and each of those was read-only",
+      "database_registration": {
+        "status": "GAP",
+        "basis": "make daily.runtime.duty.database_registration.remote_readback duty=demo -> registration_before and registration_after both registered=false with writes=0 against control database sc_platform_control; the duty declaration itself exists (data_purpose demo, tenant_key <demo-tenant-key>, environment_role platform_internal_demo, strategy single_db_multi_company)",
+        "note": "the same finding was already carried as an open item: the demo duty still carries no registration of its own, and suspend/resume have not been exercised for it"
+      },
+      "company_data_space_registration": {
+        "status": "COVERED",
+        "basis": "the governed onboarding receipt declared the environment role platform_internal_demo and adopted three company registrations (company 1 purpose 'demo', companies 21/22 purpose 'test') without relabelling anything"
+      },
+      "edition_effective": {
+        "status": "BLOCKED (fail-closed, correct)",
+        "basis": "make daily.runtime.duty.edition_release.remote_readback duty=demo -> BLOCKED, rule 'sc.tenant.bound_tenant_key names another tenant (<customer-tenant-key>) on duty demo'. The parameter is read from the duty's own database (scripts/ops/daily_runtime_duty_edition_release.py reads ir_config_parameter with --database duty.database), so the customer tenant key is present inside the demo carrier. The refusal is the right protection against a wrong underlying fact, and the entry was not widened.",
+        "root": "the customer module's post-init hook writes that parameter, and sc_demo still carries the customer module; the demo duty therefore cannot carry an effective edition while the carrier is bound to another tenant"
+      },
+      "accounts_and_roles": {
+        "status": "GAP (declared)",
+        "basis": "the duty connects as the cluster superuser role odoo (createdb+superuser); role_compliance is declared_gap with owning task DAILY-RUNTIME-DEMO-APP-ROLE-01, and no dedicated demo application role or credential exists"
+      },
+      "payload_import_grant": {
+        "status": "NOT APPLICABLE BY DESIGN (correct)",
+        "basis": "make daily.runtime.duty.operator_grant.remote_readback duty=demo -> BLOCKED, rule 'duty demo is declared demo, not customer: only a customer duty may be issued the payload import grant'. This confirms the demo duty is deliberately excluded from the customer import path; it is a protection, not a gap."
+      },
+      "routing": {
+        "status": "COVERED",
+        "basis": "the read-only duty plan passes for every declared duty and the deployment-wide binding; the demo duty declares nginx 18081, odoo loopback 8070, exact filter ^sc_demo$ and list_db=false, and declared_services_are_running passed"
+      },
+      "install_and_upgrade": {
+        "status": "PARTIAL",
+        "basis": "the governed upgrade phase exists and has been exercised on platform_control (17.0.1.1.14 -> 17.0.1.1.15) and on <customer-tenant-db>; the demo duty has been refreshed but never needed an upgrade, and its declared module set still lacks the demo module"
+      },
+      "revocation": {
+        "status": "COVERED (platform scope)",
+        "basis": "the maintenance-access entry proves self-approval refusal, no-role refusal, expiry and revocation refusal and target substitution refusal, repeat-execution behaviour and non-forgeable audit; the temporary customer import grant was fully revoked"
+      },
+      "backup_and_restore": {
+        "status": "TO VERIFY",
+        "basis": "a paired set exists under the demo duty's own declared namespace <demo-backup-namespace> (sc_demo-20261015T062043Z-849c0c54: database.dump, filestore.tar.gz, manifest.json, SHA256SUMS, all 0600 root:root), but no validated isolated restore drill is recorded for this duty under the amended guard"
+      }
+    },
+    "step_3_executed_readonly_cases": {
+      "what_ran": [
+        "make daily.runtime.duty.database_registration.remote_readback (demo) - read-only, writes=0",
+        "make daily.runtime.duty.edition_release.remote_readback (demo) - read-only, refused fail-closed",
+        "make daily.runtime.duty.operator_grant.remote_readback (demo) - read-only, refused by design"
+      ],
+      "why_only_these": "the product-behaviour case is not executable: its prerequisite (a carrier with proven synthetic/demo provenance) is not met, so it was not run and no synthetic data was invented for it",
+      "not_run": "no duty write, no database write, no relabelling, no demo-module install, no matrix rerun",
+      "evidence": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/demo-mechanism-readback-20261016/"
+    },
+    "owner_decision_needed": "the demo duty's carrier, role and edition binding cannot be repaired by code: the standing rule keeps sc_demo read-only and forbids cleaning, relabelling or copying it, and the fail-closed refusals come from a customer tenant key already written inside it. The decision is whether the demo line gets its own genuinely-demo carrier (its own cluster, role, filter, route and namespace under the same unified onboarding mechanism) or the owner accepts a different lawful carrier for demo product acceptance.",
+    "not_a_pass": "no version was released, no environment was upgraded, no data was migrated and no acceptance line is closed by this record.",
+    "limits": "the readbacks were taken at tool sha 8927178e against the standing duty declaration digest; the edition and operator refusals are correct fail-closed behaviour and must not be removed by widening a mechanism. Recording this in the ledger is bookkeeping and rides with the next real product candidate."
+  },
+  "demo_carrier_rebuild_20261016": {
+    "authority": "owner ruling 2026-10-16 after the read-only judgement: D1=A1 (create sc-demo-dev, database name sc_demo, independent sc_demo_app/sc_demo_maintenance, own storage and session spaces, exact filter, finally taking over 18081/8070; stand down the old odoo/nginx through a governed entry while keeping the old db/redis and every volume), D2 (declare smart_construction_demo as the demo duty's data carrier; fix the confirmed terminal-state bypass before initializing; do not substitute another fixture lane for the formal demo data chain), D3 (historic source stays unchanged: no rename, no clean, no migration, no upgrade, no seed; registered independently as a protected historic source; no customer data repair this round), D4 (new cluster and data identity invalidate the old demo runtime evidence; keep historic reports and revalidate only the affected set derived from the new identity and changed inputs). Execution order fixed by the owner: readonly plan and recovery conditions -> fix the generation path and the governed tools -> independent review then build the cluster -> formal demo initialization -> governed cutover of 18081/8070 -> backup/restore and product acceptance -> independent B-line closure. Owner also required two corrections: (1) align the declared set with the actual instances and explain the extra duty; (2) a database name may no longer identify a target alone.",
+    "correction_1_duty_set": {
+      "my_earlier_statement": "I wrote '4 managed duties' while listing three, which was wrong.",
+      "fact": "The declared and instantiated set is exactly three duties plus one deployment-wide binding: platform_control, demo, customer_tenant_dev (the third is supplied by the managed instance document under ops_root because its data_purpose is customer), and the deployment binding that proves the deployed frontend build environment names the declared platform-admin database. The plan reports all three duties passing plus deployment_binding passed; there is no fourth duty.",
+      "rehearsal_stacks_not_duties": [
+        "sc-core035-mvp-daily-20260727142732-46a327 (db/odoo/redis, odoo 127.0.0.1:18095)",
+        "sc-release-rehearsal (db/ingress/product-release/redis, ingress 18086)",
+        "sc-user-data-rehearsal (db/odoo/redis, odoo 18089)"
+      ],
+      "note": "rehearsal stacks are not counted as duties and are not part of this rebuild."
+    },
+    "step_1_readonly_facts_20261016": {
+      "plan": "make daily.runtime.database.duty.plan -> status PASS, phase plan, applied=false, declaration_digest 7103947eb771ded352a10e7f4b92f265222dcdc0bc52408b99e79638e93509f4, plan_digest a939ac48c20d77ee7ddc0a04e4acc199cc79facef8a65118397d9b3b357f3743, compose_sha256 b888e8a54f5ef3e5fd7f424907919b30ee34825fa0f661adc8cbeda89e780b80, remote_head b80841059b196f66487f4b598d90d3b0662476b4, report .runtime/final-acceptance/daily-deployed/database-duty-plan.json; 34 + 123 unit tests OK.",
+      "demo_duty_identity": "the demo duty already runs the governed stack file (container label com.docker.compose.project.config_files = the governed duty-stack-b888e8a54f5e.yml, whose sha256 prefix equals the repository's config/ops/daily_runtime_duty_stack.yml), but its cluster identity is still the pre-governance one: project sc-backend-odoo-dev, containers sc-backend-odoo-dev-{db,odoo,nginx,redis}-1, volumes sc_dev_db_data / sc_dev_odoo_data / sc_dev_redis_data, application role odoo (cluster bootstrap superuser, custody.role_compliance declared_gap).",
+      "ports": "the legacy nginx publishes 0.0.0.0:18081->80 and the legacy odoo publishes 0.0.0.0:8070->8069; 18081 is the repository-wide published face default (Makefile, make/codex.mk x4, make/runtime_ops.mk, and make/release.mk asserts the public acceptance port must be 18081), so the new carrier takes over 18081/8070 rather than moving the convention.",
+      "auto_revival_paths": "all four legacy containers declare restart policy unless-stopped, so a manual stop sticks across daemon restarts; however nothing is fixed thereafter: any later `docker compose -p sc-backend-odoo-dev up` recreates them, and the duty entry itself renders that project name from the declaration, so the declaration must stop naming the legacy cluster before the stop can be durable. No watchtower/autoheal/restart-agent container exists.",
+      "other_consumers": "no live TCP consumer on 8070 or 18081 at inspection time; the only host cron entry is the BT-panel ACME certificate renewal (/www/server/cron/3ab48c27ec99cb9787749c362afae517 -> acme_v2.py --renew_v2=1), which touches no duty database or volume; /etc/cron.d holds only e2scrub_all and sysstat; no crontab entry references the duty stack.",
+      "recovery_condition": "a paired demo recovery point exists under the demo duty's currently declared namespace /data/backups/daily_candidate (sc_demo-20261015T062043Z-849c0c54: database.dump 650,398,584B, filestore.tar.gz 4,276,638B, manifest.json 4,870B, SHA256SUMS 243B, all 0600 root:root) and an earlier validated restored copy exists as the sc-user-data-rehearsal stack; no isolated restore drill is recorded for the demo duty under the amended guard, so 'a volume exists' is not yet 'a recovery is proven'. A new cluster needs its own plan-bound recovery point before demo data is loaded.",
+      "server_facts": "26 volumes present including sc_dev_*, sc_platform_control_*, sc_tenant_<tenant_key>_dev_*, sc_prod_* and sc_test_* (the retired sc-backend-odoo-prod containers are gone); no sc-demo-dev volume or container exists yet."
+    },
+    "step_2_code_findings_20261016": {
+      "bypass_state": "ALREADY CLOSED, not to be re-fixed. demo_addons/smart_construction_demo/tools/scenario_loader.py no longer contains _write_cost_source_state and no longer defines _ensure_s80_material_lifecycle; it declares the governed action chain (\"sc.material.outbound\",\"issued\") -> (\"action_issue\",) and resolves the acting seat per action; the guarded scenario XML must not carry a state, and the demo module's own tests assert both (test_demo_funding_baseline_lifecycle.py: test_loader_never_writes_the_guarded_state_field, test_s80_material_xml_creates_legal_drafts, test_loader_declares_the_governed_action_chain). The fix landed in PR #665 (10bf72ef) and PR #666 (04c6a129).",
+      "real_gap": "the duty stack cannot carry the demo module as declared today, and no governed remote entry runs the demo seed chain: (a) _validate_stack refuses stack.runtime_env outside (dev,test), while the demo module's guard_demo_scope requires SC_ENVIRONMENT=demo inside the process; (b) render_env derives both ENV and SC_ENVIRONMENT from runtime_env and knows no SC_ALLOW_DEMO_DATA / SC_DEMO_USER_PASSWORD, and neither appears in the stack env template nor is forwarded by the compose definition; (c) the seed chain exists only for the local profile (make local.dev.demo.seed -> scripts/demo/run_seed.sh with SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 STEPS=..., profile demo_full in the demo registry), and the three existing remote fixture entries seed the acceptance-fixture lane, not the demo lane; (d) guard_demo_scope accepts only sc_demo / sc_dev_demo / sc_demo_*, which the new carrier satisfies by keeping the name sc_demo.",
+      "identity_ambiguity": "five read-only tools still default to a bare --database sc_demo with no duty binding (daily_runtime_tenant_topology_inventory, daily_runtime_data_ownership_probe, daily_runtime_published_face_converge, daily_runtime_routing_inventory, daily_runtime_lifecycle_fixture_prepare). After the rebuild two live clusters each carry a database named sc_demo, so a bare name stops identifying a target. The recovery/continuity lane is already safe: it is bound to a contract carrying database_container, database_volume, database_role and database, and the make entries require the selected duty's recovery-directory pattern.",
+      "owner_requirement": "all writes, backups, restores and routing must bind duty + cluster identity + instance + database + storage; a tool that can only take a database name must first gain an ambiguity refusal."
+    },
+    "planned_change_set": [
+      "P4 target identity: add a shared resolver plus a protected-historic-source declaration so a bare database name that resolves to more than one live/declared carrier is refused, and bind every affected tool's target to duty + cluster + instance + database + storage.",
+      "P4 demo duty carrier: declaration switch of the demo duty to its own cluster/volumes/role/filter/namespaces, naming rule extended by exactly one demo maintenance role, runtime_env demo allowed only for a demo-duty data_purpose, stack env + compose forwarding of the two demo switches, and a minted SC_DEMO_USER_PASSWORD as duty secret material.",
+      "P4 governed demo seed entry for the duty: reuse the existing local demo seed script semantics inside the duty container rather than inventing a second chain.",
+      "P4 governed stand-down entry for a declared leftover stack's serving containers (exact container identity, plan/apply, confirmation token, evidence freeze, volumes and data untouched), so the legacy publisher can be stopped durably before the switch.",
+      "P4 demo duty registration in the control database, edition publication for the new carrier, and a plan-bound recovery point plus isolated restore drill for the new cluster."
+    ],
+    "not_a_pass": "no cluster was created, no container was stopped, no database was written, no data was relabelled, and no evidence was reissued by this record. The demo line still has no lawful product-behaviour carrier until the rebuild lands.",
+    "limits": "the plan above is read-only evidence at tool sha 8927178e plus the dirty run ledger; the three fail-closed refusals recorded earlier (no registration, cross-tenant edition binding, payload-import grant refused for a non-customer duty) remain the correct current behaviour and none of them is to be widened.",
+    "step_2_implementation_20261016": {
+      "status": "implemented locally, uncommitted; no host write has been made",
+      "entry": "scripts/ops/daily_runtime_legacy_stack_retire.py",
+      "what_changed": [
+        "The retirement entry now declares an *intent* per leftover stack and proves the matching fact instead of applying one stop rule to every shape. shared_writer keeps the original proof (a live co-writer on a cluster data volume, stopped by PostgreSQL Immediate Shutdown so no shutdown checkpoint lands in the WAL the survivor is using, redis by SIGKILL so no persistence write lands in the shared volume). serving_publisher is the opposite proof: the container owns no cluster data directory, so it is stopped with the signal its own image declares, and the plan must prove it shares no *live writable* volume with anything still running.",
+        "A serving declaration must name what could still revive it (revival_path), may not contain a postgres/redis container (that is the shared_writer shape), and every serving container must declare the exact signal docker stop will send (expected_stop_signal). An image that later changes its declared signal refuses instead of being stopped with an unreviewed signal.",
+        "The collector reads Config.StopSignal with Docker's documented default SIGTERM resolved explicitly (Docker 27 omits the key entirely when unset, which is why an empty string would have been read as 'no signal'), plus per-container mounts and a running-only volume-owner map. Sharing is judged against live co-owners only: sc_dev_odoo_data is still attached to the stopped prod odoo container, and reading the stopped attachment as a second writer would have refused a clean publisher retirement.",
+        "observe/apply now carry every declared checkout (legacy_checkouts) and every declared compose file instead of only stacks[0], so a declaration holding two shapes cannot silently drop one."
+      ],
+      "declaration": "config/ops/daily_runtime_retired_stacks.v1.json now declares two stacks: the already-retired shared_writer sc-backend-odoo-prod (unchanged) and the serving_publisher sc-backend-odoo-dev holding sc-backend-odoo-dev-nginx-1 (d3a95831c4a8, StopSignal SIGQUIT) and sc-backend-odoo-dev-odoo-1 (a903708bb1ae, no declared signal -> Docker default SIGTERM), read back from the host on 2026-10-16.",
+      "deliberately_not_neutralised": "the publisher's compose file is the governed rendered duty stack /opt/projects/secure/daily-runtime-duties/duty-stack-b888e8a54f5e.yml, whose digest is sha256(config/ops/daily_runtime_duty_stack.yml) and which the same render path still writes for the other duties. Neutralising it would break the stack that is starting rather than remove a revival path, so it is left unlisted; the container restart policy is the only automatic revival path and the entry removes it with docker update --restart=no before stopping anything.",
+      "side_effect_registered": "because the retirement declaration is the routing inventory's retired-identity source, the routing inventory now legitimately refuses while the legacy publisher still runs. That refusal is the intended fail-closed signal and clears when the cutover completes; it must not be worked around by removing the declaration entries.",
+      "tests": [
+        "scripts/ops/test_daily_runtime_legacy_stack_retire.py: 36 tests OK (was 20); new coverage pins the publisher stop path, the refusal cases (live writable share, cluster data directory mount, changed stop signal, missing revival_path, missing signal, cluster writer under the publisher intent, serving kind under the shared_writer intent) and the multi-stack checkout/compose-file aggregation.",
+        "unaffected suites re-run green: duty_identity 57, database_duty 140, routing_inventory 17, tenant_topology_inventory 13, data_ownership_probe 18, lifecycle_fixture_prepare 18, published_face_converge 27."
+      ],
+      "not_a_pass": "no cluster was created, no container was stopped, no database was written. This is code plus its unit layer only; the plan/apply and the independent review are still pending."
+    },
+    "layered_planning_mapping_20261016": {
+      "status": "closed locally",
+      "finding": "scripts/verify/frontend_dev_incremental.py --plan-worktree still reported make/codex.mk as an unmapped product path, so a governed make-lane edit demanded a hand-picked L2 target (manualNonZeroL2Required).",
+      "why_not_hidden": "make/codex.mk is an execution entrypoint, not narrative bookkeeping, so it must not be moved into NON_SOURCE_PATH_PREFIXES. Hiding it would delete the only signal that a changed entry point needs validating.",
+      "fix": "One explicit Rule maps the four lanes the baseline iteration policy guard already owns via MAKE_TARGET_REQUIREMENTS (make/codex.mk, make/runtime_ops.mk, make/dev.mk, make/ci.mk) to verify.baseline.iteration.execution.policy. make/frontend.mk keeps its existing exclusive route to verify.frontend.dev.incremental.unit, so its exact-equality assertion is unchanged. No make target was deleted or renamed.",
+      "evidence": {
+        "plan_worktree_unmappedPathCount": "0 (was 1)",
+        "unit": "python3 -m unittest scripts.verify.test_frontend_dev_incremental -> 31 tests OK",
+        "new_assertion": "test_governed_make_lane_change_routes_to_the_iteration_policy_guard"
+      },
+      "not_a_pass": "Local unit result only; the affected L2 make target and the review are still to run."
+    },
+    "l2_closure_20261016": {
+      "status": "all affected non-zero L2 targets pass locally",
+      "targets": {
+        "verify.baseline.iteration.execution.policy": "16 tests OK (new: the planner routes the governed make lanes here)",
+        "verify.daily.runtime.duty.identity.unit": "57 OK",
+        "verify.daily.runtime.database.duty": "140 OK",
+        "verify.daily.runtime.routing.inventory": "17 OK",
+        "verify.daily.runtime.tenant.topology.inventory": "13 OK",
+        "verify.daily.runtime.data_ownership.probe": "18 OK",
+        "verify.daily.runtime.lifecycle_fixture.prepare": "18 OK",
+        "verify.daily.runtime.legacy_stack.retire": "36 OK",
+        "verify.daily.runtime.published_face.converge": "27 OK",
+        "verify.frontend.dev.incremental.unit": "31 OK",
+        "verify.test.coverage.registry": "18 OK",
+        "verify.tenant.product_payload_boundary": "10 + 11 OK"
+      },
+      "ci_local_iteration": "EXIT=0, status=resolved, outside_scope=[], unmappedPathCount=0, L1_only",
+      "not_a_pass": "Local unit results only. The independent review, the read-only duty/retirement plans and every host write are still outstanding; no host write has been made."
+    },
+    "verification_surface_registration_20261016": {
+      "finding": "verify.verification.lane_coverage denied the batch: the new governed entry daily.runtime.database.duty.seed was a zero-reference target outside both the dispositions registry and the frozen identity set (targets_zero_reference_unregistered 1 > 0 and 1 identity outside the frozen set).",
+      "fix": "Registered it the same way as its siblings (plan/apply/initialize/upgrade): an ops_runbook disposition entry naming the owner and the reason, plus the identity added to frozen_identities.targets_zero_reference. Wiring it into an automated lane was rejected: it performs a real host write and requires an explicit demo confirmation, so it must stay a runbook entry.",
+      "evidence": "make audit.verification.lane_coverage.check -> PASS surface within the frozen baseline",
+      "note": "The frozen identity set was augmented by exactly one reviewed item; nothing was removed or replaced, so the count-neutral replacement check still holds."
+    },
+    "customer_identity_leak_20261016": {
+      "finding": "make verify.tenant.product_payload_boundary FAILED: the run ledger carried the literal customer tenant database name in its Step 1 server_facts text.",
+      "fix": "Replaced it with the same placeholder convention the ledger already uses elsewhere (sc_tenant_<tenant_key>_dev_*). No other tracked file carries the identity; the .runtime/* hits are gitignored and outside the guard's tracked+untracked scope.",
+      "evidence": "make verify.tenant.product_payload_boundary -> PASS files=8341 values_recorded=false, FIXED_CUSTOMER_IDENTIFIERS=0",
+      "classification": "real product-tree boundary violation introduced by this batch, not a false positive; the guard must not be relaxed."
+    },
+    "duty_binding_wiring_20261016": {
+      "why_this_record": "Step 2 could have shipped five entries that refuse an ambiguous database name and still be useless: the governed make lanes never passed the duty down, so every one of them would have kept refusing forever once the rebuilt carrier and the preserved historic source shared sc_demo. The wiring gap is the difference between a tool that can tell two carriers apart and an operator who can actually say which one is meant.",
+      "gap_1_entry_never_received_the_duty": {
+        "fact": "daily.runtime.routing.inventory, daily.runtime.tenant.topology.inventory, daily.runtime.data_ownership.probe, daily.runtime.lifecycle_fixture.prepare and daily.runtime.published_face.converge each gained --duty and a binding refusal, but make/codex.mk passed no such flag. With the declaration now holding two carriers of sc_demo, every lane would have failed on the ambiguity with no way for the runbook to answer it.",
+        "fix": "make/codex.mk gains DAILY_RUNTIME_DUTY (empty, never defaulted) plus DAILY_RUNTIME_DUTY_FLAG and a DAILY_RUNTIME_DUTY_BINDING_REQUIRED guard. The flag is empty rather than defaulted on purpose: a lane-chosen default would be the entry picking the target, which is the decision the selector exists to force. The five lanes now require the variable and forward it."
+      },
+      "gap_2_lane_still_shipped_the_legacy_container_name": {
+        "fact": "The routing inventory's --cluster-container default was changed to empty so the cluster catalog is read from the *bound duty's* cluster, but make/codex.mk still defaulted DAILY_RUNTIME_ROUTING_CLUSTER_CONTAINER to the historic container sc-backend-odoo-dev-db-1 and passed it explicitly. The make path therefore still read the historic source's catalog while reporting the rebuilt carrier's database -- exactly the silent cross-carrier read the change was meant to remove.",
+        "fix": "The make default is emptied and the flag is now passed only when an operator explicitly sets it (a deliberate cross-carrier audit); the tool derives the container from the binding via the new resolve_cluster_container helper and records cluster_container_source as argument|bound_duty. The dead module-level DEFAULT_CLUSTER_CONTAINER constant is removed so no caller can fall back to a remembered name."
+      },
+      "tests": {
+        "scripts/ops/test_daily_runtime_routing_inventory.py": "22 tests OK (was 19). New: the bound duty's cluster is read by default; an explicit container stays available for a cross-carrier audit; no legacy container name is shipped as a module default.",
+        "scripts/ops/test_daily_runtime_tenant_topology_inventory.py": "15 OK",
+        "scripts/ops/test_daily_runtime_data_ownership_probe.py": "20 OK",
+        "scripts/ops/test_daily_runtime_lifecycle_fixture_prepare.py": "20 OK",
+        "scripts/verify/frontend_dev_incremental.py": "31 OK. Two new routes: the governed make lanes map to verify.baseline.iteration.execution.policy, and the tenant-topology tool maps to its own target (it had fallen into the identity rule and its test file was reported unmapped)."
+      },
+      "readonly_proof_on_the_host": {
+        "bare_name_refused": "make daily.runtime.routing.inventory DAILY_RUNTIME_EXPECTED_SHA=<sha> -> EXIT=2, 'DAILY_RUNTIME_DUTY must name the declared duty this entry binds'",
+        "duty_bound_read": "make daily.runtime.routing.inventory DAILY_RUNTIME_DUTY=demo DAILY_RUNTIME_EXPECTED_SHA=b80841059b196f66487f4b598d90d3b0662476b4 -> EXIT=2, report /tmp/ri-demo.json: cluster_container=sc-demo-dev-db-1 source=bound_duty, binding duty=demo database=sc_demo role=sc_demo_app project=sc-demo-dev volume=sc_demo_db_data purpose=demo, cluster_error='Error response from daemon: No such container: sc-demo-dev-db-1'.",
+        "interpretation": "The carrier is declared to_be_created, so the derived cluster does not exist and the read fails closed. This is the correct pre-creation state and the positive evidence that the lane reads the *declared* carrier instead of a remembered container. The report was written to /tmp so the recorded routing-inventory.json evidence from the earlier identity was not overwritten.",
+        "writes": false
+      },
+      "plans_rerun": {
+        "daily.runtime.database.duty.plan (selection=demo)": "PASS, applied=false, duties=[demo passed], declaration_digest dd4bad27081e54751947e193cf2531a36432c60b20747c2d12e5e62b82f56e7c, plan_digest f15354c4efd2cb97a35df00c07d054a267e2f3a357324c901db714b5163b9df4, compose_sha256 b9d0305dc0dc11f3cbcc2e31cff00cbfc6f585a14f5db36696b9f686ddfbb6d3, remote_head b80841059b196f66487f4b598d90d3b0662476b4, deployment_binding frontend_build_env_names_the_declared_platform_admin_database passed",
+        "daily.runtime.legacy_stack.retire.plan": "status PLAN, failing_guards [], plan_digest 776978bcef9d3506a0df49c7dddc95b116cf9e4d1791cd3d873ee45bd866e34f; commands show both serving containers stopped with their own verified signal after the automatic restart path is removed",
+        "note": "Both digests are unchanged from the earlier reading in this batch, i.e. the declarations themselves did not change while the wiring was fixed."
+      },
+      "l2_closure_refresh": {
+        "supersedes": "the routing/tenant/data_ownership/lifecycle counts in l2_closure_20261016, which were measured before the binding tests landed",
+        "counts": {
+          "verify.baseline.iteration.execution.policy": "16 OK",
+          "verify.daily.runtime.duty.identity.unit": "57 OK",
+          "verify.daily.runtime.database.duty": "140 OK",
+          "verify.daily.runtime.routing.inventory": "22 OK",
+          "verify.daily.runtime.tenant.topology.inventory": "15 OK",
+          "verify.daily.runtime.data_ownership.probe": "20 OK",
+          "verify.daily.runtime.lifecycle_fixture.prepare": "20 OK",
+          "verify.daily.runtime.legacy_stack.retire": "36 OK",
+          "verify.daily.runtime.published_face.converge": "27 OK",
+          "verify.frontend.dev.incremental.unit": "31 OK",
+          "verify.test.coverage.registry": "18 OK",
+          "verify.verification.lane_coverage": "PASS surface within the frozen baseline",
+          "verify.tenant.product_payload_boundary": "PASS files=8341 values_recorded=false"
+        },
+        "ci_local_iteration": "EXIT=0, PASS change_state=dirty, unmappedPathCount=0, outside_scope=[]"
+      },
+      "identity": {
+        "HEAD": "8927178e5836dbed7cebf6a789b5aaab2d32b73b",
+        "dirty": true
+      },
+      "not_a_pass": "Local units, read-only host probes and two read-only plans only. No cluster was created, no container was stopped, no database was written, no evidence was reissued, and no independent review has run yet."
     }
   }
 }

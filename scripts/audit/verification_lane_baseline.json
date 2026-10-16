@@ -142,6 +142,7 @@
       "daily.runtime.database.duty.initialize",
       "daily.runtime.database.duty.plan",
       "daily.runtime.database.duty.refresh",
+      "daily.runtime.database.duty.seed",
       "daily.runtime.database.duty.upgrade",
       "daily.runtime.duty.database_registration.remote_readback",
       "daily.runtime.duty.database_registration.remote_register",

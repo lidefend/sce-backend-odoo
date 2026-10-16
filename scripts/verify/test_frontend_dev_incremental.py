@@ -176,6 +176,23 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.frontend.dev.incremental.unit"],
                 )
 
+    def test_governed_make_lane_change_routes_to_the_iteration_policy_guard(self) -> None:
+        # The baseline iteration policy guard declares which targets each
+        # governed make lane must still provide. A lane edit therefore has to be
+        # validated by that guard; without this route the lane was reported as
+        # an unmapped path whose L2 target could only be picked by hand.
+        for path in (
+            "make/codex.mk",
+            "make/runtime_ops.mk",
+            "make/dev.mk",
+            "make/ci.mk",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.baseline.iteration.execution.policy"],
+                )
+
     def test_every_recommended_target_is_defined_by_a_makefile(self) -> None:
         # A recommendation that no makefile defines would break the smallest
         # affected check and push the reader back to a manual, broad run.
