@@ -52,7 +52,7 @@ jobs:
       github.actor == github.repository_owner) ||
       (github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository))
-    runs-on: [self-hosted, huawei, ubuntu22]
+    runs-on: ubuntu-latest
     timeout-minutes: 240
 
     env:

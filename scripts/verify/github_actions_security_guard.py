@@ -60,6 +60,9 @@ def scan(root: Path) -> list[Finding]:
             findings.add(Finding("GA001", relative, "MISSING_READ_ONLY_PERMISSIONS"))
         if re.search(r"(?m)^\s+[a-z_-]+:\s*write\s*$", lowered):
             findings.add(Finding("GA002", relative, "WRITE_TOKEN_PERMISSION"))
+        for runner in re.findall(r"(?m)^\s*runs-on:\s*(.+)$", text):
+            if runner.strip() != 'ubuntu-latest':
+                findings.add(Finding("GA021", relative, "CI_RUNNER_NOT_GITHUB_HOSTED"))
         if "pull_request_target:" in text:
             findings.add(Finding("GA003", relative, "PULL_REQUEST_TARGET_FORBIDDEN"))
         if re.search(r"(?m)^\s*git\s+push(?:\s|$)", text):

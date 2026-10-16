@@ -34,6 +34,15 @@ class GitHubActionsSecurityGuardTests(unittest.TestCase):
                     './.github/workflows/backend_test_suite.yml', replacement))
                 self.assertIn('ACTION_NOT_PINNED_TO_SHA', {x.classification for x in guard.scan(root)})
 
+    def test_ci_runner_cannot_return_to_self_hosted_or_dynamic_labels(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for runner in ('[self-hosted, huawei, ubuntu22]', '${{ inputs.runner }}'):
+                self.write(root, 'fixture.yml', 'permissions:\n  contents: read\njobs:\n  check:\n    runs-on: ' + runner + '\n')
+                self.assertIn('CI_RUNNER_NOT_GITHUB_HOSTED', {x.classification for x in guard.scan(root)})
+            self.write(root, 'fixture.yml', 'permissions:\n  contents: read\njobs:\n  check:\n    runs-on: ubuntu-latest\n')
+            self.assertEqual(guard.scan(root), [])
+
     def test_safe_public_guard_passes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

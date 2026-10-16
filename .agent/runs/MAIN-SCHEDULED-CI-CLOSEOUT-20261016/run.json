@@ -40,7 +40,10 @@
     "make/ci.mk",
     "scripts/ci/test_ci_risk_classifier.py",
     "docs/engineering_convergence/test_inventory.csv",
-    "docs/engineering_convergence/test_inventory_summary.md"
+    "docs/engineering_convergence/test_inventory_summary.md",
+    ".github/workflows/demo-ci.yml",
+    ".github/workflows/sc_smoke.yml",
+    ".github/workflows/infra-stage-gate.yml"
   ],
   "environment": {
     "kind": "offline",
@@ -48,7 +51,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Freeze owner-requested incremental premerge CI; one exact-head Quick, independent review, publish updated PR669; required professional job now waits for affected backend suite. Do not dispatch duplicate full backend manually.",
+  "next_exact_step": "Apply owner GitHub-hosted-only runner policy; targeted policy tests then freeze/Quick/publish; verify selected backend run on hosted runner, no manual full duplicate.",
   "source_runs": [
     38818510036,
     38811434965,
@@ -411,5 +414,13 @@
     "targeted_command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestDeclaredStateTableIsTheOnlyStateWriter",
     "targeted_count": 8,
     "targeted_status": "passed"
+  },
+  "hosted_ci_policy": {
+    "owner_instruction": "GitHub available => use hosted runners, not self-hosted (performance)",
+    "layer": "P4",
+    "changes": "All4 remaining CI workflows move to ubuntu-latest; preserve exact identity, isolated resources, cleanup, required tests. Manual legacy lanes not newly dispatched. Demo image origins use official defaults with same digest.",
+    "validation": "runner policy guard negative test and workflow contracts; backend real run required on hosted runner",
+    "superseded_candidate": "b5a4647c01f7cba49e1f230deb85d67527077568",
+    "invalidation": "Runner identity changes invalidate remote runtime observations, not source-level behavior tests"
   }
 }

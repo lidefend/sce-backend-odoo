@@ -100,3 +100,17 @@ TestDeclaredStateTableIsTheOnlyStateWriter failed setup because clean installati
 had no implicit tax group. Explicit company-owned group and country fixed the
 fixture; governed local.dev targeted8/8 passed. No lifecycle assertion weakened.
 Remote execution of the new workflow and final integration remain pending.
+
+
+## Owner correction: GitHub-hosted CI only
+
+The owner clarified that GitHub availability means validation must not use the
+slower self-hosted runner. The previous candidate reused the legacy backend
+self-hosted executor; that choice is superseded. All four remaining CI runner
+bindings (backend suite, demo, smoke, infra stage) now use ubuntu-latest. The
+security guard rejects self-hosted/dynamic runner labels. Manual legacy lanes
+remain manual and are not claimed as runtime-validated by this change. Demo
+image references retain their immutable digests but use official origins rather
+than domestic runner-specific mirrors. No daily deployment resources change.
+The backend remote result must come from the newly frozen hosted candidate;
+previous runner observations cannot prove this execution environment.
