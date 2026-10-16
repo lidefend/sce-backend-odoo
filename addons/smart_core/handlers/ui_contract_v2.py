@@ -71,6 +71,7 @@ from .ui_contract_v2_constants import (
 )
 from . import ui_contract_v2_projection as _projection
 from ..app_config_engine.services.dispatchers.action_dispatcher import ActionDispatcher
+from ..app_config_engine.services.resolvers.action_resolver import ActionResolver
 from .ui_contract import UiContractHandler
 from .ui_contract_preview import (
     PreviewAccessDenied,
@@ -562,7 +563,7 @@ class UiContractV2Handler(BaseIntentHandler):
             return None
         op = str(params.get("op") or params.get("subject") or "model").strip().lower()
         if op in {"action", "action_open", "menu"}:
-            resolver = ActionDispatcher(self.env, self.su_env).resolver
+            resolver = ActionResolver(self.env)
             resolved = resolver.resolve_action(
                 params.get("action_id") or params.get("id"),
                 params.get("action_xmlid") or params.get("action_xml_id"),

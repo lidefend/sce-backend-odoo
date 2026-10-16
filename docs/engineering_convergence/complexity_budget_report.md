@@ -20,7 +20,7 @@ Generated from repository source files. This report is informational during the 
 | 4963 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4498 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
 | 4476 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 4392 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 4393 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3787 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3719 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3705 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
@@ -221,7 +221,7 @@ Generated from repository source files. This report is informational during the 
 | 4963 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4498 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
 | 4476 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 4392 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 4393 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3787 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3719 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3705 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |

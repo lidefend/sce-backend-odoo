@@ -54,7 +54,7 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/utils/contract_governance_list_surface.py",
     "addons/smart_core/utils/contract_governance_user_surface.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "803f23e0d7b7a0033847f2f0e13c6c94296e258d6b3deab0d4bef34dee25c5be"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "4cc7899310f7541ac5244dba4ef92b79a4a5dbd21e11606119493fefe404fe9f"
 
 
 def _assembled_cache_digest() -> str:

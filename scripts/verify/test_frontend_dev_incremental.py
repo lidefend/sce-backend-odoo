@@ -120,6 +120,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 targets = select_targets([path])
                 self.assertIn("verify.business_config.formal_list.unit", targets)
                 self.assertIn("verify.unified_page_contract.v2.assembler", targets)
+                self.assertIn("verify.contract.entry_equivalence.guard", targets)
                 self.assertIn("verify.form_structure_authority_unification.unit", targets)
 
     def test_presentation_vocabulary_change_routes_to_the_parity_guard(self) -> None:

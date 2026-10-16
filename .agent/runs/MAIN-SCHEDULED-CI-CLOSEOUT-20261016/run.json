@@ -697,6 +697,22 @@
       "sce-frontend-fault-iteration": {
         "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-frontend-fault-iteration.log",
         "sha256": "22a8e5cec248ab26a76833fe9b8e78ad71adebedaec705f8048163cc76949c63"
+      },
+      "sce-fault-sibling-checks": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-fault-sibling-checks.log",
+        "sha256": "89f030bde1fd6775b4880ac58e7ee7abd27ec65ab427f6a541b367a9ed5270ab"
+      },
+      "sce-fault-sibling-static": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-fault-sibling-static.log",
+        "sha256": "4866ec6a81a4309f5f9953f32fa1cde3c5798414f009164b888fbc88bc3bb011"
+      },
+      "sce-missing-record-resolver-final": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-missing-record-resolver-final.log",
+        "sha256": "283f6321d66b9f1882a83c9d75339911e1827cc2f0188d5da2ae4a740968ad75"
+      },
+      "sce-frontend-fault-cache-checks": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-frontend-fault-cache-checks.log",
+        "sha256": "5ff2ad71f962256ddfe312d28cac3eff706fbedfec868a0bf5afe666e0343eeb"
       }
     },
     "results": {
@@ -727,6 +743,14 @@
       "recovery": "bump actual cache version + input pin; add owning assembler guard to existing early impact recommendation",
       "reused": "unchanged ORM behavior, frontend and probe tests; cache version changes invalidate cached contracts rather than product schema",
       "targeted_recovery": "assembler4sources, intent and web consumer guards PASS; planner30tests and form structure232tests PASS; B-line delta review PASS; freeze preparation PASS"
+    },
+    "quick_653cfaaa": {
+      "status": "failed",
+      "owner": "P0 dispatcher single authority",
+      "recovery": "instantiate canonical ActionResolver directly, preserving only one ActionDispatcher; add owning entry-equivalence guard to early mapping",
+      "log": "/tmp/sce-frontend-fault-final-quick.log",
+      "publication": "not pushed; no receipt",
+      "recovery_checks": "PASS: entry-equivalence10, assembler4sources, formal-list suite, planner30, canonical/pattern/primitive/parity/style;7 affected source guards; actualORM2methods;freeze prepare;B-line review"
     }
   }
 }

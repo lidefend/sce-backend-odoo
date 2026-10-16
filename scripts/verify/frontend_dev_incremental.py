@@ -166,6 +166,7 @@ RULES = (
         "verify.business_config.formal_list.unit",
         "verify.form_structure_authority_unification.unit",
         "verify.unified_page_contract.v2.assembler",
+        "verify.contract.entry_equivalence.guard",
     )),
     # The renderer implements the declared presentation vocabulary that the
     # projection publishes.  Editing the renderer's vocabulary block, the token
