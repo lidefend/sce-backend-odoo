@@ -211,6 +211,14 @@ def evaluate(database, payload):
             "detail": f"database={database} observed={len(names)}",
         },
         {
+            # The inventory must prove it read the *bound* database and not the
+            # other cluster that answers to the same name: two carriers share
+            # ``sc_demo``, so "the name appears in this catalogue" is not enough.
+            "id": "shell_database_is_the_bound_database",
+            "passed": str(payload.get("current_database") or "") == database,
+            "detail": f"current_database={payload.get('current_database')!r} bound={database!r}",
+        },
+        {
             "id": "distinct_login_roles_observed",
             "passed": bool(logins),
             "detail": f"login_roles={[row['name'] for row in logins]}",

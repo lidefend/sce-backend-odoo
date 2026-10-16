@@ -245,6 +245,23 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
         with self.assertRaisesRegex(module.ConvergeError, "DUTY_IDENTITY_DATABASE_AMBIGUOUS:sc_demo"):
             module.bind_target(options, instances_reader=synthetic_instances)
 
+    def test_the_entry_ships_no_bare_database_default(self) -> None:
+        """The lane must not pre-answer the target question with a default.
+
+        ``--duty`` alone has to be enough, and an empty ``--database`` must still
+        bind through the declaration; a shipped ``sc_demo`` default would have
+        kept the lane implicitly limited to the demo duty and made the answer
+        look like the entry's rather than the operator's.
+        """
+        self.assertEqual(module.DEFAULT_DATABASE, "")
+        options = mock.Mock()
+        options.duty = "demo"
+        options.database = ""
+        options.ssh_host = "sc-root"
+        binding = module.bind_target(options, instances_reader=synthetic_instances)
+        self.assertEqual(binding["database"], "sc_demo")
+        self.assertEqual(binding["compose_project"], "sc-demo-dev")
+
     def test_naming_the_duty_binds_the_demo_carrier(self) -> None:
         options = mock.Mock()
         options.duty = "demo"

@@ -254,7 +254,11 @@ def prepare(expected_sha, binding, ssh_host, base_url, password):
     }
     declared = carrier.get("state") or {}
     landed = str(carrier.get("database") or "")
-    if landed and landed != database:
+    # A missing readback is not a weaker success: the builder is supposed to
+    # report the database it ran in, and an absent field means the carrier never
+    # proved it landed in the bound duty rather than in the other cluster that
+    # answers to the same name.
+    if not landed or landed != database:
         evidence["status"] = "FAIL"
         evidence["reason"] = "the fixture builder read back database %s, not the bound %s" % (landed, database)
     elif declared.get("lifecycle_state") != "draft" or declared.get("sc_approval_state") != "draft":

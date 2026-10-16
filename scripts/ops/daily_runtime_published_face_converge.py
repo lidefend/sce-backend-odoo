@@ -42,7 +42,7 @@ import daily_runtime_duty_identity as duty_identity  # noqa: E402
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
 DEFAULT_ENV_NAME = "dev"
 DEFAULT_ENV_FILE = ".env.dev"
-DEFAULT_DATABASE = "sc_demo"
+DEFAULT_DATABASE = ""
 DEFAULT_PRODUCT_KEYS = "construction.standard,construction.preview"
 CONFIRMATION = "REFRESH_DAILY_RUNTIME_PUBLISHED_FACE_FROM_LOCKED_CONTRACT"
 SNAPSHOT_CONFIRMATION = "RELEASE_EXACT_DAILY_PRODUCT_NAVIGATION"

@@ -183,6 +183,73 @@ class GuardTests(unittest.TestCase):
         self.assertNotIn("remote_make", source)
 
 
+class PrepareLandingTests(unittest.TestCase):
+    """The entry must fail when the shell landed in the other carrier.
+
+    The rebuilt demo duty and the preserved historic source both answer to
+    ``sc_demo``; a preparation that silently ran against the historic cluster
+    would be a write to a protected source.  A missing readback is treated the
+    same as a wrong one.
+    """
+
+    def setUp(self):
+        self._ssh = module.ssh
+        self._served = module.served_identity
+        self.calls = []
+        self.engines = 0
+        module.served_identity = lambda base_url: {}
+        self.addCleanup(self.restore)
+
+    def restore(self):
+        module.ssh = self._ssh
+        module.served_identity = self._served
+
+    def stub(self, *, shell_stdout=b"", guard_rc=0, guard_stderr=b"GUARD: PASS\n"):
+        def fake_ssh(host, command, *, input_bytes=None):
+            self.calls.append({"host": host, "command": command, "program": input_bytes})
+            if "git rev-parse HEAD" in command:
+                return Result(stdout=(SHA + "\n").encode())
+            if command.startswith("rm -f "):
+                return Result()
+            if "cat > " in command:
+                return Result()
+            if "docker exec" in command:
+                # Both the preparation and the read-only guard run through the
+                # bound container's odoo shell, so they are told apart by the
+                # order the entry issues them.
+                self.engines += 1
+                if self.engines == 1:
+                    return Result(stdout=shell_stdout)
+                return Result(returncode=guard_rc, stderr=guard_stderr)
+            return Result()
+
+        module.ssh = fake_ssh
+
+    def test_a_preparation_that_landed_in_the_bound_database_passes(self):
+        self.stub(shell_stdout=b"PREPARE_MAIL_SENDER database=sc_demo\n")
+        evidence = module.prepare(SHA, SENDER, DEMO_BINDING, "sc-root", "")
+        self.assertEqual(evidence["status"], "PASS")
+        self.assertEqual(evidence["landed_database"], "sc_demo")
+
+    def test_a_preparation_that_landed_elsewhere_fails_closed(self):
+        self.stub(shell_stdout=b"PREPARE_MAIL_SENDER database=sc_dev_demo\n")
+        evidence = module.prepare(SHA, SENDER, DEMO_BINDING, "sc-root", "")
+        self.assertEqual(evidence["status"], "FAIL")
+        self.assertEqual(evidence["landed_database"], "sc_dev_demo")
+
+    def test_a_preparation_without_a_readback_fails_closed(self):
+        self.stub(shell_stdout=b"no marker here\n")
+        evidence = module.prepare(SHA, SENDER, DEMO_BINDING, "sc-root", "")
+        self.assertEqual(evidence["status"], "FAIL")
+        self.assertEqual(evidence["landed_database"], "")
+
+    def test_a_failing_guard_result_fails_even_when_the_landing_is_right(self):
+        self.stub(shell_stdout=b"PREPARE_MAIL_SENDER database=sc_demo\n",
+                  guard_rc=2, guard_stderr=b"GUARD: FAIL\n")
+        evidence = module.prepare(SHA, SENDER, DEMO_BINDING, "sc-root", "")
+        self.assertEqual(evidence["status"], "FAIL")
+
+
 class CommandTests(unittest.TestCase):
     def test_confirmation_token_is_stable(self):
         self.assertEqual(module.CONFIRMATION, "PREPARE_DAILY_RUNTIME_OUTGOING_MAIL_SENDER")

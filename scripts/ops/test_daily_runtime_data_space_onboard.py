@@ -17,6 +17,13 @@ SPEC.loader.exec_module(module)
 SHA = "91a220ab76f3f581b4a233b2774979b2023205da"
 
 
+class Result:
+    def __init__(self, returncode=0, stdout=b"", stderr=b""):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
 class PreflightTests(unittest.TestCase):
     def test_accepts_declared_inputs(self):
         module.preflight(SHA, "sc_demo", "sc-root", "platform_internal_demo", "sc-demo-main")
@@ -133,6 +140,78 @@ class DutyBindingTests(unittest.TestCase):
         self.assertIn("docker exec -i sc-demo-dev-odoo-1", command[-1])
         self.assertIn("-d sc_demo", command[-1])
         self.assertNotIn("ENV_FILE", command[-1])
+
+
+class OnboardLandingTests(unittest.TestCase):
+    """The entry must fail when the shell landed in the other carrier.
+
+    The rebuilt demo duty and the preserved historic source both answer to
+    ``sc_demo``; an onboarding that silently ran against the historic cluster
+    would write to a protected source.
+    """
+
+    BINDING = {
+        "duty": "demo",
+        "database": "sc_demo",
+        "compose_project": "sc-demo-dev",
+        "odoo_container": "sc-demo-dev-odoo-1",
+    }
+
+    def setUp(self):
+        self._ssh = module.ssh
+        self._served = module.served_identity
+        self.calls = []
+        module.served_identity = lambda base_url: {}
+        self.addCleanup(self.restore)
+
+    def restore(self):
+        module.ssh = self._ssh
+        module.served_identity = self._served
+
+    def payload(self, *, database, passed=True, writes=True):
+        return {
+            "database": database,
+            "environment_role": "platform_internal_demo",
+            "tenant_key": "sc-demo-main",
+            "post_conditions": {"operators_pending_enrollment_is_empty": passed},
+            "passed": passed,
+            "writes": writes,
+        }
+
+    def stub(self, *, engine_payload, engine_rc=0):
+        body = "%s%s\n" % (module.MARKER, json.dumps(engine_payload))
+
+        def fake_ssh(host, command, *, input_bytes=None):
+            self.calls.append({"host": host, "command": command, "program": input_bytes})
+            if "git rev-parse HEAD" in command:
+                return Result(stdout=(SHA + "\n").encode())
+            if command.startswith("rm -f "):
+                return Result()
+            if "cat > " in command:
+                return Result()
+            if "docker exec" in command:
+                return Result(returncode=engine_rc, stdout=body.encode())
+            return Result()
+
+        module.ssh = fake_ssh
+
+    def test_an_onboarding_that_landed_in_the_bound_database_passes(self):
+        self.stub(engine_payload=self.payload(database="sc_demo"))
+        evidence = module.onboard(SHA, self.BINDING, "sc-root", "platform_internal_demo",
+                                 "sc-demo-main", "", True)
+        self.assertEqual(evidence["status"], "PASS")
+
+    def test_an_onboarding_that_landed_elsewhere_fails_closed(self):
+        self.stub(engine_payload=self.payload(database="sc_dev_demo"))
+        evidence = module.onboard(SHA, self.BINDING, "sc-root", "platform_internal_demo",
+                                 "sc-demo-main", "", True)
+        self.assertEqual(evidence["status"], "FAIL")
+
+    def test_an_onboarding_without_a_readback_fails_closed(self):
+        self.stub(engine_payload=self.payload(database=""))
+        evidence = module.onboard(SHA, self.BINDING, "sc-root", "platform_internal_demo",
+                                 "sc-demo-main", "", True)
+        self.assertEqual(evidence["status"], "FAIL")
 
 
 if __name__ == "__main__":

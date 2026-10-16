@@ -759,7 +759,12 @@ daily.runtime.source_revision.align: guard.prod.forbid verify.daily.runtime.sour
 # receipt for the same exact commit lets an unchanged generation be reused
 # without rebuilding.
 DAILY_RUNTIME_FRONTEND_BUILD_SHA ?=
-DAILY_RUNTIME_FRONTEND_BUILD_DATABASE ?= sc_demo
+# The served face at 18081 belongs to the demo duty, so the database the build
+# bakes is that duty's declared database - read from the same declaration the
+# duty entry validates, exactly like the platform-admin binding above. A
+# hand-maintained copy here would silently bake a stale name after a
+# declaration change, and a bare database name does not identify a carrier.
+DAILY_RUNTIME_FRONTEND_BUILD_DATABASE ?= $(shell python3 -c 'import json; d=json.load(open("config/ops/daily_runtime_database_duties.v1.json")); print([x["database"] for x in d["duties"] if x["duty"] == "demo"][0])')
 DAILY_RUNTIME_FRONTEND_BUILD_BASE_URL ?= http://127.0.0.1:18081
 DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT ?= .runtime/final-acceptance/daily-deployed/frontend-build.json
 DAILY_RUNTIME_FRONTEND_BUILD_REPORT ?= $(DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT)
@@ -1361,6 +1366,7 @@ daily.runtime.published_face.converge: guard.prod.forbid verify.daily.runtime.pu
 		--expected-sha "$(DAILY_RUNTIME_PUBLISHED_FACE_EXPECTED_SHA)" \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		$(DAILY_RUNTIME_DUTY_FLAG) \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
 		--login "$(DAILY_RUNTIME_PUBLISHED_FACE_LOGIN)" \
 		--product-keys "$(DAILY_RUNTIME_PUBLISHED_FACE_PRODUCT_KEYS)" \
 		--upgrade-modules "$(DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES)" \

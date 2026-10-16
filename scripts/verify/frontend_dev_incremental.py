@@ -285,6 +285,12 @@ RULES = (
     ), (
         "verify.daily.runtime.published_face.converge",
     )),
+    # `daily_runtime_frontend_build_align` deliberately has no route here: its
+    # only non-zero behaviour lock is `verify.daily.runtime.frontend.build`, a
+    # candidate-only lane the development inner loop must never select. Adding a
+    # route to it would make the planner raise "selected a candidate-only
+    # target"; leaving the path unmapped is what tells the operator a hand-picked
+    # candidate L2 is required.
     # The duty entry's own suite is the behavior lock of the phase machinery the
     # declaration drives; its test file was unmapped while the entry itself was
     # claimed by the identity rule, so a test-only edit selected nothing.

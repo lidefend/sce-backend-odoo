@@ -265,6 +265,25 @@ class PrepareTests(unittest.TestCase):
         module.prepare(SHA, BINDING, "sc-root", "http://daily", "123456")
         self.assertIn("rm -f", [cmd for _, cmd, _ in calls][-1])
 
+    def test_a_builder_without_a_database_readback_fails_closed(self):
+        # A missing field is not a weaker success: the builder is supposed to
+        # report the database it ran in, and the rebuilt demo duty and the
+        # preserved historic source both answer to sc_demo.
+        payload = {
+            "carrier_id": 123,
+            "carrier_code": "FE-LC",
+            "carrier_name": "FE Project Lifecycle",
+            "company_id": 42,
+            "company_name": "FE Company A",
+            "state": START_STATE,
+            "xmlid": "smart_construction_acceptance_fixture.fe_project_lifecycle",
+            "reset": False,
+        }
+        engine = "%s%s\n" % (module.EXE_LINE, json.dumps(payload))
+        self._install(head_sha=SHA, engine_stdout=engine, served={})
+        evidence = module.prepare(SHA, BINDING, "sc-root", "", "123456")
+        self.assertEqual(evidence["status"], "FAIL")
+
     def test_a_builder_that_read_back_another_database_fails_closed(self):
         payload = {
             "database": "sc_dev_demo",

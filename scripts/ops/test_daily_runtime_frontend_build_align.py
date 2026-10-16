@@ -117,6 +117,27 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
                     build_module.preflight(SHA, "sc-root", bad)
             build_module.preflight(SHA, "sc-root", ADMIN_DB)
 
+    def test_the_entry_ships_no_bare_database_default(self) -> None:
+        """The served database is a governance fact, not an entry default.
+
+        A database *name* does not identify a carrier: the rebuilt demo duty and
+        the preserved historic source both answer to ``sc_demo``.  A shipped
+        literal would also silently bake a stale name after a declaration change.
+        """
+        self.assertEqual(build_module.DEFAULT_DATABASE, "")
+
+    def test_an_unset_or_illegal_served_database_fails_closed(self) -> None:
+        for bad in ("", "sc demo", "-sc_demo", "SC_DEMO"):
+            with mock.patch.dict(os.environ, CONFIRM):
+                with self.assertRaisesRegex(build_module.BuildError, "served database"):
+                    call_align(database=bad)
+
+    def test_the_make_lane_derives_the_served_database_from_the_declaration(self) -> None:
+        makefile = Path(__file__).resolve().parents[2] / "make" / "codex.mk"
+        text = makefile.read_text(encoding="utf-8")
+        self.assertNotIn("DAILY_RUNTIME_FRONTEND_BUILD_DATABASE ?= sc_demo", text)
+        self.assertIn("daily_runtime_database_duties.v1.json", text)
+
     def test_remote_command_binds_exact_revision_and_reuse_hint(self) -> None:
         command = build_module.remote_command(
             SHA, "dev", ".env.dev", "sc_demo", "http://127.0.0.1:18081", FINGERPRINT,
