@@ -2499,3 +2499,34 @@ PASS、`verify.test.coverage.registry` PASS，以及两份登记的程序化比�
 - 下一精确步骤：把载荷陈旧（声明 `customer_module_version=17.0.2.7.0` 对已安装 `17.0.2.8.0` →
   `TPV1_CUSTOMER_ADAPTER_INCOMPATIBLE`）交给用户模块重新出包、签名、重批；产品仓库不放宽适配器。
   之后进行客户开发租户的数据对账（12386 / 6322 / 29 / 6035）与业务闭环验收。
+
+### 分支重放（squash 续接，2026-10-16）
+
+PR #666 以 squash 合入后，`fix/data-ownership-visibility-recovery-20261015` 已不再是 `main` 的祖先；
+该分支远端已发布，治理规则禁止改写已发布历史，受管同步入口也按设计**拒绝已发布的同名分支**。
+因此按既有先例另建未发布分支，并用入口的依赖模式只重放依赖合并点之后的责任提交：
+
+| 项 | 值 |
+|---|---|
+| 新分支 | `fix/daily-runtime-identity-relocation-closeout-20261016` |
+| 实际共同祖先（`EXPECTED_OLD_BASE`） | `10bf72ef4bb060556bd2844598b58f9806392d34` |
+| 重放基线（`DEPENDENCY_HEAD` / `replay_base`） | `6590a4333834f17312712c90715bcf265e4f298b` |
+| 目标 `main`（`DEPENDENCY_MERGE` / `EXPECTED_MAIN`） | `04c6a1292c33b923abc666bc1444c869372081b3` |
+| 重放前 HEAD | `5df3e09de37f773e7812d9f4a5ae53e51b05bc3b` |
+| 重放后 HEAD | `c75915356bc43eadf1bf27ea3115a4c13ac31b47` |
+
+入口 PASS、零冲突、`generated_evidence_invalidated=none`，并留下恢复 bundle。验证：`origin/main` 是
+新 HEAD 的祖先；`git rev-list --count origin/main..HEAD` 为 **1**；`origin/main..HEAD` 的稳定 patch
+身份与 `6590a433..5df3e09d` 相同（`6ffa16de11accb91338eb30a671e608817407c4f`）；相对 main 的树差异
+仅限本 run 台账与本章记录。旧分支引用**未被移动、未被强推**。
+
+同时把 `.agent/active-runs.json` 的绑定由旧分支改到新分支（解除旧绑定），否则新分支下
+`make agent.run.resume` 会报 `unregistered`（已实测）。
+
+**本候选的处置**：该提交是 bookkeeping（run 台账 + 迭代记录）。`pr.merge.local_quick_gate` 会拒绝
+“相对 merge base 仅改 `.agent/` 与 `docs/`”的独立候选（exit 13），因此它**不单独开 PR**，按该门禁
+自身的指引随下一个产品候选同行，而不是为零新增覆盖付一次完整套件。
+
+身份改绑的另一项后果：本 run 的本地 receipt 绑定分支名，因此全部报 `receipt identity mismatch`（stale），
+而它们声明的输入并未改变（重放保持了稳定 patch 身份）。这些是迭代期咨询性回执、不是交付门禁，
+将在下一个候选真正需要时由 `make agent.run.record` 在新分支身份下重录，现在不为 bookkeeping 候选重跑。
