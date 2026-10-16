@@ -242,15 +242,24 @@ DIRECT_DEMO_TO_PRODUCTION_PROMOTION_FORBIDDEN=true
 
 ```text
 LEGACY_AUTHORITY_DATABASES=LEGACY_SOURCE_A,LEGACY_SOURCE_B
+CANDIDATE_MASTER_CARRIER=pre_governance_shared_cluster
 CANDIDATE_MASTER_DATABASE=sc_demo
 CANDIDATE_MASTER_IS_PRODUCTION=false
 PLATFORM_INTERNAL_DEMO_TENANT=true
 CUSTOMER_PRODUCTION_TENANT=false
 DEVELOPMENT_DATABASE_IS_BUSINESS_EVIDENCE=false
+DATABASE_NAME_ALONE_IS_NOT_TARGET_IDENTITY=true
 ```
 
-`sc_demo` 只能作为平台内部演示、整理和迁移分析的候选来源，不能成为正式客户生产
-租户。历史权威库的存在不代表允许 Codex 访问；访问仍需独立明确授权。
+**数据库名不能单独作为目标身份。** 上表中 `sc_demo` 是指受保护历史来源载体
+`pre_governance_shared_cluster`（cluster `sc-backend-odoo-dev`，数据卷
+`sc_dev_db_data`）中的同名库；它与当日新建的 demo 职责载体 `sc-demo-dev`
+（数据卷 `sc_demo_db_data`）**同名但不是同一目标**。任何写入、备份、恢复、
+路由与证据绑定都必须同时给出 duty／carrier、cluster、实例、数据库和存储；
+工具只接收数据库名时必须先拒绝歧义，不得猜测。
+
+`sc_demo`（历史来源载体）只能作为平台内部演示、整理和迁移分析的候选来源，不能成为
+正式客户生产租户。历史权威库的存在不代表允许 Codex 访问；访问仍需独立明确授权。
 
 ## 9. 数据、模块、fixture 与账号生命周期
 
@@ -347,11 +356,11 @@ UM-P1 必须按本规则区分：
 | 租户业务资产 | 客户租户库 | 每个企业客户独立；禁止跨租户 ORM、外键和附件引用 |
 | 企业共享主数据 | 由治理决策确定的单一租户库 | 可供该租户内多公司共享，不得默认跨租户共享 |
 | 客户业务历史 | 客户租户库及独立 filestore | 不随模块卸载或 fixture 清理而删除 |
-| fixture | 新建隔离的开发/验收租户 | 禁止进入 UAT、生产、`sc_demo`、DAILY 和 18086 对照库 |
+| fixture | 新建隔离的开发/验收租户 | 禁止进入 UAT、生产、受保护历史来源载体、DAILY 和 18086 对照库 |
 | 迁移控制与追溯数据 | 平台控制库或独立运维库 | 只保存任务元数据、批次和审计索引，不保存客户业务正文 |
 
 UM-P2 安装演练的默认目标只能是新建、隔离的客户租户演练库，不得使用平台控制库、
-行业公共目录库、`sc_demo`、DAILY、18086 对照库、UAT 或生产库。
+行业公共目录库、受保护历史来源载体、DAILY、18086 对照库、UAT 或生产库。
 
 ## 13. 规则变更与例外
 
@@ -360,3 +369,19 @@ UM-P2 安装演练的默认目标只能是新建、隔离的客户租户演练�
 - 例外不得允许将平台控制权解释为租户业务数据访问权。
 - 规则修改必须作为独立治理任务处理；不得夹带在数据库、模块或部署操作中。
 - 本规则本身不授权创建 `sc_platform_control` 或任何租户数据库，也不授权迁移既有环境。
+
+### 13.1 例外登记：Demo 职责载体与受保护历史来源同名
+
+| 项目 | 内容 |
+|---|---|
+| 例外主题 | 新建 demo 职责载体与受保护历史来源均使用库名 `sc_demo` |
+| 治理依据 | 2026-10-16 所有者裁定 D1=A1：新建 `sc-demo-dev` 作为日常 Demo 载体；D3：原库不改名、不清库、不迁移、不升级，登记为受保护历史来源 |
+| 载体 A（新 Demo 职责） | duty `demo`；cluster `sc-demo-dev`（容器 `sc-demo-dev-db-1`，数据卷 `sc_demo_db_data`）；应用角色 `sc_demo_app`、维护角色 `sc_demo_maintenance`；存储 `sc_demo_odoo_data`／`sc_demo_redis_data`，filestore/session 命名空间 `sc_demo`；备份命名空间 `/data/backups/daily-demo-dev`；filter `^sc_demo$`；路由 18081/8070 |
+| 载体 B（受保护历史来源） | `source_id=pre_governance_shared_cluster`；cluster `sc-backend-odoo-dev`（容器 `sc-backend-odoo-dev-db-1`，数据卷 `sc_dev_db_data`）；`visibility=read_only_historic` |
+| 影响范围 | routing inventory、数据库身份盘点、备份/恢复、种子初始化、迁移计划与证据绑定 |
+| 区分方式 | 不按库名区分，按 duty／carrier＋cluster＋数据卷共同区分；裸库名必须被判定为歧义并拒绝执行 |
+| 审计责任 | 平台数据库管理职责（duty 声明 `config/ops/daily_runtime_database_duties.v1.json`）与运维 P4 入口共同承担 |
+| 退出条件 | 历史来源被正式处置（归档或退役并记录）后，本例外自动失效；在此之前不得将历史来源改名为 Demo 或反向并入新 Demo 载体 |
+
+本例外不改变规则主体：仍然禁止跨客户共享业务数据库、filestore 或数据库凭据，
+也仍然禁止把平台管理权解释为租户业务数据访问权。
