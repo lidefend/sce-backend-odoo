@@ -610,6 +610,17 @@ def write_markdown(path: Path, rows: list[ContractFormAuditRow], summary: dict[s
     path.write_text(text, encoding="utf-8")
 
 
+def audit_failures(rows: list[ContractFormAuditRow]) -> list[str]:
+    """Coverage observations are not violations; empty/error results are not passes."""
+    if not rows:
+        return ["no models audited"]
+    return [
+        f"{row.model}: {row.status}/{row.boundary_status}: {row.boundary_issues}"
+        for row in rows
+        if row.status != "ok" or row.boundary_status in {"contract_error", "boundary_violation"}
+    ]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out-dir", default=str(DEFAULT_OUTPUT_DIR))
@@ -646,7 +657,10 @@ def main(argv: list[str] | None = None) -> int:
     write_markdown(out_dir / "form_structure_contract_runtime_audit.md", rows, summary)
     print(f"runtime v2 form contract audit written to {out_dir}")
     print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
-    return 0
+    failures = audit_failures(rows)
+    for failure in failures:
+        print(f"[form_structure_contract_runtime_audit] FAIL {failure}", file=sys.stderr)
+    return 1 if failures else 0
 
 
 if __name__ == "__main__":

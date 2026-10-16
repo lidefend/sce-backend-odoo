@@ -2640,7 +2640,7 @@ verify.industry_module.product_boundary: guard.prod.forbid
 .PHONY: verify.user_module.product_boundary
 verify.user_module.product_boundary: guard.prod.forbid
 	@python3 scripts/verify/customer_module_extraction_guard.py
-	@echo "[verify.user_module.product_boundary] PASS external-customer-package"
+	@echo "[verify.user_module.product_boundary] PASS product extraction only; external package acceptance is separate"
 
 .PHONY: verify.user_module.data_baseline.runtime_audit
 verify.user_module.data_baseline.runtime_audit: guard.prod.forbid check-compose-project check-compose-env verify.user_module.product_boundary
@@ -2688,6 +2688,7 @@ verify.product_to_customer.dependency: guard.prod.forbid
 	@python3 scripts/verify/product_to_customer_dependency_guard.py
 
 verify.customer_module.extraction: guard.prod.forbid
+	@PYTHONPATH=. python3 scripts/verify/test_customer_module_extraction_guard.py
 	@python3 -m py_compile scripts/verify/customer_module_extraction_guard.py
 	@python3 scripts/verify/customer_module_extraction_guard.py
 

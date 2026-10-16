@@ -17,8 +17,28 @@ def _is_customer_module(module_name: str) -> bool:
     ).exists()
 
 
+def verify_industry_user_data_boundary(root: Path) -> list[str]:
+    """Retain the product-owned assertion from the extracted P2 legacy guard."""
+    errors = []
+    for name in ("smart_construction_core", "smart_construction_scene", "smart_construction_bootstrap"):
+        for path in (root / "addons" / name).rglob("*"):
+            if not path.is_file():
+                continue
+            relative = path.relative_to(root)
+            if path.name == "user_master_v1.xml":
+                errors.append(f"P1 must not carry a real-user payload file: {relative}")
+            elif path.suffix.lower() in {".xml", ".csv", ".json", ".py", ".md"}:
+                try:
+                    source = path.read_text(encoding="utf-8")
+                except UnicodeDecodeError:
+                    continue
+                if "legacy_user_sc_" in source:
+                    errors.append(f"P1 must not carry a real-user payload token: {relative}")
+    return errors
+
+
 def main() -> int:
-    errors: list[str] = []
+    errors: list[str] = verify_industry_user_data_boundary(ROOT)
     for manifest_path in sorted((ROOT / "addons").glob("*/__manifest__.py")):
         module_name = manifest_path.parent.name
         if _is_customer_module(module_name):

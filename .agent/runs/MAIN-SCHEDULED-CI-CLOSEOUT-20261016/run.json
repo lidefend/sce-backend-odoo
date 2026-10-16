@@ -49,7 +49,10 @@
     "frontend/apps/web/scripts/frontend_product_maturity_audit.mjs",
     "config/frontend/role_surface_exposure_declarations_v1.json",
     "docs/product/frontend_business_entry_acceptance_v1.csv",
-    "scripts/ops/local_quick_evidence.py"
+    "scripts/ops/local_quick_evidence.py",
+    "make/runtime_ops.mk",
+    "make/dev_test.mk",
+    "docs/audit/guard_registry/guard_registry.json"
   ],
   "environment": {
     "kind": "offline",
@@ -57,7 +60,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Prepare generated reports and freeze bounded P4 concurrency fix; exact Quick, independent fingerprint review, archive then publish PR669 on hosted runners.",
+  "next_exact_step": "Finish affected L1 and review; preserve B external evidence blocker; resume PR669 settlement probe fix before freeze/publication.",
   "source_runs": [
     38818510036,
     38811434965,
@@ -420,6 +423,22 @@
     "sce-ci-incremental-tests.log": {
       "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-incremental-tests.log",
       "sha256": "e3c74ca32520b0530bfc82ee8220e0cafb6649c4893d4cba2d19871b2a6391d4"
+    },
+    "sce-user-boundary-guards.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-user-boundary-guards.log",
+      "sha256": "91a7fa31c9955aae3c0f88aa6cbf2ba5fed067c790b8f56611ad95808c443c51"
+    },
+    "sce-user-boundary-followup.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-user-boundary-followup.log",
+      "sha256": "2b310bbf1ae8265a62bb046b20b0f364c70db5b5ddef2bf6a3c982e676d47c4a"
+    },
+    "sce-user-boundary-registry-final.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-user-boundary-registry-final.log",
+      "sha256": "19d753c227ff912ddf2ba7cb1a952d9fa27704d5bfd40ad667a3653abdfdd5d5"
+    },
+    "sce-user-boundary-iteration.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-user-boundary-iteration.log",
+      "sha256": "f464045a779a0577c38a808d27af097315e3d0e9bb0e98ad4cba71a54786a2ea"
     }
   },
   "validation_scope": {
@@ -495,5 +514,25 @@
     "review": "B-line no blocker; added real temporary second worktree new-content commit test;58pass",
     "runtime_writes": "none",
     "remote_backend_previous_candidate": "b5 backend job116822443887 completed success05:42:42UTC; aggregate workflow still running, not new candidate evidence"
+  },
+  "user_boundary_recovery": {
+    "id": "PRODUCT-STALE-USER-BOUNDARY-GUARDS-01",
+    "layer": "P4",
+    "owner": "product executor",
+    "reason": "User authorized removal of stale P2 assumptions from product validation; no product semantics or customer repository changes",
+    "source_head": "ac8987fdf9458645bba9cebf78731bccdba6a720",
+    "status": "targeted_passed_external_P2_and_live_runtime_not_verified",
+    "impact": "A static/runtime wiring; existing extraction guard and regression tests; B preserved until external P2 coverage is verified",
+    "validation": "L1 guards and L2 nonzero negative tests; L3/L4 not required for static wiring changes; no database writes",
+    "exclusions": "P2 preferences/data acceptance is not claimed; prior remote frontend settlement target failure remains separate open CI blocker",
+    "A": "retired through governed entry; generic chain preserved and repaired; runtime identity unified; live audit not_run",
+    "B": "orphan preserved; product prohibition migrated; eight external P2 evidence groups pending",
+    "tests": {
+      "extraction_and_chain_negative": 5,
+      "runtime_audit_and_shell": 20
+    },
+    "review": "local_env_review: no confirmed blocker; live runtime not proven",
+    "L1": "ci.local.iteration PASS; registry audit PASS, zero undispositioned; shell syntax and diff check PASS",
+    "same_layer_discovery": "generic chain initially failed four stale assertions; repaired actual owner binding, five tests incl six injections passed; earlier failed log retained"
   }
 }

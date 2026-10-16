@@ -166,3 +166,34 @@ successful test fabrication is introduced. The sharded lane remains unchanged.
 content and moving its branch, as well as each refusal condition above. Independent
 review found no blocker. Prior full Quick runs without receipts remain non-delivery
 observations. This receipt-producer source change requires a newly frozen candidate.
+
+## PRODUCT-STALE-USER-BOUNDARY-GUARDS-01（P4，2026-10-16）
+
+用户授权产品执行器接管。来源候选 `ac8987fdf9458645bba9cebf78731bccdba6a720`；本节记录未提交范围，非冻结证据。
+
+A 的静态与运行时脚本通过 `make guard.retire` 转入 retired，产品的两个 form_structure 聚合入口解除 P2 前置。替代职责并非客户布局等价验证：
+
+- 原生视图/有效结构：`verify.form_view.native_structure.boundary_guard`。
+- 模型、视图、动作作用域：`verify.form_view.scope.boundary_guard`、`verify.form_view.scope.runtime_chain_guard`、`verify.form_view.scope.action_projection_audit`。
+- 产品契约及运行时：`verify.form_structure.contract.guard`、`verify.form_structure.contract_runtime.audit`。运行时零模型、契约错误和边界违规失败；无 notebook 等描述性观察不构成违规。wrapper 不再覆盖环境或使用遗留默认库/容器，复制与执行共用调用方受管 Compose 身份；拒绝 isolated 执行并传播失败。
+- A 中三列平铺、无 tab、固定客户字段、客户初始化方法和客户菜单覆盖属于 P2；本次没有证明外部客户包验收通过。
+
+同步发现的通用运行链守卫仍检查重构前 API 文件与旧单行文本。已改绑真实 v2 client、保留 view/menu/action 传输及明确 view 上下文；六种删除注入必须失败。未修改产品消费者。
+
+B **仍为 orphan，未退役、未重新接线**。原源码保留在上述 Git 候选；以下为完整的九组函数级职责映射。未验证的外部职责不能以产品抽离守卫 PASS 代替。
+
+| 旧函数 | 责任及处置 | 替代证据状态 |
+| --- | --- | --- |
+| verify_manifest_boundary | P2 包依赖、初始化资产顺序、载体分离 | 外部 P2 包测试待核验 |
+| verify_lowcode_customer_config_baseline_manifest | P2 已确认低代码资产、接受记录、replay 顺序 | 外部 P2 资产及升级测试待核验；通用 lowcode 守卫不等价 |
+| verify_history_business_data_baseline_manifest | P2 历史来源、家族覆盖、载荷锁定及恢复 | 外部签名载荷与对账待核验 |
+| verify_user_data_rebaseline_contract | P2 历史数量、来源和附件约定 | 旧固定数量不升级成产品默认；版本化 P2 基线待核验 |
+| verify_xml_boundary | P2 XML 与数据/偏好初始化载体 | 外部包安装、升级验证待核验 |
+| verify_hook_boundary | P2 数据与偏好及已批准资产的调用顺序 | 外部包安装、升级验证待核验 |
+| verify_partner_location_boundary | P2 地址回填与偏好分离 | 外部迁移负例待核验 |
+| verify_user_data_baseline_boundary | P2 幂等、密码与权限不破坏及历史重放 | 外部迁移行为证据待核验；签名授权不是这些行为的证明 |
+| verify_industry_modules_do_not_carry_user_data | 产品行业模块不得承载真实用户资产 | 已迁入 customer_module_extraction_guard；原三模块、文件名、五类文本后缀均保留；实际文件注入负例通过 |
+
+B 退出条件：外部执行器提供精确包身份、上述八组义务的替代用例/版本化废弃理由与非零结果；产品侧核验后通过受管退役入口处理。当前不能声明此缺陷整体关闭。
+
+验证：extraction 五项测试（含六种运行链注入）通过；runtime audit 二十项测试（含真实 main 零样本、shell 环境传递/失败传播）通过；通用结构、scope、native、修正后的 chain 静态守卫通过。独立复核指出并促成环境接线修复，当前 A/B 增量无确定阻断。真实 Odoo 运行时审计未执行，shell stub 不充当活体验收；不改业务数据，不跑浏览器全量。当前 PR 的结算探针菜单缺陷仍独立未关闭，本节不宣称主线集成或发布。
