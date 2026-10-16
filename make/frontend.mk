@@ -1347,3 +1347,8 @@ verify.frontend.business_entry.evidence_scope.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/evidence_scope.py scripts/verify/business_entry_matrix_incremental.py scripts/verify/business_entry_matrix_scope_seed.py
 	@python3 -m unittest scripts.ops.test_evidence_scope scripts.verify.test_business_entry_matrix_incremental
 	@node scripts/verify/business_entry_matrix_reuse_identity.test.mjs
+
+.PHONY: verify.frontend.scoped_preference.runtime.unit
+verify.frontend.scoped_preference.runtime.unit:
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/scoped_preference_runtime_test.ts --bundle --platform=node --format=esm --outfile=/tmp/scoped-preference-runtime-test.mjs >/dev/null
+	@node /tmp/scoped-preference-runtime-test.mjs

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import subprocess
 import sys
@@ -114,25 +115,31 @@ def validate_performance(report: dict[str, Any], expected_sha: str) -> dict[str,
         raise EvidenceError("PERFORMANCE_NOT_PASS")
     scenarios = report.get("scenarios") or {}
     budgets = report.get("budgets") or {}
+    policy = read_json(ROOT / "config/frontend/release_performance_budgets_v1.json")
+    if budgets != policy.get("scenarios"):
+        raise EvidenceError("PERFORMANCE_BUDGET_AUTHORITY_MISMATCH")
     if set(scenarios) != set(budgets):
         raise EvidenceError("PERFORMANCE_BUDGET_COVERAGE_MISMATCH")
     relative_pass = report.get("relative_budget_pass") is True
     absolute_pass = report.get("absolute_budget_pass") is True
-    relative_limit = 10.0
-    regressions = report.get("metric_regression_percent") or {}
-    if not absolute_pass and not relative_pass:
+    if not absolute_pass:
         raise EvidenceError("PERFORMANCE_BUDGET_NOT_PASS")
     for name, metrics in scenarios.items():
         budget = budgets[name]
-        if int(metrics.get("sample_count") or 0) < 5:
+        samples = metrics.get("samples_ms")
+        if (not isinstance(samples, list) or len(samples) < int(policy["minimum_sample_count"])
+                or metrics.get("sample_count") != len(samples)):
             raise EvidenceError(f"PERFORMANCE_SAMPLE_COUNT:{name}")
+        if any(type(value) not in (int, float) or not math.isfinite(value) or value < 0 for value in samples):
+            raise EvidenceError(f"PERFORMANCE_SAMPLE_INVALID:{name}")
+        ordered = sorted(samples)
+        observed = {"median_ms": ordered[len(ordered) // 2],
+                    "p95_ms": ordered[math.ceil(len(ordered) * .95) - 1], "max_ms": ordered[-1]}
+        if any(type(metrics.get(key)) not in (int, float) or metrics[key] != value for key, value in observed.items()):
+            raise EvidenceError(f"PERFORMANCE_SUMMARY_MISMATCH:{name}")
         for metric in ("median_ms", "p95_ms", "max_ms"):
             within_absolute = float(metrics.get(metric) or 0) <= float(budget.get(metric) or 0)
-            within_relative = (
-                isinstance((regressions.get(name) or {}).get(metric), (int, float))
-                and float((regressions.get(name) or {})[metric]) <= relative_limit
-            )
-            if not within_absolute and not (relative_pass and within_relative):
+            if not within_absolute:
                 raise EvidenceError(f"PERFORMANCE_BUDGET_EXCEEDED:{name}:{metric}")
     return {
         "result": "PASS",

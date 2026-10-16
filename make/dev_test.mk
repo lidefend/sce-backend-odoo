@@ -11,6 +11,10 @@ test.admin-vis-p3.project-record-rule-orm: guard.prod.forbid check-compose-proje
 	@$(RUN_ENV) bash scripts/test/admin_vis_p3_project_record_rule_orm.sh
 test.chatter-timeline.authorization.orm: guard.prod.forbid
 	@$(RUN_ENV) SC_AUTHORIZATION_ORM_TEST_TAGS=chatter_timeline_authorization_orm bash scripts/test/admin_vis_p3_project_record_rule_orm.sh
+.PHONY: test.candidate.contract-profiles.orm
+test.candidate.contract-profiles.orm: guard.prod.forbid
+	@$(RUN_ENV) SC_AUTHORIZATION_ORM_TEST_TAGS=candidate_contract_profiles bash scripts/test/admin_vis_p3_project_record_rule_orm.sh
+
 test.payment-settlement.component-profile.orm: guard.prod.forbid
 	@$(RUN_ENV) SC_AUTHORIZATION_ORM_TEST_TAGS=payment_settlement_component_profile bash scripts/test/admin_vis_p3_project_record_rule_orm.sh
 

@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -189,11 +190,11 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             "  python310_runtime_compatibility:", 1
         )[0]
         self.assertNotIn("test.chatter-timeline.authorization.orm", authorization_section)
-        self.assertIn("Prove candidate chatter authorization with real ORM", text)
-        self.assertIn("env.CANDIDATE_REQUESTED == 'true'", text)
+        self.assertIn("make test.candidate.contract-profiles.orm", text)
+        self.assertIn('"${CANDIDATE_REQUESTED}" = true', text)
         preparation = text.split(
             "- name: Prepare host-owned artifact root before container checks", 1
-        )[1].split("- name: Prove candidate chatter authorization with real ORM", 1)[0]
+        )[1].split("- name: Report ORM verification selection", 1)[0]
         self.assertIn("if: env.PROFESSIONAL_MODE == 'full'", preparation)
         self.assertIn("python3 scripts/verify/ci_artifact_host_write_guard.py", preparation)
         full_section = text.split(
@@ -339,6 +340,56 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             ROOT / "addons/smart_construction_core/tests/test_payment_settlement_component_profile.py"
         ).read_text(encoding="utf-8")
         self.assertIn('@tagged("payment_settlement_component_profile"', module)
+
+    def test_shared_orm_installation_preserves_independent_verdicts(self) -> None:
+        runner = (ROOT / "scripts/test/admin_vis_p3_project_record_rule_orm.sh").read_text()
+        expectation = runner.split('set_suite_expectation() {', 1)[1].split('\ncase "${ENV:-dev}"', 1)[0]
+        loop = runner.split('# Share only installation:', 1)[1]
+        loop = loop[loop.index('base_test_log='):]
+        # Execute the actual shell loop with a fake Odoo process, retaining the
+        # real result guard. A clean first suite must never mask a bad second.
+        fake = r"""
+        timeout() {
+          local tag= arg count=5 i
+          while [ "$#" -gt 0 ]; do
+            arg="$1"; shift
+            if [ "$arg" = --test-tags ]; then tag="$1"; shift; fi
+          done
+          echo "$tag" >> "$CALLS"
+          [ "$tag" != payment_settlement_component_profile ] || count=7
+          if [ "$tag" = "$BAD_SUITE" ]; then
+            case "$BAD_KIND" in
+              exit) return 1 ;;
+              zero) count=0 ;;
+              truncated) count=6 ;;
+              foreign) tag=wrong_suite ;;
+            esac
+          fi
+          for ((i=0; i<count; i++)); do
+            echo "INFO db odoo.addons.smart_core.tests.test_${tag}: Starting TestSuite.test_${i} ..."
+          done
+          echo "0 failed, 0 error(s) of $count tests"
+        }
+        """
+        for bad_suite, kind in [('', ''), ('chatter_timeline_authorization_orm', 'zero'),
+                                ('payment_settlement_component_profile', 'zero'),
+                                ('payment_settlement_component_profile', 'truncated'),
+                                ('payment_settlement_component_profile', 'foreign'),
+                                ('payment_settlement_component_profile', 'exit')]:
+            with self.subTest(suite=bad_suite, kind=kind), tempfile.TemporaryDirectory() as directory:
+                script = ('set -euo pipefail\nsource scripts/ci/orm_result_guard.sh\n'
+                          + 'set_suite_expectation() {' + expectation + '\n' + fake
+                          + '\nsuite_tags=(chatter_timeline_authorization_orm payment_settlement_component_profile)\n'
+                          + 'compose=(fake); odoo_common=(odoo); orm_timeout_seconds=30\n'
+                          + 'test_log="$TEST_ROOT/test.log"; test_logs=()\n' + loop)
+                result = subprocess.run(['bash', '-c', script], cwd=ROOT, text=True,
+                                        capture_output=True, env={**os.environ, 'TEST_ROOT': directory,
+                                        'CALLS': directory + '/calls', 'BAD_SUITE': bad_suite, 'BAD_KIND': kind})
+                calls = Path(directory, 'calls').read_text().splitlines()
+                self.assertEqual(result.returncode == 0, not bad_suite, result.stdout + result.stderr)
+                self.assertEqual(len(calls), 1 if bad_suite.startswith('chatter') else 2)
+                if not bad_suite:
+                    self.assertEqual(result.stdout.count('suite='), 2)
 
     def test_nightly_candidate_is_separate_from_main_push(self) -> None:
         for workflow in (

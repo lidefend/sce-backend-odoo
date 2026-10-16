@@ -3,12 +3,12 @@
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
     "odoo_tags": 169,
-    "gated": 4,
-    "on_demand": 22,
+    "gated": 3,
+    "on_demand": 23,
     "unwired": 143,
-    "odoo_tag_declarations": 382,
-    "gated_declarations": 92,
-    "uncovered_declarations": 290,
+    "odoo_tag_declarations": 384,
+    "gated_declarations": 93,
+    "uncovered_declarations": 291,
     "ci_unit_scripts": 15,
     "ci_unit_scripts_wired": 15,
     "ci_unit_scripts_unwired": 0
@@ -18,7 +18,7 @@
       "group": "sc_gate",
       "status": "gated",
       "kind": "odoo_tag",
-      "declarations": 64,
+      "declarations": 66,
       "files": [
         "addons/sc_norm_engine/tests/test_boq_norm_link.py",
         "addons/smart_construction_acceptance_fixture/tests/test_acceptance_fixture_guard.py",
@@ -28,6 +28,7 @@
         "addons/smart_construction_bundle/tests/test_current_account_workspace.py",
         "addons/smart_construction_bundle/tests/test_missing_record_contract.py",
         "addons/smart_construction_bundle/tests/test_startup_delivery_identity.py",
+        "addons/smart_construction_bundle/tests/test_startup_performance_contract.py",
         "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py",
         "addons/smart_construction_bundle/tests/test_workspace_role_routes.py",
         "addons/smart_construction_core/tests/test_acl_matrix_gate.py",
@@ -79,7 +80,8 @@
         "addons/smart_owner_bundle/tests/test_bundle_registry_consistency.py",
         "addons/smart_owner_core/tests/test_core_extension_contract.py",
         "addons/smart_scene/tests/test_scene_resolver_priority.py",
-        "demo_addons/smart_construction_demo/tests/test_demo_showcase_gate.py"
+        "demo_addons/smart_construction_demo/tests/test_demo_showcase_gate.py",
+        "demo_addons/smart_construction_demo/tests/test_startup_metadata_performance.py"
       ],
       "owner": "platform-team",
       "evidence": [
@@ -641,7 +643,7 @@
     },
     {
       "group": "chatter_timeline_authorization_orm",
-      "status": "gated",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [

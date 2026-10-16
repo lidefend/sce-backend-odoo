@@ -115,6 +115,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_core/handlers/ui_contract_v2.py",
             "addons/smart_core/handlers/ui_contract_v2_projection.py",
             "addons/smart_core/core/form_structure_authority.py",
+            "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
         ):
             with self.subTest(path=path):
                 targets = select_targets([path])

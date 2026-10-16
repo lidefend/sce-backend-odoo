@@ -7,6 +7,7 @@ import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { launchChromium } from './playwright_runtime.mjs';
 import { applyReleasedNavigationTarget, captureReleasedNavigation, findReleasedNavigationTargetByMenuXmlid } from './released_navigation_target.mjs';
+import { measureRuntimeSample } from './frontend_runtime_performance_sample.mjs';
 import { evaluateRelativePerformanceBudget } from './frontend_performance_budget.mjs';
 import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
 import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
@@ -684,6 +685,7 @@ async function main() {
     warmup_runs: {},
     runs_per_scenario: PERF_RUNS,
     scenarios: {},
+    runtime_samples: { login_to_interactive: [], company_switch: [] },
     budgets: performanceBudgets.scenarios || {},
     budget_source: PERF_BUDGET_PATH,
     relative_regression_percent: null,
@@ -1032,7 +1034,10 @@ async function main() {
       const loginSamples = [];
       for (let i = 0; i < PERF_RUNS; i += 1) {
         await logout(page);
-        loginSamples.push(await time(() => login(page, FINANCE_LOGIN)));
+        const sample = await measureRuntimeSample(page, () => login(page, FINANCE_LOGIN),
+          { index: i + 1, role: 'finance', cache_state: 'after_declared_warmup' });
+        loginSamples.push(sample.total_ms);
+        performanceReport.runtime_samples.login_to_interactive.push(sample);
       }
       performanceReport.scenarios.login_to_interactive = stats(loginSamples);
       // The released expense settlement entry is published to the project manager
@@ -1111,7 +1116,11 @@ async function main() {
       performanceReport.warmup_runs.company_switch = companySwitchWarmupRuns;
       for (let i = 0; i < PERF_RUNS; i += 1) {
         selectedCompanyLabel = selectedCompanyLabel === 'FE Company A' ? 'FE Company B' : 'FE Company A';
-        switchSamples.push(await time(() => selectCompany(page, selectedCompanyLabel)));
+        const sample = await measureRuntimeSample(page, () => selectCompany(page, selectedCompanyLabel),
+          { index: i + 1, role: 'finance', target_company: selectedCompanyLabel === 'FE Company A' ? 'a' : 'b',
+            cache_state: 'after_declared_warmup' });
+        switchSamples.push(sample.total_ms);
+        performanceReport.runtime_samples.company_switch.push(sample);
       }
       performanceReport.scenarios.company_switch = stats(switchSamples);
       if (PERF_BASELINE_CAPTURE) {
@@ -1133,6 +1142,9 @@ async function main() {
       }));
       performanceReport.absolute_scenario_pass = absoluteScenarioPass;
       performanceReport.absolute_budget_pass = Object.values(absoluteScenarioPass).every(Boolean);
+      // Historical experiments remain diagnostic. Relative improvement cannot
+      // excuse an absolute user-experience budget violation.
+      performanceReport.relative_baseline_authority = 'historical_experiment_diagnostic_only';
       if (PERF_BASELINE_PATH) {
         const baseline = JSON.parse(fs.readFileSync(PERF_BASELINE_PATH, 'utf8'));
         const relative = evaluateRelativePerformanceBudget({
@@ -1148,7 +1160,7 @@ async function main() {
       } else {
         performanceReport.relative_budget_pass = false;
       }
-      check(performanceReport.absolute_budget_pass || performanceReport.relative_budget_pass, `performance budget exceeded: ${JSON.stringify(performanceReport.scenarios)}`);
+      check(performanceReport.absolute_budget_pass, `performance budget exceeded: ${JSON.stringify(performanceReport.scenarios)}`);
       performanceReport.result = 'PASS';
       if (PERF_ONLY) {
         fs.writeFileSync(path.join(OUT, 'performance.json'), `${JSON.stringify(performanceReport, null, 2)}\n`);

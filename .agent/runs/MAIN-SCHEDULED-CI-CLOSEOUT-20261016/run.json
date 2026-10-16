@@ -61,7 +61,48 @@
     "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
     "frontend/apps/web/scripts/record_form_return_navigation_test.ts",
     "make/frontend.mk",
-    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "scripts/test/admin_vis_p3_project_record_rule_orm.sh",
+    "make/dev.mk",
+    "docs/ops/runtime_performance_baseline_v1.md",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/delivery/menu_service.py",
+    "addons/smart_core/governance/scene_normalizer.py",
+    "addons/smart_core/tests/test_scene_normalizer_entry_target.py",
+    "addons/smart_core/app_config_engine/models/app_nav_config.py",
+    "addons/smart_core/utils/load_contract_response_cache.py",
+    "addons/smart_core/tests/test_load_contract_response_cache.py",
+    "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/src/app/runtime/scopedPreferenceRuntime.ts",
+    "frontend/apps/web/scripts/scoped_preference_runtime_test.ts",
+    "addons/smart_core/handlers/ui_contract.py",
+    "addons/smart_core/handlers/user_view_preference.py",
+    "addons/smart_core/app_config_engine/services/dispatchers/action_dispatcher.py",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/tests/test_relation_entry_contract.py",
+    "addons/smart_core/tests/test_ui_contract_id_boundaries.py",
+    "addons/smart_core/controllers/intent_dispatcher.py",
+    "addons/smart_core/core/intent_router.py",
+    "docs/architecture/backend_contract_boundaries.md",
+    "addons/smart_core/tests/test_user_view_preference_boundaries.py",
+    "frontend/apps/web/src/api/preferences.ts",
+    "frontend/packages/schema/src/index.ts",
+    "frontend/apps/web/src/app/runtime/listPreferenceProjection.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+    "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+    "frontend/apps/web/src/pages/ListPage.vue",
+    "frontend/apps/web/src/pages/listPage/listColumnVisibility.ts",
+    "addons/smart_core/core/list_preference_policy.py",
+    "addons/smart_core/utils/contract_governance.py",
+    "addons/smart_core/utils/contract_governance_registry.py",
+    "addons/smart_core/models/user_view_preference.py",
+    "addons/smart_construction_core/core_extension.py",
+    "docs/contract/cases.yml",
+    "docs/contract/snapshots/user_view_preference_get_intent_admin.json",
+    "docs/contract/snapshots/user_view_preference_set_intent_admin.json",
+    "docs/contract/snapshots/user_view_preference_get_resolved_intent_admin.json",
+    "docs/contract/snapshots/user_view_preference_set_resolved_intent_admin.json",
+    "docs/engineering_convergence/ui_contract_v2_responsibility_map.md"
   ],
   "environment": {
     "kind": "offline",
@@ -69,7 +110,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Prepare generated evidence; freeze clean candidate; one Quick plus fingerprint review/archive; publish and verify PR669 required checks.",
+  "next_exact_step": "R5 is adjudicated and R6 is authorized (see r6_delivery_closeout). ci.delivery.freeze.prepare PASSed and refreshed tracked generated reports. Now: review the generated changes, make the layer-owned commits (P0 smart_core+frontend, P1 construction core/bundle+demo, P4 ops/CI/generated+run ledger), freeze the complete tracked+untracked fingerprint at the clean HEAD, run one exact-head ci.local.quick, take the independent review and external archive, then make pr.push. The registered residuals (878 one-column drift, 8 unreachable declared locks, miss-path double copy, gen-2 GC stop, ctime change-detection) stay registered and are not delivery blockers for this batch. R3 cache-copy and R4 first-permission stay independent follow-ups. No deployment, mainline integration or product acceptance is claimed by this batch.",
   "source_runs": [
     38818510036,
     38811434965,
@@ -234,6 +275,394 @@
       "dirty": true,
       "log": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-ref-refresh-tests-final.log",
       "sha256": "5a40555e3e70af2ad0ae0b707e26e69a53e9022802fbbc7c54f2ae8111b093df"
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.frontend.contract_basis.unit",
+      "status": "passed",
+      "tests": 15,
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-contract-basis.log",
+        "sha256": "1df25b071c04acccf507b858e1df11530e8656d961f5e0dcfdad207a8cbffc28"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.frontend.professional_relation_lifecycle.unit verify.frontend.hierarchical_worksheet.unit",
+      "status": "passed",
+      "tests": 17,
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-relation-consumer.log",
+        "sha256": "7670c993d360f819ff4a5ed785dca071984fb3d1c612945d129ce0c46b692188"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L4",
+      "command": "PRODUCT_PERFORMANCE_BROWSER_SCOPE=relation-dialog make local.dev.runtime.performance.browser",
+      "status": "passed",
+      "stage": "iteration affected-surface observation, not a frozen-candidate matrix",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-http-relation-dialog.log",
+        "sha256": "baad52f11dfea9eafc15956aba1fa9c6379d4c76e6d2d00d918cb8cafc114f1d"
+      },
+      "report": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/local-browser-relation-dialog-performance.json",
+        "sha256": "25d177b767167d865efb6945d0bbd5af9e7f89b8a9f56e0a44d36bd75b4dafd4"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.unified_page_contract.v2.assembler",
+      "status": "failed",
+      "stage": "dirty iteration, pre-fix observation of the assembled-contract cache identity pin",
+      "failure_owner": "validation-tool/batch debt, not the relation popup contract: the in-batch ui_contract_v2.py change (version literal rename + single-source assembly + put_generated) was not re-pinned in the guard",
+      "resolution": "re-pinned and input gap closed; see the passed entry below and relation_demand_boundary.assembled_cache_pin_closure",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-assembler-entry-equivalence.log",
+        "sha256": "74ce1323c4db5b4b500f6601fd9a25ec4e7c4822c08d68604325a8dc0f9d1e79"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.unified_page_contract.v2.assembler",
+      "status": "passed",
+      "stage": "same dirty iteration after re-pinning; guard reports sources=4",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-assembler-guard-after.log",
+        "sha256": "833732a8560250514865519dc1a2ce0c19e476f4fd02da17e1ff8c8df9feccd2"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "read-only reverse verification of the assembled-contract cache pin (in-memory input perturbation, no file written)",
+      "status": "passed",
+      "stage": "fail-closed re-established for the newly pinned page_assembler input and for the served version literal",
+      "non_zero_cases": 4,
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-assembler-guard-reverse.log",
+        "sha256": "4025a29f02e6d6d5b5bd51fe4c99e6a4a6429bd117f5097b34f8166463ef6f3f"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.frontend.dev.incremental.unit",
+      "status": "passed",
+      "stage": "page_assembler.py now routes to the assembled-contract guard in the incremental recommendation; 30 tests OK",
+      "tests": 30,
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-incremental-route.log",
+        "sha256": "25ed09967212a2ae766c474db861516037d9fe4238b37c13efce0872ac7c8869"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "stage": "refreshed after the guard/routing edit; coverage=L1_only, receipt=none, change_state=dirty",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-iteration-guardfix.log",
+        "sha256": "28cad3c0fa61d7ac6c536a5246095f96852057433b9c4024287e6e987e0879fa"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "stage": "change_state=dirty, coverage=L1_only, receipt=none; prints L2 recommendations without executing them",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-cache-identity-iteration.log",
+        "sha256": "b077671da55c4080782714a8923187e933904d5c5f8dfda622072d20ed26656c"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.business_config.formal_list.unit",
+      "status": "passed",
+      "tests": 225,
+      "test_count": 225,
+      "stage": "Ran 145 / 13 / 62 / 5 OK; the cache module suite went 12 -> 13 with the new ctime-identity regression test",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-cache-identity-formal-list-unit-after.log",
+        "sha256": "7498f067d5ff9086264fc3466cf891a2645b36a006d0a9374ee09d6be9fd6655"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.unified_page_contract.v2.assembler",
+      "status": "passed",
+      "stage": "sources=4; the assembled-contract pin is intact although load_contract_response_cache.py changed, because it is deliberately not an ASSEMBLED_CACHE_INPUT (covered by the persisted runtime source token)",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-cache-identity-assembler-guard.log",
+        "sha256": "b4226401cfd3f542be70e8a7f4ae73861280941067eddd6f1a86f55e15e71edd"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "make local.dev.runtime.cache_identity.probe",
+      "status": "passed",
+      "stage": "counterexample: PRE old_source_still_served=true -> POST false; token now follows ctime identity; exit=2 by design from the fail-closed odoo.shell commit guard after the report prints",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-cache-identity-post.log",
+        "sha256": "e09973711e92e514cec6ef62abc1e6e63c2dc09f53f4480b56072001f1fda076"
+      },
+      "counterexample_log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-cache-identity-pre.log",
+        "sha256": "0c8f896f02271b732c73e5a784af31eb4f9d3d6d1f6220e92ec07ed9784ac9f6"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.unified_page_contract.v2.assembler",
+      "status": "passed",
+      "stage": "sources=4 after re-pinning ASSEMBLED_CACHE_INPUTS_SHA256 and bumping the version literal to ui-contract-v2-2026-10-16-owned-source-handoff because R3 changed the handler code",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-assembler-guard.log",
+        "sha256": "2e41dd1872887604b75bcfe60dcb36b05ee9e3bc7560d137372474c1ad378285"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "read-only reverse verification of the assembled-contract cache pin (in-memory perturbation)",
+      "status": "passed",
+      "stage": "baseline clean; perturbed page_assembler bytes -> fail closed; unrecorded handler literal -> fail closed; restored -> clean",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-assembler-guard-reverse.log",
+        "sha256": "b6fa313a669f09ecd4c06399b4cd8282a911194875883dd41377aeb3faa11301"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.business_config.formal_list.unit",
+      "status": "passed",
+      "tests": 227,
+      "test_count": 227,
+      "stage": "Ran 145 / 15 / 62 / 5 OK; cache module 13 -> 15 with the R3 ownership/AST guards",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-formal-list-unit.log",
+        "sha256": "5dec3d3da7d5c2b9d7869c90dd496f4aaf20aa1150d71c557204176b12de03bd"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.unified_page_contract.v2.runtime",
+      "status": "passed",
+      "stage": "23 + 126 tests OK; Unified Page Contract v2+ runtime guard score=6",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-v2-runtime.log",
+        "sha256": "bd4594314786b7775a74614fb5d1a2ba06f08b21b17776830d80ea380295fbaa"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "stage": "change_state=dirty, coverage=L1_only, receipt=none",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-iteration.log",
+        "sha256": "9e772376f5fba60478b8a1c66c6a41431ca4eea2506d0e6bdadd17665e2deafd"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "make local.dev.restart && PRODUCT_PERFORMANCE_MODE=relation_demand_probe make local.dev.runtime.performance.observe",
+      "status": "passed",
+      "stage": "R3 runtime equivalence: dialog_build_count 17, sql_count 1041, relation_base_sha256 / relation_entry_sha256 / search_dialog_sha256 / declarations / dialog_targets unchanged vs the R2 after run; only envelope digests and per-dialog timings differ (version literal + source token changed by design)",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-demand-after.log",
+        "sha256": "878b29d31e4cba5e954cff7543b01d0bb9d4548c551c96363672a55f9fbda009"
+      },
+      "comparison": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-demand-equivalence.log",
+        "sha256": "af5902faa386569b15643488d99b0c98f5bbe1f5e3836efc849438445e2eae96"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.contract.entry_equivalence.guard",
+      "status": "passed",
+      "tests": 10,
+      "stage": "10 tests OK; contract_v2_entry_equivalence_guard PASS after the assembled-cache re-pin",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-entry-equivalence.log",
+        "sha256": "1594933f1a0bef4490f3a6551564fad20554d3a1d3c1986da9b152212d8ab50a"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "python3 scripts/verify/test_local_dev_runtime_permission_probe.py",
+      "status": "passed",
+      "tests": 8,
+      "stage": "8 tests OK; probe refuses commit, binds sc_dev_demo, non-sudo actor, restores patched hooks, attributes only declared scenarios, guard load-bearing, exports declared keys only",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r4-permission-probe-unit.log",
+        "sha256": "133449d6f429f0588126e0403937f271f33f90517460d5c4b39d69c2eeda0f25"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "stage": "change_state=dirty, coverage=L1_only, receipt=none",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r4-iteration.log",
+        "sha256": "d24aec99160002279f1e9d6bf9ae71effb6b820767bb7542cfd2811f7d80f64f"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "make local.dev.runtime.permission.probe",
+      "status": "passed",
+      "stage": "R4 permission-gate attribution on sc-local-dev/sc_dev_demo: cold owner = published route authority (131.9/132.6 ms), warm per-request 1.658 ms (menu_id) / 0.407 ms (no menu_id), no redundant duplicate build; boundary counterexamples recorded (action_group_excluded gap)",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r4-permission-probe-7.log",
+        "sha256": "f13205bd352a9335e25669799f536f058279a0390d6ca3f2ba0dea32e80fd501"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "make local.dev.runtime.contract_request.probe",
+      "status": "passed",
+      "stage": "R5 bounded observation on sc-local-dev/sc_dev_demo, uid45/company1, ui.contract.v2 action878 menu559: process_first 1504.4 ms miss/682 SQL; warm n=12 median 83.5 ms / p95 187.3 ms / SQL 25 / deepcopy 26; paired gc-disabled control n=12 median 81.6 ms with max extra 6.7 ms and gc_ms 0; cold rebuild permission 133.3 ms (R4 cross-check); identity variation miss->hit; R3 removed copying measured at 19.0 ms per warm request; warm anomaly attributed to generation-2 GC stop",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-contract-request-probe-7.log",
+        "sha256": "1acf199079f65c697811b28e766626e1623082dd5e79309a208f79cceca8a917"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "python3 addons/smart_core/tests/test_user_view_preference_boundaries.py && python3 addons/smart_core/tests/test_ui_contract_v2_boundaries.py && python3 scripts/verify/ui_contract_v2_responsibility_map_guard.py && python3 -m unittest scripts.verify.test_formal_list_configuration_baseline",
+      "status": "passed",
+      "tests": 185,
+      "stage": "34 + 146 + 5 tests OK plus the responsibility-map guard PASS; covers illegal identity, write-before-validate, the declared action-scoped lock (reported, hide refused, width-only lock honoured, other action/model never locked), the revoked-read refusal, the company-free scope key and the P1 formal-list hook unchanged",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-preference-unit.log",
+        "sha256": "e0e8826d4ce59637298f89b805da18624e2dead3d713ac51879bd9696d03224d"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "make local.dev shell probe: artifacts/r5_preference_identity_probe.py on sc-local-dev/sc_dev_demo",
+      "status": "passed",
+      "stage": "uid45/company1 non-superuser action 878: effective GET ok with 22 declared columns and preference_policy locked=true, allow_visibility/order/width=false, locked_columns=columns; stored GET carries policy_source=current_page_contract and no preference_contract; empty identity GET/SET 400; model/action mismatch 400; model:unknown sentinel rows 0",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-preference-identity-2.log",
+        "sha256": "6d771846253da96c207cbd89e51113755cd96a7c4c20062bfe2aca1a6727e3a2"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "make local.dev shell probe: artifacts/r5_formal_list_lock_facts.py + artifacts/r5_contract_lock_verdict_probe.py on sc-local-dev/sc_dev_demo",
+      "status": "passed",
+      "stage": "all 10 declared P1 formal-list locks now report allow_visibility/allow_order/allow_width false in the preference projection (0/10 before the fix); the real ui.contract.v2 response for the two reachable locked actions agrees on the verdict (2/2), 869 matches the locked set and order exactly, 878 carries one extra P1-registered profile column (registered residual); the other 8 have no published menu carrier for this principal and are compared with P1's own derivation instead",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-preference-lock-facts.log",
+        "sha256": "086278a22cf0a6d581bcdce813ebe8a8e5363872a8d2eeb990cf682ef3b3ec6c"
+      },
+      "comparison": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-contract-lock-verdict.log",
+        "sha256": "1e42abe49c86899f2d10e0c3207976496829779a77fa65e39c7144ad0bb764b8"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "make local.dev shell probe: artifacts/r5_preference_behavior_probe.py on sc-local-dev/sc_dev_demo",
+      "status": "passed",
+      "stage": "bounded behaviour counterexamples with every write rolled back: forbidden/non-declared column not persisted, declaration change flips the materialised verdict, company switch keeps one scope_key and the same columns, revoked model read refuses with 403 (3/3 ACL rows restored), undeclared surface 403/422, illegal identity 400 with 0 rows written",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-preference-behavior.log",
+        "sha256": "586e6cc5b7c9317794ba17cbdbcc9573ee21625e5f4c6d7719fe37a562c41f39"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.frontend.scoped_preference.runtime.unit",
+      "status": "passed",
+      "tests": 19,
+      "stage": "19 tests passed: scoped save keeps its scope and refuses after authority/epoch change, stored projection cannot masquerade as effective, declared policy consumed without adding forbidden columns, missing policy never defaults to allowed",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-preference-frontend-unit.log",
+        "sha256": "4a485993d2acfc5f83c839fc16dda5ab38a221abce3154cca097a15812efb1eb"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "stage": "change_state=dirty, coverage=L1_only, receipt=none after the R5 scope declaration",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-preference-iteration.log",
+        "sha256": "6243527b693f25a165da894547ed412e28b394d2c7d41ebd8593d577a7ab5fd3"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "make local.dev.runtime.contract_request.probe PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID=878",
+      "status": "passed",
+      "stage": "bounded observation after the R5 write path: the HTTP response shape is unchanged versus the pre-write probe-7 (median response_bytes 113916, SQL 25, deepcopy 26, cache reason assembled_v2_hot_cache_hit identical), so removing the server-side stored-preference reorder changed nothing for this principal; hot dispatch median 90.099ms / p95 206.056 / max 218.047 with the hot_4 outlier attributed to a generation-2 GC pause (gc_ms 127.512) and the paired gc-disabled group median 85.462 / p95 86.467 / max 93.997 (extra over median 8.535ms, gc_ms 0); permission is not the per-request cost (hot median ~3.2ms vs the ~133.3ms cold first check that cross-confirms R4); the R3 removed copy costs 19.0ms per hot request; acceptance_pass=false is by probe design (a bounded observation, not a pass gate)",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-contract-request-probe-8.log",
+        "sha256": "88531ae14dac5af6f09908c4abd3ccb1435ff426548d29b9768d5fddcf3042d7"
+      },
+      "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+      "dirty": true
     }
   ],
   "evidence_index": {
@@ -488,6 +917,70 @@
     "sce-quality-parallel-freeze.log": {
       "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-quality-parallel-freeze.log",
       "sha256": "d6dc8b0ffce212713f148ffba005b53b294cbc7ba8cd657b134488d94804b3b5"
+    },
+    "sce-r4-permission-probe-7.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r4-permission-probe-7.log",
+      "sha256": "f13205bd352a9335e25669799f536f058279a0390d6ca3f2ba0dea32e80fd501"
+    },
+    "sce-r4-permission-probe-unit.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r4-permission-probe-unit.log",
+      "sha256": "133449d6f429f0588126e0403937f271f33f90517460d5c4b39d69c2eeda0f25"
+    },
+    "sce-r4-iteration.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r4-iteration.log",
+      "sha256": "d24aec99160002279f1e9d6bf9ae71effb6b820767bb7542cfd2811f7d80f64f"
+    },
+    "sce-r5-contract-request-probe-7.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-contract-request-probe-7.log",
+      "sha256": "1acf199079f65c697811b28e766626e1623082dd5e79309a208f79cceca8a917"
+    },
+    "sce-r5-contract-request-probe-6.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-contract-request-probe-6.log",
+      "sha256": "3ef6ff8e89a1ba6e33bebd306a244adcc09ffed771296cc27832fece847f264d"
+    },
+    "sce-r5-contract-request-probe-8.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-contract-request-probe-8.log",
+      "sha256": "88531ae14dac5af6f09908c4abd3ccb1435ff426548d29b9768d5fddcf3042d7"
+    },
+    "sce-r5-preference-frontend-unit.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-preference-frontend-unit.log",
+      "sha256": "4a485993d2acfc5f83c839fc16dda5ab38a221abce3154cca097a15812efb1eb"
+    },
+    "docs/contract/snapshots/user_view_preference_get_intent_admin.json": {
+      "path": "docs/contract/snapshots/user_view_preference_get_intent_admin.json",
+      "sha256": "2bbf93346efd64f5a182bd06354445a4f9b8881f022857d99bb9070b1e98f55e"
+    },
+    "docs/contract/snapshots/user_view_preference_set_intent_admin.json": {
+      "path": "docs/contract/snapshots/user_view_preference_set_intent_admin.json",
+      "sha256": "cec5a96cb21d1ace712a22e2ba372af76f44976f1cf9acd53634ee0a75a2f064"
+    },
+    "docs/contract/cases.yml": {
+      "path": "docs/contract/cases.yml",
+      "sha256": "87a5d93092409ab849a957b8f193b4dd375303a870e58532133c65708a790040"
+    },
+    "sce-r5-preference-lock-facts.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-preference-lock-facts.log",
+      "sha256": "086278a22cf0a6d581bcdce813ebe8a8e5363872a8d2eeb990cf682ef3b3ec6c"
+    },
+    "sce-r5-contract-lock-verdict.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-contract-lock-verdict.log",
+      "sha256": "1e42abe49c86899f2d10e0c3207976496829779a77fa65e39c7144ad0bb764b8"
+    },
+    "sce-r5-preference-behavior.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-preference-behavior.log",
+      "sha256": "586e6cc5b7c9317794ba17cbdbcc9573ee21625e5f4c6d7719fe37a562c41f39"
+    },
+    "sce-r5-preference-identity-2.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-preference-identity-2.log",
+      "sha256": "6d771846253da96c207cbd89e51113755cd96a7c4c20062bfe2aca1a6727e3a2"
+    },
+    "sce-r5-preference-unit.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-preference-unit.log",
+      "sha256": "e0e8826d4ce59637298f89b805da18624e2dead3d713ac51879bd9696d03224d"
+    },
+    "sce-r5-preference-iteration.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r5-preference-iteration.log",
+      "sha256": "6243527b693f25a165da894547ed412e28b394d2c7d41ebd8593d577a7ab5fd3"
     }
   },
   "validation_scope": {
@@ -752,5 +1245,1793 @@
       "publication": "not pushed; no receipt",
       "recovery_checks": "PASS: entry-equivalence10, assembler4sources, formal-list suite, planner30, canonical/pattern/primitive/parity/style;7 affected source guards; actualORM2methods;freeze prepare;B-line review"
     }
+  },
+  "ci_efficiency_recovery": {
+    "source_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+    "layer": "P4",
+    "owner_authorization": "Fix CI failures and reduce redundancy; performance separated into evidence-led dedicated study",
+    "failure": "frontend performance: login median3289 budget3000; company switch median2277 budget2000; required gate remains blocked",
+    "scope": "Reuse one isolated ORM installation for two independently verified suites; preserve tags, result checks and cleanup",
+    "validation": "L1 syntax/workflow; L2 negative wiring and result tests; actual ORM execution required before delivery",
+    "performance_next": "Capture existing startup_profile plus network and UI timings for same five login/company samples; no budget relaxation or cross-principal cache",
+    "next": "Implement shared preparation with separate suite executions and verdicts",
+    "performance_authorization": "Owner requires systematic actual runtime baseline and optimization before launch; prior baselines are experimental, not acceptance authority",
+    "earliest_next": "L1/L2 measurement tooling; scoped local.dev backend observation; comparable environment browser capture; optimize proven bottleneck; never promote FAIL observation to passing budget",
+    "p0_boundary": {
+      "target": "smart_core system.init generic recursive cleaning",
+      "standard_vs_user": "platform transport mechanism",
+      "why_here": "measured repeated scalar calls; no domain semantics",
+      "why_not_elsewhere": "frontend/industry/ops must not compensate contract assembly cost",
+      "blast_radius": "system.init cleanup traversal only; exact old/new output and nonmutation tests required",
+      "excluded": "no memo, cross-user cache, moved stripping position or changed permissions"
+    }
+  },
+  "backend_runtime_investigation": {
+    "stage_identity": "56f5096422d967d582c2b25ab9a4bfaa03173534 + explicit dirty scope",
+    "status": "in_progress",
+    "evidence": "artifacts/main-scheduled-ci-closeout-20261016/local-runtime-shape.json",
+    "observed_scene_ready_nodes": 1836718,
+    "primitive_optimization": "Withdrawn from candidate: five pairs proved equality but no stable latency benefit. Original diagnostic evidence preserved; system_init restored to HEAD.",
+    "scope": "authentication through contract, ORM, projection, serialization and action completion; unmeasured chains not_run",
+    "next": "P0 batch external-ID/menu/target metadata reads with equivalence tests; preserve both route-authority safety passes.",
+    "correction": "Earlier empty params measured full-default scene path, not actual registry web startup; no login-causality claim.",
+    "web_startup_sql_count": 906,
+    "sql_attribution": {
+      "route_action_xmlid": 192,
+      "native_menu_path": 90,
+      "scene_normalizer": 72,
+      "scene_provider": 69
+    },
+    "evidence_web_profile": "artifacts/main-scheduled-ci-closeout-20261016/web-startup-profile.json",
+    "evidence_sql": "artifacts/main-scheduled-ci-closeout-20261016/web-startup-sql-owned.json",
+    "diagnostic_tests": "4 passed, scripts/verify/test_local_dev_runtime_performance.py",
+    "implementation_boundary": {
+      "layer": "P0",
+      "module": "smart_core",
+      "target": "delivery/menu_service.py",
+      "reason": "batch native metadata reads inside one authority build, not product policy or frontend semantics",
+      "blast_radius": "route action XML-ID resolution; both ACL passes retained",
+      "upgrade": "no schema/data change; fresh process required"
+    },
+    "menu_batch_result": {
+      "identity": "56f5096422d967d582c2b25ab9a4bfaa03173534 + dirty menu_service batching; hash bound in artifact",
+      "evidence": "artifacts/main-scheduled-ci-closeout-20261016/menu-batch-paired.json",
+      "pairs": 5,
+      "complete_data_equal": 5,
+      "previous_sql": 906,
+      "candidate_sql": 786,
+      "previous_median_ms": 495.86,
+      "candidate_median_ms": 387.01,
+      "limit": "local demo finance backend-only warm samples; not HTTP/browser or release acceptance",
+      "unit_tests": "4 metadata + 4 diagnostic passed",
+      "orm": "4 unchanged bundle-owned cases reused from original 5-pass run; relocated demo-owned case executed 1 test, 0 failures/errors (/tmp/sce-menu-batch-demo-contract.log)",
+      "review": "independent read-only review: P0 no blocker; demo test dependency defect closed with registered demo ORM 1 pass",
+      "next": "remaining native menu path and scene target queries; browser absolute budget still unproven",
+      "L1": "ci.local.iteration passed /tmp/sce-menu-batch-final-iteration.log; subsequent edits only record observed results"
+    },
+    "path_batch_result": {
+      "layer": "P0 smart_core delivery/menu_service.py",
+      "status": "targeted_validation_and_independent_review_passed",
+      "reason": "replace repeated native ref existence checks with one same-user batch; no ACL or policy change",
+      "tests": "6 metadata + 4 diagnostic pure cases pass; new bundle native path case1 pass; new demo finance registry equality/SQL case1 pass",
+      "evidence": [
+        "/tmp/sce-path-batch-orm.log",
+        "/tmp/sce-path-batch-demo.log"
+      ],
+      "limitations": "same demo finance principal, not cross-role or HTTP/browser acceptance",
+      "next": "scene target resolution duplicate ref existence queries; then affected browser absolute-budget measurement, no release claim",
+      "evidence_pair": "artifacts/main-scheduled-ci-closeout-20261016/path-batch-paired.json",
+      "pairs": 5,
+      "complete_data_equal": 5,
+      "previous_sql": 786,
+      "candidate_sql": 697,
+      "previous_median_ms": 378.65,
+      "candidate_median_ms": 361.87,
+      "review": "independent read-only no blocker; current-user identity and exception behavior preserved",
+      "L1": "ci.local.iteration /tmp/sce-path-batch-iteration.log passed; later edits evidence metadata only"
+    },
+    "scene_batch_boundary": {
+      "layer": "P0",
+      "module": "smart_core",
+      "target": "addons/smart_core/governance/scene_normalizer.py",
+      "reason": "batch native reference existence checks only; normalization/mismatch diagnostics unchanged",
+      "exclusions": "no frontend semantics, global cache, module upgrade or data repair",
+      "next": "targeted tests then equivalent full-registry measurements"
+    },
+    "scene_batch_result": {
+      "layer": "P0 smart_core governance/scene_normalizer.py",
+      "status": "targeted_validation_and_independent_review_passed",
+      "tests": "5 pure normalizer tests; demo finance actual full-response equivalence/SQL1 pass; bundle native reference/diagnostic1 pass",
+      "failed_diagnostic": "old TestSceneNormalizerTargetResolution target ran zero tests; not accepted; existing file is not imported by module tests/__init__.py",
+      "replacement": "registered bundle-owned case using own action/menu/XMLID fixtures, no demo or industry prerequisite",
+      "review_fix": "materialize generator input in helper; public resolve_targets consumes its returned sequence; generator/list/diagnostics equivalence test passes",
+      "reuse": "generator handling fix leaves actual list path unchanged; earlier list-path ORM results reused with explicit branch analysis",
+      "next": "establish governed served backend/frontend candidate identity for affected browser timing; do not assume isolated-shell measurements describe served runtime",
+      "paired_evidence": "artifacts/main-scheduled-ci-closeout-20261016/scene-batch-paired.json",
+      "pairs": 5,
+      "complete_data_equal": 5,
+      "previous_sql": 697,
+      "candidate_sql": 630,
+      "previous_median_ms": 401.33,
+      "candidate_median_ms": 346.45,
+      "L1": "passed /tmp/sce-scene-batch-iteration.log; subsequent edits record results only",
+      "review": "independent read-only confirms iterator regression closed, no remaining code blocker"
+    },
+    "browser_observation": {
+      "status": "scoped_observation_complete_not_acceptance",
+      "owner": "P4 local.dev runtime observation",
+      "runtime_change": "make local.dev.frontend + make local.dev.up SC_SOURCE_REVISION=56f5096422d967d582c2b25ab9a4bfaa03173534; explicit dirty scope",
+      "identity_before": "artifacts/main-scheduled-ci-closeout-20261016/browser-runtime-before.json",
+      "scope": "same sc-local-dev/sc_dev_demo volumes, no fixture reset/upgrade; loaded backend hashes and served index checked",
+      "entry": "make local.dev.runtime.performance.browser",
+      "test": "diagnostic unit suite5 passes including six wrong-runtime negatives",
+      "failure_classification": "initial tool assumed isolated-runner source path /mnt/extra-addons; corrected to configured /mnt/source-addons before browser launch; initial combined browser report failed only at stale company-selector after five completed login samples; corrected actual context indicator in company-only observation",
+      "limitations": "development build, local demo finance; not formal release baseline; alternate company not fabricated",
+      "logs": [
+        "/tmp/sce-runtime-browser-build.log",
+        "/tmp/sce-runtime-browser-up.log",
+        "/tmp/sce-runtime-browser-observation.log",
+        "/tmp/sce-runtime-browser-observation-2.log",
+        "/tmp/sce-runtime-browser-company.log",
+        "/tmp/sce-runtime-browser-identity.log"
+      ],
+      "login_samples_ms": [
+        1441,
+        1318,
+        1342,
+        1298,
+        1421
+      ],
+      "login_median_ms": 1342,
+      "login_boundary": "WorkspaceHome.ready; differs from CI shell-ready",
+      "company_switch": {
+        "status": "not_run",
+        "option_count": 1,
+        "reason": "no_assigned_alternative_company"
+      },
+      "identity_readback": "passed: same container/start/source hashes/index across login, company and identity observations; entry JS/CSS hashes match served files",
+      "review": "independent read-only no execution blocker; source mtime/start and entry-asset readback added; lazy chunks not fully inventoried",
+      "reuse": "Only diagnostic selector/identity reporting changed after login observations; product source, container and frontend index unchanged. Preserve original failed report; reuse five completed login samples without promoting report status.",
+      "runtime_current": "local.dev serves dirty candidate; rollback via registered local.dev.up in original source worktree, no database restore required",
+      "evidence": [
+        "artifacts/main-scheduled-ci-closeout-20261016/local-browser-performance.json",
+        "artifacts/main-scheduled-ci-closeout-20261016/local-browser-company-performance.json",
+        "artifacts/main-scheduled-ci-closeout-20261016/local-browser-identity-performance.json"
+      ],
+      "L1": "passed: make ci.local.iteration /tmp/sce-browser-performance-iteration.log; diff --check passed",
+      "candidate_validity": "Historical observation only after primitive recursion withdrawal. Served process has earlier code; source changed after startup so identity entry must refuse. No new runtime refresh or claim that old timings describe final candidate.",
+      "review_followup": "No S1/S2; S3 immediate promise rejection handler and unconditional report after best-effort resource cleanup implemented; browser/context creation now included in try/finally.",
+      "post_review_tests": "diagnostic5 + metadata6 passed; node syntax passed; make ci.local.iteration passed /tmp/sce-browser-performance-final-iteration.log"
+    },
+    "systemic_review": {
+      "status": "in_progress_publication_preparation_paused_by_owner",
+      "owner_direction": "Systematically diagnose actual slowness; SQL reduction alone is insufficient",
+      "final_contract_test": "5 actual ORM tests passed; /tmp/sce-performance-final-contract.log",
+      "current_profile": "artifacts/main-scheduled-ci-closeout-20261016/systemic-current-profile.json",
+      "first_profile": "artifacts/main-scheduled-ci-closeout-20261016/systemic-first-profile.json",
+      "facts": [
+        "Unprofiled first shell call 2011.65ms/3009 SQL; build_nav1251ms. This is rollback shell cache-generation state, NOT proof of real deployed cold-login latency.",
+        "Profiled first request total3555.51ms; app.menu.config generation1581.54ms, collect503, action summary873. Instrumentation overhead prevents direct latency comparison.",
+        "app_nav_config first loads all active menus then recursively searches children for each node; leaf head repeats action summary.",
+        "Warm profiled request716.84ms/630SQL; menu facts exports4 (visible3/authorized1), deepcopy80500; cumulative times overlap and must not be summed."
+      ],
+      "hypotheses": [
+        "Determine actual persisted menu cache absent/stale/force reason and live invalidation frequency before attributing repeated login slowness.",
+        "List preflight contract then data serial dependency; verify repeated contract requests on pagination/search with actual request trace.",
+        "Edit contract snapshot plus subsequent record read may overlap; verify field intersection and freshness/token responsibilities."
+      ],
+      "measurement_limits": [
+        "Old local browser total includes goto/fill/click automation, not just click-to-ready.",
+        "Playwright return tail about300ms is not proven rendering time.",
+        "Profile first does not clear shared caches or claim true cold conditions."
+      ],
+      "next": "Read-only menu cache trigger and caller analysis; add bounded full-chain request/real-render timing; measure list/search/edit before structural optimization or freeze.",
+      "L1": "passed /tmp/sce-systemic-diagnostic-iteration.log; six diagnostic tests passed"
+    },
+    "menu_cache_boundary": {
+      "Formal Product Layer": "P0",
+      "Layer Target": "app.menu.config native projection cache",
+      "Module": "smart_core",
+      "Standard vs User-Specific": "generic metadata freshness mechanism",
+      "Why Here": "native source cache must advance validation watermark even if projection unchanged",
+      "Why Not Elsewhere": "not frontend policy, industry defaults or ops repair",
+      "Blast Radius": "navigation regeneration only; unchanged hash/version/content required; newer metadata must still invalidate",
+      "upgrade": "no schema/data migration; fresh test process, runtime restart required for live use"
+    },
+    "cache_diagnosis": {
+      "stage": "56f50964 + dirty",
+      "source_readback": "company1/user zh_CN projection missing; one existing en_US projection observed (scope initially all web caches; do not infer company binding from that row)",
+      "evidence": "/tmp/sce-systemic-cache-dimensions.log",
+      "invalidated_claim": "Do not equate zh_CN rollback-shell first-call generation with browser language or recurring live request cost. Browser no language param; effective context still needs measured binding.",
+      "confirmed_defect": "hash-unchanged rebuild leaves last_generated unchanged; real ORM before-fix1 failed on unchanged2000 timestamp",
+      "before_log": "/tmp/sce-cache-watermark-before.log",
+      "fix": "capture conservative generation start; unchanged projection advances freshness without version/content change; metadata invalidation uses complete menu source scope",
+      "after_log": "/tmp/sce-cache-watermark-after.log",
+      "status": "scoped_tests_passed_systemic_investigation_open",
+      "diagnostic_failure": "initial cache tool used Environment.with_context (recordset-only API); fixed by api.Environment with explicit same principal/company and language; no cache writes",
+      "after_result": "2 actual ORM passed /tmp/sce-cache-watermark-source-domain.log",
+      "review": "confirmed defect; capture watermark before source reads, not at generation end; no complete concurrency-safety claim",
+      "remaining": "full source versioning/deletions/late-commit concurrency still not proven; browser effective company/lang binding and list/edit latency require observation",
+      "additional_defect": "generation reads full menu metadata, freshness check used native visibility-filtered search; actionless new menu timestamp was newer but change undetected. Now full_list=True/active_test=False for sudo source metadata search only.",
+      "failed_boundary_logs": [
+        "/tmp/sce-cache-watermark-boundaries.log",
+        "/tmp/sce-cache-watermark-during-edit.log"
+      ],
+      "L1": "passed /tmp/sce-cache-source-final-iteration.log"
+    },
+    "http_chain": {
+      "status": "diagnostic_observed_not_acceptance",
+      "runtime": "existing sc-local-dev/sc_dev_demo; local.dev.up then explicit local.dev.restart since up did not reload dirty source; /tmp/sce-chain-runtime-restart.log",
+      "scope": "P4 metadata-only request observation; query/open/enter edit only, no save; no fixture/upgrade/new credentials",
+      "evidence": [
+        "artifacts/main-scheduled-ci-closeout-20261016/local-browser-chain-initial-selector-failure.json",
+        "artifacts/main-scheduled-ci-closeout-20261016/local-browser-chain-before-stage-profile.json",
+        "artifacts/main-scheduled-ci-closeout-20261016/local-browser-record-before-stage-profile.json"
+      ],
+      "findings": {
+        "home": "system.init followed by my.work.summary; initial observed summary492ms server, subsequent164ms. Old three-intent collector omitted it.",
+        "list": "3813ms automation; ui.contract.v2 HTTP2889.533ms/server2615ms/106992bytes; preferences1853.466 and836.034ms overlap other requests, MUST NOT sum. api.data180.58ms.",
+        "query": "599ms automation; full ui.contract.v2 again180.443ms followed by data158.41ms.",
+        "record": "3583ms automation; ui.contract.v2 2716.993ms/1047844bytes; record read96.767ms, attachment contract414.634ms; contract mainData94fields vs read76, overlap46,missing30 inclwrite_date.",
+        "edit": "not_run: no enabled unique declared edit action on selected record"
+      },
+      "source_causes": [
+        "user_view_preference._resolve_list_profile_contract calls UiContractHandler to obtain list_profile; fallback generate_contract.",
+        "ActionView column preference watch depends on action/model/options; options arrival can trigger another request; exact preference scope values not yet captured, so two requests not proven identical.",
+        "List preflight resolves contract before data request, including query path.",
+        "Record fallback read is necessary for missing fields; shared46 fields alone do not authorize dropping refresh orwrite_date."
+      ],
+      "measurement_limits": [
+        "total_automation_ms includes Playwright overhead, not product SLO",
+        "first attempt collector parsed concurrently; changed to parse after action completion in subsequent artifacts",
+        "login user.lang=zh_CN is principal profile, NOT proof of effective Odoo env.lang; company1 runtime context observed",
+        "initial wrong link selector failed before list; corrected declared canonical menu and ok-state, preserve failed artifact",
+        "record-only new scope reuses list evidence; setup login/navigation not measured as new list evidence"
+      ],
+      "review": "S2 record/edit failure propagation fixed; S3 parse timing/field-name whitelist fixed. seven diagnostic unit cases pass; L1 pending",
+      "L1": "passed /tmp/sce-http-chain-iteration.log; diff --check passed"
+    },
+    "cache_copy_optimization": {
+      "status": "implemented_targeted_checks_passed_systemic_performance_open",
+      "layer": "P0",
+      "target": "smart_core projection cache snapshot ownership",
+      "reason": "Measured list post_cache_store 246ms; handler already deep-copies independent components before cache repeats full copy. Remove only duplicate copy, preserve isolation, source token and principal scope. No product semantics in frontend or P4.",
+      "validation": "L1 syntax/iteration, L2 cache isolation and handler wiring tests, then affected local.dev list observation; no schema upgrade/fixture/full matrix needed.",
+      "tests": {
+        "cache": "12 passed /tmp/sce-contract-copy-final-cache-tests.log",
+        "v2_boundaries": "142 passed /tmp/sce-contract-copy-boundaries.log; unchanged handler call after lock-only correction",
+        "diagnostic": "7 passed /tmp/sce-contract-copy-final-diagnostic-tests.log",
+        "L1": "passed /tmp/sce-contract-copy-final-iteration.log",
+        "negative": "in-memory injection of duplicate deepcopy rejected by real handler call test (1 expected failure), no product file mutation"
+      },
+      "review": "local_env_review: ownership and token isolation intact; adopted original-lock ordering and added both changed backend files to runtime source binding",
+      "runtime": "local.dev.restart /tmp/sce-contract-copy-final-runtime-restart.log; no upgrade/fixture/data reset",
+      "evidence": "artifacts/main-scheduled-ci-closeout-20261016/local-browser-chain-before-preference-scheduling.json",
+      "observed": "cache miss: source_projection1984ms, post_cache_store51ms, full contract HTTP2615.259ms; preferences1763.84/912.754ms; list automation3503ms; hot query contract187.218ms",
+      "limits": "Previous post_cache_store246ms was persisted-cache path; not controlled before/after; no overall speedup or SLO claim. Earlier new-copy probe lacks changed file hashes and is diagnostic-invalid for candidate binding, preserved as local-browser-chain-copy-incomplete-source-binding.json.",
+      "impact": "Only final list assembled cache snapshot publication changed; list/query observed. Record-specific path does not enter this branch, prior form stage evidence retained. No whole browser matrix.",
+      "read_path_handoff_followup": "The write-path snapshot publication keeps its producer copy. The read-path hand-off (the redundant copies after get()) is closed in source_handoff_ownership_closure."
+    },
+    "contract_stage_profile": {
+      "status": "diagnostic_only",
+      "evidence": [
+        "artifacts/main-scheduled-ci-closeout-20261016/local-browser-chain-stage-profile-before-copy.json",
+        "artifacts/main-scheduled-ci-closeout-20261016/local-browser-record-stage-profile-before-copy.json"
+      ],
+      "list": "two identical list_columns scopes action878/payment.request, HTTP1548.325/1087.269ms; contract persisted671.122ms, post_cache_store246ms; hot query329.703ms",
+      "record": "contract1652.908ms; relation_base_map351ms inside business_category_policy410ms; source_assembly274ms; record total2421ms automation",
+      "limits": "warm cache observations, NOT optimization comparison; stages nested, do not sum; edit not_run"
+    },
+    "preference_scheduling": {
+      "status": "implemented_scoped_browser_observed_not_overall_acceptance",
+      "layer": "P0 generic frontend contract consumer",
+      "reason": "Separate transport from contract application, initial parallel fetch then first-ready application; preserve backend policy refresh and scoped save identity. No schema changes, no industry semantics or server authority bypass.",
+      "validation": "L1, nonzero scheduling/race tests, typecheck, then affected local.dev list build/chain; no schema/fixture/record matrix.",
+      "checks": {
+        "unit": "15 passed /tmp/sce-preference-unit-final.log",
+        "L1": "passed /tmp/sce-preference-active-iteration.log",
+        "typecheck": "passed /tmp/sce-preference-active-typecheck.log",
+        "build": "passed /tmp/sce-preference-active-build.log",
+        "browser": "list and query observed; exact list_columns GET count=1, all list requests ok, /tmp/sce-preference-browser.log"
+      },
+      "independent_review": "local_env_review: pending-write barrier, scoped queue identity, context epoch and inactive KeepAlive gates reviewed; no remaining scoped blocker.",
+      "impact": "ActionView preference lifecycle only: initial GET in parallel, first contract arrival applies without GET; changed policy/columns/context refetch. Scope/epoch transitions invalidate obsolete responses. Writes stay serialized, captured scope, pre-send authority epoch check, reads wait pending writes. No schema/backend authority or policy default changes.",
+      "affected_keys": [
+        "local.dev finance initial payment-request list preference count",
+        "list query still usable"
+      ],
+      "excluded": "Record form/startup backend unchanged; prior evidence reused, no fixture reset/module upgrade/backend restart/full matrix.",
+      "evidence": [
+        "artifacts/main-scheduled-ci-closeout-20261016/local-browser-chain-before-full-http-timing.json",
+        "artifacts/main-scheduled-ci-closeout-20261016/preference-scheduling-request-count.json"
+      ],
+      "observed": "list automation1454ms; preference1407.938ms; persisted contract640.606ms; data73.545ms; query629ms. Cache state differs from prior miss run, no controlled overall latency improvement claim.",
+      "limitations": "No browser preference writes performed; save race/epoch boundaries covered by deferred unit tests and read-only independent review."
+    },
+    "preference_backend_profile": {
+      "status": "root_cause_attributed",
+      "layer": "P4 diagnostic via existing local.dev authority",
+      "command": "make local.dev.runtime.performance.observe PRODUCT_PERFORMANCE_MODE=preference_profile PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID=878",
+      "stage_identity": "HEAD 56f5096422d967d582c2b25ab9a4bfaa03173534 + current dirty scope; preference handler hash bound in report; actor finance/company1/zh_CN, sc_dev_demo",
+      "tests": "9 diagnostic tests pass /tmp/sce-preference-profile-unit.log; L1 /tmp/sce-preference-profile-iteration.log passed before final failure-path-only test addition; product/tool inputs unchanged afterward, additional test passed",
+      "evidence": "artifacts/main-scheduled-ci-closeout-20261016/preference-backend-profile.json",
+      "samples": "profiled first3121.4ms/1117SQL; second1178.8ms/218SQL; not HTTP SLO or true cold baseline",
+      "attribution": "Each preference read calls PageAssembler, 27 get_contract_api/build_final_contract calls and24 relation search-dialog builds; second relation injection463.82ms, relation search dialogs302.88ms nested, source-level full handler1167.84ms. Do not sum nested stats.",
+      "safety": "2 declared action reads per assigned company; current-cursor commit refused and rollback in finally; no preference values/query args persisted; no permanent DB/schema/fixture changes",
+      "next": "P0 introduce narrow preference profile projection through existing owner pipeline, prove preference and metadata policy equivalence before bypassing unrelated relation-dialog assembly; do not disable ACL or globally trim full page contracts."
+    },
+    "preference_projection": {
+      "status": "scoped_checks_passed_not_performance_closed",
+      "layer": "P0",
+      "target": "smart_core internal list preference projection",
+      "why": "List preference consumes profile only; relation entry UI assembly measured27 views/24 dialogs. Keep full main model authority and finalize pipeline, suppress unused relation UI only in Python-internal projection, not HTTP payload. No industry/customer rule, front-end semantic fallback or new cache.",
+      "validation": "L1 focused wiring/contract tests -> actual full preference envelope equality paired -> local.dev restart and affected browser; no module schema upgrade or fixture.",
+      "review_correction": "Entire relation injection omission rejected before runtime: relation can_read drives access policy. Retain all relation authority and inline facts, omit only unused dialog construction; hierarchy_levels explicitly retain dialog dependencies.",
+      "paired_evidence": "artifacts/main-scheduled-ci-closeout-20261016/preference-projection-paired.json",
+      "paired_result": "6/6 complete preference envelopes identical; warmed previous1060–1193ms/218SQL vs candidate741–827ms/76SQL; cProfile observations only, not HTTP SLO",
+      "tests": "relation17,uiID8,userpref13,v2 142,delivery2,orchestration23 passed; governed actual ORM dispatcher4 passed",
+      "diagnostic_failure": "host dispatcher ORM test failed missing odoo; corrected via local.dev.test4/4, not product failure"
+    },
+    "full_intent_chain": {
+      "status": "http_and_router_attributed_policy_dependency_open",
+      "layer": "P0 smart_core generic HTTP execution observation + P4 existing local.dev collector",
+      "reason": "Handler-only profiles omit auth/routing/serialization; user requires complete request-path attribution. No business semantics/permission changes.",
+      "validation": "L1 + isolated execution of real controller timing path, then existing local.dev restart/browser affected list. No schema/fixture/full matrix.",
+      "boundaries": "Measure nonoverlapping controller phases; transport/worker queue remains separate unmeasured residual, never call it network latency without proof.",
+      "unit": "11 passed /tmp/sce-full-chain-unit.log",
+      "review": "Independent B confirms handler-only profiles exclude auth/router/serialization; elapsed_ms setdefault may preserve handler timing; generic router repeated environment/check preparation cost not yet measured.",
+      "measurement": "normal JSON path Server-Timing; six nonoverlapping segments; no timing claim for errors/304/raw responses. HTTP collector includes timing metadata, excludes bodies/credentials.",
+      "stage_identity": "56f5096422d967d582c2b25ab9a4bfaa03173534 + explicit dirty scope",
+      "checks": {
+        "diagnostic": "12 passed /tmp/sce-full-chain-router-unit.log",
+        "router_envelope": "9 passed /tmp/sce-full-chain-router-envelope.log",
+        "controller_permission": "2 passed /tmp/sce-full-chain-controller-permission.log",
+        "L1": "PASS /tmp/sce-full-chain-router-iteration.log",
+        "runtime": "local.dev.restart /tmp/sce-full-chain-router-restart.log; no schema/fixture/data reset",
+        "browser": "affected list/query PASS /tmp/sce-full-chain-router-browser.log"
+      },
+      "evidence": [
+        "artifacts/main-scheduled-ci-closeout-20261016/local-browser-chain-controller-timing.json",
+        "artifacts/main-scheduled-ci-closeout-20261016/local-browser-chain-before-stored-preference.json"
+      ],
+      "observed": {
+        "preference_http_ms": 1186.186,
+        "context_auth_ms": 22.552,
+        "permission_ms": 2.147,
+        "dispatch_ms": 1133.938,
+        "handler_run_ms": 1133.804,
+        "resolve_ms": 0.005,
+        "environment_ms": 0.043,
+        "handler_prepare_ms": 0.019,
+        "json_response_ms": 0.15,
+        "contract_permission_first_ms": 215.173,
+        "contract_permission_query_ms": 2.312
+      },
+      "conclusion": "Measured same-database preference bottleneck is handler execution, not generic intent selection/environment setup. Handler invokes page contract for policy, resulting in overassembly. Normal controller timings cover auth through JSON; upstream/downstream residual not causally attributed.",
+      "open": [
+        "Extract minimal authoritative column/preference policy projection preserving action/view selection, field ACL, low-code and finalizer overrides; no second policy authority.",
+        "Instrument swallowed-exception fallback branch before asserting it absent; preserve errors instead of silently allowing policy gaps where contract requires fail-closed.",
+        "RESOLVED (R4): the ~215 ms first contract-permission segment is the one-time first build of the published route authority plus process-first module/ORM cold, not a per-request cost; warm per-request gate is ~1.6 ms (menu_id) and ~0.4 ms (no menu_id) with no duplicate authority build. See backend_runtime_investigation.permission_gate_attribution.",
+        "Token auth code opens temporary cursor for token_version then rereads user on request cursor; assess consistency purpose before optimization.",
+        "Record/edit and capacity not accepted; no global SLO or release completion.",
+        "P0 SECURITY (R4-discovered, pre-existing): check_intent_permission skips ir.actions.act_window.groups_id when the request omits action_type (ir.actions.actions has no groups_id). Unguarded gate branch; not currently reachable in this sample (excluded_but_published=[]). Needs its own authorization and counterexample set. See backend_runtime_investigation.permission_gate_attribution.open.p0_action_groups_not_enforced_for_ir_actions_actions.",
+        "RESOLVED (R5): the warm 176.984 -> 315.920 ms contract anomaly is a CPython generation-2 collection stop (~100-115 ms) that attaches to whichever stage is allocating when the threshold is crossed; it disappears in the paired gc-disabled control on the identical request (max extra 6.7 ms). Cache semantics, SQL count, copy count and the permission gate are unchanged. See backend_runtime_investigation.r5_unified_observation.",
+        "OPEN (R5): the reproducible ~100-115 ms gc stop on the warm contract path is registered as an independent runtime-performance item (no gc tuning accepted yet); the miss-path double copy (ui_contract_v2.py:751 plus put()) stays registered without an API change."
+      ],
+      "independent_review": "local_env_review no determined blocker in controller/router timing; nested dispatch_* not additive with dispatch, early/error/304 paths unmeasured; cross-db cursor finalization in dispatch residual."
+    },
+    "policy_architecture": {
+      "status": "owner_boundary_recorded_implementation_open",
+      "Formal Product Layer": "P0 mechanism + P1 declared industry facts",
+      "Layer Target": "smart_core policy projection; smart_construction_core explicit view-target governance",
+      "Module": "smart_core / smart_construction_core",
+      "Standard vs User-Specific": "platform mechanism and industry baseline; no customer-specific rule",
+      "Why Here": "Policy facts must be independently reusable before page materialization; rendering cannot own authority",
+      "Why Not Elsewhere": "Not frontend inference, ops policy or a new runtime configuration authority",
+      "Blast Radius": "preference GET/SET, list/form projection, project/partner finalize hooks and relation block/degrade; validate policy and access equivalence across these exact cases",
+      "confirmed_couplings": [
+        "preference._resolve_list_profile_contract invokes full UI handler",
+        "core field policy sourced from views.form.form_profile",
+        "relation overrides extracted from rendered form nodes",
+        "P1 project/partner finalize routing branches on form presence",
+        "v2 also reads preference order while ActionView independently GETs and reapplies preference"
+      ],
+      "decision": "Separate source facts, effective policy projection, preference values/effective preference and page materialization. Preserve source authority and legal policy order. No silent fallback to empty policy; no fake form sentinel; no new cross-principal cache.",
+      "execution_order": [
+        {
+          "id": "AP1",
+          "owner": "P0/P1",
+          "deliverable": "Define source-resolved view family vs requested surface explicitly; extract core_fields/relation declarations from native and published config facts into reusable policy inputs; page and preference use identical resolver",
+          "proof": "project/partner/ordinary list; explicit view and role-denied relation negative cases"
+        },
+        {
+          "id": "AP2",
+          "owner": "P0",
+          "deliverable": "Pure shared policy evaluation over resolved facts. GET/SET consume minimal policy projection and current-user preference repository; no nested UI handler/full assembler",
+          "proof": "nonempty saved preferences, stale columns, forbidden columns, locked columns, policy change, user/company switches, dynamic columns, hard failures"
+        },
+        {
+          "id": "AP3",
+          "owner": "P0 generic consumer",
+          "deliverable": "Resolve duplicate v2/GET/frontend preference application using one declared effective preference source; retain save race/epoch barriers; no frontend policy defaults",
+          "proof": "initial load/edit/save/reset/revisit plus authorization context and cache freshness"
+        },
+        {
+          "id": "AP4",
+          "owner": "P4",
+          "deliverable": "Alternate same-identity measured requests, full policy/permission/output equivalence; HTTP phase/SQL/query count evidence",
+          "proof": "no page-assembler calls for preference reads; no semantics regression; report observed latency not count-only gain"
+        }
+      ]
+    },
+    "stored_preference_projection": {
+      "status": "implemented_scoped_checks_and_browser_passed",
+      "layer": "P0 smart_core preference transport + generic frontend declared-policy consumer",
+      "decision": "Explicit stored projection separates user choice from effective policy; no page generation for stored reads. Existing effective GET retained for compatibility; SET still authorized server policy. Frontend consumes already-required current page policy, never assumes permission from stored value.",
+      "scope": "ActionView list GET only, other callers unchanged",
+      "validation": "backend reject full-profile call on stored path, current-user/no-sudo, invalid mode, frontend unknown/locked columns and missing policy; existing save-race tests; actual governed HTTP evidence",
+      "exclusions": "Not claiming old effective GET/SET or all form-policy coupling fixed; no cache, schema upgrade, permissions relaxation",
+      "identity": "56f5096422d967d582c2b25ab9a4bfaa03173534 + dirty owned files; not frozen",
+      "checks": {
+        "backend": "16 passed /tmp/sce-stored-preference-backend-final.log",
+        "shape": "9 passed /tmp/sce-stored-preference-final-tests.log",
+        "preference_runtime": "19 passed same final-tests log",
+        "diagnostic": "12 passed /tmp/sce-stored-preference-diagnostic-final.log",
+        "typecheck": "PASS /tmp/sce-stored-preference-final-types.log",
+        "L1": "PASS /tmp/sce-stored-preference-final-iteration.log; subsequent added backend equivalence test passed; no product change after L1",
+        "build": "PASS /tmp/sce-stored-preference-final-build.log",
+        "browser": "local.dev.runtime.performance.browser chain observed; list/query failure=null; record not_run",
+        "contract_basis": "15 tests + guard PASS /tmp/sce-stored-preference-basis-final.log"
+      },
+      "evidence": "artifacts/main-scheduled-ci-closeout-20261016/local-browser-chain-before-single-assembly.json",
+      "previous_evidence": "artifacts/main-scheduled-ci-closeout-20261016/local-browser-chain-before-stored-preference.json",
+      "observed": {
+        "stored_http_ms": 43.469,
+        "stored_handler_ms": 11.677,
+        "previous_effective_http_ms": 1186.186,
+        "previous_effective_handler_ms": 1133.804,
+        "current_contract_http_ms": 2095.412,
+        "stored_get_count": 1
+      },
+      "limits": "Single corresponding local-role observation, not controlled distributions/SLO; read-only browser, preference writes covered by deferred race tests, not browser save. Full contract still slow. No mainline/release/delivery completion.",
+      "review": "B local_env_review: no known scoped blocker; independently read exact reports. S2 hard-hidden reenable and empty-set fallback both fixed; multiple occurrence conflicts fail closed.",
+      "failures_and_recovery": [
+        "Shape fixture omitted policy; added complete declaration and separate missing-policy negative, no assertion relaxation.",
+        "Typecheck found setError missing fallback arg; corrected exact API.",
+        "Actual shape negative initially put componentConfig facts in primaryDataSource; fixed fixture to real widget carrier.",
+        "Diagnostic expected request shape missing newly explicit projection field; updated expectation,12 pass."
+      ],
+      "boundaries": "Stored preference is not authority for visible fields. Explicit response markers required. Current page policy booleans required; inaccessible/unknown columns excluded, optional hidden remains adjustable. Explicit authorized empty collection cannot revive fallback columns; conflicting occurrences halt. Existing effective GET and SET unmodified compatibility paths."
+    },
+    "single_source_assembly": {
+      "stage_identity": "56f50964 + explicit dirty batch scope; not frozen",
+      "boundary": {
+        "Formal Product Layer": "P0; P4 diagnostic only",
+        "Layer Target": "smart_core UiContractV2 source resolution",
+        "Module": "smart_core",
+        "Standard vs User-Specific": "platform mechanism for all page entries",
+        "Why Here": "V2 must dereference explicit menu references, not reassemble completed action/model pages",
+        "Why Not Elsewhere": "No industry/model exception, no frontend semantics, no ACL or lifecycle bypass",
+        "Blast Radius": "non-native ui.contract V2 sources; action/model/view full pages preserved; menu references still resolved; source cache namespace invalidated"
+      },
+      "validation_plan": {
+        "L1": "diagnostic pure tests and ci.local.iteration",
+        "L2": "V2 boundaries including single assembly negative and menu view binding",
+        "L3": "existing local.dev restart, no schema changes/upgrade needed",
+        "L4": "only existing local demo chain action878 impacted; no full matrix",
+        "L5": "not run: dirty iteration, performance work remains"
+      },
+      "profile_before": "/tmp/sce-contract-profile.log",
+      "profile_after": "/tmp/sce-contract-single-assembly-profile.log",
+      "observed": {
+        "first_query_count_before": 1374,
+        "first_query_count_after": 1163,
+        "page_assembly_calls_before": 2,
+        "page_assembly_calls_after": 1,
+        "relation_dialog_calls_before": 48,
+        "relation_dialog_calls_after": 24
+      },
+      "limitations": [
+        "Single before/after observation, not p95 or capacity evidence",
+        "Hot request rose 176.984->315.920ms; investigate repeat samples, do not claim no regression",
+        "Remaining 24 dialogs and 1163 profiled SQLs not justified as necessary yet",
+        "Record journey not executed; no blanket cross-role/page acceptance"
+      ],
+      "review": "B-line final scoped review no blocker. S2 explicit view_id first-dispatch omission and scene/menu provenance omission fixed, with tests. Not overall acceptance.",
+      "status": "scoped_fix_verified; whole platform performance remains open",
+      "validation": {
+        "L1": "ci.local.iteration PASS dirty; diagnostic14 tests; diff check PASS",
+        "L2": "V2 boundaries145; source id boundaries9; real Odoo explicit-view accept/reject2 passed",
+        "mutation": "old repeated assembly injected in-memory; new boundary test rejected it, no on-disk mutation",
+        "L3": "registered local.dev restarted after final code; no schema/fixture upgrade",
+        "L4": "chain login/list/query observed with failure=null; record not_run no_visible_record_link; acceptance_pass=false",
+        "L5": "not_run: owner requests stop and handoff; no freeze/Quick/commit/publish/remote deploy"
+      },
+      "http_report": "artifacts/main-scheduled-ci-closeout-20261016/local-browser-chain-performance.json",
+      "http_before": "artifacts/main-scheduled-ci-closeout-20261016/local-browser-chain-before-single-assembly.json",
+      "http_observed_ms": {
+        "contract_first_before": 2095.412,
+        "contract_first_after": 1553.605,
+        "preference_stored_after": 45.596,
+        "contract_hot_before": 176.984,
+        "contract_hot_after": 315.92,
+        "source_projection_after": 1157,
+        "permission_first_after": 148.869
+      },
+      "evidence_logs": [
+        "artifacts/main-scheduled-ci-closeout-20261016/sce-contract-profile.log",
+        "artifacts/main-scheduled-ci-closeout-20261016/sce-contract-single-assembly-profile.log",
+        "artifacts/main-scheduled-ci-closeout-20261016/sce-contract-profile-tests.log",
+        "artifacts/main-scheduled-ci-closeout-20261016/sce-contract-single-assembly-tests.log",
+        "artifacts/main-scheduled-ci-closeout-20261016/sce-contract-action-view-tests.log",
+        "artifacts/main-scheduled-ci-closeout-20261016/sce-contract-native-view-orm.log",
+        "artifacts/main-scheduled-ci-closeout-20261016/sce-contract-single-assembly-final2-iteration.log",
+        "artifacts/main-scheduled-ci-closeout-20261016/sce-contract-single-assembly-mutation.log",
+        "artifacts/main-scheduled-ci-closeout-20261016/sce-contract-single-assembly-browser.log",
+        "artifacts/main-scheduled-ci-closeout-20261016/sce-contract-single-assembly-final2-restart.log"
+      ],
+      "relation_source_attribution": {
+        "status": "diagnostic_attribution_complete_r2_boundary_implementation_open",
+        "owner": "P4 diagnostic over the existing P0 assembler path; no product file changed",
+        "method": "bounded wrapper in scripts/verify/local_dev_runtime_performance.py mode=relation_attribution over PageAssembler._inject_relation_entry_contract/_build_relation_entry_for_field/_build_relation_search_dialog_contract; commit forbidden, non-sudo demo principal, cursor rolled back",
+        "request": {
+          "action_id": 878,
+          "model": "payment.request",
+          "op": "action_open",
+          "principal": "smart_construction_demo.user_demo_role_finance",
+          "database": "sc_dev_demo"
+        },
+        "observed": {
+          "process_first_sample_ms": 3921.71,
+          "process_first_sql": 1163,
+          "warm_sample_ms": 523.62,
+          "warm_sql": 22,
+          "main_view_field_count": 74,
+          "relation_field_count": 31,
+          "distinct_relation_targets": 24,
+          "search_dialog_calls": 24,
+          "hierarchy_dialog_field_count": 0,
+          "include_relation_search_dialogs_default": true,
+          "relation_field_sql_total": 438,
+          "dialog_sql_total": 375,
+          "dialog_elapsed_ms_total": 1168.92,
+          "relation_targets_reachable_from_page_surface": 17,
+          "targets_only_from_model_wide_field_expansion": 7,
+          "sql_from_fields_in_main_view": 255,
+          "sql_from_fields_not_in_main_view": 183,
+          "dialog_outlier": "res.currency dialog 16 SQL / 548.73ms, reproduced at 538.45ms in a second independent process"
+        },
+        "expansion_only_targets": [
+          "mail.activity",
+          "mail.activity.type",
+          "mail.followers",
+          "mail.message",
+          "rating.rating",
+          "res.users",
+          "tier.review"
+        ],
+        "classification": "Search dialogs are built for every relation field of the model regardless of the requested surface: 17 relation targets are reachable from the current action878 page (18 of 31 relation fields appear in the main view) while 7 targets (mail chatter, rating, tier.review and the res.users audit/activity fields) are reachable only through model-wide field expansion. No hierarchy-policy dialog dependency exists on this page.",
+        "boundary_note": "Attribution only. No field is deleted and no empty dialog is substituted: on-demand materialization needs a declared backend requirement and a governed request protocol (R2), and a field must never be dropped only because the list does not render it.",
+        "evidence": [
+          "artifacts/main-scheduled-ci-closeout-20261016/r1-relation-dependency-set.json",
+          "artifacts/main-scheduled-ci-closeout-20261016/r1-relation-attribution.json",
+          "artifacts/main-scheduled-ci-closeout-20261016/sce-r1-relation-attribution.log",
+          "artifacts/main-scheduled-ci-closeout-20261016/sce-r1-relation-attribution-b.log",
+          "artifacts/main-scheduled-ci-closeout-20261016/sce-r1-iteration.log"
+        ],
+        "validation": {
+          "L1": "make ci.local.iteration PASS dirty (coverage=L1_only, receipt=none)",
+          "diagnostic": "15 passed: python3 -m unittest scripts.verify.test_local_dev_runtime_performance",
+          "diff_check": "git diff --check PASS",
+          "reproducibility": "two independent odoo shell processes: dialog_count 24 and dialog_sql 375 identical; sample0 3921.71/3865.75ms"
+        },
+        "limitations": [
+          "local demo backend observation in one process; not HTTP, browser, SLO or capacity evidence",
+          "nested stages: the relation-field total contains the dialog total; do not sum",
+          "warm-sample response digest differs from the process-first sample; volatile envelope identity not isolated",
+          "single action878 finance list page; no other page, role or company claim"
+        ],
+        "next": "R2 fact/policy/materialization boundary consumes this dependency set; do not weaken ACL, hierarchy policy or relation permission to shrink the set"
+      }
+    },
+    "relation_demand_boundary": {
+      "status": "R2 scoped boundary verified (declaration -> materialization -> counterexamples -> benefit) and the persisted source-cache identity is now closed (R2 runs before the source write; the source token follows code identity via ctime; PRE/POST counterexample). R2 verdict pending owner reconciliation of the consolidated evidence; whole platform performance remains open.",
+      "owner": "P0 smart_core PageAssembler relation demand declaration/materialization; P4 diagnostic + local.dev wrapper extension only",
+      "boundary": {
+        "Formal Product Layer": "P0 platform kernel",
+        "Layer Target": "smart_core app_config_engine.services.assemblers.page_assembler relation_entry materialization",
+        "Module": "smart_core",
+        "Standard vs User-Specific": "platform mechanism for every page entry; no model special-case",
+        "Why Here": "the assembler is the single declaration owner of relation permission/navigation/hierarchy/search-dialog facts",
+        "Why Not Elsewhere": "no frontend self-declared set, no model special-case, no ACL/hierarchy relaxation, no empty dialog substitute",
+        "Blast Radius": "relation_entry.search_dialog presence for relation fields not referenced by the resolved view, explicit override or hierarchy policy; permission/navigation/hierarchy facts preserved; page contract interface unchanged"
+      },
+      "step1_currency_attribution": {
+        "conclusion": "the ~540ms res.currency dialog is not a per-request cost: it is the process-first Odoo code-translation load, and it appears for any first native view read in that process",
+        "cold_chain": [
+          "dialog total 648.71ms -> view_read 625.09ms -> res_currency._get_view 550ms -> translate._read_code_translations_file 545ms -> polib.pofile 491ms",
+          "same first-load cost observed for res.partner and res.users in the same process; after warmup the same dialogs are 6-17ms"
+        ],
+        "warm_stage_sample_ms": {
+          "view_generate": 670,
+          "view_read": 541,
+          "contract_acl_governance": 368,
+          "field_parse": 133
+        },
+        "boundary": "stages nest and must not be summed; R1's 7 expansion-only targets are not deleted on this basis; this benefit is not attributed to on-demand materialization"
+      },
+      "declaration": {
+        "stage_semantics": {
+          "permission": "target ACL/record rule/delete policy/write facts; always demanded",
+          "navigation": "declared action/menu/create_mode/can_open; always demanded",
+          "hierarchy_fact": "dialog read_fields/order required by the level policy",
+          "search_dialog": "popup content; only for relation fields referenced by the resolved view, an explicit override or the hierarchy policy"
+        },
+        "carrier": "RELATION_DEMAND_STAGES + PageAssembler._relation_demand_declaration (+ _collect_view_field_names)",
+        "stages": [
+          "permission",
+          "navigation",
+          "hierarchy_fact",
+          "search_dialog"
+        ],
+        "sources": [
+          "resolved_view_field",
+          "explicit_view_override",
+          "hierarchy_policy",
+          "model_field_expansion"
+        ],
+        "note": "declaration is derived from already-resolved views/published config/policy, never from a model special-case; stage_timings gained relation_entry_overrides and relation_demand_declaration"
+      },
+      "materialization": {
+        "rule": "include_search_dialog = (field in hierarchy_dialog_fields) or (include_relation_search_dialogs and field in dialog_required_fields); the dialog is built and published only when include_search_dialog and can_read",
+        "no_empty_structure": "an unreadable target publishes no search_dialog key at all (not an empty dict); the frontend fail-closed path (ContractGapError / canRead gate) is unchanged",
+        "interface": "the relation_entry interface and every other entitlement field (can_read/can_create/can_open/create_mode/default_vals/default_from_fields/inline/reason_code/delete_policy/options_limit/page_size) are unchanged"
+      },
+      "three_way_comparison": {
+        "method": "PRE-CHANGE and POST-CHANGE runs of the same in-process probe; the reconstruction flips only the product-side condition inside the diagnostic wrapper, so the recorded difference is the real one",
+        "before": {
+          "source": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-demand-before.log",
+          "dialog_build_count": 24,
+          "sql_count": 1163,
+          "elapsed_ms": 2006.39
+        },
+        "after": {
+          "source": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-demand-after.log",
+          "dialog_build_count": 17,
+          "sql_count": 1041,
+          "elapsed_ms": 1845.68
+        },
+        "baseline_reconstructed": {
+          "source": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-demand-baseline-reconstructed.log",
+          "baseline_reconstruction": true,
+          "dialog_build_count": 24,
+          "sql_count": 1163,
+          "elapsed_ms": 2008.92
+        },
+        "equality_proof": "before and reconstructed share relation_base_sha256 95b0de6b..., relation_entry_sha256 93c1f8db... and search_dialog_sha256 e9daa7b7..., so the reconstruction reproduces the pre-change pipeline faithfully rather than over-building",
+        "authoritative_relation_surface": "after vs reconstructed: relation field set 31 == 31; relation_base_surface equal; non-dialog relation entry diff 0; dialog_present_fields 18 (after) vs 31 (reconstructed), baseline-only 13, after-only 0; the 18 common dialog payloads are identical; declarations equal with capability_counts {hierarchy_fact:0, navigation:31, permission:31, search_dialog:18}",
+        "equivalence_clause": "dialog_present_fields == relation_fields_in_view == dialog_required_fields (18)",
+        "removed_fields": [
+          "activity_ids",
+          "activity_type_id",
+          "activity_user_id",
+          "create_uid",
+          "message_follower_ids",
+          "message_ids",
+          "message_partner_ids",
+          "rating_ids",
+          "review_ids",
+          "reviewer_ids",
+          "settlement_currency_id",
+          "website_message_ids",
+          "write_uid"
+        ],
+        "removed_targets": [
+          "mail.activity",
+          "mail.activity.type",
+          "mail.followers",
+          "mail.message",
+          "rating.rating",
+          "res.users",
+          "tier.review"
+        ],
+        "retained_targets_note": "res.currency and res.partner keep dialogs because other fields of those targets stay in the resolved view",
+        "volatile_identity": "only registered request identity is excluded from the digest (_VOLATILE_ENVELOPE_KEYS: requestId/traceId/traceSource/etag/snapshotId/elapsed_ms/stages_ms/projection_cache/source_ref/source_token_ready/isolation_id); contractSha256 and sourceSha256 stay and are compared; the 6 differing paths in the whole-envelope diff are all /data/meta/lifecycle/** content digests, not request identity",
+        "envelope_scope_limits": "envelope_path_digests is bounded to depth 6 with 400 nodes per level; the diff is authoritative only inside that bound"
+      },
+      "counterexamples": {
+        "res_users": "res.users is not excluded merely for being off the main view: its 4 reachable paths (create_uid, write_uid, activity_user_id, reviewer_ids) all report can_create=False, create_mode=disabled, default_vals=[], inline_create=False, and they keep can_read/can_open/reason_code; no default-value, create or dynamic-visibility consumer exists, so only the unconsumed popup build is dropped",
+        "mail_chatter_rating_tier": "mail.activity / mail.activity.type / mail.followers / mail.message / rating.rating / tier.review lose only search_dialog; permission and navigation facts remain",
+        "unreadable_target": "an unreadable target publishes no search_dialog key at all and keeps reason_code RELATION_READ_FORBIDDEN; _apply_access_policy still blocks with RELATION_READ_FORBIDDEN_CORE",
+        "hierarchy_dependency": "a hierarchy level field that is not rendered in the tree still materializes its dialog (read_fields/order), proven by test and by the preserved backend consumption at page_assembler hierarchy policy",
+        "explicit_view_override": "an explicit relation_entry override on an off-view field still demands the dialog",
+        "project_partner_governance": "project_id keeps RELATION_ENTRY_OVERRIDE_AUTHORITY_DENIED and partner_id keeps RELATION_ENTRY_NOT_PUBLISHED with their dialogs intact over HTTP; sc.business.category keeps its governed dialog branch",
+        "consumer_matrix": "the only frontend consumer of relation_entry.search_dialog is the popup path (relationDescriptor.ts relationSearchDialogContract / relationSearchColumnsFromContract consumed by useRecordRelationships.loadRelationSearchColumns/fetchRelationSearchRows); loadRelationSearchColumns returns [] when canRead!==true, and a missing dialog falls back to a declared V2 tree contract; non-rendered fields never run either path"
+      },
+      "http_observation": {
+        "entry": "PRODUCT_PERFORMANCE_BROWSER_SCOPE=relation-dialog make local.dev.runtime.performance.browser (bounded affected surface, not the full page matrix)",
+        "runtime_identity": "sc-local-dev / sc_dev_demo / 127.0.0.1:18081 after a governed `make local.dev.restart`; probe verifies served index/assets and served backend source hashes against the worktree source",
+        "list_action878": "one ui.contract.v2 action_open response; the delivered list layout carries the single relation column attachment_ids with its search_dialog, and no other relation entry is delivered on that surface",
+        "record_form": "18 delivered relation fields, all with search_dialog: attachment_ids, business_category_id, company_contractor_responsibility_summary_id, company_id, contract_currency_id, contract_id, currency_id, funding_baseline_id, ledger_line_ids, material_settlement_id, outflow_line_ids, partner_id, payment_execution_ids, project_id, receipt_invoice_line_ids, rental_settlement_id, settlement_id, subcontract_settlement_id",
+        "dialog_behaviour": "the declared 搜索更多 panel action opened the relation search dialog on the first in-view many2one (project_id): 7 Chinese headers, 15 rows, no ContractGapError, one api.data project.project list call (36.087ms HTTP / 15ms server)",
+        "http_timings_ms": "record form contract warm 1075.169 HTTP / 1027 server; the process-first run of the same request was 1896.825 / 1845 (code-translation cold), matching the in-process 2007->1846 convergence",
+        "envelopes": [
+          {
+            "path": "artifacts/main-scheduled-ci-closeout-20261016/local-browser-relation-list-envelope.json",
+            "sha256": "09996d937ce070aff0fc5a8ed5c76046d980185c0c96b71b4274f7280e6ddda9"
+          },
+          {
+            "path": "artifacts/main-scheduled-ci-closeout-20261016/local-browser-relation-dialog-envelope.json",
+            "sha256": "0403678ec6321cf469c61658a59469b492c26869a46755174ece1b2c2b7630b7"
+          },
+          {
+            "path": "artifacts/main-scheduled-ci-closeout-20261016/local-browser-relation-dialog-performance.json",
+            "sha256": "25d177b767167d865efb6945d0bbd5af9e7f89b8a9f56e0a44d36bd75b4dafd4"
+          }
+        ],
+        "semantic_normalization": {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-http-semantic-diff.log",
+          "sha256": "44ab153456c5b086e2e91487e4e1f96d04bd7e7393b898b9eb06e8bcb1c2739e"
+        },
+        "limitation": "one page, one record form and the first in-view many2one exposing 搜索更多; not a per-field or per-role matrix, and not SLO/capacity evidence"
+      },
+      "benefit": {
+        "removed_unconsumed_work": "7 of 24 search dialogs (24 -> 17), 122 SQL (1163 -> 1041) and about 161ms in the same in-process request",
+        "why_safe": "the removed dialogs belong to relation fields that no resolved view, override or hierarchy policy references, and the HTTP list surface delivers none of them",
+        "not_claimed": "this is not the platform performance closure; hot-request fluctuation, cache duplication (R3), first permission (~149ms, R4) and the unified preference consumption (R5) remain open"
+      },
+      "known_pre_existing_failures": {
+        "scope": "smart_construction_core (P1) ORM batch over the dirty iteration worktree",
+        "observed": "19 failed / 19 error of 152 tests; failures are menu xmlid/business-domain/tax-center/tender-registration drift in TestUserFeedbackBusinessViews, not relation popup semantics",
+        "control": "reverting addons/smart_core/.../page_assembler.py to HEAD and re-running three representative cases (sce-r2-orm-sc-core-reverted-3.log) reproduces the same two unrelated failures, so they are not caused by the R2 change",
+        "r2_relevant_case": "TestUserFeedbackBusinessViews.test_expense_deposit_application_contract_scopes_business_category_relation passes in both runs (the 2 failures in that 3-test batch are the currency-visibility and business_config_contract cases)",
+        "discipline": "recorded as pre-existing/known, not fixed to make the batch green; the R2-owned smart_core ORM batch is clean (16 post-tests, 0 failed)"
+      },
+      "assembled_cache_pin_closure": {
+        "owner_question": "Is the relation/search-dialog popup contract itself broken?",
+        "answer": "No. The failing check is the assembled-contract cache identity pin, not a dialog contract assertion.",
+        "what_the_guard_protects": "verify.unified_page_contract.v2.assembler.check_assembled_contract_cache_pin binds the version literal the handler serves (ASSEMBLED_CONTRACT_CACHE_VERSION) and a sha256 over the v2 assembly code inputs to one pin. A drift fails closed so an assembly-code change cannot keep serving the previously assembled contract from cache; the author must re-pin deliberately instead of the cache hiding the change.",
+        "root_cause": "Batch-internal debt of the single-source assembly round, not R2: the dirty ui_contract_v2.py renamed the literal (authoritative-record-preflight -> single-source-assembly), changed the cache write to put_generated and changed menu-entry dereferencing, while the guard literal and input digest were not re-pinned.",
+        "drift_attribution_proof": "Only ui_contract_v2.py differed from HEAD among the 12 previously pinned inputs; with HEAD bytes for that file the digest equals the previously recorded 4cc78993..., and with the current bytes it equals the reported 5c95b0a6.... page_assembler.py was not in the input set at all, so the R2 dialog change did not produce this failure.",
+        "gap_closed": "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py is now a pinned assembly input: the v2 handler builds the page through PageAssembler itself (_inject_business_category_form_policy -> _inject_relation_entry_contract, called from _handle_contract before assemble_unified_page_contract_v2 and before the assembled cache write), so an R2-like dialog change now fails closed until it is re-pinned.",
+        "repin": {
+          "guard_version_literal": "ui-contract-v2-2026-10-16-single-source-assembly",
+          "handler_version_literal": "ui-contract-v2-2026-10-16-single-source-assembly",
+          "assembled_cache_inputs_sha256": "7b94190390459fb847947e18ab7bec850aec3d546d7b575dc965cc069a46fbe7",
+          "inputs": 13,
+          "method": "digest recomputed by the guard's own algorithm (_assembled_cache_digest), not hand-computed"
+        },
+        "why_the_handler_literal_was_not_bumped_again": "The literal's job is to keep an assembly produced by different code from being served. The last pinned identity is HEAD's literal, which this batch already replaced. The assembled payload only exists in the process-local CONTRACT_PROJECTION_HOT_CACHE (TTL 30s), and the durable persisted runtime source asset is the pre-injection source contract: the v2 relation/policy injection runs after that store, and the stored projection path passes include_relation_search_dialogs=False, so R2 has no durable stale-cache identity to invalidate. The guard now follows the handler's actual in-batch literal and fails closed on any further input change.",
+        "product_hashes_unchanged": {
+          "addons/smart_core/handlers/ui_contract_v2.py": "09b79bd1fc0c2002b444de57c1d981b388a8f145f7d978c0117fb02afc52bbdd",
+          "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py": "99dddef26eef4ef29edf7bf87499c9b5618a4f047927ec480f13b15734423c60",
+          "consequence": "R2 runtime/HTTP evidence stays bound to the same product sources; no runtime lane was invalidated by this closure"
+        },
+        "routing_completion": "scripts/verify/frontend_dev_incremental.py now routes page_assembler.py edits to verify.business_config.formal_list.unit / verify.form_structure_authority_unification.unit / verify.unified_page_contract.v2.assembler / verify.contract.entry_equivalence.guard, so the drift is visible in the inner loop instead of only at Quick",
+        "reverse_verification": [
+          "baseline: no error",
+          "page_assembler bytes perturbed in memory -> digest drift error (fail closed)",
+          "handler serving an unrecorded literal -> literal mismatch error (fail closed)",
+          "restored -> no error"
+        ],
+        "status": "closed for R2 scope; the assembled contract cache pin is consistent again. Still dirty, not frozen, no Quick."
+      },
+      "validation": {
+        "L1": "make ci.local.iteration PASS (coverage=L1_only, receipt=none); let local.dev restart; git diff --check PASS",
+        "L1_guards": "verify.frontend.contract_basis.unit 15 passed open_defects=0; verify.frontend.relation_entry.contract_guard 23 passed; professional_relation_lifecycle 7 passed; hierarchical_worksheet 10 cases passed",
+        "L2": "test_relation_entry_contract 23 passed; test_ui_contract_id_boundaries 9 passed; verify.business_config.formal_list.unit 145/12/62/5 passed; test_page_assembler_view_orchestration_versions 23 passed; verify.unified_page_contract.v2.runtime 23/126 passed + guard score=6; diagnostic test_local_dev_runtime_performance 18 passed",
+        "L2_orm": "smart_core ORM batch TestRelationEntryOverrideFailClosed/TestRuntimeViewContractFailClosed 16 post-tests 0 failed",
+        "L4_bounded": "affected-surface HTTP + dialog observation above; iteration stage, not a frozen-candidate matrix",
+        "L5": "not run: iteration dirty scope, no freeze/Quick/commit/push/merge/deploy",
+        "L1_guard_repin": "verify.unified_page_contract.v2.assembler PASS after re-pinning (sources=4); read-only reverse verification proves the newly pinned page_assembler input and the served literal both fail closed; verify.frontend.dev.incremental.unit 30 tests OK; ci.local.iteration PASS refreshed",
+        "L1_r2_cache_identity": "make ci.local.iteration PASS (change_state=dirty, coverage=L1_only, receipt=none) + make verify.unified_page_contract.v2.assembler PASS (sources=4); git diff --check clean",
+        "L2_r2_cache_identity": "make verify.business_config.formal_list.unit PASS: Ran 145 / 13 / 62 / 5 OK (13 = 12 pre-existing + 1 new TestContractCodeFingerprintIdentity in test_load_contract_response_cache.py)",
+        "L2_r2_cache_identity_probe": "make local.dev.runtime.cache_identity.probe: PRE old_source_still_served=true / POST false; identity row path+mtime_ns+ctime_ns+size; probe exit=2 by design (fail-closed commit guard) after report"
+      },
+      "limitations": [
+        "in-process probe plus one bounded HTTP surface; not an SLO, capacity or cross-role claim",
+        "nested stages are not additive (the relation-field total contains the dialog total)",
+        "the whole-envelope diff is bounded (depth 6, 400 nodes/level) and the reconstruction shares the product process state",
+        "single demo principal (finance, company1) and one action (878)"
+      ],
+      "evidence": [
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-stage-probe.log",
+          "sha256": "6b85877b3d4243cd0620530b0a74f38ac63e80cda057b4b83f3e2e631d9a240c"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-stage-probe-cold.log",
+          "sha256": "2510abb2eb54032fd46f3654911abad78d34929d337e2559a37e847f5610110d"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-stage-probe-currency-cold.log",
+          "sha256": "194eef9776ae759e2b6beed0713a6e1a4768e5c037742bfdef36c9e75de21549"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-stage-probe-discriminate.log",
+          "sha256": "e8f615bada9b182fd2c4ad6cb87ec7f54bc749d98e4ccf099eea0b48cbb5cb66"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-demand-before.log",
+          "sha256": "aa09a1f828ae721c94129056080f0c8402cad3e6b00a20ac2f1c0cd2e6026231"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-demand-after.log",
+          "sha256": "8ea452de09d7dd4cd13be8f72fdba933b9b9252d3f27bd4d609b20fa39e79bb1"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-demand-baseline-reconstructed.log",
+          "sha256": "ad785ea683d9f0f6964471cb033918183c84d68c9f7d968e428f1b97864d2599"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-http-relation-dialog.log",
+          "sha256": "baad52f11dfea9eafc15956aba1fa9c6379d4c76e6d2d00d918cb8cafc114f1d"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-http-restart.log",
+          "sha256": "585e98534f1cf2895ff32d526d874a9a47910572e95ed64c0a12da88e1714b20"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-relation-entry-guard.log",
+          "sha256": "bab4143d08f34037c120c0a69de41b86940563a311b2cd206db4e663c05e0b4b"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-id-boundaries.log",
+          "sha256": "a4fb0b5d5c6f6ec65bd0908a4bc6fa442d7d53e9b7fec633ea844c1e7a8c361e"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-v2-boundaries.log",
+          "sha256": "8e202c847fadb86b4ad483fd872b6f5dc030e66f69e7a750a7b9ba92e98da1c3"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-orchestration.log",
+          "sha256": "367243c728056fc1df5e50383e7e97185806601c831de5326d9c038c834187db"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-v2-runtime.log",
+          "sha256": "d186de67c9db2c824ddf5260807cff34aa2f6c5908de42ad9d9168303a3f1b6b"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-contract-basis.log",
+          "sha256": "1df25b071c04acccf507b858e1df11530e8656d961f5e0dcfdad207a8cbffc28"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-relation-consumer.log",
+          "sha256": "7670c993d360f819ff4a5ed785dca071984fb3d1c612945d129ce0c46b692188"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-orm-smart-core.log",
+          "sha256": "9d72da6e4ee57208aa1d2e1ee9287c05269be1dff6128b0f33c97b2894534c87"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-orm-sc-core.log",
+          "sha256": "c0e69ce7c06ab23c1dc28160e945bec583fb31b843814e2a8c55f9b26dceef37"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-orm-sc-core-current-3.log",
+          "sha256": "23469d1be88115b70a80b36ffaa28871590d4d3d36e80c32de3f4261cf6d954e"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-orm-sc-core-reverted-3.log",
+          "sha256": "6558d51215b88ad6c28fbb8b3bba8efaa0c7b1083527de59f5084b0fa9d58949"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-iteration.log",
+          "sha256": "ad5243e48881b9d4cefe6f8a509171beed0b5d56df39360922b9f1739d6b9985"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-assembler-guard-after.log",
+          "sha256": "833732a8560250514865519dc1a2ce0c19e476f4fd02da17e1ff8c8df9feccd2"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-assembler-guard-reverse.log",
+          "sha256": "4025a29f02e6d6d5b5bd51fe4c99e6a4a6429bd117f5097b34f8166463ef6f3f"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-incremental-route.log",
+          "sha256": "25ed09967212a2ae766c474db861516037d9fe4238b37c13efce0872ac7c8869"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-iteration-guardfix.log",
+          "sha256": "28cad3c0fa61d7ac6c536a5246095f96852057433b9c4024287e6e987e0879fa"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-cache-identity-pre.log",
+          "sha256": "0c8f896f02271b732c73e5a784af31eb4f9d3d6d1f6220e92ec07ed9784ac9f6"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-cache-identity-post.log",
+          "sha256": "e09973711e92e514cec6ef62abc1e6e63c2dc09f53f4480b56072001f1fda076"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-cache-identity-formal-list-unit.log",
+          "sha256": "cbfd8978bbc63224ab4bd507e619a48e410471c2c6e86d8ff560d2a2aadef88f"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-cache-identity-formal-list-unit-after.log",
+          "sha256": "7498f067d5ff9086264fc3466cf891a2645b36a006d0a9374ee09d6be9fd6655"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-cache-identity-iteration.log",
+          "sha256": "b077671da55c4080782714a8923187e933904d5c5f8dfda622072d20ed26656c"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-cache-identity-assembler-guard.log",
+          "sha256": "b4226401cfd3f542be70e8a7f4ae73861280941067eddd6f1a86f55e15e71edd"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-cache-identity-orm-test.log",
+          "sha256": "7baef67f1db872b8aad11396faf3681b862cdc7da9b58d298e07471bdca610f9"
+        }
+      ],
+      "next": "R3 cache ownership / duplicate copy after cache.get() is the next independent item and must not be folded into R2; R4 first permission (~149ms), R5 unified preference consumption plus a real performance baseline, then R6 independent review and delivery stay separate. No freeze, Quick, commit, push, merge or deploy for the dirty iteration scope.",
+      "source_cache_identity_closure": {
+        "owner_question": "Do the R2 relation-demand changes land before or after the persisted runtime source asset write, does the persisted source token cover the changed code identity, and can a stale source still be served without the 30s hot TTL?",
+        "instrumentation": "New P4 read-only probe scripts/verify/local_dev_runtime_cache_identity_probe.py (wrapper make local.dev.runtime.cache_identity.probe) monkeypatches get_runtime_source_asset / upsert_runtime_source_asset / _inject_relation_entry_contract and records the event sequence for both the list and the form surface of action 878.",
+        "r2_method_positions": [
+          {
+            "seq": 1,
+            "event": "source_asset_read",
+            "note": "miss",
+            "caller": "ui_contract_v2.py:_handle_contract:683"
+          },
+          {
+            "seq": 2,
+            "event": "relation_entry_inject",
+            "note": "R2 declaration/materialization; BEFORE the source write",
+            "caller": "page_assembler.py:assemble_page_contract:646"
+          },
+          {
+            "seq": 3,
+            "event": "source_asset_write",
+            "note": "persisted",
+            "caller": "ui_contract_v2.py:_handle_contract:759"
+          },
+          {
+            "seq": 4,
+            "event": "relation_entry_inject",
+            "note": "form surface only; AFTER the source write",
+            "caller": "ui_contract_v2.py:_inject_business_category_form_policy:1657"
+          }
+        ],
+        "positions_verdict": "The R2 declaration/materialization runs in page_assembler.assemble_page_contract:646 BEFORE the runtime source asset is persisted, so the persisted payload already carries the R2 relation surface; the form-surface policy injection at :1657 is a later, response-only step. list and form agree on source_asset_read_precedes_write=true and source_asset_write_after_relation_injection=true.",
+        "persisted_payload_carries_r2_surface": {
+          "fields_with_relation_entry": 31,
+          "fields_with_search_dialog": 18,
+          "search_dialog_fields": [
+            "attachment_ids",
+            "business_category_id",
+            "company_contractor_responsibility_summary_id",
+            "company_id",
+            "contract_currency_id",
+            "contract_id",
+            "currency_id",
+            "funding_baseline_id",
+            "ledger_line_ids",
+            "material_settlement_id",
+            "outflow_line_ids",
+            "partner_id",
+            "payment_execution_ids",
+            "project_id",
+            "receipt_invoice_line_ids",
+            "rental_settlement_id",
+            "settlement_id",
+            "subcontract_settlement_id"
+          ],
+          "payload_sections": [
+            "source_type",
+            "ui_data",
+            "ui_meta"
+          ]
+        },
+        "token_covers_code_identity": {
+          "binding": "build_projection_source_token binds a runtime_source row ['code_fingerprint', contract_code_fingerprint()] alongside SC_SOURCE_REVISION / SC_SOURCE_FINGERPRINT; see load_contract_response_cache.py build_projection_source_token.",
+          "probe_fact": "token_changes_with_code_fingerprint=true; persisted_source_token_tracks_code_fingerprint=true",
+          "ttl_not_involved": "the persisted runtime source asset has no expiry column; rejection is by asset_version (source token) plus status only, so a stale source is rejected on identity, not because 30s elapsed."
+        },
+        "defect_found": "contract_code_fingerprint() hashed (path, mtime_ns, size). A same-size in-place rewrite that restores mtime left the token unchanged, so the persisted source asset kept serving the old contract. Identity was not covered, and the persisted asset has no TTL to fall back on.",
+        "counterexample": {
+          "pre_fix": {
+            "log": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-cache-identity-pre.log",
+            "sha256": "0c8f896f02271b732c73e5a784af31eb4f9d3d6d1f6220e92ec07ed9784ac9f6",
+            "content_changed": true,
+            "size_equal": true,
+            "mtime_equal": true,
+            "ctime_changed": true,
+            "legacy_row_tuple_unchanged": true,
+            "token_unchanged_by_content": true,
+            "old_source_still_served": true,
+            "old_source_rejected_after_identity_change": false
+          },
+          "post_fix": {
+            "log": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-cache-identity-post.log",
+            "sha256": "e09973711e92e514cec6ef62abc1e6e63c2dc09f53f4480b56072001f1fda076",
+            "content_changed": true,
+            "size_equal": true,
+            "mtime_equal": true,
+            "ctime_changed": true,
+            "token_unchanged_by_content": false,
+            "old_source_still_served": false,
+            "old_source_rejected_after_identity_change": true,
+            "same_size_content_change_reaches_the_token": true,
+            "mtime_only_change": {
+              "token_unchanged": false,
+              "old_source_still_served": false
+            }
+          },
+          "shape": "old source cached -> code identity changes -> old source rejected"
+        },
+        "fix": {
+          "owner": "P0 smart_core utils/load_contract_response_cache.py",
+          "change": "identity row is now path + mtime_ns + ctime_ns + size; docstring records that any content write (and utime) advances ctime, so a same-(mtime,size) content change still changes the token.",
+          "why_ctime": "ctime advances on every inode write including utime, which is exactly the case (mtime+size restored) the old row could not see; mtime_ns and size are kept so an ordinary edit is still detected.",
+          "durable_regression": "hermetic unit test added to addons/smart_core/tests/test_load_contract_response_cache.py: TestContractCodeFingerprintIdentity; it lives in the governed L2 entry verify.business_config.formal_list.unit (self-contained importlib load, temp identity root).",
+          "reverse_check": "with the legacy (mtime,size) row the fingerprint is unchanged (test would fail); with the ctime row it changes (test passes). Verified in-process for both variants."
+        },
+        "guard_scope_decision": {
+          "question": "Does the ctime change require re-pinning ASSEMBLED_CACHE_INPUTS_SHA256 / ASSEMBLED_CONTRACT_CACHE_VERSION?",
+          "answer": "No. load_contract_response_cache.py is not one of the 13 ASSEMBLED_CACHE_INPUTS; the guard comment states the pre-assembly source contract is a different layer covered by the persisted runtime source asset token instead of the assembly-code fingerprint.",
+          "confirmation": "make verify.unified_page_contract.v2.assembler re-ran PASS (sources=4) on the current dirty tree, so the assembled pin is intact."
+        },
+        "code_identity": {
+          "addons/smart_core/utils/load_contract_response_cache.py": "d5ce5896b44c4e2a0a794d097fe7599a7fd6442818a1052f9eb88aebea2f9d13",
+          "addons/smart_core/tests/test_load_contract_response_cache.py": "bd077e47dd394b533d5c6178cc4155ce94826473b6863abb793950eb3f209c16",
+          "scripts/verify/local_dev_runtime_cache_identity_probe.py": "fdc8bf21735803fb93b770a2df3e131840c1eef9b37d4f68bf36d7126f7e5c5d",
+          "make/dev.mk": "4ad251db7d3fe0d13882783bce2337ae84ff3b4372043ec20bb65e0facac91e9"
+        },
+        "limitations": [
+          "in-process probe on the registered local demo principal and one observed action (878)",
+          "the identity-change case uses a temp identity root in the container /tmp holding a byte-identical copy, because the real /mnt/source-addons is not writable for the container user; no real code file was mutated",
+          "the probe exits 2 by design: odoo.shell.exec refuses commit, so the fail-closed guard trips after the report is printed - not a test failure",
+          "the form surface returns an existing 409 NATIVE_ACTION_GUIDANCE_INVALID for a different reason; it does not affect the list-surface or identity conclusions"
+        ],
+        "status": "closed for R2 scope: R2 runs before the source write, the persisted token now covers code identity, the reverse counterexample passes, and the assembled pin is unchanged."
+      },
+      "evidence_reconciliation": {
+        "purpose": "single-run answer to the R2 evidence reconciliation request; unchanged results are reused, not rerun",
+        "requested_answers": {
+          "declaration_source_and_consumer": {
+            "declaration": "relationship demand is declared by RELATION_DEMAND_STAGES + PageAssembler._relation_demand_declaration (+ _collect_view_field_names) inside addons/smart_core/app_config_engine/services/assemblers/page_assembler.py - see keys declaration + boundary.",
+            "stages": "permission / navigation / hierarchy_fact / search_dialog",
+            "sources": "resolved_view_field / explicit_view_override / hierarchy_policy / model_field_expansion (from already-resolved views, published config and policy only - never a model special-case)",
+            "consumer": "the only consumer of relation_entry.search_dialog is the frontend popup path: relationDescriptor.ts relationSearchDialogContract / relationSearchColumnsFromContract -> useRecordRelationships.loadRelationSearchColumns / fetchRelationSearchRows. canRead !== true returns [] and a missing dialog falls back to the declared V2 tree contract; no other entitlement field is touched.",
+            "evidence_key": "counterexamples.consumer_matrix"
+          },
+          "dialog_reduction": {
+            "dialogs": "24 -> 17 (7 removed); SQL 1163 -> 1041; in-process elapsed 2006.39 -> 1845.68 ms",
+            "removed_targets": [
+              "mail.activity",
+              "mail.activity.type",
+              "mail.followers",
+              "mail.message",
+              "rating.rating",
+              "res.users",
+              "tier.review"
+            ],
+            "retained_and_why": "dialogs are kept for relation fields referenced by the resolved main view, demanded by an explicit override, required by a hierarchy policy (even when not rendered), or needed for navigation/permission facts of a readable target. res.currency and res.partner keep dialogs because other fields of those targets stay in the resolved view.",
+            "evidence_key": "three_way_comparison + benefit"
+          },
+          "counterexample_coverage": {
+            "main_view_relation": "kept (dialog_required_fields == relation_fields_in_view, 18)",
+            "hidden_but_policy_needed": "a hierarchy or policy-needed field that is not rendered still materializes",
+            "hierarchy_dependency": "read_fields/order required by the level policy always materialize (counterexamples.hierarchy_dependency)",
+            "explicit_view_override": "an off-view field with an explicit override still demands the dialog (counterexamples.explicit_view_override)",
+            "permission_forbidden": "an unreadable target publishes no search_dialog key at all and keeps RELATION_READ_FORBIDDEN (counterexamples.unreadable_target)",
+            "project_partner_governance": "project_id keeps RELATION_ENTRY_OVERRIDE_AUTHORITY_DENIED and partner_id keeps RELATION_ENTRY_NOT_PUBLISHED; both dialogs fully retained (HTTP observation) (counterexamples.project_partner_governance)",
+            "res_users_consumers": "res.users is not excluded merely for being off the main view: its 4 reachable paths (create_uid/write_uid/activity_user_id/reviewer_ids) were checked for default values, create, dynamic visibility and other consumers - can_create=False, create_mode=disabled, default_vals=[], inline_create=False while can_read/can_open/reason_code are kept.",
+            "evidence_key": "counterexamples.*"
+          },
+          "sql_source_and_http_before_after": {
+            "in_process": "see three_way_comparison (dialog_build_count / sql_count / elapsed_ms before vs after vs reconstructed baseline)",
+            "http": "single action878 list page and a record form with 18 relation fields; warm record-form contract 1075.169 HTTP / 1027 server ms vs a process-first run at 1896.825 / 1845 (code-translation cold); one api.data project.project popup at 36.087 ms HTTP / 15 ms server; envelope semantic normalization in sce-r2-http-semantic-diff.log",
+            "evidence_key": "http_observation"
+          },
+          "currency_attribution": {
+            "conclusion": "the ~540ms res.currency dialog is NOT a per-request cost: it is the process-first Odoo code-translation load",
+            "chain": "dialog total 648.71ms -> view_read 625.09 -> res_currency._get_view 550 -> translate._read_code_translations_file 545 -> polib.pofile 491",
+            "note": "same-process first reads of res.partner / res.users are the same order of magnitude and drop to 6-17ms once warm; stages nest and must not be summed; this does not justify deleting R1's 7 expansion-only targets and is not attributed to on-demand materialization.",
+            "evidence_key": "step1_currency_attribution"
+          }
+        },
+        "new_deltas_this_round": {
+          "source_cache_identity": "added source_cache_identity_closure (R2 runs before the source write; token now covers ctime; PRE/POST counterexample; L2 regression test)",
+          "verification": "make ci.local.iteration PASS (L1), make verify.business_config.formal_list.unit PASS 145/13/62/5, make verify.unified_page_contract.v2.assembler PASS sources=4"
+        },
+        "gap_status": "all six requested answers are present in this run; nothing was rerun that was unchanged."
+      }
+    },
+    "source_handoff_ownership_closure": {
+      "status": "implemented; runtime equivalence confirmed; systemic performance still open (no R3 latency win claimed)",
+      "owner_question": "After get() already returns an isolated copy, are the handler's further deepcopies redundant, and can they be removed without letting the value, the cache, the persisted source or the final contract alias?",
+      "layer": "P0 smart_core handlers/ui_contract_v2.py against the documented LoadContractResponseCache ownership contract",
+      "ownership_proof": {
+        "hot_path": "CONTRACT_PROJECTION_HOT_CACHE.get() returns copy.deepcopy(response) (load_contract_response_cache.py); the governed counterexample test_hit_returns_isolated_copy mutates a nested list and the entry stays intact.",
+        "persisted_path": "get_runtime_source_asset rebuilds payload = json.loads(record.payload_json) -> a fresh object graph every call; the handler additionally puts an independent copy into the hot cache before using it.",
+        "assembled_source": "_assembled_v2 is never persisted (payload_sections = source_type/ui_data/ui_meta), so it can only come from the hot cache, i.e. from get()'s isolated copy.",
+        "alias_matrix": "in-process check on the exact handler payload shape: the get() result is not the entry, and ui_data / ui_meta / _assembled_v2.contract / _assembled_v2.source_contract are each disjoint; mutating all of them in place leaves the entry and the next get() untouched.",
+        "consumer_fact": "the assembled-hit branch hands its graph to seal_runtime_contract and then returns; that graph is a get() copy discarded at the end of the request."
+      },
+      "change": {
+        "removed": [
+          "cached-source branch: deepcopy(cached_source['ui_data']/['ui_meta']) replaced by direct assignment (in-place mutation is safe because this request owns the graph)",
+          "assembled-hit branch: deepcopy(assembled_cached['source_contract']/['contract']) replaced by direct assignment (the graph is discarded after sealing)"
+        ],
+        "preserved": [
+          "the cache-layer isolation boundary: get() still deep-copies on every read",
+          "the persisted payload is still rebuilt by json.loads",
+          "the TTL and the source token",
+          "the per-uid/role/company/lang cache key",
+          "the write-path producer copy at put_generated :1127 (the cache is never handed the live in-request object)"
+        ],
+        "identified_but_deferred": "the miss path at ui_contract_v2.py:751 deep-copies ui_data into cached_payload because ui_data is mutated afterwards by the record overlay and the injections; put() then copies that already-fresh payload again. That residual second copy is the caller-owned-input safety governed by test_put_isolates_caller_owned_input and is NOT part of the get() hand-off this round; a separate owned-put API would be needed, so it stays a follow-up and is explicitly not folded in."
+      },
+      "counterexamples_retained": {
+        "value_pollution": "test_hit_returns_isolated_copy (governed L2)",
+        "cross_request_pollution": "test_handler_generated_snapshot_keeps_component_and_request_isolation",
+        "identity_change": "test_source_change_invalidates_entry + test_ttl_expiry_invalidates_entry + TestContractCodeFingerprintIdentity (ctime)",
+        "new_r3": "TestHandlerHandOffOwnsTheGetCopy: (a) an AST guard asserts the handler never deepcopies cached_source/assembled_cached again, with a reverse check showing it flags the pre-R3 style; (b) an in-place hand-off of the get() graph leaves both the entry and the next read untouched."
+      },
+      "assembled_cache_pin": {
+        "trigger": "ui_contract_v2.py is ASSEMBLED_CACHE_HANDLER and one of the 13 ASSEMBLED_CACHE_INPUTS, so the guard failed closed as designed.",
+        "action": "bumped the handler literal and the guard literal ASSEMBLED_CACHE_VERSION to ui-contract-v2-2026-10-16-owned-source-handoff and re-pinned ASSEMBLED_CACHE_INPUTS_SHA256 with the guard's own digest algorithm (not hand-computed).",
+        "reverse_verification": "baseline clean; perturbed page_assembler bytes -> fail closed with the new digest; unrecorded handler literal -> fail closed; restored -> clean."
+      },
+      "runtime_equivalence": {
+        "entry": "PRODUCT_PERFORMANCE_MODE=relation_demand_probe PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID=878 make local.dev.runtime.performance.observe after a governed make local.dev.restart",
+        "contract_handler_sha256": {
+          "r2": "09b79bd1fc0c2002b444de57c1d981b388a8f145f7d978c0117fb02afc52bbdd",
+          "r3": "eb59982462169c7b1e564ee48f18442f6b0cad9e0719a62c5ffb3ddc57dd6e05"
+        },
+        "identical": [
+          "dialog_build_count 17 == 17",
+          "dialog_target_count 17 == 17",
+          "sql_count 1041 == 1041",
+          "relation_field_count 31",
+          "view_field_count 74",
+          "declared_field_count 169",
+          "relation_base_sha256",
+          "relation_entry_sha256",
+          "search_dialog_sha256",
+          "declarations",
+          "dialog_present_fields",
+          "dialog_targets",
+          "relation_surface",
+          "owner_hashes",
+          "injection_count"
+        ],
+        "differing_and_why": "the envelope digests and the per-dialog timings differ because the envelope embeds the assembled cache-version literal and the source token, both changed by design; dialog_builds is structurally identical (17 rows, same relation/columns/sql) and only timing differs; elapsed_ms 1845.68 -> 1829.68 (within fluctuation).",
+        "not_claimed": "a single first-request observation that does not isolate the removed hot-path copies, so no R3 latency win is claimed; R2's 24 -> 17 dialogs / 1163 -> 1041 SQL benefit is retained unchanged."
+      },
+      "supersedes_r2_hash": "R2 recorded handlers/ui_contract_v2.py = 09b79bd1... as unchanged; R3 changes that file, so the R2 runtime evidence stays bound to the R2 stage identity while R3 re-verified equivalence at the authoritative relation surface above.",
+      "validation": {
+        "L1": "make ci.local.iteration PASS (dirty, coverage=L1_only, receipt=none); git diff --check clean",
+        "L1_guard": "make verify.unified_page_contract.v2.assembler PASS (sources=4) after the re-pin; reverse verification fail-closed on input and literal drift",
+        "L2": "make verify.business_config.formal_list.unit PASS Ran 145 / 15 / 62 / 5; make verify.unified_page_contract.v2.runtime PASS 23 + 126 score=6; make verify.contract.entry_equivalence.guard PASS (10 tests)",
+        "L4_bounded": "one governed restart plus one relation_demand_probe observation; no browser matrix, no frozen-candidate matrix",
+        "L5": "not run: dirty iteration scope, no freeze/Quick/commit/push/merge/deploy"
+      },
+      "stage": "dirty, not frozen, not committed, not pushed, not deployed",
+      "next": "R4 first permission (~149ms) and R5 unified preference consumption plus a real performance baseline stay independent. A hot-request deepcopy-count profile is the right instrument for the removed copies and belongs to the R3/R5 acceptance, not to this closure.",
+      "evidence": [
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-assembler-guard.log",
+          "sha256": "2e41dd1872887604b75bcfe60dcb36b05ee9e3bc7560d137372474c1ad378285"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-assembler-guard-reverse.log",
+          "sha256": "b6fa313a669f09ecd4c06399b4cd8282a911194875883dd41377aeb3faa11301"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-formal-list-unit.log",
+          "sha256": "5dec3d3da7d5c2b9d7869c90dd496f4aaf20aa1150d71c557204176b12de03bd"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-v2-runtime.log",
+          "sha256": "bd4594314786b7775a74614fb5d1a2ba06f08b21b17776830d80ea380295fbaa"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-iteration.log",
+          "sha256": "9e772376f5fba60478b8a1c66c6a41431ca4eea2506d0e6bdadd17665e2deafd"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-runtime-restart.log",
+          "sha256": "b27981fd1710722f572414e44d7a20014425904dd6d01a4db7f2ea9b214d73f1"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-demand-after.log",
+          "sha256": "878b29d31e4cba5e954cff7543b01d0bb9d4548c551c96363672a55f9fbda009"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-demand-equivalence.log",
+          "sha256": "af5902faa386569b15643488d99b0c98f5bbe1f5e3836efc849438445e2eae96"
+        },
+        {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-entry-equivalence.log",
+          "sha256": "1594933f1a0bef4490f3a6551564fad20554d3a1d3c1986da9b152212d8ab50a"
+        }
+      ]
+    },
+    "permission_gate_attribution": {
+      "status": "attributed; no redundant duplicate call; no code change; one pre-existing P0 ACL gap registered as independent open item",
+      "owner_question": "Is the ~215 ms controller `permission` segment of the first ui.contract.v2 list request a per-request cost with a redundant call, or a one-time initialization? If redundant, only then change code.",
+      "layer": "P0 smart_core security/intent_permission.py + delivery/runtime_route_authority.py observed through a P4 read-only probe; no sudo, no cache widening, no skipped check.",
+      "reason": "R4 must separate first-initialization from per-request cost before any optimization; guessing a per-model special case is forbidden.",
+      "method": "P4 read-only probe scripts/verify/local_dev_runtime_permission_probe.py replaces odoo.http.request with a faithful shim and runs the unmodified check_intent_permission, timing/counting unmodified helpers via __wrapped__. registry.clear_cache() clears only the throwaway shell process. Principal smart_construction_demo.user_demo_role_finance uid=45 company1 sudo=false; intent ui.contract.v2 action 878 op=action_open menu_id 559.",
+      "findings": {
+        "process_first_gate_ms": 2.373,
+        "cold_after_registry_clear_gate_ms": {
+          "with_menu_id": 132.648,
+          "without_menu_id": 0.505
+        },
+        "warm_gate_ms": {
+          "with_menu_id": {
+            "median": 1.658,
+            "min": 1.492,
+            "max": 1.692,
+            "samples": [
+              1.492,
+              1.503,
+              1.658,
+              1.692
+            ]
+          },
+          "without_menu_id": {
+            "median": 0.407,
+            "min": 0.267,
+            "max": 0.416,
+            "samples": [
+              0.267,
+              0.4,
+              0.407,
+              0.416
+            ]
+          }
+        },
+        "per_request_gate_is_the_215ms_segment": false,
+        "first_touch_is_one_time": true,
+        "menu_id_selects_the_publication_branch": {
+          "with_menu_id_calls": 1,
+          "without_menu_id_calls": 0
+        },
+        "cold_subphases_ms": {
+          "intent_permission._published_menu_decision": 131.941,
+          "runtime_route_authority.build_runtime_route_authority": 131.906,
+          "runtime_route_authority._build_runtime_route_authority": 130.431,
+          "MenuService.build_nav": 58.207,
+          "MenuService.build_route_authority": 56.242,
+          "ProductPolicyService.get_policy": 7.785,
+          "DeliveryEngine._normalize_delivery_nav_refs": 5.68,
+          "runtime_route_authority.principal_group_signature": 1.431,
+          "IdentityResolver.user_group_xmlids": 1.368,
+          "system_init._load_platform_release_gate": 0.888,
+          "BaseModel.check_access_rights_calls": 133
+        },
+        "cold_owner": "published_route_authority_is_the_cold_owner=true: _published_menu_decision (131.9 ms) == build_runtime_route_authority (131.9 ms) == _build_runtime_route_authority (130.4 ms)",
+        "route_authority_build_calls": {
+          "process_first_with_menu": 0,
+          "with_menu_cold": 1,
+          "with_menu_warm_1": 0
+        },
+        "no_redundant_duplicate_authority_build_in_one_gate": true,
+        "warm_key_cost_is_the_group_signature_ms": 1.049,
+        "conclusion": "The observed 215 ms controller segment is the one-time first build of the published route authority plus process-first module/ORM cache cold, not a per-request cost. Warm per-request gate is 1.5-1.7 ms with menu_id and ~0.4 ms without; the only warm key cost is principal_group_signature (~1.0 ms, i.e. user_group_xmlids). No duplicate authority build occurs inside one gate, so there is nothing redundant to remove and R4 requires no code change."
+      },
+      "counterexamples": {
+        "unpublished_menu_pair": {
+          "expected": "deny",
+          "ok": false,
+          "error": "AccessError: user has no access to menu 付款申请"
+        },
+        "nonexistent_model": {
+          "expected": "deny",
+          "ok": false,
+          "error": "MissingError: model sc.probe.absent.model does not exist"
+        },
+        "synthetic_navigation_menu": {
+          "expected": "allow",
+          "ok": true,
+          "note": "intent=menu.navigation; no action gate by design"
+        },
+        "action_group_excluded": {
+          "expected": "deny",
+          "ok": true,
+          "is_gap": true
+        },
+        "company_scope_switch": {
+          "executed": false,
+          "note": "demo finance principal has a single company; second_company_id=null; honestly recorded as not covered"
+        }
+      },
+      "open": {
+        "p0_action_groups_not_enforced_for_ir_actions_actions": {
+          "summary": "check_intent_permission does not enforce ir.actions.act_window.groups_id when the request omits action_type: _resolve_action tries ir.actions.actions first (no groups_id field -> getattr returns None -> the groups intersection is skipped). Pre-existing at HEAD (git show HEAD:addons/smart_core/security/intent_permission.py), not introduced by this round. The real ui.contract.v2 action_open path omits action_type, so it takes this branch.",
+          "probe_fact": {
+            "action_id": 72,
+            "action_type_absent_model": "ir.actions.actions",
+            "has_groups_id_field": false,
+            "act_window_groups": [
+              4
+            ],
+            "gate_ok": true
+          },
+          "blast_radius": {
+            "act_window_total": 738,
+            "act_window_with_groups": 419,
+            "act_window_group_excluded": 174,
+            "action_72_published": false,
+            "excluded_but_published": [],
+            "published_action_count": 45
+          },
+          "not_currently_exploitable": "In this sample every group-excluded act_window is outside the principal published navigation (excluded_but_published=[]), so no reachable action was found that bypasses the group check; the gate branch itself is unguarded.",
+          "disposition": "registered as an independent P0 security boundary item; NOT fixed inside R4 (needs separate authorization and its own counterexample set)"
+        }
+      },
+      "evidence": {
+        "runtime_report": {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r4-permission-probe-7.log",
+          "sha256": "f13205bd352a9335e25669799f536f058279a0390d6ca3f2ba0dea32e80fd501"
+        },
+        "unit": {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r4-permission-probe-unit.log",
+          "sha256": "133449d6f429f0588126e0403937f271f33f90517460d5c4b39d69c2eeda0f25"
+        },
+        "probe": {
+          "path": "scripts/verify/local_dev_runtime_permission_probe.py",
+          "sha256": "689b3d353d9a9d82a06aa56aa103d857e788a7649aab1f3847f443278c4daf55"
+        },
+        "probe_test": {
+          "path": "scripts/verify/test_local_dev_runtime_permission_probe.py",
+          "sha256": "aaf9ef226dd4e2fdf2a5332fd0e32c7d9a22b9dab98f5dfe9a0c6d21bb2aa1ae"
+        },
+        "unmodified_product_files": {
+          "security/intent_permission.py": "54f2b8fa2d6a40419c83efde6bf19ebb439d66bb298d428f0aae2286a0b30bb1",
+          "delivery/runtime_route_authority.py": "ebe4e453e84426fd4881717a6e661713c6592810cf75020d94d6eac143d095bf"
+        }
+      },
+      "limitations": [
+        "in-process probe on the registered local demo finance principal and one observed action; controller ingress/session/transport is out of scope",
+        "registry.clear_cache() affects only this throwaway odoo shell process, never the serving workers",
+        "route-authority cold cost is measured after the probe already paid module import; the extra gap to the observed 215 ms segment is process-first module/ORM cold, not re-measured here",
+        "not an SLO, capacity, cross-role or release claim; no freeze, commit, push or deployment"
+      ],
+      "stage_identity": "56f5096422d967d582c2b25ab9a4bfaa03173534 + explicit dirty scope"
+    },
+    "r5_unified_observation": {
+      "status": "bounded_observation_complete_anomaly_attributed",
+      "owner_question": "One bounded observation must cover the R3 hot-cache benefit, the R4 permission cost and the current R2 HTTP shape (fixed user/company/action/params, first vs warm separated, sample count, distribution, SQL, stage timings, errors) and must explain the earlier warm 176.984 -> 315.920 ms anomaly instead of showing the fastest sample.",
+      "layer": "P4 diagnostic observation over the frozen P0/P1 product code; no product file changed in R5",
+      "method": {
+        "probe": "scripts/verify/local_dev_runtime_contract_request_probe.py",
+        "probe_sha256": "ecedf0b718fde0fd0dec5389abe0ebed1b8af8670c8914f446cf4b9fa5a061e3",
+        "entrypoint": "make local.dev.runtime.contract_request.probe",
+        "environment": "sc-local-dev / sc_dev_demo / ^sc_dev_demo$; disposable odoo shell carrier (ODOO_SHELL_RUN_ISOLATED=1); env.cr.commit refused",
+        "fixed_identity": {
+          "xmlid": "smart_construction_demo.user_demo_role_finance",
+          "uid": 45,
+          "company_id": 1,
+          "sudo": false,
+          "intent": "ui.contract.v2",
+          "op": "action_open",
+          "action_id": 878,
+          "menu_id": 559
+        },
+        "fixed_request": "byte-identical params for all repeated samples; limit=40 is the only variation, used to change projection identity",
+        "shim_boundary": "io.request and intent_router.request are faithful request stand-ins; controller ingress/session/transport, context_auth and json_response remain out of scope",
+        "gc_control": "a paired in-process group repeats the same fixed request with automatic CPython collection disabled; it is a discrimination control for one-off pauses, not a product configuration proposal",
+        "product_files_unchanged": {
+          "handlers/ui_contract_v2.py": "eb59982462169c7b1e564ee48f18442f6b0cad9e0719a62c5ffb3ddc57dd6e05",
+          "utils/load_contract_response_cache.py": "d5ce5896b44c4e2a0a794d097fe7599a7fd6442818a1052f9eb88aebea2f9d13",
+          "app_config_engine/services/assemblers/page_assembler.py": "99dddef26eef4ef29edf7bf87499c9b5618a4f047927ec480f13b15734423c60",
+          "core/intent_router.py": "0504c15b46fac727d207cebae44ee382209a6549923ff696b44dc9b3317b3d77",
+          "controllers/intent_dispatcher.py": "a101932363d0ee6d589800288719ea7a475c8a6b3a5e53e577f7bb7851ec85af"
+        }
+      },
+      "samples": {
+        "runs": [
+          "sce-r5-contract-request-probe-6.log (paired control first complete)",
+          "sce-r5-contract-request-probe-7.log (referenced run; adds the direct R3 removed-copy measurement)"
+        ],
+        "process_first": {
+          "n": 1,
+          "cache": "miss/asset_not_found",
+          "dispatch_ms": 1504.369,
+          "permission_ms": 1.992,
+          "sql_count": 682,
+          "sql_ms": 252.421,
+          "deepcopy_count": 90,
+          "stages_ms": {
+            "authority_and_cache_lookup": 49,
+            "source_projection": 1137,
+            "v2_projection_and_seal": 253,
+            "post_cache_store": 36,
+            "post_runtime_seal": 21
+          }
+        },
+        "hot": {
+          "n": 12,
+          "cache": "assembled_v2_hot_cache_hit (12/12)",
+          "dispatch_ms": {
+            "min": 81.369,
+            "median": 83.465,
+            "p95": 187.25,
+            "max": 198.019,
+            "steady_10_of_12": [
+              81.369,
+              82.049,
+              82.757,
+              82.759,
+              82.988,
+              83.057,
+              83.465,
+              84.45,
+              86.355,
+              87.606
+            ]
+          },
+          "permission_ms": {
+            "min": 2.66,
+            "median": 2.89,
+            "max": 3.305
+          },
+          "sql_count": {
+            "min": 25,
+            "median": 25,
+            "max": 25
+          },
+          "deepcopy_count": {
+            "min": 26,
+            "median": 26,
+            "max": 26,
+            "sites": {
+              "utils/load_contract_response_cache.py:get": 1,
+              "fields.py:convert_to_record": 25
+            }
+          },
+          "response_bytes": {
+            "median": 113916,
+            "max": 113918
+          },
+          "lookup_ms": {
+            "min": 57,
+            "median": 60,
+            "p95": 62,
+            "max": 163
+          },
+          "seal_ms_steady": [
+            21.369,
+            21.458,
+            21.684,
+            21.705,
+            21.943,
+            21.993,
+            22.741,
+            23.303,
+            23.478,
+            23.561
+          ],
+          "gc_ms": {
+            "median": 2.979,
+            "max": 114.787
+          }
+        },
+        "hot_gc_off_control": {
+          "n": 12,
+          "cache": "assembled_v2_hot_cache_hit (12/12)",
+          "dispatch_ms": {
+            "min": 78.598,
+            "median": 81.557,
+            "p95": 83.582,
+            "max": 88.263,
+            "max_extra_over_median_ms": 6.706
+          },
+          "permission_ms": {
+            "min": 2.599,
+            "median": 2.906,
+            "max": 3.686
+          },
+          "sql_count": {
+            "median": 25
+          },
+          "gc_ms": {
+            "median": 0.0,
+            "max": 0.0
+          }
+        },
+        "variant": [
+          {
+            "phase": "variant_1",
+            "cache": "miss/asset_not_found",
+            "identity_ref": "1b2c2eb0ba58",
+            "dispatch_ms": 773.611,
+            "sql_count": 210,
+            "permission_ms": 2.78
+          },
+          {
+            "phase": "variant_2",
+            "cache": "hot/assembled_v2_hot_cache_hit",
+            "identity_ref": "1b2c2eb0ba58",
+            "dispatch_ms": 85.147,
+            "sql_count": 25,
+            "permission_ms": 2.803
+          }
+        ],
+        "cold_rebuild": {
+          "n": 1,
+          "cache": "persisted/runtime_source_asset_hit (registry caches + process hot cache cleared)",
+          "dispatch_ms": 197.756,
+          "permission_ms": 133.308,
+          "sql_count": 344,
+          "deepcopy_count": 33
+        }
+      },
+      "per_request_structure_ms": {
+        "note": "warm steady sample, nested phases must not be added into a total",
+        "dispatch_median": 83.465,
+        "authority_and_cache_lookup": {
+          "total_median": 60,
+          "CONTRACT_PROJECTION_HOT_CACHE.get": 38.108,
+          "_validate_scene_action_binding": 16.366,
+          "build_projection_source_token": 7.83,
+          "build_projection_cache_key": 0.127,
+          "other_members": "<0.01 each"
+        },
+        "v2_projection_and_seal": {
+          "total_steady": 22,
+          "seal_runtime_contract": 23.303,
+          "seal_unified_page_contract": 19.859,
+          "refresh_saved_search_runtime": 1.149,
+          "emit_delivery_observation": 2.228
+        }
+      },
+      "r3_hot_cache_benefit": {
+        "hit_stability": "24/24 warm samples are assembled_v2_hot_cache_hit with one projection identity (11e770c4b2ae) and one source ref (8c5d1259eb77); sql_count 25 and deepcopy_count 26 in every sample",
+        "remaining_copy_sites": "exactly two: the retained cache-isolation copy in load_contract_response_cache.get (1 call, 36-38 ms per request) and ORM record conversion (fields.py:convert_to_record, 25 calls)",
+        "handler_level_copy_removed_by_r3": "no deepcopy(cached_source)/deepcopy(assembled_cached) site remains in the handler",
+        "removed_work_measured_directly_ms": {
+          "_assembled_v2.source_contract": [
+            15.614,
+            15.641,
+            16.954,
+            17.27,
+            18.628
+          ],
+          "_assembled_v2.contract": [
+            1.878,
+            1.899,
+            2.035,
+            2.051,
+            2.489
+          ],
+          "total_median": 18.989
+        },
+        "claim": "R3 removed ~19 ms of duplicate copying per warm request (about 23% of the ~83 ms warm dispatch median). This is the measured cost of the eliminated work, not a wall-clock A/B of the older revision.",
+        "not_claimed": "no throughput/SLO claim; the retained cache-isolation copy stays"
+      },
+      "r4_permission_cost": {
+        "warm_per_request_ms": {
+          "n": 12,
+          "min": 2.66,
+          "median": 2.89,
+          "max": 3.305
+        },
+        "control_group_warm_ms": {
+          "n": 12,
+          "median": 2.906
+        },
+        "cold_this_run_ms": 133.308,
+        "cross_check": "cold 133.308 ms matches the R4 attribution (132.648 / 131.941 ms one-time published route-authority build); one-time per process, no redundant duplicate build, no sudo, no cache enlargement, no check skipped"
+      },
+      "r2_http_cross_reference": {
+        "status": "existing HTTP Server-Timing evidence reused unchanged; HTTP was NOT re-run in R5",
+        "list_contract_cold": {
+          "before_ms": 2095.412,
+          "before_permission_ms": 149.91,
+          "before_dispatch_ms": 1902.64,
+          "before_cache": "miss/asset_not_found",
+          "before_source_projection_ms": 1566,
+          "after_ms": 1553.605,
+          "after_permission_ms": 148.869,
+          "after_dispatch_ms": 1358.235,
+          "after_source_projection_ms": 1157,
+          "after_post_runtime_seal_ms": 23
+        },
+        "query_contract_warm": {
+          "params_shape": "op=action_open action_id=878, no view_type/fields/model (same shape in both samples)",
+          "before_ms": 176.984,
+          "before_permission_ms": 2.132,
+          "before_dispatch_ms": 147.655,
+          "before_cache": "hot/assembled_v2_hot_cache_hit",
+          "before_stages_ms": {
+            "authority_and_cache_lookup": 80,
+            "source_projection": 19,
+            "v2_projection_and_seal": 43
+          },
+          "after_ms": 315.92,
+          "after_permission_ms": 1.99,
+          "after_dispatch_ms": 287.006,
+          "after_cache": "hot/assembled_v2_hot_cache_hit",
+          "after_stages_ms": {
+            "authority_and_cache_lookup": 81,
+            "source_projection": 25,
+            "v2_projection_and_seal": 176
+          }
+        },
+        "comparison_boundary": "the browser warm lane (dispatch 147.655 ms before) and the shell probe warm median (83.465 ms) are different lanes and must not be subtracted from each other"
+      },
+      "warm_anomaly_attribution": {
+        "verdict": "the 176.984 -> 315.920 ms warm delta is a CPython generation-2 garbage-collection stop, not a cache-semantics or product-code regression",
+        "ruled_out": [
+          "not a hit -> miss switch: both browser samples are hot/assembled_v2_hot_cache_hit",
+          "not R3's removed copies: deepcopy_count is 26 in every warm sample including the pauses",
+          "not extra SQL: sql_count is 25 in every warm sample including the pauses",
+          "not a permission change: 2.132 ms before vs 1.990 ms after"
+        ],
+        "positive_evidence": {
+          "pause_magnitude_ms": "102-114 ms over the warm median",
+          "pause_location_varies": "in one process the pause landed in authority_and_cache_lookup (hot_10: lookup 163 ms vs 57-62 ms steady, seal normal 22.302) and in another sample in the seal (hot_4: seal_runtime_contract 135.390 ms vs 21.4-23.6 ms steady, lookup normal 60)",
+          "earlier_runs": "probe runs 2/3/5 showed it in the lookup stage; probe runs 6/7 showed it in the lookup and the seal stage",
+          "gc_counters": "the pause samples report gc_ms 114.787 / 106.308 and one generation-2 collection, matching the extra-over-median 114.554 / ~102 ms",
+          "control": "in the paired gc-disabled group the pause is absent: max extra over median 6.706 ms with gc_ms 0.0 on the identical request"
+        },
+        "browser_reading": "the browser's single after sample added +133 ms inside v2_projection_and_seal (43 -> 176) with authority_and_cache_lookup unchanged (80 -> 81) - the same class of stop on a larger HTTP heap, attaching to whichever stage is allocating when the generation-2 threshold is crossed",
+        "boundary": "both browser values are single samples and are not a distribution; the probe's warm median is 83.465 ms with p95 187.25 ms, so a warm outlier of this size is inside the observed distribution, not a new regression"
+      },
+      "volatile_identity": {
+        "fact": "the 24 warm responses carry 20 distinct sha256 over a 113916-115 byte envelope with one projection identity and one cache reason",
+        "consequence": "raw response digests are not a normalized comparison here; equivalence uses projection identity ref + sql_count + deepcopy_count + byte size",
+        "status": "same limitation already registered in R1; still open, not a new defect"
+      },
+      "open": {
+        "python_gc_stop_is_a_runtime_characteristic": {
+          "summary": "A reproducible ~100-115 ms CPython generation-2 collection stop appears on the warm contract path about once per 5-10 identical requests; it is not product work and disappears when automatic collection is disabled.",
+          "disposition": "registered as an independent performance item; NOT fixed in R5 (disabling or freezing gc is a runtime decision requiring its own evidence, and the miss-path double copy stays registered too)"
+        },
+        "miss_path_double_copy": "ui_contract_v2.py:751 deepcopy(ui_data) plus the copy inside put() stays registered; not proven to be a key cost, so no API is added this round"
+      },
+      "limitations": [
+        "in-process probe on the registered local demo finance principal and one fixed ui.contract.v2 request",
+        "the probe shims odoo.http.request; controller ingress/session/transport and context_auth/json_response remain out of scope",
+        "registry.clear_cache() and the process hot-cache clear affect only the throwaway odoo shell process, never the serving workers",
+        "the gc-disabled group is a paired discrimination control, not a product configuration suggestion",
+        "the browser warm values are single samples from existing evidence and were not re-run; a distribution would need an authorized HTTP lane",
+        "not an SLO, capacity, cross-role or release claim; no freeze, commit, push or deployment"
+      ],
+      "stage_identity": "56f5096422d967d582c2b25ab9a4bfaa03173534 + explicit dirty scope"
+    },
+    "init_contract_model_authority": {
+      "status": "verified (read-only code + snapshot evidence): system.init DOES supply the model on every navigation node, and no product path sends a model-less contract request. The observed model:unknown is a contract-shape case artifact plus a registered preference-boundary gap; product code and declared snapshots unchanged this round.",
+      "question": "Does the init contract omit the model, leaving the frontend unable to know the model? Which intents carry no model and what are they for?",
+      "init_supplies_model": {
+        "declaration": [
+          "addons/smart_core/delivery/menu_service.py:138-175 (_menu_fact_tree_as_native) projects each nav node with action_id + model (from action_meta.res_model) + view_modes + route",
+          "addons/smart_core/delivery/menu_service.py:179-186 (_authorization_native_nav, facts from ACL-visible carriers) authorized menu facts come from ACL-visible carriers (MenuFactService.export_authorized_menu_facts)",
+          "addons/smart_core/handlers/system_init.py:1079-1105 builds each navigation leaf meta with action_id, model=action.res_model, view_modes, route",
+          "addons/smart_core/handlers/system_init.py:1103-1105 and 1079-1087 are the same projection used for acceptance-runtime leaves"
+        ],
+        "consumption": [
+          "frontend/apps/web/src/stores/session.ts:1687-1691 fails closed when navigation.nav is missing (initError 'system.init missing required navigation nav')",
+          "frontend/apps/web/src/app/menu.ts:18-31 findActionMeta / findActionMetaByMenu:33-42 resolve the nav meta by action_id or menu_id",
+          "frontend/apps/web/src/app/resolvers/actionResolver.ts:27-46 resolveMetaFromContract, mergeMeta:48-70 merge nav meta with contract pageInfo.model",
+          "frontend/apps/web/src/views/ActionView.vue:1471 const model = computed(() => actionMeta.value?.model ?? '')"
+        ],
+        "conclusion": "the navigation contract carries action_id + model for every entry, and the list contract additionally exposes pageInfo.model; the frontend does not need the model BEFORE the request."
+      },
+      "model_less_intents": {
+        "shape": "ui.contract.v2 with op in {action, action_open, menu} declares the target as (op, action_id) and legitimately omits model; the backend resolves res_model from the action record. Only op=model requires an explicit model.",
+        "declaration": [
+          "addons/smart_core/handlers/ui_contract_v2.py:565-576 resolves the action and reads info['res_model'] when op in {action, action_open, menu}",
+          "addons/smart_core/handlers/ui_contract_v2.py:4109-4120 maps op->subject for the native form projection and raises when no model authority resolves",
+          "frontend: ui.contract.v2 list request sends op + action_id only; model is a response field, not a request field"
+        ],
+        "observed_product_request": "artifacts/main-scheduled-ci-closeout-20261016/local-browser-chain-performance.json chain.list.requests[0] and chain.query.requests[0]: op=action_open, action_id=878, model=null, view_type=null, intent=ui.contract.v2",
+        "scope_key_rule": "addons/smart_core/models/user_view_preference.py:53-60 build_scope_key: action:<id> wins and the model is ignored when action_id>0, so a model-less product request cannot degrade the scope key"
+      },
+      "model_unknown_attribution": {
+        "source": "docs/contract/cases.yml:1278-1293 registers the contract-shape cases user_view_preference_get_intent_admin / user_view_preference_set_intent_admin with intent_params {} - deliberately neither action_id nor model",
+        "sentinel": "addons/smart_core/handlers/user_view_preference.py:85 (_legacy_scope_key) and addons/smart_core/models/user_view_preference.py:56 (build_scope_key) fall back to model:unknown when action_id<=0 and model is empty",
+        "artifact": "docs/contract/snapshots/user_view_preference_get_intent_admin.json: scope_key=ui:list_columns:list:model:unknown, action=null, model=null; docs/contract/snapshots/user_view_preference_set_intent_admin.json: id=1 WRITTEN under the same sentinel scope_key",
+        "classification": "not an init-contract defect. It is (a) a contract-shape case artifact and (b) a registered preference-boundary gap: when the target is unresolved the SET path persists under a writable sentinel identity, i.e. a default value carrying product semantics.",
+        "disposition": "register inside the preference responsibility closure (deny/downgrade or declare the expected shape); do not rewrite the already-declared snapshots and do not change product code this round"
+      },
+      "product_consumers_all_carry_a_target": [
+        "frontend/apps/web/src/views/ActionView.vue:3254-3266 (watch -> listColumnPreferenceRuntime.sync at 3265) passes identity '' when neither action_id nor model is resolved, so the preference sync is withheld instead of sent to a sentinel",
+        "frontend/apps/web/src/app/runtime/scopedPreferenceRuntime.ts identity/generation/sequence guards",
+        "addons/smart_core/handlers/user_view_preference.py:55-67 _scope_key resolves action first, so a temporarily missing model does not degrade the product scope key"
+      ],
+      "residual": "the model:unknown sentinel gap feeds no product request today; it stays open for the preference responsibility closure, not for this answer"
+    },
+    "preference_responsibility_closure": {
+      "stage_identity": "56f5096422d967d582c2b25ab9a4bfaa03173534 + explicit dirty scope",
+      "status": "boundary_closed_with_one_registered_residual",
+      "identity_enforcement": {
+        "carrier": "addons/smart_core/core/list_preference_policy.py resolve_identity (P0)",
+        "action_type_read_from": "ir.actions.actions.type via sudo (admin-only by stock ACL)",
+        "res_model_read_from": "ir.actions.act_window.res_model via sudo (internal-user readable)",
+        "pattern_owner": "addons/smart_core/delivery/menu_service.py:330, addons/smart_core/app_config_engine/services/resolvers/action_resolver.py:57",
+        "caller_authorization_enforced_by": [
+          "addons/smart_core/core/list_preference_policy.py project -> check_access_rights('read') on the caller env",
+          "addons/smart_core/core/list_preference_policy.py _readable_fields -> check_field_access_rights('read') on the caller env",
+          "_native_columns uses the caller get_view (no sudo), so a denied model yields no columns"
+        ],
+        "observed_codes": {
+          "illegal_identity": 400,
+          "no_read_access": 403,
+          "no_declared_surface": 422
+        },
+        "sentinel_model_unknown_rows": 0
+      },
+      "declared_list_lock": {
+        "p0_registry": "addons/smart_core/utils/contract_governance_registry.py register_formal_list_lock / formal_list_lock_declarations",
+        "p1_declaration": "addons/smart_construction_core/core_extension.py register_formal_list_lock(USER_CONFIRMED_FORMAL_LIST_ACTION_XMLIDS)",
+        "declared_actions": 10,
+        "before_fix_rows_reporting_the_lock": 0,
+        "after_fix_rows_reporting_the_lock": 10,
+        "contract_side_comparison": {
+          "reachable_locked_actions": [
+            878,
+            869
+          ],
+          "verdict_agrees": "2/2 (contract allow_visibility/allow_order false == preference projection false)",
+          "exact_locked_set_and_order_match": [
+            "869"
+          ],
+          "residual": "878: the projection declares 22 locked columns, the contract layoutContract.listProfile carries 21; the extra 'legal_next_action_display' comes from the P1 registered legacy standard list profile (payment.request.list), i.e. pre-existing P1 declaration drift between the registered profile and the action's native tree arch, not introduced by R5. No behavioural effect while visibility/order/width are all locked; registered below.",
+          "unreachable_actions": "the other 8 declared locks have no published menu carrier for this principal in sc_dev_demo, so the contract-side verdict is NOT independently observed for them; their P0 verdict was compared with P1's own derivation (8/8 same set+order except action 610, whose action.view_id carries no tree arch so P1 locks the surface's existing orchestrated columns)."
+        }
+      },
+      "behaviour_counterexamples": {
+        "declared_column_boundary": "submitting id/create_uid/write_date/not_a_field plus hiding 'name' on the locked surface persisted nothing forbidden",
+        "declaration_change": "releasing the in-process declaration flips locked true->false and allow_visibility false->true",
+        "company_switch": "probe company 130 created inside the rollback and granted to the principal: scope_key identical (ui:list_columns:list:action:878) and columns identical, so the declared scope carries no company dimension (design statement, not a silent fallback)",
+        "revoked_access": "suspending the 3 read-ACL rows for payment.request makes the projection refuse with 403 instead of returning the registered profile columns; the 3 rows were restored (3/3)",
+        "undeclared_surface": "ir.model.access refused (403 no read access); a readable model with no declared surface refuses with 422 (unit test)",
+        "illegal_identity_never_writes": "empty identity and model/action mismatch both 400 with 0 preference rows before and after",
+        "save_race_barrier": "make verify.frontend.scoped_preference.runtime.unit: 19 tests passed, including local-edit-vs-slow-GET, A-B-A stale-response, queued write refused on changed authority"
+      },
+      "single_application_owner": {
+        "server": "addons/smart_core/handlers/ui_contract_v2.py no longer reorders columns from stored preference; the preference intent only declares (preference_contract) and stores",
+        "frontend": "frontend/apps/web/src/views/ActionView.vue applyListColumnPreference consuming list_profile.preference_policy (published) and the stored projection, guarded by the declared policy",
+    "stored_read": "returns storage facts only (policy_source=current_page_contract, no preference_contract)"
+  },
+  "http_shape_after_r5_write": {
+    "probe": "make local.dev.runtime.contract_request.probe PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID=878 on sc-local-dev/sc_dev_demo (sce-r5-contract-request-probe-8.log)",
+    "result": "the HTTP response shape is byte-identical to the pre-write probe-7 (median response_bytes 113916, SQL 25, hot deepcopy 26, cache reason assembled_v2_hot_cache_hit), so the R5 write path that stopped the server re-ordering stored preference columns introduced no contract change for this principal",
+    "hot_dispatch_ms": {"median": 90.099, "p95": 206.056, "max": 218.047, "n": 12},
+    "hot_outlier": "hot_4 max 218.047ms is a generation-2 GC pause (hot_gc_ms 127.512); the paired gc-disabled group is median 85.462 / p95 86.467 / max 93.997 with gc_ms 0 (extra over median 8.535ms)",
+    "cost_split": "permission is not the per-request cost (hot median ~3.2ms) while the cold first check is ~133.3ms (cross-confirms R4); the R3 removed copy costs 19.0ms per hot request",
+    "acceptance_pass": false,
+    "acceptance_pass_note": "the probe is a bounded observation by design, not a pass gate"
+  },
+  "registered_residuals": [
+    "878 locked-column inventory differs from the contract layoutContract.listProfile by one P1-registered profile column (owner: P1 declaration drift)",
+        "8 of 10 declared locks are not contract-side observable in sc_dev_demo (no published menu carrier for this principal)",
+        "miss-path double copy in ui_contract_v2.py stays registered (unchanged)",
+        "generation-2 GC stop attribution stays registered (unchanged)",
+        "ctime remains a change-detection signal only; production identity should bind an immutable build or content digest (unchanged)"
+      ]
+    }
+  },
+  "handoff_runtime_performance_20261016": {
+    "owner_request": "finish this round then stop; another executor continues",
+    "writer_worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",
+    "branch": "fix/main-scheduled-ci-closeout-20261016",
+    "head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
+    "dirty": true,
+    "record": "docs/ops/iterations/main_scheduled_ci_closeout_20261016.md#契约装配性能接力交接2026-10-16",
+    "authority": "existing sc-local-dev/sc_dev_demo only; no main checkout writes",
+    "next": "R1 relation-dialog attribution done (24 dialogs/375 SQL, 17 page-reachable + 7 expansion-only targets, res.currency 548ms outlier, hierarchy policy 0). Successor continues at R2 fact/policy/materialization boundary; no full browser matrix.",
+    "stop_state": "owner-requested handoff; no active validation process remains"
+  },
+  "r6_delivery_closeout": {
+    "authorization": "owner green-lit R6 after the R5 adjudication ('同意继续推进')",
+    "order": "R1-R5 consolidated batch review -> delivery documentation and generated-evidence preparation (ci.delivery.freeze.prepare PASS) -> freeze clean HEAD with the complete tracked+untracked fingerprint -> one exact-head ci.local.quick -> independent review and external archive -> make pr.push",
+    "freeze_prepare": {
+      "status": "passed",
+      "log": "artifacts/main-scheduled-ci-closeout-20261016/sce-r6-freeze-prepare.log",
+      "note": "refreshed tracked generated reports only (test_inventory 1539->1543 assets); PASS candidate=unfrozen"
+    },
+    "commit_plan": "layer-owned commits: P0 smart_core+frontend contract/preference, P1 construction core/bundle+demo tests, P4 ops/CI/generated evidence and the run ledger",
+    "open_residuals_carried": "the registered residuals stay registered; none is treated as a delivery blocker for this batch",
+    "not_done_here": "no mainline integration, deployment or end-user acceptance is claimed by this batch"
   }
 }

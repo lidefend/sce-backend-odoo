@@ -1258,3 +1258,64 @@ verify.local.dev.demo_action_roles.orm: guard.prod.forbid
 verify.local.dev.demo_loaded_chains.orm: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_construction_demo TEST_TAGS="demo_loaded_chains" local.dev.test
+
+.PHONY: local.dev.runtime.performance.observe
+local.dev.runtime.performance.observe: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  PRODUCT_PERFORMANCE_MODE="$(if $(PRODUCT_PERFORMANCE_MODE),$(PRODUCT_PERFORMANCE_MODE),observe)" \
+	  PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID="$(PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID)" \
+	  PRODUCT_PERFORMANCE_V2_SHA256="$$(sha256sum addons/smart_core/handlers/ui_contract_v2.py | awk '{print $$1}')" \
+	  PRODUCT_PERFORMANCE_UI_SHA256="$$(sha256sum addons/smart_core/handlers/ui_contract.py | awk '{print $$1}')" \
+	  PRODUCT_PERFORMANCE_ASSEMBLER_SHA256="$$(sha256sum addons/smart_core/app_config_engine/services/assemblers/page_assembler.py | awk '{print $$1}')" \
+	  PRODUCT_PERFORMANCE_DISPATCHER_SHA256="$$(sha256sum addons/smart_core/app_config_engine/services/dispatchers/action_dispatcher.py | awk '{print $$1}')" \
+	  PRODUCT_PERFORMANCE_PREFERENCE_SHA256="$$(sha256sum addons/smart_core/handlers/user_view_preference.py | awk '{print $$1}')" \
+	  PRODUCT_PERFORMANCE_REQUEST_CASE="$(if $(PRODUCT_PERFORMANCE_REQUEST_CASE),$(PRODUCT_PERFORMANCE_REQUEST_CASE),web_startup)" \
+	  PRODUCT_PERFORMANCE_STAGE_PROBE_RELATIONS="$(PRODUCT_PERFORMANCE_STAGE_PROBE_RELATIONS)" \
+	  PRODUCT_PERFORMANCE_SCENE_SHA256="$$(sha256sum addons/smart_core/governance/scene_normalizer.py | awk '{print $$1}')" \
+	  PRODUCT_PERFORMANCE_MENU_SHA256="$$(sha256sum addons/smart_core/delivery/menu_service.py | awk '{print $$1}')" \
+	  PRODUCT_PERFORMANCE_HANDLER_SHA256="$$(sha256sum addons/smart_core/handlers/system_init.py | awk '{print $$1}')" \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/verify/local_dev_runtime_performance.py
+
+.PHONY: local.dev.runtime.performance.browser
+local.dev.runtime.performance.browser: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  PRODUCT_PERFORMANCE_BROWSER_SCOPE="$(if $(PRODUCT_PERFORMANCE_BROWSER_SCOPE),$(PRODUCT_PERFORMANCE_BROWSER_SCOPE),login)" \
+	  bash scripts/verify/local_dev_runtime_performance_browser.sh
+
+# Read-only cache-identity probe for the R2 relation-demand boundary: where the
+# R2 methods run relative to the persisted runtime-source write, and whether the
+# persisted source token covers the affected code identity. Rollback-only writes,
+# commit refused; see scripts/verify/local_dev_runtime_cache_identity_probe.py.
+.PHONY: local.dev.runtime.cache_identity.probe
+local.dev.runtime.cache_identity.probe: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID="$(PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID)" \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/verify/local_dev_runtime_cache_identity_probe.py
+
+# Read-only permission-gate attribution probe for R4: splits the controller
+# ``permission`` segment into its real sub-phases and separates the process-first
+# initialization cost from the per-request cost, on the registered demo finance
+# principal and the observed action. Commit is refused; no product code, schema,
+# fixture or ACL change; see scripts/verify/local_dev_runtime_permission_probe.py.
+.PHONY: local.dev.runtime.permission.probe
+local.dev.runtime.permission.probe: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID="$(PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID)" \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/verify/local_dev_runtime_permission_probe.py
+
+# Read-only bounded contract-request observation for R5: one fixed identity and
+# one fixed ui.contract.v2 request repeated for a real distribution, with an
+# explicit hot/variant/cold split, the router dispatch_* segments, SQL counts
+# a copy.deepcopy profile, an inner attribution of authority_and_cache_lookup
+# and a paired garbage-collection control group for one-off pauses. Commit is
+# refused; no product code, schema, fixture or ACL change; see
+# scripts/verify/local_dev_runtime_contract_request_probe.py.
+.PHONY: local.dev.runtime.contract_request.probe
+local.dev.runtime.contract_request.probe: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID="$(PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID)" \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/verify/local_dev_runtime_contract_request_probe.py

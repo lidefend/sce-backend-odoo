@@ -111,13 +111,13 @@ def scan(root: Path) -> list[Finding]:
                 "runs-on: ubuntu-latest",
                 'git fetch --no-tags origin "${HEAD_SHA}"',
                 'test "$(git rev-parse FETCH_HEAD)" = "${HEAD_SHA}"',
-                "make test.chatter-timeline.authorization.orm",
+                "make test.candidate.contract-profiles.orm",
                 "scripts/ci/self_hosted_runner_cleanup.sh",
             )
             if any(item not in text for item in required):
                 findings.add(Finding("GA012", relative, "PROFESSIONAL_TRUST_BOUNDARY_INCOMPLETE"))
             prepare_marker = "- name: Prepare host-owned artifact root before container checks"
-            orm_marker = "- name: Prove candidate chatter authorization with real ORM"
+            orm_marker = "- name: Prove settlement component profile with real ORM"
             full_marker = "- name: Run full professional quality gate (serialized artifact writers)"
             mainline_marker = "- name: Run mainline integrity gate"
             prepare_position = text.find(prepare_marker)
