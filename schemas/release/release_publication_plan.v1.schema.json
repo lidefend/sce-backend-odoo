@@ -13,11 +13,16 @@
     "preflight"
   ],
   "properties": {
-    "schema_version": {"const": "release_publication_plan.v1"},
+    "schema_version": {
+      "const": "release_publication_plan.v1"
+    },
     "publication_attempt_id": {
       "pattern": "^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}$"
     },
-    "created_at": {"type": "string", "format": "date-time"},
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "identity": {
       "type": "object",
       "additionalProperties": false,
@@ -47,20 +52,39 @@
         "live_github_main_tree",
         "live_gitee_main_sha",
         "live_gitee_main_tree",
-        "candidate_reachable_from_live_main"
+        "candidate_reachable_from_live_main",
+        "candidate_frontend_archive_sha256",
+        "candidate_frontend_sbom_sha256",
+        "candidate_frontend_image_content_id"
       ],
       "properties": {
-        "version": {"pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+$"},
+        "version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+$"
+        },
         "candidate_attempt_id": {
           "pattern": "^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}$"
         },
-        "candidate_source_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_source_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_created_github_main_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_created_github_main_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_created_gitee_main_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_created_gitee_main_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_required_checks_head_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_source_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_source_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_created_github_main_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_created_github_main_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_created_gitee_main_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_created_gitee_main_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_required_checks_head_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
         "candidate_required_checks_evidence": {
           "type": "object",
           "additionalProperties": false,
@@ -71,35 +95,84 @@
             "release_candidate_gate"
           ],
           "properties": {
-            "public_guard": {"const": "success"},
-            "professional_authorization": {"const": "success"},
-            "professional_quality_gate": {"const": "success"},
-            "release_candidate_gate": {"const": "success"}
+            "public_guard": {
+              "const": "success"
+            },
+            "professional_authorization": {
+              "const": "success"
+            },
+            "professional_quality_gate": {
+              "const": "success"
+            },
+            "release_candidate_gate": {
+              "const": "success"
+            }
           }
         },
         "candidate_evidence_sha256": {
           "type": "object",
           "minProperties": 1,
-          "additionalProperties": {"pattern": "^[0-9a-f]{64}$"},
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{64}$"
+          },
           "propertyNames": {
             "pattern": "^(attempts/[A-Za-z0-9._/-]+|latest\\.json)$"
           }
         },
-        "candidate_report_sha256": {"pattern": "^[0-9a-f]{64}$"},
-        "candidate_manifest_sha256": {"pattern": "^[0-9a-f]{64}$"},
-        "candidate_archive_sha256": {"pattern": "^[0-9a-f]{64}$"},
-        "candidate_sbom_sha256": {"pattern": "^[0-9a-f]{64}$"},
-        "candidate_image_content_id": {"pattern": "^sha256:[0-9a-f]{64}$"},
-        "candidate_tool_contract_sha256": {"pattern": "^[0-9a-f]{64}$"},
-        "publication_tool_source_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "publication_tool_source_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "publication_tool_contract_sha256": {"pattern": "^[0-9a-f]{64}$"},
-        "expected_live_main_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "live_github_main_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "live_github_main_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "live_gitee_main_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "live_gitee_main_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_reachable_from_live_main": {"const": true}
+        "candidate_report_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_archive_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_sbom_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_image_content_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "candidate_tool_contract_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "publication_tool_source_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "publication_tool_source_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "publication_tool_contract_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "expected_live_main_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "live_github_main_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "live_github_main_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "live_gitee_main_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "live_gitee_main_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_reachable_from_live_main": {
+          "const": true
+        },
+        "candidate_frontend_archive_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_frontend_sbom_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_frontend_image_content_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
       }
     },
     "targets": {
@@ -111,20 +184,48 @@
         "git_tag",
         "github_repository",
         "github_release",
-        "gitee_tag"
+        "gitee_tag",
+        "frontend_registry_repository",
+        "frontend_registry_tags"
       ],
       "properties": {
-        "registry_repository": {"const": "ghcr.io/lidefend/sce-product"},
+        "registry_repository": {
+          "const": "ghcr.io/lidefend/sce-product"
+        },
         "registry_tags": {
           "type": "array",
           "minItems": 2,
           "maxItems": 2,
-          "items": {"type": "string", "pattern": "^[A-Za-z0-9./:_-]+$"}
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9./:_-]+$"
+          }
         },
-        "git_tag": {"type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+$"},
-        "github_repository": {"const": "lidefend/sce-backend-odoo"},
-        "github_release": {"type": "string"},
-        "gitee_tag": {"type": "string"}
+        "git_tag": {
+          "type": "string",
+          "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+$"
+        },
+        "github_repository": {
+          "const": "lidefend/sce-backend-odoo"
+        },
+        "github_release": {
+          "type": "string"
+        },
+        "gitee_tag": {
+          "type": "string"
+        },
+        "frontend_registry_repository": {
+          "const": "ghcr.io/lidefend/sce-frontend"
+        },
+        "frontend_registry_tags": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9./:_-]+$"
+          }
+        }
       }
     },
     "preflight": {
@@ -145,8 +246,12 @@
         "candidate_evidence_verified"
       ],
       "properties": {
-        "candidate_created_github_main_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_created_gitee_main_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_created_github_main_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_created_gitee_main_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
         "candidate_required_checks": {
           "type": "object",
           "additionalProperties": false,
@@ -157,21 +262,47 @@
             "release_candidate_gate"
           ],
           "properties": {
-            "public_guard": {"const": "success"},
-            "professional_authorization": {"const": "success"},
-            "professional_quality_gate": {"const": "success"},
-            "release_candidate_gate": {"const": "success"}
+            "public_guard": {
+              "const": "success"
+            },
+            "professional_authorization": {
+              "const": "success"
+            },
+            "professional_quality_gate": {
+              "const": "success"
+            },
+            "release_candidate_gate": {
+              "const": "success"
+            }
           }
         },
-        "publication_tool_source_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "publication_tool_source_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "live_github_main_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "live_github_main_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "live_gitee_main_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "live_gitee_main_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_reachable_from_live_main": {"const": true},
-        "external_targets_absent": {"const": true},
-        "candidate_evidence_verified": {"const": true}
+        "publication_tool_source_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "publication_tool_source_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "live_github_main_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "live_github_main_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "live_gitee_main_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "live_gitee_main_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_reachable_from_live_main": {
+          "const": true
+        },
+        "external_targets_absent": {
+          "const": true
+        },
+        "candidate_evidence_verified": {
+          "const": true
+        }
       }
     }
   }

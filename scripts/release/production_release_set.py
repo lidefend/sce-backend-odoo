@@ -57,6 +57,7 @@ def load_lock(path: Path) -> dict:
     required = {
         "schema_version", "release_version", "product_sha", "product_tree",
         "product_image", "product_image_digest", "customer_sha", "customer_tree",
+        "frontend_image", "frontend_image_digest",
         "tenant_key", "customer_package", "customer_package_digest", "customer_package_signature_key_id",
         "customer_package_manifest", "customer_package_manifest_digest",
         "customer_package_schema_version", "customer_package_build_product_sha",
@@ -74,7 +75,7 @@ def load_lock(path: Path) -> dict:
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_OPERATOR_SCHEMA_INVALID")
     if set(payload) != required:
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_SCHEMA_INVALID")
-    if payload["schema_version"] != "sce.production_release_set.v4":
+    if payload["schema_version"] != "sce.production_release_set.v5":
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_SCHEMA_INVALID")
     expected_version = (Path(__file__).resolve().parents[2] / "VERSION").read_text().strip()
     if payload["release_version"] != expected_version:
@@ -86,6 +87,10 @@ def load_lock(path: Path) -> dict:
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_IMAGE_REFERENCE_MISMATCH")
     if not DIGEST.fullmatch(str(payload["product_image_digest"])):
         raise ReleaseSetError("PRODUCTION_RELEASE_SET_IMAGE_DIGEST_INVALID")
+    if payload["frontend_image_digest"] != str(payload["frontend_image"]).partition("@")[2]:
+        raise ReleaseSetError("PRODUCTION_RELEASE_SET_FRONTEND_IMAGE_REFERENCE_MISMATCH")
+    if not DIGEST.fullmatch(str(payload["frontend_image_digest"])):
+        raise ReleaseSetError("PRODUCTION_RELEASE_SET_FRONTEND_IMAGE_DIGEST_INVALID")
     for name in ("customer_package_digest", "payload_digest"):
         if not CHECKSUM.fullmatch(str(payload[name])):
             raise ReleaseSetError(f"PRODUCTION_RELEASE_SET_{name.upper()}_INVALID")
@@ -229,7 +234,8 @@ def validate_environment(payload: dict) -> None:
         "EXPECTED_RELEASE_SHA": payload["product_sha"],
         "EXPECTED_IMAGE_DIGEST": payload["product_image_digest"],
         "ODOO_IMAGE_REF": payload["product_image"],
-        "NGINX_IMAGE_REF": payload["product_image"],
+        "EXPECTED_FRONTEND_IMAGE_DIGEST": payload["frontend_image_digest"],
+        "FRONTEND_IMAGE_REF": payload["frontend_image"],
     }
     for name, value in expected.items():
         if os.environ.get(name) != value:
@@ -277,6 +283,7 @@ def main() -> int:
             "release_version": payload["release_version"],
             "product_sha": payload["product_sha"],
             "product_image_digest": payload["product_image_digest"],
+            "frontend_image_digest": payload["frontend_image_digest"],
             "customer_package_digest": payload["customer_package_digest"],
             "customer_package_manifest_digest": payload[
                 "customer_package_manifest_digest"

@@ -19,6 +19,7 @@ prefix="sc-contract-hardening-${stamp}"
 db="sc_contract_hardening_test_${stamp//-/}"
 image="sce-contract-hardening:${short_sha}"
 builder="sce-contract-hardening-builder:${short_sha}"
+frontend_image="sce-contract-hardening-frontend:${short_sha}"
 network="${prefix}-network"
 db_container="${prefix}-db"
 redis_container="${prefix}-redis"
@@ -49,7 +50,7 @@ cleanup() {
   for volume in "$database_volume" "$redis_volume" "$filestore_volume" "$session_volume" "$tmp_volume" "$log_volume"; do
     docker volume rm "$volume" >/dev/null 2>&1 || true
   done
-  docker image rm "$image" "$builder" >/dev/null 2>&1 || true
+  docker image rm "$image" "$builder" "$frontend_image" >/dev/null 2>&1 || true
   rm -rf -- "$context_dir" "$log_dir"
   return "$status"
 }
@@ -67,19 +68,23 @@ while IFS= read -r -d '' dir; do
   touch -h -r "$root/$rel" "$dir"
 done < <(find "$context_dir" -type d -print0)
 find "$context_dir/frontend" -exec touch -h -d '@0' {} +
-docker build --file "$context_dir/Dockerfile.production-frontend-builder" --tag "$builder" "$context_dir"
-builder_container="$(docker create "$builder")"
 mkdir -p "$context_dir/frontend/apps/web/dist-production-candidate"
-docker cp "$builder_container:/build/frontend/apps/web/dist/." "$context_dir/frontend/apps/web/dist-production-candidate/"
-docker rm "$builder_container" >/dev/null
+docker build --file "$context_dir/Dockerfile.production-frontend-builder" \
+  --target frontend-dist --output "type=local,dest=${context_dir}/frontend/apps/web/dist-production-candidate" \
+  --tag "$builder" "$context_dir"
+[[ -s "$context_dir/frontend/apps/web/dist-production-candidate/index.html" ]]
 
 frontend_hash="$(find "$context_dir/frontend/apps/web/dist-production-candidate" -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
 product_version="$(python3 scripts/release/product_release.py --version)"
+build_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 docker build --file "$context_dir/Dockerfile.production-candidate" --tag "$image" \
   --build-arg "SOURCE_SHA=$source_sha" --build-arg "PRODUCT_VERSION=$product_version" \
-  --build-arg "FRONTEND_BUILD_SHA256=$frontend_hash" --build-arg "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  --build-arg "PYTHON_VERSION=registry-pinned" --build-arg "NODE_VERSION=22.17.0-build-only" \
-  --build-arg "PNPM_VERSION=9.12.3-build-only" "$context_dir"
+  --build-arg "BUILD_TIME=$build_time" --build-arg "PYTHON_VERSION=registry-pinned" "$context_dir"
+docker build --file "$context_dir/Dockerfile.production-frontend" --tag "$frontend_image" \
+  --build-arg "SOURCE_SHA=$source_sha" --build-arg "PRODUCT_VERSION=$product_version" \
+  --build-arg "FRONTEND_BUILD_SHA256=$frontend_hash" --build-arg "BUILD_TIME=$build_time" \
+  --build-arg "PNPM_VERSION=9.12.3-build-only" \
+  "$context_dir"
 
 runtime_user="$(docker image inspect "$image" --format '{{.Config.User}}')"
 [[ -n "$runtime_user" && "$runtime_user" != "0" && "$runtime_user" != "root" ]]
@@ -93,6 +98,27 @@ docker run --rm --entrypoint sh "$image" -eu -c '
   cd /opt/sce-product/contracts
   sha256sum -c formal_business_product_menu_policy_v1.json.sha256
 '
+
+if ! docker run --rm --entrypoint sh "$image" -eu -c '
+  ! test -e /opt/sce/frontend
+  ! test -e /usr/share/nginx/html/index.html
+  ! command -v nginx
+'; then
+  echo "[contract-image] Odoo image must not contain frontend assets or nginx" >&2; exit 1
+fi
+frontend_image_id="$(docker image inspect "$frontend_image" --format '{{.Id}}')"
+frontend_label_sha="$(docker image inspect "$frontend_image" --format '{{index .Config.Labels "io.sce.frontend.sha256"}}')"
+[[ "$frontend_label_sha" == "$frontend_hash" ]] || {
+  echo "[contract-image] io.sce.frontend.sha256 must equal the frontend build fingerprint" >&2; exit 1
+}
+if ! docker run --rm -e "EXPECTED_FRONTEND_SHA=$frontend_hash" --entrypoint sh "$frontend_image" -eu -c '
+  test -s /usr/share/nginx/html/index.html
+  test -s /usr/share/nginx/html/.build-sha256
+  test "$(cat /usr/share/nginx/html/.build-sha256)" = "$EXPECTED_FRONTEND_SHA"
+  command -v nginx >/dev/null
+'; then
+  echo "[contract-image] frontend image is missing static assets or nginx" >&2; exit 1
+fi
 
 docker network create "$network" >/dev/null
 for volume in "$database_volume" "$redis_volume" "$filestore_volume" "$session_volume" "$tmp_volume" "$log_volume"; do
@@ -108,7 +134,9 @@ docker exec "$db_container" pg_isready -U odoo -d postgres >/dev/null
 image_id="$(docker image inspect "$image" --format '{{.Id}}')"
 release_identity_dir="$log_dir/release-identity"
 mkdir -p "$release_identity_dir"
-SOURCE_SHA="$source_sha" IMAGE_DIGEST="$image_id" RELEASE_IDENTITY_DIR="$release_identity_dir" python3 - <<'PY'
+SOURCE_SHA="$source_sha" IMAGE_DIGEST="$image_id" FRONTEND_IMAGE_DIGEST="$frontend_image_id" \
+  FRONTEND_SHA256="$frontend_hash" PRODUCT_VERSION="$product_version" \
+  RELEASE_IDENTITY_DIR="$release_identity_dir" python3 - <<'PY'
 import hashlib
 import json
 import os
@@ -119,12 +147,19 @@ manifest = root / "product-release-manifest.json"
 manifest.write_text(
     json.dumps(
         {
-            "schema_version": "product_release_manifest.v3",
+            "schema_version": "product_release_manifest.v4",
             "repository": "lidefend/sce-backend-odoo",
             "branch": "main",
+            "release_version": os.environ["PRODUCT_VERSION"],
+            "product_version": os.environ["PRODUCT_VERSION"],
             "source_sha": os.environ["SOURCE_SHA"],
             "oci_revision": os.environ["SOURCE_SHA"],
             "container_source_revision": os.environ["SOURCE_SHA"],
+            "image": "ghcr.io/lidefend/sce-product:contract-hardening",
+            "image_tags": [
+                "ghcr.io/lidefend/sce-product:contract-hardening",
+                f"ghcr.io/lidefend/sce-product:sha-{os.environ['SOURCE_SHA'][:12]}",
+            ],
             "image_digest": os.environ["IMAGE_DIGEST"],
             "registry_repository": "ghcr.io/lidefend/sce-product",
             "registry_refs": [
@@ -132,10 +167,34 @@ manifest.write_text(
                 f"ghcr.io/lidefend/sce-product@{os.environ['IMAGE_DIGEST']}",
             ],
             "local_image_id": os.environ["IMAGE_DIGEST"],
+            "frontend_image": "ghcr.io/lidefend/sce-frontend:contract-hardening",
+            "frontend_image_tags": [
+                "ghcr.io/lidefend/sce-frontend:contract-hardening",
+                f"ghcr.io/lidefend/sce-frontend:sha-{os.environ['SOURCE_SHA'][:12]}",
+            ],
+            "frontend_registry_repository": "ghcr.io/lidefend/sce-frontend",
+            "frontend_registry_refs": [
+                f"ghcr.io/lidefend/sce-frontend@{os.environ['FRONTEND_IMAGE_DIGEST']}",
+                f"ghcr.io/lidefend/sce-frontend@{os.environ['FRONTEND_IMAGE_DIGEST']}",
+            ],
+            "frontend_image_digest": os.environ["FRONTEND_IMAGE_DIGEST"],
+            "frontend_local_image_id": os.environ["FRONTEND_IMAGE_DIGEST"],
+            "frontend_sha256": os.environ["FRONTEND_SHA256"],
+            "frontend_sbom_sha256": "d" * 64,
+            "frontend_archive_sha256": "e" * 64,
+            "frontend_archive_config_digest": os.environ["FRONTEND_IMAGE_DIGEST"],
+            "frontend_archive_reload_image_id": os.environ["FRONTEND_IMAGE_DIGEST"],
+            "base_image_digests": {
+                "frontend_builder": "sha256:" + "1" * 64,
+                "frontend_runtime": "sha256:" + "2" * 64,
+                "odoo_runtime": "sha256:" + "3" * 64,
+            },
             "archive_config_digest": os.environ["IMAGE_DIGEST"],
             "archive_reload_image_id": os.environ["IMAGE_DIGEST"],
             "archive_sha256": "a" * 64,
             "baseline_checksum": "b" * 64,
+            "candidate_status": "rc",
+            "deployment_status": "not_deployed",
             "scan": {
                 "status": "completed",
                 "source_sha": os.environ["SOURCE_SHA"],
@@ -148,6 +207,17 @@ manifest.write_text(
                     "SECRET": 0,
                 },
                 "policy": {"result": "pass"},
+                "frontend": {
+                    "image_digest": os.environ["FRONTEND_IMAGE_DIGEST"],
+                    "counts": {
+                        "CRITICAL": 0,
+                        "HIGH": 0,
+                        "MEDIUM": 0,
+                        "LOW": 0,
+                        "SECRET": 0,
+                    },
+                    "policy": {"result": "pass"},
+                },
             },
         },
         sort_keys=True,
@@ -172,6 +242,7 @@ common_env=(
   -e "SC_FILESTORE_VOLUME=$filestore_volume" -e "SC_SESSION_VOLUME=$session_volume"
   -e "SC_TMP_VOLUME=$tmp_volume" -e "SC_LOG_VOLUME=$log_volume" -e "EXPECTED_RELEASE_SHA=$source_sha"
   -e "EXPECTED_IMAGE_DIGEST=$image_id"
+  -e "EXPECTED_FRONTEND_IMAGE_DIGEST=$frontend_image_id"
   -e RELEASE_MANIFEST_PATH=/opt/sce-release/product-release-manifest.json
   -e RELEASE_MANIFEST_CHECKSUM_PATH=/opt/sce-release/product-release-manifest.sha256
 )

@@ -217,6 +217,8 @@ printf '{"status":"PASS","changed":true,"root":"%s"}\n' "$final"
         "--product-tree", args.product_tree,
         "--product-image", args.product_image,
         "--product-image-digest", args.product_image_digest,
+        "--frontend-image", args.frontend_image,
+        "--frontend-image-digest", args.frontend_image_digest,
         "--customer-sha", args.customer_sha,
         "--customer-tree", args.customer_tree,
         "--tenant-key", args.tenant_key,
@@ -260,6 +262,8 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--product-tree", required=True)
     result.add_argument("--product-image", required=True)
     result.add_argument("--product-image-digest", required=True)
+    result.add_argument("--frontend-image", required=True)
+    result.add_argument("--frontend-image-digest", required=True)
     result.add_argument("--customer-sha", required=True)
     result.add_argument("--customer-tree", required=True)
     result.add_argument("--tenant-key", required=True)

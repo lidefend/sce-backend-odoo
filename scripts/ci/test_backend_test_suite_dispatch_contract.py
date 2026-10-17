@@ -26,14 +26,41 @@ class BackendTestSuiteDispatchContractTest(unittest.TestCase):
         cache = steps['Restore frontend build layers']['with']
         self.assertEqual(cache['path'], '${{ runner.temp }}/backend-frontend-buildkit')
         self.assertIn('frontend/**', cache['key'])
-        self.assertIn('Dockerfile', cache['key'])
+        self.assertIn('Dockerfile.production-frontend-builder', cache['key'])
+        self.assertNotIn("hashFiles('Dockerfile'", cache['key'])
         build = steps['Calculate frontend build fingerprint']
         self.assertNotIn('if', build)
         self.assertIn('--cache-from', build['run'])
         self.assertIn('--cache-to', build['run'])
-        self.assertIn('test "${recorded_hash}" = "${calculated_hash}"', build['run'])
+        self.assertIn('--file Dockerfile.production-frontend-builder', build['run'])
+        self.assertIn('--target frontend-dist', build['run'])
+        self.assertNotIn('frontend-artifact', build['run'])
+        self.assertIn('test -s "${dist_dir}/index.html"', build['run'])
+        self.assertIn('test "${calculated_hash}" = "${EXPECTED_FRONTEND_BUILD_SHA256}"', build['run'])
+        self.assertIn('FRONTEND_DIST_DIR=', build['run'])
         for name in ('Build images and start database', 'Run backend test suite per module'):
             self.assertNotIn('if', steps[name])
+
+    def test_frontend_fingerprint_uses_dedicated_builder_stage(self):
+        workflows = (
+            ROOT / '.github/workflows/backend_test_suite.yml',
+            ROOT / '.github/workflows/demo-ci.yml',
+        )
+        for path in workflows:
+            with self.subTest(workflow=path.name):
+                workflow = yaml.safe_load(path.read_text())
+                steps = {
+                    step['name']: step
+                    for job in workflow['jobs'].values()
+                    for step in job.get('steps', [])
+                    if 'name' in step
+                }
+                build = steps['Calculate frontend build fingerprint']['run']
+                self.assertIn('--file Dockerfile.production-frontend-builder', build)
+                self.assertIn('--target frontend-dist', build)
+                self.assertNotIn('--target frontend-artifact', build)
+                self.assertNotIn('frontend-verified', build)
+                self.assertIn('find . -type f -print0', build)
 
     def test_dispatch_is_exact_head_and_full_suite_only(self):
         makefile = (ROOT / "make/ci.mk").read_text(encoding="utf-8")

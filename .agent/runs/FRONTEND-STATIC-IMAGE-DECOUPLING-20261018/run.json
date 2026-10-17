@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "id": "FRONTEND-STATIC-IMAGE-DECOUPLING-20261018",
+  "branch": "fix/frontend-static-image-decoupling-20261018",
+  "baseline_sha": "f90461c2e4d1bfb3b6551add19d357e76a8443ee",
+  "status": "active",
+  "goal": ".agent/goals/FRONTEND-STATIC-IMAGE-DECOUPLING-20261018.yaml",
+  "record": "docs/ops/iterations/frontend_static_image_decoupling_20261018.md",
+  "scope": [
+    "Dockerfile",
+    "Dockerfile.production-candidate",
+    "Dockerfile.production-frontend",
+    "Dockerfile.production-frontend-builder",
+    "docker-compose.yml",
+    "docker-compose.production-candidate.yml",
+    "make/release.mk",
+    "make/production_blocker.mk",
+    "scripts/release/",
+    "scripts/ops/",
+    "scripts/verify/",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/test/admin_vis_p3_project_record_rule_orm.sh",
+    "schemas/release/",
+    ".github/workflows/backend_test_suite.yml",
+    ".github/workflows/demo-ci.yml",
+    "docs/ops/",
+    ".agent/active-runs.json",
+    ".agent/goals/FRONTEND-STATIC-IMAGE-DECOUPLING-20261018.yaml",
+    ".agent/runs/FRONTEND-STATIC-IMAGE-DECOUPLING-20261018/run.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools and already built docker images; no production or shared database writes"
+  },
+  "checks": {
+    "frontend_static_image_decoupling": {
+      "target": "verify.frontend.static.image.decoupling",
+      "inputs": [
+        "Dockerfile",
+        "Dockerfile.production-candidate",
+        "Dockerfile.production-frontend",
+        "Dockerfile.production-frontend-builder",
+        "docker-compose.yml",
+        "docker-compose.production-candidate.yml",
+        "make/release.mk",
+        "make/production_blocker.mk",
+        "scripts/release",
+        "scripts/ops",
+        "scripts/verify",
+        "schemas/release"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Owner acceptance of the local batch; commit and push only through the compliant Make entry when requested."
+}

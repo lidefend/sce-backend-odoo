@@ -225,26 +225,27 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: ${{ runner.temp }}/backend-frontend-buildkit
-          key: backend-frontend-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Dockerfile', '.dockerignore', 'frontend/**', '.github/workflows/backend_test_suite.yml') }}
+          key: backend-frontend-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Dockerfile.production-frontend-builder', '.dockerignore', 'frontend/**', '.github/workflows/backend_test_suite.yml') }}
           restore-keys: |
-            backend-frontend-v1-${{ runner.os }}-${{ runner.arch }}-
+            backend-frontend-v2-${{ runner.os }}-${{ runner.arch }}-
 
-      # The compose build enforces the immutable frontend fingerprint via the
-      # Dockerfile 'frontend-verified' stage, so the expected hash must be
-      # derived from the 'frontend-artifact' stage before docker compose
-      # build (same approach as demo-ci.yml). First real execution on the
-      # self-hosted runner (run 32179847781) failed without this step.
+      # The frontend is a separate static carrier: the Odoo Dockerfile no
+      # longer has any frontend/nginx stage. Build the dist from the dedicated
+      # builder export stage and derive the immutable fingerprint from those
+      # files. The exported directory is also what the local-dev nginx service
+      # mounts, so it stays available for the compose build below.
       - name: Calculate frontend build fingerprint
         run: |
           set -euo pipefail
-          artifact_dir="${RUNNER_TEMP}/frontend-artifact-${GITHUB_RUN_ID}"
+          dist_dir="${RUNNER_TEMP}/frontend-dist-${GITHUB_RUN_ID}"
+          rm -rf "${dist_dir}"
           docker buildx build \
-            --file Dockerfile \
-            --target frontend-artifact \
+            --file Dockerfile.production-frontend-builder \
+            --target frontend-dist \
             --cache-from "type=local,src=${RUNNER_TEMP}/backend-frontend-buildkit" \
             --cache-to "type=local,dest=${RUNNER_TEMP}/backend-frontend-buildkit-next,mode=max" \
-            --output "type=local,dest=${artifact_dir}" \
-            --build-arg "APT_MIRROR=${APT_MIRROR:-default}" \
+            --output "type=local,dest=${dist_dir}" \
+            --build-arg "VITE_ODOO_DB=${DB_NAME}" \
             .
           # Export into a fresh directory so old cache blobs cannot accumulate.
           python3 - <<'PY_CACHE'
@@ -256,14 +257,15 @@ jobs:
           (root / 'backend-frontend-buildkit-next').rename(previous)
           PY_CACHE
           printf 'frontend layers exact-key-hit=%s; output hash revalidated below\n' '${{ steps.frontend_layers.outputs.cache-hit }}' >> "${GITHUB_STEP_SUMMARY}"
-          recorded_hash="$(cat "${artifact_dir}/.build-sha256")"
-          calculated_hash="$(cd "${artifact_dir}" && LC_ALL=C find . -type f ! -name .build-sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
-          test -n "${recorded_hash}"
-          test "${recorded_hash}" = "${calculated_hash}"
-          echo "FRONTEND_BUILD_SHA256=${recorded_hash}" >> "${GITHUB_ENV}"
+          test -s "${dist_dir}/index.html"
+          calculated_hash="$(cd "${dist_dir}" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
+          test -n "${calculated_hash}"
+          if [ -n "${EXPECTED_FRONTEND_BUILD_SHA256:-}" ]; then
+            test "${calculated_hash}" = "${EXPECTED_FRONTEND_BUILD_SHA256}"
+          fi
+          echo "FRONTEND_BUILD_SHA256=${calculated_hash}" >> "${GITHUB_ENV}"
+          echo "FRONTEND_DIST_DIR=${dist_dir}" >> "${GITHUB_ENV}"
           echo "SOURCE_SHA=${HEAD_SHA}" >> "${GITHUB_ENV}"
-          find "${artifact_dir}" -mindepth 1 -delete
-          rmdir "${artifact_dir}"
 
       - name: Build images and start database
         run: |

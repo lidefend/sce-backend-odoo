@@ -41,56 +41,89 @@ SHA = "a" * 40
 TREE = "b" * 40
 VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 IMAGE_ID = "sha256:" + "c" * 64
+FRONTEND_IMAGE_ID = "sha256:" + "7" * 64
 CONTRACT = "f" * 64
 ATTEMPT = "20260724T120000Z-" + "1" * 32
 CREATED_AT = "2026-07-24T12:00:00Z"
+BACKEND_TAGS = [
+    f"ghcr.io/lidefend/sce-product:{VERSION}",
+    f"ghcr.io/lidefend/sce-product:sha-{SHA[:12]}",
+]
+FRONTEND_TAGS = [
+    f"ghcr.io/lidefend/sce-frontend:{VERSION}",
+    f"ghcr.io/lidefend/sce-frontend:sha-{SHA[:12]}",
+]
+
+
+def write_docker_archive(path: Path, tags: list[str], config_digest: str) -> None:
+    rows = [
+        {
+            "Config": f"blobs/sha256/{config_digest}",
+            "RepoTags": tags,
+            "Layers": [],
+        }
+    ]
+    payload = json.dumps(rows).encode()
+    with tarfile.open(path, "w") as handle:
+        member = tarfile.TarInfo("manifest.json")
+        member.size = len(payload)
+        handle.addfile(member, io.BytesIO(payload))
 
 
 def write_candidate(root: Path) -> None:
     (root / "candidate-contract.sha256").write_text(CONTRACT + "\n", encoding="utf-8")
     archive = root / "candidate-image.tar"
     config_digest = "e" * 64
-    archive_rows = [
-        {
-            "Config": f"blobs/sha256/{config_digest}",
-            "RepoTags": [
-                f"ghcr.io/lidefend/sce-product:{VERSION}",
-                f"ghcr.io/lidefend/sce-product:sha-{SHA[:12]}",
-            ],
-            "Layers": [],
-        }
-    ]
-    manifest_bytes = json.dumps(archive_rows).encode()
-    with tarfile.open(archive, "w") as handle:
-        member = tarfile.TarInfo("manifest.json")
-        member.size = len(manifest_bytes)
-        handle.addfile(member, io.BytesIO(manifest_bytes))
+    write_docker_archive(archive, BACKEND_TAGS, config_digest)
+    frontend_archive = root / "candidate-frontend-image.tar"
+    frontend_config_digest = "9" * 64
+    write_docker_archive(frontend_archive, FRONTEND_TAGS, frontend_config_digest)
     frontend = "d" * 64
     (root / "frontend-build.sha256").write_text(frontend + "\n", encoding="utf-8")
     (root / "reloaded-image-id.txt").write_text(IMAGE_ID + "\n", encoding="utf-8")
+    (root / "reloaded-frontend-image-id.txt").write_text(
+        FRONTEND_IMAGE_ID + "\n", encoding="utf-8"
+    )
     image = {
-        "schema_version": 2,
+        "schema_version": 3,
         "source_sha": SHA,
         "oci_revision": SHA,
         "container_source_revision": SHA,
         "source_tree_sha": TREE,
         "product_version": VERSION,
         "image": f"ghcr.io/lidefend/sce-product:{VERSION}",
-        "image_tags": [
-            f"ghcr.io/lidefend/sce-product:{VERSION}",
-            f"ghcr.io/lidefend/sce-product:sha-{SHA[:12]}",
-        ],
+        "image_tags": list(BACKEND_TAGS),
+        "frontend_image": f"ghcr.io/lidefend/sce-frontend:{VERSION}",
+        "frontend_image_tags": list(FRONTEND_TAGS),
         "registry_repository": "ghcr.io/lidefend/sce-product",
+        "frontend_registry_repository": "ghcr.io/lidefend/sce-frontend",
         "local_image_id": IMAGE_ID,
+        "frontend_local_image_id": FRONTEND_IMAGE_ID,
         "image_digest": None,
+        "frontend_image_digest": None,
         "publish_status": "not_published",
         "archive_config_digest": "sha256:" + config_digest,
+        "frontend_archive_config_digest": "sha256:" + frontend_config_digest,
         "frontend_build_sha256": frontend,
         "archive_sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
+        "frontend_archive_sha256": hashlib.sha256(
+            frontend_archive.read_bytes()
+        ).hexdigest(),
+        "contains": [
+            "odoo_backend",
+            "formal_addons",
+            "python_dependencies",
+            "startup_configuration",
+        ],
+        "base_image_digests": {
+            "frontend_builder": "sha256:" + "1" * 64,
+            "frontend_runtime": "sha256:" + "2" * 64,
+            "odoo_runtime": "sha256:" + "3" * 64,
+        },
     }
     (root / "image-manifest.json").write_text(json.dumps(image), encoding="utf-8")
     scan = {
-        "schema_version": "candidate_scan.v2",
+        "schema_version": "candidate_scan.v3",
         "status": "completed",
         "source_sha": SHA,
         "image_digest": None,
@@ -99,9 +132,19 @@ def write_candidate(root: Path) -> None:
         "publish_status": "not_published",
         "counts": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 2, "LOW": 4, "SECRET": 0},
         "policy": {"result": "pass"},
+        "frontend": {
+            "local_image_id": FRONTEND_IMAGE_ID,
+            "image_digest": None,
+            "counts": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "SECRET": 0},
+            "policy": {"result": "pass"},
+        },
     }
     (root / "security-summary.json").write_text(json.dumps(scan), encoding="utf-8")
     (root / "sbom.cyclonedx.json").write_text(
+        json.dumps({"bomFormat": "CycloneDX", "specVersion": "1.6"}),
+        encoding="utf-8",
+    )
+    (root / "sbom-frontend.cyclonedx.json").write_text(
         json.dumps({"bomFormat": "CycloneDX", "specVersion": "1.6"}),
         encoding="utf-8",
     )
@@ -110,6 +153,7 @@ def write_candidate(root: Path) -> None:
         "trivy-db-metadata.json",
         "trivy-version.json",
         "trivy.json",
+        "trivy-frontend.json",
     ):
         (root / name).write_text("{}\n", encoding="utf-8")
 

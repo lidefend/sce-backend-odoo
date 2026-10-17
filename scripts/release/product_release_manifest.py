@@ -28,6 +28,17 @@ REQUIRED_FIELDS = (
     "registry_refs",
     "image_digest",
     "local_image_id",
+    "frontend_image",
+    "frontend_image_tags",
+    "frontend_registry_repository",
+    "frontend_registry_refs",
+    "frontend_image_digest",
+    "frontend_local_image_id",
+    "frontend_sha256",
+    "frontend_sbom_sha256",
+    "frontend_archive_sha256",
+    "frontend_archive_config_digest",
+    "frontend_archive_reload_image_id",
     "oci_revision",
     "container_source_revision",
     "base_image_digests",
@@ -39,6 +50,8 @@ REQUIRED_FIELDS = (
     "candidate_status",
     "deployment_status",
 )
+FRONTEND_REGISTRY_REPOSITORY = "ghcr.io/lidefend/sce-frontend"
+BASE_IMAGE_KEYS = {"frontend_builder", "frontend_runtime", "odoo_runtime"}
 
 
 class ManifestContractError(ValueError):
@@ -73,13 +86,19 @@ def _load(path: Path, label: str) -> dict:
     return payload
 
 
-def validate_manifest(payload: dict, *, expected_source_sha: str, expected_image_digest: str) -> None:
+def validate_manifest(
+    payload: dict,
+    *,
+    expected_source_sha: str,
+    expected_image_digest: str,
+    expected_frontend_image_digest: str,
+) -> None:
     for field in REQUIRED_FIELDS:
         value = payload.get(field)
         if value is None or value == "" or value == [] or value == {}:
             raise ManifestContractError(f"required manifest field is missing or empty: {field}")
-    if payload.get("schema_version") != "product_release_manifest.v3":
-        raise ManifestContractError("manifest schema_version must be product_release_manifest.v3")
+    if payload.get("schema_version") != "product_release_manifest.v4":
+        raise ManifestContractError("manifest schema_version must be product_release_manifest.v4")
     if payload["repository"] != EXPECTED_REPOSITORY:
         raise ManifestContractError("manifest repository is not the approved authority")
     if payload["branch"] != EXPECTED_BRANCH:
@@ -88,6 +107,8 @@ def validate_manifest(payload: dict, *, expected_source_sha: str, expected_image
         raise ManifestContractError("expected source SHA must be full lowercase SHA")
     if not DIGEST.fullmatch(expected_image_digest):
         raise ManifestContractError("expected image digest is invalid")
+    if not DIGEST.fullmatch(expected_frontend_image_digest):
+        raise ManifestContractError("expected frontend image digest is invalid")
     for field in ("source_sha", "oci_revision", "container_source_revision"):
         if payload[field] != expected_source_sha:
             raise ManifestContractError(f"manifest {field} does not match source SHA")
@@ -98,7 +119,25 @@ def validate_manifest(payload: dict, *, expected_source_sha: str, expected_image
     expected_ref = f"{payload['registry_repository']}@{expected_image_digest}"
     if payload["registry_refs"] != [expected_ref, expected_ref]:
         raise ManifestContractError("manifest registry refs do not match image digest")
-    for field in ("local_image_id", "archive_config_digest", "archive_reload_image_id"):
+    if payload["frontend_registry_repository"] != FRONTEND_REGISTRY_REPOSITORY:
+        raise ManifestContractError("manifest frontend registry repository is not approved")
+    if payload["frontend_image_digest"] != expected_frontend_image_digest:
+        raise ManifestContractError(
+            "manifest frontend image_digest does not match registry digest"
+        )
+    frontend_ref = f"{FRONTEND_REGISTRY_REPOSITORY}@{expected_frontend_image_digest}"
+    if payload["frontend_registry_refs"] != [frontend_ref, frontend_ref]:
+        raise ManifestContractError(
+            "manifest frontend registry refs do not match image digest"
+        )
+    for field in (
+        "local_image_id",
+        "frontend_local_image_id",
+        "archive_config_digest",
+        "archive_reload_image_id",
+        "frontend_archive_config_digest",
+        "frontend_archive_reload_image_id",
+    ):
         if not DIGEST.fullmatch(str(payload[field])):
             raise ManifestContractError(f"manifest {field} is invalid")
     tags = payload["image_tags"]
@@ -106,15 +145,33 @@ def validate_manifest(payload: dict, *, expected_source_sha: str, expected_image
         raise ManifestContractError("manifest must contain version and source image tags")
     if not tags[1].endswith(expected_source_sha[:12]):
         raise ManifestContractError("source image tag does not match source SHA")
+    frontend_tags = payload["frontend_image_tags"]
+    if (
+        not isinstance(frontend_tags, list)
+        or len(frontend_tags) != 2
+        or payload["frontend_image"] != frontend_tags[0]
+    ):
+        raise ManifestContractError(
+            "manifest must contain version and source frontend image tags"
+        )
+    if not frontend_tags[1].endswith(expected_source_sha[:12]):
+        raise ManifestContractError(
+            "source frontend image tag does not match source SHA"
+        )
     base_images = payload["base_image_digests"]
-    if set(base_images) != {"frontend_builder", "odoo_runtime"}:
-        raise ManifestContractError("both frontend builder and Odoo base image digests are required")
+    if set(base_images) != BASE_IMAGE_KEYS:
+        raise ManifestContractError(
+            "frontend builder, frontend runtime and Odoo base image digests are required"
+        )
     if any(not DIGEST.fullmatch(str(value)) for value in base_images.values()):
         raise ManifestContractError("base image digest is invalid")
     if not CHECKSUM.fullmatch(str(payload["baseline_checksum"])):
         raise ManifestContractError("baseline checksum is invalid")
     if not CHECKSUM.fullmatch(str(payload["archive_sha256"])):
         raise ManifestContractError("archive checksum is invalid")
+    for field in ("frontend_sha256", "frontend_sbom_sha256", "frontend_archive_sha256"):
+        if not CHECKSUM.fullmatch(str(payload[field])):
+            raise ManifestContractError(f"{field} is invalid")
     scan = payload["scan"]
     if not isinstance(scan, dict):
         raise ManifestContractError("scan record is invalid")
@@ -125,6 +182,19 @@ def validate_manifest(payload: dict, *, expected_source_sha: str, expected_image
         raise ManifestContractError("scan severity counts are incomplete")
     if scan.get("status") != "completed" or (scan.get("policy") or {}).get("result") != "pass":
         raise ManifestContractError("scan is incomplete or policy did not pass")
+    frontend_scan = scan.get("frontend")
+    if not isinstance(frontend_scan, dict):
+        raise ManifestContractError("frontend scan record is invalid")
+    if frontend_scan.get("image_digest") != expected_frontend_image_digest:
+        raise ManifestContractError("frontend scan identity does not match manifest")
+    frontend_counts = frontend_scan.get("counts")
+    if (
+        not isinstance(frontend_counts, dict)
+        or set(("CRITICAL", "HIGH", "MEDIUM", "LOW", "SECRET")) - set(frontend_counts)
+    ):
+        raise ManifestContractError("frontend scan severity counts are incomplete")
+    if (frontend_scan.get("policy") or {}).get("result") != "pass":
+        raise ManifestContractError("frontend scan policy did not pass")
     if payload["candidate_status"] != "rc":
         raise ManifestContractError("candidate_status must be rc")
     if payload["deployment_status"] not in {"not_deployed", "blocked"}:
@@ -136,14 +206,18 @@ def build_manifest(
     image: dict,
     scan: dict,
     sbom_sha256: str,
+    frontend_sbom_sha256: str,
     archive_sha256: str,
+    frontend_archive_sha256: str,
     archive_reload_image_id: str,
+    frontend_archive_reload_image_id: str,
     release: dict,
     expected_source_sha: str,
 ) -> dict:
     expected_digest = str(image.get("image_digest") or "")
+    expected_frontend_digest = str(image.get("frontend_image_digest") or "")
     payload = {
-        "schema_version": "product_release_manifest.v3",
+        "schema_version": "product_release_manifest.v4",
         "repository": EXPECTED_REPOSITORY,
         "branch": EXPECTED_BRANCH,
         "release_version": release["product_version"],
@@ -156,6 +230,17 @@ def build_manifest(
         "registry_refs": image.get("registry_refs"),
         "image_digest": expected_digest,
         "local_image_id": image.get("local_image_id"),
+        "frontend_image": image.get("frontend_image"),
+        "frontend_image_tags": image.get("frontend_image_tags"),
+        "frontend_registry_repository": image.get("frontend_registry_repository"),
+        "frontend_registry_refs": image.get("frontend_registry_refs"),
+        "frontend_image_digest": expected_frontend_digest,
+        "frontend_local_image_id": image.get("frontend_local_image_id"),
+        "frontend_sha256": image.get("frontend_build_sha256"),
+        "frontend_sbom_sha256": frontend_sbom_sha256,
+        "frontend_archive_sha256": frontend_archive_sha256,
+        "frontend_archive_config_digest": image.get("frontend_archive_config_digest"),
+        "frontend_archive_reload_image_id": frontend_archive_reload_image_id,
         "oci_revision": image.get("oci_revision"),
         "container_source_revision": image.get("container_source_revision"),
         "base_image_digests": image.get("base_image_digests"),
@@ -165,7 +250,6 @@ def build_manifest(
         "archive_config_digest": image.get("archive_config_digest"),
         "archive_reload_image_id": archive_reload_image_id,
         "sbom_sha256": sbom_sha256,
-        "frontend_sha256": image.get("frontend_build_sha256"),
         "module_version_matrix": image.get("module_version_matrix"),
         "tenant_payload_contract": release["contracts"]["tenant_payload"],
         "route_authority_contract": release["contracts"]["route_authority"],
@@ -177,6 +261,7 @@ def build_manifest(
         payload,
         expected_source_sha=expected_source_sha,
         expected_image_digest=expected_digest,
+        expected_frontend_image_digest=expected_frontend_digest,
     )
     return payload
 
@@ -185,9 +270,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--image-manifest", required=True, type=Path)
     parser.add_argument("--sbom", required=True, type=Path)
+    parser.add_argument("--frontend-sbom", required=True, type=Path)
     parser.add_argument("--scan-summary", required=True, type=Path)
     parser.add_argument("--archive", required=True, type=Path)
+    parser.add_argument("--frontend-archive", required=True, type=Path)
     parser.add_argument("--archive-reload-digest-file", required=True, type=Path)
+    parser.add_argument("--frontend-archive-reload-digest-file", required=True, type=Path)
     parser.add_argument("--expected-source-sha", required=True)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
@@ -200,13 +288,24 @@ def main() -> int:
         archive_sha = sha256_file(args.archive)
         if archive_sha != image.get("archive_sha256"):
             raise ManifestContractError("archive checksum does not match image manifest")
+        frontend_archive_sha = sha256_file(args.frontend_archive)
+        if frontend_archive_sha != image.get("frontend_archive_sha256"):
+            raise ManifestContractError(
+                "frontend archive checksum does not match image manifest"
+            )
         reload_image_id = args.archive_reload_digest_file.read_text(encoding="utf-8").strip()
+        frontend_reload_image_id = args.frontend_archive_reload_digest_file.read_text(
+            encoding="utf-8"
+        ).strip()
         payload = build_manifest(
             image=image,
             scan=scan,
             sbom_sha256=sha256_file(args.sbom),
+            frontend_sbom_sha256=sha256_file(args.frontend_sbom),
             archive_sha256=archive_sha,
+            frontend_archive_sha256=frontend_archive_sha,
             archive_reload_image_id=reload_image_id,
+            frontend_archive_reload_image_id=frontend_reload_image_id,
             release=release,
             expected_source_sha=args.expected_source_sha,
         )

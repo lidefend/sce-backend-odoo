@@ -18,6 +18,15 @@ FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
 CHECKSUM = re.compile(r"^[0-9a-f]{64}$")
 EXPECTED_REPOSITORY = "ghcr.io/lidefend/sce-product"
+EXPECTED_FRONTEND_REPOSITORY = "ghcr.io/lidefend/sce-frontend"
+EXPECTED_CONTAINS = {
+    "odoo_backend",
+    "formal_addons",
+    "python_dependencies",
+    "startup_configuration",
+}
+FORBIDDEN_CONTAINS = {"production_frontend_static", "frontend_static", "nginx"}
+EXPECTED_BASE_IMAGE_KEYS = {"frontend_builder", "frontend_runtime", "odoo_runtime"}
 EXPECTED_REQUIRED_CHECKS = {
     "public_guard",
     "professional_authorization",
@@ -81,6 +90,27 @@ def atomic_write_text(path: Path, value: str) -> None:
             os.unlink(temporary)
 
 
+def validate_docker_archive(
+    archive: Path, *, expected_tags: list[str], expected_config_digest: str, label: str
+) -> None:
+    if archive.stat().st_size <= 0:
+        raise CandidateReportError(f"{label} archive is empty")
+    try:
+        with tarfile.open(archive, "r") as handle:
+            rows = json.load(handle.extractfile("manifest.json"))
+    except (OSError, KeyError, json.JSONDecodeError, tarfile.TarError) as exc:
+        raise CandidateReportError(f"{label} archive is not independently readable") from exc
+    if not isinstance(rows, list) or len(rows) != 1:
+        raise CandidateReportError(f"{label} archive must contain exactly one image")
+    if rows[0].get("RepoTags") != expected_tags:
+        raise CandidateReportError(f"{label} archive tags do not match image manifest")
+    archive_config = str(rows[0].get("Config") or "")
+    if archive_config != str(expected_config_digest or "").replace(
+        "sha256:", "blobs/sha256/", 1
+    ):
+        raise CandidateReportError(f"{label} archive config does not match image manifest")
+
+
 def validate_build_artifacts(
     artifacts: Path,
     *,
@@ -107,15 +137,17 @@ def validate_build_artifacts(
     image_manifest = load_json(artifacts / "image-manifest.json", "image manifest")
     required = {
         "candidate-image.tar",
+        "candidate-frontend-image.tar",
         "frontend-build.sha256",
         "image-manifest.json",
         "reloaded-image-id.txt",
+        "reloaded-frontend-image-id.txt",
     }
     missing = sorted(name for name in required if not (artifacts / name).is_file())
     if missing:
         raise CandidateReportError(f"build outputs are incomplete: {', '.join(missing)}")
-    if image_manifest.get("schema_version") != 2:
-        raise CandidateReportError("image manifest schema must be v2")
+    if image_manifest.get("schema_version") != 3:
+        raise CandidateReportError("image manifest schema must be v3")
     for field in ("source_sha", "oci_revision", "container_source_revision"):
         if image_manifest.get(field) != expected_source_sha:
             raise CandidateReportError(f"image manifest {field} does not match source SHA")
@@ -125,10 +157,31 @@ def validate_build_artifacts(
         raise CandidateReportError("image manifest product version does not match")
     if image_manifest.get("registry_repository") != EXPECTED_REPOSITORY:
         raise CandidateReportError("candidate registry repository is not approved")
+    if image_manifest.get("frontend_registry_repository") != EXPECTED_FRONTEND_REPOSITORY:
+        raise CandidateReportError("candidate frontend registry repository is not approved")
     if image_manifest.get("publish_status") != "not_published":
         raise CandidateReportError("candidate must remain unpublished")
     if image_manifest.get("image_digest") is not None:
         raise CandidateReportError("unpublished candidate must not claim a registry digest")
+    if image_manifest.get("frontend_image_digest") is not None:
+        raise CandidateReportError(
+            "unpublished candidate frontend must not claim a registry digest"
+        )
+
+    contains = image_manifest.get("contains")
+    if not isinstance(contains, list) or set(contains) != EXPECTED_CONTAINS:
+        raise CandidateReportError(
+            "candidate contains must be the backend-only product surface"
+        )
+    if FORBIDDEN_CONTAINS & set(contains):
+        raise CandidateReportError("candidate Odoo image must not claim frontend or nginx")
+    base_images = image_manifest.get("base_image_digests")
+    if not isinstance(base_images, dict) or set(base_images) != EXPECTED_BASE_IMAGE_KEYS:
+        raise CandidateReportError(
+            "frontend builder, frontend runtime and Odoo base digests are required"
+        )
+    if any(not DIGEST.fullmatch(str(value)) for value in base_images.values()):
+        raise CandidateReportError("base image digest is invalid")
 
     local_image_id = str(image_manifest.get("local_image_id") or "")
     reloaded_image_id = (artifacts / "reloaded-image-id.txt").read_text(
@@ -136,6 +189,17 @@ def validate_build_artifacts(
     ).strip()
     if not DIGEST.fullmatch(local_image_id) or reloaded_image_id != local_image_id:
         raise CandidateReportError("archive reload image ID does not match built image")
+    frontend_local_image_id = str(image_manifest.get("frontend_local_image_id") or "")
+    reloaded_frontend_image_id = (artifacts / "reloaded-frontend-image-id.txt").read_text(
+        encoding="utf-8"
+    ).strip()
+    if (
+        not DIGEST.fullmatch(frontend_local_image_id)
+        or reloaded_frontend_image_id != frontend_local_image_id
+    ):
+        raise CandidateReportError(
+            "frontend archive reload image ID does not match built image"
+        )
 
     archive = artifacts / "candidate-image.tar"
     if archive.stat().st_size <= 0:
@@ -151,26 +215,40 @@ def validate_build_artifacts(
     if frontend_sha != image_manifest.get("frontend_build_sha256"):
         raise CandidateReportError("frontend checksum does not match image manifest")
 
+    frontend_archive = artifacts / "candidate-frontend-image.tar"
+    if sha256_file(frontend_archive) != image_manifest.get("frontend_archive_sha256"):
+        raise CandidateReportError(
+            "frontend archive checksum does not match image manifest"
+        )
+
     expected_tags = [
         f"{EXPECTED_REPOSITORY}:{expected_version}",
         f"{EXPECTED_REPOSITORY}:sha-{expected_source_sha[:12]}",
     ]
     if image_manifest.get("image_tags") != expected_tags:
         raise CandidateReportError("candidate image tags do not match version/source identity")
-    try:
-        with tarfile.open(archive, "r") as handle:
-            rows = json.load(handle.extractfile("manifest.json"))
-    except (OSError, KeyError, json.JSONDecodeError, tarfile.TarError) as exc:
-        raise CandidateReportError("candidate archive is not independently readable") from exc
-    if not isinstance(rows, list) or len(rows) != 1:
-        raise CandidateReportError("candidate archive must contain exactly one image")
-    if rows[0].get("RepoTags") != expected_tags:
-        raise CandidateReportError("candidate archive tags do not match image manifest")
-    archive_config = str(rows[0].get("Config") or "")
-    if archive_config != str(image_manifest.get("archive_config_digest") or "").replace(
-        "sha256:", "blobs/sha256/", 1
-    ):
-        raise CandidateReportError("candidate archive config does not match image manifest")
+    expected_frontend_tags = [
+        f"{EXPECTED_FRONTEND_REPOSITORY}:{expected_version}",
+        f"{EXPECTED_FRONTEND_REPOSITORY}:sha-{expected_source_sha[:12]}",
+    ]
+    if image_manifest.get("frontend_image_tags") != expected_frontend_tags:
+        raise CandidateReportError(
+            "candidate frontend image tags do not match version/source identity"
+        )
+    validate_docker_archive(
+        archive,
+        expected_tags=expected_tags,
+        expected_config_digest=str(image_manifest.get("archive_config_digest") or ""),
+        label="candidate",
+    )
+    validate_docker_archive(
+        frontend_archive,
+        expected_tags=expected_frontend_tags,
+        expected_config_digest=str(
+            image_manifest.get("frontend_archive_config_digest") or ""
+        ),
+        label="candidate frontend",
+    )
     return image_manifest
 
 
@@ -216,8 +294,33 @@ def build_ready_report(
         raise CandidateReportError("security policy blocks the candidate")
     if (scan.get("policy") or {}).get("result") != "pass":
         raise CandidateReportError("security scan policy did not pass")
+    if scan.get("schema_version") != "candidate_scan.v3":
+        raise CandidateReportError("security scan must bind both candidate images")
+    frontend_scan = scan.get("frontend")
+    if not isinstance(frontend_scan, dict):
+        raise CandidateReportError("frontend security scan record is unavailable")
+    if frontend_scan.get("local_image_id") != image.get("frontend_local_image_id"):
+        raise CandidateReportError(
+            "frontend security scan identity does not match build"
+        )
+    if frontend_scan.get("image_digest") is not None:
+        raise CandidateReportError(
+            "pre-publication frontend scan must not claim registry publication"
+        )
+    frontend_counts = frontend_scan.get("counts")
+    if not isinstance(frontend_counts, dict):
+        raise CandidateReportError("frontend security scan counts are unavailable")
+    if any(int(frontend_counts.get(key, -1)) != 0 for key in ("CRITICAL", "HIGH", "SECRET")):
+        raise CandidateReportError("frontend security policy blocks the candidate")
+    if (frontend_scan.get("policy") or {}).get("result") != "pass":
+        raise CandidateReportError("frontend security scan policy did not pass")
     if sbom.get("bomFormat") != "CycloneDX":
         raise CandidateReportError("SBOM is not a CycloneDX document")
+    frontend_sbom = load_json(
+        artifacts / "sbom-frontend.cyclonedx.json", "frontend CycloneDX SBOM"
+    )
+    if frontend_sbom.get("bomFormat") != "CycloneDX":
+        raise CandidateReportError("frontend SBOM is not a CycloneDX document")
     if set(remote_main) != {"github", "gitee"} or set(remote_main.values()) != {
         expected_source_sha
     }:
@@ -236,16 +339,20 @@ def build_ready_report(
         name: sha256_file(artifacts / name)
         for name in (
             "candidate-image.tar",
+            "candidate-frontend-image.tar",
             "candidate-contract.sha256",
             "frontend-build.sha256",
             "image-manifest.json",
             "reloaded-image-id.txt",
+            "reloaded-frontend-image-id.txt",
             "sbom.cyclonedx.json",
+            "sbom-frontend.cyclonedx.json",
             "security-summary.json",
             "syft-version.json",
             "trivy-db-metadata.json",
             "trivy-version.json",
             "trivy.json",
+            "trivy-frontend.json",
         )
     }
     return {

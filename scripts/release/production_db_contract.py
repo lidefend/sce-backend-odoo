@@ -47,8 +47,14 @@ def _validate_release_manifest(env: dict[str, str], expected_sha: str) -> None:
         raise ContractError("release manifest checksum mismatch")
     if not isinstance(payload, dict):
         raise ContractError("release manifest must be a JSON object")
-    if payload.get("schema_version") != "product_release_manifest.v3":
-        raise ContractError("release manifest schema must be product_release_manifest.v3")
+    schema_version = payload.get("schema_version")
+    if schema_version not in {
+        "product_release_manifest.v3",
+        "product_release_manifest.v4",
+    }:
+        raise ContractError(
+            "release manifest schema must be product_release_manifest.v3 or v4"
+        )
     if payload.get("repository") != "lidefend/sce-backend-odoo" or payload.get("branch") != "main":
         raise ContractError("release manifest repository/branch authority mismatch")
     for field in ("source_sha", "oci_revision", "container_source_revision"):
@@ -79,6 +85,60 @@ def _validate_release_manifest(env: dict[str, str], expected_sha: str) -> None:
         or (scan.get("policy") or {}).get("result") != "pass"
     ):
         raise ContractError("release manifest scan contract is incomplete or mismatched")
+    if schema_version == "product_release_manifest.v4":
+        expected_frontend_digest = (
+            env.get("EXPECTED_FRONTEND_IMAGE_DIGEST") or ""
+        ).strip()
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", expected_frontend_digest):
+            raise ContractError(
+                "EXPECTED_FRONTEND_IMAGE_DIGEST must be a sha256 digest"
+            )
+        if payload.get("frontend_image_digest") != expected_frontend_digest:
+            raise ContractError(
+                "release manifest frontend_image_digest must match "
+                "EXPECTED_FRONTEND_IMAGE_DIGEST"
+            )
+        if payload.get("frontend_registry_repository") != "ghcr.io/lidefend/sce-frontend":
+            raise ContractError(
+                "release manifest frontend registry repository is not approved"
+            )
+        frontend_ref = (
+            f"ghcr.io/lidefend/sce-frontend@{expected_frontend_digest}"
+        )
+        if payload.get("frontend_registry_refs") != [frontend_ref, frontend_ref]:
+            raise ContractError(
+                "release manifest frontend registry refs must match "
+                "EXPECTED_FRONTEND_IMAGE_DIGEST"
+            )
+        for field in (
+            "frontend_local_image_id",
+            "frontend_archive_config_digest",
+            "frontend_archive_reload_image_id",
+        ):
+            if not re.fullmatch(r"sha256:[0-9a-f]{64}", str(payload.get(field) or "")):
+                raise ContractError(f"release manifest {field} is required")
+        for field in (
+            "frontend_sha256",
+            "frontend_sbom_sha256",
+            "frontend_archive_sha256",
+        ):
+            if not re.fullmatch(r"[0-9a-f]{64}", str(payload.get(field) or "")):
+                raise ContractError(f"release manifest {field} is required")
+        frontend_scan = scan.get("frontend")
+        frontend_counts = (
+            frontend_scan.get("counts") if isinstance(frontend_scan, dict) else None
+        )
+        if (
+            not isinstance(frontend_scan, dict)
+            or frontend_scan.get("image_digest") != expected_frontend_digest
+            or not isinstance(frontend_counts, dict)
+            or set(("CRITICAL", "HIGH", "MEDIUM", "LOW", "SECRET"))
+            - set(frontend_counts)
+            or (frontend_scan.get("policy") or {}).get("result") != "pass"
+        ):
+            raise ContractError(
+                "release manifest frontend scan contract is incomplete or mismatched"
+            )
 
 
 def validate(action: str, env: dict[str, str] | None = None) -> str:

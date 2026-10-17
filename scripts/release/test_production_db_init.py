@@ -28,12 +28,13 @@ RELEASE_IDENTITY_ROOT = Path(RELEASE_IDENTITY_TMP.name)
 def environment(database: str = "sc_migration_rehearsal") -> dict[str, str]:
     source_sha = "a" * 40
     image_digest = "sha256:" + "b" * 64
+    frontend_digest = "sha256:" + "e" * 64
     manifest = RELEASE_IDENTITY_ROOT / f"{database}-product-release-manifest.json"
     checksum = RELEASE_IDENTITY_ROOT / f"{database}-product-release-manifest.sha256"
     manifest.write_text(
         json.dumps(
             {
-                "schema_version": "product_release_manifest.v3",
+                "schema_version": "product_release_manifest.v4",
                 "repository": "lidefend/sce-backend-odoo",
                 "branch": "main",
                 "source_sha": source_sha,
@@ -43,6 +44,22 @@ def environment(database: str = "sc_migration_rehearsal") -> dict[str, str]:
                 "registry_repository": "ghcr.io/lidefend/sce-product",
                 "registry_refs": [f"ghcr.io/lidefend/sce-product@{image_digest}"] * 2,
                 "local_image_id": "sha256:" + "1" * 64,
+                "frontend_image": "ghcr.io/lidefend/sce-frontend:9.9.9-rc.1",
+                "frontend_image_tags": [
+                    "ghcr.io/lidefend/sce-frontend:9.9.9-rc.1",
+                    f"ghcr.io/lidefend/sce-frontend:sha-{source_sha[:12]}",
+                ],
+                "frontend_registry_repository": "ghcr.io/lidefend/sce-frontend",
+                "frontend_registry_refs": [
+                    f"ghcr.io/lidefend/sce-frontend@{frontend_digest}"
+                ] * 2,
+                "frontend_image_digest": frontend_digest,
+                "frontend_local_image_id": "sha256:" + "4" * 64,
+                "frontend_sha256": "5" * 64,
+                "frontend_sbom_sha256": "6" * 64,
+                "frontend_archive_sha256": "7" * 64,
+                "frontend_archive_config_digest": "sha256:" + "8" * 64,
+                "frontend_archive_reload_image_id": "sha256:" + "9" * 64,
                 "archive_config_digest": "sha256:" + "2" * 64,
                 "archive_reload_image_id": "sha256:" + "3" * 64,
                 "archive_sha256": "c" * 64,
@@ -58,7 +75,23 @@ def environment(database: str = "sc_migration_rehearsal") -> dict[str, str]:
                         "LOW": 0,
                         "SECRET": 0
                     },
-                    "policy": {"result": "pass"}
+                    "policy": {"result": "pass"},
+                    "frontend": {
+                        "image_digest": frontend_digest,
+                        "counts": {
+                            "CRITICAL": 0,
+                            "HIGH": 0,
+                            "MEDIUM": 0,
+                            "LOW": 0,
+                            "SECRET": 0
+                        },
+                        "policy": {"result": "pass"}
+                    }
+                },
+                "base_image_digests": {
+                    "frontend_builder": "sha256:" + "a" * 64,
+                    "frontend_runtime": "sha256:" + "b" * 64,
+                    "odoo_runtime": "sha256:" + "c" * 64
                 }
             },
             sort_keys=True,
@@ -78,6 +111,7 @@ def environment(database: str = "sc_migration_rehearsal") -> dict[str, str]:
         "SC_SOURCE_REVISION": source_sha,
         "EXPECTED_RELEASE_SHA": source_sha,
         "EXPECTED_IMAGE_DIGEST": image_digest,
+        "EXPECTED_FRONTEND_IMAGE_DIGEST": frontend_digest,
         "RELEASE_MANIFEST_PATH": str(manifest),
         "RELEASE_MANIFEST_CHECKSUM_PATH": str(checksum),
         "PLATFORM_RELEASE_DB": database,

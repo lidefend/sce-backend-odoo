@@ -31,6 +31,11 @@ TARGET_DATABASE = "sc_production"
 TARGET_PROJECT = "sc_production"
 DEPLOYMENT_MODE = "FIRST_FRESH_DEPLOY"
 CONFIRMATION = "YES_INSTALL_MISSING_FORMAL_MODULES"
+DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
+IMAGE_REFERENCE = re.compile(
+    r"^[a-z0-9][a-z0-9._/-]*@(?P<digest>sha256:[0-9a-f]{64})$"
+)
+FRONTEND_REGISTRY_REPOSITORY = "ghcr.io/lidefend/sce-frontend"
 EXPECTED_SOURCE_SHA = "e996239f1779cf510a0ca2ca5cd169121406a48b"
 EXPECTED_IMAGE_DIGEST = (
     "sha256:ab1d4154201246b20c85c3619d756d8b4c9a5c8e9543d76d0f5eea308b7c99ad"
@@ -204,6 +209,33 @@ def _load_product_modules() -> tuple[str, ...]:
     return modules
 
 
+def resolve_image_identities(
+    active_env: Mapping[str, str],
+) -> tuple[str, str, str, str]:
+    odoo_reference = str(active_env.get("ODOO_IMAGE_REF") or "").strip()
+    odoo_digest = str(active_env.get("EXPECTED_IMAGE_DIGEST") or "").strip()
+    frontend_reference = str(active_env.get("FRONTEND_IMAGE_REF") or "").strip()
+    frontend_digest = str(
+        active_env.get("EXPECTED_FRONTEND_IMAGE_DIGEST") or ""
+    ).strip()
+    for label, reference, digest in (
+        ("Odoo", odoo_reference, odoo_digest),
+        ("frontend", frontend_reference, frontend_digest),
+    ):
+        if not DIGEST.fullmatch(digest):
+            raise FormalModuleInstallError(f"{label} image digest is invalid")
+        match = IMAGE_REFERENCE.fullmatch(reference)
+        if not match or match.group("digest") != digest:
+            raise FormalModuleInstallError(f"{label} image reference is invalid")
+    if odoo_reference == frontend_reference:
+        raise FormalModuleInstallError(
+            "Odoo and frontend image identities must be distinct"
+        )
+    if not frontend_reference.startswith(FRONTEND_REGISTRY_REPOSITORY + "@"):
+        raise FormalModuleInstallError("frontend image repository is not approved")
+    return odoo_reference, odoo_digest, frontend_reference, frontend_digest
+
+
 def validate_invocation(active_env: Mapping[str, str]) -> None:
     expected = {
         "ENV": "prod",
@@ -215,7 +247,6 @@ def validate_invocation(active_env: Mapping[str, str]) -> None:
         "EXPECTED_RELEASE_SHA": EXPECTED_SOURCE_SHA,
         "EXPECTED_IMAGE_DIGEST": EXPECTED_IMAGE_DIGEST,
         "ODOO_IMAGE_REF": EXPECTED_IMAGE_REFERENCE,
-        "NGINX_IMAGE_REF": EXPECTED_IMAGE_REFERENCE,
         "BACKUP_CONFIG_SOURCE": str(BACKUP_CONFIG_PATH),
         "BACKUP_ROOT": BACKUP_ROOT,
         "BACKUP_TARGET_DB": TARGET_DATABASE,
@@ -226,6 +257,7 @@ def validate_invocation(active_env: Mapping[str, str]) -> None:
     for name, value in expected.items():
         if active_env.get(name) != value:
             raise FormalModuleInstallError(f"{name} must be {value}")
+    resolve_image_identities(active_env)
     for name in CALLER_MODULE_VARIABLES:
         if active_env.get(name):
             raise FormalModuleInstallError(
@@ -333,7 +365,7 @@ def _validate_common_state(
     if host.get("volume_count") != 6:
         raise FormalModuleInstallError("production volume identity differs")
     if host.get("image_digest_match") is not True:
-        raise FormalModuleInstallError("rc.4 digest differs")
+        raise FormalModuleInstallError("image digest differs")
     if host.get("oci_revision_match") is not True:
         raise FormalModuleInstallError("OCI revision differs")
     if host.get("container_revision_match") is not True:
@@ -458,32 +490,44 @@ class ProductionOperations:
             raise FormalModuleInstallError("production volume names are not unique")
         self._run(["docker", "volume", "inspect", *expected_volumes])
 
+        odoo_reference, odoo_digest, frontend_reference, frontend_digest = (
+            resolve_image_identities(self.env)
+        )
+        expected_containers = {
+            "sc_production-odoo-1": (odoo_reference, odoo_digest),
+            "sc_production-nginx-1": (frontend_reference, frontend_digest),
+        }
         image_digest_match = True
         oci_revision_match = True
         container_revision_match = True
         for item in containers:
             name = item["Name"].lstrip("/")
-            if name not in {"sc_production-odoo-1", "sc_production-nginx-1"}:
+            expected_identity = expected_containers.get(name)
+            if expected_identity is None:
                 continue
-            image_digest_match &= (
-                item.get("Config", {}).get("Image") == EXPECTED_IMAGE_REFERENCE
-            )
+            reference, digest = expected_identity
+            config = item.get("Config") or {}
+            configured_image = str(config.get("Image") or "")
+            image_digest_match &= configured_image == reference
+            image_digest_match &= configured_image.rpartition("@")[2] == digest
             image = json.loads(
                 self._run(["docker", "image", "inspect", item["Image"]]).stdout
             )[0]
-            labels = image.get("Config", {}).get("Labels") or {}
+            labels = (image.get("Config") or {}).get("Labels") or {}
             oci_revision_match &= (
                 labels.get("org.opencontainers.image.revision")
                 == EXPECTED_SOURCE_SHA
             )
-            container_env = {
-                value.split("=", 1)[0]: value.split("=", 1)[1]
-                for value in item.get("Config", {}).get("Env") or []
-                if "=" in value
-            }
-            container_revision_match &= (
-                container_env.get("SC_SOURCE_REVISION") == EXPECTED_SOURCE_SHA
-            )
+            if name == "sc_production-odoo-1":
+                container_env = {
+                    value.split("=", 1)[0]: value.split("=", 1)[1]
+                    for value in config.get("Env") or []
+                    if "=" in value
+                }
+                container_revision_match &= (
+                    container_env.get("SC_SOURCE_REVISION")
+                    == EXPECTED_SOURCE_SHA
+                )
         state["host"] = {
             "compose_project": self.env.get("PRODUCTION_COMPOSE_PROJECT"),
             "healthy_containers": healthy,
@@ -495,7 +539,7 @@ class ProductionOperations:
         return state
 
     def nginx_fingerprint(self) -> str:
-        result = self._run(["nginx", "-T"])
+        result = self._run(self.compose + ["exec", "-T", "nginx", "nginx", "-T"])
         return hashlib.sha256(
             (result.stdout + result.stderr).encode("utf-8")
         ).hexdigest()

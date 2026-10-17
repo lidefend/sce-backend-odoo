@@ -37,6 +37,16 @@ IMAGE_ID = "sha256:" + "c" * 64
 REMOTE_DIGEST = "sha256:" + "d" * 64
 CHECK_HEAD = "e" * 40
 TOOL_CONTRACT = "f" * 64
+FRONTEND_IMAGE_ID = "sha256:" + "7" * 64
+FRONTEND_REMOTE_DIGEST = "sha256:" + "8" * 64
+BACKEND_TAGS = [
+    f"{publication.REGISTRY_REPOSITORY}:{VERSION}",
+    f"{publication.REGISTRY_REPOSITORY}:sha-{SOURCE[:12]}",
+]
+FRONTEND_TAGS = [
+    f"{publication.FRONTEND_REGISTRY_REPOSITORY}:{VERSION}",
+    f"{publication.FRONTEND_REGISTRY_REPOSITORY}:sha-{SOURCE[:12]}",
+]
 
 
 def sha(path: Path) -> str:
@@ -73,24 +83,27 @@ def write_fixture(root: Path, *, ready: bool = True) -> Path:
     attempt.mkdir(parents=True)
     artifacts = {
         "candidate-image.tar": b"immutable archive",
+        "candidate-frontend-image.tar": b"immutable frontend archive",
         "sbom.cyclonedx.json": b'{"bomFormat":"CycloneDX"}\n',
+        "sbom-frontend.cyclonedx.json": b'{"bomFormat":"CycloneDX"}\n',
         "candidate-contract.sha256": (TOOL_CONTRACT + "\n").encode(),
     }
     for name, value in artifacts.items():
         (attempt / name).write_bytes(value)
     manifest = {
-        "schema_version": 2,
+        "schema_version": 3,
         "source_sha": SOURCE,
         "source_tree_sha": TREE,
         "product_version": VERSION,
         "publish_status": "not_published",
         "image_digest": None,
+        "frontend_image_digest": None,
         "registry_repository": publication.REGISTRY_REPOSITORY,
-        "image_tags": [
-            f"{publication.REGISTRY_REPOSITORY}:{VERSION}",
-            f"{publication.REGISTRY_REPOSITORY}:sha-{SOURCE[:12]}",
-        ],
+        "frontend_registry_repository": publication.FRONTEND_REGISTRY_REPOSITORY,
+        "image_tags": list(BACKEND_TAGS),
+        "frontend_image_tags": list(FRONTEND_TAGS),
         "local_image_id": IMAGE_ID,
+        "frontend_local_image_id": FRONTEND_IMAGE_ID,
     }
     (attempt / "image-manifest.json").write_text(
         json.dumps(manifest), encoding="utf-8"
@@ -99,7 +112,9 @@ def write_fixture(root: Path, *, ready: bool = True) -> Path:
         name: sha(attempt / name)
         for name in (
             "candidate-image.tar",
+            "candidate-frontend-image.tar",
             "sbom.cyclonedx.json",
+            "sbom-frontend.cyclonedx.json",
             "candidate-contract.sha256",
             "image-manifest.json",
         )
@@ -156,11 +171,27 @@ class FakeBackend:
         self.fail_registry_once = False
         self.fail_registry_partial_once = False
         self.fail_registry_validation_once = False
+        self.fail_frontend_registry_once = False
+        self.force_same_registry_digest = False
         self.fail_tag_once = False
         self.fail_release_once = False
         self.credentials_ready = True
         self.move_main_after_registry = False
         self.move_main_before_first_write = False
+
+    def _registry_digest_for(self, reference: str) -> str:
+        if reference.startswith(publication.FRONTEND_REGISTRY_REPOSITORY):
+            return (
+                REMOTE_DIGEST
+                if self.force_same_registry_digest
+                else FRONTEND_REMOTE_DIGEST
+            )
+        return REMOTE_DIGEST
+
+    def _image_id_for(self, reference: str) -> str:
+        if reference.startswith(publication.FRONTEND_REGISTRY_REPOSITORY):
+            return FRONTEND_IMAGE_ID
+        return IMAGE_ID
 
     def remote_main(self, remote):
         return (
@@ -186,7 +217,7 @@ class FakeBackend:
         if self.move_main_before_first_write:
             self.move_main_before_first_write = False
             self.github_main = "8" * 40
-        return IMAGE_ID
+        return self._image_id_for(reference)
 
     def registry_credentials_ready(self):
         return self.credentials_ready
@@ -196,40 +227,53 @@ class FakeBackend:
 
     def push_registry(self, references):
         self.events.append("registry_push")
+        digest = self._registry_digest_for(references[0])
+        is_frontend = references[0].startswith(publication.FRONTEND_REGISTRY_REPOSITORY)
         if self.fail_registry_partial_once:
             self.fail_registry_partial_once = False
-            self.registry[references[0]] = REMOTE_DIGEST
+            self.registry[references[0]] = digest
             raise publication.PublicationError(
                 "injected partial registry failure", stage="registry_push"
             )
         for reference in references:
-            self.registry[reference] = REMOTE_DIGEST
+            self.registry[reference] = digest
         if self.move_main_after_registry:
             self.github_main = "9" * 40
+        if is_frontend and self.fail_frontend_registry_once:
+            self.fail_frontend_registry_once = False
+            raise publication.PublicationError(
+                "injected frontend registry failure", stage="registry_push"
+            )
         if self.fail_registry_once:
             self.fail_registry_once = False
             raise publication.PublicationError(
                 "injected registry failure", stage="registry_push"
             )
-        return REMOTE_DIGEST
+        return digest
 
-    def validate_registry_candidate(self, reference, expected_local_image_id):
+    def validate_registry_candidate(
+        self, reference, expected_local_image_id, repository
+    ):
+        digest = self._registry_digest_for(repository)
         if reference not in self.registry:
             self.events.append("registry_validation")
-            self.registry[reference] = REMOTE_DIGEST
+            self.registry[reference] = digest
         if self.fail_registry_validation_once:
             self.fail_registry_validation_once = False
             raise publication.PublicationError(
                 "injected temporary validation failure", stage="registry_push"
             )
-        if expected_local_image_id != IMAGE_ID:
+        if expected_local_image_id != self._image_id_for(repository):
             raise publication.PublicationError(
                 "temporary registry candidate differs", stage="registry_push"
             )
         return self.registry[reference]
 
     def verify_registry_content(self, repository, digest, expected_local_image_id):
-        return digest == REMOTE_DIGEST and expected_local_image_id == IMAGE_ID
+        return (
+            digest == self._registry_digest_for(repository)
+            and expected_local_image_id == self._image_id_for(repository)
+        )
 
     def tag_commit(self, remote, tag):
         return self.tags[remote]
@@ -399,6 +443,8 @@ class PublicationContractTests(unittest.TestCase):
                 "preflight_checks",
                 "registry_validation",
                 "registry_push",
+                "registry_validation",
+                "registry_push",
                 "tag_create",
                 "release_create",
             ],
@@ -408,6 +454,14 @@ class PublicationContractTests(unittest.TestCase):
         self.assertNotEqual(report_path.parent, self.candidate)
         self.assertEqual(
             report["external"]["registry"]["digest"], REMOTE_DIGEST
+        )
+        self.assertEqual(
+            report["external"]["frontend_registry"],
+            {
+                "repository": publication.FRONTEND_REGISTRY_REPOSITORY,
+                "digest": FRONTEND_REMOTE_DIGEST,
+                "tags": FRONTEND_TAGS,
+            },
         )
         self.assertEqual(report["external"]["tags"]["github"], SOURCE)
         self.assertEqual(report["external"]["tags"]["gitee"], SOURCE)
@@ -427,11 +481,25 @@ class PublicationContractTests(unittest.TestCase):
         self.assertEqual(
             report["publication_manifest"]["sha256"], sha(manifest_path)
         )
+        publication_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            publication_manifest["registry_digest"], REMOTE_DIGEST
+        )
+        self.assertEqual(
+            publication_manifest["frontend_registry_digest"],
+            FRONTEND_REMOTE_DIGEST,
+        )
+        self.assertEqual(
+            publication_manifest["frontend_registry_tags"],
+            FRONTEND_TAGS,
+        )
         release_body = self.backend.release_payload["body"]
         self.assertNotIn(str(self.root), release_body)
         self.assertIn(result["publication_attempt_id"], release_body)
         self.assertIn(SOURCE, release_body)
         self.assertIn(LIVE_MAIN, release_body)
+        self.assertIn(REMOTE_DIGEST, release_body)
+        self.assertIn(FRONTEND_REMOTE_DIGEST, release_body)
 
     def test_candidate_source_may_equal_or_precede_live_main(self):
         advanced = self.pipeline().execute()
@@ -515,16 +583,30 @@ class PublicationContractTests(unittest.TestCase):
         self.assertNotIn("release_create", self.backend.events)
 
     def test_all_preflight_finishes_before_first_external_write(self):
-        self.backend.registry[f"{publication.REGISTRY_REPOSITORY}:{VERSION}"] = (
-            REMOTE_DIGEST
-        )
-        with self.assertRaises(publication.PublicationError):
-            self.pipeline().execute()
-        self.assertNotIn("registry_push", self.backend.events)
-        self.assertNotIn("tag_create", self.backend.events)
-        self.assertNotIn("release_create", self.backend.events)
-        _, report, _ = self.latest_report()
-        self.assertEqual(report["state"], "FAILED_PREFLIGHT")
+        for case, references in (("backend", BACKEND_TAGS), ("frontend", FRONTEND_TAGS)):
+            with self.subTest(existing=case), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                write_fixture(root)
+                backend = FakeBackend()
+                backend.registry[references[0]] = backend._registry_digest_for(
+                    references[0]
+                )
+                pipe = publication.Publication(
+                    version=VERSION,
+                    candidate_attempt_id=CANDIDATE_ATTEMPT,
+                    expected_source_sha=SOURCE,
+                    expected_publication_tool_sha=LIVE_MAIN,
+                    expected_live_main_sha=LIVE_MAIN,
+                    backend=backend,
+                    root=root,
+                )
+                with self.assertRaises(publication.PublicationError):
+                    pipe.execute()
+                self.assertNotIn("registry_push", backend.events)
+                self.assertNotIn("tag_create", backend.events)
+                self.assertNotIn("release_create", backend.events)
+                report = json.loads(pipe.report_path.read_text())
+                self.assertEqual(report["state"], "FAILED_PREFLIGHT")
 
     def test_candidate_not_ready_and_hash_mismatch_fail_before_writes(self):
         report_path = self.candidate / "release-report.json"
@@ -539,10 +621,22 @@ class PublicationContractTests(unittest.TestCase):
         payload["CANDIDATE_READY"] = True
         payload["status"] = "ready"
         report_path.write_text(json.dumps(payload))
-        (self.candidate / "sbom.cyclonedx.json").write_text("changed")
-        with self.assertRaises(publication.PublicationError):
-            self.pipeline().execute()
-        self.assertEqual(self.backend.events, [])
+        for tampered in (
+            "sbom.cyclonedx.json",
+            "candidate-image.tar",
+            "sbom-frontend.cyclonedx.json",
+            "candidate-frontend-image.tar",
+        ):
+            with self.subTest(tampered=tampered):
+                path = self.candidate / tampered
+                original = path.read_bytes()
+                path.write_bytes(original + b"tampered")
+                try:
+                    with self.assertRaises(publication.PublicationError):
+                        self.pipeline().execute()
+                finally:
+                    path.write_bytes(original)
+                self.assertEqual(self.backend.events, [])
 
     def test_source_tree_remote_and_check_mismatch_fail_closed(self):
         cases = (
@@ -636,20 +730,33 @@ class PublicationContractTests(unittest.TestCase):
             requested_publication_attempt_id=attempt_id
         ).execute()
         self.assertEqual(result["state"], "PUBLICATION_COMPLETE")
-        self.assertEqual(self.backend.events.count("registry_push"), 1)
+        self.assertEqual(self.backend.events.count("registry_push"), 2)
+        self.assertEqual(
+            {self.backend.registry[tag] for tag in BACKEND_TAGS},
+            {REMOTE_DIGEST},
+        )
+        self.assertEqual(
+            {self.backend.registry[tag] for tag in FRONTEND_TAGS},
+            {FRONTEND_REMOTE_DIGEST},
+        )
 
     def test_partial_registry_push_resumes_only_missing_tag(self):
         self.backend.fail_registry_partial_once = True
         pipe = self.pipeline()
         with self.assertRaises(publication.PublicationError):
             pipe.execute()
-        self.assertEqual(len(self.backend.registry), 2)
+        self.assertEqual(
+            len((set(BACKEND_TAGS) | set(FRONTEND_TAGS)) & set(self.backend.registry)),
+            1,
+        )
         result = self.pipeline(
             requested_publication_attempt_id=pipe.attempt_dir.name
         ).execute()
         self.assertEqual(result["state"], "PUBLICATION_COMPLETE")
-        self.assertEqual(len(self.backend.registry), 3)
-        self.assertEqual(set(self.backend.registry.values()), {REMOTE_DIGEST})
+        for tag in BACKEND_TAGS:
+            self.assertEqual(self.backend.registry[tag], REMOTE_DIGEST)
+        for tag in FRONTEND_TAGS:
+            self.assertEqual(self.backend.registry[tag], FRONTEND_REMOTE_DIGEST)
 
     def test_temporary_validation_failure_does_not_publish_formal_tags(self):
         self.backend.fail_registry_validation_once = True
@@ -664,6 +771,51 @@ class PublicationContractTests(unittest.TestCase):
         )
         self.assertEqual(self.backend.events, ["preflight_checks", "registry_validation"])
 
+    def test_frontend_registry_failure_is_fail_closed(self):
+        self.backend.fail_frontend_registry_once = True
+        pipe = self.pipeline()
+        with self.assertRaises(publication.PublicationError):
+            pipe.execute()
+        self.assertEqual(self.backend.events.count("registry_push"), 2)
+        self.assertNotIn("tag_create", self.backend.events)
+        self.assertNotIn("release_create", self.backend.events)
+        report = json.loads(pipe.report_path.read_text())
+        self.assertEqual(report["state"], "FAILED_REGISTRY_PUSH")
+        self.assertFalse(report["PUBLICATION_COMPLETE"])
+        for tag in BACKEND_TAGS:
+            self.assertEqual(self.backend.registry[tag], REMOTE_DIGEST)
+        self.assertFalse((pipe.attempt_dir / "frontend-registry.json").exists())
+
+        result = self.pipeline(
+            requested_publication_attempt_id=pipe.attempt_dir.name
+        ).execute()
+        self.assertEqual(result["state"], "PUBLICATION_COMPLETE")
+        for tag in FRONTEND_TAGS:
+            self.assertEqual(self.backend.registry[tag], FRONTEND_REMOTE_DIGEST)
+
+    def test_identical_backend_and_frontend_registry_digest_is_rejected(self):
+        self.backend.force_same_registry_digest = True
+        pipe = self.pipeline()
+        with self.assertRaises(publication.PublicationError):
+            pipe.execute()
+        self.assertNotIn("tag_create", self.backend.events)
+        self.assertNotIn("release_create", self.backend.events)
+        report = json.loads(pipe.report_path.read_text())
+        self.assertEqual(report["state"], "FAILED_REGISTRY_PUSH")
+
+    def test_frontend_candidate_must_be_an_independent_image(self):
+        manifest_path = self.candidate / "image-manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest["frontend_local_image_id"] = IMAGE_ID
+        manifest_path.write_text(json.dumps(manifest))
+        report_path = self.candidate / "release-report.json"
+        report = json.loads(report_path.read_text())
+        report["artifacts"]["sha256"]["image-manifest.json"] = sha(manifest_path)
+        report_path.write_text(json.dumps(report))
+        with self.assertRaises(publication.PublicationError):
+            self.pipeline().execute()
+        self.assertEqual(self.backend.events, [])
+
     def test_tag_failure_resumes_and_verifies_partial_tag(self):
         self.backend.fail_tag_once = True
         pipe = self.pipeline()
@@ -677,7 +829,7 @@ class PublicationContractTests(unittest.TestCase):
         ).execute()
         self.assertEqual(result["state"], "PUBLICATION_COMPLETE")
         self.assertEqual(self.backend.tags["gitee-mirror"], SOURCE)
-        self.assertEqual(self.backend.events.count("registry_push"), 1)
+        self.assertEqual(self.backend.events.count("registry_push"), 2)
 
     def test_release_failure_resumes_without_duplicate_release(self):
         self.backend.fail_release_once = True
@@ -706,10 +858,17 @@ class PublicationContractTests(unittest.TestCase):
             )
             digest = self.backend.push_registry(pipe.identity["image_tags"])
             registry = {"digest": digest, "tags": pipe.identity["image_tags"]}
+            frontend_digest = self.backend.push_registry(
+                pipe.identity["frontend_image_tags"]
+            )
+            pipe.write_frontend_registry(
+                digest=frontend_digest,
+                tags=list(pipe.identity["frontend_image_tags"]),
+            )
             tags = self.backend.ensure_tags(
                 f"v{VERSION}", SOURCE, "test", pipe.state["created_at"]
             )
-            notes = pipe.release_notes(plan, digest)
+            notes = pipe.release_notes(plan, digest, frontend_digest)
             release = self.backend.create_release(
                 f"v{VERSION}", f"{VERSION} release candidate", notes
             )
@@ -717,6 +876,11 @@ class PublicationContractTests(unittest.TestCase):
                 "RELEASE_PUBLISHED",
                 external={
                     "registry": registry,
+                    "frontend_registry": {
+                        "repository": publication.FRONTEND_REGISTRY_REPOSITORY,
+                        "digest": frontend_digest,
+                        "tags": list(pipe.identity["frontend_image_tags"]),
+                    },
                     "tags": tags,
                     "release": {"tag": f"v{VERSION}", "url": release["url"]},
                 },
@@ -746,10 +910,17 @@ class PublicationContractTests(unittest.TestCase):
             )
             digest = self.backend.push_registry(pipe.identity["image_tags"])
             registry = {"digest": digest, "tags": pipe.identity["image_tags"]}
+            frontend_digest = self.backend.push_registry(
+                pipe.identity["frontend_image_tags"]
+            )
+            pipe.write_frontend_registry(
+                digest=frontend_digest,
+                tags=list(pipe.identity["frontend_image_tags"]),
+            )
             tags = self.backend.ensure_tags(
                 f"v{VERSION}", SOURCE, "test", pipe.state["created_at"]
             )
-            notes = pipe.release_notes(plan, digest)
+            notes = pipe.release_notes(plan, digest, frontend_digest)
             release = self.backend.create_release(
                 f"v{VERSION}", f"{VERSION} release candidate", notes
             )
@@ -757,6 +928,11 @@ class PublicationContractTests(unittest.TestCase):
                 "RELEASE_PUBLISHED",
                 external={
                     "registry": registry,
+                    "frontend_registry": {
+                        "repository": publication.FRONTEND_REGISTRY_REPOSITORY,
+                        "digest": frontend_digest,
+                        "tags": list(pipe.identity["frontend_image_tags"]),
+                    },
                     "tags": tags,
                     "release": {"tag": f"v{VERSION}", "url": release["url"]},
                 },

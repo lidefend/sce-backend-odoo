@@ -66,16 +66,36 @@ for path, mode in ((runtime_path, 0o600), (promotion_path, 0o640)):
         raise SystemExit("[production.release.config.promote] BLOCKED unsafe configuration file")
 runtime_rows, runtime = env_read(runtime_path)
 promotion_rows, promotion = env_read(promotion_path)
+current_image_ref = "ghcr.io/lidefend/sce-product@" + current_digest
 if runtime.get("EXPECTED_RELEASE_SHA") != current_source or runtime.get("EXPECTED_IMAGE_DIGEST") != current_digest:
     raise SystemExit("[production.release.config.promote] BLOCKED current runtime identity differs")
-if runtime.get("ODOO_IMAGE_REF") != "ghcr.io/lidefend/sce-product@" + current_digest:
+if runtime.get("ODOO_IMAGE_REF") != current_image_ref:
     raise SystemExit("[production.release.config.promote] BLOCKED current runtime image ref differs")
+current_frontend_ref = str(runtime.get("FRONTEND_IMAGE_REF") or "").strip()
+current_frontend_digest = str(runtime.get("EXPECTED_FRONTEND_IMAGE_DIGEST") or "").strip()
+if current_frontend_ref or current_frontend_digest:
+    if (
+        not re.fullmatch(r"sha256:[0-9a-f]{64}", current_frontend_digest)
+        or current_frontend_ref.partition("@")[2] != current_frontend_digest
+        or current_frontend_ref == current_image_ref
+    ):
+        raise SystemExit("[production.release.config.promote] BLOCKED current frontend image identity differs")
+else:
+    if runtime.get("NGINX_IMAGE_REF") != current_image_ref:
+        raise SystemExit("[production.release.config.promote] BLOCKED legacy frontend image identity differs")
 running = json.loads(subprocess.run(
     ["docker", "inspect", "sc_production-odoo-1"], check=True,
     stdout=subprocess.PIPE, text=True,
 ).stdout)[0]
 if running.get("Image") != promotion.get("DEPLOYMENT_IMAGE_REF"):
     raise SystemExit("[production.release.config.promote] BLOCKED promotion config does not match running image")
+running_frontend = json.loads(subprocess.run(
+    ["docker", "inspect", "sc_production-nginx-1"], check=True,
+    stdout=subprocess.PIPE, text=True,
+).stdout)[0]
+expected_current_frontend_ref = current_frontend_ref or current_image_ref
+if (running_frontend.get("Config") or {}).get("Image") != expected_current_frontend_ref:
+    raise SystemExit("[production.release.config.promote] BLOCKED running frontend image differs")
 observed_next = subprocess.run(
     ["docker", "image", "inspect", image_ref, "--format", "{{.Id}}"], check=True,
     stdout=subprocess.PIPE, text=True,
@@ -84,11 +104,53 @@ if observed_next != next_image_id:
     raise SystemExit("[production.release.config.promote] BLOCKED next image content ID differs")
 image = json.loads((manifest_root / "image-manifest.json").read_text())
 release = json.loads((manifest_root / "product-release-manifest.json").read_text())
-if any(payload.get("source_sha") != next_source or payload.get("image_digest") != next_digest for payload in (image, release)):
-    raise SystemExit("[production.release.config.promote] BLOCKED next manifest identity differs")
-frontend_digest = str(image.get("frontend_build_sha256") or "").strip()
-if not re.fullmatch(r"[0-9a-f]{64}", frontend_digest):
+if image.get("source_sha") != next_source or image.get("image_digest") != next_digest:
+    raise SystemExit("[production.release.config.promote] BLOCKED next image manifest identity differs")
+if release.get("source_sha") != next_source or release.get("image_digest") != next_digest:
+    raise SystemExit("[production.release.config.promote] BLOCKED next release manifest identity differs")
+frontend_tag = str(image.get("frontend_image") or "").strip()
+frontend_repository = str(image.get("frontend_registry_repository") or "").strip()
+frontend_image_digest = str(image.get("frontend_image_digest") or "").strip()
+frontend_image_id = str(image.get("frontend_local_image_id") or "").strip()
+frontend_build_sha256 = str(image.get("frontend_build_sha256") or "").strip()
+if frontend_repository != "ghcr.io/lidefend/sce-frontend":
+    raise SystemExit("[production.release.config.promote] BLOCKED frontend registry repository differs")
+if not re.fullmatch(r"sha256:[0-9a-f]{64}", frontend_image_digest):
+    raise SystemExit("[production.release.config.promote] BLOCKED frontend image digest is invalid")
+if not re.fullmatch(r"sha256:[0-9a-f]{64}", frontend_image_id):
+    raise SystemExit("[production.release.config.promote] BLOCKED frontend local image ID is invalid")
+if not re.fullmatch(r"[0-9a-f]{64}", frontend_build_sha256):
     raise SystemExit("[production.release.config.promote] BLOCKED frontend build identity is invalid")
+frontend_ref = frontend_repository + "@" + frontend_image_digest
+frontend_tags = image.get("frontend_image_tags")
+if (
+    frontend_ref == image_ref
+    or not frontend_tag.startswith(frontend_repository + ":")
+    or not isinstance(frontend_tags, list)
+    or len(frontend_tags) != 2
+    or frontend_tag != frontend_tags[0]
+    or image.get("frontend_registry_refs") != [frontend_ref, frontend_ref]
+    or image.get("registry_refs") != [image_ref, image_ref]
+):
+    raise SystemExit("[production.release.config.promote] BLOCKED frontend image reference is invalid")
+if (
+    release.get("frontend_image") != frontend_tag
+    or release.get("frontend_image_digest") != frontend_image_digest
+    or release.get("frontend_registry_repository") != frontend_repository
+    or release.get("frontend_registry_refs") != [frontend_ref, frontend_ref]
+    or release.get("registry_refs") != [image_ref, image_ref]
+):
+    raise SystemExit("[production.release.config.promote] BLOCKED next frontend manifest identity differs")
+if release.get("local_image_id") != next_image_id or release.get("frontend_local_image_id") != frontend_image_id:
+    raise SystemExit("[production.release.config.promote] BLOCKED next image content identity differs")
+if release.get("frontend_sha256") != frontend_build_sha256:
+    raise SystemExit("[production.release.config.promote] BLOCKED next frontend build binding differs")
+observed_next_frontend = subprocess.run(
+    ["docker", "image", "inspect", frontend_ref, "--format", "{{.Id}}"], check=True,
+    stdout=subprocess.PIPE, text=True,
+).stdout.strip()
+if observed_next_frontend != frontend_image_id:
+    raise SystemExit("[production.release.config.promote] BLOCKED next frontend content ID differs")
 checksum = (manifest_root / "product-release-manifest.sha256").read_text().split()[0]
 if checksum != hashlib.sha256((manifest_root / "product-release-manifest.json").read_bytes()).hexdigest():
     raise SystemExit("[production.release.config.promote] BLOCKED next manifest checksum differs")
@@ -99,16 +161,19 @@ runtime_updates = {
     "VERSION_TAG": "v" + version,
     "EXPECTED_RELEASE_SHA": next_source,
     "EXPECTED_IMAGE_DIGEST": next_digest,
-    "FRONTEND_BUILD_SHA256": frontend_digest,
+    "EXPECTED_FRONTEND_IMAGE_DIGEST": frontend_image_digest,
+    "FRONTEND_BUILD_SHA256": frontend_build_sha256,
     "ODOO_IMAGE_REF": image_ref,
-    "NGINX_IMAGE_REF": image_ref,
+    "FRONTEND_IMAGE_REF": frontend_ref,
+    "NGINX_IMAGE_REF": frontend_ref,
     "CANDIDATE_IMAGE": image_ref,
     "IMAGE_MANIFEST_PATH": str(manifest_root / "image-manifest.json"),
     "RELEASE_MANIFEST_PATH": str(manifest_root / "product-release-manifest.json"),
     "RELEASE_MANIFEST_CHECKSUM_PATH": str(manifest_root / "product-release-manifest.sha256"),
 }
-if "FRONTEND_BUILD_SHA256" not in runtime:
-    runtime_rows.append("FRONTEND_BUILD_SHA256=")
+for key in ("FRONTEND_BUILD_SHA256", "EXPECTED_FRONTEND_IMAGE_DIGEST", "FRONTEND_IMAGE_REF", "NGINX_IMAGE_REF"):
+    if key not in runtime:
+        runtime_rows.append(key + "=")
 promotion_updates = {
     "ACCEPTANCE_PRODUCT_KEY": "sce-product",
     "ACCEPTANCE_PACKAGE_DIGEST": acceptance_digest,
@@ -141,7 +206,16 @@ try:
     os.replace(promotion_temp, promotion_path)
     _, observed_runtime = env_read(runtime_path)
     _, observed_promotion = env_read(promotion_path)
-    if observed_runtime.get("EXPECTED_RELEASE_SHA") != next_source or observed_runtime.get("EXPECTED_IMAGE_DIGEST") != next_digest or observed_runtime.get("FRONTEND_BUILD_SHA256") != frontend_digest or observed_promotion.get("DEPLOYMENT_IMAGE_REF") != next_image_id or observed_promotion.get("ACCEPTANCE_PACKAGE_DIGEST") != acceptance_digest:
+    if (
+        observed_runtime.get("EXPECTED_RELEASE_SHA") != next_source
+        or observed_runtime.get("EXPECTED_IMAGE_DIGEST") != next_digest
+        or observed_runtime.get("ODOO_IMAGE_REF") != image_ref
+        or observed_runtime.get("EXPECTED_FRONTEND_IMAGE_DIGEST") != frontend_image_digest
+        or observed_runtime.get("FRONTEND_IMAGE_REF") != frontend_ref
+        or observed_runtime.get("FRONTEND_BUILD_SHA256") != frontend_build_sha256
+        or observed_promotion.get("DEPLOYMENT_IMAGE_REF") != next_image_id
+        or observed_promotion.get("ACCEPTANCE_PACKAGE_DIGEST") != acceptance_digest
+    ):
         raise RuntimeError("post-promote identity mismatch")
 except Exception:
     shutil.copy2(runtime_backup, runtime_path)
@@ -151,7 +225,8 @@ finally:
     runtime_temp.unlink(missing_ok=True)
     promotion_temp.unlink(missing_ok=True)
 print(json.dumps({"status":"PASS","source_sha":next_source,"image_digest":next_digest,
-                  "image_id":next_image_id,"frontend_build_sha256":frontend_digest,"acceptance_package_digest":acceptance_digest,"runtime_backup":str(runtime_backup),
+                  "image_id":next_image_id,"frontend_image_digest":frontend_image_digest,"frontend_image_id":frontend_image_id,
+                  "frontend_image_ref":frontend_ref,"frontend_image_tag":frontend_tag,"frontend_build_sha256":frontend_build_sha256,"acceptance_package_digest":acceptance_digest,"runtime_backup":str(runtime_backup),
                   "promotion_backup":str(promotion_backup)}))
 '''
 

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -16,10 +17,14 @@ from typing import Any
 
 PROJECT = "sc_production"
 DATABASE = "sc_production"
-DIGEST_IMAGE = re.compile(r"^.+@sha256:[0-9a-f]{64}$")
+FRONTEND_REGISTRY_REPOSITORY = "ghcr.io/lidefend/sce-frontend"
+DIGEST_IMAGE = re.compile(r"^[a-z0-9][a-z0-9._/-]*@sha256:[0-9a-f]{64}$")
+IMAGE_DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
+CHECKSUM = re.compile(r"^[0-9a-f]{64}$")
 LOGIN_PATTERN = re.compile(r"^[A-Za-z0-9_.@+-]{1,128}$")
 BASE_URL_PATTERN = re.compile(r"^https?://[A-Za-z0-9._:-]+/?$")
 RUNTIME_SECRET_NAMES = ("DB_USER", "DB_PASSWORD", "JWT_SECRET", "ADMIN_PASSWD")
+RELEASE_MANIFEST_LIMIT = 4 * 1024 * 1024
 
 
 class RuntimeContextError(RuntimeError):
@@ -90,17 +95,89 @@ def _mount(container: Mapping[str, Any], destination: str, *, volume: bool) -> s
     return value
 
 
+def _image_digest(reference: str) -> str:
+    return "sha256:" + reference.rsplit("@sha256:", 1)[1]
+
+
+def _release_manifest(container: Mapping[str, Any]) -> dict[str, Any]:
+    manifest_path = Path(
+        _mount(container, "/opt/sce-release/product-release-manifest.json", volume=False)
+    )
+    checksum_path = Path(
+        _mount(container, "/opt/sce-release/product-release-manifest.sha256", volume=False)
+    )
+    try:
+        for path in (manifest_path, checksum_path):
+            if path.is_symlink() or not path.is_file():
+                raise RuntimeContextError("production release manifest is unavailable")
+        payload = manifest_path.read_bytes()
+        if not payload or len(payload) > RELEASE_MANIFEST_LIMIT:
+            raise RuntimeContextError("production release manifest size is invalid")
+        checksum = checksum_path.read_text(encoding="utf-8").split()[0]
+        if not CHECKSUM.fullmatch(checksum):
+            raise RuntimeContextError("production release manifest checksum is invalid")
+        if hashlib.sha256(payload).hexdigest() != checksum:
+            raise RuntimeContextError("production release manifest checksum differs")
+        manifest = json.loads(payload.decode("utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError, IndexError) as exc:
+        raise RuntimeContextError("production release manifest cannot be read") from exc
+    if not isinstance(manifest, dict):
+        raise RuntimeContextError("production release manifest identity is invalid")
+    return manifest
+
+
+def _validate_release_identity(
+    release_manifest: Mapping[str, Any],
+    *,
+    odoo_image_ref: str,
+    odoo_digest: str,
+    frontend_image_ref: str,
+    frontend_digest: str,
+    source_sha: str,
+) -> None:
+    if not isinstance(release_manifest, Mapping):
+        raise RuntimeContextError("production release manifest identity is invalid")
+    if (
+        release_manifest.get("source_sha") != source_sha
+        or release_manifest.get("oci_revision") != source_sha
+        or release_manifest.get("container_source_revision") != source_sha
+    ):
+        raise RuntimeContextError("production release source identity differs")
+    if release_manifest.get("image_digest") != odoo_digest:
+        raise RuntimeContextError("production release Odoo digest differs")
+    if release_manifest.get("frontend_image_digest") != frontend_digest:
+        raise RuntimeContextError("production release frontend digest differs")
+    if release_manifest.get("registry_refs") != [odoo_image_ref, odoo_image_ref]:
+        raise RuntimeContextError("production release Odoo image reference differs")
+    if release_manifest.get("frontend_registry_repository") != FRONTEND_REGISTRY_REPOSITORY:
+        raise RuntimeContextError("production release frontend repository differs")
+    if release_manifest.get("frontend_registry_refs") != [
+        frontend_image_ref,
+        frontend_image_ref,
+    ]:
+        raise RuntimeContextError("production release frontend image reference differs")
+
+
 def resolve_compose_environment(
-    containers: Mapping[str, Mapping[str, Any]], active_env: Mapping[str, str]
+    containers: Mapping[str, Mapping[str, Any]],
+    active_env: Mapping[str, str],
+    release_manifest: Mapping[str, Any],
 ) -> dict[str, str]:
     odoo_container = containers["odoo"]
     nginx_container = containers["nginx"]
     runtime = _environment(odoo_container)
-    image_ref = str((odoo_container.get("Config") or {}).get("Image") or "")
-    nginx_image_ref = str((nginx_container.get("Config") or {}).get("Image") or "")
-    if not DIGEST_IMAGE.fullmatch(image_ref) or nginx_image_ref != image_ref:
+    odoo_image_ref = str((odoo_container.get("Config") or {}).get("Image") or "")
+    frontend_image_ref = str((nginx_container.get("Config") or {}).get("Image") or "")
+    if not DIGEST_IMAGE.fullmatch(odoo_image_ref) or not DIGEST_IMAGE.fullmatch(
+        frontend_image_ref
+    ):
         raise RuntimeContextError("production application image identity differs")
-    expected_digest = "sha256:" + image_ref.rsplit("@sha256:", 1)[1]
+    if frontend_image_ref == odoo_image_ref:
+        raise RuntimeContextError("Odoo and frontend images must be distinct")
+    if not frontend_image_ref.startswith(FRONTEND_REGISTRY_REPOSITORY + "@"):
+        raise RuntimeContextError("production frontend image repository differs")
+    odoo_digest = _image_digest(odoo_image_ref)
+    frontend_digest = _image_digest(frontend_image_ref)
     required_runtime = {
         "TARGET_DB": DATABASE,
         "DB_NAME": DATABASE,
@@ -108,7 +185,10 @@ def resolve_compose_environment(
         "ODOO_DBFILTER": f"^{DATABASE}$",
         "PLATFORM_RELEASE_DB": DATABASE,
         "SC_ENVIRONMENT": "production",
-        "EXPECTED_IMAGE_DIGEST": expected_digest,
+        "EXPECTED_IMAGE_DIGEST": odoo_digest,
+        "EXPECTED_FRONTEND_IMAGE_DIGEST": frontend_digest,
+        "ODOO_IMAGE_REF": odoo_image_ref,
+        "FRONTEND_IMAGE_REF": frontend_image_ref,
     }
     for key, expected in required_runtime.items():
         if runtime.get(key) != expected:
@@ -119,6 +199,14 @@ def resolve_compose_environment(
     for name in RUNTIME_SECRET_NAMES:
         if not runtime.get(name):
             raise RuntimeContextError(f"running production secret {name} is unavailable")
+    _validate_release_identity(
+        release_manifest,
+        odoo_image_ref=odoo_image_ref,
+        odoo_digest=odoo_digest,
+        frontend_image_ref=frontend_image_ref,
+        frontend_digest=frontend_digest,
+        source_sha=source_sha,
+    )
 
     resolved = dict(active_env)
     resolved.update(
@@ -127,11 +215,13 @@ def resolve_compose_environment(
             "TARGET_DB": DATABASE,
             "DB_NAME": DATABASE,
             "PLATFORM_RELEASE_DB": DATABASE,
-            "ODOO_IMAGE_REF": image_ref,
-            "NGINX_IMAGE_REF": nginx_image_ref,
+            "ODOO_IMAGE_REF": odoo_image_ref,
+            "FRONTEND_IMAGE_REF": frontend_image_ref,
+            "NGINX_IMAGE_REF": frontend_image_ref,
             "SC_ENVIRONMENT": "production",
             "EXPECTED_RELEASE_SHA": source_sha,
-            "EXPECTED_IMAGE_DIGEST": expected_digest,
+            "EXPECTED_IMAGE_DIGEST": odoo_digest,
+            "EXPECTED_FRONTEND_IMAGE_DIGEST": frontend_digest,
             "RELEASE_MANIFEST_PATH": _mount(
                 odoo_container, "/opt/sce-release/product-release-manifest.json", volume=False
             ),
@@ -229,7 +319,10 @@ def main() -> int:
             or marker.read_text().strip() != tool_root.name
         ):
             raise RuntimeContextError("immutable deployment-tool identity differs")
-        compose_env = resolve_compose_environment(_containers(), os.environ)
+        containers = _containers()
+        compose_env = resolve_compose_environment(
+            containers, os.environ, _release_manifest(containers["odoo"])
+        )
         argv = command(tool_root, args.login, args.base_url, args.mode)
     except RuntimeContextError as exc:
         raise SystemExit(f"[ops.user.password-reset.runtime] BLOCKED: {exc}") from None

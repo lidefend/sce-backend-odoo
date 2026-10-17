@@ -416,6 +416,7 @@ production.attachment_preview.csp.apply: guard.prod.danger
 
 production.tenant.delivery.artifacts.sync: guard.prod.danger
 	@test "$(CONFIRM_PRODUCTION_TENANT_ARTIFACT_SYNC)" = "YES_SYNC_SIGNED_TENANT_DELIVERY_ARTIFACTS" || (echo "exact signed tenant delivery artifact synchronization acknowledgement is required"; exit 2)
+	@test -n "$(PRODUCTION_TENANT_PRODUCT_FRONTEND_IMAGE)" -a -n "$(PRODUCTION_TENANT_PRODUCT_FRONTEND_IMAGE_DIGEST)" || (echo "tenant delivery frontend image and digest are required"; exit 2)
 	@ENV="$(ENV)" PROD_DANGER="$${PROD_DANGER:-}" \
 		CONFIRM_PRODUCTION_TENANT_ARTIFACT_SYNC="$(CONFIRM_PRODUCTION_TENANT_ARTIFACT_SYNC)" \
 		python3 scripts/ops/production_tenant_delivery_artifact_sync.py \
@@ -429,6 +430,8 @@ production.tenant.delivery.artifacts.sync: guard.prod.danger
 			--product-tree "$(PRODUCTION_TENANT_PRODUCT_TREE)" \
 			--product-image "$(PRODUCTION_TENANT_PRODUCT_IMAGE)" \
 			--product-image-digest "$(PRODUCTION_TENANT_PRODUCT_IMAGE_DIGEST)" \
+			--frontend-image "$(PRODUCTION_TENANT_PRODUCT_FRONTEND_IMAGE)" \
+			--frontend-image-digest "$(PRODUCTION_TENANT_PRODUCT_FRONTEND_IMAGE_DIGEST)" \
 			--customer-sha "$(PRODUCTION_TENANT_CUSTOMER_SHA)" \
 			--customer-tree "$(PRODUCTION_TENANT_CUSTOMER_TREE)" \
 			--tenant-key "$(PRODUCTION_TENANT_KEY)" \
@@ -514,6 +517,10 @@ verify.production.backup_restore_contract:
 
 PRODUCTION_CONTRACT_COMPOSE = $(COMPOSE_BIN) -f docker-compose.production-candidate.yml
 PRODUCTION_DB_MANAGER = $(PRODUCTION_CONTRACT_COMPOSE) run --rm --no-deps --entrypoint /usr/local/bin/production-db-manage odoo
+ODOO_IMAGE_REF ?=
+FRONTEND_IMAGE_REF ?=
+EXPECTED_IMAGE_DIGEST ?=
+EXPECTED_FRONTEND_IMAGE_DIGEST ?=
 PRODUCTION_RELEASE_SET_LOCK ?=
 PRODUCTION_CUSTOMER_PACKAGE_MANIFEST ?=
 PRODUCTION_CUSTOMER_ARCHIVE_ROOT ?=
@@ -591,28 +598,35 @@ release.production.identity.preflight:
 	@test -n "$(CANDIDATE_IMAGE)" || (echo "CANDIDATE_IMAGE is required"; exit 2)
 	@test -n "$(EXPECTED_RELEASE_SHA)" || (echo "EXPECTED_RELEASE_SHA is required"; exit 2)
 	@test -n "$(EXPECTED_IMAGE_DIGEST)" || (echo "EXPECTED_IMAGE_DIGEST is required"; exit 2)
+	@test -n "$(FRONTEND_IMAGE_REF)" || (echo "FRONTEND_IMAGE_REF is required"; exit 2)
+	@test -n "$(EXPECTED_FRONTEND_IMAGE_DIGEST)" || (echo "EXPECTED_FRONTEND_IMAGE_DIGEST is required"; exit 2)
 	@test -n "$(IMAGE_MANIFEST_PATH)" || (echo "IMAGE_MANIFEST_PATH is required"; exit 2)
 	@test -n "$(RELEASE_MANIFEST_PATH)" || (echo "RELEASE_MANIFEST_PATH is required"; exit 2)
 	@test -n "$(RELEASE_MANIFEST_CHECKSUM_PATH)" || (echo "RELEASE_MANIFEST_CHECKSUM_PATH is required"; exit 2)
 	@python3 scripts/release/release_source_identity.py artifact-preflight \
 		--image "$(CANDIDATE_IMAGE)" \
+		--frontend-image "$(FRONTEND_IMAGE_REF)" \
 		--image-manifest "$(IMAGE_MANIFEST_PATH)" \
 		--release-manifest "$(RELEASE_MANIFEST_PATH)" \
 		--release-manifest-checksum "$(RELEASE_MANIFEST_CHECKSUM_PATH)" \
 		--expected-release-sha "$(EXPECTED_RELEASE_SHA)" \
-		--expected-image-digest "$(EXPECTED_IMAGE_DIGEST)"
+		--expected-image-digest "$(EXPECTED_IMAGE_DIGEST)" \
+		--expected-frontend-image-digest "$(EXPECTED_FRONTEND_IMAGE_DIGEST)"
 
 release.production.compose.preflight: release.production.identity.preflight
 	@test "$(PRODUCTION_COMPOSE_PROJECT)" = "sc_production" || (echo "PRODUCTION_COMPOSE_PROJECT must be sc_production"; exit 2)
 	@test "$(TARGET_DB)" = "sc_production" || (echo "TARGET_DB must be sc_production"; exit 2)
 	@test -n "$(ODOO_IMAGE_REF)" || (echo "ODOO_IMAGE_REF is required"; exit 2)
-	@test -n "$(NGINX_IMAGE_REF)" || (echo "NGINX_IMAGE_REF is required"; exit 2)
+	@test -n "$(FRONTEND_IMAGE_REF)" || (echo "FRONTEND_IMAGE_REF is required"; exit 2)
+	@test -n "$(EXPECTED_IMAGE_DIGEST)" || (echo "EXPECTED_IMAGE_DIGEST is required"; exit 2)
+	@test -n "$(EXPECTED_FRONTEND_IMAGE_DIGEST)" || (echo "EXPECTED_FRONTEND_IMAGE_DIGEST is required"; exit 2)
 	@python3 scripts/release/production_compose_contract.py \
 		--project "$(PRODUCTION_COMPOSE_PROJECT)" \
 		--database "$(TARGET_DB)" \
 		--odoo-image-ref "$(ODOO_IMAGE_REF)" \
-		--nginx-image-ref "$(NGINX_IMAGE_REF)" \
-		--expected-digest "$(EXPECTED_IMAGE_DIGEST)" \
+		--frontend-image-ref "$(FRONTEND_IMAGE_REF)" \
+		--expected-odoo-digest "$(EXPECTED_IMAGE_DIGEST)" \
+		--expected-frontend-digest "$(EXPECTED_FRONTEND_IMAGE_DIGEST)" \
 		--release-manifest "$(RELEASE_MANIFEST_PATH)"
 
 release.production.infrastructure.up: guard.prod.danger release.production.compose.preflight
@@ -1144,3 +1158,12 @@ release.history.fingerprint.candidate_pre: guard.prod.forbid check-compose-proje
 
 release.history.fingerprint.candidate_post: guard.prod.forbid check-compose-project check-compose-env
 	@CANDIDATE_DB="$(CANDIDATE_DB)" CANDIDATE_PROJECT="$(CANDIDATE_PROJECT)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" bash scripts/release/production_candidate_fingerprint.sh candidate candidate-post
+
+.PHONY: verify.frontend.static.image.decoupling
+verify.frontend.static.image.decoupling: guard.prod.forbid
+	@python3 -m py_compile scripts/release/release_publication.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/candidate_scan_contract.py scripts/release/production_compose_contract.py scripts/release/production_release_set.py scripts/release/production_db_contract.py scripts/ops/production_release_config_promote.py scripts/ops/production_user_password_reset_runtime.py scripts/ops/production_tenant_delivery_artifact_sync.py
+	@cd scripts/release && python3 -m unittest test_production_compose_contract test_production_release_set test_product_release test_release_source_identity test_release_publication test_candidate_scan_contract test_production_db_init
+	@python3 -m unittest scripts.ops.test_production_release_config_promote scripts.ops.test_production_user_password_reset_runtime scripts.ops.test_production_tenant_delivery_artifact_sync
+	@python3 -m unittest scripts.ci.test_backend_test_suite_dispatch_contract
+	@bash -n scripts/release/immutable_candidate_build.sh scripts/release/immutable_candidate_scan.sh scripts/release/production_contract_image_acceptance.sh scripts/verify/production_blocker_image.sh scripts/verify/production_blocker_runtime_assets.sh
+	@git diff --check
