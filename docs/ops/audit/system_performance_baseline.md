@@ -6,7 +6,7 @@ production acceptance.
 
 - schema: `system-performance-baseline/v1`
 - status: `baseline`
-- generated_at: `2026-10-17T01:18:12.604703+00:00`
+- generated_at: `2026-10-17T06:12:59.516541+00:00`
 - samples observed / retained: `142` / `142`
 - stage timings summed: `no`
 - gaps: `0`
@@ -69,13 +69,13 @@ budgets and is not a capacity or production acceptance.
 
 | target | tier | agg | basis | samples | observed ms | target ms | tolerance ms | historical gate | verdict |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |
-| warm_contract_dispatch | instant_interaction | p95 | unprofiled | 24 | 78.22 | 100 | 200 | 5000 (50x) | met |
-| cold_contract_assembly | keeps_flow | max | unprofiled | 1 | 249.36 | 1000 | 3000 | 5000 (5x) | met |
-| profile_first_contract_assembly | keeps_flow | first | profiled | 0 | - (profiled 3660.89) | 1000 | 3000 | 5000 (5x) | not_evaluated |
-| first_contract_assembly | keeps_flow | first | unprofiled | 1 | 1742.09 | 1000 | 3000 | 5000 (5x) | within_tolerance |
-| startup_system_init_first | good_ttfb | first | unprofiled | 1 | 1754.91 | 800 | 3000 | 8000 (10x) | within_tolerance |
-| startup_system_init_http | good_ttfb | p95 | unprofiled | 1 | 649.01 | 800 | 3000 | 8000 (10x) | met |
-| warm_startup_repeat | keeps_flow | p95 | unprofiled | 5 | 464.26 | 1000 | 3000 | 8000 (8x) | met |
+| warm_contract_dispatch | instant_interaction | p95 | unprofiled | 24 | 70.66 | 100 | 200 | 5000 (50x) | met |
+| cold_contract_assembly | keeps_flow | max | unprofiled | 1 | 200.11 | 1000 | 3000 | 5000 (5x) | met |
+| profile_first_contract_assembly | keeps_flow | first | profiled | 0 | - (profiled 3575.05) | 1000 | 3000 | 5000 (5x) | not_evaluated |
+| first_contract_assembly | keeps_flow | first | unprofiled | 1 | 1644.24 | 1000 | 3000 | 5000 (5x) | within_tolerance |
+| startup_system_init_first | good_ttfb | first | unprofiled | 1 | 1701.10 | 800 | 3000 | 8000 (10x) | within_tolerance |
+| startup_system_init_http | good_ttfb | p95 | unprofiled | 1 | 630.90 | 800 | 3000 | 8000 (10x) | met |
+| warm_startup_repeat | keeps_flow | p95 | unprofiled | 5 | 444.49 | 1000 | 3000 | 8000 (8x) | met |
 
 ### First-call boundary
 
@@ -87,13 +87,13 @@ marker frames are nested and are never summed, and a sample without a profile is
 | target | one-time state | one-time ms | frame | calls | share of observed |
 | --- | --- | ---: | --- | ---: | ---: |
 | cold_contract_assembly | not_declared | - | - | - | - |
-| profile_first_contract_assembly | measured | 556.95 | translate.py:545 __call__ | 820 | 0.1521 |
+| profile_first_contract_assembly | measured | 562.48 | translate.py:545 __call__ | 820 | 0.1573 |
 | first_contract_assembly | not_declared | - | - | - | - |
 | startup_system_init_first | not_declared | - | - | - | - |
 
 ### Not evaluated
 
-- `profile_first_contract_assembly`: diagnostic-only target: retained for owner ranking and one-time share attribution, never graded against an absolute target; see comparability_rule and profiled_values_ms (profiled values ms: 34.74, 3660.89)
+- `profile_first_contract_assembly`: diagnostic-only target: retained for owner ranking and one-time share attribution, never graded against an absolute target; see comparability_rule and profiled_values_ms (profiled values ms: 32.20, 3575.05)
 
 ## Role-dimension contract variation
 
@@ -109,5 +109,5 @@ substituted contract.
 
 | case | dispatched | refused | unavailable | identity refs | surface digests | cold ms (min/median/max) | hot ms (per role) |
 | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| `form_action_open` | 4 | 0 | 5 | 4 | 4 | 565.904/837.025/899.978 | cap_project_manager=780.1, role_executive=765.1, role_finance=775.8, role_project_a_member=721.0 |
-| `list_action_open` | 6 | 3 | 0 | 6 | 6 | 168.052/194.205/314.951 | cap_project_manager=14.8, cap_project_read=15.1, cap_project_user=15.6, role_executive=14.4, role_finance=14.8, role_project_a_member=13.9 |
+| `form_action_open` | 4 | 0 | 5 | 4 | 4 | 411.833/683.028/709.904 | cap_project_manager=650.2, role_executive=415.4, role_finance=626.8, role_project_a_member=377.0 |
+| `list_action_open` | 6 | 3 | 0 | 6 | 6 | 108.092/117.719/262.874 | cap_project_manager=16.0, cap_project_read=14.0, cap_project_user=14.2, role_executive=15.0, role_finance=14.3, role_project_a_member=13.3 |

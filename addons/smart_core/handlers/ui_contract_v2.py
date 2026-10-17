@@ -92,7 +92,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-17-read-only-source-loan"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-17-base-identity-no-source-hash"
 
 # The assembled entry carries the semantic digests its own seal produced, keyed
 # by the entry identity the hit path already validates (cache_version,
@@ -1237,8 +1237,35 @@ class UiContractV2Handler(BaseIntentHandler):
                 },
             )
         assembled_cache_stored_at = time.monotonic()
+        # The assembly-stage seal already hashed this exact source graph.  The
+        # runtime seal must recompute the contract digest because post-processing
+        # changed the contract, but the source payload is unchanged.  Reusing
+        # only ``sourceSha256`` avoids a second full walk without reusing any
+        # digest whose payload moved.
+        assembly_lifecycle = (
+            (contract_v2.get("meta") or {}).get("lifecycle")
+            if isinstance(contract_v2.get("meta"), dict)
+            else None
+        )
+        assembly_source_digest = (
+            (assembly_lifecycle.get("generation") or {}).get("sourceSha256")
+            if isinstance(assembly_lifecycle, dict)
+            else ""
+        )
         contract_v2 = _authority.seal_runtime_contract(
-            self, contract_v2, source_contract, runtime_source_type, str(request_id), trace_id, client_type, action_id=action_id
+            self,
+            contract_v2,
+            source_contract,
+            runtime_source_type,
+            str(request_id),
+            trace_id,
+            client_type,
+            action_id=action_id,
+            reuse_digests=(
+                {"sourceSha256": assembly_source_digest}
+                if isinstance(assembly_source_digest, str) and assembly_source_digest
+                else None
+            ),
         )
         assembled_digest_slot.update(sealed_semantic_digests(contract_v2))
         runtime_sealed_at = time.monotonic()

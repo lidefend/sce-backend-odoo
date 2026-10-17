@@ -1337,6 +1337,27 @@ local.dev.runtime.performance.browser: guard.prod.forbid local.dev.ready
 	  PRODUCT_PERFORMANCE_BROWSER_SCOPE="$(if $(PRODUCT_PERFORMANCE_BROWSER_SCOPE),$(PRODUCT_PERFORMANCE_BROWSER_SCOPE),login)" \
 	  bash scripts/verify/local_dev_runtime_performance_browser.sh
 
+.PHONY: local.dev.runtime.startup_fact_reuse.probe
+local.dev.runtime.startup_fact_reuse.probe: guard.prod.forbid local.dev.ready
+	@python3 -m py_compile scripts/verify/local_dev_runtime_startup_fact_reuse_probe.py
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  PRODUCT_PERFORMANCE_STARTUP_FACT_REUSE_MODE="$(if $(STARTUP_FACT_REUSE_MODE),$(STARTUP_FACT_REUSE_MODE),candidate)" \
+	  PRODUCT_PERFORMANCE_STARTUP_FACT_REUSE_PROFILE="$(if $(STARTUP_FACT_REUSE_PROFILE),$(STARTUP_FACT_REUSE_PROFILE),counter)" \
+	  PRODUCT_PERFORMANCE_STARTUP_FACT_REUSE_SAMPLES="$(if $(STARTUP_FACT_REUSE_SAMPLES),$(STARTUP_FACT_REUSE_SAMPLES),4)" \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/verify/local_dev_runtime_startup_fact_reuse_probe.py
+
+# Read-only proof that declared admin-surface actions reach the published route
+# authority with ``entry_target`` instead of a model-name inference. See
+# scripts/verify/local_dev_runtime_entry_target_probe.py.
+.PHONY: local.dev.runtime.entry_target.probe
+local.dev.runtime.entry_target.probe: guard.prod.forbid local.dev.ready
+	@python3 -m py_compile scripts/verify/local_dev_runtime_entry_target_probe.py
+	@python3 scripts/verify/test_local_dev_runtime_entry_target_probe.py
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/verify/local_dev_runtime_entry_target_probe.py
+
 # Read-only cache-identity probe for the R2 relation-demand boundary: where the
 # R2 methods run relative to the persisted runtime-source write, and whether the
 # persisted source token covers the affected code identity. Rollback-only writes,
@@ -1415,6 +1436,28 @@ local.dev.runtime.contract_role_matrix.probe: guard.prod.forbid local.dev.ready
 	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  odoo.shell.exec < scripts/verify/local_dev_runtime_contract_role_matrix_probe.py
 
+# Uninstrumented record-form repeat probe: no SQL, deepcopy or GC wrappers, so
+# the measured dispatch is the product path rather than the attribution probe's
+# own graph walk. Same registered principal and record for first/hot repeats.
+# Commit is refused; no product code, schema, fixture or ACL change; see
+# scripts/verify/local_dev_runtime_record_form_probe.py.
+.PHONY: local.dev.runtime.record_form.probe
+local.dev.runtime.record_form.probe: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID="$(PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID)" \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/verify/local_dev_runtime_record_form_probe.py
+
+# Runtime proof that the assembled-cache key/token move when the principal loses
+# a group or a policy definition changes. Writes happen inside savepoints and are
+# rolled back; commit is refused. See
+# scripts/verify/local_dev_runtime_projection_cache_identity_probe.py.
+.PHONY: local.dev.runtime.projection_cache_identity.probe
+local.dev.runtime.projection_cache_identity.probe: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/verify/local_dev_runtime_projection_cache_identity_probe.py
+
 # P4 system performance baseline. One bounded capture on the registered
 # sc-local-dev / sc_dev_demo profile; reuses the existing governed probes and
 # normalizes their payloads once into artifacts/backend/system_performance_baseline.json
@@ -1438,5 +1481,5 @@ local.dev.runtime.performance.baseline: guard.prod.forbid local.dev.ready
 # complete baseline; negative cases must register a gap or fail closed.
 .PHONY: verify.system.performance.baseline.unit
 verify.system.performance.baseline.unit: guard.prod.forbid
-	@python3 -m py_compile scripts/verify/system_performance_baseline.py scripts/verify/test_system_performance_baseline.py scripts/verify/local_dev_runtime_contract_role_matrix_probe.py scripts/ops/local_dev_performance_identity.py
-	@python3 -m unittest scripts.verify.test_system_performance_baseline
+	@python3 -m py_compile scripts/verify/system_performance_baseline.py scripts/verify/test_system_performance_baseline.py scripts/verify/local_dev_runtime_contract_role_matrix_probe.py scripts/verify/local_dev_runtime_record_form_probe.py scripts/verify/test_local_dev_runtime_record_form_probe.py scripts/verify/local_dev_runtime_projection_cache_identity_probe.py scripts/ops/local_dev_performance_identity.py
+	@python3 -m unittest scripts.verify.test_system_performance_baseline scripts.verify.test_local_dev_runtime_record_form_probe

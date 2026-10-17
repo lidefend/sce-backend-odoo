@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
+from odoo.addons.smart_core.core.navigation_entry_target import build_web_surface_entry_target
 from odoo.addons.smart_core.security.platform_admin import can_discover_platform_capabilities
 
 from .capability_service import CapabilityService
@@ -91,7 +92,7 @@ class DeliveryEngine:
     ) -> dict:
         if not isinstance(entry_target, dict):
             entry_target = {}
-        if _text(entry_target.get("type")) == "scene":
+        if _text(entry_target.get("type")) in {"scene", "admin_surface"}:
             next_target = dict(entry_target)
             refs = dict(next_target.get("compatibility_refs") or {})
             if menu_id:
@@ -176,15 +177,41 @@ class DeliveryEngine:
         else:
             route = current_route
 
-        meta["entry_target"] = self._normalize_entry_target_refs(
-            entry_target=meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {},
-            menu_id=menu_id,
-            action_id=action_id,
-            model=model,
-            view_modes=view_modes,
-            route=route,
+        existing_target = meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {}
+        declared_surface = (
+            {}
+            if _text(existing_target.get("type")) == "scene"
+            else build_web_surface_entry_target(
+                getattr(action, "context", None) if action else meta.get("context"),
+                menu_id=menu_id,
+                action_id=action_id,
+                model=model,
+                view_modes=view_modes,
+            )
         )
+        if declared_surface:
+            meta["entry_target"] = self._normalize_entry_target_refs(
+                entry_target=declared_surface,
+                menu_id=menu_id,
+                action_id=action_id,
+                model=model,
+                view_modes=view_modes,
+                route=declared_surface.get("route") or route,
+            )
+        else:
+            meta["entry_target"] = self._normalize_entry_target_refs(
+                entry_target=existing_target,
+                menu_id=menu_id,
+                action_id=action_id,
+                model=model,
+                view_modes=view_modes,
+                route=route,
+            )
         node["meta"] = meta
+        # ``_nav_target_index`` reads the node-level target first, so a stale
+        # node copy would overwrite the declared projection when the route
+        # authority index is rebuilt. Keep both carriers on one identity.
+        node["entry_target"] = meta["entry_target"]
 
     def _normalize_delivery_nav_refs(self, nav: list[dict]) -> list[dict]:
         for node in nav or []:

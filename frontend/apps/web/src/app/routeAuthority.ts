@@ -1,4 +1,7 @@
 import type { RecordContextContract, RecordContextOption } from '@sc/schema';
+import { contractGapError } from './contract/contractGap';
+
+const ROUTE_AUTHORITY_DECLARATION_LAYER = 'P0:smart_core:MenuService.build_route_authority';
 
 export type RouteAuthorityKind = 'PRIMARY_NAV' | 'DISCOVERED_PRIMARY_NAV' | 'ROLE_HOME_ACTION' | 'CONTEXTUAL_ROUTE' | 'ADMIN_ROUTE' | 'DENIED';
 
@@ -49,6 +52,13 @@ function record(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
+function contractGap(missing: string, message: string): never {
+  throw contractGapError(
+    { kind: 'contract_defect', missing, requiredDeclarationLayer: ROUTE_AUTHORITY_DECLARATION_LAYER },
+    message,
+  );
+}
+
 function positiveInteger(value: unknown): number {
   const parsed = Number(value || 0);
   return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : 0;
@@ -57,28 +67,46 @@ function positiveInteger(value: unknown): number {
 function normalizeEntry(
   value: unknown,
   expectedKind: RouteAuthorityKind,
+  location: string,
   allowContainer = false,
   allowDeclaredTarget = false,
-): RouteAuthorityEntry | null {
+): RouteAuthorityEntry {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    contractGap(location, `${location} 必须是对象：前端不静默丢弃已声明条目`);
+  }
   const row = record(value);
   const actionId = positiveInteger(row.action_id);
   const actionXmlid = String(row.action_xmlid || '').trim();
   const menuId = positiveInteger(row.menu_id);
   const menuXmlid = String(row.menu_xmlid || '').trim();
   const menuBoundAction = actionId > 0 && menuId > 0 && Boolean(menuXmlid);
+  if (row.entry_target !== undefined && row.entry_target !== null
+    && (typeof row.entry_target !== 'object' || Array.isArray(row.entry_target))) {
+    contractGap(`${location}.entry_target`, `${location}.entry_target 必须是对象`);
+  }
+  const entryTarget = record(row.entry_target);
   // A contract-declared target entry (scene / record / url) carries no business
   // action; it is authorized by the same (menu_id, action_id 0) pair the backend
   // ``role_home_actions`` bucket publishes.  Admission stays fail-closed: the
   // entry must declare an explicit entry_target or scene_key.
   const declaredTarget = allowDeclaredTarget
     && menuId > 0
-    && (Object.keys(record(row.entry_target)).length > 0 || Boolean(String(row.scene_key || '').trim()));
-  if (
-    (!actionId || (!actionXmlid && !menuBoundAction))
-    && !(allowContainer && menuId > 0)
-    && !declaredTarget
-  ) return null;
-  if (String(row.route_kind || '') !== expectedKind) return null;
+    && (Object.keys(entryTarget).length > 0 || Boolean(String(row.scene_key || '').trim()));
+  // A denial record may legitimately name a declared action that does not exist
+  // yet (action_id 0 + action_xmlid), or only a menu carrier that was not
+  // delivered (action_id 0 + menu_xmlid).  Both stay explicit denial records,
+  // never silently dropped entries; a denial with no identity at all is still
+  // a contract gap.
+  const denialRecord = expectedKind === 'DENIED' && (Boolean(actionXmlid) || Boolean(menuXmlid));
+  if (!actionId && !(allowContainer && menuId > 0) && !declaredTarget && !denialRecord) {
+    contractGap(`${location}.action_id`, `${location} 未声明 action_id，也不是已声明的目标入口`);
+  }
+  if (!actionXmlid && !menuBoundAction && !(allowContainer && menuId > 0) && !declaredTarget && !denialRecord) {
+    contractGap(`${location}.action_xmlid`, `${location} 缺少 action_xmlid 或 menu_xmlid`);
+  }
+  if (String(row.route_kind || '') !== expectedKind) {
+    contractGap(`${location}.route_kind`, `${location}.route_kind 与所属 bucket 不一致`);
+  }
   return {
     action_xmlid: actionXmlid,
     route_kind: expectedKind,
@@ -94,7 +122,7 @@ function normalizeEntry(
     context: String(row.context || '').trim(),
     route: String(row.route || '').trim(),
     scene_key: String(row.scene_key || '').trim() || undefined,
-    entry_target: Object.keys(record(row.entry_target)).length ? record(row.entry_target) : undefined,
+    entry_target: Object.keys(entryTarget).length ? entryTarget : undefined,
     allowed_operation: String(row.allowed_operation || '').trim(),
     required_capability: String(row.required_capability || '').trim(),
     context_requirements: record(row.context_requirements),
@@ -103,48 +131,64 @@ function normalizeEntry(
 }
 
 export function normalizeRouteAuthorityContract(value: unknown): RouteAuthorityContract | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    contractGap('route_authority', 'route_authority 必须是对象');
+  }
   const row = record(value);
-  if (String(row.contract_version || '') !== '2.0.0') return null;
-  if (String(row.schema_version || '') !== '2.0.0') return null;
+  if (String(row.contract_version || '') !== '2.0.0') {
+    contractGap('route_authority.contract_version', 'route_authority.contract_version 必须为 2.0.0');
+  }
+  if (String(row.schema_version || '') !== '2.0.0') {
+    contractGap('route_authority.schema_version', 'route_authority.schema_version 必须为 2.0.0');
+  }
   const scope = record(row.principal_scope);
+  const userId = positiveInteger(scope.user_id);
+  const companyId = positiveInteger(scope.company_id);
+  if (!userId) contractGap('route_authority.principal_scope.user_id', 'principal_scope.user_id 必须为正整数');
+  if (!companyId) contractGap('route_authority.principal_scope.company_id', 'principal_scope.company_id 必须为正整数');
+  const bucket = (key: string): unknown[] => {
+    const value = row[key];
+    if (value === undefined || value === null) return [];
+    if (!Array.isArray(value)) contractGap(`route_authority.${key}`, `route_authority.${key} 必须是数组`);
+    return value;
+  };
   const normalizeBucket = (key: string, kind: RouteAuthorityKind, allowDeclaredTarget = false) => (
-    Array.isArray(row[key])
-      ? row[key]
-        .map((item) => normalizeEntry(item, kind, false, allowDeclaredTarget))
-        .filter(Boolean) as RouteAuthorityEntry[]
-      : []
+    bucket(key).map((item, index) => normalizeEntry(
+      item,
+      kind,
+      `route_authority.${key}[${index}]`,
+      false,
+      allowDeclaredTarget,
+    ))
   );
   return {
     contract_version: '2.0.0',
     schema_version: '2.0.0',
     source: String(row.source || '').trim(),
     principal_scope: {
-      user_id: positiveInteger(scope.user_id),
-      company_id: positiveInteger(scope.company_id),
+      user_id: userId,
+      company_id: companyId,
       role_code: String(scope.role_code || '').trim(),
     },
-    primary_actions: Array.isArray(row.primary_actions)
-      ? row.primary_actions
-        .map((item) => {
-          const kind = String(record(item).route_kind || '');
-          if (!['PRIMARY_NAV', 'DISCOVERED_PRIMARY_NAV'].includes(kind)) return null;
-          return normalizeEntry(item, kind as RouteAuthorityKind);
-        })
-        .filter(Boolean) as RouteAuthorityEntry[]
-      : [],
+    primary_actions: bucket('primary_actions').map((item, index) => {
+      const kind = String(record(item).route_kind || '');
+      if (!['PRIMARY_NAV', 'DISCOVERED_PRIMARY_NAV'].includes(kind)) {
+        contractGap(`route_authority.primary_actions[${index}].route_kind`, 'primary_actions 条目 route_kind 非法');
+      }
+      return normalizeEntry(item, kind as RouteAuthorityKind, `route_authority.primary_actions[${index}]`);
+    }),
     role_home_actions: normalizeBucket('role_home_actions', 'ROLE_HOME_ACTION', true),
     contextual_actions: normalizeBucket('contextual_actions', 'CONTEXTUAL_ROUTE'),
     admin_actions: normalizeBucket('admin_actions', 'ADMIN_ROUTE'),
     denied_actions: normalizeBucket('denied_actions', 'DENIED'),
-    menu_containers: Array.isArray(row.menu_containers)
-      ? row.menu_containers
-        .map((item) => {
-          const kind = String(record(item).route_kind || '');
-          if (!['PRIMARY_NAV', 'DISCOVERED_PRIMARY_NAV', 'ROLE_HOME_ACTION', 'CONTEXTUAL_ROUTE', 'ADMIN_ROUTE'].includes(kind)) return null;
-          return normalizeEntry(item, kind as RouteAuthorityKind, true);
-        })
-        .filter(Boolean) as RouteAuthorityEntry[]
-      : [],
+    menu_containers: bucket('menu_containers').map((item, index) => {
+      const kind = String(record(item).route_kind || '');
+      if (!['PRIMARY_NAV', 'DISCOVERED_PRIMARY_NAV', 'ROLE_HOME_ACTION', 'CONTEXTUAL_ROUTE', 'ADMIN_ROUTE'].includes(kind)) {
+        contractGap(`route_authority.menu_containers[${index}].route_kind`, 'menu_containers 条目 route_kind 非法');
+      }
+      return normalizeEntry(item, kind as RouteAuthorityKind, `route_authority.menu_containers[${index}]`, true);
+    }),
   };
 }
 
@@ -153,11 +197,12 @@ export function routeAuthorityForPrincipal(
   expected: { userId: number; companyId: number; roleCode: string },
 ): RouteAuthorityContract | null {
   const contract = normalizeRouteAuthorityContract(value);
-  const scope = contract?.principal_scope;
+  if (!contract) return null;
+  const scope = contract.principal_scope;
+  // A principal mismatch is an authorization-scope decision, not a contract
+  // shape defect.  Malformed or version-mismatched contracts already threw.
   if (
-    !contract
-    || !scope?.user_id
-    || scope.user_id !== expected.userId
+    scope.user_id !== expected.userId
     || (expected.roleCode && scope.role_code !== expected.roleCode)
     || (expected.companyId > 0 && scope.company_id !== expected.companyId)
   ) return null;

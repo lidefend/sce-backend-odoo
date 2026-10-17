@@ -1112,5 +1112,280 @@ class TestHandlerHandOffOwnsTheGetCopy(unittest.TestCase):
         self.assertEqual(after, stored)
 
 
+class TestAssembledCacheIdentityInvalidation(unittest.TestCase):
+    """A record-free assembled hit must not survive a role or policy change.
+
+    The assembled hit branch returns after re-sealing: it does not re-run
+    entitlement, field/business policy, action, modifier or trim projection.
+    That is only safe because the cache key contains the principal's group set
+    and the source token contains the ACL/rule/user rows and the *definition* of
+    every business policy. These negative cases pin both halves; without them a
+    re-seal would be mistaken for a fresh authorization decision.
+    """
+
+    @staticmethod
+    def _key_env(group_ids, *, company_id=1):
+        return SimpleNamespace(
+            cr=SimpleNamespace(dbname="sc_dev_demo"),
+            user=SimpleNamespace(id=7, groups_id=SimpleNamespace(ids=list(group_ids))),
+            company=SimpleNamespace(id=company_id),
+            context={"lang": "zh_CN", "allowed_company_ids": [company_id]},
+        )
+
+    @staticmethod
+    def _projection_key(env, params=None, context=None):
+        return TARGET.build_projection_cache_key(
+            env,
+            namespace="ui.contract.v2.source.single-assembly.v1",
+            params=params or {"model": "project.project"},
+            model_name="project.project",
+            view_types="form",
+            context=context or {"lang": "zh_CN", "allowed_company_ids": [env.company.id]},
+        )
+
+    def test_role_revocation_changes_the_cache_key(self):
+        before = self._projection_key(self._key_env([11, 12, 13]))
+        revoked = self._projection_key(self._key_env([11, 12]))
+
+        self.assertTrue(before)
+        self.assertTrue(revoked)
+        self.assertNotEqual(
+            before,
+            revoked,
+            "removing one group from the principal must make the assembled entry unreachable",
+        )
+
+    def test_company_scope_changes_the_cache_key(self):
+        first = self._projection_key(self._key_env([11], company_id=1))
+        second = self._projection_key(self._key_env([11], company_id=2))
+
+        self.assertNotEqual(first, second)
+
+    def test_transport_only_params_do_not_churn_the_key(self):
+        env = self._key_env([11])
+        first = self._projection_key(env, {"model": "project.project", "request_id": "a"})
+        second = self._projection_key(env, {"model": "project.project", "request_id": "b"})
+
+        self.assertEqual(first, second)
+
+    class _TokenModel:
+        _fields = {"write_date": object()}
+
+        def __init__(self, row, id_rows=None):
+            self.row = row
+            self.id_rows = id_rows
+
+        def sudo(self):
+            return self
+
+        def with_context(self, **_kwargs):
+            return self
+
+        def search(self, _domain, **kwargs):
+            if kwargs.get("order") == "id":
+                return list(self.id_rows or [])
+            return self.row
+
+    class _TokenEnv:
+        def __init__(self, rows):
+            self.rows = rows
+            self.user = SimpleNamespace(id=7, groups_id=SimpleNamespace(ids=[11]))
+            self.company = SimpleNamespace(id=1)
+            self.cr = SimpleNamespace(dbname="sc_dev_demo")
+
+        def __contains__(self, _model_code):
+            return True
+
+        def __getitem__(self, model_code):
+            value = self.rows[model_code]
+            if model_code == "ui.business.config.contract":
+                return TestAssembledCacheIdentityInvalidation._TokenModel(None, id_rows=value)
+            return TestAssembledCacheIdentityInvalidation._TokenModel(value)
+
+    @staticmethod
+    def _default_token_rows():
+        rows = {
+            model_code: SimpleNamespace(
+                id=1,
+                write_date="2026-10-17 00:00:00",
+                latest_version="",
+            )
+            for model_code in (
+                "ir.ui.view",
+                "ir.model.fields",
+                "ir.actions.act_window",
+                "ir.ui.menu",
+                "ir.model.access",
+                "ir.rule",
+                "res.users",
+                "ir.module.module",
+                "app.model.config",
+                "app.view.config",
+                "app.search.config",
+                "app.permission.config",
+                "app.action.config",
+                "ui.form.field.policy",
+                "ui.menu.config.policy",
+                "sc.approval.policy",
+                "sc.scene",
+            )
+        }
+        rows["ui.business.config.contract"] = [
+            SimpleNamespace(
+                id=1,
+                definition_sha256="definition-a",
+                version_no=1,
+                status="published",
+                active=True,
+            )
+        ]
+        return rows
+
+    def _source_token(self, rows):
+        with patch.object(TARGET, "contract_code_fingerprint", return_value="c" * 64):
+            with patch.dict(
+                os.environ,
+                {"SC_SOURCE_REVISION": "a" * 40, "SC_SOURCE_FINGERPRINT": "b" * 64},
+                clear=False,
+            ):
+                return TARGET.build_projection_source_token(
+                    self._TokenEnv(rows), model_name="project.project", action_id=506
+                )
+
+    def test_role_revocation_reaches_the_source_token(self):
+        before = self._default_token_rows()
+        after = self._default_token_rows()
+        after["res.users"] = SimpleNamespace(
+            id=1, write_date="2026-10-17 00:00:01", latest_version=""
+        )
+
+        self.assertNotEqual(
+            self._source_token(before),
+            self._source_token(after),
+            "a group membership write moves res.users.write_date and must invalidate the token",
+        )
+
+    def test_acl_change_reaches_the_source_token(self):
+        before = self._default_token_rows()
+        after = self._default_token_rows()
+        after["ir.model.access"] = SimpleNamespace(
+            id=1, write_date="2026-10-17 00:00:01", latest_version=""
+        )
+
+        self.assertNotEqual(self._source_token(before), self._source_token(after))
+
+    def test_business_policy_definition_change_reaches_the_source_token(self):
+        before = self._default_token_rows()
+        after = self._default_token_rows()
+        after["ui.business.config.contract"] = [
+            SimpleNamespace(
+                id=1,
+                definition_sha256="definition-b",
+                version_no=1,
+                status="published",
+                active=True,
+            )
+        ]
+
+        self.assertNotEqual(self._source_token(before), self._source_token(after))
+
+    def test_unchanged_authorities_produce_a_stable_source_token(self):
+        self.assertEqual(
+            self._source_token(self._default_token_rows()),
+            self._source_token(self._default_token_rows()),
+        )
+
+    def test_assembled_entry_is_unreachable_after_role_revocation(self):
+        cache = LoadContractResponseCache(max_entries=2, ttl_seconds=30, clock=lambda: 0.0)
+        env_before = self._key_env([11, 12, 13])
+        key_before = self._projection_key(env_before)
+        token_before = self._source_token(self._default_token_rows())
+        cache.put_generated(
+            key_before,
+            token_before,
+            lambda: self._stored_snapshot({"page": "before"}),
+        )
+
+        self.assertIsNotNone(cache.get_assembled(
+            key_before,
+            token_before,
+            cache_version="test",
+            client_type="web",
+            delivery_profile="full",
+            limit_params={},
+            digests_key="assembled_semantic_digests",
+        ))
+
+        key_after = self._projection_key(self._key_env([11, 12]))
+        self.assertIsNone(cache.get(key_after, token_before))
+        self.assertIsNone(cache.get_assembled(
+            key_after,
+            token_before,
+            cache_version="test",
+            client_type="web",
+            delivery_profile="full",
+            limit_params={},
+            digests_key="assembled_semantic_digests",
+        ))
+
+    def test_assembled_entry_is_unreachable_after_policy_change(self):
+        cache = LoadContractResponseCache(max_entries=2, ttl_seconds=30, clock=lambda: 0.0)
+        env = self._key_env([11, 12])
+        key = self._projection_key(env)
+        token_before = self._source_token(self._default_token_rows())
+        cache.put_generated(
+            key,
+            token_before,
+            lambda: self._stored_snapshot({"page": "before"}),
+        )
+
+        self.assertIsNotNone(cache.get_assembled(
+            key,
+            token_before,
+            cache_version="test",
+            client_type="web",
+            delivery_profile="full",
+            limit_params={},
+            digests_key="assembled_semantic_digests",
+        ))
+
+        changed_rows = self._default_token_rows()
+        changed_rows["ui.business.config.contract"] = [
+            SimpleNamespace(
+                id=1,
+                definition_sha256="definition-b",
+                version_no=1,
+                status="published",
+                active=True,
+            )
+        ]
+        token_after = self._source_token(changed_rows)
+
+        self.assertIsNone(cache.get(key, token_after))
+        self.assertIsNone(cache.get_assembled(
+            key,
+            token_after,
+            cache_version="test",
+            client_type="web",
+            delivery_profile="full",
+            limit_params={},
+            digests_key="assembled_semantic_digests",
+        ))
+
+    @staticmethod
+    def _stored_snapshot(contract):
+        return {
+            "_assembled_v2": {
+                "cache_version": "test",
+                "client_type": "web",
+                "delivery_profile": "full",
+                "limit_params": {},
+                "contract": contract,
+                "source_contract": {},
+                "assembled_semantic_digests": {},
+            }
+        }
+
+
 if __name__ == "__main__":
     unittest.main()

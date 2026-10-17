@@ -77,21 +77,51 @@ REQUEST_TRANSPORT_CONTEXT_KEYS = ("trace_id", "request_id")
 
 
 def strip_request_transport_identity(value: Any) -> Any:
-    """Copy ``value``, dropping transport identity from ``context`` containers."""
+    """Return ``value`` with transport identity removed from ``context`` containers.
+
+    The result is copy-on-write: any subtree that contains no transport key is
+    returned by reference because the only consumer (canonical JSON hashing)
+    never mutates it.  The previous unconditional deep-copy walked and allocated
+    the whole delivered contract on every seal, which was a material part of the
+    record-form hot path.  Callers that mutate the result must copy the object
+    they own; ``contract_semantic_payload`` does exactly that before dropping
+    ``meta``.
+    """
     if isinstance(value, dict):
+        changed = False
         out: dict[str, Any] = {}
         for key, item in value.items():
             if key == "context" and isinstance(item, dict):
-                out[key] = {
-                    sub_key: strip_request_transport_identity(sub_value)
-                    for sub_key, sub_value in item.items()
-                    if sub_key not in REQUEST_TRANSPORT_CONTEXT_KEYS
-                }
+                context_changed = False
+                context_out: dict[str, Any] = {}
+                for sub_key, sub_value in item.items():
+                    if sub_key in REQUEST_TRANSPORT_CONTEXT_KEYS:
+                        context_changed = True
+                        continue
+                    child = strip_request_transport_identity(sub_value)
+                    if child is not sub_value:
+                        context_changed = True
+                    context_out[sub_key] = child
+                if context_changed:
+                    changed = True
+                    out[key] = context_out
+                else:
+                    out[key] = item
                 continue
-            out[key] = strip_request_transport_identity(item)
-        return out
+            child = strip_request_transport_identity(item)
+            if child is not item:
+                changed = True
+            out[key] = child
+        return out if changed else value
     if isinstance(value, list):
-        return [strip_request_transport_identity(item) for item in value]
+        out_list: list[Any] = []
+        changed = False
+        for item in value:
+            child = strip_request_transport_identity(item)
+            if child is not item:
+                changed = True
+            out_list.append(child)
+        return out_list if changed else value
     return value
 
 
@@ -125,6 +155,9 @@ def source_meta_for_identity(meta: Any) -> dict[str, Any]:
 
 def contract_semantic_payload(contract: dict[str, Any]) -> dict[str, Any]:
     payload = strip_request_transport_identity(contract if isinstance(contract, dict) else {})
+    # ``strip_request_transport_identity`` may return the caller's own object by
+    # reference, so isolate the top level before removing ``meta``.
+    payload = dict(payload)
     payload.pop("meta", None)
     return payload
 

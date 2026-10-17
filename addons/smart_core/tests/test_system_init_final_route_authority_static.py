@@ -4,6 +4,24 @@ import unittest
 
 
 class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
+    def test_configuration_actions_declare_web_surface_entry_targets(self):
+        root = Path(__file__).resolve().parents[3]
+        business = (
+            root
+            / "addons"
+            / "smart_construction_core"
+            / "views"
+            / "support"
+            / "business_config_workbench_views.xml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("'sc_web_surface': 'business_config'", business)
+        self.assertIn("'sc_web_route': '/admin/business-config'", business)
+        menu = (
+            root / "addons" / "smart_core" / "views" / "ui_menu_config_policy_views.xml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("'sc_web_surface': 'menu_config'", menu)
+        self.assertIn("'sc_web_route': '/admin/menu-config'", menu)
+
     def test_single_navigation_contract_owns_tree_and_route_authority(self):
         source = (
             Path(__file__).resolve().parents[1] / "handlers" / "system_init.py"

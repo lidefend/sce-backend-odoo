@@ -9,6 +9,7 @@ from odoo.addons.smart_core.core.delivery_menu_defaults import (
     build_delivery_menu_root,
     synthetic_menu_id,
 )
+from odoo.addons.smart_core.core.navigation_entry_target import build_web_surface_entry_target
 from odoo.addons.smart_core.delivery.menu_delivery_convergence_service import MenuDeliveryConvergenceService
 from odoo.addons.smart_core.delivery.menu_fact_service import MenuFactService
 from odoo.addons.smart_core.delivery.native_config_menu_projection import native_config_delivery_groups
@@ -192,7 +193,7 @@ class MenuService:
         # Odoo's action-centric renderable set: a declared carrier with no
         # action (a scene-entry page such as the role home) is authorized by
         # its groups and must stay observable.
-        facts = MenuFactService(self.env).export_authorized_menu_facts()
+        facts = self._menu_fact_snapshot("authorized")
         return self._menu_fact_tree_as_native(facts.tree)
 
     def build_contextual_routes(self, role_surface: dict | None) -> list[dict]:
@@ -205,7 +206,7 @@ class MenuService:
             for item in surface.get("contextual_menu_xmlids") or []
             if str(item).strip() and str(item).strip().lower() not in denied
         ]
-        facts = MenuFactService(self.env).export_visible_menu_facts()
+        facts = self._menu_fact_snapshot("visible")
         by_xmlid = {
             str(row.get("menu_xmlid") or "").strip(): row
             for row in facts.flat
@@ -358,7 +359,7 @@ class MenuService:
         action_key = (action_model, action_id)
         action_xmlid = (action_xmlids[action_key] if action_xmlids is not None and action_key in action_xmlids
                         else self._record_xmlid(action))
-        return {
+        entry = {
             "action_xmlid": action_xmlid,
             "route_kind": route_kind,
             "menu_id": menu_id,
@@ -377,6 +378,16 @@ class MenuService:
             "context_requirements": {},
             "source": source,
         }
+        declared_target = build_web_surface_entry_target(
+            action_meta.get("context"),
+            menu_id=menu_id,
+            action_id=action_id,
+            model=model_name,
+            view_modes=view_modes,
+        )
+        if declared_target:
+            entry["entry_target"] = declared_target
+        return entry
 
     def _route_entry_from_action_spec(self, spec: dict, *, route_kind: str) -> dict | None:
         row = spec if isinstance(spec, dict) else {}
@@ -393,7 +404,7 @@ class MenuService:
             int(menu.id) if menu and str(getattr(menu, "_name", "")) == "ir.ui.menu" else 0
         )
         view_modes = [item.strip() for item in str(action.view_mode or "").split(",") if item.strip()]
-        return {
+        entry = {
             "action_xmlid": action_xmlid,
             "route_kind": route_kind,
             "menu_id": menu_id,
@@ -412,6 +423,16 @@ class MenuService:
             "context_requirements": dict(row.get("context_requirements") or {}),
             "source": str(row.get("source") or "role_surface.route_authority").strip(),
         }
+        declared_target = build_web_surface_entry_target(
+            action.context,
+            menu_id=menu_id,
+            action_id=int(action.id),
+            model=str(action.res_model or "").strip(),
+            view_modes=view_modes,
+        )
+        if declared_target:
+            entry["entry_target"] = declared_target
+        return entry
 
     def _denied_route_entry(self, menu_xmlid: str) -> dict | None:
         xmlid = str(menu_xmlid or "").strip()
@@ -563,7 +584,15 @@ class MenuService:
             if key in retained:
                 result[bucket].append(entry)
             else:
-                result["denied_actions"].append({**entry, "reason_code": "PRODUCT_ENTRY_NOT_RELEASED"})
+                # The entry leaves an executable bucket, so its declared
+                # route_kind must become DENIED as well; consumers validate
+                # bucket membership against the record kind and would otherwise
+                # reject a legitimately unpublished (but valid) entry.
+                result["denied_actions"].append({
+                    **entry,
+                    "route_kind": "DENIED",
+                    "reason_code": "PRODUCT_ENTRY_NOT_RELEASED",
+                })
         return result
 
     @staticmethod
@@ -931,7 +960,7 @@ class MenuService:
                 **buckets,
             }
 
-        facts = MenuFactService(self.env).export_visible_menu_facts()
+        facts = self._menu_fact_snapshot("visible")
         action_xmlids = self._action_xmlids_from_facts(facts.flat)
         visible_by_xmlid = {
             str(row.get("menu_xmlid") or "").strip(): row
@@ -1329,7 +1358,31 @@ class MenuService:
 
     def __init__(self, env=None):
         self.env = env
+        self._menu_fact_cache = {}
         self._business_group_display_order = self._resolve_business_group_display_order()
+
+    def _menu_fact_snapshot(self, kind: str):
+        """Return one request-scoped menu fact snapshot per question.
+
+        ``visible`` and ``authorized`` answer different questions and are never
+        interchangeable. Within a single request the underlying menu, action and
+        group facts are stable, so each question is exported once and then reused
+        by navigation, contextual routes and route authority.
+        """
+        if self.env is None:
+            return None
+        cache = getattr(self, "_menu_fact_cache", None)
+        if not isinstance(cache, dict):
+            cache = {}
+            self._menu_fact_cache = cache
+        if kind not in cache:
+            service = MenuFactService(self.env)
+            cache[kind] = (
+                service.export_authorized_menu_facts()
+                if kind == "authorized"
+                else service.export_visible_menu_facts()
+            )
+        return cache[kind]
 
     @staticmethod
     def _canonical_group_label(label: str) -> str:

@@ -2229,3 +2229,454 @@ cold min/median/max 185.824/198.425/345.061；`form_action_open` 热 791.8–908
   `…sce-r11-baseline-prerebind.sha256.json`、`…sce-r11-baseline-unit.log`、`…sce-r11-runtime-perf-unit.log`；
   台账条目 `backend_runtime_investigation.hot_request_allocation_attribution`、
   `…hot_request_probe_overhead_accounting`、`…system_performance_baseline_rebind`。
+
+## R12 record 表单静态结构复用与四层缓存边界（2026-10-17，接力执行器；不冻结）
+
+### （1）声明（先于改动）
+
+- **Formal Product Layer**：P0 平台内核产品。
+- **Layer Target**：`smart_core` 契约运行时（`handlers/ui_contract_v2.py`、`core/unified_page_contract_v2_assembler.py`、`core/unified_page_contract_v2_client.py`、`core/contract_lifecycle.py`）与 `smart_construction_core` 投影归一化 hook。
+- **Standard vs User-Specific**：平台机制，不含行业或客户语义。
+- **Why Here**：缓存分层与复制所有权属于契约运行时机制；记录事实与权限必须逐请求计算。
+- **Why Not Elsewhere**：不得在前端用 key/TTL 推断权限，不得把 record 契约写入持久资产或进程缓存，不得在行业/客户模块特判。
+- **Blast Radius**：`ui.contract.v2` 表单/列表装配与终端裁剪；以装配守卫、128 项 compact 测试、23 项 lifecycle 测试、无插桩运行探针与语义等值校验证明收敛。
+
+### （2）四层职责（机制化）
+
+| 层 | 允许保存 | 禁止保存 |
+| --- | --- | --- |
+| L0 动态计算（每请求） | 记录覆盖、权限/entitlement、业务动作、策略、modifier/status、最终 seal 与 trim | 不缓存 |
+| L1 后端进程热缓存 | record-independent 源投影；**仅 record-free** 已装配契约 | 带 `record_id`/create/preview 的已装配契约 |
+| L2 后端持久资产 | 仅源投影（`contract_kind=runtime_source`） | 已装配/record-bound 契约、权限裁决 |
+| L3 前端缓存 | 仅无 `recordId`、无 `previewToken` 的 create 契约 | 编辑/只读记录契约、预览契约 |
+
+权威说明：`docs/architecture/contract_runtime_cache_layers_v1.md`。
+
+### （3）改动与所有权
+
+1. `smart_core_normalize_projected_contract_data`：先在权威输入上判断 `model == sc.general.contract` 且存在 `tax_id`，仅在 normalizer 真正可改变数据时才 `deepcopy`；其余请求不再为 no-op 复制整图。
+2. `trim_unified_page_contract_v2`：顶层已完成唯一一次 `deepcopy`，`_trim_container`/`_trim_widget` 改为在自有副本上原地裁剪，不再逐节点重复复制。
+3. `strip_request_transport_identity`：改为 copy-on-write；无传输字段的子树按引用返回。`contract_semantic_payload` 在删除 `meta` 前显式复制顶层，保证调用方对象不被修改。
+4. `seal_runtime_contract`：复用装配阶段已算出的 `sourceSha256`；只重算被后处理改变过的 `contractSha256`。
+5. `_base_contract`：不再为占位 `meta` 计算全图 `payload_sha256`；占位值改用稳定页面身份，最终 identity 由 seal 生成。
+6. `ASSEMBLED_CONTRACT_CACHE_VERSION` bump 为 `ui-contract-v2-2026-10-17-base-identity-no-source-hash`，守卫摘要重钉为 `5470929601b3756a291adaac9445df3df9ecd0db276cb1e5ef0bde487cc24e12`。
+7. 装配守卫新增 fail-closed 检查：`get_assembled` 必须 record-free、`_base_contract` 禁止全图指纹、前端 create 缓存键必须绑定 `sessionDb`/`token`/`contextEpoch`；同时钉住 I9（命中分支只 seal 并 return，不得调用 entitlement/字段策略/动作/modifier/trim）和 I10（key 含主体组摘要，token 含 ACL/规则/用户行/业务与字段策略定义）。
+
+### （4）实测（无插桩探针，同探针同场景 A/B）
+
+| 指标 | 基线 | 本轮 | 变化 |
+| --- | ---: | ---: | ---: |
+| 记录表单首次 dispatch | 2669.028 ms | 2513.162 ms | −5.8% |
+| 记录表单热中位（偶数样本中间两项均值） | 688.528 ms | 501.288 ms | −27.2% |
+| 记录表单窗口最大值 | 711.902 ms | 551.859 ms | −22.5%（仅本次窗口观察） |
+| `v2_source_assembly` 热中位 | 130.0 ms | 121.5 ms | −6.5% |
+| `post_trim` 热中位 | 84.5 ms | 21.0 ms | −75.1% |
+| `post_runtime_seal` 热中位 | 140.5 ms | 38.5 ms | −72.6% |
+| `v2_projection_and_seal` 热中位 | 651.5 ms | 405.0 ms | −37.8% |
+| 列表热中位（对照） | 14.396 ms | 14.304 ms | 持平 |
+
+六样本下 nearest-rank p95 等于窗口最大值，只能作为本次窗口观察，不能作为尾部分布结论。
+原始 R12 日志的 700.6→520.2 ms 使用了错误的中位数取值；用同批原始样本复算后为
+697.437→483.499 ms（−30.7%），窗口最大值 796.509→540.022 ms（−32.2%），无需重跑。
+
+`record_overlay` 仍约 9–10 ms，保持逐请求执行；`v2_projection_and_seal` 的剩余成本主要在源装配、业务类别/关系注入与 seal。
+
+### （5）语义等值（先于收益比较）
+
+旧的“按字段名在任意深度删除 `timing`”过滤器会误删真实业务字段
+`data.business.timing.deadline`（1→2 仍被判相等），因此旧 `4bfa3c1a6d2254fe…`
+摘要与“完整响应等价”结论**撤回**，`sce-r13-*` 仅保留为计时证据。修正后只豁免 10 条
+已登记精确路径（顶层 `meta.elapsed_ms`、`meta.projection_cache`、`data.meta` 的四个
+request/trace 身份键、两个 contract `context` 容器中的 `trace_id`/`request_id`）。
+新窗口基线与本轮过滤后全树 SHA-256 均为
+`ff6db9d1bdd3beb91a2f5f183c87321573677506d19d2141d994dffd010bbefb`，
+`contractSha256` 均为 `1673cb0b2f037845…`，section 摘要全部一致；热响应差异路径只有
+`meta.elapsed_ms` 与 `meta.projection_cache.stages_ms.*`，没有任何业务子树。
+反例已固化为 `scripts/verify/test_local_dev_runtime_record_form_probe.py` 的 9 项非零测试。
+
+### （6）门禁
+
+- `make verify.unified_page_contract.v2.assembler` → PASS（sources=4；含 I9/I10）。
+- `make verify.unified_page_contract.v2.client` → PASS（clients=3）。
+- `python3 addons/smart_core/tests/test_contract_lifecycle.py` → 23 tests OK。
+- `python3 addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` → 128 tests OK。
+- `python3 addons/smart_core/tests/test_load_contract_response_cache.py` → 48 tests OK（含角色/策略失效反例）。
+- `make local.dev.runtime.projection_cache_identity.probe` → PASS（角色撤销与策略变化均使 key/token 移动，savepoint 回滚恢复，commit 被拒绝）。
+- `make verify.system.performance.baseline.unit` → 70 tests OK。
+- 证据：`artifacts/main-scheduled-ci-closeout-20261016/sce-r14-record-form-{baseline,after}-precise-semantic.log`、`…sce-r14-projection-cache-identity.log`；`sce-r13-*` 仅保留为原始计时与错误过滤器的历史证据。
+
+### （7）边界与未声称
+
+- 不冻结、不 `ci.local.quick`、不推送、不合并、不部署；不宣称批次验收完成、主线集成完成或产品交付完成。
+- 不恢复 record 级整装配缓存；不得用 `write_date`、TTL 或前端 key 代替运行时权限与关联记录事实。
+- 首次打开（首次契约约 1.74 s、首次 `system.init` 约 1.75 s）与真实页面端到端等待仍未关闭；gen-2 GC 长尾仍未证明消除。
+
+## R13 证据口径与缓存边界校正（2026-10-17，只读复核后执行；不冻结）
+
+### （1）声明
+
+- **Formal Product Layer**：P0 平台内核产品；P4 仅为测量与验证工具。
+- **Layer Target**：`smart_core` 契约运行时缓存身份与命中路径；`scripts/verify` 测量探针。
+- **Standard vs User-Specific**：平台机制与验证口径，不含行业/客户语义。
+- **Why Here**：缓存命中是否安全由 `cache_key`/`source_token` 与失效机制决定；测量是否可信由探针统计和语义比较决定。
+- **Why Not Elsewhere**：不得用前端 key、TTL 或 `write_date` 代替权限/策略事实；不得恢复 record-bound 整装配缓存。
+- **Blast Radius**：record-free 已装配命中、源投影身份、测量结论与文档；不改变记录表单的逐请求 overlay/权限/输出语义。
+
+### （2）修正的三项证据问题
+
+1. **中位数口径**：`_stats` 原用 `values[len // 2]`，六样本时取第 4 个值。现改为偶数样本中间两项均值；nearest-rank p95 在六样本时显式标记为窗口最大值，不作为尾部分布结论。同批已有样本正确复算为 `697.437 → 483.499 ms`（−30.7%），窗口最大值 `796.509 → 540.022 ms`，未重跑。
+2. **语义比较范围**：旧 `_semantic_copy` 按字段名在任意深度删除 `timing`，已用 `data.business.timing.deadline` 1→2 证明会漏判。现仅豁免 10 条登记精确路径；新增“业务字段改变必须失败”“未登记 `context.trace_id` 必须保留”等 9 项反例。
+3. **缓存命中描述**：record-free 已装配命中的实际路径是复用缓存 `source_contract`/`contract`、只执行 runtime seal 后返回；它跳过 entitlement、字段/业务策略、动作、modifier/status 与 trim。seal 只刷新 request/trace 身份与摘要，**不是授权**。安全边界由 `cache_key` 的组摘要/公司/上下文与 `source_token` 的 ACL、规则、用户行、策略定义、代码身份共同保证。
+
+### （3）缓存身份与失效证据
+
+受管运行时探针在 `sc-local-dev/sc_dev_demo`、uid 45、公司 1 上执行：
+
+- 移除组 128 `smart_construction_core.group_sc_role_finance_manager`：`cache_key` 与 `source_token` 同时变化；
+- 草稿业务配置契约 id 27（`construction.contract`）`priority` +1：`source_token` 变化；
+- 两个 savepoint 回滚后 key/token/组集合逐字节恢复，commit 被拒绝。
+
+非零单测同时覆盖：角色撤销改变 key、公司范围改变 key、ACL/规则/用户行变化改变 token、业务策略定义变化改变 token、旧已装配条目在角色或策略变化后不可达。
+
+### （4）门禁与边界
+
+静态守卫已扩展为 I9/I10 fail-closed：命中分支不得调用 entitlement/策略/动作/modifier/trim；key 必须含主体组摘要；token 必须含 ACL、规则、用户行、业务/字段策略定义。文档、单测与运行时探针三者绑定同一结论。
+
+本段不冻结、不 `ci.local.quick`、不推送、不合并、不部署。首次打开/启动与真实页面“点击→可操作”仍未完成，下一段只做首次视图读取、翻译加载与契约编译的分别归因。
+
+## R15 请求内事实复用与启动响应确定性（2026-10-17，不冻结）
+
+### （1）声明
+
+- **Formal Product Layer**：P0 平台内核产品；P4 仅为受管测量工具。
+- **Layer Target**：`smart_core` 导航/路由事实导出与身份投影；`smart_construction_core` 启动扩展事实入口。
+- **Standard vs User-Specific**：平台机制，不含行业/客户语义。
+- **Why Here**：菜单与组事实是导航裁定的输入，重复导出只增加成本，不产生新语义。
+- **Why Not Elsewhere**：不得用跨请求缓存或前端 key 替代裁定；不得把 ACL/模型实现细节搬进前端。
+- **Blast Radius**：`system.init` 的 `navigation`、`nav` 与 `user` 投影；路由准入集合不变。
+
+### （2）改动
+
+1. **请求内菜单事实复用**：`MenuService._menu_fact_snapshot(kind)` 让可见事实与授权事实在单个请求内各导出一次，供 contextual routes、route authority 与最终导航复用。两者回答不同问题，不互换。
+2. **扩展事实去重**：`smart_core_extend_system_init` 在融合入口已写入 `ext_facts["smart_construction_core"]` 时不再重复调用 `get_system_init_fact_contributions`。
+3. **启动响应确定性**：`SystemInitIdentityPayload.build` 对 `groups_xmlids` 稳定排序。该字段原按 Python `set` 顺序输出，同一身份在不同进程产生不同字节；这是等价性证据此前逐次变化的原因。
+
+### （3）探针修正
+
+- 变量改为 `PRODUCT_PERFORMANCE_STARTUP_FACT_REUSE_{MODE,PROFILE,SAMPLES,DETAIL}`，经 `odoo_shell_exec.sh` 的 `PRODUCT_*` 白名单转发。此前 `STARTUP_FACT_REUSE_MODE` 未被转发，标记为 previous 的日志实际跑的是 candidate。
+- `previous` 复现必须包裹**包命名空间**的 `smart_core_extend_system_init`；包裹 `core_extension` 模块属性不会被 `run_extension_hooks` 的派发命中。计数同时覆盖包命名空间与模块全局两处 `get_system_init_fact_contributions`。
+- 新增 `PROFILE`：`counter` 统计调用并抬高耗时；`timing` 不装计数器，只测时间。中位数由 `statistics.median` 对热样本计算，不再用固定下标。
+
+### （4）A/B 结果（`sc-local-dev`/`sc_dev_demo`，uid 45，公司 1，单主体）
+
+| 指标 | previous | candidate | 变化 |
+| --- | --- | --- | --- |
+| 热样本耗时中位数（timing，6 样本） | 364.030 ms | 315.095 ms | −13.4% |
+| 热样本耗时中位数（counter，4 样本） | 372.339 ms | 324.333 ms | −12.9% |
+| 热请求 SQL 中位数 | 629 | 597 | −32（−5.1%） |
+| 首请求 SQL | 3022 | 2990 | −32 |
+| 首请求耗时 | 1762.204 ms | 1757.683 ms | 冷启动主导，未见差异 |
+| 菜单事实扫描/请求 | 4 | 2 | −2 |
+| 可见事实导出/请求 | 3 | 1 | −2 |
+| 授权事实导出/请求 | 1 | 1 | 0 |
+| 扩展贡献计算/请求 | 2 | 1 | −1 |
+| 路由权威构建/请求 | 2 | 2 | 0 |
+| DeliveryEngine.build/请求 | 1 | 1 | 0 |
+
+### （5）等价性
+
+两种模式、两个独立进程、全部样本的以下摘要完全一致：
+
+- `route_authority_sha256=468fbadd…`（primary 15 / contextual 31 / denied 33 / container 1 / role_home 1）
+- `navigation_sha256=487a1232…`
+- `data_semantic_sha256=b7ef60dc…`，`data_json_bytes=379649` 逐字节相同，19 个顶层 section 摘要全部相等
+
+结论边界：这是**后端单主体、进程内**的等价与耗时证据；不含 HTTP/浏览器、多角色矩阵，也不证明 GC 长尾。首请求差异不可归因于本轮改动。
+
+### （6）门禁
+
+- `make verify.backend.navigation_delivery.unit` → PASS（含菜单事实复用回归 1 项）。
+- `python3 addons/smart_core/tests/test_system_init_payload_builder_semantics.py` → 19 tests OK（新增 `groups_xmlids` 稳定排序反例）。
+- `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestProjectMemberRoleSurface.test_system_init_hook_reuses_merged_extension_facts'` → 1 test，0 failed。
+- 证据：`artifacts/main-scheduled-ci-closeout-20261016/sce-r15-startup-fact-reuse-{previous,candidate}-{counter,timing}.log`。
+
+### （7）边界与下一项
+
+- 不冻结、不 `ci.local.quick`、不推送、不合并、不部署。
+- 路由入口字段分层与 `entry_key` 迁移口径见 `docs/architecture/route_entry_contract_field_layering_v1.md`；本轮未实施协议迁移、未删除任何字段。
+- 前端改造范围较大，已登记为独立计划任务 `.agent/goals/ROUTE-ENTRY-CONTRACT-MIGRATION.yaml`（`status: planned`），按专题处理。当时登记的 4 条开放缺陷已在 R15.2 逐项最小闭环，`openContractDefects=0`，`verify.frontend.contract_basis.enforce` PASS；剩余的 `router/index.ts` 与 `useBusinessConfigNavigation.ts` 模型名查找仍属后续 P0-1/P0-2 迁移，本轮不声称前端已完全摆脱模型名。
+- 路由权威条目的静默丢弃属前端协议迁移，已并入独立计划任务，不阻塞本轮后端性能主线；后端性能主线以 R15.1 的系统运行性能基线重采收口。
+
+## R15.1 系统运行性能基线重采（2026-10-17，后端性能主线收口；不冻结）
+
+### （1）收口条件与边界
+
+- 本轮主线是**后端运行性能收口**，收口条件是建立可复现、绑定当前代码身份的系统运行性能基线。
+- 测量工具归属 P4；被测机制归属 P0（`smart_core` 启动、导航与契约运行时）。采样政策、阈值政策与平台 SLA 口径均未改变。
+- 该收口只覆盖 `controlled_regression`。`daily_experience` 与 `capacity` 未完成时，只能声明“受控回归基线已建立”，不能声明批次验收、主线集成、版本发布或产品交付完成。
+
+### （2）采集身份与环境
+
+- 命令：`ENV=dev ENV_FILE=<main checkout>/.env.dev PRODUCT_PERFORMANCE_BASELINE_SOURCES=sla,observe,contract_profile,contract_request,permission,cache_identity,role_matrix make local.dev.runtime.performance.baseline`
+- 环境：`sc-local-dev` / `sc_dev_demo` / dbfilter `^sc_dev_demo$`；运行时 `17.0-20260630`；容器 `sc-local-dev-odoo-1`。
+- 采集前重建容器以加载当前工作树代码：`/mnt/source-addons` 在 addons_path 中先于 `/mnt/product-addons`，容器内 `menu_service.py` 哈希与本工作树一致。
+- 刷新原因：旧基线生成于 `2026-10-17T01:18:12Z`，早于 R15 改动，其代码身份不能被本轮继承。
+
+### （3）记录结果
+
+- `status=baseline`，`gaps=0`，`entries=7`，`samples observed/retained=142/142`。
+- 代码身份：`target_code_identity.head=eda906b3eaac360aa885c46d70247a174c5e1c5f`，`dirty=true`；`source_code_identity` 记录 `addons/smart_core/delivery/menu_service.py=323bce4af9bfd6996470b10aa98153b5aaf3f0d64f1f1c5274718b13e7f56240`，全量 9 个探针声明文件。
+- 身份边界：`addons/smart_construction_core/core_extension.py` 与 `addons/smart_core/core/system_init_identity_payload.py` 不在探针声明文件清单内，只由 HEAD+dirty 覆盖；这两个文件的运行效果已由 R15 的 A/B 与等价性证据单独覆盖。
+- 记录：`artifacts/backend/system_performance_baseline.json`，sha256 `7ea91f55d50d1adf363979aaaf31e6e6747e891b7726282aecb58873ed50e7fd`。
+
+### （4）三层状态
+
+| 层 | 状态 | 说明 |
+| --- | --- | --- |
+| `controlled_regression` | `passed` | 5 个身份匹配条目；`sla-guard` 与 `cache-identity` 按声明不承载产品代码身份，记为 unknown |
+| `daily_experience` | `not_run` | 需要绑定部署、真实网络路径、代表角色与数据规模 |
+| `capacity` | `target_unresolved` | 目标并发、数据规模、吞吐与错误预算未确认 |
+
+### （5）与上一基线差异（同环境、单次观察，不作回归归因）
+
+| 指标 | 旧基线（01:18Z） | 本基线（04:46Z） |
+| --- | ---: | ---: |
+| `warm_contract_dispatch` p95 | 78.22 ms | 77.81 ms |
+| `cold_contract_assembly` max | 249.36 ms | 187.20 ms |
+| `first_contract_assembly` first | 1742.09 ms | 1620.22 ms |
+| `startup_system_init_first` first | 1754.91 ms | 1724.86 ms |
+| `startup_system_init_http` p95 | 649.01 ms | 768.54 ms |
+| `warm_startup_repeat` p95 | 464.26 ms | 414.86 ms |
+
+成熟系统目标总体为 `within_tolerance`（met 4 / within tolerance 2 / failed 0 / not evaluated 1）。`startup_system_init_http` 是单样本 p95，仍低于 800 ms 目标；其升高不得归因于本轮改动。`profile_first_contract_assembly`（profiled `3732.94 ms`）按声明仅作诊断，不参与绝对目标评级。
+
+同一次采集重生成的平台 SLA 报告每次意图只有 6 个样本，6 样本 p95 接近最大值，且采集紧接容器重建：`system.init` p95 `768.54 ms`（限 `8000`）、`ui.contract` p95 `1564.38 ms`（限 `5000`）、`execute_button` `23.34 ms`。该次采集全部请求为 2xx、零错误；这些 HTTP 层数字只作观察，不作暖态回归归因。SLA 报告随基线刷新同步更新，后续 R15.2 重采会再次覆盖该报告。
+
+### （6）门禁
+
+- `make verify.system.performance.baseline.unit` → 70 tests OK（含 negative gap 与 positive baseline 用例）。
+- `make ci.local.iteration` → PASS（`dirty` / `L1_only` / `receipt=none`）。
+- `git diff --check` → exit 0。
+
+### （7）收口结论与残余
+
+- 受控回归基线已绑定当前候选重新建立，后端性能主线按既定条件收口；本记录不冻结、不 Quick、不推送、不 PR、不合并、不部署。
+- `daily_experience` 需在目标部署测量真实页面“点击→可操作”，并区分网络、串行请求、后端与前端耗时；旧版体验数据不得归因本轮。
+- 前端 `entry_key` 协议迁移继续作为独立计划任务 `.agent/goals/ROUTE-ENTRY-CONTRACT-MIGRATION.yaml` 专题处理，不属于本轮性能收口范围。
+
+## R15.2 审核收口：契约门禁、缓存口径与运行投影（2026-10-17，不冻结）
+
+### （1）范围与边界
+
+- 响应独立审核 `REQUEST_CHANGES` 的 S1（契约门禁阻断）与 S2（缓存分层文档自相矛盾）；不再扩展性能优化，不追求额外毫秒收益，不完成整个 `entry_key` 迁移。
+- 本记录只推进“固定范围 → 修正两项审核问题 → 补受影响验证”。不冻结、不 `ci.local.quick`、不推送、不 PR、不合并、不部署。
+- 可认可状态仍为**受控回归基线已建立**；批次验收、主线集成、部署与产品交付分别判断。
+
+### （2）S1：契约门禁闭环
+
+1. **声明载体**：后端新增 `build_web_surface_entry_target()`（`addons/smart_core/core/navigation_entry_target.py`），只投影 action 已声明的 `sc_web_surface` / `sc_web_route`，不从模型名、路由拼写或未声明的 context 键推断。
+2. **声明补齐**：配置工作台与菜单配置 action 显式声明 `sc_web_surface` 与 `sc_web_route`（`business_config_workbench_views.xml`、`ui_menu_config_policy_views.xml`）。
+3. **前端消费**：`actionRoutePolicy.ts` 删除模型名常量比较、Odoo context 字符串正则与模型语法正则，只消费 `entry_target`；缺失或非法声明抛 `ContractGapError`。
+4. **不再静默丢弃**：`normalizeRouteAuthorityContract()` 对版本、bucket、条目形状、`route_kind`、`entry_target` 非法均报契约缺口；主体不匹配仍按授权拒绝返回 `null`。
+5. **台账**：`docs/architecture/frontend_contract_basis_ledger.json` 的 `openContractDefects=[]`、`closedContractDefects=18`、`declarationBindings=11`；`verify.frontend.contract_basis.enforce` 从 STOP 转为 PASS。
+6. **未完成边界**：`frontend/apps/web/src/router/index.ts` 与 `frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigNavigation.ts` 仍有模型名查找；`actionRoutePolicy.ts` 的 `resolveAuthorizedConfigurationRoute` 在 record/model-form 路径上仍比较路由模型与契约声明的 authority 模型。三者均已登记为 `.agent/goals/ROUTE-ENTRY-CONTRACT-MIGRATION.yaml` 的后续项（P0-2/P0-5）。本轮不删除、不声称迁移完成。
+
+### （3）S2：缓存分层口径统一
+
+- `docs/architecture/contract_runtime_cache_layers_v1.md` 统一为：record-free 已装配缓存命中后跳过 entitlement、策略、动作、modifier 与 trim；`seal` 只刷新保存搜索与摘要，不是授权。
+- 明确“逐请求”适用于未命中的装配/投影管线；缓存有效性与失效由缓存键、版本与失效机制保证，`re-seal` 不作为权限重算证据。
+- 禁止 record-bound 整装配缓存的边界不变。
+
+### （4）运行投影缺陷与修复
+
+- 受管运行验证发现：`business_config` 的 route authority 条目原为 `type=compatibility`，原因是 `DeliveryEngine` 只刷新 `meta.entry_target`，而 `MenuService._nav_target_index` 先读节点级 `entry_target`，旧值覆盖了声明投影。
+- 修复：`_normalize_delivery_nav_node_refs()` 同步 `node["entry_target"] = meta["entry_target"]`，保证节点与 meta 同一身份。
+- 反例测试：`test_entry_publication_authority.py` 新增“声明 admin_surface 必须同步到节点目标”用例；`test_delivery_menu_entry_target.py` 覆盖声明投影本身。
+- 受管升级 `smart_core,smart_construction_core` 后，`sc_dev_demo` 的 published authority 对 `sc_demo_business_config`（uid 21）同时带 `business_config` 与 `menu_config`，对 `demo_full`（uid 55）带 `business_config`；路由分别为 `/admin/business-config` 与 `/admin/menu-config`，`business_config` 带 `root_menu_xmlid=smart_construction_core.menu_sc_root`。
+
+### （5）门禁与证据
+
+| 层级 | 命令 | 结果 | 证据 |
+| --- | --- | --- | --- |
+| L1 | `make verify.product.entry_publication.unit` | PASS（17 + 13 + 3 tests） | 见命令输出 |
+| L1 | `make verify.frontend.navigation_shell.unit` | PASS（110 tests + guard `components=5`） | `artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-navigation-shell.log`，sha256 `07579947…` |
+| L1 | `make verify.nav.pro01r.route_authority.unit` | PASS（10 + 2 + 12 + 16 + 16 cases） | `artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-route-authority-unit.log`，sha256 `fde51552…` |
+| L1 | `make verify.frontend.contract_basis.unit verify.frontend.contract_basis.enforce` | PASS（15 tests；`open_defects=0`） | `artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-contract-basis.log`，sha256 `bc758177…` |
+| L1 | `python3 scripts/verify/test_local_dev_runtime_entry_target_probe.py` | PASS（9 tests） | 含负例：缺面、错路由、缺根菜单、未声明面、相对路由 |
+| L3 | `make local.dev.upgrade MODULE=smart_core,smart_construction_core` | PASS（含 authority verify） | `artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-module-upgrade.log`，sha256 `dc95485d…` |
+| L3 | `make local.dev.runtime.entry_target.probe` | PASS（两主体零违规） | `artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-entry-target-probe.log`，sha256 `f6c42c5d…` |
+| L1 | `make ci.local.iteration` | PASS（dirty / L1_only / `outside_scope=[]`） | `artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-iteration.log`，sha256 `7c6ea8f5…` |
+| L1 | `git diff --check` | PASS（exit 0） | 见命令输出 |
+
+- 本地升级属于受管 `local.dev` 生命周期写入，不是部署；只刷新 `sc-local-dev`/`sc_dev_demo` 的模块视图数据。
+- 运行探针只读：`commit` 被拒绝、事务回滚，不写产品数据、schema、fixture 或 ACL。
+
+### （6）收口结论与剩余
+
+- 两项审核阻断已按最小范围处理；本轮不新增性能结论，不改采样与阈值政策。
+- `daily_experience` 仍为 `not_run`，`capacity` 仍为 `target_unresolved`；短窗口数据不能证明 GC 长尾消失。
+- 后续顺序：汇总受影响证据对全部改动输入的绑定 → 冻结前置与所选发布车道检查 → 独立复核 → 受保护 PR 集成；每一步需在获得相应授权后执行。
+
+### （7）基线重采：绑定 R15.2 全部输入
+
+- 原因：R15.1 基线记录的 `menu_service.py` 哈希为 `323bce4a…`，R15.2 的入口投影改动后当前文件为 `c6dba956…`；`delivery_engine.py` 虽不在 9 个声明身份文件内，但属于导航与路由权威的运行依赖。旧基线不能绑定当前候选。
+- 命令：`ENV=dev ENV_FILE=<main checkout>/.env.dev PRODUCT_PERFORMANCE_BASELINE_SOURCES=sla,observe,contract_profile,contract_request,permission,cache_identity,role_matrix make local.dev.runtime.performance.baseline`
+- 结果：`status=baseline`，`gaps=0`，`entries=7`，`samples observed/retained=142/142`；`target_code_identity.head=eda906b3eaac360aa885c46d70247a174c5e1c5f`，`dirty=true`；`controlled_regression=passed`，`daily_experience=not_run`，`capacity=target_unresolved`。
+- 记录：`artifacts/backend/system_performance_baseline.json`，sha256 `4edc92ce…`；采集日志 `artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-performance-baseline.log`，sha256 `9fab4166…`。
+
+| 指标 | R15.1（04:46Z） | R15.2 重采（05:26Z） |
+| --- | ---: | ---: |
+| `warm_contract_dispatch` p95 | 77.81 ms | 70.66 ms |
+| `cold_contract_assembly` max | 187.20 ms | 200.11 ms |
+| `first_contract_assembly` first | 1620.22 ms | 1644.24 ms |
+| `startup_system_init_first` first | 1724.86 ms | 1701.10 ms |
+| `startup_system_init_http` p95 | 768.54 ms | 1418.72 ms |
+| `warm_startup_repeat` p95 | 414.86 ms | 444.49 ms |
+
+- 成熟系统目标总体为 `within_tolerance`（met 3 / within tolerance 3 / failed 0 / not evaluated 1）。两次采集都是单窗口观察，差异不作为本轮回归或收益的归因；尤其是 `startup_system_init_http` 只有 1 个 p95 样本，不能用于长尾结论。
+- SLA 报告已随重采刷新：`system.init` p95 `1418.72 ms`（限 `8000`）、`ui.contract` p95 `814.53 ms`（限 `5000`）、`execute_button` `25.12 ms`（限 `3000`）。`execute_button` 6 次均为 `403`，工具归类为 `permission_guard`、`error_count=0`，仅产生 1 条 warning；本轮不把它归因为代码回归，也不宣称业务成功。SLA 报告：`artifacts/backend/platform_sla_report.json`，sha256 `308c94b2…`。
+- 该重采只刷新受控回归基线与 SLA 观察；`daily_experience` 与 `capacity` 状态不变。
+
+## R15.3 审核收口：拒绝记录身份、管理面声明完整性与 403 取证（2026-10-17，不冻结）
+
+### （1）范围与边界
+
+- 只处理审核提出的 S1/S2 两处阻断；性能优化保持封口，不追加毫秒优化，不做完整 `entry_key` 迁移。
+- 未冻结、未 Quick、未推送、未 PR、未合并、未部署；状态仍为“受控回归基线已建立”。
+
+### （2）S1：拒绝记录必须可被生产端与消费端同时接受
+
+- 生产端 `MenuService.filter_route_authority_by_publication()`：条目被移入 `denied_actions` 时显式写 `route_kind="DENIED"`。此前只追加 `reason_code`，会保留 `PRIMARY_NAV`/`ADMIN_ROUTE` 等可执行种类，触发消费端 bucket 一致性校验。
+- 消费端 `routeAuthority.normalizeEntry()`：`DENIED` 记录接受 `action_xmlid` **或** `menu_xmlid` 作为身份；两者都为空的拒绝记录仍是 `ContractGap`。严格校验保留，未恢复静默过滤。
+- 真实反例（`sc_dev_demo` 发布权威，非构造数据）：uid 21 `denied=8`、uid 55 `denied=1`，两边都含 `menu_sc_root`（`action_id=0`、`action_xmlid` 为空、`source=role_surface.declared.not_delivered`）。修复前该形态会在 `route_authority.denied_actions[*].action_id` 抛缺口，导致整条 `system.init` 消费失败。
+
+### （3）S2：区分“未声明管理面”和“声明不完整”
+
+- `build_web_surface_entry_target()`：`sc_web_surface` 与 `sc_web_route` **都不存在**时返回 `{}`，普通 action 继续走 compatibility；只要其中一个存在、或原文出现声明键但静态解析失败，就投影为显式 `admin_surface`，缺失字段留空。
+- 前端 `actionRoutePolicy.adminSurfaceTarget()` 对空 `surface` / 非法 `route` 抛 `ContractGapError`，不再有“缺一半就降级为 compatibility”的路径。
+- 运行时探针新增 `partial_declaration_violations`，当前为空。
+
+### （4）403 单独取证
+
+- 主体：`sc_dev_demo` 的 uid 2 `Administrator`；记录：`project.project:1`；动作：`action_view_tasks`（`type=object`，`dry_run=True`）。
+- 后端响应：HTTP 403，`code=PERMISSION_DENIED`，`message=ACTION_CONTRACT_AUTHORITY_MISSING`，`reason_code=PERMISSION_DENIED`。
+- 结论：SLA 探针发送的是不带声明契约身份（`action_id` / `backend_identity` / `source_widget_id`）的裸按钮请求，`execute_button` 按契约 fail-closed 拒绝。这是**预期的声明契约拒绝**，不是代码回归，也不代表一次成功的状态迁移。
+- `platform_sla_guard.py` 现在记录 `denial{http_status,code,message,reason_code}` 与 `denial_classification`；仅 `fail_closed_undeclared_action_authority` 被视为已解释，其余标记为 `unexplained` 留待人工判定。状态码分类不再单独充当证据。
+
+### （5）受影响页面验收（前端真实消费，非后端探针替代）
+
+| 主体 | 场景 | 结果 |
+|---|---|---|
+| uid 21 `sc_demo_business_config` | 带 8 条拒绝记录（含菜单级拒绝）的启动 | 通过；无页面错误 |
+| uid 21 | `/admin/business-config` | 通过；`.business-config-page` 挂载，URL 未漂移 |
+| uid 21 | `/admin/menu-config` | 通过；页面挂载，URL 未漂移 |
+| uid 55 `demo_full` | 带 1 条菜单级拒绝的启动 | 通过；无页面错误 |
+| uid 55 | 普通列表 `/a/878?menu_id=559` | 通过；20 行数据 |
+| uid 55 | 记录 `/r/payment.request/99` | 通过；`data-state=ok` |
+
+- 两个角色全程 `page_errors=[]`、`http5xx=[]`，未出现契约缺口文案。
+
+### （6）证据失效集合
+
+- 重跑：`menu_service.py` / `navigation_entry_target.py` 直接影响的 L2 单测与前端 route authority 守卫；`local.dev.runtime.entry_target.probe`（L3）；SLA 报告（工具输出结构变化）；受影响页面（L4）。
+- 复用：缓存分层文档、性能基线采样、两个配置入口与普通列表/记录页面（其输入未变）；契约台账因新增完成绑定而重跑 `unit`+`enforce`，不默认重采七源。
+- 未运行：完整浏览器矩阵、`ci.local.quick`、冻结。SLA 本次 `system.init` p95 为 584 ms，属热态单次观察，不作为新收益声明。
+
+### （7）生成物刷新与冻结前置
+
+- `make verify.frontend.contract_basis.unit verify.frontend.contract_basis.enforce`：15 项单测 PASS；`open_defects=0`、`bindings=11`、`exemptions=5`、`logic_sites=3`。台账闭合来自修复两个真实缺陷并补全完成绑定，未删除或改分类放行。
+- `make ci.local.iteration`：PASS（`change_state=dirty`、`coverage=L1_only`、`receipt=none`）。`changedPathCount=227` 被测试台账的顺序编号重排放大；按路径集合比对，语义变化是新增 2 个测试资产、删除 0 个。
+- `make ci.delivery.freeze.prepare`：PASS（`candidate=unfrozen`）。受跟踪生成物仅刷新测试台账、复杂度报告和分片队列：
+  - 测试台账 1548 → 1550，新增 `test_local_dev_runtime_entry_target_probe.py`、`test_local_dev_runtime_record_form_probe.py`，无删除，相对顺序不变；行号整体位移是顺序 ID 重排。
+  - 复杂度报告扫描文件 4838 → 4844（新增的 6 个探针/测试工具），需拆分行 67 → 68（`test_delivery_menu_entry_target.py` 增长到 1543 行）。
+  - 其余内容绑定生成物（E2E 矩阵、模块依赖图、契约结构指纹等）无漂移。
+- 生成物变化不影响上述页面证据：页面证据的输入是运行时契约与前端消费代码，均未被生成报告改动。生成改动已审查，尚未提交；当前仍是 dirty 候选，不是冻结身份，也不构成 Quick 或交付证据。
+
+### （8）结论
+
+- S1/S2 两处阻断已最小修复，生产端—消费端反例均落地，契约台账门禁、受影响页面、`ci.local.iteration` 与冻结前置检查均通过；可以进入汇总批次产品复核。
+- 上述仅代表“定向验收 + 冻结前置通过”。批次验收尚未宣布；主线集成、部署、产品交付仍分别未发生，不得合并表述。
+
+## R15.4 汇总批次产品复核（2026-10-17，执行端，不冻结）
+
+### （1）候选身份与范围
+
+- 候选：HEAD `eda906b3eaac360aa885c46d70247a174c5e1c5f` + 显式 dirty 范围（49 个路径）。
+- 范围：R15.3 的 S1/S2 最小修复与验证资产；性能优化继续封口，不追加毫秒优化，不做完整 `entry_key` 迁移。
+- 状态：未 commit、未冻结、未 Quick、未推送、未 PR、未合并、未部署。
+
+### （2）产品面覆盖（复用 R15.3 原始证据）
+
+| 产品面 | 主体/入口 | 结果 | 证据 |
+|---|---|---|---|
+| 带拒绝条目的角色启动 | uid 21，`denied=8`（含菜单级 `menu_sc_root`） | 通过；无契约缺口、无页面错误 | `sce-r15-3-affected-pages.log` |
+| 带拒绝条目的角色启动 | uid 55，`denied=1`（菜单级拒绝） | 通过；无契约缺口、无页面错误 | `sce-r15-3-affected-pages.log` |
+| 配置入口一 | `/admin/business-config` | 通过；页面挂载，URL 未漂移 | `sce-r15-3-affected-pages.log` |
+| 配置入口二 | `/admin/menu-config` | 通过；页面挂载，URL 未漂移 | `sce-r15-3-affected-pages.log` |
+| 普通列表入口 | `/a/878?menu_id=559` | 通过；20 行数据 | `sce-r15-3-affected-pages.log` |
+| 普通记录入口 | `/r/payment.request/99` | 通过；`data-state=ok` | `sce-r15-3-affected-pages.log` |
+| 真实契约消费 | 前端归一化器消费 live `system.init` | 通过；每条拒绝 `route_kind=DENIED` 且有身份 | `sce-r15-3-route-authority-consumption.log` |
+
+- 两个角色全程 `page_errors=[]`、`http5xx=[]`。
+
+### （3）反例与边界（生产端—消费端成对）
+
+| 反例 | 期望 | 证据 |
+|---|---|---|
+| 仅 `menu_xmlid`、无 action 的拒绝记录 | 前端接受，不中断初始化 | 后端 `test_unpublished_declaration_is_republished_as_a_denied_record`；探针 `test_menu_only_denial_is_a_valid_denial_record`；前端 guard 菜单级拒绝用例 |
+| 未发布条目被移入 `denied_actions` | 重写为 `route_kind=DENIED`，保留原身份 | 后端 publication 单测；前端 `PRODUCT_ENTRY_NOT_RELEASED` 用例 |
+| 无身份拒绝记录 | 仍抛 `ContractGap`，不静默过滤 | 探针 `test_denial_without_identity_is_a_violation`；前端 `assertGap` 用例 |
+| 拒绝记录保留可执行 `route_kind` | 视为违规 | 探针 `test_denial_keeps_its_executable_route_kind_is_a_violation` |
+| `sc_web_surface`/`sc_web_route` 声明不完整 | 投影为显式 `admin_surface`，消费端停机 | 后端 `test_partial_web_surface_declaration_is_an_explicit_gap_target`；探针 `test_partial_declaration_must_project_to_an_explicit_gap`；前端 `adminSurfaceTarget` 缺口用例 |
+| 普通 action 完全未声明管理面 | 保持 compatibility，不误报缺口 | 后端同组单测；探针 `test_complete_declaration_passes` 等 |
+| `execute_button` 403 | 预期 fail-closed，不是回归 | `sce-r15-3-sla.log`：uid2、`project.project:1`、`action_view_tasks`、`dry_run`，`PERMISSION_DENIED/ACTION_CONTRACT_AUTHORITY_MISSING` |
+
+### （4）未覆盖与不得外推的结论
+
+- 未运行完整浏览器矩阵、`ci.local.quick`、冻结、发布候选门禁。
+- 未覆盖正式 89 个入口的其余产品面、`daily_experience`、`capacity`、首次打开/启动专项、真实部署后的“点击→可操作”长尾。
+- 上述页面通过只证明本批受影响面未回归，不证明产品整体交付或性能目标全部达成。
+
+### （5）证据失效分析
+
+- `ci.delivery.freeze.prepare` 只刷新测试台账、复杂度报告与分片队列；页面证据的输入（运行时契约、后端路由权威、前端消费代码）未变，因此复用 R15.3 页面证据，不重采七源。
+- 台账/复杂度/分片报告的路径变化来自新增测试资产和顺序 ID 重排；按路径集合比对无删除，不改变任何运行时行为。
+- `run.json` 与批次记录属于证据元数据，不影响 L2/L3/L4 结果输入。
+
+### （6）复核结论
+
+- 执行端汇总批次产品复核通过：S1/S2 修复、反例、受影响页面、契约台账门禁、`ci.local.iteration` 与冻结前置均一致，未发现新的功能回归证据。
+- 该结论不替代独立复核。批次验收、主线集成、部署、产品交付仍分别是未完成状态；下一步需所有者明确授权后才进入“提交清洁候选→完整指纹→精确 HEAD Quick→独立复核→受保护 PR”。
+
+## R15.5 增量证据绑定与当前候选基线（2026-10-17，不冻结）
+
+### （1）问题与影响集合
+
+- 冻结前身份问题：旧性能基线 `artifacts/backend/system_performance_baseline.json`（sha256 `4edc92ce…`）登记的 `menu_service.py` 哈希为 `c6dba956…`，S1 修复后当前文件为 `8896c6ba…`，旧基线不能直接称为当前候选基线。
+- 同时发现 `platform_sla_guard.py` 在 R15.3 增加了拒绝取证字段，属于基线全局 `probe_and_budget_digest` 的输入变化。
+- 用 `scripts/ops/evidence_scope.py` 建立七源单位集合（`sla`、`observe`、`contract_profile`、`permission`、`contract_request`、`cache_identity`、`role_matrix`），单位为“采集命令 + 探针哈希 + 该探针声明的产品文件哈希”，运行时身份绑定 `sc-local-dev` / `sc_dev_demo` / 容器与镜像 ID。
+- 计划结果：受影响 `sla`、`permission`；可复用 `observe`、`contract_profile`、`contract_request`、`cache_identity`、`role_matrix`；`identity_changed=false`。计划：`artifacts/main-scheduled-ci-closeout-20261016/sce-r15-5-performance-scope-plan.json`，sha256 `fed1f59b…`。
+
+### （2）只补受影响采集
+
+- `sla`：首次按 `ENV=.env.dev` 直接调用未加载受管环境，`DB_NAME` 缺失导致登录失败；归类为调用/环境缺陷，不是产品失败。按 `scripts/common/env.sh` 加载受管 env 后重采 PASS，未改产品代码。
+- `permission`：通过受管 `local.dev.runtime.permission.probe` 重采 PASS；新日志声明的 `menu_service.py` 哈希为 `8896c6ba…`，与当前文件一致。
+- 其余五源原始日志保持不变，作为继承输入参与一次归一化；没有重采七源，也没有仅修改旧哈希。
+- 归一化：`--strict` PASS，`status=baseline`、`gaps=0`、`entries=7`。所有声明了产品哈希的条目 `identity_match=match`；`sla` 与 `cache_identity` 按设计不声明产品哈希，仍为 `unknown`，不冒充匹配。
+- 新基线：`artifacts/backend/system_performance_baseline.json`，sha256 `7bdb15f5…`；受跟踪报告 `docs/ops/audit/system_performance_baseline.md` sha256 `13f2bbed…`。
+- 新 SLA 观察：`system.init` p95 `630.90 ms`、`ui.contract` p95 `877.16 ms`、`execute_button` `23.53 ms`（6 次均 403，`PERMISSION_DENIED / ACTION_CONTRACT_AUTHORITY_MISSING`，分类 `fail_closed_undeclared_action_authority`）。该 403 只证明裸请求被拒绝，不作为动作成功或性能收益证据。
+
+### （3）继承关系落账
+
+- 执行结果写回证据作用域台账：`sla`、`permission` 记为 `passed`；其余五源保留 `declared`（继承自旧基线登记哈希）。
+- 再次 `plan`：`affected=[]`、`stale=[]`、`blocked=[]`、`execution_required=false`、七源全部可复用；`units_digest=5e7a658d…`。计划：`artifacts/main-scheduled-ci-closeout-20261016/sce-r15-5-performance-scope-plan-after.json`，sha256 `bc4752a1…`。
+
+### （4）复用边界
+
+- 页面证据继续复用：S1/S2 修复后未再修改运行时契约或前端消费代码，本次只重采性能证据，不改变页面输入。
+- 本基线是当前 dirty 候选内容上的测量；提交后将以同一文件集合生成完整指纹，并在干净 HEAD 上再归一化一次仅更新 `target_code_identity`（不重采原始证据）。
+
+### （5）结论
+
+- 旧基线身份问题已闭合，当前候选基线不再引用过期 `menu_service.py` 哈希。
+- 下一步：形成清洁候选并提交，生成完整指纹，然后执行一次精确 HEAD Quick。

@@ -597,8 +597,21 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
 
 
 def smart_core_normalize_projected_contract_data(env, data, context):
-    del context
+    del env, context
     if not isinstance(data, dict):
+        return None
+    # ``general_contract_tax_contract`` is the only normalizer applied here and
+    # it is a no-op unless the request is the general-contract form carrying
+    # ``tax_id``.  Copying the whole projected source graph before that check
+    # made every other form pay a full deepcopy for a no-op (measured at about
+    # 147 ms on a record form).  Decide on the authoritative input first, then
+    # isolate the graph only when the normalizer can actually change it.
+    model = _sc_text(
+        data.get("model")
+        or ((data.get("head") or {}).get("model") if isinstance(data.get("head"), dict) else "")
+    )
+    fields = data.get("fields") if isinstance(data.get("fields"), dict) else {}
+    if model != "sc.general.contract" or "tax_id" not in fields:
         return None
     out = deepcopy(data)
     _sc_general_contract_tax_contract(out)
@@ -1303,14 +1316,16 @@ def smart_core_extend_system_init(data, env, user):
     if not isinstance(data, dict):
         return data
 
-    contribution = get_system_init_fact_contributions(env, user)
     ext_facts = data.get("ext_facts")
     if not isinstance(ext_facts, dict):
         ext_facts = {}
-    if isinstance(contribution, dict):
-        module_key = str(contribution.get("module") or "smart_construction_core").strip() or "smart_construction_core"
-        facts_payload = contribution.get("facts") if isinstance(contribution.get("facts"), dict) else {}
-        ext_facts[module_key] = dict(facts_payload)
+    module_key = "smart_construction_core"
+    if not isinstance(ext_facts.get(module_key), dict):
+        contribution = get_system_init_fact_contributions(env, user)
+        if isinstance(contribution, dict):
+            module_key = str(contribution.get("module") or module_key).strip() or module_key
+            facts_payload = contribution.get("facts") if isinstance(contribution.get("facts"), dict) else {}
+            ext_facts[module_key] = dict(facts_payload)
     data["ext_facts"] = ext_facts
     return _system_init_rows.apply_system_init_profile_overrides(data)
 

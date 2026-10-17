@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import ast
 from typing import Any, Dict
 
 
@@ -27,6 +28,80 @@ def _view_modes(value) -> list[str]:
     if isinstance(value, str):
         return [_text(item) for item in value.split(",") if _text(item)]
     return []
+
+
+def _context_mapping(value) -> dict:
+    """Read a statically declared action context without evaluating code."""
+    if isinstance(value, dict):
+        return dict(value)
+    text = _text(value)
+    if not text:
+        return {}
+    try:
+        parsed = ast.literal_eval(text)
+    except (SyntaxError, ValueError):
+        return {}
+    return dict(parsed) if isinstance(parsed, dict) else {}
+
+
+def _mentions_web_surface(context) -> bool:
+    """Detect a surface declaration the static parser could not read.
+
+    The declaration keys are literal in the action context; if they are present
+    but the context cannot be parsed, the declaration is incomplete from the
+    consumer's point of view and must not degrade to the compatibility path.
+    """
+    text = context if isinstance(context, str) else ""
+    return bool(text) and ("sc_web_surface" in text or "sc_web_route" in text)
+
+
+def build_web_surface_entry_target(
+    context,
+    *,
+    menu_id=None,
+    action_id=None,
+    model: str = "",
+    view_modes=None,
+) -> dict:
+    """Project a declared web-surface action into one explicit entry target.
+
+    The action declaration owns ``sc_web_surface`` / ``sc_web_route``. This
+    projection only normalizes those declared values; it never infers a
+    surface from a model, a route spelling or an Odoo context key that the
+    declaration did not publish.
+    """
+    declared = _context_mapping(context)
+    surface = _text(declared.get("sc_web_surface"))
+    route = _text(declared.get("sc_web_route"))
+    # A plain action may declare no web surface at all; it stays on the
+    # compatibility path.  A *partial* surface declaration is a contract defect,
+    # not an absent declaration: project it as an explicit ``admin_surface``
+    # with the missing field empty so the consumer fails closed with a contract
+    # gap instead of silently degrading to ``compatibility``.
+    declared_any = (
+        "sc_web_surface" in declared
+        or "sc_web_route" in declared
+        or _mentions_web_surface(context)
+    )
+    if not surface and not route and not declared_any:
+        return {}
+    entry_target = {
+        "type": "admin_surface",
+        "surface": surface,
+        "route": route,
+    }
+    root_menu_xmlid = _text(declared.get("business_config_root_menu_xmlid"))
+    if root_menu_xmlid:
+        entry_target["root_menu_xmlid"] = root_menu_xmlid
+    compatibility_refs = _build_compatibility_refs(
+        menu_id=menu_id,
+        action_id=action_id,
+        model=model,
+        view_modes=view_modes,
+    )
+    if compatibility_refs:
+        entry_target["compatibility_refs"] = compatibility_refs
+    return entry_target
 
 
 def build_scene_entry_target(

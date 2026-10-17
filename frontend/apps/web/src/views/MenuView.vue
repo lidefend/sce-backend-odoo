@@ -122,14 +122,14 @@ async function resolve() {
       session.setActionMeta(result.meta);
       if (isMenuConfigurationAction(result.meta)) {
         await router.replace({
-          path: '/admin/menu-config',
+          path: resolveActionWebRoute(result.meta),
           query: resolveMenuCarryQuery(result.meta, { menu_id: menuId, action_id: result.meta.action_id }),
         });
         return;
       }
       if (isBusinessConfigurationAction(result.meta)) {
         await router.replace({
-          path: resolveActionWebRoute(result.meta) || '/admin/business-config',
+          path: resolveActionWebRoute(result.meta),
           query: resolveMenuCarryQuery(result.meta, {
             ...resolveActionWebRouteQuery(result.meta),
             menu_id: menuId,
@@ -175,14 +175,14 @@ async function resolve() {
       if (result.target.action_id) {
         if (isMenuConfigurationAction(result.target.meta)) {
           await router.replace({
-            path: '/admin/menu-config',
+            path: resolveActionWebRoute(result.target.meta),
             query: resolveMenuCarryQuery(result.target.meta, { menu_id: result.target.menu_id, action_id: result.target.action_id }),
           });
           return;
         }
         if (isBusinessConfigurationAction(result.target.meta)) {
           await router.replace({
-            path: resolveActionWebRoute(result.target.meta) || '/admin/business-config',
+            path: resolveActionWebRoute(result.target.meta),
             query: resolveMenuCarryQuery(result.target.meta, {
               ...resolveActionWebRouteQuery(result.target.meta),
               menu_id: result.target.menu_id,

@@ -7,9 +7,13 @@
 
 | intent | p95_ms | p95_limit | max_payload_bytes | payload_limit | statuses |
 |---|---:|---:|---:|---:|---|
-| system.init | 649.01 | 8000.00 | 238316 | 3500000 | 200 |
-| ui.contract | 794.67 | 5000.00 | 621388 | 3500000 | 200 |
-| execute_button | 28.60 | 3000.00 | 684 | 600000 | 403 |
+| system.init | 630.90 | 8000.00 | 238926 | 3500000 | 200 |
+| ui.contract | 877.16 | 5000.00 | 621388 | 3500000 | 200 |
+| execute_button | 23.53 | 3000.00 | 683 | 600000 | 403 |
+
+## Denials
+
+- execute_button: http=403 code=PERMISSION_DENIED message=ACTION_CONTRACT_AUTHORITY_MISSING reason_code=PERMISSION_DENIED classification=fail_closed_undeclared_action_authority
 
 ## Errors
 
@@ -17,4 +21,4 @@
 
 ## Warnings
 
-- execute_button has non-2xx statuses in SLA run: [403]
+- execute_button has non-2xx statuses in SLA run: [403] (code=PERMISSION_DENIED, message=ACTION_CONTRACT_AUTHORITY_MISSING, reason_code=PERMISSION_DENIED, classification=fail_closed_undeclared_action_authority)

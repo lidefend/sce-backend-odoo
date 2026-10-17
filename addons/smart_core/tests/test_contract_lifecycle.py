@@ -34,6 +34,34 @@ class ContractLifecycleTests(unittest.TestCase):
         contract = {"pageInfo": {"pageId": "project.list"}, "meta": {"traceId": "trace.one"}}
         self.assertEqual(contract_semantic_payload(contract), {"pageInfo": {"pageId": "project.list"}})
 
+    def test_semantic_payload_never_mutates_a_caller_without_transport_keys(self):
+        # ``strip_request_transport_identity`` is copy-on-write so a payload with
+        # no transport identity is returned by reference.  The semantic payload
+        # must still isolate the top level before dropping ``meta``, or sealing
+        # would delete the caller's metadata.
+        contract = {
+            "pageInfo": {"pageId": "project.list"},
+            "meta": {"traceId": "trace.one", "etag": "etag.one"},
+        }
+        payload = contract_semantic_payload(contract)
+        self.assertEqual(payload, {"pageInfo": {"pageId": "project.list"}})
+        self.assertEqual(contract["meta"], {"traceId": "trace.one", "etag": "etag.one"})
+
+    def test_transport_strip_is_copy_on_write_and_keeps_unchanged_subtrees(self):
+        stable = {"pageInfo": {"pageId": "project.list"}, "rows": [{"id": 1}, {"id": 2}]}
+        payload = {
+            "stable": stable,
+            "context": {"lang": "en_US", "trace_id": "trace.one", "request_id": "request.one"},
+        }
+        stripped = contract_lifecycle.strip_request_transport_identity(payload)
+        self.assertEqual(stripped["context"], {"lang": "en_US"})
+        self.assertIs(stripped["stable"], stable)
+        self.assertEqual(payload["context"]["trace_id"], "trace.one")
+
+    def test_transport_strip_reuses_the_whole_object_when_nothing_moves(self):
+        payload = {"pageInfo": {"pageId": "project.list"}, "context": {"lang": "en_US"}, "rows": [{"id": 1}]}
+        self.assertIs(contract_lifecycle.strip_request_transport_identity(payload), payload)
+
     def test_request_transport_identity_is_not_part_of_semantic_payload(self):
         # The delivered contract echoes the live request context. Its business
         # context is authoritative, but the per-request transport identity must

@@ -170,7 +170,11 @@ def _trim_container(row: dict[str, Any], client_type: str, *, budget: dict[str, 
         if int(budget.get("containers") or 0) <= 0:
             return {}
         budget["containers"] = int(budget.get("containers") or 0) - 1
-    out = deepcopy(row)
+    # ``trim_unified_page_contract_v2`` already isolated the whole contract with
+    # one deepcopy.  Copying every container and widget again here duplicated the
+    # entire tree (measured at about 40 ms on a full-profile record form) while
+    # adding no isolation: this function receives rows owned by that copy.
+    out = row
     out["children"] = [_trim_container(child, client_type, budget=budget) for child in _list(out.get("children")) if isinstance(child, dict)]
     out["children"] = [child for child in out["children"] if child]
     widgets = []
@@ -190,7 +194,7 @@ def _trim_widget(row: dict[str, Any]) -> dict[str, Any]:
     # Responsive width and "fill the row" behaviour belong to the front end;
     # the delivery face must not rewrite a widget's declared width or inject a
     # CSS-level full-width instruction per terminal.
-    return deepcopy(row)
+    return row
 
 
 def _trim_component_registry(registry: dict[str, Any], client_type: str) -> dict[str, Any]:

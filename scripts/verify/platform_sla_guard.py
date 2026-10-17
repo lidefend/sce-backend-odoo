@@ -71,6 +71,42 @@ def _classify_status(intent: str, status: int) -> str:
     return "system_error"
 
 
+def _denial_detail(status: int, payload: dict) -> dict | None:
+    """Return the backend's own rejection identity for one non-2xx response.
+
+    An HTTP status code alone cannot prove *why* a request was denied.  The
+    guard records the backend reason so a later reader can distinguish an
+    intended fail-closed guard from a regression without re-running the probe.
+    """
+    if 200 <= status < 300:
+        return None
+    error = payload.get("error") if isinstance(payload.get("error"), dict) else {}
+    result = (payload.get("data") or {}).get("result") if isinstance(payload.get("data"), dict) else {}
+    result = result if isinstance(result, dict) else {}
+    return {
+        "http_status": int(status),
+        "code": str(error.get("code") or payload.get("code") or "").strip(),
+        "message": str(error.get("message") or result.get("message") or "").strip(),
+        "reason_code": str(error.get("reason_code") or result.get("reason_code") or "").strip(),
+    }
+
+
+def _classify_denial(intent: str, denial: dict | None) -> str:
+    if not denial:
+        return ""
+    if (
+        intent == "execute_button"
+        and denial.get("http_status") == 403
+        and denial.get("message") == "ACTION_CONTRACT_AUTHORITY_MISSING"
+    ):
+        # The guarded intent refuses a request that carries no declared action
+        # contract identity (action_id / backend_identity / source_widget_id).
+        # This probe intentionally sends that bare shape, so the refusal is the
+        # endpoint's own fail-closed contract, not a performance regression.
+        return "fail_closed_undeclared_action_authority"
+    return "unexplained"
+
+
 def main() -> int:
     baseline = _load_baseline()
     iterations = int(baseline.get("iterations") or 6)
@@ -121,6 +157,7 @@ def main() -> int:
             sizes: list[int] = []
             statuses: list[int] = []
             status_breakdown: dict[str, int] = {}
+            denial: dict | None = None
             for _ in range(iterations):
                 status, payload, elapsed = _call(intent_url, token, intent, params)
                 statuses.append(int(status))
@@ -128,6 +165,9 @@ def main() -> int:
                 sizes.append(len(json.dumps(payload, ensure_ascii=False).encode("utf-8")))
                 kind = _classify_status(intent, int(status))
                 status_breakdown[kind] = status_breakdown.get(kind, 0) + 1
+                observed_denial = _denial_detail(int(status), payload)
+                if observed_denial and denial is None:
+                    denial = observed_denial
                 if status >= 500:
                     errors.append(f"{intent} returns 5xx: {status}")
             p95 = _p95(times)
@@ -138,8 +178,17 @@ def main() -> int:
                 errors.append(f"{intent} p95 exceeded SLA: {p95:.2f} > {p95_limit:.2f}")
             if max_size > size_limit:
                 errors.append(f"{intent} payload exceeded SLA: {max_size} > {size_limit}")
+            denial_classification = _classify_denial(intent, denial)
             if any(400 <= s < 500 for s in statuses):
-                warnings.append(f"{intent} has non-2xx statuses in SLA run: {sorted(set(statuses))}")
+                detail = ""
+                if denial:
+                    detail = (
+                        f" (code={denial.get('code') or '<empty>'}"
+                        f", message={denial.get('message') or '<empty>'}"
+                        f", reason_code={denial.get('reason_code') or '<empty>'}"
+                        f", classification={denial_classification or 'unclassified'})"
+                    )
+                warnings.append(f"{intent} has non-2xx statuses in SLA run: {sorted(set(statuses))}{detail}")
             rows.append(
                 {
                     "intent": intent,
@@ -153,6 +202,8 @@ def main() -> int:
                         else ("normal" if all(200 <= s < 300 for s in statuses) else "mixed")
                     ),
                     "status_breakdown": status_breakdown,
+                    "denial": denial,
+                    "denial_classification": denial_classification,
                     "p95_limit": p95_limit,
                     "payload_limit": size_limit,
                 }
@@ -191,6 +242,20 @@ def main() -> int:
             f"{row['max_payload_bytes']} | {row['payload_limit']} | "
             f"{','.join(str(s) for s in row['statuses'])} |"
         )
+    denials = [row for row in rows if row.get("denial")]
+    lines.extend(["", "## Denials", ""])
+    if denials:
+        for row in denials:
+            denial = row["denial"]
+            lines.append(
+                f"- {row['intent']}: http={denial['http_status']} "
+                f"code={denial.get('code') or '<empty>'} "
+                f"message={denial.get('message') or '<empty>'} "
+                f"reason_code={denial.get('reason_code') or '<empty>'} "
+                f"classification={row.get('denial_classification') or 'unclassified'}"
+            )
+    else:
+        lines.append("- none")
     lines.extend(["", "## Errors", ""])
     if errors:
         for item in errors:

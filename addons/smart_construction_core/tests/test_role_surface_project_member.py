@@ -1,5 +1,6 @@
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
+from unittest import mock
 
 from odoo.addons.smart_construction_core.core_extension_actor_roles import resolve_release_actor_role_codes
 from odoo.addons.smart_construction_core.core_extension import get_system_init_fact_contributions
@@ -963,6 +964,20 @@ class TestProjectMemberRoleSurface(TransactionCase):
         self.assertTrue(surface["deny_all_navigation"])
         self.assertEqual(resolver.filter_nav_for_role_surface(nodes, surface), [])
         self.assertEqual(MenuService._filter_role_surface_nodes(nodes, surface), [])
+
+    def test_system_init_hook_reuses_merged_extension_facts(self):
+        from odoo.addons.smart_construction_core import core_extension
+
+        existing = {"role_entries": [{"key": "project.member"}]}
+        data = {"ext_facts": {"smart_construction_core": dict(existing)}}
+        with mock.patch.object(
+            core_extension,
+            "get_system_init_fact_contributions",
+            side_effect=AssertionError("extension facts must not be recomputed"),
+        ):
+            core_extension.smart_core_extend_system_init(data, self.env, self.env.user)
+
+        self.assertEqual(data["ext_facts"]["smart_construction_core"]["role_entries"], existing["role_entries"])
 
     def test_known_unreachable_actions_are_removed_by_stable_identifiers(self):
         resolver = self._resolver()

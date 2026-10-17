@@ -114,7 +114,38 @@
     "docs/contract/exports/intent_catalog.json",
     "addons/smart_core/core/contract_lifecycle.py",
     "addons/smart_core/handlers/ui_contract_v2_authority.py",
-    "addons/smart_core/tests/test_contract_lifecycle.py"
+    "addons/smart_core/tests/test_contract_lifecycle.py",
+    "docs/engineering_convergence/action_view_responsibility_map.md",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/audit/verification_lane_exemptions.json",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/core/unified_page_contract_v2_client.py",
+    "frontend/apps/web/src/app/contracts/v2/client.ts",
+    "docs/architecture/contract_runtime_cache_layers_v1.md",
+    "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+    "scripts/verify/test_local_dev_runtime_record_form_probe.py",
+    "scripts/verify/local_dev_runtime_projection_cache_identity_probe.py",
+    ".agent/goals/ROUTE-ENTRY-CONTRACT-MIGRATION.yaml",
+    "addons/smart_core/core/system_init_identity_payload.py",
+    "addons/smart_core/tests/test_menu_acl_carrier_authorization.py",
+    "addons/smart_core/tests/test_system_init_payload_builder_semantics.py",
+    "docs/architecture/frontend_contract_basis_ledger.json",
+    "docs/architecture/route_entry_contract_field_layering_v1.md",
+    "scripts/verify/local_dev_runtime_startup_fact_reuse_probe.py",
+    "addons/smart_construction_core/views/support/business_config_workbench_views.xml",
+    "addons/smart_core/core/navigation_entry_target.py",
+    "addons/smart_core/delivery/delivery_engine.py",
+    "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+    "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+    "addons/smart_core/views/ui_menu_config_policy_views.xml",
+    "frontend/apps/web/scripts/route_authority_guard_test.ts",
+    "frontend/apps/web/src/app/routeAuthority.ts",
+    "frontend/apps/web/src/app/routeQuery.ts",
+    "frontend/apps/web/src/services/actionRoutePolicy.ts",
+    "frontend/apps/web/src/services/action_service.ts",
+    "frontend/apps/web/src/views/MenuView.vue",
+    "addons/smart_core/tests/test_entry_publication_authority.py"
   ],
   "environment": {
     "kind": "offline",
@@ -122,7 +153,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Performance topic stays open by owner instruction; do NOT freeze, Quick, push, merge or deploy this round. HEAD=da983b708df341131c298f200b8e7543f7d4de57 plus explicit dirty scope. Two earlier layer-owned commits (95351644 P0 perf(contract) warm-cache read-isolation clone, da983b70 P4 chore(ops) baseline carrier + ledger + generated evidence) remain unpushed and undeployed. This round established one declared system performance baseline over the registered sc-local-dev/sc_dev_demo profile from a declared 7-source set (sla, observe, contract_profile, contract_request, permission, cache_identity, role_matrix): status=baseline, entries=7, samples 142/142, gaps=0, controlled_regression=passed, identity match on 5 entries and unknown (never zero) on the 2 payloads that declare no product-code hash. Coverage counterexample, reproducible without re-capture: dropping sla,observe yields entries=4/samples=37/gaps=1 and blocks controlled_regression on visible_scale, so the tracked report must never be regenerated from a narrower source set. The role dimension is now inside the same baseline (9 declared roles, contract surface varies by role, all refusals explicit, relation surface varies for form and does NOT vary for list). Verified numbers: mature-system targets overall=within_tolerance (met 3/within 3/failed 0/not_evaluated 1); warm_contract_dispatch p95 172.88 ms is still above its 100 ms target and is NOT claimed improved; hot dispatch median 63.084/p95 172.876, SQL 22, convert_to_record deepcopies 0/12; the hot p95 tail is reproduced as a CPython gen-2 GC pause (outlier in hot_4, +129.699 ms over median) and removed by the gc-disabled control, consistent with the recorded 176.984->315.920 ms attribution. Permission (warm 1.968/0.408 ms, cold owner = published route authority, no redundant rebuild) and the persisted source token (content-hash identity, old source rejected after identity change, ttl not involved) are cited from the same capture. Next exact step: keep working the open performance items - first native view read and first contract compile warm-up (the single hard breach, still profile_first_contract_assembly at profiled 4018.56 ms), the gen-2 GC pause on the hot p95, R3 miss-path double copy (measured, not critical), and the preference effective GET/SET decoupling residuals plus single-application responsibility. Re-freeze only when the owner ends the optimization round. Registered residuals stay registered and are not delivery blockers.; 2026-10-17 (R7): three landed_uncommitted fixes plus one probe-check correction closed this round - (1) seal semantic-digest memo (hot median 60.251 -> 35.663 ms, p95 177.095 -> 36.843 ms, SQL unchanged 22, delivered contract unchanged), (2) layout_fields ordering determinism (order_digest constant 60b33572e04dfafd, membership-only consumers), (3) source-envelope identity now drops the per-request elapsed_ms (sourceSha256 constant 42d7bb3f..., 0 pairwise path differences over 37222 paths across 6 processes, negative control 20 tests pass), and (4) the scene-guard equivalence now masks only the two registered measurement subtrees while still reporting the raw diff. Next exact step unchanged in substance: keep working the open performance items - the single hard breach profile_first_contract_assembly (3774.39 ms > 3000 ms tolerance) with its process-first one-time initialization already attributed at 560.26 ms, the gen-2 GC pause on the hot p95, R3 miss-path double copy (measured, not critical) and the preference effective GET/SET decoupling residuals with single-application responsibility. Do NOT freeze, Quick, push, merge or deploy; performance is NOT closed. 2026-10-17 (R8): the relation-dialog and cold-owner numbers were re-measured after R2/R7 as a recount, not a new claim: 17 session dialogs 542.13 ms / 253 SQL, of which res.currency alone is 298.66 ms and is proven to be the process-first translation load (warm re-measure 6.98 / 6.20 ms in the same process; res.users 52.60 -> 9.75 ms shows the same shape). The dialog count therefore stays 17; nothing was removed and no remaining relation target may be deleted on the strength of this attribution. The profiled cold owner re-count is 3620.04 ms / 1031 SQL (previously 3749.69 ms) with deepcopy 850.73 / 761935 as the largest self cost, compose reached exclusively through build_final_contract, and authenticated_form_role_key called once at 341-344 ms from compose. The hot sample shows the real remaining hot-path owner: _isolated_clone copies the stored entry at 46.23 ms self of 79.83 ms over 144171 calls, so the warm request is dominated by copying, not assembling. New diagnostic capability added (PRODUCT_PERFORMANCE_PROFILE_CALLERS) with its own unit test repaired and a new make entry verify.local.dev.runtime.performance.unit; the probe is in PROBE_SCRIPTS so the probe digest move is declared, not drift. Next exact step: keep the performance topic open and work the hot-path copy volume next, proving the ownership and aliasing of every returned subtree (the read-isolation copy is already known to be required because refresh_saved_search_runtime writes the per-user saved-search overlay into contract.searchContract and the seal writes per-request meta identity), then re-measure. Do NOT freeze, Quick, push, merge or deploy; performance is NOT closed and no overall target verdict changed in R8. 2026-10-17 (R8 shared-memo closure): the hot owner is the store-copy, not assembly. In the assembled-hit cache write, ui_data and source_contract (a shallow dict(ui_data)) were each deep-copied with independent memos, so an aliased subtree was copied twice. Cloning them through one shared memo (contract_v2 keeps its own, because seal mutates it) cut the full clone 17.597 -> 8.507 ms (-51.7%), the post-clone full-graph containers 17250 -> 9311 and the shared ui_data|source_contract containers 0 -> 7939, with json_bytes identical (2049131) on both sides. Paired same-process A/B: hot median 85.726 -> 79.046 ms, GC-disabled hot median 85.265 -> 75.504 ms, hot lookup 28 -> 20 ms; SQL 22 and permission unchanged; delivered contractSha256 b90852db... and sourceSha256 42d7bb3f... identical to the R7 constant and scene_guard_equivalence all-match with zero unexplained diff paths. Ownership is now a two-group model (source group ui_data+_assembled_v2.source_contract shared; assembled group contract disjoint), which supersedes the earlier alias_matrix 'each disjoint' wording; the fixed contract is test_load_contract_response_cache.py (double-ownership grouping, value/cross-request pollution and identity-change counterexamples). Affected L2 all pass (verify.business_config.formal_list.unit 240, verify.backend.contract_lifecycle.authority 54, verify.local.dev.runtime.performance.unit 19, verify.agent.ledger.unit 15). The 7-source baseline was re-captured (gaps=0, identity rebound to ui_contract_v2.py=b7adfe86...), mature-system targets met 4/within 2/failed 0/not_evaluated 1 (overall=within_tolerance); the warm_contract_dispatch p95 172.876 -> 99.711 ms move is SAMPLE VOLATILITY (the gen-2 GC pause fell outside the later window) and is NOT claimed as a clone win. The clone win is the controlled 6.68-9.76 ms A/B. Still open and NOT attributed here: the one-off CPython gen-2 GC pause on the hot p95 (candidate hot outlier 195.173 ms / gc_ms 114.058), the first native-view read and first contract compile warm-up, R3 miss-path double copy (measured, not proven critical) and the preference effective GET/SET decoupling residuals with single-application responsibility. Next exact step: keep the performance topic open and attack the gen-2 GC pause on the hot p95 next, proving whether it is allocation volume from the remaining copies or a general heap trigger before any change. Do NOT freeze, Quick, push, merge or deploy; performance is NOT closed and no overall target verdict changed in R8. 2026-10-17 (R9 hot-path attribution, no product change): the hot p95 tail is now attributed from the SAME R8 probe's per-request CPython gc counters, without a new run. Each hot request performs ~24-25 gen-0 and 2-3 gen-1 collections (~303 cyclic objects, ~2-3 ms), so the gen-1 counter reaches CPython's gen-2 threshold every few requests and fires ONE full gen-2 stop of ~114-154 ms (hot_7 114.058 ms; process_first fires 2 at 257.81 ms total). Disabling gc removes it (hot_gc_off gc_ms total 0.0). Attribution: FREQUENCY is allocation-volume driven (a full entry clone is ~9311 containers, i.e. the dominant allocation source), DURATION is heap-size driven (full gen-2 scan over the long-lived cache entries). A naive node count (hot_entry_graph_nodes, no dedup) previously suggested the assembled hit cloned ~47% unused ui_data; that is REFUTED - with R8's shared memo the entry's unique graph is 9311 and ui_data's non-shared containers are only ~188 (~2%), so no unused-section split is warranted. The real remaining lever, registered as a design only, is to share the read-only ui_data/source_contract by reference and clone only the seal-mutated contract (~1038 containers): it would cut the clone ~8.5->~1 ms AND cut gen-0/gen-1 volume ~5x, directly lowering the gen-2 frequency. It is NOT implemented this round because it requires an airtight read-only proof plus the value/cross-request-pollution and identity-change counterexamples extended to the shared sections. Next exact step: prove that every assembled-hit consumer only READS ui_data/source_contract (seal writes meta into contract only), then implement the shared-reference read with the counterexamples kept, and re-measure the clone split and the gc counters. Do NOT freeze, Quick, push, merge or deploy; performance is NOT closed and no overall target verdict changed in R9. 2026-10-17 (R10 shared-read, landed_uncommitted): the assembled hot hit now READS the cached source payload instead of re-copying it - get_assembled hands ui_data and _assembled_v2.source_contract over on loan (read-only), copies ui_meta and the bound digests, and deep-copies only _assembled_v2.contract because seal rewrites it; the gate tuple is one shared function used by the accessor, the post-lookup guard and the assembled branch, and a shared_source flag makes a by-reference graph unable to reach the assembly path that writes into it. Proof: the branch returns before every source_contract write, strip_request_transport_identity is copy-on-write, a burst of 8 real seals leaves the entry byte-identical, AST guards keep the loaned sections write-free, and an equivalence test replays the removed inline gate. Adjacent-time A/B with only that variable changed (hot n=12): dispatch median 79.804 -> 71.456 ms (-8.348 ms, -10.5 pct), paired gc-disabled control -10.304 ms, gen-0 23-25 -> 13-14, gen-1 2-3 -> 1-2, gen-2 1/12 -> 0/12; process_first, cold_rebuild, SQL and permission are unchanged, and the delivered contract is identical over all 37222 paths (0 differences, contractSha256 b90852db..., sourceSha256 42d7bb3f..., integrity ok on every delivery, memo == recomputation). Counterfactual clone split: 8.756 ms full entry -> 0.815 ms contract + 0.003 ms ui_meta. Limits: gen-0 fell ~1.8x not the predicted ~5x and the residual 13-14 gen-0 per hot request is NOT attributed; the gen-2 pause simply did not fire in these windows (not a closure); r3_removed_copy_ms is a deepcopy-basis diagnostic and is not the removed production cost. R3 miss-path copy, R4 first-permission and the preference effective GET/SET single-application residuals stay independent open items. Next exact step: attribute the residual ~13-14 gen-0 allocations per hot request before any further clone change, then attack the first native-view read / first contract compile warm-up (the single hard breach) and the gen-2 p95 item. Do NOT freeze, Quick, push, merge or deploy; performance is NOT closed. R10 documentation (docs/ops/iterations/main_scheduled_ci_closeout_20261016.md, 'R10 热读共享只读分片' section) and the two final L1 checks (verify.agent.ledger.unit 15 tests OK + guard PASS, git diff --check empty) are now written and registered; the next exact step is unchanged. 2026-10-17 (R11): the R10 residual '13-14 gen-0 per hot request' is closed as an ATTRIBUTION, not as a product change: it is the contract_request probe's own _seal_binding instrumentation (payload identity recompute over the ~8263-container cached source), proven by a variant-A counterexample on the same probe / same managed entry / same request (hot dispatch median 69.176 -> 14.299 ms, gen-0 13-14 -> 2-3) and by an UNINSTRUMENTED independent probe (hot dispatch median 13.811 ms, gen-0 2-3, gen-2 0/12, permission 2.06-3.02 ms, 1593 net containers split as cache.get_assembled 852 / build_projection_source_token 481 / emit_delivery_observation 136 / permission 91 / seal_runtime_contract 59). Absolute hot numbers must now be quoted from the uninstrumented probe; the R10 adjacent A/B differential (-8.348 ms) stays valid because the instrumentation is common-mode there. The system performance baseline was ALSO rebound this round: the recorded probe digest and the product-code identity were both stale (the capture predated the R10 08:52 product edit), so a managed 7-source re-capture was run: status=baseline, entries=7, samples 142/142, gaps=0, controlled_regression=passed, probe digest 1d891b7ae7429b49bc2268d432a0dbd9d712f9da383af354e142ff2b365283a5, product-code identity 18/18 pairs matching with 0 drift, and the tracked report corrected from 3 sources/11 samples to the full 7/142. Targets went to overall=within_tolerance (met 4 / within 2 / failed 0 / not_evaluated 1) with warm_contract_dispatch p95 78.219 ms met - which is NOT a closure claim, since R8 already recorded 99.711 ms met and declared that delta sample volatility, and this window simply had no gen-2 outlier. Still open and independent: the first native-view read / first contract compile warm-up, the gen-2 p95 pause, the R3 miss-path double copy, the R4 first-permission path, the preference effective GET/SET single-application residuals, and the res.users-style default/create/dynamically-visible consumer audit. Do NOT freeze, Quick, push, merge or deploy; performance is NOT closed. 2026-10-17 (R12 owner directive: integrate the performance branch): the owner ordered this performance-optimization branch into mainline and ended the earlier 'do not freeze/Quick/push/merge' hold for this round. The landed scope is committed in three layer-owned commits: 331f5542 perf(contract) shared read-only source slice (clone only the seal-mutated contract), a0962a9c fix(verify) declared-identity performance probes and contract gate normalisation, 4da64426 docs(ops) baseline report plus R7-R11 attribution. Targeted L2 on this tree: verify.local.dev.runtime.performance.unit 19 tests, verify.system.performance.baseline.unit 61 tests, verify.agent.ledger.unit 15 tests + guard PASS, py_compile clean; ci.local.iteration PASS with outside_scope=[]. Integration is NOT a closure claim: the single hard breach profile_first_contract_assembly (3774.39 ms > 3000 ms tolerance), the gen-2 p95 pause, R3 miss-path double copy, R4 first-permission path, the preference effective GET/SET single-application residuals and the res.users-style default/create/dynamically-visible consumer audit stay open and registered. NEXT: ci.delivery.freeze.prepare, commit generated evidence, freeze clean HEAD, one exact-head ci.local.quick, pr.push to the GitHub authoritative remote, pr.create, wait for public_guard, merge_policy_gate, professional_quality_gate and frontend_release_gate on the exact head, then the protected PR merge; no deploy, no daily runtime refresh, no version-release or product-acceptance claim. The daily-runtime candidate PR #670 (branch fix/daily-runtime-payload-import-closeout-20261016, head 7eec5f47) stays open and unmerged pending the owner's ordering.",
+  "next_exact_step": "2026-10-17 (R15.5 evidence binding closed; clean candidate pending): HEAD=eda906b3eaac360aa885c46d70247a174c5e1c5f plus explicit dirty scope. Performance baseline identity is current: menu_service.py=8896c6ba and platform_sla_guard.py=bd7499a1 are rebound; only sla and permission were recaptured, the other five logs were inherited; normalized status=baseline gaps=0 entries=7; evidence-scope re-plan affected=[] and all seven units reusable. New baseline sha256=7bdb15f5. Page evidence is reused because runtime contract and frontend consumer code did not change in R15.5. Next: run ci.delivery.freeze.prepare once before the final commit, review the complete tracked+untracked scope, commit the clean candidate, compute the full fingerprint, then run exactly one Quick at the frozen HEAD; after that independent review, external archive and governed PR publication. No push/PR/deploy yet.",
   "source_runs": [
     38818510036,
     38811434965,
@@ -401,7 +432,7 @@
       "resolution": "re-pinned and input gap closed; see the passed entry below and relation_demand_boundary.assembled_cache_pin_closure",
       "log": {
         "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-assembler-entry-equivalence.log",
-        "sha256": "74ce1323c4db5b4b500f6601fd9a25ec4e7c4822c08d68604325a8dc0f9d1e79"
+        "sha256": "5b52bee1354cd5215004e2afa0873416572f0c3ff6805488d7c0a90efb0267c4"
       },
       "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
       "dirty": true
@@ -413,7 +444,7 @@
       "stage": "same dirty iteration after re-pinning; guard reports sources=4",
       "log": {
         "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-host-assembler-guard-after.log",
-        "sha256": "833732a8560250514865519dc1a2ce0c19e476f4fd02da17e1ff8c8df9feccd2"
+        "sha256": "5b52bee1354cd5215004e2afa0873416572f0c3ff6805488d7c0a90efb0267c4"
       },
       "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
       "dirty": true
@@ -489,7 +520,7 @@
       "stage": "sources=4; the assembled-contract pin is intact although load_contract_response_cache.py changed, because it is deliberately not an ASSEMBLED_CACHE_INPUT (covered by the persisted runtime source token)",
       "log": {
         "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r2-cache-identity-assembler-guard.log",
-        "sha256": "b4226401cfd3f542be70e8a7f4ae73861280941067eddd6f1a86f55e15e71edd"
+        "sha256": "5b52bee1354cd5215004e2afa0873416572f0c3ff6805488d7c0a90efb0267c4"
       },
       "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
       "dirty": true
@@ -517,7 +548,7 @@
       "stage": "sources=4 after re-pinning ASSEMBLED_CACHE_INPUTS_SHA256 and bumping the version literal to ui-contract-v2-2026-10-16-owned-source-handoff because R3 changed the handler code",
       "log": {
         "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r3-assembler-guard.log",
-        "sha256": "2e41dd1872887604b75bcfe60dcb36b05ee9e3bc7560d137372474c1ad378285"
+        "sha256": "5b52bee1354cd5215004e2afa0873416572f0c3ff6805488d7c0a90efb0267c4"
       },
       "stage_head": "56f5096422d967d582c2b25ab9a4bfaa03173534",
       "dirty": true
@@ -2009,6 +2040,552 @@
       },
       "stage_head": "da983b708df341131c298f200b8e7543f7d4de57",
       "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.unified_page_contract.v2.assembler",
+      "status": "passed",
+      "stage": "R12 assembler guard PASS (with the _fingerprint Name-call detection fixed so the rule cannot pass vacuously) sources=4 after the cache-layer boundary extension: get_assembled must stay record-free, _base_contract must not fingerprint the source graph, the persistent asset must stay source-only, and the frontend create cache key must bind sessionDb/token/contextEpoch. Also re-pins ASSEMBLED_CACHE_INPUTS_SHA256=5470929601b3756a291adaac9445df3df9ecd0db276cb1e5ef0bde487cc24e12 with cache version ui-contract-v2-2026-10-17-base-identity-no-source-hash.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-assembler-guard.log",
+        "sha256": "5b52bee1354cd5215004e2afa0873416572f0c3ff6805488d7c0a90efb0267c4"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.unified_page_contract.v2.client",
+      "status": "passed",
+      "stage": "R12 terminal-trim guard PASS clients=3 after removing the per-node deepcopy in _trim_container/_trim_widget; the guard compares the trimmed output for all three client types against the recorded snapshot, so the ownership change is behavior-equivalent on the declared fixture.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-client-guard.log",
+        "sha256": "8851cddba765b6080d7c14bae8a8f3b1b33d7ff906e78c4315c6cfb1a4fde471"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "python3 addons/smart_core/tests/test_contract_lifecycle.py",
+      "status": "passed",
+      "test_count": 23,
+      "stage": "R12 lifecycle unit: 23 tests OK, including copy-on-write strip, no-mutation of the caller payload, object reuse for unchanged subtrees, and contract_semantic_payload top-level isolation before dropping meta.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-contract-lifecycle-unit.log",
+        "sha256": "7b7dc7b80a1526f8fbd83449d2a67622138309015a7ab0ae6c04e5a3b61eb1a8"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "python3 addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+      "status": "passed",
+      "test_count": 128,
+      "stage": "R12 compact/full trim unit: 128 tests OK; the trimmed contract is unchanged after the ownership change and the caller contract is not mutated.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-mobile-compact-unit.log",
+        "sha256": "45670123e3c9d40e6c3b76560cc5f664feb687227bcb62f8999e6c1143197e95"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "make local.dev.runtime.record_form.probe (uninstrumented, sc-local-dev/sc_dev_demo, payment.request record form, role_finance)",
+      "status": "passed",
+      "stage": "R12 raw timing observation, superseded in interpretation by R14: the probe stored the fourth of six samples as the median and its any-depth timing filter could hide a real business field, so the 700.6 -> 520.2 ms figure and the 4bfa3c1a... 'complete response equivalent' claim are not valid conclusions. Correct even-sample median from the same R12 samples is 697.437 -> 483.499 ms (-30.7%); the corrected same-probe window and exact semantic exemptions are in the R14 rows. This row remains only as the historical raw capture.",
+      "log": {
+        "baseline": {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-record-form-baseline-semantic.log",
+          "sha256": "b056d656648bc02b25da965e3880bc984ccd0bd842755713e354783fe1678c96"
+        },
+        "after": {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-record-form-after-base-identity.log",
+          "sha256": "9b7fba26f721fe0a0cfade43a350a29a9414f5a89cd0c530055abdf92f7a3163"
+        }
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.backend.contract_lifecycle.authority",
+      "status": "passed",
+      "stage": "R12 lifecycle authority guard PASS after copy-on-write strip and the runtime seal sourceSha256 reuse; the guard re-reads the recorded lifecycle evidence and reports errors=[]. This covers the changed addons/smart_core/core/contract_lifecycle.py surface beyond the 23 focused unit tests.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-contract-lifecycle-authority.log",
+        "sha256": "723d27b1a3d0339a3044cdf3e401028a065322ee85594e53e838b4f4aa635e43"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.unified_page_contract.v2.runtime",
+      "status": "passed",
+      "test_count": 128,
+      "stage": "R12 v2 runtime guard PASS score=6 with 128 runtime unit tests OK after the assembler/trim/lifecycle ownership changes.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-v2-runtime-guard.log",
+        "sha256": "cbaf62c27a8fd73afcee58bbb0c940705c19a9a4a6bbd73b598638f5fe00ad76"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "stage": "R12 inner-loop panel: PASS change_state=dirty scope=unclassified_by_design coverage=L1_only receipt=none; resume outside_scope=[] blockers=[]. This is the default static entry and is not delivery evidence; the affected non-zero L2 targets were run explicitly above.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-iteration.log",
+        "sha256": "a64cc76adcd296e67824bc53bd4b09fa069ea366465e6a786b0985bf09842874"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "python3 addons/smart_core/tests/test_load_contract_response_cache.py",
+      "status": "passed",
+      "test_count": 48,
+      "stage": "R14 P0 identity invalidation: 48 tests OK. New negative cases prove role revocation, company scope, ACL/rule/user-row changes and business-policy definition changes move the projection identity, and an already stored assembled entry is unreachable after a role or policy change. A re-seal is not treated as a fresh authorization decision.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-cache-identity-unit.log",
+        "sha256": "55c8fa2b1ca113c0a1c05d5640ad5f795d30efc2b65f2ab893bbb61023cb6dd7"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.system.performance.baseline.unit",
+      "status": "passed",
+      "test_count": 70,
+      "stage": "R14 P4 statistics and semantic comparison: 70 tests OK, including the even-sample median, six-sample nearest-rank p95/window-max labeling, exact registered exemptions, the data.business.timing.deadline 1 -> 2 counterexample, and preservation of an unregistered context.trace_id.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-performance-baseline-unit.log",
+        "sha256": "a6fa78562d070635c3d6bce101aaa00ff2cab6872722f0df147fb157ca0cf12a"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.unified_page_contract.v2.assembler",
+      "status": "passed",
+      "stage": "R14 assembler guard PASS sources=4 after adding I9/I10: the assembled hit must seal and return without entitlement/policy/action/modifier/trim; cache_key must carry the principal group digest; source_token must carry ACL, rule, user row, business-policy and field-policy definition authorities.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-assembler-guard-i9-i10.log",
+        "sha256": "5b52bee1354cd5215004e2afa0873416572f0c3ff6805488d7c0a90efb0267c4"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "make local.dev.runtime.projection_cache_identity.probe",
+      "status": "passed",
+      "stage": "R14 governed runtime identity probe: removing group 128 moves both cache_key and source_token; changing draft ui.business.config.contract id 27 priority moves source_token; savepoint rollback restores all three identities and commit is refused. This proves old-entry unreachability, not per-hit reauthorization.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-projection-cache-identity.log",
+        "sha256": "61231d6ded184284021f31ba5a1e1a8828c172c20772b2e742da5567d1cb3961"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "make local.dev.runtime.record_form.probe (corrected precise semantic comparison; sc-local-dev/sc_dev_demo)",
+      "status": "passed",
+      "stage": "R14 corrected A/B, no rerun needed for the original samples: new window hot median 688.528 -> 501.288 ms (-27.2%), window max 711.902 -> 551.859 ms (-22.5%, observation only), first 2669.028 -> 2513.162 ms; full-tree semantic SHA-256 ff6db9d1bdd3beb91a2f5f183c87321573677506d19d2141d994dffd010bbefb on both sides, contractSha256 1673cb0b2f037845... on both sides, all section digests equal, only meta.elapsed_ms and meta.projection_cache.stages_ms.* differ. Original R12 samples recompute to 697.437 -> 483.499 ms (-30.7%). Diagnostic only; not delivery evidence.",
+      "log": {
+        "baseline": {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-record-form-baseline-precise-semantic.log",
+          "sha256": "7fc657608032b90957a95cc461213b370ef2a1dfa4e9f32facc3d3124b8ded30"
+        },
+        "after": {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-record-form-after-precise-semantic.log",
+          "sha256": "f54e68260907837ddffa5e02dae234cb009dbd560f68aa92a8c25f27c7016bab"
+        }
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.unified_page_contract.v2.runtime && make verify.backend.contract_lifecycle.authority",
+      "status": "passed",
+      "test_count": 175,
+      "stage": "R14 affected L1/L2 re-check after the guard and documentation reconciliation: v2 runtime guard score=6 with 23+128 tests OK; lifecycle authority score=100 with 23+10+11+13 tests OK and errors=[].",
+      "log": {
+        "runtime": {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-v2-runtime-guard.log",
+          "sha256": "f581041b9fc9bc9c8d8063b882105bd3fd38c99c7332930e7daa32b69da667af"
+        },
+        "lifecycle": {
+          "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-contract-lifecycle-authority.log",
+          "sha256": "1f20a0eeb9e5bc58746cbd3bcc81e335bf48eec154d464c57628c12f88bf7b3a"
+        }
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "stage": "R14 inner-loop panel before the ledger write: status=resolved, outside_scope=[], change_state=dirty, coverage=L1_only, receipt=none. L1 only; not delivery evidence.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-iteration-pre-ledger.log",
+        "sha256": "b91d2db1f1976e2965ed41b8b23be9b023eaeaeaf8ae6f9226619729003ac959"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.agent.ledger.unit",
+      "status": "passed",
+      "test_count": 15,
+      "stage": "R14 final ledger closure: 15 tests OK; agent_ledger_consistency_guard PASS goals=106 runs=84 pinned_residuals=2 open_run_allowlist=2.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-agent-ledger-unit.log",
+        "sha256": "e1647e1756678867cc6e4650c4b2defbec7c41771844a857178537a68cf629ca"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "stage": "R14 final inner-loop panel after evidence registration: PASS change_state=dirty scope=unclassified_by_design coverage=L1_only receipt=none; next=risk_selected_non_zero_L2_targets_required. L1 only; not delivery evidence.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-iteration-final.log",
+        "sha256": "fba861ec598a374078e0536e3c625c6db2dda8d5a0df99bfb083dda68e2239ce"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L0",
+      "command": "git diff --check",
+      "status": "passed",
+      "stage": "R14 whitespace/conflict-marker check on the exact dirty scope; empty output, exit 0.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-diff-check-final.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.system.performance.baseline.unit",
+      "status": "passed",
+      "test_count": 70,
+      "stage": "70 non-zero normalizer tests OK (positive baseline plus negative gap/fail-closed cases)",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-1-baseline-unit.log",
+        "sha256": "5e48031fb3dcb558e1524ddef5ccc3df3615dfd37a7dbd2b6305178962950063"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "ENV=dev ENV_FILE=<main checkout>/.env.dev PRODUCT_PERFORMANCE_BASELINE_SOURCES=sla,observe,contract_profile,contract_request,permission,cache_identity,role_matrix make local.dev.runtime.performance.baseline",
+      "status": "passed",
+      "stage": "managed sc-local-dev/sc_dev_demo baseline recaptured against the current dirty candidate: status=baseline gaps=0 entries=7 samples 142/142; target_code_identity.head=eda906b3... dirty=true; source_code_identity records menu_service.py=323bce4a...f56240; record sha256 7ea91f55...; controlled_regression=passed, daily_experience=not_run, capacity=target_unresolved. Odoo container was recreated first so /mnt/source-addons (current worktree) precedes /mnt/product-addons.",
+      "log": {
+        "path": "artifacts/backend/system_performance_baseline.json",
+        "sha256": "7ea91f55d50d1adf363979aaaf31e6e6747e891b7726282aecb58873ed50e7fd"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "stage": "iteration entry PASS change_state=dirty coverage=L1_only receipt=none; scope/static entry only, not delivery evidence and not a Quick substitute; rerun after run.json metadata update, scope unchanged (28 changed worktree paths)",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-1-iteration.log",
+        "sha256": "3311035eababafc949b6cc66694e5cd0ea85350c97a975135f351daca99678f7"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.product.entry_publication.unit",
+      "status": "passed",
+      "stage": "R15.2 dirty candidate eda906b3eaac360aa885c46d70247a174c5e1c5f plus explicit dirty scope; L1: entry publication 17+13+3 tests PASS",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-entry-publication.log",
+        "sha256": "49c22335b50581e5960e3cb3189549254d1ad66a2357a1a24d2ed9dcde2a46cf"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.frontend.navigation_shell.unit",
+      "status": "passed",
+      "stage": "R15.2 dirty candidate eda906b3eaac360aa885c46d70247a174c5e1c5f plus explicit dirty scope; L1: navigation shell 110 tests + guard components=5 PASS",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-navigation-shell.log",
+        "sha256": "075799470ebc11d14b815fbf1ccb45319116780c3e91ffd094f07ce95e5a2f5a"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.nav.pro01r.route_authority.unit",
+      "status": "passed",
+      "stage": "R15.2 dirty candidate eda906b3eaac360aa885c46d70247a174c5e1c5f plus explicit dirty scope; L1: route authority guard cases PASS",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-route-authority-unit.log",
+        "sha256": "fde515520ca7cee3a999685c3604c20005af003742b30065ed82233b821fb219"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.frontend.contract_basis.unit verify.frontend.contract_basis.enforce",
+      "status": "passed",
+      "stage": "R15.2 dirty candidate eda906b3eaac360aa885c46d70247a174c5e1c5f plus explicit dirty scope; L1: contract basis 15 tests PASS, open_defects=0",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-contract-basis.log",
+        "sha256": "bc758177d4d86df755e79cf34f0abe16be16ba87364f63538d8c85a4064bada1"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_core,smart_construction_core make local.dev.upgrade MODULE=smart_core,smart_construction_core",
+      "status": "passed",
+      "stage": "R15.2 dirty candidate eda906b3eaac360aa885c46d70247a174c5e1c5f plus explicit dirty scope; L3: governed local.dev module upgrade + authority verify PASS; not a deployment",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-module-upgrade.log",
+        "sha256": "dc95485de9332d8a915159cb89aed9f685c475608f465bedb92df2ccc1477582"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "make local.dev.runtime.entry_target.probe",
+      "status": "passed",
+      "stage": "R15.2 dirty candidate eda906b3eaac360aa885c46d70247a174c5e1c5f plus explicit dirty scope; L3: runtime published authority carries admin_surface entry_target for uid21/55; 9 probe unit tests PASS",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-entry-target-probe.log",
+        "sha256": "f6c42c5d4a929d7d07b830be80b498e5d14bd5ace35be1347c5c8a8e2ed66fd7"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "stage": "R15.2 dirty candidate eda906b3 plus explicit dirty scope (43 changed worktree paths); final iteration entry PASS change_state=dirty scope=unclassified_by_design coverage=L1_only receipt=none; scope/static entry only, not delivery evidence and not a Quick substitute; run after the R15.2 baseline recapture and documentation updates, outside_scope=[]",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-iteration.log",
+        "sha256": "7c6ea8f5d616f17d9d06fd06ad458c92993c379fd5205276ef184ea4718ca346"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "ENV=dev ENV_FILE=<main checkout>/.env.dev PRODUCT_PERFORMANCE_BASELINE_SOURCES=sla,observe,contract_profile,contract_request,permission,cache_identity,role_matrix make local.dev.runtime.performance.baseline",
+      "status": "passed",
+      "stage": "R15.2 baseline recapture bound to the current dirty candidate after menu_service.py changed from 323bce4a... to c6dba956... and delivery_engine.py changed: status=baseline, gaps=0, entries=7, samples 142/142; target_code_identity.head=eda906b3eaac360aa885c46d70247a174c5e1c5f dirty=true; controlled_regression=passed, daily_experience=not_run, capacity=target_unresolved. Mature-target overall=within_tolerance (met 3 / within 3 / failed 0 / not evaluated 1). SLA: system.init p95 1418.72 ms, ui.contract p95 814.53 ms, execute_button 25.12 ms; execute_button returned 403 six times classified permission_guard with error_count=0 and one warning; not attributed to code and not claimed as business success. Single-window observation only.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-performance-baseline.log",
+        "sha256": "9fab4166d69fced00bbcf7df2cdf6703f9383d4ffac717e1050388881fe0523c"
+      },
+      "record": {
+        "path": "artifacts/backend/system_performance_baseline.json",
+        "sha256": "4edc92ce75d41bc43252e18f33dfd8421e7baef90e85daf7c5637cc2aa3af55d"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "python3 addons/smart_core/tests/test_delivery_menu_entry_target.py + test_entry_publication_authority.py + test_route_authority_single_consumer.py + test_menu_acl_carrier_authorization.py",
+      "status": "passed",
+      "stage": "R15.3 dirty candidate eda906b3 plus explicit dirty scope (S1/S2 review fixes); 89 non-zero tests PASS (menu-only denial accepted, publication denial republished as route_kind=DENIED, partial admin_surface is an explicit gap, plain action keeps compatibility)",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-3-backend-unit.log",
+        "sha256": "a8acf8659c9afc51c66e021f7570263cc9c6ed29d3f9e25faa667f03804c38c4"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.nav.pro01r.route_authority.unit && make verify.product.entry_publication.unit && make verify.frontend.navigation_shell.unit",
+      "status": "passed",
+      "stage": "R15.3 dirty candidate eda906b3 plus explicit dirty scope (S1/S2 review fixes); frontend route-authority normalizer accepts menu-only denials, rejects empty-identity denials, and treats partial admin_surface as ContractGap; navigation shell/publish units PASS",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-3-frontend-unit.log",
+        "sha256": "7e815d11dc924439ae4b830e16f0a1968b5137619a7e4fc793be3acc31eb8dfb"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "make local.dev.runtime.entry_target.probe",
+      "status": "passed",
+      "stage": "R15.3 dirty candidate eda906b3 plus explicit dirty scope (S1/S2 review fixes); published authority for uid21 denied=8 / uid55 denied=1, both include menu-only denial menu_sc_root; partial_declaration_violations=[]; 13 probe unit tests PASS",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-3-entry-target-probe.log",
+        "sha256": "d73d297916a87c01ad33220d8e57d29c72e569c85fdd0239a9f3e41f2d17f67c"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "ENV=.env.dev E2E_BASE_URL=http://127.0.0.1:8070 make verify.platform.sla.guard",
+      "status": "passed",
+      "stage": "R15.3 dirty candidate eda906b3 plus explicit dirty scope (S1/S2 review fixes); execute_button 403 captured as PERMISSION_DENIED/ACTION_CONTRACT_AUTHORITY_MISSING for uid2 project.project:1 action_view_tasks dry_run, classified fail_closed_undeclared_action_authority; no 5xx, SLA within limits",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-3-sla.log",
+        "sha256": "a7cec4346ca4fcc1f4b10061568f65578839fa1286ae28f76fd117ffe8852397"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "node /tmp/consume_route_authority.cjs (real frontend normalizer over live system.init route_authority for uid21/uid55)",
+      "status": "passed",
+      "stage": "R15.3 dirty candidate eda906b3 plus explicit dirty scope (S1/S2 review fixes); live published payloads normalize without gap; every denial has route_kind=DENIED and an identity; admin surfaces resolve to /admin/business-config and /admin/menu-config",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-3-route-authority-consumption.log",
+        "sha256": "65cde85370fd9dd57f14281b312a9aae777cf05baac63b7cde1928303e8a7fab"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L4",
+      "command": "node /tmp/core_acceptance.mjs (Playwright, sc-local-dev nginx 18081, sc_dev_demo)",
+      "status": "passed",
+      "stage": "R15.3 dirty candidate eda906b3 plus explicit dirty scope (S1/S2 review fixes); uid21 startup+business-config+menu-config and uid55 startup+list(/a/878,20 rows)+record(/r/payment.request/99,state=ok); page_errors=[] http5xx=[]; bounded affected-page set only, not a full matrix",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-3-affected-pages.log",
+        "sha256": "e70f1f68b02c0c70a525150a0b3e0c58cb0214a7a61e7824f3600a92e2426d90"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.frontend.contract_basis.unit verify.frontend.contract_basis.enforce",
+      "status": "passed",
+      "stage": "R15.3 dirty candidate eda906b3 plus explicit dirty scope (S1/S2 review fixes); 15 unit tests PASS; enforce PASS bindings=11 exemptions=5 logic_sites=3 open_defects=0. The ledger was closed by fixing the two real defects (menu-only denial identity, partial admin_surface declaration) and correcting the completion binding, not by deleting or reclassifying a live defect.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-3-contract-basis.log",
+        "sha256": "636b5a37394ad3eeab4932e2643f0a936de842e7fe9bc2b7366b72d867e60541"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "stage": "R15.3 dirty candidate eda906b3 plus explicit dirty scope (S1/S2 review fixes); final iteration entry PASS change_state=dirty scope=unclassified_by_design coverage=L1_only receipt=none; scope/static entry only, not delivery evidence and not a Quick substitute. changedPathCount=227 is inflated by deterministic sequential-id renumbering in the tracked test inventory; the semantic inventory delta is +2 test assets and 0 removals.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-3-iteration.log",
+        "sha256": "cbf741f7e411a54e49831d966ae8acc8f4be648c82395d2d4e8ef2c79f4c1509"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L5",
+      "command": "make ci.delivery.freeze.prepare",
+      "status": "passed",
+      "stage": "R15.3 dirty candidate eda906b3 plus explicit dirty scope (S1/S2 review fixes); PASS candidate=unfrozen next=review_generated_changes_commit_freeze_then_run_quick_once. Refreshed tracked generated reports only: test_inventory +2 assets (entry_target/record_form probe tests) with deterministic sequential-id renumbering, complexity report +6 scanned files (the 6 untracked probe/test tools) and +1 split-plan file (test_delivery_menu_entry_target.py), split plan queue correspondingly; no other content-bound generated evidence drifted. Generated changes are reviewed but NOT committed; this is pre-freeze only, not a frozen identity and not a Quick.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-3-freeze-prepare.log",
+        "sha256": "bd74a98058af5951739bf0488246f5a04a8f38282db247d865b210c3a46c4468"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "python3 scripts/ops/evidence_scope.py plan --check local.dev.runtime.performance.baseline",
+      "status": "passed",
+      "stage": "R15.5 dirty candidate eda906b3 plus explicit dirty scope (performance evidence identity rebind); seven capture units declared from the prior baseline's recorded probe+product hashes; plan affected=[sla,permission], reusable=[observe,contract_profile,contract_request,cache_identity,role_matrix], identity_changed=false. permission is stale because menu_service.py changed c6dba956->8896c6ba; sla is stale because platform_sla_guard.py changed 05bc583a->bd7499a1.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-5-performance-scope-plan.json",
+        "sha256": "fed1f59bc4dd7c011b5481079f206ffe6bc09356f93a91027a4ecb674e944195"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "source scripts/common/env.sh; E2E_BASE_URL=http://127.0.0.1:8070 make verify.platform.sla.guard (then copy artifacts/backend/platform_sla_report.json to sla-guard.json)",
+      "status": "passed",
+      "stage": "R15.5 dirty candidate eda906b3 plus explicit dirty scope (performance evidence identity rebind); SLA re-captured only because the probe input changed; first attempt without the registered env failed at login (DB_NAME missing) and is classified as an invocation/environment defect, not a product failure; governed-env retry PASS. Observation sla-guard.json sha256=857235e2; system.init p95 630.90 ms, ui.contract p95 877.16 ms, execute_button 23.53 ms with six 403s classified fail_closed_undeclared_action_authority (not a success or performance claim).",
+      "log": {
+        "path": "artifacts/backend/system-performance-baseline/sla-guard.log",
+        "sha256": "a7cec4346ca4fcc1f4b10061568f65578839fa1286ae28f76fd117ffe8852397"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L3",
+      "command": "make --no-print-directory ENV=dev ENV_FILE=<registered .env.dev> PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID=878 local.dev.runtime.permission.probe",
+      "status": "passed",
+      "stage": "R15.5 dirty candidate eda906b3 plus explicit dirty scope (performance evidence identity rebind); permission re-captured only because its declared product hash changed; new payload declares menu_service.py=8896c6ba..., matching the current file; read-only probe, commit refused; principal uid45 finance.",
+      "log": {
+        "path": "artifacts/backend/system-performance-baseline/permission.log",
+        "sha256": "fff54f44100c6639c7371b4aa27911fa5752cca355b8f4b63dbbfed620a84c20"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "python3 scripts/verify/system_performance_baseline.py --strict --identity-file ... --inputs <sla-guard.json + six existing logs> --out artifacts/backend/system_performance_baseline.json --report docs/ops/audit/system_performance_baseline.md",
+      "status": "passed",
+      "stage": "R15.5 dirty candidate eda906b3 plus explicit dirty scope (performance evidence identity rebind); one normalization over the two recaptured sources plus five inherited unchanged logs; status=baseline gaps=0 entries=7; every entry that declares product hashes is identity_match=match (sla/cache-identity declare none and stay unknown); probe_and_budget_digest now matches current files. New baseline sha256=7bdb15f5; tracked report sha256=13f2bbed.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-5-performance-baseline-normalize.log",
+        "sha256": "304c03774d6866d45c264ff24a2e256b13cda86caa9d4225fe458f4b169a2096"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "python3 scripts/ops/evidence_scope.py record ... && plan ...",
+      "status": "passed",
+      "stage": "R15.5 dirty candidate eda906b3 plus explicit dirty scope (performance evidence identity rebind); sla and permission recorded as passed; five unchanged sources remain declared/inherited from the prior baseline record; re-plan affected=[] stale=[] blocked=[] execution_required=false, all seven reusable, units_digest=5e7a658d.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-5-performance-scope-plan-after.json",
+        "sha256": "bc4752a13461bd51170fbff5e85a8c7b046afdcb1c6b0ae7a7ba3687f105a285"
+      },
+      "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true
     }
   ],
   "evidence_index": {
@@ -2951,6 +3528,230 @@
     "sce-r11-ledger-unit-final.log": {
       "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r11-ledger-unit-final.log",
       "sha256": "1c94eaa029bbea562985d8da2a7c7a93094ec9dff2b39834a75c2a31a487611e"
+    },
+    "sce-r13-cache-layers-doc.md": {
+      "path": "docs/architecture/contract_runtime_cache_layers_v1.md",
+      "sha256": "6ccbd5d77d8af3369cd4cb1f39c34b8622ac0e2c939fa580fef66f81d5ff7e3f"
+    },
+    "sce-r13-iteration-doc.md": {
+      "path": "docs/ops/iterations/main_scheduled_ci_closeout_20261016.md",
+      "sha256": "c4505aaf526684e83e48cc3de6253920b4fa37d5e01b718f7420f88ed8418ca7"
+    },
+    "sce-r13-performance-governance.md": {
+      "path": "docs/audit/performance_baseline_governance.md",
+      "sha256": "0db71a31077644e0d30e7e2bf5091e2ecf815a68c47dd9f959cd5625f4cccc7f"
+    },
+    "sce-r13-assembler-guard.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-assembler-guard.log",
+      "sha256": "5b52bee1354cd5215004e2afa0873416572f0c3ff6805488d7c0a90efb0267c4"
+    },
+    "sce-r13-client-guard.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-client-guard.log",
+      "sha256": "8851cddba765b6080d7c14bae8a8f3b1b33d7ff906e78c4315c6cfb1a4fde471"
+    },
+    "sce-r13-contract-lifecycle-unit.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-contract-lifecycle-unit.log",
+      "sha256": "7b7dc7b80a1526f8fbd83449d2a67622138309015a7ab0ae6c04e5a3b61eb1a8"
+    },
+    "sce-r13-contract-lifecycle-authority.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-contract-lifecycle-authority.log",
+      "sha256": "723d27b1a3d0339a3044cdf3e401028a065322ee85594e53e838b4f4aa635e43"
+    },
+    "sce-r13-mobile-compact-unit.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-mobile-compact-unit.log",
+      "sha256": "45670123e3c9d40e6c3b76560cc5f664feb687227bcb62f8999e6c1143197e95"
+    },
+    "sce-r13-v2-runtime-guard.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-v2-runtime-guard.log",
+      "sha256": "cbaf62c27a8fd73afcee58bbb0c940705c19a9a4a6bbd73b598638f5fe00ad76"
+    },
+    "sce-r13-iteration.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-iteration.log",
+      "sha256": "a64cc76adcd296e67824bc53bd4b09fa069ea366465e6a786b0985bf09842874"
+    },
+    "sce-r13-record-form-baseline-semantic.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-record-form-baseline-semantic.log",
+      "sha256": "b056d656648bc02b25da965e3880bc984ccd0bd842755713e354783fe1678c96"
+    },
+    "sce-r13-record-form-after-semantic.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-record-form-after-semantic.log",
+      "sha256": "953e1e86641c7290086e5bb1b7c381d2a3f382dc00c14a352434c5923afcdf67"
+    },
+    "sce-r13-record-form-after-static-reuse.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-record-form-after-static-reuse.log",
+      "sha256": "a8956288ba112099bb9d6bd137f60b5155c05a4ebd458be3acd134985444ed4a"
+    },
+    "sce-r13-record-form-after-base-identity.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-record-form-after-base-identity.log",
+      "sha256": "9b7fba26f721fe0a0cfade43a350a29a9414f5a89cd0c530055abdf92f7a3163"
+    },
+    "sce-r13-record-form-baseline.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r13-record-form-baseline.log",
+      "sha256": "0e4009c671456dbb37f127525b478ae0a0651c039d6651fa15b093ea4fe92a2b"
+    },
+    "sce-r14-record-form-baseline-precise-semantic.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-record-form-baseline-precise-semantic.log",
+      "sha256": "7fc657608032b90957a95cc461213b370ef2a1dfa4e9f32facc3d3124b8ded30"
+    },
+    "sce-r14-record-form-after-precise-semantic.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-record-form-after-precise-semantic.log",
+      "sha256": "f54e68260907837ddffa5e02dae234cb009dbd560f68aa92a8c25f27c7016bab"
+    },
+    "sce-r14-projection-cache-identity.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-projection-cache-identity.log",
+      "sha256": "61231d6ded184284021f31ba5a1e1a8828c172c20772b2e742da5567d1cb3961"
+    },
+    "sce-r14-cache-identity-unit.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-cache-identity-unit.log",
+      "sha256": "55c8fa2b1ca113c0a1c05d5640ad5f795d30efc2b65f2ab893bbb61023cb6dd7"
+    },
+    "sce-r14-performance-baseline-unit.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-performance-baseline-unit.log",
+      "sha256": "a6fa78562d070635c3d6bce101aaa00ff2cab6872722f0df147fb157ca0cf12a"
+    },
+    "sce-r14-assembler-guard-i9-i10.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-assembler-guard-i9-i10.log",
+      "sha256": "5b52bee1354cd5215004e2afa0873416572f0c3ff6805488d7c0a90efb0267c4"
+    },
+    "sce-r14-v2-runtime-guard.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-v2-runtime-guard.log",
+      "sha256": "f581041b9fc9bc9c8d8063b882105bd3fd38c99c7332930e7daa32b69da667af"
+    },
+    "sce-r14-contract-lifecycle-authority.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-contract-lifecycle-authority.log",
+      "sha256": "1f20a0eeb9e5bc58746cbd3bcc81e335bf48eec154d464c57628c12f88bf7b3a"
+    },
+    "sce-r14-iteration-pre-ledger.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-iteration-pre-ledger.log",
+      "sha256": "b91d2db1f1976e2965ed41b8b23be9b023eaeaeaf8ae6f9226619729003ac959"
+    },
+    "sce-r14-agent-ledger-unit.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-agent-ledger-unit.log",
+      "sha256": "e1647e1756678867cc6e4650c4b2defbec7c41771844a857178537a68cf629ca"
+    },
+    "sce-r14-iteration-final.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-iteration-final.log",
+      "sha256": "fba861ec598a374078e0536e3c625c6db2dda8d5a0df99bfb083dda68e2239ce"
+    },
+    "sce-r14-diff-check-final.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-diff-check-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "sce-r14-performance-governance.md": {
+      "path": "docs/audit/performance_baseline_governance.md",
+      "sha256": "a7fef4fde151a5632865885178d0028f6657257792836aaaefaee5cf6c12e61b"
+    },
+    "sce-r14-iteration-doc.md": {
+      "path": "docs/ops/iterations/main_scheduled_ci_closeout_20261016.md",
+      "sha256": "a261c61baca9dd7474a03feb517d1b659ad4fa4344ac92e2705378e26e95136f"
+    },
+    "sce-r14-cache-layers-doc.md": {
+      "path": "docs/architecture/contract_runtime_cache_layers_v1.md",
+      "sha256": "d83a39540ed0ca070c9d26450dcf3c18064bb0bd2b188f17299fc5a9228eecef"
+    },
+    "sce-r15-1-baseline-unit.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-1-baseline-unit.log",
+      "sha256": "5e48031fb3dcb558e1524ddef5ccc3df3615dfd37a7dbd2b6305178962950063"
+    },
+    "sce-r15-1-iteration.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-1-iteration.log",
+      "sha256": "3311035eababafc949b6cc66694e5cd0ea85350c97a975135f351daca99678f7"
+    },
+    "sce-r15-1-system-performance-baseline.json": {
+      "path": "artifacts/backend/system_performance_baseline.json",
+      "sha256": "7ea91f55d50d1adf363979aaaf31e6e6747e891b7726282aecb58873ed50e7fd"
+    },
+    "sce-r15-1-system-performance-baseline.md": {
+      "path": "docs/ops/audit/system_performance_baseline.md",
+      "sha256": "f057a6fffea6ad370bd109964611cbabdb704bead804987d182155c688dfa1c0"
+    },
+    "sce-r15-1-baseline-identity.json": {
+      "path": "artifacts/backend/system-performance-baseline/identity.json",
+      "sha256": "ab109da3c15686a6c5f2992da353a86ddddb7e0d0f2fb355b0563f45456cee38"
+    },
+    "sce-r15-1-baseline-sla-guard.json": {
+      "path": "artifacts/backend/system-performance-baseline/sla-guard.json",
+      "sha256": "70892c7f01b5530c90cdeaa21455dee0d42f2be948bb61c9da6e054356c9408d"
+    },
+    "sce-r15-1-baseline-observe.log": {
+      "path": "artifacts/backend/system-performance-baseline/observe.log",
+      "sha256": "7c7bb9d21e5054d80c14a8d14e2ed8c02472e8d2556582e3ebac752463f168ff"
+    },
+    "sce-r15-1-baseline-contract-profile.log": {
+      "path": "artifacts/backend/system-performance-baseline/contract-profile.log",
+      "sha256": "28777120045085695369c68a9c9c80e14681d672b3eb9f7e19dfeecd4c8bb594"
+    },
+    "sce-r15-1-baseline-permission.log": {
+      "path": "artifacts/backend/system-performance-baseline/permission.log",
+      "sha256": "b6effd0dbb5359fa94385f9d031125223abbbb97b9009984db98bfd325aea376"
+    },
+    "sce-r15-1-baseline-contract-request.log": {
+      "path": "artifacts/backend/system-performance-baseline/contract-request.log",
+      "sha256": "7ab6d9071607dfed6414c63d824d23ed9635ac19a18f36b420c1226214636887"
+    },
+    "sce-r15-1-baseline-cache-identity.log": {
+      "path": "artifacts/backend/system-performance-baseline/cache-identity.log",
+      "sha256": "f5e22135f18a36b293998481decb01e7e652998115f4540a81179f913967e9a9"
+    },
+    "sce-r15-1-baseline-role-matrix.log": {
+      "path": "artifacts/backend/system-performance-baseline/role-matrix.log",
+      "sha256": "a1fc2589d43c9d864c965e0d2e8d0822554fdad876cea080624c068fed8e6fc3"
+    },
+    "sce-r15-1-platform-sla-report.json": {
+      "path": "artifacts/backend/platform_sla_report.json",
+      "sha256": "70892c7f01b5530c90cdeaa21455dee0d42f2be948bb61c9da6e054356c9408d"
+    },
+    "sce-r15-1-platform-sla-report.md": {
+      "path": "docs/ops/audit/platform_sla_report.md",
+      "sha256": "62c42534371e7dc5f7a29e1f0293cfac36507a31f85e906f1a9c3c83b4b005c7"
+    },
+    "sce-r15-2-entry-publication.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-entry-publication.log",
+      "sha256": "49c22335b50581e5960e3cb3189549254d1ad66a2357a1a24d2ed9dcde2a46cf"
+    },
+    "sce-r15-2-navigation-shell.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-navigation-shell.log",
+      "sha256": "075799470ebc11d14b815fbf1ccb45319116780c3e91ffd094f07ce95e5a2f5a"
+    },
+    "sce-r15-2-route-authority-unit.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-route-authority-unit.log",
+      "sha256": "fde515520ca7cee3a999685c3604c20005af003742b30065ed82233b821fb219"
+    },
+    "sce-r15-2-contract-basis.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-contract-basis.log",
+      "sha256": "bc758177d4d86df755e79cf34f0abe16be16ba87364f63538d8c85a4064bada1"
+    },
+    "sce-r15-2-module-upgrade.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-module-upgrade.log",
+      "sha256": "dc95485de9332d8a915159cb89aed9f685c475608f465bedb92df2ccc1477582"
+    },
+    "sce-r15-2-entry-target-probe.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-entry-target-probe.log",
+      "sha256": "f6c42c5d4a929d7d07b830be80b498e5d14bd5ace35be1347c5c8a8e2ed66fd7"
+    },
+    "sce-r15-2-iteration.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-iteration.log",
+      "sha256": "7c6ea8f5d616f17d9d06fd06ad458c92993c379fd5205276ef184ea4718ca346"
+    },
+    "sce-r15-2-performance-baseline.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-2-performance-baseline.log",
+      "sha256": "9fab4166d69fced00bbcf7df2cdf6703f9383d4ffac717e1050388881fe0523c"
+    },
+    "sce-r15-2-baseline.json": {
+      "path": "artifacts/backend/system_performance_baseline.json",
+      "sha256": "4edc92ce75d41bc43252e18f33dfd8421e7baef90e85daf7c5637cc2aa3af55d"
+    },
+    "sce-r15-2-sla-report.json": {
+      "path": "artifacts/backend/platform_sla_report.json",
+      "sha256": "308c94b2dceac3d4c8a023d6fc4886cd15c35ad0fe9b4f9b27fe677c31544ac4"
+    },
+    "sce-r15-2-system-performance-baseline.md": {
+      "path": "docs/ops/audit/system_performance_baseline.md",
+      "sha256": "d063ce812687d04fa87c785a5e023df3d7ef99f3e783d90db1d5e6f6ae2c6b9c"
+    },
+    "sce-r15-2-platform-sla-report.md": {
+      "path": "docs/ops/audit/platform_sla_report.md",
+      "sha256": "ed0ae5790cf0895b9ba1734a9f4641ab067190054ca17fe412e84994ac0abe3c"
     }
   },
   "validation_scope": {
@@ -7217,6 +8018,36 @@
         "sce-r11-baseline-artifact.json",
         "sce-r11-baseline-report.md"
       ]
+    },
+    "record_form_static_structure_reuse": {
+      "status": "landed_uncommitted",
+      "owner": "P0 smart_core contract runtime",
+      "scope": [
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/unified_page_contract_v2_client.py",
+        "addons/smart_core/core/contract_lifecycle.py",
+        "addons/smart_construction_core/core_extension.py"
+      ],
+      "changes": [
+        "no-op projected normalizer no longer deepcopies the whole graph before checking model/tax_id",
+        "terminal trim owns one top-level deepcopy; container/widget trimming mutates that copy instead of copying per node",
+        "transport-identity stripping is copy-on-write; contract_semantic_payload copies the top level before removing meta",
+        "runtime seal reuses the assembly-stage sourceSha256 and recomputes only the moved contractSha256",
+        "_base_contract no longer fingerprints the whole source for meta placeholders that the seal immediately overwrites; stable page identity is used instead"
+      ],
+      "cache_layers": "docs/architecture/contract_runtime_cache_layers_v1.md",
+      "cache_version": "ui-contract-v2-2026-10-17-base-identity-no-source-hash",
+      "assembled_inputs_sha256": "5470929601b3756a291adaac9445df3df9ecd0db276cb1e5ef0bde487cc24e12",
+      "rejected": "record-level full-assembly cache keyed by record.write_date; overlay and downstream extensions read related records, entitlement and runtime policy that write_date does not version",
+      "measurement": "corrected same-probe window: record-form hot median 688.528 -> 501.288 ms (-27.2%), window max 711.902 -> 551.859 ms (observation only; six-sample nearest-rank p95 equals max), first 2669.028 -> 2513.162 ms; recomputing the original R12 samples with the correct even-sample median gives 697.437 -> 483.499 ms (-30.7%). Full-tree SHA-256 after 10 exact registered exemptions is ff6db9d1bdd3beb91a2f5f183c87321573677506d19d2141d994dffd010bbefb on both sides and contractSha256 is 1673cb0b2f037845... on both sides. The old 4bfa3c1a... complete-response-equivalence claim is withdrawn because the old any-depth timing filter could hide data.business.timing.deadline changes",
+      "evidence": [
+        "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-record-form-baseline-precise-semantic.log",
+        "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-record-form-after-precise-semantic.log",
+        "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-projection-cache-identity.log",
+        "artifacts/main-scheduled-ci-closeout-20261016/sce-r14-assembler-guard-i9-i10.log"
+      ],
+      "boundary": "no freeze, Quick, push, merge or deploy; first open/startup and the gen-2 p95 tail remain open. record-free assembled hit re-seals and returns before entitlement/policy/action/modifier/trim; the seal is not an authorization recomputation"
     }
   },
   "handoff_runtime_performance_20261016": {
@@ -7228,7 +8059,23 @@
     "record": "docs/ops/iterations/main_scheduled_ci_closeout_20261016.md#契约装配性能接力交接2026-10-16",
     "authority": "existing sc-local-dev/sc_dev_demo only; no main checkout writes",
     "next": "R10 landed_uncommitted: the assembled hot hit shares the cached source payload on loan and copies only the seal-mutated contract (adjacent A/B -8.348 ms median, -10.5 pct, gen-0 23-25 -> 13-14, gen-2 1/12 -> 0/12, delivered contract identical over 37222 paths). Open and independent: the residual 13-14 gen-0 per hot request (unattributed), the first native-view read / first contract compile warm-up (single hard breach), the gen-2 p95 item, the R3 miss-path double copy (measured, not proven critical, not removed), the R4 first-permission path, and the preference effective GET/SET single-application residuals. Write tree /home/lidefend/workspace/sce-backend-odoo-local-env, branch fix/main-scheduled-ci-closeout-20261016, HEAD da983b708df341131c298f200b8e7543f7d4de57 plus dirty scope. No freeze, no Quick, no push, no merge, no deploy. R10 documentation section 'R10 热读共享只读分片' is now written in docs/ops/iterations/main_scheduled_ci_closeout_20261016.md and the closing L1 checks are registered (verify.agent.ledger.unit 15 tests OK with guard PASS, git diff --check empty, ci.local.iteration panel resolved/outside_scope=[]); no earlier evidence or hash was rewritten. R11 landed_uncommitted (no product change): the R10 residual per-hot-request 13-14 gen-0 is attributed to the contract_request probe's own _seal_binding payload recompute - variant-A counterexample (hot dispatch median 69.176 -> 14.299 ms, gen-0 13-14 -> 2-3, same probe/entry/request) and an uninstrumented independent probe (13.811 ms median, gen-0 2-3, gen-2 0/12, exclusive split led by cache.get_assembled 852 and build_projection_source_token 481). R10's -8.348 ms differential stays valid as a common-mode A/B; its absolute instrumented values are replaced by the uninstrumented figure. The system performance baseline identity was rebound with a managed 7-source re-capture (entries=7, samples 142/142, gaps=0, controlled_regression=passed, probe digest 1d891b7a..., product code 18/18 matching, tracked report corrected from 3/11 to 7/142); warm_contract_dispatch p95 is 78.219 ms met but that is sample volatility, not a closure. New artifacts: sce-r11-alloc-attribution.log, sce-r11-crprobe-recheck.log, sce-r11-crprobe-overhead.log, sce-r11-crprobe-overhead2.log, sce-r11-variantA-sealbinding-stub.log/.py, sce-r11-baseline-refresh.log, sce-r11-baseline-prerebind.sha256.json, sce-r11-baseline-unit.log, sce-r11-runtime-perf-unit.log, sce-r11-diff-check.log, sce-r11-iteration.log. Write tree unchanged, no freeze/Quick/push/merge/deploy.",
-    "stop_state": "owner-requested handoff; no active validation process remains"
+    "stop_state": "owner-requested handoff; no active validation process remains",
+    "r13_record_form_cache_layers": {
+      "head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
+      "dirty": true,
+      "record": "docs/ops/iterations/main_scheduled_ci_closeout_20261016.md#r12-record-表单静态结构复用与四层缓存边界2026-10-17接力执行器不冻结",
+      "authority": "docs/architecture/contract_runtime_cache_layers_v1.md",
+      "landed": "R14-corrected same-probe window: record-form hot median 688.528 -> 501.288 ms (-27.2%), window max 711.902 -> 551.859 ms (observation only), first 2669.028 -> 2513.162 ms; original R12 samples recompute to 697.437 -> 483.499 ms (-30.7%). Full-tree semantic SHA-256 ff6db9d1... matches after exact registered exemptions; the old any-depth timing filter and its 4bfa3c1a... equivalence claim are withdrawn",
+      "guard": "make verify.unified_page_contract.v2.assembler (cache layers + no source fingerprint in _base_contract), verify.unified_page_contract.v2.client, 23 lifecycle tests, 128 compact tests",
+      "open": [
+        "first contract assembly ~1.74 s and first system.init ~1.75 s",
+        "real page click->request->render wait",
+        "gen-2 GC p95 tail"
+      ],
+      "l1_closure": "R14 final closure after the ledger write: verify.agent.ledger.unit 15 tests OK with guard PASS goals=106 runs=84; ci.local.iteration PASS change_state=dirty coverage=L1_only receipt=none; git diff --check empty. L1 only; no Quick, freeze, push, merge or deploy.",
+      "evidence_supersession": "The R13 document entries remain as historical stage hashes. Current documents are registered separately as sce-r14-performance-governance.md a7fef4fd..., sce-r14-iteration-doc.md a261c61b... and sce-r14-cache-layers-doc.md d83a3954...; earlier R13 hashes are not rewritten.",
+      "stop_state": "owner asked to continue; no freeze/Quick/push/merge/deploy; no active validation process remains"
+    }
   },
   "r6_delivery_closeout": {
     "authorization": "owner green-lit R6 after the R5 adjudication ('同意继续推进')",

@@ -352,3 +352,55 @@ report `docs/ops/audit/system_performance_baseline.md`
   system target stays `failed` on `profile_first_contract_assembly`; warm dispatch p95 stays above its
   100 ms immediate target. Evidence:
   `artifacts/main-scheduled-ci-closeout-20261016/sce-r7-source-identity-evidence.json`.
+
+### Cache Layers and Assembly-Time Redundant Hashing (R12, 2026-10-17)
+
+- rule: the runtime contract has exactly one authority - per-request dynamic computation. Caches may
+  only carry record-independent facts. The binding table and invariants live in
+  `docs/architecture/contract_runtime_cache_layers_v1.md`; the machine check lives in
+  `scripts/verify/unified_page_contract_v2_assembler_guard.py::check_cache_layer_boundaries`.
+  I9 pins the hit-path ordering (seal then return, no entitlement/policy/action/modifier/trim); I10
+  pins the principal group digest in `build_projection_cache_key` and the ACL/rule/user/policy
+  definition authorities in `build_projection_source_token`. The runtime unreachability claim is
+  additionally covered by 48 cache unit tests and the governed identity probe.
+- record boundary: a request carrying `record_id` may read the source projection but must never read
+  or write the assembled-contract cache. The guard pins the read gate
+  (`not runtime_record_id and (not is_create_request)`), the write gate
+  (`not runtime_record_id and (not is_create_request) and cache_key and source_token`), the presence
+  of `apply_runtime_record_overlay(` in the assembly path, and the absence of `_assembled_v2` /
+  `contract_v2` in the persistent runtime asset repository.
+- frontend boundary: `createContractCache` may only serve a record-free, preview-free create
+  contract, and its key must bind `sessionDb`, `token` and `contextEpoch`. The guard fails closed if
+  any of those markers disappears.
+- counterexample (before): `_base_contract` called `_fingerprint(source_payload)` to fill
+  `meta.etag`/`snapshotId`/`traceId`/`requestId`, then `assemble_unified_page_contract_v2` sealed the
+  contract and overwrote all four from the lifecycle digests. Every assembly therefore hashed the
+  whole source graph twice (placeholder + seal). Replacing the placeholder with a stable page
+  identity cut `v2_source_assembly` from `130.5 ms` to `111.0 ms` median on the uninstrumented
+  record-form probe.
+- copy-ownership rule: `trim_unified_page_contract_v2` owns the only top-level `deepcopy`;
+  `_trim_container`/`_trim_widget` must not copy again. `strip_request_transport_identity` is
+  copy-on-write and may return the caller's object, so any mutating caller must copy first
+  (`contract_semantic_payload` does). The guard pins the first two rules structurally.
+- equivalence evidence: the earlier field-name filter was too broad - it removed the real business
+  field `data.business.timing.deadline` at any depth, so a 1 -> 2 change still compared equal. That
+  `4bfa3c1a6d2254fe...` claim is withdrawn; the R13 logs remain timing evidence only. The corrected
+  filter exempts exactly 10 registered paths (top-level `meta.elapsed_ms`/`meta.projection_cache`,
+  four request/trace identity keys under `data.meta`, and `trace_id`/`request_id` in the two contract
+  `context` containers). Corrected same-probe window: full-tree SHA-256
+  `ff6db9d1bdd3beb91a2f5f183c87321573677506d19d2141d994dffd010bbefb` on both sides,
+  `contractSha256` `1673cb0b2f037845...` on both sides, all section digests equal, and only
+  `meta.elapsed_ms` plus `meta.projection_cache.stages_ms.*` differ. The `data.business.timing.deadline`
+  counterexample is a non-zero unit test. Latency: hot median `688.528 -> 501.288 ms` (`-27.2%`),
+  window maximum `711.902 -> 551.859 ms` (`-22.5%`, observation only). Recomputing the original R12
+  samples with the correct even-sample median gives `697.437 -> 483.499 ms` (`-30.7%`). Evidence:
+  `artifacts/main-scheduled-ci-closeout-20261016/sce-r14-record-form-{baseline,after}-precise-semantic.log`
+  and `scripts/verify/test_local_dev_runtime_record_form_probe.py`.
+- cache-identity counterexamples: removing finance-manager group 128 moves both `cache_key` and
+  `source_token`; changing draft `ui.business.config.contract` id 27 `priority` moves `source_token`;
+  both savepoints roll back to byte-identical identities and commit is refused. Non-zero unit tests
+  also cover role/ACL/rule/user/policy-definition changes and prove the old assembled entry is
+  unreachable. Seal refreshes identity, not authorization. Evidence:
+  `artifacts/main-scheduled-ci-closeout-20261016/sce-r14-projection-cache-identity.log`.
+- boundary: not a freeze, Quick, push, merge, deployment, batch-acceptance or product-delivery
+  claim. First open/startup and the gen-2 p95 tail remain open.

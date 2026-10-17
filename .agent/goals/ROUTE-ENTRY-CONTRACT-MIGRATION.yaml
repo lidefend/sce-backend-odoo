@@ -1,0 +1,143 @@
+schema_version: 1
+goal:
+  id: ROUTE-ENTRY-CONTRACT-MIGRATION
+  title: route_entry_contract_migration
+  status: planned
+  formal_product_layer: P0
+  supporting_layer: P4
+  layer_target: smart_core
+  module:
+    - addons/smart_core
+    - frontend/apps/web
+    - docs/architecture
+  baseline:
+    branch: fix/main-scheduled-ci-closeout-20261016
+    full_sha: eda906b3eaac360aa885c46d70247a174c5e1c5f
+    note: planned_after_R15; not_started; no files changed by this goal yet
+  objective: >-
+    Move the entry contract to one boundary: the frontend consumes a stable entry
+    identity plus explicit verdicts, and never interprets backend implementation
+    (model names, Odoo context serialization, view resolution, ACL, query-domain
+    composition). Field removal alone is explicitly out of scope because the data
+    call protocol is still model-scoped.
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism
+    why_here: >-
+      Route admission, entry resolution and contract projection are P0 platform
+      mechanisms owned by smart_core; business entry and filter semantics stay
+      declared by P1/P2 layers.
+    why_not_elsewhere:
+      - no_industry_or_customer_semantics_in_the_entry_mechanism
+      - no_frontend_inference_to_replace_a_missing_declaration
+      - no_new_environment_or_credential_authority
+      - ops_scripts_are_not_a_semantic_authority
+    blast_radius:
+      - system_init_navigation_and_route_authority_projection
+      - frontend_router_action_route_policy_and_route_authority_consumers
+      - api_data_call_protocol
+      - docs_architecture_route_entry_contract_field_layering_v1
+  open_contract_defects:
+    []
+  closed_contract_defects:
+    - id: OD-20261017-ROUTE-MODEL-IDENTITY
+      closed_in: R15.2
+      resolution: >-
+        Configuration actions now publish sc_web_surface/sc_web_route in their
+        declaration; navigation_entry_target.build_web_surface_entry_target
+        projects entry_target{type:admin_surface,surface,route}; the frontend
+        actionRoutePolicy consumes that declaration and no longer compares
+        hardcoded model names.
+    - id: OD-20261017-ROUTE-CONTEXT-STRING-PARSING
+      closed_in: R15.2
+      resolution: >-
+        The backend parses only its own declared context keys and publishes the
+        resolved entry_target; the frontend no longer regex-parses Odoo context
+        strings.
+    - id: OD-20261017-ROUTE-SILENT-ENTRY-DROP
+      closed_in: R15.2
+      resolution: >-
+        routeAuthority normalization is fail-closed: malformed entries, version
+        drift and bucket/kind mismatches raise ContractGapError with
+        route_authority.<bucket>[<index>].<field>; explicit denial records stay
+        observable.
+    - id: OD-20261017-RECORD-ROUTE-MODEL-SYNTAX
+      closed_in: R15.2
+      resolution: >-
+        The frontend model-syntax regex is removed; the model name is treated as
+        an opaque backend-declared technical identifier. Public entry-token
+        migration remains P0-2 below.
+  residual_frontend_model_sites:
+    - frontend/apps/web/src/router/index.ts
+    - frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigNavigation.ts
+    - >-
+      frontend/apps/web/src/services/actionRoutePolicy.ts
+      (resolveAuthorizedConfigurationRoute still compares the record route's model
+      with the contract-declared authority model for record/model-form paths; the
+      comparison is an opaque identifier guard, not a product-semantic branch, and
+      leaves with the P0-2 entry-token address migration)
+  note: >-
+    These remaining model-name lookups belong to the P0-1/P0-2 entry-identity
+    migration, not to the four contract-basis defects closed in R15.2.
+  plan:
+    - id: P0-1
+      title: entry-scoped read/write protocol
+      detail: >-
+        list/read/write accept a stable entry identity; the backend resolves the
+        model, base domain, company scope and permission domain. The frontend stops
+        sending `model` and stops building permission/company filters.
+      acceptance:
+        - backend resolves model from entry identity for list/read/write
+        - undeclared filter or action is refused explicitly, not ignored
+        - frontend data layer no longer requires `model`
+    - id: P0-2
+      title: opaque public addresses
+      detail: >-
+        Record and action addresses carry an entry token plus record identifier;
+        the model name leaves the public URL. Legacy /f/:model/:id and /r/:model/:id
+        keep redirect compatibility.
+      acceptance:
+        - new addresses resolve without the frontend reading a model name
+        - legacy addresses still land on the same page
+    - id: P0-3
+      title: explicit verdicts
+      detail: >-
+        Page, button, filter and relation-selector payloads return explicit
+        available/readonly/hidden/denied with reason codes; the frontend renders the
+        verdict and raises ContractGapError when it is absent.
+      acceptance:
+        - every declared actionable surface carries a verdict and reason code
+        - missing verdict stops with ContractGapError and a defect path
+    - id: P0-4
+      title: field closure with version bump
+      detail: >-
+        Remove backend-only and diagnostic-only fields (route authority
+        domain/context/required_capability/source, nav meta.groups_xmlids, user
+        groups_xmlids where no declared consumer exists) behind a contract version
+        bump and compatibility window.
+      acceptance:
+        - declared-but-unconsumed fields closed in the ledger
+        - version bump documented with a compatibility window
+    - id: P0-5
+      title: remove remaining transitional model branches
+      detail: >-
+        Delete the remaining router/useBusinessConfigNavigation model-name lookups
+        after P0-1/P0-2 land. The actionRoutePolicy model constants and Odoo
+        context parsing were removed in R15.2.
+      acceptance:
+        - no frontend branch on a hardcoded model name
+        - no frontend parsing of Odoo context serialization
+        - all four R15.2 contract defects remain closed with behaviour tests
+  constraints:
+    - one_independently_acceptable_product_result_per_worktree
+    - do_not_delete_fields_before_P0_1_and_P0_2_land
+    - hidden_fields_never_substitute_per_request_authorization
+    - freeze_blocked_while_open_contract_defects_remain
+  acceptance_gate:
+    - make verify.frontend.contract_basis.enforce
+    - make verify.backend.navigation_delivery.unit
+    - risk_selected_non_zero_L2_backend_and_frontend_targets
+    - governed_runtime_check_on_sc_local_dev_sc_dev_demo
+  references:
+    - docs/architecture/route_entry_contract_field_layering_v1.md
+    - docs/architecture/frontend_contract_basis_ledger.json
+    - docs/ops/iterations/main_scheduled_ci_closeout_20261016.md

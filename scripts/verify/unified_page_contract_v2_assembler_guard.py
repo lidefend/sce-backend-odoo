@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import importlib.util
 import json
@@ -28,8 +29,9 @@ P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_p
 # the version literal the handler serves to a digest of the code that produces
 # the assembled contract; on drift this guard fails closed and the author
 # re-pins both values deliberately instead of the cache hiding the change.
-ASSEMBLED_CACHE_VERSION = "ui-contract-v2-2026-10-17-read-only-source-loan"
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-2026-10-17-base-identity-no-source-hash"
 ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
+ASSEMBLED_CACHE_MODULE = "addons/smart_core/utils/load_contract_response_cache.py"
 ASSEMBLED_CACHE_INPUTS = (
     ASSEMBLED_CACHE_HANDLER,
     "addons/smart_core/core/unified_page_contract_v2_assembler.py",
@@ -61,7 +63,18 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/utils/contract_governance_list_surface.py",
     "addons/smart_core/utils/contract_governance_user_surface.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "69ad5296b7d03ff86989b55a404752acc84d98fa605f485e8bd942bbbb3f0497"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "5470929601b3756a291adaac9445df3df9ecd0db276cb1e5ef0bde487cc24e12"
+
+# Cache layers are deliberately separated:
+#   * dynamic per-request computation owns record facts, permission verdicts and
+#     entitlement;
+#   * the process-local hot cache may keep the record-independent source and,
+#     only for record-free requests, the assembled contract;
+#   * the persistent asset stores the source projection only;
+#   * the browser may cache only a record-free create contract.
+# The checks below fail closed if a future change lets a record-bound contract
+# enter any of those layers.
+FRONTEND_CONTRACT_CLIENT = "frontend/apps/web/src/app/contracts/v2/client.ts"
 
 
 def _assembled_cache_digest() -> str:
@@ -86,6 +99,345 @@ def check_assembled_contract_cache_pin(errors: list[str]) -> None:
             f"{ASSEMBLED_CACHE_VERSION}: re-pin ASSEMBLED_CACHE_VERSION here and in "
             f"{ASSEMBLED_CACHE_HANDLER}",
         )
+
+
+def _enclosing_if_test(node: ast.AST, parents: dict[ast.AST, ast.AST]) -> str:
+    current = parents.get(node)
+    while current is not None:
+        if isinstance(current, ast.If):
+            return ast.unparse(current.test)
+        current = parents.get(current)
+    return ""
+
+
+def _call_attr_names(tree: ast.AST) -> set[str]:
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            names.add(node.func.attr)
+    return names
+
+
+def _function_def(tree: ast.AST, name: str) -> ast.FunctionDef | None:
+    return next(
+        (
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.FunctionDef) and node.name == name
+        ),
+        None,
+    )
+
+
+def _call_names(tree: ast.AST) -> set[str]:
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if isinstance(node.func, ast.Attribute):
+            names.add(node.func.attr)
+        elif isinstance(node.func, ast.Name):
+            names.add(node.func.id)
+    return names
+
+
+def _string_constants(tree: ast.AST) -> set[str]:
+    return {
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+
+
+def _dict_keys(tree: ast.AST) -> set[str]:
+    keys: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Dict):
+            continue
+        keys.update(
+            key.value
+            for key in node.keys
+            if isinstance(key, ast.Constant) and isinstance(key.value, str)
+        )
+    return keys
+
+
+def check_cache_layer_boundaries(errors: list[str]) -> None:
+    handler_path = ROOT / ASSEMBLED_CACHE_HANDLER
+    try:
+        tree = ast.parse(handler_path.read_text(encoding="utf-8"))
+    except SyntaxError as exc:
+        fail(errors, f"cannot parse {ASSEMBLED_CACHE_HANDLER}: {exc}")
+        return
+    parents: dict[ast.AST, ast.AST] = {}
+    for parent in ast.walk(tree):
+        for child in ast.iter_child_nodes(parent):
+            parents[child] = parent
+    calls = _call_attr_names(tree)
+    forbidden = {"get_record_assembled", "put_record_generated"}
+    leaked = sorted(forbidden & calls)
+    if leaked:
+        fail(
+            errors,
+            "record-bound contracts must not enter a cache: found "
+            f"{leaked} in {ASSEMBLED_CACHE_HANDLER}; compute record and permission "
+            "state per request and reuse static structure only",
+        )
+    expected_gate = "not runtime_record_id and (not is_create_request) and cache_key and source_token"
+    store_nodes = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "put_generated"
+    ]
+    if not store_nodes:
+        fail(errors, "the handler no longer writes the record-independent assembled cache")
+    for node in store_nodes:
+        gate = _enclosing_if_test(node, parents)
+        if gate != expected_gate:
+            fail(
+                errors,
+                "assembled contract cache write must stay gated by "
+                f"'{expected_gate}', found '{gate or '<no if gate>'}'",
+            )
+    shared_read_nodes = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "get_assembled"
+    ]
+    if not shared_read_nodes:
+        fail(errors, "the handler no longer performs the shared assembled-cache read")
+    expected_read_gate = "not runtime_record_id and (not is_create_request)"
+    for node in shared_read_nodes:
+        gate = _enclosing_if_test(node, parents)
+        if gate != expected_read_gate:
+            fail(
+                errors,
+                "assembled contract cache read must stay gated by "
+                f"'{expected_read_gate}', found '{gate or '<no if gate>'}'",
+            )
+    text = handler_path.read_text(encoding="utf-8")
+    if "_assembled_v2" in text and "if not runtime_record_id and isinstance(cached_source, dict)" not in text:
+        fail(errors, "the assembled cache read must stay restricted to record-free requests")
+    if "apply_runtime_record_overlay(" not in text:
+        fail(errors, "record forms must still compute the record overlay per request")
+
+    # I9: the assembled hit returns after re-sealing and MUST NOT reach the
+    # entitlement/policy/action/modifier/trim projection below. The hit is a
+    # cache reuse of a previously authorized record-free projection, not a new
+    # authorization decision; a re-seal must never be presented as one.
+    hit_branch = next(
+        (
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.If)
+            and any(
+                isinstance(descendant, ast.Constant)
+                and descendant.value == "assembled_v2_hot_cache_hit"
+                for descendant in ast.walk(node)
+            )
+        ),
+        None,
+    )
+    if hit_branch is None:
+        fail(errors, "the handler no longer declares the record-free assembled hit branch")
+    else:
+        hit_calls = _call_names(hit_branch)
+        forbidden_hit_calls = {
+            "_project_action_group_entitlements",
+            "_apply_field_policies_to_v2_status",
+            "project_runtime_business_actions",
+            "project_workflow_action_semantics",
+            "hydrate_final_modifier_dependencies",
+            "hydrate_final_action_modifier_status",
+            "trim_unified_page_contract_v2",
+        }
+        leaked_hit_calls = sorted(hit_calls & forbidden_hit_calls)
+        if leaked_hit_calls:
+            fail(
+                errors,
+                "the assembled hit must return before entitlement/policy/action/"
+                f"modifier/trim projection; found {leaked_hit_calls} inside the hit branch",
+            )
+        if "seal_runtime_contract" not in hit_calls:
+            fail(errors, "the assembled hit must re-seal the request identity before returning")
+        if not any(isinstance(node, ast.Return) for node in ast.walk(hit_branch)):
+            fail(errors, "the assembled hit branch must terminate the request with a return")
+        enclosing = next(
+            (
+                node
+                for node in ast.walk(tree)
+                if isinstance(node, ast.FunctionDef)
+                and any(child is hit_branch for child in ast.walk(node))
+            ),
+            None,
+        )
+        if enclosing is None:
+            fail(errors, "cannot resolve the function containing the assembled hit branch")
+        else:
+            hit_line = int(getattr(hit_branch, "lineno", 0))
+            later_markers = {
+                "_project_action_group_entitlements",
+                "_apply_field_policies_to_v2_status",
+                "project_runtime_business_actions",
+                "hydrate_final_modifier_dependencies",
+                "trim_unified_page_contract_v2",
+            }
+            for node in ast.walk(enclosing):
+                if not isinstance(node, ast.Call):
+                    continue
+                name = (
+                    node.func.attr
+                    if isinstance(node.func, ast.Attribute)
+                    else node.func.id
+                    if isinstance(node.func, ast.Name)
+                    else ""
+                )
+                if name in later_markers and int(getattr(node, "lineno", 0)) < hit_line:
+                    fail(
+                        errors,
+                        f"{name} is projected before the assembled hit branch; the hit "
+                        "would then be indistinguishable from a per-request recomputation",
+                    )
+
+    assembler_tree = ast.parse(ASSEMBLER_PATH.read_text(encoding="utf-8"))
+    base_contract = next(
+        (
+            node
+            for node in ast.walk(assembler_tree)
+            if isinstance(node, ast.FunctionDef) and node.name == "_base_contract"
+        ),
+        None,
+    )
+    if base_contract is None:
+        fail(errors, "the assembler no longer declares _base_contract")
+    else:
+        base_calls = _call_attr_names(base_contract) | {
+            node.func.id
+            for node in ast.walk(base_contract)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        }
+        if "_fingerprint" in base_calls:
+            fail(
+                errors,
+                "_base_contract must not fingerprint the whole source graph: its meta "
+                "placeholders are overwritten by the seal, and the seal hashes the "
+                "source again; use a stable page identity",
+            )
+        base_strings = {
+            node.value
+            for node in ast.walk(base_contract)
+            if isinstance(node, ast.Constant) and isinstance(node.value, str)
+        }
+        if not any("upc.base" in value for value in base_strings):
+            fail(errors, "_base_contract must derive its placeholders from a stable page identity")
+    asset_read = ROOT / "addons/smart_core/core/ui_base_contract_asset_repository.py"
+    if asset_read.is_file():
+        asset_text = asset_read.read_text(encoding="utf-8")
+        if "_assembled_v2" in asset_text or "contract_v2" in asset_text:
+            fail(
+                errors,
+                "the persistent runtime asset must store the source projection only; "
+                "an assembled or record-bound contract belongs to the hot cache/dynamic layer",
+            )
+
+    # I10: the hit path does not recompute permission or policy. Its validity
+    # must therefore rest on identity: the cache key binds the principal's group
+    # set, and the source token binds ACL/rule/user rows plus the *definition* of
+    # every business/field policy. Removing either half would let a re-seal
+    # outlive a revoked role or a changed policy.
+    cache_path = ROOT / ASSEMBLED_CACHE_MODULE
+    try:
+        cache_tree = ast.parse(cache_path.read_text(encoding="utf-8"))
+    except SyntaxError as exc:
+        fail(errors, f"cannot parse {ASSEMBLED_CACHE_MODULE}: {exc}")
+        cache_tree = None
+    if cache_tree is not None:
+        role_code = _function_def(cache_tree, "projection_role_code")
+        if role_code is None:
+            fail(errors, "projection_role_code is missing; the cache key cannot bind principal groups")
+        else:
+            role_text = ast.unparse(role_code)
+            if "env.user.groups_id.ids" not in role_text or "sha256" not in role_text:
+                fail(
+                    errors,
+                    "projection_role_code must derive a stable digest from the principal's "
+                    "group set; uid alone is not a permission identity",
+                )
+        cache_key = _function_def(cache_tree, "build_projection_cache_key")
+        if cache_key is None:
+            fail(errors, "build_projection_cache_key is missing")
+        else:
+            key_names = _call_names(cache_key)
+            key_keys = _dict_keys(cache_key)
+            for marker in ("role", "company_id", "allowed_company_ids", "params"):
+                if marker not in key_keys:
+                    fail(
+                        errors,
+                        "the projection cache key must bind role/company/context and semantic "
+                        f"params ({marker!r} is missing)",
+                    )
+            if "projection_role_code" not in key_names:
+                fail(
+                    errors,
+                    "the projection cache key must derive its principal component through "
+                    "projection_role_code(env)",
+                )
+        source_token = _function_def(cache_tree, "build_projection_source_token")
+        if source_token is None:
+            fail(errors, "build_projection_source_token is missing")
+        else:
+            token_text = ast.unparse(source_token)
+            token_strings = _string_constants(source_token)
+            for marker in (
+                "ir.model.access",
+                "ir.rule",
+                "res.users",
+                "ui.business.config.contract",
+                "ui.form.field.policy",
+            ):
+                if marker not in token_strings:
+                    fail(
+                        errors,
+                        "the projection source token must bind ACL/rule/user/policy-definition "
+                        f"authorities ({marker!r} is missing)",
+                    )
+            for marker in ("definition_sha256", "role_group_ids"):
+                if marker not in token_text:
+                    fail(
+                        errors,
+                        "the projection source token must bind policy definitions and field-policy "
+                        f"role scopes ({marker} is missing)",
+                    )
+    client_path = ROOT / FRONTEND_CONTRACT_CLIENT
+    if client_path.is_file():
+        client_text = client_path.read_text(encoding="utf-8")
+        required = (
+            "const cacheable = renderProfile === 'create'",
+            "&& !normalizedRecordId(options.recordId)",
+            "&& !String(options.previewToken || '').trim()",
+        )
+        for marker in required:
+            if marker not in client_text:
+                fail(
+                    errors,
+                    "the frontend contract cache must stay limited to record-free create "
+                    f"contracts ({marker!r} is missing)",
+                )
+        if "createContractCache.set(key" not in client_text:
+            fail(errors, "the frontend create-contract cache write is missing")
+        for marker in ("currentContextEpoch()", "session.sessionDb", "session.token"):
+            if marker not in client_text:
+                fail(
+                    errors,
+                    "the frontend create-contract cache key must stay bound to the "
+                    f"session database, token and context epoch ({marker!r} is missing)",
+                )
+    else:
+        fail(errors, f"frontend contract client is missing: {FRONTEND_CONTRACT_CLIENT}")
     digests = _assembled_cache_digest()
     if digests != ASSEMBLED_CACHE_INPUTS_SHA256:
         fail(
@@ -416,6 +768,7 @@ def main() -> int:
     p1_layout = load_module(P1_PROJECT_LAYOUT_PATH, "smart_construction_core_project_layout_guard_target")
     errors: list[str] = []
     check_assembled_contract_cache_pin(errors)
+    check_cache_layer_boundaries(errors)
     snapshot = load_json(args.snapshot)
     registry = load_json(args.enum_registry)
     schema_validator = Draft202012Validator(load_json(args.schema))
