@@ -127,7 +127,7 @@
       "identity": "artifacts/backend/system-performance-baseline/identity.json",
       "identity_sha256": "247584f06ef9637d02c5ffeed123cedc2b9f8db3a0dc0e6608da911f177117ab",
       "inputs": {
-        "artifacts/backend/system-performance-baseline/sla-guard.json": "6ba72467d088af5392a074a916ef7f76b391e7c8d77f89d647c7060021b74501",
+        "artifacts/backend/system-performance-baseline/sla-guard.json": "6e0cb16936e1760e741fb8b2b6cc33943143df5948c6ae4c08275f52faecbb1f",
         "artifacts/backend/system-performance-baseline/observe.log": "2a7d0d367c7165d5d89da5ebe1cb86665aac174a661f20988582f840d13a19dc",
         "artifacts/backend/system-performance-baseline/contract-profile.log": "99e44d4c49dcd0b21677d7ebf74f7636a1a2581d5d5e2863d1ffbe8022bde7c2",
         "artifacts/backend/system-performance-baseline/permission.log": "b5c504b28433626744d6e57f293938088a310c9a25fd95fc2dcfd2bf572f0ddd",
@@ -150,7 +150,7 @@
       "algorithm": "codex_complete_worktree_fingerprint/v1",
       "layer": "L5",
       "status": "generated_after_freeze",
-      "hash_binding": "recorded in the archive identity.json and manifest; validated with scripts/contract/complete_worktree_fingerprint.validate_fingerprint",
+      "hash_binding": "recorded in artifacts/menu-cache-invalidation-closeout-20261017/archive/identity.json and artifacts/menu-cache-invalidation-closeout-20261017/archive/manifest.json, both rewritten for the frozen HEAD after the commit; validated with scripts/contract/complete_worktree_fingerprint.validate_fingerprint",
       "note": "not inlined with a sha256 here: this file is tracked, so a hash of the final commit's own artifact cannot be written into that commit without changing it"
     },
     "exact-head-quick": {
@@ -158,7 +158,7 @@
       "producer": "atomic-ci-local-quick-runner-v2",
       "layer": "L5",
       "status": "generated_after_freeze",
-      "hash_binding": "recorded in the archive identity.json and manifest; verified with scripts/ops/local_quick_evidence.py verify --expected-head <final-head>",
+      "hash_binding": "recorded in artifacts/menu-cache-invalidation-closeout-20261017/archive/identity.json and artifacts/menu-cache-invalidation-closeout-20261017/archive/manifest.json for the frozen HEAD; verified with scripts/ops/local_quick_evidence.py verify --expected-head <final-head>",
       "note": "the earlier candidate receipt 4ddeb3d4… is superseded and must not be reused for the new head"
     }
   },
