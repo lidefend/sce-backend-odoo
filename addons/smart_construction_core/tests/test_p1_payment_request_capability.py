@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import threading
+import uuid
 from pathlib import Path
 from unittest.mock import patch
 
@@ -8,6 +9,7 @@ import odoo
 from odoo import SUPERUSER_ID, api
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
+from .business_case import BusinessTransactionCase
 from lxml import etree
 
 from odoo.addons.smart_construction_core.services.financial_workspace_contract import (
@@ -27,7 +29,8 @@ from odoo.addons.smart_core.core import unified_page_contract_v2_assembler as co
 
 
 @tagged("post_install", "-at_install", "sc_gate", "p1_payment_request")
-class TestP1PaymentRequestCapability(TransactionCase):
+class TestP1PaymentRequestCapability(BusinessTransactionCase):
+    approval_models = ("payment.request",)
     # The released execution form keeps one structure: the native view owns the
     # body.  This is the retired contract body (sections "来源申请 ... 责任与状态")
     # that the native form must keep presenting, field by field.
@@ -184,11 +187,13 @@ class TestP1PaymentRequestCapability(TransactionCase):
         )
 
     def _cleanup_concurrent_payment_fixture(
-        self, database, request_id, contract_id, project_id, partner_id, manager_id
+        self, database, request_id, contract_id, project_id, partner_id, manager_id, company_id, tenant_key
     ):
         """Remove records committed by the independent-transaction race test."""
         registry = odoo.registry(database)
         with registry.cursor() as cursor:
+            cursor.execute("SET LOCAL lock_timeout = '10s'")
+            cursor.execute("SET LOCAL statement_timeout = '30s'")
             env = api.Environment(cursor, SUPERUSER_ID, {"tracking_disable": True})
             env["sc.payment.execution"].sudo().search(
                 [("payment_request_id", "=", request_id)]
@@ -201,8 +206,27 @@ class TestP1PaymentRequestCapability(TransactionCase):
             env["payment.request"].sudo().browse(request_id).unlink()
             env["construction.contract"].sudo().browse(contract_id).unlink()
             env["project.project"].sudo().browse(project_id).unlink()
+            manager_partner = env["res.users"].sudo().browse(manager_id).partner_id
             env["res.users"].sudo().browse(manager_id).unlink()
+            manager_partner.unlink()
             env["res.partner"].sudo().browse(partner_id).unlink()
+            env["account.tax"].sudo().with_context(active_test=False).search([("company_id", "=", company_id)]).unlink()
+            env["account.tax.group"].sudo().search([("company_id", "=", company_id)]).unlink()
+            for model in ("ir.property", "stock.rule", "stock.warehouse", "stock.picking.type", "stock.route"):
+                env[model].sudo().with_context(active_test=False).search([("company_id", "=", company_id)]).unlink()
+            trailing_records = [
+                env[model].sudo().with_context(active_test=False).search([("company_id", "=", company_id)])
+                for model in ("stock.location", "product.pricelist", "resource.calendar", "ir.sequence", "ir.attachment")
+            ]
+            company_partner = env["res.company"].sudo().browse(company_id).partner_id
+            env["res.company"].sudo().browse(company_id).unlink()
+            company_partner.unlink()
+            for records in trailing_records:
+                records.exists().unlink()
+            cursor.execute("DELETE FROM sc_data_space_serialization WHERE tenant_key=%s", [tenant_key])
+            self.assertFalse(env["sc.tenant.company.registration"].sudo().search_count([("company_id", "=", company_id)]))
+            self.assertFalse(env["payment.request"].sudo().browse(request_id).exists())
+            self.assertFalse(env["res.company"].sudo().browse(company_id).exists())
             cursor.commit()
 
     def _approved_execution(self):
@@ -1124,7 +1148,13 @@ class TestP1PaymentRequestCapability(TransactionCase):
         database = self.env.cr.dbname
         registry = odoo.registry(database)
         with registry.cursor() as cursor:
+            cursor.execute("SET LOCAL lock_timeout = '10s'")
+            cursor.execute("SET LOCAL statement_timeout = '30s'")
             env = api.Environment(cursor, SUPERUSER_ID, {"tracking_disable": True})
+            company = env["res.company"].create({"name": "Synthetic committed payment race"})
+            tenant_key = "synthetic-payment-race-" + uuid.uuid4().hex
+            self.register_business_company(company, tenant_key=tenant_key)
+            env = api.Environment(cursor, SUPERUSER_ID, {"tracking_disable": True, "allowed_company_ids": company.ids})
             project = env["project.project"].create(
                 {
                     "name": "P1 concurrent payment project",
@@ -1163,6 +1193,8 @@ class TestP1PaymentRequestCapability(TransactionCase):
                 {
                     "name": "P1 concurrent finance manager %s" % request.id,
                     "login": "p1_concurrent_finance_manager_%s" % request.id,
+                    "company_id": company.id,
+                    "company_ids": [(6, 0, company.ids)],
                     "groups_id": [
                         (
                             6,
@@ -1183,16 +1215,13 @@ class TestP1PaymentRequestCapability(TransactionCase):
             project_id = project.id
             partner_id = partner.id
             manager_id = manager.id
+            company_id = company.id
+            self.addCleanup(
+                self._cleanup_concurrent_payment_fixture,
+                database, request_id, contract_id, project_id, partner_id,
+                manager_id, company_id, tenant_key,
+            )
             cursor.commit()
-        self.addCleanup(
-            self._cleanup_concurrent_payment_fixture,
-            database,
-            request_id,
-            contract_id,
-            project_id,
-            partner_id,
-            manager_id,
-        )
 
         barrier = threading.Barrier(2)
         result_lock = threading.Lock()
@@ -1201,7 +1230,9 @@ class TestP1PaymentRequestCapability(TransactionCase):
         def create_execution():
             outcome = "unexpected"
             with registry.cursor() as cursor:
-                env = api.Environment(cursor, manager_id, {"tracking_disable": True})
+                cursor.execute("SET LOCAL lock_timeout = '10s'")
+                cursor.execute("SET LOCAL statement_timeout = '20s'")
+                env = api.Environment(cursor, manager_id, {"tracking_disable": True, "allowed_company_ids": [company_id]})
                 try:
                     barrier.wait(timeout=15)
                     execution = env["sc.payment.execution"].create(
@@ -1222,7 +1253,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         for thread in threads:
             thread.start()
         for thread in threads:
-            thread.join(timeout=30)
+            thread.join(timeout=45)
         self.assertTrue(all(not thread.is_alive() for thread in threads))
         self.assertEqual(
             sorted(row[0] for row in outcomes),
@@ -2661,7 +2692,6 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "project_id",
             "partner_id",
             "partner_transaction_eligibility",
-            "partner_transaction_eligibility_reason",
             "contract_id",
             "contract_payment_terms",
             "contract_change_amount",
@@ -2689,7 +2719,6 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "payee_account_completeness",
             "payee_account_source_display",
             "payment_execution_status_display",
-            "payment_blocking_reason_display",
             "legal_next_action_display",
             "reject_reason",
             "note",
@@ -2697,7 +2726,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         }
         visit_contract(contract)
         visit_contract(container_tree, layout=True)
-        self.assertEqual(len(required_fields), 42)
+        self.assertEqual(len(required_fields), 40)
         self.assertFalse(
             required_fields - declared_fields,
             "readonly normalized payload fields missing: %s"
@@ -2706,7 +2735,6 @@ class TestP1PaymentRequestCapability(TransactionCase):
         semantic_enhancement_fields = {
             "payment_flow_label",
             "legal_next_action_display",
-            "payment_blocking_reason_display",
         }
         always_applicable_layout_fields = required_fields - {
             "reject_reason",
@@ -2718,6 +2746,11 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "readonly applicable layout fields missing: %s"
             % sorted(always_applicable_layout_fields - normalized_fields),
         )
+
+        interaction_fields = {"partner_transaction_eligibility_reason", "payment_blocking_reason_display"}
+        for name in interaction_fields:
+            self.assertEqual(self.env["payment.request"]._fields[name].sc_ui_usage, "interaction")
+        self.assertFalse(interaction_fields & normalized_fields, "interaction guidance must not reappear as body fields")
 
         matrix_candidates = (
             Path("/mnt/config/p1_payment_request_field_completeness_v1.json"),
@@ -2920,7 +2953,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         # is carried by the normalized modifier/status authority rather than
         # by deleting the rejected-only field from the layout tree.
         expected_edit_layout_fields = required_fields - semantic_enhancement_fields
-        self.assertEqual(len(expected_edit_layout_fields), 39)
+        self.assertEqual(len(expected_edit_layout_fields), 38)
         self.assertEqual(
             edit_layout_fields & required_fields,
             expected_edit_layout_fields,
@@ -3043,6 +3076,8 @@ class TestP1PaymentRequestCapability(TransactionCase):
 @tagged("post_install", "-at_install", "sc_gate", "p1_payment_request_concurrency")
 class TestP1PaymentRequestConcurrency(TransactionCase):
     """Run the committed-transaction race after savepoint-based capability tests."""
+
+    register_business_company = BusinessTransactionCase.register_business_company
 
     _cleanup_concurrent_payment_fixture = (
         TestP1PaymentRequestCapability._cleanup_concurrent_payment_fixture

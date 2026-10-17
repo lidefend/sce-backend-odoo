@@ -13,7 +13,83 @@ import json
 import os
 import time
 from collections import OrderedDict
+from typing import Any
 from threading import RLock
+
+
+_DEEPCOPY = copy.deepcopy
+
+
+def _isolated_clone(value, memo):
+    value_type = type(value)
+    if value_type is dict:
+        known = memo.get(id(value))
+        if known is not None:
+            return known
+        clone = {}
+        memo[id(value)] = clone
+        for key, item in value.items():
+            clone[_isolated_clone(key, memo)] = _isolated_clone(item, memo)
+        return clone
+    if value_type is list:
+        known = memo.get(id(value))
+        if known is not None:
+            return known
+        clone = []
+        memo[id(value)] = clone
+        append = clone.append
+        for item in value:
+            append(_isolated_clone(item, memo))
+        return clone
+    if value is None or value_type is str or value_type is bool or value_type is int or value_type is float:
+        # ``copy.deepcopy`` returns atomic values unchanged and never memoises
+        # them; subclasses (int/str enums, numpy scalars ...) fall through to it.
+        return value
+    return _DEEPCOPY(value, memo)
+
+
+def isolated_clone(value):
+    """Return a graph disjoint from ``value``, exactly as ``copy.deepcopy`` does.
+
+    Assembled contract payloads are JSON-shaped, so the two dominant container
+    types are cloned directly. That skips ``copy.deepcopy``'s per-object
+    dispatch (``_deepcopy_dispatch`` lookup, ``__deepcopy__``/``__reduce_ex__``
+    probing) while keeping the same memo bookkeeping, so shared sub-objects stay
+    shared in the copy exactly like ``deepcopy``. Every other type is delegated
+    to ``copy.deepcopy`` with the same memo, which keeps tuple, set, subclass
+    and custom-object semantics unchanged.
+    """
+    return _isolated_clone(value, {})
+
+
+def assembled_snapshot_gate_matches(
+    response: Any,
+    *,
+    cache_version: Any,
+    client_type: Any,
+    delivery_profile: Any,
+    limit_params: Any,
+) -> bool:
+    """True only for an entry whose assembled slice is the one this request wants.
+
+    The gate tuple is read in two places - the shared read and the handler that
+    consumes it - so it lives here once: a drift between the accessor and its
+    consumer must degrade to the fully isolated read, never to a shared graph
+    handed to a path that writes in place. An entry without a matching
+    ``_assembled_v2`` (or without dict ``contract``/``source_contract``) is not
+    a consumable assembled hit.
+    """
+    assembled = response.get("_assembled_v2") if isinstance(response, dict) else None
+    if not isinstance(assembled, dict):
+        return False
+    return bool(
+        assembled.get("cache_version") == cache_version
+        and assembled.get("client_type") == client_type
+        and assembled.get("delivery_profile") == delivery_profile
+        and assembled.get("limit_params") == limit_params
+        and isinstance(assembled.get("contract"), dict)
+        and isinstance(assembled.get("source_contract"), dict)
+    )
 
 
 class LoadContractResponseCache:
@@ -37,16 +113,100 @@ class LoadContractResponseCache:
                 self._entries.pop(cache_key, None)
                 return None
             self._entries.move_to_end(cache_key)
-            return copy.deepcopy(response)
+            # Same isolation contract as ``copy.deepcopy`` on the payload this
+            # cache stores (JSON-shaped containers), without its per-object
+            # dispatch cost on the hot read path.
+            return isolated_clone(response)
+
+    def get_assembled(
+        self,
+        cache_key,
+        source_token,
+        *,
+        cache_version,
+        client_type,
+        delivery_profile,
+        limit_params,
+        digests_key,
+    ):
+        """Hot read of one assembled slice without re-copying the source graph.
+
+        The stored entry keeps ``ui_data`` and ``_assembled_v2.source_contract``
+        on one shared memo, so the fully isolated ``get`` copies the whole source
+        graph on every hot assembled hit even though that path only *reads* it.
+        This accessor returns the live ``ui_data`` / ``source_contract`` and the
+        meta by reference (plus a fresh copy of the meta and of the semantic
+        digests, which are cheap), and returns a **fresh deep copy of the
+        contract** because ``seal_runtime_contract`` mutates the contract in
+        place. Callers must therefore treat ``ui_data`` and ``source_contract``
+        as **read-only**.
+
+        It returns ``None`` unless the entry is a live, gate-matching assembled
+        hit, so a caller can safely fall back to the fully isolated ``get``.
+        """
+        if not cache_key or not source_token or self.ttl_seconds <= 0:
+            return None
+        now = self._clock()
+        with self._lock:
+            entry = self._entries.get(cache_key)
+            if entry is None:
+                return None
+            created_at, stored_token, response = entry
+            if stored_token != source_token or now - created_at > self.ttl_seconds:
+                self._entries.pop(cache_key, None)
+                return None
+            if not assembled_snapshot_gate_matches(
+                response,
+                cache_version=cache_version,
+                client_type=client_type,
+                delivery_profile=delivery_profile,
+                limit_params=limit_params,
+            ):
+                return None
+            assembled = response["_assembled_v2"]
+            self._entries.move_to_end(cache_key)
+            digests = assembled.get(digests_key)
+            return {
+                "source_type": response.get("source_type"),
+                # Shared by reference: read-only on the assembled hit path.
+                "ui_data": response.get("ui_data"),
+                "ui_meta": copy.deepcopy(response.get("ui_meta")),
+                "_assembled_v2": {
+                    "cache_version": assembled.get("cache_version"),
+                    "client_type": assembled.get("client_type"),
+                    "delivery_profile": assembled.get("delivery_profile"),
+                    "limit_params": assembled.get("limit_params"),
+                    # ``seal_runtime_contract`` mutates the contract in place, so
+                    # it is copied; the source payload it reads stays shared.
+                    "contract": _DEEPCOPY(assembled["contract"]),
+                    "source_contract": assembled["source_contract"],
+                    digests_key: dict(digests) if isinstance(digests, dict) else digests,
+                },
+            }
 
     def put(self, cache_key, source_token, response):
         if not cache_key or not source_token or not isinstance(response, dict):
             return
+        self.put_generated(cache_key, source_token, lambda: copy.deepcopy(response))
+
+    def put_generated(self, cache_key, source_token, snapshot_factory):
+        """Store a newly built, exclusively owned snapshot without copying twice.
+
+        Internal producers must copy every externally mutable component and must
+        not retain the returned snapshot. Ordinary callers use ``put`` instead.
+        The factory runs under the cache lock, preserving ordering with clear().
+        ``get`` still returns an isolated copy on every read.
+        """
+        if not cache_key or not source_token:
+            return
         with self._lock:
+            response = snapshot_factory()
+            if not isinstance(response, dict):
+                return
             self._entries[cache_key] = (
                 self._clock(),
                 source_token,
-                copy.deepcopy(response),
+                response,
             )
             self._entries.move_to_end(cache_key)
             while len(self._entries) > self.max_entries:
@@ -114,8 +274,46 @@ def build_projection_cache_key(env, *, namespace, params, model_name, view_types
 
 
 _CODE_FINGERPRINT_LOCK = RLock()
-_CODE_FINGERPRINT_CACHE: dict[str, str | None] = {"value": None}
+_CODE_FINGERPRINT_CACHE: dict[str, object] = {
+    "value": None,
+    "content_recomputations": 0,
+}
 _CODE_FINGERPRINT_ROOT = "/mnt/source-addons"
+_CODE_FINGERPRINT_SUFFIXES = (".py", ".xml")
+_CODE_FINGERPRINT_SKIP_DIRS = frozenset({"__pycache__", "tests", ".git"})
+
+
+def _code_content_digest():
+    """代码身份：受管源码根下每个 .py/.xml 的 ``path + 内容`` 的 sha256 聚合摘要。
+
+    身份**只绑定内容**。文件系统的 ``size/mtime_ns/ctime_ns`` 一律不参与身份：
+    它们是文件系统的变化信号，``touch``/``utime``、目录重建或镜像层差异都会让
+    它们漂移而与代码无关；把它们混进身份会产生假失效，而只依赖 ``mtime+size``
+    又会漏掉就地改写，两者都不是可靠的内容身份。
+    """
+    digest = hashlib.sha256()
+    root = os.getenv("SC_SOURCE_ADDONS_ROOT", _CODE_FINGERPRINT_ROOT)
+    paths: list[str] = []
+    if os.path.isdir(root):
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [name for name in dirnames if name not in _CODE_FINGERPRINT_SKIP_DIRS]
+            for filename in filenames:
+                if filename.endswith(_CODE_FINGERPRINT_SUFFIXES):
+                    paths.append(os.path.join(dirpath, filename))
+    for full in sorted(paths):
+        digest.update(full.encode("utf-8", "replace"))
+        digest.update(b"\0")
+        try:
+            with open(full, "rb") as handle:
+                while True:
+                    chunk = handle.read(1 << 20)
+                    if not chunk:
+                        break
+                    digest.update(chunk)
+        except OSError:
+            digest.update(b"<unreadable>")
+        digest.update(b"\0")
+    return digest.hexdigest()
 
 
 def contract_code_fingerprint() -> str:
@@ -123,35 +321,31 @@ def contract_code_fingerprint() -> str:
 
     ``build_projection_source_token`` 只依赖权威表的 ``write_date`` 与部署期
     环境变量，纯 Python/XML 代码改动不会改变它们，导致旧契约缓存被继续命中。
-    这里对受管源码根下的 .py/.xml 文件做聚合指纹；
-    代码改动后重启进程会重算指纹，token 变化使旧缓存立即失效。
-    指纹按进程缓存，首次计算后 O(1) 命中。
+    这里对受管源码根下的 .py/.xml 文件做聚合指纹；持久化的 runtime source
+    asset 没有 TTL，身份必须自己跟随代码内容，token 变化使旧缓存立即失效。
+
+    身份分层（2026-10-17 修正）：代码身份是内容摘要（``_code_content_digest``），
+    文件系统的 ``size/mtime_ns/ctime_ns`` **不参与身份**。因此 ``ctime`` 不再是
+    代码身份，也不再是触发手段：
+
+    * 同一 (mtime, size) 下的就地改写（R2 反例）会改变内容摘要，旧 token 立即
+      失效；
+    * 仅元数据变化（``touch``/``utime``，内容不变）不会移动身份，不会造成假
+      失效，也不会让真实内容改动被掩盖。
+
+    正式部署仍应绑定不可变构建或内容摘要：``SC_SOURCE_REVISION`` /
+    ``SC_SOURCE_FINGERPRINT`` 已在 token 中，本函数是同一部署内代码内容身份的
+    进程内兜底。摘要按进程缓存：运行中的解释器不会重新加载已导入的模块，因此
+    进程内重复读取源码没有意义，跨进程/重启时由新进程重新按内容计算。
     """
     with _CODE_FINGERPRINT_LOCK:
         if _CODE_FINGERPRINT_CACHE["value"]:
             return _CODE_FINGERPRINT_CACHE["value"]
-        rows: list[tuple[str, int, int]] = []
-        root = os.getenv("SC_SOURCE_ADDONS_ROOT", _CODE_FINGERPRINT_ROOT)
-        if os.path.isdir(root):
-            for dirpath, dirnames, filenames in os.walk(root):
-                dirnames[:] = [
-                    name for name in dirnames
-                    if name not in {"__pycache__", "tests", ".git"}
-                ]
-                for filename in filenames:
-                    if not filename.endswith((".py", ".xml")):
-                        continue
-                    full = os.path.join(dirpath, filename)
-                    try:
-                        stat = os.stat(full)
-                    except OSError:
-                        continue
-                    rows.append((full, stat.st_mtime_ns, stat.st_size))
-        digest = hashlib.sha256()
-        for row in sorted(rows):
-            digest.update(repr(row).encode("utf-8", "replace"))
-        value = digest.hexdigest()
+        value = _code_content_digest()
         _CODE_FINGERPRINT_CACHE["value"] = value
+        _CODE_FINGERPRINT_CACHE["content_recomputations"] = int(
+            _CODE_FINGERPRINT_CACHE["content_recomputations"]
+        ) + 1
         return value
 
 

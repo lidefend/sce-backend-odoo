@@ -6,7 +6,8 @@
     "fix/fe-contract-runtime-02-consumption-stop-closure": ".agent/runs/FE-CONTRACT-RUNTIME-02/run.json",
     "fix/nav-node-level-menu-acl-closeout": ".agent/runs/TARGET-ENV-ROLE-ACCEPTANCE/run.json",
     "fix/payment-request-chain-alignment-20261013": ".agent/runs/PAYMENT-REQUEST-CHAIN-ALIGNMENT/run.json",
-    "fix/local-development-environment-closeout-20261016": ".agent/runs/LOCAL-DEVELOPMENT-ENVIRONMENT-CLOSEOUT-20261016/run.json"
+    "fix/local-development-environment-closeout-20261016": ".agent/runs/LOCAL-DEVELOPMENT-ENVIRONMENT-CLOSEOUT-20261016/run.json",
+    "fix/main-scheduled-ci-closeout-20261016": ".agent/runs/MAIN-SCHEDULED-CI-CLOSEOUT-20261016/run.json"
   },
   "schema_version": 1
 }

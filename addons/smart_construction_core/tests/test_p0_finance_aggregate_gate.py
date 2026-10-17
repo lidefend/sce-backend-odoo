@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from odoo.exceptions import AccessError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 
 @tagged("post_install", "-at_install", "sc_gate")
-class TestP0FinanceAggregateGate(TransactionCase):
+class TestP0FinanceAggregateGate(BusinessTransactionCase):
     """P0 gate for finance aggregation paths (read_group)."""
 
     _SUM_FIELDS = (
@@ -17,7 +18,7 @@ class TestP0FinanceAggregateGate(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        company = cls.env.ref("base.main_company")
+        company = cls.env.company
         ctx = dict(
             cls.env.context,
             mail_create_nosubscribe=True,

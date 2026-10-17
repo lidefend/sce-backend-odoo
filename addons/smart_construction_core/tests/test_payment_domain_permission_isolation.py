@@ -2,7 +2,8 @@
 import base64
 
 from odoo.exceptions import AccessError, UserError, ValidationError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 from odoo.addons.smart_construction_core.handlers.payment_request_approval import (
     PaymentRequestApproveHandler,
@@ -17,13 +18,14 @@ from odoo.addons.smart_construction_core.handlers.payment_request_approval impor
     "e2e_fixed_journey",
     "payment_domain_permission_isolation",
 )
-class TestPaymentDomainPermissionIsolation(TransactionCase):
+class TestPaymentDomainPermissionIsolation(BusinessTransactionCase):
+    approval_models = ("payment.request",)
     """Fixed evidence for payment-domain entry, ORM, action and Intent boundaries."""
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company_a = cls.env.ref("base.main_company")
+        cls.company_a = cls.env.company
         cls.company_b = cls.env["res.company"].create(
             {
                 "name": "T2 Company B",
@@ -31,6 +33,7 @@ class TestPaymentDomainPermissionIsolation(TransactionCase):
                 "country_id": cls.company_a.country_id.id,
             }
         )
+        cls.register_business_company(cls.company_b)
         cls.finance_user = cls._role_user(
             "t2_finance_user",
             [
@@ -145,7 +148,7 @@ class TestPaymentDomainPermissionIsolation(TransactionCase):
 
     @classmethod
     def _settlement(cls, project, contract):
-        return cls.env["sc.settlement.order"].create(
+        return cls.env["sc.settlement.order"].with_company(project.company_id).create(
             {
                 "title": "%s Settlement" % project.name,
                 "project_id": project.id,

@@ -1,0 +1,7 @@
+schema_version: 1
+goal:
+  id: MAIN-SCHEDULED-CI-CLOSEOUT-20261016
+  title: Main scheduled CI failure closure
+  status: active
+  formal_product_layer: P4
+  objective: Repair scheduled CI failures at their owning layer and verify exact candidate without relaxing gates.

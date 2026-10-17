@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from odoo.exceptions import UserError, ValidationError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 
 @tagged("post_install", "-at_install", "sc_gate", "daily_contract_settlement")
-class TestDailyContractSettlement(TransactionCase):
+class TestDailyContractSettlement(BusinessTransactionCase):
     def _user(self, login, group_xmlid):
         return self.env["res.users"].with_context(no_reset_password=True).create(
             {

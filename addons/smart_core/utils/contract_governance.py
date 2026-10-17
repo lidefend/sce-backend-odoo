@@ -364,6 +364,14 @@ def register_legacy_standard_list_profile(profile: dict[str, Any]) -> None:
     _registry.register_legacy_standard_list_profile(profile)
 
 
+def register_formal_list_lock(declaration: dict[str, Any]) -> bool:
+    return _registry.register_formal_list_lock(declaration)
+
+
+def formal_list_lock_declarations() -> list[dict[str, Any]]:
+    return _registry.formal_list_lock_declarations()
+
+
 def register_tier_review_list_nav_action_prefix(prefix: str) -> None:
     _registry.register_tier_review_list_nav_action_prefix(prefix)
 

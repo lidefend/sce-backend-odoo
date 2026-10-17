@@ -106,6 +106,32 @@ class TestUiContractIdBoundaries(unittest.TestCase):
         env = types.SimpleNamespace(context={}, user=types.SimpleNamespace(lang=""))
         self.handler = module.UiContractHandler(env=env, context={})
 
+    def test_internal_preference_projection_returns_only_profile_and_restores_purpose(self):
+        result_module = sys.modules['odoo.addons.smart_core.core.intent_execution_result']
+        result_module.adapt_handler_result = lambda value: value
+        def handle(payload):
+            self.assertTrue(self.handler._list_preference_projection)
+            return {'ok': True, 'data': {'list_profile': {'columns': ['name']}, 'partial_page': True}}
+        self.handler.handle = handle
+        self.assertEqual(self.handler.read_list_preference_profile({}), {'columns': ['name']})
+        self.assertFalse(self.handler._list_preference_projection)
+        def fail(payload):
+            raise ValueError('failed projection')
+        self.handler.handle = fail
+        with self.assertRaises(ValueError):
+            self.handler.read_list_preference_profile({})
+        self.assertFalse(self.handler._list_preference_projection)
+
+    def test_external_payload_or_context_cannot_select_narrow_projection(self):
+        module = sys.modules['odoo.addons.smart_core.handlers.ui_contract']
+        self.handler.env.cr = object()
+        self.handler.env.user.id = 7
+        module.ActionDispatcher = lambda env, su, **kwargs: kwargs
+        self.handler.payload = {'include_relation_search_dialogs': False, '_list_preference_projection': True}
+        self.assertEqual(self.handler._build_dispatcher({'include_relation_search_dialogs': False, '_list_preference_projection': True}), {})
+        self.handler._list_preference_projection = True
+        self.assertEqual(self.handler._build_dispatcher({}), {'include_relation_search_dialogs': False})
+
     def test_action_open_rejects_invalid_action_id(self):
         result = self.handler._op_action_open({"action_id": "bad"}, {})
 
@@ -126,6 +152,31 @@ class TestUiContractIdBoundaries(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["error"]["code"], 400)
         self.assertIn("view_id", result["error"]["message"])
+
+    def test_action_open_forwards_explicit_list_view_to_first_dispatch(self):
+        from unittest.mock import Mock
+        dispatcher = Mock()
+        dispatcher.dispatch.return_value = ({"head": {}, "views": {"tree": {"columns": ["name"]}}}, {})
+        self.handler._build_dispatcher = lambda ctx: dispatcher
+        self.handler._finalize_projected_contract = lambda **kwargs: kwargs["data"]
+        for requested, expected in (("1700", 1700), (None, None)):
+            params = {"action_id": "7", "view_type": "tree", "menu_id": 71,
+                      "sceneKey": "declared_scene", "menuXmlid": "example.menu", "arbitrary": "not forwarded"}
+            if requested:
+                params["view_id"] = requested
+            data = self.handler._op_action_open(params, {})
+            self.assertEqual(data["scene_key"], "declared_scene")
+            self.assertEqual(data["head"]["scene_key"], "declared_scene")
+            self.assertEqual(data["menu_xmlid"], "example.menu")
+            self.assertEqual(data["head"]["menu_xmlid"], "example.menu")
+            self.assertNotIn("arbitrary", data)
+            forwarded = dispatcher.dispatch.call_args.args[0]
+            self.assertEqual(forwarded.get("view_id"), expected)
+            self.assertEqual(forwarded["subject"], "action")
+            self.assertEqual(forwarded["action_id"], 7)
+            self.assertEqual(forwarded["view_type"], "tree")
+            self.assertEqual(forwarded["menu_id"], 71)
+        self.assertEqual(dispatcher.dispatch.call_count, 2)
 
     def test_action_open_forwards_explicit_form_view_id(self):
         action = types.SimpleNamespace(

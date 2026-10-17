@@ -375,7 +375,17 @@ def _base_contract(
     request_id: str,
 ) -> dict[str, Any]:
     client = client_type if client_type in STABLE_CLIENT_TYPES else "web_pc"
-    fp = _fingerprint(source_payload)
+    # ``meta.etag``/``snapshotId``/``traceId``/``requestId`` written here are
+    # placeholders: ``assemble_unified_page_contract_v2`` always seals the
+    # contract before returning, and the seal overwrites every one of them from
+    # the lifecycle digests.  Fingerprinting the whole source graph here only to
+    # fill those placeholders made every assembly hash the source twice (the
+    # seal hashes it again).  A stable page identity is enough for the
+    # placeholders and keeps ``_base_contract`` deterministic for its own tests.
+    # ``source_payload`` stays in the signature because callers pass the graph
+    # they assembled from; it is deliberately not walked.
+    del source_payload
+    fp = _stable_id(f"{page_id}|{source_type}", "upc.base")
     return {
         "pageInfo": {
             "pageId": _stable_id(page_id, "page.generated"),

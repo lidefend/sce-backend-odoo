@@ -2,11 +2,12 @@
 import ast
 
 from odoo.exceptions import ValidationError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 
 @tagged("post_install", "-at_install", "sc_gate", "project_special_tax_deduction")
-class TestProjectSpecialTaxDeduction(TransactionCase):
+class TestProjectSpecialTaxDeduction(BusinessTransactionCase):
     def _user(self, login, group_xmlid):
         return self.env["res.users"].with_context(no_reset_password=True).create(
             {

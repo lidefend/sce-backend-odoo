@@ -128,11 +128,12 @@ const { useCreatedRecordNavigationRuntime } = await import('../src/pages/contrac
 const { useFormNavigationActionsRuntime } = await import('../src/pages/contractForm/useFormNavigationActionsRuntime');
 const { resolveProfessionalRelationLifecycleEvent } = await import('../src/pages/contractForm/professionalRelationLifecycleModel');
 router.addRoute({ path: '/f/:model/:id', name: 'model-form', component: {} });
-const previousWindow = (globalThis as any).window;
+const previousWindow = Reflect.get(globalThis, 'window');
 let hardNavigations = 0;
-const testWindow: any = { location: { origin: 'http://fixture.local', replace: () => { hardNavigations += 1; } } };
+type TestWindow = { location: { origin: string; replace: () => void }; parent?: TestWindow | { postMessage: (message: unknown) => void } };
+const testWindow: TestWindow = { location: { origin: 'http://fixture.local', replace: () => { hardNavigations += 1; } } };
 testWindow.parent = testWindow;
-(globalThis as any).window = testWindow;
+Reflect.set(globalThis, 'window', testWindow);
 const createQuery = ref<Record<string, unknown>>({});
 let intake = false;
 const intakeNavigation = useFormNavigationActionsRuntime({ router, actionId: () => 2,
@@ -184,5 +185,5 @@ posted = undefined; beginContextTransition();
 assert.equal(await createdNavigation.navigateCreatedRecord({ ...createdOptions, feedback: { result, owner: fixture.owner } }), false);
 assert.equal(posted, undefined, 'old context cannot complete dialog handoff');
 fixture.sourceScope.stop();
-(globalThis as any).window = previousWindow;
+Reflect.set(globalThis, 'window', previousWindow);
 console.log('[native_action_notification_created] PASS checks=15 ordinary_intake_dialog=true');

@@ -45,7 +45,13 @@ class SystemInitIdentityPayload:
         return {
             "id": user.id,
             "name": user.name,
-            "groups_xmlids": list(user_groups_xmlids),
+            # The contract declares a set of group identifiers; emitting them in
+            # Python set order made the same identity produce different bytes in
+            # every process (string hash randomization). Stable order keeps the
+            # startup response byte-identical and therefore cacheable.
+            "groups_xmlids": sorted(
+                str(item) for item in (user_groups_xmlids or []) if item
+            ),
             "is_platform_admin": user_is_platform_admin(user),
             "lang": user.lang,
             "tz": user.tz,

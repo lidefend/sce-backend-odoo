@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -127,7 +130,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         an ``if: false`` guard cannot satisfy it by matching text.
         """
         workflow = yaml.safe_load(self.text("professional_quality_gate.yml"))
-        steps = workflow["jobs"]["professional_quality_gate"]["steps"]
+        steps = workflow["jobs"]["professional_quality_checks"]["steps"]
         names = [step.get("name") for step in steps]
         pin_name = "Install pinned Node.js runtime for the syntax sweep"
         self.assertEqual(names.count(pin_name), 1, "the sweep job must pin the node runtime once")
@@ -187,11 +190,11 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             "  python310_runtime_compatibility:", 1
         )[0]
         self.assertNotIn("test.chatter-timeline.authorization.orm", authorization_section)
-        self.assertIn("Prove candidate chatter authorization with real ORM", text)
-        self.assertIn("env.CANDIDATE_REQUESTED == 'true'", text)
+        self.assertIn("make test.candidate.contract-profiles.orm", text)
+        self.assertIn('"${CANDIDATE_REQUESTED}" = true', text)
         preparation = text.split(
             "- name: Prepare host-owned artifact root before container checks", 1
-        )[1].split("- name: Prove candidate chatter authorization with real ORM", 1)[0]
+        )[1].split("- name: Report ORM verification selection", 1)[0]
         self.assertIn("if: env.PROFESSIONAL_MODE == 'full'", preparation)
         self.assertIn("python3 scripts/verify/ci_artifact_host_write_guard.py", preparation)
         full_section = text.split(
@@ -304,7 +307,8 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         # the count and satisfy the identity pin without the test running.
         self.assertIn("odoo\\.addons\\.[[:alnum:]_.]+: Starting ", guard)
         self.assertNotIn("grep -c 'Starting '", guard)
-        self.assertIn('grep -qF -- "${token}"', guard)
+        self.assertIn('grep -F -- "${token}" >/dev/null', guard)
+        self.assertNotIn('grep -qF -- "${token}"', guard)
         self.assertIn("odoo.service.server: Starting post tests", guard)
         self.assertIn("return 4", guard)
         self.assertIn("return 5", guard)
@@ -336,6 +340,56 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             ROOT / "addons/smart_construction_core/tests/test_payment_settlement_component_profile.py"
         ).read_text(encoding="utf-8")
         self.assertIn('@tagged("payment_settlement_component_profile"', module)
+
+    def test_shared_orm_installation_preserves_independent_verdicts(self) -> None:
+        runner = (ROOT / "scripts/test/admin_vis_p3_project_record_rule_orm.sh").read_text()
+        expectation = runner.split('set_suite_expectation() {', 1)[1].split('\ncase "${ENV:-dev}"', 1)[0]
+        loop = runner.split('# Share only installation:', 1)[1]
+        loop = loop[loop.index('base_test_log='):]
+        # Execute the actual shell loop with a fake Odoo process, retaining the
+        # real result guard. A clean first suite must never mask a bad second.
+        fake = r"""
+        timeout() {
+          local tag= arg count=5 i
+          while [ "$#" -gt 0 ]; do
+            arg="$1"; shift
+            if [ "$arg" = --test-tags ]; then tag="$1"; shift; fi
+          done
+          echo "$tag" >> "$CALLS"
+          [ "$tag" != payment_settlement_component_profile ] || count=7
+          if [ "$tag" = "$BAD_SUITE" ]; then
+            case "$BAD_KIND" in
+              exit) return 1 ;;
+              zero) count=0 ;;
+              truncated) count=6 ;;
+              foreign) tag=wrong_suite ;;
+            esac
+          fi
+          for ((i=0; i<count; i++)); do
+            echo "INFO db odoo.addons.smart_core.tests.test_${tag}: Starting TestSuite.test_${i} ..."
+          done
+          echo "0 failed, 0 error(s) of $count tests"
+        }
+        """
+        for bad_suite, kind in [('', ''), ('chatter_timeline_authorization_orm', 'zero'),
+                                ('payment_settlement_component_profile', 'zero'),
+                                ('payment_settlement_component_profile', 'truncated'),
+                                ('payment_settlement_component_profile', 'foreign'),
+                                ('payment_settlement_component_profile', 'exit')]:
+            with self.subTest(suite=bad_suite, kind=kind), tempfile.TemporaryDirectory() as directory:
+                script = ('set -euo pipefail\nsource scripts/ci/orm_result_guard.sh\n'
+                          + 'set_suite_expectation() {' + expectation + '\n' + fake
+                          + '\nsuite_tags=(chatter_timeline_authorization_orm payment_settlement_component_profile)\n'
+                          + 'compose=(fake); odoo_common=(odoo); orm_timeout_seconds=30\n'
+                          + 'test_log="$TEST_ROOT/test.log"; test_logs=()\n' + loop)
+                result = subprocess.run(['bash', '-c', script], cwd=ROOT, text=True,
+                                        capture_output=True, env={**os.environ, 'TEST_ROOT': directory,
+                                        'CALLS': directory + '/calls', 'BAD_SUITE': bad_suite, 'BAD_KIND': kind})
+                calls = Path(directory, 'calls').read_text().splitlines()
+                self.assertEqual(result.returncode == 0, not bad_suite, result.stdout + result.stderr)
+                self.assertEqual(len(calls), 1 if bad_suite.startswith('chatter') else 2)
+                if not bad_suite:
+                    self.assertEqual(result.stdout.count('suite='), 2)
 
     def test_nightly_candidate_is_separate_from_main_push(self) -> None:
         for workflow in (
@@ -448,6 +502,41 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             if path.is_file() and path.suffix in {".yml", ".yaml"}
         ]
         self.assertEqual(duplicated, [])
+
+
+class ParallelQualityExecutionTest(unittest.TestCase):
+    def jobs(self):
+        return yaml.safe_load((ROOT / '.github/workflows/professional_quality_gate.yml').read_text())['jobs']
+
+    def test_independent_work_is_parallel_and_protected_name_is_unique(self):
+        jobs = self.jobs()
+        self.assertEqual(jobs['professional_quality_checks']['needs'], 'professional_authorization')
+        self.assertEqual(jobs['backend_impact_suite']['needs'], 'professional_authorization')
+        self.assertEqual(set(jobs['professional_quality_gate']['needs']), {
+            'professional_authorization', 'backend_impact_suite',
+            'professional_quality_checks', 'python310_runtime_compatibility'})
+        self.assertEqual(sum(job.get('name') == 'professional_quality_gate' for job in jobs.values()), 1)
+        self.assertIn('!cancelled()', jobs['professional_quality_checks']['if'])
+        self.assertIn("needs.professional_authorization.result == 'success'", jobs['professional_quality_checks']['if'])
+        self.assertIn('always() && !cancelled()', jobs['professional_quality_gate']['if'])
+        self.assertNotIn('always()', jobs['professional_quality_checks']['if'])
+        self.assertTrue(all('checkout' not in step.get('name', '').lower()
+                            for step in jobs['professional_quality_gate']['steps']))
+
+    def test_actual_aggregate_script_rejects_missing_failed_cancelled_and_skipped(self):
+        steps = self.jobs()['professional_quality_gate']['steps']
+        step = next(s for s in steps if s['name'] == 'Enforce quality and compatibility execution')
+        self.assertEqual(step['env']['QUALITY_RESULT'], '${{ needs.professional_quality_checks.result }}')
+        self.assertEqual(step['env']['PYTHON_RESULT'], '${{ needs.python310_runtime_compatibility.result }}')
+        for event in ('pull_request', 'schedule', 'workflow_dispatch', 'push'):
+            for quality in ('success', 'failure', 'cancelled', 'skipped', ''):
+                for python in ('success', 'failure', 'cancelled', 'skipped', ''):
+                    with self.subTest(event=event, quality=quality, python=python):
+                        expected = quality == 'success' and python == ('skipped' if event == 'push' else 'success')
+                        result = subprocess.run(['bash', '-c', step['run']],
+                            env={**os.environ, 'EVENT_NAME': event, 'QUALITY_RESULT': quality, 'PYTHON_RESULT': python},
+                            capture_output=True, text=True)
+                        self.assertEqual(result.returncode == 0, expected)
 
 
 if __name__ == "__main__":

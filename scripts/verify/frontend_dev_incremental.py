@@ -157,14 +157,22 @@ RULES = (
     # while running only frontend targets left a runtime NameError
     # (`project_form_structure_surfaces` iterating an undefined name) undetected
     # locally on 2026-10-10 until the served contract failed for every model.
+    # The app-config page assembler is part of the same assembled output: the v2
+    # handler injects its business-category policy and relation entry/search
+    # dialog contracts before assembling and caching the page, and the assembler
+    # guard's cache-identity fingerprint includes it. Without this route a change
+    # there only failed when the frozen candidate ran Quick.
     Rule((
         "addons/smart_core/handlers/ui_contract_v2.py",
         "addons/smart_core/handlers/ui_contract_v2_projection.py",
         "addons/smart_core/core/form_structure_authority.py",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
         "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
     ), (
         "verify.business_config.formal_list.unit",
         "verify.form_structure_authority_unification.unit",
+        "verify.unified_page_contract.v2.assembler",
+        "verify.contract.entry_equivalence.guard",
     )),
     # The renderer implements the declared presentation vocabulary that the
     # projection publishes.  Editing the renderer's vocabulary block, the token

@@ -1,4 +1,5 @@
 import { computed, type Ref } from 'vue';
+import { readListPreferencePolicy } from '../runtime/listPreferenceProjection';
 import { uniqueFields } from '../runtime/actionViewRequestRuntime';
 import {
   collectContractV2FieldStatusByCode,
@@ -10,7 +11,7 @@ import {
   resolveContractV2SurfacePolicies,
 } from '../contracts/v2/store';
 import type { ContractV2NormalizedStore } from '../contracts/v2/types';
-import { requireDeclaredBoolean, requireDeclaredText } from '../contract/contractGap';
+import { contractGapError, requireDeclaredBoolean, requireDeclaredText } from '../contract/contractGap';
 
 type Dict = Record<string, unknown>;
 
@@ -240,6 +241,23 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       ...((profile?.column_labels || {}) as Record<string, string>),
     };
     return uniqueFields([...baseColumns, ...Array.from(hidden)])
+      .filter((name) => {
+        const schema = schemaByName[name] || {};
+        const widgets = store?.widgetsByFieldCodeAll.get(name) || [];
+        const denied = widgets.map(widget => {
+          const status = store?.widgetStatusById.get(widget.widgetId);
+          return status?.visible === false || status?.auth === 'none'
+            || widget.componentConfig?.invisible === true || widget.componentConfig?.column_invisible === true;
+        });
+        if (denied.some(Boolean) && denied.some(value => !value)) {
+          throw contractGapError({kind: 'contract_defect', missing: `list_column.${name}.occurrence_authority`,
+            requiredDeclarationLayer: LIST_PROFILE_DECLARATION_LAYER}, `Ambiguous list column authority: ${name}`);
+        }
+        // Optional/default hidden columns remain configurable; an explicit
+        // contract denial cannot be reversed by a historical personal choice.
+        return schema.invisible !== true && schema.column_invisible !== true
+          && v2FieldStatus[name]?.visible !== false && !denied.some(Boolean);
+      })
       .map((name) => {
         const schema = schemaByName[name] || {};
         const field = fieldsMap[name];
@@ -488,19 +506,6 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
           : undefined,
       },
     };
-    const rawPreferencePolicy = (rawProfile.preference_policy || {}) as Dict;
-    const preferencePolicy = {
-      scope: String(rawPreferencePolicy.scope || '').trim() || undefined,
-      allow_visibility: rawPreferencePolicy.allow_visibility !== false,
-      allow_order: rawPreferencePolicy.allow_order !== false,
-      allow_width: rawPreferencePolicy.allow_width !== false,
-      locked_columns: Array.isArray(rawPreferencePolicy.locked_columns)
-        ? rawPreferencePolicy.locked_columns.map((item) => String(item || '').trim()).filter(Boolean)
-        : [],
-      must_request_columns: Array.isArray(rawPreferencePolicy.must_request_columns)
-        ? rawPreferencePolicy.must_request_columns.map((item) => String(item || '').trim()).filter(Boolean)
-        : [],
-    };
     if (!columns.length && !crossDeviceCriticalColumns.length && !Object.keys(columnLabels).length && !rowPrimary && !rowSecondary && !statusField && !metricFields.length && !Object.keys(rawBatchPolicy).length && !Object.keys(rawGrouping).length) {
       return null;
     }
@@ -510,7 +515,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       cross_device_critical_columns: crossDeviceCriticalColumns,
       hidden_columns: hiddenColumns,
       column_labels: columnLabels,
-      preference_policy: preferencePolicy,
+      preference_policy: readListPreferencePolicy(rawProfile.preference_policy),
       row_primary: rowPrimary,
       row_secondary: rowSecondary,
       show_row_number: showRowNumber,

@@ -3,7 +3,8 @@
 import base64
 from types import SimpleNamespace
 
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 from odoo.addons.smart_construction_core.services.payment_request_work_item_service import (
     PaymentRequestWorkItemService,
@@ -12,7 +13,8 @@ from odoo.addons.smart_construction_core.handlers.my_work_summary import MyWorkS
 
 
 @tagged("sc_smoke", "payment_request_work_item_service")
-class TestPaymentRequestWorkItemService(TransactionCase):
+class TestPaymentRequestWorkItemService(BusinessTransactionCase):
+    approval_models = ("payment.request",)
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

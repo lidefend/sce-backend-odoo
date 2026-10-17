@@ -151,5 +151,30 @@ class AuthorityProbeNoDependencyMutationTest(unittest.TestCase):
             self.assertNotIn('restart', args)
 
 
+class TestRunnerNoDependencyMutationTest(unittest.TestCase):
+    def test_both_actual_test_entries_preserve_dependencies(self):
+        repository = Path(__file__).resolve().parents[2]
+        for name in ('test.sh', 'test_safe.sh'):
+            with self.subTest(script=name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                common = root / 'scripts/common'
+                common.mkdir(parents=True)
+                (common / 'env.sh').write_text('DB_NAME=sc_dev_demo\nDB_USER=synthetic\nDB_PASSWORD=synthetic\nMODULE=synthetic\nTEST_TAGS=synthetic\nCOMPOSE_FILES=\nDOCS_MOUNT_HOST=/docs\nDOCS_MOUNT_CONT=/docs\nCONFIG_MOUNT_HOST=/config\nCONFIG_MOUNT_CONT=/config\nADDONS_EXTERNAL_MOUNT=/external\n')
+                (common / 'guard_prod.sh').write_text('guard_prod_forbid() { :; }\n')
+                lib = root / 'scripts/_lib'
+                lib.mkdir()
+                (lib / 'common.sh').write_text('log() { :; }; normalize_test_tags() { echo synthetic; }; compose() { printf "%s\\n" "$@" > "$TRACE"; }\n')
+                tests = root / 'scripts/test'
+                tests.mkdir()
+                script = tests / name
+                script.write_text((repository / 'scripts/test' / name).read_text())
+                trace = root / 'trace'
+                result = subprocess.run(['bash', str(script)], env={**os.environ, 'ROOT_DIR':str(root), 'TRACE':str(trace)}, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                args = trace.read_text().splitlines()
+                self.assertEqual(args[:2], ['run', '--no-deps'])
+                self.assertNotIn('up', args)
+
+
 if __name__ == '__main__':
     unittest.main()

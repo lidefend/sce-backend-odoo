@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from odoo.tests.common import TransactionCase, tagged
+from odoo.exceptions import UserError
 
 from ..hooks import guard_demo_scope
 
@@ -47,8 +48,32 @@ class TestDemoShowcaseGate(TransactionCase):
         self.assertNotIn('"state": "active"', source)
         self.assertIn("baseline.action_create_revision", source)
         self.assertIn("baseline.action_activate()", source)
-        self.assertIn("settlement.action_submit()", source)
-        self.assertIn("payment.action_submit()", source)
+        from ..seed.steps import step_40_contracts_demo
+        from ..tools import scenario_loader
+        settlement = Mock(state="draft")
+        actor_record = Mock()
+        def submit():
+            settlement.state = "approve"
+        actor_record.action_submit.side_effect = submit
+        with patch.object(scenario_loader, "_demo_action_record", return_value=actor_record) as resolve_actor:
+            self.assertIs(step_40_contracts_demo._approve_settlement(self.env, settlement), settlement)
+        resolve_actor.assert_called_once_with(
+            settlement.env, settlement, "action_submit", step_40_contracts_demo._DEMO_DOCUMENT_SUBMITTER)
+        actor_record.action_submit.assert_called_once_with()
+        settlement.write.assert_not_called()
+        payment = Mock(state="draft")
+        def approve(env, record):
+            self.assertIs(env, self.env)
+            self.assertIs(record, payment)
+            record.state = "approved"
+        with patch.object(step_40_contracts_demo, "_demo_drive_approval", side_effect=approve) as drive:
+            self.assertIs(step_40_contracts_demo._approve_payment(self.env, payment), payment)
+        drive.assert_called_once_with(self.env, payment)
+        payment.write.assert_not_called()
+        payment.state = "draft"
+        with patch.object(step_40_contracts_demo, "_demo_drive_approval"):
+            with self.assertRaises(UserError):
+                step_40_contracts_demo._approve_payment(self.env, payment)
         self.assertIn('record=%s,%s(%s); state=%s;', source)
         self.assertIn('calculation=round(%s=%s * ratio=%s, 2), currency_rounding=%s;', source)
         self.assertIn('invoice_ref[expected=non-empty,actual=%s,match=%s]', source)

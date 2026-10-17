@@ -3,6 +3,9 @@ import importlib.util
 import sys
 import types
 import unittest
+import copy
+from unittest.mock import patch
+from types import SimpleNamespace
 from pathlib import Path
 
 
@@ -102,6 +105,71 @@ class TestSceneNormalizerEntryTarget(unittest.TestCase):
         self.assertEqual((((target_payload.get("entry_target") or {}).get("record_entry") or {}).get("record_id")), 42)
         self.assertEqual((((target_payload.get("entry_target") or {}).get("record_entry") or {}).get("action_id")), 502)
         self.assertEqual((((target_payload.get("entry_target") or {}).get("record_entry") or {}).get("menu_id")), 202)
+
+
+class TestSceneReferenceBatch(unittest.TestCase):
+    def make_env(self, fail=False):
+        refs = {'sample.action': ('ir.actions.act_window', 1), 'sample.menu': ('ir.ui.menu', 1),
+                'sample.alias': ('ir.ui.menu', 1), 'sample.deleted': ('ir.ui.menu', 2)}
+        queries = []
+        class Env:
+            def ref(self, key, **kwargs):
+                pair = refs.get(key)
+                return SimpleNamespace(id=pair[1]) if pair and pair[1] == 1 else None
+            def __getitem__(self, model):
+                if model == 'ir.model.data':
+                    return SimpleNamespace(_xmlid_to_res_model_res_id=lambda key, **kwargs: refs.get(key, (False, False)))
+                def browse(ids):
+                    queries.append((model, ids))
+                    if fail:
+                        raise PermissionError('unresolved batch')
+                    return SimpleNamespace(exists=lambda: SimpleNamespace(ids=[rid for rid in ids if rid == 1]))
+                return SimpleNamespace(browse=browse)
+        return Env(), queries
+
+    def test_same_numeric_ids_remain_model_scoped_and_missing_stays_missing(self):
+        env, queries = self.make_env()
+        result = target._resolve_xmlids_batch(env, ['sample.action', 'sample.menu', 'sample.alias', 'sample.menu', 'sample.deleted', 'sample.missing'])
+        self.assertEqual(result, {'sample.action': 1, 'sample.menu': 1, 'sample.alias': 1, 'sample.deleted': None, 'sample.missing': None})
+        self.assertEqual(queries, [('ir.actions.act_window', [1]), ('ir.ui.menu', [1, 2])])
+
+    def test_normalization_and_diagnostics_match_single_reference_resolution(self):
+        env, _ = self.make_env()
+        source = [{'code': 'test.one', 'target': {'action_xmlid': 'sample.action', 'action_id': 999, 'menuXmlid': 'sample.menu'}},
+                  {'code': 'test.two', 'target': {'action_xmlid': 'sample.missing', 'menu_xmlid': 'sample.deleted'}},
+                  {'code': 'test.three', 'target': {'actionXmlid': 'sample.action', 'menu_xmlid': 'sample.alias'}}]
+        old, current = copy.deepcopy(source), copy.deepcopy(source)
+        old_errors, current_errors = [], []
+        with patch.object(target, '_resolve_xmlids_batch', return_value={}):
+            target._normalize_scene_targets(env, old, {}, old_errors)
+        target._normalize_scene_targets(env, current, {}, current_errors)
+        self.assertEqual(current, old)
+        self.assertEqual(current_errors, old_errors)
+        self.assertIn('TARGET_ID_XMLID_MISMATCH', {row['code'] for row in current_errors})
+        self.assertIn('XMLID_NOT_FOUND', {row['code'] for row in current_errors})
+
+    def test_failed_batch_retains_single_reference_behavior(self):
+        env, _ = self.make_env(fail=True)
+        self.assertEqual(target._resolve_xmlids_batch(env, ['sample.action']), {})
+        scenes = [{'code': 'test.one', 'target': {'action_xmlid': 'sample.action'}}]
+        target._normalize_scene_targets(env, scenes, {}, [])
+        self.assertEqual(scenes[0]['target']['action_id'], 1)
+
+    def test_generator_matches_list_including_diagnostics_and_public_return(self):
+        env, _ = self.make_env()
+        rows = [{'code': 'test.one', 'target': {'action_xmlid': 'sample.action', 'action_id': 999}},
+                {'code': 'test.missing', 'target': {'action_xmlid': 'sample.missing'}}]
+        expected_diagnostics = {'normalize_warnings': [], 'resolve_errors': []}
+        actual_diagnostics = copy.deepcopy(expected_diagnostics)
+        normalizer = target.SceneNormalizer()
+        expected = normalizer.resolve_targets(env, copy.deepcopy(rows), [], expected_diagnostics)
+        actual = normalizer.resolve_targets(env, (row for row in copy.deepcopy(rows)), [], actual_diagnostics)
+        self.assertEqual(actual, expected)
+        self.assertEqual(actual_diagnostics, expected_diagnostics)
+        direct_errors = []
+        direct = target._normalize_scene_targets(env, (row for row in copy.deepcopy(rows)), {}, direct_errors)
+        self.assertEqual(direct, expected)
+        self.assertEqual(direct_errors, expected_diagnostics['resolve_errors'])
 
 
 if __name__ == "__main__":

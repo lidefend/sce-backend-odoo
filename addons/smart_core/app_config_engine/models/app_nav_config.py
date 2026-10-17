@@ -210,7 +210,9 @@ class AppMenuConfig(models.Model):
             ("write_date", ">", last_generated),
             ("create_date", ">", last_generated),
         ]
-        if self.env["ir.ui.menu"].sudo().search(changed_domain, limit=1):
+        if self.env["ir.ui.menu"].sudo().with_context(
+            **{"ir.ui.menu.full_list": True, "active_test": False}
+        ).search(changed_domain, limit=1):
             return True
         if self.env["ir.actions.actions"].sudo().search(changed_domain, limit=1):
             return True
@@ -224,6 +226,13 @@ class AppMenuConfig(models.Model):
         - model_name=None → 生成全量（target='__all__'）；否则仅保留 res_model==model_name 的分支；
         - 仅持久化“轻量动作摘要”，避免把 context/domain 等变量态带入缓存。
         """
+        # A source edit during generation must remain newer than this snapshot.
+        # ir.ui.menu/ir.actions stamp write_date/create_date with the writing
+        # transaction's clock (env.cr.now()), and _menu_metadata_changed_since
+        # compares against those columns, so the watermark must come from the
+        # same clock. A wall-clock value would miss edits committed by a
+        # transaction that began before this one but wrote after the snapshot.
+        generation_started = self.env.cr.now()
         scene = self._normalize_scene(scene)
         def annotate(node, parent_stack):
             """补充 level/path/breadcrumbs/leaf 等衍生信息，便于运行态裁剪与前端使用。"""
@@ -335,7 +344,7 @@ class AppMenuConfig(models.Model):
                 'action_index': action_index,
                 'config_hash': new_hash,          # 结构版号
                 'etag': new_hash,                 # 运行态默认可用；真正响应会再叠加 filters 与 uid
-                'last_generated': fields.Datetime.now(),
+                'last_generated': generation_started,
                 'meta_info': {'roots': len(roots), 'kept_roots': kept_roots},
                 'is_active': True,
             }
@@ -347,6 +356,10 @@ class AppMenuConfig(models.Model):
                     cfg.write(vals)
                     _logger.info("Menu config updated: %s/%s v%s", target_key, scene, cfg.version)
                 else:
+                    # The source was revalidated even when its projection did
+                    # not change. Otherwise the same metadata edit triggers a
+                    # full rebuild on every subsequent lookup.
+                    cfg.write({'last_generated': vals['last_generated']})
                     _logger.info("Menu config unchanged: %s/%s v%s", target_key, scene, cfg.version)
             else:
                 vals['version'] = 1

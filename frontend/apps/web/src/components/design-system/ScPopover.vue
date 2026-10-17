@@ -7,18 +7,22 @@
     :disabled="disabled"
     :overlay-class-name="overlayClassName"
     :overlay-style="overlayStyle"
+    @visible-change="visible = $event"
     destroy-on-close
   >
     <template #content>
       <slot />
     </template>
-    <slot name="trigger" />
+    <slot name="trigger" :visible="visible" />
   </TDesignPopup>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import { TDesignPopup } from './tdesignPrimitiveBridge';
 import { semanticPrimitiveIdentity } from './primitiveAdapter';
+
+const visible = ref(false);
 
 export type ScPopoverPlacement =
   | 'top'

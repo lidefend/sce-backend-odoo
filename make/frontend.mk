@@ -155,7 +155,7 @@ verify.frontend.navigation_shell.unit: guard.prod.forbid verify.frontend.scene_e
 
 .PHONY: verify.frontend.record_form_return.unit
 verify.frontend.record_form_return.unit: guard.prod.forbid
-	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/record_form_return_navigation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/record-form-return-navigation-test.mjs >/dev/null
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/record_form_return_navigation_test.ts --bundle --platform=node --format=esm '--define:import.meta.env={}' --outfile=/tmp/record-form-return-navigation-test.mjs >/dev/null
 	@node /tmp/record-form-return-navigation-test.mjs
 
 .PHONY: verify.frontend.boq_import_preview.unit
@@ -1347,3 +1347,8 @@ verify.frontend.business_entry.evidence_scope.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/evidence_scope.py scripts/verify/business_entry_matrix_incremental.py scripts/verify/business_entry_matrix_scope_seed.py
 	@python3 -m unittest scripts.ops.test_evidence_scope scripts.verify.test_business_entry_matrix_incremental
 	@node scripts/verify/business_entry_matrix_reuse_identity.test.mjs
+
+.PHONY: verify.frontend.scoped_preference.runtime.unit
+verify.frontend.scoped_preference.runtime.unit:
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/scoped_preference_runtime_test.ts --bundle --platform=node --format=esm --outfile=/tmp/scoped-preference-runtime-test.mjs >/dev/null
+	@node /tmp/scoped-preference-runtime-test.mjs

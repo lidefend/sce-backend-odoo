@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 from odoo.addons.smart_construction_core.handlers.payment_request_available_actions import (
     PaymentRequestAvailableActionsHandler,
@@ -14,7 +15,7 @@ from odoo.addons.smart_core.handlers.reason_codes import (
 
 
 @tagged("sc_smoke", "payment_request_available_actions_backend")
-class TestPaymentRequestAvailableActionsBackend(TransactionCase):
+class TestPaymentRequestAvailableActionsBackend(BusinessTransactionCase):
     def _create_user(self, login, group_xmlids):
         groups = [self.env.ref(xmlid).id for xmlid in group_xmlids]
         return self.env["res.users"].with_context(no_reset_password=True).create(
@@ -121,6 +122,11 @@ class TestPaymentRequestAvailableActionsBackend(TransactionCase):
         self.assertEqual(((result.get("error") or {}).get("reason_code")), REASON_NOT_FOUND)
 
     def test_available_actions_success_shape(self):
+        self.env["sc.approval.policy"].create({
+            "name": "Synthetic payment approval", "code": "synthetic_actions_approval",
+            "target_model": "payment.request", "company_id": self.env.company.id,
+            "approval_required": True, "mode": "single",
+        })
         payment = self._create_payment_request_minimal()
         finance_user = self._create_user(
             "payment_actions_finance_user",

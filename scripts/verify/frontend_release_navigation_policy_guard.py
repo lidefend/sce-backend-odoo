@@ -80,9 +80,74 @@ def validate(manifest: dict, policies: dict) -> list[str]:
     return errors
 
 
+def validate_formal_targets(manifest: dict, product: dict, scenes: dict) -> list[str]:
+    """Browser expectations must reference published declarations, not retired aliases."""
+    targets = {row["menu_xmlid"]: row for group in product["menu_groups"]
+               for row in group.get("menus", []) if row.get("menu_xmlid")}
+    errors = []
+    for role, declaration in manifest["roles"].items():
+        for key in declaration["browser_leaf_keys"]:
+            menu, action, model = key.split("|")
+            target = targets.get(menu)
+            if not target or not target.get("enabled") or target.get("release_state") != "released":
+                errors.append(f"{role}: browser target is not formally released: {menu}")
+                continue
+            if (action, model) != (target.get("action_xmlid", ""), target.get("model", "")):
+                errors.append(f"{role}: formal target identity differs: {menu}")
+            if not action or not model:
+                scene = manifest.get("scene_targets", {}).get(menu)
+                expected = {"scene_key": target.get("scene_key"), "route": target.get("route")}
+                if (target.get("entry_target_policy") != "scene_entry" or not scenes.get(menu)
+                        or scenes[menu] != expected["scene_key"] or scene != expected):
+                    errors.append(f"{role}: scene declaration differs: {menu}")
+    for menu, scene in manifest.get("scene_targets", {}).items():
+        target = targets.get(menu, {})
+        if (scene != {"scene_key": target.get("scene_key"), "route": target.get("route")}
+                or target.get("entry_target_policy") != "scene_entry"):
+            errors.append(f"scene target outside formal authority: {menu}")
+    return errors
+
+
+def validate_runtime_targets(source: str, product: dict) -> list[str]:
+    """Check actual resolver calls against the formal publication declaration."""
+    tree = ast.parse(source)
+    constants = {
+        target.id: node.value.value
+        for node in tree.body if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant)
+        for target in node.targets if isinstance(target, ast.Name)
+    }
+    def value(node):
+        return constants.get(node.id) if isinstance(node, ast.Name) else (
+            node.value if isinstance(node, ast.Constant) else None)
+    targets = {row["menu_xmlid"]: row for group in product["menu_groups"]
+               for row in group.get("menus", []) if row.get("menu_xmlid")}
+    calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
+             and isinstance(node.func, ast.Name) and node.func.id == "target"]
+    if not calls:
+        return ["runtime resolver has no declared target calls"]
+    errors = []
+    for call in calls:
+        menu = value(call.args[0]) if call.args else None
+        action = next((value(k.value) for k in call.keywords if k.arg == "declared_action_xmlid"), None)
+        row = targets.get(menu, {})
+        if not menu or not row.get("enabled") or row.get("release_state") != "released":
+            errors.append(f"runtime target not formally released at line {call.lineno}: {menu}")
+        elif not action or row.get("action_xmlid") != action:
+            errors.append(f"runtime action differs at line {call.lineno}: {menu}")
+    return errors
+
+
 def main() -> int:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     errors = validate(manifest, _load_role_policy())
+    product_policy = json.loads((ROOT / "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json").read_text())
+    standard = next(row for row in product_policy["products"] if row["product_key"] == "construction.standard")
+    tree = ast.parse(POLICY.read_text())
+    scenes = next(ast.literal_eval(node.value) for node in tree.body
+                  if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "NAV_MENU_SCENE_MAP" for t in node.targets))
+    errors.extend(validate_formal_targets(manifest, standard, scenes))
+    errors.extend(validate_runtime_targets(
+        (ROOT / "scripts/verify/frontend_delivery_hardening_runtime_ids.py").read_text(), standard))
     if errors:
         print("[frontend_release_navigation_policy_guard] FAIL")
         for error in errors:

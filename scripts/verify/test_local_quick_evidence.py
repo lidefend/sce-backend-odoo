@@ -244,12 +244,102 @@ class LocalQuickEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(evidence.EvidenceError, "does not match"):
             evidence.verify(self.root, self.head)
 
-    def test_ref_drift_does_not_sign(self) -> None:
+    def test_ref_drift_without_original_proofs_does_not_sign(self) -> None:
         def runner(command, **kwargs):
             subprocess.run(["git", "-C", str(self.root), "tag", "new-ref"], check=True)
             return subprocess.CompletedProcess(command, 0)
-        with self.assertRaisesRegex(evidence.EvidenceError, "reference snapshot changed"):
+        with self.assertRaisesRegex(evidence.EvidenceError, "scanner proof missing"):
             evidence.run_quick(self.root, runner=runner)
+        self.assertFalse(evidence.evidence_path(self.root, self.head).exists())
+
+    def _ref_refresh_runner(self, mode="success"):
+        calls = []
+        def runner(command, **kwargs):
+            calls.append(command)
+            if len(calls) == 2 and mode == "failed":
+                return subprocess.CompletedProcess(command, 7)
+            if not (len(calls) == 2 and mode == "missing_proof"):
+                with mock.patch.dict(os.environ, kwargs["env"]):
+                    for kind in evidence.scans.AUTHORITY:
+                        evidence.scans.record_scan_success(self.root, kind)
+            if len(calls) == 1:
+                evidence.git(self.root, "tag", "other-worktree-tip")
+            if len(calls) == 2 and mode == "drift_again":
+                evidence.git(self.root, "tag", "second-tip")
+            if len(calls) == 2 and mode == "dirty":
+                (self.root / "tracked.txt").write_text("changed during refresh")
+            return subprocess.CompletedProcess(command, 0)
+        return runner, calls
+
+    def test_ref_only_drift_refreshes_scans_without_repeating_quick(self):
+        runner, calls = self._ref_refresh_runner()
+        path = evidence.run_quick(self.root, runner=runner)
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[1], ["make", "--no-print-directory",
+            *evidence.scans.GOVERNED_SCAN_TARGETS.values()])
+        self.assertEqual(evidence.verify(self.root, self.head), path)
+
+    def test_other_worktree_new_commit_is_actually_in_refreshed_coverage(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            other = Path(temporary) / "other"
+            evidence.git(self.root, "worktree", "add", "-q", "-b", "other-executor", str(other))
+            original_runner, calls = self._ref_refresh_runner()
+            def runner(command, **kwargs):
+                result = original_runner(command, **kwargs)
+                if len(calls) == 1:
+                    (other / "tracked.txt").write_text("new reachable content\n")
+                    evidence.git(other, "add", "tracked.txt")
+                    evidence.git(other, "-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+                                 "commit", "-qm", "other executor commit")
+                return result
+            path = evidence.run_quick(self.root, runner=runner)
+            tip = evidence.git(other, "rev-parse", "HEAD")
+            self.assertNotEqual(tip, self.head)
+            payload = json.loads(path.read_text())
+            for scanner in payload["coverage"]["scanners"].values():
+                self.assertIn(["refs/heads/other-executor", tip, "commit"], scanner["refs"])
+            self.assertEqual(len(calls), 2)
+            self.assertEqual(evidence.verify(self.root, self.head), path)
+
+    def test_failed_reference_refresh_does_not_sign(self):
+        runner, calls = self._ref_refresh_runner("failed")
+        with self.assertRaises(evidence.QuickRunFailed):
+            evidence.run_quick(self.root, runner=runner)
+        self.assertEqual(len(calls), 2)
+        self.assertFalse(evidence.evidence_path(self.root, self.head).exists())
+
+    def test_refresh_requires_new_actual_scanner_proofs(self):
+        runner, _ = self._ref_refresh_runner("missing_proof")
+        with self.assertRaisesRegex(evidence.EvidenceError, "scanner proof missing"):
+            evidence.run_quick(self.root, runner=runner)
+        self.assertFalse(evidence.evidence_path(self.root, self.head).exists())
+
+    def test_refresh_is_bounded_and_second_drift_does_not_sign(self):
+        runner, calls = self._ref_refresh_runner("drift_again")
+        with self.assertRaisesRegex(evidence.EvidenceError, "changed again"):
+            evidence.run_quick(self.root, runner=runner)
+        self.assertEqual(len(calls), 2)
+        self.assertFalse(evidence.evidence_path(self.root, self.head).exists())
+
+    def test_candidate_mutation_during_scan_refresh_does_not_sign(self):
+        runner, _ = self._ref_refresh_runner("dirty")
+        with self.assertRaisesRegex(evidence.EvidenceError, "clean"):
+            evidence.run_quick(self.root, runner=runner)
+        self.assertFalse(evidence.evidence_path(self.root, self.head).exists())
+
+    def test_scan_authority_change_never_uses_reference_refresh(self):
+        runner, calls = self._ref_refresh_runner()
+        original_snapshot = evidence.scans.coverage_snapshot
+        def snapshot(root):
+            result = original_snapshot(root)
+            # Original proofs already exist; only the post-suite observation changes.
+            if calls and evidence.git(root, "tag", "--list", "other-worktree-tip"):
+                result["scanners"]["history"]["authority"] = "changed"
+            return result
+        with mock.patch.object(evidence.scans, "coverage_snapshot", side_effect=snapshot):
+            with self.assertRaisesRegex(evidence.EvidenceError, "authority changed"):
+                evidence.run_quick(self.root, runner=runner)
+        self.assertEqual(len(calls), 1)
         self.assertFalse(evidence.evidence_path(self.root, self.head).exists())
 
     def test_unsafe_make_environment_rejected_before_either_runner(self) -> None:

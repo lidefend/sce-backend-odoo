@@ -37,6 +37,7 @@ orm_expect_count="${orm_expect_count:-}"
 # log - a module listing, a traceback, a tag declaration - is not proof that the
 # test executed.
 orm_expect_identity="${orm_expect_identity:-}"
+orm_expect_database="${orm_expect_database:-}"
 
 validate_orm_timeout() {
   local value="${1:-}"
@@ -168,11 +169,24 @@ evaluate_orm_outcome() {
   fi
   local token
   for token in ${orm_expect_identity}; do
-    if ! printf '%s\n' "${starts}" | grep -qF -- "${token}"; then
+    if ! printf '%s\n' "${starts}" | grep -F -- "${token}" >/dev/null; then
       echo "[orm-guard][FATAL] expected test identity never started in the log: ${token}" >&2
       return 5
     fi
   done
+
+  if [[ -n "${orm_expect_database}" ]]; then
+    # Every executed case and final loading summary must belong to the selected
+    # attempt, not another module/database whose success happened to be logged.
+    if printf '%s\n' "${starts}" | grep -vF " INFO ${orm_expect_database} odoo.addons." >/dev/null; then
+      echo "[orm-guard][FATAL] test starts belong to another database" >&2
+      return 5
+    fi
+    if ! grep -F "tests when loading database '${orm_expect_database}'" "${log}" >/dev/null; then
+      echo "[orm-guard][FATAL] selected database has no loading summary" >&2
+      return 5
+    fi
+  fi
 
   echo "[orm-guard] ORM_RESULT_GUARD=PASS tests=${observed} expected=${orm_expect_count:-self}" \
        "identity=${orm_expect_identity:-unpinned}"
@@ -276,6 +290,15 @@ if [[ "${1:-}" == "--self-test" ]]; then
   expect_code 2 0 "${identity_token}" 0 "${selftest_dir}/pass.log"
   # a missing identity pin must be rejected by the guard and by the validator
   expect_code 5 "" "${identity_token}" 0 "${selftest_dir}/foreign.log"
+  write_log "${selftest_dir}/large.log" 1000 '0 failed, 0 error(s) of 1000 tests'
+  expect_code 0 "" "${identity_token}" 0 "${selftest_dir}/large.log"
+  orm_expect_database="expected_db"
+  expect_code 5 "" "${identity_token}" 0 "${selftest_dir}/pass.log"
+  sed 's/ INFO db / INFO expected_db /' "${selftest_dir}/pass.log" >"${selftest_dir}/database.log"
+  expect_code 5 "" "${identity_token}" 0 "${selftest_dir}/database.log"
+  printf "0 failed, 0 error(s) of 7 tests when loading database 'expected_db'\n" >>"${selftest_dir}/database.log"
+  expect_code 0 "" "${identity_token}" 0 "${selftest_dir}/database.log"
+  orm_expect_database=""
   expect_timeout_code 0 3600
   expect_timeout_code 0 45
   expect_timeout_code 2 0

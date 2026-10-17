@@ -10,6 +10,7 @@ import path from 'node:path';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 import {
   compareNavigation,
+  isDeclaredScene,
   loadNavigationManifest,
 } from '../../../../scripts/verify/frontend_navigation_audit.mjs';
 
@@ -292,7 +293,7 @@ async function main() {
   const rawIdTitle = normalized.filter((row) => /\s#\d+|^\d+$/i.test(String(row.title || ''))).length;
   const undefinedTitle = normalized.filter((row) => /undefined|null/i.test(`${row.title || ''} ${row.document_title || ''}`)).length;
   const missingMenuXmlid = normalized.filter((row) => !row.menu_xmlid).length;
-  const missingActionXmlid = normalized.filter((row) => !row.action_xmlid).length;
+  const missingActionXmlid = normalized.filter((row) => !row.action_xmlid && !isDeclaredScene(navigationManifest, row)).length;
   const forbidden = normalized.filter((row) => row.load_result === 'permission' || (row.http_errors || []).some((item) => item.status === 403)).length;
   const unresolved = normalized.filter((row) => row.reachable === false || !row.route).length;
   const summary = {
@@ -341,7 +342,7 @@ async function main() {
     && summary.unresolved === 0
     && failed.length === 0
     && journeyRows.length === roles.length * 8;
-  console.log(JSON.stringify({ pass, surfaces: normalized.length, failed: failed.length, failures: failureSummary, outputDir }, null, 2));
+  console.log(JSON.stringify({ pass, surfaces: normalized.length, failed: failed.length, failures: failureSummary, navigation: navigationAudit, outputDir }, null, 2));
   if (!pass) process.exitCode = 2;
 }
 

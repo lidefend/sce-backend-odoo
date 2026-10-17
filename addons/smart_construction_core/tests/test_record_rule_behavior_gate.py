@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 from odoo.exceptions import AccessError, ValidationError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 
 @tagged("post_install", "-at_install", "sc_gate", "sc_perm", "rr_gate")
-class TestRecordRuleBehaviorGate(TransactionCase):
+class TestRecordRuleBehaviorGate(BusinessTransactionCase):
     """P0 record rule behavior gate: verify allowed/denied boundaries on key models."""
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        company = cls.env.ref("base.main_company")
+        company = cls.env.company
         ctx = dict(
             cls.env.context,
             mail_create_nosubscribe=True,
@@ -251,6 +252,7 @@ class TestRecordRuleBehaviorGate(TransactionCase):
         # It has to be measured on real reads: seeing the rule definition (or
         # an ACL) is not proof that a role cannot cross the boundary.
         cls.company_secondary = _ctx("res.company").create({"name": "RR Secondary Company"})
+        cls.register_business_company(cls.company_secondary)
 
         def _create_company_user(login, group_xmlids, company):
             groups = [(6, 0, [cls.env.ref(x).id for x in group_xmlids])]
@@ -465,7 +467,7 @@ class TestRecordRuleBehaviorGate(TransactionCase):
         )
 
     def _can_read(self, user, record):
-        Model = self.env[record._name].with_user(user)
+        Model = self.env[record._name].with_user(user).with_context(allowed_company_ids=user.company_ids.ids)
         return bool(Model.search_count([("id", "=", record.id)]))
 
     def _assert_write_allowed(self, user, record, values):

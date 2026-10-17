@@ -223,6 +223,7 @@ def seal_runtime_contract(
     client_type: str,
     action_id: int | None = None,
     sink: Callable[[str], Any] | None = None,
+    reuse_digests: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     # The cached page is structural authority, not a snapshot of user favorites.
     # Both source-cache and assembled-cache paths pass through this boundary.
@@ -242,6 +243,7 @@ def seal_runtime_contract(
         generator_version=owner.VERSION,
         source_authority=owner.source_authority_contract(),
         published_version_ref=_published_version_ref(contract, source_payload),
+        reuse_digests=reuse_digests,
     )
     # Every runtime delivery passes through here, so this is the one place that
     # observes the sealed result. The call is fail-open and returns a bool the

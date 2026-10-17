@@ -34,10 +34,16 @@ class ActionDispatcher:
             "runtime_carrier": "app_config_engine.action_dispatcher",
         }
 
-    def __init__(self, env, su_env):
+    def __init__(self, env, su_env, *, include_relation_search_dialogs=True):
+        self.include_relation_search_dialogs = include_relation_search_dialogs
         self.env = env
         self.su_env = su_env
         self.resolver = ActionResolver(env)
+
+    def _page_assembler(self):
+        if not self.include_relation_search_dialogs:
+            return PageAssembler(self.env, self.su_env, include_relation_search_dialogs=False)
+        return PageAssembler(self.env, self.su_env)
 
     def _resolve_action_gateway(self):
         if 'app.action.gateway' in self.env:
@@ -52,7 +58,7 @@ class ActionDispatcher:
             if not p.get("model"):
                 raise ValueError("model subject 需要提供 model 名")
             p["view_types"] = PageAssembler.normalize_view_types(p.get('view_type') or 'tree,form')
-            return PageAssembler(self.env, self.su_env).assemble_page_contract(p)
+            return self._page_assembler().assemble_page_contract(p)
 
         # ---- 2) operation：execute/onchange/validate/report
         if subject == 'operation':
@@ -97,7 +103,7 @@ class ActionDispatcher:
                 # 把 active_menu_id 放入上下文，利于 domain/context 计算
                 ctx = p.setdefault('context', {})
                 ctx.setdefault('active_menu_id', amid)
-            return PageAssembler(self.env, self.su_env).assemble_page_contract(p, action=info)
+            return self._page_assembler().assemble_page_contract(p, action=info)
 
         # client：不需要模型
         if atype == 'ir.actions.client':
@@ -134,7 +140,7 @@ class ActionDispatcher:
         if atype == 'ir.actions.act_window':
             p['model'] = info.get('res_model') or p.get('model')
             p['view_types'] = PageAssembler.normalize_view_types(p.get('view_type') or info.get('view_mode') or 'tree,form')
-            return PageAssembler(self.env, self.su_env).assemble_page_contract(p, action=info)
+            return self._page_assembler().assemble_page_contract(p, action=info)
         if atype == 'ir.actions.client':
             return ClientUrlReportAssembler(self.env, self.su_env).assemble_client_contract(p, info)
         raise ValueError(f"server 动作返回了不支持的类型：{atype}")

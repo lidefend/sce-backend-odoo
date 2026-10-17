@@ -66,7 +66,6 @@ as a batch:
 | `_inject_action_window_contract` | Reads `ir.actions.act_window`, safely parses action domain/context, and merges action metadata into the source contract. |
 | `_inject_current_form_settings_action` | Delegates to `PageAssembler` for current form settings action projection. |
 | `_inject_business_category_form_policy` | Reads action context, delegates to `PageAssembler`, applies contract governance, relation-entry hooks, and form-structure injection. |
-| `_merge_user_list_preference_columns` | Reads `sc.user.view.preference` for user list column preferences. |
 | `_form_structure_governance` | Reads `ui.business.config.contract` view orchestration contracts and composes governance metadata. |
 | `_merge_business_list_profile` | Reads business config contracts and action/view-specific list configuration. |
 | `_inject_record_business_category_context` | Reads the target record business category and merges request context. |
@@ -83,7 +82,7 @@ Do not move these responsibilities before behavior coverage exists:
 - `UiContractHandler` re-entry in `_resolve_entry_contract`;
 - `PageAssembler` delegation in form settings and business category policy;
 - action/window metadata injection;
-- user preference merge;
+- stored user list preference application (owned by the frontend consumer, not V2);
 - record snapshot hydration;
 - view XML parsing;
 - scene contract source loading.
@@ -167,7 +166,7 @@ Before moving transaction-heavy methods, add or confirm behavior coverage for:
 - menu entry resolution through `_resolve_entry_contract`;
 - action context/domain injection;
 - business config form groups and field order;
-- list column preference merge;
+- list column preference application by the frontend consumer against the declared policy;
 - record snapshot hydration fallback;
 - attachment display value hydration;
 - native group column XML parsing;

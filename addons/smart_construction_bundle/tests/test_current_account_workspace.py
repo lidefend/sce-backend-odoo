@@ -1,30 +1,14 @@
 # -*- coding: utf-8 -*-
+from unittest.mock import patch
+
 from odoo.exceptions import AccessError, UserError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from odoo.addons.smart_construction_core.tests.business_case import BusinessTransactionCase
 
-
-def released_action(action_callable):
-    """Return the document this carrier dispatches to, or ``None`` when refused.
-
-    A carrier only hands over a document the principal's navigation can open, so
-    it resolves the menu of the entry in the current principal's route authority
-    - the same contract the client enforces.  When that authority has no entry
-    for the target the carrier fails closed with a governed business message
-    instead of returning an action the client would have to deny.  The dispatch
-    contract of a refused carrier is asserted structurally in
-    ``test_context_workspace_native_lowcode``.  Anything other than that governed
-    refusal is an error and must not be swallowed here.
-    """
-    try:
-        return action_callable()
-    except UserError as exc:
-        if "正式入口" not in str(exc):
-            raise
-        return None
 
 
 @tagged("post_install", "-at_install", "sc_gate", "current_account_workspace")
-class TestCurrentAccountWorkspace(TransactionCase):
+class TestCurrentAccountWorkspace(BusinessTransactionCase):
     def _user(self, login, group_xmlid):
         return self.env["res.users"].with_context(no_reset_password=True).create(
             {
@@ -37,9 +21,14 @@ class TestCurrentAccountWorkspace(TransactionCase):
 
     def setUp(self):
         super().setUp()
+        from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
+        self.env["ir.config_parameter"].sudo().set_param("smart_core.platform_release_db", self.env.cr.dbname)
+        self.env["ir.config_parameter"].sudo().set_param("smart_core.release_operator.catalog_source_db", self.env.cr.dbname)
+        EditionReleaseSnapshotService(self.env).freeze_release_surface(
+            product_key="construction.standard", version="synthetic-workspace-test", replace_active=True)
         self.finance_user = self._user(
             "current_account_finance_user",
-            "smart_construction_core.group_sc_cap_finance_user",
+            "smart_construction_core.group_sc_role_finance_user",
         )
         self.project_user = self._user(
             "current_account_project_user",
@@ -100,24 +89,21 @@ class TestCurrentAccountWorkspace(TransactionCase):
         )
         resolved = 0
         for call, model, category, needs_partner in cases:
-            action = released_action(call)
-            if not action:
-                continue
+            action = call()
             resolved += 1
             self.assertEqual(action["res_model"], model)
             self.assertEqual(action["view_mode"], "form")
             self.assertEqual(action["context"]["default_project_id"], self.project.id)
             self.assertEqual(action["context"]["default_business_category_code"], category)
-            self.assertTrue(action["menu_id"])
+            self.assertEqual(action["menu_id"], self.env.ref("smart_construction_core.menu_sc_product_current_account_v1").id)
             if needs_partner:
                 self.assertEqual(action["context"]["default_partner_id"], self.partner.id)
-        self.assertTrue(resolved, "no carrier of this entry is released: contract unverified")
+        self.assertEqual(resolved, len(cases), "every declared handling carrier must be operable")
 
-        ledger_action = released_action(workspace.action_view_current_account)
-        if ledger_action:
-            self.assertEqual(ledger_action["res_model"], "sc.finance.project.counterparty.position")
-            self.assertIn(("project_id", "=", self.project.id), ledger_action["domain"])
-            self.assertIn(("partner_id", "=", self.partner.id), ledger_action["domain"])
+        ledger_action = workspace.action_view_current_account()
+        self.assertEqual(ledger_action["res_model"], "sc.finance.project.counterparty.position")
+        self.assertIn(("project_id", "=", self.project.id), ledger_action["domain"])
+        self.assertIn(("partner_id", "=", self.partner.id), ledger_action["domain"])
 
         product_action = self.env.ref("smart_construction_core.action_sc_product_current_account_v1")
         self.assertEqual(product_action.res_model, "sc.current.account.workspace")
@@ -134,11 +120,24 @@ class TestCurrentAccountWorkspace(TransactionCase):
             without_partner.action_contractor_borrow_project()
         with self.assertRaises(UserError):
             without_partner.action_contractor_repay_project()
-        borrow_action = released_action(without_partner.action_project_borrow_company)
-        if borrow_action:
-            self.assertEqual(borrow_action["res_model"], "sc.financing.loan")
+        borrow_action = without_partner.action_project_borrow_company()
+        self.assertEqual(borrow_action["res_model"], "sc.financing.loan")
 
         with self.assertRaises(AccessError):
             self.env["sc.current.account.workspace"].with_user(self.project_user).create(
                 {"project_id": self.project.id}
             )
+
+    def test_shared_ledger_cannot_borrow_another_workspace_carrier(self):
+        workspace = self._workspace()
+        own_menu = self.env.ref(workspace._sc_dispatch_menu_xmlid)
+        routes = workspace._sc_route_authority()
+        ledger_id = self.env.ref("smart_construction_core.action_sc_finance_project_counterparty_position").id
+        other_routes = [row for row in routes if row.get("action_id") == ledger_id and row.get("menu_id") != own_menu.id]
+        self.assertTrue(other_routes, "negative requires a real published sibling carrier")
+        with patch.object(type(workspace), "_sc_route_authority", return_value=other_routes):
+            with self.assertRaisesRegex(UserError, "正式入口"):
+                workspace.action_view_current_account()
+        with patch.object(type(workspace), "_sc_route_authority", return_value=[]):
+            with self.assertRaisesRegex(UserError, "正式入口"):
+                workspace.action_view_current_account()

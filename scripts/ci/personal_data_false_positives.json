@@ -238,6 +238,20 @@
       "blob_id": "bc2eaf30e04aac1880176f78d7183a1e3bf844d3",
       "classification": "BANK_ACCOUNT_PATTERN",
       "reason": "verified_synthetic_permission_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
+      "blob_id": "a3f3a5d3635b896cb67b6359bc759a7e852609f7",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_fixture_values_unchanged_from_main_41c7a9dd_after_registered_company_and_approval_fixture_repair"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+      "blob_id": "e744dc509f51353214405799ab771215025e54d4",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_fixture_values_unchanged_from_main_41c7a9dd_after_registered_company_and_approval_fixture_repair"
     }
   ]
 }

@@ -788,6 +788,7 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # github-actions security sweep.
 .PHONY: verify.ci.workflow.contract
 verify.ci.workflow.contract: guard.prod.forbid
+	@python3 scripts/ci/test_backend_impact_plan.py
 	@python3 -m py_compile scripts/ci/test_backend_test_suite_dispatch_contract.py
 	@python3 scripts/ci/test_backend_test_suite_dispatch_contract.py
 	@echo "[verify.ci.workflow.contract] PASS"
@@ -1095,6 +1096,16 @@ ci.local.quick.compose: guard.prod.forbid
 # gate installs no frontend dependencies, so a wire here can only fail with
 # "esbuild not found" instead of a real gate result.
 # ---------------------------------------------------------------------------
+# Single-application lock on the list preference contract (R5): the contract /
+# page-assembly layer never reads the preference store, the one server-side
+# application helper lives only in the preference handler, and the frontend has
+# exactly one application site. It is a static structural guard and is not part
+# of the architecture suite above; the runtime behaviour is owned by
+# verify.local.dev.user_view_preference.runtime.orm.
+.PHONY: verify.contract.list_preference.single_application
+verify.contract.list_preference.single_application: guard.prod.forbid
+	@python3 scripts/verify/list_preference_single_application_guard.py --output artifacts/backend/list_preference_single_application_guard.json
+
 .PHONY: verify.contract.architecture.suite
 verify.contract.architecture.suite: \
 	guard.prod.forbid \
@@ -1184,7 +1195,7 @@ verify.contract.architecture.suite: \
 	@python3 scripts/ci/node_syntax_check.py
 	@echo "[OK] contract & architecture guard suite passed"
 
-ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.pr.push.unit verify.frontend.dev.incremental.unit verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit verify.menu_config_tree_editor.behavior verify.contract_form_runtime_state.behavior verify.action_view_runtime_smoke.behavior verify.frontend.lint.src verify.ui_contract.delivery_surface.unit verify.contract.architecture.suite
+ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.pr.push.unit verify.frontend.dev.incremental.unit verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit verify.menu_config_tree_editor.behavior verify.contract_form_runtime_state.behavior verify.action_view_runtime_smoke.behavior verify.frontend.lint.src verify.ui_contract.delivery_surface.unit verify.contract.architecture.suite verify.contract.list_preference.single_application verify.contract.gate_case_normalisation.unit verify.product.menu.metadata_batch.unit verify.local.dev.runtime.performance.unit verify.system.performance.baseline.unit verify.frontend.scoped_preference.runtime.unit
 	@git diff --check
 	@echo "[OK] local quick gate passed"
 

@@ -45,14 +45,18 @@ class _FactServiceDouble:
 
     renderable_tree: list[dict] = []
     authorized_tree: list[dict] = []
+    visible_export_calls = 0
+    authorized_export_calls = 0
 
     def __init__(self, env):
         self.env = env
 
     def export_visible_menu_facts(self):
+        type(self).visible_export_calls += 1
         return SimpleNamespace(tree=[dict(node) for node in type(self).renderable_tree])
 
     def export_authorized_menu_facts(self):
+        type(self).authorized_export_calls += 1
         return SimpleNamespace(tree=[dict(node) for node in type(self).authorized_tree])
 
 
@@ -65,7 +69,7 @@ def _load_authorization_native_nav():
         for node in tree.body
         if isinstance(node, ast.ClassDef) and node.name == "MenuService"
     )
-    wanted = {"_authorization_native_nav", "_menu_fact_tree_as_native"}
+    wanted = {"_authorization_native_nav", "_menu_fact_tree_as_native", "_menu_fact_snapshot"}
     body = []
     for node in cls.body:
         if isinstance(node, ast.FunctionDef) and node.name in wanted:
@@ -203,6 +207,22 @@ class MenuAclCarrierAuthorizationTests(unittest.TestCase):
         given = [{"menu_id": 7, "children": []}]
         nodes = self.authorization._authorization_native_nav(instance, {}, given)
         self.assertEqual(nodes, given)
+
+    def test_menu_fact_exports_are_reused_within_one_service_instance(self):
+        _FactServiceDouble.visible_export_calls = 0
+        _FactServiceDouble.authorized_export_calls = 0
+        instance = object.__new__(self.authorization)
+        instance.env = SimpleNamespace()
+
+        visible_first = self.authorization._menu_fact_snapshot(instance, "visible")
+        visible_second = self.authorization._menu_fact_snapshot(instance, "visible")
+        authorized_first = self.authorization._menu_fact_snapshot(instance, "authorized")
+        authorized_second = self.authorization._menu_fact_snapshot(instance, "authorized")
+
+        self.assertIs(visible_first, visible_second)
+        self.assertIs(authorized_first, authorized_second)
+        self.assertEqual(_FactServiceDouble.visible_export_calls, 1)
+        self.assertEqual(_FactServiceDouble.authorized_export_calls, 1)
 
     # --- the ACL filter itself ---------------------------------------------
 

@@ -231,6 +231,17 @@ gate.contract.bootstrap-pass:
 	@$(MAKE) --no-print-directory verify.contract.preflight
 	@DB="$(DB_NAME)" CASES_FILE="docs/contract/cases.yml" REF_DIR="docs/contract/snapshots" CONTRACT_CONFIG="$(CONTRACT_CONFIG)" ODOO_CONF="$(ODOO_CONF)" scripts/contract/gate_contract.sh --bootstrap --bootstrap-pass
 
+# 契约门的 per-case 声明式易变响应键：只抑制被声明的成员，其余仍严格比较，
+# 声明非法即失败（fail-closed）。用注入的导出命令驱动真实 gate，无需数据库。
+# Pinned to the single preference case; the tracked reference must not carry the
+# environment-assigned row handle.
+.PHONY: verify.contract.gate_case_normalisation.unit
+verify.contract.gate_case_normalisation.unit: guard.prod.forbid
+	@bash -n scripts/contract/gate_contract.sh
+	@python3 -m py_compile scripts/verify/intent_cases_integrity_guard.py
+	@python3 -m py_compile scripts/verify/test_contract_gate_case_normalisation.py
+	@python3 scripts/verify/test_contract_gate_case_normalisation.py
+
 # --- Contract structure fingerprint (hard lock) -----------------------
 # The fingerprint captures contract-relevant code structure (field
 # declarations + state-machine definitions).  If the code changes in
