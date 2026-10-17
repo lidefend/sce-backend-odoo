@@ -324,6 +324,27 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn("production_compose_contract", document)
         self.assertIn("EXPECTED_FRONTEND_IMAGE_DIGEST", document)
 
+    def test_decoupling_document_records_build_landing_and_fingerprint_conventions(self):
+        document = (
+            ROOT / "docs/ops/frontend_static_image_decoupling_20261018.md"
+        ).read_text()
+        self.assertIn("--output type=local,dest=", document)
+        self.assertNotIn("builder 导出目录是", document)
+        self.assertIn(
+            "cp -a /tmp/frontend-dist/. frontend/apps/web/dist-production-candidate/",
+            document,
+        )
+        for marker in ("F1（CI 规范口径）", "脚本变体", "契约镜像验收变体", "互不可比"):
+            self.assertIn(marker, document)
+        self.assertIn("scripts/release/immutable_candidate_build.sh", document)
+        self.assertIn(
+            "scripts/release/production_contract_image_acceptance.sh", document
+        )
+        self.assertIn(".gitignore:87", document)
+        self.assertIn("陈旧", document)
+        self.assertIn("自身不带版本标识", document)
+        self.assertIn("SOURCE_SHA=<pinned-sha>", document)
+
     def test_candidate_edge_health_is_json_and_drives_container_health(self):
         self.assertIn("location = /healthz", self.nginx_candidate)
         self.assertIn('default_type application/json', self.nginx_candidate)

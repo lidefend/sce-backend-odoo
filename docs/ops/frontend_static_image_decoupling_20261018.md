@@ -3,8 +3,12 @@
 ## 职责边界
 
 - 前端源码在主仓 `frontend/`。静态产物由 `Dockerfile.production-frontend-builder`
-  独立构建，产物目录为 `/build/frontend/apps/web/dist`，通过 export-only stage
-  `frontend-dist` 导出。
+  内的 pnpm/vite 构建到镜像内 `/build/frontend/apps/web/dist`，并由 export-only
+  stage `frontend-dist` 导出。**宿主机落点由
+  `--output type=local,dest=<dir>` 决定**：命令里传哪个 `<dir>`，产物就落在
+  哪里，不存在固定的“导出目录”。`Dockerfile.production-frontend` 的 `COPY`
+  源必须与该落点一致（当前为
+  `frontend/apps/web/dist-production-candidate/`）。
 - Odoo 镜像（`Dockerfile` / `Dockerfile.production-candidate`）只包含后端运行时。
   它不得包含 `/opt/sce/frontend`、`/usr/share/nginx/html/index.html`、`nginx`
   可执行文件或 Node 工具链。
@@ -21,14 +25,18 @@
 | Odoo 后端 | `ODOO_IMAGE_REF` | `EXPECTED_IMAGE_DIGEST` | 后端运行时 | `/opt/sce/frontend`、nginx、Node |
 | 前端静态 | `FRONTEND_IMAGE_REF` | `EXPECTED_FRONTEND_IMAGE_DIGEST` | `index.html`、`.build-sha256`、nginx | Node 构建链 |
 
-前端指纹统一算法（构建、CI、校验共用）：
+## 指纹口径（三套，互不可比）
 
-```bash
-cd <dist-dir> && find . -type f -print0 | LC_ALL=C sort -z \
-  | xargs -0 sha256sum | sha256sum | awk '{print $1}'
-```
+`sha256sum` 的输出包含文件路径，因此不同遍历根或路径前缀会得到不同摘要。
+以下三套口径**互不可比**，不得跨口径断言相等：
 
-外部 `FRONTEND_BUILD_SHA256`、前端镜像内 `.build-sha256` 与镜像标签
+| 口径 | 计算方式 | 消费方 |
+| --- | --- | --- |
+| F1（CI 规范口径） | `cd <dist-dir> && find . -type f -print0 \| LC_ALL=C sort -z \| xargs -0 sha256sum \| sha256sum` | `.github/workflows/backend_test_suite.yml`、`.github/workflows/demo-ci.yml`，产出 `FRONTEND_BUILD_SHA256` |
+| 脚本变体（相对根，无 `LC_ALL=C`） | `find "$dist" -type f -print0 \| sort -z \| xargs -0 sha256sum \| sha256sum` | `scripts/release/immutable_candidate_build.sh`（候选 `frontend-build.sha256`）、`scripts/release/production_acceptance.sh`、`make/release.mk` 的 release artifacts |
+| 契约镜像验收变体（绝对路径前缀） | `find "$context_dir/frontend/apps/web/dist-production-candidate" -type f -print0 \| sort -z \| xargs -0 sha256sum \| sha256sum` | `scripts/release/production_contract_image_acceptance.sh`，校验镜像 label 与 `.build-sha256` |
+
+同一口径内，外部 `FRONTEND_BUILD_SHA256`、前端镜像内 `.build-sha256` 与镜像标签
 `io.sce.frontend.sha256` 三者必须相等。
 
 ## 构建与验收命令
@@ -37,6 +45,10 @@ cd <dist-dir> && find . -type f -print0 | LC_ALL=C sort -z \
 # 1. 导出前端静态产物
 docker build --file Dockerfile.production-frontend-builder \
   --target frontend-dist --output type=local,dest=/tmp/frontend-dist .
+
+# 1b. 把导出产物放到 Dockerfile.production-frontend 的 COPY 源目录
+mkdir -p frontend/apps/web/dist-production-candidate
+cp -a /tmp/frontend-dist/. frontend/apps/web/dist-production-candidate/
 
 # 2. 构建前端静态镜像（上下文需包含 dist-production-candidate）
 docker build --file Dockerfile.production-frontend \
@@ -77,11 +89,23 @@ CI 中 `backend_test_suite.yml` 与 `demo-ci.yml` 均使用
   `FRONTEND_IMAGE_REF`。不得向该服务注入未被消费的
   `EXPECTED_FRONTEND_IMAGE_DIGEST` 环境变量；该摘要已在 preflight 阶段完成校验。
 
+## dist-production-candidate 状态
+
+- `frontend/apps/web/dist-production-candidate/` 被 `.gitignore:87` 忽略：
+  它不在版本库中，可能来自任意历史构建而**陈旧**，且**自身不带版本标识**。
+- 因此构建前端镜像前必须由固定 `SOURCE_SHA` 重新导出并整体覆盖该目录：
+
+```bash
+SOURCE_SHA=<pinned-sha>
+rm -rf frontend/apps/web/dist-production-candidate
+mkdir -p frontend/apps/web/dist-production-candidate
+docker build --file Dockerfile.production-frontend-builder \
+  --target frontend-dist \
+  --output type=local,dest=frontend/apps/web/dist-production-candidate .
+```
+
 ## 当前未闭合项（阻断，需镜像/编排责任人处理）
 
-- 该 Dockerfile 从构建上下文复制 `frontend/apps/web/dist-production-candidate/`，
-  而 builder 导出目录是 `dist`；构建前端镜像前必须先把导出产物放入该路径
-  （`scripts/release/immutable_candidate_build.sh` 采用同样方式）。
 - builder 不生成 `.build-sha256`，指纹由外部计算后作为构建参数注入；镜像内文件
   由 `Dockerfile.production-frontend` 写入。
 
