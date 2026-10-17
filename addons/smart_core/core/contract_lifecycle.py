@@ -95,10 +95,59 @@ def strip_request_transport_identity(value: Any) -> Any:
     return value
 
 
+# Source-envelope identity
+# ------------------------
+# The source envelope's ``source_meta`` is part of the payload that
+# ``build_lifecycle_evidence`` hashes into ``sourceSha256``, so every key in it
+# is part of the source identity. Transport identity and per-request measurements
+# describe the request, not the source: keeping them made the digest change
+# between processes (and between requests) for byte-identical source content.
+# ``elapsed_ms`` is the projection's own duration; ``trace_id``/``request_id`` are
+# the request's transport identity.
+SOURCE_META_PER_REQUEST_KEYS = REQUEST_TRANSPORT_CONTEXT_KEYS + ("elapsed_ms",)
+
+
+def source_meta_for_identity(meta: Any) -> dict[str, Any]:
+    """The source envelope meta with per-request identity and measurements removed.
+
+    Returns a new dict; the caller's ``meta`` is never mutated. A non-dict value
+    yields ``{}`` so an unreadable envelope contributes no identity rather than
+    an accidental one.
+    """
+    if not isinstance(meta, dict):
+        return {}
+    return {
+        key: value
+        for key, value in meta.items()
+        if key not in SOURCE_META_PER_REQUEST_KEYS
+    }
+
+
 def contract_semantic_payload(contract: dict[str, Any]) -> dict[str, Any]:
     payload = strip_request_transport_identity(contract if isinstance(contract, dict) else {})
     payload.pop("meta", None)
     return payload
+
+
+def _reusable_digest(reuse_digests: dict[str, Any] | None, key: str) -> str:
+    """Return a caller-supplied digest only when it is a usable sha256 value.
+
+    A missing, blank or non-string value is never accepted: the caller falls
+    back to computing the digest from the payload it actually holds. The reuse
+    is therefore a pure memo hint, never an authority: ``reuse_digests`` may
+    only carry a digest that was produced by this same function over the same
+    semantic payload, and ``verify_unified_page_contract_integrity`` still
+    recomputes it from the delivered contract on every delivery.
+    """
+    if not isinstance(reuse_digests, dict):
+        return ""
+    value = reuse_digests.get(key)
+    if not isinstance(value, str):
+        return ""
+    value = value.strip()
+    if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+        return ""
+    return value
 
 
 def build_lifecycle_evidence(
@@ -114,6 +163,7 @@ def build_lifecycle_evidence(
     generator_version: str,
     source_authority: dict[str, Any],
     published_version_ref: str = "",
+    reuse_digests: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     normalized_request_id = protocol_id(request_id, prefix="request")
     normalized_trace_id = protocol_id(trace_id or request_id, prefix="trace")
@@ -139,7 +189,8 @@ def build_lifecycle_evidence(
             "generator": str(generator or "unknown"),
             "generatorVersion": str(generator_version or UNIFIED_PAGE_SCHEMA_VERSION),
             "sourceType": str(source_type or "unknown"),
-            "sourceSha256": payload_sha256(
+            "sourceSha256": _reusable_digest(reuse_digests, "sourceSha256")
+            or payload_sha256(
                 strip_request_transport_identity(source_payload if isinstance(source_payload, dict) else {})
             ),
         },
@@ -151,7 +202,8 @@ def build_lifecycle_evidence(
         },
         "integrity": {
             "algorithm": HASH_ALGORITHM,
-            "contractSha256": payload_sha256(contract_semantic_payload(contract)),
+            "contractSha256": _reusable_digest(reuse_digests, "contractSha256")
+            or payload_sha256(contract_semantic_payload(contract)),
         },
         "authority": deepcopy(source_authority if isinstance(source_authority, dict) else {}),
     }
@@ -170,6 +222,7 @@ def seal_unified_page_contract(
     generator_version: str = UNIFIED_PAGE_SCHEMA_VERSION,
     source_authority: dict[str, Any] | None = None,
     published_version_ref: str = "",
+    reuse_digests: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if not isinstance(contract, dict):
         raise TypeError("contract must be a dict")
@@ -187,6 +240,7 @@ def seal_unified_page_contract(
         generator_version=generator_version,
         source_authority=source_authority or {},
         published_version_ref=published_version_ref,
+        reuse_digests=reuse_digests,
     )
     digest = lifecycle["integrity"]["contractSha256"]
     normalized_request_id = lifecycle["runtime"]["requestId"]

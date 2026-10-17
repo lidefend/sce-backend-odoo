@@ -2132,7 +2132,12 @@ class PageAssembler:
             "required_fields": profile_required_names,
             "fields": policy_fields,
             "field_labels": policy_field_labels,
-            "layout_fields": list(seen_fields),
+            # The layout field surface is a membership fact, so it must not carry
+            # a set's iteration order: ``list(set(...))`` varies with the process
+            # string hash seed, which made the source payload (and therefore the
+            # sealed ``sourceSha256``) differ between two processes serving the
+            # identical contract. Consumers read this list for membership only.
+            "layout_fields": sorted(seen_fields),
         }
 
     def _include_configured_orchestrated_view_types(self, view_types, *, model_name="", action_id=None):

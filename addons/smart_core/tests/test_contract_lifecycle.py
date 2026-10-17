@@ -106,6 +106,98 @@ class ContractLifecycleTests(unittest.TestCase):
         self.assertEqual(len(lifecycle["integrity"]["contractSha256"]), 64)
         self.assertEqual(verify_unified_page_contract_integrity(contract), (True, "ok"))
 
+    def test_a_bound_digest_is_reused_without_recomputation(self):
+        contract = self._contract()
+        source = {"model": "project.project"}
+        baseline = contract_lifecycle.build_lifecycle_evidence(
+            contract=contract, source_payload=source, source_type="ui.contract",
+            request_id="request.one", trace_id="trace.one", client_type="web_pc",
+            stage="runtime_delivery", generator="test", generator_version="1",
+            source_authority={},
+        )
+        digests = {
+            "contractSha256": baseline["integrity"]["contractSha256"],
+            "sourceSha256": baseline["generation"]["sourceSha256"],
+        }
+        calls = {"n": 0}
+        original = contract_lifecycle.payload_sha256
+
+        def _refuse(*args, **kwargs):
+            calls["n"] += 1
+            return original(*args, **kwargs)
+
+        contract_lifecycle.payload_sha256 = _refuse
+        try:
+            reused = contract_lifecycle.build_lifecycle_evidence(
+                contract=contract, source_payload=source, source_type="ui.contract",
+                request_id="request.two", trace_id="trace.two", client_type="web_pc",
+                stage="runtime_delivery", generator="test", generator_version="1",
+                source_authority={}, reuse_digests=digests,
+            )
+        finally:
+            contract_lifecycle.payload_sha256 = original
+        self.assertEqual(calls["n"], 0)
+        self.assertEqual(reused["integrity"]["contractSha256"], digests["contractSha256"])
+        self.assertEqual(reused["generation"]["sourceSha256"], digests["sourceSha256"])
+        # The reused seal is still a genuine per-request identity.
+        self.assertEqual(reused["runtime"]["traceId"], "trace.two")
+
+    def test_reuse_fails_closed_on_a_missing_or_malformed_digest(self):
+        contract = self._contract()
+        for reuse in (None, {}, {"contractSha256": "", "sourceSha256": ""},
+                      {"contractSha256": "x" * 64, "sourceSha256": "y" * 64},
+                      {"contractSha256": 1234, "sourceSha256": "z" * 64},
+                      {"contractSha256": "a" * 64}):
+            evidence = contract_lifecycle.build_lifecycle_evidence(
+                contract=contract, source_payload={"model": "project.project"},
+                source_type="ui.contract", request_id="request.one", trace_id="trace.one",
+                client_type="web_pc", stage="runtime_delivery", generator="test",
+                generator_version="1", source_authority={}, reuse_digests=reuse,
+            )
+            self.assertEqual(len(evidence["integrity"]["contractSha256"]), 64)
+            self.assertEqual(len(evidence["generation"]["sourceSha256"]), 64)
+            if isinstance(reuse, dict) and reuse.get("contractSha256") in ("x" * 64,):
+                self.assertNotEqual(evidence["integrity"]["contractSha256"], reuse["contractSha256"])
+
+    def test_a_wrong_bound_digest_is_caught_by_the_per_request_reverification(self):
+        # The reuse is a memo, not an authority: if the bound digest did not
+        # describe the delivered contract, the delivery-time re-verification
+        # must reject it instead of shipping a silently wrong etag.
+        contract = seal_unified_page_contract(
+            self._contract(),
+            source_payload={"model": "project.project"},
+            source_type="ui.contract",
+            request_id="request.one",
+            trace_id="trace.one",
+            reuse_digests={"contractSha256": "b" * 64, "sourceSha256": "a" * 64},
+        )
+        self.assertEqual(contract["meta"]["etag"], "upc-v2-sha256-" + "b" * 64)
+        ok, reason = verify_unified_page_contract_integrity(contract)
+        self.assertFalse(ok)
+        self.assertEqual(reason, "contract_sha256_mismatch")
+
+    def test_a_correct_bound_digest_still_verifies(self):
+        contract = self._contract()
+        source = {"model": "project.project"}
+        evidence = contract_lifecycle.build_lifecycle_evidence(
+            contract=contract, source_payload=source, source_type="ui.contract",
+            request_id="request.one", trace_id="trace.one", client_type="web_pc",
+            stage="runtime_delivery", generator="test", generator_version="1",
+            source_authority={},
+        )
+        sealed = seal_unified_page_contract(
+            contract,
+            source_payload=source,
+            source_type="ui.contract",
+            request_id="request.two",
+            trace_id="trace.two",
+            reuse_digests={
+                "contractSha256": evidence["integrity"]["contractSha256"],
+                "sourceSha256": evidence["generation"]["sourceSha256"],
+            },
+        )
+        self.assertEqual(verify_unified_page_contract_integrity(sealed), (True, "ok"))
+
     def test_tampering_fails_integrity_verification(self):
         contract = seal_unified_page_contract(
             self._contract(),
@@ -156,6 +248,69 @@ class ContractLifecycleTests(unittest.TestCase):
             unattributed["meta"]["lifecycle"]["integrity"]["contractSha256"],
         )
         self.assertEqual(verify_unified_page_contract_integrity(attributed), (True, "ok"))
+
+
+class SourceMetaIdentityTests(unittest.TestCase):
+    """``source_meta`` is inside the hashed source payload.
+
+    ``build_lifecycle_evidence`` hashes ``strip_request_transport_identity(source_payload)``
+    into ``sourceSha256``, so every key the source envelope meta carries is part of
+    the source identity. A per-request measurement there makes the same source
+    content produce a different identity in every process.
+    """
+
+    def _identity(self, source_payload):
+        return payload_sha256(contract_lifecycle.strip_request_transport_identity(source_payload))
+
+    def test_per_request_measurements_and_transport_identity_are_dropped(self):
+        meta = {
+            "intent": "ui.contract",
+            "model": "res.partner",
+            "op": "action_open",
+            "elapsed_ms": 1234,
+            "trace_id": "trace.one",
+            "request_id": "request.one",
+        }
+        self.assertEqual(
+            contract_lifecycle.source_meta_for_identity(meta),
+            {"intent": "ui.contract", "model": "res.partner", "op": "action_open"},
+        )
+        # The caller's meta is never mutated: only the hashed copy is normalized.
+        self.assertEqual(meta["elapsed_ms"], 1234)
+        self.assertEqual(meta["trace_id"], "trace.one")
+
+    def test_a_non_dict_meta_contributes_no_identity(self):
+        self.assertEqual(contract_lifecycle.source_meta_for_identity(None), {})
+        self.assertEqual(contract_lifecycle.source_meta_for_identity("ui.contract"), {})
+        self.assertEqual(contract_lifecycle.source_meta_for_identity([("intent", "ui.contract")]), {})
+
+    def _source_payload(self, *, elapsed_ms, model="res.partner", op="action_open"):
+        return {
+            "model": model,
+            "source_meta": contract_lifecycle.source_meta_for_identity({
+                "intent": "ui.contract",
+                "model": model,
+                "op": op,
+                "elapsed_ms": elapsed_ms,
+                "trace_id": "trace.one",
+                "request_id": "request.one",
+            }),
+        }
+
+    def test_source_identity_is_stable_across_projection_duration(self):
+        # Two projections of the same source that differ only in how long they
+        # took are the same source; the identity must not move with the clock.
+        self.assertEqual(
+            self._identity(self._source_payload(elapsed_ms=1)),
+            self._identity(self._source_payload(elapsed_ms=9999)),
+        )
+
+    def test_source_identity_still_moves_when_a_source_fact_changes(self):
+        # Negative control: the filter is narrow. A changed source fact still
+        # changes the identity, both outside and inside the envelope meta.
+        baseline = self._identity(self._source_payload(elapsed_ms=7))
+        self.assertNotEqual(baseline, self._identity(self._source_payload(elapsed_ms=7, model="project.project")))
+        self.assertNotEqual(baseline, self._identity(self._source_payload(elapsed_ms=7, op="action_other")))
 
 
 if __name__ == "__main__":

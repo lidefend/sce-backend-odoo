@@ -1309,6 +1309,9 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "user.view.preference.set",
+    "volatile_keys": [
+      "id"
+    ],
     "intent_params": {
       "model": "res.partner",
       "preference_key": "list_columns",

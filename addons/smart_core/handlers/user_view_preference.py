@@ -363,7 +363,10 @@ class UserViewPreferenceSetHandler(UserViewPreferenceGetHandler):
         return {
             "ok": True,
             "data": {
-                "id": record.id,
+                # The declared response surface is {scope_key, preference}. The
+                # row handle is environment-assigned, undeclared in
+                # UserViewPreferenceContract and consumed by nobody, so it is
+                # never emitted (it must not become an identity contract).
                 "scope_key": scope_key,
                 "preference": record.value_json if isinstance(record.value_json, dict) else {},
             },

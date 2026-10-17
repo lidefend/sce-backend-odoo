@@ -1306,6 +1306,66 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(result.code, 409)
         self.assertIn("SCENE_ACTION_BINDING_INVALID", result.error["message"])
 
+    def test_scene_action_binding_skips_registry_load_without_scene_key(self):
+        loads = []
+
+        def _must_not_load(*args, **kwargs):
+            loads.append(1)
+            raise AssertionError("scene registry must not load for a scene-less request")
+
+        self.module.load_scenes_from_db_or_fallback = _must_not_load
+        handler = self.module.UiContractV2Handler(env=object())
+
+        result = handler._validate_scene_action_binding({"action_id": 878, "menu_id": 559})
+
+        self.assertIsNone(result)
+        self.assertEqual(loads, [])
+
+    def test_scene_action_binding_skips_registry_load_for_blank_scene_key(self):
+        loads = []
+
+        def _must_not_load(*args, **kwargs):
+            loads.append(1)
+            raise AssertionError("scene registry must not load for a blank scene key")
+
+        self.module.load_scenes_from_db_or_fallback = _must_not_load
+        handler = self.module.UiContractV2Handler(env=object())
+
+        self.assertIsNone(handler._validate_scene_action_binding({"scene_key": "   ", "action_id": 878}))
+        self.assertIsNone(handler._validate_scene_action_binding({"sceneKey": "", "action_id": 878}))
+        self.assertEqual(loads, [])
+
+    def test_scene_action_binding_still_loads_and_rejects_for_scene_key(self):
+        loads = []
+
+        def _load(*args, **kwargs):
+            loads.append(1)
+            return {"scenes": [{"key": "contract.income", "target": {"action_id": 786}}]}
+
+        self.module.load_scenes_from_db_or_fallback = _load
+        handler = self.module.UiContractV2Handler(env=object())
+
+        accepted = handler._validate_scene_action_binding(
+            {"scene_key": "contract.income", "action_id": 786}
+        )
+        self.assertIsNone(accepted)
+
+        rejected = handler._validate_scene_action_binding(
+            {"scene_key": "contract.income", "action_id": 999}
+        )
+        self.assertFalse(rejected.ok)
+        self.assertEqual(rejected.code, 409)
+        self.assertIn("SCENE_ACTION_BINDING_INVALID", rejected.error["message"])
+
+        # The camelCase key the adapter reads must reach the same guarded load.
+        camel = handler._validate_scene_action_binding(
+            {"sceneKey": "contract.income", "actionId": 999}
+        )
+        self.assertFalse(camel.ok)
+        self.assertEqual(camel.code, 409)
+
+        self.assertEqual(len(loads), 3)
+
     def test_rejects_invalid_max_widgets(self):
         handler = self.module.UiContractV2Handler(env=object())
 
