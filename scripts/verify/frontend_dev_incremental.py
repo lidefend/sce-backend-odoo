@@ -39,6 +39,13 @@ class Rule:
 
 
 RULES = (
+    Rule(("scripts/dev/local_dev_demo_authority_verify.sh",
+          "scripts/dev/local_environment_health.sh",
+          "scripts/dev/local_environment_readiness.py",
+          "scripts/verify/test_local_environment_readiness.py"), (
+        "verify.local.env.readiness.unit",
+        "audit.verification.lane_coverage.check",
+    )),
     Rule((
         "/views/LoginView.vue",
         "/views/AccountActivationView.vue",

@@ -46,7 +46,7 @@
   "goal": ".agent/goals/DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY.yaml",
   "id": "DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY",
   "next_exact_step": "Completed 2026-10-06: the lane self-consistency objective is already satisfied on main and verified by tree comparison (HEAD equals origin/main 5298e288 apart from this run record). This branch carried no unique change, so it is retired as a metadata-only carrier and its active-run binding is removed; the daily server lane was not re-run for this metadata-only retirement.",
-  "record": ".runtime/pr/daily-acceptance-lane-selfconsistency.md",
+  "record": "docs/ops/iterations/daily_acceptance_lane_selfconsistency_original_record.md",
   "schema_version": 1,
   "scope": [
     ".agent/active-runs.json",

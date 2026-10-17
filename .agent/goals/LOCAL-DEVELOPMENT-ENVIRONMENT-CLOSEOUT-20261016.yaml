@@ -1,0 +1,7 @@
+schema_version: 1
+goal:
+  id: LOCAL-DEVELOPMENT-ENVIRONMENT-CLOSEOUT-20261016
+  title: Governed local development readiness
+  status: active
+  formal_product_layer: P4
+  objective: Verify persistent local development and optional clean-install lifecycle without customer data or daily runtime changes.
