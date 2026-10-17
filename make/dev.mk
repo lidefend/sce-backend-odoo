@@ -207,6 +207,29 @@ local.dev.contract_snapshot: guard.prod.forbid local.dev.ready
 	  CONTRACT_START_CASE="$(CONTRACT_START_CASE)" CONTRACT_CASE_ONLY="$(CONTRACT_CASE_ONLY)" \
 	  contract.export_all
 
+# Bounded affected-surface contract gate over the registered local.dev profile
+# (database sc_dev_demo, source = THIS worktree). Iteration/diagnostic entry: it
+# regenerates and compares ONLY the declared case names in LOCAL_DEV_GATE_CASES,
+# each of which must exist in docs/contract/cases.yml (a missing name fails
+# closed). It never writes the tracked reference directory and is NOT a
+# substitute for the full delivery gate (gate.contract). Set
+# LOCAL_DEV_GATE_REF_DIR to compare against an alternate reference directory.
+LOCAL_DEV_GATE_CASES ?=
+LOCAL_DEV_GATE_REF_DIR ?= docs/contract/snapshots
+.PHONY: local.dev.gate_contract.bounded local.dev.gate_contract.bounded.run
+local.dev.gate_contract.bounded: guard.prod.forbid local.dev.ready
+	@test -n "$(LOCAL_DEV_GATE_CASES)" || (echo "LOCAL_DEV_GATE_CASES is required (comma-separated declared case names)" >&2; exit 2)
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  LOCAL_DEV_GATE_CASES="$(LOCAL_DEV_GATE_CASES)" \
+	  LOCAL_DEV_GATE_REF_DIR="$(LOCAL_DEV_GATE_REF_DIR)" \
+	  local.dev.gate_contract.bounded.run
+
+local.dev.gate_contract.bounded.run:
+	@DB="$(DB_NAME)" CASES_FILE="docs/contract/cases.yml" CASE_FILTER="$(LOCAL_DEV_GATE_CASES)" \
+	  REF_DIR="$(LOCAL_DEV_GATE_REF_DIR)" TMP_DIR="tmp/contract_gate_scope_run" \
+	  CONTRACT_CONFIG="$(CONTRACT_CONFIG)" ODOO_CONF="$(ODOO_CONF)" \
+	  scripts/contract/gate_contract.sh
+
 local.dev.project_create_contract_action_scope: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/local_dev_project_create_contract_action_scope.sh
@@ -233,6 +256,17 @@ verify.local.dev.form_structure_surface_capability.orm: guard.prod.forbid
 verify.local.dev.canonical_navigation_projection.orm: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_core TEST_TAGS="/smart_core:TestCanonicalNavigationProjection" local.dev.test
+
+# Registered verify alias for the run index: the real-ORM lock on the user view
+# preference surface -- an illegal or mismatched identity is refused before any
+# read or write, the stored/effective projections never instantiate the page
+# assembler, and the server never applies a stored order to the declared list
+# contract (the frontend consumer is the single application site). Pinned to its
+# fixed test tag so a run that collects zero tests cannot pass.
+.PHONY: verify.local.dev.user_view_preference.runtime.orm
+verify.local.dev.user_view_preference.runtime.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_core TEST_TAGS="/smart_core:TestUserViewPreferenceRuntime" local.dev.test
 
 local.dev.project_profile_write_fixture: guard.prod.forbid local.dev.ready
 	@test -n "$(P4_PROJECT_PROFILE_MODE)" || (echo "P4_PROJECT_PROFILE_MODE is required" >&2; exit 2)
@@ -551,7 +585,8 @@ local.contract-lifecycle.discard: guard.prod.forbid local.contract-lifecycle.req
 	local.contract-snapshot.seed local.contract-snapshot.rebuild \
 	local.contract-snapshot.up local.contract-snapshot.down local.contract-snapshot.ps \
 	local.contract-snapshot.logs local.contract-snapshot.odoo-shell \
-	local.contract-snapshot.odoo-shell.run local.contract-snapshot.upgrade \
+	local.contract-snapshot.odoo-shell.run local.contract-snapshot.preference_record.probe \
+	local.contract-snapshot.upgrade \
 	local.contract-snapshot.discard local.contract-snapshot.contract_export \
 	local.contract-snapshot.gate_contract local.contract-snapshot.gate_contract.run \
 	local.contract-snapshot.matrix_audit local.contract-snapshot.matrix_audit.run
@@ -601,6 +636,16 @@ local.contract-snapshot.odoo-shell: guard.prod.forbid local.contract-snapshot.re
 # entrypoint. Invoked only through the guarded outer target.
 local.contract-snapshot.odoo-shell.run:
 	@$(RUN_ENV) DB_NAME="$(DB_NAME)" bash scripts/ops/odoo_shell_exec.sh
+
+# Read-only inventory of the historical preference sentinel row in the
+# registered contract-snapshot database (sc_contract_snapshot). The tracked
+# snapshot's environment-assigned ``id`` is described but never used as a
+# deletion handle; resolution is always by (user_id, scope_key). Commit is
+# refused and the carrier rolls back. See
+# scripts/verify/local_contract_snapshot_preference_record_probe.py.
+local.contract-snapshot.preference_record.probe: guard.prod.forbid local.contract-snapshot.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" \
+	  local.contract-snapshot.odoo-shell < scripts/verify/local_contract_snapshot_preference_record_probe.py
 
 local.contract-snapshot.upgrade: guard.prod.forbid local.contract-snapshot.require_env
 	@test -n "$(MODULE)" || (echo "MODULE is required" >&2; exit 2)
@@ -1259,6 +1304,13 @@ verify.local.dev.demo_loaded_chains.orm: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_construction_demo TEST_TAGS="demo_loaded_chains" local.dev.test
 
+# Unit guard for the bounded runtime-performance observation carrier. It runs the
+# probe against a fake environment: no database, no runtime write, no browser.
+.PHONY: verify.local.dev.runtime.performance.unit
+verify.local.dev.runtime.performance.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/local_dev_runtime_performance.py scripts/verify/test_local_dev_runtime_performance.py
+	@python3 scripts/verify/test_local_dev_runtime_performance.py
+
 .PHONY: local.dev.runtime.performance.observe
 local.dev.runtime.performance.observe: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
@@ -1294,6 +1346,18 @@ local.dev.runtime.cache_identity.probe: guard.prod.forbid local.dev.ready
 	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  odoo.shell.exec < scripts/verify/local_dev_runtime_cache_identity_probe.py
 
+# Read-only preference-record inventory for R5: which ``sc.user.view.preference``
+# rows exist on the governed runtime, who owns each one, and what the tracked
+# snapshot's ``id`` claim resolves to today -- always by (user, scope_key), never
+# by the snapshot id. Commit is refused; no product code, schema, fixture or ACL
+# change; no row is written or deleted; see
+# scripts/verify/local_dev_runtime_preference_record_probe.py.
+.PHONY: local.dev.runtime.preference_record.probe
+local.dev.runtime.preference_record.probe: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/verify/local_dev_runtime_preference_record_probe.py
+
 # Read-only permission-gate attribution probe for R4: splits the controller
 # ``permission`` segment into its real sub-phases and separates the process-first
 # initialization cost from the per-request cost, on the registered demo finance
@@ -1303,6 +1367,7 @@ local.dev.runtime.cache_identity.probe: guard.prod.forbid local.dev.ready
 local.dev.runtime.permission.probe: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
 	  PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID="$(PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID)" \
+	  PRODUCT_PERFORMANCE_PERMISSION_CARRIER="$(PRODUCT_PERFORMANCE_PERMISSION_CARRIER)" \
 	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  odoo.shell.exec < scripts/verify/local_dev_runtime_permission_probe.py
 
@@ -1320,13 +1385,41 @@ local.dev.runtime.contract_request.probe: guard.prod.forbid local.dev.ready
 	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  odoo.shell.exec < scripts/verify/local_dev_runtime_contract_request_probe.py
 
+# Read-only per-request allocation attribution: on one fixed identity and one
+# fixed ui.contract.v2 request it separates the real generation-0/1/2
+# distribution (gc enabled) from a nesting-aware net-container attribution over
+# a curated set of existing callables (gc disabled), so the residual hot-request
+# allocation volume is located instead of inferred. Commit is refused; no
+# product code, schema, fixture or ACL change; see
+# scripts/verify/local_dev_runtime_allocation_attribution_probe.py.
+.PHONY: local.dev.runtime.allocation_attribution.probe
+local.dev.runtime.allocation_attribution.probe: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID="$(PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID)" \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/verify/local_dev_runtime_allocation_attribution_probe.py
+
+# Read-only role-dimension contract observation: the same fixed ui.contract.v2
+# request under several declared demo principals, so the contract identity and
+# the visible relation surface are shown to vary by role, per-role first/cold/
+# hot costs are separated from the process-first cost, and a role without the
+# capability is refused explicitly instead of via an empty contract. Commit is
+# refused; no product code, schema, fixture or ACL change; see
+# scripts/verify/local_dev_runtime_contract_role_matrix_probe.py.
+.PHONY: local.dev.runtime.contract_role_matrix.probe
+local.dev.runtime.contract_role_matrix.probe: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID="$(PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID)" \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/verify/local_dev_runtime_contract_role_matrix_probe.py
+
 # P4 system performance baseline. One bounded capture on the registered
 # sc-local-dev / sc_dev_demo profile; reuses the existing governed probes and
 # normalizes their payloads once into artifacts/backend/system_performance_baseline.json
 # and docs/ops/audit/system_performance_baseline.md. It starts no environment and
 # never writes product code; missing identity is reported as an explicit gap.
 # PRODUCT_PERFORMANCE_BASELINE_SOURCES selects the bounded capture set, for example
-# "sla,observe" (default) or "sla,observe,contract_profile,permission,cache_identity".
+# "sla,observe" (default) or "sla,observe,contract_profile,contract_request,permission,cache_identity".
 .PHONY: local.dev.runtime.performance.baseline
 local.dev.runtime.performance.baseline: guard.prod.forbid local.dev.ready
 	@if [ "$(DB_NAME)" != "sc_dev_demo" ] || [ "$(COMPOSE_PROJECT_NAME)" != "sc-local-dev" ]; then \
@@ -1343,5 +1436,5 @@ local.dev.runtime.performance.baseline: guard.prod.forbid local.dev.ready
 # complete baseline; negative cases must register a gap or fail closed.
 .PHONY: verify.system.performance.baseline.unit
 verify.system.performance.baseline.unit: guard.prod.forbid
-	@python3 -m py_compile scripts/verify/system_performance_baseline.py scripts/verify/test_system_performance_baseline.py scripts/ops/local_dev_performance_identity.py
+	@python3 -m py_compile scripts/verify/system_performance_baseline.py scripts/verify/test_system_performance_baseline.py scripts/verify/local_dev_runtime_contract_role_matrix_probe.py scripts/ops/local_dev_performance_identity.py
 	@python3 -m unittest scripts.verify.test_system_performance_baseline

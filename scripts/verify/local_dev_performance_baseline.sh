@@ -71,11 +71,25 @@ if want permission; then
     ENV=dev ENV_FILE="${ENV_FILE}" local.dev.runtime.permission.probe
 fi
 
+if want contract_request; then
+  run_capture contract-request env \
+    PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID="${PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID:-878}" \
+    "${MAKE:-make}" --no-print-directory -C "${ROOT_DIR}" \
+    ENV=dev ENV_FILE="${ENV_FILE}" local.dev.runtime.contract_request.probe
+fi
+
 if want cache_identity; then
   run_capture cache-identity env \
     PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID="${PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID:-878}" \
     "${MAKE:-make}" --no-print-directory -C "${ROOT_DIR}" \
     ENV=dev ENV_FILE="${ENV_FILE}" local.dev.runtime.cache_identity.probe
+fi
+
+if want role_matrix; then
+  run_capture role-matrix env \
+    PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID="${PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID:-878}" \
+    "${MAKE:-make}" --no-print-directory -C "${ROOT_DIR}" \
+    ENV=dev ENV_FILE="${ENV_FILE}" local.dev.runtime.contract_role_matrix.probe
 fi
 
 if [[ ${#captured[@]} -eq 0 ]]; then

@@ -12,6 +12,13 @@ is ~2 ms. This probe answers, with runtime evidence instead of code reading:
 3. whether the observed request shape (``menu_id`` present or absent) selects the
    expensive publication-authority branch.
 
+The earlier ``first_touch_of_process`` reading was already warm: deriving the
+observed menu carrier calls the process-cached ``sc.product.policy``
+``published_route_authority()`` before the first gate. To close the gap between
+the controller's observed ``permission`` segment and the registry-cleared cold
+reading, the probe accepts an optional ``PRODUCT_PERFORMANCE_PERMISSION_CARRIER`` value so
+the *genuinely* first gate of the process can run before any other authority read.
+
 Read-only: commit is refused, the probe rolls back, it changes no product code,
 schema, fixture or ACL. ``registry.clear_cache()`` only clears this throwaway
 ``odoo shell`` process, never the serving workers.
@@ -20,6 +27,7 @@ import hashlib
 import importlib
 import inspect
 import json
+import os
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -43,6 +51,7 @@ def _refuse_commit(*_args, **_kwargs):
 env.cr.commit = _refuse_commit
 
 REPORT = {"schema": "runtime-permission-probe/v1", "database": DATABASE, "acceptance_pass": False}
+PROCESS_FIRST = {}
 
 
 def _timed_import(name):
@@ -191,18 +200,39 @@ class _RequestShim:
 _ORIGINAL_REQUEST = ip.request
 _ORIGINAL_SP_ORMCACHE = None
 
+_PF_FIRST_ORM_STARTED = time.perf_counter()
 user = env.ref("smart_construction_demo.user_demo_role_finance")
+PROCESS_FIRST["first_orm_read_env_ref_ms"] = round((time.perf_counter() - _PF_FIRST_ORM_STARTED) * 1000.0, 3)
 assert user.active and not user.share, "declared demo finance identity unavailable"
 company = user.company_id.id
 actor = api.Environment(env.cr, user.id, {"allowed_company_ids": [company], "lang": "zh_CN"})
 assert not actor.su, "actor must not be elevated"
 
+# The carrier may be supplied so the first gate can run before any other ORM
+# work warms the process-cached published route authority.
+_PF_CARRIER_ENV = os.environ.get("PRODUCT_PERFORMANCE_PERMISSION_CARRIER")
+PF_CARRIER = int(_PF_CARRIER_ENV) if _PF_CARRIER_ENV else None
 Policy = actor["sc.product.policy"]
-CARRIER = None
-for _menu_id, _action_id in tra.iter_published_pairs(Policy.published_route_authority()):
-    if int(_action_id) == ACTION_ID and int(_menu_id) > 0:
-        CARRIER = int(_menu_id)
-        break
+CARRIER = PF_CARRIER
+if CARRIER is None:
+    _pf_acl_before, _pf_sql_before = ACL["count"], SQL["count"]
+    STATE["scenario"] = "process_first_authority_read"
+    STATE["phase"] = "first_read"
+    try:
+        _pf_authority_started = time.perf_counter()
+        _pf_authority = Policy.published_route_authority()
+        _pf_authority_ms = (time.perf_counter() - _pf_authority_started) * 1000.0
+    finally:
+        STATE["scenario"] = None
+        STATE["phase"] = None
+    PROCESS_FIRST["first_published_route_authority_read_ms"] = round(_pf_authority_ms, 3)
+    PROCESS_FIRST["first_published_route_authority_read_acls"] = ACL["count"] - _pf_acl_before
+    PROCESS_FIRST["first_published_route_authority_read_sql"] = SQL["count"] - _pf_sql_before
+    for _menu_id, _action_id in tra.iter_published_pairs(_pf_authority):
+        if int(_action_id) == ACTION_ID and int(_menu_id) > 0:
+            CARRIER = int(_menu_id)
+            break
+PROCESS_FIRST["carrier_source"] = "environment" if PF_CARRIER is not None else "derived_in_process"
 assert CARRIER, "no published menu carrier for the observed action"
 
 NO_MENU = {"intent": INTENT, "action_id": ACTION_ID, "op": "action_open"}
@@ -257,7 +287,12 @@ def _run(scenario, phase):
     }
 
 
-# 1. Process-first invocation in this throwaway process, on the real request shape.
+# 1. Genuinely-first gate of this throwaway process: only runs when the carrier
+#    was supplied, so this gate, and not the setup, pays the one-time authority
+#    build plus the process-first ORM/module cache cold.
+if PF_CARRIER is not None:
+    _run("with_menu_id", "process_first_true")
+# 2. First invocation on the real request shape after setup (authority already warm).
 _run("with_menu_id", "first_touch_of_process")
 # 2. Per-scenario cold/warm, each cold preceded by a registry-cache clear so the
 #    one-time authority/registry work must reappear instead of being inherited.
@@ -409,6 +444,29 @@ REPORT["entitlement_model_available"] = entitlement_available
 REPORT["action_resolution"] = ACTION_RESOLUTION
 REPORT["action_auth_scope"] = _ACTION_SCOPE
 REPORT["negatives"] = {key.split(":", 1)[1]: row for key, row in GATE.items() if key.startswith("negatives:")}
+_pf_phases = _phases("with_menu_id", "process_first_true")
+_pf_gate_ms = GATE["with_menu_id:process_first_true"]["gate_ms"] if "with_menu_id:process_first_true" in GATE else None
+_pf_authority_ms = _pf_phases.get("runtime_route_authority._build_runtime_route_authority")
+REPORT["process_first"] = {
+    "carrier_source": PROCESS_FIRST.get("carrier_source"),
+    "first_orm_read_env_ref_ms": PROCESS_FIRST.get("first_orm_read_env_ref_ms"),
+    "first_published_route_authority_read_ms": PROCESS_FIRST.get("first_published_route_authority_read_ms"),
+    "first_published_route_authority_read_acls": PROCESS_FIRST.get("first_published_route_authority_read_acls"),
+    "first_published_route_authority_read_sql": PROCESS_FIRST.get("first_published_route_authority_read_sql"),
+    "first_published_route_authority_read_subphases_ms": _phases("process_first_authority_read", "first_read"),
+    "controller_observed_first_permission_ms": 215.173,
+    "true_first_gate_ms": _pf_gate_ms,
+    "true_first_gate_subphases_ms": _pf_phases,
+    "true_first_gate_acls": GATE.get("with_menu_id:process_first_true", {}).get("acl_count"),
+    "true_first_gate_sql": GATE.get("with_menu_id:process_first_true", {}).get("sql_count"),
+    "innermost_authority_build_ms": _pf_authority_ms,
+    "process_first_module_orm_cold_residual_ms": (
+        round(_pf_gate_ms - _pf_authority_ms, 3)
+        if _pf_gate_ms is not None and _pf_authority_ms is not None else None
+    ),
+    "second_gate_after_setup_ms": GATE["with_menu_id:first_touch_of_process"]["gate_ms"],
+    "registry_cleared_cold_gate_ms": GATE["with_menu_id:cold_after_registry_clear"]["gate_ms"],
+}
 REPORT["findings"] = {
     "menu_publication_branch_selected_by_menu_id": {
         "without_menu_id": _counts("without_menu_id", "cold_after_registry_clear", "intent_permission._published_menu_decision"),
@@ -453,6 +511,7 @@ REPORT["limitations"] = [
     "in-process probe on the registered local demo finance principal and one observed action",
     "the probe shims odoo.http.request for the gate; controller ingress/session/transport is out of scope",
     "registry.clear_cache() affects only this throwaway odoo shell process",
+    "true_first_gate_ms runs only when PRODUCT_PERFORMANCE_PERMISSION_CARRIER is supplied; without it carrier_source=derived_in_process and the reading is the existing warm first touch",
     "not an SLO, capacity, cross-role or release claim; no freeze, commit, push or deployment",
 ]
 

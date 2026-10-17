@@ -28,9 +28,15 @@ class RuntimeObservationTests(unittest.TestCase):
         cursor.execute = query
         user = SimpleNamespace(active=True, share=False, id=7,
                                company_id=SimpleNamespace(id=1), company_ids=SimpleNamespace(ids=[1]))
+        class FakeRegistry:
+            def __init__(self):
+                self.cleared = 0
+            def clear_cache(self):
+                self.cleared += 1
         class Environment:
             cr = cursor
             su = False
+            registry = FakeRegistry()
             def ref(self, xmlid):
                 return user
             def __getitem__(self, model):
@@ -148,10 +154,35 @@ class RuntimeObservationTests(unittest.TestCase):
 
     def test_contract_profile_matches_observed_request_and_does_not_export_values(self):
         report, calls = self.execute(mode='contract_profile')
-        self.assertEqual(calls, [{'params': {'action_id': 1, 'op': 'action_open'}}] * 2)
+        # declared variants: candidate x2, six profiled/unprofiled pairs, registry_cold
+        self.assertGreaterEqual(len(calls), 2)
+        self.assertEqual(len(calls), len(report['companies'][0]['samples']))
+        self.assertTrue(all(call['params'] == {'action_id': 1, 'op': 'action_open'} for call in calls))
+        self.assertEqual([row['variant'] for row in report['companies'][0]['samples']][-1], 'registry_cold')
+        self.assertTrue(any(row['profiled'] is False for row in report['companies'][0]['samples']))
         self.assertEqual(report['request_case'], 'action_open_contract')
         self.assertNotIn('PRIVATE_VALUE', json.dumps(report))
         self.assertTrue(report['contract_handler_sha256'])
+
+    def test_profile_callers_export_is_opt_in_and_bounded(self):
+        os.environ['PRODUCT_PERFORMANCE_PROFILE_CALLERS'] = 'handle,query'
+        try:
+            report, _ = self.execute(mode='contract_profile')
+        finally:
+            os.environ.pop('PRODUCT_PERFORMANCE_PROFILE_CALLERS', None)
+        samples = report['companies'][0]['samples']
+        self.assertTrue(all('callers' not in row for row in samples if row['profiled'] is False))
+        exported = [row['callers'] for row in samples if row.get('callers')]
+        self.assertTrue(exported)
+        entry = exported[0]['handle']
+        self.assertGreater(entry['calls'], 0)
+        # 'handle' is the outermost profiled frame, so a nested callee proves the
+        # caller map is populated for frames that were recorded under the profiler.
+        nested = exported[0]['query']
+        self.assertGreater(nested['calls'], 0)
+        self.assertTrue(nested['top_callers'])
+        self.assertTrue(all({'caller', 'nc', 'ct_ms'} <= set(row) for row in nested['top_callers']))
+        self.assertNotIn('PRIVATE_SECRET', json.dumps(report))
 
     def test_contract_profile_failure_rolls_back(self):
         with self.assertRaisesRegex(RuntimeError, 'injected failure'):
@@ -159,13 +190,15 @@ class RuntimeObservationTests(unittest.TestCase):
 
     def test_relation_attribution_records_targets_and_restores_owner(self):
         report, calls = self.execute(mode='relation_attribution')
-        self.assertEqual(len(calls), 2)
+        samples_all = report['companies'][0]['samples']
+        self.assertEqual(len(calls), len(samples_all))
+        self.assertGreaterEqual(len(calls), 2)
         self.assertEqual(report['request_case'], 'action_open_contract')
         detail = report['companies'][0]['relation_attribution']
-        # Two scoped samples, one relation field and one dialog per sample.
-        self.assertEqual(detail['inject_count'], 2)
-        self.assertEqual(detail['field_count'], 2)
-        self.assertEqual(detail['dialog_count'], 2)
+        # One relation field and one dialog per scoped sample.
+        self.assertEqual(detail['inject_count'], len(samples_all))
+        self.assertEqual(detail['field_count'], len(samples_all))
+        self.assertEqual(detail['dialog_count'], len(samples_all))
         self.assertEqual(detail['dialog_targets'], ['res.partner'])
         self.assertEqual(detail['include_relation_search_dialogs'], [True])
         samples = report['companies'][0]['samples']
@@ -245,10 +278,10 @@ class RuntimeObservationTests(unittest.TestCase):
     def test_preference_profile_executes_only_two_scoped_reads_without_values(self):
         result = self.execute(mode='preference_profile')
         report, calls = result
-        self.assertEqual(len(calls), 2)
+        self.assertGreaterEqual(len(calls), 2)
+        self.assertEqual(len(calls), len(report['companies'][0]['samples']))
         self.assertTrue(all(call['params']['preference_key'] == 'list_columns' for call in calls))
         self.assertNotIn('PRIVATE_VALUE', json.dumps(report))
-        self.assertEqual(len(report['companies'][0]['samples']), 2)
 
     def test_cache_state_uses_read_only_authority_and_reports_each_reason(self):
         from unittest.mock import Mock

@@ -1,12 +1,16 @@
 """Bounded cache-identity probe for the R2 relation-demand boundary (P4 diagnostic).
 
-Two questions, answered with runtime evidence instead of code reading:
+Three questions, answered with runtime evidence instead of code reading:
 
 1. Where do the R2-changed methods run relative to the persisted runtime-source
    cache write (``upsert_runtime_source_asset`` inside
    ``UiContractV2Handler._handle_contract``)?
 2. Does the persisted source token cover the affected code identity, i.e. is the
    old source asset rejected once that identity changes?
+3. Is that identity bound to content rather than to file-system metadata? A
+   metadata-only touch on unchanged content must keep the identity and must keep
+   serving the row written under it (no false invalidation, no needless rebuild),
+   while a same-size content rewrite with a restored mtime must still move it.
 
 Read-only apart from rollback-only runtime-source rows on the registered
 ``sc_dev_demo`` database with the demo finance principal: commit is refused, no
@@ -186,7 +190,11 @@ REPORT["step0_identity"] = {
     "SC_SOURCE_ADDONS_ROOT": os.getenv("SC_SOURCE_ADDONS_ROOT"),
     "identity_root": identity_root,
     "identity_root_is_dir": root_path.is_dir(),
-    "identity_row_tuple": "path + mtime_ns + ctime_ns + size",
+    "identity_basis": "sha256 over (path, content) of every .py/.xml under the identity root",
+    "identity_signal_not_used": (
+        "size / mtime_ns / ctime_ns are deliberately NOT part of the code identity: "
+        "they are a file-system change signal that also drifts on metadata-only touches"
+    ),
     "affected_sources": {
         label: {
             "path": str(path),
@@ -343,6 +351,16 @@ tmp_token_2 = _under_root(tmp_root, lambda: _token(actor, model_name=MODEL, acti
 tmp_legacy_2 = _legacy_digest(tmp_root)
 after_change = _lookup(CACHE_KEY, tmp_token_2, ROLE_CODE, COMPANY)
 
+# A source row written under the NEW content identity, so the metadata-only case
+# below can prove the identity does not drift on its own (no false invalidation
+# and therefore no needless rebuild).
+asset_repo.upsert_runtime_source_asset(
+    actor, cache_key=CACHE_KEY, source_token=tmp_token_2, payload=MARKER,
+    role_code=ROLE_CODE, company_id=COMPANY, source_ref="cache-identity-probe-metadata",
+)
+new_source = _lookup(CACHE_KEY, tmp_token_2, ROLE_CODE, COMPANY)
+new_present = (new_source.get("ui_data") or {}).get("probe_marker") == "old-source"
+
 mtime_only_ns = stat_after.st_mtime_ns + 1_000_000
 os.utime(probe_file, ns=(stat_after.st_atime_ns, mtime_only_ns))
 tmp_token_3 = _under_root(tmp_root, lambda: _token(actor, model_name=MODEL, action_id=ACTION_ID, menu_id=None))
@@ -364,8 +382,16 @@ REPORT["step2_identity_change"] = {
         "old_source_still_served": bool(after_change),
     },
     "mtime_only_change": {
-        "token_unchanged": tmp_token_1 == tmp_token_3,
+        "rows_written_under_new_identity": bool(new_present),
+        "token_unchanged_by_metadata": tmp_token_2 == tmp_token_3,
+        "token_unchanged_vs_initial_identity": tmp_token_1 == tmp_token_3,
         "old_source_still_served": bool(after_touch),
+        "note": (
+            "the identity must be compared against the post-content-change token "
+            "(tmp_token_2), not the initial one: a metadata-only touch on unchanged "
+            "content must not move the identity and must not invalidate the row "
+            "written under the current content identity"
+        ),
     },
     "token_initial": tmp_token_1,
     "token_after_content_change": tmp_token_2,
@@ -396,6 +422,14 @@ REPORT["verdict"] = {
     "same_size_content_change_reaches_the_token": not content_case["token_unchanged_by_content"],
     "old_source_rejected_after_identity_change": bool(
         content_case["content_changed"] and not content_case["old_source_still_served"]
+    ),
+    "metadata_only_change_keeps_the_identity": REPORT["step2_identity_change"]["mtime_only_change"][
+        "token_unchanged_by_metadata"
+    ],
+    "metadata_only_change_does_not_force_a_rebuild": bool(
+        content_case["content_changed"]
+        and REPORT["step2_identity_change"]["mtime_only_change"]["rows_written_under_new_identity"]
+        and REPORT["step2_identity_change"]["mtime_only_change"]["old_source_still_served"]
     ),
     "ttl_not_involved": (
         "the persisted runtime source asset has no expiry column; rejection is by "

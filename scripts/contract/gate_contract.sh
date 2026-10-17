@@ -9,6 +9,14 @@ IGNORE_KEYS=${IGNORE_KEYS:-trace_id,exported_at,generated_at,done_at,server_time
 BOOTSTRAP=${BOOTSTRAP:-0}
 BOOTSTRAP_PASS=${BOOTSTRAP_PASS:-0}
 IGNORE_NULL_TOP_LEVEL_ERROR=${IGNORE_NULL_TOP_LEVEL_ERROR:-1}
+# Export entrypoint. The default regenerates the snapshots from the live
+# database; a deterministic test can inject a stub that only has to honour the
+# OUTDIR/CASES_FILE/DB/CONTRACT_CONFIG/ODOO_CONF environment contract.
+EXPORT_ALL_CMD=${EXPORT_ALL_CMD:-scripts/contract/export_all.sh}
+# Optional declared narrowing: a comma-separated list of case names. When set,
+# only those cases are exported and compared; every requested name must exist in
+# CASES_FILE (a missing name fails closed). The empty default keeps the full run.
+CASE_FILTER=${CASE_FILTER:-}
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -43,9 +51,24 @@ fi
 rm -rf "$TMP_DIR"
 mkdir -p "$TMP_DIR"
 
-OUTDIR="$TMP_DIR" CASES_FILE="$CASES_FILE" DB="$DB_NAME" CONTRACT_CONFIG="${CONTRACT_CONFIG:-}" ODOO_CONF="${ODOO_CONF:-}" scripts/contract/export_all.sh
+_export_snapshots() {
+  OUTDIR="$TMP_DIR" CASES_FILE="$CASES_FILE" DB="$DB_NAME" \
+    CONTRACT_CONFIG="${CONTRACT_CONFIG:-}" ODOO_CONF="${ODOO_CONF:-}" \
+    CASE_ONLY="${1:-}" "$EXPORT_ALL_CMD"
+}
 
-IGNORE_KEYS="$IGNORE_KEYS" REF_DIR="$REF_DIR" TMP_DIR="$TMP_DIR" BOOTSTRAP="$BOOTSTRAP" BOOTSTRAP_PASS="$BOOTSTRAP_PASS" IGNORE_NULL_TOP_LEVEL_ERROR="$IGNORE_NULL_TOP_LEVEL_ERROR" python3 - <<'PY'
+if [ -n "$CASE_FILTER" ]; then
+  IFS=',' read -r -a _gate_case_names <<< "$CASE_FILTER"
+  for _gate_case in "${_gate_case_names[@]}"; do
+    _gate_case="$(printf '%s' "$_gate_case" | tr -d '[:space:]')"
+    [ -n "$_gate_case" ] || continue
+    _export_snapshots "$_gate_case"
+  done
+else
+  _export_snapshots ""
+fi
+
+IGNORE_KEYS="$IGNORE_KEYS" REF_DIR="$REF_DIR" TMP_DIR="$TMP_DIR" BOOTSTRAP="$BOOTSTRAP" BOOTSTRAP_PASS="$BOOTSTRAP_PASS" IGNORE_NULL_TOP_LEVEL_ERROR="$IGNORE_NULL_TOP_LEVEL_ERROR" CASE_FILTER="$CASE_FILTER" python3 - <<'PY'
 import difflib
 import json
 import os
@@ -126,15 +149,55 @@ def _shapeize(obj):
     return type(obj).__name__
 
 
+def _case_volatile_keys(case, case_name, invalid):
+    """Declared per-case volatile response keys, validated fail-closed.
+
+    A case may declare ``volatile_keys`` for response members whose value is
+    assigned by the environment that produced the snapshot (for example a
+    database row handle) rather than by the declared contract.  The declaration
+    is additive to the global IGNORE_KEYS list and applies to that case only;
+    anything else stays strictly compared.  A malformed declaration is a
+    failure, never a silent skip.
+    """
+    if "volatile_keys" not in case:
+        return []
+    declared = case.get("volatile_keys")
+    if not isinstance(declared, list) or not declared:
+        invalid.append(f"{case_name}: volatile_keys must be a non-empty list of key names")
+        return []
+    keys = []
+    for entry in declared:
+        if not isinstance(entry, str) or not entry.strip():
+            invalid.append(f"{case_name}: volatile_keys entries must be non-empty strings")
+            return []
+        if entry.strip() in ("*", "**"):
+            invalid.append(f"{case_name}: volatile_keys must never be a wildcard")
+            return []
+        key = entry.strip()
+        if key in keys:
+            invalid.append(f"{case_name}: volatile_keys entry duplicated: {key}")
+            return []
+        keys.append(key)
+    return keys
+
+
 cases_file = os.environ.get("CASES_FILE", "docs/contract/cases.yml")
 ref_dir = os.environ.get("REF_DIR", "docs/contract/snapshots")
 tmp_dir = os.environ.get("TMP_DIR", "tmp/contract_snapshots_run")
 ignore_keys = [k.strip() for k in os.environ.get("IGNORE_KEYS", "").split(",") if k.strip()]
 bootstrap = os.environ.get("BOOTSTRAP", "0") == "1"
 bootstrap_pass = os.environ.get("BOOTSTRAP_PASS", "0") == "1"
+case_filter = [n.strip() for n in os.environ.get("CASE_FILTER", "").split(",") if n.strip()]
 
 with open(cases_file, "r", encoding="utf-8") as f:
     cases = json.loads(f.read())
+
+if case_filter:
+    declared_names = {str(case.get("case") or "") for case in cases}
+    undeclared = [name for name in case_filter if name not in declared_names]
+    if undeclared:
+        print(f"FAIL case filter names not declared in {cases_file}: {', '.join(undeclared)}")
+        sys.exit(2)
 
 report = []
 failures = 0
@@ -142,6 +205,8 @@ missing = 0
 
 for case in cases:
     name = case.get("case")
+    if case_filter and name not in case_filter:
+        continue
     compare_mode = str(case.get("compare_mode") or "strict").strip().lower()
     ref_path = os.path.join(ref_dir, f"{name}.json")
     cur_path = os.path.join(tmp_dir, f"{name}.json")
@@ -150,6 +215,13 @@ for case in cases:
         report.append(("FAIL", name, "snapshot not generated"))
         failures += 1
         continue
+    invalid = []
+    volatile_keys = _case_volatile_keys(case, name, invalid)
+    if invalid:
+        report.append(("FAIL", name, "; ".join(invalid)))
+        failures += 1
+        continue
+    case_ignore_keys = sorted(set(ignore_keys) | set(volatile_keys))
     if not os.path.exists(ref_path):
         trace_id = _read_trace_id(cur_path)
         report.append(("MISSING_BASELINE", name, f"trace_id={trace_id}"))
@@ -164,8 +236,8 @@ for case in cases:
     with open(cur_path, "r", encoding="utf-8") as f:
         cur_data = json.load(f)
 
-    ref_norm = _strip_keys(ref_data, ignore_keys)
-    cur_norm = _strip_keys(cur_data, ignore_keys)
+    ref_norm = _strip_keys(ref_data, case_ignore_keys)
+    cur_norm = _strip_keys(cur_data, case_ignore_keys)
     if compare_mode == "shape":
         ref_norm = _shapeize(ref_norm)
         cur_norm = _shapeize(cur_norm)
@@ -174,7 +246,7 @@ for case in cases:
     cur_text = json.dumps(cur_norm, ensure_ascii=False, sort_keys=True, indent=2).splitlines()
 
     if ref_text == cur_text:
-        report.append(("PASS", name, ""))
+        report.append(("PASS", name, f"volatile={','.join(volatile_keys)}" if volatile_keys else ""))
         continue
 
     trace_id = _read_trace_id(cur_path)

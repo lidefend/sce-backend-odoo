@@ -31,6 +31,7 @@ EXPECTED_REPORT_KEYS = {
     'action_auth_scope',
     'negatives',
     'findings',
+    'process_first',
     'limitations',
 }
 
@@ -132,6 +133,13 @@ class PermissionProbeGuardTests(unittest.TestCase):
         guarded['_bump']('x')
         self.assertEqual(guarded['STATE']['phases'], {})
         self.assertEqual(guarded['STATE']['counts'], {})
+
+    def test_separates_process_first_from_registry_cleared_cold(self):
+        self.assertIn('os.environ.get("PRODUCT_PERFORMANCE_PERMISSION_CARRIER")', SOURCE)
+        self.assertIn('PROCESS_FIRST["carrier_source"] = "environment" if PF_CARRIER is not None else "derived_in_process"', SOURCE)
+        self.assertIn('_run("with_menu_id", "process_first_true")', SOURCE)
+        self.assertIn('"process_first_module_orm_cold_residual_ms"', SOURCE)
+        self.assertIn('"registry_cleared_cold_gate_ms"', SOURCE)
 
     def test_declares_the_boundary_counterexamples(self):
         for name in EXPECTED_NEGATIVES:

@@ -42,6 +42,7 @@ ALLOWED_CASE_KEYS = {
     "trace_id",
     "user",
     "view_type",
+    "volatile_keys",
 }
 CASE_NAME_PATTERN = re.compile(r"^[a-z0-9_]+$")
 MAX_CASE_NAME_LEN = 80
@@ -141,6 +142,29 @@ def main() -> int:
                     f"{case_name}: unsupported compare_mode={compare_mode} "
                     f"(allowed: {', '.join(sorted(ALLOWED_COMPARE_MODES))})"
                 )
+
+        if "volatile_keys" in item:
+            volatile_keys = item.get("volatile_keys")
+            if not isinstance(volatile_keys, list) or not volatile_keys:
+                invalid.append(
+                    f"{case_name}: volatile_keys must be a non-empty list of key names"
+                )
+            else:
+                declared_keys = []
+                for entry in volatile_keys:
+                    if not isinstance(entry, str) or not entry.strip():
+                        invalid.append(
+                            f"{case_name}: volatile_keys entries must be non-empty strings"
+                        )
+                        break
+                    key = entry.strip()
+                    if key in ("*", "**"):
+                        invalid.append(f"{case_name}: volatile_keys must never be a wildcard")
+                        break
+                    if key in declared_keys:
+                        invalid.append(f"{case_name}: volatile_keys entry duplicated: {key}")
+                        break
+                    declared_keys.append(key)
 
         _validate_positive_int(item.get("id"), "id", case_name, invalid)
         _validate_positive_int(item.get("menu_id"), "menu_id", case_name, invalid)

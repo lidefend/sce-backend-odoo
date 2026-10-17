@@ -457,6 +457,137 @@ def run_relation_stage_probe(env, actor, action, params, measured_handler, hashe
     return report
 
 
+def _graph_stats(value):
+    """Count container/leaf nodes and the shared-node factor of one object graph."""
+    seen = {}
+    stack = [value]
+    containers = 0
+    leaves = 0
+    edges = 0
+    while stack:
+        node = stack.pop()
+        if isinstance(node, (dict, list)):
+            marker = id(node)
+            if marker in seen:
+                continue
+            seen[marker] = True
+            containers += 1
+            children = list(node.values()) if isinstance(node, dict) else list(node)
+            edges += len(children)
+            stack.extend(children)
+        else:
+            leaves += 1
+    return {'containers': containers, 'leaves': leaves, 'edges': edges,
+            'nodes': containers + leaves,
+            'shared_references': edges - containers}
+
+
+def _best_ms(fn, repeats=7):
+    best = None
+    for _ in range(repeats):
+        started = time.perf_counter()
+        value = fn()
+        elapsed = (time.perf_counter() - started) * 1000
+        best = elapsed if best is None else min(best, elapsed)
+        del value
+    return round(best, 3)
+
+
+def _shared_container_stats(*values):
+    """Count containers reached by more than one of ``values`` when walked together.
+
+    Two graphs that were deep-copied with separate memos share nothing, even when
+    the live objects did alias. One shared memo (in the store and in the read
+    clone) would keep every structurally shared subtree single, so this count is
+    the ceiling of what a shared-memo copy can save.
+    """
+    visits = {}
+    order = []
+    for index, value in enumerate(values):
+        stack = [value]
+        while stack:
+            node = stack.pop()
+            if not isinstance(node, (dict, list)):
+                continue
+            marker = id(node)
+            if marker not in visits:
+                visits[marker] = set()
+                order.append(marker)
+            visits[marker].add(index)
+            stack.extend(node.values() if isinstance(node, dict) else node)
+    shared = sum(1 for marker in order if len(visits[marker]) > 1)
+    return {'union_containers': len(order), 'shared_containers': shared}
+
+
+def run_cache_clone_split(env, actor, action, params, measured_handler):
+    """Read-only split of the warm assembled-cache read clone.
+
+    The hot read path clones the whole cached entry, which holds both the source
+    ``ui_data`` subtree and the ``_assembled_v2`` subtree that sealing mutates.
+    This probe warms the process-local hot cache with one real ``action_open``
+    request, then measures each subtree separately, so the share of the read
+    clone that only feeds two fallback ``model``/``view_type`` lookups is told
+    apart from the share that must stay isolated. It also records whether the two
+    subtrees alias at all, which is what decides if one clone pass really covers
+    them. Diagnostic only: the cache is read, never written; no product code and
+    no database row is touched.
+    """
+    from odoo.addons.smart_core.core.intent_execution_result import adapt_handler_result
+    from odoo.addons.smart_core.utils.load_contract_response_cache import (
+        CONTRACT_PROJECTION_HOT_CACHE,
+        isolated_clone,
+    )
+
+    warm = adapt_handler_result(measured_handler(env=actor).handle({'params': params}))
+    assert isinstance(warm, dict) and warm.get('ok') is True, 'warm cache priming failed'
+    entries = list(CONTRACT_PROJECTION_HOT_CACHE._entries.values())
+    report = {'status': 'observed', 'entry_count': len(entries), 'entries': [],
+              'warm_response_sha256': hashlib.sha256(
+                  json.dumps(warm, sort_keys=True, default=str).encode()).hexdigest()}
+    for created_at, token, response in entries:
+        if not isinstance(response, dict):
+            continue
+        assembled = response.get('_assembled_v2')
+        if not isinstance(assembled, dict):
+            continue
+        ui_data = response.get('ui_data')
+        ui_meta = response.get('ui_meta')
+        contract = assembled.get('contract')
+        source_contract = assembled.get('source_contract')
+        row = {
+            'token_is_content_hash': isinstance(token, str) and len(token) == 64,
+            'has_ui_data': isinstance(ui_data, dict),
+            'has_assembled': True,
+            'aliasing': {
+                'contract_is_ui_data': contract is ui_data,
+                'source_contract_is_ui_data': source_contract is ui_data,
+                'source_contract_is_contract': source_contract is contract,
+                'ui_meta_is_ui_data': ui_meta is ui_data,
+            },
+            'graph_full': _graph_stats(response),
+            'graph_assembled': _graph_stats(assembled),
+            'graph_contract': _graph_stats(contract or {}),
+            'graph_source_contract': _graph_stats(source_contract or {}),
+            'graph_ui_data': _graph_stats(ui_data or {}),
+            'graph_ui_meta': _graph_stats(ui_meta or {}),
+            'clone_full_ms': _best_ms(lambda: isolated_clone(response)),
+            'clone_assembled_ms': _best_ms(lambda: isolated_clone(assembled)),
+            'clone_contract_ms': _best_ms(lambda: isolated_clone(contract or {})),
+            'clone_source_contract_ms': _best_ms(lambda: isolated_clone(source_contract or {})),
+            'clone_ui_data_ms': _best_ms(lambda: isolated_clone(ui_data or {})),
+            'clone_ui_meta_ms': _best_ms(lambda: isolated_clone(ui_meta or {})),
+            'clone_ui_data_shared_with_source_contract_ms': _best_ms(
+                lambda: isolated_clone({'ui_data': ui_data or {}, 'source_contract': source_contract or {}})),
+            'shared_ui_data_vs_source_contract': _shared_container_stats(ui_data or {}, source_contract or {}),
+            'shared_full_vs_assembled': _shared_container_stats(response, assembled),
+            'json_bytes_full': len(json.dumps(response, sort_keys=True, default=str)),
+            'json_bytes_assembled': len(json.dumps(assembled, sort_keys=True, default=str)),
+            'json_bytes_ui_data': len(json.dumps(ui_data, sort_keys=True, default=str)),
+            'json_bytes_ui_meta': len(json.dumps(ui_meta, sort_keys=True, default=str)),
+        }
+        report['entries'].append(row)
+    return report
+
 # Only pure per-request identity is excluded. Content-derived digests
 # (contractSha256/sourceSha256) are deliberately kept so a real difference cannot
 # be hidden by normalisation.
@@ -807,7 +938,7 @@ def run_relation_demand_probe(env, actor, action, params, measured_handler, hash
     }
 
 
-assert mode in {'observe', 'cache_state', 'preference_profile', 'preference_compare', 'contract_profile', 'relation_attribution', 'relation_stage_probe', 'relation_demand_probe', 'profile', 'profile_first', 'shape', 'compare', 'sql', 'menu_compare', 'path_compare', 'scene_compare'}, 'unknown measurement mode'
+assert mode in {'observe', 'cache_state', 'preference_profile', 'preference_compare', 'contract_profile', 'relation_attribution', 'relation_stage_probe', 'relation_demand_probe', 'cache_clone_split', 'profile', 'profile_first', 'shape', 'compare', 'sql', 'menu_compare', 'path_compare', 'scene_compare'}, 'unknown measurement mode'
 request_case = os.environ.get('PRODUCT_PERFORMANCE_REQUEST_CASE', 'web_startup')
 assert request_case in {'web_startup', 'full_default'}, 'unknown request case'
 # Explicit counterpart of session.ts init request; full_default is diagnostic only.
@@ -827,13 +958,13 @@ try:
               'handler_sha256': hashlib.sha256(source.read_bytes()).hexdigest(),
               'companies': [], 'limitations': ['no_http_browser_or_authentication_measurement',
               'no_true_cold_cache_claim', 'no_capacity_claim', 'not_delivery_baseline']}
-    if mode in {'preference_profile', 'preference_compare', 'contract_profile', 'relation_attribution', 'relation_stage_probe', 'relation_demand_probe'}:
+    if mode in {'preference_profile', 'preference_compare', 'contract_profile', 'relation_attribution', 'relation_stage_probe', 'relation_demand_probe', 'cache_clone_split'}:
         report['request_case'] = 'list_preference'
         report['request_params'] = None  # Exact action/model recorded per company below.
     for company in companies:
         actor = api.Environment(env.cr, user.id, {'allowed_company_ids': [company], 'lang': 'zh_CN'})
         assert not actor.su, 'actor must not be elevated'
-        if mode in {'preference_profile', 'preference_compare', 'contract_profile', 'relation_attribution', 'relation_stage_probe', 'relation_demand_probe'}:
+        if mode in {'preference_profile', 'preference_compare', 'contract_profile', 'relation_attribution', 'relation_stage_probe', 'relation_demand_probe', 'cache_clone_split'}:
             from odoo.addons.smart_core.handlers.user_view_preference import UserViewPreferenceGetHandler
             action_id = int(os.environ.get('PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID') or 0)
             assert action_id > 0, 'exact observed preference action required'
@@ -844,7 +975,7 @@ try:
             assert source_hash == os.environ.get('PRODUCT_PERFORMANCE_PREFERENCE_SHA256'), 'preference handler identity mismatch'
             params = {'action_id': action_id, 'model': action.res_model, 'view_type': 'list', 'preference_key': 'list_columns'}
             measured_handler = UserViewPreferenceGetHandler
-            if mode in {'contract_profile', 'relation_attribution', 'relation_stage_probe', 'relation_demand_probe'}:
+            if mode in {'contract_profile', 'relation_attribution', 'relation_stage_probe', 'relation_demand_probe', 'cache_clone_split'}:
                 from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
                 measured_handler = UiContractV2Handler
                 digest = hashlib.sha256(Path(inspect.getsourcefile(measured_handler)).read_bytes()).hexdigest()
@@ -877,36 +1008,76 @@ try:
                     'demand_probe': run_relation_demand_probe(env, actor, action, params, measured_handler, hashes),
                 })
                 continue
+            if mode == 'cache_clone_split':
+                report['companies'].append({
+                    'company_id': company,
+                    'preference_handler_sha256': source_hash,
+                    'projection_owner_hashes': hashes,
+                    'clone_split': run_cache_clone_split(env, actor, action, params, measured_handler),
+                })
+                continue
             def previous_profile(handler, payload):
                 result = adapt_handler_result(handler.handle(payload))
                 data = result.get('data') if isinstance(result, dict) else None
                 profile = data.get('list_profile') if isinstance(data, dict) else None
                 return profile if isinstance(profile, dict) else None
             samples = []
-            variants = ['previous', 'candidate', 'candidate', 'previous', 'previous', 'candidate'] if mode == 'preference_compare' else ['candidate', 'candidate']
+            variants = ['previous', 'candidate', 'candidate', 'previous', 'previous', 'candidate'] if mode == 'preference_compare' else ['candidate', 'candidate', 'candidate_unprofiled', 'registry_cold']
+            if mode == 'contract_profile':
+                pair_rounds = int(os.environ.get('PRODUCT_PERFORMANCE_PROFILE_PAIR') or 6)
+                paired = [
+                    'candidate_paired_profiled' if round_index % 2 == 0 else 'candidate_paired_unprofiled'
+                    for round_index in range(pair_rounds)
+                ]
+                variants = ['candidate', 'candidate'] + paired + ['registry_cold']
+            unprofiled_first = os.environ.get('PRODUCT_PERFORMANCE_PROFILE_FIRST_SAMPLE') == '0'
             attribution = install_relation_attribution(env) if mode == 'relation_attribution' else None
             try:
                 for index, variant in enumerate(variants):
                     attribution_mark = attribution.mark() if attribution is not None else None
-                    profiler = cProfile.Profile()
+                    if variant == 'registry_cold':
+                        env.registry.clear_cache()
+                    profiler = None if (
+                        variant.endswith('unprofiled') or (index == 0 and unprofiled_first)
+                    ) else cProfile.Profile()
                     before = env.cr.sql_log_count
                     started = time.perf_counter()
-                    profiler.enable()
+                    if profiler is not None:
+                        profiler.enable()
                     try:
                         with (patch.object(UiContractHandler, 'read_list_preference_profile', previous_profile)
                               if variant == 'previous' else nullcontext()):
                             result = adapt_handler_result(measured_handler(env=actor).handle({'params': params}))
                     finally:
-                        profiler.disable()
+                        if profiler is not None:
+                            profiler.disable()
                     assert isinstance(result, dict) and result.get('ok') is True, 'preference read failed'
                     functions = []
-                    for (filename, line, function), (_, calls, own, cumulative, _) in pstats.Stats(profiler).stats.items():
-                        functions.append({'file': Path(filename).name, 'line': line, 'function': function, 'calls': calls,
-                                          'self_ms': round(own * 1000, 2), 'cumulative_ms': round(cumulative * 1000, 2)})
-                    sample = {'index': index, 'variant': variant, 'response_sha256': hashlib.sha256(json.dumps(result, sort_keys=True, default=str).encode()).hexdigest(), 'profiled': True, 'elapsed_ms': round((time.perf_counter() - started) * 1000, 2),
+                    if profiler is not None:
+                        for (filename, line, function), (_, calls, own, cumulative, _) in pstats.Stats(profiler).stats.items():
+                            functions.append({'file': Path(filename).name, 'line': line, 'function': function, 'calls': calls,
+                                              'self_ms': round(own * 1000, 2), 'cumulative_ms': round(cumulative * 1000, 2)})
+                    sample = {'index': index, 'variant': variant, 'response_sha256': hashlib.sha256(json.dumps(result, sort_keys=True, default=str).encode()).hexdigest(), 'profiled': profiler is not None, 'elapsed_ms': round((time.perf_counter() - started) * 1000, 2),
                               'sql_count': env.cr.sql_log_count - before,
                               'cumulative_top': sorted(functions, key=lambda row: row['cumulative_ms'], reverse=True)[:40],
                               'self_top': sorted(functions, key=lambda row: row['self_ms'], reverse=True)[:20]}
+                    caller_names = [name for name in os.environ.get('PRODUCT_PERFORMANCE_PROFILE_CALLERS', '').split(',') if name]
+                    if profiler is not None and caller_names:
+                        wanted = set(caller_names)
+                        aggregate = {}
+                        for (filename, line, function), (_, calls, own, cumulative, callers_map) in pstats.Stats(profiler).stats.items():
+                            if function not in wanted:
+                                continue
+                            row = aggregate.setdefault(function, {'calls': calls, 'cumulative_ms': round(cumulative * 1000, 2), 'callers': {}})
+                            for (caller_file, caller_line, caller_function), (_, caller_nc, _, caller_ct) in (callers_map or {}).items():
+                                key = '%s:%s:%s' % (Path(caller_file).name, caller_function, caller_line)
+                                entry = row['callers'].setdefault(key, {'nc': 0, 'ct_ms': 0.0})
+                                entry['nc'] += caller_nc
+                                entry['ct_ms'] = round(entry['ct_ms'] + caller_ct * 1000, 2)
+                        sample['callers'] = {name: {'calls': value['calls'], 'cumulative_ms': value['cumulative_ms'],
+                                                    'top_callers': sorted(({'caller': key, 'nc': entry['nc'], 'ct_ms': entry['ct_ms']} for key, entry in value['callers'].items()),
+                                                                          key=lambda item: item['ct_ms'], reverse=True)[:12]}
+                                             for name, value in aggregate.items()}
                     if attribution_mark is not None:
                         sample['relation_attribution'] = attribution.since(attribution_mark)
                     samples.append(sample)

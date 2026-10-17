@@ -1096,6 +1096,16 @@ ci.local.quick.compose: guard.prod.forbid
 # gate installs no frontend dependencies, so a wire here can only fail with
 # "esbuild not found" instead of a real gate result.
 # ---------------------------------------------------------------------------
+# Single-application lock on the list preference contract (R5): the contract /
+# page-assembly layer never reads the preference store, the one server-side
+# application helper lives only in the preference handler, and the frontend has
+# exactly one application site. It is a static structural guard and is not part
+# of the architecture suite above; the runtime behaviour is owned by
+# verify.local.dev.user_view_preference.runtime.orm.
+.PHONY: verify.contract.list_preference.single_application
+verify.contract.list_preference.single_application: guard.prod.forbid
+	@python3 scripts/verify/list_preference_single_application_guard.py --output artifacts/backend/list_preference_single_application_guard.json
+
 .PHONY: verify.contract.architecture.suite
 verify.contract.architecture.suite: \
 	guard.prod.forbid \
