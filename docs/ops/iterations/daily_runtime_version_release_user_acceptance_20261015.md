@@ -2715,3 +2715,35 @@ exact-head Quick 回执 `.git/codex/evidence/ci.local.quick/6dbe7135….json`（
 - 客户数据迁移：**尚未运行**。
 - 唯一外部阻塞：**兼容新签名载荷（客户模块 `17.0.2.8.0`）及对应真实审批**。载荷须携带构建身份、新校验和与签名依据，
   而不是只改版本号；平台侧兼容基础已确定（该 duty 以部署树 `b80841059b19` 运行 `smart_core 17.0.1.1.15`）。
+
+## 2026-10-17：duty 栈发布前端构建身份 + 容器读取合并（本轮目标：执行效率）
+
+**权威**：所有者本轮指令——本轮目标是优化执行效率。同一函数内同时存在一个正确性缺口：duty 栈只转发
+`SC_SOURCE_REVISION`，不转发所服务的前端产物身份，`/api/runtime-version` 因而回答一个匿名 bundle，
+所有验收车道的证据复用键被静默降级为“部署”而非“产物”。
+
+**改动**（P4，`scripts/ops/daily_runtime_database_duty.py` + 栈模板）：
+
+- 栈环境模板声明并从 compose 转发 `FRONTEND_BUILD_SHA256`；值不写死，由 `frontend_build_facts` 从 duty 声明的
+  `stack.frontend_dist_dir/.build-sha256`（受管指纹入口写入）读取，并与已部署构建环境文件自身的声明对账；
+  缺失、非 sha256 或对账不一致时**拒绝渲染**（`DAILY_DUTY_FRONTEND_BUILD_IDENTITY`）。
+- `APPLICATION_IDENTITY_KEYS` 由“已声明未消费”转为真实消费：容器回读新增
+  `served_container_publishes_the_declared_runtime_identity`，把容器实际发布的身份与 duty 声明的身份比较。
+- **效率**：`application_config_facts` 原先按 key 逐个 `docker exec`（`ENV`、`SC_ENVIRONMENT` 两条）再为
+  addon 根扫描支付第三条；现在运行时环境、身份向量与 addon 根扫描共用**一次** NUL 分隔探测。
+  每个 duty 每次运行少 2 次容器进入；三个 duty 即每次运行少 6 次。两个新增的发布身份事实不增加任何往返。
+
+**验证**（dirty stage identity `ae4b1ad1` + 上述 4 个文件）：
+
+- `make verify.daily.runtime.database.duty`：PASS；`verify.daily.runtime.duty.identity.unit` 65 tests OK，
+  `scripts.ops.test_daily_runtime_database_duty` 156 tests OK（本 delta 前 153，新增 3）。
+- `make ci.local.iteration`：EXIT=0 PASS；`unmappedPathCount=11` 全部是既有的 candidate-only 车道文件，
+  按既有登记“开发内环不得选择 candidate-only target”，planner 报 `manualNonZeroL2Required` 是诚实信号，
+  不是本 delta 引入的缺口。
+- 未运行 L3/L4：本 delta 未做任何主机写入，duty 入口只经渲染后的 carrier 在假主机上执行。
+
+**影响分析**：失效的只有 `verify.daily.runtime.database.duty` 的本地回执（其工具源已变，且此前即因回执身份不匹配而 stale）；
+`demo_carrier_rebuild_20261016` 下的只读主机事实、恢复点完整性与独立复核仍然有效——它们描述主机与已复核声明，本 delta 均未改变。
+声明的 digest 未变，`--apply` 前仍需从复核后的文件重新派生。
+
+**未完成**：未创建集群、未停止容器、未写库、未重发任何证据；Demo 线在本轮仍未获得合法的产品行为载体。

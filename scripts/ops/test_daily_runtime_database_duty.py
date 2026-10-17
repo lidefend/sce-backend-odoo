@@ -38,6 +38,29 @@ DECLARATION = ROOT / "config/ops/daily_runtime_database_duties.v1.json"
 ENV_TEMPLATE = ROOT / "config/ops/daily_runtime_duty_stack.env"
 COMPOSE_FILE = ROOT / "config/ops/daily_runtime_duty_stack.yml"
 
+#: A frontend artifact fingerprint shaped exactly as the governed build entry
+#: writes it into the artifact's own ``.build-sha256``. The duty render refuses
+#: a stack that cannot name the bundle it serves, so the fixtures have to hand
+#: each declared duty that artifact instead of the refusal being relaxed for
+#: tests.
+FRONTEND_BUILD_FINGERPRINT = "0123456789abcdef" * 4
+
+
+def provision_frontend_artifact(root, duties, fingerprint=FRONTEND_BUILD_FINGERPRINT):
+    """Give every declared duty the served frontend artifact its render requires.
+
+    ``fingerprint=None`` creates the declared output directory without the
+    artifact, which is a duty whose served bundle cannot be identified.
+    """
+    dist = os.path.join(root, "web-dist")
+    os.makedirs(dist, exist_ok=True)
+    if fingerprint is not None:
+        with open(os.path.join(dist, ".build-sha256"), "w") as stream:
+            stream.write("%s\n" % (fingerprint,))
+    for duty in duties:
+        duty.setdefault("stack", {})["frontend_dist_dir"] = dist
+    return dist
+
 
 def setUpModule():
     """Resolve the tracked template against the synthetic customer binding."""
@@ -1091,6 +1114,78 @@ class EvaluationTests(unittest.TestCase):
             row, self.observe(row, **self.upgraded()), declaration, phase="apply")}
         self.assertNotIn("a_verified_recovery_point_precedes_the_upgrade", verdict)
         self.assertNotIn("the_declared_module_upgrade_completed", verdict)
+
+    def served_identity(self, *, published_revision=None, published_fingerprint=None,
+                        declared_fingerprint=FRONTEND_BUILD_FINGERPRINT):
+        """A serving duty observed together with the identity its route publishes.
+
+        ``declared_fingerprint=None`` models an artifact the entry could not read
+        at all, which is a duty the render would have refused: the verdict still
+        has to say so instead of counting the container as identified.
+        """
+        revision = "a" * 40
+        return {
+            "cluster": {"present": True, "running": True, "system_identifier": "7696799124996268070",
+                        "data_volume_owner": "sc_platform_control_db_data",
+                        "project": "sc-platform-control-dev", "config_files": "/opt/x/duty-stack.yml",
+                        "error": ""},
+            "custody": {"database_present": True, "database_owner": "sc_platform_control_app",
+                        "allow_connections": True, "role_present": True, "role_superuser": False,
+                        "role_createdb": False, "role_createrole": False, "role_canlogin": True,
+                        "public_connects": False, "public_schema_create": True,
+                        "database_role_connects": True, "error": ""},
+            "application_config": {
+                "container": "sc-platform-control-dev-odoo-1",
+                "environment": {"ENV": "dev", "SC_ENVIRONMENT": "dev",
+                                "SC_SOURCE_REVISION": (revision if published_revision is None
+                                                       else published_revision),
+                                "FRONTEND_BUILD_SHA256": (FRONTEND_BUILD_FINGERPRINT
+                                                          if published_fingerprint is None
+                                                          else published_fingerprint)},
+                "addons_path": [], "missing_addons_roots": [], "error": ""},
+            "runtime_identity": {
+                "declared": {"SC_SOURCE_REVISION": revision,
+                             "FRONTEND_BUILD_SHA256": declared_fingerprint or ""},
+                "served_build_sha256": declared_fingerprint or "",
+                "build_env_build_sha256": declared_fingerprint or "",
+                "artifact_path": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev/.build-sha256",
+                "fingerprint_error": "" if declared_fingerprint else "no fingerprint",
+                "pointer": "/opt/projects/repos/sce-product-odoo/.env.dev"},
+        }
+
+    def test_the_verdict_reads_the_identity_the_route_publishes(self):
+        """The revision is not the bundle, so both are judged from the container.
+
+        A stack that forwards ``SC_SOURCE_REVISION`` alone answers with an
+        anonymous bundle: the revision moves, the served artifact stays at its
+        previous generation, and nothing in the readback can tell the two apart.
+        The verdict must therefore compare what the *container* publishes with
+        the identity the duty declared, including the artifact fingerprint.
+        """
+        declaration = self.declaration()
+        row = picked(declaration, "platform_control")
+        identifier = "served_container_publishes_the_declared_runtime_identity"
+
+        verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            row, self.observe(row, **self.served_identity()), declaration, phase="apply")}
+        self.assertTrue(verdict[identifier])
+
+        stale = self.served_identity(published_revision="b" * 40)
+        verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            row, self.observe(row, **stale), declaration, phase="apply")}
+        self.assertFalse(verdict[identifier], "a container publishing another revision is not this duty")
+
+        anonymous = self.served_identity(published_fingerprint="")
+        verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            row, self.observe(row, **anonymous), declaration, phase="apply")}
+        self.assertFalse(verdict[identifier],
+                         "an unidentified served bundle must not read as this duty")
+
+        unreadable = self.served_identity(declared_fingerprint=None)
+        verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            row, self.observe(row, **unreadable), declaration, phase="apply")}
+        self.assertFalse(verdict[identifier],
+                         "an artifact the entry cannot read declares no identity to match")
 
     def seeded(self):
         """The demo duty observed just after its own seed chain reported."""
@@ -2152,16 +2247,21 @@ class CarrierExecutionTests(unittest.TestCase):
         return [c for c in fake.commands if "odoo" in c and "shell" in c]
 
     def payload(self, duties, ops_root, *, mode="apply", phase="initialize",
-                bootstrap_timeout=1800, bootstrap_poll=15):
+                bootstrap_timeout=1800, bootstrap_poll=15, frontend_build_env=None):
         import hashlib
 
+        build_env_file = os.path.join(ops_root, "absent-build.env")
+        if frontend_build_env is not None:
+            build_env_file = os.path.join(ops_root, "build.env")
+            with open(build_env_file, "w") as stream:
+                stream.write(frontend_build_env)
         return {
             "mode": mode,
             "phase": phase,
             "product_root": "/opt/projects/repos/sce-product-odoo",
             "ops_root": ops_root,
             "platform_admin_database": "sc_platform_control",
-            "frontend_build_env_file": os.path.join(ops_root, "absent-build.env"),
+            "frontend_build_env_file": build_env_file,
             "source_revision": "a" * 40,
             "compose_sha256": hashlib.sha256(self.COMPOSE_TEXT.encode("utf-8")).hexdigest(),
             "stack": {"compose_text": self.COMPOSE_TEXT},
@@ -2173,11 +2273,14 @@ class CarrierExecutionTests(unittest.TestCase):
         }
 
     def execute(self, fake, duties, *, mode="apply", phase="initialize",
-                bootstrap_timeout=1800, bootstrap_poll=15):
+                bootstrap_timeout=1800, bootstrap_poll=15, frontend_build_env=None,
+                fingerprint=FRONTEND_BUILD_FINGERPRINT):
         with tempfile.TemporaryDirectory() as ops_root:
+            provision_frontend_artifact(ops_root, duties, fingerprint=fingerprint)
             rendered = duty_entry.render_remote_program(
                 self.payload(duties, ops_root, mode=mode, phase=phase,
-                             bootstrap_timeout=bootstrap_timeout, bootstrap_poll=bootstrap_poll)
+                             bootstrap_timeout=bootstrap_timeout, bootstrap_poll=bootstrap_poll,
+                             frontend_build_env=frontend_build_env)
             )
             captured = io.StringIO()
             saved = sys.modules.get("subprocess")
@@ -2200,6 +2303,51 @@ class CarrierExecutionTests(unittest.TestCase):
 
     def ups(self, fake):
         return [c for c in fake.commands if "up" in c and c[:2] == ["docker", "compose"]]
+
+    def test_a_duty_that_cannot_name_its_served_frontend_build_is_never_created(self):
+        """A stack that serves a bundle it cannot identify is refused, not started.
+
+        ``/api/runtime-version`` is the only place the running system answers
+        which frontend sits behind the route, and the acceptance lanes key the
+        reuse of their observations on that artifact. A duty rendered without it
+        would publish an anonymous bundle and silently degrade every reuse key
+        from the artifact to the deployment, so the render refuses -- and the
+        refusal must arrive before anything is started, not as a healthy stack
+        nobody can identify afterwards.
+        """
+        cases = (
+            ("no artifact in the declared output directory", None, None),
+            ("an artifact that is not a sha256", "not-a-frontend-fingerprint", None),
+            ("an artifact the deployed build environment contradicts", FRONTEND_BUILD_FINGERPRINT,
+             "VITE_PLATFORM_ADMIN_DB=sc_platform_control\nFRONTEND_BUILD_SHA256=%s\n" % ("f" * 64,)),
+        )
+        for label, fingerprint, frontend_env in cases:
+            with self.subTest(label):
+                fake = FakeSubprocess()
+                report = self.execute(fake, [self.duty()], fingerprint=fingerprint,
+                                      frontend_build_env=frontend_env)
+                entry = report["duties"][0]
+                self.assertIn("DAILY_DUTY_FRONTEND_BUILD_IDENTITY", entry["error"] or "", entry)
+                self.assertEqual(self.ups(fake), [],
+                                 "a duty the entry cannot identify must not be started")
+
+    def test_the_environment_vector_is_read_in_one_round_trip(self):
+        """Every declared duty is walked on every run, so the probe is one call.
+
+        A per-key ``docker exec`` multiplies the container-namespace cost by the
+        number of identity keys for facts that are read in the same instant, and
+        the runtime environment, the published identity and the addon-root scan
+        are all read together. They therefore travel in a single NUL-separated
+        probe, and a regression back to separate container entries fails here.
+        """
+        fake = FakeSubprocess()
+        self.execute(fake, [self.duty()])
+        probes = [command for command in fake.commands
+                  if command[:2] == ["docker", "exec"] and "printf '%s\\0'" in " ".join(command)]
+        self.assertEqual(len(probes), 1, fake.commands)
+        for key in ("ENV", "SC_ENVIRONMENT", "SC_SOURCE_REVISION", "FRONTEND_BUILD_SHA256"):
+            self.assertIn('"$%s"' % (key,), probes[0][-1])
+        self.assertIn("addons_path", probes[0][-1])
 
     def test_the_cluster_is_waited_for_and_the_application_is_not(self):
         fake = FakeSubprocess()
@@ -2537,11 +2685,12 @@ class ApplicationCredentialTests(unittest.TestCase):
         "ADMIN_PASSWD=@ADMIN_PASSWD@\n"
         "JWT_SECRET=@JWT_SECRET@\n"
         "SC_BOOTSTRAP_SECRET=@SC_BOOTSTRAP_SECRET@\n"
+        "FRONTEND_BUILD_SHA256=@FRONTEND_BUILD_SHA256@\n"
         "LIST_DB=false\n"
     )
     ADOPTED = "a" * 64
 
-    def duty(self, source_env_file):
+    def duty(self, source_env_file, frontend_dist_dir="/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev"):
         return {
             "duty": "demo",
             "database": "sc_demo",
@@ -2559,7 +2708,7 @@ class ApplicationCredentialTests(unittest.TestCase):
                       "runtime_env": "dev", "odoo_image": "odoo17-odoo:latest",
                       "postgres_image": "postgres:15",
                       "product_root": "/opt/projects/repos/sce-product-odoo",
-                      "frontend_dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
+                      "frontend_dist_dir": frontend_dist_dir,
                       "demo_addons_root": "/opt/projects/runtime-addons-empty",
                       "customer_addons_root": "/opt/projects/runtime-addons-empty",
                       "services": ["db", "redis", "odoo", "nginx"],
@@ -2698,7 +2847,7 @@ class ApplicationCredentialTests(unittest.TestCase):
         """
         with tempfile.TemporaryDirectory() as root:
             source = self.source_file(root, self.ADOPTED)
-            duty = self.duty(source)
+            duty = self.duty(source, provision_frontend_artifact(root, []))
 
             def run(namespace, ops_root):
                 stale = os.path.join(ops_root, "demo.env")
@@ -2712,6 +2861,7 @@ class ApplicationCredentialTests(unittest.TestCase):
 
             facts, rendered, mode = self.carrier(run)
         self.assertTrue(facts["credentials_created"])
+        self.assertEqual(facts["env_keys"]["FRONTEND_BUILD_SHA256"], FRONTEND_BUILD_FINGERPRINT)
         self.assertEqual(rendered["DB_PASSWORD"], self.ADOPTED)
         self.assertEqual(rendered["DB_MAINTENANCE_PASSWORD"], self.ADOPTED)
         self.assertNotIn("b" * 64, json.dumps(rendered))
@@ -2746,7 +2896,8 @@ class ApplicationCredentialTests(unittest.TestCase):
         duty is rendered into its carrier-qualified name.
         """
         with tempfile.TemporaryDirectory() as root:
-            duty = self.rebuilt_demo_duty(self.duty(os.path.join(root, "absent.env")))
+            duty = self.rebuilt_demo_duty(self.duty(
+                os.path.join(root, "absent.env"), provision_frontend_artifact(root, [])))
             legacy = ("DUTY_NAME=demo\nCOMPOSE_PROJECT_NAME=sc-backend-odoo-dev\n"
                       "DB_NAME=sc_demo\nDB_USER=odoo\nDB_MAINTENANCE_USER=odoo\n"
                       "DB_PASSWORD=%s\n" % ("f" * 64,))

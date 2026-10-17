@@ -90,6 +90,14 @@ services:
       SCENE_USE_PINNED: ${SCENE_USE_PINNED}
       SCENE_ROLLBACK: ${SCENE_ROLLBACK}
       SC_SOURCE_REVISION: ${SC_SOURCE_REVISION}
+      # The build identity the application *publishes* for what it serves. The
+      # source revision alone is not the served bundle: a merge that changes no
+      # frontend source leaves the artifact at its previous generation, so the
+      # acceptance lanes key their evidence reuse on the artifact fingerprint
+      # and `/api/runtime-version` has to answer which frontend is deployed. A
+      # stack that forwards only the revision reports an unidentified bundle and
+      # silently degrades that reuse key to the deployment (2026-10-16).
+      FRONTEND_BUILD_SHA256: ${FRONTEND_BUILD_SHA256}
       REDIS_HOST: redis
       ODOO_CONF_OUT: /var/lib/odoo/odoo.conf
       TERM: xterm-256color

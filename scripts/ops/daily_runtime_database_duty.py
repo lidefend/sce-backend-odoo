@@ -153,7 +153,7 @@ DEFAULT_CREDENTIAL_SOURCE_KEY = "DB_PASSWORD"
 ENV_READBACK_KEYS = (
     "DUTY_NAME", "COMPOSE_PROJECT_NAME", "DB_NAME", "DB_USER", "DB_MAINTENANCE_USER",
     "DB_DATA", "REDIS_DATA", "ODOO_DATA", "ODOO_DBFILTER", "ODOO_PORT", "NGINX_PORT",
-    "LIST_DB", "SC_ALLOW_DEMO_DATA",
+    "LIST_DB", "SC_ALLOW_DEMO_DATA", "FRONTEND_BUILD_SHA256",
 )
 #: The environment keys the *application process* itself reads. ``ENV`` decides
 #: whether ``render_odoo_conf`` may drop an unavailable optional addon root, and
@@ -161,6 +161,18 @@ ENV_READBACK_KEYS = (
 #: initialization. A duty whose container cannot see them serves a different
 #: runtime than the one its declaration names (2026-10-16).
 APPLICATION_ENVIRONMENT_KEYS = ("ENV", "SC_ENVIRONMENT")
+#: The build identity the *application process* publishes for what it serves.
+#: ``SC_SOURCE_REVISION`` is the deployed source revision and
+#: ``FRONTEND_BUILD_SHA256`` is the frontend artifact behind the same route.
+#: They are not the same fact: a merge that changes no frontend source moves the
+#: revision while the served bundle stays at its previous generation, and the
+#: acceptance lanes key evidence reuse on the artifact. Both are read by product
+#: code (``product_release``) and published by ``/api/runtime-version``, so a
+#: stack that forwards neither serves a runtime nothing can identify.
+APPLICATION_IDENTITY_KEYS = ("SC_SOURCE_REVISION", "FRONTEND_BUILD_SHA256")
+#: The shape of a frontend artifact fingerprint. It is the value the governed
+#: build entry writes into the artifact's own ``.build-sha256``.
+FRONTEND_FINGERPRINT = re.compile(r"^[0-9a-f]{64}$")
 PLACEHOLDER = re.compile(r"@[A-Z0-9_]+@")
 #: The cluster readback is one argument vector on purpose. A combined short
 #: option cluster such as ``-Atc`` makes psql take the *next* argv as the value
@@ -860,9 +872,13 @@ SECRET_KEYS = (
 ENV_READBACK_KEYS = (
     "DUTY_NAME", "COMPOSE_PROJECT_NAME", "DB_NAME", "DB_USER", "DB_MAINTENANCE_USER",
     "DB_DATA", "REDIS_DATA", "ODOO_DATA", "ODOO_DBFILTER", "ODOO_PORT", "NGINX_PORT",
-    "LIST_DB", "SC_ALLOW_DEMO_DATA",
+    "LIST_DB", "SC_ALLOW_DEMO_DATA", "FRONTEND_BUILD_SHA256",
 )
 APPLICATION_ENVIRONMENT_KEYS = ("ENV", "SC_ENVIRONMENT")
+#: Mirrored from the host entry: the identity the application publishes for what
+#: it serves, and the shape of the artifact fingerprint it is judged against.
+APPLICATION_IDENTITY_KEYS = ("SC_SOURCE_REVISION", "FRONTEND_BUILD_SHA256")
+FRONTEND_FINGERPRINT = re.compile(r"^[0-9a-f]{64}$")
 INDUSTRY_MODULE_PREFIX = "smart_construction_"
 #: The demo-data switches, mirrored from the host entry so the rendered stack
 #: and the readback that proves it cannot drift apart.
@@ -1060,7 +1076,7 @@ def materialise_managed_instances():
     return entry
 
 
-def frontend_build_facts():
+def frontend_build_facts(duty=None):
     """Read the deployed frontend build environment back.
 
     ``VITE_PLATFORM_ADMIN_DB`` is a *build-time* variable: the duty nginx and
@@ -1068,6 +1084,18 @@ def frontend_build_facts():
     env file would therefore be a decorative binding that can silently disagree
     with the bundle users actually load. The honest check is to read the file the
     frontend build consumed and refuse when it names another database.
+
+    ``FRONTEND_BUILD_SHA256`` is the opposite case and is bound the other way
+    round. The application process *does* read it and publishes it, and every
+    acceptance lane keys the reuse of its observations on it, so a duty stack
+    that never forwards it serves an unidentified bundle: the served revision
+    still moves, reuse silently degrades from the artifact to the deployment, and
+    nothing in the running system answers which frontend is behind the route. The
+    artifact owns that fact -- ``.build-sha256`` inside the duty's declared
+    output directory is written by the same governed fingerprint entry that
+    produced the build -- so it is read from there and reconciled against the
+    deployed build environment's own declaration instead of being pinned here or
+    re-derived by a second hash rule.
     """
     path = PAYLOAD["frontend_build_env_file"]
     declared = PAYLOAD["platform_admin_database"]
@@ -1076,7 +1104,8 @@ def frontend_build_facts():
     if present:
         with open(path, "rb") as stream:
             digest = hashlib.sha256(stream.read()).hexdigest()
-    observed = read_env_file(path).get("VITE_PLATFORM_ADMIN_DB", "")
+    declared_values = read_env_file(path)
+    observed = declared_values.get("VITE_PLATFORM_ADMIN_DB", "")
     error = ""
     if not present:
         error = "the declared frontend build environment file is missing"
@@ -1084,12 +1113,36 @@ def frontend_build_facts():
         error = "the deployed frontend build names %s, not the declared %s" % (
             observed or "<unset>", declared,
         )
+    output_dir = str(((duty or {}).get("stack") or {}).get("frontend_dist_dir") or "")
+    artifact_path = os.path.join(output_dir, ".build-sha256") if output_dir else ""
+    artifact = ""
+    if artifact_path and os.path.exists(artifact_path):
+        with open(artifact_path) as stream:
+            artifact = stream.read().strip().lower()
+    build_env_sha256 = str(declared_values.get("FRONTEND_BUILD_SHA256", "")).strip().lower()
+    fingerprint_error = ""
+    if duty is not None:
+        if not artifact_path:
+            fingerprint_error = "the duty declares no frontend output directory"
+        elif not os.path.exists(artifact_path):
+            fingerprint_error = ("the served frontend artifact declares no fingerprint (%s)"
+                                 % (artifact_path,))
+        elif not FRONTEND_FINGERPRINT.fullmatch(artifact):
+            fingerprint_error = ("the served frontend artifact fingerprint is not a sha256: %s"
+                                 % (artifact or "<empty>",))
+        elif build_env_sha256 and build_env_sha256 != artifact:
+            fingerprint_error = ("the deployed frontend build environment declares %s while the "
+                                 "served artifact is %s" % (build_env_sha256, artifact))
     return {
         "path": path,
         "present": present,
         "sha256": digest,
         "platform_admin_db": observed,
         "error": error,
+        "served_build_sha256": artifact,
+        "build_env_build_sha256": build_env_sha256,
+        "artifact_path": artifact_path,
+        "fingerprint_error": fingerprint_error,
     }
 
 
@@ -1244,6 +1297,16 @@ def duty_credentials(duty):
 
 def render_env(duty, credentials):
     is_demo = duty.get("data_purpose") == DEMO_PURPOSE
+    served = frontend_build_facts(duty)
+    if served["fingerprint_error"] or not served["served_build_sha256"]:
+        # A duty stack that serves a frontend has to say which build it serves.
+        # An empty or unverifiable value would start a runtime whose published
+        # identity is anonymous -- the 2026-10-16 gap -- so the render refuses
+        # and the reviewed declaration is what has to change, not the confidence.
+        raise RuntimeError("DAILY_DUTY_FRONTEND_BUILD_IDENTITY:%s:%s" % (
+            duty["duty"],
+            served["fingerprint_error"] or "the served frontend fingerprint is absent",
+        ))
     values = {
         "DUTY_NAME": duty["duty"],
         "COMPOSE_PROJECT_NAME": duty["cluster"]["compose_project"],
@@ -1256,6 +1319,7 @@ def render_env(duty, credentials):
         ),
         "SC_PRODUCT_ROOT": duty["stack"]["product_root"],
         "SC_SOURCE_REVISION": PAYLOAD["source_revision"],
+        "FRONTEND_BUILD_SHA256": served["served_build_sha256"],
         "POSTGRES_IMAGE": duty["stack"]["postgres_image"],
         "DB_NAME": duty["database"],
         "DB_USER": duty["database_role"],
@@ -1417,6 +1481,13 @@ def application_config_facts(duty):
     while building its static-file map, and *every* ``/api/*`` route answered
     500 before dispatch. Reading the container back is what makes a declaration
     that says "serving" disagree out loud with a container that cannot serve.
+
+    The same readback carries the identity the application *publishes*. A stack
+    that forwards the source revision but not the served frontend artifact
+    answers ``/api/runtime-version`` with an anonymous bundle, and every
+    acceptance lane silently degrades its reuse key from the artifact to the
+    deployment; so both are read from the container and judged against the
+    declared revision and the fingerprint of the artifact behind the route.
     """
     facts = {"container": "", "environment": {}, "addons_path": [],
              "missing_addons_roots": [], "error": ""}
@@ -1425,21 +1496,31 @@ def application_config_facts(duty):
         facts["error"] = "the declared odoo service is not running"
         return facts
     facts["container"] = container
-    for key in APPLICATION_ENVIRONMENT_KEYS:
-        observed = run(["docker", "exec", container, "sh", "-lc",
-                        'printf "%s" "$' + key + '"'])
-        facts["environment"][key] = (
-            (observed.stdout or "").strip() if not observed.returncode else ""
-        )
+    # One round trip for the whole vector: each ``docker exec`` costs a
+    # container namespace entry, and the duty entry walks every declared duty on
+    # every run, so a per-key probe would multiply that cost by the number of
+    # identity keys for facts that are read in the same instant anyway. The
+    # values travel NUL-separated in a fixed key order, which keeps a value that
+    # ever contains a newline from shifting the mapping onto its neighbour.
+    keys = APPLICATION_ENVIRONMENT_KEYS + APPLICATION_IDENTITY_KEYS
+    # The addon-root scan is the same kind of fact read at the same moment, so it
+    # travels in the same round trip after the NUL-terminated vector instead of
+    # paying a second container entry for it.
     probe = run(["docker", "exec", container, "sh", "-lc",
+                 "printf '%s\\0' " + " ".join('"$%s"' % (key,) for key in keys) + "; "
                  "sed -n 's/^addons_path *= *//p' /var/lib/odoo/odoo.conf | tr ',' '\\n' "
                  "| while read -r entry; do [ -n \"$entry\" ] || continue; "
                  "if [ -d \"$entry\" ]; then echo \"present=$entry\"; "
                  "else echo \"missing=$entry\"; fi; done"])
+    fields = (probe.stdout or "").split("\0", len(keys))
+    facts["environment"] = {
+        key: (fields[index].strip() if index < len(fields) else "")
+        for index, key in enumerate(keys)
+    }
     if probe.returncode:
         facts["error"] = (probe.stderr or probe.stdout or "").strip()[:300]
         return facts
-    for line in (probe.stdout or "").splitlines():
+    for line in (fields[len(keys)] if len(fields) > len(keys) else "").splitlines():
         marker, _, path = line.strip().partition("=")
         if not path:
             continue
@@ -2099,11 +2180,38 @@ def duty_entry(duty):
     entry["service"] = service_facts(duty)
     if "odoo" in [str(item) for item in duty["stack"]["services"]]:
         entry["application_config"] = application_config_facts(duty)
+    entry["runtime_identity"] = duty_runtime_identity(duty)
     if (entry["cluster"].get("present") and entry["cluster"].get("running")
             and entry["custody"].get("database_present")
             and entry["custody"].get("role_present")):
         entry["application_credential"] = application_credential_facts(duty)
     return entry
+
+
+def duty_runtime_identity(duty):
+    """The identity one duty's route must publish, and the artifact behind it.
+
+    ``SC_SOURCE_REVISION`` and ``FRONTEND_BUILD_SHA256`` are the two facts
+    ``/api/runtime-version`` answers with, and they move independently: a merge
+    that changes no frontend source advances the revision while the served
+    artifact keeps its generation. The revision is the payload's own review
+    input; the artifact fingerprint is read from the duty's declared output
+    directory, where the governed build entry writes it. Recording both beside
+    the container's own environment is what lets the verdict compare a
+    *published* identity with the declared one instead of trusting the render.
+    """
+    served = frontend_build_facts(duty)
+    return {
+        "declared": {
+            "SC_SOURCE_REVISION": str(PAYLOAD["source_revision"]),
+            "FRONTEND_BUILD_SHA256": served.get("served_build_sha256") or "",
+        },
+        "served_build_sha256": served.get("served_build_sha256") or "",
+        "build_env_build_sha256": served.get("build_env_build_sha256") or "",
+        "artifact_path": served.get("artifact_path") or "",
+        "fingerprint_error": served.get("fingerprint_error") or "",
+        "pointer": served.get("path") or "",
+    }
 
 
 def salvage_entry(duty, error):
@@ -2637,6 +2745,25 @@ def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, 
                 for key in APPLICATION_ENVIRONMENT_KEYS),
             {"declared": declared_runtime_env, "observed": environment,
              "keys": list(APPLICATION_ENVIRONMENT_KEYS),
+             "container": application.get("container")})
+        # The revision is not the bundle. ``SC_SOURCE_REVISION`` moves with the
+        # deployed commit while ``FRONTEND_BUILD_SHA256`` names the artifact the
+        # route actually serves, and the acceptance lanes key the reuse of their
+        # observations on the artifact. A stack that forwards the revision alone
+        # answers ``/api/runtime-version`` with an anonymous bundle, so this is
+        # read back from the container and compared with the identity the duty
+        # declared instead of being assumed from the render (2026-10-16).
+        identity = observation.get("runtime_identity") or {}
+        declared_identity = identity.get("declared") or {}
+        add("served_container_publishes_the_declared_runtime_identity",
+            bool(declared_identity.get("FRONTEND_BUILD_SHA256"))
+            and all(environment.get(key) == declared_identity.get(key)
+                    for key in APPLICATION_IDENTITY_KEYS),
+            {"declared": declared_identity,
+             "observed": {key: environment.get(key) for key in APPLICATION_IDENTITY_KEYS},
+             "artifact_path": identity.get("artifact_path") or "",
+             "build_env_build_sha256": identity.get("build_env_build_sha256") or "",
+             "fingerprint_error": identity.get("fingerprint_error") or "",
              "container": application.get("container")})
         add("served_addons_path_has_no_unmounted_root",
             not application.get("missing_addons_roots"),

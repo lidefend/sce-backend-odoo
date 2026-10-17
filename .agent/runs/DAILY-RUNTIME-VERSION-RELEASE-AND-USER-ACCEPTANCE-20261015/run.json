@@ -293,7 +293,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "STATUS 2026-10-16 (demo carrier rebuild authorized; D1=A1, D2=formal demo module, D3=preserve the historic source, D4=revalidate by dependency). Steps 1 and 2 are complete and committed locally: the rebuilt carrier is declared; every duty-scoped read-only entry and every duty-scoped write/read tool binds the declared duty instead of a bare database name; the governed make lanes forward that duty; the routing lane no longer defaults to the historic container; the governance text registers the two same-name carriers by carrier identity; the restored tool lanes have their own non-zero L2 routes; the two weak landing assertions and the last two bare database defaults found by independent review are closed with fail-closed behaviour and regression cases; both read-only plans were re-read with the binding wired. The independent read-only review of HEAD 2ec2306c returned PASS with no S1/S2 and seven S3 findings, of which five were closed in 74545f9c and two (routing-inventory explicit cluster-container, legacy-retire running-only writer count) are accepted residuals for the first write. Read-only host readback confirms the legacy publish face still serves 18081 and 8070, the new carrier does not exist yet, there is no cron or systemd consumer, the single-postmaster disposal is still in force, and the 2026-10-15 recovery point verifies byte-for-byte. No host write has been made. NEXT: obtain a focused re-check of commit 74545f9c against the reviewed files, then create the sc-demo-dev cluster (daily.runtime.database.duty.apply with the reviewed declaration digest), initialize it, seed it through the product's own demo chain, stand the legacy publisher down with daily.runtime.legacy_stack.retire.apply (maintenance state is the failure default), and switch 18081/8070, then product acceptance and the independent B-line closure.",
+  "next_exact_step": "STATUS 2026-10-17 (owner round directive: this round's objective is execution efficiency). The duty-carrier step-2 work is implemented locally on top of ae4b1ad1 in a dirty tree; the newest delta makes the duty stack publish the served frontend build identity and folds the runtime-environment, identity and addon-root reads into one container entry per duty per run (was three). make verify.daily.runtime.database.duty is green (65 + 156 tests, +3 new) and make ci.local.iteration exits 0 on the dirty stage identity. The demo rebuild's owner-fixed order is unchanged and still not started: no host write has been made, the legacy publish face still serves 18081/8070, no sc-demo-dev cluster or sc_demo* volume exists, and the recovery/stand-down preconditions recorded under demo_carrier_rebuild_20261016 still hold. NEXT: obtain one focused independent re-check bound to the current candidate (the review set is 74545f9c..dirty, which now also carries the frontend-identity and probe-batching delta), then create the sc-demo-dev cluster through daily.runtime.database.duty.apply with the digest re-derived from the reviewed declaration, initialize it, seed it through the product's own demo chain, stand the legacy publisher down with daily.runtime.legacy_stack.retire.apply (maintenance state is the failure default), switch 18081/8070, then product acceptance and the independent B-line closure.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -4079,5 +4079,62 @@
       "writes": false,
       "not_a_pass": "Still no cluster, no container stop, no database write. The reviewer PASSed the pre-fix candidate; because the fix is a delta on reviewed files, a focused re-check is requested before the first host write rather than assuming the earlier PASS covers it."
     }
+  },
+  "duty_frontend_build_identity_and_probe_efficiency_20261017": {
+    "authority": "owner round directive 2026-10-17: this round's objective is execution efficiency. The duty stack also had a correctness gap in the same function: it forwarded SC_SOURCE_REVISION but not the served frontend artifact, so /api/runtime-version answered an anonymous bundle and every acceptance lane silently degraded its evidence-reuse key from the artifact to the deployment.",
+    "stage_identity": {
+      "head": "ae4b1ad16ce6a8d67a9cb1b2df51619663c4d110",
+      "dirty_scope": [
+        "config/ops/daily_runtime_duty_stack.env",
+        "config/ops/daily_runtime_duty_stack.yml",
+        "scripts/ops/daily_runtime_database_duty.py",
+        "scripts/ops/test_daily_runtime_database_duty.py"
+      ],
+      "frozen": false,
+      "note": "iteration stage identity, not a delivery fingerprint; no commit and no host write was made by this record"
+    },
+    "efficiency": {
+      "round_trips_before": "application_config_facts paid one container entry per environment key (ENV, SC_ENVIRONMENT) plus a third for the addon-root scan: 3 docker exec round trips per declared duty per entry run",
+      "round_trips_after": "the runtime environment, the published identity vector and the addon-root scan share one NUL-separated probe: 1 round trip per declared duty per entry run",
+      "delta": "2 fewer container entries per duty per run; with the three declared duties that is 6 fewer entries per run, and the two new published-identity facts cost no additional entry",
+      "why_it_matters": "the duty entry walks every declared duty on every plan, refresh, upgrade and seed; the identity facts are read in the same instant as the runtime environment, so a per-key probe multiplied a namespace entry by a constant for no additional information",
+      "guard": "test_the_environment_vector_is_read_in_one_round_trip pins exactly one probe per duty and fails if the reads split again"
+    },
+    "identity_publishing": {
+      "env_template": "config/ops/daily_runtime_duty_stack.env now carries FRONTEND_BUILD_SHA256=@FRONTEND_BUILD_SHA256@ and config/ops/daily_runtime_duty_stack.yml forwards it into the application container",
+      "source_of_the_value": "the value is not pinned in the declaration: frontend_build_facts reads .build-sha256 from the duty's declared stack.frontend_dist_dir, which the governed fingerprint entry writes, and reconciles it against the deployed build environment file's own FRONTEND_BUILD_SHA256; the render refuses when it is absent, not a sha256, or contradicted",
+      "why_refuse_rather_than_default": "an empty or unverifiable value starts a runtime whose published identity is anonymous -- exactly the 2026-10-16 gap -- so the reviewed declaration (or the artifact) is what has to change, not the confidence",
+      "readback": "application_config_facts now also reads SC_SOURCE_REVISION and FRONTEND_BUILD_SHA256 from the running container, and evaluates a new assertion served_container_publishes_the_declared_runtime_identity comparing what the container publishes with the identity the duty declared (duty_runtime_identity)"
+    },
+    "files": [
+      "scripts/ops/daily_runtime_database_duty.py: APPLICATION_IDENTITY_KEYS is now consumed (it was declared but unused); FRONTEND_FINGERPRINT shape check; frontend_build_facts(duty) reports artifact_path/served_build_sha256/build_env_build_sha256/fingerprint_error; render_env refuses DAILY_DUTY_FRONTEND_BUILD_IDENTITY and forwards FRONTEND_BUILD_SHA256; ENV_READBACK_KEYS includes it; duty_runtime_identity records the declared identity beside the artifact facts; application_config_facts reads one combined probe; evaluate asserts the published identity",
+      "scripts/ops/test_daily_runtime_database_duty.py: fixtures provision the served artifact instead of the refusal being relaxed; new cases for the refusal (absent artifact, non-sha256 artifact, artifact contradicted by the build environment), for the single-round-trip probe, and for the published-identity verdict (matching, foreign revision, anonymous bundle, unreadable artifact)"
+    ],
+    "validation": {
+      "make verify.daily.runtime.database.duty": "PASS -- py_compile OK, verify.daily.runtime.duty.identity.unit 65 tests OK, scripts.ops.test_daily_runtime_database_duty 156 tests OK (153 before this delta, +3 new)",
+      "make ci.local.iteration": "EXIT=0 PASS change_state=dirty receipt=none next=risk_selected_non_zero_L2_targets_required",
+      "zero_test_or_unknown": "none: every executed command reported a non-zero test count",
+      "not_run_and_why": {
+        "runtime_l3_l4": "no host write was made by this delta; the duty entry is exercised only through the rendered carrier against the fake host, so no governed runtime lane was entered",
+        "frontend_build_lane": "scripts/ops/daily_runtime_frontend_build_align.py was not modified; its behaviour and its own unit lane are untouched"
+      }
+    },
+    "impact_analysis": {
+      "changed_inputs": [
+        "config/ops/daily_runtime_duty_stack.env",
+        "config/ops/daily_runtime_duty_stack.yml",
+        "scripts/ops/daily_runtime_database_duty.py"
+      ],
+      "invalidated": [
+        "the local receipt for verify.daily.runtime.database.duty (its tool source changed, and it was already stale on a receipt identity mismatch before this delta)"
+      ],
+      "carried_forward": [
+        "the read-only host facts, the recovery-point integrity check and the independent review recorded under demo_carrier_rebuild_20261016 stay valid: they describe the host and the reviewed declaration, neither of which this delta changes",
+        "no runtime navigation, fixture or browser evidence depends on this tool's internals"
+      ],
+      "effect_on_the_pending_first_write": "the duty entry is the tool that will create the sc-demo-dev cluster, so its delta belongs to the same review set the record already requires to be re-checked before the first host write; the shipped declaration digest is unchanged by this delta and still has to be re-derived from the reviewed file before apply"
+    },
+    "not_a_pass": "No cluster was created, no container was stopped, no database was written and no evidence was reissued by this record. The demo line still has no lawful product-behaviour carrier until the rebuild lands.",
+    "writes": false
   }
 }
