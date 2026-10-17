@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "id": "CI-REMOTE-EFFICIENCY-20261017",
+  "branch": "fix/ci-backend-sharding-cache-20261017",
+  "status": "active",
+  "goal": ".agent/goals/CI-REMOTE-EFFICIENCY-20261017.yaml",
+  "record": "docs/ops/iterations/ci_remote_efficiency_20261017.md",
+  "baseline_sha": "42b19e0ba3141e54c3d8f5a949a08add0b93330f",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CI-REMOTE-EFFICIENCY-20261017.yaml",
+    ".agent/runs/CI-REMOTE-EFFICIENCY-20261017/run.json",
+    ".agent/runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/run.json",
+    ".github/workflows/backend_test_suite.yml",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/ci_remote_efficiency_20261017.md",
+    "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
+    "make/ci.mk",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/self_hosted_runner_cleanup.sh",
+    "scripts/ci/test_backend_suite_plan.py",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/verify/github_actions_security_guard.py",
+    "scripts/verify/test_github_actions_security_guard.py",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/audit/verification_lane_baseline.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing local Make gates and GitHub CI backend_suite; no shared runtime/database access."
+  },
+  "checks": {
+    "ci_workflow": {
+      "target": "verify.ci.workflow.contract",
+      "kind": "offline",
+      "inputs": [
+        ".github/workflows/backend_test_suite.yml",
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+        "make/ci.mk",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "make/codex.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "implementation_evidence": {
+    "owner_request": "Optimize remote gates in existing PR #670; no new PR.",
+    "layer": "P4 CI tooling",
+    "candidate_head": "a98fdc0983b7f4c1a0d7612b2a1dc46fb3a8ddd9",
+    "dirty": true,
+    "tasks": [
+      "Preserve all runtime scope (renderer affects addons_path); report exact selection reasons.",
+      "Reuse frontend BuildKit layers; recompute current build and verify output hash.",
+      "Partition 14 selected modules into four nonempty shards (4/4/3/3); preserve full union, nonzero test guards and failure aggregation.",
+      "Keep nightly/dispatch discovery and exact run/shard cleanup; independent review then publish only to PR670."
+    ],
+    "exclusions": [
+      "No cross-run ORM success reuse without authoritative environment evidence.",
+      "No product changes, deployment, shared database writes or new PR."
+    ],
+    "validation": {
+      "L0": "passed",
+      "L1": "passed: final ci.local.iteration, 10 workflow bash steps, diff-check",
+      "L2": "passed: verify.ci.workflow.contract 15+8+8; risk workflow 17; GitHub security 18; 66 total",
+      "L3": "not_run: CI-only change; no product runtime mutation",
+      "L4": "not_run: no product/browser changes",
+      "L5": "not_run",
+      "freeze_prepare": "passed: /tmp/pr670-freeze-prepare.log; candidate remains unfrozen"
+    },
+    "next_exact_step": "Preserve tested CI delta locally; resolve publication destination because owner-requested PR670 has already merged without this delta. Do not push the old branch or create another PR implicitly.",
+    "evidence": [
+      "/tmp/pr670-ci-workflow-tests.log",
+      "/tmp/pr670-backend-plan.json"
+    ],
+    "independent_review": "Read-only agent reviewed current CI delta; no S1/S2 after preserving nightly discovery and exact-shard cleanup. Remote compatibility remains pending.",
+    "generated_review": {
+      "inventory_before": 1550,
+      "inventory_after": 1551,
+      "added": [
+        "scripts/ci/test_backend_suite_plan.py"
+      ],
+      "removed": [],
+      "ci_unit_scripts": "15 -> 16, all wired",
+      "complexity": "4844 -> 4846 scanned files; split count unchanged at 68"
+    },
+    "integration_update": {
+      "pr": 670,
+      "merged_head": "a98fdc0983b7f4c1a0d7612b2a1dc46fb3a8ddd9",
+      "merge_commit": "42b19e0ba3141e54c3d8f5a949a08add0b93330f",
+      "merged_at": "2026-10-17T11:33:27Z",
+      "ci_delta_in_merge": false,
+      "local_state": "uncommitted; unpublished; preserved",
+      "publication": "pending owner choice: original same-PR destination is closed; do not create another PR implicitly"
+    }
+  },
+  "next_exact_step": "Commit this reviewed CI-only scope, freeze fingerprint, run exact-head Quick, bind independent review/archive, publish independent PR and merge only after current-head required CI success.",
+  "carry_forward": {
+    "source_head": "a98fdc0983b7f4c1a0d7612b2a1dc46fb3a8ddd9",
+    "current_baseline": "42b19e0ba3141e54c3d8f5a949a08add0b93330f",
+    "proof": "git diff source_head origin/main empty before switching; CI implementation/test inputs unchanged during metadata transfer",
+    "results": [
+      "66 targeted tests",
+      "10 workflow shell syntax checks",
+      "independent CI-delta read-only review"
+    ],
+    "invalidated": [
+      "new run/goal identity and generated scan counts; freeze preparation rerun"
+    ]
+  },
+  "publication_authority": "Owner explicitly requested independent CI optimization through integration; all other topics paused. Protected squash chosen consistently with prior integration; no deployment.",
+  "freeze_preparation": {
+    "status": "passed",
+    "command": "make ci.delivery.freeze.prepare",
+    "log": "/tmp/ci-efficiency-freeze.log",
+    "stage": "42b19e0b plus declared dirty CI delta",
+    "generated_review": "one test entry added, none removed; 16 CI scripts all wired; no split-count growth"
+  },
+  "quick_recovery": {
+    "failed_head": "d6df920b56f731b74a853a5debf39e3221b6e6ce",
+    "failure_owner": "P4 verification lane wiring",
+    "log": "/tmp/ci-efficiency-quick.log",
+    "failure": "targets_zero_reference=792 > max791, frozen identities already contain792; no new identity",
+    "recovery": "Wire existing ORM selection tests into CI workflow contract aggregate; retire its obsolete zero-reference disposition and shrink frozen identity set, preserve count limit791.",
+    "impact": "make/ci.mk dependency graph and two audit registries only; backend sharding/cache implementation and 66 prior implementation tests unchanged; focused aggregate now77 tests passed.",
+    "validation_layer": "L1/L2; no local runtime or browser changes required; repeat frozen Quick after justified correction",
+    "targeted_results": {
+      "workflow_aggregate": "passed 77 tests /tmp/ci-efficiency-workflow-v2.log",
+      "lane_audit_and_tests": "passed 72 tests /tmp/ci-efficiency-lane-recovery.log",
+      "iteration": "passed L1_only /tmp/ci-efficiency-iteration-v2.log",
+      "independent_review": "no S1/S2; /root/performance_code_review"
+    }
+  }
+}

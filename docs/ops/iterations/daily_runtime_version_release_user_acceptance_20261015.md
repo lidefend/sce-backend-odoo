@@ -2747,3 +2747,8 @@ exact-head Quick 回执 `.git/codex/evidence/ci.local.quick/6dbe7135….json`（
 声明的 digest 未变，`--apply` 前仍需从复核后的文件重新派生。
 
 **未完成**：未创建集群、未停止容器、未写库、未重发任何证据；Demo 线在本轮仍未获得合法的产品行为载体。
+
+
+Owner directive 2026-10-17: all non-CI execution is paused. PR #670 merged
+as 42b19e0ba3141e54c3d8f5a949a08add0b93330f. Unpublished CI changes transfer to
+`.agent/runs/CI-REMOTE-EFFICIENCY-20261017/run.json`; no deployment is authorized by this merge.

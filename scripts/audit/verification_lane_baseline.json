@@ -544,7 +544,6 @@
       "verify.business_config.standard_list_loop.unit",
       "verify.business_scope.context.runtime",
       "verify.capability.lint",
-      "verify.ci.orm_selection.unit",
       "verify.ci.scheduled_gates",
       "verify.clean_product_tree",
       "verify.construction.create_defaults.unit",

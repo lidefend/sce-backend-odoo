@@ -1,12 +1,40 @@
 import re
 from pathlib import Path
 import unittest
+import yaml
 
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 class BackendTestSuiteDispatchContractTest(unittest.TestCase):
+    def test_matrix_cannot_hide_failed_or_cancelled_shards(self):
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+        plan = workflow['jobs']['plan']
+        suite = workflow['jobs']['backend_suite']
+        self.assertIn('github.event.pull_request.head.repo.full_name == github.repository', plan['if'])
+        self.assertEqual(suite['needs'], 'plan')
+        self.assertFalse(suite['strategy']['fail-fast'])
+        self.assertEqual(suite['strategy']['max-parallel'], 4)
+        self.assertEqual(suite['strategy']['matrix'], '${{ fromJSON(needs.plan.outputs.matrix) }}')
+        self.assertNotIn('continue-on-error', suite)
+        self.assertIn('${{ matrix.index }}', suite['env']['COMPOSE_PROJECT_NAME'])
+
+    def test_cache_reuses_layers_not_test_success_or_database_state(self):
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+        steps = {s['name']: s for s in workflow['jobs']['backend_suite']['steps']}
+        cache = steps['Restore frontend build layers']['with']
+        self.assertEqual(cache['path'], '${{ runner.temp }}/backend-frontend-buildkit')
+        self.assertIn('frontend/**', cache['key'])
+        self.assertIn('Dockerfile', cache['key'])
+        build = steps['Calculate frontend build fingerprint']
+        self.assertNotIn('if', build)
+        self.assertIn('--cache-from', build['run'])
+        self.assertIn('--cache-to', build['run'])
+        self.assertIn('test "${recorded_hash}" = "${calculated_hash}"', build['run'])
+        for name in ('Build images and start database', 'Run backend test suite per module'):
+            self.assertNotIn('if', steps[name])
+
     def test_dispatch_is_exact_head_and_full_suite_only(self):
         makefile = (ROOT / "make/ci.mk").read_text(encoding="utf-8")
         target = makefile.split("ci.backend_test_suite.dispatch:", 1)[1].split("\n.PHONY:", 1)[0]

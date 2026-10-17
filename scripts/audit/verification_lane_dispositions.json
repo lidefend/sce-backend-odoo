@@ -2348,11 +2348,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.ci.orm_selection.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/CI-SCHEDULED-LANE-CONCURRENCY-CLOSURE/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.ci.scheduled_gates": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",

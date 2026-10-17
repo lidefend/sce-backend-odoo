@@ -155,7 +155,7 @@ def scan(root: Path) -> list[Finding]:
                 findings.add(Finding("GA018", relative, "PROFESSIONAL_ARTIFACT_WRITERS_NOT_SERIALIZED"))
         if path.name == "backend_test_suite.yml":
             required = (
-                "CI_PROJECT_NAME: sc-suite-${{ github.run_id }}",
+                "CI_PROJECT_NAME: sc-suite-${{ github.run_id }}-${{ matrix.index }}",
                 "COMPOSE_PROJECT_NAME: sc-suite-${{ github.run_id }}",
                 "if: always()",
                 "bash scripts/ci/self_hosted_runner_cleanup.sh",

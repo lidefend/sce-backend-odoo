@@ -1,0 +1,18 @@
+schema_version: 1
+goal:
+  id: CI-REMOTE-EFFICIENCY-20261017
+  title: bounded_backend_ci_parallelism_and_build_reuse
+  status: active
+  formal_product_layer: P4
+  layer_target: github_ci_backend_workflow
+  module: [scripts/ci, scripts/verify, make, .github/workflows]
+  objective: Reduce remote CI elapsed time with build-layer reuse and complete bounded parallel test execution; independently integrate via protected PR.
+  baseline:
+    branch: main
+    full_sha: 42b19e0ba3141e54c3d8f5a949a08add0b93330f
+  constraints:
+    - no_test_scope_reduction_or_cached_database_verdicts
+    - no_product_changes_or_deployment
+    - all_other_topics_paused_by_owner
+    - exact_head_ci_and_independent_review_before_protected_merge
+  next_exact_step: Freeze and validate the existing tested CI delta, then publish an independent PR.
