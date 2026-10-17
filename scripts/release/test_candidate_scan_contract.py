@@ -21,18 +21,19 @@ LOCAL_ID = "sha256:" + "d" * 64
 FRONTEND_LOCAL_ID = "sha256:" + "e" * 64
 ODOO_REPOSITORY = "ghcr.io/lidefend/sce-product"
 FRONTEND_REPOSITORY = "ghcr.io/lidefend/sce-frontend"
+PRODUCT_VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 
 
 def published_manifest() -> dict:
     return {
         "schema_version": 3,
         "source_sha": SHA,
-        "image": f"{ODOO_REPOSITORY}:1.0.0-rc.20",
+        "image": f"{ODOO_REPOSITORY}:{PRODUCT_VERSION}",
         "image_digest": DIGEST,
         "registry_repository": ODOO_REPOSITORY,
         "registry_refs": [f"{ODOO_REPOSITORY}@{DIGEST}"] * 2,
         "local_image_id": LOCAL_ID,
-        "frontend_image": f"{FRONTEND_REPOSITORY}:1.0.0-rc.20",
+        "frontend_image": f"{FRONTEND_REPOSITORY}:{PRODUCT_VERSION}",
         "frontend_image_digest": FRONTEND_DIGEST,
         "frontend_registry_repository": FRONTEND_REPOSITORY,
         "frontend_registry_refs": [f"{FRONTEND_REPOSITORY}@{FRONTEND_DIGEST}"] * 2,
@@ -45,11 +46,11 @@ def unpublished_manifest() -> dict:
     return {
         "schema_version": 3,
         "source_sha": SHA,
-        "image": f"{ODOO_REPOSITORY}:1.0.0-rc.20",
+        "image": f"{ODOO_REPOSITORY}:{PRODUCT_VERSION}",
         "image_digest": None,
         "registry_repository": ODOO_REPOSITORY,
         "local_image_id": LOCAL_ID,
-        "frontend_image": f"{FRONTEND_REPOSITORY}:1.0.0-rc.20",
+        "frontend_image": f"{FRONTEND_REPOSITORY}:{PRODUCT_VERSION}",
         "frontend_image_digest": None,
         "frontend_registry_repository": FRONTEND_REPOSITORY,
         "frontend_local_image_id": FRONTEND_LOCAL_ID,

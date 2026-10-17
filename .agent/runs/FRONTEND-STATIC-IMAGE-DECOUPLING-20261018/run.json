@@ -24,6 +24,8 @@
     ".github/workflows/backend_test_suite.yml",
     ".github/workflows/demo-ci.yml",
     "docs/ops/",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
     ".agent/active-runs.json",
     ".agent/goals/FRONTEND-STATIC-IMAGE-DECOUPLING-20261018.yaml",
     ".agent/runs/FRONTEND-STATIC-IMAGE-DECOUPLING-20261018/run.json"
