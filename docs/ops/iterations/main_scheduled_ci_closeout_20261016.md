@@ -2709,3 +2709,35 @@ request/trace 身份键、两个 contract `context` 容器中的 `trace_id`/`req
 ### （5）状态
 
 - 未执行 Quick、独立复核、外部归档、推送、PR 或部署。
+
+## R15.7 Quick 首轮失败与验证面登记收口（2026-10-17，不冻结）
+
+### （1）失败事实
+
+- 在清洁候选 `6760de8a…`（指纹 `19127d7b…`）上执行一次 `make ci.local.quick`，退出码 2，未签发 receipt。
+- 唯一失败门禁：`audit.verification.lane_coverage.check`（由 `verify.verification.lane_coverage` 汇入 `verify.contract.architecture.suite`）。
+- 拒绝内容：`targets_zero_reference` 787→791、`local_only_scripts` 18→21，且 4 个 target 与 3 个脚本不在冻结身份集内。
+- 归属判断：不是本轮 S1/S2 或性能证据改动引入的产品缺陷，而是 R14/R15 性能时段新增的本地只读探针与其单测从未登记。属 P4 验证工具面负债，本轮负责收口。
+
+### （2）最小修复（登记，不删表面）
+
+- `scripts/audit/verification_lane_dispositions.json`：登记 4 个探针 target，`disposition=local_diagnostic`、`owner=platform-team`、`review_by=2027-03-31`，理由写明需要活栈、不能进 Quick。
+  - `local.dev.runtime.entry_target.probe`、`local.dev.runtime.projection_cache_identity.probe`、`local.dev.runtime.record_form.probe`、`local.dev.runtime.startup_fact_reuse.probe`。
+- `scripts/audit/verification_lane_exemptions.json`：登记 3 个 local-only 脚本，沿用既有 `local_performance_probe` / `local_quick_only_unit` 分类。
+  - `local_dev_runtime_projection_cache_identity_probe.py`、`local_dev_runtime_record_form_probe.py`、`test_local_dev_runtime_record_form_probe.py`。
+- `scripts/audit/verification_lane_baseline.json`：用唯一受管入口 `--write-baseline` 重写，属守卫声明的“deliberate, reviewed action”，不是手工改哈希。
+- 两个登记文件的改动均为纯新增（`42 insertions`），未改动或删除既有条目。
+
+### （3）基线扩展范围核验
+
+- 重写后差异恰好 7 项身份 + 4 项关联计数：`max_targets_zero_reference` 787→791、`max_local_only_scripts` 18→21、`recorded_targets_defined` 2356→2360、`recorded_targets_unreached_from_anchor` 2181→2185。
+- 没有任何无关身份被顺带扩入；未修改产品代码、探针断言或执行车道。
+
+### （4）验证
+
+- `make verify.verification.lane_coverage`：`PASS surface within the frozen baseline`，自检 72 tests OK。
+- 未重跑与本次改动无关的门禁；Quick 仍需在最终冻结 HEAD 上重新执行一次。
+
+### （5）状态
+
+- 未独立复核、未归档、未推送、未部署。

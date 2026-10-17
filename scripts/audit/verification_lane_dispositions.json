@@ -1446,6 +1446,12 @@
       "reason": "R9/R11 分配归因只读探针：在活的运行时进程内读取 gc 计数与容器归属，用于证明热路径分配来源，不能脱离栈执行。",
       "review_by": "2027-03-31"
     },
+    "local.dev.runtime.entry_target.probe": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "R14 入口目标解析只读探针：在活的运行时进程内验证入口→动作目标的解析与拒绝路径，需要活栈，不能进 Quick。",
+      "review_by": "2027-03-31"
+    },
     "local.dev.runtime.performance.baseline": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",
@@ -1462,6 +1468,24 @@
       "disposition": "local_diagnostic",
       "owner": "platform-team",
       "reason": "偏好记录运行时探针：在活栈上验证单一应用职责，属于人工诊断面。",
+      "review_by": "2027-03-31"
+    },
+    "local.dev.runtime.projection_cache_identity.probe": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "R15 投影缓存身份只读探针：在活的运行时进程内核对缓存键与身份隔离，需要活栈，不能进 Quick。",
+      "review_by": "2027-03-31"
+    },
+    "local.dev.runtime.record_form.probe": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "R15 带记录表单无插桩探针：在 payment.request 记录表单路径上计时，需要活栈与受管 sc_dev_demo 数据。",
+      "review_by": "2027-03-31"
+    },
+    "local.dev.runtime.startup_fact_reuse.probe": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "R14 启动事实复用探针：核对 system.init 的导航与路由权威构建是否重复，需要活栈。",
       "review_by": "2027-03-31"
     },
     "local.dev.verify_realistic": {

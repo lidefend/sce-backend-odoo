@@ -109,6 +109,24 @@
       "lane_owner": "local.quick",
       "reason_code": "local_quick_only_unit",
       "reason": "列表偏好单一应用静态守卫，已接入 ci.local.quick 车道。"
+    },
+    {
+      "script": "scripts/verify/local_dev_runtime_projection_cache_identity_probe.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_performance_probe",
+      "reason": "投影缓存身份只读探针：需要活的本地栈；远端确定性套件不能提供该运行时。"
+    },
+    {
+      "script": "scripts/verify/local_dev_runtime_record_form_probe.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_performance_probe",
+      "reason": "带记录表单无插桩探针：需要活的本地栈与受管 sc_dev_demo 数据。"
+    },
+    {
+      "script": "scripts/verify/test_local_dev_runtime_record_form_probe.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_quick_only_unit",
+      "reason": "带记录表单探针的单元测试，随其 local-only 探针由本地 lane 消费。"
     }
   ],
   "remote_only": [

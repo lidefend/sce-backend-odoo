@@ -153,7 +153,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "2026-10-17 (R15.6 clean candidate formed): candidate HEAD=b1363534 clean, no tracked/untracked leftovers after review. Performance baseline rebound at clean HEAD (target_code_identity head=b1363534 dirty=false; only generated_at/head/dirty changed; status=baseline gaps=0 entries=7; five hash-declaring sources identity_match=match, sla/cache-identity unknown by design). Evidence scope re-plan after rebind: affected=[] stale=[] blocked=[] execution_required=false, units_digest=5e7a658d. Page evidence reused (no contract/frontend change). Next: run ci.delivery.freeze.prepare once, commit the R15.6 bookkeeping so the candidate SHA exists, then re-normalize JSON-only at that clean SHA so the record's target identity equals the candidate (self-reference cannot be avoided in-commit; the final artifact sha256 goes into the untracked archive manifest and PR text). Then codex preflight fingerprint, exactly one ci.local.quick at the frozen HEAD, independent review, external archive, governed PR. No push/PR/deploy yet.",
+  "next_exact_step": "2026-10-17 (R15.7 lane-coverage registration closed): the first Quick at 6760de8a failed only at audit.verification.lane_coverage.check because R14/R15 local probes were unregistered; 4 targets (local_diagnostic) and 3 scripts (local_performance_probe / local_quick_only_unit) are now registered and the baseline was widened through --write-baseline with a diff limited to those 7 identities and 4 dependent counters; verify.verification.lane_coverage PASS (72 self-tests). Next: re-run ci.delivery.freeze.prepare, commit this P4 registration batch, rebind the performance baseline JSON to that clean SHA, recompute the preflight fingerprint, then run exactly one ci.local.quick at the frozen HEAD. The earlier failed Quick is superseded, not reused. No push/PR/deploy yet.",
   "source_runs": [
     38818510036,
     38811434965,
@@ -2609,6 +2609,18 @@
         "sha256": "bc4752a13461bd51170fbff5e85a8c7b046afdcb1c6b0ae7a7ba3687f105a285"
       },
       "stage_head": "b136353474554b6f235d242746f4bdbc4b4a065f",
+      "dirty": false
+    },
+    {
+      "layer": "L1",
+      "command": "make audit.verification.lane_coverage.check && python3 scripts/audit/verification_lane_coverage.py --write-baseline --check && make verify.verification.lane_coverage",
+      "status": "passed",
+      "stage": "R15.7 at candidate 6760de8a: the first ci.local.quick failed only at audit.verification.lane_coverage.check because R14/R15 local read-only probes were never registered (targets_zero_reference 787->791, local_only_scripts 18->21, 4 targets + 3 scripts outside the frozen identity set). Registered the 4 targets as local_diagnostic and the 3 scripts as local_performance_probe/local_quick_only_unit, then widened the baseline through the sanctioned --write-baseline entry. Baseline diff is exactly the 7 identities plus the 4 dependent counters; no unrelated identity widened. verify.verification.lane_coverage PASS with 72 self-tests OK.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-6-quick.log",
+        "sha256": "5e6398b993845706b936982474e4283cc4ec8da3c9222955a87357f6d4bf6129"
+      },
+      "stage_head": "6760de8a4dcd087864865cb10f99fb17e8907813",
       "dirty": false
     }
   ],
