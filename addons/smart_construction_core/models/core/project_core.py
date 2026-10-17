@@ -1802,7 +1802,9 @@ class ProjectProject(models.Model):
         return res
 
     def _guard_project_close_by_settlement(self, target_state):
-        Settlement = self.env["project.settlement"]
+        # 结项守卫只统计未完成事实，不向操作者返回结算记录；跨能力域的
+        # 存在性校验使用内部提权，避免把财务读权限变成项目经理的前置条件。
+        Settlement = self.env["project.settlement"].sudo()
         count = Settlement.search_count(
             [
                 ("project_id", "=", self.id),
@@ -1820,7 +1822,7 @@ class ProjectProject(models.Model):
             )
 
     def _guard_project_close_by_payment(self, target_state):
-        Payment = self.env["payment.request"]
+        Payment = self.env["payment.request"].sudo()
         count = Payment.search_count(
             [
                 ("project_id", "=", self.id),

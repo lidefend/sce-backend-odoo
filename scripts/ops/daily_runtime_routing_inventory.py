@@ -48,6 +48,11 @@ FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 CONTAINER_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 DATABASE_NAME = re.compile(r"^[A-Za-z0-9_]+$")
+DATABASE_ROLE = re.compile(r"^[A-Za-z0-9_]+$")
+#: Role discovery reads the cluster container's own bootstrap environment. The
+#: postgres image publishes the role it created the cluster with; a workstation
+#: entry must never assume one carrier's role name for another carrier.
+ROLE_ENVIRONMENT_KEYS = ("POSTGRES_USER", "PGUSER", "DB_USER")
 POSTGRES_DATA_DESTINATION = "/var/lib/postgresql/data"
 #: Cluster maintenance databases exist in every Odoo cluster and are never
 #: served by an application instance; they are reported but never counted as
@@ -61,11 +66,16 @@ class InventoryError(RuntimeError):
 
 PROGRAM_TEMPLATE = '''
 import json
+import re
 import subprocess
 
 MARKER = "DAILY_ROUTING_INVENTORY="
 CLUSTER_CONTAINER = __CLUSTER_CONTAINER__
 DATABASE = __DATABASE__
+DATABASE_ROLE = __DATABASE_ROLE__
+EXPECTED_PROJECT = __EXPECTED_PROJECT__
+ROLE_ENVIRONMENT_KEYS = __ROLE_ENVIRONMENT_KEYS__
+ROLE_NAME = re.compile(__ROLE_PATTERN__)
 DATA_DESTINATION = __DATA_DESTINATION__
 
 
@@ -85,6 +95,53 @@ def env_map(entry):
             values[key] = value
     return values
 
+
+cluster_entry = next(
+    (
+        entry
+        for entry in inspected
+        if str(entry.get("Name") or "").lstrip("/") == CLUSTER_CONTAINER
+    ),
+    None,
+)
+cluster_project = ""
+if cluster_entry is not None:
+    cluster_project = (
+        ((cluster_entry.get("Config") or {}).get("Labels") or {})
+        .get("com.docker.compose.project")
+        or ""
+    )
+
+role_error = ""
+role_source = "argument" if DATABASE_ROLE else ""
+role = DATABASE_ROLE
+if cluster_entry is None:
+    role_error = "CLUSTER_CONTAINER_NOT_RUNNING:%s" % (CLUSTER_CONTAINER,)
+elif not role:
+    environment = env_map(cluster_entry)
+    candidates = sorted(
+        {
+            environment[key]
+            for key in ROLE_ENVIRONMENT_KEYS
+            if str(environment.get(key) or "").strip()
+        }
+    )
+    if len(candidates) == 1:
+        role = candidates[0]
+        role_source = "container_environment"
+        if not ROLE_NAME.fullmatch(role):
+            role_error = "DATABASE_ROLE_INVALID:%s" % (role,)
+            role = ""
+    elif not candidates:
+        role_error = (
+            "DATABASE_ROLE_UNRESOLVED: cluster container %s declares none of %s"
+            % (CLUSTER_CONTAINER, ",".join(ROLE_ENVIRONMENT_KEYS))
+        )
+    else:
+        role_error = (
+            "DATABASE_ROLE_AMBIGUOUS: cluster container %s declares conflicting roles %s"
+            % (CLUSTER_CONTAINER, ",".join(candidates))
+        )
 
 instances = []
 data_volume_owners = {}
@@ -137,50 +194,71 @@ for entry in inspected:
     )
 
 cluster_databases = []
-cluster_error = ""
-probe = run(
-    [
-        "docker",
-        "exec",
-        CLUSTER_CONTAINER,
-        "psql",
-        "-U",
-        "odoo",
-        "-d",
-        "postgres",
-        "-Atc",
-        "SELECT datname FROM pg_database WHERE datistemplate = false ORDER BY datname",
-    ]
-)
-if probe.returncode:
-    cluster_error = (probe.stderr or probe.stdout or "").strip()[:400]
-else:
-    cluster_databases = [row for row in probe.stdout.split() if row]
-
+cluster_error = role_error
 system_identifier = ""
-identity_probe = run(
-    [
-        "docker",
-        "exec",
-        CLUSTER_CONTAINER,
-        "psql",
-        "-U",
-        "odoo",
-        "-d",
-        "postgres",
-        "-Atc",
-        "SELECT system_identifier FROM pg_control_system()",
-    ]
-)
-if not identity_probe.returncode:
-    system_identifier = identity_probe.stdout.strip()
+identity_error = ""
+if not role_error:
+    probe = run(
+        [
+            "docker",
+            "exec",
+            CLUSTER_CONTAINER,
+            "psql",
+            "-U",
+            role,
+            "-d",
+            "postgres",
+            "-Atc",
+            "SELECT datname FROM pg_database WHERE datistemplate = false ORDER BY datname",
+        ]
+    )
+    if probe.returncode:
+        cluster_error = (probe.stderr or probe.stdout or "").strip()[:400]
+    else:
+        cluster_databases = [row for row in probe.stdout.split() if row]
+
+    identity_probe = run(
+        [
+            "docker",
+            "exec",
+            CLUSTER_CONTAINER,
+            "psql",
+            "-U",
+            role,
+            "-d",
+            "postgres",
+            "-Atc",
+            "SELECT system_identifier FROM pg_control_system()",
+        ]
+    )
+    if identity_probe.returncode:
+        # A non-zero probe is not "no identifier": it is an unobserved identity.
+        # The verdict must fail instead of reporting an empty value as success.
+        identity_error = (
+            identity_probe.stderr or identity_probe.stdout or ""
+        ).strip()[:400]
+    else:
+        system_identifier = identity_probe.stdout.strip()
+
+project_error = ""
+if EXPECTED_PROJECT and cluster_project != EXPECTED_PROJECT:
+    project_error = (
+        "CLUSTER_CONTAINER_PROJECT_MISMATCH:%s:%s:%s"
+        % (CLUSTER_CONTAINER, cluster_project or "<unknown>", EXPECTED_PROJECT)
+    )
 
 payload = {
     "cluster_container": CLUSTER_CONTAINER,
+    "cluster_container_project": cluster_project,
     "cluster_database": DATABASE,
+    "cluster_role": role,
+    "cluster_role_source": role_source,
+    "cluster_role_error": role_error,
+    "cluster_project_error": project_error,
     "cluster_databases": cluster_databases,
     "cluster_error": cluster_error,
     "cluster_system_identifier": system_identifier,
+    "cluster_system_identifier_error": identity_error,
     "postgres_data_volume_owners": data_volume_owners,
     "instances": instances,
     "running_containers": sorted(running),
@@ -223,43 +301,76 @@ def marker_payload(output):
     return None
 
 
-def inventory(expected_sha, database, ssh_host, cluster_container):
+def _render_program(database, cluster_container, database_role, expected_project):
+    return (
+        PROGRAM_TEMPLATE
+        .replace("__CLUSTER_CONTAINER__", json.dumps(cluster_container))
+        .replace("__DATABASE__", json.dumps(database))
+        .replace("__DATABASE_ROLE__", json.dumps(database_role or ""))
+        .replace("__EXPECTED_PROJECT__", json.dumps(expected_project or ""))
+        .replace("__ROLE_ENVIRONMENT_KEYS__", json.dumps(list(ROLE_ENVIRONMENT_KEYS)))
+        .replace("__ROLE_PATTERN__", json.dumps(DATABASE_ROLE.pattern))
+        .replace("__DATA_DESTINATION__", json.dumps(POSTGRES_DATA_DESTINATION))
+        .encode("utf-8")
+    )
+
+
+def _execute_remote(ssh_host, program):
+    """Run the probe and remove it even when the readback fails.
+
+    The probe file is a temporary carrier of this entry, so a transport error,
+    a non-zero exit or an unparsable payload must not leave it behind. Cleanup
+    runs in ``finally`` for every path after a successful upload.
+    """
+    try:
+        upload = ssh(ssh_host, f"cat > {shlex.quote(REMOTE_TMP)}", input_bytes=program)
+        if upload.returncode:
+            raise InventoryError(f"remote program upload failed: {decode(upload)[:400]}")
+        return ssh(ssh_host, f"python3 {shlex.quote(REMOTE_TMP)}")
+    finally:
+        # Also after a failed/partial upload: a residue must not depend on the
+        # execution path having been reached.
+        ssh(ssh_host, f"rm -f {shlex.quote(REMOTE_TMP)}")
+
+
+def _execute_local(program):
+    """Run the probe from stdin; no fixed /tmp path means no preplaced symlink."""
+    return run(["python3", "-"], input_bytes=program)
+
+
+def inventory(expected_sha, database, ssh_host, cluster_container,
+              database_role="", expected_project="", local=False):
     if not FULL_SHA.fullmatch(expected_sha or ""):
         raise InventoryError("expected SHA must be a full lowercase commit identity")
     if not DATABASE_NAME.fullmatch(database or ""):
         raise InventoryError("database must be a plain database name")
     if not CONTAINER_NAME.fullmatch(cluster_container or ""):
         raise InventoryError("cluster container must be a container name")
-    if not SSH_HOST.fullmatch(ssh_host or ""):
+    if database_role and not DATABASE_ROLE.fullmatch(database_role):
+        raise InventoryError("database role must be a plain role name")
+    if not local and not SSH_HOST.fullmatch(ssh_host or ""):
         raise InventoryError("SSH host must be a configured host alias")
     if not (ROOT / ".git").exists():
         raise InventoryError("must run from the governed repository")
 
-    head = ssh(ssh_host, "cd /opt/projects/repos/sce-product-odoo && git rev-parse HEAD")
+    if local:
+        head = run(["git", "-C", str(ROOT), "rev-parse", "HEAD"])
+    else:
+        head = ssh(ssh_host, "cd /opt/projects/repos/sce-product-odoo && git rev-parse HEAD")
     if head.returncode:
-        raise InventoryError(f"remote revision read failed: {decode(head)[:400]}")
+        raise InventoryError(f"revision read failed: {decode(head)[:400]}")
     remote_head = head.stdout.decode().strip()
     if remote_head != expected_sha:
         raise InventoryError(
-            f"remote HEAD {remote_head or '<unknown>'} != expected {expected_sha}"
+            f"runtime HEAD {remote_head or '<unknown>'} != expected {expected_sha}"
         )
 
-    program = (
-        PROGRAM_TEMPLATE
-        .replace("__CLUSTER_CONTAINER__", json.dumps(cluster_container))
-        .replace("__DATABASE__", json.dumps(database))
-        .replace("__DATA_DESTINATION__", json.dumps(POSTGRES_DATA_DESTINATION))
-        .encode("utf-8")
+    program = _render_program(
+        database, cluster_container, database_role, expected_project,
     )
-    upload = ssh(ssh_host, f"cat > {shlex.quote(REMOTE_TMP)}", input_bytes=program)
-    if upload.returncode:
-        raise InventoryError(f"remote program upload failed: {decode(upload)[:400]}")
-    executed = ssh(
-        ssh_host,
-        f"python3 {shlex.quote(REMOTE_TMP)}; rc=$?; rm -f {shlex.quote(REMOTE_TMP)}; exit $rc",
-    )
+    executed = _execute_local(program) if local else _execute_remote(ssh_host, program)
     if executed.returncode:
-        raise InventoryError(f"remote inventory failed: {decode(executed)[:800]}")
+        raise InventoryError(f"inventory failed: {decode(executed)[:800]}")
     payload = marker_payload(decode(executed))
     if payload is None:
         raise InventoryError(f"no readback payload: {decode(executed)[-800:]}")
@@ -269,6 +380,11 @@ def inventory(expected_sha, database, ssh_host, cluster_container):
 def _exact_filter(instance):
     expected = f"^{instance.get('database') or ''}$"
     return instance.get("dbfilter") == expected
+
+
+def _list_db_open(value):
+    """True when a declared selector value opens database enumeration."""
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def retired_container_names(declaration_path):
@@ -298,7 +414,7 @@ def retired_container_names(declaration_path):
     return sorted(set(names))
 
 
-def evaluate(database, payload, retired=()):
+def evaluate(database, payload, retired=(), expected_project=""):
     instances = payload.get("instances") or []
     cluster_databases = payload.get("cluster_databases") or []
     volume_owners = payload.get("postgres_data_volume_owners") or {}
@@ -310,6 +426,14 @@ def evaluate(database, payload, retired=()):
         row.get("container")
         for row in instances
         if row.get("dbfilter") and not _exact_filter(row)
+    ]
+    # A serving instance is the one that publishes a host port. Its declared
+    # selector must be closed: an unset ODOO_LIST_DB or a false value is closed,
+    # a true value reopens database enumeration whatever the filter says.
+    open_selectors = [
+        row.get("container")
+        for row in instances
+        if row.get("host_ports") and _list_db_open(row.get("list_db_env"))
     ]
     # A *serving* instance is one that publishes a host port. A database stack
     # legitimately passes its ODOO_DB/ODOO_DBFILTER environment to its database
@@ -348,10 +472,30 @@ def evaluate(database, payload, retired=()):
 
     assertions = [
         {
+            "id": "cluster_role_resolved",
+            "passed": bool(payload.get("cluster_role"))
+            and not payload.get("cluster_role_error"),
+            "detail": {
+                "role": payload.get("cluster_role") or "",
+                "source": payload.get("cluster_role_source") or "",
+                "error": payload.get("cluster_role_error") or "",
+            },
+        },
+        {
+            "id": "cluster_system_identifier_observed",
+            "passed": bool(payload.get("cluster_system_identifier"))
+            and not payload.get("cluster_system_identifier_error"),
+            "detail": {
+                "system_identifier": payload.get("cluster_system_identifier") or "",
+                "error": payload.get("cluster_system_identifier_error") or "",
+            },
+        },
+        {
             "id": "cluster_databases_observed",
             "passed": bool(cluster_databases) and not payload.get("cluster_error"),
             "detail": {
                 "cluster_container": payload.get("cluster_container"),
+                "role": payload.get("cluster_role") or "",
                 "databases": cluster_databases,
                 "error": payload.get("cluster_error") or "",
             },
@@ -365,6 +509,14 @@ def evaluate(database, payload, retired=()):
             "id": "application_instance_filter_is_exact",
             "passed": not bad_filter,
             "detail": bad_filter,
+        },
+        {
+            "id": "database_enumeration_closed",
+            "passed": not open_selectors,
+            "detail": {
+                "open_selector_instances": open_selectors,
+                "rule": "serving instances (with a published host port) must leave ODOO_LIST_DB unset or false",
+            },
         },
         {
             "id": "single_serving_instance_per_database",
@@ -400,6 +552,17 @@ def evaluate(database, payload, retired=()):
             "detail": f"writes={payload.get('writes')}",
         },
     ]
+    if expected_project:
+        assertions.append({
+            "id": "cluster_container_is_the_expected_project",
+            "passed": payload.get("cluster_container_project") == expected_project,
+            "detail": {
+                "container": payload.get("cluster_container") or "",
+                "observed": payload.get("cluster_container_project") or "",
+                "expected": expected_project,
+                "error": payload.get("cluster_project_error") or "",
+            },
+        })
     served_databases = sorted(name for name in served if name)
     declared_databases = sorted({row.get("database") for row in instances if row.get("database")})
     unserved = sorted(
@@ -416,6 +579,8 @@ def evaluate(database, payload, retired=()):
         "served_databases": served_databases,
         "unserved_databases": unserved,
         "cluster_system_identifier": payload.get("cluster_system_identifier") or "",
+        "cluster_role": payload.get("cluster_role") or "",
+        "cluster_role_source": payload.get("cluster_role_source") or "",
         "duty_gap": {
             "databases_without_serving_instance": unserved,
             "instances_without_exact_filter": bad_filter,
@@ -457,27 +622,79 @@ def main():
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--database", default=DEFAULT_DATABASE)
     parser.add_argument("--duty", default="", help="the declared duty this entry binds; a database name alone is not a target identity")
-    parser.add_argument("--ssh-host", required=True)
+    parser.add_argument("--ssh-host", default="", help="governed host alias; required unless --local")
     # The cluster this entry reads the catalog from is the *bound duty's* cluster,
     # never a remembered container name: the daily demo carrier now runs its own
     # cluster, and a hard-coded legacy name would silently inventory the historic
     # source instead. An explicit value stays available for a cross-carrier audit.
     parser.add_argument("--cluster-container", default="", help="container whose cluster catalog is read; defaults to the bound duty's cluster")
+    parser.add_argument(
+        "--database-role", default="",
+        help="role the cluster probe connects as; empty resolves POSTGRES_USER/PGUSER/DB_USER from the cluster container and fails closed",
+    )
+    parser.add_argument(
+        "--expect-compose-project", default="",
+        help="compose project the cluster container must belong to; recorded and asserted when given",
+    )
+    parser.add_argument(
+        "--local", action="store_true",
+        help="read the workstation's own docker daemon; requires --database, --cluster-container and --expect-compose-project",
+    )
     parser.add_argument("--retired-stacks", default="")
     parser.add_argument("--report", required=True)
     options = parser.parse_args()
 
     try:
-        binding = bind_target(options)
         retired = retired_container_names(options.retired_stacks or None)
-        cluster_container = resolve_cluster_container(
-            options.cluster_container, binding,
+        expected_project = options.expect_compose_project
+        if not options.local and not options.ssh_host:
+            raise InventoryError("--ssh-host is required unless --local")
+        if options.local:
+            # A local read is a deliberate carrier binding, not a weak database
+            # name: the operator names the database, the cluster container and
+            # the compose project, and the probe reports all three back.
+            missing = [
+                flag for flag, value in (
+                    ("--database", options.database),
+                    ("--cluster-container", options.cluster_container),
+                    ("--expect-compose-project", expected_project),
+                ) if not value
+            ]
+            if missing:
+                raise InventoryError(
+                    "local mode requires %s" % (", ".join(missing),)
+                )
+            binding = {
+                "database": options.database,
+                "database_container": options.cluster_container,
+                "compose_project": expected_project,
+                "database_role": options.database_role,
+                "source": "local_argument",
+            }
+            cluster_container = options.cluster_container
+            cluster_container_source = "argument"
+            payload, remote_head = inventory(
+                options.expected_sha, options.database, options.ssh_host,
+                cluster_container, database_role=options.database_role,
+                expected_project=expected_project, local=True,
+            )
+        else:
+            binding = bind_target(options)
+            cluster_container = resolve_cluster_container(
+                options.cluster_container, binding,
+            )
+            cluster_container_source = (
+                "argument" if options.cluster_container else "bound_duty"
+            )
+            payload, remote_head = inventory(
+                options.expected_sha, binding["database"], options.ssh_host,
+                cluster_container, database_role=options.database_role,
+                expected_project=expected_project,
+            )
+        verdict = evaluate(
+            binding["database"], payload, retired=retired,
+            expected_project=expected_project,
         )
-        payload, remote_head = inventory(
-            options.expected_sha, binding["database"], options.ssh_host,
-            cluster_container,
-        )
-        verdict = evaluate(binding["database"], payload, retired=retired)
     except InventoryError as error:
         print(f"[daily.runtime.routing.inventory] BLOCKED {error}", file=sys.stderr)
         return 2
@@ -489,9 +706,8 @@ def main():
         "ssh_host": options.ssh_host,
         "database_binding": binding,
         "cluster_container": cluster_container,
-        "cluster_container_source": (
-            "argument" if options.cluster_container else "bound_duty"
-        ),
+        "cluster_container_source": cluster_container_source,
+        "expected_compose_project": expected_project,
         "cluster_database": binding["database"],
         "retired_stacks_declaration": options.retired_stacks,
         "writes": False,
@@ -522,6 +738,8 @@ def main():
         "instance_count": verdict["instance_count"],
         "cluster_databases": verdict["cluster_databases"],
         "unserved_databases": verdict["unserved_databases"],
+        "cluster_role": verdict["cluster_role"],
+        "cluster_role_source": verdict["cluster_role_source"],
         "cluster_system_identifier": verdict["cluster_system_identifier"],
         "failed_assertions": [r["id"] for r in verdict["assertions"] if not r["passed"]],
     }, ensure_ascii=False, indent=2, sort_keys=True))

@@ -8,6 +8,7 @@ binds the exact reviewed commands, and each fail-closed guard actually refuses.
 
 import json
 import unittest
+from unittest import mock
 
 from scripts.ops import daily_runtime_legacy_stack_retire as retire
 
@@ -463,6 +464,76 @@ class DeclarationTest(unittest.TestCase):
         payload["stacks"][0].pop("revival_path")
         with self.assertRaises(retire.RetireError):
             retire.load_declaration_from_text(json.dumps(payload))
+
+
+class ProbeCleanupTests(unittest.TestCase):
+    """The uploaded probe must not survive a failed or successful readback.
+
+    The residue this locks out was observed as ``/tmp/sc-daily-legacy-stack-retire.py``:
+    the upload succeeded, the execution path ended without a cleanup step, and the
+    file stayed on the host.
+    """
+
+    class Result:
+        def __init__(self, returncode=0, stdout=b"", stderr=b""):
+            self.returncode = returncode
+            self.stdout = stdout
+            self.stderr = stderr
+
+    def test_the_probe_is_removed_when_the_readback_raises(self):
+        calls = []
+
+        def fake_ssh(_host, command, input_bytes=None):
+            calls.append(command)
+            if command.startswith("cat > "):
+                self.assertTrue(input_bytes)
+                return self.Result()
+            if command.startswith("python3 "):
+                raise RuntimeError("transport lost")
+            if command.startswith("rm -f "):
+                return self.Result()
+            raise AssertionError("unexpected command: %s" % command)
+
+        with mock.patch.object(retire, "ssh", side_effect=fake_ssh):
+            with self.assertRaisesRegex(RuntimeError, "transport lost"):
+                retire._execute("sc-root", {})
+        self.assertEqual(calls[-1], "rm -f " + retire.REMOTE_TMP)
+
+    def test_the_probe_is_removed_after_a_successful_readback(self):
+        calls = []
+
+        def fake_ssh(_host, command, input_bytes=None):
+            calls.append(command)
+            if command.startswith("cat > "):
+                return self.Result()
+            if command.startswith("python3 "):
+                return self.Result(stdout=(retire.MARKER + '{"ok": true}\n').encode())
+            if command.startswith("rm -f "):
+                return self.Result()
+            raise AssertionError("unexpected command: %s" % command)
+
+        with mock.patch.object(retire, "ssh", side_effect=fake_ssh):
+            self.assertEqual(retire._execute("sc-root", {}), {"ok": True})
+        self.assertEqual(calls[-1], "rm -f " + retire.REMOTE_TMP)
+
+    def test_the_probe_is_removed_when_the_upload_fails(self):
+        # The upload is the first step that can leave a file behind. Cleanup
+        # that starts only after a successful upload leaks a residue exactly
+        # when the transport is already suspect.
+        calls = []
+
+        def fake_ssh(_host, command, input_bytes=None):
+            calls.append(command)
+            if command.startswith("cat > "):
+                return self.Result(returncode=1, stderr=b"disk full")
+            if command.startswith("rm -f "):
+                return self.Result()
+            raise AssertionError("unexpected command: %s" % command)
+
+        with mock.patch.object(retire, "ssh", side_effect=fake_ssh):
+            with self.assertRaisesRegex(retire.RetireError, "upload failed"):
+                retire._execute("sc-root", {})
+        self.assertEqual(calls[-1], "rm -f " + retire.REMOTE_TMP)
 
 
 if __name__ == "__main__":

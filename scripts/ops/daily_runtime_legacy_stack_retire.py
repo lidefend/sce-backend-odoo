@@ -875,14 +875,22 @@ def _execute(ssh_host, payload):
         .replace("__DEFAULT_STOP_SIGNAL__", json.dumps(DEFAULT_STOP_SIGNAL))
         .encode("utf-8")
     )
-    upload = ssh(ssh_host, f"cat > {shlex.quote(REMOTE_TMP)}", input_bytes=program)
-    if upload.returncode:
-        raise RetireError(f"remote program upload failed: {decode(upload)[:400]}")
-    executed = ssh(ssh_host, f"python3 {shlex.quote(REMOTE_TMP)}")
-    result = marker_payload(decode(executed))
-    if result is None:
-        raise RetireError(f"no remote payload (exit {executed.returncode}): {decode(executed)[-900:]}")
-    return result
+    try:
+        upload = ssh(ssh_host, f"cat > {shlex.quote(REMOTE_TMP)}", input_bytes=program)
+        if upload.returncode:
+            raise RetireError(f"remote program upload failed: {decode(upload)[:400]}")
+        executed = ssh(ssh_host, f"python3 {shlex.quote(REMOTE_TMP)}")
+        result = marker_payload(decode(executed))
+        if result is None:
+            raise RetireError(
+                f"no remote payload (exit {executed.returncode}): {decode(executed)[-900:]}"
+            )
+        return result
+    finally:
+        # The probe is a temporary carrier of this entry. A failed readback must
+        # not leave it on the host -- that residue is exactly what this guard
+        # makes impossible to forget.
+        ssh(ssh_host, f"rm -f {shlex.quote(REMOTE_TMP)}")
 
 
 def main():

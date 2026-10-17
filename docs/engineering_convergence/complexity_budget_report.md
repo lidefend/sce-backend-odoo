@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4849`
+- Scanned files: `4851`
 - Files requiring split plan: `68`
 - Files above warning threshold: `133`
 
@@ -53,7 +53,7 @@ Generated from repository source files. This report is informational during the 
 | 1977 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1956 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
-| 1883 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
+| 1885 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1841 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1813 | YAML workflow | `scripts/verify/registry.yaml` |
@@ -155,8 +155,8 @@ Generated from repository source files. This report is informational during the 
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 1001 | Python source | `scripts/verify/local_dev_project_create_contract_action_scope.py` |
 | 1000 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
+| 996 | Python source | `scripts/ops/daily_runtime_legacy_stack_retire.py` |
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
-| 988 | Python source | `scripts/ops/daily_runtime_legacy_stack_retire.py` |
 | 976 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 959 | Python source | `addons/smart_construction_core/tests/test_cost_fact_model_v2.py` |
@@ -264,7 +264,7 @@ Generated from repository source files. This report is informational during the 
 | 1977 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1956 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
-| 1883 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
+| 1885 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1841 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1813 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |

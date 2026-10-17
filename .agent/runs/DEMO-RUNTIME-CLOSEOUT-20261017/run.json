@@ -1,0 +1,339 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-RUNTIME-CLOSEOUT-20261017",
+  "branch": "fix/demo-runtime-closeout-20261017",
+  "status": "active",
+  "goal": ".agent/goals/DEMO-RUNTIME-CLOSEOUT-20261017.yaml",
+  "record": "docs/ops/iterations/demo_runtime_closeout_20261017.md",
+  "baseline_sha": "80da1af3d060201cebbddc58146e940a7f34b570",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DEMO-RUNTIME-CLOSEOUT-20261017.yaml",
+    ".agent/runs/DEMO-RUNTIME-CLOSEOUT-20261017/run.json",
+    ".runtime/demo-blocker-batch-02/",
+    "addons/smart_construction_core/models/core/project_core.py",
+    "addons/smart_construction_core/security/sc_capability_groups.xml",
+    "addons/smart_construction_core/tests/test_project_close_guard_internal_privilege.py",
+    "addons/smart_construction_core/tests/test_settlement_contract_read_capability.py",
+    "docs/ops/iterations/demo_runtime_closeout_20261017.md",
+    "scripts/ops/daily_runtime_database_identity_inventory.py",
+    "scripts/ops/daily_runtime_legacy_stack_retire.py",
+    "scripts/ops/daily_runtime_routing_inventory.py",
+    "scripts/ops/test_daily_runtime_database_identity_inventory.py",
+    "scripts/ops/test_daily_runtime_legacy_stack_retire.py",
+    "scripts/ops/test_daily_runtime_routing_inventory.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Owner-authorized local development runtime reached through governed local.dev.* and demo.load.full Make entries; sc-local-dev / sc_dev_demo only; no production or customer data.",
+    "cluster": "sc-local-dev",
+    "database": "sc_dev_demo",
+    "duty": "demo",
+    "base_url": "http://127.0.0.1:18081",
+    "data_purpose": "demo",
+    "carrier_identity": {
+      "compose_project": "sc-local-dev",
+      "containers": [
+        "sc-local-dev-odoo-1",
+        "sc-local-dev-db-1",
+        "sc-local-dev-nginx-1",
+        "sc-local-dev-redis-1"
+      ],
+      "database": "sc_dev_demo",
+      "database_role": "odoo",
+      "system_identifier": "7674830867180216358",
+      "volumes": [
+        "sc_local_dev_db_data",
+        "sc_local_dev_odoo_data"
+      ],
+      "http_entry": "http://127.0.0.1:18081",
+      "direct_odoo": "0.0.0.0:8070->8069/tcp",
+      "source": ".runtime/demo-blocker-batch-02/env-carrier-identity-20261017.json",
+      "topology_source": ".runtime/demo-blocker-batch-02/env-carrier-topology-20261017.json",
+      "original_sources": [
+        "/tmp/env-carrier-identity-20261017.json",
+        "/tmp/env-carrier-topology-20261017.json",
+        "/tmp/env-runtime-probe-03.json"
+      ]
+    },
+    "paused_carriers": [
+      {
+        "carrier": "sc-demo-dev",
+        "database": "sc_demo",
+        "role": "sc_demo_maintenance",
+        "system_identifier": "7697127891101417510",
+        "reason": "old demo carrier; writes paused; not the new carrier"
+      },
+      {
+        "carrier": "sc_demo (local cluster copy)",
+        "database": "sc_demo",
+        "reason": "old local copy; not a write target"
+      },
+      {
+        "carrier": "sc_production",
+        "database": "sc_production",
+        "role": "odoo",
+        "system_identifier": "7668535447460634662",
+        "reason": "production; demo/user writes forbidden"
+      },
+      {
+        "carrier": "sc-backend-odoo-prod",
+        "reason": "retired production stack; not a write target"
+      }
+    ]
+  },
+  "product_boundary": {
+    "formal_product_layer": "P4 ops delivery tooling consuming P0/P1/P2/P3 declarations",
+    "layer_target": "daily demo runtime duty and formal demo seed chain",
+    "standard_vs_user_specific": "demo/sample data for an owner-authorized daily runtime; not production and not customer data",
+    "why_here": "The duty declaration, governed Make entries and product demo carrier own runtime identity and seeding.",
+    "why_not_elsewhere": "No product code, frontend contract or customer module change is needed to observe or repair runtime identity.",
+    "blast_radius": "P1 capability declaration for settlement clerk contract read and P1 project close guards using internal privilege for existence counts; local sc_dev_demo runtime only."
+  },
+  "checks": {
+    "daily_duty_unit": {
+      "target": "verify.daily.runtime.database.duty",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/daily_runtime_database_duty.py",
+        "scripts/ops/test_daily_runtime_database_duty.py",
+        "scripts/ops/daily_runtime_duty_identity.py",
+        "scripts/ops/test_daily_runtime_duty_identity.py",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "make/codex.mk"
+      ],
+      "readback": {
+        "artifact": ".runtime/demo-blocker-batch-02/carrier-readback.json"
+      }
+    }
+  },
+  "blockers": [
+    "旧 Demo 服务器写入已暂停；本轮未部署本批代码。",
+    "make agent.run.resume 报告 daily_duty_unit stale（runtime evidence requires authoritative environment readback）。",
+    "Old demo environment writes remain paused by the scheduler."
+  ],
+  "next_exact_step": "暂停在本批可验证范围内：BATCH-02 代码与只读证据已在 sc-local-dev / sc_dev_demo 完成（routing inventory 角色发现与 database_enumeration_closed / cluster_system_identifier_observed 断言、list_db=false 受管回读、三处探针 try/finally 清理、DEMO-03 结论）。仍开放：旧 Demo 服务器与调度器写入暂停、本轮未部署本批代码；agent.run.resume 的 daily_duty_unit 在 runtime environment 声明下仍报 stale。下一步须由 owner/调度方授权把本批部署到声明载体并做用户验收；批次、主线、部署、用户验收均未完成。",
+  "evidence": {
+    "l1_unit_tests": ".runtime/demo-closeout-20261017/l1-duty-unit.log (221 tests)",
+    "duty_plan": ".runtime/demo-closeout-20261017/database-duty-plan.json",
+    "duty_plan_log": ".runtime/demo-closeout-20261017/duty-plan-demo.log",
+    "database_identity": ".runtime/demo-closeout-20261017/database-identity-inventory.json",
+    "routing": ".runtime/demo-closeout-20261017/routing-inventory.json",
+    "tenant_topology": ".runtime/demo-closeout-20261017/tenant-topology-inventory.json",
+    "agent_ledger_guard": ".runtime/demo-closeout-20261017/agent-ledger-guard.log",
+    "ci_local_iteration": ".runtime/demo-blocker-batch-02/ci-local-iteration.log",
+    "agent_ledger_guard_demo02": ".runtime/demo-closeout-20261017/agent-ledger-guard-demo02.log",
+    "agent_run_resume_demo02": ".runtime/demo-closeout-20261017/agent-run-resume-demo02.json",
+    "ci_local_iteration_demo02": ".runtime/demo-closeout-20261017/ci-local-iteration-demo02.log",
+    "historical_seed_receipt": ".runtime/final-acceptance/daily-deployed/database-duty-seed.json",
+    "identity_before_refresh": ".runtime/demo-closeout-20261017/identity-before-refresh-demo02.txt",
+    "refresh_report": ".runtime/demo-closeout-20261017/database-duty-refresh-demo.json",
+    "refresh_log": ".runtime/demo-closeout-20261017/duty-refresh-demo.log",
+    "identity_after_refresh": ".runtime/demo-closeout-20261017/identity-after-refresh-demo02.txt",
+    "other_duties_identity_after_refresh": ".runtime/demo-closeout-20261017/other-duties-identity-after-refresh.txt",
+    "container_identity_comparison": ".runtime/demo-closeout-20261017/container-identity-comparison.json",
+    "facts_after_refresh": ".runtime/demo-closeout-20261017/facts-after-refresh.txt",
+    "http_after_refresh": ".runtime/demo-closeout-20261017/http-after-refresh.json",
+    "plan_after_refresh": ".runtime/demo-closeout-20261017/database-duty-plan-after-refresh.json",
+    "plan_after_refresh_log": ".runtime/demo-closeout-20261017/duty-plan-demo-after-refresh.log",
+    "agent_ledger_guard_newcarrier": ".runtime/demo-closeout-20261017/agent-ledger-guard-newcarrier.log",
+    "agent_run_resume_newcarrier": ".runtime/demo-closeout-20261017/agent-run-resume-newcarrier.json",
+    "ci_local_iteration_newcarrier": ".runtime/demo-closeout-20261017/ci-local-iteration-newcarrier.log",
+    "verify_duty_newcarrier": ".runtime/demo-closeout-20261017/verify-duty-newcarrier.log",
+    "runtime_fix_log": ".runtime/demo-local-20261017/demo-load-full-after-fix.log",
+    "carrier_identity_readback": ".runtime/demo-blocker-batch-02/carrier-readback.json",
+    "routing_inventory_local": ".runtime/demo-blocker-batch-02/routing-inventory-local.json",
+    "routing_inventory_remote": ".runtime/demo-blocker-batch-02/routing-inventory-remote-sc-demo-dev.json",
+    "routing_inventory_wrong_role_fail_closed": ".runtime/demo-blocker-batch-02/routing-inventory-local-wrong-role.json",
+    "database_identity_inventory_local": ".runtime/demo-blocker-batch-02/database-identity-inventory-local.json",
+    "list_db_http_probe": ".runtime/demo-blocker-batch-02/list-db-http-probe.json",
+    "temporary_probe_cleanup": ".runtime/demo-blocker-batch-02/temporary-probe-cleanup.json",
+    "demo_03_seed_replay_conclusion": ".runtime/demo-blocker-batch-02/demo-03-seed-replay-conclusion.json",
+    "targeted_tests": ".runtime/demo-blocker-batch-02/targeted-tests.log",
+    "verify_daily_runtime_database_duty": ".runtime/demo-blocker-batch-02/verify-daily-runtime-database-duty.log",
+    "batch02_routing_local": ".runtime/demo-blocker-batch-02/routing-inventory-local.json",
+    "batch02_routing_remote": ".runtime/demo-blocker-batch-02/routing-inventory-remote-sc-demo-dev.json",
+    "batch02_routing_wrong_role": ".runtime/demo-blocker-batch-02/routing-inventory-local-wrong-role.json",
+    "batch02_identity_local": ".runtime/demo-blocker-batch-02/database-identity-inventory-local.json",
+    "batch02_list_db_http": ".runtime/demo-blocker-batch-02/list-db-http-probe.json",
+    "batch02_probe_cleanup": ".runtime/demo-blocker-batch-02/temporary-probe-cleanup.json",
+    "batch02_seed_replay_conclusion": ".runtime/demo-blocker-batch-02/demo-03-seed-replay-conclusion.json",
+    "batch02_targeted_tests": ".runtime/demo-blocker-batch-02/targeted-tests.log",
+    "batch02_verify_duty": ".runtime/demo-blocker-batch-02/verify-daily-runtime-database-duty.log",
+    "batch02_carrier_identity": ".runtime/demo-blocker-batch-02/env-carrier-identity-20261017.json",
+    "batch02_carrier_topology": ".runtime/demo-blocker-batch-02/env-carrier-topology-20261017.json"
+  },
+  "results": [
+    {
+      "layer": "L1",
+      "command": "make verify.agent.ledger.unit",
+      "status": "passed",
+      "tests": 15,
+      "identity": "80da1af3 + this run's four registration files"
+    },
+    {
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "identity": "80da1af3 + dirty run registration scope",
+      "note": "L1 only; 0 unmapped paths; recommends the affected L2 target"
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.daily.runtime.database.duty",
+      "status": "passed",
+      "tests": 221,
+      "identity": "80da1af3 + dirty run registration scope",
+      "note": "offline duty identity and declaration units; no runtime write"
+    },
+    {
+      "layer": "L1",
+      "command": "python3 addons/smart_construction_core/tests/test_settlement_contract_read_capability.py",
+      "status": "passed",
+      "tests": 4,
+      "identity": "80da1af3 + settlement contract-read capability fix",
+      "note": "static XML/CSV assertions for settlement capability inheritance"
+    },
+    {
+      "layer": "L1",
+      "command": "python3 scripts/verify/role_acl_minimum_set_guard.py",
+      "status": "passed",
+      "identity": "80da1af3 + settlement contract-read capability fix",
+      "note": "ACL minimum set guard unchanged and green"
+    },
+    {
+      "layer": "L2",
+      "command": "make local.dev.demo.seed STEPS=demo_showroom",
+      "status": "passed",
+      "identity": "80da1af3 + both P1 fixes synced to sc-local-dev mirror",
+      "note": "failed at construction.contract before the fix; passed after the capability grant; then passed after the project-close guard fix"
+    },
+    {
+      "layer": "L2",
+      "command": "make demo.load.full",
+      "status": "passed",
+      "identity": "80da1af3 + both P1 fixes synced to sc-local-dev mirror",
+      "note": "full chain exit 0; 0 AccessError and 0 make errors in .runtime/demo-local-20261017/demo-load-full-after-fix.log"
+    },
+    {
+      "layer": "L1",
+      "command": "python3 -m unittest scripts.ops.test_daily_runtime_routing_inventory",
+      "status": "passed",
+      "tests": 27,
+      "note": "role discovery, fail-closed and try/finally cleanup"
+    },
+    {
+      "layer": "L1",
+      "command": "python3 -m unittest scripts.ops.test_daily_runtime_legacy_stack_retire",
+      "status": "passed",
+      "tests": 38,
+      "note": "probe cleanup on success and on transport failure"
+    },
+    {
+      "layer": "L1",
+      "command": "python3 -m unittest scripts.ops.test_daily_runtime_database_identity_inventory",
+      "status": "passed",
+      "tests": 18,
+      "note": "list_db=false, exact dbfilter and configured db_name assertions"
+    },
+    {
+      "layer": "L1",
+      "command": "python3 addons/smart_construction_core/tests/test_project_close_guard_internal_privilege.py",
+      "status": "passed",
+      "tests": 3,
+      "note": "both close guards count through sudo and return no record"
+    },
+    {
+      "layer": "L1",
+      "command": "python3 addons/smart_construction_core/tests/test_um_p1_contract_settlement_visibility_boundaries.py",
+      "status": "failed",
+      "tests": 4,
+      "note": "pre-existing baseline failure: sc_record_rules.xml domain differs from the test's expected domain; file is identical to HEAD and was not modified by this batch"
+    },
+    {
+      "layer": "L2",
+      "command": "python3 scripts/ops/daily_runtime_routing_inventory.py --local ...",
+      "status": "passed",
+      "note": "role odoo from container env; cluster_error empty; sc_dev_demo observed; exit 0"
+    },
+    {
+      "layer": "L2",
+      "command": "python3 scripts/ops/daily_runtime_routing_inventory.py --duty demo --ssh-host sc-root ...",
+      "status": "passed",
+      "note": "role sc_demo_maintenance from container env; cluster_error empty; exit 0"
+    },
+    {
+      "layer": "L2",
+      "command": "python3 scripts/ops/daily_runtime_database_identity_inventory.py --local ...",
+      "status": "passed",
+      "note": "list_db=False, dbfilter=^sc_dev_demo$, configured_db_name=sc_dev_demo; exit 0"
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.daily.runtime.database.duty",
+      "status": "passed",
+      "tests": 221,
+      "note": "65 + 156 unit tests; exit 0"
+    }
+  ],
+  "historical_notes": [
+    "DEMO-02 completed: the demo odoo container now publishes SC_SOURCE_REVISION=343a51d6ffda12e2b9fa05b098675b2c1e0ddd77 and FRONTEND_BUILD_SHA256=23e9f516c4f415428075eec70ddc457ebb7193dc8aff63a26d103a3df73bad22; the demo plan and version endpoint PASS. This is not a mainline deployment or product acceptance.",
+    "Blockers were reconciled on 2026-10-17 to the verbatim union of receipts daa6b1c9ec85efde8d486066b53d2de219d2cc531df9e769209bf3e4b72730fc and 7b30fb8bcf8e8efb84d032baa8084543e7e825161fefb9c3044bfa32585363dd; no blocker was closed."
+  ],
+  "closed_blockers": [
+    {
+      "blocker": "新载体身份仍未声明；旧 sc-root/sc-prod 不能作为新 environment 载体。",
+      "reason": "载体身份已由 environment 线取证并写入 run.environment.carrier_identity：compose project=sc-local-dev、容器 sc-local-dev-odoo-1/sc-local-dev-db-1/sc-local-dev-nginx-1/sc-local-dev-redis-1、数据库 sc_dev_demo、角色 odoo、system_identifier=7674830867180216358、卷 sc_local_dev_db_data/sc_local_dev_odoo_data、HTTP 18081。sc-demo-dev/sc_demo/sc_production/sc-backend-odoo-prod 被显式列为暂停对象，不作为新载体。",
+      "evidence": [
+        ".runtime/demo-blocker-batch-02/env-carrier-identity-20261017.json",
+        ".runtime/demo-blocker-batch-02/env-carrier-topology-20261017.json",
+        ".runtime/demo-blocker-batch-02/carrier-readback.json",
+        ".agent/runs/DEMO-RUNTIME-CLOSEOUT-20261017/run.json"
+      ]
+    },
+    {
+      "blocker": "New carrier identity is not declared.",
+      "reason": "同一条事实的英文表述；run.environment.carrier_identity 已声明 sc-local-dev / sc_dev_demo / odoo / 7674830867180216358 及卷与 HTTP 入口，旧 sc-root/sc-prod 明确排除。",
+      "evidence": [
+        ".runtime/demo-blocker-batch-02/env-carrier-identity-20261017.json",
+        ".runtime/demo-blocker-batch-02/env-carrier-topology-20261017.json",
+        ".agent/runs/DEMO-RUNTIME-CLOSEOUT-20261017/run.json"
+      ]
+    },
+    {
+      "blocker": "DEMO-03 seed replay necessity is unproven.",
+      "reason": "修复后的 demo.load.full 已在 sc_dev_demo 实际执行 demo_showroom 与 demo_full 两条 seed 链并以 demo_90_verify 和 odoo 重启结束，故本轮不需要额外 DEMO-03 replay。结论只覆盖“是否需要额外 replay”，不声称 seed 幂等或重复 replay 无损。",
+      "evidence": [
+        ".runtime/demo-blocker-batch-02/demo-03-seed-replay-conclusion.json",
+        ".runtime/demo-local-20261017/demo-load-full-after-fix.log"
+      ]
+    },
+    {
+      "blocker": "Routing inventory cannot read the demo cluster catalog because its probe hardcodes psql -U odoo.",
+      "reason": "已移除硬编码角色：角色解析改为 --database-role → 容器环境 POSTGRES_USER/PGUSER/DB_USER → fail-closed，并校验角色字符集。本地 sc-local-dev-db-1 解析为 odoo、远端 sc-demo-dev-db-1 解析为 sc_demo_maintenance，两台载体均 PASS；错误角色会 fail-closed FAIL。",
+      "evidence": [
+        ".runtime/demo-blocker-batch-02/routing-inventory-local.json",
+        ".runtime/demo-blocker-batch-02/routing-inventory-remote-sc-demo-dev.json",
+        ".runtime/demo-blocker-batch-02/routing-inventory-local-wrong-role.json",
+        ".runtime/demo-blocker-batch-02/targeted-tests.log"
+      ]
+    },
+    {
+      "blocker": "Managed list_db=false configuration readback is not yet implemented; the refreshed container currently reports LIST_DB=false, but that retained item is not closed by this batch.",
+      "reason": "已实现受管回读：identity inventory 读取容器内有效配置并断言 list_db 为 False、dbfilter 精确匹配、configured db_name 一致；新增 --local/--odoo-container 入口与单测，本地 sc-local-dev 实跑 PASS，HTTP /web/database/list 返回 Access Denied 且不泄露库名。",
+      "evidence": [
+        ".runtime/demo-blocker-batch-02/database-identity-inventory-local.json",
+        ".runtime/demo-blocker-batch-02/list-db-http-probe.json",
+        ".runtime/demo-blocker-batch-02/targeted-tests.log"
+      ]
+    },
+    {
+      "blocker": "Temporary probe cleanup is not exception-safe; the old /tmp/sc-daily-legacy-stack-retire.py residue remains and was not removed in this batch.",
+      "reason": "routing / legacy / identity 三个脚本的 upload 均已纳入 try/finally，后接 rm -f，上传失败与回读失败都会清理；已补“上传失败也清理”单测。确认属于本批的远端 /tmp/sc-daily-legacy-stack-retire.py 已删除，本地与远端 /tmp/sc-daily-* 均为 absent。",
+      "evidence": [
+        ".runtime/demo-blocker-batch-02/temporary-probe-cleanup.json",
+        ".runtime/demo-blocker-batch-02/targeted-tests.log"
+      ]
+    }
+  ]
+}
