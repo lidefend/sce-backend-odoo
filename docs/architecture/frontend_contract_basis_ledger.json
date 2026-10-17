@@ -125,6 +125,28 @@
       "stopDetail": "权限级别是唯一枚举（none/read/edit/admin）；前端只按枚举判定读/写与禁止访问，非法或缺失即 ContractGapError 停机。admin 蕴含 edit 由声明层给出（permission_auth_level），不由前端猜测。",
       "regressionGuard": "verify.frontend.collection_view_semantics.unit",
       "behaviourTest": "frontend/apps/web/scripts/record_entry_contract_test.ts"
+    },
+    {
+      "surface": "route_authority.admin_surface_entry_target",
+      "declaredBy": "addons/smart_core/core/navigation_entry_target.py",
+      "declaredSymbol": "build_web_surface_entry_target",
+      "consumedBy": "frontend/apps/web/src/services/actionRoutePolicy.ts",
+      "consumedSymbol": "adminSurfaceTarget",
+      "stopSymbol": "contractGapError",
+      "onMissing": "stop",
+      "behaviourTest": "frontend/apps/web/scripts/route_authority_guard_test.ts",
+      "regressionGuard": "verify.nav.pro01r.route_authority.unit"
+    },
+    {
+      "surface": "route_authority.contract_shape",
+      "declaredBy": "addons/smart_core/delivery/menu_service.py",
+      "declaredSymbol": "build_route_authority",
+      "consumedBy": "frontend/apps/web/src/app/routeAuthority.ts",
+      "consumedSymbol": "normalizeRouteAuthorityContract",
+      "stopSymbol": "contractGapError",
+      "onMissing": "stop",
+      "behaviourTest": "frontend/apps/web/scripts/route_authority_guard_test.ts",
+      "regressionGuard": "verify.nav.pro01r.route_authority.unit"
     }
   ],
   "registeredMechanismExemptions": [
@@ -385,6 +407,90 @@
         ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/verify_frontend_form_canvas_layout_guard.log",
         ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/verify_frontend_native_form_structure_responsibility_unit.log",
         ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/verify_frontend_contract_basis_unit.log"
+      ]
+    },
+    {
+      "id": "OD-20261017-ROUTE-MODEL-IDENTITY",
+      "missing": "route_authority.entry.entry_target（业务配置入口的显式目标声明）",
+      "surface": "actionRoutePolicy.ts isBusinessConfigurationAction / isMenuConfigurationAction / resolveAuthorizedConfigurationRoute",
+      "owner": "P0:smart_core:MenuService.build_route_authority",
+      "discoveredBy": "前端用硬编码模型名（BUSINESS_CONFIG_MODELS.contract、MENU_CONFIG_POLICY_MODEL）和 `authority.model !== routeModel` 比较来决定跳转到业务配置工作台；这是前端理解后端模型身份并据其选择产品行为。",
+      "closureCondition": "后端在路由权威条目显式声明 entry_target.route/entry_target.kind；前端只消费声明值，删除模型名常量比较；未声明即 ContractGapError 停机，并由行为测试锁定。",
+      "requiredDeclarationLayer": "P0:smart_core:navigation_entry_target.build_web_surface_entry_target + P0:smart_core:MenuService.build_route_authority",
+      "resolution": "配置类 action 在 XML 声明 sc_web_surface/sc_web_route；后端 navigation_entry_target.build_web_surface_entry_target 将声明投影为 entry_target{type:admin_surface,surface,route,root_menu_xmlid}，并由 route authority 与 nav meta 发布。前端 actionRoutePolicy 只按 entry_target.surface 分流，删除 BUSINESS_CONFIG_MODELS/MENU_CONFIG_POLICY_MODEL 比较、/admin/* 路由字符串兜底和 context 反推；缺失或非法声明即 ContractGapError。",
+      "closureEvidence": [
+        "addons/smart_core/core/navigation_entry_target.py",
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_construction_core/views/support/business_config_workbench_views.xml",
+        "addons/smart_core/views/ui_menu_config_policy_views.xml",
+        "frontend/apps/web/src/services/actionRoutePolicy.ts",
+        "frontend/apps/web/src/app/routeQuery.ts",
+        "frontend/apps/web/src/app/routeAuthority.ts",
+        "frontend/apps/web/scripts/route_authority_guard_test.ts",
+        "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py"
+      ]
+    },
+    {
+      "id": "OD-20261017-ROUTE-CONTEXT-STRING-PARSING",
+      "missing": "route_authority.entry.declared_context（已解析的声明字段）",
+      "surface": "actionRoutePolicy.ts contextValue / resolveActionWebRoute / resolveActionWebRouteQuery",
+      "owner": "P0:smart_core:MenuService._route_entry_from_menu",
+      "discoveredBy": "前端用正则解析 Odoo context 字符串（形如 {'sc_web_route': '...'}、business_config_root_menu_xmlid）取得目标路由；前端理解了后端的序列化格式，而不是消费声明结果。",
+      "closureCondition": "后端直接声明 entry_target.route 与 business_config_root_menu_xmlid 等已解析字段；前端删除正则解析，缺失即 ContractGapError。",
+      "requiredDeclarationLayer": "P0:smart_core:navigation_entry_target.build_web_surface_entry_target + P0:smart_core:MenuService.build_route_authority",
+      "resolution": "前端删除 contextValue 正则与 Odoo context 字符串解析；后端只解析自己在声明层发布的 sc_web_route/sc_web_surface/business_config_root_menu_xmlid，并发布已解析的 entry_target.route/root_menu_xmlid。前端只消费 entry_target，缺失即 ContractGapError。",
+      "closureEvidence": [
+        "addons/smart_core/core/navigation_entry_target.py",
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_construction_core/views/support/business_config_workbench_views.xml",
+        "addons/smart_core/views/ui_menu_config_policy_views.xml",
+        "frontend/apps/web/src/services/actionRoutePolicy.ts",
+        "frontend/apps/web/src/app/routeQuery.ts",
+        "frontend/apps/web/src/app/routeAuthority.ts",
+        "frontend/apps/web/scripts/route_authority_guard_test.ts",
+        "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py"
+      ]
+    },
+    {
+      "id": "OD-20261017-ROUTE-SILENT-ENTRY-DROP",
+      "missing": "route_authority.entry.<bucket>[i].<field> 缺口报告",
+      "surface": "routeAuthority.ts normalizeRouteAuthorityContract / routeAuthorityForPrincipal",
+      "owner": "P0:frontend:app/routeAuthority.ts（消费侧）+ P0:smart_core 声明侧",
+      "discoveredBy": "不合法条目被 filter(Boolean) 静默丢弃，外壳版本/主体不匹配只返回 null。拒绝本身安全，但不报告缺口，把后端契约缺陷伪装成“本来就没有这个入口”。",
+      "closureCondition": "条目非法时抛 ContractGapError（携带 bucket、下标、字段路径与归属层），行为测试覆盖“声明了但形状非法必须报缺口”，并在台账登记该判断站点。",
+      "requiredDeclarationLayer": "P0:smart_core:navigation_entry_target.build_web_surface_entry_target + P0:smart_core:MenuService.build_route_authority",
+      "resolution": "normalizeEntry 不再返回 null 后 filter(Boolean)：条目非对象、缺 action_xmlid/action_id、bucket 与 route_kind 不一致、entry_target 非对象、契约版本或 principal_scope 形状非法，均抛 ContractGapError 并携带 route_authority.<bucket>[<index>].<field>；显式拒绝记录保留：action_xmlid 存在（PRODUCT_ENTRY_NOT_DEFINED）或仅 menu_xmlid 存在（菜单级未交付）都属显式拒绝；两类身份皆空才报缺口。principal 不匹配仍按授权范围拒绝返回 null，不误报为契约缺陷。",
+      "closureEvidence": [
+        "addons/smart_core/core/navigation_entry_target.py",
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_construction_core/views/support/business_config_workbench_views.xml",
+        "addons/smart_core/views/ui_menu_config_policy_views.xml",
+        "frontend/apps/web/src/services/actionRoutePolicy.ts",
+        "frontend/apps/web/src/app/routeQuery.ts",
+        "frontend/apps/web/src/app/routeAuthority.ts",
+        "frontend/apps/web/scripts/route_authority_guard_test.ts",
+        "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py"
+      ]
+    },
+    {
+      "id": "OD-20261017-RECORD-ROUTE-MODEL-SYNTAX",
+      "missing": "record_route.entry_identity（记录路由的稳定入口标识）",
+      "surface": "actionRoutePolicy.ts isRecordWorkItemNavigation；router path /f/:model/:id、/r/:model/:id",
+      "owner": "P0:smart_core:system_init.navigation + P0:frontend:router",
+      "discoveredBy": "前端以 /^[a-z][a-z0-9_.]*$/ 校验模型标识语法，且公开地址直接携带模型名；记录访问与数据调用仍以模型为协议。",
+      "closureCondition": "记录访问以入口令牌 + 记录标识表达、由后端解析模型；前端不再校验模型语法；旧地址保留跳转兼容，并以行为测试锁定。",
+      "requiredDeclarationLayer": "P0:smart_core:navigation_entry_target.build_web_surface_entry_target + P0:smart_core:MenuService.build_route_authority",
+      "resolution": "前端删除 /^[a-z][a-z0-9_.]*$/ 模型语法校验，model 作为后端声明的透明技术标识透传；记录访问与数据调用仍由后端解析模型并逐请求授权。公开地址的入口令牌迁移属于架构演进，已登记在 ROUTE-ENTRY-CONTRACT-MIGRATION（P0-2），不再以“前端校验模型语法”形式存在。",
+      "closureEvidence": [
+        "frontend/apps/web/src/services/actionRoutePolicy.ts",
+        "frontend/apps/web/scripts/route_authority_guard_test.ts",
+        ".agent/goals/ROUTE-ENTRY-CONTRACT-MIGRATION.yaml"
       ]
     }
   ],

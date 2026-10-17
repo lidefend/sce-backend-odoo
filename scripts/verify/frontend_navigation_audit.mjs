@@ -8,6 +8,13 @@ export function stableLeafKey(row) {
     .join('|');
 }
 
+export function isDeclaredScene(manifest, row) {
+  const target = manifest?.scene_targets?.[row?.menu_xmlid];
+  return Boolean(target?.scene_key && target?.route
+    && !row?.action_xmlid && !row?.model
+    && row?.route === target.route);
+}
+
 function duplicates(values) {
   const counts = new Map();
   for (const value of values) counts.set(value, (counts.get(value) || 0) + 1);
@@ -22,7 +29,9 @@ export function compareNavigation(manifest, rows, roleLogins) {
     if (!expected) throw new Error(`NAVIGATION_MANIFEST_ROLE_MISSING:${role}`);
     const expectedKeys = [...(expected.browser_leaf_keys || expected.leaf_keys || [])].sort();
     const actualKeys = rows.filter((row) => row.role === login).map(stableLeafKey).sort();
-    const invalid = actualKeys.filter((key) => key.split('|').some((part) => !part));
+    const invalid = rows.filter((row) => row.role === login)
+      .filter((row) => stableLeafKey(row).split('|').some((part) => !part)
+        && !isDeclaredScene(manifest, row)).map(stableLeafKey).sort();
     const expectedSet = new Set(expectedKeys);
     const actualSet = new Set(actualKeys);
     const missing = expectedKeys.filter((key) => !actualSet.has(key));

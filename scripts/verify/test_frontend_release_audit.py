@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from frontend_release_audit import (
@@ -72,8 +73,11 @@ class FrontendReleaseAuditFailClosedTest(unittest.TestCase):
             with self.assertRaises(EvidenceError):
                 validate_accessibility(report, SHA)
 
-    def test_performance_sample_and_budget_fail_closed(self):
-        metrics = {"sample_count": 5, "median_ms": 10, "p95_ms": 20, "max_ms": 20}
+    @patch('frontend_release_audit.read_json', return_value={
+        'minimum_sample_count': 5,
+        'scenarios': {'home': {'median_ms': 20, 'p95_ms': 30, 'max_ms': 30}}})
+    def test_performance_sample_and_budget_fail_closed(self, policy_read):
+        metrics = {"samples_ms": [10, 10, 10, 20, 20], "sample_count": 5, "median_ms": 10, "p95_ms": 20, "max_ms": 20}
         budget = {"median_ms": 20, "p95_ms": 30, "max_ms": 30}
         valid = {
             "git_sha": SHA,
@@ -89,6 +93,13 @@ class FrontendReleaseAuditFailClosedTest(unittest.TestCase):
             {**valid, "scenarios": {"home": {**metrics, "sample_count": 4}}},
             {**valid, "scenarios": {"home": {**metrics, "p95_ms": 31}}},
             {**valid, "result": "NOT_RUN"},
+            {**valid, "scenarios": {}, "budgets": {}},
+            {**valid, "scenarios": {"home": {key: value for key, value in metrics.items() if key != "median_ms"}}},
+            {**valid, "scenarios": {"home": {**metrics, "median_ms": float('nan')}}},
+            {**valid, "budgets": {"home": {**budget, "median_ms": 99999}}},
+            {**valid, "scenarios": {"home": {**metrics, "samples_ms": [1, 1, 1, 1, 1]}}},
+            {**valid, "scenarios": {"home": {**metrics, "samples_ms": [10, 10, 10, 20, float('nan')]}}},
+            {**valid, "scenarios": {"home": {**metrics, "samples_ms": None}}},
         ):
             with self.assertRaises(EvidenceError):
                 validate_performance(report, SHA)
@@ -109,7 +120,8 @@ class FrontendReleaseAuditFailClosedTest(unittest.TestCase):
                 "home": {"median_ms": 5.0, "p95_ms": -5.0, "max_ms": -5.0}
             },
         }
-        validate_performance(relative, SHA)
+        with self.assertRaises(EvidenceError):
+            validate_performance(relative, SHA)
         for metric in ("median_ms", "p95_ms", "max_ms"):
             regressed = json.loads(json.dumps(relative))
             regressed["metric_regression_percent"]["home"][metric] = 11.0

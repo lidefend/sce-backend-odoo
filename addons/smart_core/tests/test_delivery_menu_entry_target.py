@@ -45,6 +45,55 @@ menu_service = _load_module(
 
 
 class TestDeliveryMenuEntryTarget(unittest.TestCase):
+    def test_web_surface_entry_target_projects_only_declared_fields(self):
+        target = menu_service.build_web_surface_entry_target(
+            "{'sc_web_surface': 'business_config', 'sc_web_route': '/admin/business-config',"
+            " 'business_config_root_menu_xmlid': 'smart_construction_core.menu_sc_root'}",
+            menu_id=431,
+            action_id=737,
+            model="ui.business.config.contract",
+            view_modes=["tree", "form"],
+        )
+        self.assertEqual(target["type"], "admin_surface")
+        self.assertEqual(target["surface"], "business_config")
+        self.assertEqual(target["route"], "/admin/business-config")
+        self.assertEqual(target["root_menu_xmlid"], "smart_construction_core.menu_sc_root")
+        self.assertEqual(target["compatibility_refs"]["menu_id"], 431)
+        self.assertEqual(target["compatibility_refs"]["action_id"], 737)
+        # An action that declares no web surface at all stays on the
+        # compatibility path; only a partial declaration is a contract defect.
+        self.assertEqual(menu_service.build_web_surface_entry_target(""), {})
+        self.assertEqual(menu_service.build_web_surface_entry_target("{'search_default_visible': 1}"), {})
+        self.assertEqual(menu_service.build_web_surface_entry_target({}), {})
+
+    def test_partial_web_surface_declaration_is_an_explicit_gap_target(self):
+        # A route spelling alone is not a surface declaration: the declaration
+        # is incomplete, so it must surface as an explicit ``admin_surface``
+        # target with the missing field empty (consumer fails closed) instead of
+        # silently degrading to ``compatibility``.
+        route_only = menu_service.build_web_surface_entry_target(
+            "{'sc_web_route': '/admin/business-config'}"
+        )
+        self.assertEqual(route_only["type"], "admin_surface")
+        self.assertEqual(route_only["surface"], "")
+        self.assertEqual(route_only["route"], "/admin/business-config")
+
+        surface_only = menu_service.build_web_surface_entry_target(
+            "{'sc_web_surface': 'business_config'}"
+        )
+        self.assertEqual(surface_only["type"], "admin_surface")
+        self.assertEqual(surface_only["surface"], "business_config")
+        self.assertEqual(surface_only["route"], "")
+
+        # A declaration the static parser cannot read must not be dropped
+        # either: the keys are present, so the target stays explicit.
+        unparsed = menu_service.build_web_surface_entry_target(
+            "{'sc_web_surface': MODEL_SURFACE, 'sc_web_route': '/admin/business-config'}"
+        )
+        self.assertEqual(unparsed["type"], "admin_surface")
+        self.assertEqual(unparsed["surface"], "")
+        self.assertEqual(unparsed["route"], "")
+
     def test_native_platform_capability_grants_function_visibility_not_model_acl(self):
         class DeniedModel:
             def check_access_rights(self, operation, raise_exception=False):

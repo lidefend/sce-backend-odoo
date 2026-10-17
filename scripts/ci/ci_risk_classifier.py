@@ -168,7 +168,7 @@ def classify(
 def changed_paths(base: str, head: str) -> tuple[str, ...]:
     if not base or not head:
         raise ValueError("base and head SHA are required")
-    command = ["git", "diff", "--name-only", "--diff-filter=ACMRTUXB", f"{base}...{head}", "--"]
+    command = ["git", "diff", "--name-only", "--no-renames", f"{base}...{head}", "--"]
     result = subprocess.run(command, cwd=ROOT, check=True, text=True, capture_output=True)
     return tuple(result.stdout.splitlines())
 

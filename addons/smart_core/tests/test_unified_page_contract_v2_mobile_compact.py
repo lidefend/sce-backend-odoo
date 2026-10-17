@@ -167,6 +167,57 @@ def _native_view_fixture_arch(relative_path: str, record_id: str) -> str:
 
 
 class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
+    def test_full_profile_trim_isolates_the_input_contract(self):
+        contract = {
+            "pageInfo": {"clientType": "web_pc", "deliveryProfile": "full"},
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "root",
+                    "children": [{
+                        "containerId": "child",
+                        "widgetList": [{"widgetId": "field.name", "value": "original"}],
+                    }],
+                }],
+                "componentRegistry": {"field.name": {"componentKey": "display.text"}},
+            },
+            "statusContract": {"widgetStatus": [{"widgetId": "field.name", "visible": True}]},
+            "actionContract": {"actionRuleList": []},
+        }
+        before = deepcopy(contract)
+        trimmed = client.trim_unified_page_contract_v2(
+            contract,
+            client_type="web_pc",
+            delivery_profile="full",
+        )
+        self.assertEqual(contract, before)
+        trimmed["layoutContract"]["containerTree"][0]["children"][0]["widgetList"][0]["value"] = "changed"
+        self.assertEqual(contract, before)
+        self.assertEqual(
+            trimmed["layoutContract"]["containerTree"][0]["children"][0]["widgetList"][0]["widgetId"],
+            "field.name",
+        )
+
+    def test_compact_trim_does_not_mutate_the_input_contract(self):
+        contract = {
+            "pageInfo": {"clientType": "harmony_h5", "deliveryProfile": "mobile_compact"},
+            "layoutContract": {
+                "containerTree": [
+                    {"containerId": f"c{index}", "widgetList": [{"widgetId": f"field.f{index}"}]}
+                    for index in range(4)
+                ],
+            },
+            "statusContract": {"widgetStatus": []},
+            "actionContract": {"actionRuleList": []},
+        }
+        before = deepcopy(contract)
+        trimmed = client.trim_unified_page_contract_v2(
+            contract,
+            client_type="harmony_h5",
+            delivery_profile="mobile_compact",
+        )
+        self.assertEqual(contract, before)
+        self.assertLessEqual(len(trimmed["layoutContract"]["containerTree"]), 4)
+
     def test_complex_view_types_remain_explicit_in_v2_contract(self):
         for view_type in ("pivot", "graph", "calendar", "gantt", "activity", "dashboard"):
             with self.subTest(view_type=view_type):

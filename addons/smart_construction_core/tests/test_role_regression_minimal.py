@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase
+from .business_case import BusinessTransactionCase
 from odoo.tests.common import tagged
 from odoo.addons.smart_core.security.platform_admin import (
     PLATFORM_ADMIN_GROUP,
@@ -11,7 +12,7 @@ from odoo.addons.smart_core.security.platform_admin import (
 
 
 @tagged("post_install", "-at_install", "sc_gate", "sc_perm", "role_regression_minimal")
-class TestRoleRegressionMinimal(TransactionCase):
+class TestRoleRegressionMinimal(BusinessTransactionCase):
     """
     最小角色回归：验证典型角色对关键域动作的允许/拒绝。
     关注 action.groups_id 与用户组交集，防止菜单不可见但 action 绕过。
@@ -20,7 +21,7 @@ class TestRoleRegressionMinimal(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        company = cls.env.ref("base.main_company")
+        company = cls.env.company
 
         def _create(login, group_xmlids):
             groups = [(6, 0, [cls.env.ref(x).id for x in group_xmlids])]
@@ -167,7 +168,7 @@ class TestRoleRegressionMinimal(TransactionCase):
         self.assertTrue(tenant_runtime.check_access_rights("create", raise_exception=False))
 
     def test_workflow_runtime_is_scoped_by_allowed_company_without_count_leak(self):
-        main_company = self.env.ref("base.main_company")
+        main_company = self.env.company
         other_company = self.env["res.company"].create(
             {"name": "ADMIN_VIS_P2 synthetic workflow company"}
         )

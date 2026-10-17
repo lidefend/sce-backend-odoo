@@ -25797,7 +25797,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 537,
+      "test_refs": 635,
       "request_schema_hint": [
         "company_id",
         "credential",
@@ -38343,7 +38343,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 136,
+      "test_refs": 141,
       "request_schema_hint": [
         "op",
         "source_mode"
@@ -38653,16 +38653,19 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 20,
+      "test_refs": 22,
       "request_schema_hint": [
         "actionId",
         "action_id",
+        "action_xml_id",
+        "action_xmlid",
         "client_type",
         "context",
         "contextRaw",
         "context_raw",
         "domainRaw",
         "domain_raw",
+        "id",
         "menuId",
         "menu_id",
         "model",
@@ -42693,9 +42696,29 @@
       "test_refs": 1,
       "request_schema_hint": [
         "action_id",
-        "preference_key"
+        "model",
+        "preference_key",
+        "projection",
+        "view_type"
       ],
       "response_data_schema_hint": [
+        "code",
+        "error",
+        "error.code",
+        "error.message",
+        "meta",
+        "meta.source_authorities",
+        "meta.source_authorities[]",
+        "meta.source_authority",
+        "meta.source_authority.authorities",
+        "meta.source_authority.authorities[]",
+        "meta.source_authority.kind",
+        "meta.source_authority.no_business_fact_authority",
+        "meta.source_authority.projection_only",
+        "meta.source_authority.runtime_carrier",
+        "meta.source_authority.write_proxy",
+        "meta.source_kind",
+        "ok",
         "preference",
         "preference.column_order",
         "preference.column_order[]",
@@ -42706,13 +42729,48 @@
         "preference.visible_columns[]",
         "scope_key"
       ],
-      "error_schema_hint": [],
+      "error_schema_hint": [
+        "code",
+        "message"
+      ],
       "observed_reason_codes": [],
       "examples": [
         {
           "case": "user_view_preference_get_intent_admin",
           "snapshot_file": "docs/contract/snapshots/user_view_preference_get_intent_admin.json",
           "request_keys": [],
+          "response_data_keys": [
+            "code",
+            "error",
+            "error.code",
+            "error.message",
+            "meta",
+            "meta.source_authorities",
+            "meta.source_authorities[]",
+            "meta.source_authority",
+            "meta.source_authority.authorities",
+            "meta.source_authority.authorities[]",
+            "meta.source_authority.kind",
+            "meta.source_authority.no_business_fact_authority",
+            "meta.source_authority.projection_only",
+            "meta.source_authority.runtime_carrier",
+            "meta.source_authority.write_proxy",
+            "meta.source_kind",
+            "ok"
+          ],
+          "response_error_keys": [
+            "code",
+            "message"
+          ]
+        },
+        {
+          "case": "user_view_preference_get_resolved_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/user_view_preference_get_resolved_intent_admin.json",
+          "request_keys": [
+            "model",
+            "preference_key",
+            "view_type"
+          ],
           "response_data_keys": [
             "preference",
             "preference.column_order",
@@ -42740,12 +42798,36 @@
       "has_idempotency_window": false,
       "test_refs": 1,
       "request_schema_hint": [
-        "action_id",
+        "model",
         "preference",
-        "preference_key"
+        "preference.column_order",
+        "preference.column_order[]",
+        "preference.column_widths",
+        "preference.hidden_columns",
+        "preference.hidden_columns[]",
+        "preference.visible_columns",
+        "preference.visible_columns[]",
+        "preference_key",
+        "view_type"
       ],
       "response_data_schema_hint": [
-        "id",
+        "code",
+        "error",
+        "error.code",
+        "error.message",
+        "meta",
+        "meta.source_authorities",
+        "meta.source_authorities[]",
+        "meta.source_authority",
+        "meta.source_authority.authorities",
+        "meta.source_authority.authorities[]",
+        "meta.source_authority.kind",
+        "meta.source_authority.no_business_fact_authority",
+        "meta.source_authority.projection_only",
+        "meta.source_authority.runtime_carrier",
+        "meta.source_authority.write_proxy",
+        "meta.source_kind",
+        "ok",
         "preference",
         "preference.column_order",
         "preference.column_order[]",
@@ -42756,7 +42838,10 @@
         "preference.visible_columns[]",
         "scope_key"
       ],
-      "error_schema_hint": [],
+      "error_schema_hint": [
+        "code",
+        "message"
+      ],
       "observed_reason_codes": [],
       "examples": [
         {
@@ -42764,7 +42849,46 @@
           "snapshot_file": "docs/contract/snapshots/user_view_preference_set_intent_admin.json",
           "request_keys": [],
           "response_data_keys": [
-            "id",
+            "code",
+            "error",
+            "error.code",
+            "error.message",
+            "meta",
+            "meta.source_authorities",
+            "meta.source_authorities[]",
+            "meta.source_authority",
+            "meta.source_authority.authorities",
+            "meta.source_authority.authorities[]",
+            "meta.source_authority.kind",
+            "meta.source_authority.no_business_fact_authority",
+            "meta.source_authority.projection_only",
+            "meta.source_authority.runtime_carrier",
+            "meta.source_authority.write_proxy",
+            "meta.source_kind",
+            "ok"
+          ],
+          "response_error_keys": [
+            "code",
+            "message"
+          ]
+        },
+        {
+          "case": "user_view_preference_set_resolved_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/user_view_preference_set_resolved_intent_admin.json",
+          "request_keys": [
+            "model",
+            "preference",
+            "preference.column_order",
+            "preference.column_order[]",
+            "preference.column_widths",
+            "preference.hidden_columns",
+            "preference.hidden_columns[]",
+            "preference.visible_columns",
+            "preference.visible_columns[]",
+            "preference_key",
+            "view_type"
+          ],
+          "response_data_keys": [
             "preference",
             "preference.column_order",
             "preference.column_order[]",

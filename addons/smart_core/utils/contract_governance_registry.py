@@ -39,6 +39,13 @@ _LEGACY_PROJECT_KANBAN_PROFILE_REGISTRY: dict[str, dict[str, Any]] = {}
 _LEGACY_KANBAN_ROW_ACTION_REGISTRY: dict[str, list[dict[str, Any]]] = {}
 _CAPABILITY_GROUP_PROFILE_REGISTRY: dict[str, dict[str, Any]] = {}
 _SCENE_SEMANTIC_PROFILE_REGISTRY: list[dict[str, Any]] = []
+# Action-scoped declared list locks.  An industry or customer layer declares
+# "*this* action's list surface is user-confirmed locked": its columns stay
+# visible and keep their declared order.  The declaration is keyed by the
+# action's own external id, so the mechanism stays generic and the semantic
+# stays in the owning layer; the P0 list-preference projection only reads it.
+_FORMAL_LIST_LOCK_REGISTRY: list[dict[str, Any]] = []
+_FORMAL_LIST_LOCK_CONFLICTS: list[dict[str, Any]] = []
 
 
 def _safe_text(value: Any, fallback: str = "") -> str:
@@ -104,6 +111,65 @@ def register_legacy_standard_list_profile(profile: dict[str, Any]) -> None:
             _LEGACY_STANDARD_LIST_PROFILE_REGISTRY[index] = normalized
             return
     _LEGACY_STANDARD_LIST_PROFILE_REGISTRY.append(normalized)
+
+
+def register_formal_list_lock(declaration: dict[str, Any]) -> bool:
+    """Register a declared, action-scoped list lock.
+
+    Returns ``False`` when the declaration cannot become an executable lock (no
+    key, no action reference, or a different payload for an already-declared
+    key).  A conflict is recorded instead of silently letting import order pick
+    one owner for the same action.
+    """
+    if not isinstance(declaration, dict):
+        return False
+    key = _safe_text(declaration.get("declaration_key"))
+    action_xmlids = [
+        _safe_text(value)
+        for value in (declaration.get("action_xmlids") if isinstance(declaration.get("action_xmlids"), list) else [])
+        if _safe_text(value)
+    ]
+    if not key or not action_xmlids:
+        return False
+    normalized = {
+        "declaration_key": key,
+        "action_xmlids": sorted(set(action_xmlids)),
+        "model_name": _safe_text(declaration.get("model_name")),
+        "scope": _safe_text(declaration.get("scope"), "ui_only"),
+        "allow_visibility": declaration.get("allow_visibility") is not False,
+        "allow_order": declaration.get("allow_order") is not False,
+        "allow_width": declaration.get("allow_width") is not False,
+        "source": _safe_text(declaration.get("source"), "declared_formal_list_lock"),
+    }
+    for index, existing in enumerate(_FORMAL_LIST_LOCK_REGISTRY):
+        if _safe_text(existing.get("declaration_key")) != key:
+            continue
+        if existing == normalized:
+            return True
+        _FORMAL_LIST_LOCK_CONFLICTS.append({"declaration_key": key, "declared": normalized, "existing": existing})
+        _logger.warning("formal list lock declaration conflict for %s refused", key)
+        return False
+    _FORMAL_LIST_LOCK_REGISTRY.append(normalized)
+    return True
+
+
+def formal_list_lock_declarations() -> list[dict[str, Any]]:
+    """Read-only view of the declared action-scoped list locks."""
+    return [_deep_clone_json_like(declaration) for declaration in _FORMAL_LIST_LOCK_REGISTRY]
+
+
+def formal_list_lock_declaration_conflicts() -> list[dict[str, Any]]:
+    return [_deep_clone_json_like(row) for row in _FORMAL_LIST_LOCK_CONFLICTS]
+
+
+def legacy_standard_list_profiles() -> list[dict[str, Any]]:
+    """Read-only view of the declared legacy standard list profiles.
+
+    Returns shallow copies so a consumer (for example the P0 list-preference
+    policy projection) can read the declared column order without mutating the
+    registry. Registration stays the only write path.
+    """
+    return [dict(profile) for profile in _LEGACY_STANDARD_LIST_PROFILE_REGISTRY]
 
 
 def register_workflow_contract_profile(model_name: str, profile: dict[str, Any], *, source: str = "") -> bool:

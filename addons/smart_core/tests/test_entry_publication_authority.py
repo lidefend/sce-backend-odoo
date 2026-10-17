@@ -1,11 +1,21 @@
 """Execute route projection/validation with bounded publication and ORM doubles."""
 import ast
+import importlib.util
 from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def load_entry_target_projection():
+    path = ROOT / "core/navigation_entry_target.py"
+    spec = importlib.util.spec_from_file_location("navigation_entry_target_test", path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec and spec.loader
+    spec.loader.exec_module(module)
+    return module.build_web_surface_entry_target
 
 
 def load_projection():
@@ -45,6 +55,20 @@ class EntryPublicationTest(unittest.TestCase):
         self.assertEqual(result["denied_actions"][-1]["reason_code"], "PRODUCT_ENTRY_NOT_RELEASED")
         self.assertEqual(result["denied_actions"][0]["reason_code"], "ACL_DENIED")
         self.assertEqual(self.authority, before)
+
+    def test_unpublished_declaration_is_republished_as_a_denied_record(self):
+        # The entry leaves an executable bucket: its route_kind must be DENIED
+        # as well, otherwise the consumer (which validates bucket membership
+        # against route_kind) rejects a legitimately unpublished entry.
+        result = self.project(self.authority, filter_nodes=self.filter_nodes)
+        denied = next(
+            row for row in result["denied_actions"]
+            if row.get("reason_code") == "PRODUCT_ENTRY_NOT_RELEASED"
+        )
+        self.assertEqual(denied["route_kind"], "DENIED")
+        self.assertEqual(denied["action_id"], 655)
+        self.assertEqual(denied["menu_id"], 507)
+        self.assertEqual(denied["model"], "plan")
 
     def test_existing_configuration_exception_is_decided_by_shared_filter(self):
         result = self.project(self.authority, filter_nodes=self.filter_nodes)
@@ -175,6 +199,39 @@ class EntryPublicationTest(unittest.TestCase):
             self.assertEqual(result["meta"]["route"], route if route.startswith("/s/") else "/a/775?menu_id=42")
             self.assertEqual(result["meta"]["entry_target"]["scene_key"], "published.page")
             self.assertEqual(result["meta"]["entry_target"]["compatibility_refs"]["model"], "test.document")
+            self.assertEqual(result["entry_target"], result["meta"]["entry_target"])
+
+    def test_shared_normalizer_syncs_declared_admin_surface_to_node_target(self):
+        path = ROOT / "delivery/delivery_engine.py"
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == "DeliveryEngine")
+        names = {"_normalize_entry_target_refs", "_normalize_delivery_nav_node_refs", "_normalize_delivery_nav_refs"}
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        scope = {"_text": lambda v: str(v or "").strip(), "_to_int": lambda v: int(v or 0),
+                 "build_web_surface_entry_target": load_entry_target_projection()}
+        target_class = ast.ClassDef(name="Normalizer", bases=[], keywords=[], body=methods, decorator_list=[])
+        tree = ast.fix_missing_locations(ast.Module(body=[target_class], type_ignores=[]))
+        exec(compile(tree, str(path), "exec"), scope)
+        normalizer = scope["Normalizer"]()
+        records = {
+            "config.menu": SimpleNamespace(id=431, active=True),
+            "config.action": SimpleNamespace(
+                id=806, _name="ir.actions.act_window", res_model="ui.business.config.contract",
+                view_mode="tree,form",
+                context="{'sc_web_surface': 'business_config', 'sc_web_route': '/admin/business-config'}",
+            ),
+        }
+        normalizer._resolve_xmlid_record = lambda xmlid, **kwargs: records.get(xmlid)
+        stale = {"type": "compatibility", "route": "/a/806?menu_id=431",
+                 "compatibility_refs": {"menu_id": 431, "action_id": 806}}
+        node = {"menu_id": 431, "route": "/a/806?menu_id=431", "entry_target": dict(stale),
+                "meta": {"menu_xmlid": "config.menu", "action_xmlid": "config.action",
+                         "menu_id": 431, "action_id": 806, "route": "/a/806?menu_id=431",
+                         "entry_target": dict(stale)}}
+        result = normalizer._normalize_delivery_nav_refs([node])[0]
+        self.assertEqual(result["entry_target"], result["meta"]["entry_target"])
+        self.assertEqual(result["entry_target"]["type"], "admin_surface")
+        self.assertEqual(result["entry_target"]["surface"], "business_config")
+        self.assertEqual(result["entry_target"]["route"], "/admin/business-config")
 
     def test_runtime_validator_obeys_failed_publication_authority(self):
         result, _ = self.handler(775, fail_closed=True)

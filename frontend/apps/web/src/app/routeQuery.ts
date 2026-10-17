@@ -1,5 +1,6 @@
 import type { LocationQueryRaw } from 'vue-router';
 import { adaptLegacyRecordEntry, decodeFormalRecordEntry, resolveRecordOpenTarget } from './runtime/recordEntryContract';
+import { contractGapError } from './contract/contractGap';
 
 type QueryLike = LocationQueryRaw;
 type SceneRouteSource = {
@@ -264,6 +265,24 @@ export function buildEntryTargetRouteTarget(
     entry_title: entryTitle || firstQueryValue(normalizedQuery.entry_title) || undefined,
   });
   const route = String(entryTarget?.route || '').trim();
+  if (type === 'admin_surface') {
+    const surface = String(entryTarget?.surface || '').trim();
+    if (!surface || !route.startsWith('/')) {
+      throw contractGapError(
+        {
+          kind: 'contract_defect',
+          missing: 'entry_target.admin_surface.route',
+          requiredDeclarationLayer: 'P0:smart_core:navigation_entry_target.build_web_surface_entry_target',
+        },
+        '契约声明了 admin_surface 但缺少 surface 或合法 route：前端不停机兜底',
+      );
+    }
+    const rootMenuXmlid = String(entryTarget?.root_menu_xmlid || '').trim();
+    return {
+      path: route,
+      query: compactQuery({ ...query, root_menu_xmlid: rootMenuXmlid || undefined }),
+    };
+  }
   const recordEntry = entryTargetRecordEntry(entryTarget);
   const recordModel = String(recordEntry.model || '').trim();
   const recordId = positiveInteger(recordEntry.record_id);

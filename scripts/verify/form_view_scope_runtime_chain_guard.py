@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT_API = ROOT / "frontend/apps/web/src/api/contract.ts"
+CONTRACT_V2_CLIENT = ROOT / "frontend/apps/web/src/app/contracts/v2/client.ts"
 CONTRACT_FORM = ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue"
 RECORD_PAGE_LIFECYCLE = ROOT / "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts"
 UI_CONTRACT_V2 = ROOT / "addons/smart_core/handlers/ui_contract_v2.py"
@@ -29,6 +30,7 @@ def _assert(condition: bool, message: str, errors: list[str]) -> None:
 def main() -> int:
     errors: list[str] = []
     contract_api = _read(CONTRACT_API)
+    contract_client = _read(CONTRACT_V2_CLIENT)
     contract_form = _read(CONTRACT_FORM)
     record_page_lifecycle = _read(RECORD_PAGE_LIFECYCLE)
     ui_contract_v2 = _read(UI_CONTRACT_V2)
@@ -37,9 +39,9 @@ def main() -> int:
     doc = _read(DOC)
 
     _assert("viewId?: number | null;" in contract_api, "contract API options must accept explicit viewId", errors)
-    _assert("params.view_id = viewId;" in contract_api, "contract API must send view_id to ui.contract.v2", errors)
+    _assert("params.view_id = normalizedRecordId(options.viewId);" in contract_client, "contract API must send view_id to ui.contract.v2", errors)
     _assert(
-        "const requestedViewId = toPositiveInt(route.query.view_id) || toPositiveInt(route.query.viewId) || 0;" in record_page_lifecycle,
+        "const requestedViewId = toPositiveInt(route.query.view_id) || toPositiveInt(route.query.viewId) || 0;" in " ".join(record_page_lifecycle.split()),
         "record page lifecycle must read route view_id/viewId",
         errors,
     )
@@ -61,8 +63,10 @@ def main() -> int:
         errors,
     )
     _assert(
-        "params.action_id = actionId;" in contract_api
-        and "params.menu_id = menuId;" in contract_api,
+        "params.action_id = actionId;" in contract_client
+        and "params.menu_id = normalizedRecordId(options.menuId);" in contract_client
+        and "const params = applyCommonOptions({" in contract_client
+        and "}, { ...options, renderProfile: renderProfile || undefined });" in contract_client,
         "model contract request must preserve action/menu scope",
         errors,
     )
@@ -88,7 +92,8 @@ def main() -> int:
     )
     _assert(
         'context.get(\'contract_action_id\')' in app_view_config
-        and 'context.get(\'contract_view_id\') or context.get(\'requested_view_id\')' in app_view_config,
+        and "requested_view_raw = context.get('contract_view_id')" in app_view_config
+        and "requested_view_raw = context.get('requested_view_id')" in app_view_config,
         "app.view.config projection identity must read action/view context",
         errors,
     )

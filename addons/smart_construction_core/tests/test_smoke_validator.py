@@ -1,10 +1,24 @@
 # -*- coding: utf-8 -*-
 from odoo.exceptions import UserError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 
 @tagged("post_install", "-at_install", "sc_smoke", "smoke_validator")
-class TestValidatorSmoke(TransactionCase):
+class TestValidatorSmoke(BusinessTransactionCase):
+    approval_models = ("payment.request", "sc.settlement.order")
+
+    def _legacy_payment_fixture(self, values):
+        """Inject historical corruption only to exercise the data validator."""
+        values = dict(values)
+        state = values.pop("state", "draft")
+        request = self.env["payment.request"].create(dict(values, state="draft"))
+        if state != "draft":
+            with self.assertRaises(UserError), self.env.cr.savepoint():
+                self.env["payment.request"].create(dict(values, state=state))
+            self.env.cr.execute("UPDATE payment_request SET state=%s WHERE id=%s", (state, request.id))
+            request.invalidate_recordset(["state"])
+        return request
 
     def _approved_settlement_fixture(self, values):
         settlement = self.env["sc.settlement.order"].create(values)
@@ -34,7 +48,7 @@ class TestValidatorSmoke(TransactionCase):
     def test_validator_catches_missing_settlement(self):
         project = self.env["project.project"].create({"name": "Validator Project"})
         partner = self.env["res.partner"].create({"name": "Validator Partner"})
-        bad_pr = self.env["payment.request"].with_context(payment_soft_gate=True).create(
+        bad_pr = self._legacy_payment_fixture(
             {
                 "name": "VAL-PR-BAD",
                 "type": "pay",
@@ -57,7 +71,7 @@ class TestValidatorSmoke(TransactionCase):
         # 构造完整链路：项目 -> 合同 -> 采购 -> 结算 -> 付款申请
         project = self.env["project.project"].create({"name": "PR Happy Project"})
         partner = self.env["res.partner"].create({"name": "Happy Vendor"})
-        company = self.env.ref("base.main_company")
+        company = self.env.company
         contract = self.env["construction.contract"].create(
             {"subject": "Happy Contract", "type": "in", "project_id": project.id, "partner_id": partner.id}
         )
@@ -134,7 +148,7 @@ class TestValidatorSmoke(TransactionCase):
         # bad_pr：缺少 settlement_id，但处于必须有关联的状态
         project1 = self.env["project.project"].create({"name": "Scope Project BAD"})
         partner1 = self.env["res.partner"].create({"name": "Scope Vendor BAD"})
-        bad_pr = self.env["payment.request"].with_context(payment_soft_gate=True).create(
+        bad_pr = self._legacy_payment_fixture(
             {
                 "name": "VAL-PR-BAD-SCOPE",
                 "type": "pay",
@@ -188,7 +202,7 @@ class TestValidatorSmoke(TransactionCase):
                 "line_ids": [(0, 0, {"name": "Settlement Line", "qty": 1, "price_unit": 10})],
             }
         )
-        good_pr = self.env["payment.request"].sudo().with_context(payment_soft_gate=True).create(
+        good_pr = self._legacy_payment_fixture(
             {
                 "name": "VAL-PR-GOOD-SCOPE",
                 "type": "pay",
@@ -234,7 +248,7 @@ class TestValidatorSmoke(TransactionCase):
         })
         baseline.action_activate()
         partner = self.env["res.partner"].create({"name": "Overpay Vendor"})
-        company = self.env.ref("base.main_company")
+        company = self.env.company
         contract = self.env["construction.contract"].create(
             {"subject": "Overpay Contract", "type": "in", "project_id": project.id, "partner_id": partner.id}
         )
@@ -383,7 +397,7 @@ class TestValidatorSmoke(TransactionCase):
                 "line_ids": [(0, 0, {"name": "Settlement Line", "qty": 1, "price_unit": 100})],
             }
         )
-        company = self.env.ref("base.main_company")
+        company = self.env.company
         finance_group = self.env.ref("smart_construction_core.group_sc_cap_finance_user")
         finance_mgr_group = self.env.ref("smart_construction_core.group_sc_cap_finance_manager")
         fin_user = self.env["res.users"].with_context(no_reset_password=True).create({
@@ -454,7 +468,7 @@ class TestValidatorSmoke(TransactionCase):
         partner = self.env["res.partner"].create({"name": "Happy Vendor"})
         unrelated_project = self.env["project.project"].create({"name": "Settle Unrelated Bad Project"})
         unrelated_partner = self.env["res.partner"].create({"name": "Unrelated Bad Vendor"})
-        self.env["payment.request"].with_context(payment_soft_gate=True).create(
+        self._legacy_payment_fixture(
             {
                 "name": "VAL-PR-UNRELATED-BAD",
                 "type": "pay",
@@ -505,7 +519,7 @@ class TestValidatorSmoke(TransactionCase):
                 "state": "draft",
             }
         )
-        company = self.env.ref("base.main_company")
+        company = self.env.company
         settlement_group = self.env.ref("smart_construction_core.group_sc_cap_settlement_manager")
         settlement_mgr = self.env["res.users"].with_context(no_reset_password=True).create({
             "name": "Settle Happy Manager",

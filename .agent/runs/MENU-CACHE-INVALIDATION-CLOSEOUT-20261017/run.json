@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "id": "MENU-CACHE-INVALIDATION-CLOSEOUT-20261017",
+  "branch": "fix/menu-cache-invalidation-closeout-20261017",
+  "baseline_sha": "95919c2a6a2c753a0e6581be5e94738648961c29",
+  "status": "active",
+  "goal": ".agent/goals/MENU-CACHE-INVALIDATION-CLOSEOUT-20261017.yaml",
+  "record": "docs/ops/iterations/menu_cache_invalidation_closeout_20261017.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MENU-CACHE-INVALIDATION-CLOSEOUT-20261017.yaml",
+    ".agent/runs/MENU-CACHE-INVALIDATION-CLOSEOUT-20261017/run.json",
+    "docs/ops/iterations/menu_cache_invalidation_closeout_20261017.md",
+    "docs/ops/audit/system_performance_baseline.md",
+    "docs/ops/audit/platform_sla_report.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "addons/smart_core/app_config_engine/models/app_nav_config.py",
+    "addons/smart_construction_bundle/tests/test_startup_performance_contract.py",
+    "scripts/verify/local_dev_runtime_performance.py",
+    "scripts/verify/local_dev_performance_baseline.sh",
+    "scripts/verify/platform_sla_guard.py",
+    "scripts/verify/local_dev_runtime_permission_probe.py",
+    "scripts/verify/system_performance_baseline.py",
+    "scripts/verify/test_system_performance_baseline.py",
+    "scripts/verify/test_local_dev_runtime_performance.py",
+    "scripts/verify/local_dev_runtime_contract_request_probe.py",
+    "scripts/verify/local_dev_runtime_contract_role_matrix_probe.py",
+    "make/dev.mk"
+  ],
+  "environment": {
+    "profile": "sc-local-dev",
+    "database": "sc_dev_demo",
+    "compose_project": "sc-local-dev",
+    "kind": "runtime"
+  },
+  "product_boundary": {
+    "formal_product_layer": "P0 platform kernel product",
+    "layer_target": "app.menu.config projection cache invalidation; P4 performance-evidence identity",
+    "standard_vs_user_specific": "platform mechanism",
+    "why_here": "The persisted menu projection and its invalidation rule are platform kernel behavior used by system.init.",
+    "why_not_elsewhere": "The rule is not construction-industry or customer-specific; frontend must not compensate for a stale projection.",
+    "blast_radius": "system.init navigation projection, menu cache freshness checks, startup observation identity; no contract payload or schema change"
+  },
+  "checks": {
+    "runtime_performance_unit": {
+      "target": "verify.local.dev.runtime.performance.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/local_dev_runtime_performance.py",
+        "scripts/verify/test_local_dev_runtime_performance.py",
+        "scripts/verify/local_dev_runtime_permission_probe.py",
+        "scripts/verify/test_local_dev_runtime_permission_probe.py",
+        "make/dev.mk"
+      ]
+    },
+    "system_performance_baseline_unit": {
+      "target": "verify.system.performance.baseline.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/system_performance_baseline.py",
+        "scripts/verify/test_system_performance_baseline.py",
+        "scripts/verify/baselines/platform_sla.json"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Remaining after this commit: generate the complete tracked+untracked fingerprint for the clean HEAD, run exactly one exact-head ci.local.quick, write the independent-review record bound to that fingerprint (the earlier pending review stays as history), archive to a new evidence directory with the corrected base+dirty capture provenance, push the branch, open the PR against main, dispatch and verify the four required checks on the new head, then pr.merge.prep with the resulting head. No deploy.",
+  "evidence_index": {
+    "unit-runtime-performance.log": {
+      "path": "artifacts/menu-cache-invalidation-closeout-20261017/logs/unit-runtime-performance.log",
+      "sha256": "e17c6f68933e795da273389d79e5fd13d00feefc15bf890debbafd2cb828fe18",
+      "layer": "L1",
+      "command": "make verify.local.dev.runtime.performance.unit",
+      "test_count": 29,
+      "status": "passed"
+    },
+    "unit-system-performance-baseline.log": {
+      "path": "artifacts/menu-cache-invalidation-closeout-20261017/logs/unit-system-performance-baseline.log",
+      "sha256": "629a9a0579674019a4e1172427d9540355a0a301e27d79b4620d83380e7e9567",
+      "layer": "L1",
+      "command": "make verify.system.performance.baseline.unit",
+      "test_count": 72,
+      "status": "passed"
+    },
+    "unit-permission-probe.log": {
+      "path": "artifacts/menu-cache-invalidation-closeout-20261017/logs/unit-permission-probe.log",
+      "sha256": "7c758af7411e05fc2e6c4fb89045f7a03d9a5957d5305092903a23a66373d034",
+      "layer": "L1",
+      "command": "python3 -m unittest scripts.verify.test_local_dev_runtime_permission_probe",
+      "test_count": 9,
+      "status": "passed"
+    },
+    "l2-startup-performance-contract.log": {
+      "path": "artifacts/menu-cache-invalidation-closeout-20261017/logs/l2-startup-performance-contract.log",
+      "sha256": "921b4003a19970c53a85866adb44264b903bc31b769845d693cd18256f13d713",
+      "layer": "L2",
+      "command": "make local.dev.test MODULE=smart_construction_bundle TEST_TAGS=/smart_construction_bundle:TestStartupPerformanceContract",
+      "test_count": 14,
+      "status": "passed"
+    },
+    "mutation-check-archived-view-test.log": {
+      "path": "artifacts/menu-cache-invalidation-closeout-20261017/logs/mutation-check-archived-view-test.log",
+      "sha256": "3be3ea1eaaa0bf5af70a3efb5b72788d78d6e2a863931c17baa3320d9af551b6",
+      "layer": "L2",
+      "command": "same single test with active_test=False removed from the digest read",
+      "test_count": 1,
+      "status": "failed_as_expected",
+      "note": "proves the archived-view counter-example discriminates: the assertion fails on the pre-fix read and passes with the fix restored"
+    },
+    "ci-local-iteration.log": {
+      "path": "artifacts/menu-cache-invalidation-closeout-20261017/logs/ci-local-iteration.log",
+      "sha256": "715a0c8a07af8c498f1732625af433403fbdcf0fd2054d5e0f0acd09b5394854",
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "status": "passed"
+    },
+    "freeze-prepare.log": {
+      "path": "artifacts/menu-cache-invalidation-closeout-20261017/logs/freeze-prepare.log",
+      "sha256": "2e094775a8e4ec693ed423f346fbfc2a4d1af3978fe026959e18ecb5fafe339b",
+      "layer": "L5",
+      "command": "make ci.delivery.freeze.prepare",
+      "status": "passed"
+    },
+    "system-performance-baseline.json": {
+      "path": "artifacts/backend/system_performance_baseline.json",
+      "sha256": "943949d69cdc9909abad88a3422985c62fcd40c9093caa8c968b396d358321f9",
+      "layer": "L3",
+      "command": "make local.dev.runtime.performance.baseline SOURCES=sla,observe,permission,contract_request,role_matrix REUSE_UNCHANGED=1",
+      "entries": 7,
+      "identity_gaps": 0,
+      "status": "passed"
+    },
+    "runtime-inputs": {
+      "layer": "L3",
+      "identity": "artifacts/backend/system-performance-baseline/identity.json",
+      "identity_sha256": "247584f06ef9637d02c5ffeed123cedc2b9f8db3a0dc0e6608da911f177117ab",
+      "inputs": {
+        "artifacts/backend/system-performance-baseline/sla-guard.json": "6e0cb16936e1760e741fb8b2b6cc33943143df5948c6ae4c08275f52faecbb1f",
+        "artifacts/backend/system-performance-baseline/observe.log": "2a7d0d367c7165d5d89da5ebe1cb86665aac174a661f20988582f840d13a19dc",
+        "artifacts/backend/system-performance-baseline/contract-profile.log": "99e44d4c49dcd0b21677d7ebf74f7636a1a2581d5d5e2863d1ffbe8022bde7c2",
+        "artifacts/backend/system-performance-baseline/permission.log": "b5c504b28433626744d6e57f293938088a310c9a25fd95fc2dcfd2bf572f0ddd",
+        "artifacts/backend/system-performance-baseline/contract-request.log": "5b16272365ed240926f9e951062457ae9c5d3909ad2a1eb055661f541663c2c6",
+        "artifacts/backend/system-performance-baseline/cache-identity.log": "770d38dfe9b70ddb31b7ad6ee8f89148871b7a3ef57594d5f37b33e0fea033b1",
+        "artifacts/backend/system-performance-baseline/role-matrix.log": "ecc9d16ded355567f8bfe614e506cf73304c7c00b2df9a0d3c0ae02497dc24d4"
+      },
+      "status": "passed",
+      "note": "captured on base 95919c2a + dirty candidate content (pre-commit); cache-identity identity_match=unknown"
+    },
+    "cold-after-restart": {
+      "path": "artifacts/backend/system-performance-baseline/sla-guard.cold-after-restart.json",
+      "sha256": "987f6cec73f7ddd938bb5ca3f9ffd9f2974dca073de3b66ede9219840184d174",
+      "layer": "L3",
+      "status": "observation_only",
+      "note": "process-first request retention, not compared with the warm baseline"
+    },
+    "frozen-fingerprint": {
+      "path": "artifacts/fingerprints/menu-cache-invalidation-closeout-20261017-frozen.json",
+      "algorithm": "codex_complete_worktree_fingerprint/v1",
+      "layer": "L5",
+      "status": "generated_after_freeze",
+      "hash_binding": "recorded in artifacts/menu-cache-invalidation-closeout-20261017/archive/identity.json and artifacts/menu-cache-invalidation-closeout-20261017/archive/manifest.json, both rewritten for the frozen HEAD after the commit; validated with scripts/contract/complete_worktree_fingerprint.validate_fingerprint",
+      "note": "not inlined with a sha256 here: this file is tracked, so a hash of the final commit's own artifact cannot be written into that commit without changing it"
+    },
+    "exact-head-quick": {
+      "path": ".git/worktrees/sce-backend-odoo-local-env/codex/evidence/ci.local.quick/<final-head>.json",
+      "producer": "atomic-ci-local-quick-runner-v2",
+      "layer": "L5",
+      "status": "generated_after_freeze",
+      "hash_binding": "recorded in artifacts/menu-cache-invalidation-closeout-20261017/archive/identity.json and artifacts/menu-cache-invalidation-closeout-20261017/archive/manifest.json for the frozen HEAD; verified with scripts/ops/local_quick_evidence.py verify --expected-head <final-head>",
+      "note": "the earlier candidate receipt 4ddeb3d4… is superseded and must not be reused for the new head"
+    }
+  },
+  "validation_scope": {
+    "changed_paths_declared": true,
+    "earliest_layer": "L1",
+    "skipped_layers": [
+      {
+        "layer": "L4",
+        "reason": "no frontend, contract payload, schema or fixture change; the batch product review page evidence is reused and this server-side invalidation fix adds no affected browser journey",
+        "status": "not_run"
+      }
+    ]
+  }
+}

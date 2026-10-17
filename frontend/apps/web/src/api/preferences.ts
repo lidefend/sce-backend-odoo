@@ -19,10 +19,11 @@ export type UserViewPreferenceScope = {
   preference_key?: string;
 };
 
-export async function getUserViewPreference(scope: UserViewPreferenceScope) {
+export async function getUserViewPreference(scope: UserViewPreferenceScope, projection?: 'stored') {
   return intentRequest<UserViewPreferenceContract>({
     intent: 'user.view.preference.get',
     params: {
+      ...(projection ? { projection } : {}),
       action_id: scope.action_id,
       model: scope.model || '',
       view_type: scope.view_type || 'list',

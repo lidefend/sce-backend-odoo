@@ -9,6 +9,7 @@ class ScCurrentAccountWorkspace(models.TransientModel):
     _name = "sc.current.account.workspace"
     _inherit = ["sc.context.workspace.entry.authority"]
     _description = "往来款办理工作台"
+    _sc_dispatch_menu_xmlid = "smart_construction_core.menu_sc_product_current_account_v1"
 
     project_id = fields.Many2one("project.project", string="项目", required=True)
     partner_id = fields.Many2one("res.partner", string="承包人/往来单位", help='办理承包人借还款前请选择承包人/往来单位')

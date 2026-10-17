@@ -31,6 +31,102 @@
       "lane_owner": "local.quick",
       "reason_code": "developer_inner_loop_planner",
       "reason": "Developer inner-loop incremental planner and its unit. It describes what a local worktree changed and has no meaning as a delivery gate."
+    },
+    {
+      "script": "scripts/verify/local_dev_runtime_performance.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_performance_probe",
+      "reason": "运行时性能观测载体：需要在已注册的 sc-local-dev/sc_dev_demo 栈内执行，无栈时只能跑其单测。"
+    },
+    {
+      "script": "scripts/verify/local_dev_runtime_permission_probe.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_performance_probe",
+      "reason": "R4 权限归因只读探针：需要活栈；信任属性由 test_local_dev_runtime_permission_probe.py 在无栈环境下守护。"
+    },
+    {
+      "script": "scripts/verify/local_dev_runtime_contract_role_matrix_probe.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_performance_probe",
+      "reason": "角色矩阵只读探针：需要活栈与 9 个声明角色。"
+    },
+    {
+      "script": "scripts/ops/local_dev_performance_identity.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_performance_probe",
+      "reason": "性能基线身份解析器：只在受管本地栈内绑定探针摘要与产品码身份。"
+    },
+    {
+      "script": "scripts/verify/system_performance_baseline.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_quick_only_unit",
+      "reason": "系统性能基线采集/比对器与其单测；采集侧需要受管栈，单测在 verify.system.performance.baseline.unit 内无栈执行。"
+    },
+    {
+      "script": "scripts/verify/test_system_performance_baseline.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_quick_only_unit",
+      "reason": "系统性能基线采集器的无栈单测，由 verify.system.performance.baseline.unit 执行。"
+    },
+    {
+      "script": "scripts/verify/test_local_dev_runtime_performance.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_quick_only_unit",
+      "reason": "性能观测载体的无栈单测，由 verify.local.dev.runtime.performance.unit 执行。"
+    },
+    {
+      "script": "scripts/verify/test_local_dev_runtime_permission_probe.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_quick_only_unit",
+      "reason": "权限归因探针的信任属性单测，由 verify.local.dev.runtime.performance.unit 执行。"
+    },
+    {
+      "script": "scripts/verify/test_menu_metadata_batch.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_quick_only_unit",
+      "reason": "菜单元数据批量与权限消费者的无栈单测，由 verify.product.menu.metadata_batch.unit 执行。"
+    },
+    {
+      "script": "scripts/verify/test_contract_gate_case_normalisation.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_quick_only_unit",
+      "reason": "契约用例规范化单测，由 verify.contract.gate_case_normalisation.unit 执行。"
+    },
+    {
+      "script": "scripts/contract/gate_contract.sh",
+      "lane_owner": "local.quick",
+      "reason_code": "local_quick_only_unit",
+      "reason": "契约门禁执行体：由 verify.contract.architecture.suite 与 local.dev.gate_contract.* 调用。"
+    },
+    {
+      "script": "scripts/verify/intent_cases_integrity_guard.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_quick_only_unit",
+      "reason": "intent 用例完整性守卫，随契约门禁执行。"
+    },
+    {
+      "script": "scripts/verify/list_preference_single_application_guard.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_quick_only_unit",
+      "reason": "列表偏好单一应用静态守卫，已接入 ci.local.quick 车道。"
+    },
+    {
+      "script": "scripts/verify/local_dev_runtime_projection_cache_identity_probe.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_performance_probe",
+      "reason": "投影缓存身份只读探针：需要活的本地栈；远端确定性套件不能提供该运行时。"
+    },
+    {
+      "script": "scripts/verify/local_dev_runtime_record_form_probe.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_performance_probe",
+      "reason": "带记录表单无插桩探针：需要活的本地栈与受管 sc_dev_demo 数据。"
+    },
+    {
+      "script": "scripts/verify/test_local_dev_runtime_record_form_probe.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_quick_only_unit",
+      "reason": "带记录表单探针的单元测试，随其 local-only 探针由本地 lane 消费。"
     }
   ],
   "remote_only": [
@@ -551,6 +647,12 @@
     },
     "remote_unit_shard": {
       "trigger": "Re-review when the local lane adopts the unit/contract shards; until then they run remotely only."
+    },
+    "local_performance_probe": {
+      "trigger": "Re-review when the registered local stack can run inside a remote workflow; until then these probes are local-only by construction."
+    },
+    "local_quick_only_unit": {
+      "trigger": "Re-review when a GitHub workflow invokes the same unit targets directly; today the exact-head local quick merge gate is the enforcing lane."
     }
   }
 }

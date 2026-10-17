@@ -1282,6 +1282,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "user.view.preference.get",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1289,7 +1290,39 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "user.view.preference.set",
+    "allow_error_response": true,
     "intent_params": {}
+  },
+  {
+    "case": "user_view_preference_get_resolved_intent_admin",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "user.view.preference.get",
+    "intent_params": {
+      "model": "res.partner",
+      "preference_key": "list_columns",
+      "view_type": "list"
+    }
+  },
+  {
+    "case": "user_view_preference_set_resolved_intent_admin",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "user.view.preference.set",
+    "volatile_keys": [
+      "id"
+    ],
+    "intent_params": {
+      "model": "res.partner",
+      "preference_key": "list_columns",
+      "view_type": "list",
+      "preference": {
+        "visible_columns": [],
+        "hidden_columns": [],
+        "column_order": [],
+        "column_widths": {}
+      }
+    }
   },
   {
     "case": "workspace_home_enter_intent_admin",

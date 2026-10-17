@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { ref } from 'vue';
+import { useRecordPageLifecycle } from '../src/pages/contractForm/useRecordPageLifecycle.ts';
 import { readFileSync } from 'node:fs';
 import { relationReadRouteRequest, validateRelationReadRoute } from '../src/app/relationReadRouteAuthority.ts';
 import { resolveCreateFormActivityRedirect } from '../src/app/recordFormActivityRoute.ts';
@@ -274,6 +276,24 @@ check('router uses bounded read validator without mutating session authority; lo
   const loader=readFileSync('frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts','utf8');
   assert.match(loader,/loadActionContractV2\(actionId.value/);
   assert.match(loader,/loadModelContractV2\(currentModel,[\s\S]*?actionId: actionId.value[\s\S]*?menuId: menuId.value[\s\S]*?\.\.\.profileOptions/);
+});
+
+check('action contract errors retain their authority without a model fallback', async () => {
+  for (const status of [403, 404, 409, 500, 0]) {
+    const failure = Object.assign(new Error('authoritative failure'), { status });
+    let fallbackCalls = 0;
+    const lifecycle = useRecordPageLifecycle({
+      contract: ref(null), v2ContractStore: ref(null), v2ContractDecodeError: ref(''),
+      renderProfile: ref('readonly'), model: ref('x.document'), actionId: ref(8),
+      recordId: ref(99), menuId: ref(7), route: { query: {} },
+      requestedSurface: ref('user'), requestedSourceMode: ref('backend_internal'),
+      buildRouteContractContext: () => ({}), toPositiveInt: () => 0,
+      loadActionContractV2: async () => { throw failure; },
+      loadModelContractV2: async () => { fallbackCalls += 1; throw new Error('wrong authority'); },
+    });
+    await assert.rejects(lifecycle.loadContract(), error => error === failure);
+    assert.equal(fallbackCalls, 0);
+  }
 });
 
 for (const testCase of cases) {

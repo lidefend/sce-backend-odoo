@@ -2,6 +2,10 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
+from types import SimpleNamespace
+
+import ci_risk_classifier
 
 from ci_risk_classifier import classify
 
@@ -9,6 +13,15 @@ from ci_risk_classifier import classify
 class CIRiskClassifierTests(unittest.TestCase):
     def lane(self, *paths: str, event: str = "pull_request", ref: str = "") -> str:
         return classify(paths, event_name=event, ref=ref).lane
+
+    def test_git_diff_includes_deletions_and_both_rename_owners(self):
+        with patch.object(ci_risk_classifier.subprocess, 'run', return_value=SimpleNamespace(
+                stdout='addons/old/models/a.py\naddons/new/models/a.py\n')) as run:
+            paths = ci_risk_classifier.changed_paths('base', 'head')
+        command = run.call_args.args[0]
+        self.assertIn('--no-renames', command)
+        self.assertFalse(any(value.startswith('--diff-filter') for value in command))
+        self.assertTrue(classify(paths, event_name='pull_request').orm_required)
 
     def test_documentation_is_fast(self) -> None:
         self.assertEqual(self.lane("docs/ops/runbook.md"), "FAST")

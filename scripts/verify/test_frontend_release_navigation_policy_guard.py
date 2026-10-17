@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import unittest
+import json
+from pathlib import Path
 
-from scripts.verify.frontend_release_navigation_policy_guard import ROLE_MAP, validate
+from scripts.verify.frontend_release_navigation_policy_guard import ROLE_MAP, validate, validate_formal_targets, validate_runtime_targets
 
 
 def _fixture():
@@ -78,6 +80,59 @@ class ReleaseNavigationPolicyGuardTest(unittest.TestCase):
         policies["pm"]["primary_menu_xmlids"] = [legacy_menu]
         errors = validate(manifest, policies)
         self.assertTrue(any(formal_menu in row and legacy_menu in row for row in errors))
+
+    def test_formal_targets_reject_retired_identity_even_when_role_and_manifest_agree(self):
+        manifest, _ = _fixture()
+        self.assertTrue(validate_formal_targets(manifest, {"menu_groups": []}, {}))
+
+    def test_scene_route_must_match_product_and_backend_scene_map(self):
+        menu = "x.home"
+        target = {"menu_xmlid": menu, "action_xmlid": "", "model": "", "enabled": True,
+                  "release_state": "released", "entry_target_policy": "scene_entry",
+                  "scene_key": "workspace.home", "route": "/s/workspace.home"}
+        product = {"menu_groups": [{"menus": [target]}]}
+        manifest = {"roles": {"owner": {"browser_leaf_keys": [menu + "||"]}},
+                    "scene_targets": {menu: {"scene_key": "workspace.home", "route": "/s/workspace.home"}}}
+        self.assertEqual(validate_formal_targets(manifest, product, {menu: "workspace.home"}), [])
+        self.assertTrue(validate_formal_targets(manifest, product, {menu: "other"}))
+        manifest["scene_targets"][menu]["route"] = "/s/other"
+        self.assertTrue(validate_formal_targets(manifest, product, {menu: "workspace.home"}))
+
+
+
+class RuntimeTargetDeclarationTest(unittest.TestCase):
+    def setUp(self):
+        root = Path(__file__).resolve().parents[2]
+        self.source = (root / 'scripts/verify/frontend_delivery_hardening_runtime_ids.py').read_text()
+        policy = json.loads((root / 'addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json').read_text())
+        self.standard = next(p for p in policy['products'] if p['product_key'] == 'construction.standard')
+        self.assertEqual(validate_runtime_targets(self.source, self.standard), [])
+
+    def test_real_resolver_is_published(self):
+        self.assertEqual(validate_runtime_targets(self.source, self.standard), [])
+
+    def test_retired_settlement_entry_fails(self):
+        source = self.source.replace('menu_sc_p1_expense_settlement', 'menu_sc_expense_contract_settlement')
+        self.assertTrue(validate_runtime_targets(source, self.standard))
+
+    def test_mismatched_action_fails(self):
+        source = self.source.replace('action_sc_settlement_order_expense', 'action_sc_settlement_order_income')
+        self.assertTrue(validate_runtime_targets(source, self.standard))
+
+    def test_missing_action_argument_fails(self):
+        source = self.source.replace('declared_action_xmlid=SETTLEMENT_ACTION_XMLID,', '')
+        self.assertTrue(validate_runtime_targets(source, self.standard))
+
+    def test_disabled_formal_entry_fails(self):
+        for group in self.standard['menu_groups']:
+            for row in group.get('menus', []):
+                if row.get('menu_xmlid', '').endswith('.menu_sc_p1_expense_settlement'):
+                    row['enabled'] = False
+        self.assertTrue(validate_runtime_targets(self.source, self.standard))
+
+    def test_empty_or_dynamic_target_fails(self):
+        self.assertTrue(validate_runtime_targets('', self.standard))
+        self.assertTrue(validate_runtime_targets('target(resolve_menu(), x)', self.standard))
 
 
 if __name__ == "__main__":

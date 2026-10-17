@@ -12,6 +12,60 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
+
+class RuntimePerformanceSampleTest(unittest.TestCase):
+    def test_measurement_preserves_real_boundary_and_redacts_payloads(self):
+        program = r"""
+import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
+import { measureRuntimeSample, startupTiming } from './scripts/verify/frontend_runtime_performance_sample.mjs';
+assert.deepEqual(startupTiming({total_ms:10,timings_ms:{assembly:8,token:'secret',invalid:-1},
+ subtimings_ms:{capabilities:{query:3,secret:'private'}},payload:'private'}),
+ {total_ms:10,timings_ms:{assembly:8},subtimings_ms:{capabilities:{query:3}}});
+assert.equal(startupTiming(null),null);
+assert.equal(startupTiming({total_ms:-1}).total_ms,null);
+const page = new EventEmitter();
+const request = (intent, profile=true) => ({url:()=>'/api/v1/intent',
+ postData:()=>JSON.stringify({intent,params:{password:'never-export'}}),
+ timing:()=>({responseEnd:5}),response:async()=>({status:()=>200,finished:async()=>null,
+ json:async()=>({meta:profile?{startup_profile:{total_ms:3,timings_ms:{build:2}}}:{},data:{private:'never-export'}})})});
+const sample=await measureRuntimeSample(page,async()=>{
+ page.emit('request',request('system.init'));page.emit('request',request('api.data'));
+ await new Promise(resolve=>setTimeout(resolve,15));
+},{index:1});
+assert.equal(sample.requests.length,1);
+assert.equal(sample.requests[0].startup_profile.total_ms,3);
+assert.equal(sample.requests[0].diagnostic,'captured');
+assert.ok(sample.total_ms>=10);
+assert.ok(!JSON.stringify(sample).includes('never-export'));
+assert.equal(page.listenerCount('request'),0);
+const missing=await measureRuntimeSample(page,async()=>page.emit('request',request('system.init',false)),{});
+assert.equal(missing.requests[0].startup_profile,null);
+assert.equal(missing.requests[0].diagnostic,'startup_profile_missing');
+await assert.rejects(measureRuntimeSample(page,async()=>{throw new Error('original failure')},{}),/original failure/);
+assert.equal(page.listenerCount('request'),0);
+console.log('runtime sample assertions PASS');
+"""
+        subprocess.run(['node', '--input-type=module', '-e', program], cwd=ROOT, check=True)
+
+
+class MissingRecordResponseTest(unittest.TestCase):
+    def test_only_matching_contract_record_absence_is_expected(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text()
+        function = source.split("function isExpectedMissingRecordResponse(row, expected) {", 1)[1].split("\nfunction capture", 1)[0]
+        program = "const accepts = function(row, expected) {" + function + r"""
+const assert = require('node:assert/strict');
+const expected = {recordId: 73, actionId: 8};
+const valid = {status:404,intent:'ui.contract.v2',op:'action_open',reason_code:'RECORD_NOT_FOUND',res_id:73,action_id:8};
+assert.equal(accepts(valid,expected),true);
+for (const patch of [{status:409},{status:403},{status:500},{reason_code:'CONFIG_TARGET_STALE'},
+ {reason_code:undefined},{op:'model'},{intent:'api.data'},{res_id:74},{action_id:9}]) {
+ assert.equal(accepts({...valid,...patch},expected),false,JSON.stringify(patch));
+}
+"""
+        subprocess.run(["node", "-e", program], cwd=ROOT, check=True)
+
+
 class PaymentCreateFailureEvidenceTest(unittest.TestCase):
     def test_control_diagnostic_distinguishes_hidden_readonly_and_editable_without_values(self):
         source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text()

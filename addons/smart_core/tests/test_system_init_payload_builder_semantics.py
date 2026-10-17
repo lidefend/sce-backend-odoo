@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import importlib.util
+import json
 import os
 import sys
 import types
@@ -31,6 +32,40 @@ target = _load_module(
     "odoo.addons.smart_core.core.system_init_payload_builder",
     CORE_DIR / "system_init_payload_builder.py",
 )
+
+_load_module("odoo.addons.smart_core.core.source_authority", CORE_DIR / "source_authority.py")
+security_pkg = sys.modules.setdefault(
+    "odoo.addons.smart_core.security", types.ModuleType("odoo.addons.smart_core.security")
+)
+security_pkg.__path__ = [str(CORE_DIR.parent / "security")]
+smart_core_pkg.security = security_pkg
+_load_module(
+    "odoo.addons.smart_core.security.platform_admin",
+    CORE_DIR.parent / "security" / "platform_admin.py",
+)
+identity_payload = _load_module(
+    "odoo.addons.smart_core.core.system_init_identity_payload",
+    CORE_DIR / "system_init_identity_payload.py",
+)
+
+
+class TestSystemInitIdentityPayloadDeterminism(unittest.TestCase):
+    def test_groups_xmlids_are_emitted_in_stable_order(self):
+        user = types.SimpleNamespace(
+            id=45, name="Demo", lang="zh_CN", tz="Asia/Shanghai", company_id=None
+        )
+        groups = {"z.group", "a.group", "m.group"}
+
+        payload = identity_payload.SystemInitIdentityPayload.build(user, groups)
+
+        self.assertEqual(payload["groups_xmlids"], ["a.group", "m.group", "z.group"])
+        repeated = identity_payload.SystemInitIdentityPayload.build(
+            user, set(reversed(sorted(groups)))
+        )
+        self.assertEqual(
+            json.dumps(payload, sort_keys=True),
+            json.dumps(repeated, sort_keys=True),
+        )
 
 
 class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):

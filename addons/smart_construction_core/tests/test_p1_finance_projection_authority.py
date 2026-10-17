@@ -11,14 +11,15 @@ from psycopg2.errors import SerializationFailure
 from odoo import SUPERUSER_ID, api
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.modules.registry import Registry
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 from ..models.support import operating_metrics as opm
 from ..services.payment_slice_native_adapter import PaymentSliceNativeAdapter
 
 
 @tagged("post_install", "-at_install", "sc_gate", "p1_finance_projection_authority")
-class TestP1FinanceProjectionAuthority(TransactionCase):
+class TestP1FinanceProjectionAuthority(BusinessTransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -1213,6 +1214,7 @@ class TestP1FinanceProjectionAuthority(TransactionCase):
                 "currency_id": self.env.company.currency_id.id,
             }
         )
+        self.register_business_company(other_company)
         other_manager = self.env["res.users"].with_context(
             no_reset_password=True
         ).create(
@@ -1241,7 +1243,7 @@ class TestP1FinanceProjectionAuthority(TransactionCase):
             )
         )
         self.assertFalse(
-            self.env["payment.ledger"].with_user(other_manager).search(
+            self.env["payment.ledger"].with_user(other_manager).with_context(allowed_company_ids=other_company.ids).search(
                 [("id", "=", ledger.id)]
             )
         )
@@ -1392,12 +1394,12 @@ class TestP1FinanceProjectionAuthority(TransactionCase):
             )
         )
         self.assertFalse(
-            self.env["payment.ledger"].with_user(other_manager).search(
+            self.env["payment.ledger"].with_user(other_manager).with_context(allowed_company_ids=other_company.ids).search(
                 [("id", "=", ledger.id)]
             )
         )
         self.assertFalse(
-            self.env["payment.ledger.allocation"].with_user(other_manager).search(
+            self.env["payment.ledger.allocation"].with_user(other_manager).with_context(allowed_company_ids=other_company.ids).search(
                 [("id", "=", allocation.id)]
             )
         )

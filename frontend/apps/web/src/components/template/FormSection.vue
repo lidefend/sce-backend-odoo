@@ -38,7 +38,7 @@
       <template #label="{ item }">
         {{ item.label }}
         <ScPopover v-if="detailFactField(item).helpText" :trigger="NATIVE_FIELD_HELP_TRIGGER" data-field-help>
-          <template #trigger><ScButton variant="ghost" size="small" type="button" :aria-label="detailFactField(item).label" :aria-controls="fieldHelpId(detailFactField(item))" data-field-help-trigger>?</ScButton></template>
+          <template #trigger="{ visible }"><ScButton variant="ghost" size="small" type="button" :aria-label="detailFactField(item).label" :aria-expanded="visible" :aria-controls="visible ? fieldHelpId(detailFactField(item)) : undefined" data-field-help-trigger>?</ScButton></template>
           <span :id="fieldHelpId(detailFactField(item))">{{ detailFactField(item).helpText }}</span>
         </ScPopover>
       </template>
@@ -144,7 +144,7 @@
               @keydown.enter.prevent="emitFieldLabelChange(field, ($event.target as HTMLInputElement).value)"
             />
           <ScPopover v-if="field.helpText" :trigger="NATIVE_FIELD_HELP_TRIGGER" data-field-help>
-            <template #trigger><ScButton variant="ghost" size="small" type="button" :aria-label="field.label" :aria-controls="fieldHelpId(field)" data-field-help-trigger>?</ScButton></template>
+            <template #trigger="{ visible }"><ScButton variant="ghost" size="small" type="button" :aria-label="field.label" :aria-expanded="visible" :aria-controls="visible ? fieldHelpId(field) : undefined" data-field-help-trigger>?</ScButton></template>
             <span :id="fieldHelpId(field)">{{ field.helpText }}</span>
           </ScPopover>
             <div v-if="fieldActionsFor(field).length" class="field-inline-config">

@@ -37,6 +37,16 @@ _RELATION_SEARCH_DIALOG_HOT_CACHE_MAX = 256
 # 决定了「实际可见记录集合」这一业务事实。声明层在此给出该事实，前端只
 # 原样消费（缺失或非法即 ContractGapError 停机），不得再自造第二套参数来源。
 RELATION_ENTRY_PAGE_SIZE = 20
+
+# P0 声明：关系目标的需求阶段。四类消费必须分开声明、分开物化，不得再由
+# 「源模型存在关系字段」统一触发完整搜索弹窗装配。
+#   permission     关系目标的 ACL / 记录规则 / 删除策略 / 写权限事实（导航与
+#                  权限消费；总是需要，不随视图可见性变化）
+#   navigation     声明的打开入口（action/menu/create_mode/can_open）
+#   hierarchy_fact 层级策略事实（弹窗 read_fields 与 order）
+#   search_dialog  搜索弹窗展示内容（columns/search/governance），只服务
+#                  在已解析原生视图或显式声明里被渲染出来的关系字段
+RELATION_DEMAND_STAGES = ("permission", "navigation", "hierarchy_fact", "search_dialog")
 from ...utils.misc import safe_eval
 from ...utils.view_utils import normalize_cols_safely
 
@@ -222,11 +232,12 @@ class PageAssembler:
         "res.groups",
     }
 
-    def __init__(self, env, su_env=None):
+    def __init__(self, env, su_env=None, *, include_relation_search_dialogs=True):
         """
         env:  运行态环境（必须带当前用户，用于 ORM 自动应用记录规则、用户筛选等）
         su_env: 提权环境（默认 env.sudo()），用于收集模型/视图/权限等“元数据”，避免被权限阻塞
         """
+        self.include_relation_search_dialogs = include_relation_search_dialogs
         self.env = env
         # 旧：self.su_env = su_env or env.sudo()  # 会报错：Environment 没有 sudo()
         # 新：优先使用传入的 su_env；否则用 request.env.sudo()；再不行用任意模型 sudo 后取其 env
@@ -2121,7 +2132,12 @@ class PageAssembler:
             "required_fields": profile_required_names,
             "fields": policy_fields,
             "field_labels": policy_field_labels,
-            "layout_fields": list(seen_fields),
+            # The layout field surface is a membership fact, so it must not carry
+            # a set's iteration order: ``list(set(...))`` varies with the process
+            # string hash seed, which made the source payload (and therefore the
+            # sealed ``sourceSha256``) differ between two processes serving the
+            # identical contract. Consumers read this list for membership only.
+            "layout_fields": sorted(seen_fields),
         }
 
     def _include_configured_orchestrated_view_types(self, view_types, *, model_name="", action_id=None):
@@ -3284,6 +3300,106 @@ class PageAssembler:
                 continue
             row["default"] = row is matched_row
 
+    @staticmethod
+    def _collect_view_field_names(views):
+        """已解析原生/发布视图节点里渲染出的字段名（不含模型特判）。"""
+        names = set()
+
+        def visit(value):
+            if isinstance(value, dict):
+                if str(value.get("type") or "").strip().lower() == "field":
+                    name = str(value.get("name") or "").strip()
+                    if name:
+                        names.add(name)
+                for nested in value.values():
+                    visit(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    visit(nested)
+
+        visit(views)
+        return names
+
+    def _relation_demand_declaration(self, data, model_name="", layout_relation_overrides=None):
+        """P0 唯一的关系需求声明：来源 -> 目标 -> 所需能力 -> 使用阶段。
+
+        来源只取已解析事实，不做模型特判：
+          - 视图来源 ``view_fields``：已解析原生视图/已发布配置渲染出的字段节点；
+          - 显式声明 ``explicit_override_fields``：视图显式给出 relation_entry 覆盖；
+          - 策略来源 ``hierarchy_fields``：层级策略要求的事实字段。
+
+        阶段含义（见 ``RELATION_DEMAND_STAGES``）：
+          - ``permission`` 关系目标 ACL/记录规则/删除策略/写权限事实，始终需要；
+          - ``navigation`` 声明的 action/menu/create_mode/can_open 打开能力，始终需要；
+          - ``hierarchy_fact`` 层级策略消费的弹窗 read_fields/order 事实；
+          - ``search_dialog`` 搜索弹窗展示内容，只服务被渲染出来的关系字段。
+
+        只由「源模型字段表扩张」带来、未被任何视图或策略引用的关系字段（审计与动态
+        字段）不再要求搜索弹窗；其权限与导航事实仍然保留，不得据此削弱 ACL 或
+        返回假空弹窗。
+        """
+        fields = data.get("fields") if isinstance(data, dict) and isinstance(data.get("fields"), dict) else {}
+        views = data.get("views") if isinstance(data, dict) and isinstance(data.get("views"), dict) else {}
+        view_fields = self._collect_view_field_names(views)
+        override_fields = {
+            str(name).strip()
+            for name in (layout_relation_overrides or {})
+            if str(name).strip()
+        }
+        context = data.get("context") if isinstance(data, dict) and isinstance(data.get("context"), dict) else {}
+        hierarchy_fields = {
+            str(level.get("field") or "").strip()
+            for level in (context.get("hierarchy_levels") or [])
+            if isinstance(level, dict) and str(level.get("field") or "").strip()
+        }
+        declaration = {
+            "model": str(model_name or "").strip(),
+            "sources": {
+                "view_fields": sorted(view_fields),
+                "explicit_override_fields": sorted(override_fields),
+                "hierarchy_fields": sorted(hierarchy_fields),
+                "view_sources": {
+                    str(view_type): str(
+                        view.get("source")
+                        or view.get("sourceAuthority")
+                        or view.get("source_authority")
+                        or ""
+                    )
+                    for view_type, view in sorted(views.items())
+                    if isinstance(view, dict)
+                },
+            },
+            "targets": {},
+            "dialog_required_fields": set(),
+        }
+        for name, desc in fields.items():
+            if not isinstance(desc, dict):
+                continue
+            field_type = str(desc.get("type") or "").strip().lower()
+            relation = str(desc.get("relation") or "").strip()
+            if field_type not in {"many2one", "many2many", "one2many"} or not relation:
+                continue
+            field_name = str(name or "").strip()
+            stages = ["permission", "navigation"]
+            sources = ["model_field_expansion"]
+            if field_name in view_fields:
+                sources.append("resolved_view_field")
+            if field_name in override_fields:
+                sources.append("explicit_view_override")
+            if field_name in hierarchy_fields:
+                sources.append("hierarchy_policy")
+                stages.append("hierarchy_fact")
+            if field_name in view_fields or field_name in override_fields or field_name in hierarchy_fields:
+                stages.append("search_dialog")
+                declaration["dialog_required_fields"].add(field_name)
+            declaration["targets"][field_name] = {
+                "relation": relation,
+                "type": field_type,
+                "sources": sources,
+                "stages": stages,
+            }
+        return declaration
+
     def _inject_relation_entry_contract(
         self,
         data,
@@ -3296,6 +3412,14 @@ class PageAssembler:
             return
         model_name = str(model_name or "").strip()
         contract_context = data.get("context") if isinstance(data.get("context"), dict) else {}
+        # Hierarchy policy consumes dialog read_fields/order before profile
+        # finalization. Keep those dependencies even in a preference projection.
+        hierarchy_levels = contract_context.get("hierarchy_levels")
+        hierarchy_dialog_fields = {
+            str(level.get("field") or "").strip()
+            for level in (hierarchy_levels if isinstance(hierarchy_levels, list) else [])
+            if isinstance(level, dict)
+        }
         record_defaults = data.get("record") if isinstance(data.get("record"), dict) else {}
         if record_defaults:
             contract_context = {**record_defaults, **contract_context}
@@ -3310,10 +3434,20 @@ class PageAssembler:
                 relation_models.add(relation)
         if not relation_models:
             return
+        relation_models_ready_at = time.monotonic()
         layout_relation_overrides, layout_relation_override_errors = self._relation_entry_overrides_from_views(
             data.get("views")
         )
-        relation_models_ready_at = time.monotonic()
+        relation_overrides_ready_at = time.monotonic()
+        # P0 需求声明先于物化：只有被来源（已解析视图/显式覆盖/层级策略）引用的关系
+        # 字段才需要搜索弹窗展示内容；其余关系字段只保留权限与导航事实。
+        demand_declaration = self._relation_demand_declaration(
+            data,
+            model_name=model_name,
+            layout_relation_overrides=layout_relation_overrides,
+        )
+        dialog_required_fields = demand_declaration["dialog_required_fields"]
+        relation_demand_ready_at = time.monotonic()
         relation_entry_map = self._build_relation_entry_map(relation_models)
         relation_map_ready_at = time.monotonic()
         relation_projection_cache = {}
@@ -3346,6 +3480,13 @@ class PageAssembler:
                     contract_context=contract_context,
                     relation_projection_cache=relation_projection_cache,
                     relation_cache_key=relation_cache_key,
+                    include_search_dialog=(
+                        str(field_name) in hierarchy_dialog_fields
+                        or (
+                            self.include_relation_search_dialogs
+                            and str(field_name) in dialog_required_fields
+                        )
+                    ),
                 )
                 override_error = layout_relation_override_errors.get(
                     str(field_name or "").strip()
@@ -3377,7 +3518,13 @@ class PageAssembler:
         if stage_timings is not None:
             stage_timings.update({
                 "relation_models_collect": int((relation_models_ready_at - started_at) * 1000),
-                "relation_base_map": int((relation_map_ready_at - relation_models_ready_at) * 1000),
+                "relation_entry_overrides": int(
+                    (relation_overrides_ready_at - relation_models_ready_at) * 1000
+                ),
+                "relation_demand_declaration": int(
+                    (relation_demand_ready_at - relation_overrides_ready_at) * 1000
+                ),
+                "relation_base_map": int((relation_map_ready_at - relation_demand_ready_at) * 1000),
                 "relation_field_projection": int((time.monotonic() - relation_map_ready_at) * 1000),
             })
 
@@ -3544,6 +3691,7 @@ class PageAssembler:
         contract_context=None,
         relation_projection_cache=None,
         relation_cache_key="",
+        include_search_dialog=True,
     ):
         entry = dict(base_entry or {})
         relation = str(descriptor.get("relation") or "").strip()
@@ -3719,13 +3867,17 @@ class PageAssembler:
         else:
             inline_create = deepcopy(inline_create)
 
-        search_dialog_cache_key = ("search_dialog", relation, model_name)
-        search_dialog = projection_cache.get(search_dialog_cache_key)
-        if not isinstance(search_dialog, dict):
-            search_dialog = self._build_relation_search_dialog_contract(relation, model_name=model_name)
-            projection_cache[search_dialog_cache_key] = deepcopy(search_dialog)
-        else:
-            search_dialog = deepcopy(search_dialog)
+        # 不可读的关系目标没有可消费的搜索弹窗：前端在打开弹窗前先判 can_read，
+        # 层级策略也在 can_read 为假时直接跳过；依旧不下发空结构蒙混通过。
+        search_dialog = None
+        if include_search_dialog and can_read:
+            search_dialog_cache_key = ("search_dialog", relation, model_name)
+            search_dialog = projection_cache.get(search_dialog_cache_key)
+            if not isinstance(search_dialog, dict):
+                search_dialog = self._build_relation_search_dialog_contract(relation, model_name=model_name)
+                projection_cache[search_dialog_cache_key] = deepcopy(search_dialog)
+            else:
+                search_dialog = deepcopy(search_dialog)
 
         if override_authority_error:
             entry["action_id"] = None
@@ -3769,7 +3921,6 @@ class PageAssembler:
                 "can_create": can_create,
                 "reason_code": reason_code,
                 "inline_create": inline_create,
-                "search_dialog": search_dialog,
                 # P0 声明：关系字段候选取数规模（空关键字 / 有关键字）。
                 # 前端只消费，不再自行选择 relation option 的取数条数。
                 "options_limit": 80,
@@ -3805,6 +3956,8 @@ class PageAssembler:
                 },
             }
         )
+        if include_search_dialog and can_read:
+            entry["search_dialog"] = search_dialog
         return entry
 
     def _relation_entry_authority_pair_error(self, action_id, menu_id, relation):

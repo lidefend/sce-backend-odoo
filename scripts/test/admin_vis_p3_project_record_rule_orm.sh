@@ -20,7 +20,7 @@ fi
 
 authorization_test_tags="${SC_AUTHORIZATION_ORM_TEST_TAGS:-admin_vis_p3_project_record_rule_orm}"
 case "$authorization_test_tags" in
-  admin_vis_p3_project_record_rule_orm|chatter_timeline_authorization_orm|payment_settlement_component_profile) ;;
+  admin_vis_p3_project_record_rule_orm|chatter_timeline_authorization_orm|payment_settlement_component_profile|candidate_contract_profiles) ;;
   *)
     echo "[admin-vis-p3-orm][FATAL] unsupported fixed authorization test tag" >&2
     exit 2
@@ -36,22 +36,29 @@ validate_orm_timeout "$orm_timeout_seconds" || exit 2
 
 # Identity and collected count are pinned per fixed tag; the shared guard rejects
 # a run whose log does not show these tests actually executing.
-orm_expect_count=""
-orm_expect_identity=""
-case "$authorization_test_tags" in
-  payment_settlement_component_profile)
-    orm_expect_count=7
-    orm_expect_identity="test_payment_settlement_component_profile"
-    ;;
-  chatter_timeline_authorization_orm)
-    orm_expect_identity="test_chatter_timeline_authorization_orm"
-    ;;
-  admin_vis_p3_project_record_rule_orm)
-    orm_expect_identity="test_admin_vis_p3_project_record_rule_orm"
-    ;;
-esac
-validate_orm_expect_count "$orm_expect_count" || exit 2
-export orm_expect_count orm_expect_identity
+suite_tags=("$authorization_test_tags")
+if [[ "$authorization_test_tags" == candidate_contract_profiles ]]; then
+  suite_tags=(chatter_timeline_authorization_orm payment_settlement_component_profile)
+fi
+set_suite_expectation() {
+  orm_expect_count=""
+  orm_expect_identity=""
+  case "$1" in
+    payment_settlement_component_profile)
+      orm_expect_count=7
+      orm_expect_identity="test_payment_settlement_component_profile"
+      ;;
+    chatter_timeline_authorization_orm)
+      orm_expect_identity="test_chatter_timeline_authorization_orm"
+      ;;
+    admin_vis_p3_project_record_rule_orm)
+      orm_expect_identity="test_admin_vis_p3_project_record_rule_orm"
+      ;;
+    *) return 2 ;;
+  esac
+  validate_orm_expect_count "$orm_expect_count" || return 2
+  export orm_expect_count orm_expect_identity
+}
 
 case "${ENV:-dev}" in
   dev|test) ;;
@@ -167,6 +174,7 @@ cleanup_result=0
 database_removed=false
 resources_removed=false
 test_log="$(mktemp)"
+test_logs=("$test_log")
 frontend_artifact_dir=""
 
 cleanup() {
@@ -215,9 +223,11 @@ cleanup() {
   else
     cleanup_result=86
   fi
-  if [[ -f "$test_log" ]]; then
-    find "$test_log" -delete
-  fi
+  for log_path in "${test_logs[@]}"; do
+    if [[ -f "$log_path" ]]; then
+      find "$log_path" -delete
+    fi
+  done
   if [[ -n "$frontend_artifact_dir" && -d "$frontend_artifact_dir" ]]; then
     find "$frontend_artifact_dir" -depth -delete
   fi
@@ -329,17 +339,26 @@ odoo_common=(
   -i smart_construction_core \
   --log-level=info
 
-set +e
-timeout --signal=TERM --kill-after=30 "${orm_timeout_seconds}" \
-  "${compose[@]}" run --rm --no-deps -T --entrypoint /usr/bin/odoo odoo \
-  "${odoo_common[@]:1}" \
-  -u smart_core \
-  --test-enable \
-  --test-tags "$authorization_test_tags" \
-  --log-level=test 2>&1 | tee "$test_log"
-test_status="${PIPESTATUS[0]}"
-set -e
-# Reject a failure, a timeout and an absent/zero test report alike.
-evaluate_orm_outcome "$test_status" "$test_log"
+# Share only installation: each suite starts a fresh Odoo process and has its
+# own log, identity, count and verdict. TransactionCase rolls back test writes.
+# The existing trap cleans the single governed environment after either failure.
+base_test_log="$test_log"
+for suite_tag in "${suite_tags[@]}"; do
+  set_suite_expectation "$suite_tag"
+  test_log="${base_test_log}.${suite_tag}"
+  test_logs+=("$test_log")
+  set +e
+  timeout --signal=TERM --kill-after=30 "${orm_timeout_seconds}" \
+    "${compose[@]}" run --rm --no-deps -T --entrypoint /usr/bin/odoo odoo \
+    "${odoo_common[@]:1}" \
+    -u smart_core \
+    --test-enable \
+    --test-tags "$suite_tag" \
+    --log-level=test 2>&1 | tee "$test_log"
+  test_status="${PIPESTATUS[0]}"
+  set -e
+  evaluate_orm_outcome "$test_status" "$test_log"
+  echo "[admin-vis-p3-orm] suite=$suite_tag REAL_ORM_TEST_RESULT=PASS"
+done
 
 echo "[admin-vis-p3-orm] REAL_ORM_TEST_RESULT=PASS"

@@ -42,13 +42,13 @@ export function openAction(
   }
 
   if (isMenuConfigurationAction(action)) {
-    router.push({ path: '/admin/menu-config', query });
+    router.push({ path: resolveActionWebRoute(action), query });
     return;
   }
 
   if (isBusinessConfigurationAction(action)) {
     router.push({
-      path: resolveActionWebRoute(action) || '/admin/business-config',
+      path: resolveActionWebRoute(action),
       query: { ...query, ...resolveActionWebRouteQuery(action) },
     });
     return;

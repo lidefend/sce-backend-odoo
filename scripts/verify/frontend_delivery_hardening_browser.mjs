@@ -7,6 +7,7 @@ import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { launchChromium } from './playwright_runtime.mjs';
 import { applyReleasedNavigationTarget, captureReleasedNavigation, findReleasedNavigationTargetByMenuXmlid } from './released_navigation_target.mjs';
+import { measureRuntimeSample } from './frontend_runtime_performance_sample.mjs';
 import { evaluateRelativePerformanceBudget } from './frontend_performance_budget.mjs';
 import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
 import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
@@ -316,11 +317,16 @@ function stats(values) {
   };
 }
 async function time(run) { const start = performance.now(); await run(); return Math.round(performance.now() - start); }
+function isExpectedMissingRecordResponse(row, expected) {
+  return row.status === 404 && row.intent === 'ui.contract.v2'
+    && row.op === 'action_open' && row.reason_code === 'RECORD_NOT_FOUND'
+    && row.res_id === expected.recordId && row.action_id === expected.actionId;
+}
 function capture(page) {
   const state = {
     console: [], pageerror: [], unhandled: [], http: [], expectedHttp: [], expectedConsole: [],
     network: [], expectForbidden: false, expectedConsoleAllowance: 0, pendingExpectedForbiddenResponses: 0,
-    requestCounts: {}, relationCandidateCounts: {},
+    requestCounts: {}, relationCandidateCounts: {}, pendingHttpDetails: [],
   };
   runtimeByPage.set(page, state);
   page.on('request', (request) => {
@@ -388,8 +394,14 @@ function capture(page) {
       intent: requestPayload.intent || '',
       op: requestPayload.params?.op || '',
       model: requestPayload.params?.model || '',
-      res_id: Number(requestPayload.params?.res_id || 0) || 0,
+      res_id: Number(requestPayload.params?.record_id || requestPayload.params?.res_id || 0) || 0,
+      action_id: Number(requestPayload.params?.action_id || 0) || 0,
     };
+    // Keep only bounded machine diagnostics, never business payloads or messages.
+    state.pendingHttpDetails.push(response.json().then((body) => {
+      const reason = body?.error?.reason_code;
+      if (typeof reason === 'string' && /^[A-Z0-9_]{1,96}$/.test(reason)) row.reason_code = reason;
+    }).catch(() => {}));
     const intent = row.intent;
     if (
       response.status() === 403
@@ -673,6 +685,7 @@ async function main() {
     warmup_runs: {},
     runs_per_scenario: PERF_RUNS,
     scenarios: {},
+    runtime_samples: { login_to_interactive: [], company_switch: [] },
     budgets: performanceBudgets.scenarios || {},
     budget_source: PERF_BUDGET_PATH,
     relative_regression_percent: null,
@@ -949,10 +962,12 @@ async function main() {
         if (surface.mode === 'dialog') await page.keyboard.press('Escape');
         if (surface.name === 'not-found' && faultSnapshot) {
           await page.waitForTimeout(250);
+          await Promise.all(runtime.pendingHttpDetails.splice(0));
           const expectedConsole = runtime.console.slice(faultSnapshot.console);
           const expectedHttp = runtime.http.slice(faultSnapshot.http);
           check(expectedConsole.every((line) => /Failed to load resource/i.test(line)), `not-found surface unexpected console=${expectedConsole.join(' | ')}`);
-          check(expectedHttp.length > 0 && expectedHttp.every((row) => row.status === 404 && ['api.data', 'chatter.timeline'].includes(row.intent)), `not-found surface unexpected HTTP=${JSON.stringify(expectedHttp)}`);
+          check(expectedHttp.length === 1 && isExpectedMissingRecordResponse(expectedHttp[0], { recordId: 999999, actionId: TARGETS.payment_request.action_id }), `not-found surface unexpected HTTP=${JSON.stringify(expectedHttp)}`);
+          check(await page.locator('main [data-semantic-state-surface="page"][role="alert"]').filter({ hasText: '该记录不存在' }).isVisible(), 'not-found surface must render the missing-record state');
           check(runtime.pageerror.length === faultSnapshot.pageerror, 'not-found surface caused pageerror');
           runtime.expectedConsole.push(...expectedConsole);
           runtime.expectedHttp.push(...expectedHttp);
@@ -1019,7 +1034,10 @@ async function main() {
       const loginSamples = [];
       for (let i = 0; i < PERF_RUNS; i += 1) {
         await logout(page);
-        loginSamples.push(await time(() => login(page, FINANCE_LOGIN)));
+        const sample = await measureRuntimeSample(page, () => login(page, FINANCE_LOGIN),
+          { index: i + 1, role: 'finance', cache_state: 'after_declared_warmup' });
+        loginSamples.push(sample.total_ms);
+        performanceReport.runtime_samples.login_to_interactive.push(sample);
       }
       performanceReport.scenarios.login_to_interactive = stats(loginSamples);
       // The released expense settlement entry is published to the project manager
@@ -1098,7 +1116,11 @@ async function main() {
       performanceReport.warmup_runs.company_switch = companySwitchWarmupRuns;
       for (let i = 0; i < PERF_RUNS; i += 1) {
         selectedCompanyLabel = selectedCompanyLabel === 'FE Company A' ? 'FE Company B' : 'FE Company A';
-        switchSamples.push(await time(() => selectCompany(page, selectedCompanyLabel)));
+        const sample = await measureRuntimeSample(page, () => selectCompany(page, selectedCompanyLabel),
+          { index: i + 1, role: 'finance', target_company: selectedCompanyLabel === 'FE Company A' ? 'a' : 'b',
+            cache_state: 'after_declared_warmup' });
+        switchSamples.push(sample.total_ms);
+        performanceReport.runtime_samples.company_switch.push(sample);
       }
       performanceReport.scenarios.company_switch = stats(switchSamples);
       if (PERF_BASELINE_CAPTURE) {
@@ -1120,6 +1142,9 @@ async function main() {
       }));
       performanceReport.absolute_scenario_pass = absoluteScenarioPass;
       performanceReport.absolute_budget_pass = Object.values(absoluteScenarioPass).every(Boolean);
+      // Historical experiments remain diagnostic. Relative improvement cannot
+      // excuse an absolute user-experience budget violation.
+      performanceReport.relative_baseline_authority = 'historical_experiment_diagnostic_only';
       if (PERF_BASELINE_PATH) {
         const baseline = JSON.parse(fs.readFileSync(PERF_BASELINE_PATH, 'utf8'));
         const relative = evaluateRelativePerformanceBudget({
@@ -1135,7 +1160,7 @@ async function main() {
       } else {
         performanceReport.relative_budget_pass = false;
       }
-      check(performanceReport.absolute_budget_pass || performanceReport.relative_budget_pass, `performance budget exceeded: ${JSON.stringify(performanceReport.scenarios)}`);
+      check(performanceReport.absolute_budget_pass, `performance budget exceeded: ${JSON.stringify(performanceReport.scenarios)}`);
       performanceReport.result = 'PASS';
       if (PERF_ONLY) {
         fs.writeFileSync(path.join(OUT, 'performance.json'), `${JSON.stringify(performanceReport, null, 2)}\n`);

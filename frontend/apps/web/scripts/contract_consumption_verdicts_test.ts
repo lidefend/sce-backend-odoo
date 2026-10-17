@@ -17,13 +17,13 @@ import { resolveStatusFieldSuppression } from '../src/pages/contractForm/nativeL
 
 let cases = 0;
 
-function verdict(auth: unknown, extra: Partial<Parameters<typeof resolveOccurrenceAuthVerdict>[0]> = {}, label = '') {
+function verdict(auth: unknown, extra: Partial<Parameters<typeof resolveOccurrenceAuthVerdict>[0]> = {}) {
   cases += 1;
   return resolveOccurrenceAuthVerdict({ hasWidgetVerdict: true, auth, ...extra });
 }
 
 // --- 1. occurrence auth enum -----------------------------------------------
-assert.equal(verdict(null, {}, 'missing').gap, true, `${'auth missing'}: a field verdict without a level is a gap`);
+assert.equal(verdict(null).gap, true, `${'auth missing'}: a field verdict without a level is a gap`);
 assert.deepEqual(
   { readonly: verdict(null).readonly, blocked: verdict(null).blocked },
   { readonly: true, blocked: true },

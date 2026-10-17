@@ -200,21 +200,102 @@ class AppMenuConfig(models.Model):
                 )
         return self._generate_from_menus(model_name=model_name, scene=scene)
 
+    # Source columns that feed the persisted projection. Timestamps are
+    # deliberately absent: they cannot separate edits that share the writing
+    # transaction's clock.
+    _MENU_DIGEST_FIELDS = (
+        'id', 'name', 'sequence', 'parent_id', 'action', 'active', 'groups_id', 'web_icon',
+    )
+    _ACTION_DIGEST_FIELDS = ('id', 'name', 'type')
+    _ACT_WINDOW_DIGEST_FIELDS = ('id', 'res_model', 'view_mode', 'view_id')
+    _ACT_WINDOW_VIEW_DIGEST_FIELDS = ('id', 'act_window_id', 'view_id', 'view_mode', 'sequence')
+    _VIEW_DIGEST_FIELDS = ('id', 'type')
+    _MENU_XMLID_DIGEST_FIELDS = ('id', 'module', 'name', 'model', 'res_id')
+
+    @staticmethod
+    def _digest_rows(rows, many2one=(), many2many=()):
+        """Normalize search_read rows into a deterministic digest payload."""
+        normalized = []
+        for row in rows:
+            item = {}
+            for key in sorted(row):
+                value = row[key]
+                if key in many2one:
+                    item[key] = value[0] if isinstance(value, (list, tuple)) else value
+                elif key in many2many:
+                    item[key] = sorted(value or [])
+                else:
+                    item[key] = value
+            normalized.append(item)
+        return normalized
+
+    @api.model
+    def _menu_source_digest(self) -> str:
+        """Content digest of every menu/action field the projection depends on.
+
+        A timestamp watermark is not a reliable invalidation signal in Odoo:
+        ``write_date``/``create_date`` carry the *writing transaction's* clock,
+        so an edit made later in the same transaction equals the watermark and
+        a transaction that started before generation but commits afterwards
+        carries an earlier one. Both would be served stale forever because the
+        cache has no TTL. Comparing source content catches both, and also
+        catches deletions, without polling clocks.
+        """
+        menu_model = self.env['ir.ui.menu'].sudo().with_context(
+            **{'ir.ui.menu.full_list': True, 'active_test': False})
+        menus = self._digest_rows(
+            menu_model.search_read([], list(self._MENU_DIGEST_FIELDS), order='id'),
+            many2one=('parent_id',), many2many=('groups_id',),
+        )
+        actions = self._digest_rows(
+            self.env['ir.actions.actions'].sudo().search_read(
+                [], list(self._ACTION_DIGEST_FIELDS), order='id'))
+        act_windows = self._digest_rows(
+            self.env['ir.actions.act_window'].sudo().search_read(
+                [], list(self._ACT_WINDOW_DIGEST_FIELDS), order='id'),
+            many2one=('view_id',),
+        )
+        act_window_views = self._digest_rows(
+            self.env['ir.actions.act_window.view'].sudo().search_read(
+                [], list(self._ACT_WINDOW_VIEW_DIGEST_FIELDS), order='id'),
+            many2one=('act_window_id', 'view_id'),
+        )
+        # The projection persists ``(view_id, view_id.type)`` for every
+        # act_window view and picks a default view by ``view_id.type``, so the
+        # referenced views' types must be part of the digest. Only referenced
+        # views are read: an unreferenced view cannot change this projection.
+        # ``active_test`` is disabled because the projection does not filter
+        # archived views either; an archived but still referenced view would
+        # otherwise keep an old type in a permanently fresh projection.
+        view_ids = sorted({row['view_id'] for row in act_window_views if row.get('view_id')})
+        views = self._digest_rows(
+            self.env['ir.ui.view'].sudo().with_context(active_test=False).search_read(
+                [('id', 'in', view_ids)], list(self._VIEW_DIGEST_FIELDS), order='id'),
+        ) if view_ids else []
+        # The projection persists menu xml_id/module for module blacklists, so
+        # an XML-ID rename must invalidate it even though ir.ui.menu is unchanged.
+        menu_xmlids = self._digest_rows(
+            self.env['ir.model.data'].sudo().search_read(
+                [('model', '=', 'ir.ui.menu')], list(self._MENU_XMLID_DIGEST_FIELDS), order='id'))
+        return self._hash({
+            'menus': menus,
+            'actions': actions,
+            'act_windows': act_windows,
+            'act_window_views': act_window_views,
+            'views': views,
+            'menu_xmlids': menu_xmlids,
+        })
+
     def _menu_metadata_changed_since(self, cfg) -> bool:
-        """Detect stale menu projection after module upgrades add or update menus/actions."""
-        last_generated = cfg.last_generated
-        if not last_generated:
+        """Detect a stale menu projection by comparing source content.
+
+        Legacy rows without a stored digest are treated as stale and rebuilt
+        once; the regenerated row carries the digest for later lookups.
+        """
+        stored = (cfg.meta_info or {}).get('source_digest')
+        if not stored:
             return True
-        changed_domain = [
-            "|",
-            ("write_date", ">", last_generated),
-            ("create_date", ">", last_generated),
-        ]
-        if self.env["ir.ui.menu"].sudo().search(changed_domain, limit=1):
-            return True
-        if self.env["ir.actions.actions"].sudo().search(changed_domain, limit=1):
-            return True
-        return False
+        return stored != self._menu_source_digest()
 
     @api.model
     def _generate_from_menus(self, model_name=None, scene='web'):
@@ -224,6 +305,14 @@ class AppMenuConfig(models.Model):
         - model_name=None → 生成全量（target='__all__'）；否则仅保留 res_model==model_name 的分支；
         - 仅持久化“轻量动作摘要”，避免把 context/domain 等变量态带入缓存。
         """
+        # The watermark is kept for display and compatibility, but staleness is
+        # decided by a content digest taken before any source row is read.
+        # Timestamps alone miss edits made later in this same transaction (the
+        # clock is equal) and delayed commits from older transactions (the
+        # clock is lower). Taking the digest first is fail-safe: an edit that
+        # lands between digest and tree read only causes one extra rebuild.
+        generation_started = self.env.cr.now()
+        source_digest = self._menu_source_digest()
         scene = self._normalize_scene(scene)
         def annotate(node, parent_stack):
             """补充 level/path/breadcrumbs/leaf 等衍生信息，便于运行态裁剪与前端使用。"""
@@ -335,8 +424,12 @@ class AppMenuConfig(models.Model):
                 'action_index': action_index,
                 'config_hash': new_hash,          # 结构版号
                 'etag': new_hash,                 # 运行态默认可用；真正响应会再叠加 filters 与 uid
-                'last_generated': fields.Datetime.now(),
-                'meta_info': {'roots': len(roots), 'kept_roots': kept_roots},
+                'last_generated': generation_started,
+                'meta_info': {
+                    'roots': len(roots),
+                    'kept_roots': kept_roots,
+                    'source_digest': source_digest,
+                },
                 'is_active': True,
             }
 
@@ -347,6 +440,13 @@ class AppMenuConfig(models.Model):
                     cfg.write(vals)
                     _logger.info("Menu config updated: %s/%s v%s", target_key, scene, cfg.version)
                 else:
+                    # The source was revalidated even when its projection did
+                    # not change. Otherwise the same metadata edit triggers a
+                    # full rebuild on every subsequent lookup.
+                    cfg.write({
+                        'last_generated': vals['last_generated'],
+                        'meta_info': vals['meta_info'],
+                    })
                     _logger.info("Menu config unchanged: %s/%s v%s", target_key, scene, cfg.version)
             else:
                 vals['version'] = 1
@@ -367,6 +467,11 @@ class AppMenuConfig(models.Model):
                     if cfg.config_hash != new_hash:
                         vals['version'] = cfg.version + 1
                         cfg.write(vals)
+                    else:
+                        cfg.write({
+                            'last_generated': vals['last_generated'],
+                            'meta_info': vals['meta_info'],
+                        })
                     _logger.info("Menu config concurrent create resolved: %s/%s v%s", target_key, scene, cfg.version)
 
             return cfg

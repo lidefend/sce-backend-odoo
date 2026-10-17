@@ -21,6 +21,28 @@ class GitHubActionsSecurityGuardTests(unittest.TestCase):
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
 
+    def test_same_commit_reusable_workflow_exception_is_exact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = (ROOT / '.github/workflows/professional_quality_gate.yml').read_text()
+            self.write(root, 'backend_test_suite.yml', (ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+            self.write(root, 'professional_quality_gate.yml', source)
+            self.assertNotIn('ACTION_NOT_PINNED_TO_SHA', {x.classification for x in guard.scan(root)})
+            for replacement in ('./.github/workflows/other.yml',
+                                './.github/workflows/backend_test_suite.yml@main'):
+                self.write(root, 'professional_quality_gate.yml', source.replace(
+                    './.github/workflows/backend_test_suite.yml', replacement))
+                self.assertIn('ACTION_NOT_PINNED_TO_SHA', {x.classification for x in guard.scan(root)})
+
+    def test_ci_runner_cannot_return_to_self_hosted_or_dynamic_labels(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for runner in ('[self-hosted, huawei, ubuntu22]', '${{ inputs.runner }}'):
+                self.write(root, 'fixture.yml', 'permissions:\n  contents: read\njobs:\n  check:\n    runs-on: ' + runner + '\n')
+                self.assertIn('CI_RUNNER_NOT_GITHUB_HOSTED', {x.classification for x in guard.scan(root)})
+            self.write(root, 'fixture.yml', 'permissions:\n  contents: read\njobs:\n  check:\n    runs-on: ubuntu-latest\n')
+            self.assertEqual(guard.scan(root), [])
+
     def test_safe_public_guard_passes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -278,8 +300,8 @@ jobs:
 
             workflow.write_text(
                 source.replace(
-                    "elif ! grep -Eq '0 failed, 0 error\\(s\\) of [1-9][0-9]* tests when loading database' \"${module_log}\"; then\n",
-                    "elif false; then\n",
+                     'if ! evaluate_orm_outcome "${module_status}" "${module_log}"; then\n' ,
+                    "if false; then\n",
                     1,
                 ),
                 encoding="utf-8",

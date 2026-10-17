@@ -11,6 +11,10 @@ test.admin-vis-p3.project-record-rule-orm: guard.prod.forbid check-compose-proje
 	@$(RUN_ENV) bash scripts/test/admin_vis_p3_project_record_rule_orm.sh
 test.chatter-timeline.authorization.orm: guard.prod.forbid
 	@$(RUN_ENV) SC_AUTHORIZATION_ORM_TEST_TAGS=chatter_timeline_authorization_orm bash scripts/test/admin_vis_p3_project_record_rule_orm.sh
+.PHONY: test.candidate.contract-profiles.orm
+test.candidate.contract-profiles.orm: guard.prod.forbid
+	@$(RUN_ENV) SC_AUTHORIZATION_ORM_TEST_TAGS=candidate_contract_profiles bash scripts/test/admin_vis_p3_project_record_rule_orm.sh
+
 test.payment-settlement.component-profile.orm: guard.prod.forbid
 	@$(RUN_ENV) SC_AUTHORIZATION_ORM_TEST_TAGS=payment_settlement_component_profile bash scripts/test/admin_vis_p3_project_record_rule_orm.sh
 
@@ -2640,7 +2644,7 @@ verify.industry_module.product_boundary: guard.prod.forbid
 .PHONY: verify.user_module.product_boundary
 verify.user_module.product_boundary: guard.prod.forbid
 	@python3 scripts/verify/customer_module_extraction_guard.py
-	@echo "[verify.user_module.product_boundary] PASS external-customer-package"
+	@echo "[verify.user_module.product_boundary] PASS product extraction only; external package acceptance is separate"
 
 .PHONY: verify.user_module.data_baseline.runtime_audit
 verify.user_module.data_baseline.runtime_audit: guard.prod.forbid check-compose-project check-compose-env verify.user_module.product_boundary
@@ -2688,6 +2692,7 @@ verify.product_to_customer.dependency: guard.prod.forbid
 	@python3 scripts/verify/product_to_customer_dependency_guard.py
 
 verify.customer_module.extraction: guard.prod.forbid
+	@PYTHONPATH=. python3 scripts/verify/test_customer_module_extraction_guard.py
 	@python3 -m py_compile scripts/verify/customer_module_extraction_guard.py
 	@python3 scripts/verify/customer_module_extraction_guard.py
 
@@ -2914,6 +2919,11 @@ verify.product.menu.monotonic.unit: guard.prod.forbid
 .PHONY: verify.product.menu.native_inventory.unit
 verify.product.menu.native_inventory.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_product_native_menu_inventory
+
+.PHONY: verify.product.menu.metadata_batch.unit
+verify.product.menu.metadata_batch.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/test_menu_metadata_batch.py
+	@python3 -m unittest scripts.verify.test_menu_metadata_batch
 
 .PHONY: verify.local.clean.frontend_output.unit
 verify.local.clean.frontend_output.unit: guard.prod.forbid

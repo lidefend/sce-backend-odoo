@@ -1,10 +1,15 @@
 import assert from 'node:assert/strict';
+import { isContractGapError } from '../src/app/contract/contractGap';
 import {
   findRouteAuthority,
   normalizeRouteAuthorityContract,
   routeAuthorityContextAllowed,
   routeAuthorityForPrincipal,
 } from '../src/app/routeAuthority';
+
+function assertGap(run: () => unknown) {
+  assert.throws(run, (error: unknown) => isContractGapError(error));
+}
 
 const raw = {
   contract_version: '2.0.0',
@@ -44,8 +49,78 @@ const raw = {
 
 const contract = normalizeRouteAuthorityContract(raw);
 assert.ok(contract);
-assert.equal(normalizeRouteAuthorityContract({ ...raw, contract_version: 'route_authority.v1' }), null);
-assert.equal(normalizeRouteAuthorityContract({ ...raw, schema_version: '1.0.0' }), null);
+assertGap(() => normalizeRouteAuthorityContract({ ...raw, contract_version: 'route_authority.v1' }));
+assertGap(() => normalizeRouteAuthorityContract({ ...raw, schema_version: '1.0.0' }));
+assertGap(() => normalizeRouteAuthorityContract({ ...raw, primary_actions: ['not-an-entry'] }));
+try {
+  normalizeRouteAuthorityContract({
+    ...raw,
+    primary_actions: [{ route_kind: 'PRIMARY_NAV', menu_id: 0, action_id: 41 }],
+  });
+  assert.fail('malformed entry must report a contract gap');
+} catch (error) {
+  assert.ok(isContractGapError(error));
+  assert.equal((error as { defect: { missing: string } }).defect.missing, 'route_authority.primary_actions[0].action_xmlid');
+}
+const deniedUndefinedContract = normalizeRouteAuthorityContract({
+  ...raw,
+  denied_actions: [{
+    action_xmlid: 'x.declared_but_undefined',
+    route_kind: 'DENIED',
+    menu_id: 0,
+    action_id: 0,
+    reason_code: 'PRODUCT_ENTRY_NOT_DEFINED',
+  }],
+});
+assert.ok(deniedUndefinedContract);
+assert.equal(deniedUndefinedContract.denied_actions.length, 1, 'explicit denial records are not silently dropped');
+// The backend also publishes menu-only denials: a declared menu carrier that is
+// not delivered has action_id 0 and no action_xmlid, but keeps its menu
+// identity (role_surface.declared.not_delivered).  That is a legitimate denial
+// record and must not abort the whole system.init consumption.
+const deniedMenuOnlyContract = normalizeRouteAuthorityContract({
+  ...raw,
+  denied_actions: [{
+    action_xmlid: '',
+    route_kind: 'DENIED',
+    menu_id: 1004,
+    menu_xmlid: 'smart_construction_core.menu_sc_workspace_home',
+    action_id: 0,
+    reason_code: 'PRODUCT_ENTRY_NOT_VISIBLE',
+  }],
+});
+assert.ok(deniedMenuOnlyContract);
+assert.equal(deniedMenuOnlyContract.denied_actions.length, 1);
+assert.equal(deniedMenuOnlyContract.denied_actions[0].action_xmlid, '');
+assert.equal(deniedMenuOnlyContract.denied_actions[0].menu_xmlid, 'smart_construction_core.menu_sc_workspace_home');
+// An entry filtered out by product publication keeps the identity of the
+// original bucket entry; the backend republishes it with route_kind DENIED.
+const unpublishedEntryContract = normalizeRouteAuthorityContract({
+  ...raw,
+  denied_actions: [{
+    action_xmlid: 'x.unreleased',
+    route_kind: 'DENIED',
+    menu_id: 507,
+    menu_xmlid: 'x.menu_507',
+    action_id: 655,
+    model: 'plan',
+    reason_code: 'PRODUCT_ENTRY_NOT_RELEASED',
+  }],
+});
+assert.equal(unpublishedEntryContract?.denied_actions[0].action_id, 655);
+// A denial record with no identity at all is still a contract gap: strict
+// validation is preserved, never replaced by silent filtering.
+assertGap(() => normalizeRouteAuthorityContract({
+  ...raw,
+  denied_actions: [{
+    action_xmlid: '',
+    route_kind: 'DENIED',
+    menu_id: 0,
+    menu_xmlid: '',
+    action_id: 0,
+    reason_code: 'PRODUCT_ENTRY_NOT_VISIBLE',
+  }],
+}));
 const contextual = contract.contextual_actions[0];
 assert.equal(routeAuthorityContextAllowed(contextual, {}, { companyId: 3, projectId: 9 }), false);
 assert.equal(routeAuthorityContextAllowed(
@@ -153,7 +228,18 @@ console.log('[route-authority-guard] PASS');
 
 // Dedicated configuration routes must retain the same authority gate on every entry.
 import { resolveAuthorizedConfigurationRoute, resolveActionWebRoute } from '../src/services/actionRoutePolicy';
-const configAuthority = { action_id: 737, menu_id: 431, model: 'ui.business.config.contract', context: { sc_web_route: '/admin/business-config', business_config_root_menu_xmlid: 'product.root' } };
+const configAuthority = {
+  action_id: 737,
+  menu_id: 431,
+  model: 'ui.business.config.contract',
+  context: "{'sc_web_route': '/admin/business-config'}",
+  entry_target: {
+    type: 'admin_surface',
+    surface: 'business_config',
+    route: '/admin/business-config',
+    root_menu_xmlid: 'product.root',
+  },
+};
 for (const routeName of ['menu', 'action', 'model-form', 'record']) {
   const target = resolveAuthorizedConfigurationRoute({ routeName, routeModel: configAuthority.model, authority: configAuthority, authorized: true, query: { activity_page_id: 'old-instance' } });
   assert.equal(target?.path, '/admin/business-config');
@@ -166,7 +252,14 @@ assert.equal(resolveAuthorizedConfigurationRoute({ routeName: 'action', authorit
 assert.equal(resolveAuthorizedConfigurationRoute({ routeName: 'business-config', authority: configAuthority, authorized: true, query: {} }), null, 'no redirect loop');
 assert.equal(resolveAuthorizedConfigurationRoute({ routeName: 'model-form', routeModel: 'sc.document.admin.document', authority: configAuthority, authorized: true, query: { config_mode: 'form_field_configuration' } }), null);
 assert.equal(resolveAuthorizedConfigurationRoute({ routeName: 'model-form', routeModel: 'sc.document.admin.document', authority: { action_id: 666, model: 'sc.document.admin.document' }, authorized: true, query: { config_mode: 'form_field_configuration' } }), null, 'business form settings remain embedded');
-assert.equal(resolveActionWebRoute({ ...configAuthority, context: "{'sc_web_route': '/admin/business-config'}" }), '/admin/business-config');
+assert.equal(resolveActionWebRoute({ ...configAuthority, entry_target: undefined }), '', 'frontend never parses the Odoo context string');
+assertGap(() => resolveActionWebRoute({ ...configAuthority, entry_target: { type: 'admin_surface', surface: 'business_config' } }));
+// A partial declaration must stay a gap, not degrade to compatibility: the
+// backend projects it as admin_surface with the missing field empty.
+assertGap(() => resolveActionWebRoute({ ...configAuthority, entry_target: { type: 'admin_surface', surface: '', route: '/admin/business-config' } }));
+assertGap(() => resolveActionWebRoute({ ...configAuthority, entry_target: { type: 'admin_surface', surface: 'business_config', route: '' } }));
+assertGap(() => resolveActionWebRoute({ ...configAuthority, entry_target: { type: 'admin_surface', surface: 'unknown_surface', route: '/admin/unknown' } }));
+assert.equal(resolveActionWebRoute({ ...configAuthority, entry_target: { type: 'admin_surface', surface: 'menu_config', route: '/admin/menu-config' } }), '/admin/menu-config');
 console.log('[configuration_entry_routing] PASS cases=10');
 
 import { buildLowCodeReturnQuery } from '../src/pages/contractForm/formConfigHelpers';
@@ -265,11 +358,9 @@ assert.equal(declaredTargetContract.role_home_actions[0].route, '/s/workspace.ho
 
 // An actionless role-home row without any declared target stays rejected, so the
 // admission cannot be widened into "any menu id is authorized".
-const bareRoleHomeContract = normalizeRouteAuthorityContract({
+assertGap(() => normalizeRouteAuthorityContract({
   ...raw,
   role_home_actions: [{ route_kind: 'ROLE_HOME_ACTION', menu_id: 1004, action_id: 0, route: '/x' }],
-});
-assert.ok(bareRoleHomeContract);
-assert.equal(bareRoleHomeContract.role_home_actions.length, 0);
+}));
 
 console.log('[login_return_authority] PASS cases=16 source=contract_route_authority');

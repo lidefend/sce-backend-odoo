@@ -9,6 +9,7 @@ from odoo.addons.smart_core.core.delivery_menu_defaults import (
     build_delivery_menu_root,
     synthetic_menu_id,
 )
+from odoo.addons.smart_core.core.navigation_entry_target import build_web_surface_entry_target
 from odoo.addons.smart_core.delivery.menu_delivery_convergence_service import MenuDeliveryConvergenceService
 from odoo.addons.smart_core.delivery.menu_fact_service import MenuFactService
 from odoo.addons.smart_core.delivery.native_config_menu_projection import native_config_delivery_groups
@@ -192,7 +193,7 @@ class MenuService:
         # Odoo's action-centric renderable set: a declared carrier with no
         # action (a scene-entry page such as the role home) is authorized by
         # its groups and must stay observable.
-        facts = MenuFactService(self.env).export_authorized_menu_facts()
+        facts = self._menu_fact_snapshot("authorized")
         return self._menu_fact_tree_as_native(facts.tree)
 
     def build_contextual_routes(self, role_surface: dict | None) -> list[dict]:
@@ -205,7 +206,7 @@ class MenuService:
             for item in surface.get("contextual_menu_xmlids") or []
             if str(item).strip() and str(item).strip().lower() not in denied
         ]
-        facts = MenuFactService(self.env).export_visible_menu_facts()
+        facts = self._menu_fact_snapshot("visible")
         by_xmlid = {
             str(row.get("menu_xmlid") or "").strip(): row
             for row in facts.flat
@@ -248,6 +249,32 @@ class MenuService:
             return str(record.get_external_id().get(record.id) or "").strip()
         except Exception:
             return ""
+
+    def _action_xmlids_from_facts(self, rows: list[dict]) -> dict:
+        """Batch native metadata only; no authority decision or persistent cache.
+
+        Use Odoo's own selector so multiple XML-IDs retain its existing choice.
+        Keys include the action model because record IDs are model-scoped.
+        A failed batch retains the existing per-record resolution behavior.
+        """
+        ids_by_model = {}
+        for row in rows:
+            model = row.get("action_model")
+            record_id = row.get("action_id")
+            if (row.get("action_exists") and model in MenuFactService.ACTION_MODELS
+                    and isinstance(record_id, int) and record_id > 0):
+                ids_by_model.setdefault(model, set()).add(record_id)
+        result = {}
+        for model, ids in ids_by_model.items():
+            if model not in self.env:
+                continue
+            try:
+                mapping = self.env[model].sudo().browse(sorted(ids)).get_external_id()
+            except Exception:
+                continue
+            result.update({(model, record_id): str(mapping.get(record_id) or "").strip()
+                           for record_id in ids})
+        return result
 
     def _action_is_runtime_allowed(self, action, allowed_operation: str) -> bool:
         if not action or not bool(getattr(action, "active", True)):
@@ -309,7 +336,7 @@ class MenuService:
             return False
         return self._action_is_runtime_allowed(action, allowed_operation)
 
-    def _route_entry_from_menu(self, row: dict, *, route_kind: str, source: str) -> dict | None:
+    def _route_entry_from_menu(self, row: dict, *, route_kind: str, source: str, action_xmlids: dict | None = None) -> dict | None:
         if not isinstance(row, dict) or not row.get("action_exists"):
             return None
         menu_id = row.get("menu_id")
@@ -329,8 +356,11 @@ class MenuService:
             metadata_action = action.sudo()
             model_name = str(getattr(getattr(metadata_action, "model_id", None), "model", "") or "").strip()
         view_modes = [item.strip() for item in str(action_meta.get("view_mode") or "").split(",") if item.strip()]
-        return {
-            "action_xmlid": self._record_xmlid(action),
+        action_key = (action_model, action_id)
+        action_xmlid = (action_xmlids[action_key] if action_xmlids is not None and action_key in action_xmlids
+                        else self._record_xmlid(action))
+        entry = {
+            "action_xmlid": action_xmlid,
             "route_kind": route_kind,
             "menu_id": menu_id,
             "menu_xmlid": str(row.get("menu_xmlid") or "").strip(),
@@ -348,6 +378,16 @@ class MenuService:
             "context_requirements": {},
             "source": source,
         }
+        declared_target = build_web_surface_entry_target(
+            action_meta.get("context"),
+            menu_id=menu_id,
+            action_id=action_id,
+            model=model_name,
+            view_modes=view_modes,
+        )
+        if declared_target:
+            entry["entry_target"] = declared_target
+        return entry
 
     def _route_entry_from_action_spec(self, spec: dict, *, route_kind: str) -> dict | None:
         row = spec if isinstance(spec, dict) else {}
@@ -364,7 +404,7 @@ class MenuService:
             int(menu.id) if menu and str(getattr(menu, "_name", "")) == "ir.ui.menu" else 0
         )
         view_modes = [item.strip() for item in str(action.view_mode or "").split(",") if item.strip()]
-        return {
+        entry = {
             "action_xmlid": action_xmlid,
             "route_kind": route_kind,
             "menu_id": menu_id,
@@ -383,6 +423,16 @@ class MenuService:
             "context_requirements": dict(row.get("context_requirements") or {}),
             "source": str(row.get("source") or "role_surface.route_authority").strip(),
         }
+        declared_target = build_web_surface_entry_target(
+            action.context,
+            menu_id=menu_id,
+            action_id=int(action.id),
+            model=str(action.res_model or "").strip(),
+            view_modes=view_modes,
+        )
+        if declared_target:
+            entry["entry_target"] = declared_target
+        return entry
 
     def _denied_route_entry(self, menu_xmlid: str) -> dict | None:
         xmlid = str(menu_xmlid or "").strip()
@@ -534,7 +584,15 @@ class MenuService:
             if key in retained:
                 result[bucket].append(entry)
             else:
-                result["denied_actions"].append({**entry, "reason_code": "PRODUCT_ENTRY_NOT_RELEASED"})
+                # The entry leaves an executable bucket, so its declared
+                # route_kind must become DENIED as well; consumers validate
+                # bucket membership against the record kind and would otherwise
+                # reject a legitimately unpublished (but valid) entry.
+                result["denied_actions"].append({
+                    **entry,
+                    "route_kind": "DENIED",
+                    "reason_code": "PRODUCT_ENTRY_NOT_RELEASED",
+                })
         return result
 
     @staticmethod
@@ -902,7 +960,8 @@ class MenuService:
                 **buckets,
             }
 
-        facts = MenuFactService(self.env).export_visible_menu_facts()
+        facts = self._menu_fact_snapshot("visible")
+        action_xmlids = self._action_xmlids_from_facts(facts.flat)
         visible_by_xmlid = {
             str(row.get("menu_xmlid") or "").strip(): row
             for row in facts.flat
@@ -927,6 +986,7 @@ class MenuService:
                     fact,
                     route_kind=route_kind,
                     source=f"role_surface.{field}",
+                    action_xmlids=action_xmlids,
                 )
                 if entry:
                     buckets[bucket].append(entry)
@@ -1001,6 +1061,7 @@ class MenuService:
                     visible_by_pair.get(pair),
                     route_kind="DISCOVERED_PRIMARY_NAV",
                     source="delivery_engine.nav",
+                    action_xmlids=action_xmlids,
                 )
                 if entry:
                     buckets["primary_actions"].append(entry)
@@ -1297,7 +1358,31 @@ class MenuService:
 
     def __init__(self, env=None):
         self.env = env
+        self._menu_fact_cache = {}
         self._business_group_display_order = self._resolve_business_group_display_order()
+
+    def _menu_fact_snapshot(self, kind: str):
+        """Return one request-scoped menu fact snapshot per question.
+
+        ``visible`` and ``authorized`` answer different questions and are never
+        interchangeable. Within a single request the underlying menu, action and
+        group facts are stable, so each question is exported once and then reused
+        by navigation, contextual routes and route authority.
+        """
+        if self.env is None:
+            return None
+        cache = getattr(self, "_menu_fact_cache", None)
+        if not isinstance(cache, dict):
+            cache = {}
+            self._menu_fact_cache = cache
+        if kind not in cache:
+            service = MenuFactService(self.env)
+            cache[kind] = (
+                service.export_authorized_menu_facts()
+                if kind == "authorized"
+                else service.export_visible_menu_facts()
+            )
+        return cache[kind]
 
     @staticmethod
     def _canonical_group_label(label: str) -> str:
@@ -1675,6 +1760,11 @@ class MenuService:
         return self._policy_target_is_runtime_allowed(menu)
 
     def _flatten_policy_menus(self, policy: dict) -> list[dict]:
+        path_xmlids = [str(menu.get("menu_xmlid") or "").strip()
+                       for group in policy.get("menu_groups") or [] if isinstance(group, dict)
+                       for menu in group.get("menus") or []
+                       if isinstance(menu, dict) and self._release_menu_enabled(menu)]
+        native_paths = self._native_visible_menu_paths(path_xmlids)
         out = []
         index = 0
         productization_keys = (
@@ -1714,7 +1804,8 @@ class MenuService:
                 route = str(menu.get("route") or "").strip()
                 action_id = menu.get("action_id")
                 menu_xmlid = str(menu.get("menu_xmlid") or "").strip()
-                native_visible_menu_path = self._native_visible_menu_path(menu_xmlid)
+                native_visible_menu_path = (native_paths[menu_xmlid] if menu_xmlid in native_paths
+                                            else self._native_visible_menu_path(menu_xmlid))
                 if route.startswith("/a/") and scene_key == menu_xmlid:
                     scene_key = ""
                 raw_anchor = scene_key or (str(menu_id) if isinstance(menu_id, int) and menu_id > 0 else str(menu.get("menu_key") or "").strip() or str(index))
@@ -1749,6 +1840,39 @@ class MenuService:
                         row[key] = value
                 out.append(row)
         return [row for row in out if row.get("menu_key") and row.get("label")]
+
+    def _native_visible_menu_paths(self, xmlids: list[str]) -> dict[str, str]:
+        """Native ref resolution with one existence check, in the same user env.
+
+        This replaces only repeated env.ref existence checks, not menu ACLs.
+        Missing/non-menu refs remain empty. Unresolved batches use the original
+        single-record path, preserving its errors and compatibility behavior.
+        """
+        if self.env is None or not xmlids:
+            return {}
+        try:
+            model_data = self.env["ir.model.data"]
+            resolved = {}
+            paths = {}
+            for xmlid in dict.fromkeys(xmlids):
+                if not xmlid:
+                    paths[xmlid] = ""
+                    continue
+                try:
+                    model, record_id = model_data._xmlid_to_res_model_res_id(xmlid, raise_if_not_found=False)
+                except Exception:
+                    continue
+                if model == "ir.ui.menu" and record_id:
+                    resolved[xmlid] = record_id
+                else:
+                    paths[xmlid] = ""
+            menus = self.env["ir.ui.menu"].browse(sorted(set(resolved.values()))).exists()
+            names = {menu.id: " / ".join(part.strip() for part in str(menu.complete_name or "").strip().split("/") if part.strip())
+                     for menu in menus}
+            paths.update({xmlid: names.get(record_id, "") for xmlid, record_id in resolved.items()})
+            return paths
+        except Exception:
+            return {}
 
     def _native_visible_menu_path(self, menu_xmlid: str) -> str:
         """Return the installed menu ancestry as the runtime path authority."""

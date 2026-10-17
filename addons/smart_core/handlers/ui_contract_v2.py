@@ -9,6 +9,7 @@ from typing import Any, Dict, Optional
 from lxml import etree
 
 from ..core.form_configuration_compiler import FormConfigurationError
+from ..core.contract_lifecycle import source_meta_for_identity
 from ..core.base_handler import BaseIntentHandler
 from ..core.intent_execution_result import IntentExecutionResult
 from ..core.unified_page_contract_v2_assembler import (
@@ -45,6 +46,7 @@ from ..utils.contract_governance import (
 from ..utils.extension_hooks import call_extension_hook_first
 from ..utils.load_contract_response_cache import (
     CONTRACT_PROJECTION_HOT_CACHE,
+    assembled_snapshot_gate_matches,
     build_projection_cache_key,
     build_projection_source_token,
     projection_base_params,
@@ -71,6 +73,7 @@ from .ui_contract_v2_constants import (
 )
 from . import ui_contract_v2_projection as _projection
 from ..app_config_engine.services.dispatchers.action_dispatcher import ActionDispatcher
+from ..app_config_engine.services.resolvers.action_resolver import ActionResolver
 from .ui_contract import UiContractHandler
 from .ui_contract_preview import (
     PreviewAccessDenied,
@@ -89,7 +92,16 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-14-declared-layout-columns-and-action-denial-guidance"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-17-base-identity-no-source-hash"
+
+# The assembled entry carries the semantic digests its own seal produced, keyed
+# by the entry identity the hit path already validates (cache_version,
+# client_type, delivery_profile, limit_params). They are a memo of a pure
+# function of that stored, never-handed-out graph, so a hit reuses them instead
+# of re-walking the whole payload; a missing or malformed value is refused and
+# the seal recomputes, and ``emit_delivery_observation`` still recomputes from
+# the delivered contract on every request.
+ASSEMBLED_SEMANTIC_DIGESTS_KEY = "assembled_semantic_digests"
 
 
 # --- Declared form surfaces -------------------------------------------------
@@ -201,6 +213,52 @@ def project_form_structure_surfaces(payload: Any, *, capabilities: dict[str, Any
     return out
 
 
+def _digest_pair(contract: Any) -> dict[str, str]:
+    """The two 64-hex semantic digests a container carries, or ``{}``.
+
+    Membership is decided by shape alone, so both the sealed contract's
+    lifecycle and the assembled entry's binding are read the same way: an
+    absent, blank or malformed value yields ``{}`` and the caller recomputes
+    instead of reusing it.
+    """
+    if not isinstance(contract, dict):
+        return {}
+    contract_digest = str(contract.get("contractSha256") or "").strip()
+    source_digest = str(contract.get("sourceSha256") or "").strip()
+    if not _is_sha256_hex(contract_digest) or not _is_sha256_hex(source_digest):
+        return {}
+    return {"contractSha256": contract_digest, "sourceSha256": source_digest}
+
+
+def _is_sha256_hex(value: str) -> bool:
+    return len(value) == 64 and all(char in "0123456789abcdef" for char in value)
+
+
+def sealed_semantic_digests(contract: Any) -> dict[str, str]:
+    """The two semantic digests a sealed contract carries in its lifecycle.
+
+    The seal already computes them; reading them back is how one delivery hands
+    the next one the request-invariant part of its own work. An unreadable
+    lifecycle returns ``{}`` so the caller recomputes instead of reusing a
+    missing or malformed value.
+    """
+    meta = contract.get("meta") if isinstance(contract, dict) else None
+    lifecycle = meta.get("lifecycle") if isinstance(meta, dict) else None
+    if not isinstance(lifecycle, dict):
+        return {}
+    integrity = lifecycle.get("integrity") if isinstance(lifecycle.get("integrity"), dict) else {}
+    generation = lifecycle.get("generation") if isinstance(lifecycle.get("generation"), dict) else {}
+    return _digest_pair({"contractSha256": integrity.get("contractSha256"),
+                         "sourceSha256": generation.get("sourceSha256")})
+
+
+def _reusable_assembled_digests(assembled_cached: Any) -> dict[str, str]:
+    """Digests bound to one assembled cache entry, or ``{}`` when unbound."""
+    if not isinstance(assembled_cached, dict):
+        return {}
+    return _digest_pair(assembled_cached.get(ASSEMBLED_SEMANTIC_DIGESTS_KEY))
+
+
 def authoritative_form_role_key(env: Any) -> str:
     """Resolve the current server session's formal role surface for form selection.
 
@@ -248,6 +306,12 @@ class UiContractV2Handler(BaseIntentHandler):
         _authority.project_action_group_entitlements(self.env, source_contract, _logger)
 
     def _validate_scene_action_binding(self, params: dict[str, Any]):
+        # The authority adapter is a no-op unless the request carries a scene
+        # key (that is its own precondition, read with the same two keys), so a
+        # scene-less request must not pay the full scene-registry rebuild: the
+        # loaded payload would never be read, only discarded by the adapter.
+        if not str(params.get("scene_key") or params.get("sceneKey") or "").strip():
+            return None
         payload = load_scenes_from_db_or_fallback(self.env, drift=None, logger=None) or {}
         return _authority.validate_scene_action_binding(payload, params, self._err)
 
@@ -465,9 +529,6 @@ class UiContractV2Handler(BaseIntentHandler):
             columns = list(fact_columns)
         if not columns:
             return
-        pref = profile.get("preference_policy") if isinstance(profile.get("preference_policy"), dict) else {}
-        if pref.get("allow_order") is not False:
-            columns = self._merge_user_list_preference_columns(source_contract, columns)
         locked_profile = deepcopy(profile)
         profile_labels = locked_profile.get("column_labels") if isinstance(locked_profile.get("column_labels"), dict) else {}
         locked_profile["column_labels"] = self._apply_legacy_visible_business_labels(
@@ -504,45 +565,6 @@ class UiContractV2Handler(BaseIntentHandler):
         if isinstance(source_authority, dict):
             source_authority["source_key"] = "list_profile.business_config_contract_authoritative"
 
-    def _merge_user_list_preference_columns(self, source_contract: dict[str, Any], columns: list[str]) -> list[str]:
-        profile = source_contract.get("list_profile") if isinstance(source_contract.get("list_profile"), dict) else {}
-        preference = profile.get("preference_policy") if isinstance(profile.get("preference_policy"), dict) else {}
-        if preference.get("allow_order") is False:
-            return columns
-        action_id = self._source_action_id(source_contract)
-        if action_id <= 0 or "sc.user.view.preference" not in self.env:
-            return columns
-        model_name = self._source_model_name(source_contract)
-        authoritative_columns = set(columns)
-        try:
-            rec = self.env["sc.user.view.preference"].sudo().search(
-                [
-                    ("user_id", "=", self.env.user.id),
-                    ("preference_key", "=", "list_columns"),
-                    ("view_type", "in", ["list", "tree"]),
-                    ("action_id", "=", action_id),
-                ],
-                order="id desc",
-                limit=1,
-            )
-        except Exception:
-            _logger.debug("ui.contract.v2 user list preference lookup skipped", exc_info=True)
-            return columns
-        value = rec.value_json if rec and isinstance(getattr(rec, "value_json", None), dict) else {}
-        preferred = []
-        for key in ("visible_columns", "column_order"):
-            rows = value.get(key) if isinstance(value.get(key), list) else []
-            for raw in rows:
-                name = str(raw or "").strip()
-                if not name or name in preferred:
-                    continue
-                if name not in authoritative_columns:
-                    continue
-                preferred.append(name)
-        if not preferred:
-            return columns
-        return [*preferred, *[name for name in columns if name not in preferred]]
-
     def handle(self, payload: Optional[Dict[str, Any]] = None, ctx: Optional[Dict[str, Any]] = None):
         try:
             return self._handle_contract(payload, ctx)
@@ -551,6 +573,40 @@ class UiContractV2Handler(BaseIntentHandler):
             result = self._err(409, "页面配置无法应用，请联系配置管理员处理")
             result.error.update(exc.public_details())
             return result
+
+    def _validate_form_record(self, model, params):
+        view_type = str(params.get("view_type") or params.get("viewType") or "form").lower()
+        record_id, _error = parse_positive_int(
+            params.get("record_id") or params.get("recordId") or params.get("res_id") or params.get("resId"),
+            allow_empty=True,
+        )
+        if view_type != "form" or not record_id:
+            return None
+        op = str(params.get("op") or params.get("subject") or "model").strip().lower()
+        if op in {"action", "action_open", "menu"}:
+            resolver = ActionResolver(self.env)
+            resolved = resolver.resolve_action(
+                params.get("action_id") or params.get("id"),
+                params.get("action_xmlid") or params.get("action_xml_id"),
+                params.get("menu_id"),
+            )
+            info = resolver.drill_down_action(resolved) or {}
+            model = info.get("res_model") if info.get("type") == "ir.actions.act_window" else None
+            if model and params.get("model") and params["model"] != model:
+                return self._err(400, "请求模型与动作模型不一致")
+        if not model or model not in self.env:
+            return None
+        Model = self.env[model]
+        # Do not reveal existence before model access has been established.
+        # AccessError propagates to the intent dispatcher's existing 403 mapping.
+        Model.check_access_rights("read")
+        record = Model.browse(record_id).exists()
+        if not record:
+            result = self._err(404, "记录不存在")
+            result.error.update(reason_code="RECORD_NOT_FOUND")
+            return result
+        record.check_access_rule("read")
+        return None
 
     def _handle_contract(self, payload: Optional[Dict[str, Any]] = None, ctx: Optional[Dict[str, Any]] = None):
         started_at = time.monotonic()
@@ -600,11 +656,46 @@ class UiContractV2Handler(BaseIntentHandler):
             action_record = self.env["ir.actions.act_window"].sudo().browse(action_id)
             if action_record.exists():
                 cache_model = str(action_record.res_model or "").strip()
+        # Record identity is checked before source caching/projection. Missing
+        # records must not reach action guidance as an empty configuration.
+        record_error = self._validate_form_record(cache_model, ui_params)
+        if record_error is not None:
+            return record_error
         base_params = projection_base_params(params)
         base_ui_params = projection_base_params(ui_params)
+        # Record-bound and create sources mutate the assembled source graph, so
+        # they must never take the shared assembled read. Compute that identity
+        # before the cache lookup so the hot read can route to the safe accessor.
+        runtime_record_id, _record_id_error = parse_positive_int(
+            params.get("record_id")
+            or params.get("recordId")
+            or ui_params.get("record_id")
+            or ui_params.get("recordId"),
+            allow_empty=True,
+        )
+        requested_render_profile = str(
+            params.get("render_profile")
+            or params.get("renderProfile")
+            or ui_params.get("render_profile")
+            or ui_params.get("renderProfile")
+            or ""
+        ).strip().lower()
+        requested_record_id = str(
+            params.get("record_id")
+            or params.get("recordId")
+            or ui_params.get("record_id")
+            or ui_params.get("recordId")
+            or ""
+        ).strip().lower()
+        is_create_request = requested_render_profile == "create" or requested_record_id == "new"
         cache_key = ""
         source_token = ""
         cached_source = None
+        # True only while ``cached_source`` aliases the cache entry's own source
+        # graphs. The assembled branch below reads them and seals its own copy of
+        # the contract, so sharing is safe there AND ONLY there; the guard after
+        # the lookup degrades every other outcome to the fully isolated ``get``.
+        shared_source = False
         projection_cache_status = "bypass"
         projection_cache_reason = "dynamic_request"
         projection_cache_persisted = False
@@ -621,7 +712,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 namespace=(
                     "ui.contract.v2.native_form_projection.v1"
                     if native_form_source
-                    else "ui.contract.v2.source"
+                    else "ui.contract.v2.source.single-assembly.v1"
                 ),
                 params=base_params,
                 model_name=cache_model,
@@ -635,7 +726,25 @@ class UiContractV2Handler(BaseIntentHandler):
                 action_id=action_id,
             )
             if cache_key and source_token:
-                cached_source = CONTRACT_PROJECTION_HOT_CACHE.get(cache_key, source_token)
+                cached_source = None
+                if not runtime_record_id and not is_create_request:
+                    # An assembled hit only READS the shared source payload while
+                    # seal mutates the contract, so a gate-matching assembled read
+                    # can share the source graph instead of re-copying it. Any
+                    # doubt (missing/gate-mismatched entry) returns None and falls
+                    # back to the fully isolated ``get`` below.
+                    cached_source = CONTRACT_PROJECTION_HOT_CACHE.get_assembled(
+                        cache_key,
+                        source_token,
+                        cache_version=ASSEMBLED_CONTRACT_CACHE_VERSION,
+                        client_type=client_type,
+                        delivery_profile=delivery_profile,
+                        limit_params=limit_params,
+                        digests_key=ASSEMBLED_SEMANTIC_DIGESTS_KEY,
+                    )
+                    shared_source = cached_source is not None
+                if cached_source is None:
+                    cached_source = CONTRACT_PROJECTION_HOT_CACHE.get(cache_key, source_token)
                 if cached_source is not None:
                     projection_cache_status = "hot"
                     projection_cache_reason = "hot_cache_hit"
@@ -664,12 +773,34 @@ class UiContractV2Handler(BaseIntentHandler):
             cached_source = None
             projection_cache_status = "miss"
             projection_cache_reason = "native_form_source_type_mismatch"
+        if shared_source and cached_source is not None and not assembled_snapshot_gate_matches(
+            cached_source,
+            cache_version=ASSEMBLED_CONTRACT_CACHE_VERSION,
+            client_type=client_type,
+            delivery_profile=delivery_profile,
+            limit_params=limit_params,
+        ):
+            # Fail-safe, not a normal branch: the shared read may only be
+            # consumed by the assembled branch (same gate tuple). If that ever
+            # drifts, replace it with the fully isolated read instead of handing
+            # a by-reference source graph to a path that mutates it. No entry is
+            # lost: this only runs when the accessor already returned one.
+            cached_source = CONTRACT_PROJECTION_HOT_CACHE.get(cache_key, source_token)
+            shared_source = False
         cache_lookup_ready_at = time.monotonic()
         if cached_source is not None:
-            ui_data = deepcopy(cached_source.get("ui_data") or {})
-            ui_meta = deepcopy(cached_source.get("ui_meta") or {})
-            ui_meta.pop("trace_id", None)
-            ui_meta.pop("request_id", None)
+            # Ownership depends on which accessor produced it, and nothing below
+            # may assume more than it has:
+            #   * ``get_assembled`` (the shared read) returns ``ui_data`` /
+            #     ``source_contract`` ON LOAN. They are read-only for the whole
+            #     request; the assembled branch seals its own copy of the
+            #     contract, and the guard above sends anything else to ``get``.
+            #   * ``get`` deep-copies on read and ``get_runtime_source_asset``
+            #     rebuilds the payload with ``json.loads``; those graphs are
+            #     exclusively owned, which is what the assembly path needs when
+            #     it writes into them.
+            ui_data = cached_source.get("ui_data") or {}
+            ui_meta = source_meta_for_identity(cached_source.get("ui_meta"))
         else:
             if native_form_source:
                 try:
@@ -685,6 +816,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 except Exception:
                     _logger.exception("native form projection failed")
                     return self._err(500, "native form projection failed")
+                ui_meta = source_meta_for_identity(ui_meta)
             else:
                 source_result = UiContractHandler(
                     projection_env,
@@ -705,15 +837,14 @@ class UiContractV2Handler(BaseIntentHandler):
                     base_ui_params or ui_params,
                     ctx,
                 )
+                ui_meta = source_meta_for_identity(ui_meta)
             if cache_key and source_token:
                 cached_payload = {
                     "source_type": runtime_source_type,
                     "ui_data": deepcopy(ui_data),
-                    "ui_meta": {
-                        key: deepcopy(value)
-                        for key, value in ui_meta.items()
-                        if key not in {"trace_id", "request_id"}
-                    },
+                    # ``ui_meta`` reached here through ``source_meta_for_identity``:
+                    # per-request transport and diagnostic identity is already gone.
+                    "ui_meta": deepcopy(ui_meta),
                 }
                 CONTRACT_PROJECTION_HOT_CACHE.put(cache_key, source_token, cached_payload)
                 persisted_asset = upsert_runtime_source_asset(
@@ -731,13 +862,6 @@ class UiContractV2Handler(BaseIntentHandler):
         source_ready_at = time.monotonic()
         model = params.get("model") or ui_data.get("model") or ui_meta.get("model") or ""
         view_type = params.get("view_type") or params.get("viewType") or ui_data.get("view_type") or ui_meta.get("view_type") or "form"
-        runtime_record_id, _record_id_error = parse_positive_int(
-            params.get("record_id")
-            or params.get("recordId")
-            or ui_params.get("record_id")
-            or ui_params.get("recordId"),
-            allow_empty=True,
-        )
         if runtime_record_id:
             try:
                 from ..app_config_engine.services.assemblers.page_assembler import PageAssembler
@@ -765,40 +889,35 @@ class UiContractV2Handler(BaseIntentHandler):
             or f"ui.contract.v2.{model or 'unknown'}.{view_type or 'form'}"
         )
 
-        requested_render_profile = str(
-            params.get("render_profile")
-            or params.get("renderProfile")
-            or ui_params.get("render_profile")
-            or ui_params.get("renderProfile")
-            or ""
-        ).strip().lower()
-        requested_record_id = str(
-            params.get("record_id")
-            or params.get("recordId")
-            or ui_params.get("record_id")
-            or ui_params.get("recordId")
-            or ""
-        ).strip().lower()
-        is_create_request = requested_render_profile == "create" or requested_record_id == "new"
         assembled_cached = (
             cached_source.get("_assembled_v2")
             if not runtime_record_id and isinstance(cached_source, dict)
             else None
         )
+        # The gate tuple is read through the same helper the shared accessor and
+        # the post-lookup guard use, so this branch and ``get_assembled`` cannot
+        # drift apart: drift would let a by-reference source graph reach the
+        # assembly path below, which writes into the graph it is handed.
         if (
             isinstance(assembled_cached, dict)
             and not is_create_request
-            and assembled_cached.get("cache_version") == ASSEMBLED_CONTRACT_CACHE_VERSION
-            and assembled_cached.get("client_type") == client_type
-            and assembled_cached.get("delivery_profile") == delivery_profile
-            and assembled_cached.get("limit_params") == limit_params
-            and isinstance(assembled_cached.get("contract"), dict)
-            and isinstance(assembled_cached.get("source_contract"), dict)
+            and assembled_snapshot_gate_matches(
+                cached_source,
+                cache_version=ASSEMBLED_CONTRACT_CACHE_VERSION,
+                client_type=client_type,
+                delivery_profile=delivery_profile,
+                limit_params=limit_params,
+            )
         ):
             projection_cache_status = "hot"
             projection_cache_reason = "assembled_v2_hot_cache_hit"
-            source_contract = deepcopy(assembled_cached["source_contract"])
-            contract_v2 = deepcopy(assembled_cached["contract"])
+            # This branch READS ``ui_data`` / ``source_contract`` and returns
+            # before the assembly path below ever runs. ``contract_v2`` here is
+            # this request's own copy (the shared accessor copies it because
+            # sealing rewrites it in place); the source payload it digests stays
+            # on loan to the cache entry and is never written.
+            source_contract = assembled_cached["source_contract"]
+            contract_v2 = assembled_cached["contract"]
             contract_v2 = _authority.seal_runtime_contract(
                 self,
                 contract_v2,
@@ -808,6 +927,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 trace_id,
                 client_type,
                 action_id=action_id,
+                reuse_digests=_reusable_assembled_digests(assembled_cached),
             )
             return IntentExecutionResult(
                 ok=True,
@@ -1083,32 +1203,71 @@ class UiContractV2Handler(BaseIntentHandler):
             **limit_params,
         )
         contract_trimmed_at = time.monotonic()
+        # Filled from the seal result below. The stored entry references this
+        # exact dict, so the next hit carries the digests this request paid for
+        # without a second walk over the payload.
+        assembled_digest_slot: dict[str, str] = {}
         if not runtime_record_id and not is_create_request and cache_key and source_token:
-            CONTRACT_PROJECTION_HOT_CACHE.put(
+            # ``source_contract`` is the assembly-time shallow copy of ``ui_data``,
+            # so the two object graphs still share every subtree the normalizers
+            # did not replace. Deep-copying them under one shared memo stores each
+            # shared subtree once; ``get`` clones with one memo too, so the cached
+            # read stops paying for a second copy of the source graph and the
+            # process-wide allocation volume falls with it. ``contract`` keeps its
+            # own memo on purpose: sealing mutates it, and it must stay disjoint
+            # from the source payload whose digest is computed from it.
+            source_snapshot_memo: dict[int, object] = {}
+            CONTRACT_PROJECTION_HOT_CACHE.put_generated(
                 cache_key,
                 source_token,
-                {
+                lambda: {
                     "source_type": runtime_source_type,
-                    "ui_data": deepcopy(ui_data),
-                    "ui_meta": {
-                        key: deepcopy(value)
-                        for key, value in ui_meta.items()
-                        if key not in {"trace_id", "request_id"}
-                    },
+                    "ui_data": deepcopy(ui_data, source_snapshot_memo),
+                    # ``ui_meta`` reached here through ``source_meta_for_identity``.
+                    "ui_meta": deepcopy(ui_meta),
                     "_assembled_v2": {
                         "cache_version": ASSEMBLED_CONTRACT_CACHE_VERSION,
                         "client_type": client_type,
                         "delivery_profile": delivery_profile,
                         "limit_params": deepcopy(limit_params),
                         "contract": deepcopy(contract_v2),
-                        "source_contract": deepcopy(source_contract),
+                        "source_contract": deepcopy(source_contract, source_snapshot_memo),
+                        ASSEMBLED_SEMANTIC_DIGESTS_KEY: assembled_digest_slot,
                     },
                 },
             )
         assembled_cache_stored_at = time.monotonic()
-        contract_v2 = _authority.seal_runtime_contract(
-            self, contract_v2, source_contract, runtime_source_type, str(request_id), trace_id, client_type, action_id=action_id
+        # The assembly-stage seal already hashed this exact source graph.  The
+        # runtime seal must recompute the contract digest because post-processing
+        # changed the contract, but the source payload is unchanged.  Reusing
+        # only ``sourceSha256`` avoids a second full walk without reusing any
+        # digest whose payload moved.
+        assembly_lifecycle = (
+            (contract_v2.get("meta") or {}).get("lifecycle")
+            if isinstance(contract_v2.get("meta"), dict)
+            else None
         )
+        assembly_source_digest = (
+            (assembly_lifecycle.get("generation") or {}).get("sourceSha256")
+            if isinstance(assembly_lifecycle, dict)
+            else ""
+        )
+        contract_v2 = _authority.seal_runtime_contract(
+            self,
+            contract_v2,
+            source_contract,
+            runtime_source_type,
+            str(request_id),
+            trace_id,
+            client_type,
+            action_id=action_id,
+            reuse_digests=(
+                {"sourceSha256": assembly_source_digest}
+                if isinstance(assembly_source_digest, str) and assembly_source_digest
+                else None
+            ),
+        )
+        assembled_digest_slot.update(sealed_semantic_digests(contract_v2))
         runtime_sealed_at = time.monotonic()
         assembler_stages.update({
             "route_collection_presentation": int((collection_presentation_at - route_source_ready_at) * 1000),
@@ -3259,10 +3418,10 @@ class UiContractV2Handler(BaseIntentHandler):
         if not columns:
             return
 
-        # Configured columns meet final product constraints before personal order.
-        # The final enforcement step applies allowed preferences exactly once.
-        if not direct_orchestration_columns:
-            columns = self._merge_user_list_preference_columns(source_contract, columns)
+        # Configured columns are the declared order only. The stored personal
+        # preference is applied exactly once, by the frontend consumer, against
+        # the declared preference_policy below; the server never reorders the
+        # declared contract with a user choice.
         labels = profile.get("column_labels") if isinstance(profile.get("column_labels"), dict) else {}
         view_column_labels = {}
         for row in [*raw_columns, *tree_schema_rows]:
@@ -4259,8 +4418,13 @@ class UiContractV2Handler(BaseIntentHandler):
         ui_params: dict[str, Any],
         ctx: Optional[Dict[str, Any]],
     ) -> tuple[dict[str, Any], dict[str, Any]]:
-        entry = ui_data.get("entry") if isinstance(ui_data.get("entry"), dict) else {}
-        model = str(entry.get("model") or ui_data.get("model") or "").strip()
+        # Only menu-entry references need dereferencing. action/model/view
+        # sources already contain the authoritative assembled page. Rebuilding
+        # them as a model page both duplicates assembly and loses action scope.
+        entry = ui_data.get("entry")
+        if ui_data.get("subject") != "menu" or not isinstance(entry, dict):
+            return ui_data, ui_meta
+        model = str(entry.get("model") or "").strip()
         view_type = str(
             entry.get("view_type")
             or entry.get("viewType")

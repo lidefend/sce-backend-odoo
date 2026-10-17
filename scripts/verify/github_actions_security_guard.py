@@ -60,6 +60,9 @@ def scan(root: Path) -> list[Finding]:
             findings.add(Finding("GA001", relative, "MISSING_READ_ONLY_PERMISSIONS"))
         if re.search(r"(?m)^\s+[a-z_-]+:\s*write\s*$", lowered):
             findings.add(Finding("GA002", relative, "WRITE_TOKEN_PERMISSION"))
+        for runner in re.findall(r"(?m)^\s*runs-on:\s*(.+)$", text):
+            if runner.strip() != 'ubuntu-latest':
+                findings.add(Finding("GA021", relative, "CI_RUNNER_NOT_GITHUB_HOSTED"))
         if "pull_request_target:" in text:
             findings.add(Finding("GA003", relative, "PULL_REQUEST_TARGET_FORBIDDEN"))
         if re.search(r"(?m)^\s*git\s+push(?:\s|$)", text):
@@ -69,6 +72,11 @@ def scan(root: Path) -> list[Finding]:
         for action_match in ANY_ACTION.finditer(text):
             line = action_match.group(0).strip()
             reference = action_match.group(1)
+            if reference == './.github/workflows/backend_test_suite.yml':
+                # Same-commit reusable workflow, never a mutable external ref.
+                target = root / reference
+                if path.name == 'professional_quality_gate.yml' and target.is_file():
+                    continue
             if line not in pinned_lines:
                 findings.add(Finding("GA005", f"{relative}:{reference}", "ACTION_NOT_PINNED_TO_SHA"))
             elif not reference.startswith(("actions/", "github/")):
@@ -103,13 +111,13 @@ def scan(root: Path) -> list[Finding]:
                 "runs-on: ubuntu-latest",
                 'git fetch --no-tags origin "${HEAD_SHA}"',
                 'test "$(git rev-parse FETCH_HEAD)" = "${HEAD_SHA}"',
-                "make test.chatter-timeline.authorization.orm",
+                "make test.candidate.contract-profiles.orm",
                 "scripts/ci/self_hosted_runner_cleanup.sh",
             )
             if any(item not in text for item in required):
                 findings.add(Finding("GA012", relative, "PROFESSIONAL_TRUST_BOUNDARY_INCOMPLETE"))
             prepare_marker = "- name: Prepare host-owned artifact root before container checks"
-            orm_marker = "- name: Prove candidate chatter authorization with real ORM"
+            orm_marker = "- name: Prove settlement component profile with real ORM"
             full_marker = "- name: Run full professional quality gate (serialized artifact writers)"
             mainline_marker = "- name: Run mainline integrity gate"
             prepare_position = text.find(prepare_marker)
@@ -170,8 +178,10 @@ def scan(root: Path) -> list[Finding]:
                 'attempt_db="${module_db}_retry1"',
                 '[[ ! "${module_status}" =~ ^(137|139)$ ]]',
                 'retrying once with isolated database',
-                "0 failed, 0 error\\(s\\) of [1-9][0-9]* tests when loading database",
-                "backend suite collected zero tests for module ${module}",
+                "source scripts/ci/orm_result_guard.sh",
+                'orm_expect_identity="odoo.addons.${module}.tests."',
+                'orm_expect_database="${attempt_db}"',
+                'if ! evaluate_orm_outcome "${module_status}" "${module_log}"; then',
             )
             if any(item not in text for item in test_routing_requirements):
                 findings.add(Finding("GA020", relative, "BACKEND_SUITE_TEST_ROUTING_NOT_FAIL_CLOSED"))

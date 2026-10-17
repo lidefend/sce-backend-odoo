@@ -110,7 +110,9 @@ def main() -> int:
             "useActionPageModel({",
             "useActionViewActionRuntime({",
             "useActionViewSelectionActionRuntime({",
-            "async function loadListColumnPreference",
+            "const listColumnPreferenceRuntime = createScopedPreferenceRuntime({",
+            "readStoredListPreference(",
+            "enqueuePreferenceWrite(",
             "async function handleToggleRecordFavorite",
             "async function redirectMenuOnlyRouteIfNeeded",
             "window.addEventListener(RECORD_CONTEXT_CHANGED_EVENT",
@@ -127,6 +129,7 @@ def main() -> int:
             errors.append("ActionView.vue must not locally implement normalizeActivityRuntimeRouteQuery")
         for token in [
             "function runBatchPolicyAction(",
+            "function loadListColumnPreference(",
             "function stableActionContractId(",
             "function resolveActionViewV2ButtonStatus(",
             "function applyActionViewV2ButtonStatus(",

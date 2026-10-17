@@ -85,7 +85,7 @@
     <field name="view_id" ref="smart_core.view_ui_menu_config_policy_tree"/>
     <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_core.view_ui_menu_config_policy_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_core.view_ui_menu_config_policy_form')})]"/>
     <field name="search_view_id" ref="smart_core.view_ui_menu_config_policy_search"/>
-    <field name="context">{'search_default_visible': 1}</field>
+    <field name="context">{'search_default_visible': 1, 'sc_web_route': '/admin/menu-config', 'sc_web_surface': 'menu_config'}</field>
     <field name="groups_id" eval="[(6, 0, [
       ref('smart_core.group_smart_core_business_config_admin'),
       ref('smart_core.group_smart_core_admin')

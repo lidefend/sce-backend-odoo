@@ -363,6 +363,7 @@ import {
   resolveDesktopListCandidates,
   prioritizeExplicitlyEnabledListColumns,
   resolveEnabledListColumns,
+  resolveListColumnChoices,
   resolveResponsiveListColumns,
   listColumnVisibilityBlockReason,
 } from './listPage/listColumnVisibility';
@@ -1423,20 +1424,17 @@ const orderedColumnNames = computed(() => {
 });
 
 const columnChoices = computed<ColumnOption[]>(() => {
-  if (Array.isArray(props.columnOptions) && props.columnOptions.length) {
-    const byName = props.columnOptions.reduce<Record<string, ColumnOption>>((acc, column) => {
-      acc[column.name] = column;
-      return acc;
-    }, {});
-    return applyColumnOrder(props.columnOptions.map((column) => column.name), Array.isArray(props.columnOrder) ? props.columnOrder : [])
-      .map((name) => byName[name])
-      .filter((column): column is ColumnOption => Boolean(column));
-  }
-  return orderedColumnNames.value.map((name) => ({
+  const choices = resolveListColumnChoices(props.columnOptions, () => orderedColumnNames.value.map((name) => ({
     name,
     label: columnLabels.value[name] || contractColumnLabels.value[name] || name,
     defaultVisible: !hiddenColumns.value[name],
-  }));
+  })));
+  const byName = choices.reduce<Record<string, ColumnOption>>((acc, column) => {
+    acc[column.name] = column;
+    return acc;
+  }, {});
+  return applyColumnOrder(choices.map(column => column.name), Array.isArray(props.columnOrder) ? props.columnOrder : [])
+    .map(name => byName[name]).filter((column): column is ColumnOption => Boolean(column));
 });
 const DEFAULT_VISIBLE_COLUMN_BUDGET = 12;
 const defaultVisibleColumnMap = computed<Record<string, boolean>>(() =>
