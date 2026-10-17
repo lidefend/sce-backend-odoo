@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "id": "AGENT-DISPATCH-INBOX-20261017",
+  "branch": "fix/agent-dispatch-inbox-20261017",
+  "status": "active",
+  "goal": ".agent/goals/AGENT-DISPATCH-INBOX-20261017.yaml",
+  "record": "docs/ops/agent_dispatch_inbox.md",
+  "baseline_sha": "80da1af3d060201cebbddc58146e940a7f34b570",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/AGENT-DISPATCH-INBOX-20261017.yaml",
+    ".agent/runs/AGENT-DISPATCH-INBOX-20261017/run.json",
+    "scripts/ops/agent_dispatch_inbox.py",
+    "scripts/verify/test_agent_dispatch_inbox.py",
+    "make/codex.mk",
+    "docs/ops/agent_dispatch_inbox.md",
+    "scripts/ops/install_agent_dispatch_inbox.sh"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Owner authorized unified local dispatcher; no product runtime writes"
+  },
+  "checks": {
+    "dispatch_unit": {
+      "target": "verify.agent.dispatch.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/agent_dispatch_inbox.py",
+        "scripts/verify/test_agent_dispatch_inbox.py",
+        "make/codex.mk"
+      ]
+    }
+  },
+  "evidence": {
+    "dispatch_unit": {
+      "status": "passed",
+      "target": "verify.agent.dispatch.unit",
+      "tests": 42,
+      "log": ".runtime/agent-runs/AGENT-DISPATCH-INBOX-20261017/dispatch_unit.log",
+      "receipt": ".runtime/agent-runs/AGENT-DISPATCH-INBOX-20261017/dispatch_unit.json"
+    },
+    "iteration": {
+      "status": "passed",
+      "target": "ci.local.iteration",
+      "coverage": "L1_only",
+      "log": ".runtime/agent-runs/AGENT-DISPATCH-INBOX-20261017/iteration.log",
+      "note": "dispatch_unit reused; three new paths remain unclassified by design and are covered by the targeted test"
+    },
+    "install_readback": {
+      "status": "passed",
+      "path": ".runtime/agent-runs/AGENT-DISPATCH-INBOX-20261017/install_readback.json",
+      "note": "installed lib equals source; private README equals docs; timer active; service Result=success; automatic_execution=false"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Submit the pilot schema-2 receipt with task_ref AGENT-DISPATCH-INBOX-20261017 and executor codex-dispatch-mechanism-executor-20261017, superseding 964bf274... only after install readback is frozen. Then issue one minimal read-only evidence task per lane; no business execution.",
+  "observations": {
+    "schema": 2,
+    "dispatcher": {
+      "id": "codex-main-dispatcher-20261017",
+      "takeover_at": "2026-10-17T13:11:30+00:00"
+    },
+    "lane_bindings": {
+      "demo": "/home/lidefend/workspace/sce-backend-odoo",
+      "user": "/home/lidefend/workspace/sce-customer-odoo",
+      "frontend": "/home/lidefend/workspace/sce-product-odoo-clean-root",
+      "environment": "/home/lidefend/workspace/sce-backend-odoo-local-env",
+      "pilot": "/home/lidefend/workspace/sce-backend-odoo-local-env"
+    },
+    "pilot_schema_1": "historical only; current worktree changed after the pilot receipts",
+    "receipt_id": "964bf27499e68560f25ec8b11a935828a70c30d1a8053a158df20860de7b6137",
+    "readback": ".runtime/dispatch-pilot/readback.json",
+    "pilot_unit_test_count": 25,
+    "unit_test_count": 42,
+    "iteration": "passed (L1 only; dispatch_unit reused)",
+    "offline_migration": "passed on /tmp copy; old schema 1 receipts remain readable",
+    "install": {
+      "status": "passed",
+      "installed_sha256": "1c246fd9581cbbac814519b1cf2cbfb9042848efff4310fa14ac02490d0ad0cc",
+      "source_sha256": "1c246fd9581cbbac814519b1cf2cbfb9042848efff4310fa14ac02490d0ad0cc",
+      "readme_sync": "byte-identical with docs/ops/agent_dispatch_inbox.md; cmp PASS",
+      "timer": "active",
+      "service_result": "success",
+      "exec_main_status": "0"
+    },
+    "supersede_regression": "proposal_ready receipts are invalidated immediately by a successor and cannot be retried; a schema-2 supersedes list can retire multiple duplicate predecessors and requires every prior blocker to be repeated or explicitly closed",
+    "frontend_entry": {
+      "status": "ready",
+      "repository": "/home/lidefend/workspace/sce-product-odoo-clean-root",
+      "run": ".agent/runs/FRONTEND-DISPATCH-ENTRY-20261017/run.json",
+      "check": "agent.dispatch.status",
+      "note": "frontend lane resolves correctly; no product code, build or deployment executed"
+    },
+    "worktree_groups": {
+      "local-env": ["environment", "pilot"]
+    },
+    "duplicate_receipts": {
+      "demo": ["daa6b1c9ec85efde8d486066b53d2de219d2cc531df9e769209bf3e4b72730fc", "7b30fb8bcf8e8efb84d032baa8084543e7e825161fefb9c3044bfa32585363dd"],
+      "user": ["add84c1082f1a3329957c9d51c09bc491d802f26b4bac0b65222d0904ee61d37", "29d0ae49f7a8be47e08c6031065b1dfb4a6d219f7797dac32b4dbb06b0e9b3b4"],
+      "note": "no successor declared; multi-supersedes is available but no replacement receipt has been submitted"
+    },
+    "candidate": {
+      "head": "80da1af3d060201cebbddc58146e940a7f34b570",
+      "manifest_sha256": "f943d3153fc4921cb111e40f17b7b54880f3461ac681ef042c834d6e98caef72",
+      "manifest_note": "SHA256 over sorted [path, sha256] for the listed candidate files; receipt identity remains authoritative for the full worktree",
+      "files": {
+        "scripts/ops/agent_dispatch_inbox.py": "1c246fd9581cbbac814519b1cf2cbfb9042848efff4310fa14ac02490d0ad0cc",
+        "scripts/verify/test_agent_dispatch_inbox.py": "0fc86fed6ec88594c542a0e7b1a902126d86aa8c11c67b9548164ad2647c92e4",
+        "scripts/ops/install_agent_dispatch_inbox.sh": "da739b278cd405d31fdeb90037c04e21abefbfd20736c643de88fb3589c84c35",
+        "docs/ops/agent_dispatch_inbox.md": "3270b72113179b359398bf46345ebf21f0a4846b74f1ccfa3e7eb0039a19faeb",
+        "make/codex.mk": "05451664b5bbd0222ad66c9f3686bfd3f7b10564c92ec312ad81a9440167b09f"
+      }
+    },
+    "private_queue": {
+      "snapshot_at": "2026-10-17T13:45:00+00:00",
+      "receipts": 7,
+      "proposal_ready": 5,
+      "blocked": 2,
+      "tasks": 1,
+      "task_status": "acknowledged"
+    },
+    "old_receipt_recheck": {
+      "passed": 4,
+      "failed": 3,
+      "note": "three pilot receipts fail worktree identity recheck; four pass file identity but not semantic acceptance; none is closed by this batch"
+    },
+    "independent_review": "pilot schema 1 only; schema 2 mechanism is covered by targeted tests, not a separate independent review",
+    "integration": "not_started",
+    "product_deployment": "not_started",
+    "business_executors": "paused"
+  }
+}

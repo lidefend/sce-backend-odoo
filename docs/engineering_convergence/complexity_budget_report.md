@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4848`
+- Scanned files: `4851`
 - Files requiring split plan: `68`
-- Files above warning threshold: `132`
+- Files above warning threshold: `133`
 
 ## Split Plan Required
 
@@ -179,6 +179,7 @@ Generated from repository source files. This report is informational during the 
 | 883 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 877 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
+| 874 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 872 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
 | 868 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 862 | Python source | `addons/smart_core/handlers/ui_contract.py` |
