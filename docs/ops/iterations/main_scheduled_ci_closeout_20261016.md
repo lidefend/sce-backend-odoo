@@ -2787,3 +2787,38 @@ request/trace 身份键、两个 contract `context` 容器中的 `trace_id`/`req
 ### （4）状态
 
 - 新提交后候选身份变化，需重绑性能基线目标身份、重算指纹并在新 HEAD 上再跑一次 Quick；旧候选的归档与 PR 正文以新身份更新。
+
+## R15.10 远程 backend_suite 失败：菜单水印与源行时钟不一致（2026-10-17，不冻结）
+
+### （1）失败事实
+
+- 候选 `f6fc274b…` 的必需检查 `backend_impact_suite / backend_suite`（run 39011943905）失败。
+- 失败点：`addons/smart_construction_bundle/tests/test_startup_performance_contract.py::test_menu_edit_during_generation_remains_newer_than_snapshot`。
+- 断言：`edit write_date=2026-10-17 07:06:29.382899` 不大于 `cfg.last_generated=2026-10-17 07:06:34`。
+- 同一日志显示该测试进程 07:06:34.337 才启动，而 `write_date` 等于该测试类共享游标首次写日志字段的时刻；本地 `sc_dev_demo` 复现为 `07:31:16.114782` 对 `07:31:40`，形态一致。
+
+### （2）根因
+
+- Odoo 17 对 `create_date/write_date` 使用 `vals.setdefault('write_date', env.cr.now())`，`Cursor.now()` 返回并缓存**事务时间戳**（`SELECT now() AT TIME ZONE 'UTC'`），不是墙钟。
+- `app.menu.config._generate_from_menus` 之前用 `fields.Datetime.now()`（墙钟）作为 `last_generated`，而 `_menu_metadata_changed_since` 拿它和源行的 `write_date/create_date` 比较，两侧不是同一时钟，无法排序。
+- 同一事务内写入的源行时间戳恒等于事务时间戳，因此墙钟水印一定晚于本事务写入的任何行，生成期间发生的编辑会被水印掩盖。这是产品侧水印语义缺陷，不是单纯测试问题。
+
+### （3）最小修复
+
+- P0 `addons/smart_core/app_config_engine/models/app_nav_config.py`：`generation_started = self.env.cr.now()`，与 `ir.ui.menu`/`ir.actions` 的日志字段同钟，且在生成开始时取值；无 schema、契约或载荷变化。
+- P1 测试 `addons/smart_construction_bundle/tests/test_startup_performance_contract.py`：改为断言 `cfg.last_generated` 等于生成时的事务时钟，并由“时间戳晚于水印的源行”触发 `_menu_metadata_changed_since` 为真。
+- 未采用“第二事务提交编辑”的夹具：Odoo 所有游标都是 REPEATABLE READ，`TransactionCase` 外层快照看不到另一事务的提交；该形态无法成立，已实测确认。
+- 断言强度未降低：时钟一致性、晚于水印必判脏、以及原有的版本不抖动/不重复装配断言全部保留。
+
+### （4）定向验证
+
+- `make local.dev.test MODULE=smart_construction_bundle TEST_TAGS="/smart_construction_bundle:TestStartupPerformanceContract"`：7 tests，0 failed，0 error。
+- `make local.dev.test MODULE=smart_core TEST_TAGS="sc_smoke/smart_core,sc_gate/smart_core"`：0 failed，0 error。
+- `make local.dev.test MODULE=smart_construction_bundle TEST_TAGS="sc_smoke/smart_construction_bundle,sc_gate/smart_construction_bundle"`：0 failed，0 error（stats 37 tests）。
+- `make ci.local.iteration`：PASS，`outside_scope=[]`，仅 L1；按影响集合补跑上述 L2 目标。
+
+### （5）状态
+
+- 性能优化范围保持封口：不新增产品语义、不做 `entry_key` 迁移、不追加毫秒优化。
+- 新提交后需重绑性能基线目标身份、重算指纹，并在新冻结 HEAD 上执行一次 `ci.local.quick`；远程 `backend_test_suite` 必须在新 head 上重跑，不继承 `f6fc274b` 结果。
+- 未合并、未部署。

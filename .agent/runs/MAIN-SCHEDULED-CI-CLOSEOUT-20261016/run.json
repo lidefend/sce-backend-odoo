@@ -62,6 +62,7 @@
     "frontend/apps/web/scripts/record_form_return_navigation_test.ts",
     "make/frontend.mk",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
     "scripts/test/admin_vis_p3_project_record_rule_orm.sh",
     "make/dev.mk",
     "docs/ops/runtime_performance_baseline_v1.md",
@@ -153,7 +154,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "2026-10-17 (R15.9 ledger re-export pending commit): PR #669 frontend_release_gate failed because the decision-authority ledger lagged ActionView.vue line drift; re-exported via verify.frontend.decision_authority.export (3 line entries only, classifications unchanged) and the unit passes 15 tests. Next: commit, rebind the performance baseline JSON, recompute the fingerprint, run exactly one ci.local.quick at the new frozen HEAD, refresh the external archive and PR body, then monitor required remote checks on the new head. No merge or deploy.",
+  "next_exact_step": "2026-10-17 (R15.10): the required remote backend_suite failed at f6fc274b in smart_construction_bundle test_menu_edit_during_generation_remains_newer_than_snapshot. Diagnosis: app.menu.config.last_generated was taken from the wall clock (fields.Datetime.now()) while ir.ui.menu/ir.actions write_date is the writing transaction's clock (env.cr.now()), so a source row written inside the generating transaction is always older than the watermark; reproduced locally on sc_dev_demo with the same 07:31:16 vs 07:31:40 split. Fixed the owning P0 watermark to env.cr.now() and rebuilt the test to assert clock identity plus a later-stamped source row (a committed second transaction is invisible under Odoo's REPEATABLE READ test cursor, so that fixture shape cannot work). Next: ci.local.iteration + affected smart_core gate, freeze.prepare, rebind the performance baseline identity to the new clean HEAD (same seven sources, no re-capture), new fingerprint, exactly one ci.local.quick, refresh the external archive and PR body, then monitor required remote checks on the new head. No merge or deploy.",
   "source_runs": [
     38818510036,
     38811434965,
@@ -2637,6 +2638,48 @@
       "status": "passed",
       "stage": "R15.9: remote frontend_release_gate failed at b51a20b8 because the committed decision-authority ledger was out of sync with the live scan after ActionView.vue line drift. Re-exported through the governed entry; the ledger diff is exactly three line entries (1433->1436, 1423->1426, 3068->3070) with unchanged classifications and statistics. Unit now passes 15 tests and the guard PASSes.",
       "stage_head": "b51a20b87bc60ebdf83b5de8f3da92a434576729",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "make local.dev.test MODULE=smart_construction_bundle TEST_TAGS=/smart_construction_bundle:TestStartupPerformanceContract",
+      "status": "failed",
+      "stage": "R15.10 reproduction at f6fc274b: the remote backend_suite failure reproduced unchanged on sc_dev_demo (edit write_date 2026-10-17 07:31:16.114782 not greater than cfg.last_generated 2026-10-17 07:31:40). Odoo stamps log-access columns with env.cr.now() (the transaction timestamp, cached per cursor) while the watermark used fields.Datetime.now() (wall clock), so the two values cannot be ordered against each other.",
+      "stage_head": "f6fc274b5174cce60ee2b7fb9abce36ad0e221fb",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "make local.dev.test MODULE=smart_construction_bundle TEST_TAGS=/smart_construction_bundle:TestStartupPerformanceContract",
+      "status": "passed",
+      "test_count": 7,
+      "stage": "R15.10 fix: the P0 watermark now uses env.cr.now(), the same clock ir.ui.menu/ir.actions are stamped with, captured at generation start. The test asserts cfg.last_generated equals that generation clock and that a source row stamped after it makes the projection stale; a committed second-transaction fixture was rejected because TransactionCase runs on a REPEATABLE READ cursor whose snapshot cannot see the other transaction. Result: 7 tests, 0 failed, 0 errors on sc_dev_demo.",
+      "stage_head": "f6fc274b5174cce60ee2b7fb9abce36ad0e221fb",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "make local.dev.test MODULE=smart_core TEST_TAGS=sc_smoke/smart_core,sc_gate/smart_core",
+      "status": "passed",
+      "stage": "R15.10 affected P0 module gate after the watermark change: 0 failed, 0 error (23 tests executed, 8820 queries).",
+      "stage_head": "f6fc274b5174cce60ee2b7fb9abce36ad0e221fb",
+      "dirty": true
+    },
+    {
+      "layer": "L2",
+      "command": "make local.dev.test MODULE=smart_construction_bundle TEST_TAGS=sc_smoke/smart_construction_bundle,sc_gate/smart_construction_bundle",
+      "status": "passed",
+      "test_count": 37,
+      "stage": "R15.10 affected P1 module gate: 0 failed, 0 error (stats 37 tests, 36251 queries).",
+      "stage_head": "f6fc274b5174cce60ee2b7fb9abce36ad0e221fb",
+      "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "stage": "R15.10 L1 entry: PASS change_state=dirty coverage=L1_only outside_scope=[]; risk-selected non-zero L2 targets executed separately above.",
+      "stage_head": "f6fc274b5174cce60ee2b7fb9abce36ad0e221fb",
       "dirty": true
     }
   ],
@@ -8142,5 +8185,15 @@
     "commit_plan": "layer-owned commits: P0 smart_core+frontend contract/preference, P1 construction core/bundle+demo tests, P4 ops/CI/generated evidence and the run ledger",
     "open_residuals_carried": "the registered residuals stay registered; none is treated as a delivery blocker for this batch",
     "not_done_here": "no mainline integration, deployment or end-user acceptance is claimed by this batch"
+  },
+  "backend_suite_watermark_recovery_20261017": {
+    "trigger": "required remote check backend_impact_suite / backend_suite failed at f6fc274b (run 39011943905) in addons/smart_construction_bundle/tests/test_startup_performance_contract.py test_menu_edit_during_generation_remains_newer_than_snapshot",
+    "observed_failure": "AssertionError: edit write_date=2026-10-17 07:06:29.382899 not greater than cfg.last_generated=2026-10-17 07:06:34; the test started at 07:06:34.337 and the row timestamp equals the first log-access write of the shared TransactionCase cursor",
+    "root_cause": "Odoo fills log-access columns with vals.setdefault('write_date', env.cr.now()) and Cursor.now() returns the transaction timestamp cached per cursor, while _generate_from_menus stored fields.Datetime.now() (wall clock). _menu_metadata_changed_since compares against those columns, so the watermark and the compared values lived on different clocks; a wall-clock watermark is also newer than any row the generating transaction writes and therefore hides edits made during generation.",
+    "product_fix": "addons/smart_core/app_config_engine/models/app_nav_config.py: generation_started = self.env.cr.now() (P0 smart_core; no schema, contract or payload change)",
+    "test_fix": "the committed second-cursor fixture is unusable inside TransactionCase (every Odoo cursor is REPEATABLE READ and the outer snapshot never sees the other transaction), so the fixture patches cr.now() to a later transaction clock for the edit and asserts both the clock identity of cfg.last_generated and that the later-stamped row makes the projection stale; no assertion was relaxed",
+    "not_a_closure": "no new product semantics, no entry_key migration, no additional millisecond optimization; the performance batch stays sealed",
+    "verification": "local.dev.test smart_construction_bundle TestStartupPerformanceContract: 7 tests, 0 failed; ci.local.iteration, the affected smart_core gate, freeze.prepare and the exact-head Quick are still pending in this run",
+    "remote_followup": "the new candidate must let backend_test_suite run on the new head; f6fc274b results are not inherited"
   }
 }

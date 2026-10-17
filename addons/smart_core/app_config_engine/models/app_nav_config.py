@@ -227,7 +227,12 @@ class AppMenuConfig(models.Model):
         - 仅持久化“轻量动作摘要”，避免把 context/domain 等变量态带入缓存。
         """
         # A source edit during generation must remain newer than this snapshot.
-        generation_started = fields.Datetime.now()
+        # ir.ui.menu/ir.actions stamp write_date/create_date with the writing
+        # transaction's clock (env.cr.now()), and _menu_metadata_changed_since
+        # compares against those columns, so the watermark must come from the
+        # same clock. A wall-clock value would miss edits committed by a
+        # transaction that began before this one but wrote after the snapshot.
+        generation_started = self.env.cr.now()
         scene = self._normalize_scene(scene)
         def annotate(node, parent_stack):
             """补充 level/path/breadcrumbs/leaf 等衍生信息，便于运行态裁剪与前端使用。"""

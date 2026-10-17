@@ -1,5 +1,6 @@
 """Prove startup metadata batching preserves native facts and contract values."""
 import copy
+import datetime
 from unittest.mock import patch
 from odoo.tests.common import TransactionCase, tagged
 from odoo.addons.smart_core.handlers import system_init
@@ -117,12 +118,29 @@ class TestStartupPerformanceContract(TransactionCase):
     def test_menu_edit_during_generation_remains_newer_than_snapshot(self):
         model = self.env['app.menu.config']
         original_hash = type(model)._hash
-        edits = []
+        cursor = self.env.cr
+        observed = {}
+
         def edit_after_source_read(recordset, payload):
-            edits.append(self.env['ir.ui.menu'].create({'name': 'Concurrent metadata fixture', 'active': True}))
+            source_clock = recordset.env.cr.now()
+            observed['source_clock'] = source_clock
+            # Odoo stamps log-access columns with the writing transaction's
+            # clock, so a concurrent editor is one that writes under a later
+            # clock than the generating transaction.
+            with patch.object(cursor, 'now',
+                              return_value=source_clock + datetime.timedelta(microseconds=1)):
+                observed['edit'] = recordset.env['ir.ui.menu'].create({
+                    'name': 'Concurrent metadata fixture',
+                    'active': True,
+                })
             return original_hash(recordset, payload)
+
         with patch.object(type(model), '_hash', edit_after_source_read):
             cfg = model._generate_from_menus(scene='web')
-        self.assertEqual(len(edits), 1)
-        self.assertGreater(edits[0].write_date, cfg.last_generated)
+        edit = observed['edit']
+        # The watermark and the source rows share the transaction clock; a
+        # wall-clock watermark would sit after every row this transaction
+        # writes and would hide edits made during generation.
+        self.assertEqual(cfg.last_generated, observed['source_clock'])
+        self.assertGreater(edit.write_date, cfg.last_generated)
         self.assertTrue(model._menu_metadata_changed_since(cfg))
