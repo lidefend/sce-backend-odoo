@@ -28,7 +28,7 @@ P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_p
 # the version literal the handler serves to a digest of the code that produces
 # the assembled contract; on drift this guard fails closed and the author
 # re-pins both values deliberately instead of the cache hiding the change.
-ASSEMBLED_CACHE_VERSION = "ui-contract-v2-2026-10-16-owned-source-handoff"
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-2026-10-17-read-only-source-loan"
 ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
 ASSEMBLED_CACHE_INPUTS = (
     ASSEMBLED_CACHE_HANDLER,
@@ -61,7 +61,7 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/utils/contract_governance_list_surface.py",
     "addons/smart_core/utils/contract_governance_user_surface.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "6448bf854054cf9d8b3d744bc3d638593ca6231920c4cd99a35222db2f0ea443"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "69ad5296b7d03ff86989b55a404752acc84d98fa605f485e8bd942bbbb3f0497"
 
 
 def _assembled_cache_digest() -> str:
