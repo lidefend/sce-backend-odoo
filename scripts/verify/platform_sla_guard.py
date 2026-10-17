@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import time
@@ -14,6 +15,13 @@ ROOT = Path(__file__).resolve().parents[2]
 BASELINE_JSON = ROOT / "scripts" / "verify" / "baselines" / "platform_sla.json"
 REPORT_MD = ROOT / "docs" / "ops" / "audit" / "platform_sla_report.md"
 REPORT_JSON = ROOT / "artifacts" / "backend" / "platform_sla_report.json"
+
+
+def _sha256_file(path: Path) -> str | None:
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return None
 
 
 def _load_baseline() -> dict:
@@ -211,6 +219,15 @@ def main() -> int:
 
     payload = {
         "ok": len(errors) == 0,
+        # system.init is served by the running Odoo process; bind the product
+        # files that produce the measured rows so the baseline can reject a
+        # report captured against different code.
+        "identity": {
+            "handlers/system_init.py": _sha256_file(
+                ROOT / "addons/smart_core/handlers/system_init.py"),
+            "app_config_engine/models/app_nav_config.py": _sha256_file(
+                ROOT / "addons/smart_core/app_config_engine/models/app_nav_config.py"),
+        },
         "summary": {
             "iterations": iterations,
             "target_count": len(rows),

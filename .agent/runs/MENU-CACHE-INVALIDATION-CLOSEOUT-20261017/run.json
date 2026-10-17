@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "id": "MENU-CACHE-INVALIDATION-CLOSEOUT-20261017",
+  "branch": "fix/menu-cache-invalidation-closeout-20261017",
+  "baseline_sha": "95919c2a6a2c753a0e6581be5e94738648961c29",
+  "status": "active",
+  "goal": ".agent/goals/MENU-CACHE-INVALIDATION-CLOSEOUT-20261017.yaml",
+  "record": "docs/ops/iterations/menu_cache_invalidation_closeout_20261017.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MENU-CACHE-INVALIDATION-CLOSEOUT-20261017.yaml",
+    ".agent/runs/MENU-CACHE-INVALIDATION-CLOSEOUT-20261017/run.json",
+    "docs/ops/iterations/menu_cache_invalidation_closeout_20261017.md",
+    "docs/ops/audit/system_performance_baseline.md",
+    "docs/ops/audit/platform_sla_report.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "addons/smart_core/app_config_engine/models/app_nav_config.py",
+    "addons/smart_construction_bundle/tests/test_startup_performance_contract.py",
+    "scripts/verify/local_dev_runtime_performance.py",
+    "scripts/verify/local_dev_performance_baseline.sh",
+    "scripts/verify/platform_sla_guard.py",
+    "scripts/verify/local_dev_runtime_permission_probe.py",
+    "scripts/verify/system_performance_baseline.py",
+    "scripts/verify/test_system_performance_baseline.py",
+    "scripts/verify/test_local_dev_runtime_performance.py",
+    "make/dev.mk"
+  ],
+  "environment": {
+    "profile": "sc-local-dev",
+    "database": "sc_dev_demo",
+    "compose_project": "sc-local-dev",
+    "kind": "runtime"
+  },
+  "product_boundary": {
+    "formal_product_layer": "P0 platform kernel product",
+    "layer_target": "app.menu.config projection cache invalidation; P4 performance-evidence identity",
+    "standard_vs_user_specific": "platform mechanism",
+    "why_here": "The persisted menu projection and its invalidation rule are platform kernel behavior used by system.init.",
+    "why_not_elsewhere": "The rule is not construction-industry or customer-specific; frontend must not compensate for a stale projection.",
+    "blast_radius": "system.init navigation projection, menu cache freshness checks, startup observation identity; no contract payload or schema change"
+  },
+  "checks": {
+    "runtime_performance_unit": {
+      "target": "verify.local.dev.runtime.performance.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/local_dev_runtime_performance.py",
+        "scripts/verify/test_local_dev_runtime_performance.py",
+        "scripts/verify/local_dev_runtime_permission_probe.py",
+        "scripts/verify/test_local_dev_runtime_permission_probe.py",
+        "make/dev.mk"
+      ]
+    },
+    "system_performance_baseline_unit": {
+      "target": "verify.system.performance.baseline.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/system_performance_baseline.py",
+        "scripts/verify/test_system_performance_baseline.py",
+        "scripts/verify/baselines/platform_sla.json"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run ci.local.iteration and ci.delivery.freeze.prepare, commit the clean candidate, freeze the full fingerprint, run exactly one exact-head ci.local.quick, archive evidence, record independent review before merge, then publish the PR.",
+  "evidence_index": [],
+  "validation_scope": {
+    "changed_paths_declared": true,
+    "earliest_layer": "L1",
+    "skipped_layers": []
+  }
+}

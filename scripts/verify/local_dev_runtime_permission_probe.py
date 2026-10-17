@@ -433,6 +433,8 @@ REPORT["identity"] = {
     "security/intent_permission.py": hashlib.sha256(Path(inspect.getsourcefile(ip)).read_bytes()).hexdigest(),
     "delivery/runtime_route_authority.py": _source_hash("delivery/runtime_route_authority.py"),
     "delivery/menu_service.py": _source_hash("delivery/menu_service.py"),
+    # The probe's build_nav sample reaches the menu projection cache.
+    "app_config_engine/models/app_nav_config.py": _source_hash("app_config_engine/models/app_nav_config.py"),
     "controllers/intent_dispatcher.py": _source_hash("controllers/intent_dispatcher.py"),
 }
 REPORT["import_ms"] = {key: round(ms, 3) for key, ms in IMPORT_MS.items()}

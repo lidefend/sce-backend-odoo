@@ -14,6 +14,10 @@ source "${ROOT_DIR}/scripts/common/env.sh"
 OUT_DIR="${ROOT_DIR}/artifacts/backend/system-performance-baseline"
 SOURCES="${PRODUCT_PERFORMANCE_BASELINE_SOURCES:-sla,observe}"
 STRICT="${PRODUCT_PERFORMANCE_BASELINE_STRICT:-0}"
+# Incremental verification: re-capture only PRODUCT_PERFORMANCE_BASELINE_SOURCES
+# and reuse the unchanged inputs already present in OUT_DIR. Without this mode a
+# partial capture would normalize only the new inputs and silently drop the rest.
+REUSE_UNCHANGED="${PRODUCT_PERFORMANCE_BASELINE_REUSE_UNCHANGED:-0}"
 mkdir -p "${OUT_DIR}"
 
 captured=()
@@ -24,11 +28,16 @@ want() { [[ ",${SOURCES}," == *",$1,"* ]]; }
 run_capture() {
   local name="$1"; shift
   local log="${OUT_DIR}/${name}.log"
+  local tmp="${log}.tmp"
   echo "[baseline] capturing ${name}"
-  if "$@" >"${log}" 2>&1; then
+  # A failed capture must not overwrite a previously valid input when
+  # incremental reuse is enabled; keep the traceback beside it instead.
+  if "$@" >"${tmp}" 2>&1; then
+    mv "${tmp}" "${log}"
     captured+=("${log}")
   else
-    echo "[baseline] capture ${name} FAILED; see ${log}" >&2
+    mv "${tmp}" "${log}.failed"
+    echo "[baseline] capture ${name} FAILED; see ${log}.failed" >&2
     failed+=("${name}")
   fi
 }
@@ -102,11 +111,27 @@ if [[ "${STRICT}" == "1" ]]; then
   strict_flag=(--strict)
 fi
 
-echo "[baseline] normalizing ${#captured[@]} capture(s)"
+normalize_inputs=()
+if [[ "${REUSE_UNCHANGED}" == "1" ]]; then
+  declare -A seen_input=()
+  for candidate in "${captured[@]}" \
+    "${OUT_DIR}/sla-guard.json" "${OUT_DIR}/observe.log" "${OUT_DIR}/contract-profile.log" \
+    "${OUT_DIR}/permission.log" "${OUT_DIR}/contract-request.log" \
+    "${OUT_DIR}/cache-identity.log" "${OUT_DIR}/role-matrix.log"; do
+    [[ -f "${candidate}" ]] || continue
+    [[ -n "${seen_input[${candidate}]:-}" ]] && continue
+    seen_input["${candidate}"]=1
+    normalize_inputs+=("${candidate}")
+  done
+else
+  normalize_inputs=("${captured[@]}")
+fi
+
+echo "[baseline] normalizing ${#normalize_inputs[@]} input(s)"
 python3 "${ROOT_DIR}/scripts/verify/system_performance_baseline.py" \
   "${strict_flag[@]}" \
   --identity-file "${OUT_DIR}/identity.json" \
-  --inputs "${captured[@]}" \
+  --inputs "${normalize_inputs[@]}" \
   --out "${ROOT_DIR}/artifacts/backend/system_performance_baseline.json" \
   --report "${ROOT_DIR}/docs/ops/audit/system_performance_baseline.md"
 

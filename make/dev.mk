@@ -1328,6 +1328,7 @@ local.dev.runtime.performance.observe: guard.prod.forbid local.dev.ready
 	  PRODUCT_PERFORMANCE_SCENE_SHA256="$$(sha256sum addons/smart_core/governance/scene_normalizer.py | awk '{print $$1}')" \
 	  PRODUCT_PERFORMANCE_MENU_SHA256="$$(sha256sum addons/smart_core/delivery/menu_service.py | awk '{print $$1}')" \
 	  PRODUCT_PERFORMANCE_HANDLER_SHA256="$$(sha256sum addons/smart_core/handlers/system_init.py | awk '{print $$1}')" \
+	  PRODUCT_PERFORMANCE_MENU_CONFIG_SHA256="$$(sha256sum addons/smart_core/app_config_engine/models/app_nav_config.py | awk '{print $$1}')" \
 	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  odoo.shell.exec < scripts/verify/local_dev_runtime_performance.py
 
@@ -1475,6 +1476,7 @@ local.dev.runtime.performance.baseline: guard.prod.forbid local.dev.ready
 	  MAKE="$(MAKE)" PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID="$(PRODUCT_PERFORMANCE_PREFERENCE_ACTION_ID)" \
 	  PRODUCT_PERFORMANCE_BASELINE_SOURCES="$(if $(PRODUCT_PERFORMANCE_BASELINE_SOURCES),$(PRODUCT_PERFORMANCE_BASELINE_SOURCES),sla,observe)" \
 	  PRODUCT_PERFORMANCE_BASELINE_STRICT="$(PRODUCT_PERFORMANCE_BASELINE_STRICT)" \
+	  PRODUCT_PERFORMANCE_BASELINE_REUSE_UNCHANGED="$(PRODUCT_PERFORMANCE_BASELINE_REUSE_UNCHANGED)" \
 	  bash scripts/verify/local_dev_performance_baseline.sh
 
 # Non-zero unit tests for the baseline normalizer: positive cases must reach a

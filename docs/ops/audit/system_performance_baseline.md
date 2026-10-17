@@ -6,7 +6,7 @@ production acceptance.
 
 - schema: `system-performance-baseline/v1`
 - status: `baseline`
-- generated_at: `2026-10-17T06:19:43.975454+00:00`
+- generated_at: `2026-10-17T08:59:28.254825+00:00`
 - samples observed / retained: `142` / `142`
 - stage timings summed: `no`
 - gaps: `0`
@@ -37,7 +37,7 @@ production acceptance.
 
 | source | schema | mode | samples | identity |
 | --- | --- | --- | ---: | --- |
-| `artifacts/backend/system-performance-baseline/sla-guard.json` | platform-sla-guard/v1 | - | 3 | unknown |
+| `artifacts/backend/system-performance-baseline/sla-guard.json` | platform-sla-guard/v1 | - | 3 | match |
 | `artifacts/backend/system-performance-baseline/observe.log` | runtime-performance-observation/v1 | observe | 6 | match |
 | `artifacts/backend/system-performance-baseline/contract-profile.log` | runtime-performance-observation/v1 | contract_profile | 9 | match |
 | `artifacts/backend/system-performance-baseline/permission.log` | runtime-permission-probe/v1 | - | 0 | match |
@@ -73,9 +73,9 @@ budgets and is not a capacity or production acceptance.
 | cold_contract_assembly | keeps_flow | max | unprofiled | 1 | 200.11 | 1000 | 3000 | 5000 (5x) | met |
 | profile_first_contract_assembly | keeps_flow | first | profiled | 0 | - (profiled 3575.05) | 1000 | 3000 | 5000 (5x) | not_evaluated |
 | first_contract_assembly | keeps_flow | first | unprofiled | 1 | 1644.24 | 1000 | 3000 | 5000 (5x) | within_tolerance |
-| startup_system_init_first | good_ttfb | first | unprofiled | 1 | 1701.10 | 800 | 3000 | 8000 (10x) | within_tolerance |
-| startup_system_init_http | good_ttfb | p95 | unprofiled | 1 | 630.90 | 800 | 3000 | 8000 (10x) | met |
-| warm_startup_repeat | keeps_flow | p95 | unprofiled | 5 | 444.49 | 1000 | 3000 | 8000 (8x) | met |
+| startup_system_init_first | good_ttfb | first | unprofiled | 1 | 1776.24 | 800 | 3000 | 8000 (10x) | within_tolerance |
+| startup_system_init_http | good_ttfb | p95 | unprofiled | 1 | 644.95 | 800 | 3000 | 8000 (10x) | met |
+| warm_startup_repeat | keeps_flow | p95 | unprofiled | 5 | 550.19 | 1000 | 3000 | 8000 (8x) | met |
 
 ### First-call boundary
 

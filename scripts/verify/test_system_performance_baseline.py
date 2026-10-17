@@ -174,6 +174,42 @@ class IdentityTests(unittest.TestCase):
         self.assertEqual(normalized["identity_match"]["status"], "match")
         self.assertEqual(normalized["identity_match"]["hash_count"], 1)
 
+    def test_menu_config_identity_is_bound_and_mismatch_is_stale(self):
+        path = "addons/smart_core/app_config_engine/models/app_nav_config.py"
+        payload = _observation_payload()
+        payload["menu_config_sha256"] = hashlib.sha256((spb.ROOT / path).read_bytes()).hexdigest()
+        normalized = spb.normalize(_entry(payload))
+        self.assertEqual(normalized["identity_match"]["status"], "match")
+        self.assertEqual(normalized["identity_match"]["hash_count"], 2)
+        payload["menu_config_sha256"] = "2" * 64
+        stale = spb.normalize(_entry(payload))
+        self.assertEqual(stale["identity_match"]["status"], "stale")
+        self.assertEqual(
+            {row["path"] for row in stale["identity_match"]["mismatches"]}, {path})
+
+    def test_sla_identity_binds_system_init_and_menu_config(self):
+        relative = ("handlers/system_init.py", "app_config_engine/models/app_nav_config.py")
+        payload = {
+            "ok": True,
+            "summary": {},
+            "rows": [],
+            "identity": {
+                item: hashlib.sha256(
+                    (spb.ROOT / "addons/smart_core" / item).read_bytes()).hexdigest()
+                for item in relative
+            },
+        }
+        entry = {
+            "source": {"path": "sla.json", "sha256": "0",
+                       "mtime": "2026-01-01T00:00:00+00:00"},
+            "prefix": "",
+            "schema": "platform-sla-guard/v1",
+            "payload": payload,
+        }
+        normalized = spb.normalize(entry)
+        self.assertEqual(normalized["identity_match"]["status"], "match")
+        self.assertEqual(normalized["identity_match"]["hash_count"], 2)
+
     def test_stale_identity_is_flagged(self):
         payload = _observation_payload()
         payload["handler_sha256"] = "0" * 64

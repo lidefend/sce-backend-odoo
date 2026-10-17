@@ -361,6 +361,7 @@ IDENTITY_HASH_FILES = {
     "handler_sha256": "addons/smart_core/handlers/system_init.py",
     "contract_handler_sha256": "addons/smart_core/handlers/ui_contract_v2.py",
     "preference_handler_sha256": "addons/smart_core/handlers/user_view_preference.py",
+    "menu_config_sha256": "addons/smart_core/app_config_engine/models/app_nav_config.py",
 }
 # Payload projection-owner key -> product file.
 IDENTITY_OWNER_FILES = {
@@ -718,6 +719,7 @@ def _product_file_hashes(entry: dict) -> dict:
         "runtime-contract-request-probe/v1",
         "runtime-permission-probe/v1",
         "runtime-contract-role-matrix-probe/v1",
+        "platform-sla-guard/v1",
     }:
         declared.clear()
         for relative, value in (payload.get("identity") or {}).items():

@@ -7,9 +7,9 @@
 
 | intent | p95_ms | p95_limit | max_payload_bytes | payload_limit | statuses |
 |---|---:|---:|---:|---:|---|
-| system.init | 630.90 | 8000.00 | 238926 | 3500000 | 200 |
-| ui.contract | 877.16 | 5000.00 | 621388 | 3500000 | 200 |
-| execute_button | 23.53 | 3000.00 | 683 | 600000 | 403 |
+| system.init | 644.95 | 8000.00 | 238928 | 3500000 | 200 |
+| ui.contract | 870.50 | 5000.00 | 621388 | 3500000 | 200 |
+| execute_button | 25.08 | 3000.00 | 683 | 600000 | 403 |
 
 ## Denials
 
