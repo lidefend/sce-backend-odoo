@@ -293,7 +293,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "STATUS 2026-10-17 (owner round directive: this round's objective is execution efficiency). The duty-carrier step-2 work is implemented locally on top of ae4b1ad1 in a dirty tree; the newest delta makes the duty stack publish the served frontend build identity and folds the runtime-environment, identity and addon-root reads into one container entry per duty per run (was three). make verify.daily.runtime.database.duty is green (65 + 156 tests, +3 new) and make ci.local.iteration exits 0 on the dirty stage identity. The demo rebuild's owner-fixed order is unchanged and still not started: no host write has been made, the legacy publish face still serves 18081/8070, no sc-demo-dev cluster or sc_demo* volume exists, and the recovery/stand-down preconditions recorded under demo_carrier_rebuild_20261016 still hold. NEXT: obtain one focused independent re-check bound to the current candidate (the review set is 74545f9c..dirty, which now also carries the frontend-identity and probe-batching delta), then create the sc-demo-dev cluster through daily.runtime.database.duty.apply with the digest re-derived from the reviewed declaration, initialize it, seed it through the product's own demo chain, stand the legacy publisher down with daily.runtime.legacy_stack.retire.apply (maintenance state is the failure default), switch 18081/8070, then product acceptance and the independent B-line closure.",
+  "next_exact_step": "STATUS 2026-10-17 (owner round directive: execute mainline integration first and do not refresh or deploy the daily candidate runtime before mainline stability). Candidate 06c04215 is committed on fix/daily-runtime-payload-import-closeout-20261016 on top of the reviewed 343a51d6 duty identity/efficiency change; 06c04215 only restores the two exact PD003 synthetic-fixture blobs already registered on main and regenerates the complexity and split-plan reports. The previous clean 343a51d6 exact-head Quick failed with no receipt on shards 1 and 4; the owning-layer fixes now pass make security.personal_data_scan (confirmed_matches=0, values_recorded=false) and make ci.generated_reports.guard. NEXT: commit this ledger-only update, run one clean exact-head make ci.local.quick on 06c04215 and require its receipt, perform a read-only merge-tree conflict check against main 41c7a9dd, then invoke workspace.branch.sync-main.extended with exact branch/head/base/main/commit-count identities to rebase on the current main. A receipt is invalidated by the rebase, so rerun Quick on the rebased head before pr.push, pr.create, required-check verification and governed merge. Mainline integration has no commit-count limit; the 12/64 limit applies only to the governed unpublished-branch rebase entry. Do not claim mainline, release or product acceptance from this remediation, and do not deploy or refresh runtime as part of the merge.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -4083,20 +4083,27 @@
   "duty_frontend_build_identity_and_probe_efficiency_20261017": {
     "authority": "owner round directive 2026-10-17: this round's objective is execution efficiency. The duty stack also had a correctness gap in the same function: it forwarded SC_SOURCE_REVISION but not the served frontend artifact, so /api/runtime-version answered an anonymous bundle and every acceptance lane silently degraded its evidence-reuse key from the artifact to the deployment.",
     "stage_identity": {
-      "head": "ae4b1ad16ce6a8d67a9cb1b2df51619663c4d110",
-      "dirty_scope": [
-        "config/ops/daily_runtime_duty_stack.env",
-        "config/ops/daily_runtime_duty_stack.yml",
-        "scripts/ops/daily_runtime_database_duty.py",
-        "scripts/ops/test_daily_runtime_database_duty.py"
-      ],
+      "head": "343a51d6ffda12e2b9fa05b098675b2c1e0ddd77",
+      "dirty_scope": [],
       "frozen": false,
-      "note": "iteration stage identity, not a delivery fingerprint; no commit and no host write was made by this record"
+      "note": "committed iteration stage identity; not a delivery fingerprint and no host write was made by this record"
     },
     "efficiency": {
       "round_trips_before": "application_config_facts paid one container entry per environment key (ENV, SC_ENVIRONMENT) plus a third for the addon-root scan: 3 docker exec round trips per declared duty per entry run",
       "round_trips_after": "the runtime environment, the published identity vector and the addon-root scan share one NUL-separated probe: 1 round trip per declared duty per entry run",
       "delta": "2 fewer container entries per duty per run; with the three declared duties that is 6 fewer entries per run, and the two new published-identity facts cost no additional entry",
+      "measured_host_cost": {
+        "method": "read-only sc-root benchmark on sc-demo-dev-odoo-1; three warm rounds of ten iterations each, alternating the pre-change three-exec path and the current single-exec path; the measured scope is container exec plus the addon-root scan and excludes SSH and the rest of the plan",
+        "before_ms_per_duty_median": 170.5,
+        "after_ms_per_duty_median": 58.5,
+        "saved_ms_per_duty": 112.0,
+        "reduction_percent": 65.7,
+        "three_duties": {"before_ms": 511.5, "after_ms": 175.5, "saved_ms": 336.0},
+        "samples_ms": {
+          "before": [167.3, 170.5, 175.3],
+          "after": [56.0, 58.9, 58.5]
+        }
+      },
       "why_it_matters": "the duty entry walks every declared duty on every plan, refresh, upgrade and seed; the identity facts are read in the same instant as the runtime environment, so a per-key probe multiplied a namespace entry by a constant for no additional information",
       "guard": "test_the_environment_vector_is_read_in_one_round_trip pins exactly one probe per duty and fails if the reads split again"
     },
@@ -4134,7 +4141,94 @@
       ],
       "effect_on_the_pending_first_write": "the duty entry is the tool that will create the sc-demo-dev cluster, so its delta belongs to the same review set the record already requires to be re-checked before the first host write; the shipped declaration digest is unchanged by this delta and still has to be re-derived from the reviewed file before apply"
     },
-    "not_a_pass": "No cluster was created, no container was stopped, no database was written and no evidence was reissued by this record. The demo line still has no lawful product-behaviour carrier until the rebuild lands.",
+    "not_a_pass": "No host write was made by this delta. The committed change only closes the tool-layer efficiency and identity-publishing gap; the running duties still need an exact candidate deployment and refresh before their published identity can pass the new assertion.",
+    "writes": false
+  },
+  "duty_runtime_identity_plan_20261017": {
+    "authority": "Read-only plan after the 343a51d6 identity-publishing change; the result is recorded before any deployment so the failed earlier layer is explicit.",
+    "stage_identity": {
+      "head": "343a51d6ffda12e2b9fa05b098675b2c1e0ddd77",
+      "dirty_scope": [],
+      "frozen": false
+    },
+    "command": "make daily.runtime.database.duty.plan",
+    "status": "FAIL",
+    "exit_code": 1,
+    "report": ".runtime/final-acceptance/daily-deployed/database-duty-plan.json",
+    "declaration_digest": "37b3b2fc91c770f9191e00d64aa90c7910ff299e81da4d8958d9e1992b30a4e5",
+    "plan_digest": "d94d0f994c06938a1a602a8a67bf22c2d0577c1a71c6a6b5884f2b1709371940",
+    "remote_head": "ae4b1ad16ce6a8d67a9cb1b2df51619663c4d110",
+    "failed_assertion": "served_container_publishes_the_declared_runtime_identity",
+    "failed_duties": [
+      "platform_control",
+      "demo",
+      "customer_tenant_dev"
+    ],
+    "observed": {
+      "platform_control": "SC_SOURCE_REVISION=b80841059b196f66487f4b598d90d3b0662476b4, FRONTEND_BUILD_SHA256 empty",
+      "demo": "SC_SOURCE_REVISION=ae4b1ad16ce6a8d67a9cb1b2df51619663c4d110, FRONTEND_BUILD_SHA256 empty",
+      "customer_tenant_dev": "SC_SOURCE_REVISION=b80841059b196f66487f4b598d90d3b0662476b4, FRONTEND_BUILD_SHA256 empty"
+    },
+    "classification": "deployment drift / expected fail-closed",
+    "reason": "The deployed runtime tree is still ae4b1ad1 and every running application container was created before the reviewed stack forwarded FRONTEND_BUILD_SHA256. The two older duties also publish an older source revision. The assertion therefore refuses exactly as designed; it is not a defect in candidate 343a51d6 and must not be relaxed.",
+    "not_run": [
+      "No duty apply, initialize, upgrade, seed or cutover was run from this plan.",
+      "No host write was made by the plan."
+    ],
+    "next_exact_step": "Deploy the exact candidate tree, refresh all three declared duties, then rerun the read-only plan and require it to PASS before any dependent acceptance or cutover work.",
+    "writes": false
+  },
+  "duty_frontend_identity_review_20261017": {
+    "authority": "Continuation-executor focused read-only re-check of the committed candidate 74545f9c..343a51d6 before exact-candidate deployment; this is not an external independent review and does not claim one.",
+    "stage_identity": {
+      "head": "343a51d6ffda12e2b9fa05b098675b2c1e0ddd77",
+      "dirty_scope": [
+        ".agent/runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/run.json"
+      ],
+      "frozen": false
+    },
+    "result": "PASS with no blocking finding",
+    "checked": [
+      "The served artifact fingerprint has one declared source: the duty's stack.frontend_dist_dir/.build-sha256, read by frontend_build_facts; it is reconciled with the deployed build environment when that environment declares a fingerprint and is never pinned in the duty declaration.",
+      "render_env refuses before any compose up when the artifact is missing, is not a sha256, or contradicts the deployed build environment; the refusal is bound to DAILY_DUTY_FRONTEND_BUILD_IDENTITY.",
+      "The application environment and identity vector are transported NUL-separated in one docker exec; the addon-root scan shares that entry and the fixed key order prevents a newline-bearing value from shifting the mapping.",
+      "evaluate requires a non-empty declared FRONTEND_BUILD_SHA256 and exact equality for both SC_SOURCE_REVISION and FRONTEND_BUILD_SHA256; a matching revision with an anonymous, foreign or unreadable artifact cannot satisfy the assertion.",
+      "The existing local verification remains sufficient for this tool-layer delta: 65 identity tests and 156 duty tests passed, and the focused deployment blocker is the running container generation, not a candidate code defect."
+    ],
+    "not_claimed": [
+      "No external reviewer signature or independent B-line review is claimed by this record.",
+      "No runtime or product acceptance is claimed; the current plan still fails closed on the deployed identity."
+    ],
+    "writes": false
+  },
+  "mainline_integration_round_20261017": {
+    "authority": "Owner round directive 2026-10-17: execute mainline integration first; a mainline merge has no commit-count limit, and the 12/64 limit belongs only to the governed unpublished-branch rebase entry. Further host writes and runtime refresh are paused until mainline stability.",
+    "stage_identity": {
+      "head": "06c042153814b2c02170235e5f04c190cec6dd89",
+      "dirty_scope": [
+        ".agent/runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/run.json"
+      ],
+      "frozen": false
+    },
+    "previous_candidate": {
+      "head": "343a51d6ffda12e2b9fa05b098675b2c1e0ddd77",
+      "quick_result": "FAIL with no receipt",
+      "passed_shards": [0, 2, 3, 5, 6, 7],
+      "failed_shards": [1, 4],
+      "failure_1": "ci.generated_reports.guard reported the complexity report stale; regenerating it then exposed the dependent split-plan queue as stale too.",
+      "failure_2": "security.personal_data_scan and repository.clean_history.scan reported PD003 on historical blobs a3f3a5d3635b896cb67b6359bc759a7e852609f7 and e744dc509f51353214405799ab771215025e54d4, both synthetic bank-account fixtures."
+    },
+    "remediation": [
+      "Restored the exact PD003 registrations for the same two immutable blobs already present on main 41c7a9dd; the values are synthetic and the registry remains exact-path, exact-blob and exact-rule with no wildcard or directory exemption.",
+      "Regenerated docs/engineering_convergence/complexity_budget_report.md and its dependent docs/engineering_convergence/split_plan_queue.md."
+    ],
+    "targeted_results": {
+      "make security.personal_data_scan": "PASS; confirmed_matches=0, suppressed_false_positives=23, values_recorded=false",
+      "make ci.generated_reports.guard": "PASS; all tracked generated reports current",
+      "python3 scripts/ci/test_personal_data_scan.py": "PASS; 9 tests"
+    },
+    "next_exact_step": "Run one clean exact-head ci.local.quick on 06c04215, inspect merge-tree conflicts read-only, rebase through workspace.branch.sync-main.extended on exact identities, rerun Quick on the rebased head, then publish and integrate through governed PR entries while re-reading the live head, main and required checks before merge.",
+    "not_a_pass": "No exact-head Quick receipt exists for 06c04215 yet. No rebase, publication, PR, merge, deployment, release or product acceptance is claimed by this record.",
     "writes": false
   }
 }
