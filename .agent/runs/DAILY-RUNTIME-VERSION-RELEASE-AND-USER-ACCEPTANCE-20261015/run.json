@@ -21,7 +21,7 @@
     "disposition": "Registered as findings of this run; not resolved in the three-database step. They belong to the fact-source unification goal and keep it open.",
     "guard_defect": "sc_data_scope_rule_coverage_guard.record_is_global treats groups=[(5,0,0)] as group-scoped although Odoo treats it as global, so three hand-written payroll global rules are invisible to the guard"
   },
-  "baseline_sha": "b966d66a0c4132e7b2c75e497fec5bf2207d44d6",
+  "baseline_sha": "5dbf503d514040fbfddaddd056cecda7ae460876",
   "blockers": [
     "CLOSED 2026-10-16 in this run (was: the maintenance access for <customer-tenant-db> could not be requested and approved). The named approver lidefend is now a verified platform security administrator with an account, and the approval was driven end to end over the product HTTP entry: request by the platform administrator admin, approval by lidefend, state approved, window 2026-10-16 08:43:20 CST. The decision was taken by the product capability, not by a one-off shell. See maintenance_approval_execution_20261016 and maintenance_access_real_runtime_negatives_20261016.",
     "CLOSED 2026-10-16 in this run (was: the daily runtime published face still ran SC_SOURCE_REVISION=10bf72ef). Two candidate bundle deployments converged the published face and the duty refresh then read all three faces back at b80841059b196f66487f4b598d90d3b0662476b4, so the routes added on this branch are mounted. See duty_stack_runtime_environment_forwarding_20261016.",
