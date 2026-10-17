@@ -153,7 +153,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "2026-10-17 (R15.7 lane-coverage registration closed): the first Quick at 6760de8a failed only at audit.verification.lane_coverage.check because R14/R15 local probes were unregistered; 4 targets (local_diagnostic) and 3 scripts (local_performance_probe / local_quick_only_unit) are now registered and the baseline was widened through --write-baseline with a diff limited to those 7 identities and 4 dependent counters; verify.verification.lane_coverage PASS (72 self-tests). Next: re-run ci.delivery.freeze.prepare, commit this P4 registration batch, rebind the performance baseline JSON to that clean SHA, recompute the preflight fingerprint, then run exactly one ci.local.quick at the frozen HEAD. The earlier failed Quick is superseded, not reused. No push/PR/deploy yet.",
+  "next_exact_step": "2026-10-17 (R15.8 harness fix pending commit): second Quick at 6a369199 failed only at verify.product.menu.metadata_batch.unit because the AST harness namespace lacked build_web_surface_entry_target; the harness now injects the real navigation_entry_target function and the unit passes 6 tests. Next: re-run ci.delivery.freeze.prepare, commit the harness fix, rebind the performance baseline JSON to the new clean SHA, recompute the preflight fingerprint, and run exactly one ci.local.quick at that frozen HEAD. Both earlier Quick runs are failed and superseded. No push/PR/deploy yet.",
   "source_runs": [
     38818510036,
     38811434965,
@@ -2621,6 +2621,14 @@
         "sha256": "5e6398b993845706b936982474e4283cc4ec8da3c9222955a87357f6d4bf6129"
       },
       "stage_head": "6760de8a4dcd087864865cb10f99fb17e8907813",
+      "dirty": false
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.product.menu.metadata_batch.unit",
+      "status": "passed",
+      "stage": "R15.8 at candidate 6a369199: the second ci.local.quick failed at verify.product.menu.metadata_batch.unit with NameError build_web_surface_entry_target (the AST harness execs menu_service methods in a hand-built namespace that lacked the module-level import introduced by the S2 fix). Fixed the owning P4 harness by loading the real pure-Python navigation_entry_target module and injecting the real function, no stub and no copied implementation. Target now passes 6 tests; Quick must still be re-run once at the new frozen HEAD.",
+      "stage_head": "6a369199d08ab863ce4fddec7f4d43b8abe7f321",
       "dirty": false
     }
   ],

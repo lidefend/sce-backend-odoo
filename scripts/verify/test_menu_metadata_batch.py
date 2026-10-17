@@ -1,14 +1,22 @@
 """Exercise the production batching and permission consumer without Odoo boot."""
 import ast
+import importlib.util
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
 SOURCE = Path(__file__).resolve().parents[2] / 'addons/smart_core/delivery/menu_service.py'
+ENTRY_TARGET_SOURCE = Path(__file__).resolve().parents[2] / 'addons/smart_core/core/navigation_entry_target.py'
 CLASS = next(node for node in ast.parse(SOURCE.read_text()).body if isinstance(node, ast.ClassDef) and node.name == 'MenuService')
 METHODS = {'_action_xmlids_from_facts', '_route_entry_from_menu', '_native_visible_menu_paths'}
-namespace = {'MenuFactService': SimpleNamespace(ACTION_MODELS={'ir.actions.act_window', 'ir.actions.server'})}
+_ENTRY_TARGET_SPEC = importlib.util.spec_from_file_location('navigation_entry_target_under_test', ENTRY_TARGET_SOURCE)
+ENTRY_TARGET_MODULE = importlib.util.module_from_spec(_ENTRY_TARGET_SPEC)
+_ENTRY_TARGET_SPEC.loader.exec_module(ENTRY_TARGET_MODULE)
+namespace = {
+    'MenuFactService': SimpleNamespace(ACTION_MODELS={'ir.actions.act_window', 'ir.actions.server'}),
+    'build_web_surface_entry_target': ENTRY_TARGET_MODULE.build_web_surface_entry_target,
+}
 exec(compile(ast.Module(body=[node for node in CLASS.body if isinstance(node, ast.FunctionDef) and node.name in METHODS], type_ignores=[]), str(SOURCE), 'exec'), namespace)
 
 

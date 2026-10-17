@@ -2741,3 +2741,27 @@ request/trace 身份键、两个 contract `context` 容器中的 `trace_id`/`req
 ### （5）状态
 
 - 未独立复核、未归档、未推送、未部署。
+
+## R15.8 Quick 二次失败：AST 测试台缺依赖注入（2026-10-17，不冻结）
+
+### （1）失败事实
+
+- 在候选 `6a369199…`（指纹 `65c05b48…`）上执行 `make ci.local.quick`，退出码 2，未签发 receipt。
+- 失败门禁：`verify.product.menu.metadata_batch.unit`。
+- 报错：`NameError: name 'build_web_surface_entry_target' is not defined`，位置 `addons/smart_core/delivery/menu_service.py:381`。
+- 归因：S2 修复在 `_route_entry_from_menu` 中调用模块级导入 `build_web_surface_entry_target`；而 `scripts/verify/test_menu_metadata_batch.py` 以 AST 抽取类方法、在自建命名空间中 exec，命名空间未提供该模块级依赖。属 P4 测试工具面未同步，不是产品逻辑缺陷；产品调用本身是声明投影的既有职责。
+
+### （2）最小修复
+
+- `scripts/verify/test_menu_metadata_batch.py`：按路径加载纯 Python 的生产模块 `addons/smart_core/core/navigation_entry_target.py`，把真实的 `build_web_surface_entry_target` 注入测试命名空间。
+- 未打桩、未在测试中复制实现，因此 S2 的“不完整声明显式停机”行为仍由真实代码参与断言。
+- 改动仅该文件（`9 insertions, 1 deletion`），未触碰产品代码、门禁定义或其他测试。
+
+### （3）定向验证
+
+- `make verify.product.menu.metadata_batch.unit`：6 tests OK，退出码 0。
+- 该失败属 fail-fast 捕获；修复后按影响集合只需重跑本单元，Quick 仍需在最终冻结 HEAD 上整体重跑一次。
+
+### （4）状态
+
+- 未独立复核、未归档、未推送、未部署。
