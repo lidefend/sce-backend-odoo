@@ -153,7 +153,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "2026-10-17 (R15.8 harness fix pending commit): second Quick at 6a369199 failed only at verify.product.menu.metadata_batch.unit because the AST harness namespace lacked build_web_surface_entry_target; the harness now injects the real navigation_entry_target function and the unit passes 6 tests. Next: re-run ci.delivery.freeze.prepare, commit the harness fix, rebind the performance baseline JSON to the new clean SHA, recompute the preflight fingerprint, and run exactly one ci.local.quick at that frozen HEAD. Both earlier Quick runs are failed and superseded. No push/PR/deploy yet.",
+  "next_exact_step": "2026-10-17 (R15.9 ledger re-export pending commit): PR #669 frontend_release_gate failed because the decision-authority ledger lagged ActionView.vue line drift; re-exported via verify.frontend.decision_authority.export (3 line entries only, classifications unchanged) and the unit passes 15 tests. Next: commit, rebind the performance baseline JSON, recompute the fingerprint, run exactly one ci.local.quick at the new frozen HEAD, refresh the external archive and PR body, then monitor required remote checks on the new head. No merge or deploy.",
   "source_runs": [
     38818510036,
     38811434965,
@@ -2630,6 +2630,14 @@
       "stage": "R15.8 at candidate 6a369199: the second ci.local.quick failed at verify.product.menu.metadata_batch.unit with NameError build_web_surface_entry_target (the AST harness execs menu_service methods in a hand-built namespace that lacked the module-level import introduced by the S2 fix). Fixed the owning P4 harness by loading the real pure-Python navigation_entry_target module and injecting the real function, no stub and no copied implementation. Target now passes 6 tests; Quick must still be re-run once at the new frozen HEAD.",
       "stage_head": "6a369199d08ab863ce4fddec7f4d43b8abe7f321",
       "dirty": false
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.frontend.decision_authority.export && make verify.frontend.decision_authority.unit",
+      "status": "passed",
+      "stage": "R15.9: remote frontend_release_gate failed at b51a20b8 because the committed decision-authority ledger was out of sync with the live scan after ActionView.vue line drift. Re-exported through the governed entry; the ledger diff is exactly three line entries (1433->1436, 1423->1426, 3068->3070) with unchanged classifications and statistics. Unit now passes 15 tests and the guard PASSes.",
+      "stage_head": "b51a20b87bc60ebdf83b5de8f3da92a434576729",
+      "dirty": true
     }
   ],
   "evidence_index": {

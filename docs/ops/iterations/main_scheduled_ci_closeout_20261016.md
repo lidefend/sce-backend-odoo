@@ -2765,3 +2765,25 @@ request/trace 身份键、两个 contract `context` 容器中的 `trace_id`/`req
 ### （4）状态
 
 - 未独立复核、未归档、未推送、未部署。
+
+## R15.9 远程 frontend_release_gate 失败：决策权威台账未随行号重导（2026-10-17，不冻结）
+
+### （1）失败事实
+
+- 候选 `b51a20b8…` 的 PR #669 运行中，`frontend_release_gate` 失败；失败点 `verify.frontend.decision_authority.unit` 的 `test_committed_ledger_matches_live_scan`。
+- 报错：`committed decision-authority ledger is out of sync with the live scan; re-export it and review the diff`。
+- 归因：本批较早提交修改了 `frontend/apps/web/src/views/ActionView.vue`，行号整体位移；台账仍是位移前扫描结果。属生成台账未随源码重导，不是决策分类变化。
+
+### （2）最小修复
+
+- 通过受管入口 `make verify.frontend.decision_authority.export` 重新导出 `docs/frontend_productization/decision-authority-inventory-v1.json`。
+- 台账差异仅 3 处 `lines`（`1433→1436`、`1423→1426`、`3068→3070`），`classification`、`literal`、`occurrences` 与统计（findings=139、distinct=99、contract-derived=51、frontend-logic-defects=0）全部未变。
+
+### （3）验证
+
+- `make verify.frontend.decision_authority.unit`：15 tests OK，守卫 PASS（每个决策均为契约派生、已登记缺口或声明渲染交互）。
+- 本地 Quick 未覆盖该单元，因此此前本地通过不代表远程该车道通过；本轮把该单元纳入定向验证。
+
+### （4）状态
+
+- 新提交后候选身份变化，需重绑性能基线目标身份、重算指纹并在新 HEAD 上再跑一次 Quick；旧候选的归档与 PR 正文以新身份更新。
