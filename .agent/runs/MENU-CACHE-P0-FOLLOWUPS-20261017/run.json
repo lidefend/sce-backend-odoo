@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "MENU-CACHE-P0-FOLLOWUPS-20261017",
   "branch": "fix/menu-cache-p0-followups-registry-20261017",
-  "baseline_sha": "f7765c52ee1283cc8fdeccec6782b046df33f292",
+  "baseline_sha": "5dbf503d514040fbfddaddd056cecda7ae460876",
   "status": "active",
   "goal": ".agent/goals/MENU-CACHE-P0-FOLLOWUPS-20261017.yaml",
   "record": "docs/ops/iterations/menu_cache_p0_followups_20261017.md",
