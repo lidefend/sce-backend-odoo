@@ -35,12 +35,14 @@ class ReleaseSetTest(unittest.TestCase):
             "tenant_key": "sample_tenant",
         }))
         data = {
-            "schema_version": "sce.production_release_set.v4",
+            "schema_version": "sce.production_release_set.v5",
             "release_version": (Path(__file__).resolve().parents[2] / "VERSION").read_text().strip(),
             "product_sha": "a" * 40,
             "product_tree": "b" * 40,
             "product_image": "ghcr.io/lidefend/sce-product@sha256:" + "c" * 64,
             "product_image_digest": "sha256:" + "c" * 64,
+            "frontend_image": "ghcr.io/lidefend/sce-frontend@sha256:" + "9" * 64,
+            "frontend_image_digest": "sha256:" + "9" * 64,
             "customer_sha": "d" * 40,
             "customer_tree": "e" * 40,
             "tenant_key": "sample_tenant",
@@ -101,6 +103,51 @@ class ReleaseSetTest(unittest.TestCase):
             payload = target.load_lock(lock)
             target.verify_bound_files(payload)
 
+    def test_split_images_are_bound_independently(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            lock, _ = self.fixture(Path(temporary))
+            payload = target.load_lock(lock)
+            self.assertEqual(
+                payload["product_image_digest"],
+                payload["product_image"].partition("@")[2],
+            )
+            self.assertEqual(
+                payload["frontend_image_digest"],
+                payload["frontend_image"].partition("@")[2],
+            )
+            self.assertNotEqual(
+                payload["frontend_image_digest"], payload["product_image_digest"]
+            )
+
+    def test_frontend_reference_digest_mismatch_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            lock, data = self.fixture(Path(temporary))
+            data["frontend_image_digest"] = "sha256:" + "8" * 64
+            lock.write_text(json.dumps(data))
+            with self.assertRaisesRegex(
+                target.ReleaseSetError, "FRONTEND_IMAGE_REFERENCE_MISMATCH"
+            ):
+                target.load_lock(lock)
+
+    def test_frontend_digest_format_is_validated(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            lock, data = self.fixture(Path(temporary))
+            data["frontend_image"] = "ghcr.io/lidefend/sce-frontend@sha256:" + "z" * 64
+            data["frontend_image_digest"] = "sha256:" + "z" * 64
+            lock.write_text(json.dumps(data))
+            with self.assertRaisesRegex(
+                target.ReleaseSetError, "FRONTEND_IMAGE_DIGEST_INVALID"
+            ):
+                target.load_lock(lock)
+
+    def test_v4_lock_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            lock, data = self.fixture(Path(temporary))
+            data["schema_version"] = "sce.production_release_set.v4"
+            lock.write_text(json.dumps(data))
+            with self.assertRaisesRegex(target.ReleaseSetError, "SCHEMA_INVALID"):
+                target.load_lock(lock)
+
     def test_signed_tenant_history_module_is_allowed(self):
         with tempfile.TemporaryDirectory() as temporary:
             lock, data = self.fixture(Path(temporary))
@@ -133,6 +180,51 @@ class ReleaseSetTest(unittest.TestCase):
                 with self.assertRaises(target.ReleaseSetError):
                     target.validate_environment(target.load_lock(lock))
 
+    def environment_mapping(self, payload: dict) -> dict[str, str]:
+        return {
+            "ENV": "prod",
+            "PRODUCTION_COMPOSE_PROJECT": "sc_production",
+            "TARGET_DB": "sc_production",
+            "EXPECTED_RELEASE_SHA": payload["product_sha"],
+            "EXPECTED_IMAGE_DIGEST": payload["product_image_digest"],
+            "ODOO_IMAGE_REF": payload["product_image"],
+            "EXPECTED_FRONTEND_IMAGE_DIGEST": payload["frontend_image_digest"],
+            "FRONTEND_IMAGE_REF": payload["frontend_image"],
+        }
+
+    def test_environment_accepts_split_image_identity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            lock, _ = self.fixture(Path(temporary))
+            payload = target.load_lock(lock)
+            with patch.dict(
+                os.environ, self.environment_mapping(payload), clear=True
+            ):
+                target.validate_environment(payload)
+
+    def test_environment_rejects_frontend_reference_mismatch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            lock, _ = self.fixture(Path(temporary))
+            payload = target.load_lock(lock)
+            env = self.environment_mapping(payload)
+            env["FRONTEND_IMAGE_REF"] = "ghcr.io/lidefend/sce-frontend@sha256:" + "7" * 64
+            with patch.dict(os.environ, env, clear=True):
+                with self.assertRaisesRegex(
+                    target.ReleaseSetError, "FRONTEND_IMAGE_REF"
+                ):
+                    target.validate_environment(payload)
+
+    def test_environment_rejects_frontend_digest_mismatch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            lock, _ = self.fixture(Path(temporary))
+            payload = target.load_lock(lock)
+            env = self.environment_mapping(payload)
+            env["EXPECTED_FRONTEND_IMAGE_DIGEST"] = "sha256:" + "7" * 64
+            with patch.dict(os.environ, env, clear=True):
+                with self.assertRaisesRegex(
+                    target.ReleaseSetError, "EXPECTED_FRONTEND_IMAGE_DIGEST"
+                ):
+                    target.validate_environment(payload)
+
     def test_wrong_database_and_filestore_are_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
             lock, data = self.fixture(Path(temporary))
@@ -153,6 +245,8 @@ class ReleaseSetTest(unittest.TestCase):
                 "product_tree": data["product_tree"],
                 "product_image": data["product_image"],
                 "product_image_digest": data["product_image_digest"],
+                "frontend_image": data["frontend_image"],
+                "frontend_image_digest": data["frontend_image_digest"],
                 "customer_sha": data["customer_sha"],
                 "customer_tree": data["customer_tree"],
                 "tenant_key": data["tenant_key"],

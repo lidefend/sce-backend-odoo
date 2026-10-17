@@ -34,12 +34,14 @@ def build_payload(args: argparse.Namespace) -> dict:
     if args.output.exists() or args.output.is_symlink():
         raise production_release_set.ReleaseSetError("PRODUCTION_RELEASE_SET_OUTPUT_EXISTS")
     return {
-        "schema_version": "sce.production_release_set.v4",
+        "schema_version": "sce.production_release_set.v5",
         "release_version": args.release_version,
         "product_sha": args.product_sha,
         "product_tree": args.product_tree,
         "product_image": args.product_image,
         "product_image_digest": args.product_image_digest,
+        "frontend_image": args.frontend_image,
+        "frontend_image_digest": args.frontend_image_digest,
         "customer_sha": args.customer_sha,
         "customer_tree": args.customer_tree,
         "tenant_key": args.tenant_key,
@@ -106,6 +108,8 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--product-tree", required=True)
     result.add_argument("--product-image", required=True)
     result.add_argument("--product-image-digest", required=True)
+    result.add_argument("--frontend-image", required=True)
+    result.add_argument("--frontend-image-digest", required=True)
     result.add_argument("--customer-sha", required=True)
     result.add_argument("--customer-tree", required=True)
     result.add_argument("--tenant-key", required=True)

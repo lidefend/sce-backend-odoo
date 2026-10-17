@@ -32,3 +32,8 @@ RUN --mount=type=cache,id=sce-frontend-pnpm-store,target=/pnpm/store,sharing=loc
 COPY frontend/ ./
 RUN pnpm -C packages/design-tokens build \
     && pnpm -C apps/web exec vite build --mode production
+
+# Export-only stage for CI fingerprinting and local artifact extraction. The
+# runtime image is Dockerfile.production-frontend, not this builder.
+FROM scratch AS frontend-dist
+COPY --from=0 /build/frontend/apps/web/dist/ /

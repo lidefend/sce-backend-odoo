@@ -155,6 +155,9 @@ class StaticContractTests(unittest.TestCase):
         cls.frontend_dockerfile = (
             ROOT / "Dockerfile.production-frontend-builder"
         ).read_text()
+        cls.frontend_runtime_dockerfile = (
+            ROOT / "Dockerfile.production-frontend"
+        ).read_text()
         cls.entrypoint = (ROOT / "scripts/release/production_odoo_entrypoint.sh").read_text()
         cls.manager = (ROOT / "scripts/release/production_db_manage.sh").read_text()
         cls.compose = (ROOT / "docker-compose.production-candidate.yml").read_text()
@@ -218,8 +221,8 @@ class StaticContractTests(unittest.TestCase):
         self.assertLess(dependency_install, source_copy)
         self.assertIn("id=sce-frontend-pnpm-store", self.frontend_dockerfile)
         self.assertIn("id=sce-frontend-apt-lists", self.frontend_dockerfile)
-        self.assertIn("id=sce-runtime-apt-lists", self.dockerfile)
         self.assertIn("id=sce-runtime-pip-cache", self.dockerfile)
+        self.assertNotIn("sce-frontend-", self.dockerfile)
     def test_empty_addon_directories_created(self):
         for path in ("/mnt/customer-addons", "/mnt/test-addons", "/mnt/source-addons"): self.assertIn(path, self.dockerfile)
     def test_candidate_image_ships_module_owned_menu_source(self):
@@ -249,15 +252,42 @@ class StaticContractTests(unittest.TestCase):
     def test_compose_images_are_digest_pinned(self): self.assertEqual(len(re.findall(r"image: .*@sha256:[0-9a-f]{64}", self.compose)), 2)
     def test_application_services_require_digest_addressed_refs(self):
         self.assertIn("ODOO_IMAGE_REF with image@sha256 digest is required", self.compose)
-        self.assertIn("NGINX_IMAGE_REF with image@sha256 digest is required", self.compose)
+        self.assertIn("FRONTEND_IMAGE_REF with image@sha256 digest is required", self.compose)
+        self.assertNotIn("NGINX_IMAGE_REF", self.compose)
         self.assertNotIn("image: ${CANDIDATE_IMAGE", self.compose)
         self.assertIn("PRODUCTION_COMPOSE_PROJECT:?PRODUCTION_COMPOSE_PROJECT is required", self.compose)
+
+    def test_compose_contract_admits_two_independent_image_identities(self):
+        preflight = self.release_make.split(
+            "release.production.compose.preflight:", 1
+        )[1].split("\n\n", 1)[0]
+        for token in (
+            "--odoo-image-ref",
+            "--frontend-image-ref",
+            "--expected-odoo-digest",
+            "--expected-frontend-digest",
+            "FRONTEND_IMAGE_REF is required",
+            "EXPECTED_FRONTEND_IMAGE_DIGEST is required",
+        ):
+            self.assertIn(token, preflight)
+        self.assertNotIn("--nginx-image-ref", preflight)
+        self.assertNotIn("--expected-digest", preflight)
+        identity_preflight = self.release_make.split(
+            "release.production.identity.preflight:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("FRONTEND_IMAGE_REF is required", identity_preflight)
+        self.assertIn("EXPECTED_FRONTEND_IMAGE_DIGEST is required", identity_preflight)
+        self.assertIn('--frontend-image "$(FRONTEND_IMAGE_REF)"', identity_preflight)
+        self.assertIn("--expected-frontend-image-digest", identity_preflight)
 
     def test_runtime_receives_frontend_build_identity(self):
         self.assertIn(
             'FRONTEND_BUILD_SHA256="${FRONTEND_BUILD_SHA256}"',
-            self.dockerfile,
+            self.frontend_runtime_dockerfile,
         )
+        self.assertIn(".build-sha256", self.frontend_runtime_dockerfile)
+        self.assertNotIn("FRONTEND_BUILD_SHA256", self.dockerfile)
+        self.assertNotIn("/usr/share/nginx", self.dockerfile)
         self.assertIn(
             "FRONTEND_BUILD_SHA256: ${FRONTEND_BUILD_SHA256:?FRONTEND_BUILD_SHA256 is required}",
             self.compose,
@@ -269,7 +299,9 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn('return 200 \'{"status":"ok","service":"sce-web"}', self.nginx_candidate)
         nginx_service = self.compose.split("\n  nginx:\n", 1)[1]
         self.assertIn("http://127.0.0.1/healthz", nginx_service)
-        self.assertIn("json.load(r).get('status') == 'ok'", nginx_service)
+        healthcheck = nginx_service.replace('\\"', '"')
+        self.assertIn("curl -fsS http://127.0.0.1/healthz", healthcheck)
+        self.assertIn('"status":"ok"', healthcheck)
         self.assertNotIn('test: ["CMD-SHELL", "nginx -t"]', nginx_service)
 
     def test_promotion_config_preflight_is_read_only_and_fail_closed(self):

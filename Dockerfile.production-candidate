@@ -3,12 +3,8 @@ FROM odoo:17.0@sha256:f88f646a0f5fc0b225995ee28953d9ce7367cc731b1756765114691fb9
 USER root
 
 COPY requirements-odoo.txt /tmp/requirements-odoo.txt
-RUN --mount=type=cache,id=sce-runtime-apt-lists,target=/var/lib/apt/lists,sharing=locked \
-    --mount=type=cache,id=sce-runtime-apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=sce-runtime-pip-cache,target=/root/.cache/pip,sharing=locked \
-    apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gettext-base nginx \
-    && apt-get purge -y nodejs npm node-less libnode-dev libnode72 \
+RUN --mount=type=cache,id=sce-runtime-pip-cache,target=/root/.cache/pip,sharing=locked \
+    apt-get purge -y nodejs npm node-less libnode-dev libnode72 \
     && apt-get autoremove -y --purge \
     && rm -rf /usr/local/bin/rtlcss /usr/local/lib/node_modules/rtlcss \
     && rm -f /usr/share/java/libintl-*.jar \
@@ -39,9 +35,7 @@ COPY addons/smart_owner_core /mnt/product-addons/smart_owner_core
 COPY addons/smart_owner_bundle /mnt/product-addons/smart_owner_bundle
 COPY addons_external/oca_server_ux /mnt/addons_external/oca_server_ux
 COPY config/odoo.conf.template /etc/odoo/odoo.conf.template
-COPY config/nginx/conf.d/production-candidate.conf /etc/nginx/templates/default.conf.template
 COPY scripts/render_odoo_conf.py /usr/local/bin/render_odoo_conf.py
-COPY scripts/render_nginx_conf.sh /usr/local/bin/render_nginx_conf.sh
 COPY scripts/release/production_odoo_entrypoint.sh /usr/local/bin/odoo-entrypoint.sh
 COPY scripts/release/production_db_contract.py /usr/local/bin/production_db_contract.py
 COPY scripts/release/production_db_init.py /usr/local/bin/production_db_init.py
@@ -53,41 +47,32 @@ COPY scripts/tenant_payload/provision_operator.py /usr/local/share/sce/provision
 COPY scripts/tenant_payload/odoo_action.py /usr/local/share/sce/tenant_payload_odoo_action.py
 COPY scripts/release/configure_colocated_platform_core.py /usr/local/share/sce/configure_colocated_platform_core.py
 COPY scripts/release/initialize_colocated_platform_snapshot.py /usr/local/share/sce/initialize_colocated_platform_snapshot.py
-COPY frontend/apps/web/dist-production-candidate /usr/share/nginx/html
 COPY VERSION /opt/sce-product/VERSION
 COPY release/product-release.yaml /opt/sce-product/product-release.yaml
 
-RUN chmod 0755 /usr/local/bin/odoo-entrypoint.sh /usr/local/bin/render_odoo_conf.py /usr/local/bin/render_nginx_conf.sh \
+RUN chmod 0755 /usr/local/bin/odoo-entrypoint.sh /usr/local/bin/render_odoo_conf.py \
         /usr/local/bin/production_db_contract.py /usr/local/bin/production_db_init.py /usr/local/bin/production-db-manage \
         /usr/local/bin/production-maintenance /usr/local/bin/production_maintenance_config.py \
-    && rm -f /etc/nginx/sites-enabled/default \
     && find /mnt/product-addons /mnt/customer-addons /mnt/test-addons /mnt/source-addons /mnt/addons_external -type d -exec chmod 0755 {} + \
     && find /mnt/product-addons /mnt/customer-addons /mnt/test-addons /mnt/source-addons /mnt/addons_external -type f -exec chmod 0644 {} + \
-    && chown -R root:root /mnt/product-addons /mnt/customer-addons /mnt/test-addons /mnt/source-addons /mnt/addons_external /usr/share/nginx/html \
+    && chown -R root:root /mnt/product-addons /mnt/customer-addons /mnt/test-addons /mnt/source-addons /mnt/addons_external \
     && chown -R odoo:odoo /opt/sce-runtime
 
 ARG SOURCE_SHA
 ARG PRODUCT_VERSION
-ARG FRONTEND_BUILD_SHA256
 ARG BUILD_TIME
 ARG ODOO_VERSION=17.0
 ARG PYTHON_VERSION
-ARG NODE_VERSION
-ARG PNPM_VERSION
 
 ENV SC_PRODUCT_VERSION="${PRODUCT_VERSION}" \
-    SC_SOURCE_REVISION="${SOURCE_SHA}" \
-    FRONTEND_BUILD_SHA256="${FRONTEND_BUILD_SHA256}"
+    SC_SOURCE_REVISION="${SOURCE_SHA}"
 
 LABEL org.opencontainers.image.revision="${SOURCE_SHA}" \
       org.opencontainers.image.created="${BUILD_TIME}" \
       org.opencontainers.image.title="sce-product" \
       org.opencontainers.image.version="${PRODUCT_VERSION}" \
-      com.sce.frontend.sha256="${FRONTEND_BUILD_SHA256}" \
       com.sce.odoo.version="${ODOO_VERSION}" \
       com.sce.python.version="${PYTHON_VERSION}" \
-      com.sce.node.version="${NODE_VERSION}" \
-      com.sce.pnpm.version="${PNPM_VERSION}" \
       com.sce.node.runtime="absent" \
       com.sce.rtl.boundary="unsupported-ltr-only"
 

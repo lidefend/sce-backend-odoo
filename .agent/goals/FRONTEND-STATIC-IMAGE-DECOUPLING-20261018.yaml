@@ -1,0 +1,26 @@
+schema_version: 1
+goal:
+  id: FRONTEND-STATIC-IMAGE-DECOUPLING-20261018
+  title: 前端静态产物与 Odoo 镜像解耦
+  status: active
+  formal_product_layer: P4
+  layer_target: release/verification toolchain; Odoo runtime image, standalone frontend static image, local demo nginx mount
+  module: [scripts/release, scripts/ops, scripts/verify, Dockerfile, docker-compose, make, docs]
+  objective: >-
+    Remove frontend static assets, nginx and the Node toolchain from the Odoo
+    runtime image; publish the frontend as an independent immutable static
+    image; keep the local demo served from the main repository dist.
+  baseline:
+    branch: fix/frontend-static-image-decoupling-20261018
+    full_sha: f90461c2e4d1bfb3b6551add19d357e76a8443ee
+  exclusions:
+    - No writes to sc-demo-dev, sc_demo, sc_production or sc-backend-odoo-prod.
+    - No changes outside sce-backend-odoo.
+  acceptance:
+    - Odoo image has no /opt/sce/frontend, nginx, node or npm.
+    - Frontend image serves index.html and /healthz and carries io.sce.frontend.sha256.
+    - Release chain requires independent Odoo/frontend digests and fails closed.
+    - Demo /web/login, / and /healthz return 200 from the main-repo dist.
+  rollback: >-
+    Revert this branch's tracked changes; the demo nginx mount is a local
+    compose override and does not modify shared carriers.

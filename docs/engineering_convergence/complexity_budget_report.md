@@ -5,8 +5,8 @@ Generated from repository source files. This report is informational during the 
 ## Summary
 
 - Scanned files: `4851`
-- Files requiring split plan: `68`
-- Files above warning threshold: `133`
+- Files requiring split plan: `69`
+- Files above warning threshold: `134`
 
 ## Split Plan Required
 
@@ -66,6 +66,7 @@ Generated from repository source files. This report is informational during the 
 | 1718 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1693 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1656 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
+| 1652 | Python source | `scripts/release/release_publication.py` |
 | 1650 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1616 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
@@ -89,7 +90,6 @@ Generated from repository source files. This report is informational during the 
 | 1557 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1491 | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1488 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
-| 1484 | Python source | `scripts/release/release_publication.py` |
 | 1479 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1475 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1453 | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
@@ -130,6 +130,7 @@ Generated from repository source files. This report is informational during the 
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1137 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
+| 1131 | Python source | `scripts/release/test_release_publication.py` |
 | 1129 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1128 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
@@ -161,7 +162,6 @@ Generated from repository source files. This report is informational during the 
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 959 | Python source | `addons/smart_construction_core/tests/test_cost_fact_model_v2.py` |
 | 955 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
-| 955 | Python source | `scripts/release/test_release_publication.py` |
 | 951 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
@@ -207,17 +207,19 @@ Generated from repository source files. This report is informational during the 
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 429 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 423 | Shell script | `scripts/demo/verify.sh` |
-| 412 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
+| 414 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
+| 385 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 364 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 356 | Shell script | `scripts/ops/git_safe_push.sh` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
-| 314 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
+| 330 | Shell script | `scripts/release/immutable_candidate_build.sh` |
 | 312 | Shell script | `scripts/ci/orm_result_guard.sh` |
 | 308 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 302 | Shell script | `scripts/deploy/prod_sim_fresh_replay.sh` |
 | 287 | Shell script | `scripts/common/frontend_release_ci_identity.sh` |
 | 278 | Shell script | `scripts/verify/local_dev_payment_request_floorplan_readonly.sh` |
 | 271 | Shell script | `scripts/contract/gate_contract.sh` |
+| 271 | Shell script | `scripts/verify/production_blocker_image.sh` |
 
 ## Largest Files
 
@@ -277,6 +279,7 @@ Generated from repository source files. This report is informational during the 
 | 1718 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1693 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1656 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
+| 1652 | split_plan_required | Python source | `scripts/release/release_publication.py` |
 | 1650 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1650 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
@@ -291,7 +294,6 @@ Generated from repository source files. This report is informational during the 
 | 1513 | split_plan_required | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1491 | warning | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
-| 1484 | warning | Python source | `scripts/release/release_publication.py` |
 | 1479 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1475 | warning | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1453 | warning | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |

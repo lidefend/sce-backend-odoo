@@ -32,6 +32,7 @@ REPOSITORY = "lidefend/sce-backend-odoo"
 GITHUB_REMOTE = "origin"
 GITEE_REMOTE = "gitee-mirror"
 REGISTRY_REPOSITORY = "ghcr.io/lidefend/sce-product"
+FRONTEND_REGISTRY_REPOSITORY = "ghcr.io/lidefend/sce-frontend"
 REQUIRED_CHECKS = (
     "public_guard",
     "professional_authorization",
@@ -228,8 +229,10 @@ def candidate_identity(
 
     required = {
         "candidate-image.tar",
+        "candidate-frontend-image.tar",
         "image-manifest.json",
         "sbom.cyclonedx.json",
+        "sbom-frontend.cyclonedx.json",
     }
     if not required.issubset(hashes):
         raise PublicationError("candidate report does not bind required publication evidence")
@@ -252,13 +255,16 @@ def candidate_identity(
 
     manifest = load_json(attempt / "image-manifest.json", "candidate image manifest")
     if (
-        manifest.get("schema_version") != 2
+        manifest.get("schema_version") != 3
         or manifest.get("source_sha") != expected_source_sha
         or manifest.get("source_tree_sha") != source_tree
         or manifest.get("product_version") != version
         or manifest.get("publish_status") != "not_published"
         or manifest.get("image_digest") is not None
+        or manifest.get("frontend_image_digest") is not None
         or manifest.get("registry_repository") != REGISTRY_REPOSITORY
+        or manifest.get("frontend_registry_repository")
+        != FRONTEND_REGISTRY_REPOSITORY
     ):
         raise PublicationError("candidate image manifest identity differs")
     tags = manifest.get("image_tags")
@@ -268,9 +274,23 @@ def candidate_identity(
     ]
     if tags != expected_tags:
         raise PublicationError("candidate image tags differ")
+    frontend_tags = manifest.get("frontend_image_tags")
+    expected_frontend_tags = [
+        f"{FRONTEND_REGISTRY_REPOSITORY}:{version}",
+        f"{FRONTEND_REGISTRY_REPOSITORY}:sha-{expected_source_sha[:12]}",
+    ]
+    if frontend_tags != expected_frontend_tags:
+        raise PublicationError("candidate frontend image tags differ")
     local_image_id = str(manifest.get("local_image_id") or "")
     if not DIGEST.fullmatch(local_image_id):
         raise PublicationError("candidate local image ID is invalid")
+    frontend_local_image_id = str(manifest.get("frontend_local_image_id") or "")
+    if not DIGEST.fullmatch(frontend_local_image_id):
+        raise PublicationError("candidate frontend local image ID is invalid")
+    if local_image_id == frontend_local_image_id:
+        raise PublicationError(
+            "candidate frontend image must be an independent image identity"
+        )
     report_image = report.get("image") or {}
     if (
         report_image.get("local_image_id") != local_image_id
@@ -323,6 +343,11 @@ def candidate_identity(
         "sbom_sha256": verified_hashes["sbom.cyclonedx.json"],
         "local_image_id": local_image_id,
         "image_tags": expected_tags,
+        "frontend_local_image_id": frontend_local_image_id,
+        "frontend_image_tags": expected_frontend_tags,
+        "frontend_registry_repository": FRONTEND_REGISTRY_REPOSITORY,
+        "frontend_archive_sha256": verified_hashes["candidate-frontend-image.tar"],
+        "frontend_sbom_sha256": verified_hashes["sbom-frontend.cyclonedx.json"],
         "required_checks": source.get("required_checks") or {},
         "required_checks_head_sha": checks_head,
     }
@@ -489,14 +514,17 @@ class ExternalBackend:
         return str(next(iter(digests)))
 
     def validate_registry_candidate(
-        self, reference: str, expected_local_image_id: str
+        self,
+        reference: str,
+        expected_local_image_id: str,
+        repository: str = REGISTRY_REPOSITORY,
     ) -> str:
         digest = self.registry_digest(reference)
         if digest is None:
             self.run(["docker", "tag", expected_local_image_id, reference])
             digest = self.push_registry([reference])
         if not self.verify_registry_content(
-            REGISTRY_REPOSITORY,
+            repository,
             digest,
             expected_local_image_id,
         ):
@@ -709,6 +737,100 @@ class Publication:
             os.close(self.lock_fd)
             self.lock_fd = None
 
+    def frontend_registry_path(self) -> Path:
+        return self.attempt_dir / "frontend-registry.json"
+
+    def write_frontend_registry(self, *, digest: str, tags: list[str]) -> None:
+        path = self.frontend_registry_path()
+        payload = {
+            "schema_version": "release_publication_frontend_registry.v1",
+            "repository": FRONTEND_REGISTRY_REPOSITORY,
+            "digest": digest,
+            "tags": tags,
+        }
+        if path.is_symlink():
+            raise PublicationError("frontend registry record must not be a symlink")
+        if path.is_file():
+            existing = load_json(path, "frontend registry record")
+            if existing != payload:
+                raise PublicationError(
+                    "frontend registry record identity differs",
+                    stage="registry_push",
+                )
+            return
+        atomic_write_json(path, payload)
+
+    def read_frontend_registry(self) -> dict:
+        payload = load_json(
+            self.frontend_registry_path(), "frontend registry record"
+        )
+        digest = str(payload.get("digest") or "")
+        if (
+            payload.get("repository") != FRONTEND_REGISTRY_REPOSITORY
+            or payload.get("tags") != self.identity["frontend_image_tags"]
+            or not DIGEST.fullmatch(digest)
+        ):
+            raise PublicationError(
+                "frontend registry record identity differs", stage="registry_push"
+            )
+        return payload
+
+    def publish_registry_group(
+        self,
+        *,
+        repository: str,
+        tags: list[str],
+        local_image_id: str,
+        label: str,
+    ) -> str:
+        validation_reference = f"{repository}:candidate-{self.attempt_dir.name}"
+        validation_digest = self.backend.validate_registry_candidate(
+            validation_reference, local_image_id, repository
+        )
+        existing = [self.backend.registry_digest(ref) for ref in tags]
+        known = {value for value in existing if value is not None}
+        if len(known) > 1:
+            raise PublicationError(
+                f"partial {label} registry state resolves to conflicting digests",
+                stage="registry_push",
+            )
+        if all(existing) and len(known) == 1:
+            digest = str(existing[0])
+        else:
+            missing = [
+                reference
+                for reference, value in zip(tags, existing, strict=True)
+                if value is None
+            ]
+            pushed = self.backend.push_registry(missing)
+            if known and pushed not in known:
+                raise PublicationError(
+                    f"resumed {label} registry tag digest conflicts",
+                    stage="registry_push",
+                )
+            digest = str(next(iter(known), pushed))
+        if not DIGEST.fullmatch(digest):
+            raise PublicationError(
+                f"{label} registry digest is invalid", stage="registry_push"
+            )
+        if digest != validation_digest:
+            raise PublicationError(
+                f"formal {label} registry tags differ from validated candidate",
+                stage="registry_push",
+            )
+        for reference in tags:
+            if self.backend.registry_digest(reference) != digest:
+                raise PublicationError(
+                    f"{label} registry digest verification failed",
+                    stage="registry_push",
+                )
+        if not self.backend.verify_registry_content(repository, digest, local_image_id):
+            raise PublicationError(
+                f"{label} registry content does not match candidate image",
+                stage="registry_push",
+            )
+        return digest
+
     def create_or_resume(self) -> None:
         if self.requested_publication_attempt_id:
             attempt_id = self.requested_publication_attempt_id
@@ -811,6 +933,9 @@ class Publication:
         for reference in identity["image_tags"]:
             if self.backend.registry_digest(reference) is not None:
                 raise PublicationError("target registry tag already exists")
+        for reference in identity["frontend_image_tags"]:
+            if self.backend.registry_digest(reference) is not None:
+                raise PublicationError("target frontend registry tag already exists")
         tag = f"v{self.version}"
         for remote in (GITHUB_REMOTE, GITEE_REMOTE):
             if self.backend.tag_commit(remote, tag) is not None:
@@ -820,6 +945,12 @@ class Publication:
         for reference in identity["image_tags"]:
             if self.backend.local_image_id(reference) != identity["local_image_id"]:
                 raise PublicationError("local candidate image identity differs")
+        for reference in identity["frontend_image_tags"]:
+            if (
+                self.backend.local_image_id(reference)
+                != identity["frontend_local_image_id"]
+            ):
+                raise PublicationError("local candidate frontend image identity differs")
 
         attempt_id = self.attempt_dir.name
         plan = {
@@ -851,6 +982,13 @@ class Publication:
                 "candidate_archive_sha256": identity["archive_sha256"],
                 "candidate_sbom_sha256": identity["sbom_sha256"],
                 "candidate_image_content_id": identity["local_image_id"],
+                "candidate_frontend_archive_sha256": identity[
+                    "frontend_archive_sha256"
+                ],
+                "candidate_frontend_sbom_sha256": identity["frontend_sbom_sha256"],
+                "candidate_frontend_image_content_id": identity[
+                    "frontend_local_image_id"
+                ],
                 "candidate_tool_contract_sha256": identity[
                     "candidate_tool_contract_sha256"
                 ],
@@ -867,6 +1005,8 @@ class Publication:
             "targets": {
                 "registry_repository": REGISTRY_REPOSITORY,
                 "registry_tags": identity["image_tags"],
+                "frontend_registry_repository": FRONTEND_REGISTRY_REPOSITORY,
+                "frontend_registry_tags": identity["frontend_image_tags"],
                 "git_tag": tag,
                 "github_repository": REPOSITORY,
                 "github_release": tag,
@@ -920,14 +1060,19 @@ class Publication:
             },
             "external": {
                 "registry": {"digest": None, "tags": []},
+                "frontend_registry": {
+                    "repository": FRONTEND_REGISTRY_REPOSITORY,
+                    "digest": None,
+                    "tags": [],
+                },
                 "tags": {"github": None, "gitee": None},
                 "release": {"tag": None, "url": None},
             },
             "failure": None,
             "evidence": {"log": "logs/publication.log"},
-                "publication_manifest": None,
-                "recovery_tool": None,
-                "history": [
+            "publication_manifest": None,
+            "recovery_tool": None,
+            "history": [
                 {
                     "state": "PLANNED",
                     "previous_state": None,
@@ -1007,6 +1152,13 @@ class Publication:
             "candidate_archive_sha256": identity["archive_sha256"],
             "candidate_sbom_sha256": identity["sbom_sha256"],
             "candidate_image_content_id": identity["local_image_id"],
+            "candidate_frontend_archive_sha256": identity[
+                "frontend_archive_sha256"
+            ],
+            "candidate_frontend_sbom_sha256": identity["frontend_sbom_sha256"],
+            "candidate_frontend_image_content_id": identity[
+                "frontend_local_image_id"
+            ],
             "candidate_tool_contract_sha256": identity[
                 "candidate_tool_contract_sha256"
             ],
@@ -1065,7 +1217,9 @@ class Publication:
         )
         append_log(self.log_path, f"state={state} previous={previous}")
 
-    def release_notes(self, plan: dict, digest: str) -> Path:
+    def release_notes(
+        self, plan: dict, digest: str, frontend_digest: str
+    ) -> Path:
         identity = plan["identity"]
         notes = self.attempt_dir / "release-notes.md"
         atomic_write_text(
@@ -1081,9 +1235,12 @@ class Publication:
                     f"- Candidate attempt: `{identity['candidate_attempt_id']}`",
                     f"- Publication attempt: `{self.attempt_dir.name}`",
                     f"- Image: `{REGISTRY_REPOSITORY}@{digest}`",
+                    f"- Frontend image: `{FRONTEND_REGISTRY_REPOSITORY}@{frontend_digest}`",
                     f"- Candidate report SHA-256: `{identity['candidate_report_sha256']}`",
                     f"- Archive SHA-256: `{identity['candidate_archive_sha256']}`",
                     f"- SBOM SHA-256: `{identity['candidate_sbom_sha256']}`",
+                    f"- Frontend archive SHA-256: `{identity['candidate_frontend_archive_sha256']}`",
+                    f"- Frontend SBOM SHA-256: `{identity['candidate_frontend_sbom_sha256']}`",
                 )
             )
             + "\n",
@@ -1164,6 +1321,7 @@ class Publication:
 
     def write_publication_manifest(self, plan: dict) -> dict:
         path = self.attempt_dir / "publication-manifest.json"
+        frontend_registry = self.read_frontend_registry()
         payload = {
             "schema_version": "release_publication_manifest.v1",
             "publication_attempt_id": self.attempt_dir.name,
@@ -1184,9 +1342,21 @@ class Publication:
                 "candidate_archive_sha256"
             ],
             "candidate_sbom_sha256": plan["identity"]["candidate_sbom_sha256"],
+            "candidate_frontend_archive_sha256": plan["identity"][
+                "candidate_frontend_archive_sha256"
+            ],
+            "candidate_frontend_sbom_sha256": plan["identity"][
+                "candidate_frontend_sbom_sha256"
+            ],
+            "candidate_frontend_image_content_id": plan["identity"][
+                "candidate_frontend_image_content_id"
+            ],
             "registry_repository": REGISTRY_REPOSITORY,
             "registry_tags": self.state["external"]["registry"]["tags"],
             "registry_digest": self.state["external"]["registry"]["digest"],
+            "frontend_registry_repository": FRONTEND_REGISTRY_REPOSITORY,
+            "frontend_registry_tags": frontend_registry["tags"],
+            "frontend_registry_digest": frontend_registry["digest"],
             "github_tag_commit": self.state["external"]["tags"]["github"],
             "gitee_tag_commit": self.state["external"]["tags"]["gitee"],
             "release_tag": self.state["external"]["release"]["tag"],
@@ -1241,10 +1411,18 @@ class Publication:
                                     "candidate_source_sha": self.expected_source_sha,
                                     "publication_tool_source_sha": self.expected_publication_tool_sha,
                                     "expected_live_main_sha": self.expected_live_main_sha,
+                                    "candidate_frontend_archive_sha256": None,
+                                    "candidate_frontend_sbom_sha256": None,
+                                    "candidate_frontend_image_content_id": None,
                                 },
                                 "plan": None,
                                 "external": {
                                     "registry": {"digest": None, "tags": []},
+                                    "frontend_registry": {
+                                        "repository": FRONTEND_REGISTRY_REPOSITORY,
+                                        "digest": None,
+                                        "tags": [],
+                                    },
                                     "tags": {"github": None, "gitee": None},
                                     "release": {"tag": None, "url": None},
                                 },
@@ -1278,66 +1456,35 @@ class Publication:
             }:
                 self.verify_publication_context(plan, stage="registry_push")
                 self.transition("REGISTRY_PUSH_IN_PROGRESS")
-                validation_reference = (
-                    f"{REGISTRY_REPOSITORY}:candidate-{self.attempt_dir.name}"
+                digest = self.publish_registry_group(
+                    repository=REGISTRY_REPOSITORY,
+                    tags=list(self.identity["image_tags"]),
+                    local_image_id=self.identity["local_image_id"],
+                    label="Odoo",
                 )
-                validation_digest = self.backend.validate_registry_candidate(
-                    validation_reference,
-                    self.identity["local_image_id"],
+                frontend_digest = self.publish_registry_group(
+                    repository=FRONTEND_REGISTRY_REPOSITORY,
+                    tags=list(self.identity["frontend_image_tags"]),
+                    local_image_id=self.identity["frontend_local_image_id"],
+                    label="frontend",
                 )
-                existing = [
-                    self.backend.registry_digest(ref)
-                    for ref in self.identity["image_tags"]
-                ]
-                known = {value for value in existing if value is not None}
-                if len(known) > 1:
+                if frontend_digest == digest:
                     raise PublicationError(
-                        "partial registry state resolves to conflicting digests",
+                        "Odoo and frontend registry digests must be independent",
                         stage="registry_push",
                     )
-                if all(existing) and len(known) == 1:
-                    digest = str(existing[0])
-                else:
-                    missing = [
-                        reference
-                        for reference, value in zip(
-                            self.identity["image_tags"], existing, strict=True
-                        )
-                        if value is None
-                    ]
-                    pushed = self.backend.push_registry(missing)
-                    if known and pushed not in known:
-                        raise PublicationError(
-                            "resumed registry tag digest conflicts",
-                            stage="registry_push",
-                        )
-                    digest = str(next(iter(known), pushed))
-                if not DIGEST.fullmatch(digest):
-                    raise PublicationError(
-                        "registry digest is invalid", stage="registry_push"
-                    )
-                if digest != validation_digest:
-                    raise PublicationError(
-                        "formal registry tags differ from validated candidate",
-                        stage="registry_push",
-                    )
-                for reference in self.identity["image_tags"]:
-                    if self.backend.registry_digest(reference) != digest:
-                        raise PublicationError(
-                            "registry digest verification failed", stage="registry_push"
-                        )
-                if not self.backend.verify_registry_content(
-                    REGISTRY_REPOSITORY,
-                    digest,
-                    self.identity["local_image_id"],
-                ):
-                    raise PublicationError(
-                        "registry content does not match candidate image",
-                        stage="registry_push",
-                    )
+                self.write_frontend_registry(
+                    digest=frontend_digest,
+                    tags=list(self.identity["frontend_image_tags"]),
+                )
                 registry = {"digest": digest, "tags": self.identity["image_tags"]}
                 external = dict(self.state["external"])
                 external["registry"] = registry
+                external["frontend_registry"] = {
+                    "repository": FRONTEND_REGISTRY_REPOSITORY,
+                    "digest": frontend_digest,
+                    "tags": list(self.identity["frontend_image_tags"]),
+                }
                 self.transition("REGISTRY_PUSHED", external=external)
 
             current = self.state["state"]
@@ -1369,8 +1516,11 @@ class Publication:
                 self.transition("RELEASE_CREATE_IN_PROGRESS")
                 tag = plan["targets"]["git_tag"]
                 release = self.backend.release(tag)
+                frontend_registry = self.read_frontend_registry()
                 if release is None:
-                    notes = self.release_notes(plan, registry["digest"])
+                    notes = self.release_notes(
+                        plan, registry["digest"], frontend_registry["digest"]
+                    )
                     release = self.backend.create_release(
                         tag, f"{self.version} release candidate", notes
                     )
@@ -1382,6 +1532,7 @@ class Publication:
                     or self.expected_source_sha not in body
                     or self.attempt_dir.name not in body
                     or str(registry["digest"]) not in body
+                    or str(frontend_registry["digest"]) not in body
                 ):
                     raise PublicationError(
                         "GitHub Release identity verification failed",
@@ -1396,12 +1547,20 @@ class Publication:
 
             if self.state["state"] == "RELEASE_PUBLISHED":
                 digest = str(self.state["external"]["registry"]["digest"])
+                frontend_registry = self.read_frontend_registry()
                 if not digest or any(
                     self.backend.registry_digest(ref) != digest
                     for ref in self.identity["image_tags"]
                 ):
                     raise PublicationError(
                         "final registry verification failed", stage="complete"
+                    )
+                if any(
+                    self.backend.registry_digest(ref) != frontend_registry["digest"]
+                    for ref in self.identity["frontend_image_tags"]
+                ):
+                    raise PublicationError(
+                        "final frontend registry verification failed", stage="complete"
                     )
                 if not self.backend.verify_registry_content(
                     REGISTRY_REPOSITORY,
@@ -1410,6 +1569,15 @@ class Publication:
                 ):
                     raise PublicationError(
                         "final registry content verification failed", stage="complete"
+                    )
+                if not self.backend.verify_registry_content(
+                    FRONTEND_REGISTRY_REPOSITORY,
+                    frontend_registry["digest"],
+                    self.identity["frontend_local_image_id"],
+                ):
+                    raise PublicationError(
+                        "final frontend registry content verification failed",
+                        stage="complete",
                     )
                 tag = plan["targets"]["git_tag"]
                 if any(

@@ -303,11 +303,11 @@ done
 frontend_artifact_dir="$(mktemp -d)"
 provided_frontend_sha="${FRONTEND_BUILD_SHA256:-}"
 docker build \
-  --target frontend-artifact \
+  --file Dockerfile.production-frontend-builder \
+  --target frontend-dist \
   --output "type=local,dest=${frontend_artifact_dir}" \
-  --build-arg "APT_MIRROR=${APT_MIRROR:-default}" \
   "$ROOT_DIR"
-frontend_build_sha="$(tr -d '[:space:]' <"${frontend_artifact_dir}/.build-sha256")"
+frontend_build_sha="$(find "${frontend_artifact_dir}" -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
 if ! [[ "$frontend_build_sha" =~ ^[0-9a-f]{64}$ ]]; then
   echo "[admin-vis-p3-orm][FATAL] isolated frontend artifact digest is invalid" >&2
   exit 5

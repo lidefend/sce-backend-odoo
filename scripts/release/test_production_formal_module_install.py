@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+import json
 import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -18,6 +20,9 @@ assert SPEC and SPEC.loader
 tool = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(tool)
 
+FRONTEND_DIGEST = "sha256:" + "e" * 64
+FRONTEND_REFERENCE = "ghcr.io/lidefend/sce-frontend@" + FRONTEND_DIGEST
+
 
 def valid_env() -> dict[str, str]:
     return {
@@ -30,7 +35,8 @@ def valid_env() -> dict[str, str]:
         "EXPECTED_RELEASE_SHA": tool.EXPECTED_SOURCE_SHA,
         "EXPECTED_IMAGE_DIGEST": tool.EXPECTED_IMAGE_DIGEST,
         "ODOO_IMAGE_REF": tool.EXPECTED_IMAGE_REFERENCE,
-        "NGINX_IMAGE_REF": tool.EXPECTED_IMAGE_REFERENCE,
+        "FRONTEND_IMAGE_REF": FRONTEND_REFERENCE,
+        "EXPECTED_FRONTEND_IMAGE_DIGEST": FRONTEND_DIGEST,
         "BACKUP_CONFIG_SOURCE": str(tool.BACKUP_CONFIG_PATH),
         "BACKUP_ROOT": tool.BACKUP_ROOT,
         "BACKUP_TARGET_DB": "sc_production",
@@ -308,6 +314,42 @@ class InvocationGuardTests(unittest.TestCase):
         with self.assertRaises(tool.FormalModuleInstallError):
             tool.validate_invocation(active)
 
+    def test_missing_frontend_image_identity_is_rejected(self):
+        for name in ("FRONTEND_IMAGE_REF", "EXPECTED_FRONTEND_IMAGE_DIGEST"):
+            with self.subTest(name=name):
+                active = valid_env()
+                active.pop(name)
+                with self.assertRaisesRegex(
+                    tool.FormalModuleInstallError, "frontend"
+                ):
+                    tool.validate_invocation(active)
+
+    def test_frontend_image_must_be_distinct_from_odoo(self):
+        active = valid_env()
+        active["FRONTEND_IMAGE_REF"] = tool.EXPECTED_IMAGE_REFERENCE
+        active["EXPECTED_FRONTEND_IMAGE_DIGEST"] = tool.EXPECTED_IMAGE_DIGEST
+        with self.assertRaisesRegex(tool.FormalModuleInstallError, "distinct"):
+            tool.validate_invocation(active)
+
+    def test_frontend_digest_must_match_its_own_reference(self):
+        active = valid_env()
+        active["EXPECTED_FRONTEND_IMAGE_DIGEST"] = "sha256:" + "f" * 64
+        with self.assertRaisesRegex(tool.FormalModuleInstallError, "frontend"):
+            tool.validate_invocation(active)
+
+    def test_frontend_digest_format_is_enforced(self):
+        active = valid_env()
+        active["EXPECTED_FRONTEND_IMAGE_DIGEST"] = "sha256:xyz"
+        active["FRONTEND_IMAGE_REF"] = "ghcr.io/lidefend/sce-frontend@sha256:xyz"
+        with self.assertRaisesRegex(tool.FormalModuleInstallError, "frontend"):
+            tool.validate_invocation(active)
+
+    def test_frontend_image_repository_is_pinned(self):
+        active = valid_env()
+        active["FRONTEND_IMAGE_REF"] = "ghcr.io/example/frontend@" + FRONTEND_DIGEST
+        with self.assertRaisesRegex(tool.FormalModuleInstallError, "repository"):
+            tool.validate_invocation(active)
+
     def test_non_production_environment_is_rejected(self):
         active = valid_env()
         active["ENV"] = "test"
@@ -333,6 +375,161 @@ class InvocationGuardTests(unittest.TestCase):
             active[variable] = "unexpected_module"
             with self.assertRaises(tool.FormalModuleInstallError):
                 tool.validate_invocation(active)
+
+
+class StubProductionOperations(tool.ProductionOperations):
+    def __init__(
+        self,
+        env,
+        *,
+        nginx_image=FRONTEND_REFERENCE,
+        odoo_env=None,
+        labels=None,
+    ):
+        super().__init__(env)
+        self.nginx_image = nginx_image
+        self.odoo_env = (
+            odoo_env
+            if odoo_env is not None
+            else ["SC_SOURCE_REVISION=" + tool.EXPECTED_SOURCE_SHA]
+        )
+        self.labels = dict(labels or {})
+        self.calls = []
+        self.state = {
+            key: value for key, value in valid_state().items() if key != "host"
+        }
+
+    @staticmethod
+    def _container(name, image, identifier, env=None):
+        return {
+            "Name": "/" + name,
+            "State": {"Health": {"Status": "healthy"}},
+            "Config": {"Image": image, "Env": list(env or [])},
+            "Image": identifier,
+        }
+
+    def _inventory(self):
+        return [
+            self._container(
+                "sc_production-db-1",
+                "postgres@sha256:" + "c" * 64,
+                "sha256:" + "3" * 64,
+            ),
+            self._container(
+                "sc_production-redis-1",
+                "redis@sha256:" + "d" * 64,
+                "sha256:" + "4" * 64,
+            ),
+            self._container(
+                "sc_production-odoo-1",
+                tool.EXPECTED_IMAGE_REFERENCE,
+                "sha256:" + "1" * 64,
+                self.odoo_env,
+            ),
+            self._container(
+                "sc_production-nginx-1",
+                self.nginx_image,
+                "sha256:" + "2" * 64,
+            ),
+        ]
+
+    def _run(self, args, *, input_text=None):
+        self.calls.append(list(args))
+        if args[:3] == ["docker", "compose", "-f"]:
+            if args[-2:] == ["nginx", "-T"]:
+                return subprocess.CompletedProcess(args, 0, "nginx config\n", "")
+            return subprocess.CompletedProcess(
+                args,
+                0,
+                "FORMAL_MODULE_STATE=" + json.dumps(self.state) + "\n",
+                "",
+            )
+        if args[:2] == ["docker", "inspect"]:
+            return subprocess.CompletedProcess(
+                args, 0, json.dumps(self._inventory()), ""
+            )
+        if args[:3] == ["docker", "image", "inspect"]:
+            revision = self.labels.get(args[3], tool.EXPECTED_SOURCE_SHA)
+            return subprocess.CompletedProcess(
+                args,
+                0,
+                json.dumps(
+                    [
+                        {
+                            "Config": {
+                                "Labels": {
+                                    "org.opencontainers.image.revision": revision
+                                }
+                            }
+                        }
+                    ]
+                ),
+                "",
+            )
+        if args[:3] == ["docker", "volume", "inspect"]:
+            return subprocess.CompletedProcess(args, 0, "", "")
+        raise AssertionError(f"unexpected command: {args}")
+
+
+class CollectStateTests(unittest.TestCase):
+    def operations(self, **kwargs):
+        env = dict(valid_env())
+        env.update(
+            {
+                "SC_DATABASE_VOLUME": "database",
+                "SC_REDIS_VOLUME": "redis",
+                "SC_FILESTORE_VOLUME": "filestore",
+                "SC_SESSION_VOLUME": "sessions",
+                "SC_TMP_VOLUME": "tmp",
+                "SC_LOG_VOLUME": "logs",
+            }
+        )
+        return StubProductionOperations(env, **kwargs)
+
+    def test_collect_state_binds_odoo_and_frontend_images_independently(self):
+        operations = self.operations()
+        state = operations.collect_state(tool._load_product_modules())
+        operations.nginx_fingerprint()
+        self.assertTrue(state["host"]["image_digest_match"])
+        self.assertTrue(state["host"]["oci_revision_match"])
+        self.assertTrue(state["host"]["container_revision_match"])
+        self.assertIn(
+            operations.compose + ["exec", "-T", "nginx", "nginx", "-T"],
+            operations.calls,
+        )
+        self.assertNotIn(["nginx", "-T"], operations.calls)
+        tool.validate_before(state, tool._load_product_modules())
+
+    def test_nginx_container_must_run_the_frontend_image(self):
+        operations = self.operations(nginx_image=tool.EXPECTED_IMAGE_REFERENCE)
+        state = operations.collect_state(tool._load_product_modules())
+        self.assertFalse(state["host"]["image_digest_match"])
+        with self.assertRaisesRegex(tool.FormalModuleInstallError, "digest"):
+            tool.validate_before(state, tool._load_product_modules())
+
+    def test_frontend_digest_must_match_the_configured_identity(self):
+        other = "ghcr.io/lidefend/sce-frontend@sha256:" + "f" * 64
+        operations = self.operations(nginx_image=other)
+        state = operations.collect_state(tool._load_product_modules())
+        self.assertFalse(state["host"]["image_digest_match"])
+        with self.assertRaises(tool.FormalModuleInstallError):
+            tool.validate_before(state, tool._load_product_modules())
+
+    def test_oci_revision_mismatch_on_the_frontend_fails_closed(self):
+        operations = self.operations(labels={"sha256:" + "2" * 64: "f" * 40})
+        state = operations.collect_state(tool._load_product_modules())
+        self.assertFalse(state["host"]["oci_revision_match"])
+        with self.assertRaisesRegex(tool.FormalModuleInstallError, "OCI revision"):
+            tool.validate_before(state, tool._load_product_modules())
+
+    def test_odoo_container_revision_is_still_checked(self):
+        operations = self.operations(odoo_env=["TARGET_DB=sc_production"])
+        state = operations.collect_state(tool._load_product_modules())
+        self.assertFalse(state["host"]["container_revision_match"])
+        with self.assertRaisesRegex(
+            tool.FormalModuleInstallError, "container source revision"
+        ):
+            tool.validate_before(state, tool._load_product_modules())
 
 
 class ModuleBoundaryTests(unittest.TestCase):
@@ -469,6 +666,13 @@ class OrchestrationTests(unittest.TestCase):
         self.assertNotIn("SC_BOOTSTRAP_ADMIN_PASSWORD", source)
         self.assertNotIn("nginx -s reload", source)
         self.assertNotIn("systemctl reload", source)
+        self.assertNotIn('self._run(["nginx", "-T"])', source)
+        self.assertNotIn('"NGINX_IMAGE_REF": EXPECTED_IMAGE_REFERENCE', source)
+        self.assertIn(
+            'self.compose + ["exec", "-T", "nginx", "nginx", "-T"]', source
+        )
+        self.assertIn('"FRONTEND_IMAGE_REF"', source)
+        self.assertIn('"EXPECTED_FRONTEND_IMAGE_DIGEST"', source)
         self.assertEqual(source.count("operations.install(ordered_missing)"), 1)
         self.assertIn(
             "module.validate_backup(directory, require_artifact_contract=True)",

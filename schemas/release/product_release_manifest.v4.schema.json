@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lidefend/sce-backend-odoo/schemas/release/product_release_manifest.v4.schema.json",
+  "title": "SCE product release manifest v4 (independent Odoo and frontend images)",
+  "type": "object",
+  "required": [
+    "schema_version", "repository", "branch", "release_version", "source_sha",
+    "image", "image_tags", "registry_repository", "registry_refs", "image_digest",
+    "local_image_id",
+    "frontend_image", "frontend_image_tags", "frontend_registry_repository",
+    "frontend_registry_refs", "frontend_image_digest", "frontend_local_image_id",
+    "frontend_sha256", "frontend_sbom_sha256", "frontend_archive_sha256",
+    "frontend_archive_config_digest", "frontend_archive_reload_image_id",
+    "oci_revision", "container_source_revision",
+    "base_image_digests", "baseline_checksum", "scan", "archive_sha256",
+    "archive_config_digest", "archive_reload_image_id", "candidate_status",
+    "deployment_status"
+  ],
+  "properties": {
+    "schema_version": {"const": "product_release_manifest.v4"},
+    "repository": {"const": "lidefend/sce-backend-odoo"},
+    "branch": {"const": "main"},
+    "release_version": {"type": "string", "minLength": 1},
+    "product_version": {"type": "string", "minLength": 1},
+    "source_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "source_tree_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "image": {"type": "string", "pattern": "^ghcr\\.io/lidefend/sce-product:.+$"},
+    "image_tags": {
+      "type": "array", "minItems": 2, "maxItems": 2,
+      "items": {"type": "string", "pattern": "^ghcr\\.io/lidefend/sce-product:.+$"}
+    },
+    "registry_repository": {"const": "ghcr.io/lidefend/sce-product"},
+    "registry_refs": {
+      "type": "array", "minItems": 2, "maxItems": 2,
+      "items": {"type": "string", "pattern": "^ghcr\\.io/lidefend/sce-product@sha256:[0-9a-f]{64}$"}
+    },
+    "image_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "local_image_id": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "frontend_image": {"type": "string", "pattern": "^ghcr\\.io/lidefend/sce-frontend:.+$"},
+    "frontend_image_tags": {
+      "type": "array", "minItems": 2, "maxItems": 2,
+      "items": {"type": "string", "pattern": "^ghcr\\.io/lidefend/sce-frontend:.+$"}
+    },
+    "frontend_registry_repository": {"const": "ghcr.io/lidefend/sce-frontend"},
+    "frontend_registry_refs": {
+      "type": "array", "minItems": 2, "maxItems": 2,
+      "items": {"type": "string", "pattern": "^ghcr\\.io/lidefend/sce-frontend@sha256:[0-9a-f]{64}$"}
+    },
+    "frontend_image_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "frontend_local_image_id": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "frontend_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "frontend_sbom_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "frontend_archive_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "frontend_archive_config_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "frontend_archive_reload_image_id": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "oci_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "container_source_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "base_image_digests": {
+      "type": "object",
+      "required": ["frontend_builder", "frontend_runtime", "odoo_runtime"],
+      "additionalProperties": false,
+      "properties": {
+        "frontend_builder": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "frontend_runtime": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "odoo_runtime": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    },
+    "baseline_checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "scan": {
+      "type": "object",
+      "required": ["status", "source_sha", "image_digest", "counts", "policy", "frontend"],
+      "properties": {
+        "status": {"const": "completed"},
+        "source_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "image_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "counts": {"type": "object"},
+        "policy": {"type": "object"},
+        "frontend": {
+          "type": "object",
+          "required": ["image_digest", "counts", "policy"],
+          "properties": {
+            "image_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+            "counts": {"type": "object"},
+            "policy": {"type": "object"}
+          }
+        }
+      }
+    },
+    "sbom_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "archive_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "archive_config_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "archive_reload_image_id": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "module_version_matrix": {"type": "object"},
+    "tenant_payload_contract": {"type": "string"},
+    "route_authority_contract": {"type": "string"},
+    "built_at": {"type": "string", "minLength": 1},
+    "candidate_status": {"const": "rc"},
+    "deployment_status": {"enum": ["not_deployed", "blocked"]}
+  }
+}

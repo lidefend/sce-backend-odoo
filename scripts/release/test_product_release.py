@@ -32,6 +32,7 @@ version_guard = load(
 )
 SHA = "a" * 40
 DIGEST = "sha256:" + "c" * 64
+FRONTEND_DIGEST = "sha256:" + "7" * 64
 
 
 def image_manifest() -> dict:
@@ -54,8 +55,23 @@ def image_manifest() -> dict:
         "image_digest": DIGEST,
         "local_image_id": "sha256:" + "2" * 64,
         "archive_config_digest": "sha256:" + "3" * 64,
+        "frontend_image": f"ghcr.io/lidefend/sce-frontend:{release.read_version()}",
+        "frontend_image_tags": [
+            f"ghcr.io/lidefend/sce-frontend:{release.read_version()}",
+            f"ghcr.io/lidefend/sce-frontend:sha-{SHA[:12]}",
+        ],
+        "frontend_registry_repository": "ghcr.io/lidefend/sce-frontend",
+        "frontend_registry_refs": [
+            f"ghcr.io/lidefend/sce-frontend@{FRONTEND_DIGEST}",
+            f"ghcr.io/lidefend/sce-frontend@{FRONTEND_DIGEST}",
+        ],
+        "frontend_image_digest": FRONTEND_DIGEST,
+        "frontend_local_image_id": "sha256:" + "4" * 64,
+        "frontend_archive_config_digest": "sha256:" + "5" * 64,
+        "frontend_archive_sha256": hashlib.sha256(b"frontend-archive").hexdigest(),
         "base_image_digests": {
             "frontend_builder": "sha256:" + "d" * 64,
+            "frontend_runtime": "sha256:" + "6" * 64,
             "odoo_runtime": "sha256:" + "e" * 64,
         },
         "baseline_checksum": "f" * 64,
@@ -68,7 +84,7 @@ def image_manifest() -> dict:
 
 def scan_summary() -> dict:
     return {
-        "schema_version": "candidate_scan.v2",
+        "schema_version": "candidate_scan.v3",
         "status": "completed",
         "source_sha": SHA,
         "image_digest": DIGEST,
@@ -77,6 +93,11 @@ def scan_summary() -> dict:
         "vulnerability_db_updated_at": "2026-07-23T00:00:00Z",
         "scanned_at": "2026-07-23T01:00:00Z",
         "policy": {"result": "pass"},
+        "frontend": {
+            "image_digest": FRONTEND_DIGEST,
+            "counts": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "SECRET": 0},
+            "policy": {"result": "pass"},
+        },
     }
 
 
@@ -85,24 +106,33 @@ class ProductReleaseTests(unittest.TestCase):
         image = image or image_manifest()
         image_path = root / "image-manifest.json"
         sbom = root / "sbom.cyclonedx.json"
+        frontend_sbom = root / "sbom-frontend.cyclonedx.json"
         scan = root / "security-summary.json"
         archive = root / "candidate-image.tar"
+        frontend_archive = root / "candidate-frontend-image.tar"
         reload_digest = root / "reloaded-image-id.txt"
+        frontend_reload_digest = root / "reloaded-frontend-image-id.txt"
         output = root / "product-release-manifest.json"
         image_path.write_text(json.dumps(image), encoding="utf-8")
         sbom.write_text('{"bomFormat":"CycloneDX"}\n', encoding="utf-8")
+        frontend_sbom.write_text('{"bomFormat":"CycloneDX"}\n', encoding="utf-8")
         scan.write_text(json.dumps(scan_summary()), encoding="utf-8")
         archive.write_bytes(b"archive")
+        frontend_archive.write_bytes(b"frontend-archive")
         reload_digest.write_text(DIGEST + "\n", encoding="utf-8")
+        frontend_reload_digest.write_text(FRONTEND_DIGEST + "\n", encoding="utf-8")
         return subprocess.run(
             [
                 sys.executable,
                 str(ROOT / "scripts/release/product_release_manifest.py"),
                 "--image-manifest", str(image_path),
                 "--sbom", str(sbom),
+                "--frontend-sbom", str(frontend_sbom),
                 "--scan-summary", str(scan),
                 "--archive", str(archive),
+                "--frontend-archive", str(frontend_archive),
                 "--archive-reload-digest-file", str(reload_digest),
+                "--frontend-archive-reload-digest-file", str(frontend_reload_digest),
                 "--expected-source-sha", SHA,
                 "--output", str(output),
             ],
@@ -111,14 +141,14 @@ class ProductReleaseTests(unittest.TestCase):
             capture_output=True,
         )
 
-    def test_manifest_v3_binds_registry_and_archive_identity(self):
+    def test_manifest_v4_binds_both_registry_and_archive_identities(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             result = self.invoke(root)
             self.assertEqual(result.returncode, 0, result.stderr)
             payload = json.loads((root / "product-release-manifest.json").read_text())
             schema = json.loads(
-                (ROOT / "schemas/release/product_release_manifest.v3.schema.json").read_text()
+                (ROOT / "schemas/release/product_release_manifest.v4.schema.json").read_text()
             )
             Draft202012Validator.check_schema(schema)
             Draft202012Validator(schema).validate(payload)
@@ -127,6 +157,11 @@ class ProductReleaseTests(unittest.TestCase):
             self.assertEqual(payload["scan"]["counts"]["MEDIUM"], 2)
             self.assertEqual(payload["archive_reload_image_id"], DIGEST)
             self.assertEqual(payload["image_digest"], DIGEST)
+            self.assertEqual(payload["frontend_image_digest"], FRONTEND_DIGEST)
+            self.assertEqual(payload["frontend_registry_refs"], [
+                f"ghcr.io/lidefend/sce-frontend@{FRONTEND_DIGEST}"
+            ] * 2)
+            self.assertEqual(payload["frontend_archive_reload_image_id"], FRONTEND_DIGEST)
             self.assertEqual(payload["deployment_status"], "not_deployed")
             manifest_sha = hashlib.sha256(
                 (root / "product-release-manifest.json").read_bytes()
@@ -159,8 +194,11 @@ class ProductReleaseTests(unittest.TestCase):
             image=image_manifest(),
             scan=scan_summary(),
             sbom_sha256="2" * 64,
+            frontend_sbom_sha256="3" * 64,
             archive_sha256=image_manifest()["archive_sha256"],
+            frontend_archive_sha256=image_manifest()["frontend_archive_sha256"],
             archive_reload_image_id=DIGEST,
+            frontend_archive_reload_image_id=FRONTEND_DIGEST,
             release=release.load_release_config(),
             expected_source_sha=SHA,
         )
@@ -171,7 +209,10 @@ class ProductReleaseTests(unittest.TestCase):
                 manifest_contract.ManifestContractError
             ):
                 manifest_contract.validate_manifest(
-                    candidate, expected_source_sha=SHA, expected_image_digest=DIGEST
+                    candidate,
+                    expected_source_sha=SHA,
+                    expected_image_digest=DIGEST,
+                    expected_frontend_image_digest=FRONTEND_DIGEST,
                 )
 
     def test_version_and_release_contract_have_one_source(self):

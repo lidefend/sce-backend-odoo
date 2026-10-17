@@ -14,6 +14,7 @@ from typing import Callable
 
 EXPECTED_REPOSITORY = "lidefend/sce-backend-odoo"
 EXPECTED_REMOTE_URL = "https://github.com/lidefend/sce-backend-odoo.git"
+FRONTEND_REGISTRY_REPOSITORY = "ghcr.io/lidefend/sce-frontend"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 CommandRunner = Callable[[list[str], Path], str]
 
@@ -91,11 +92,14 @@ def validate_artifact_identity(
     *,
     expected_sha: str,
     expected_image_digest: str,
+    expected_frontend_image_digest: str,
     image_manifest: dict,
     release_manifest: dict,
     oci_revision: str,
     container_revision: str,
     actual_registry_digests: list[str],
+    frontend_oci_revision: str,
+    frontend_actual_registry_digests: list[str],
 ) -> dict[str, str]:
     expected_sha = _require_sha(expected_sha, "EXPECTED_RELEASE_SHA")
     revisions = {
@@ -114,6 +118,13 @@ def validate_artifact_identity(
     expected_image_digest = str(expected_image_digest or "").strip()
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", expected_image_digest):
         raise ReleaseIdentityError("EXPECTED_IMAGE_DIGEST must be a sha256 digest")
+    expected_frontend_image_digest = str(
+        expected_frontend_image_digest or ""
+    ).strip()
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", expected_frontend_image_digest):
+        raise ReleaseIdentityError(
+            "EXPECTED_FRONTEND_IMAGE_DIGEST must be a sha256 digest"
+        )
     digests = {
         "image manifest digest": image_manifest.get("image_digest", ""),
         "release manifest digest": release_manifest.get("image_digest", ""),
@@ -124,27 +135,71 @@ def validate_artifact_identity(
     expected_ref = f"ghcr.io/lidefend/sce-product@{expected_image_digest}"
     if expected_ref not in actual_registry_digests:
         raise ReleaseIdentityError("candidate image is not bound to the expected registry digest")
+    for label, value in {
+        "image manifest frontend digest": image_manifest.get(
+            "frontend_image_digest", ""
+        ),
+        "release manifest frontend digest": release_manifest.get(
+            "frontend_image_digest", ""
+        ),
+    }.items():
+        if str(value or "").strip() != expected_frontend_image_digest:
+            raise ReleaseIdentityError(
+                f"{label} does not match EXPECTED_FRONTEND_IMAGE_DIGEST"
+            )
+    expected_frontend_ref = (
+        f"{FRONTEND_REGISTRY_REPOSITORY}@{expected_frontend_image_digest}"
+    )
+    if expected_frontend_ref not in frontend_actual_registry_digests:
+        raise ReleaseIdentityError(
+            "frontend image is not bound to the expected registry digest"
+        )
+    if str(frontend_oci_revision or "").strip() != expected_sha:
+        raise ReleaseIdentityError(
+            "frontend OCI revision does not match EXPECTED_RELEASE_SHA"
+        )
     if release_manifest.get("repository") != EXPECTED_REPOSITORY:
         raise ReleaseIdentityError("release manifest repository is not approved")
     if release_manifest.get("branch") != "main":
         raise ReleaseIdentityError("release manifest branch must be main")
-    if release_manifest.get("schema_version") != "product_release_manifest.v3":
-        raise ReleaseIdentityError("release manifest schema is not v3")
+    if release_manifest.get("schema_version") != "product_release_manifest.v4":
+        raise ReleaseIdentityError("release manifest schema is not v4")
     if release_manifest.get("container_source_revision") != expected_sha:
         raise ReleaseIdentityError("release manifest container revision mismatch")
     if release_manifest.get("registry_repository") != "ghcr.io/lidefend/sce-product":
         raise ReleaseIdentityError("release manifest registry repository is not approved")
     if release_manifest.get("registry_refs") != [expected_ref, expected_ref]:
         raise ReleaseIdentityError("release manifest registry refs mismatch")
-    for field in ("local_image_id", "archive_config_digest", "archive_reload_image_id"):
+    if release_manifest.get("frontend_registry_repository") != FRONTEND_REGISTRY_REPOSITORY:
+        raise ReleaseIdentityError(
+            "release manifest frontend registry repository is not approved"
+        )
+    if release_manifest.get("frontend_registry_refs") != [
+        expected_frontend_ref,
+        expected_frontend_ref,
+    ]:
+        raise ReleaseIdentityError("release manifest frontend registry refs mismatch")
+    for field in (
+        "local_image_id",
+        "archive_config_digest",
+        "archive_reload_image_id",
+        "frontend_local_image_id",
+        "frontend_archive_config_digest",
+        "frontend_archive_reload_image_id",
+    ):
         if not re.fullmatch(r"sha256:[0-9a-f]{64}", str(release_manifest.get(field) or "")):
             raise ReleaseIdentityError(f"release manifest {field} is missing or invalid")
-    if not re.fullmatch(r"[0-9a-f]{64}", str(release_manifest.get("archive_sha256") or "")):
-        raise ReleaseIdentityError("release manifest archive checksum is missing")
+    for field in ("archive_sha256", "frontend_archive_sha256", "frontend_sha256"):
+        if not re.fullmatch(r"[0-9a-f]{64}", str(release_manifest.get(field) or "")):
+            raise ReleaseIdentityError(f"release manifest {field} is missing")
     if not re.fullmatch(r"[0-9a-f]{64}", str(release_manifest.get("baseline_checksum") or "")):
         raise ReleaseIdentityError("release manifest baseline checksum is missing")
     base_images = release_manifest.get("base_image_digests")
-    if not isinstance(base_images, dict) or set(base_images) != {"frontend_builder", "odoo_runtime"}:
+    if not isinstance(base_images, dict) or set(base_images) != {
+        "frontend_builder",
+        "frontend_runtime",
+        "odoo_runtime",
+    }:
         raise ReleaseIdentityError("release manifest base image digests are incomplete")
     if any(not re.fullmatch(r"sha256:[0-9a-f]{64}", str(value)) for value in base_images.values()):
         raise ReleaseIdentityError("release manifest base image digest is invalid")
@@ -161,11 +216,29 @@ def validate_artifact_identity(
         or (scan.get("policy") or {}).get("result") != "pass"
     ):
         raise ReleaseIdentityError("release manifest scan record is incomplete or mismatched")
+    frontend_scan = scan.get("frontend")
+    if not isinstance(frontend_scan, dict):
+        raise ReleaseIdentityError("release manifest frontend scan record is missing")
+    frontend_counts = frontend_scan.get("counts")
+    if (
+        frontend_scan.get("image_digest") != expected_frontend_image_digest
+        or not isinstance(frontend_counts, dict)
+        or set(("CRITICAL", "HIGH", "MEDIUM", "LOW", "SECRET"))
+        - set(frontend_counts)
+        or (frontend_scan.get("policy") or {}).get("result") != "pass"
+    ):
+        raise ReleaseIdentityError(
+            "release manifest frontend scan record is incomplete or mismatched"
+        )
     if release_manifest.get("candidate_status") != "rc":
         raise ReleaseIdentityError("release manifest candidate status is invalid")
     if release_manifest.get("deployment_status") not in {"not_deployed", "blocked"}:
         raise ReleaseIdentityError("release manifest deployment status is invalid")
-    return {"source_sha": expected_sha, "image_digest": expected_image_digest}
+    return {
+        "source_sha": expected_sha,
+        "image_digest": expected_image_digest,
+        "frontend_image_digest": expected_frontend_image_digest,
+    }
 
 
 def _load_json(path: Path, label: str) -> dict:
@@ -206,11 +279,13 @@ def main() -> int:
 
     artifact = subparsers.add_parser("artifact-preflight")
     artifact.add_argument("--image", required=True)
+    artifact.add_argument("--frontend-image", required=True)
     artifact.add_argument("--image-manifest", required=True, type=Path)
     artifact.add_argument("--release-manifest", required=True, type=Path)
     artifact.add_argument("--release-manifest-checksum", required=True, type=Path)
     artifact.add_argument("--expected-release-sha", required=True)
     artifact.add_argument("--expected-image-digest", required=True)
+    artifact.add_argument("--expected-frontend-image-digest", required=True)
     args = parser.parse_args()
 
     try:
@@ -226,15 +301,28 @@ def main() -> int:
             release_manifest = _load_json(args.release_manifest, "release manifest")
             image_payload = _inspect_image(args.image)
             config = image_payload.get("Config") or {}
+            frontend_payload = _inspect_image(args.frontend_image)
+            frontend_config = frontend_payload.get("Config") or {}
             result = validate_artifact_identity(
                 expected_sha=args.expected_release_sha,
                 expected_image_digest=args.expected_image_digest,
+                expected_frontend_image_digest=args.expected_frontend_image_digest,
                 image_manifest=image_manifest,
                 release_manifest=release_manifest,
                 oci_revision=str((config.get("Labels") or {}).get("org.opencontainers.image.revision") or ""),
                 container_revision=_container_revision(image_payload),
                 actual_registry_digests=[
                     str(value) for value in (image_payload.get("RepoDigests") or [])
+                ],
+                frontend_oci_revision=str(
+                    (frontend_config.get("Labels") or {}).get(
+                        "org.opencontainers.image.revision"
+                    )
+                    or ""
+                ),
+                frontend_actual_registry_digests=[
+                    str(value)
+                    for value in (frontend_payload.get("RepoDigests") or [])
                 ],
             )
     except (ReleaseIdentityError, subprocess.CalledProcessError, json.JSONDecodeError) as exc:

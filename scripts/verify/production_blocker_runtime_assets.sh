@@ -8,6 +8,7 @@ project="sc-production-blocker-matrix"
 compose_file="docker-compose.migration-safety.yml"
 database="${BLOCKER_ASSET_DATABASE:-sc_blocker_formal_empty}"
 image="${BLOCKER_RUNTIME_IMAGE:-sce-blocker-runtime:test}"
+frontend_image="${BLOCKER_FRONTEND_IMAGE:-}"
 container="sc-production-blocker-assets"
 port="${BLOCKER_ASSET_PORT:-18092}"
 artifacts="${BLOCKER_ASSET_ARTIFACTS:-artifacts/production-blocker/runtime-assets}"
@@ -87,22 +88,33 @@ PY
 )"
 [[ "$report_result" == REPORT_OK\|pdf\|* ]]
 
-docker run --rm --entrypoint sh "$image" -c \
-  'test -s /opt/sce/frontend/index.html && test -s /opt/sce/frontend/.build-sha256 && ! command -v node && ! command -v npm'
+docker run --rm --entrypoint sh "$image" -eu -c '
+  test ! -e /opt/sce/frontend
+  test ! -e /usr/share/nginx/html/index.html
+  ! command -v nginx
+  ! command -v node
+  ! command -v npm
+'
+
+# The static frontend is a separate carrier. Assert it only when its image is
+# supplied; the Odoo runtime image above must never carry it.
+if [[ -n "$frontend_image" ]]; then
+  docker run --rm --entrypoint sh "$frontend_image" -eu -c '
+    test -s /usr/share/nginx/html/index.html
+    test -s /usr/share/nginx/html/.build-sha256
+    command -v nginx
+  '
+fi
 
 ASSET_BEFORE="$asset_before" ASSET_AFTER="$asset_after" ASSET_REQUESTS="$asset_requests" \
-REPORT_RESULT="$report_result" IMAGE="$image" ARTIFACTS="$artifacts" python3 - <<'PY'
+REPORT_RESULT="$report_result" IMAGE="$image" FRONTEND_IMAGE="$frontend_image" \
+ARTIFACTS="$artifacts" python3 - <<'PY'
 import json
 import os
-import subprocess
 from pathlib import Path
 
 kind, size, digest = os.environ["REPORT_RESULT"].split("|")[1:]
-image = os.environ["IMAGE"]
-label_hash = subprocess.check_output(
-    ["docker", "image", "inspect", image, "--format", '{{index .Config.Labels "io.sce.frontend.sha256"}}'],
-    text=True,
-).strip()
+frontend_image = os.environ["FRONTEND_IMAGE"]
 payload = {
     "schema_version": 1,
     "production_startup": True,
@@ -114,7 +126,11 @@ payload = {
         "requested_assets": int(os.environ["ASSET_REQUESTS"]),
     },
     "report": {"kind": kind, "bytes": int(size), "sha256": digest},
-    "custom_frontend": {"present": True, "label_sha256": label_hash},
+    "custom_frontend": {
+        "present": False,
+        "carrier": "separate_frontend_image",
+        "frontend_image_checked": bool(frontend_image),
+    },
     "node_runtime_present": False,
     "rtl_boundary": "unsupported_ltr_only",
 }

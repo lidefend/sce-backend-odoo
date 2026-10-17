@@ -23,15 +23,34 @@
     "history"
   ],
   "properties": {
-    "schema_version": {"const": "release_publication_report.v1"},
+    "schema_version": {
+      "const": "release_publication_report.v1"
+    },
     "publication_attempt_id": {
       "type": "string",
       "pattern": "^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}$"
     },
-    "created_at": {"type": "string", "format": "date-time"},
-    "updated_at": {"type": "string", "format": "date-time"},
-    "finished_at": {"type": ["string", "null"], "format": "date-time"},
-    "previous_state": {"type": ["string", "null"]},
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "previous_state": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "state": {
       "enum": [
         "PLANNED",
@@ -52,7 +71,9 @@
         "REJECT_CONCURRENT_PUBLICATION"
       ]
     },
-    "PUBLICATION_COMPLETE": {"type": "boolean"},
+    "PUBLICATION_COMPLETE": {
+      "type": "boolean"
+    },
     "identity": {
       "type": "object",
       "additionalProperties": false,
@@ -61,20 +82,39 @@
         "candidate_attempt_id",
         "candidate_source_sha",
         "publication_tool_source_sha",
-        "expected_live_main_sha"
+        "expected_live_main_sha",
+        "candidate_frontend_archive_sha256",
+        "candidate_frontend_sbom_sha256",
+        "candidate_frontend_image_content_id"
       ],
       "properties": {
-        "version": {"pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+$"},
+        "version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+$"
+        },
         "candidate_attempt_id": {
           "pattern": "^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}$"
         },
-        "candidate_source_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_source_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_created_github_main_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_created_github_main_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_created_gitee_main_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_created_gitee_main_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_required_checks_head_sha": {"pattern": "^[0-9a-f]{40}$"},
+        "candidate_source_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_source_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_created_github_main_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_created_github_main_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_created_gitee_main_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_created_gitee_main_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_required_checks_head_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
         "candidate_required_checks_evidence": {
           "type": "object",
           "additionalProperties": false,
@@ -85,118 +125,291 @@
             "release_candidate_gate"
           ],
           "properties": {
-            "public_guard": {"const": "success"},
-            "professional_authorization": {"const": "success"},
-            "professional_quality_gate": {"const": "success"},
-            "release_candidate_gate": {"const": "success"}
+            "public_guard": {
+              "const": "success"
+            },
+            "professional_authorization": {
+              "const": "success"
+            },
+            "professional_quality_gate": {
+              "const": "success"
+            },
+            "release_candidate_gate": {
+              "const": "success"
+            }
           }
         },
         "candidate_evidence_sha256": {
           "type": "object",
           "minProperties": 1,
-          "additionalProperties": {"pattern": "^[0-9a-f]{64}$"},
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{64}$"
+          },
           "propertyNames": {
             "pattern": "^(attempts/[A-Za-z0-9._/-]+|latest\\.json)$"
           }
         },
-        "candidate_report_sha256": {"pattern": "^[0-9a-f]{64}$"},
-        "candidate_manifest_sha256": {"pattern": "^[0-9a-f]{64}$"},
-        "candidate_archive_sha256": {"pattern": "^[0-9a-f]{64}$"},
-        "candidate_sbom_sha256": {"pattern": "^[0-9a-f]{64}$"},
-        "candidate_image_content_id": {"pattern": "^sha256:[0-9a-f]{64}$"},
-        "candidate_tool_contract_sha256": {"pattern": "^[0-9a-f]{64}$"},
-        "publication_tool_source_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "publication_tool_source_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "publication_tool_contract_sha256": {"pattern": "^[0-9a-f]{64}$"},
-        "expected_live_main_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "live_github_main_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "live_github_main_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "live_gitee_main_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "live_gitee_main_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "candidate_reachable_from_live_main": {"const": true}
+        "candidate_report_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_archive_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_sbom_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_image_content_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "candidate_tool_contract_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "publication_tool_source_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "publication_tool_source_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "publication_tool_contract_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "expected_live_main_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "live_github_main_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "live_github_main_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "live_gitee_main_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "live_gitee_main_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "candidate_reachable_from_live_main": {
+          "const": true
+        },
+        "candidate_frontend_archive_sha256": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_frontend_sbom_sha256": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_frontend_image_content_id": {
+          "type": ["string", "null"],
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
       }
     },
     "plan": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "additionalProperties": false,
-      "required": ["path", "sha256"],
+      "required": [
+        "path",
+        "sha256"
+      ],
       "properties": {
-        "path": {"const": "publication-plan.json"},
-        "sha256": {"pattern": "^[0-9a-f]{64}$"}
+        "path": {
+          "const": "publication-plan.json"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        }
       }
     },
     "external": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["registry", "tags", "release"],
+      "required": [
+        "registry",
+        "tags",
+        "release",
+        "frontend_registry"
+      ],
       "properties": {
         "registry": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["digest", "tags"],
+          "required": [
+            "digest",
+            "tags"
+          ],
           "properties": {
             "digest": {
-              "type": ["string", "null"],
+              "type": [
+                "string",
+                "null"
+              ],
               "pattern": "^sha256:[0-9a-f]{64}$"
             },
-            "tags": {"type": "array", "items": {"type": "string"}}
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         },
         "tags": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["github", "gitee"],
+          "required": [
+            "github",
+            "gitee"
+          ],
           "properties": {
-            "github": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
-            "gitee": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"}
+            "github": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "gitee": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9a-f]{40}$"
+            }
           }
         },
         "release": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["tag", "url"],
+          "required": [
+            "tag",
+            "url"
+          ],
           "properties": {
-            "tag": {"type": ["string", "null"]},
-            "url": {"type": ["string", "null"]}
+            "tag": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "frontend_registry": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "repository",
+            "digest",
+            "tags"
+          ],
+          "properties": {
+            "repository": {
+              "const": "ghcr.io/lidefend/sce-frontend"
+            },
+            "digest": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         }
       }
     },
     "failure": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "additionalProperties": false,
-      "required": ["stage", "message"],
+      "required": [
+        "stage",
+        "message"
+      ],
       "properties": {
-        "stage": {"type": "string"},
-        "message": {"type": "string"}
+        "stage": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
       }
     },
     "evidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["log"],
+      "required": [
+        "log"
+      ],
       "properties": {
-        "log": {"const": "logs/publication.log"}
+        "log": {
+          "const": "logs/publication.log"
+        }
       }
     },
     "publication_manifest": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "additionalProperties": false,
-      "required": ["path", "sha256"],
+      "required": [
+        "path",
+        "sha256"
+      ],
       "properties": {
-        "path": {"const": "publication-manifest.json"},
-        "sha256": {"pattern": "^[0-9a-f]{64}$"}
+        "path": {
+          "const": "publication-manifest.json"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        }
       }
     },
     "recovery_tool": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "additionalProperties": false,
-      "required": ["source_sha", "source_tree", "contract_sha256", "previous_tool_source_sha"],
+      "required": [
+        "source_sha",
+        "source_tree",
+        "contract_sha256",
+        "previous_tool_source_sha"
+      ],
       "properties": {
-        "source_sha": {"pattern": "^[0-9a-f]{40}$"},
-        "source_tree": {"pattern": "^[0-9a-f]{40}$"},
-        "contract_sha256": {"pattern": "^[0-9a-f]{64}$"},
-        "previous_tool_source_sha": {"pattern": "^[0-9a-f]{40}$"}
+        "source_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "source_tree": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "contract_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "previous_tool_source_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        }
       }
     },
     "history": {
@@ -205,18 +418,38 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["state", "previous_state", "recorded_at"],
+        "required": [
+          "state",
+          "previous_state",
+          "recorded_at"
+        ],
         "properties": {
-          "state": {"type": "string"},
-          "previous_state": {"type": ["string", "null"]},
-          "recorded_at": {"type": "string", "format": "date-time"}
+          "state": {
+            "type": "string"
+          },
+          "previous_state": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       }
     }
   },
   "allOf": [
     {
-      "if": {"properties": {"plan": {"type": "object"}}},
+      "if": {
+        "properties": {
+          "plan": {
+            "type": "object"
+          }
+        }
+      },
       "then": {
         "properties": {
           "identity": {
@@ -248,12 +481,24 @@
       }
     },
     {
-      "if": {"properties": {"state": {"const": "PUBLICATION_COMPLETE"}}},
+      "if": {
+        "properties": {
+          "state": {
+            "const": "PUBLICATION_COMPLETE"
+          }
+        }
+      },
       "then": {
         "properties": {
-          "PUBLICATION_COMPLETE": {"const": true},
-          "failure": {"type": "null"},
-          "publication_manifest": {"type": "object"}
+          "PUBLICATION_COMPLETE": {
+            "const": true
+          },
+          "failure": {
+            "type": "null"
+          },
+          "publication_manifest": {
+            "type": "object"
+          }
         }
       }
     }
