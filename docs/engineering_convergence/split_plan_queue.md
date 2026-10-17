@@ -6,8 +6,8 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 
 - Split-plan files: `68`
 - P0: `0`
-- P1: `32`
-- P2: `36`
+- P1: `33`
+- P2: `35`
 
 ## Queue
 
@@ -31,6 +31,7 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P1 | 3312 | Construction backend owner | `addons/smart_construction_core/security/sc_record_rules.xml` | Split data/view records by product domain and manifest load order. |
 | P1 | 3131 | Platform owner | `addons/smart_core/tests/test_menu_configuration_audit.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P1 | 3089 | Construction backend owner | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
+| P1 | 3018 | DevOps owner | `scripts/ops/daily_runtime_database_duty.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P1 | 3011 | Construction backend owner | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P1 | 2934 | Platform owner | `addons/smart_core/delivery/menu_service.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P1 | 2875 | Platform owner | `addons/smart_core/core/workspace_home_contract_builder.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
@@ -45,14 +46,13 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P1 | 1543 | Platform owner | `addons/smart_core/tests/test_delivery_menu_entry_target.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P1 | 1521 | Platform owner | `addons/smart_core/handlers/business_config_surface.py` | Extract parsing, validation, assembly, and response mapping into owned services. |
 | P1 | 1521 | Platform owner | `addons/smart_core/tests/test_view_orchestrator.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
+| P2 | 2982 | DevOps owner | `scripts/ops/test_daily_runtime_database_duty.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2584 | Frontend owner | `frontend/apps/web/src/app/contracts/v2/schema.ts` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 2492 | DevOps owner | `scripts/ops/daily_runtime_database_duty.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2340 | DevOps owner | `scripts/verify/backend_business_fact_model_audit.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2245 | DevOps owner | `scripts/verify/test_frontend_professional_component_registry_guard.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2205 | Construction backend owner | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2184 | Frontend owner | `frontend/apps/web/src/pages/ListPage.vue` | Assessed Wave3 Round12 (no further split value; component/helper extraction done, max logic block 51 lines). Keep under P2 growth guard. |
 | P2 | 2120 | DevOps owner | `scripts/verify/local_dev_project_profile_write_browser.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 2103 | DevOps owner | `scripts/ops/test_daily_runtime_database_duty.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2095 | Construction backend owner | `addons/smart_construction_core/models/core/subcontract_management.py` | Extract service methods for cross-model workflow, amount, and policy logic. |
 | P2 | 2093 | Construction backend owner | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P2 | 2029 | Frontend owner | `frontend/apps/web/src/pages/ContractFormPage.vue` | Assessed Wave3 Round2 (no further split value; 5587→1857 integration shell). Keep under P2 growth guard. |

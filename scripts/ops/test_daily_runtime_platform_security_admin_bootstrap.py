@@ -30,12 +30,34 @@ assert SPEC and SPEC.loader
 ENTRY = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ENTRY)
 
+SUPPORT_SPEC = importlib.util.spec_from_file_location(
+    "duty_identity_test_support",
+    ROOT / "scripts/ops/duty_identity_test_support.py",
+)
+assert SUPPORT_SPEC and SUPPORT_SPEC.loader
+SUPPORT = importlib.util.module_from_spec(SUPPORT_SPEC)
+SUPPORT_SPEC.loader.exec_module(SUPPORT)
+
 DECLARATION = ROOT / "config/ops/daily_runtime_database_duties.v1.json"
 CONTROL_DATABASE = "sc_platform_control"
 LOGIN = "lidefend"
 NAME = "Li Defend"
 EVIDENCE = "owner ruling 2026-10-16 names lidefend as the platform security admin"
 DIGEST = "a" * 64
+
+
+def setUpModule():
+    """Resolve the tracked template against the synthetic customer binding.
+
+    The concrete binding of a customer duty lives outside the git checkout, so a
+    test that reads the *tracked* declaration names a fixture through the one
+    explicit override the resolver supports. Without it the module only passed on
+    a host that happened to hold the governed directory, which is not a property
+    a lane may depend on.
+    """
+    override = SUPPORT.synthetic_instances_override()
+    override.start()
+    unittest.addModuleCleanup(override.stop)
 
 
 def entry_module():

@@ -523,6 +523,11 @@ def _scan_volume_filestore(contract: dict, *, image: str, volume: str) -> dict:
             "docker",
             "run",
             "--rm",
+            # ``-i`` is not optional here: the scan program is delivered through
+            # stdin, and a detached ``docker run`` without it never receives the
+            # program, exits 0 with empty stdout, and looks like a scan that
+            # returned no inventory.
+            "-i",
             "--pull",
             "never",
             "--network",
@@ -568,9 +573,9 @@ def _filestore_aggregate(scan: dict) -> dict:
 
 
 def _classify_filestore(scan: dict, store_rows: list[tuple[str, str]]) -> dict:
-    """Separate attachment bodies, GC markers and unexplained entries.
+    """Separate attachment bodies, collection markers and unexplained entries.
 
-    Three classes, and nothing is excluded by directory name alone:
+    Four classes, and nothing is excluded by directory name alone:
 
     * ``body`` -- the relative path is a live ``store_fname``. It has to exist,
       and its content digest has to equal both the store name and the row's own
@@ -578,19 +583,48 @@ def _classify_filestore(scan: dict, store_rows: list[tuple[str, str]]) -> dict:
     * ``maintenance marker`` -- an empty file under ``checklist`` whose relative
       path has the store-name shape Odoo's ``_mark_for_gc`` writes. Counted on
       its own and kept; it is not an attachment orphan.
+    * ``pending collection body`` -- a store-named body that no live row
+      references *and* whose name is listed in ``checklist``. Odoo 17 never
+      unlinks an attachment file on deletion: ``_file_delete`` only marks the
+      name, and ``_gc_file_store_unsafe`` later unlinks the body and then the
+      marker. A body in that state is a deleted attachment waiting for the
+      collector, so treating it as unexplained would only assert that the
+      collector had already run. It is counted separately and kept.
     * ``unknown`` -- everything else, including unreferenced files that merely
-      look like store names, non-empty checklist entries, and any non-regular
-      entry. These keep failing the guard so they get investigated.
+      look like store names while carrying no marker, non-empty checklist
+      entries, and any non-regular entry. These keep failing the guard so they
+      get investigated. Without the marker nothing in Odoo will ever collect
+      such a file, which is exactly what makes it unexplained.
     """
     referenced = {fname: checksum for fname, checksum in store_rows}
     present = set()
     bodies: list[str] = []
     markers: list[str] = []
+    pending: list[str] = []
+    marked: set[str] = set()
+    candidates: list[dict] = []
     missing: list[str] = []
     mismatched: list[dict] = []
     unknown: list[dict] = []
     body_content: list[str] = []
     for row in scan["files"]:
+        path = row["path"]
+        if path.startswith(CHECKLIST_DIRECTORY + "/"):
+            name = path[len(CHECKLIST_DIRECTORY) + 1 :]
+            if int(row["size"]) == 0 and STORE_FNAME.fullmatch(name):
+                markers.append(path)
+                marked.add(name)
+            else:
+                unknown.append(
+                    {
+                        "path": path,
+                        "size": int(row["size"]),
+                        "reason": "checklist entry that is not a collection marker",
+                    }
+                )
+            continue
+        candidates.append(row)
+    for row in candidates:
         path = row["path"]
         present.add(path)
         if path in referenced:
@@ -616,15 +650,24 @@ def _classify_filestore(scan: dict, store_rows: list[tuple[str, str]]) -> dict:
                 continue
             bodies.append(path)
             body_content.append(f"{path}\t{row['sha1']}")
-        elif (
-            path.startswith(CHECKLIST_DIRECTORY + "/")
-            and int(row["size"]) == 0
-            and STORE_FNAME.fullmatch(path[len(CHECKLIST_DIRECTORY) + 1 :])
-        ):
-            markers.append(path)
+        elif path in marked:
+            if path.rsplit("/", 1)[-1] != row["sha1"]:
+                mismatched.append(
+                    {
+                        "path": path,
+                        "reason": "store name is not the content digest",
+                        "file_sha1": row["sha1"],
+                    }
+                )
+                continue
+            pending.append(path)
         else:
             unknown.append(
-                {"path": path, "size": int(row["size"]), "reason": "unreferenced file"}
+                {
+                    "path": path,
+                    "size": int(row["size"]),
+                    "reason": "unreferenced file with no collection marker",
+                }
             )
     for fname in referenced:
         if fname not in present:
@@ -640,6 +683,7 @@ def _classify_filestore(scan: dict, store_rows: list[tuple[str, str]]) -> dict:
         "referenced_attachment_count": len(referenced),
         "referenced_body_count": len(bodies),
         "maintenance_marker_count": len(markers),
+        "pending_collection_body_count": len(pending),
         "unknown_entry_count": len(unknown),
         "missing_count": len(missing),
         "checksum_mismatch_count": len(mismatched),
@@ -649,6 +693,7 @@ def _classify_filestore(scan: dict, store_rows: list[tuple[str, str]]) -> dict:
         "referenced_body_path_digest": _sha256_lines(sorted(bodies)),
         "referenced_body_content_digest": _sha256_lines(sorted(body_content)),
         "maintenance_marker_digest": _sha256_lines(sorted(markers)),
+        "pending_collection_body_path_digest": _sha256_lines(sorted(pending)),
     }
 
 
@@ -659,6 +704,11 @@ def _assert_filestore_inventory(inventory: dict) -> None:
     present and readable with its recorded content" and "nothing unexplained
     sits in the tree" are different facts, and a version that only compares two
     totals cannot tell them apart.
+
+    Bodies pending collection are deliberately not one of the three: Odoo 17
+    marks a deleted attachment's file for collection instead of unlinking it, so
+    their presence says the collector has not run, not that the filestore is
+    inconsistent. They are counted in the inventory and never asserted away.
     """
     if inventory["missing_count"]:
         raise ContinuityError(

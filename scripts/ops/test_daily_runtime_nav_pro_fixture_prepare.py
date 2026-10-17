@@ -209,36 +209,57 @@ class PrepareTests(unittest.TestCase):
             "contract_id": 503,
         }
 
+    BINDING = {
+        "bound_by": "duty",
+        "duty": "demo",
+        "database": "sc_demo",
+        "compose_project": "sc-demo-dev",
+        "odoo_container": "sc-demo-dev-odoo-1",
+    }
+
     def test_fails_closed_before_any_engine_run_on_revision_mismatch(self):
         calls = self._install(head_sha="0" * 40, engine_stdout="", served={})
         with self.assertRaises(module.PrepareError):
-            module.prepare(SHA, "sc_demo", "sc-root", "", "123456")
+            module.prepare(SHA, self.BINDING, "sc-root", "", "123456")
         self.assertEqual(len(calls), 1, "engine ran despite a revision mismatch")
 
-    def test_reports_pass_and_uses_the_governed_shell_entry(self):
+    def test_reports_pass_and_runs_in_the_bound_duty_container(self):
         engine = "engine log\n%s%s\n%s\n" % (
             module.EXE_LINE,
             json.dumps(self._payload()),
             module.SENTINEL,
         )
         calls = self._install(head_sha=SHA, engine_stdout=engine, served={"database": "sc_demo", "git_sha": SHA})
-        evidence = module.prepare(SHA, "sc_demo", "sc-root", "http://daily", "123456")
+        evidence = module.prepare(SHA, self.BINDING, "sc-root", "http://daily", "123456")
         self.assertEqual(evidence["status"], "PASS")
         self.assertEqual(evidence["readback"]["project_id"], 501)
-        command = next(cmd for _, cmd, _ in calls if "odoo.shell.exec" in cmd)
-        self.assertIn("make ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo odoo.shell.exec", command)
-        self.assertIn("NAV_PRO_PASSWORD=123456", command)
-        self.assertIn("SC_ENVIRONMENT=dev", command)
-        self.assertIn("SC_ALLOW_DEMO_DATA=1", command)
+        command = next(cmd for _, cmd, _ in calls if "docker exec" in cmd)
+        self.assertIn("docker exec -i -e NAV_PRO_PASSWORD=123456 sc-demo-dev-odoo-1", command)
+        self.assertIn("-d sc_demo", command)
+        self.assertNotIn("ENV_FILE", command)
+        self.assertNotIn("sc-backend-odoo-dev", command)
         uploaded = next(payload_bytes for _, _, payload_bytes in calls if payload_bytes is not None)
         self.assertIn(b"NAV_PRO_01_RUNTIME_PREPARE=PASS", uploaded)
         self.assertIn(b"nav_pro_", uploaded)
+
+    def test_a_landing_in_another_database_is_refused(self):
+        payload = self._payload()
+        payload["database"] = "sc_demo"
+        engine = "%s%s\n%s\n" % (module.EXE_LINE, json.dumps(payload), module.SENTINEL)
+        self._install(head_sha=SHA, engine_stdout=engine, served={})
+        evidence = module.prepare(SHA, self.BINDING, "sc-root", "", "123456")
+        self.assertEqual(evidence["status"], "PASS")
+        wrong = dict(self.BINDING, database="sc_other")
+        self._install(head_sha=SHA, engine_stdout=engine, served={})
+        evidence = module.prepare(SHA, wrong, "sc-root", "", "123456")
+        self.assertEqual(evidence["status"], "FAIL")
+        self.assertIn("landed in database", evidence["reason"])
 
     def test_fails_when_the_success_sentinel_is_absent(self):
         engine = "%s%s\n" % (module.EXE_LINE, json.dumps(self._payload()))
         self._install(head_sha=SHA, engine_stdout=engine, served={"database": "sc_demo", "git_sha": SHA})
         with self.assertRaises(module.PrepareError):
-            module.prepare(SHA, "sc_demo", "sc-root", "http://daily", "123456")
+            module.prepare(SHA, self.BINDING, "sc-root", "http://daily", "123456")
 
     def test_fails_when_a_declared_user_is_missing(self):
         engine = "%s%s\n%s\n" % (
@@ -247,7 +268,7 @@ class PrepareTests(unittest.TestCase):
             module.SENTINEL,
         )
         self._install(head_sha=SHA, engine_stdout=engine, served={"database": "sc_demo", "git_sha": SHA})
-        evidence = module.prepare(SHA, "sc_demo", "sc-root", "http://daily", "123456")
+        evidence = module.prepare(SHA, self.BINDING, "sc-root", "http://daily", "123456")
         self.assertEqual(evidence["status"], "FAIL")
 
     def test_fails_when_the_carrier_did_not_read_back(self):
@@ -257,25 +278,53 @@ class PrepareTests(unittest.TestCase):
             module.SENTINEL,
         )
         self._install(head_sha=SHA, engine_stdout=engine, served={"database": "sc_demo", "git_sha": SHA})
-        evidence = module.prepare(SHA, "sc_demo", "sc-root", "http://daily", "123456")
+        evidence = module.prepare(SHA, self.BINDING, "sc-root", "http://daily", "123456")
         self.assertEqual(evidence["status"], "FAIL")
 
     def test_fails_when_served_revision_does_not_match(self):
         engine = "%s%s\n%s\n" % (module.EXE_LINE, json.dumps(self._payload()), module.SENTINEL)
         self._install(head_sha=SHA, engine_stdout=engine, served={"database": "sc_demo", "git_sha": "f" * 40})
-        evidence = module.prepare(SHA, "sc_demo", "sc-root", "http://daily", "123456")
+        evidence = module.prepare(SHA, self.BINDING, "sc-root", "http://daily", "123456")
         self.assertEqual(evidence["status"], "FAIL")
 
     def test_fails_when_served_database_does_not_match(self):
         engine = "%s%s\n%s\n" % (module.EXE_LINE, json.dumps(self._payload()), module.SENTINEL)
         self._install(head_sha=SHA, engine_stdout=engine, served={"database": "sc_other", "git_sha": SHA})
-        evidence = module.prepare(SHA, "sc_demo", "sc-root", "http://daily", "123456")
+        evidence = module.prepare(SHA, self.BINDING, "sc-root", "http://daily", "123456")
         self.assertEqual(evidence["status"], "FAIL")
 
 
 class CommandTests(unittest.TestCase):
     def test_confirmation_token_is_stable(self):
         self.assertEqual(module.CONFIRMATION, "PROVISION_DAILY_SC_DEMO_NAV_PRO_FIXTURE")
+
+
+class DutyBindingTests(unittest.TestCase):
+    """A database *name* stops being a target identity once two carriers share it."""
+
+    instances = Path(__file__).with_name("synthetic_duty_instances.sample.json")
+
+    def reader(self, _path: str) -> str:
+        return self.instances.read_text(encoding="utf-8")
+
+    def options(self, **overrides):
+        import types
+
+        options = types.SimpleNamespace(duty="", database="sc_demo", ssh_host="sc-root")
+        for key, value in overrides.items():
+            setattr(options, key, value)
+        return options
+
+    def test_a_bare_database_name_no_longer_binds_a_carrier(self) -> None:
+        with self.assertRaisesRegex(
+            module.PrepareError, "DUTY_IDENTITY_DATABASE_AMBIGUOUS:sc_demo"
+        ):
+            module.bind_target(self.options(), instances_reader=self.reader)
+
+    def test_naming_the_duty_binds_the_rebuilt_demo_carrier(self) -> None:
+        binding = module.bind_target(self.options(duty="demo"), instances_reader=self.reader)
+        self.assertEqual(binding["database"], "sc_demo")
+        self.assertEqual(binding["odoo_container"], "sc-demo-dev-odoo-1")
 
 
 if __name__ == "__main__":

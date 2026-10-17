@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
@@ -15,6 +17,13 @@ module = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(module)
 
 SHA = "10bf72ef4bb060556bd2844598b58f9806392d34"
+
+
+class Result:
+    def __init__(self, returncode=0, stdout=b"", stderr=b""):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
 
 
 def database(name, *, modules=None, companies=None, registrations=None, business=None, error=None):
@@ -79,7 +88,62 @@ class PreflightTests(unittest.TestCase):
 
     def test_program_uses_the_governed_shell_entry(self):
         self.assertEqual(module.REMOTE_ROOT, "/opt/projects/repos/sce-product-odoo")
-        self.assertIn("odoo.shell.exec", Path(SCRIPT).read_text(encoding="utf-8"))
+        source = Path(SCRIPT).read_text(encoding="utf-8")
+        self.assertIn("duty_identity.odoo_shell_command", source)
+        self.assertNotIn("remote_make", source)
+
+
+class RemoteInventoryTests(unittest.TestCase):
+    """The topology must be read from the carrier the entry claims to measure."""
+
+    binding = {
+        "database": "sc_demo",
+        "compose_project": "sc-demo-dev",
+        "odoo_container": "sc-demo-dev-odoo-1",
+    }
+
+    def setUp(self):
+        self._ssh = module.ssh
+        self.calls = []
+        self.addCleanup(lambda: setattr(module, "ssh", self._ssh))
+
+    def result(self, *args, **kwargs):  # pragma: no cover - replaced per test
+        raise AssertionError("stub not installed")
+
+    def stub(self, *, landed="sc_demo", head=SHA):
+        def fake_ssh(host, command, *, input_bytes=None):
+            self.calls.append((host, command))
+            if "git rev-parse HEAD" in command:
+                return Result(0, (head + "\n").encode())
+            body = module.MARKER + json.dumps(
+                {"databases": ["sc_demo"], "shell_database": landed, "observation": {}, "writes": False}
+            ) + "\n"
+            return Result(0, body.encode())
+
+        module.ssh = fake_ssh
+
+    def test_the_inventory_runs_inside_the_bound_container(self):
+        self.stub()
+        payload, remote_head = module.inventory(
+            SHA, dict(self.binding), "sc-root", ["sc_demo"],
+        )
+        self.assertEqual(remote_head, SHA)
+        self.assertEqual(payload["shell_database"], "sc_demo")
+        engine = [cmd for _, cmd in self.calls if "docker exec" in cmd][0]
+        self.assertIn("sc-demo-dev-odoo-1 odoo shell", engine)
+        self.assertIn("-d sc_demo", engine)
+        self.assertNotIn("ENV_FILE", engine)
+
+    def test_a_readback_from_another_carrier_fails_closed(self):
+        self.stub(landed="sc_dev_demo")
+        with self.assertRaisesRegex(module.InventoryError, "not the bound sc_demo"):
+            module.inventory(SHA, dict(self.binding), "sc-root", ["sc_demo"])
+
+    def test_a_revision_mismatch_stops_before_the_engine_runs(self):
+        self.stub(head="0" * 40)
+        with self.assertRaises(module.InventoryError):
+            module.inventory(SHA, dict(self.binding), "sc-root", ["sc_demo"])
+        self.assertEqual(len(self.calls), 1)
 
 
 class VerdictTests(unittest.TestCase):
@@ -164,6 +228,45 @@ class VerdictTests(unittest.TestCase):
         verdict = module.evaluate(list(observation), payload({**observation}) | {"writes": True})
         failed = {row["id"] for row in verdict["assertions"] if not row["passed"]}
         self.assertIn("inventory_is_read_only", failed)
+
+
+class TenantTopologyDutyBindingTests(unittest.TestCase):
+    """A database *name* stops being a target identity once two carriers share it.
+
+    The refusal is read from the shipped declaration, not from a stub: it now
+    names the rebuilt demo duty and the preserved historic source with the same
+    ``sc_demo``, so an entry that receives only ``--database`` would otherwise
+    have to guess which carrier it is measuring.
+    """
+
+    instances = Path(__file__).with_name("synthetic_duty_instances.sample.json")
+
+    def reader(self, _path: str) -> str:
+        return self.instances.read_text(encoding="utf-8")
+
+    def options(self, **overrides):
+        options = mock.Mock()
+        options.duty = ""
+        options.database = "sc_demo"
+        options.ssh_host = "sc-root"
+        for key, value in overrides.items():
+            setattr(options, key, value)
+        return options
+
+    def test_a_bare_database_name_no_longer_binds_a_carrier(self) -> None:
+        with self.assertRaisesRegex(module.InventoryError, "DUTY_IDENTITY_DATABASE_AMBIGUOUS:sc_demo"):
+            module.bind_target(self.options(), instances_reader=self.reader)
+
+    def test_naming_the_duty_binds_the_rebuilt_demo_carrier(self) -> None:
+        binding = module.bind_target(
+            self.options(duty="demo"), instances_reader=self.reader
+        )
+        self.assertEqual(binding["database"], "sc_demo")
+        self.assertEqual(binding["database_role"], "sc_demo_app")
+        self.assertEqual(binding["compose_project"], "sc-demo-dev")
+        self.assertEqual(binding["database_container"], "sc-demo-dev-db-1")
+        self.assertEqual(binding["database_volume"], "sc_demo_db_data")
+        self.assertEqual(binding["data_purpose"], "demo")
 
 
 if __name__ == "__main__":

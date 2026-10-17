@@ -45,9 +45,11 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import daily_runtime_duty_identity as duty_identity  # noqa: E402
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
 REMOTE_TMP = "/tmp/sc-daily-tenant-topology.py"
-DEFAULT_DATABASE = "sc_demo"
+DEFAULT_DATABASE = ""
 DEFAULT_DATABASES = ("sc_demo", "sc_odoo", "sc_platform_core")
 MARKER = "DAILY_TENANT_TOPOLOGY="
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -183,6 +185,7 @@ for name in DATABASES:
 
 print(MARKER + json.dumps({
     "databases": DATABASES,
+    "shell_database": env.cr.dbname,
     "observation": observation,
     "writes": False,
 }, ensure_ascii=False, sort_keys=True))
@@ -221,14 +224,14 @@ def marker_payload(output):
     return None
 
 
-def remote_make(ssh_host, database, target, *, stdin_path):
-    command = (
-        "cd " + shlex.quote(REMOTE_ROOT)
-        + " && make --no-print-directory " + target
-        + " DB_NAME=" + shlex.quote(database)
-        + " < " + shlex.quote(stdin_path)
-    )
-    return ssh(ssh_host, command)
+def remote_shell(ssh_host, binding, *, stdin_path):
+    """Read the topology through the *bound duty's own* application container.
+
+    A database *name* is not a target identity: the rebuilt demo duty and the
+    preserved pre-governance source both answer to ``sc_demo``, so the carrier
+    comes from the declaration's compose project instead of a bare ``DB_NAME``.
+    """
+    return ssh(ssh_host, duty_identity.odoo_shell_command(binding, program_path=stdin_path))
 
 
 def parse_databases(value):
@@ -251,7 +254,8 @@ def product_modules(customer_module=""):
     return modules
 
 
-def inventory(expected_sha, database, ssh_host, databases, *, customer_module=""):
+def inventory(expected_sha, binding, ssh_host, databases, *, customer_module=""):
+    database = str(binding["database"])
     """Read the tenant topology of the declared databases.
 
     ``customer_module`` is the tenant's own customer addon, named by the caller.
@@ -290,12 +294,17 @@ def inventory(expected_sha, database, ssh_host, databases, *, customer_module=""
     upload = ssh(ssh_host, f"cat > {shlex.quote(REMOTE_TMP)}", input_bytes=program)
     if upload.returncode:
         raise InventoryError(f"remote program upload failed: {decode(upload)[:400]}")
-    executed = remote_make(ssh_host, database, "odoo.shell.exec", stdin_path=REMOTE_TMP)
+    executed = remote_shell(ssh_host, binding, stdin_path=REMOTE_TMP)
     ssh(ssh_host, f"rm -f {shlex.quote(REMOTE_TMP)}")
     payload = marker_payload(decode(executed))
     if payload is None:
         raise InventoryError(
             f"no readback payload in the odoo-shell output: {decode(executed)[-800:]}"
+        )
+    landed = str(payload.get("shell_database") or "")
+    if landed != database:
+        raise InventoryError(
+            f"the shell ran in database {landed or '<unknown>'}, not the bound {database}"
         )
     return payload, remote_head
 
@@ -420,10 +429,29 @@ def evaluate(databases, payload):
     }
 
 
+
+
+def bind_target(options, *, instances_reader=None) -> dict:
+    """Bind the target duty, its cluster, its database and its storage, or stop.
+
+    The topology question is asked about one carrier: a name that resolves to two of them answers about neither.
+    """
+    try:
+        reader = instances_reader
+        if reader is None:
+            reader = duty_identity.ssh_instances_reader(options.ssh_host)
+        return duty_identity.bind_duty_database(
+            getattr(options, "duty", ""), options.database, instances_reader=reader,
+        )
+    except duty_identity.DutyIdentityError as error:
+        raise InventoryError(str(error))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--database", default=DEFAULT_DATABASE)
+    parser.add_argument("--duty", default="", help="the declared duty this entry binds; a database name alone is not a target identity")
     parser.add_argument("--databases", default=",".join(DEFAULT_DATABASES))
     parser.add_argument("--ssh-host", required=True)
     parser.add_argument("--report", required=True)
@@ -435,9 +463,10 @@ def main():
     options = parser.parse_args()
 
     try:
+        binding = bind_target(options)
         databases = parse_databases(options.databases)
         payload, remote_head = inventory(
-            options.expected_sha, options.database, options.ssh_host, databases,
+            options.expected_sha, binding, options.ssh_host, databases,
             customer_module=options.customer_module,
         )
         verdict = evaluate(databases, payload)
@@ -450,7 +479,8 @@ def main():
         "expected_sha": options.expected_sha,
         "remote_head": remote_head,
         "ssh_host": options.ssh_host,
-        "opened_database": options.database,
+        "database_binding": binding,
+        "opened_database": binding["database"],
         "declared_databases": list(databases),
         "declared_customer_module": options.customer_module,
         "writes": False,

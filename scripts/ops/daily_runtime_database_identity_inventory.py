@@ -27,9 +27,12 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import daily_runtime_duty_identity as duty_identity  # noqa: E402
+
+
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
 REMOTE_TMP = "/tmp/sc-daily-db-identity-inventory.py"
-DEFAULT_DATABASE = "sc_demo"
 MARKER = "DAILY_DATABASE_IDENTITY_INVENTORY="
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
@@ -132,17 +135,33 @@ def marker_payload(output):
     return None
 
 
-def remote_make(ssh_host, database, target, *, stdin_path):
-    command = (
-        "cd " + shlex.quote(REMOTE_ROOT)
-        + " && make --no-print-directory " + target
-        + " DB_NAME=" + shlex.quote(database)
-        + " < " + shlex.quote(stdin_path)
-    )
-    return ssh(ssh_host, command)
+def bind_target(options, *, instances_reader=None):
+    """Bind the target duty, its cluster, its database and its storage, or stop.
+
+    A database *name* is not a target identity, and this entry's whole question
+    is about a *cluster*: the rebuilt demo carrier and the preserved
+    pre-governance source both answer to ``sc_demo`` while living in two
+    clusters.  Naming only the database used to answer the question about
+    whichever cluster happened to serve that name.
+    """
+    try:
+        reader = instances_reader
+        if reader is None:
+            reader = duty_identity.ssh_instances_reader(options.ssh_host)
+        return duty_identity.bind_duty_database(
+            getattr(options, "duty", ""), options.database, instances_reader=reader,
+        )
+    except duty_identity.DutyIdentityError as error:
+        raise InventoryError(str(error))
 
 
-def inventory(expected_sha, database, ssh_host):
+def remote_shell(ssh_host, binding, *, stdin_path):
+    """Read the catalog from the *bound duty's own* application container."""
+    return ssh(ssh_host, duty_identity.odoo_shell_command(binding, program_path=stdin_path))
+
+
+def inventory(expected_sha, binding, ssh_host):
+    database = str(binding["database"])
     if not FULL_SHA.fullmatch(expected_sha or ""):
         raise InventoryError("expected SHA must be a full lowercase commit identity")
     if not DATABASE_NAME.fullmatch(database or ""):
@@ -165,7 +184,7 @@ def inventory(expected_sha, database, ssh_host):
     upload = ssh(ssh_host, f"cat > {shlex.quote(REMOTE_TMP)}", input_bytes=program)
     if upload.returncode:
         raise InventoryError(f"remote program upload failed: {decode(upload)[:400]}")
-    executed = remote_make(ssh_host, database, "odoo.shell.exec", stdin_path=REMOTE_TMP)
+    executed = remote_shell(ssh_host, binding, stdin_path=REMOTE_TMP)
     ssh(ssh_host, f"rm -f {shlex.quote(REMOTE_TMP)}")
     payload = marker_payload(decode(executed))
     if payload is None:
@@ -190,6 +209,14 @@ def evaluate(database, payload):
             "id": "observed_database_present",
             "passed": database in names,
             "detail": f"database={database} observed={len(names)}",
+        },
+        {
+            # The inventory must prove it read the *bound* database and not the
+            # other cluster that answers to the same name: two carriers share
+            # ``sc_demo``, so "the name appears in this catalogue" is not enough.
+            "id": "shell_database_is_the_bound_database",
+            "passed": str(payload.get("current_database") or "") == database,
+            "detail": f"current_database={payload.get('current_database')!r} bound={database!r}",
         },
         {
             "id": "distinct_login_roles_observed",
@@ -220,16 +247,18 @@ def evaluate(database, payload):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
-    parser.add_argument("--database", default=DEFAULT_DATABASE)
+    parser.add_argument("--duty", default="", help="the declared duty this entry binds; a database name alone is not a target identity")
+    parser.add_argument("--database", default="")
     parser.add_argument("--ssh-host", required=True)
     parser.add_argument("--report", required=True)
     options = parser.parse_args()
 
     try:
+        binding = bind_target(options)
         payload, remote_head = inventory(
-            options.expected_sha, options.database, options.ssh_host
+            options.expected_sha, binding, options.ssh_host
         )
-        verdict = evaluate(options.database, payload)
+        verdict = evaluate(str(binding["database"]), payload)
     except InventoryError as error:
         print(f"[daily.runtime.database.identity.inventory] BLOCKED {error}", file=sys.stderr)
         return 2
@@ -239,7 +268,8 @@ def main():
         "expected_sha": options.expected_sha,
         "remote_head": remote_head,
         "ssh_host": options.ssh_host,
-        "opened_database": options.database,
+        "opened_database": str(binding["database"]),
+        "database_binding": binding,
         "writes": False,
         "provenance": {
             "live_account_query": [

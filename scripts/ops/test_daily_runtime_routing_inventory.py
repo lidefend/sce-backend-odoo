@@ -9,6 +9,7 @@ read-only contract.
 import json
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 from scripts.ops import daily_runtime_routing_inventory as routing
@@ -235,6 +236,73 @@ class RoutingInventoryTest(unittest.TestCase):
         self.assertTrue(routing._exact_filter(instance("a", "sc_demo")))
         self.assertFalse(routing._exact_filter(instance("a", "sc_demo", dbfilter="^sc_demo")))
         self.assertFalse(routing._exact_filter(instance("a", "sc_demo", dbfilter="^sc_demo.*$")))
+
+
+class RoutingInventoryDutyBindingTests(unittest.TestCase):
+    """A database *name* stops being a target identity once two carriers share it.
+
+    The refusal is read from the shipped declaration, not from a stub: it now
+    names the rebuilt demo duty and the preserved historic source with the same
+    ``sc_demo``, so an entry that receives only ``--database`` would otherwise
+    have to guess which carrier it is measuring.
+    """
+
+    instances = Path(__file__).with_name("synthetic_duty_instances.sample.json")
+
+    def reader(self, _path: str) -> str:
+        return self.instances.read_text(encoding="utf-8")
+
+    def options(self, **overrides):
+        options = mock.Mock()
+        options.duty = ""
+        options.database = "sc_demo"
+        options.ssh_host = "sc-root"
+        for key, value in overrides.items():
+            setattr(options, key, value)
+        return options
+
+    def test_a_bare_database_name_no_longer_binds_a_carrier(self) -> None:
+        with self.assertRaisesRegex(routing.InventoryError, "DUTY_IDENTITY_DATABASE_AMBIGUOUS:sc_demo"):
+            routing.bind_target(self.options(), instances_reader=self.reader)
+
+    def test_naming_the_duty_binds_the_rebuilt_demo_carrier(self) -> None:
+        binding = routing.bind_target(
+            self.options(duty="demo"), instances_reader=self.reader
+        )
+        self.assertEqual(binding["database"], "sc_demo")
+        self.assertEqual(binding["database_role"], "sc_demo_app")
+        self.assertEqual(binding["compose_project"], "sc-demo-dev")
+        self.assertEqual(binding["database_container"], "sc-demo-dev-db-1")
+        self.assertEqual(binding["database_volume"], "sc_demo_db_data")
+        self.assertEqual(binding["data_purpose"], "demo")
+
+    def test_the_cluster_read_is_the_bound_duty_cluster_not_a_remembered_name(self) -> None:
+        # Reading a catalog from a remembered container name is how this entry
+        # would have kept reporting the historic source after the carrier moved.
+        binding = routing.bind_target(
+            self.options(duty="demo"), instances_reader=self.reader
+        )
+        self.assertEqual(
+            routing.resolve_cluster_container("", binding), "sc-demo-dev-db-1"
+        )
+
+    def test_an_explicit_container_stays_available_for_a_cross_carrier_audit(self) -> None:
+        binding = routing.bind_target(
+            self.options(duty="demo"), instances_reader=self.reader
+        )
+        self.assertEqual(
+            routing.resolve_cluster_container("sc-backend-odoo-dev-db-1", binding),
+            "sc-backend-odoo-dev-db-1",
+        )
+
+    def test_no_legacy_container_name_is_shipped_as_a_default(self) -> None:
+        # A module-level default would re-introduce the silent cross-carrier
+        # read for every caller that does not pass the flag itself.
+        self.assertFalse(
+            [name for name in dir(routing) if "CLUSTER_CONTAINER" in name
+             and getattr(routing, name) and not name.startswith("__")],
+            "the tool must derive its cluster from the bound duty",
+        )
 
 
 if __name__ == "__main__":

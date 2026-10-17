@@ -155,18 +155,31 @@ class FixtureDeclaration:
         self.root = Path(self.temporary.name)
         ops_root = self.root / "ops"
         ops_root.mkdir(parents=True, exist_ok=True)
-        for duty_name in (CUSTOMER_DUTY, ENTRY.PLATFORM_CONTROL_DUTY):
-            (ops_root / ("%s.env" % duty_name)).write_text(
-                "DUTY_NAME=%s\nCOMPOSE_PROJECT_NAME=sc-tenant-sample-dev\n"
-                "DB_NAME=sc_tenant_sample_dev\nDB_USER=sc_tenant_sample_dev_app\n"
-                "DB_DATA=sc_tenant_sample_dev_db_data\n"
-                "ODOO_DATA=sc_tenant_sample_dev_odoo_data\n"
-                "ODOO_IMAGE=odoo17-odoo:latest\nSC_SOURCE_REVISION=%s\n"
-                % (duty_name, "a" * 40),
-                encoding="utf-8",
-            )
         declaration = governed_declaration()
         declaration["ops_root"] = str(ops_root)
+        # Each file carries its *own* duty's carrier. A fixture that wrote the
+        # customer's carrier into the control duty's file described a file no
+        # governed entry would ever read, and it stopped telling the truth once
+        # the resolver began refusing another carrier's environment by name.
+        for duty in declaration["duties"]:
+            if duty["duty"] not in (CUSTOMER_DUTY, ENTRY.PLATFORM_CONTROL_DUTY):
+                continue
+            (ops_root / ("%s.env" % duty["duty"])).write_text(
+                "DUTY_NAME=%s\nCOMPOSE_PROJECT_NAME=%s\n"
+                "DB_NAME=%s\nDB_USER=%s\nDB_DATA=%s\nDB_MAINTENANCE_USER=%s\n"
+                "ODOO_DATA=%s\nODOO_IMAGE=odoo17-odoo:latest\nSC_SOURCE_REVISION=%s\n"
+                % (
+                    duty["duty"],
+                    duty["cluster"]["compose_project"],
+                    duty["database"],
+                    duty["database_role"],
+                    duty["cluster"]["data_volume"],
+                    duty["cluster"].get("maintenance_role") or duty["database_role"],
+                    duty["storage"]["odoo_data_volume"],
+                    "a" * 40,
+                ),
+                encoding="utf-8",
+            )
         for duty in declaration["duties"]:
             if duty["duty"] == CUSTOMER_DUTY:
                 if block is None:

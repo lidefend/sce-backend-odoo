@@ -74,9 +74,25 @@ class VerdictTests(unittest.TestCase):
         self.assertIn("observed_database_present", failed)
 
     def test_declared_database_passes(self):
-        verdict = module.evaluate("sc_tenant_sample_dev", payload())
+        verdict = module.evaluate(
+            "sc_tenant_sample_dev", payload(current_database="sc_tenant_sample_dev")
+        )
         self.assertTrue(verdict["passed"])
         self.assertEqual(verdict["database_count"], 2)
+
+    def test_a_read_of_the_other_carrier_is_refused(self):
+        # The rebuilt demo duty and the preserved historic source both answer to
+        # sc_demo. A catalogue that contains the bound name is not proof that the
+        # shell actually read the bound database.
+        verdict = module.evaluate("sc_tenant_sample_dev", payload())
+        failed = {row["id"] for row in verdict["assertions"] if not row["passed"]}
+        self.assertIn("shell_database_is_the_bound_database", failed)
+        self.assertFalse(verdict["passed"])
+
+    def test_a_payload_without_a_live_database_readback_is_refused(self):
+        verdict = module.evaluate("sc_demo", payload(current_database=""))
+        failed = {row["id"] for row in verdict["assertions"] if not row["passed"]}
+        self.assertIn("shell_database_is_the_bound_database", failed)
 
     def test_shared_filestore_is_reported(self):
         shared = payload(filestores={
@@ -116,7 +132,10 @@ class ProgramTests(unittest.TestCase):
     def test_program_uses_the_governed_shell_entry(self):
         self.assertEqual(module.REMOTE_ROOT, "/opt/projects/repos/sce-product-odoo")
         source = Path(SCRIPT).read_text(encoding="utf-8")
-        self.assertIn("odoo.shell.exec", source)
+        # The catalog must be read from the bound duty's own container through the
+        # shared duty-bound entry, never from a bare database name routed by hand.
+        self.assertIn("duty_identity.odoo_shell_command", source)
+        self.assertNotIn("odoo.shell.exec", source)
         self.assertIn("git rev-parse HEAD", source)
 
 

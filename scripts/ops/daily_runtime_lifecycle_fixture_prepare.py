@@ -6,11 +6,14 @@ external revision. Its checkout carries the fixture builder that was current
 when it was deployed, so the declared project-lifecycle carrier this lane needs
 cannot be created by re-running the deployed builder.
 
-This entry therefore drives the *working tree's* governed fixture builder
-through the existing ``make odoo.shell.exec`` entry: the builder source is sent
-on the standard input of the already governed shell carrier, so the deployed
-runtime executes exactly the branch's fixture tooling without rewriting the
-deployed checkout, restarting the service, or touching any credential file.
+This entry therefore drives the *working tree's* governed fixture builder into
+the *bound duty's own* application container: the builder source is sent on the
+standard input of the duty-bound shell carrier, so the carrier executes exactly
+the branch's fixture tooling without rewriting a deployed checkout, restarting
+the service, or touching any credential file.  A database *name* is not the
+target: the rebuilt demo duty and the preserved pre-governance source both
+answer to ``sc_demo``, and the command therefore names the compose project the
+declaration binds instead of a bare ``DB_NAME``.
 
 It writes only acceptance fixture rows inside the declared ``daily_dev`` fixture
 scope (``smart_construction_acceptance_fixture``, database ``sc_demo``): the
@@ -34,9 +37,21 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import daily_runtime_duty_identity as duty_identity  # noqa: E402
 FIXTURE_TOOL = ROOT / "addons" / "smart_construction_acceptance_fixture" / "tools" / "frontend_productization_fixture.py"
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
-DEFAULT_DATABASE = "sc_demo"
+REMOTE_TMP = "/tmp/sc-daily-lifecycle-fixture-prepare.py"
+DEFAULT_DATABASE = ""
+#: The fixture builder reads its own governance inputs from the process
+#: environment.  They travel as explicit ``docker exec -e`` values on the bound
+#: container, so the lane no longer depends on an environment file that belongs
+#: to whichever checkout happened to serve the database name.
+FIXTURE_ENV = {
+    "SC_ACCEPTANCE_FIXTURE_SCOPE": "daily_dev",
+    "SC_ENVIRONMENT": "dev",
+    "SC_ALLOW_DEMO_DATA": "1",
+}
 CONFIRMATION = "DRIVE_DAILY_SC_DEMO_PROJECT_LIFECYCLE"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
@@ -147,6 +162,19 @@ def ssh(ssh_host, remote_command, *, input_bytes=None):
     )
 
 
+def remote_shell(ssh_host, binding, *, stdin_path, env=None):
+    """Run a program inside the *bound duty's own* application container.
+
+    The container comes from the declaration's compose project, so the write
+    cannot land in another project that happens to serve a database of the same
+    name.
+    """
+    return ssh(
+        ssh_host,
+        duty_identity.odoo_shell_command(binding, program_path=stdin_path, env=env or {}),
+    )
+
+
 def served_identity(base_url):
     if not base_url:
         return {}
@@ -172,7 +200,8 @@ def preflight(expected_sha, database, ssh_host, password):
         raise PrepareError("fixture tool is missing: %s" % FIXTURE_TOOL)
 
 
-def prepare(expected_sha, database, ssh_host, base_url, password):
+def prepare(expected_sha, binding, ssh_host, base_url, password):
+    database = str(binding["database"])
     preflight(expected_sha, database, ssh_host, password)
 
     head = ssh(ssh_host, "cd %s && git rev-parse HEAD" % shlex.quote(REMOTE_ROOT))
@@ -183,17 +212,13 @@ def prepare(expected_sha, database, ssh_host, base_url, password):
         raise PrepareError("remote HEAD %s != declared served revision %s" % (remote_head or "<unknown>", expected_sha))
 
     program = fixture_program()
-    command = (
-        "cd %s && SC_ACCEPTANCE_FIXTURE_PASSWORD=%s SC_ACCEPTANCE_FIXTURE_SCOPE=daily_dev "
-        "SC_ENVIRONMENT=dev SC_ALLOW_DEMO_DATA=1 "
-        "make ENV=dev ENV_FILE=.env.dev DB_NAME=%s odoo.shell.exec"
-        % (
-            shlex.quote(REMOTE_ROOT),
-            shlex.quote(password),
-            shlex.quote(database),
-        )
-    )
-    applied = ssh(ssh_host, command, input_bytes=program)
+    upload = ssh(ssh_host, "cat > %s" % shlex.quote(REMOTE_TMP), input_bytes=program)
+    if upload.returncode:
+        raise PrepareError("remote builder upload failed: %s" % decode(upload)[:400])
+    env = dict(FIXTURE_ENV)
+    env["SC_ACCEPTANCE_FIXTURE_PASSWORD"] = password
+    applied = remote_shell(ssh_host, binding, stdin_path=REMOTE_TMP, env=env)
+    ssh(ssh_host, "rm -f %s" % shlex.quote(REMOTE_TMP))
     output = decode(applied)
     if applied.returncode:
         raise PrepareError("daily lifecycle fixture preparation failed: %s" % output[-1200:])
@@ -220,6 +245,7 @@ def prepare(expected_sha, database, ssh_host, base_url, password):
         "remote_head": remote_head,
         "expected_sha": expected_sha,
         "database": database,
+        "database_binding": binding,
         "carrier": carrier,
         "served_revision": served_revision,
         "served_database": served_database,
@@ -227,7 +253,15 @@ def prepare(expected_sha, database, ssh_host, base_url, password):
         "engine_output_tail": output.splitlines()[-8:],
     }
     declared = carrier.get("state") or {}
-    if declared.get("lifecycle_state") != "draft" or declared.get("sc_approval_state") != "draft":
+    landed = str(carrier.get("database") or "")
+    # A missing readback is not a weaker success: the builder is supposed to
+    # report the database it ran in, and an absent field means the carrier never
+    # proved it landed in the bound duty rather than in the other cluster that
+    # answers to the same name.
+    if not landed or landed != database:
+        evidence["status"] = "FAIL"
+        evidence["reason"] = "the fixture builder read back database %s, not the bound %s" % (landed, database)
+    elif declared.get("lifecycle_state") != "draft" or declared.get("sc_approval_state") != "draft":
         evidence["status"] = "FAIL"
         evidence["reason"] = "carrier did not read back in the declared start state"
     elif base_url and served_database and served_database != database:
@@ -239,10 +273,29 @@ def prepare(expected_sha, database, ssh_host, base_url, password):
     return evidence
 
 
+
+
+def bind_target(options, *, instances_reader=None) -> dict:
+    """Bind the target duty, its cluster, its database and its storage, or stop.
+
+    The fixture carrier is driven through one served face; the face has to be bound to a duty before it is driven.
+    """
+    try:
+        reader = instances_reader
+        if reader is None:
+            reader = duty_identity.ssh_instances_reader(options.ssh_host)
+        return duty_identity.bind_duty_database(
+            getattr(options, "duty", ""), options.database, instances_reader=reader,
+        )
+    except duty_identity.DutyIdentityError as error:
+        raise PrepareError(str(error))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--database", default=DEFAULT_DATABASE)
+    parser.add_argument("--duty", default="", help="the declared duty this entry binds; a database name alone is not a target identity")
     parser.add_argument("--ssh-host", required=True)
     parser.add_argument("--base-url", default="")
     parser.add_argument("--password", default="")
@@ -252,9 +305,10 @@ def main():
     try:
         if (os.environ.get("CONFIRM_DAILY_RUNTIME_LIFECYCLE_FIXTURE") or "") != CONFIRMATION:
             raise PrepareError("exact daily runtime lifecycle fixture confirmation is required")
+        binding = bind_target(options)
         evidence = prepare(
             options.expected_sha,
-            options.database,
+            binding,
             options.ssh_host,
             options.base_url,
             options.password,
@@ -264,6 +318,7 @@ def main():
         return 2
 
     report_path = Path(options.report)
+    evidence["database_binding"] = binding
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True))

@@ -45,7 +45,10 @@ ROOT = Path(__file__).resolve().parents[2]
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
 DEFAULT_ENV_NAME = "dev"
 DEFAULT_ENV_FILE = ".env.dev"
-DEFAULT_DATABASE = "sc_demo"
+#: No bare default: the served database is a governance fact the lane derives
+#: from the duty declaration. A database name does not identify a carrier on
+#: its own, and a shipped literal would silently bake a stale name.
+DEFAULT_DATABASE = ""
 DEFAULT_BASE_URL = "http://127.0.0.1:18081"
 #: The frontend bakes its platform-admin authority at build time. The value is
 #: not a build preference: it is derived from the governed duty declaration, and
@@ -449,6 +452,11 @@ def align(
     platform_admin_database: str,
 ) -> dict[str, object]:
     preflight(expected_sha, ssh_host, platform_admin_database)
+    if not DATABASE_NAME.fullmatch(database or ""):
+        raise BuildError(
+            "the served database must be a declared duty database name; this "
+            "entry no longer ships a bare default"
+        )
     command = [
         "ssh",
         "-o",

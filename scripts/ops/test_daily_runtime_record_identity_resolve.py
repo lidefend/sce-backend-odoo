@@ -24,6 +24,12 @@ module = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(module)
 
 SHA = "6c8e07f70c1ce0d501f9f5b56911d74f9321a721"
+BINDING = {
+    "duty": "demo",
+    "database": "sc_demo",
+    "compose_project": "sc-demo-dev",
+    "odoo_container": "sc-demo-dev-odoo-1",
+}
 PAYLOAD = {
     "companies": {"a": 21, "b": 22},
     "payment_request": {
@@ -46,9 +52,13 @@ class Result:
         self.stderr = stderr
 
 
-def payload_output(payload=None):
+def payload_output(payload=None, landed="sc_demo"):
     body = PAYLOAD if payload is None else payload
-    return ("noise\n" + module.PAYLOAD_PREFIX + json.dumps(body, sort_keys=True) + "\n").encode()
+    return (
+        "noise\n"
+        + module.LANDED_PREFIX + landed + "\n"
+        + module.PAYLOAD_PREFIX + json.dumps(body, sort_keys=True) + "\n"
+    ).encode()
 
 
 class PreflightTests(unittest.TestCase):
@@ -78,18 +88,30 @@ class ProgramTests(unittest.TestCase):
     def test_program_is_the_working_tree_resolver_verbatim(self):
         self.assertEqual(module.resolver_program(), module.RESOLVER.read_bytes())
 
-    def test_remote_command_uses_the_governed_shell_entry(self):
-        command = module.remote_command("sc_demo")
-        self.assertIn("make ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo odoo.shell.exec", command)
-        self.assertIn(module.REMOTE_ROOT, command)
+    def test_remote_shell_runs_in_the_bound_duty_container(self):
+        command = module.duty_identity.odoo_shell_command(
+            BINDING, program_path="/tmp/x.py", env=module.RESOLVER_ENV
+        )
+        self.assertIn("sc-demo-dev-odoo-1 odoo shell", command)
+        self.assertIn("-d sc_demo", command)
+        self.assertIn("SC_ENVIRONMENT=dev", command)
+        self.assertIn("SC_ALLOW_DEMO_DATA=1", command)
+        self.assertIn("< /tmp/x.py", command)
+        self.assertNotIn("ENV_FILE", command)
+        self.assertNotIn("sc-backend-odoo-dev", command)
 
-    def test_remote_command_binds_the_declared_database(self):
-        self.assertIn("DB_NAME=sc_demo odoo.shell.exec", module.remote_command("sc_demo"))
+    def test_the_tool_never_routes_through_a_bare_database_name(self):
+        source = Path(SCRIPT).read_text(encoding="utf-8")
+        # ``make ENV=dev ENV_FILE=.env.dev DB_NAME=x odoo.shell.exec`` resolves its
+        # target from a bare name; the bound container comes from the declaration.
+        self.assertNotIn("ENV_FILE", source)
+        self.assertNotIn("DB_NAME=", source)
+        self.assertIn("duty_identity.odoo_shell_command", source)
 
-    def test_remote_command_quotes_an_unsafe_database_value(self):
-        # preflight rejects such a value earlier; this locks that the command
-        # builder itself can never splice an unquoted token into the remote shell.
-        self.assertIn("DB_NAME='sc demo'", module.remote_command("sc demo"))
+    def test_the_carrier_program_is_the_resolver_plus_the_landed_probe(self):
+        program = module.carrier_program()
+        self.assertTrue(program.startswith(module.RESOLVER.read_bytes()))
+        self.assertIn(module.LANDED_PREFIX.encode(), program)
 
 
 class PayloadTests(unittest.TestCase):
@@ -155,6 +177,10 @@ class ResolveTests(unittest.TestCase):
             self.calls.append({"host": host, "command": command, "program": input_bytes})
             if command.startswith("cd ") and "git rev-parse HEAD" in command:
                 return Result(stdout=(remote_head + "\n").encode())
+            if "cat > " in command:
+                return Result()
+            if command.startswith("rm -f "):
+                return Result()
             return engine if engine is not None else Result(stdout=payload_output())
 
         module.ssh = fake_ssh
@@ -170,7 +196,7 @@ class ResolveTests(unittest.TestCase):
         root = self.temp()
         artifact = root / "acceptance_record_identity.json"
         report = root / "resolve.json"
-        evidence = module.resolve(SHA, "sc_demo", "sc-root", "http://daily", artifact, report)
+        evidence = module.resolve(SHA, BINDING, "sc-root", "http://daily", artifact, report)
 
         self.assertEqual(evidence["status"], "PASS")
         documented = json.loads(artifact.read_text())
@@ -180,18 +206,34 @@ class ResolveTests(unittest.TestCase):
         self.assertEqual(json.loads(report.read_text())["artifact_schema"], module.SCHEMA)
         self.assertEqual(evidence["targets"], ["payment_request"])
 
+    def test_the_uploaded_program_is_removed_afterwards(self):
+        self.stub()
+        root = self.temp()
+        module.resolve(SHA, BINDING, "sc-root", "", root / "a.json", root / "r.json")
+        commands = [call["command"] for call in self.calls]
+        self.assertIn("rm -f " + module.REMOTE_TMP, commands[-1])
+
+    def test_a_resolver_that_landed_in_another_database_fails_closed(self):
+        self.stub(engine=Result(stdout=payload_output(landed="sc_dev_demo")))
+        root = self.temp()
+        with self.assertRaisesRegex(module.ResolveError, "not the bound sc_demo"):
+            module.resolve(SHA, BINDING, "sc-root", "", root / "a.json", root / "r.json")
+        self.assertFalse((root / "a.json").exists())
+
     def test_engine_receives_the_working_tree_resolver_verbatim(self):
         self.stub()
         root = self.temp()
-        module.resolve(SHA, "sc_demo", "sc-root", "", root / "a.json", root / "r.json")
-        engine = [call for call in self.calls if call["program"]][-1]
-        self.assertEqual(engine["program"], module.RESOLVER.read_bytes())
+        module.resolve(SHA, BINDING, "sc-root", "", root / "a.json", root / "r.json")
+        uploaded = [call for call in self.calls if call["program"]][-1]
+        self.assertTrue(uploaded["program"].startswith(module.RESOLVER.read_bytes()))
+        engine = [call for call in self.calls if "docker exec" in call["command"]][0]
+        self.assertNotIn("input_bytes", engine)
 
     def test_fails_closed_before_any_engine_run_on_revision_mismatch(self):
         self.stub(remote_head="0" * 40)
         root = self.temp()
         with self.assertRaises(module.ResolveError):
-            module.resolve(SHA, "sc_demo", "sc-root", "", root / "a.json", root / "r.json")
+            module.resolve(SHA, BINDING, "sc-root", "", root / "a.json", root / "r.json")
         self.assertEqual(len(self.calls), 1)
         self.assertFalse((root / "a.json").exists())
 
@@ -199,20 +241,20 @@ class ResolveTests(unittest.TestCase):
         self.stub(served={"git_sha": "1" * 40, "database": "sc_demo"})
         root = self.temp()
         with self.assertRaises(module.ResolveError):
-            module.resolve(SHA, "sc_demo", "sc-root", "http://daily", root / "a.json", root / "r.json")
+            module.resolve(SHA, BINDING, "sc-root", "http://daily", root / "a.json", root / "r.json")
         self.assertFalse((root / "a.json").exists())
 
     def test_fails_closed_on_served_database_mismatch(self):
         self.stub(served={"git_sha": SHA, "database": "sc_dev_demo"})
         root = self.temp()
         with self.assertRaises(module.ResolveError):
-            module.resolve(SHA, "sc_demo", "sc-root", "http://daily", root / "a.json", root / "r.json")
+            module.resolve(SHA, BINDING, "sc-root", "http://daily", root / "a.json", root / "r.json")
 
     def test_fails_closed_on_engine_failure(self):
         self.stub(engine=Result(returncode=1, stderr=b"boom"))
         root = self.temp()
         with self.assertRaises(module.ResolveError):
-            module.resolve(SHA, "sc_demo", "sc-root", "", root / "a.json", root / "r.json")
+            module.resolve(SHA, BINDING, "sc-root", "", root / "a.json", root / "r.json")
 
     def test_a_drifted_payload_never_overwrites_the_existing_artifact(self):
         self.stub(engine=Result(stdout=b"engine noise without the payload\n"))
@@ -220,7 +262,7 @@ class ResolveTests(unittest.TestCase):
         artifact = root / "a.json"
         artifact.write_text('{"schema": "previous"}\n')
         with self.assertRaises(module.ResolveError):
-            module.resolve(SHA, "sc_demo", "sc-root", "", artifact, root / "r.json")
+            module.resolve(SHA, BINDING, "sc-root", "", artifact, root / "r.json")
         self.assertEqual(json.loads(artifact.read_text())["schema"], "previous")
 
 

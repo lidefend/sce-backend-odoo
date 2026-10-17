@@ -39,9 +39,12 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import daily_runtime_duty_identity as duty_identity  # noqa: E402
+
+
 FIXTURE_TOOL = ROOT / "scripts" / "verify" / "nav_pro_01_prepare_runtime.py"
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
-DEFAULT_DATABASE = "sc_demo"
 CONFIRMATION = "PROVISION_DAILY_SC_DEMO_NAV_PRO_FIXTURE"
 EXE_LINE = "NAV_PRO_FIXTURE_READBACK="
 SENTINEL = "NAV_PRO_01_RUNTIME_PREPARE=PASS"
@@ -159,16 +162,37 @@ def preflight(expected_sha, database, ssh_host, password):
         raise PrepareError("nav_pro fixture tool is missing: %s" % FIXTURE_TOOL)
 
 
-def remote_command(database, password):
-    """Return the governed remote shell entry that carries the fixture builder."""
-    return (
-        "cd %s && NAV_PRO_PASSWORD=%s SC_ENVIRONMENT=dev SC_ALLOW_DEMO_DATA=1 "
-        "make ENV=dev ENV_FILE=.env.dev DB_NAME=%s odoo.shell.exec"
-        % (
-            shlex.quote(REMOTE_ROOT),
-            shlex.quote(password),
-            shlex.quote(database),
+def bind_target(options, *, instances_reader=None):
+    """Bind the target duty, its cluster, its database and its storage, or stop.
+
+    A database *name* is not a target identity.  The rebuilt demo carrier and the
+    preserved pre-governance source both answer to ``sc_demo``, so an entry that
+    received only ``--database`` used to land the fixture rows in whichever
+    cluster happened to serve that name -- before the 2026-10-16 ruling, the
+    historic source the owner protects from every governed write.
+    """
+    try:
+        reader = instances_reader
+        if reader is None:
+            reader = duty_identity.ssh_instances_reader(options.ssh_host)
+        return duty_identity.bind_duty_database(
+            getattr(options, "duty", ""), options.database, instances_reader=reader,
         )
+    except duty_identity.DutyIdentityError as error:
+        raise PrepareError(str(error))
+
+
+def remote_command(binding, password):
+    """Return the remote shell entry that carries the fixture builder.
+
+    The target is the bound duty's *own* application container, named by the
+    declaration's compose project.  The fixture builder reads its one input
+    (``NAV_PRO_PASSWORD``) from the process environment, so it is the single
+    variable passed to ``docker exec``; the container keeps its own declared
+    environment, and nothing here depends on a working tree or an env file.
+    """
+    return duty_identity.odoo_shell_command(
+        binding, env={"NAV_PRO_PASSWORD": str(password)},
     )
 
 
@@ -188,7 +212,8 @@ def parse_readback(output: str) -> dict:
     return decoded
 
 
-def prepare(expected_sha, database, ssh_host, base_url, password):
+def prepare(expected_sha, binding, ssh_host, base_url, password):
+    database = str(binding["database"])
     preflight(expected_sha, database, ssh_host, password)
 
     head = ssh(ssh_host, "cd %s && git rev-parse HEAD" % shlex.quote(REMOTE_ROOT))
@@ -199,7 +224,7 @@ def prepare(expected_sha, database, ssh_host, base_url, password):
         raise PrepareError("remote HEAD %s != declared served revision %s" % (remote_head or "<unknown>", expected_sha))
 
     program = fixture_program()
-    applied = ssh(ssh_host, remote_command(database, password), input_bytes=program)
+    applied = ssh(ssh_host, remote_command(binding, password), input_bytes=program)
     output = decode(applied)
     if applied.returncode:
         raise PrepareError("daily nav_pro fixture preparation failed: %s" % output[-1200:])
@@ -218,6 +243,7 @@ def prepare(expected_sha, database, ssh_host, base_url, password):
         "remote_head": remote_head,
         "expected_sha": expected_sha,
         "database": database,
+        "database_binding": binding,
         "readback": readback,
         "served_revision": served_revision,
         "served_database": served_database,
@@ -225,7 +251,13 @@ def prepare(expected_sha, database, ssh_host, base_url, password):
         "engine_output_tail": output.splitlines()[-8:],
     }
     missing = readback.get("missing_users") or []
-    if missing:
+    if str(readback.get("database") or "") != database:
+        evidence["status"] = "FAIL"
+        evidence["reason"] = (
+            "the odoo shell landed in database %r, not the bound %r"
+            % (readback.get("database"), database)
+        )
+    elif missing:
         evidence["status"] = "FAIL"
         evidence["reason"] = "declared nav_pro users are missing after prepare: %s" % missing
     elif not readback.get("project_id") or not readback.get("partner_id") or not readback.get("contract_id"):
@@ -243,7 +275,8 @@ def prepare(expected_sha, database, ssh_host, base_url, password):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
-    parser.add_argument("--database", default=DEFAULT_DATABASE)
+    parser.add_argument("--duty", default="", help="the declared duty this entry binds; a database name alone is not a target identity")
+    parser.add_argument("--database", default="")
     parser.add_argument("--ssh-host", required=True)
     parser.add_argument("--base-url", default="")
     parser.add_argument("--password", default="")
@@ -253,9 +286,10 @@ def main():
     try:
         if (os.environ.get("CONFIRM_DAILY_RUNTIME_NAV_PRO_FIXTURE") or "") != CONFIRMATION:
             raise PrepareError("exact daily runtime nav_pro fixture confirmation is required")
+        binding = bind_target(options)
         evidence = prepare(
             options.expected_sha,
-            options.database,
+            binding,
             options.ssh_host,
             options.base_url,
             options.password,

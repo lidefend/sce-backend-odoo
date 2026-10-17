@@ -759,7 +759,12 @@ daily.runtime.source_revision.align: guard.prod.forbid verify.daily.runtime.sour
 # receipt for the same exact commit lets an unchanged generation be reused
 # without rebuilding.
 DAILY_RUNTIME_FRONTEND_BUILD_SHA ?=
-DAILY_RUNTIME_FRONTEND_BUILD_DATABASE ?= sc_demo
+# The served face at 18081 belongs to the demo duty, so the database the build
+# bakes is that duty's declared database - read from the same declaration the
+# duty entry validates, exactly like the platform-admin binding above. A
+# hand-maintained copy here would silently bake a stale name after a
+# declaration change, and a bare database name does not identify a carrier.
+DAILY_RUNTIME_FRONTEND_BUILD_DATABASE ?= $(shell python3 -c 'import json; d=json.load(open("config/ops/daily_runtime_database_duties.v1.json")); print([x["database"] for x in d["duties"] if x["duty"] == "demo"][0])')
 DAILY_RUNTIME_FRONTEND_BUILD_BASE_URL ?= http://127.0.0.1:18081
 DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT ?= .runtime/final-acceptance/daily-deployed/frontend-build.json
 DAILY_RUNTIME_FRONTEND_BUILD_REPORT ?= $(DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT)
@@ -792,7 +797,24 @@ daily.runtime.frontend.build: guard.prod.forbid verify.daily.runtime.frontend.bu
 # governed `make odoo.shell.exec` entry and proves it with the existing read-only
 # `make prod.guard.mail_from` guard. It writes only mail-sender configuration.
 .PHONY: daily.runtime.mail_sender.prepare verify.daily.runtime.mail_sender.prepare
-DAILY_RUNTIME_DATABASE ?= sc_demo
+# Empty on purpose: a database name no longer identifies a target.  Every
+# governed daily-runtime entry binds a declared duty through
+# ``DAILY_RUNTIME_DUTY`` and the rebuilt demo carrier and the preserved
+# pre-governance source both answer to ``sc_demo``.  An explicit value
+# stays available to a deliberate cross-carrier audit, and the tools
+# refuse it when a duty would have to be guessed.
+DAILY_RUNTIME_DATABASE ?=
+# Which declared duty a read-only daily-runtime inventory binds to. The owner
+# ruling of 2026-10-16 makes a database *name* insufficient: the rebuilt demo
+# carrier and the preserved historic source both carry ``sc_demo``, so an entry
+# that measures one served face has to name the carrier it means. It is
+# required rather than defaulted -- a lane-chosen default would be the entry
+# picking the target, which is exactly the decision this selector exists to
+# force. The tools refuse a name two carriers share; this variable is how the
+# runbook answers that refusal.
+DAILY_RUNTIME_DUTY ?=
+DAILY_RUNTIME_DUTY_FLAG ?= $(if $(DAILY_RUNTIME_DUTY),--duty "$(DAILY_RUNTIME_DUTY)",)
+DAILY_RUNTIME_DUTY_BINDING_REQUIRED = test -n "$(DAILY_RUNTIME_DUTY)" || { echo "DAILY_RUNTIME_DUTY must name the declared duty this entry binds; a database name alone no longer identifies a target" >&2; exit 2; }
 DAILY_RUNTIME_MAIL_SENDER_FROM ?= noreply@sc-daily.local
 DAILY_RUNTIME_MAIL_SENDER_BASE_URL ?= http://1.95.85.92:18081
 DAILY_RUNTIME_MAIL_SENDER_REPORT ?= .runtime/final-acceptance/daily-deployed/mail-sender-prepare.json
@@ -803,10 +825,12 @@ verify.daily.runtime.mail_sender.prepare: guard.prod.forbid
 
 daily.runtime.mail_sender.prepare: guard.prod.forbid verify.daily.runtime.mail_sender.prepare
 	@test "$${CONFIRM_DAILY_RUNTIME_MAIL_SENDER_PREPARE:-}" = "PREPARE_DAILY_RUNTIME_OUTGOING_MAIL_SENDER" || { echo "exact daily runtime mail-sender preparation confirmation is required" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_mail_sender_prepare.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--sender "$(DAILY_RUNTIME_MAIL_SENDER_FROM)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--base-url "$(DAILY_RUNTIME_MAIL_SENDER_BASE_URL)" \
 		--report "$(DAILY_RUNTIME_MAIL_SENDER_REPORT)"
@@ -832,9 +856,11 @@ verify.daily.runtime.data_space.onboard: guard.prod.forbid
 	@python3 -m unittest scripts.ops.test_daily_runtime_data_space_onboard
 
 daily.runtime.data_space.onboard.plan: guard.prod.forbid verify.daily.runtime.data_space.onboard
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_data_space_onboard.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--role "$(DAILY_RUNTIME_DATA_SPACE_ROLE)" \
 		--tenant-key "$(DAILY_RUNTIME_DATA_SPACE_TENANT_KEY)" \
@@ -844,9 +870,11 @@ daily.runtime.data_space.onboard.plan: guard.prod.forbid verify.daily.runtime.da
 
 daily.runtime.data_space.onboard: guard.prod.forbid verify.daily.runtime.data_space.onboard
 	@test "$${CONFIRM_DAILY_RUNTIME_DATA_SPACE_ONBOARD:-}" = "ONBOARD_DAILY_RUNTIME_DEMO_DATA_SPACE" || { echo "exact daily runtime data-space onboarding confirmation is required" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_data_space_onboard.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--role "$(DAILY_RUNTIME_DATA_SPACE_ROLE)" \
 		--tenant-key "$(DAILY_RUNTIME_DATA_SPACE_TENANT_KEY)" \
@@ -863,9 +891,11 @@ verify.daily.runtime.database.identity.inventory: guard.prod.forbid
 
 daily.runtime.database.identity.inventory: guard.prod.forbid verify.daily.runtime.database.identity.inventory
 	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" || { echo "DAILY_RUNTIME_EXPECTED_SHA must be the deployed runtime source revision" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_database_identity_inventory.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--report "$(DAILY_RUNTIME_DATABASE_IDENTITY_REPORT)"
 
@@ -894,9 +924,11 @@ verify.daily.runtime.tenant.topology.inventory: guard.prod.forbid
 
 daily.runtime.tenant.topology.inventory: guard.prod.forbid verify.daily.runtime.tenant.topology.inventory
 	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" || { echo "DAILY_RUNTIME_EXPECTED_SHA must be the deployed runtime source revision" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_tenant_topology_inventory.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--databases "$(DAILY_RUNTIME_TOPOLOGY_DATABASES)" \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		$(if $(DAILY_RUNTIME_TOPOLOGY_CUSTOMER_MODULE),--customer-module "$(DAILY_RUNTIME_TOPOLOGY_CUSTOMER_MODULE)") \
@@ -913,7 +945,11 @@ daily.runtime.tenant.topology.inventory: guard.prod.forbid verify.daily.runtime.
 # only writes a local file.
 .PHONY: verify.daily.runtime.routing.inventory daily.runtime.routing.inventory
 DAILY_RUNTIME_ROUTING_REPORT ?= .runtime/final-acceptance/daily-deployed/routing-inventory.json
-DAILY_RUNTIME_ROUTING_CLUSTER_CONTAINER ?= sc-backend-odoo-dev-db-1
+# Empty on purpose: the routing inventory reads the catalog of the cluster its
+# *bound duty* declares, and a remembered container name here would silently have the
+# entry audit a different carrier once two carriers share a database name. An explicit
+# value stays available only for a deliberate cross-carrier audit.
+DAILY_RUNTIME_ROUTING_CLUSTER_CONTAINER ?=
 DAILY_RUNTIME_RETIRED_STACKS ?= config/ops/daily_runtime_retired_stacks.v1.json
 
 verify.daily.runtime.routing.inventory: guard.prod.forbid
@@ -922,11 +958,13 @@ verify.daily.runtime.routing.inventory: guard.prod.forbid
 
 daily.runtime.routing.inventory: guard.prod.forbid verify.daily.runtime.routing.inventory
 	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" || { echo "DAILY_RUNTIME_EXPECTED_SHA must be the deployed runtime source revision" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_routing_inventory.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
-		--cluster-container "$(DAILY_RUNTIME_ROUTING_CLUSTER_CONTAINER)" \
+		$(if $(DAILY_RUNTIME_ROUTING_CLUSTER_CONTAINER),--cluster-container "$(DAILY_RUNTIME_ROUTING_CLUSTER_CONTAINER)",) \
 		--retired-stacks "$(DAILY_RUNTIME_RETIRED_STACKS)" \
 		--report "$(DAILY_RUNTIME_ROUTING_REPORT)"
 
@@ -993,6 +1031,7 @@ DAILY_RUNTIME_DATABASE_DUTY_APPLY_REPORT ?= .runtime/final-acceptance/daily-depl
 DAILY_RUNTIME_DATABASE_DUTY_INITIALIZE_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-initialize.json
 DAILY_RUNTIME_DATABASE_DUTY_REFRESH_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-refresh.json
 DAILY_RUNTIME_DATABASE_DUTY_UPGRADE_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-upgrade.json
+DAILY_RUNTIME_DATABASE_DUTY_SEED_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-seed.json
 DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST ?=
 DAILY_RUNTIME_DATABASE_DUTY_SELECTION ?=
 DAILY_RUNTIME_DATABASE_DUTY_PHASE ?= all
@@ -1105,6 +1144,29 @@ daily.runtime.database.duty.upgrade: guard.prod.forbid verify.daily.runtime.data
 		--report "$(DAILY_RUNTIME_DATABASE_DUTY_UPGRADE_REPORT)"
 
 
+# Demo data is produced by the product's own seed chain, never by a substitute
+# fixture lane and never by writing a terminal business state from an ops entry.
+# This target is that chain's governed entry: the declaration names the carrier
+# and the profile, the entry refuses any other carrier or a duty that does not
+# declare ``data_purpose=demo``, and the module's own guard re-checks the
+# database, the runtime environment and the explicit demo-data switch from
+# inside the running container before a single row is written.
+.PHONY: daily.runtime.database.duty.seed
+daily.runtime.database.duty.seed: guard.prod.forbid verify.daily.runtime.database.duty
+	@test "$${SC_CONFIRM_DAILY_RUNTIME_DUTY_SEED:-}" = "SEED_DAILY_RUNTIME_DUTY_DEMO_DATA" || { echo "SC_CONFIRM_DAILY_RUNTIME_DUTY_SEED=SEED_DAILY_RUNTIME_DUTY_DEMO_DATA is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_SELECTION must name the demo duty to seed" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST must be the digest of the reviewed declaration" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_database_duty.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
+		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
+		--apply \
+		--phase seed \
+		--expect-declaration-digest "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" \
+		--report "$(DAILY_RUNTIME_DATABASE_DUTY_SEED_REPORT)"
+
+
 # The daily runtime serves a customer tenant duty from a *customer* addons tree
 # (P2 content owned by the customer delivery repository), so that tree has to
 # reach the governed daily namespace before any install can be reviewed. This
@@ -1167,9 +1229,11 @@ verify.daily.runtime.data_ownership.probe: guard.prod.forbid
 
 daily.runtime.data_ownership.probe: guard.prod.forbid verify.daily.runtime.data_ownership.probe
 	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" || { echo "DAILY_RUNTIME_EXPECTED_SHA must be the deployed runtime source revision" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_data_ownership_probe.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--report "$(DAILY_RUNTIME_DATA_OWNERSHIP_REPORT)"
 
@@ -1190,9 +1254,11 @@ verify.daily.runtime.lifecycle_fixture.prepare: guard.prod.forbid
 daily.runtime.lifecycle_fixture.prepare: guard.prod.forbid verify.daily.runtime.lifecycle_fixture.prepare
 	@test "$${CONFIRM_DAILY_RUNTIME_LIFECYCLE_FIXTURE:-}" = "DRIVE_DAILY_SC_DEMO_PROJECT_LIFECYCLE" || { echo "exact daily runtime lifecycle fixture confirmation is required" >&2; exit 2; }
 	@test -n "$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" || { echo "SC_ACCEPTANCE_FIXTURE_PASSWORD must be supplied through the environment" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_lifecycle_fixture_prepare.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--base-url "$(DAILY_RUNTIME_LIFECYCLE_FIXTURE_BASE_URL)" \
 		--password "$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" \
@@ -1219,9 +1285,11 @@ verify.daily.runtime.nav_pro_fixture.prepare: guard.prod.forbid
 daily.runtime.nav_pro_fixture.prepare: guard.prod.forbid verify.daily.runtime.nav_pro_fixture.prepare
 	@test "$${CONFIRM_DAILY_RUNTIME_NAV_PRO_FIXTURE:-}" = "PROVISION_DAILY_SC_DEMO_NAV_PRO_FIXTURE" || { echo "exact daily runtime nav_pro fixture confirmation is required" >&2; exit 2; }
 	@test -n "$${NAV_PRO_PASSWORD:-}" || { echo "NAV_PRO_PASSWORD must be supplied through the environment" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_nav_pro_fixture_prepare.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--base-url "$(DAILY_RUNTIME_NAV_PRO_FIXTURE_BASE_URL)" \
 		--password "$${NAV_PRO_PASSWORD}" \
@@ -1245,9 +1313,11 @@ verify.daily.runtime.record_identity.resolve: guard.prod.forbid
 
 daily.runtime.record_identity.resolve: guard.prod.forbid verify.daily.runtime.record_identity.resolve
 	@test "$${CONFIRM_DAILY_RUNTIME_RECORD_IDENTITY:-}" = "RESOLVE_DAILY_SC_DEMO_RECORD_IDENTITY" || { echo "exact daily runtime record identity confirmation is required" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_record_identity_resolve.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--base-url "$(DAILY_RUNTIME_RECORD_IDENTITY_BASE_URL)" \
 		--output "$(ACCEPTANCE_RECORD_RESOLUTION)" \
@@ -1291,9 +1361,12 @@ verify.daily.runtime.published_face.converge: guard.prod.forbid
 daily.runtime.published_face.converge: guard.prod.forbid verify.daily.runtime.published_face.converge
 	@test "$${CONFIRM_DAILY_RUNTIME_PUBLISHED_FACE:-}" = "REFRESH_DAILY_RUNTIME_PUBLISHED_FACE_FROM_LOCKED_CONTRACT" || { echo "exact daily runtime published-face confirmation is required" >&2; exit 2; }
 	@test -n "$(DAILY_RUNTIME_PUBLISHED_FACE_LOGIN)" || { echo "DAILY_RUNTIME_PUBLISHED_FACE_LOGIN must name the daily full-product principal (set DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN or ACCEPTANCE_LOGIN)" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_published_face_converge.py \
 		--expected-sha "$(DAILY_RUNTIME_PUBLISHED_FACE_EXPECTED_SHA)" \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		$(DAILY_RUNTIME_DUTY_FLAG) \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
 		--login "$(DAILY_RUNTIME_PUBLISHED_FACE_LOGIN)" \
 		--product-keys "$(DAILY_RUNTIME_PUBLISHED_FACE_PRODUCT_KEYS)" \
 		--upgrade-modules "$(DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES)" \

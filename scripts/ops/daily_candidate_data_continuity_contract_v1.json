@@ -4,17 +4,7 @@
   "task_id": "DAILY-DATA-CONTINUITY-BASELINE-01",
   "environment_class": "DAILY_CANDIDATE_ENVIRONMENT",
   "data_authority": "CANDIDATE",
-  "compose_project": "sc-backend-odoo-dev",
-  "database": "sc_demo",
-  "database_role": "odoo",
-  "backup_id_prefix": "sc_demo",
-  "database_container": "sc-backend-odoo-dev-db-1",
-  "odoo_container": "sc-backend-odoo-dev-odoo-1",
-  "database_volume": "sc_dev_db_data",
-  "odoo_data_volume": "sc_dev_odoo_data",
-  "filestore_root": "/var/lib/odoo/filestore",
-  "source_repository": "/opt/projects/repos/sce-backend-odoo",
-  "backup_root": "/data/backups/daily_candidate",
+  "source_repository": "/opt/projects/repos/sce-product-odoo",
   "required_artifacts": [
     "database.dump",
     "filestore.tar.gz",
@@ -68,5 +58,7 @@
     "demo_data_write_allowed": false,
     "database_recreate_required": false,
     "filestore_recreate_required": false
-  }
+  },
+  "identity_source": "config/ops/daily_runtime_database_duties.v1.json",
+  "identity_note": "Runtime identity (database, application role, cluster, containers, volumes, filestore scope, backup namespace, backup id prefix) is resolved from the duty declaration. This contract deliberately restates none of it: the demo carrier was rebuilt onto its own cluster on 2026-10-16, and a restated identity here became a second authority that refused the move instead of following it. The pre-governance carrier that also answers to the same database name is the declaration's protected historic source, not a duty, so this contract can never select it."
 }

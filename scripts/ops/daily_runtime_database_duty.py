@@ -72,9 +72,16 @@ REFRESH_CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DUTY_REFRESH"
 #: migrations -- so it names its own token instead of reusing the refresh one.
 UPGRADE_CONFIRMATION = "UPGRADE_DAILY_RUNTIME_DUTY_DECLARED_MODULES"
 UPGRADE_CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE"
+#: Seeding a demo duty is a *data* mutation inside a duty that already serves.
+#: It is narrower than an upgrade (no schema is rewritten) and wider than a
+#: refresh (business rows are created), so it names its own token rather than
+#: borrowing either one and reading as a provision.
+SEED_CONFIRMATION = "SEED_DAILY_RUNTIME_DUTY_DEMO_DATA"
+SEED_CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DUTY_SEED"
 PHASE_CONFIRMATIONS = {
     "refresh": (REFRESH_CONFIRM_ENV, REFRESH_CONFIRMATION),
     "upgrade": (UPGRADE_CONFIRM_ENV, UPGRADE_CONFIRMATION),
+    "seed": (SEED_CONFIRM_ENV, SEED_CONFIRMATION),
 }
 POSTGRES_DATA_DESTINATION = "/var/lib/postgresql/data"
 #: ``initialize`` brings up the declared services and installs the declared
@@ -87,7 +94,7 @@ POSTGRES_DATA_DESTINATION = "/var/lib/postgresql/data"
 #: an already serving duty from the deployed source tree, after capturing and
 #: verifying a pre-upgrade recovery point, and installs nothing that the
 #: declaration does not already name.
-PHASES = ("plan", "stack", "database", "initialize", "refresh", "upgrade", "all")
+PHASES = ("plan", "stack", "database", "initialize", "refresh", "upgrade", "seed", "all")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 #: Every value the declaration must supply before a duty stack can be rendered.
@@ -103,6 +110,36 @@ SECRET_KEYS = (
     "DB_PASSWORD", "DB_MAINTENANCE_PASSWORD", "ADMIN_PASSWD", "JWT_SECRET",
     "SC_BOOTSTRAP_SECRET",
 )
+#: The declared data purpose that may carry demo data, and the one secret only
+#: that purpose mints. The demo users the product's own seed creates need a
+#: password, and it is duty secret material rather than an operator argument, so
+#: it is minted once per demo duty and never rendered into a non-demo stack.
+DEMO_PURPOSE = "demo"
+DEMO_SECRET_KEYS = ("SC_DEMO_USER_PASSWORD",)
+#: The product module that owns demo data. A duty's ``demo_seed`` section names
+#: it, and the seed phase refuses any other carrier: a second demo-data lane
+#: would be the "substitute fixture" the owner ruling of 2026-10-16 forbids.
+DEMO_SEED_CARRIER = "smart_construction_demo"
+#: The stages of the product's own demo chain, in the only order that produces a
+#: complete carrier. The release scenario set runs first because the
+#: ``demo_full`` profile's payment step resolves an S69 contract xmlid that only
+#: that set creates; running the profile alone is the defect that made a duty
+#: seeding itself report a raised chain as an unexecuted one.
+DEMO_SEED_STAGES = ("release_seed", "profile")
+#: The stage that runs the profile the declaration names. A stage list without
+#: it would seed scenarios and never the business chain the duty names, so the
+#: declaration is refused rather than run as a partial carrier.
+DEMO_SEED_PROFILE_STAGE = "profile"
+#: What ``SC_ALLOW_DEMO_DATA`` renders to per duty. It is a *derived* value, not
+#: an operator preference: the declaration's ``data_purpose`` is the single
+#: authority for whether this duty may carry demo data.
+DEMO_ALLOWED_LITERAL = "1"
+DEMO_FORBIDDEN_LITERAL = "0"
+#: A non-demo duty still has to resolve the template placeholders, and the only
+#: honest value for a password it does not have is the empty string. The demo
+#: module's own guard refuses an empty value, so this renders a stack that cannot
+#: accidentally seed demo data, rather than a stack that carries a made-up one.
+DEMO_PASSWORD_ABSENT_LITERAL = ""
 #: A duty that adopts a cluster it did not create cannot mint its own
 #: application credential: the role already exists inside the cluster's data
 #: volume and its password is not recoverable from the cluster. Such a duty
@@ -116,7 +153,7 @@ DEFAULT_CREDENTIAL_SOURCE_KEY = "DB_PASSWORD"
 ENV_READBACK_KEYS = (
     "DUTY_NAME", "COMPOSE_PROJECT_NAME", "DB_NAME", "DB_USER", "DB_MAINTENANCE_USER",
     "DB_DATA", "REDIS_DATA", "ODOO_DATA", "ODOO_DBFILTER", "ODOO_PORT", "NGINX_PORT",
-    "LIST_DB",
+    "LIST_DB", "SC_ALLOW_DEMO_DATA", "FRONTEND_BUILD_SHA256",
 )
 #: The environment keys the *application process* itself reads. ``ENV`` decides
 #: whether ``render_odoo_conf`` may drop an unavailable optional addon root, and
@@ -124,6 +161,18 @@ ENV_READBACK_KEYS = (
 #: initialization. A duty whose container cannot see them serves a different
 #: runtime than the one its declaration names (2026-10-16).
 APPLICATION_ENVIRONMENT_KEYS = ("ENV", "SC_ENVIRONMENT")
+#: The build identity the *application process* publishes for what it serves.
+#: ``SC_SOURCE_REVISION`` is the deployed source revision and
+#: ``FRONTEND_BUILD_SHA256`` is the frontend artifact behind the same route.
+#: They are not the same fact: a merge that changes no frontend source moves the
+#: revision while the served bundle stays at its previous generation, and the
+#: acceptance lanes key evidence reuse on the artifact. Both are read by product
+#: code (``product_release``) and published by ``/api/runtime-version``, so a
+#: stack that forwards neither serves a runtime nothing can identify.
+APPLICATION_IDENTITY_KEYS = ("SC_SOURCE_REVISION", "FRONTEND_BUILD_SHA256")
+#: The shape of a frontend artifact fingerprint. It is the value the governed
+#: build entry writes into the artifact's own ``.build-sha256``.
+FRONTEND_FINGERPRINT = re.compile(r"^[0-9a-f]{64}$")
 PLACEHOLDER = re.compile(r"@[A-Z0-9_]+@")
 #: The cluster readback is one argument vector on purpose. A combined short
 #: option cluster such as ``-Atc`` makes psql take the *next* argv as the value
@@ -465,8 +514,22 @@ def _validate_stack(name, duty, stack, naming, ops_root):
         failures.append("duty %s: stack.product_root is outside the governed /opt/projects root" % (name,))
     if str(stack["frontend_dist_dir"]).startswith(str(stack["product_root"]) + "/") is False:
         failures.append("duty %s: stack.frontend_dist_dir must live under stack.product_root" % (name,))
-    if stack["runtime_env"] not in ("dev", "test"):
-        failures.append("duty %s: stack.runtime_env must be a non-production runtime env" % (name,))
+    # ``demo`` is the one extra runtime environment this entry accepts, and only
+    # for a duty that *declares* the demo data purpose. It is not a relaxation of
+    # the non-production rule: the demo module's own guard reads
+    # ``SC_ENVIRONMENT`` and only seeds when it says demo, so a duty that
+    # declared its purpose as demo and its environment as dev could not run the
+    # formal demo chain at all. A non-demo duty stays refused.
+    runtime_env = str(stack["runtime_env"])
+    allowed_runtime_envs = ("dev", "test")
+    if duty.get("data_purpose") == DEMO_PURPOSE:
+        allowed_runtime_envs += (DEMO_PURPOSE,)
+    if runtime_env not in allowed_runtime_envs:
+        failures.append("duty %s: stack.runtime_env must be a non-production runtime env%s" % (
+            name,
+            " (demo is accepted only for a duty that declares data_purpose=demo)"
+            if runtime_env == DEMO_PURPOSE else "",
+        ))
     services = stack.get("services")
     if not isinstance(services, list) or not services:
         failures.append("duty %s: stack.services must be a non-empty list of service names" % (name,))
@@ -533,7 +596,14 @@ def _validate_service_face(name, duty):
                 "duty %s: service_face_reason describes a cluster_only face and is not declared here"
                 % (name,)
             )
-        if face in ("to_be_initialized", "initialized") and not custody.get("database_present"):
+        if (face in ("to_be_initialized", "initialized")
+                and not custody.get("database_present")
+                and custody.get("role_compliance") != "to_be_created"):
+            # A duty that is still ``to_be_created`` is by definition not present
+            # yet: its database does not exist, and the face it declares is the
+            # face it will become once the entry creates it. Declaring
+            # ``database_present: true`` to satisfy this check would make the
+            # declaration state a fact that is false at review time.
             failures.append(
                 "duty %s: a %s face needs its database present first, otherwise the declaration "
                 "promises a face its cluster cannot carry" % (name, face)
@@ -595,6 +665,7 @@ def _validate_scope(name, duty, compliance):
     purpose = duty.get("data_purpose")
     if purpose not in ("platform_control", "demo", "test", "customer"):
         failures.append("duty %s: data_purpose %s is not declared" % (name, purpose))
+    failures.extend(validate_demo_seed(name, duty))
     table = duty.get("section_11") or {}
     if purpose == "platform_control" and not table.get("IS_PLATFORM_CONTROL_DATABASE"):
         failures.append("duty %s: a platform control duty must say so in section 11" % (name,))
@@ -604,6 +675,61 @@ def _validate_scope(name, duty, compliance):
         # Creating an empty customer database is authorized; loading customer
         # data into it belongs to the user module, not to this entry.
         pass
+    return failures
+
+
+def validate_demo_seed(name, duty):
+    """Failures of a duty's declared demo-seed carrier, as one list."""
+    failures = []
+    purpose = duty.get("data_purpose")
+    seed = duty.get("demo_seed")
+    if isinstance(seed, dict) and seed and purpose != DEMO_PURPOSE:
+        failures.append(
+            "duty %s: only a duty that declares data_purpose=demo may declare demo_seed" % (name,)
+        )
+        return failures
+    if purpose != DEMO_PURPOSE:
+        return failures
+    if not isinstance(seed, dict) or not seed:
+        failures.append(
+            "duty %s: a demo duty must name its demo-seed carrier and profile; the entry never "
+            "defaults a demo step list of its own" % (name,)
+        )
+        return failures
+    carrier = str(seed.get("carrier") or "")
+    if carrier != DEMO_SEED_CARRIER:
+        failures.append(
+            "duty %s: demo_seed.carrier %s is not the product's own demo-data carrier (%s)"
+            % (name, carrier or "<unset>", DEMO_SEED_CARRIER)
+        )
+    profile = str(seed.get("profile") or "")
+    if not re.fullmatch(r"[a-z][a-z0-9_]*", profile):
+        failures.append("duty %s: demo_seed.profile %s is not a safe profile name" % (name, profile or "<unset>"))
+    stages = seed.get("stages")
+    if (not isinstance(stages, list) or not stages
+            or any(not isinstance(item, str) for item in stages)):
+        failures.append(
+            "duty %s: demo_seed.stages must name the product chain stages, in order; the entry "
+            "never runs a chain the declaration does not name" % (name,)
+        )
+    else:
+        unknown = [item for item in stages if item not in DEMO_SEED_STAGES]
+        if unknown:
+            failures.append(
+                "duty %s: demo_seed.stages names unknown stage(s) %s; known stages are %s"
+                % (name, ", ".join(unknown), ", ".join(DEMO_SEED_STAGES))
+            )
+        if len(set(stages)) != len(stages):
+            failures.append("duty %s: demo_seed.stages repeats a stage" % (name,))
+        if DEMO_SEED_PROFILE_STAGE not in stages:
+            failures.append(
+                "duty %s: demo_seed.stages never runs the declared profile %s; a stage list "
+                "without %s would seed a partial carrier"
+                % (name, profile or "<unset>", DEMO_SEED_PROFILE_STAGE)
+            )
+    for key in ("authority", "reason"):
+        if not str(seed.get(key) or "").strip():
+            failures.append("duty %s: demo_seed.%s is required" % (name, key))
     return failures
 
 
@@ -746,12 +872,35 @@ SECRET_KEYS = (
 ENV_READBACK_KEYS = (
     "DUTY_NAME", "COMPOSE_PROJECT_NAME", "DB_NAME", "DB_USER", "DB_MAINTENANCE_USER",
     "DB_DATA", "REDIS_DATA", "ODOO_DATA", "ODOO_DBFILTER", "ODOO_PORT", "NGINX_PORT",
-    "LIST_DB",
+    "LIST_DB", "SC_ALLOW_DEMO_DATA", "FRONTEND_BUILD_SHA256",
 )
 APPLICATION_ENVIRONMENT_KEYS = ("ENV", "SC_ENVIRONMENT")
+#: Mirrored from the host entry: the identity the application publishes for what
+#: it serves, and the shape of the artifact fingerprint it is judged against.
+APPLICATION_IDENTITY_KEYS = ("SC_SOURCE_REVISION", "FRONTEND_BUILD_SHA256")
+FRONTEND_FINGERPRINT = re.compile(r"^[0-9a-f]{64}$")
 INDUSTRY_MODULE_PREFIX = "smart_construction_"
+#: The demo-data switches, mirrored from the host entry so the rendered stack
+#: and the readback that proves it cannot drift apart.
+DEMO_PURPOSE = "demo"
+DEMO_SECRET_KEYS = ("SC_DEMO_USER_PASSWORD",)
+DEMO_ALLOWED_LITERAL = "1"
+DEMO_FORBIDDEN_LITERAL = "0"
+DEMO_PASSWORD_ABSENT_LITERAL = ""
+#: The product module that owns demo data, mirrored from the host entry. A duty
+#: whose ``demo_seed`` names another carrier is refused rather than seeded by an
+#: entry that picked a lane of its own.
+DEMO_SEED_CARRIER = "smart_construction_demo"
+#: The declared chain's stage vocabulary, mirrored from the host entry so a
+#: declaration the host accepted runs here as the same chain or not at all.
+DEMO_SEED_STAGES = ("release_seed", "profile")
+DEMO_SEED_PROFILE_STAGE = "profile"
+#: A demo seed creates business rows through the product's own chain, so it is
+#: bounded like the module installs above rather than like a status readback.
+SEED_TIMEOUT = 7200
 
 __BASE_BOOTSTRAP_PLAN__
+__DEMO_SEED_PROGRAM__
 __REFRESH_REFUSAL__
 __UPGRADE_REFUSAL__
 __PRUNE_SUPERSEDED_STACKS__
@@ -927,7 +1076,7 @@ def materialise_managed_instances():
     return entry
 
 
-def frontend_build_facts():
+def frontend_build_facts(duty=None):
     """Read the deployed frontend build environment back.
 
     ``VITE_PLATFORM_ADMIN_DB`` is a *build-time* variable: the duty nginx and
@@ -935,6 +1084,18 @@ def frontend_build_facts():
     env file would therefore be a decorative binding that can silently disagree
     with the bundle users actually load. The honest check is to read the file the
     frontend build consumed and refuse when it names another database.
+
+    ``FRONTEND_BUILD_SHA256`` is the opposite case and is bound the other way
+    round. The application process *does* read it and publishes it, and every
+    acceptance lane keys the reuse of its observations on it, so a duty stack
+    that never forwards it serves an unidentified bundle: the served revision
+    still moves, reuse silently degrades from the artifact to the deployment, and
+    nothing in the running system answers which frontend is behind the route. The
+    artifact owns that fact -- ``.build-sha256`` inside the duty's declared
+    output directory is written by the same governed fingerprint entry that
+    produced the build -- so it is read from there and reconciled against the
+    deployed build environment's own declaration instead of being pinned here or
+    re-derived by a second hash rule.
     """
     path = PAYLOAD["frontend_build_env_file"]
     declared = PAYLOAD["platform_admin_database"]
@@ -943,7 +1104,8 @@ def frontend_build_facts():
     if present:
         with open(path, "rb") as stream:
             digest = hashlib.sha256(stream.read()).hexdigest()
-    observed = read_env_file(path).get("VITE_PLATFORM_ADMIN_DB", "")
+    declared_values = read_env_file(path)
+    observed = declared_values.get("VITE_PLATFORM_ADMIN_DB", "")
     error = ""
     if not present:
         error = "the declared frontend build environment file is missing"
@@ -951,12 +1113,36 @@ def frontend_build_facts():
         error = "the deployed frontend build names %s, not the declared %s" % (
             observed or "<unset>", declared,
         )
+    output_dir = str(((duty or {}).get("stack") or {}).get("frontend_dist_dir") or "")
+    artifact_path = os.path.join(output_dir, ".build-sha256") if output_dir else ""
+    artifact = ""
+    if artifact_path and os.path.exists(artifact_path):
+        with open(artifact_path) as stream:
+            artifact = stream.read().strip().lower()
+    build_env_sha256 = str(declared_values.get("FRONTEND_BUILD_SHA256", "")).strip().lower()
+    fingerprint_error = ""
+    if duty is not None:
+        if not artifact_path:
+            fingerprint_error = "the duty declares no frontend output directory"
+        elif not os.path.exists(artifact_path):
+            fingerprint_error = ("the served frontend artifact declares no fingerprint (%s)"
+                                 % (artifact_path,))
+        elif not FRONTEND_FINGERPRINT.fullmatch(artifact):
+            fingerprint_error = ("the served frontend artifact fingerprint is not a sha256: %s"
+                                 % (artifact or "<empty>",))
+        elif build_env_sha256 and build_env_sha256 != artifact:
+            fingerprint_error = ("the deployed frontend build environment declares %s while the "
+                                 "served artifact is %s" % (build_env_sha256, artifact))
     return {
         "path": path,
         "present": present,
         "sha256": digest,
         "platform_admin_db": observed,
         "error": error,
+        "served_build_sha256": artifact,
+        "build_env_build_sha256": build_env_sha256,
+        "artifact_path": artifact_path,
+        "fingerprint_error": fingerprint_error,
     }
 
 
@@ -975,7 +1161,38 @@ def read_env_file(path):
 
 
 def credentials_path(duty):
-    return os.path.join(OPS_ROOT, duty["duty"] + ".env")
+    """The one governed environment/credential file of one duty.
+
+    A duty's file is normally named after the duty, but the *carrier* decides
+    whether an existing file may be adopted. On 2026-10-16 the rebuilt demo duty
+    and the pre-governance demo carrier were both called ``demo``: the legacy
+    file ``demo.env`` still declares ``COMPOSE_PROJECT_NAME=sc-backend-odoo-dev``
+    and still owns the surviving cluster's role password. Rendering the rebuilt
+    duty into that name would destroy a credential the historic source needs and
+    would hand one duty the route of a cluster it does not own, so a file that
+    declares another carrier is never read, adopted or written; the rebuilt duty
+    uses the carrier-qualified name instead. A file without a carrier marker is
+    still this duty's own file, and a drift in its identity keys still refuses.
+
+    This program is uploaded and run on its own, so it cannot import the
+    identity resolver; the same rule therefore lives here in this program's own
+    idiom and in ``daily_runtime_duty_identity.duty_env_path`` for the entries
+    that run from the checkout.  ``test_daily_runtime_duty_identity`` asserts the
+    two agree on the same directory, because an entry-local copy of the rule is
+    exactly how the edition-release entry came to read ``demo.env`` while a
+    correct ``sc-demo-dev.env`` sat next to it.
+    """
+    declared = str((duty.get("cluster") or {}).get("compose_project") or "")
+    canonical = os.path.join(OPS_ROOT, duty["duty"] + ".env")
+    if not declared:
+        return canonical
+    qualified = os.path.join(OPS_ROOT, declared + ".env")
+    if os.path.exists(qualified):
+        return qualified
+    owner = read_env_file(canonical).get("COMPOSE_PROJECT_NAME", "")
+    if owner and owner != declared:
+        return qualified
+    return canonical
 
 
 def credential_source(duty):
@@ -1052,6 +1269,11 @@ def duty_credentials(duty):
         if not values.get(key):
             values[key] = secrets.token_hex(32)
             created = True
+    demo_keys = DEMO_SECRET_KEYS if duty.get("data_purpose") == DEMO_PURPOSE else ()
+    for key in demo_keys:
+        if not values.get(key):
+            values[key] = secrets.token_hex(32)
+            created = True
     if duty["cluster"]["maintenance_role"] == duty["database_role"] and (
             values.get("DB_MAINTENANCE_PASSWORD") != values.get("DB_PASSWORD")):
         values["DB_MAINTENANCE_PASSWORD"] = values["DB_PASSWORD"]
@@ -1068,19 +1290,36 @@ def duty_credentials(duty):
             stream.write("# governed credential and identity material for the %s duty\n"
                          % (duty["duty"],))
             stream.write("# written by scripts/ops/daily_runtime_database_duty.py; never committed\n")
-            for key in ("DB_NAME", "DB_USER", "DB_MAINTENANCE_USER") + SECRET_KEYS:
+            for key in ("DB_NAME", "DB_USER", "DB_MAINTENANCE_USER") + SECRET_KEYS + demo_keys:
                 stream.write("%s=%s\n" % (key, values[key]))
     return values, path, created
 
 
 def render_env(duty, credentials):
+    is_demo = duty.get("data_purpose") == DEMO_PURPOSE
+    served = frontend_build_facts(duty)
+    if served["fingerprint_error"] or not served["served_build_sha256"]:
+        # A duty stack that serves a frontend has to say which build it serves.
+        # An empty or unverifiable value would start a runtime whose published
+        # identity is anonymous -- the 2026-10-16 gap -- so the render refuses
+        # and the reviewed declaration is what has to change, not the confidence.
+        raise RuntimeError("DAILY_DUTY_FRONTEND_BUILD_IDENTITY:%s:%s" % (
+            duty["duty"],
+            served["fingerprint_error"] or "the served frontend fingerprint is absent",
+        ))
     values = {
         "DUTY_NAME": duty["duty"],
         "COMPOSE_PROJECT_NAME": duty["cluster"]["compose_project"],
         "ENV": duty["stack"]["runtime_env"],
         "SC_ENVIRONMENT": duty["stack"]["runtime_env"],
+        "SC_ALLOW_DEMO_DATA": DEMO_ALLOWED_LITERAL if is_demo else DEMO_FORBIDDEN_LITERAL,
+        "SC_DEMO_USER_PASSWORD": (
+            credentials.get("SC_DEMO_USER_PASSWORD", DEMO_PASSWORD_ABSENT_LITERAL)
+            if is_demo else DEMO_PASSWORD_ABSENT_LITERAL
+        ),
         "SC_PRODUCT_ROOT": duty["stack"]["product_root"],
         "SC_SOURCE_REVISION": PAYLOAD["source_revision"],
+        "FRONTEND_BUILD_SHA256": served["served_build_sha256"],
         "POSTGRES_IMAGE": duty["stack"]["postgres_image"],
         "DB_NAME": duty["database"],
         "DB_USER": duty["database_role"],
@@ -1129,7 +1368,10 @@ def materialise_stack_files(duty):
         write_file(compose_path, compose_text)
     superseded = prune_superseded_stack_files(OPS_ROOT, compose_path)
     credentials, credential_path, created = duty_credentials(duty)
-    env_path = os.path.join(OPS_ROOT, duty["duty"] + ".env")
+    # One file, one name: the rendered environment and the governed credential
+    # material are the same file, so it is resolved once by carrier identity
+    # instead of being derived a second time from the duty name.
+    env_path = credential_path
     rendered = render_env(duty, credentials)
     if read_text(env_path) != rendered:
         write_file(env_path, rendered)
@@ -1164,7 +1406,7 @@ def compose_base(duty):
         "docker", "compose",
         "-f", stack_compose_path(),
         "--project-name", duty["cluster"]["compose_project"],
-        "--env-file", os.path.join(OPS_ROOT, duty["duty"] + ".env"),
+        "--env-file", credentials_path(duty),
     ]
 
 
@@ -1239,6 +1481,13 @@ def application_config_facts(duty):
     while building its static-file map, and *every* ``/api/*`` route answered
     500 before dispatch. Reading the container back is what makes a declaration
     that says "serving" disagree out loud with a container that cannot serve.
+
+    The same readback carries the identity the application *publishes*. A stack
+    that forwards the source revision but not the served frontend artifact
+    answers ``/api/runtime-version`` with an anonymous bundle, and every
+    acceptance lane silently degrades its reuse key from the artifact to the
+    deployment; so both are read from the container and judged against the
+    declared revision and the fingerprint of the artifact behind the route.
     """
     facts = {"container": "", "environment": {}, "addons_path": [],
              "missing_addons_roots": [], "error": ""}
@@ -1247,21 +1496,31 @@ def application_config_facts(duty):
         facts["error"] = "the declared odoo service is not running"
         return facts
     facts["container"] = container
-    for key in APPLICATION_ENVIRONMENT_KEYS:
-        observed = run(["docker", "exec", container, "sh", "-lc",
-                        'printf "%s" "$' + key + '"'])
-        facts["environment"][key] = (
-            (observed.stdout or "").strip() if not observed.returncode else ""
-        )
+    # One round trip for the whole vector: each ``docker exec`` costs a
+    # container namespace entry, and the duty entry walks every declared duty on
+    # every run, so a per-key probe would multiply that cost by the number of
+    # identity keys for facts that are read in the same instant anyway. The
+    # values travel NUL-separated in a fixed key order, which keeps a value that
+    # ever contains a newline from shifting the mapping onto its neighbour.
+    keys = APPLICATION_ENVIRONMENT_KEYS + APPLICATION_IDENTITY_KEYS
+    # The addon-root scan is the same kind of fact read at the same moment, so it
+    # travels in the same round trip after the NUL-terminated vector instead of
+    # paying a second container entry for it.
     probe = run(["docker", "exec", container, "sh", "-lc",
+                 "printf '%s\\0' " + " ".join('"$%s"' % (key,) for key in keys) + "; "
                  "sed -n 's/^addons_path *= *//p' /var/lib/odoo/odoo.conf | tr ',' '\\n' "
                  "| while read -r entry; do [ -n \"$entry\" ] || continue; "
                  "if [ -d \"$entry\" ]; then echo \"present=$entry\"; "
                  "else echo \"missing=$entry\"; fi; done"])
+    fields = (probe.stdout or "").split("\0", len(keys))
+    facts["environment"] = {
+        key: (fields[index].strip() if index < len(fields) else "")
+        for index, key in enumerate(keys)
+    }
     if probe.returncode:
         facts["error"] = (probe.stderr or probe.stdout or "").strip()[:300]
         return facts
-    for line in (probe.stdout or "").splitlines():
+    for line in (fields[len(keys)] if len(fields) > len(keys) else "").splitlines():
         marker, _, path = line.strip().partition("=")
         if not path:
             continue
@@ -1472,6 +1731,100 @@ def install_modules(duty):
         waited = run(compose_base(duty) + ["up", "-d", "--wait", "odoo"], cwd=OPS_ROOT, timeout=900)
         entry["wait"] = {"returncode": waited.returncode,
                          "error": (waited.stderr or waited.stdout or "").strip()[-400:]}
+    return entry
+
+
+def demo_seed_scope(duty):
+    """The demo-data switch as the *running container* carries it.
+
+    The seed chain's own guard refuses a database, an environment or a switch it
+    cannot see. Reading the same three facts back from the container is what
+    keeps a declaration that says "this duty may carry demo data" from being
+    satisfied by an env file the container never received -- the 2026-10-16
+    defect shape, one layer down.
+    """
+    container = service_container(duty, "odoo")
+    facts = {"container": container, "environment": "", "allow_demo_data": "",
+             "password_present": False, "error": ""}
+    if not container:
+        facts["error"] = "the declared odoo service is not running; start the duty stack first"
+        return facts
+    for key in ("SC_ENVIRONMENT", "SC_ALLOW_DEMO_DATA"):
+        facts[{"SC_ENVIRONMENT": "environment", "SC_ALLOW_DEMO_DATA": "allow_demo_data"}[key]] = (
+            run(["docker", "exec", container, "printenv", key]).stdout or "").strip()
+    presence = run(["docker", "exec", container, "sh", "-lc",
+                    "if [ -n \"${SC_DEMO_USER_PASSWORD:-}\" ]; then echo present; else echo absent; fi"])
+    # The value is never read back, let alone recorded: only whether the
+    # container holds one, because the seed's guard needs it and the report must
+    # not carry the secret it guards.
+    facts["password_present"] = (presence.stdout or "").strip() == "present"
+    return facts
+
+
+def seed_demo(duty):
+    """Run the *declared* demo-seed chain through the product's own stages.
+
+    No step list of this entry's own, no fixture lane, and no direct write to a
+    terminal state: the entry names the stages the declaration names and the
+    product module decides what each stage does. The chain has two stages because
+    the product's own full-demo loader has two -- the release scenario set, then
+    the declared profile -- and the profile assumes the scenarios. Running the
+    profile alone was the defect: the S69 payment step resolves a contract xmlid
+    that only the scenario set creates, so the chain raised, nothing committed,
+    and the declaration was left reading as seeded. The demo module's guard then
+    re-checks the database, the environment and the explicit demo-data switch
+    from inside the container, so a declaration that says "demo" and a container
+    that cannot prove it disagree here rather than mid-seed.
+    """
+    seed = duty.get("demo_seed") or {}
+    profile = str(seed.get("profile") or "")
+    stages = [str(item) for item in (seed.get("stages") or [])]
+    if duty.get("data_purpose") != DEMO_PURPOSE:
+        return {"error": "this duty does not declare data_purpose=demo; it is never seeded"}
+    if str(seed.get("carrier") or "") != DEMO_SEED_CARRIER:
+        return {"error": "the declaration names no %s demo-seed carrier" % (DEMO_SEED_CARRIER,)}
+    unknown = [item for item in stages if item not in DEMO_SEED_STAGES]
+    if (not stages or unknown or len(set(stages)) != len(stages)
+            or DEMO_SEED_PROFILE_STAGE not in stages):
+        return {"error": "the declaration does not name a runnable %s stage list"
+                         % (DEMO_SEED_CARRIER,),
+                "stages": stages, "unknown": unknown, "known": list(DEMO_SEED_STAGES)}
+    scope = demo_seed_scope(duty)
+    if scope.get("error"):
+        return {"error": scope["error"], "scope": scope}
+    if scope.get("environment") != DEMO_PURPOSE or scope.get("allow_demo_data") != DEMO_ALLOWED_LITERAL:
+        return {"error": "the running container does not carry the declared demo-data switch",
+                "scope": scope}
+    if not scope.get("password_present"):
+        return {"error": "the running container carries no demo user password", "scope": scope}
+    container = scope["container"]
+    program = demo_seed_program(DEMO_SEED_CARRIER, stages)
+    command = ["docker", "exec", "-i",
+               "-e", "SC_DEMO_SEED_PROFILE=" + profile,
+               "-e", "SC_DEMO_SEED_STAGES=" + ",".join(stages),
+               container, "odoo", "shell", "-c", "/var/lib/odoo/odoo.conf",
+               "-d", duty["database"], "--no-http", "--workers=0", "--max-cron-threads=0"]
+    result = run(command, input=program, timeout=SEED_TIMEOUT)
+    tail = ((result.stdout or "") + (result.stderr or "")).strip()
+    executed = []
+    for line in tail.splitlines():
+        marker = "[demo.seed] executed="
+        if marker in line:
+            executed = [name for name in line.split(marker, 1)[1].strip().split(",") if name]
+    entry = {"container": container, "carrier": DEMO_SEED_CARRIER, "profile": profile,
+             "stages": stages, "returncode": result.returncode, "executed": executed,
+             "tail": tail[-1200:], "scope": scope}
+    if result.returncode or not executed:
+        entry["error"] = "the declared demo-seed profile did not report an executed chain"
+        return entry
+    # The serving process holds its own registry and its own ACL/menu caches, so
+    # it is restarted before anything claims the seeded rows are visible.
+    restart = run(["docker", "restart", container], timeout=300)
+    entry["restart"] = {"command": "docker restart %s" % container,
+                        "returncode": restart.returncode}
+    waited = run(compose_base(duty) + ["up", "-d", "--wait", "odoo"], timeout=900)
+    entry["wait"] = {"returncode": waited.returncode,
+                     "error": (waited.stderr or waited.stdout or "").strip()[-400:]}
     return entry
 
 
@@ -1711,7 +2064,7 @@ def duty_entry(duty):
     wants_initialization = duty["custody"].get("service_face") == "to_be_initialized"
     entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
              "create": None, "bootstrap": None, "privileges": None, "initialize": None,
-             "refresh": None, "upgrade": None, "recovery_point": None, "route": None,
+             "refresh": None, "upgrade": None, "seed": None, "recovery_point": None, "route": None,
              "service": None, "application_config": None,
              "application_credential": None, "error": ""}
     if MODE == "apply" and PHASE in ("stack", "all"):
@@ -1806,14 +2159,59 @@ def duty_entry(duty):
                              % (entry["recovery_point"].get("error") or "unverified",)}
             else:
                 entry["upgrade"] = upgrade_declared_modules(duty)
+    if MODE == "apply" and PHASE == "seed":
+        # Seeding writes business rows, so it only runs against a duty that
+        # already carries the declared module set: the chain lives inside that
+        # module, and the guard below refuses rather than seeding a duty whose
+        # declaration has not been installed yet.
+        declared_modules = [str(item) for item in duty["stack"]["modules"]]
+        observed_modules = module_facts(duty).get("module_states") or {}
+        missing = [name for name in declared_modules if observed_modules.get(name) != "installed"]
+        if not (entry["cluster"].get("present") and entry["cluster"].get("running")):
+            entry["seed"] = {"error": "the duty cluster is not running; seeding needs a serving duty"}
+        elif not base_readback(duty).get("installed"):
+            entry["seed"] = {"error": "the duty's base module is not installed; refusing to seed "
+                                       "an uninitialized duty"}
+        elif missing:
+            entry["seed"] = {"error": "the declared module set is not installed on this duty",
+                             "missing_modules": missing, "observed": observed_modules}
+        else:
+            entry["seed"] = seed_demo(duty)
     entry["service"] = service_facts(duty)
     if "odoo" in [str(item) for item in duty["stack"]["services"]]:
         entry["application_config"] = application_config_facts(duty)
+    entry["runtime_identity"] = duty_runtime_identity(duty)
     if (entry["cluster"].get("present") and entry["cluster"].get("running")
             and entry["custody"].get("database_present")
             and entry["custody"].get("role_present")):
         entry["application_credential"] = application_credential_facts(duty)
     return entry
+
+
+def duty_runtime_identity(duty):
+    """The identity one duty's route must publish, and the artifact behind it.
+
+    ``SC_SOURCE_REVISION`` and ``FRONTEND_BUILD_SHA256`` are the two facts
+    ``/api/runtime-version`` answers with, and they move independently: a merge
+    that changes no frontend source advances the revision while the served
+    artifact keeps its generation. The revision is the payload's own review
+    input; the artifact fingerprint is read from the duty's declared output
+    directory, where the governed build entry writes it. Recording both beside
+    the container's own environment is what lets the verdict compare a
+    *published* identity with the declared one instead of trusting the render.
+    """
+    served = frontend_build_facts(duty)
+    return {
+        "declared": {
+            "SC_SOURCE_REVISION": str(PAYLOAD["source_revision"]),
+            "FRONTEND_BUILD_SHA256": served.get("served_build_sha256") or "",
+        },
+        "served_build_sha256": served.get("served_build_sha256") or "",
+        "build_env_build_sha256": served.get("build_env_build_sha256") or "",
+        "artifact_path": served.get("artifact_path") or "",
+        "fingerprint_error": served.get("fingerprint_error") or "",
+        "pointer": served.get("path") or "",
+    }
 
 
 def salvage_entry(duty, error):
@@ -1826,7 +2224,7 @@ def salvage_entry(duty, error):
     """
     entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
              "create": None, "bootstrap": None, "privileges": None, "initialize": None,
-             "refresh": None, "upgrade": None, "recovery_point": None, "route": None,
+             "refresh": None, "upgrade": None, "seed": None, "recovery_point": None, "route": None,
              "service": None, "application_config": None,
              "application_credential": None, "error": "%s: %s" % (type(error).__name__, error)}
     try:
@@ -1851,6 +2249,36 @@ report["managed_instances"] = materialise_managed_instances()
 report["writes"] = MODE == "apply"
 print(MARKER + json.dumps(report, ensure_ascii=False, sort_keys=True))
 '''
+
+
+def demo_seed_program(carrier, stages):
+    """The declared demo chain, as the product's own functions, in declared order.
+
+    The entry names no step of its own: every stage is a call into the carrier
+    the declaration names. An unknown stage raises inside the container instead
+    of being skipped, so a declaration that drifted from the product cannot
+    report a shorter chain as a completed one. It is defined here, outside the
+    embedded program, and injected by ``render_remote_program`` so that the
+    chain text is unit tested rather than only assembled.
+    """
+    lines = [
+        "import os",
+        "from odoo.addons.%s.tools.scenario_loader import load_release_seed" % (carrier,),
+        "from odoo.addons.%s.seed import run_steps" % (carrier,),
+        "profile = 'profile:' + os.environ['SC_DEMO_SEED_PROFILE']",
+        "executed = []",
+        "for stage in os.environ['SC_DEMO_SEED_STAGES'].split(','):",
+        "    if stage == 'release_seed':",
+        "        load_release_seed(env, mode='update')",
+        "        executed.append('release_seed')",
+        "    elif stage == 'profile':",
+        "        executed.extend(run_steps(env, profile))",
+        "    else:",
+        "        raise RuntimeError('unknown declared demo-seed stage: ' + stage)",
+        "env.cr.commit()",
+        "print('[demo.seed] executed=%s' % ','.join(executed))",
+    ]
+    return "\n".join(lines) + "\n"
 
 
 def base_bootstrap_plan(base_installed, entrypoint_finished, restarts):
@@ -1977,6 +2405,8 @@ def render_remote_program(payload):
     ).replace(
         "__BASE_BOOTSTRAP_PLAN__", textwrap.dedent(inspect.getsource(base_bootstrap_plan)),
     ).replace(
+        "__DEMO_SEED_PROGRAM__", textwrap.dedent(inspect.getsource(demo_seed_program)),
+    ).replace(
         "__REFRESH_REFUSAL__", textwrap.dedent(inspect.getsource(refresh_refusal)),
     ).replace(
         "__UPGRADE_REFUSAL__", textwrap.dedent(inspect.getsource(upgrade_refusal)),
@@ -2014,7 +2444,28 @@ def remote_duties(ssh_host, payload, *, remote_head=None):
 # ----------------------------------------------------------------------
 # evaluation
 # ----------------------------------------------------------------------
-def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, upgrade=False):
+def start_reached_every_declared_service(start):
+    """Whether a start entry actually brought up what it was asked to start.
+
+    The stack is brought up through two different shapes. ``stack``/``all`` start
+    the cluster only, with :func:`start_cluster`, which returns one command and
+    one return code. ``initialize``/``refresh`` start the declared services, with
+    :func:`start_services`, which returns one step per stage because the cluster
+    services have to be waited for before the first boot can be installed into.
+    Reading only ``returncode`` made the initialize phase judge a step list it
+    never produced, so a duty whose services did start was reported as "not
+    created from the reviewed definition" for ever. The shape is resolved here,
+    and an entry that reports no successful step is not a passed start: an empty
+    step list means nothing was started, which is not the same as success.
+    """
+    steps = start.get("steps")
+    if steps is not None:
+        return bool(steps) and all(step.get("returncode") == 0 for step in steps)
+    return start.get("returncode") == 0
+
+
+def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, upgrade=False,
+             seed=False):
     """Return the per-duty assertions that decide the verdict.
 
     The two phases ask different questions about the same observation. A plan
@@ -2032,6 +2483,19 @@ def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, 
 
     def add(identifier, passed, detail):
         assertions.append({"id": identifier, "passed": bool(passed), "detail": detail})
+
+    if str(observation.get("error") or "").strip():
+        # An entry that raised is not an entry whose outcome is "as declared".
+        # The 2026-10-16 rebuild proved the shape: the carrier refused the
+        # credential identity, wrote nothing, and the verdict still said PASS
+        # because the only remaining assertion ("the custody is absent as
+        # declared") was true of the very fact that nothing had been created.
+        # A salvaged error is therefore its own failing assertion, and the rest
+        # of the duty is not judged against facts a failed entry never reached.
+        add("duty_entry_completed_without_an_error", False,
+            {"error": observation.get("error"),
+             "readback_error": observation.get("readback_error", "")})
+        return assertions
 
     declared_compliance = declared_custody.get("role_compliance")
     wants_creation = declared_compliance == "to_be_created"
@@ -2079,6 +2543,10 @@ def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, 
                 "ODOO_PORT": str(duty["routing"]["odoo_loopback_port"]),
                 "NGINX_PORT": str(duty["routing"]["nginx_host_port"]),
                 "LIST_DB": "false",
+                "SC_ALLOW_DEMO_DATA": (
+                    DEMO_ALLOWED_LITERAL if duty.get("data_purpose") == DEMO_PURPOSE
+                    else DEMO_FORBIDDEN_LITERAL
+                ),
             }
             add("stack_environment_matches_declaration",
                 observed_keys == expected_keys,
@@ -2092,14 +2560,24 @@ def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, 
                  "credentials_mode": stack.get("credentials_mode")})
             start = stack.get("start") or {}
             add("stack_was_created_from_the_reviewed_definition",
-                start.get("returncode") == 0
+                start_reached_every_declared_service(start)
                 and stack.get("compose_path", "") in (cluster.get("config_files") or ""),
-                {"start_returncode": start.get("returncode"), "start_error": start.get("error"),
+                {"start_returncode": start.get("returncode"),
+                 "start_steps": [step.get("returncode") for step in (start.get("steps") or [])],
+                 "start_error": start.get("error"),
                  "compose_path": stack.get("compose_path"),
                  "container_config_files": cluster.get("config_files")})
     if not (cluster.get("present") and cluster.get("running")):
-        add("custody_absent_as_declared", wants_creation or not declared_custody.get("database_present"),
-            {"declared_database_present": declared_custody.get("database_present"), "phase": phase})
+        if creation_expected:
+            # A creating phase that reports the duty still absent did not do what
+            # it was asked to do. "Absent" only matches a to-be-created
+            # declaration while nothing was supposed to create it.
+            add("created_duty_landed_the_declared_custody", False,
+                {"present": cluster.get("present"), "running": cluster.get("running"),
+                 "error": cluster.get("error"), "phase": phase})
+        else:
+            add("custody_absent_as_declared", not declared_custody.get("database_present"),
+                {"declared_database_present": declared_custody.get("database_present"), "phase": phase})
         return assertions
 
     if creation_expected:
@@ -2225,6 +2703,34 @@ def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, 
                      if observed_upgrade_modules.get(name) != "installed"],
             {"modules": rewritten.get("modules"), "returncode": rewritten.get("returncode"),
              "observed": observed_upgrade_modules, "error": rewritten.get("error", "")})
+    if seed:
+        # ``seed`` creates business rows through the product's own chain inside a
+        # duty that already serves. Three facts make that reportable as done: the
+        # declaration named a demo carrier and profile, the *running container*
+        # carries the demo-data switch that chain's own guard re-checks, and the
+        # chain reported a non-empty executed step list instead of a silent no-op.
+        written = observation.get("seed") or {}
+        declared_seed = duty.get("demo_seed") or {}
+        add("demo_seed_names_the_product_carrier_and_profile",
+            duty.get("data_purpose") == DEMO_PURPOSE
+            and str(declared_seed.get("carrier") or "") == DEMO_SEED_CARRIER
+            and bool(str(declared_seed.get("profile") or "")),
+            {"data_purpose": duty.get("data_purpose"), "declared": declared_seed})
+        observed_scope = written.get("scope") or {}
+        add("seeded_container_carries_the_declared_demo_data_switch",
+            observed_scope.get("environment") == DEMO_PURPOSE
+            and observed_scope.get("allow_demo_data") == DEMO_ALLOWED_LITERAL
+            and observed_scope.get("password_present") is True,
+            {"observed": {key: observed_scope.get(key)
+                          for key in ("container", "environment", "allow_demo_data",
+                                      "password_present")},
+             "error": observed_scope.get("error", "")})
+        add("the_declared_demo_seed_profile_reported_an_executed_chain",
+            written.get("returncode") == 0 and bool(written.get("executed"))
+            and written.get("profile") == str(declared_seed.get("profile") or ""),
+            {"profile": written.get("profile"), "declared": declared_seed.get("profile"),
+             "executed": written.get("executed") or [], "returncode": written.get("returncode"),
+             "error": written.get("error", "")})
     application = observation.get("application_config") or {}
     declared_runtime_env = str(duty["stack"]["runtime_env"])
     if "odoo" in declared_services and application.get("container"):
@@ -2239,6 +2745,25 @@ def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, 
                 for key in APPLICATION_ENVIRONMENT_KEYS),
             {"declared": declared_runtime_env, "observed": environment,
              "keys": list(APPLICATION_ENVIRONMENT_KEYS),
+             "container": application.get("container")})
+        # The revision is not the bundle. ``SC_SOURCE_REVISION`` moves with the
+        # deployed commit while ``FRONTEND_BUILD_SHA256`` names the artifact the
+        # route actually serves, and the acceptance lanes key the reuse of their
+        # observations on the artifact. A stack that forwards the revision alone
+        # answers ``/api/runtime-version`` with an anonymous bundle, so this is
+        # read back from the container and compared with the identity the duty
+        # declared instead of being assumed from the render (2026-10-16).
+        identity = observation.get("runtime_identity") or {}
+        declared_identity = identity.get("declared") or {}
+        add("served_container_publishes_the_declared_runtime_identity",
+            bool(declared_identity.get("FRONTEND_BUILD_SHA256"))
+            and all(environment.get(key) == declared_identity.get(key)
+                    for key in APPLICATION_IDENTITY_KEYS),
+            {"declared": declared_identity,
+             "observed": {key: environment.get(key) for key in APPLICATION_IDENTITY_KEYS},
+             "artifact_path": identity.get("artifact_path") or "",
+             "build_env_build_sha256": identity.get("build_env_build_sha256") or "",
+             "fingerprint_error": identity.get("fingerprint_error") or "",
              "container": application.get("container")})
         add("served_addons_path_has_no_unmounted_root",
             not application.get("missing_addons_roots"),
@@ -2277,13 +2802,13 @@ def deployment_binding(declaration, frontend_build):
 
 
 def plan_verdict(declaration, selected, observations, *, phase="plan", initialize=False,
-                 upgrade=False):
+                 upgrade=False, seed=False):
     failures = validate_declaration(declaration)
     rows = []
     for duty in selected:
         observation = observations.get(duty["duty"]) or {}
         assertions = evaluate(duty, observation, declaration, phase=phase, initialize=initialize,
-                              upgrade=upgrade)
+                              upgrade=upgrade, seed=seed)
         rows.append({
             "duty": duty["duty"],
             "database": duty["database"],
@@ -2411,6 +2936,7 @@ def main(argv=None):
             phase="apply" if options.apply else "plan",
             initialize=bool(options.apply) and options.phase == "initialize",
             upgrade=bool(options.apply) and options.phase == "upgrade",
+            seed=bool(options.apply) and options.phase == "seed",
         )
     except DutyError as error:
         print("[daily.runtime.database.duty] BLOCKED %s" % (error,), file=sys.stderr)

@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
@@ -13,6 +15,13 @@ module = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(module)
 
 SHA = "10bf72ef4bb060556bd2844598b58f9806392d34"
+
+
+class Result:
+    def __init__(self, returncode=0, stdout=b"", stderr=b""):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
 
 
 def payload(**overrides):
@@ -269,12 +278,102 @@ class ProgramTests(unittest.TestCase):
 
     def test_probe_uses_the_governed_shell_entry(self):
         self.assertEqual(module.REMOTE_ROOT, "/opt/projects/repos/sce-product-odoo")
-        self.assertIn("odoo.shell.exec", Path(SCRIPT).read_text(encoding="utf-8"))
+        source = Path(SCRIPT).read_text(encoding="utf-8")
+        # The carrier is addressed through the bound duty's own container; a bare
+        # ``DB_NAME`` through the deployed checkout stops identifying a target
+        # once two carriers share the database name.
+        self.assertIn("duty_identity.odoo_shell_command", source)
+        self.assertNotIn("remote_make", source)
 
     def test_marker_payload_round_trip(self):
         line = module.MARKER + '{"a": 1}'
         self.assertEqual(module.marker_payload("noise\n" + line), {"a": 1})
         self.assertIsNone(module.marker_payload("noise only"))
+
+
+class RemoteProbeTests(unittest.TestCase):
+    """The readback must come from the carrier the entry claims to measure."""
+
+    binding = {
+        "database": "sc_demo",
+        "compose_project": "sc-demo-dev",
+        "odoo_container": "sc-demo-dev-odoo-1",
+    }
+
+    def setUp(self):
+        self._ssh = module.ssh
+        self.calls = []
+        self.addCleanup(lambda: setattr(module, "ssh", self._ssh))
+
+    def stub(self, *, landed="sc_demo", head=SHA):
+        def fake_ssh(host, command, *, input_bytes=None):
+            self.calls.append((host, command))
+            if "git rev-parse HEAD" in command:
+                return Result(0, (head + "\n").encode())
+            body = module.MARKER + json.dumps({"database": landed}) + "\n"
+            return Result(0, body.encode())
+
+        module.ssh = fake_ssh
+
+    def test_the_probe_runs_inside_the_bound_container(self):
+        self.stub()
+        expected, observed, remote_head = module.probe(SHA, dict(self.binding), "sc-root")
+        self.assertEqual(remote_head, SHA)
+        self.assertEqual(observed, {"database": "sc_demo"})
+        engine = [cmd for _, cmd in self.calls if "docker exec" in cmd][0]
+        self.assertIn("sc-demo-dev-odoo-1 odoo shell", engine)
+        self.assertIn("-d sc_demo", engine)
+        self.assertNotIn("ENV_FILE", engine)
+
+    def test_a_readback_from_another_carrier_fails_closed(self):
+        self.stub(landed="sc_dev_demo")
+        with self.assertRaisesRegex(module.ProbeError, "not the bound sc_demo"):
+            module.probe(SHA, dict(self.binding), "sc-root")
+
+    def test_a_revision_mismatch_stops_before_the_engine_runs(self):
+        self.stub(head="0" * 40)
+        with self.assertRaises(module.ProbeError):
+            module.probe(SHA, dict(self.binding), "sc-root")
+        self.assertEqual(len(self.calls), 1)
+
+
+class DataOwnershipDutyBindingTests(unittest.TestCase):
+    """A database *name* stops being a target identity once two carriers share it.
+
+    The refusal is read from the shipped declaration, not from a stub: it now
+    names the rebuilt demo duty and the preserved historic source with the same
+    ``sc_demo``, so an entry that receives only ``--database`` would otherwise
+    have to guess which carrier it is measuring.
+    """
+
+    instances = Path(__file__).with_name("synthetic_duty_instances.sample.json")
+
+    def reader(self, _path: str) -> str:
+        return self.instances.read_text(encoding="utf-8")
+
+    def options(self, **overrides):
+        options = mock.Mock()
+        options.duty = ""
+        options.database = "sc_demo"
+        options.ssh_host = "sc-root"
+        for key, value in overrides.items():
+            setattr(options, key, value)
+        return options
+
+    def test_a_bare_database_name_no_longer_binds_a_carrier(self) -> None:
+        with self.assertRaisesRegex(module.ProbeError, "DUTY_IDENTITY_DATABASE_AMBIGUOUS:sc_demo"):
+            module.bind_target(self.options(), instances_reader=self.reader)
+
+    def test_naming_the_duty_binds_the_rebuilt_demo_carrier(self) -> None:
+        binding = module.bind_target(
+            self.options(duty="demo"), instances_reader=self.reader
+        )
+        self.assertEqual(binding["database"], "sc_demo")
+        self.assertEqual(binding["database_role"], "sc_demo_app")
+        self.assertEqual(binding["compose_project"], "sc-demo-dev")
+        self.assertEqual(binding["database_container"], "sc-demo-dev-db-1")
+        self.assertEqual(binding["database_volume"], "sc_demo_db_data")
+        self.assertEqual(binding["data_purpose"], "demo")
 
 
 if __name__ == "__main__":

@@ -38,6 +38,29 @@ DECLARATION = ROOT / "config/ops/daily_runtime_database_duties.v1.json"
 ENV_TEMPLATE = ROOT / "config/ops/daily_runtime_duty_stack.env"
 COMPOSE_FILE = ROOT / "config/ops/daily_runtime_duty_stack.yml"
 
+#: A frontend artifact fingerprint shaped exactly as the governed build entry
+#: writes it into the artifact's own ``.build-sha256``. The duty render refuses
+#: a stack that cannot name the bundle it serves, so the fixtures have to hand
+#: each declared duty that artifact instead of the refusal being relaxed for
+#: tests.
+FRONTEND_BUILD_FINGERPRINT = "0123456789abcdef" * 4
+
+
+def provision_frontend_artifact(root, duties, fingerprint=FRONTEND_BUILD_FINGERPRINT):
+    """Give every declared duty the served frontend artifact its render requires.
+
+    ``fingerprint=None`` creates the declared output directory without the
+    artifact, which is a duty whose served bundle cannot be identified.
+    """
+    dist = os.path.join(root, "web-dist")
+    os.makedirs(dist, exist_ok=True)
+    if fingerprint is not None:
+        with open(os.path.join(dist, ".build-sha256"), "w") as stream:
+            stream.write("%s\n" % (fingerprint,))
+    for duty in duties:
+        duty.setdefault("stack", {})["frontend_dist_dir"] = dist
+    return dist
+
 
 def setUpModule():
     """Resolve the tracked template against the synthetic customer binding."""
@@ -101,6 +124,41 @@ def as_cluster_only(declaration, name, reason="reshaped into a cluster-only face
     return out
 
 
+def as_declared_gap(declaration, name, reason="the bootstrap role is still the application role"):
+    """One declared duty reshaped into the recorded shared-bootstrap-role gap.
+
+    The gap rules have to stay proven after the rebuild closed the only gap the
+    shipped declaration carried, so a test asks for the shape instead of reading
+    it off whichever duty currently happens to be in it.
+    """
+    out = copy.deepcopy(declaration)
+    row = picked(out, name)
+    row["database_role"] = "odoo"
+    row["cluster"]["maintenance_role"] = "odoo"
+    row["custody"] = {
+        "database_present": True,
+        "database_role_present": True,
+        "role_compliance": "declared_gap",
+        "gap_kind": "shared_bootstrap_role",
+        "gap_reason": reason,
+        "gap_owner_task": "DAILY-RUNTIME-DEMO-APP-ROLE-01",
+        "service_face": "initialized",
+    }
+    row["credential_source"] = {
+        "env_file": "/opt/projects/repos/sce-product-odoo/.env.dev",
+        "key": "DB_PASSWORD",
+        "reason": "the adopted role already lives in the cluster data volume",
+        "owning_task": "DAILY-RUNTIME-DEMO-APP-ROLE-01",
+    }
+    return out
+
+
+def declared_gap_duty(declaration):
+    """A duty rebuilt into the recorded gap shape, with the reshaped declaration."""
+    name = "demo"
+    return name, as_declared_gap(declaration, name)
+
+
 class DeclarationTests(unittest.TestCase):
     def test_shipped_declaration_is_valid(self):
         declaration = shipped()
@@ -134,21 +192,21 @@ class DeclarationTests(unittest.TestCase):
         self.assertTrue(any("breaks the naming convention" in f for f in failures))
 
     def test_declared_gap_must_name_its_kind(self):
-        declaration = shipped()
+        _, declaration = declared_gap_duty(shipped())
         custody = picked(declaration, "demo")["custody"]
         custody.pop("gap_kind")
         failures = duty_entry.validate_declaration(declaration)
         self.assertTrue(any("gap_kind=shared_bootstrap_role" in f for f in failures))
 
     def test_declared_gap_that_is_closed_is_stale(self):
-        declaration = shipped()
+        _, declaration = declared_gap_duty(shipped())
         row = picked(declaration, "demo")
         row["database_role"] = "sc_demo_app"
         failures = duty_entry.validate_declaration(declaration)
         self.assertTrue(any("otherwise the gap is closed" in f for f in failures))
 
     def test_declared_gap_needs_a_reason_and_an_owner(self):
-        declaration = shipped()
+        _, declaration = declared_gap_duty(shipped())
         custody = picked(declaration, "demo")["custody"]
         custody["gap_owner_task"] = ""
         failures = duty_entry.validate_declaration(declaration)
@@ -165,19 +223,29 @@ class DeclarationTests(unittest.TestCase):
         that says "the bootstrap role is still the application role" therefore
         has to say where that role's credential comes from.
         """
-        declaration = shipped()
+        _, declaration = declared_gap_duty(shipped())
         picked(declaration, "demo").pop("credential_source")
         failures = duty_entry.validate_declaration(declaration)
         self.assertTrue(any("can only adopt its credential" in f for f in failures), failures)
 
-    def test_the_shipped_demo_duty_adopts_the_declared_environment_credential(self):
-        source = picked(shipped(), "demo")["credential_source"]
-        self.assertEqual(source["env_file"], shipped()["frontend_build_env_file"])
-        self.assertEqual(source["key"], "DB_PASSWORD")
-        self.assertEqual(source["owning_task"], "DAILY-RUNTIME-DEMO-APP-ROLE-01")
+    def test_the_shipped_demo_duty_owns_its_application_credential(self):
+        """The rebuilt carrier creates its own role, so it owns its own secret.
+
+        The 2026-10-16 rebuild replaced the pre-governance cluster the demo duty
+        borrowed (and the ``odoo`` bootstrap role it adopted) with a carrier the
+        entry creates itself. A duty that creates its role mints the credential
+        that role is created with; adopting a foreign file would make an object
+        this entry owns depend on one it does not.
+        """
+        declaration = shipped()
+        row = picked(declaration, "demo")
+        self.assertNotIn("credential_source", row)
+        self.assertEqual(row["database_role"], row["database"] + "_app")
+        self.assertNotEqual(row["cluster"]["maintenance_role"], row["database_role"])
+        self.assertEqual(duty_entry.validate_declaration(declaration), [])
 
     def test_an_adopted_credential_source_needs_a_reason_and_an_owner(self):
-        declaration = shipped()
+        _, declaration = declared_gap_duty(shipped())
         source = picked(declaration, "demo")["credential_source"]
         source["owning_task"] = ""
         source["reason"] = ""
@@ -186,7 +254,7 @@ class DeclarationTests(unittest.TestCase):
         self.assertTrue(any("credential_source needs owning_task" in f for f in failures), failures)
 
     def test_an_adopted_credential_source_must_be_one_absolute_file(self):
-        declaration = shipped()
+        _, declaration = declared_gap_duty(shipped())
         source = picked(declaration, "demo")["credential_source"]
         source["env_file"] = "relative/.env.dev"
         failures = duty_entry.validate_declaration(declaration)
@@ -199,7 +267,7 @@ class DeclarationTests(unittest.TestCase):
         render, and a source inside this checkout would let a branch change what
         the running duty authenticates with.
         """
-        declaration = shipped()
+        _, declaration = declared_gap_duty(shipped())
         source = picked(declaration, "demo")["credential_source"]
         source["env_file"] = os.path.join(str(duty_entry.ROOT), "ops", "duty.env")
         failures = duty_entry.validate_declaration(declaration)
@@ -211,7 +279,7 @@ class DeclarationTests(unittest.TestCase):
         )
 
     def test_an_adopted_credential_key_must_be_duty_secret_material(self):
-        declaration = shipped()
+        _, declaration = declared_gap_duty(shipped())
         source = picked(declaration, "demo")["credential_source"]
         source["key"] = "DB_NAME"
         failures = duty_entry.validate_declaration(declaration)
@@ -221,7 +289,7 @@ class DeclarationTests(unittest.TestCase):
         self.assertTrue(any("credential_source.key is required" in f for f in failures), failures)
 
     def test_an_adopted_credential_source_names_only_declared_keys(self):
-        declaration = shipped()
+        _, declaration = declared_gap_duty(shipped())
         picked(declaration, "demo")["credential_source"]["password"] = "x"
         failures = duty_entry.validate_declaration(declaration)
         self.assertTrue(any("names unknown keys password" in f for f in failures), failures)
@@ -243,17 +311,21 @@ class DeclarationTests(unittest.TestCase):
 
     def test_two_duties_may_not_share_one_data_volume(self):
         declaration = shipped()
-        picked(declaration, "customer_tenant_dev")["cluster"]["data_volume"] = "sc_dev_db_data"
+        target = picked(declaration, "customer_tenant_dev")
+        target["cluster"]["data_volume"] = picked(declaration, "platform_control")["cluster"]["data_volume"]
         failures = duty_entry.validate_declaration(declaration)
         self.assertTrue(any("one data directory has one writer" in f for f in failures))
 
     def test_two_duties_may_not_share_a_route_or_a_namespace(self):
         declaration = shipped()
         row = picked(declaration, "customer_tenant_dev")
-        row["routing"]["nginx_host_port"] = 18081
-        row["storage"]["backup_namespace"] = "/data/backups/daily_candidate"
+        donor = picked(declaration, "platform_control")
+        row["routing"]["nginx_host_port"] = donor["routing"]["nginx_host_port"]
+        row["storage"]["backup_namespace"] = donor["storage"]["backup_namespace"]
         failures = duty_entry.validate_declaration(declaration)
-        self.assertTrue(any("share nginx_host_port=18081" in f for f in failures))
+        self.assertTrue(
+            any("share nginx_host_port=%s" % (donor["routing"]["nginx_host_port"],) in f
+                for f in failures), failures)
         self.assertTrue(any("share backup_namespace=" in f for f in failures))
 
     def test_dbfilter_must_be_the_exact_anchored_filter(self):
@@ -423,6 +495,124 @@ class DeclarationTests(unittest.TestCase):
         failures = duty_entry.validate_declaration(declaration)
         self.assertTrue(any("invalid modules" in row for row in failures), failures)
 
+    def test_a_demo_duty_that_names_no_seed_carrier_is_refused(self):
+        """A demo duty may not reach ``--phase seed`` without saying what seeds it.
+
+        The governed entry runs the product's own demo chain and never a step
+        list of its own, so a demo duty whose ``demo_seed`` section is missing or
+        empty has nothing for that entry to run. Refusing the *declaration* is
+        what keeps "seed it somehow" from becoming an entry that guesses.
+        """
+        for empty in (None, {}):
+            declaration = shipped()
+            row = picked(declaration, "demo")
+            if empty is None:
+                row.pop("demo_seed")
+            else:
+                row["demo_seed"] = empty
+            failures = duty_entry.validate_declaration(declaration)
+            self.assertTrue(
+                any("must name its demo-seed carrier and profile" in f for f in failures), failures
+            )
+
+    def test_a_demo_seed_carrier_must_be_the_products_own_demo_module(self):
+        """A second demo-data lane is refused, not merely discouraged.
+
+        The owner named ``smart_construction_demo`` as the demo duty's carrier.
+        A declaration that pointed at another module would make the governed
+        entry run a chain nothing in the product owns, which is exactly the
+        substitute-fixture lane the ruling excludes.
+        """
+        declaration = shipped()
+        picked(declaration, "demo")["demo_seed"]["carrier"] = "some_other_demo_module"
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(
+            any("is not the product's own demo-data carrier" in f for f in failures), failures
+        )
+
+    def test_a_demo_seed_profile_must_be_a_safe_profile_name(self):
+        for profile in ("", "Demo Full", "demo-full", "1demo", "../../etc/passwd"):
+            declaration = shipped()
+            picked(declaration, "demo")["demo_seed"]["profile"] = profile
+            failures = duty_entry.validate_declaration(declaration)
+            self.assertTrue(
+                any("is not a safe profile name" in f for f in failures),
+                (profile, failures),
+            )
+        declaration = shipped()
+        picked(declaration, "demo")["demo_seed"]["profile"] = "demo_full"
+        self.assertEqual(duty_entry.validate_declaration(declaration), [])
+
+    def test_a_demo_seed_must_name_the_product_chain_stages(self):
+        """A demo duty names the chain it is seeded with, stages and all.
+
+        The entry runs no step of its own, so a declaration that named only a
+        profile would ask the entry to run the profile against a duty whose
+        scenarios were never loaded -- the 2026-10-16 shape, which raised
+        mid-chain. Refusing the declaration is what keeps that from being an
+        entry that guesses the rest of the chain.
+        """
+        for stages in (None, [], "release_seed", [1, 2]):
+            declaration = shipped()
+            picked(declaration, "demo")["demo_seed"]["stages"] = stages
+            failures = duty_entry.validate_declaration(declaration)
+            self.assertTrue(
+                any("demo_seed.stages must name the product chain stages" in f for f in failures),
+                (stages, failures),
+            )
+
+    def test_a_demo_seed_stage_the_product_does_not_have_is_refused(self):
+        declaration = shipped()
+        picked(declaration, "demo")["demo_seed"]["stages"] = ["release_seed", "profile", "extra"]
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(
+            any("names unknown stage(s) extra" in f for f in failures), failures
+        )
+
+    def test_a_demo_seed_stage_list_may_not_repeat_a_stage(self):
+        declaration = shipped()
+        picked(declaration, "demo")["demo_seed"]["stages"] = ["release_seed", "profile", "profile"]
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("repeats a stage" in f for f in failures), failures)
+
+    def test_a_demo_seed_stage_list_must_run_the_declared_profile(self):
+        """Seeding the scenarios and never the profile is a partial carrier.
+
+        The duty declares ``profile=demo_full``; a stage list that omits the
+        ``profile`` stage would create scenario rows and no business chain while
+        still reporting a chain that executed.
+        """
+        declaration = shipped()
+        picked(declaration, "demo")["demo_seed"]["stages"] = ["release_seed"]
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(
+            any("never runs the declared profile demo_full" in f for f in failures), failures
+        )
+
+    def test_a_demo_seed_needs_an_authority_and_a_reason(self):
+        """The seed is a write; the declaration has to say who authorized it."""
+        for key in ("authority", "reason"):
+            declaration = shipped()
+            picked(declaration, "demo")["demo_seed"][key] = "  "
+            failures = duty_entry.validate_declaration(declaration)
+            self.assertTrue(any("demo_seed.%s is required" % (key,) in f for f in failures), failures)
+
+    def test_only_a_demo_duty_may_declare_a_demo_seed(self):
+        """A duty that is not the demo duty may never carry a demo-seed section.
+
+        Without this, a carrier duty could pick up demo seeding by copying a
+        neighbour's declaration, and the demo-data switch would follow a
+        ``data_purpose`` the duty does not have.
+        """
+        declaration = shipped()
+        donor = copy.deepcopy(picked(declaration, "demo")["demo_seed"])
+        picked(declaration, "platform_control")["demo_seed"] = donor
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(
+            any("only a duty that declares data_purpose=demo may declare demo_seed" in f
+                for f in failures), failures
+        )
+
     def test_a_duty_with_a_recorded_cluster_identity_is_never_still_to_be_created(self):
         # Once a duty exists its observed custody is written back into the
         # declaration. A declaration that still says ``to_be_created`` while the
@@ -557,9 +747,45 @@ class RemoteProgramTests(unittest.TestCase):
     def test_no_embedding_marker_survives_rendering(self):
         rendered = self.rendered()
         for marker in ("__MARKER__", "__PSQL_READBACK__", "__PAYLOAD_JSON__",
-                       "__BASE_BOOTSTRAP_PLAN__", "__REFRESH_REFUSAL__",
+                       "__BASE_BOOTSTRAP_PLAN__", "__DEMO_SEED_PROGRAM__",
+                       "__REFRESH_REFUSAL__",
                        "__UPGRADE_REFUSAL__", "__PRUNE_SUPERSEDED_STACKS__"):
             self.assertNotIn(marker, rendered)
+
+    def test_the_injected_demo_seed_chain_runs_the_declared_stages_in_order(self):
+        """The chain is the product's own functions, in the declaration's order.
+
+        The 2026-10-16 rebuild proved why this is pinned: the seed entry ran the
+        ``demo_full`` profile alone, the profile's payment step resolved an S69
+        contract xmlid that only the release scenario set creates, the chain
+        raised, and the duty still read as seeded. A chain that is assembly
+        rather than text would let that regression back in silently.
+        """
+        program = duty_entry.demo_seed_program("smart_construction_demo",
+                                               ["release_seed", "profile"])
+        self.assertIn("from odoo.addons.smart_construction_demo.tools.scenario_loader "
+                      "import load_release_seed", program)
+        self.assertIn("from odoo.addons.smart_construction_demo.seed import run_steps", program)
+        self.assertLess(program.index("load_release_seed(env, mode='update')"),
+                        program.index("run_steps(env, profile)"))
+        self.assertIn("os.environ['SC_DEMO_SEED_STAGES'].split(',')", program)
+        self.assertIn("env.cr.commit()", program)
+        compile("def _f():\n" + "\n".join("    " + line for line in program.splitlines()),
+                "<chain>", "exec")
+
+    def test_the_injected_demo_seed_chain_refuses_a_stage_the_product_does_not_have(self):
+        """An unknown stage raises inside the container instead of being skipped.
+
+        Silently skipping it would report a shorter chain as a completed one,
+        which is exactly the shape that made a partial carrier look seeded.
+        """
+        program = duty_entry.demo_seed_program("smart_construction_demo", ["profile"])
+        self.assertIn("raise RuntimeError('unknown declared demo-seed stage: ' + stage)", program)
+
+    def test_the_injected_chain_names_the_carrier_the_declaration_named(self):
+        program = duty_entry.demo_seed_program("some_other_module", ["release_seed"])
+        self.assertIn("from odoo.addons.some_other_module.seed import run_steps", program)
+        self.assertNotIn("smart_construction_demo", program)
 
     def test_superseded_rendered_stacks_are_pruned(self):
         """A re-render writes a second file name, so the replaced one is deleted.
@@ -820,7 +1046,7 @@ class EvaluationTests(unittest.TestCase):
     def verdict(self, declaration, name, phase="plan", upgrade=False, **overrides):
         duty = picked(declaration, name)
         assertions = duty_entry.evaluate(
-            duty, self.observe(duty, **overrides), declaration, phase=phase, upgrade=upgrade
+            duty, self.observe(duty, **overrides), declaration, phase=phase, upgrade=upgrade,
         )
         return {row["id"]: row["passed"] for row in assertions}
 
@@ -889,6 +1115,183 @@ class EvaluationTests(unittest.TestCase):
         self.assertNotIn("a_verified_recovery_point_precedes_the_upgrade", verdict)
         self.assertNotIn("the_declared_module_upgrade_completed", verdict)
 
+    def served_identity(self, *, published_revision=None, published_fingerprint=None,
+                        declared_fingerprint=FRONTEND_BUILD_FINGERPRINT):
+        """A serving duty observed together with the identity its route publishes.
+
+        ``declared_fingerprint=None`` models an artifact the entry could not read
+        at all, which is a duty the render would have refused: the verdict still
+        has to say so instead of counting the container as identified.
+        """
+        revision = "a" * 40
+        return {
+            "cluster": {"present": True, "running": True, "system_identifier": "7696799124996268070",
+                        "data_volume_owner": "sc_platform_control_db_data",
+                        "project": "sc-platform-control-dev", "config_files": "/opt/x/duty-stack.yml",
+                        "error": ""},
+            "custody": {"database_present": True, "database_owner": "sc_platform_control_app",
+                        "allow_connections": True, "role_present": True, "role_superuser": False,
+                        "role_createdb": False, "role_createrole": False, "role_canlogin": True,
+                        "public_connects": False, "public_schema_create": True,
+                        "database_role_connects": True, "error": ""},
+            "application_config": {
+                "container": "sc-platform-control-dev-odoo-1",
+                "environment": {"ENV": "dev", "SC_ENVIRONMENT": "dev",
+                                "SC_SOURCE_REVISION": (revision if published_revision is None
+                                                       else published_revision),
+                                "FRONTEND_BUILD_SHA256": (FRONTEND_BUILD_FINGERPRINT
+                                                          if published_fingerprint is None
+                                                          else published_fingerprint)},
+                "addons_path": [], "missing_addons_roots": [], "error": ""},
+            "runtime_identity": {
+                "declared": {"SC_SOURCE_REVISION": revision,
+                             "FRONTEND_BUILD_SHA256": declared_fingerprint or ""},
+                "served_build_sha256": declared_fingerprint or "",
+                "build_env_build_sha256": declared_fingerprint or "",
+                "artifact_path": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev/.build-sha256",
+                "fingerprint_error": "" if declared_fingerprint else "no fingerprint",
+                "pointer": "/opt/projects/repos/sce-product-odoo/.env.dev"},
+        }
+
+    def test_the_verdict_reads_the_identity_the_route_publishes(self):
+        """The revision is not the bundle, so both are judged from the container.
+
+        A stack that forwards ``SC_SOURCE_REVISION`` alone answers with an
+        anonymous bundle: the revision moves, the served artifact stays at its
+        previous generation, and nothing in the readback can tell the two apart.
+        The verdict must therefore compare what the *container* publishes with
+        the identity the duty declared, including the artifact fingerprint.
+        """
+        declaration = self.declaration()
+        row = picked(declaration, "platform_control")
+        identifier = "served_container_publishes_the_declared_runtime_identity"
+
+        verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            row, self.observe(row, **self.served_identity()), declaration, phase="apply")}
+        self.assertTrue(verdict[identifier])
+
+        stale = self.served_identity(published_revision="b" * 40)
+        verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            row, self.observe(row, **stale), declaration, phase="apply")}
+        self.assertFalse(verdict[identifier], "a container publishing another revision is not this duty")
+
+        anonymous = self.served_identity(published_fingerprint="")
+        verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            row, self.observe(row, **anonymous), declaration, phase="apply")}
+        self.assertFalse(verdict[identifier],
+                         "an unidentified served bundle must not read as this duty")
+
+        unreadable = self.served_identity(declared_fingerprint=None)
+        verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            row, self.observe(row, **unreadable), declaration, phase="apply")}
+        self.assertFalse(verdict[identifier],
+                         "an artifact the entry cannot read declares no identity to match")
+
+    def seeded(self):
+        """The demo duty observed just after its own seed chain reported."""
+        return {
+            "cluster": {"present": True, "running": True, "system_identifier": "4242",
+                        "data_volume_owner": "sc_demo_db_data", "project": "sc-demo-dev",
+                        "config_files": "/opt/x/duty-stack.yml", "error": ""},
+            "custody": {"database_present": True, "database_owner": "sc_demo_app",
+                        "allow_connections": True, "role_present": True, "role_superuser": False,
+                        "role_createdb": False, "role_createrole": False, "role_canlogin": True,
+                        "public_connects": False, "public_schema_create": True,
+                        "database_role_connects": True, "error": ""},
+            "service": {"project": "sc-demo-dev",
+                        "running_services": ["db", "redis", "odoo", "nginx"],
+                        "containers": {},
+                        "module_states": {"smart_core": "installed",
+                                          "smart_construction_core": "installed",
+                                          "smart_construction_demo": "installed"},
+                        "installed_industry_modules": ["smart_construction_core"], "error": ""},
+            "seed": {"container": "sc-demo-dev-odoo-1", "carrier": "smart_construction_demo",
+                     "profile": "demo_full", "returncode": 0,
+                     "executed": ["dictionary", "project_skeleton"],
+                     "tail": "[demo.seed] executed=dictionary,project_skeleton",
+                     "scope": {"container": "sc-demo-dev-odoo-1", "environment": "demo",
+                               "allow_demo_data": "1", "password_present": True, "error": ""}},
+        }
+
+    def seed_verdict(self, observation, declaration=None):
+        declaration = declaration if declaration is not None else self.declaration()
+        row = picked(declaration, "demo")
+        return {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            row, self.observe(row, **observation), declaration, phase="apply", seed=True)}
+
+    def test_a_demo_seed_is_only_reportable_from_the_declared_carrier_and_switch(self):
+        """Three facts, and none of them is satisfied by the declaration alone.
+
+        The chain lives inside the product module the declaration names, and its
+        own guard re-reads the database, the environment and the explicit
+        demo-data switch *inside the container*. Comparing the observed scope
+        with the declaration is what keeps a declaration that says "demo" from
+        being reported as a seed by a container that never received the switch.
+        """
+        verdict = self.seed_verdict(self.seeded())
+        self.assertTrue(verdict["demo_seed_names_the_product_carrier_and_profile"], verdict)
+        self.assertTrue(verdict["seeded_container_carries_the_declared_demo_data_switch"], verdict)
+        self.assertTrue(verdict["the_declared_demo_seed_profile_reported_an_executed_chain"], verdict)
+
+    def test_a_container_that_cannot_prove_the_demo_switch_is_not_seeded(self):
+        for key, value in (("environment", "dev"), ("environment", ""), ("allow_demo_data", "0"),
+                           ("allow_demo_data", ""), ("password_present", False)):
+            with self.subTest(key=key, value=value):
+                observation = self.seeded()
+                observation["seed"]["scope"][key] = value
+                verdict = self.seed_verdict(observation)
+                self.assertFalse(
+                    verdict["seeded_container_carries_the_declared_demo_data_switch"], verdict
+                )
+                # The other two facts are about the declaration and the chain's
+                # own report; a switch that cannot be proven must not take them
+                # down with it, or every fact would collapse into one.
+                self.assertTrue(verdict["the_declared_demo_seed_profile_reported_an_executed_chain"])
+
+    def test_a_seed_that_reported_nothing_executed_is_not_a_seed(self):
+        """A silent no-op is the failure shape, not an empty success.
+
+        ``run_steps`` returning nothing means the declared profile ran no step:
+        the database may be untouched, or the profile may name steps that no
+        longer exist. Both have to be reported rather than counted as done.
+        """
+        for overrides in ({"executed": []}, {"returncode": 1},
+                          {"profile": "some_other_profile"}):
+            with self.subTest(**overrides):
+                observation = self.seeded()
+                observation["seed"].update(overrides)
+                verdict = self.seed_verdict(observation)
+                self.assertFalse(
+                    verdict["the_declared_demo_seed_profile_reported_an_executed_chain"], verdict
+                )
+
+    def test_a_duty_that_is_not_the_demo_carrier_is_not_seeded(self):
+        declaration = copy.deepcopy(self.declaration())
+        picked(declaration, "demo")["demo_seed"]["carrier"] = "another_demo_module"
+        verdict = self.seed_verdict(self.seeded(), declaration=declaration)
+        self.assertFalse(verdict["demo_seed_names_the_product_carrier_and_profile"])
+
+    def test_the_seed_assertions_stay_out_of_every_other_phase(self):
+        """Only ``--phase seed`` asks the seed questions.
+
+        The observation is shaped like a completed seed, so a phase that judged
+        it would report it: the absence of the three assertions in every other
+        phase is what proves they belong to the seed phase alone.
+        """
+        declaration = self.declaration()
+        row = picked(declaration, "demo")
+        observation = self.observe(row, **self.seeded())
+        seeded = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            row, observation, declaration, phase="apply", seed=True)}
+        self.assertTrue(seeded["demo_seed_names_the_product_carrier_and_profile"])
+        for phase in ("plan", "apply"):
+            with self.subTest(phase=phase):
+                other = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+                    row, observation, declaration, phase=phase)}
+                self.assertNotIn("demo_seed_names_the_product_carrier_and_profile", other)
+                self.assertNotIn("seeded_container_carries_the_declared_demo_data_switch", other)
+                self.assertNotIn("the_declared_demo_seed_profile_reported_an_executed_chain", other)
+
     def created(self):
         """A duty the entry has just created, observed as it really is."""
         return {
@@ -939,6 +1342,36 @@ class EvaluationTests(unittest.TestCase):
         self.assertTrue(verdict["cluster_container_state_matches_declaration"])
         self.assertTrue(verdict["custody_absent_as_declared"])
 
+    def test_a_duty_entry_that_raised_is_never_a_pass(self):
+        """A salvaged error is a verdict, not a footnote.
+
+        The 2026-10-16 rebuild reported ``applied: true`` and ``PASS`` for a duty
+        the carrier had refused: the error was recorded beside the readback, but
+        nothing turned it into an assertion, and the single remaining assertion
+        ("the custody is absent as declared") was true of the very fact that
+        nothing had been created.
+        """
+        declaration = prospective(self.declaration(), "demo")
+        duty = picked(declaration, "demo")
+        observation = self.observe(
+            duty, error="RuntimeError: DAILY_DUTY_CREDENTIAL_IDENTITY_DRIFT:DB_USER:demo")
+        verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            duty, observation, declaration, phase="apply")}
+        self.assertFalse(verdict["duty_entry_completed_without_an_error"])
+        self.assertNotIn("custody_absent_as_declared", verdict)
+
+    def test_a_creating_apply_that_lands_no_custody_is_not_a_pass(self):
+        """Absence matches a to-be-created declaration only before it is created."""
+        declaration = prospective(self.declaration(), "demo")
+        duty = picked(declaration, "demo")
+        applied = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            duty, self.observe(duty), declaration, phase="apply")}
+        self.assertFalse(applied["created_duty_landed_the_declared_custody"])
+        self.assertNotIn("custody_absent_as_declared", applied)
+        planned = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            duty, self.observe(duty), declaration, phase="plan")}
+        self.assertTrue(planned["custody_absent_as_declared"])
+
     def test_an_unexpectedly_present_cluster_fails(self):
         declaration = prospective(self.declaration(), "platform_control")
         cluster = {"present": True, "running": True, "system_identifier": "",
@@ -957,7 +1390,13 @@ class EvaluationTests(unittest.TestCase):
 
     def test_a_declared_duty_is_never_rendered_or_restarted(self):
         declaration = self.declaration()
-        verdict = self.verdict(declaration, "demo", stack={"skipped": "not to-be-created"})
+        # The demo duty is now the *carrier being created*, which is exactly the
+        # duty this entry must render. The rule under test is about a duty that
+        # already exists, so it is asked of one whose custody is already declared
+        # compliant rather than of whichever duty the file currently points at
+        # that shape.
+        verdict = self.verdict(
+            declaration, "platform_control", stack={"skipped": "not to-be-created"})
         self.assertNotIn("stack_definition_is_the_reviewed_one", verdict)
         row = picked(prospective(declaration, "platform_control"), "platform_control")
         assertions = duty_entry.evaluate(
@@ -987,6 +1426,9 @@ class EvaluationTests(unittest.TestCase):
                 "ODOO_PORT": str(row["routing"]["odoo_loopback_port"]),
                 "NGINX_PORT": str(row["routing"]["nginx_host_port"]),
                 "LIST_DB": "false",
+                "SC_ALLOW_DEMO_DATA": (
+                    "1" if row["data_purpose"] == "demo" else "0"
+                ),
             },
         }
         cluster = {"present": True, "running": True, "system_identifier": "",
@@ -1018,6 +1460,81 @@ class EvaluationTests(unittest.TestCase):
         self.assertFalse(verdict["stack_secret_material_is_not_world_readable"])
         self.assertFalse(verdict["stack_was_created_from_the_reviewed_definition"])
 
+    def test_a_staged_service_start_is_judged_by_its_steps(self):
+        """The initialize phase starts services in stages, not with one return code.
+
+        ``initialize`` waits for the cluster services and only then starts the
+        application, so its start entry is a list of per-stage steps while the
+        ``stack`` phase's entry is a single ``start_cluster`` return code.
+        Reading only ``returncode`` judged the initialize phase's own step list
+        as "not created from the reviewed definition" for ever, and on
+        2026-10-16 that reported a duty whose services had in fact started as a
+        failed one. Both shapes are the entry's own output, so both are read; a
+        step list that reports a failure, and one that reports nothing started,
+        still fail.
+        """
+        declaration = prospective(self.declaration(), "platform_control")
+        row = picked(declaration, "platform_control")
+        stack = {
+            "skipped": None, "compose_path": "/ops/duty-stack-abc.yml",
+            "env_mode": "0o600", "credentials_mode": "0o600",
+            "unresolved_placeholders": [],
+            "start": {"returncode": 0, "error": ""},
+            "env_keys": {
+                "DUTY_NAME": row["duty"],
+                "COMPOSE_PROJECT_NAME": row["cluster"]["compose_project"],
+                "DB_NAME": row["database"],
+                "DB_USER": row["database_role"],
+                "DB_MAINTENANCE_USER": row["cluster"]["maintenance_role"],
+                "DB_DATA": row["cluster"]["data_volume"],
+                "REDIS_DATA": row["storage"]["redis_data_volume"],
+                "ODOO_DATA": row["storage"]["odoo_data_volume"],
+                "ODOO_DBFILTER": row["dbfilter"],
+                "ODOO_PORT": str(row["routing"]["odoo_loopback_port"]),
+                "NGINX_PORT": str(row["routing"]["nginx_host_port"]),
+                "LIST_DB": "false",
+                "SC_ALLOW_DEMO_DATA": (
+                    "1" if row["data_purpose"] == "demo" else "0"
+                ),
+            },
+        }
+        cluster = {"present": True, "running": True, "system_identifier": "",
+                   "data_volume_owner": "sc_platform_control_db_data",
+                   "project": "sc-platform-control-dev",
+                   "config_files": "/ops/duty-stack-abc.yml", "error": ""}
+        custody = {"database_present": False, "database_owner": "", "allow_connections": True,
+                   "role_present": False, "role_superuser": None, "role_createdb": None,
+                   "role_createrole": None, "role_canlogin": None, "public_connects": None,
+                   "public_schema_create": None, "database_role_connects": None, "error": ""}
+
+        def verdict_for(start):
+            staged = copy.deepcopy(stack)
+            staged["start"] = start
+            return {a["id"]: a["passed"] for a in duty_entry.evaluate(
+                row, {"duty": row["duty"], "cluster": cluster, "custody": custody,
+                      "stack": staged},
+                declaration)}
+
+        verdict = verdict_for({
+            "declared": ["db", "redis", "odoo", "nginx"],
+            "steps": [{"stage": "cluster", "returncode": 0},
+                      {"stage": "application", "returncode": 0}],
+        })
+        self.assertTrue(verdict["stack_was_created_from_the_reviewed_definition"])
+
+        verdict = verdict_for({
+            "declared": ["db", "redis", "odoo", "nginx"],
+            "steps": [{"stage": "cluster", "returncode": 0},
+                      {"stage": "application", "returncode": 1}],
+        })
+        self.assertFalse(verdict["stack_was_created_from_the_reviewed_definition"])
+
+        verdict = verdict_for({"declared": ["db", "redis", "odoo", "nginx"], "steps": []})
+        self.assertFalse(verdict["stack_was_created_from_the_reviewed_definition"])
+
+        verdict = verdict_for({"returncode": 1, "error": "boom"})
+        self.assertFalse(verdict["stack_was_created_from_the_reviewed_definition"])
+
     def test_a_compliant_duty_must_show_least_privilege(self):
         declaration = self.declaration()
         row = picked(declaration, "customer_tenant_dev")
@@ -1046,7 +1563,11 @@ class EvaluationTests(unittest.TestCase):
         self.assertTrue(verdict["public_cannot_connect"])
 
     def test_a_closed_declared_gap_is_detected(self):
-        declaration = self.declaration()
+        # The 2026-10-16 rebuild closed the only gap the shipped declaration
+        # carried, so the demo duty no longer *is* the gap shape. The rule stays
+        # proven by asking for that shape explicitly instead of reading it off
+        # whichever duty currently happens to be in it.
+        declaration = as_declared_gap(self.declaration(), "demo")
         cluster = {"present": True, "running": True, "system_identifier": "7597381856873586726",
                    "data_volume_owner": "sc_dev_db_data", "project": "sc-backend-odoo-dev",
                    "config_files": "", "error": ""}
@@ -1562,7 +2083,9 @@ class FakeSubprocess:
             self.command = command
             self.timeout = timeout
 
-    def __init__(self, base_installed=True, entrypoint_log=""):
+    def __init__(self, base_installed=True, entrypoint_log="", inspect_stdout="",
+                 module_states=None, container_environment=None, demo_password_present=True,
+                 seed_executed=("dictionary",), seed_returncode=0):
         self.commands = []
         self.raises = []
         #: A duty the entry is allowed to initialize is a duty whose own
@@ -1574,6 +2097,18 @@ class FakeSubprocess:
         #: an attempt still in flight; a log that reached the server line is a
         #: finished attempt, which is the only state a restart may follow.
         self.entrypoint_log = entrypoint_log
+        #: What ``docker inspect`` reports for the cluster container. The empty
+        #: default is a duty whose cluster is not there yet, which is what the
+        #: ordering tests want; a seed runs against a *running* duty, so it
+        #: hands the readback shape in.
+        self.inspect_stdout = inspect_stdout
+        #: The module states the duty's own catalog reports.
+        self.module_states = dict(module_states or {})
+        #: What ``printenv`` answers from inside the application container.
+        self.container_environment = dict(container_environment or {})
+        self.demo_password_present = demo_password_present
+        self.seed_executed = list(seed_executed)
+        self.seed_returncode = seed_returncode
 
     def run(self, command, **kwargs):
         self.commands.append(list(command))
@@ -1582,14 +2117,36 @@ class FakeSubprocess:
                 del self.raises[index]
                 raise self.TimeoutExpired(command, kwargs.get("timeout"))
         if list(command[:2]) == ["docker", "ps"]:
-            return FakeResult(stdout="sc-platform-control-dev-odoo-1\n")
+            project = "sc-platform-control-dev"
+            for item in command:
+                if str(item).startswith("label=com.docker.compose.project="):
+                    project = str(item).split("=", 2)[2]
+            return FakeResult(stdout="%s-odoo-1\n" % (project,))
+        if list(command[:2]) == ["docker", "inspect"]:
+            if "--format" in command:
+                return FakeResult(stdout="")
+            return FakeResult(stdout=self.inspect_stdout)
         text = " ".join(str(item) for item in command)
         if list(command[:2]) == ["docker", "logs"]:
             return FakeResult(stdout=self.entrypoint_log)
+        if list(command[:2]) == ["docker", "exec"] and "printenv" in command:
+            key = command[command.index("printenv") + 1]
+            return FakeResult(stdout=self.container_environment.get(key, "") + "\n")
+        if (list(command[:2]) == ["docker", "exec"] and "-lc" in command
+                and "SC_DEMO_USER_PASSWORD" in text):
+            return FakeResult(stdout="present\n" if self.demo_password_present else "absent\n")
+        if "odoo" in command and "shell" in command:
+            return FakeResult(
+                stdout="[demo.seed] executed=%s\n" % (",".join(self.seed_executed),),
+                returncode=self.seed_returncode,
+            )
         if "to_regclass('public.ir_module_module')" in text:
             return FakeResult(stdout="t\n" if self.base_installed else "f\n")
         if "WHERE name = 'base'" in text:
             return FakeResult(stdout="installed\n" if self.base_installed else "\n")
+        if "FROM ir_module_module WHERE name IN (" in text:
+            return FakeResult(stdout="".join(
+                "%s|%s\n" % (name, state) for name, state in sorted(self.module_states.items())))
         return FakeResult()
 
 
@@ -1634,17 +2191,77 @@ class CarrierExecutionTests(unittest.TestCase):
             },
         }
 
+    def demo_duty(self):
+        """The demo carrier the 2026-10-16 rebuild creates, as the carrier sees it."""
+        return {
+            "duty": "demo",
+            "database": "sc_demo",
+            "database_role": "sc_demo_app",
+            "dbfilter": "^sc_demo$",
+            "data_purpose": "demo",
+            "demo_seed": {"carrier": "smart_construction_demo", "profile": "demo_full",
+                          "stages": ["release_seed", "profile"],
+                          "authority": "docs/ops/iterations/x.md",
+                          "reason": "the owner named the product's own demo carrier"},
+            "custody": {"database_present": True, "database_role_present": True,
+                        "role_compliance": "compliant", "service_face": "initialized"},
+            "cluster": {"container": "sc-demo-dev-db-1",
+                        "compose_project": "sc-demo-dev",
+                        "data_volume": "sc_demo_db_data",
+                        "maintenance_role": "sc_demo_maintenance"},
+            "storage": {"redis_data_volume": "sc_demo_redis_data",
+                        "odoo_data_volume": "sc_demo_odoo_data"},
+            "routing": {"odoo_loopback_port": 8070, "nginx_host_port": 18081},
+            "stack": {
+                "services": ["db", "redis", "odoo", "nginx"],
+                "modules": ["smart_core", "smart_construction_core", "smart_construction_demo"],
+                "runtime_env": "demo",
+                "product_root": "/opt/projects/repos/sce-product-odoo",
+                "postgres_image": "postgres:15",
+                "odoo_image": "odoo17-odoo:latest",
+                "frontend_dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
+                "demo_addons_root": "/opt/projects/repos/sce-product-odoo/demo_addons",
+                "customer_addons_root": "/opt/projects/runtime-addons-empty",
+            },
+        }
+
+    def running_cluster(self, duty):
+        """The ``docker inspect`` readback of a cluster that is already serving."""
+        return json.dumps([{
+            "State": {"Running": True},
+            "Config": {"Labels": {
+                "com.docker.compose.project": duty["cluster"]["compose_project"],
+                "com.docker.compose.project.config_files": "/opt/x/duty-stack.yml",
+            }},
+            "Mounts": [{"Destination": "/var/lib/postgresql/data",
+                        "Name": duty["cluster"]["data_volume"]}],
+        }])
+
+    def installs(self, fake):
+        """Module installations: ``odoo -i``, which a seed must never issue."""
+        return [c for c in fake.commands
+                if c[:2] == ["docker", "exec"] and "-i" in c and "odoo" in c
+                and "shell" not in c]
+
+    def seeds(self, fake):
+        return [c for c in fake.commands if "odoo" in c and "shell" in c]
+
     def payload(self, duties, ops_root, *, mode="apply", phase="initialize",
-                bootstrap_timeout=1800, bootstrap_poll=15):
+                bootstrap_timeout=1800, bootstrap_poll=15, frontend_build_env=None):
         import hashlib
 
+        build_env_file = os.path.join(ops_root, "absent-build.env")
+        if frontend_build_env is not None:
+            build_env_file = os.path.join(ops_root, "build.env")
+            with open(build_env_file, "w") as stream:
+                stream.write(frontend_build_env)
         return {
             "mode": mode,
             "phase": phase,
             "product_root": "/opt/projects/repos/sce-product-odoo",
             "ops_root": ops_root,
             "platform_admin_database": "sc_platform_control",
-            "frontend_build_env_file": os.path.join(ops_root, "absent-build.env"),
+            "frontend_build_env_file": build_env_file,
             "source_revision": "a" * 40,
             "compose_sha256": hashlib.sha256(self.COMPOSE_TEXT.encode("utf-8")).hexdigest(),
             "stack": {"compose_text": self.COMPOSE_TEXT},
@@ -1656,11 +2273,14 @@ class CarrierExecutionTests(unittest.TestCase):
         }
 
     def execute(self, fake, duties, *, mode="apply", phase="initialize",
-                bootstrap_timeout=1800, bootstrap_poll=15):
+                bootstrap_timeout=1800, bootstrap_poll=15, frontend_build_env=None,
+                fingerprint=FRONTEND_BUILD_FINGERPRINT):
         with tempfile.TemporaryDirectory() as ops_root:
+            provision_frontend_artifact(ops_root, duties, fingerprint=fingerprint)
             rendered = duty_entry.render_remote_program(
                 self.payload(duties, ops_root, mode=mode, phase=phase,
-                             bootstrap_timeout=bootstrap_timeout, bootstrap_poll=bootstrap_poll)
+                             bootstrap_timeout=bootstrap_timeout, bootstrap_poll=bootstrap_poll,
+                             frontend_build_env=frontend_build_env)
             )
             captured = io.StringIO()
             saved = sys.modules.get("subprocess")
@@ -1683,6 +2303,51 @@ class CarrierExecutionTests(unittest.TestCase):
 
     def ups(self, fake):
         return [c for c in fake.commands if "up" in c and c[:2] == ["docker", "compose"]]
+
+    def test_a_duty_that_cannot_name_its_served_frontend_build_is_never_created(self):
+        """A stack that serves a bundle it cannot identify is refused, not started.
+
+        ``/api/runtime-version`` is the only place the running system answers
+        which frontend sits behind the route, and the acceptance lanes key the
+        reuse of their observations on that artifact. A duty rendered without it
+        would publish an anonymous bundle and silently degrade every reuse key
+        from the artifact to the deployment, so the render refuses -- and the
+        refusal must arrive before anything is started, not as a healthy stack
+        nobody can identify afterwards.
+        """
+        cases = (
+            ("no artifact in the declared output directory", None, None),
+            ("an artifact that is not a sha256", "not-a-frontend-fingerprint", None),
+            ("an artifact the deployed build environment contradicts", FRONTEND_BUILD_FINGERPRINT,
+             "VITE_PLATFORM_ADMIN_DB=sc_platform_control\nFRONTEND_BUILD_SHA256=%s\n" % ("f" * 64,)),
+        )
+        for label, fingerprint, frontend_env in cases:
+            with self.subTest(label):
+                fake = FakeSubprocess()
+                report = self.execute(fake, [self.duty()], fingerprint=fingerprint,
+                                      frontend_build_env=frontend_env)
+                entry = report["duties"][0]
+                self.assertIn("DAILY_DUTY_FRONTEND_BUILD_IDENTITY", entry["error"] or "", entry)
+                self.assertEqual(self.ups(fake), [],
+                                 "a duty the entry cannot identify must not be started")
+
+    def test_the_environment_vector_is_read_in_one_round_trip(self):
+        """Every declared duty is walked on every run, so the probe is one call.
+
+        A per-key ``docker exec`` multiplies the container-namespace cost by the
+        number of identity keys for facts that are read in the same instant, and
+        the runtime environment, the published identity and the addon-root scan
+        are all read together. They therefore travel in a single NUL-separated
+        probe, and a regression back to separate container entries fails here.
+        """
+        fake = FakeSubprocess()
+        self.execute(fake, [self.duty()])
+        probes = [command for command in fake.commands
+                  if command[:2] == ["docker", "exec"] and "printf '%s\\0'" in " ".join(command)]
+        self.assertEqual(len(probes), 1, fake.commands)
+        for key in ("ENV", "SC_ENVIRONMENT", "SC_SOURCE_REVISION", "FRONTEND_BUILD_SHA256"):
+            self.assertIn('"$%s"' % (key,), probes[0][-1])
+        self.assertIn("addons_path", probes[0][-1])
 
     def test_the_cluster_is_waited_for_and_the_application_is_not(self):
         fake = FakeSubprocess()
@@ -1836,6 +2501,144 @@ class CarrierExecutionTests(unittest.TestCase):
         self.assertIn("TimeoutExpired", report["duties"][0]["error"])
         self.assertEqual(report["duties"][1]["error"], "")
 
+    def seeded_fake(self, duty, **overrides):
+        settings = {
+            "inspect_stdout": self.running_cluster(duty),
+            "module_states": {name: "installed" for name in duty["stack"]["modules"]},
+            "container_environment": {"SC_ENVIRONMENT": "demo", "SC_ALLOW_DEMO_DATA": "1"},
+        }
+        settings.update(overrides)
+        return FakeSubprocess(**settings)
+
+    def test_the_seed_phase_runs_the_declared_profile_without_installing_anything(self):
+        """The seed is the product's own chain, not a module install or a direct write.
+
+        ``--phase initialize`` already installed the declared set, and
+        ``--phase seed`` only writes business rows -- through the profile the
+        *declaration* names, inside the running container. A seed that issued
+        ``odoo -i`` would be a second initializer, and one that wrote a terminal
+        state directly would be the bypass closed in PR #665/#666.
+        """
+        duty = self.demo_duty()
+        fake = self.seeded_fake(duty)
+        report = self.execute(fake, [duty], phase="seed")
+        settled = report["duties"][0]
+        self.assertEqual(settled["error"], "")
+        self.assertFalse(self.installs(fake), "the seed phase installs no module set")
+        self.assertFalse([c for c in fake.commands if "stop-after-init" in c])
+
+        seeded = self.seeds(fake)
+        self.assertEqual(len(seeded), 1, "one seed chain, run once")
+        command = seeded[0]
+        self.assertIn("SC_DEMO_SEED_PROFILE=demo_full", command)
+        # The chain is the declared stage list, not the profile alone: the
+        # release scenario set has to run before the profile, because the
+        # profile's payment step resolves an S69 contract xmlid that only that
+        # set creates. A command that carried the profile without the stages
+        # would re-open the 2026-10-16 shape.
+        self.assertIn("SC_DEMO_SEED_STAGES=release_seed,profile", command)
+        self.assertEqual(command[command.index("-d") + 1], "sc_demo")
+        self.assertIn("--no-http", command)
+        self.assertEqual(settled["seed"]["profile"], "demo_full")
+        self.assertEqual(settled["seed"]["stages"], ["release_seed", "profile"])
+        self.assertEqual(settled["seed"]["executed"], ["dictionary"])
+        self.assertEqual(settled["seed"]["carrier"], "smart_construction_demo")
+
+    def test_a_duty_whose_declared_stages_are_not_runnable_is_not_seeded(self):
+        """A declaration that names no runnable chain seeds nothing.
+
+        The declaration validation refuses this shape before any write, and the
+        seed itself refuses it again rather than running whichever stage it can
+        still recognise: a chain the declaration did not name is not a chain this
+        entry may report as the duty's demo data.
+        """
+        for stages in ([], ["release_seed"], ["release_seed", "profile", "extra"]):
+            with self.subTest(stages=stages):
+                duty = self.demo_duty()
+                duty["demo_seed"]["stages"] = stages
+                fake = self.seeded_fake(duty)
+                report = self.execute(fake, [duty], phase="seed")
+                settled = report["duties"][0]
+                self.assertEqual(self.seeds(fake), [], "nothing runs for a chain that is not runnable")
+                self.assertIn("stage list", settled["seed"]["error"])
+                self.assertNotIn("executed", settled["seed"],
+                                 "a chain that never ran reports no executed steps")
+                self.assertEqual(settled["seed"]["stages"], stages)
+
+    def test_the_seeded_rows_are_only_claimed_visible_after_the_application_is_restarted(self):
+        """The serving process holds its own registry and its own ACL caches.
+
+        Reporting seeded rows from a container that has not reloaded them is a
+        claim rather than an observation, so the restart and the health wait are
+        ordered *after* the chain and asserted here.
+        """
+        duty = self.demo_duty()
+        fake = self.seeded_fake(duty)
+        self.execute(fake, [duty], phase="seed")
+        seed = fake.commands.index(self.seeds(fake)[0])
+        restart = self.index_of(fake, lambda c: c[:2] == ["docker", "restart"])
+        wait = self.index_of(fake, lambda c: c[-2:] == ["--wait", "odoo"])
+        self.assertLess(seed, restart)
+        self.assertLess(restart, wait)
+
+    def test_a_container_that_cannot_prove_the_demo_switch_is_never_seeded(self):
+        for key, value in (("SC_ENVIRONMENT", "dev"), ("SC_ALLOW_DEMO_DATA", "0"),
+                           ("SC_ALLOW_DEMO_DATA", "")):
+            with self.subTest(key=key, value=value):
+                duty = self.demo_duty()
+                environment = {"SC_ENVIRONMENT": "demo", "SC_ALLOW_DEMO_DATA": "1"}
+                environment[key] = value
+                fake = self.seeded_fake(duty, container_environment=environment)
+                report = self.execute(fake, [duty], phase="seed")
+                settled = report["duties"][0]
+                self.assertFalse(self.seeds(fake), "the chain may not run without the switch")
+                self.assertIn("demo-data switch", settled["seed"]["error"])
+
+    def test_a_container_without_a_demo_password_is_never_seeded(self):
+        """The chain's own guard needs the password; a container without one refuses.
+
+        The value is never read back, which is why this models *presence* rather
+        than a password: the entry reports whether the container holds one and
+        nothing more.
+        """
+        duty = self.demo_duty()
+        fake = self.seeded_fake(duty, demo_password_present=False)
+        report = self.execute(fake, [duty], phase="seed")
+        self.assertFalse(self.seeds(fake))
+        self.assertIn("no demo user password", report["duties"][0]["seed"]["error"])
+
+    def test_a_chain_that_reported_nothing_executed_is_not_a_completed_seed(self):
+        duty = self.demo_duty()
+        fake = self.seeded_fake(duty, seed_executed=())
+        report = self.execute(fake, [duty], phase="seed")
+        settled = report["duties"][0]
+        self.assertEqual(settled["seed"]["executed"], [])
+        self.assertIn("did not report an executed chain", settled["seed"]["error"])
+        self.assertFalse([c for c in fake.commands if c[:2] == ["docker", "restart"]],
+                         "a chain that ran no step has nothing to reload")
+
+    def test_a_duty_that_is_not_fully_installed_is_never_seeded(self):
+        """Seeding is downstream of the declared module set.
+
+        The chain lives inside the demo module, so a duty that has not installed
+        it is refused rather than seeded into a database that cannot run the
+        profile.
+        """
+        duty = self.demo_duty()
+        fake = self.seeded_fake(
+            duty, module_states={"smart_core": "installed", "smart_construction_core": "installed"})
+        report = self.execute(fake, [duty], phase="seed")
+        settled = report["duties"][0]
+        self.assertFalse(self.seeds(fake))
+        self.assertIn("smart_construction_demo", settled["seed"]["missing_modules"])
+
+    def test_a_stopped_cluster_is_never_seeded(self):
+        duty = self.demo_duty()
+        fake = self.seeded_fake(duty, inspect_stdout="")
+        report = self.execute(fake, [duty], phase="seed")
+        self.assertFalse(self.seeds(fake))
+        self.assertIn("cluster is not running", report["duties"][0]["seed"]["error"])
+
 
 class ProbeSubprocess:
     """Stands in for ``subprocess`` for the application credential probe."""
@@ -1882,11 +2685,12 @@ class ApplicationCredentialTests(unittest.TestCase):
         "ADMIN_PASSWD=@ADMIN_PASSWD@\n"
         "JWT_SECRET=@JWT_SECRET@\n"
         "SC_BOOTSTRAP_SECRET=@SC_BOOTSTRAP_SECRET@\n"
+        "FRONTEND_BUILD_SHA256=@FRONTEND_BUILD_SHA256@\n"
         "LIST_DB=false\n"
     )
     ADOPTED = "a" * 64
 
-    def duty(self, source_env_file):
+    def duty(self, source_env_file, frontend_dist_dir="/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev"):
         return {
             "duty": "demo",
             "database": "sc_demo",
@@ -1904,7 +2708,7 @@ class ApplicationCredentialTests(unittest.TestCase):
                       "runtime_env": "dev", "odoo_image": "odoo17-odoo:latest",
                       "postgres_image": "postgres:15",
                       "product_root": "/opt/projects/repos/sce-product-odoo",
-                      "frontend_dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
+                      "frontend_dist_dir": frontend_dist_dir,
                       "demo_addons_root": "/opt/projects/runtime-addons-empty",
                       "customer_addons_root": "/opt/projects/runtime-addons-empty",
                       "services": ["db", "redis", "odoo", "nginx"],
@@ -2043,7 +2847,7 @@ class ApplicationCredentialTests(unittest.TestCase):
         """
         with tempfile.TemporaryDirectory() as root:
             source = self.source_file(root, self.ADOPTED)
-            duty = self.duty(source)
+            duty = self.duty(source, provision_frontend_artifact(root, []))
 
             def run(namespace, ops_root):
                 stale = os.path.join(ops_root, "demo.env")
@@ -2057,6 +2861,7 @@ class ApplicationCredentialTests(unittest.TestCase):
 
             facts, rendered, mode = self.carrier(run)
         self.assertTrue(facts["credentials_created"])
+        self.assertEqual(facts["env_keys"]["FRONTEND_BUILD_SHA256"], FRONTEND_BUILD_FINGERPRINT)
         self.assertEqual(rendered["DB_PASSWORD"], self.ADOPTED)
         self.assertEqual(rendered["DB_MAINTENANCE_PASSWORD"], self.ADOPTED)
         self.assertNotIn("b" * 64, json.dumps(rendered))
@@ -2064,6 +2869,80 @@ class ApplicationCredentialTests(unittest.TestCase):
         self.assertEqual(facts["credential_adopted_from"], source)
         self.assertEqual(facts["credentials_mode"], "0o600")
         self.assertEqual(mode, 0o600)
+
+    def rebuilt_demo_duty(self, duty):
+        """The demo duty as the 2026-10-16 rebuild declares it.
+
+        The legacy carrier and the rebuilt duty share the duty *name*, not the
+        carrier: the rebuilt one names its own cluster, its own application role
+        and its own maintenance role, so it creates the credential it uses.
+        """
+        duty = copy.deepcopy(duty)
+        duty.pop("credential_source")
+        duty["database_role"] = "sc_demo_app"
+        duty["cluster"]["compose_project"] = "sc-demo-dev"
+        duty["cluster"]["container"] = "sc-demo-dev-db-1"
+        duty["cluster"]["maintenance_role"] = "sc_demo_maintenance"
+        return duty
+
+    def test_a_foreign_carrier_file_is_never_adopted_or_overwritten(self):
+        """One duty name may not become two carriers' environment file.
+
+        ``demo.env`` still belongs to ``sc-backend-odoo-dev`` and still owns the
+        surviving cluster's role password. Adopting it would refuse the rebuild
+        for ever; overwriting it would destroy a credential the protected
+        historic source still needs and render a duty the legacy route does not
+        revive from. The file is therefore left byte-identical and the rebuilt
+        duty is rendered into its carrier-qualified name.
+        """
+        with tempfile.TemporaryDirectory() as root:
+            duty = self.rebuilt_demo_duty(self.duty(
+                os.path.join(root, "absent.env"), provision_frontend_artifact(root, [])))
+            legacy = ("DUTY_NAME=demo\nCOMPOSE_PROJECT_NAME=sc-backend-odoo-dev\n"
+                      "DB_NAME=sc_demo\nDB_USER=odoo\nDB_MAINTENANCE_USER=odoo\n"
+                      "DB_PASSWORD=%s\n" % ("f" * 64,))
+
+            def run(namespace, ops_root):
+                path = os.path.join(ops_root, "demo.env")
+                with open(path, "w") as stream:
+                    stream.write(legacy)
+                os.chmod(path, 0o600)
+                with open(path, "rb") as stream:
+                    before = stream.read()
+                facts = namespace["materialise_stack_files"](duty)
+                with open(path, "rb") as stream:
+                    after = stream.read()
+                return facts, before, after
+
+            facts, before, after = self.carrier(run)
+        self.assertEqual(before, after, "the legacy carrier's file must not be touched")
+        self.assertEqual(os.path.basename(facts["env_path"]), "sc-demo-dev.env")
+        self.assertEqual(os.path.basename(facts["credentials_path"]), "sc-demo-dev.env")
+        self.assertTrue(facts["credentials_created"])
+        self.assertEqual(facts["credentials_mode"], "0o600")
+        self.assertEqual(facts["env_mode"], "0o600")
+
+    def test_a_file_that_claims_this_carrier_but_drifts_still_refuses(self):
+        """Carrier identity resolves the file; it never excuses a drifted one.
+
+        A file that names *this* carrier is this duty's own file, so an identity
+        key that disagrees with the declaration is a drift to refuse, not a
+        second carrier to route around.
+        """
+        with tempfile.TemporaryDirectory() as root:
+            duty = self.rebuilt_demo_duty(self.duty(os.path.join(root, "absent.env")))
+
+            def run(namespace, ops_root):
+                path = os.path.join(ops_root, "sc-demo-dev.env")
+                with open(path, "w") as stream:
+                    stream.write("COMPOSE_PROJECT_NAME=sc-demo-dev\nDB_USER=odoo\n")
+                os.chmod(path, 0o600)
+                return namespace["duty_credentials"](duty)
+
+            with self.assertRaises(RuntimeError) as raised:
+                self.carrier(run)
+        self.assertIn("IDENTITY_DRIFT", str(raised.exception))
+
 
     def test_a_duty_that_creates_its_own_role_still_generates_its_own_secret(self):
         """Adoption is not a general escape hatch: no source, no adoption."""

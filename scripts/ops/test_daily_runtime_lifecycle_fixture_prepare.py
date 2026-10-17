@@ -15,6 +15,7 @@ import io
 import json
 import types
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
@@ -27,6 +28,12 @@ SPEC.loader.exec_module(module)
 FIXTURE_TOOL = Path(__file__).resolve().parents[2] / "addons" / "smart_construction_acceptance_fixture" / "tools" / "frontend_productization_fixture.py"
 SHA = "6c8e07f70c1ce0d501f9f5b56911d74f9321a721"
 START_STATE = {"lifecycle_state": "draft", "sc_approval_state": "draft"}
+BINDING = {
+    "duty": "demo",
+    "database": "sc_demo",
+    "compose_project": "sc-demo-dev",
+    "odoo_container": "sc-demo-dev-odoo-1",
+}
 
 
 class Result:
@@ -200,7 +207,7 @@ class PrepareTests(unittest.TestCase):
     def test_fails_closed_before_any_engine_run_on_revision_mismatch(self):
         calls = self._install(head_sha="0" * 40, engine_stdout="", served={})
         with self.assertRaises(module.PrepareError):
-            module.prepare(SHA, "sc_demo", "sc-root", "", "123456")
+            module.prepare(SHA, BINDING, "sc-root", "", "123456")
         self.assertEqual(len(calls), 1, "engine ran despite a revision mismatch")
 
     def test_reports_pass_and_uses_the_governed_shell_entry(self):
@@ -221,17 +228,78 @@ class PrepareTests(unittest.TestCase):
             engine_stdout=engine,
             served={"database": "sc_demo", "git_sha": SHA},
         )
-        evidence = module.prepare(SHA, "sc_demo", "sc-root", "http://daily", "123456")
+        evidence = module.prepare(SHA, BINDING, "sc-root", "http://daily", "123456")
         self.assertEqual(evidence["status"], "PASS")
         self.assertEqual(evidence["carrier"]["carrier_id"], 123)
-        command = next(cmd for _, cmd, _ in calls if "odoo.shell.exec" in cmd)
-        self.assertIn("make ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo odoo.shell.exec", command)
+        command = next(cmd for _, cmd, _ in calls if "docker exec" in cmd)
+        self.assertIn("docker exec -i ", command)
+        self.assertIn("sc-demo-dev-odoo-1 odoo shell", command)
+        self.assertIn("-d sc_demo", command)
         self.assertIn("SC_ACCEPTANCE_FIXTURE_SCOPE=daily_dev", command)
         self.assertIn("SC_ENVIRONMENT=dev", command)
         self.assertIn("SC_ALLOW_DEMO_DATA=1", command)
         self.assertIn("SC_ACCEPTANCE_FIXTURE_PASSWORD=123456", command)
+        self.assertNotIn("ENV_FILE", command)
+        self.assertNotIn("sc-backend-odoo-dev", command)
         uploaded = next(payload_bytes for _, cmd, payload_bytes in calls if payload_bytes is not None)
         self.assertIn(b"def ensure_fixture", uploaded)
+
+    def test_the_uploaded_builder_is_removed_afterwards(self):
+        payload = {
+            "database": "sc_demo",
+            "carrier_id": 123,
+            "carrier_code": "FE-LC",
+            "carrier_name": "FE Project Lifecycle",
+            "company_id": 42,
+            "company_name": "FE Company A",
+            "state": START_STATE,
+            "xmlid": "smart_construction_acceptance_fixture.fe_project_lifecycle",
+            "reset": False,
+        }
+        engine = "%s%s\n" % (module.EXE_LINE, json.dumps(payload))
+        calls = self._install(
+            head_sha=SHA,
+            engine_stdout=engine,
+            served={"database": "sc_demo", "git_sha": SHA},
+        )
+        module.prepare(SHA, BINDING, "sc-root", "http://daily", "123456")
+        self.assertIn("rm -f", [cmd for _, cmd, _ in calls][-1])
+
+    def test_a_builder_without_a_database_readback_fails_closed(self):
+        # A missing field is not a weaker success: the builder is supposed to
+        # report the database it ran in, and the rebuilt demo duty and the
+        # preserved historic source both answer to sc_demo.
+        payload = {
+            "carrier_id": 123,
+            "carrier_code": "FE-LC",
+            "carrier_name": "FE Project Lifecycle",
+            "company_id": 42,
+            "company_name": "FE Company A",
+            "state": START_STATE,
+            "xmlid": "smart_construction_acceptance_fixture.fe_project_lifecycle",
+            "reset": False,
+        }
+        engine = "%s%s\n" % (module.EXE_LINE, json.dumps(payload))
+        self._install(head_sha=SHA, engine_stdout=engine, served={})
+        evidence = module.prepare(SHA, BINDING, "sc-root", "", "123456")
+        self.assertEqual(evidence["status"], "FAIL")
+
+    def test_a_builder_that_read_back_another_database_fails_closed(self):
+        payload = {
+            "database": "sc_dev_demo",
+            "carrier_id": 123,
+            "carrier_code": "FE-LC",
+            "carrier_name": "FE Project Lifecycle",
+            "company_id": 42,
+            "company_name": "FE Company A",
+            "state": START_STATE,
+            "xmlid": "smart_construction_acceptance_fixture.fe_project_lifecycle",
+            "reset": False,
+        }
+        engine = "%s%s\n" % (module.EXE_LINE, json.dumps(payload))
+        self._install(head_sha=SHA, engine_stdout=engine, served={})
+        evidence = module.prepare(SHA, BINDING, "sc-root", "", "123456")
+        self.assertEqual(evidence["status"], "FAIL")
 
     def test_fails_when_carrier_is_not_in_the_declared_start_state(self):
         payload = {
@@ -247,7 +315,7 @@ class PrepareTests(unittest.TestCase):
         }
         engine = "%s%s\n" % (module.EXE_LINE, json.dumps(payload))
         self._install(head_sha=SHA, engine_stdout=engine, served={"database": "sc_demo", "git_sha": SHA})
-        evidence = module.prepare(SHA, "sc_demo", "sc-root", "http://daily", "123456")
+        evidence = module.prepare(SHA, BINDING, "sc-root", "http://daily", "123456")
         self.assertEqual(evidence["status"], "FAIL")
 
     def test_fails_when_served_revision_does_not_match(self):
@@ -264,13 +332,52 @@ class PrepareTests(unittest.TestCase):
         }
         engine = "%s%s\n" % (module.EXE_LINE, json.dumps(payload))
         self._install(head_sha=SHA, engine_stdout=engine, served={"database": "sc_demo", "git_sha": "f" * 40})
-        evidence = module.prepare(SHA, "sc_demo", "sc-root", "http://daily", "123456")
+        evidence = module.prepare(SHA, BINDING, "sc-root", "http://daily", "123456")
         self.assertEqual(evidence["status"], "FAIL")
 
 
 class CommandTests(unittest.TestCase):
     def test_confirmation_token_is_stable(self):
         self.assertEqual(module.CONFIRMATION, "DRIVE_DAILY_SC_DEMO_PROJECT_LIFECYCLE")
+
+
+class LifecycleFixtureDutyBindingTests(unittest.TestCase):
+    """A database *name* stops being a target identity once two carriers share it.
+
+    The refusal is read from the shipped declaration, not from a stub: it now
+    names the rebuilt demo duty and the preserved historic source with the same
+    ``sc_demo``, so an entry that receives only ``--database`` would otherwise
+    have to guess which carrier it is measuring.
+    """
+
+    instances = Path(__file__).with_name("synthetic_duty_instances.sample.json")
+
+    def reader(self, _path: str) -> str:
+        return self.instances.read_text(encoding="utf-8")
+
+    def options(self, **overrides):
+        options = mock.Mock()
+        options.duty = ""
+        options.database = "sc_demo"
+        options.ssh_host = "sc-root"
+        for key, value in overrides.items():
+            setattr(options, key, value)
+        return options
+
+    def test_a_bare_database_name_no_longer_binds_a_carrier(self) -> None:
+        with self.assertRaisesRegex(module.PrepareError, "DUTY_IDENTITY_DATABASE_AMBIGUOUS:sc_demo"):
+            module.bind_target(self.options(), instances_reader=self.reader)
+
+    def test_naming_the_duty_binds_the_rebuilt_demo_carrier(self) -> None:
+        binding = module.bind_target(
+            self.options(duty="demo"), instances_reader=self.reader
+        )
+        self.assertEqual(binding["database"], "sc_demo")
+        self.assertEqual(binding["database_role"], "sc_demo_app")
+        self.assertEqual(binding["compose_project"], "sc-demo-dev")
+        self.assertEqual(binding["database_container"], "sc-demo-dev-db-1")
+        self.assertEqual(binding["database_volume"], "sc_demo_db_data")
+        self.assertEqual(binding["data_purpose"], "demo")
 
 
 if __name__ == "__main__":

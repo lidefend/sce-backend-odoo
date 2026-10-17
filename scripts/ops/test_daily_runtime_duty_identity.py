@@ -339,6 +339,380 @@ class ResolveTests(unittest.TestCase):
                              instances_reader=lambda path: instances_document())
 
 
+class ProtectedHistoricSourceTests(unittest.TestCase):
+    """A preserved database carrier is a name collision by construction.
+
+    Before the 2026-10-16 demo rebuild one carrier answered to ``sc_demo``.  The
+    rebuild creates a second one and *preserves* the first, so a bare database
+    name stops identifying a target.  These cases pin the two properties that
+    keep that honest: the historic section is validated as its own declaration,
+    and it can never be the carrier a duty entry ends up writing to.
+    """
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+
+    def _source(self, **overrides) -> dict:
+        source = {
+            "source_id": "pre_governance_shared_cluster",
+            "database": "sc_demo",
+            "cluster": {
+                "container": "sc-backend-odoo-dev-db-1",
+                "compose_project": "sc-backend-odoo-dev",
+                "data_volume": "sc_dev_db_data",
+            },
+            "visibility": "read_only_historic",
+            "authority": "docs/ops/user_data_production_boundary_v1.md",
+            "reason": "preserved in place so a bare database name stops resolving",
+        }
+        source.update(overrides)
+        return source
+
+    def _declaration(self, source=None) -> Path:
+        payload = tracked_template()
+        payload["protected_historic_sources"] = [source or self._source()]
+        return _write(payload, self.root)
+
+    def _refuses(self, message: str, source=None):
+        with self.assertRaisesRegex(identity.DutyIdentityError, message):
+            identity.load_declaration(self._declaration(source))
+
+    def test_an_absent_section_is_a_legitimate_shape(self):
+        payload = tracked_template()
+        payload.pop("protected_historic_sources", None)
+        self.assertEqual(identity.protected_historic_sources(payload), [])
+        loaded = identity.load_declaration(
+            _write(payload, self.root), instances_reader=lambda path: instances_document()
+        )
+        self.assertNotIn("protected_historic_sources", loaded)
+
+    def test_a_declared_section_must_be_a_non_empty_list(self):
+        payload = tracked_template()
+        payload["protected_historic_sources"] = []
+        with self.assertRaisesRegex(identity.DutyIdentityError, "non-empty list"):
+            identity.load_declaration(_write(payload, self.root))
+        payload["protected_historic_sources"] = {"source_id": "x"}
+        with self.assertRaisesRegex(identity.DutyIdentityError, "non-empty list"):
+            identity.load_declaration(_write(payload, self.root))
+
+    def test_the_shipped_declaration_carries_one_validated_source(self):
+        declaration = tracked_template()
+        sources = identity.protected_historic_sources(declaration)
+        self.assertEqual([entry["source_id"] for entry in sources],
+                         ["pre_governance_shared_cluster"])
+
+    def test_every_governed_key_is_required(self):
+        for key in identity.PROTECTED_HISTORIC_SOURCE_KEYS:
+            source = self._source()
+            source.pop(key)
+            self._refuses("lacks keys %s" % (key,), source)
+
+    def test_the_source_id_must_be_a_safe_identifier(self):
+        self._refuses("not a safe identifier", self._source(source_id="Pre Governance"))
+        self._refuses("not a safe identifier", self._source(source_id="9cluster"))
+
+    def test_two_sources_may_not_share_an_id(self):
+        payload = tracked_template()
+        payload["protected_historic_sources"] = [self._source(), self._source(
+            database="sc_demo_archive",
+            cluster={"container": "sc-archive-db-1", "compose_project": "sc-archive",
+                     "data_volume": "sc_archive_db_data"},
+        )]
+        with self.assertRaisesRegex(identity.DutyIdentityError, "duplicate protected historic source id"):
+            identity.load_declaration(_write(payload, self.root))
+
+    def test_the_database_must_be_a_plain_database_name(self):
+        """History names the carrier; the name still has to be safe to interpolate."""
+        self._refuses("is not a plain database name", self._source(database="Demo-DB"))
+        self._refuses("is not a plain database name", self._source(database="sc demo"))
+
+    def test_an_unknown_visibility_is_refused(self):
+        """A source with no declared visibility is a source nobody decided about."""
+        self._refuses("visibility must be one of", self._source(visibility="writable"))
+
+    def test_authority_and_reason_must_be_stated(self):
+        self._refuses("needs authority", self._source(authority=""))
+        self._refuses("needs reason", self._source(reason="   "))
+
+    def test_the_cluster_must_name_its_carrier(self):
+        self._refuses("cluster must be an object", self._source(cluster="sc-backend-odoo-dev"))
+        self._refuses("cluster.container", self._source(cluster={
+            "container": "Sc Backend", "compose_project": "sc-backend-odoo-dev",
+            "data_volume": "sc_dev_db_data"}))
+        self._refuses("cluster.data_volume", self._source(cluster={
+            "container": "sc-backend-odoo-dev-db-1", "compose_project": "sc-backend-odoo-dev",
+            "data_volume": ""}))
+
+    def test_a_preserved_source_may_not_be_the_duty_itself(self):
+        """Sharing a container or a PGDATA with a duty would make it one writer."""
+        with self.assertRaisesRegex(identity.DutyIdentityError, "shares a cluster container"):
+            identity.load_declaration(self._declaration(self._source(cluster={
+                "container": "sc-demo-dev-db-1", "compose_project": "sc-backend-odoo-dev",
+                "data_volume": "sc_dev_db_data"})))
+        with self.assertRaisesRegex(identity.DutyIdentityError, "shares a cluster container"):
+            identity.load_declaration(self._declaration(self._source(cluster={
+                "container": "sc-backend-odoo-dev-db-1", "compose_project": "sc-backend-odoo-dev",
+                "data_volume": "sc_demo_db_data"})))
+
+
+class DutyCarrierResolutionTests(unittest.TestCase):
+    """One database name, one carrier, or a stop that names every candidate."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+
+    def _resolve(self, database, payload=None):
+        return identity.resolve_duty_carrier(
+            database, _write(payload or tracked_template(), self.root),
+            instances_reader=lambda path: instances_document(),
+        )
+
+    def test_one_name_with_one_duty_resolves_to_that_duty(self):
+        carrier = self._resolve("sc_platform_control")
+        self.assertEqual(carrier["kind"], identity.CARRIER_DUTY)
+        self.assertEqual(carrier["id"], "platform_control")
+        self.assertEqual(carrier["database_container"], "sc-platform-control-dev-db-1")
+        self.assertTrue(carrier["writable"])
+
+    def test_the_shipped_demo_name_is_ambiguous_on_purpose(self):
+        """The rebuild makes ``sc_demo`` name a duty *and* a preserved source."""
+        with self.assertRaisesRegex(
+            identity.DutyIdentityError, "DUTY_IDENTITY_DATABASE_AMBIGUOUS:sc_demo"
+        ):
+            self._resolve("sc_demo")
+
+    def test_a_preserved_source_is_never_a_duty_target(self):
+        payload = tracked_template()
+        payload["protected_historic_sources"] = [{
+            "source_id": "only_source",
+            "database": "sc_odoo",
+            "cluster": {"container": "sc-legacy-db-1", "compose_project": "sc-legacy",
+                        "data_volume": "sc_legacy_db_data"},
+            "visibility": "read_only_historic",
+            "authority": "docs/ops/user_data_production_boundary_v1.md",
+            "reason": "preserved in place",
+        }]
+        with self.assertRaisesRegex(
+            identity.DutyIdentityError, "DUTY_IDENTITY_DATABASE_HISTORIC_SOURCE:sc_odoo:only_source"
+        ):
+            self._resolve("sc_odoo", payload)
+
+    def test_an_unnamed_database_is_refused(self):
+        for value in ("", "   ", None):
+            with self.assertRaisesRegex(identity.DutyIdentityError, "DUTY_IDENTITY_DATABASE_UNNAMED"):
+                self._resolve(value)
+
+    def test_an_undeclared_database_is_refused(self):
+        with self.assertRaisesRegex(
+            identity.DutyIdentityError, "DUTY_IDENTITY_DATABASE_UNDECLARED:sc_mystery"
+        ):
+            self._resolve("sc_mystery")
+
+    def _bind(self, duty, database, payload=None):
+        return identity.bind_duty_database(
+            duty, database, _write(payload or tracked_template(), self.root),
+            instances_reader=lambda path: instances_document(),
+        )
+
+    def test_naming_the_duty_binds_the_whole_identity(self):
+        binding = self._bind("demo", "")
+        self.assertEqual(binding["bound_by"], "duty")
+        self.assertEqual(binding["database"], "sc_demo")
+        self.assertEqual(binding["database_container"], "sc-demo-dev-db-1")
+        self.assertEqual(binding["database_volume"], "sc_demo_db_data")
+        self.assertEqual(binding["compose_project"], "sc-demo-dev")
+        self.assertEqual(binding["dbfilter"], "^sc_demo$")
+        self.assertEqual(binding["data_purpose"], "demo")
+
+    def test_a_duty_binding_may_restate_its_own_database(self):
+        binding = self._bind("demo", "sc_demo")
+        self.assertEqual(binding["database"], "sc_demo")
+
+    def test_a_duty_binding_may_not_name_another_database(self):
+        """Naming both and disagreeing is not a preference, it is a stop."""
+        with self.assertRaisesRegex(
+            identity.DutyIdentityError, "DUTY_IDENTITY_DATABASE_DISAGREES_WITH_DUTY:demo:sc_tenant_sample_dev:sc_demo"
+        ):
+            self._bind("demo", "sc_tenant_sample_dev")
+
+    def test_the_weak_form_still_works_while_exactly_one_duty_carries_the_name(self):
+        binding = self._bind("", "sc_platform_control")
+        self.assertEqual(binding["bound_by"], "database")
+        self.assertEqual(binding["duty"], "platform_control")
+
+    def test_the_weak_form_stops_once_a_second_carrier_exists(self):
+        with self.assertRaisesRegex(identity.DutyIdentityError, "DUTY_IDENTITY_DATABASE_AMBIGUOUS"):
+            self._bind("", "sc_demo")
+
+    def test_a_duty_name_that_is_undeclared_is_refused(self):
+        with self.assertRaisesRegex(identity.DutyIdentityError, "undeclared duty"):
+            self._bind("legacy_demo", "")
+
+    def test_the_refusal_lists_every_carrier(self):
+        try:
+            self._resolve("sc_demo")
+        except identity.DutyIdentityError as error:
+            self.assertIn("duty=demo=sc-demo-dev-db-1", str(error))
+            self.assertIn(
+                "protected_historic_source=pre_governance_shared_cluster=sc-backend-odoo-dev-db-1",
+                str(error),
+            )
+        else:  # pragma: no cover - the refusal above is the assertion
+            self.fail("an ambiguous database name must not resolve")
+
+
+class DutyEnvPathTests(unittest.TestCase):
+    """One resolver owns which environment file a duty reads.
+
+    The rebuilt demo duty and the preserved historic source are both called
+    ``demo``, and ``demo.env`` still belongs to the pre-governance cluster. An
+    entry that derived ``<duty>.env`` on its own read that file, refused itself
+    with a carrier disagreement and never saw the correct ``sc-demo-dev.env``
+    beside it. These tests pin the shared rule and the refusal that names the
+    owner instead of silently writing another carrier's file.
+    """
+
+    DEMO = {"duty": "demo", "cluster": {"compose_project": "sc-demo-dev"}}
+    LEGACY_MARKER = "sc-backend-odoo-dev"
+
+    def _write(self, root, name, marker):
+        path = Path(root) / name
+        path.write_text(
+            "COMPOSE_PROJECT_NAME=%s\nDB_NAME=sc_demo\n" % (marker,), encoding="utf-8"
+        )
+        return path
+
+    def test_the_carrier_qualified_file_wins_when_both_exist(self):
+        with tempfile.TemporaryDirectory() as root:
+            self._write(root, "demo.env", self.LEGACY_MARKER)
+            self._write(root, "sc-demo-dev.env", "sc-demo-dev")
+            self.assertEqual(
+                identity.duty_env_path(self.DEMO, root, reading=True).name,
+                "sc-demo-dev.env",
+            )
+
+    def test_a_foreign_carrier_file_is_refused_by_name_not_read(self):
+        with tempfile.TemporaryDirectory() as root:
+            self._write(root, "demo.env", self.LEGACY_MARKER)
+            with self.assertRaises(identity.DutyIdentityError) as raised:
+                identity.duty_env_path(self.DEMO, root, reading=True)
+        message = str(raised.exception)
+        self.assertIn("ENV_CARRIER_MISMATCH", message)
+        self.assertIn(self.LEGACY_MARKER, message)
+        self.assertIn("sc-demo-dev.env", message)
+
+    def test_the_render_side_still_targets_the_qualified_name(self):
+        """Creating the duty's file is not the same question as reading one."""
+        with tempfile.TemporaryDirectory() as root:
+            self._write(root, "demo.env", self.LEGACY_MARKER)
+            self.assertEqual(
+                identity.duty_env_path(self.DEMO, root).name, "sc-demo-dev.env"
+            )
+
+    def test_a_file_without_a_carrier_marker_is_still_the_duty_own_file(self):
+        with tempfile.TemporaryDirectory() as root:
+            Path(root, "platform_control.env").write_text(
+                "DB_NAME=sc_platform_control\n", encoding="utf-8"
+            )
+            duty = {
+                "duty": "platform_control",
+                "cluster": {"compose_project": "sc-platform-control-dev"},
+            }
+            self.assertEqual(
+                identity.duty_env_path(duty, root, reading=True).name,
+                "platform_control.env",
+            )
+
+    def test_a_duty_whose_carrier_is_its_own_name_still_reads_that_file(self):
+        """The customer duty's file is named after the duty, not the carrier."""
+        with tempfile.TemporaryDirectory() as root:
+            self._write(root, "customer_tenant_dev.env", "sc-tenant-sample-dev")
+            duty = {
+                "duty": "customer_tenant_dev",
+                "cluster": {"compose_project": "sc-tenant-sample-dev"},
+            }
+            self.assertEqual(
+                identity.duty_env_path(duty, root, reading=True).name,
+                "customer_tenant_dev.env",
+            )
+
+    def test_the_resolved_identity_shape_resolves_the_same_file(self):
+        """``resolve`` hoists ``compose_project``; the resolver must read both shapes.
+
+        The edition-release entry calls the resolver with the *normalized*
+        identity, which has no ``cluster`` block. Reading only the nested shape
+        silently fell back to the duty's own name -- the first readback of the
+        rebuilt carrier asked for ``demo.env`` again.
+        """
+        with tempfile.TemporaryDirectory() as root:
+            self._write(root, "demo.env", self.LEGACY_MARKER)
+            self._write(root, "sc-demo-dev.env", "sc-demo-dev")
+            hoisted = {"duty": "demo", "compose_project": "sc-demo-dev"}
+            self.assertEqual(
+                identity.duty_env_path(hoisted, root, reading=True).name,
+                "sc-demo-dev.env",
+            )
+            self.assertEqual(identity.carrier_project(self.DEMO), "sc-demo-dev")
+            self.assertEqual(identity.carrier_project(hoisted), "sc-demo-dev")
+
+    def test_an_empty_directory_still_yields_a_creatable_path(self):
+        with tempfile.TemporaryDirectory() as root:
+            self.assertEqual(
+                identity.duty_env_path(self.DEMO, root).name, "demo.env"
+            )
+
+    def test_the_embedded_carrier_agrees_with_the_resolver(self):
+        """The uploaded program cannot import this module, so parity is asserted.
+
+        A second copy of the rule is only safe while a test proves the two
+        copies answer the same question the same way.
+        """
+        with tempfile.TemporaryDirectory() as root:
+            self._write(root, "demo.env", self.LEGACY_MARKER)
+            namespace = self._embedded_carrier(root)
+            shared = identity.duty_env_path(self.DEMO, root)
+            embedded = namespace["credentials_path"](self.DEMO)
+            self.assertEqual(os.path.basename(embedded), shared.name)
+            self._write(root, "sc-demo-dev.env", "sc-demo-dev")
+            self.assertEqual(
+                os.path.basename(namespace["credentials_path"](self.DEMO)),
+                identity.duty_env_path(self.DEMO, root).name,
+            )
+            self.assertEqual(
+                os.path.basename(namespace["credentials_path"](self.DEMO)),
+                "sc-demo-dev.env",
+            )
+
+    def _embedded_carrier(self, ops_root):
+        import contextlib
+        import hashlib
+        import io
+
+        payload = {
+            "mode": "plan",
+            "phase": "plan",
+            "product_root": "/opt/projects/repos/sce-product-odoo",
+            "ops_root": ops_root,
+            "platform_admin_database": "sc_platform_control",
+            "frontend_build_env_file": os.path.join(ops_root, "absent-build.env"),
+            "source_revision": "a" * 40,
+            "compose_sha256": hashlib.sha256(b"services:\n").hexdigest(),
+            "stack": {"compose_text": "services:\n  db:\n    image: postgres:15\n"},
+            "env_template": "DB_NAME=@DB_NAME@\n",
+            "data_destination": "/var/lib/postgresql/data",
+            "duties": [],
+        }
+        rendered = duty_entry.render_remote_program(payload)
+        namespace = {"__name__": "__parity__"}
+        with contextlib.redirect_stdout(io.StringIO()):
+            exec(compile(rendered, "<remote-carrier-parity>", "exec"), namespace)
+        return namespace
+
+
 class RemoteMaterialisationTests(unittest.TestCase):
     """The write path is the one step the product tree cannot perform for itself."""
 

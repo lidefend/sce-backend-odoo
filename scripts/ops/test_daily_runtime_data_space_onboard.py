@@ -5,6 +5,7 @@ import importlib.util
 import json
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPT = Path(__file__).with_name("daily_runtime_data_space_onboard.py")
@@ -14,6 +15,13 @@ module = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(module)
 
 SHA = "91a220ab76f3f581b4a233b2774979b2023205da"
+
+
+class Result:
+    def __init__(self, returncode=0, stdout=b"", stderr=b""):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
 
 
 class PreflightTests(unittest.TestCase):
@@ -82,7 +90,36 @@ class MarkerTests(unittest.TestCase):
         with self.assertRaises(module.OnboardError):
             module.marker_payload(module.MARKER + "{not json}")
 
-    def test_remote_command_is_built_from_the_governed_entry(self):
+class DutyBindingTests(unittest.TestCase):
+    """A database *name* stops being a target identity once two carriers share it."""
+
+    instances = Path(__file__).with_name("synthetic_duty_instances.sample.json")
+
+    def reader(self, _path: str) -> str:
+        return self.instances.read_text(encoding="utf-8")
+
+    def options(self, **overrides):
+        options = mock.Mock()
+        options.duty = ""
+        options.database = "sc_demo"
+        options.ssh_host = "sc-root"
+        for key, value in overrides.items():
+            setattr(options, key, value)
+        return options
+
+    def test_a_bare_database_name_no_longer_binds_a_carrier(self) -> None:
+        with self.assertRaisesRegex(
+            module.OnboardError, "DUTY_IDENTITY_DATABASE_AMBIGUOUS:sc_demo"
+        ):
+            module.bind_target(self.options(), instances_reader=self.reader)
+
+    def test_naming_the_duty_binds_the_rebuilt_demo_carrier(self) -> None:
+        binding = module.bind_target(self.options(duty="demo"), instances_reader=self.reader)
+        self.assertEqual(binding["database"], "sc_demo")
+        self.assertEqual(binding["compose_project"], "sc-demo-dev")
+        self.assertEqual(binding["odoo_container"], "sc-demo-dev-odoo-1")
+
+    def test_the_shell_runs_in_the_bound_duty_container(self) -> None:
         captured = {}
 
         def fake_run(command, **kwargs):
@@ -90,17 +127,91 @@ class MarkerTests(unittest.TestCase):
             import subprocess
             return subprocess.CompletedProcess(command, 0, b"", b"")
 
+        binding = module.bind_target(self.options(duty="demo"), instances_reader=self.reader)
         original = module.run
         module.run = fake_run
         try:
-            module.remote_make("sc-root", "sc_demo", "odoo.shell.exec", stdin_path="/tmp/x.py")
+            module.remote_shell("sc-root", binding, stdin_path="/tmp/x.py")
         finally:
             module.run = original
         command = captured["command"]
         self.assertEqual(command[0], "ssh")
         self.assertIn("sc-root", command)
-        self.assertIn("odoo.shell.exec", command[-1])
-        self.assertIn("DB_NAME=sc_demo", command[-1])
+        self.assertIn("docker exec -i sc-demo-dev-odoo-1", command[-1])
+        self.assertIn("-d sc_demo", command[-1])
+        self.assertNotIn("ENV_FILE", command[-1])
+
+
+class OnboardLandingTests(unittest.TestCase):
+    """The entry must fail when the shell landed in the other carrier.
+
+    The rebuilt demo duty and the preserved historic source both answer to
+    ``sc_demo``; an onboarding that silently ran against the historic cluster
+    would write to a protected source.
+    """
+
+    BINDING = {
+        "duty": "demo",
+        "database": "sc_demo",
+        "compose_project": "sc-demo-dev",
+        "odoo_container": "sc-demo-dev-odoo-1",
+    }
+
+    def setUp(self):
+        self._ssh = module.ssh
+        self._served = module.served_identity
+        self.calls = []
+        module.served_identity = lambda base_url: {}
+        self.addCleanup(self.restore)
+
+    def restore(self):
+        module.ssh = self._ssh
+        module.served_identity = self._served
+
+    def payload(self, *, database, passed=True, writes=True):
+        return {
+            "database": database,
+            "environment_role": "platform_internal_demo",
+            "tenant_key": "sc-demo-main",
+            "post_conditions": {"operators_pending_enrollment_is_empty": passed},
+            "passed": passed,
+            "writes": writes,
+        }
+
+    def stub(self, *, engine_payload, engine_rc=0):
+        body = "%s%s\n" % (module.MARKER, json.dumps(engine_payload))
+
+        def fake_ssh(host, command, *, input_bytes=None):
+            self.calls.append({"host": host, "command": command, "program": input_bytes})
+            if "git rev-parse HEAD" in command:
+                return Result(stdout=(SHA + "\n").encode())
+            if command.startswith("rm -f "):
+                return Result()
+            if "cat > " in command:
+                return Result()
+            if "docker exec" in command:
+                return Result(returncode=engine_rc, stdout=body.encode())
+            return Result()
+
+        module.ssh = fake_ssh
+
+    def test_an_onboarding_that_landed_in_the_bound_database_passes(self):
+        self.stub(engine_payload=self.payload(database="sc_demo"))
+        evidence = module.onboard(SHA, self.BINDING, "sc-root", "platform_internal_demo",
+                                 "sc-demo-main", "", True)
+        self.assertEqual(evidence["status"], "PASS")
+
+    def test_an_onboarding_that_landed_elsewhere_fails_closed(self):
+        self.stub(engine_payload=self.payload(database="sc_dev_demo"))
+        evidence = module.onboard(SHA, self.BINDING, "sc-root", "platform_internal_demo",
+                                 "sc-demo-main", "", True)
+        self.assertEqual(evidence["status"], "FAIL")
+
+    def test_an_onboarding_without_a_readback_fails_closed(self):
+        self.stub(engine_payload=self.payload(database=""))
+        evidence = module.onboard(SHA, self.BINDING, "sc-root", "platform_internal_demo",
+                                 "sc-demo-main", "", True)
+        self.assertEqual(evidence["status"], "FAIL")
 
 
 if __name__ == "__main__":
