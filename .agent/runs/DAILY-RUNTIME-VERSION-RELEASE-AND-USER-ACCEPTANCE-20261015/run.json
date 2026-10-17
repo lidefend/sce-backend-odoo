@@ -412,6 +412,7 @@
     "scripts/audit/verification_lane_baseline.json",
     "scripts/audit/verification_lane_coverage.py",
     "scripts/audit/verification_lane_dispositions.json",
+    "scripts/ci/personal_data_false_positives.json",
     "scripts/demo/load_full.sh",
     "scripts/dev/local_sample_env_prepare.sh",
     "scripts/mod/upgrade.sh",
