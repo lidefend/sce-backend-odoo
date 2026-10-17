@@ -37,6 +37,7 @@ MARKER = "DAILY_DATABASE_IDENTITY_INVENTORY="
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 DATABASE_NAME = re.compile(r"^[A-Za-z0-9_]+$")
+CONTAINER_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 
 
 class InventoryError(RuntimeError):
@@ -160,37 +161,72 @@ def remote_shell(ssh_host, binding, *, stdin_path):
     return ssh(ssh_host, duty_identity.odoo_shell_command(binding, program_path=stdin_path))
 
 
-def inventory(expected_sha, binding, ssh_host):
+def _execute_remote(ssh_host, binding, program):
+    """Upload, read back and remove the probe on every exit path."""
+    try:
+        upload = ssh(ssh_host, f"cat > {shlex.quote(REMOTE_TMP)}", input_bytes=program)
+        if upload.returncode:
+            raise InventoryError(f"remote program upload failed: {decode(upload)[:400]}")
+        return remote_shell(ssh_host, binding, stdin_path=REMOTE_TMP)
+    finally:
+        # A partial/aborted upload can already have created the file, so the
+        # removal must not start only after a successful upload.
+        ssh(ssh_host, f"rm -f {shlex.quote(REMOTE_TMP)}")
+
+
+def _execute_local(odoo_container, database, program):
+    """Read the same effective configuration from the workstation container.
+
+    The local carrier is a declared compose project, not a weaker database
+    name: the caller names the container and the database, and the probe reads
+    Odoo's own effective configuration inside it.
+    """
+    command = [
+        "docker", "exec", "-i", odoo_container,
+        "odoo", "shell", "-c", duty_identity.ODOO_CONF_PATH,
+        "-d", database,
+    ] + list(duty_identity.ODOO_SHELL_FLAGS)
+    return run(command, input_bytes=program)
+
+
+def inventory(expected_sha, binding, ssh_host, *, odoo_container="", local=False):
     database = str(binding["database"])
     if not FULL_SHA.fullmatch(expected_sha or ""):
         raise InventoryError("expected SHA must be a full lowercase commit identity")
     if not DATABASE_NAME.fullmatch(database or ""):
         raise InventoryError("database must be a plain database name")
-    if not SSH_HOST.fullmatch(ssh_host or ""):
+    if not local and not SSH_HOST.fullmatch(ssh_host or ""):
         raise InventoryError("SSH host must be a configured host alias")
+    if local and not CONTAINER_NAME.fullmatch(odoo_container or ""):
+        raise InventoryError("local mode requires a plain Odoo container name")
     if not (ROOT / ".git").exists():
         raise InventoryError("must run from the governed repository")
 
-    head = ssh(ssh_host, f"cd {shlex.quote(REMOTE_ROOT)} && git rev-parse HEAD")
+    if local:
+        head = run(["git", "-C", str(ROOT), "rev-parse", "HEAD"])
+    else:
+        head = ssh(ssh_host, f"cd {shlex.quote(REMOTE_ROOT)} && git rev-parse HEAD")
     if head.returncode:
-        raise InventoryError(f"remote revision read failed: {decode(head)[:400]}")
+        raise InventoryError(f"revision read failed: {decode(head)[:400]}")
     remote_head = head.stdout.decode().strip()
     if remote_head != expected_sha:
         raise InventoryError(
-            f"remote HEAD {remote_head or '<unknown>'} != expected {expected_sha}"
+            f"runtime HEAD {remote_head or '<unknown>'} != expected {expected_sha}"
         )
 
     program = PROGRAM_TEMPLATE.encode("utf-8")
-    upload = ssh(ssh_host, f"cat > {shlex.quote(REMOTE_TMP)}", input_bytes=program)
-    if upload.returncode:
-        raise InventoryError(f"remote program upload failed: {decode(upload)[:400]}")
-    executed = remote_shell(ssh_host, binding, stdin_path=REMOTE_TMP)
-    ssh(ssh_host, f"rm -f {shlex.quote(REMOTE_TMP)}")
+    if local:
+        executed = _execute_local(odoo_container, database, program)
+    else:
+        executed = _execute_remote(ssh_host, binding, program)
     payload = marker_payload(decode(executed))
     if payload is None:
         raise InventoryError(
             f"no readback payload in the odoo-shell output: {decode(executed)[-800:]}"
         )
+    if local:
+        payload = dict(payload)
+        payload["read_from_container"] = odoo_container
     return payload, remote_head
 
 
@@ -217,6 +253,21 @@ def evaluate(database, payload):
             "id": "shell_database_is_the_bound_database",
             "passed": str(payload.get("current_database") or "") == database,
             "detail": f"current_database={payload.get('current_database')!r} bound={database!r}",
+        },
+        {
+            "id": "database_enumeration_closed",
+            "passed": payload.get("list_db") is False,
+            "detail": f"list_db={payload.get('list_db')!r}",
+        },
+        {
+            "id": "database_filter_is_exact",
+            "passed": str(payload.get("dbfilter") or "") == "^%s$" % (database,),
+            "detail": f"dbfilter={payload.get('dbfilter')!r} expected=^%s$" % (database,),
+        },
+        {
+            "id": "configured_database_name_is_the_bound_database",
+            "passed": str(payload.get("configured_db_name") or "") in ("", database),
+            "detail": f"configured_db_name={payload.get('configured_db_name')!r} bound={database!r}",
         },
         {
             "id": "distinct_login_roles_observed",
@@ -249,15 +300,46 @@ def main():
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--duty", default="", help="the declared duty this entry binds; a database name alone is not a target identity")
     parser.add_argument("--database", default="")
-    parser.add_argument("--ssh-host", required=True)
+    parser.add_argument("--ssh-host", default="", help="governed host alias; required unless --local")
+    parser.add_argument(
+        "--local", action="store_true",
+        help="read the workstation's own Odoo container; requires --database and --odoo-container",
+    )
+    parser.add_argument(
+        "--odoo-container", default="",
+        help="Odoo container read in --local mode",
+    )
     parser.add_argument("--report", required=True)
     options = parser.parse_args()
 
     try:
-        binding = bind_target(options)
-        payload, remote_head = inventory(
-            options.expected_sha, binding, options.ssh_host
-        )
+        if not options.local:
+            if not options.ssh_host:
+                raise InventoryError("--ssh-host is required unless --local")
+            binding = bind_target(options)
+            payload, remote_head = inventory(
+                options.expected_sha, binding, options.ssh_host
+            )
+        else:
+            missing = [
+                flag for flag, value in (
+                    ("--database", options.database),
+                    ("--odoo-container", options.odoo_container),
+                ) if not value
+            ]
+            if missing:
+                raise InventoryError(
+                    "local mode requires %s" % (", ".join(missing),)
+                )
+            binding = {
+                "database": options.database,
+                "odoo_container": options.odoo_container,
+                "source": "local_argument",
+            }
+            payload, remote_head = inventory(
+                options.expected_sha, binding, "", odoo_container=options.odoo_container,
+                local=True,
+            )
         verdict = evaluate(str(binding["database"]), payload)
     except InventoryError as error:
         print(f"[daily.runtime.database.identity.inventory] BLOCKED {error}", file=sys.stderr)

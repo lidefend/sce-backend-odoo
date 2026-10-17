@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPT = Path(__file__).with_name("daily_runtime_database_identity_inventory.py")
@@ -75,10 +76,35 @@ class VerdictTests(unittest.TestCase):
 
     def test_declared_database_passes(self):
         verdict = module.evaluate(
-            "sc_tenant_sample_dev", payload(current_database="sc_tenant_sample_dev")
+            "sc_tenant_sample_dev",
+            payload(
+                current_database="sc_tenant_sample_dev",
+                dbfilter="^sc_tenant_sample_dev$",
+                configured_db_name="sc_tenant_sample_dev",
+            ),
         )
         self.assertTrue(verdict["passed"])
         self.assertEqual(verdict["database_count"], 2)
+
+    def test_an_open_database_selector_fails_closed(self):
+        verdict = module.evaluate("sc_demo", payload(list_db=True))
+        failed = {row["id"] for row in verdict["assertions"] if not row["passed"]}
+        self.assertIn("database_enumeration_closed", failed)
+        self.assertFalse(verdict["passed"])
+
+    def test_a_non_exact_dbfilter_fails_closed(self):
+        verdict = module.evaluate("sc_demo", payload(dbfilter=".*"))
+        failed = {row["id"] for row in verdict["assertions"] if not row["passed"]}
+        self.assertIn("database_filter_is_exact", failed)
+
+    def test_a_configured_database_name_for_another_database_fails_closed(self):
+        verdict = module.evaluate("sc_demo", payload(configured_db_name="sc_other"))
+        failed = {row["id"] for row in verdict["assertions"] if not row["passed"]}
+        self.assertIn("configured_database_name_is_the_bound_database", failed)
+
+    def test_an_unset_configured_database_name_is_allowed_on_a_filtered_stack(self):
+        verdict = module.evaluate("sc_demo", payload(configured_db_name=""))
+        self.assertTrue(verdict["passed"])
 
     def test_a_read_of_the_other_carrier_is_refused(self):
         # The rebuilt demo duty and the preserved historic source both answer to
@@ -137,6 +163,56 @@ class ProgramTests(unittest.TestCase):
         self.assertIn("duty_identity.odoo_shell_command", source)
         self.assertNotIn("odoo.shell.exec", source)
         self.assertIn("git rev-parse HEAD", source)
+
+class ExecuteRemoteCleanupTests(unittest.TestCase):
+    """The probe file is this entry's temporary carrier on a live host.
+
+    Cleanup that starts only after a successful upload leaves the file behind
+    exactly when the transport is already failing, so the upload belongs inside
+    the ``try`` that owns the ``finally`` removal.
+    """
+
+    class Result:
+        def __init__(self, returncode=0, stdout=b"", stderr=b""):
+            self.returncode = returncode
+            self.stdout = stdout
+            self.stderr = stderr
+
+    def test_the_probe_is_removed_when_the_upload_fails(self):
+        calls = []
+
+        def fake_ssh(_host, command, input_bytes=None):
+            calls.append(command)
+            if command.startswith("cat > "):
+                self.assertTrue(input_bytes)
+                return self.Result(returncode=1, stderr=b"connection reset by peer")
+            if command.startswith("rm -f "):
+                return self.Result()
+            raise AssertionError("unexpected command: %s" % command)
+
+        with mock.patch.object(module, "ssh", side_effect=fake_ssh):
+            with self.assertRaisesRegex(module.InventoryError, "upload failed"):
+                module._execute_remote("sc-root", {}, b"print(1)\n")
+        self.assertEqual(calls[-1], "rm -f " + module.REMOTE_TMP)
+
+    def test_the_probe_is_removed_when_the_readback_fails(self):
+        calls = []
+
+        def fake_ssh(_host, command, input_bytes=None):
+            calls.append(command)
+            if command.startswith("cat > "):
+                return self.Result()
+            if command.startswith("rm -f "):
+                return self.Result()
+            raise AssertionError("unexpected command: %s" % command)
+
+        with mock.patch.object(module, "ssh", side_effect=fake_ssh):
+            with mock.patch.object(
+                module, "remote_shell", side_effect=RuntimeError("transport lost")
+            ):
+                with self.assertRaisesRegex(RuntimeError, "transport lost"):
+                    module._execute_remote("sc-root", {}, b"print(1)\n")
+        self.assertEqual(calls[-1], "rm -f " + module.REMOTE_TMP)
 
 
 if __name__ == "__main__":

@@ -284,8 +284,13 @@
         <record id="group_sc_cap_settlement_user" model="res.groups">
             <field name="name">SC 能力 - 结算中心经办</field>
             <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+            <!-- 结算明细创建会校验继承自父结算单的合同可见性；结算经办只获得合同只读，
+                 不获得合同写权限。结算主管经 group_sc_cap_settlement_user 继承同一只读能力。 -->
             <field name="implied_ids" eval="[
-                (6, 0, [ref('smart_construction_core.group_sc_cap_settlement_read')])
+                (6, 0, [
+                    ref('smart_construction_core.group_sc_cap_settlement_read'),
+                    ref('smart_construction_core.group_sc_cap_contract_read')
+                ])
             ]"/>
         </record>
 

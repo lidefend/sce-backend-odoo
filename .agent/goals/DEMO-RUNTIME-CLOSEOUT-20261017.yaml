@@ -1,0 +1,54 @@
+schema_version: 1
+goal:
+  id: DEMO-RUNTIME-CLOSEOUT-20261017
+  title: Demo runtime closeout (identity, repair, formal demo chain, incremental acceptance)
+  status: active
+  formal_product_layer: P4
+  layer_target: daily demo runtime duty (sc-local-dev / sc_dev_demo / odoo / system_identifier 7674830867180216358)
+  module: [scripts/ops, config/ops, docs/ops]
+  objective: Restore the demo execution context, verify declared versus actual runtime facts, close only proven run gaps, validate the formal demo seed chain and incremental experience acceptance. User module, performance and other topics stay paused.
+  baseline:
+    branch: main
+    full_sha: 80da1af3d060201cebbddc58146e940a7f34b570
+  carrier_identity:
+    compose_project: sc-local-dev
+    containers: [sc-local-dev-odoo-1, sc-local-dev-db-1, sc-local-dev-nginx-1, sc-local-dev-redis-1]
+    database: sc_dev_demo
+    database_role: odoo
+    system_identifier: "7674830867180216358"
+    volumes: [sc_local_dev_db_data, sc_local_dev_odoo_data]
+    http_entry: http://127.0.0.1:18081
+    direct_odoo: 0.0.0.0:8070->8069/tcp
+    sources:
+      - /tmp/env-carrier-identity-20261017.json
+      - /tmp/env-carrier-topology-20261017.json
+    readback: .runtime/demo-blocker-batch-02/carrier-readback.json
+  paused_carriers:
+    - carrier: sc-demo-dev
+      database: sc_demo
+      role: sc_demo_maintenance
+      system_identifier: "7697127891101417510"
+      reason: old demo carrier; writes paused; not the new carrier
+    - carrier: sc_demo (local cluster copy)
+      database: sc_demo
+      reason: old local copy; not a write target
+    - carrier: sc_production
+      database: sc_production
+      role: odoo
+      system_identifier: "7668535447460634662"
+      reason: production; demo/user writes forbidden
+    - carrier: sc-backend-odoo-prod
+      reason: retired production stack; not a write target
+  constraints:
+    - no_recreate_or_reinitialize_registered_demo_database
+    - no_rename_clean_migrate_or_seed_the_protected_history_source_database
+    - reuse_existing_evidence_index_and_incremental_acceptance_mechanism
+    - no_user_module_customer_import_or_performance_scope
+    - no_separate_bookkeeping_pr_no_deployment
+    - new_carrier_is_sc-local-dev_sc_dev_demo_only
+    - sc-demo-dev_sc_demo_sc_production_and_sc-backend-odoo-prod_stay_paused
+  next_exact_step: BATCH-02 code and read-only evidence are complete on sc-local-dev / sc_dev_demo (routing role discovery passes on both local odoo and remote sc_demo_maintenance, list_db=false readback passes, temporary probe cleanup is exception-safe and the confirmed residue is removed). No write, refresh, seed, replay, upgrade or deployment was performed. Await owner/scheduler-authorized deployment of this batch to a declared carrier and user acceptance; both remain uncompleted.
+  paused:
+    - old_demo_environment_writes
+    - demo_03_seed_replay
+    - deployment_and_user_acceptance
