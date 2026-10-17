@@ -50,3 +50,11 @@ a98fdc0983b7f4c1a0d7612b2a1dc46fb3a8ddd9 as
 was still uncommitted and was NOT included. Final iteration and freeze
 preparation passed; no Quick, commit, push or new PR was performed for this
 delta. Changes are preserved pending the owner's publication destination.
+
+### Exact-head Quick recovery
+
+The frozen candidate d6df920b56f731b74a853a5debf39e3221b6e6ce failed Quick only at the verification-lane debt ratchet: 792 zero-reference targets exceeded the unchanged cap 791; all seven other shards passed. The measured identities exactly matched the already frozen 792-item identity set. No receipt was issued. Original log: /tmp/ci-efficiency-quick.log.
+
+P4 owning-layer correction wires the existing verify.ci.orm_selection.unit into verify.ci.workflow.contract, so ORM risk classification and workflow selection are enforced alongside sharding. The obsolete zero-reference disposition and identity are removed; the 791 cap is not raised. Focused aggregate: 29+17+15+8+8 = 77 tests passed. Inputs affected are the Make dependency graph and two audit registries; build/shard implementation inputs are unchanged. Lane audit and self-tests are the earliest required revalidation, followed by freeze preparation and a new justified exact-head Quick. No product/runtime/browser surface changed.
+
+Historical implementation entries saying “uncommitted” or awaiting a destination belong to the prior stage. The owner subsequently authorized independent CI-only integration and paused all other topics. The new frozen identity, independent review, archive and publication results are recorded in ignored delivery evidence and the PR rather than modifying a frozen candidate.

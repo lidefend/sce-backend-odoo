@@ -24,7 +24,9 @@
     "scripts/ci/test_backend_suite_plan.py",
     "scripts/ci/test_backend_test_suite_dispatch_contract.py",
     "scripts/verify/github_actions_security_guard.py",
-    "scripts/verify/test_github_actions_security_guard.py"
+    "scripts/verify/test_github_actions_security_guard.py",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/audit/verification_lane_baseline.json"
   ],
   "environment": {
     "kind": "offline",
@@ -41,7 +43,10 @@
         "scripts/ci/test_backend_suite_plan.py",
         "scripts/ci/test_backend_impact_plan.py",
         "scripts/ci/test_backend_test_suite_dispatch_contract.py",
-        "make/ci.mk"
+        "make/ci.mk",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "make/codex.mk"
       ]
     }
   },
@@ -117,5 +122,20 @@
     "log": "/tmp/ci-efficiency-freeze.log",
     "stage": "42b19e0b plus declared dirty CI delta",
     "generated_review": "one test entry added, none removed; 16 CI scripts all wired; no split-count growth"
+  },
+  "quick_recovery": {
+    "failed_head": "d6df920b56f731b74a853a5debf39e3221b6e6ce",
+    "failure_owner": "P4 verification lane wiring",
+    "log": "/tmp/ci-efficiency-quick.log",
+    "failure": "targets_zero_reference=792 > max791, frozen identities already contain792; no new identity",
+    "recovery": "Wire existing ORM selection tests into CI workflow contract aggregate; retire its obsolete zero-reference disposition and shrink frozen identity set, preserve count limit791.",
+    "impact": "make/ci.mk dependency graph and two audit registries only; backend sharding/cache implementation and 66 prior implementation tests unchanged; focused aggregate now77 tests passed.",
+    "validation_layer": "L1/L2; no local runtime or browser changes required; repeat frozen Quick after justified correction",
+    "targeted_results": {
+      "workflow_aggregate": "passed 77 tests /tmp/ci-efficiency-workflow-v2.log",
+      "lane_audit_and_tests": "passed 72 tests /tmp/ci-efficiency-lane-recovery.log",
+      "iteration": "passed L1_only /tmp/ci-efficiency-iteration-v2.log",
+      "independent_review": "no S1/S2; /root/performance_code_review"
+    }
   }
 }
