@@ -1594,3 +1594,15 @@ verify.trusted_scan.unit: security.online_capture.unit
 verify.ci.orm_selection.unit:
 	@python3 scripts/ci/test_ci_risk_classifier.py
 	@python3 scripts/ci/test_ci_risk_workflow_contract.py
+
+# Private receipt transport; review proposals never execute tasks.
+.PHONY: agent.dispatch.status agent.dispatch.submit agent.dispatch.review verify.agent.dispatch.unit
+AGENT_DISPATCH_ROOT ?= $(HOME)/workspace/.sce-dispatch
+agent.dispatch.status: guard.prod.forbid
+	@python3 scripts/ops/agent_dispatch_inbox.py --root "$(AGENT_DISPATCH_ROOT)" status
+agent.dispatch.submit: guard.prod.forbid
+	@python3 scripts/ops/agent_dispatch_inbox.py --root "$(AGENT_DISPATCH_ROOT)" submit --lane "$(DISPATCH_LANE)" --report "$(DISPATCH_REPORT)"
+agent.dispatch.review: guard.prod.forbid
+	@python3 scripts/ops/agent_dispatch_inbox.py --root "$(AGENT_DISPATCH_ROOT)" review-once
+verify.agent.dispatch.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_agent_dispatch_inbox

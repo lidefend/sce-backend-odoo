@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: AGENT-DISPATCH-INBOX-20261017
+  status: active
+  formal_product_layer: P4
+  objective: Private cross-repository executor receipts and automatic read-only scheduling proposals
