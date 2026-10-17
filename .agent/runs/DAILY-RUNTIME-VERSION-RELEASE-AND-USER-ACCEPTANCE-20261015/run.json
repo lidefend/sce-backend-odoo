@@ -293,7 +293,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "STATUS 2026-10-17 (owner round directive: execute mainline integration first and do not refresh or deploy the daily candidate runtime before mainline stability). Candidate 67119a36 passed its exact-head Quick, and merge-tree against main 41c7a9dd had no textual conflict. The candidate was synchronized through the governed Gitee unpublished entry workspace.branch.sync-gitee-unpublished, which appended exact main as a merge commit and preserved all responsibility history; new head 51e51e4006509549e4e5874c0a4dc047b8b93033 has parents 67119a36 and 41c7a9dd. The first post-merge ci.local.iteration rejected only six main-carried bookkeeping/local-environment paths as outside this run's declared scope; those exact paths are now registered, with no wildcard or directory widening. ci.generated_reports.guard passes on the merged tree. NEXT: rerun ci.local.iteration on this clean scope-update commit; publish with pr.push.gitee; create the Gitee PR with gitee.ci.pr.create; wait for public_guard, merge_policy_gate, professional_quality_gate and frontend_release_gate to pass on the exact head and current main; merge through the protected PR flow; then read back the PR, merge commit and main. Mainline integration has no commit-count limit; the 12/64 limit applies only to the governed unpublished-branch rebase entry. Do not claim deployment, release or product acceptance from this remediation.",
+  "next_exact_step": "OWNER PAUSED: no demo/customer/runtime/deployment execution. CI work continues exclusively in CI-REMOTE-EFFICIENCY-20261017.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -4105,10 +4105,22 @@
         "after_ms_per_duty_median": 58.5,
         "saved_ms_per_duty": 112.0,
         "reduction_percent": 65.7,
-        "three_duties": {"before_ms": 511.5, "after_ms": 175.5, "saved_ms": 336.0},
+        "three_duties": {
+          "before_ms": 511.5,
+          "after_ms": 175.5,
+          "saved_ms": 336.0
+        },
         "samples_ms": {
-          "before": [167.3, 170.5, 175.3],
-          "after": [56.0, 58.9, 58.5]
+          "before": [
+            167.3,
+            170.5,
+            175.3
+          ],
+          "after": [
+            56.0,
+            58.9,
+            58.5
+          ]
         }
       },
       "why_it_matters": "the duty entry walks every declared duty on every plan, refresh, upgrade and seed; the identity facts are read in the same instant as the runtime environment, so a per-key probe multiplied a namespace entry by a constant for no additional information",
@@ -4220,8 +4232,18 @@
     "previous_candidate": {
       "head": "343a51d6ffda12e2b9fa05b098675b2c1e0ddd77",
       "quick_result": "FAIL with no receipt",
-      "passed_shards": [0, 2, 3, 5, 6, 7],
-      "failed_shards": [1, 4],
+      "passed_shards": [
+        0,
+        2,
+        3,
+        5,
+        6,
+        7
+      ],
+      "failed_shards": [
+        1,
+        4
+      ],
       "failure_1": "ci.generated_reports.guard reported the complexity report stale; regenerating it then exposed the dependent split-plan queue as stale too.",
       "failure_2": "security.personal_data_scan and repository.clean_history.scan reported PD003 on historical blobs a3f3a5d3635b896cb67b6359bc759a7e852609f7 and e744dc509f51353214405799ab771215025e54d4, both synthetic bank-account fixtures."
     },
@@ -4237,5 +4259,9 @@
     "next_exact_step": "Run one clean exact-head ci.local.quick on 06c04215, inspect merge-tree conflicts read-only, rebase through workspace.branch.sync-main.extended on exact identities, rerun Quick on the rebased head, then publish and integrate through governed PR entries while re-reading the live head, main and required checks before merge.",
     "not_a_pass": "No exact-head Quick receipt exists for 06c04215 yet. No rebase, publication, PR, merge, deployment, release or product acceptance is claimed by this record.",
     "writes": false
+  },
+  "owner_pause_20261017": {
+    "directive": "Only independent CI optimization may proceed to integration; all other tasks paused.",
+    "ci_run": ".agent/runs/CI-REMOTE-EFFICIENCY-20261017/run.json"
   }
 }

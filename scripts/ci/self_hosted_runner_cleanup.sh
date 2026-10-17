@@ -9,6 +9,8 @@ run_id="${GITHUB_RUN_ID:-}"
 run_attempt="${GITHUB_RUN_ATTEMPT:-}"
 frontend_mode="${FRONTEND_MODE:-}"
 allow_docker_cleanup=1
+shard_index="${SHARD_INDEX:-}"
+suite_shard_project=""
 
 if [[ "${GITHUB_ACTIONS:-}" != "true" || "${GITHUB_REPOSITORY:-}" != "lidefend/sce-backend-odoo" ]]; then
   echo "[self_hosted_cleanup] invalid GitHub Actions identity" >&2
@@ -18,8 +20,12 @@ if [[ ! "${run_id}" =~ ^[0-9]+$ || ! "${run_attempt}" =~ ^[1-9][0-9]*$ ]]; then
   echo "[self_hosted_cleanup] invalid run identity" >&2
   exit 2
 fi
+if [[ "${shard_index}" =~ ^[0-3]$ ]]; then
+  suite_shard_project="sc-suite-${run_id}-${shard_index}"
+fi
 if [[ "${project}" != "sc-prof-${run_id}" \
   && "${project}" != "sc-suite-${run_id}" \
+  && ( -z "${suite_shard_project}" || "${project}" != "${suite_shard_project}" ) \
   && "${project}" != "sc-fe-release-${run_id}-${run_attempt}" ]]; then
   echo "[self_hosted_cleanup] invalid project scope" >&2
   exit 2

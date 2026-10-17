@@ -211,7 +211,7 @@ jobs:
             workflow.parent.mkdir(parents=True)
             source = (ROOT / ".github/workflows/backend_test_suite.yml").read_text(encoding="utf-8")
             workflow.write_text(
-                source.replace("      CI_PROJECT_NAME: sc-suite-${{ github.run_id }}\n", "", 1),
+                source.replace("      CI_PROJECT_NAME: sc-suite-${{ github.run_id }}-${{ matrix.index }}\n", "", 1),
                 encoding="utf-8",
             )
             classes = {item.classification for item in guard.scan(root)}
@@ -309,7 +309,7 @@ jobs:
             classes = {item.classification for item in guard.scan(root)}
             self.assertIn("BACKEND_SUITE_TEST_ROUTING_NOT_FAIL_CLOSED", classes)
 
-    def run_cleanup_fixture(self, project: str) -> tuple[subprocess.CompletedProcess[str], str]:
+    def run_cleanup_fixture(self, project: str, shard: str = '') -> tuple[subprocess.CompletedProcess[str], str]:
         with tempfile.TemporaryDirectory() as directory:
             fixture = Path(directory)
             root = fixture / "repo"
@@ -341,6 +341,7 @@ jobs:
                     "GITHUB_WORKSPACE": str(root),
                     "RUNNER_TEMP": str(runner_temp),
                     "CI_PROJECT_NAME": project,
+                    "SHARD_INDEX": shard,
                 }
             )
             result = subprocess.run(
@@ -371,6 +372,17 @@ jobs:
                 self.assertEqual(result.returncode, 2)
                 self.assertIn("invalid project scope", result.stderr)
                 self.assertEqual(calls, "")
+
+    def test_cleanup_shards_require_exact_run_and_bounded_index(self) -> None:
+        for index in range(4):
+            result, calls = self.run_cleanup_fixture(f'sc-suite-12345-{index}', str(index))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn(f'compose -p sc-suite-12345-{index} down', calls)
+        for project, shard in [('sc-suite-12345-0', ''), ('sc-suite-12345-0', '1'),
+                               ('sc-suite-12345-4', '4'), ('sc-suite-1234-0', '0')]:
+            result, calls = self.run_cleanup_fixture(project, shard)
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(calls, '')
 
 
 if __name__ == "__main__":

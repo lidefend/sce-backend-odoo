@@ -44,7 +44,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  backend_suite:
+  plan:
     if: >-
       github.repository == 'lidefend/sce-backend-odoo' &&
       (github.event_name == 'schedule' ||
@@ -53,6 +53,38 @@ jobs:
       (github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.scope.outputs.matrix }}
+      head: ${{ steps.scope.outputs.head }}
+    steps:
+      - name: Checkout exact candidate for scope planning
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.head_sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Partition exact scope without reducing coverage
+        id: scope
+        env:
+          IMPACT_BASE: ${{ inputs.base_sha }}
+          HEAD_SHA: ${{ inputs.head_sha || github.sha }}
+          MODULE_OVERRIDE: ${{ github.event.inputs.modules }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
+          python3 scripts/ci/backend_suite_plan.py --base "${IMPACT_BASE}" \
+            --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" \
+            --output "${RUNNER_TEMP}/backend-plan.json" --github-output "${GITHUB_OUTPUT}"
+          cat "${RUNNER_TEMP}/backend-plan.json" >> "${GITHUB_STEP_SUMMARY}"
+
+  backend_suite:
+    needs: plan
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ubuntu-latest
     timeout-minutes: 240
 
     env:
@@ -60,10 +92,12 @@ jobs:
       HEAD_REF: ${{ inputs.head_ref || github.event.inputs.head_ref || github.ref_name }}
       HEAD_SHA: ${{ inputs.head_sha || github.sha }}
       IMPACT_BASE: ${{ inputs.base_sha }}
-      CI_PROJECT_NAME: sc-suite-${{ github.run_id }}
-      COMPOSE_PROJECT_NAME: sc-suite-${{ github.run_id }}
+      CI_PROJECT_NAME: sc-suite-${{ github.run_id }}-${{ matrix.index }}
+      COMPOSE_PROJECT_NAME: sc-suite-${{ github.run_id }}-${{ matrix.index }}
       DB_NAME: sc_suite_ci
       TEST_TAGS_INPUT: ${{ github.event.inputs.test_tags }}
+      SHARD_INDEX: ${{ matrix.index }}
+      MODULE_OVERRIDE: ${{ github.event.inputs.modules }}
 
     defaults:
       run:
@@ -90,33 +124,21 @@ jobs:
           echo "GitHub checkout failed for ${HEAD_REF}/${HEAD_SHA}" >&2
           exit 1
 
-      - name: Resolve exact premerge impact
-        if: env.IMPACT_BASE != ''
-        run: |
-          set -euo pipefail
-          git fetch --no-tags origin "${IMPACT_BASE}"
-          test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
-          python3 scripts/ci/backend_impact_plan.py --base "${IMPACT_BASE}" \
-            --head "${HEAD_SHA}" --output "${RUNNER_TEMP}/backend-impact.json"
-          cat "${RUNNER_TEMP}/backend-impact.json" >> "${GITHUB_STEP_SUMMARY}"
-
       - name: Resolve module list
         run: |
           set -euo pipefail
-          override="${{ github.event.inputs.modules }}"
+          if [ -n "${IMPACT_BASE}" ]; then
+            git fetch --no-tags origin "${IMPACT_BASE}"
+          fi
+          test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
           MODULES=""
           PYTHON_MODULES=""
-          if [ -n "${IMPACT_BASE}" ]; then
-            # Caller cannot supply a smaller override than the exact-tree plan.
-            candidates="$(python3 -c 'import json,sys; print(" ".join(json.load(open(sys.argv[1]))["modules"]))' "${RUNNER_TEMP}/backend-impact.json")"
-          elif [ -n "${override}" ]; then
-            candidates="${override//,/ }"
-          else
-            candidates="$(find addons demo_addons -maxdepth 2 -type d -name tests -printf '%h\n' \
-              | while read -r dir; do
-                  [ -f "${dir}/__manifest__.py" ] && basename "${dir}"
-                done | sort -u | tr '\n' ' ')"
-          fi
+          # Recompute the partition from exact trees; a matrix value cannot
+          # supply or silently shrink the module list.
+          candidates="$(python3 scripts/ci/backend_suite_plan.py --base "${IMPACT_BASE}" \
+            --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" --shard "${SHARD_INDEX}" \
+            --output "${RUNNER_TEMP}/backend-plan.json")"
+          cat "${RUNNER_TEMP}/backend-plan.json" >> "${GITHUB_STEP_SUMMARY}"
           for module in ${candidates}; do
             test_dir=""
             for root in addons demo_addons; do
@@ -186,6 +208,27 @@ jobs:
             printf 'SC_ENVIRONMENT=test\n'
           } >> "${GITHUB_ENV}"
 
+      # BuildKit revalidates each layer's inputs; these are build artifacts,
+      # never cached test verdicts or database state. Prefix fallback is safe
+      # because the builder still evaluates the current Dockerfile/context.
+      - name: Set up isolated BuildKit builder
+        run: |
+          set -euo pipefail
+          docker buildx version
+          docker buildx create --name "${CI_PROJECT_NAME}-builder" \
+            --driver docker-container --driver-opt default-load=true --use
+          docker buildx inspect --bootstrap
+          echo "BUILDX_BUILDER=${CI_PROJECT_NAME}-builder" >> "${GITHUB_ENV}"
+
+      - name: Restore frontend build layers
+        id: frontend_layers
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ runner.temp }}/backend-frontend-buildkit
+          key: backend-frontend-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Dockerfile', '.dockerignore', 'frontend/**', '.github/workflows/backend_test_suite.yml') }}
+          restore-keys: |
+            backend-frontend-v1-${{ runner.os }}-${{ runner.arch }}-
+
       # The compose build enforces the immutable frontend fingerprint via the
       # Dockerfile 'frontend-verified' stage, so the expected hash must be
       # derived from the 'frontend-artifact' stage before docker compose
@@ -198,9 +241,21 @@ jobs:
           docker buildx build \
             --file Dockerfile \
             --target frontend-artifact \
+            --cache-from "type=local,src=${RUNNER_TEMP}/backend-frontend-buildkit" \
+            --cache-to "type=local,dest=${RUNNER_TEMP}/backend-frontend-buildkit-next,mode=max" \
             --output "type=local,dest=${artifact_dir}" \
             --build-arg "APT_MIRROR=${APT_MIRROR:-default}" \
             .
+          # Export into a fresh directory so old cache blobs cannot accumulate.
+          python3 - <<'PY_CACHE'
+          import os, pathlib, shutil
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          previous = root / 'backend-frontend-buildkit'
+          if previous.exists():
+              shutil.rmtree(previous)
+          (root / 'backend-frontend-buildkit-next').rename(previous)
+          PY_CACHE
+          printf 'frontend layers exact-key-hit=%s; output hash revalidated below\n' '${{ steps.frontend_layers.outputs.cache-hit }}' >> "${GITHUB_STEP_SUMMARY}"
           recorded_hash="$(cat "${artifact_dir}/.build-sha256")"
           calculated_hash="$(cd "${artifact_dir}" && LC_ALL=C find . -type f ! -name .build-sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
           test -n "${recorded_hash}"
@@ -216,7 +271,7 @@ jobs:
           docker --version
           docker compose version
           docker compose pull || true
-          docker compose build
+          docker compose build --builder "${BUILDX_BUILDER}"
           docker compose up -d db redis
           for i in $(seq 1 60); do
             if docker compose exec -T db pg_isready -U odoo -d postgres >/dev/null 2>&1; then
@@ -340,6 +395,7 @@ jobs:
             failed=1
           fi
           echo "backend suite executed ${attempted} of ${planned_total} planned module run(s); failed=${failed}"
+          printf 'shard=%s executed=%s planned=%s failed=%s\n' "${SHARD_INDEX}" "${attempted}" "${planned_total}" "${failed}" >> "${GITHUB_STEP_SUMMARY}"
           test "${failed}" -eq 0
 
       - name: Dump logs on failure
@@ -352,4 +408,5 @@ jobs:
         if: always()
         run: |
           docker compose down -v --remove-orphans || true
+          docker buildx rm "${CI_PROJECT_NAME}-builder" || true
           bash scripts/ci/self_hosted_runner_cleanup.sh

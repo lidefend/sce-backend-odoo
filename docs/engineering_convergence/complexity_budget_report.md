@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4844`
+- Scanned files: `4846`
 - Files requiring split plan: `68`
 - Files above warning threshold: `132`
 
@@ -206,9 +206,9 @@ Generated from repository source files. This report is informational during the 
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 429 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 423 | Shell script | `scripts/demo/verify.sh` |
+| 412 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 364 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 356 | Shell script | `scripts/ops/git_safe_push.sh` |
-| 355 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
 | 314 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 312 | Shell script | `scripts/ci/orm_result_guard.sh` |
