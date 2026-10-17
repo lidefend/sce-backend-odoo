@@ -61,16 +61,27 @@ CI 中 `backend_test_suite.yml` 与 `demo-ci.yml` 均使用
 计算指纹后通过 `FRONTEND_BUILD_SHA256` 与 `FRONTEND_DIST_DIR` 向下游传递；
 不再依赖 `Dockerfile` 的 `frontend-artifact` / `frontend-verified` stage。
 
+## 契约核对（2026-10-18 R2 只读复核）
+
+- `Dockerfile.production-frontend` 写入的指纹标签为
+  `io.sce.frontend.sha256`，与镜像内 `.build-sha256` 及外部
+  `FRONTEND_BUILD_SHA256` 保持一致；不再使用历史 `com.` 前缀命名空间，
+  `verify.production_blocker.image` 按 `io.` 前缀做 fail-closed 断言。
+- `EXPECTED_FRONTEND_IMAGE_DIGEST` 的归属是编排层契约：
+  `release.production.compose.preflight`（依赖
+  `release.production.identity.preflight`）检验其非空，并与
+  `FRONTEND_IMAGE_REF` 一并传给
+  `scripts/release/production_compose_contract.py`，要求与 release manifest 的
+  `frontend_image_digest` 及 Odoo/前端 release revision 集合一致。
+- `docker-compose.production-candidate.yml` 的 nginx 服务只消费
+  `FRONTEND_IMAGE_REF`。不得向该服务注入未被消费的
+  `EXPECTED_FRONTEND_IMAGE_DIGEST` 环境变量；该摘要已在 preflight 阶段完成校验。
+
 ## 当前未闭合项（阻断，需镜像/编排责任人处理）
 
-- `Dockerfile.production-frontend` 目前写入的指纹标签是
-  `com.sce.frontend.sha256`，与契约要求的 `io.sce.frontend.sha256` 不一致；
-  `verify.production_blocker.image` 会以 fail-closed 方式失败。
 - 该 Dockerfile 从构建上下文复制 `frontend/apps/web/dist-production-candidate/`，
   而 builder 导出目录是 `dist`；构建前端镜像前必须先把导出产物放入该路径
   （`scripts/release/immutable_candidate_build.sh` 采用同样方式）。
-- `docker-compose.production-candidate.yml` 尚未把
-  `EXPECTED_FRONTEND_IMAGE_DIGEST` 传入前端服务，前端镜像摘要目前无编排层断言。
 - builder 不生成 `.build-sha256`，指纹由外部计算后作为构建参数注入；镜像内文件
   由 `Dockerfile.production-frontend` 写入。
 

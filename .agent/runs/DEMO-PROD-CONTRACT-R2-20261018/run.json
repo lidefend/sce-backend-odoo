@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-PROD-CONTRACT-R2-20261018",
+  "branch": "fix/frontend-static-contract-r2-20261018",
+  "baseline_sha": "67722e808ac170dc4aa81157002979391849abe1",
+  "origin_main_sha": "67722e808ac170dc4aa81157002979391849abe1",
+  "status": "active",
+  "scope": [
+    "docs/ops/frontend_static_image_decoupling_20261018.md",
+    "scripts/release/test_production_release_contract.py",
+    ".agent/runs/DEMO-PROD-CONTRACT-R2-20261018/run.json",
+    ".runtime/demo-prod-contract-r2-20261018/"
+  ],
+  "excluded_pre_existing_changes": [
+    "scripts/verify/registry.yaml (pre-existing modification, preserved and not committed)",
+    ".agent/runs/DEMO-POST-MERGE-READBACK-20261018/ (pre-existing untracked record, preserved and not committed)"
+  ],
+  "environment": {
+    "kind": "static",
+    "authority": "local file and unit-test checks only; no push/merge/deploy, no database writes, no docker build or container mutation"
+  },
+  "blockers": [
+    "test_production_release_contract.py 的 test_admin_identity_tool_has_a_python310_ci_runtime_gate 在 origin/main 67722e8 上预先失败（workflow needs 列表已含 4 项，断言仍要求 2 项），与本批改动无关，未修复"
+  ],
+  "next_exact_step": "Await dispatcher review of the schema-2 receipt and decide whether to fix the pre-existing python310 workflow assertion in a separate task."
+}
