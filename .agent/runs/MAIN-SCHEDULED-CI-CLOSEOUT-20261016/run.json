@@ -153,7 +153,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "2026-10-17 (R15.5 evidence binding closed; clean candidate pending): HEAD=eda906b3eaac360aa885c46d70247a174c5e1c5f plus explicit dirty scope. Performance baseline identity is current: menu_service.py=8896c6ba and platform_sla_guard.py=bd7499a1 are rebound; only sla and permission were recaptured, the other five logs were inherited; normalized status=baseline gaps=0 entries=7; evidence-scope re-plan affected=[] and all seven units reusable. New baseline sha256=7bdb15f5. Page evidence is reused because runtime contract and frontend consumer code did not change in R15.5. Next: run ci.delivery.freeze.prepare once before the final commit, review the complete tracked+untracked scope, commit the clean candidate, compute the full fingerprint, then run exactly one Quick at the frozen HEAD; after that independent review, external archive and governed PR publication. No push/PR/deploy yet.",
+  "next_exact_step": "2026-10-17 (R15.6 clean candidate formed): candidate HEAD=b1363534 clean, no tracked/untracked leftovers after review. Performance baseline rebound at clean HEAD (target_code_identity head=b1363534 dirty=false; only generated_at/head/dirty changed; status=baseline gaps=0 entries=7; five hash-declaring sources identity_match=match, sla/cache-identity unknown by design). Evidence scope re-plan after rebind: affected=[] stale=[] blocked=[] execution_required=false, units_digest=5e7a658d. Page evidence reused (no contract/frontend change). Next: run ci.delivery.freeze.prepare once, commit the R15.6 bookkeeping so the candidate SHA exists, then re-normalize JSON-only at that clean SHA so the record's target identity equals the candidate (self-reference cannot be avoided in-commit; the final artifact sha256 goes into the untracked archive manifest and PR text). Then codex preflight fingerprint, exactly one ci.local.quick at the frozen HEAD, independent review, external archive, governed PR. No push/PR/deploy yet.",
   "source_runs": [
     38818510036,
     38811434965,
@@ -2586,6 +2586,30 @@
       },
       "stage_head": "eda906b3eaac360aa885c46d70247a174c5e1c5f",
       "dirty": true
+    },
+    {
+      "layer": "L1",
+      "command": "python3 scripts/verify/system_performance_baseline.py --strict --identity-file artifacts/backend/system-performance-baseline/identity.json --inputs <sla-guard.json + six inherited logs>",
+      "status": "passed",
+      "stage": "R15.6 clean candidate b1363534 (dirty=false); re-normalized the same seven inputs once at clean HEAD. Field-level diff versus the R15.5 record is exactly three fields: generated_at, identity.target_code_identity.value.head (eda906b3 -> b1363534) and dirty (true -> false). No probe was re-run and no source was re-collected. status=baseline gaps=0 entries=7; five entries that declare product hashes are identity_match=match; sla and cache-identity declare none and stay unknown; mismatches empty. JSON sha256=9576c8f0; tracked report sha256=bc66c721 (only its generated_at line changed).",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-6-performance-baseline-rebind.log",
+        "sha256": "5e1d48e0c1fc139589cee7191f11b4067606f79c4ee3a83397adcf6a959a2d3c"
+      },
+      "stage_head": "b136353474554b6f235d242746f4bdbc4b4a065f",
+      "dirty": false
+    },
+    {
+      "layer": "L1",
+      "command": "python3 scripts/ops/evidence_scope.py plan --check local.dev.runtime.performance.baseline --units <seven-unit declaration>",
+      "status": "passed",
+      "stage": "R15.6 re-plan after the clean-HEAD rebind: affected=[] stale=[] blocked=[] execution_required=false identity_changed=false units_digest=5e7a658d, all seven units reusable. The plan file is byte-identical to the R15.5 post-execution plan, so the rebind changed only the record's own target identity, not any unit input.",
+      "log": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-6-performance-scope-plan-postrebind.json",
+        "sha256": "bc4752a13461bd51170fbff5e85a8c7b046afdcb1c6b0ae7a7ba3687f105a285"
+      },
+      "stage_head": "b136353474554b6f235d242746f4bdbc4b4a065f",
+      "dirty": false
     }
   ],
   "evidence_index": {
@@ -3752,7 +3776,9 @@
     "sce-r15-2-platform-sla-report.md": {
       "path": "docs/ops/audit/platform_sla_report.md",
       "sha256": "ed0ae5790cf0895b9ba1734a9f4641ab067190054ca17fe412e84994ac0abe3c"
-    }
+    },
+    "sce-r15-6-performance-baseline-rebind.log": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-6-performance-baseline-rebind.log",
+    "sce-r15-6-performance-scope-plan-postrebind.json": "artifacts/main-scheduled-ci-closeout-20261016/sce-r15-6-performance-scope-plan-postrebind.json"
   },
   "validation_scope": {
     "runtime": "make local.dev.test; registered sc-local-dev/sc_dev_demo; canonical env from primary checkout; serialized DB calls",

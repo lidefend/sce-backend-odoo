@@ -2680,3 +2680,32 @@ request/trace 身份键、两个 contract `context` 容器中的 `trace_id`/`req
 
 - 旧基线身份问题已闭合，当前候选基线不再引用过期 `menu_service.py` 哈希。
 - 下一步：形成清洁候选并提交，生成完整指纹，然后执行一次精确 HEAD Quick。
+
+## R15.6 清洁候选形成与干净 HEAD 归一化（2026-10-17，不冻结）
+
+### （1）清洁候选
+
+- R15.5 的 S1/S2 修复与证据重绑已提交为 `b136353474554b6f235d242746f4bdbc4b4a065f`（`fix(contract): 收口路由拒绝记录、管理面缺口与性能证据身份`）。
+- 提交后复核 `git status --short` 为空；tracked/untracked 均无残留，本轮不再新开产品改动。
+
+### （2）干净 HEAD 重归一化
+
+- 在 clean HEAD `b1363534…` 上，用同一 `--identity-file` 与同一七源输入再归一化一次；不重采任何探针，不修改任何源日志。
+- 字段级差异恰好 3 项：`generated_at`、`identity.target_code_identity.value.head`（`eda906b3…` → `b1363534…`）、`identity.target_code_identity.value.dirty`（`true` → `false`）。其余字段逐字节一致。
+- 结果：`status=baseline`、`gaps=0`、`entries=7`；声明产品哈希的 5 个源 `identity_match=match`，`sla` 与 `cache_identity` 按设计不声明产品哈希仍为 `unknown`，`mismatches=[]`。
+- 物证：JSON sha256 `9576c8f0…`；受跟踪报告 sha256 `bc66c721…`（仅 `generated_at` 行变化）；归一化日志 `artifacts/main-scheduled-ci-closeout-20261016/sce-r15-6-performance-baseline-rebind.log`，sha256 `5e1d48e0…`。
+
+### （3）证据作用域复算
+
+- 重归一化后再次 `plan`：`affected=[]`、`stale=[]`、`blocked=[]`、`execution_required=false`、`identity_changed=false`、`units_digest=5e7a658d…`，七源全部可复用。
+- 计划文件 `artifacts/main-scheduled-ci-closeout-20261016/sce-r15-6-performance-scope-plan-postrebind.json`，sha256 `bc4752a1…`，与 R15.5 执行后计划逐字节一致，说明重绑没有改动任何单位输入。
+
+### （4）提交后自引用绑定
+
+- `target_code_identity` 无法指向包含它自身的提交。因此最终绑定方式为：候选提交存在后，以 JSON-only 再归一化一次，使 `head=<候选 SHA>`、`dirty=false`；受跟踪报告不再改写，其内容与重绑后 JSON 仅 `generated_at` 不同。
+- 该次提交后重绑的最终 sha256 记入未跟踪归档清单与 PR 文本；受跟踪报告与它的差异仅为生成时间，不构成内容漂移。
+- 原始证据身份不受影响：重绑不改变任何源日志、探针哈希或 `probe_and_budget_digest`。
+
+### （5）状态
+
+- 未执行 Quick、独立复核、外部归档、推送、PR 或部署。

@@ -6,7 +6,7 @@ production acceptance.
 
 - schema: `system-performance-baseline/v1`
 - status: `baseline`
-- generated_at: `2026-10-17T06:12:59.516541+00:00`
+- generated_at: `2026-10-17T06:19:43.975454+00:00`
 - samples observed / retained: `142` / `142`
 - stage timings summed: `no`
 - gaps: `0`
