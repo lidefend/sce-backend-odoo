@@ -216,6 +216,37 @@ class TestStartupPerformanceContract(TransactionCase):
         self.assertNotEqual(regenerated.meta_info['source_digest'], stored_digest)
         self.assertEqual(regenerated.meta_info['source_digest'], model._menu_source_digest())
 
+    def test_archived_referenced_view_type_change_invalidates_projection(self):
+        model = self.env['app.menu.config']
+        action = self.env['ir.actions.act_window'].create({
+            'name': 'Archived view-type fixture',
+            'res_model': 'res.partner',
+            'view_mode': 'tree',
+        })
+        view = self.env['ir.ui.view'].create({
+            'name': 'Archived view-type fixture',
+            'model': 'res.partner',
+            'type': 'tree',
+            'arch': '<tree/>',
+        })
+        self.env['ir.actions.act_window.view'].create({
+            'act_window_id': action.id,
+            'view_id': view.id,
+            'view_mode': 'tree',
+            'sequence': 1,
+        })
+        cfg = model._generate_from_menus(scene='web')
+        self.assertFalse(model._menu_metadata_changed_since(cfg))
+        stored_digest = cfg.meta_info['source_digest']
+        # The projection persists referenced view types without an active
+        # filter, so an archived view must still move the digest.
+        view.write({'active': False, 'type': 'form'})
+        self.assertFalse(view.active)
+        self.assertTrue(model._menu_metadata_changed_since(cfg))
+        regenerated = model._get_or_generate_from_menus(scene='web')
+        self.assertNotEqual(regenerated.meta_info['source_digest'], stored_digest)
+        self.assertEqual(regenerated.meta_info['source_digest'], model._menu_source_digest())
+
     def test_legacy_row_without_digest_is_rebuilt_once(self):
         model = self.env['app.menu.config']
         cfg = model._generate_from_menus(scene='web')

@@ -264,9 +264,12 @@ class AppMenuConfig(models.Model):
         # act_window view and picks a default view by ``view_id.type``, so the
         # referenced views' types must be part of the digest. Only referenced
         # views are read: an unreferenced view cannot change this projection.
+        # ``active_test`` is disabled because the projection does not filter
+        # archived views either; an archived but still referenced view would
+        # otherwise keep an old type in a permanently fresh projection.
         view_ids = sorted({row['view_id'] for row in act_window_views if row.get('view_id')})
         views = self._digest_rows(
-            self.env['ir.ui.view'].sudo().search_read(
+            self.env['ir.ui.view'].sudo().with_context(active_test=False).search_read(
                 [('id', 'in', view_ids)], list(self._VIEW_DIGEST_FIELDS), order='id'),
         ) if view_ids else []
         # The projection persists menu xml_id/module for module blacklists, so

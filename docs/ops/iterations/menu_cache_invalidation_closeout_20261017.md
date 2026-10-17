@@ -53,7 +53,9 @@ The cache has no TTL, so an invisible edit could be served indefinitely.
   active/groups/web_icon), `ir.actions.actions`, `ir.actions.act_window`,
   `ir.actions.act_window.view`, the `ir.ui.view` rows referenced by those
   act_window views (id/type, because the projection persists
-  `(view_id, view_id.type)` and picks a default view by type), and the
+  `(view_id, view_id.type)` and picks a default view by type; archived views
+  are read with `active_test=False` because the projection does not filter
+  them either), and the
   `ir.model.data` rows that supply menu `xml_id`/`module`. No timestamp takes
   part in the comparison.
 - `_generate_from_menus` takes the digest before reading any source row and
@@ -116,7 +118,8 @@ The first SLA capture after restart reported `system.init` p95 `1702.02 ms`,
 dominated by the process-first request; it is retained as
 `sla-guard.cold-after-restart.json` and is not compared with the warm baseline.
 The comparable warm-state unit was re-captured under the same candidate:
-`system.init` p95 `644.95 ms` (previous baseline `630.90 ms`).
+`system.init` p95 `736.93 ms` against the `8000 ms` SLA limit (previous baseline
+`630.90 ms`; the six-sample window is an observation, not a long-tail claim).
 
 Stage identity of these captures: the governed `sc-local-dev` runtime mounted
 the candidate working tree, so the inputs were captured against
@@ -131,8 +134,8 @@ the exact-head Quick receipt that follow the commit.
 | L1 | `make verify.local.dev.runtime.performance.unit` | 20 + 9 tests, 0 failed |
 | L1 | `make verify.system.performance.baseline.unit` | 72 tests, 0 failed |
 | L1 | `python3 -m unittest scripts.verify.test_local_dev_runtime_permission_probe` | 9 tests, 0 failed |
-| L2 | `make local.dev.test MODULE=smart_construction_bundle TEST_TAGS=/smart_construction_bundle:TestStartupPerformanceContract` | 13 tests, 0 failed |
-| L3 | `local.dev.runtime.performance.baseline` with `SOURCES=contract_request,role_matrix` + `SOURCES=sla,observe,permission`, `REUSE_UNCHANGED=1` | 7 entries, 0 gaps; 6 units `match`, `cache-identity` `unknown` |
+| L2 | `make local.dev.test MODULE=smart_construction_bundle TEST_TAGS=/smart_construction_bundle:TestStartupPerformanceContract` | 14 tests, 0 failed |
+| L3 | `local.dev.runtime.performance.baseline` with `SOURCES=sla,observe,permission,contract_request,role_matrix`, `REUSE_UNCHANGED=1` | 7 entries, 0 gaps; 6 units `match`, `cache-identity` `unknown`; baseline `943949d6…` |
 
 ### Independent review (three parallel roles)
 
@@ -153,6 +156,23 @@ Recorded follow-ups, not fixed here and not claimed as closed:
   mid-state tree with a restored digest; a single edit cannot trigger it.
 - The cold path computes the full digest twice (freshness check and generation);
   correctness is unaffected, cost is not optimized further in this batch.
+
+### Recheck of the fixes
+
+Each role re-checked only its own finding against the new candidate.
+
+| role | verdict | detail |
+| --- | --- | --- |
+| A | REQUEST_CHANGES, then fixed | the referenced-view read used Odoo's default `active_test=True`, so an archived but still referenced view kept its old type in a permanently fresh projection. Fixed with `with_context(active_test=False)` plus `test_archived_referenced_view_type_change_invalidates_projection`. |
+| B | APPROVE | both probes bind 8 product hashes including `menu_service.py` and `app_nav_config.py`; identities `match`, no residual S0-S2. |
+| C | REQUEST_CHANGES on two index items | `next_exact_step` described already-finished work, and the final fingerprint/Quick were not registered in the run index. |
+
+`run.json` now registers the fingerprint and the exact-head Quick receipt. Their
+concrete hashes cannot be embedded in `run.json` itself: that file is tracked,
+so writing the hash of the final commit's own Quick receipt would change the
+commit. The hash binding therefore lives in the archive `identity.json` and
+manifest, and is verified with `local_quick_evidence.py verify` and the
+fingerprint validator.
 
 ### Status boundaries
 

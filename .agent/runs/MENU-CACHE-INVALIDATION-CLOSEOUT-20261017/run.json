@@ -65,7 +65,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the fixed candidate, generate the complete tracked+untracked fingerprint for the clean HEAD, run exactly one exact-head ci.local.quick, write the independent-review record bound to that fingerprint (the earlier pending review stays as history), re-archive to a new evidence directory with corrected capture provenance, push the branch, open the PR against main, dispatch and verify the four required checks on the new head, then pr.merge.prep with the resulting head. No deploy.",
+  "next_exact_step": "Remaining after this commit: generate the complete tracked+untracked fingerprint for the clean HEAD, run exactly one exact-head ci.local.quick, write the independent-review record bound to that fingerprint (the earlier pending review stays as history), archive to a new evidence directory with the corrected base+dirty capture provenance, push the branch, open the PR against main, dispatch and verify the four required checks on the new head, then pr.merge.prep with the resulting head. No deploy.",
   "evidence_index": {
     "unit-runtime-performance.log": {
       "path": "artifacts/menu-cache-invalidation-closeout-20261017/logs/unit-runtime-performance.log",
@@ -93,31 +93,31 @@
     },
     "l2-startup-performance-contract.log": {
       "path": "artifacts/menu-cache-invalidation-closeout-20261017/logs/l2-startup-performance-contract.log",
-      "sha256": "b00bdb5e62c11f80d87a1c8664bb1d1155cbd243ac365342a8de5f6519af6613",
+      "sha256": "058b81d48224dcbb587f2927e1f5cd8df60b786c129889a9fd20124e100c384f",
       "layer": "L2",
       "command": "make local.dev.test MODULE=smart_construction_bundle TEST_TAGS=/smart_construction_bundle:TestStartupPerformanceContract",
-      "test_count": 13,
+      "test_count": 14,
       "status": "passed"
     },
     "ci-local-iteration.log": {
       "path": "artifacts/menu-cache-invalidation-closeout-20261017/logs/ci-local-iteration.log",
-      "sha256": "d65a4eca80eaf66d58c2cc83726228e3a32f687ff73856f41b3aac36df6c0f49",
+      "sha256": "e802a8607992eaa1da2a3ee63537af8f0cd103b37099058312185e285148fbb9",
       "layer": "L1",
       "command": "make ci.local.iteration",
       "status": "passed"
     },
     "freeze-prepare.log": {
       "path": "artifacts/menu-cache-invalidation-closeout-20261017/logs/freeze-prepare.log",
-      "sha256": "6383f0161f9a8f48a77cba4442a49999bf7d5a02849f0d64f102da11a862f00d",
+      "sha256": "0045188279bf1a5d1c9268b502eb409ecaa6c388a99d4c4b9f965628308eff23",
       "layer": "L5",
       "command": "make ci.delivery.freeze.prepare",
       "status": "passed"
     },
     "system-performance-baseline.json": {
       "path": "artifacts/backend/system_performance_baseline.json",
-      "sha256": "1958dfca80400895c8f8a4aa8a5b8cb9e4ad5e908a0114d9fb7b05d0fe6b0c68",
+      "sha256": "943949d69cdc9909abad88a3422985c62fcd40c9093caa8c968b396d358321f9",
       "layer": "L3",
-      "command": "make local.dev.runtime.performance.baseline SOURCES=contract_request,role_matrix then sla,observe,permission REUSE_UNCHANGED=1",
+      "command": "make local.dev.runtime.performance.baseline SOURCES=sla,observe,permission,contract_request,role_matrix REUSE_UNCHANGED=1",
       "entries": 7,
       "identity_gaps": 0,
       "status": "passed"
@@ -125,15 +125,15 @@
     "runtime-inputs": {
       "layer": "L3",
       "identity": "artifacts/backend/system-performance-baseline/identity.json",
-      "identity_sha256": "b9ad3c85eea2950a432dc8039ac8ccb9540dbdddae3fe1ba749543c993ea6bd2",
+      "identity_sha256": "247584f06ef9637d02c5ffeed123cedc2b9f8db3a0dc0e6608da911f177117ab",
       "inputs": {
         "artifacts/backend/system-performance-baseline/sla-guard.json": "6ba72467d088af5392a074a916ef7f76b391e7c8d77f89d647c7060021b74501",
-        "artifacts/backend/system-performance-baseline/observe.log": "342eb834825148a393e3a7755585fb859b4f73b7d71cf5364b684b2c6dc2a197",
+        "artifacts/backend/system-performance-baseline/observe.log": "2a7d0d367c7165d5d89da5ebe1cb86665aac174a661f20988582f840d13a19dc",
         "artifacts/backend/system-performance-baseline/contract-profile.log": "99e44d4c49dcd0b21677d7ebf74f7636a1a2581d5d5e2863d1ffbe8022bde7c2",
-        "artifacts/backend/system-performance-baseline/permission.log": "b0f27a6f41ad59f9c08b7fd448b48cb91029377106e28a8e3e6cb0a3357e583d",
-        "artifacts/backend/system-performance-baseline/contract-request.log": "6079ae8763cf493221dc3a6226767b28e1a386ee53581b5407fa47e47382e6ff",
+        "artifacts/backend/system-performance-baseline/permission.log": "b5c504b28433626744d6e57f293938088a310c9a25fd95fc2dcfd2bf572f0ddd",
+        "artifacts/backend/system-performance-baseline/contract-request.log": "5b16272365ed240926f9e951062457ae9c5d3909ad2a1eb055661f541663c2c6",
         "artifacts/backend/system-performance-baseline/cache-identity.log": "770d38dfe9b70ddb31b7ad6ee8f89148871b7a3ef57594d5f37b33e0fea033b1",
-        "artifacts/backend/system-performance-baseline/role-matrix.log": "8a996e8b2b6584803e7616282d245992f2441a570e191477b79d4b7c9210bfde"
+        "artifacts/backend/system-performance-baseline/role-matrix.log": "ecc9d16ded355567f8bfe614e506cf73304c7c00b2df9a0d3c0ae02497dc24d4"
       },
       "status": "passed",
       "note": "captured on base 95919c2a + dirty candidate content (pre-commit); cache-identity identity_match=unknown"
@@ -144,6 +144,22 @@
       "layer": "L3",
       "status": "observation_only",
       "note": "process-first request retention, not compared with the warm baseline"
+    },
+    "frozen-fingerprint": {
+      "path": "artifacts/fingerprints/menu-cache-invalidation-closeout-20261017-frozen.json",
+      "algorithm": "codex_complete_worktree_fingerprint/v1",
+      "layer": "L5",
+      "status": "generated_after_freeze",
+      "hash_binding": "recorded in the archive identity.json and manifest; validated with scripts/contract/complete_worktree_fingerprint.validate_fingerprint",
+      "note": "not inlined with a sha256 here: this file is tracked, so a hash of the final commit's own artifact cannot be written into that commit without changing it"
+    },
+    "exact-head-quick": {
+      "path": ".git/worktrees/sce-backend-odoo-local-env/codex/evidence/ci.local.quick/<final-head>.json",
+      "producer": "atomic-ci-local-quick-runner-v2",
+      "layer": "L5",
+      "status": "generated_after_freeze",
+      "hash_binding": "recorded in the archive identity.json and manifest; verified with scripts/ops/local_quick_evidence.py verify --expected-head <final-head>",
+      "note": "the earlier candidate receipt 4ddeb3d4… is superseded and must not be reused for the new head"
     }
   },
   "validation_scope": {
