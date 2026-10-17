@@ -293,6 +293,37 @@ class StaticContractTests(unittest.TestCase):
             self.compose,
         )
 
+    def test_frontend_fingerprint_label_uses_io_sce_namespace(self):
+        self.assertIn(
+            'io.sce.frontend.sha256="${FRONTEND_BUILD_SHA256}"',
+            self.frontend_runtime_dockerfile,
+        )
+        self.assertNotIn("com.sce.frontend.sha256", self.frontend_runtime_dockerfile)
+
+    def test_frontend_digest_is_validated_by_compose_preflight_not_service_env(self):
+        self.assertIn(
+            "${FRONTEND_IMAGE_REF:?FRONTEND_IMAGE_REF with image@sha256 digest is required}",
+            self.compose,
+        )
+        self.assertNotIn("EXPECTED_FRONTEND_IMAGE_DIGEST", self.compose)
+        preflight = self.release_make.split(
+            "release.production.compose.preflight:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("EXPECTED_FRONTEND_IMAGE_DIGEST is required", preflight)
+        self.assertIn("scripts/release/production_compose_contract.py", preflight)
+        self.assertIn("--expected-frontend-digest", preflight)
+        self.assertIn('--frontend-image-ref "$(FRONTEND_IMAGE_REF)"', preflight)
+
+    def test_decoupling_document_matches_runtime_contract(self):
+        document = (
+            ROOT / "docs/ops/frontend_static_image_decoupling_20261018.md"
+        ).read_text()
+        self.assertIn("io.sce.frontend.sha256", document)
+        self.assertNotIn("com.sce.frontend.sha256", document)
+        self.assertIn("release.production.compose.preflight", document)
+        self.assertIn("production_compose_contract", document)
+        self.assertIn("EXPECTED_FRONTEND_IMAGE_DIGEST", document)
+
     def test_candidate_edge_health_is_json_and_drives_container_health(self):
         self.assertIn("location = /healthz", self.nginx_candidate)
         self.assertIn('default_type application/json', self.nginx_candidate)
