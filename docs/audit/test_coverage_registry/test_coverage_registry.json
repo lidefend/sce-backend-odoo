@@ -652,7 +652,8 @@
       "owner": "platform-team",
       "evidence": [
         "make:test.chatter-timeline.authorization.orm :: chatter_timeline_authorization_orm bash scripts/test/admin_vis_p3_project_record"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "company_project_refund_workspace",

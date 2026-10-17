@@ -141,6 +141,14 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: chatter_timeline_authorization_orm
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:test.chatter-timeline.authorization.orm :: chatter_timeline_authorization_orm bash scripts/test/admin_vis_p3_project_record'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: company_project_refund_workspace
   kind: odoo_tag
   status: unwired
