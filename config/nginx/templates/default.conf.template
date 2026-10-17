@@ -30,6 +30,16 @@ server {
   root /usr/share/nginx/html;
   index index.html;
 
+  # Liveness probe.  The exact-match location wins over the SPA fallback in
+  # `location /`, so probes get a machine-readable JSON body instead of
+  # index.html.  No "$" may appear in the body: the image entrypoint runs
+  # envsubst with filter ^SC_PROXY_DEFAULT_DB$ and would mangle it.
+  location = /healthz {
+    default_type application/json;
+    add_header Cache-Control "no-store";
+    return 200 '{"status":"ok"}';
+  }
+
   location /assets/ {
     try_files $uri =404;
     expires -1;
