@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-DOCS-CORRECTION-R5-20261018",
+  "branch": "docs/frontend-build-path-r5-20261018",
+  "baseline_sha": "6e87e2b1e5b771e84de4417cf367f25aebdfe1a6",
+  "origin_main_sha": "6e87e2b1e5b771e84de4417cf367f25aebdfe1a6",
+  "status": "active",
+  "scope": [
+    "docs/ops/frontend_static_image_decoupling_20261018.md",
+    "scripts/release/test_production_release_contract.py",
+    ".agent/runs/DEMO-DOCS-CORRECTION-R5-20261018/run.json"
+  ],
+  "corrections": {
+    "manual_copy_step": "documented /tmp/frontend-dist -> frontend/apps/web/dist-production-candidate copy so the Dockerfile.production-frontend COPY source is satisfied",
+    "build_landing_path": "replaced the inaccurate fixed 'dist' export claim with 'landing dir is decided by --output type=local,dest=<dir>'",
+    "fingerprint_conventions": "three mutually non-comparable conventions recorded with consumers: F1 (CI), script variant (relative root), contract-image-acceptance variant (absolute prefix)",
+    "dist_production_candidate_state": "declared ignored via .gitignore:87, possibly stale, carrying no version marker, must be rebuilt from a pinned SOURCE_SHA"
+  },
+  "verification": {
+    "targeted_doc_assertions": "2 tests OK, exit 0",
+    "test_production_compose_contract": "14 tests OK, exit 0",
+    "test_production_release_contract": "62 tests, 1 failure (test_admin_identity_tool_has_a_python310_ci_runtime_gate), exit 1",
+    "grep_assertions": {
+      "doc_com_sce_count": 0,
+      "doc_output_dest_mentions": 3,
+      "doc_fingerprint_variants": 3,
+      "doc_ignored_marker": 1,
+      "doc_stale_marker": 1,
+      "compose_expected_frontend_digest_count": 0
+    }
+  },
+  "pull_request": null,
+  "excluded_pre_existing_changes": [
+    "scripts/verify/registry.yaml (pre-existing modification, preserved and not committed)",
+    ".agent/runs/DEMO-POST-MERGE-READBACK-20261018/ (pre-existing untracked record, preserved and not committed)",
+    ".agent/runs/DEMO-PUBLISH-R3-20261018/ and .agent/runs/DEMO-MERGE-R4-20261018/ (pre-existing untracked records, preserved and not committed)"
+  ],
+  "environment": {
+    "kind": "docs-correction",
+    "authority": "documentation and static test edits only; no Dockerfile/Compose/product code change, no deploy, no database writes"
+  },
+  "blockers": [
+    "test_admin_identity_tool_has_a_python310_ci_runtime_gate 在 origin/main 6e87e2b1e 上仍失败，与本批改动无关，未修复",
+    "builder 不生成 .build-sha256，指纹仍需外部注入，属既有未闭合项"
+  ],
+  "next_exact_step": "Push the branch, open a PR against main, then merge with a merge commit only if CI is fully green and the diff is docs+tests."
+}
