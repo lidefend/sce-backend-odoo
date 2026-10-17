@@ -209,6 +209,7 @@ class AppMenuConfig(models.Model):
     _ACTION_DIGEST_FIELDS = ('id', 'name', 'type')
     _ACT_WINDOW_DIGEST_FIELDS = ('id', 'res_model', 'view_mode', 'view_id')
     _ACT_WINDOW_VIEW_DIGEST_FIELDS = ('id', 'act_window_id', 'view_id', 'view_mode', 'sequence')
+    _VIEW_DIGEST_FIELDS = ('id', 'type')
     _MENU_XMLID_DIGEST_FIELDS = ('id', 'module', 'name', 'model', 'res_id')
 
     @staticmethod
@@ -259,6 +260,15 @@ class AppMenuConfig(models.Model):
                 [], list(self._ACT_WINDOW_VIEW_DIGEST_FIELDS), order='id'),
             many2one=('act_window_id', 'view_id'),
         )
+        # The projection persists ``(view_id, view_id.type)`` for every
+        # act_window view and picks a default view by ``view_id.type``, so the
+        # referenced views' types must be part of the digest. Only referenced
+        # views are read: an unreferenced view cannot change this projection.
+        view_ids = sorted({row['view_id'] for row in act_window_views if row.get('view_id')})
+        views = self._digest_rows(
+            self.env['ir.ui.view'].sudo().search_read(
+                [('id', 'in', view_ids)], list(self._VIEW_DIGEST_FIELDS), order='id'),
+        ) if view_ids else []
         # The projection persists menu xml_id/module for module blacklists, so
         # an XML-ID rename must invalidate it even though ir.ui.menu is unchanged.
         menu_xmlids = self._digest_rows(
@@ -269,6 +279,7 @@ class AppMenuConfig(models.Model):
             'actions': actions,
             'act_windows': act_windows,
             'act_window_views': act_window_views,
+            'views': views,
             'menu_xmlids': menu_xmlids,
         })
 

@@ -6,7 +6,7 @@ production acceptance.
 
 - schema: `system-performance-baseline/v1`
 - status: `baseline`
-- generated_at: `2026-10-17T08:59:28.254825+00:00`
+- generated_at: `2026-10-17T09:33:26.377290+00:00`
 - samples observed / retained: `142` / `142`
 - stage timings summed: `no`
 - gaps: `0`
@@ -39,8 +39,8 @@ production acceptance.
 | --- | --- | --- | ---: | --- |
 | `artifacts/backend/system-performance-baseline/sla-guard.json` | platform-sla-guard/v1 | - | 3 | match |
 | `artifacts/backend/system-performance-baseline/observe.log` | runtime-performance-observation/v1 | observe | 6 | match |
-| `artifacts/backend/system-performance-baseline/contract-profile.log` | runtime-performance-observation/v1 | contract_profile | 9 | match |
 | `artifacts/backend/system-performance-baseline/permission.log` | runtime-permission-probe/v1 | - | 0 | match |
+| `artifacts/backend/system-performance-baseline/contract-profile.log` | runtime-performance-observation/v1 | contract_profile | 9 | match |
 | `artifacts/backend/system-performance-baseline/contract-request.log` | runtime-contract-request-probe/v1 | - | 28 | match |
 | `artifacts/backend/system-performance-baseline/cache-identity.log` | runtime-cache-identity-probe/v1 | - | 0 | unknown |
 | `artifacts/backend/system-performance-baseline/role-matrix.log` | runtime-contract-role-matrix-probe/v1 | - | 96 | match |
@@ -69,13 +69,13 @@ budgets and is not a capacity or production acceptance.
 
 | target | tier | agg | basis | samples | observed ms | target ms | tolerance ms | historical gate | verdict |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |
-| warm_contract_dispatch | instant_interaction | p95 | unprofiled | 24 | 70.66 | 100 | 200 | 5000 (50x) | met |
-| cold_contract_assembly | keeps_flow | max | unprofiled | 1 | 200.11 | 1000 | 3000 | 5000 (5x) | met |
+| warm_contract_dispatch | instant_interaction | p95 | unprofiled | 24 | 82.80 | 100 | 200 | 5000 (50x) | met |
+| cold_contract_assembly | keeps_flow | max | unprofiled | 1 | 204.59 | 1000 | 3000 | 5000 (5x) | met |
 | profile_first_contract_assembly | keeps_flow | first | profiled | 0 | - (profiled 3575.05) | 1000 | 3000 | 5000 (5x) | not_evaluated |
-| first_contract_assembly | keeps_flow | first | unprofiled | 1 | 1644.24 | 1000 | 3000 | 5000 (5x) | within_tolerance |
-| startup_system_init_first | good_ttfb | first | unprofiled | 1 | 1776.24 | 800 | 3000 | 8000 (10x) | within_tolerance |
-| startup_system_init_http | good_ttfb | p95 | unprofiled | 1 | 644.95 | 800 | 3000 | 8000 (10x) | met |
-| warm_startup_repeat | keeps_flow | p95 | unprofiled | 5 | 550.19 | 1000 | 3000 | 8000 (8x) | met |
+| first_contract_assembly | keeps_flow | first | unprofiled | 1 | 1633.25 | 1000 | 3000 | 5000 (5x) | within_tolerance |
+| startup_system_init_first | good_ttfb | first | unprofiled | 1 | 1724.75 | 800 | 3000 | 8000 (10x) | within_tolerance |
+| startup_system_init_http | good_ttfb | p95 | unprofiled | 1 | 697.27 | 800 | 3000 | 8000 (10x) | met |
+| warm_startup_repeat | keeps_flow | p95 | unprofiled | 5 | 533.64 | 1000 | 3000 | 8000 (8x) | met |
 
 ### First-call boundary
 
@@ -109,5 +109,5 @@ substituted contract.
 
 | case | dispatched | refused | unavailable | identity refs | surface digests | cold ms (min/median/max) | hot ms (per role) |
 | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| `form_action_open` | 4 | 0 | 5 | 4 | 4 | 411.833/683.028/709.904 | cap_project_manager=650.2, role_executive=415.4, role_finance=626.8, role_project_a_member=377.0 |
-| `list_action_open` | 6 | 3 | 0 | 6 | 6 | 108.092/117.719/262.874 | cap_project_manager=16.0, cap_project_read=14.0, cap_project_user=14.2, role_executive=15.0, role_finance=14.3, role_project_a_member=13.3 |
+| `form_action_open` | 4 | 0 | 5 | 4 | 4 | 446.644/706.516/756.284 | cap_project_manager=661.4, role_executive=437.1, role_finance=613.1, role_project_a_member=383.9 |
+| `list_action_open` | 6 | 3 | 0 | 6 | 6 | 114.431/123.163/262.454 | cap_project_manager=15.7, cap_project_read=15.1, cap_project_user=15.8, role_executive=16.5, role_finance=16.5, role_project_a_member=15.5 |

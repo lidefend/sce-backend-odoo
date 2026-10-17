@@ -876,6 +876,12 @@ REPORT["identity"] = {
     "core/intent_router.py": _source_hash("core/intent_router.py"),
     "controllers/intent_dispatcher.py": _source_hash("controllers/intent_dispatcher.py"),
     "security/intent_permission.py": _source_hash("security/intent_permission.py"),
+    # Route authority resolution runs MenuService.build_nav for every role, so
+    # the menu projection implementation is an input to this matrix.
+    "delivery/menu_service.py": _source_hash("delivery/menu_service.py"),
+    "app_config_engine/models/app_nav_config.py": _source_hash(
+        "app_config_engine/models/app_nav_config.py"
+    ),
 }
 REPORT["roles"] = [
     {

@@ -1162,6 +1162,14 @@ REPORT["identity"] = {
     "app_config_engine/services/assemblers/page_assembler.py": _source_hash("app_config_engine/services/assemblers/page_assembler.py"),
     "core/intent_router.py": _source_hash("core/intent_router.py"),
     "controllers/intent_dispatcher.py": _source_hash("controllers/intent_dispatcher.py"),
+    # The request path reaches MenuService.build_nav through
+    # check_intent_permission -> _published_menu_decision ->
+    # published_route_authority, so the menu implementation is an input here.
+    "security/intent_permission.py": _source_hash("security/intent_permission.py"),
+    "delivery/menu_service.py": _source_hash("delivery/menu_service.py"),
+    "app_config_engine/models/app_nav_config.py": _source_hash(
+        "app_config_engine/models/app_nav_config.py"
+    ),
 }
 REPORT["samples"] = SAMPLES
 HOT = SAMPLES["hot"]

@@ -87,9 +87,9 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- |
 | 1650 | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1557 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
+| 1491 | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1488 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1484 | Python source | `scripts/release/release_publication.py` |
-| 1483 | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1479 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1475 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1453 | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
@@ -157,7 +157,7 @@ Generated from repository source files. This report is informational during the 
 | 1000 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 976 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
-| 967 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
+| 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 959 | Python source | `addons/smart_construction_core/tests/test_cost_fact_model_v2.py` |
 | 955 | Python source | `scripts/release/test_release_publication.py` |
 | 951 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
@@ -287,9 +287,9 @@ Generated from repository source files. This report is informational during the 
 | 1521 | split_plan_required | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1521 | split_plan_required | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1513 | split_plan_required | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
+| 1491 | warning | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1484 | warning | Python source | `scripts/release/release_publication.py` |
-| 1483 | warning | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1479 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1475 | warning | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1453 | warning | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
