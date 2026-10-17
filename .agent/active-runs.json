@@ -9,7 +9,8 @@
     "fix/local-development-environment-closeout-20261016": ".agent/runs/LOCAL-DEVELOPMENT-ENVIRONMENT-CLOSEOUT-20261016/run.json",
     "fix/main-scheduled-ci-closeout-20261016": ".agent/runs/MAIN-SCHEDULED-CI-CLOSEOUT-20261016/run.json",
     "fix/menu-cache-invalidation-closeout-20261017": ".agent/runs/MENU-CACHE-INVALIDATION-CLOSEOUT-20261017/run.json",
-    "fix/ci-backend-sharding-cache-20261017": ".agent/runs/CI-REMOTE-EFFICIENCY-20261017/run.json"
+    "fix/ci-backend-sharding-cache-20261017": ".agent/runs/CI-REMOTE-EFFICIENCY-20261017/run.json",
+    "fix/agent-dispatch-inbox-20261017": ".agent/runs/AGENT-DISPATCH-INBOX-20261017/run.json"
   },
   "schema_version": 1
 }
