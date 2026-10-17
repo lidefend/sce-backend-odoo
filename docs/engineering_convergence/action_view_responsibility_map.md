@@ -59,7 +59,7 @@ These functions own side effects today and should not be moved as a batch:
 | `applyRoutePatchAndReload` | Applies route patches and triggers reload. |
 | `syncRouteStateAndReload` | Synchronizes route state and triggers reload. |
 | `restartLoadWithRouteSync` | Restarts load after route-sync decisions. |
-| `loadListColumnPreference` | Reads user list preferences and applies visibility/order/width state. |
+| `loadListColumnPreference` | Owned by the scoped preference runtime: `createScopedPreferenceRuntime` in `app/runtime/scopedPreferenceRuntime.ts` performs the load/queue, `app/runtime/listPreferenceProjection.ts` reads and projects the stored preference, and ActionView only wires the runtime and applies the projected state. |
 | `handleListColumnVisibilityChange` | Saves visibility preference changes. |
 | `handleListColumnOrderChange` | Saves column order preference changes. |
 | `handleListColumnWidthsChange` | Saves column width preference changes and updates timer-backed status. |
