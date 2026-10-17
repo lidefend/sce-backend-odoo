@@ -1,0 +1,7 @@
+schema_version: 1
+goal:
+  id: MENU-CACHE-P0-FOLLOWUPS-20261017
+  title: Menu cache P0 follow-up registry and post-merge local observation record
+  status: active
+  formal_product_layer: P0
+  objective: Record the three menu-cache P0 follow-ups opened by the PR #671 review, and record the post-merge local runtime experience observation bound to the exact observed tree, without widening the merged performance fix.

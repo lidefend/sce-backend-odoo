@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "id": "MENU-CACHE-P0-FOLLOWUPS-20261017",
+  "branch": "fix/menu-cache-p0-followups-registry-20261017",
+  "baseline_sha": "f7765c52ee1283cc8fdeccec6782b046df33f292",
+  "status": "active",
+  "goal": ".agent/goals/MENU-CACHE-P0-FOLLOWUPS-20261017.yaml",
+  "record": "docs/ops/iterations/menu_cache_p0_followups_20261017.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MENU-CACHE-P0-FOLLOWUPS-20261017.yaml",
+    ".agent/runs/MENU-CACHE-P0-FOLLOWUPS-20261017/run.json",
+    "docs/ops/iterations/menu_cache_p0_followups_20261017.md",
+    "docs/ops/iterations/menu_cache_post_merge_observation_20261017.md",
+    "docs/ops/iterations/demo_pr670_dependency_check_20261017.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Bookkeeping and documentation only. The local runtime observation cited in the record was collected on sc-local-dev / sc_dev_demo before this branch existed and is not re-collected here; no runtime is exercised by this run."
+  },
+  "product_boundary": {
+    "formal_product_layer": "P0 platform kernel product",
+    "layer_target": "smart_core app.menu.config projection cache follow-ups; P4 local runtime observation and demo dependency bookkeeping",
+    "standard_vs_user_specific": "platform mechanism plus delivery evidence bookkeeping",
+    "why_here": "The three follow-ups are defects in the platform menu-projection invalidation mechanism merged in PR #671, so their registration belongs to the same P0 owner; the observation and dependency notes are evidence records, not product behavior.",
+    "why_not_elsewhere": "No industry or customer semantics are involved, so P1/P2/P3 must not carry them; nothing here changes frontend consumption or a contract payload.",
+    "blast_radius": "Documentation and run-ledger files only. No product source, contract, schema, menu row, fixture, ACL or runtime configuration is touched."
+  },
+  "checks": {
+    "agent_ledger_unit": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "agent_resume_unit": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the L1 entries for this documentation-only batch, commit, push the branch, open the PR against main, and verify the required checks bind to the new head. Each registered follow-up (F1 ACL snapshot freshness, F2 digest/tree snapshot consistency, F3 duplicate cold-path digest) is then dispatched as its own batch with its own counter-example and rollback scope. Do not widen the merged #671 fix here and do not deploy.",
+  "evidence_index": {},
+  "validation_scope": {
+    "changed_paths_declared": true,
+    "earliest_layer": "L1",
+    "skipped_layers": [
+      {"layer": "L2", "reason": "documentation and run-ledger only; no product source, test tool or contract input changed", "status": "not_run"},
+      {"layer": "L3", "reason": "no module, schema, fixture or runtime configuration change", "status": "not_run"},
+      {"layer": "L4", "reason": "no frontend, contract payload or runtime behavior change; the observation recorded here was already collected on the merged tree and is cited, not re-collected", "status": "not_run"},
+      {"layer": "L5", "reason": "required remote checks are executed by the PR lane after push; independent review status is recorded on the PR", "status": "not_run"}
+    ]
+  }
+}
