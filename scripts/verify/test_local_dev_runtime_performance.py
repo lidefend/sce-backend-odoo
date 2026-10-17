@@ -33,6 +33,9 @@ class RuntimeObservationTests(unittest.TestCase):
                 self.cleared = 0
             def clear_cache(self):
                 self.cleared += 1
+        class FakeMenuConfig:
+            def _menu_metadata_changed_since(self, cfg):
+                return False
         class Environment:
             cr = cursor
             su = False
@@ -40,6 +43,8 @@ class RuntimeObservationTests(unittest.TestCase):
             def ref(self, xmlid):
                 return user
             def __getitem__(self, model):
+                if model == 'app.menu.config':
+                    return FakeMenuConfig()
                 return SimpleNamespace(search_count=lambda domain: 3, browse=lambda rid: SimpleNamespace(exists=lambda: SimpleNamespace(res_model="x.test")))
         env = Environment()
         class FakeAppViewConfig:
@@ -142,6 +147,7 @@ class RuntimeObservationTests(unittest.TestCase):
             'PRODUCT_PERFORMANCE_MODE': mode, 'PRODUCT_PERFORMANCE_REQUEST_CASE': case,
             **({'PRODUCT_PERFORMANCE_DEMAND_BASELINE': '1'} if baseline else {}),
             'PRODUCT_PERFORMANCE_HANDLER_SHA256': hashlib.sha256(SCRIPT.read_bytes()).hexdigest(),
+            'PRODUCT_PERFORMANCE_MENU_CONFIG_SHA256': hashlib.sha256(SCRIPT.read_bytes()).hexdigest(),
         }), patch('inspect.getsourcefile', return_value=str(SCRIPT)), contextlib.redirect_stdout(output):
             try:
                 runpy.run_path(str(SCRIPT), init_globals={'env': env})
@@ -151,6 +157,11 @@ class RuntimeObservationTests(unittest.TestCase):
                 self.assertGreaterEqual(len(rollback), 2)
         self.assertNotIn('PRIVATE_SECRET', output.getvalue())
         return json.loads(output.getvalue().split('=', 1)[1]), calls
+
+    def test_observe_report_declares_menu_config_identity(self):
+        report, _calls = self.execute(mode='observe')
+        self.assertEqual(report['menu_config_sha256'],
+                         hashlib.sha256(SCRIPT.read_bytes()).hexdigest())
 
     def test_contract_profile_matches_observed_request_and_does_not_export_values(self):
         report, calls = self.execute(mode='contract_profile')

@@ -1,0 +1,7 @@
+schema_version: 1
+goal:
+  id: MENU-CACHE-INVALIDATION-CLOSEOUT-20261017
+  title: Menu cache invalidation correctness closeout
+  status: active
+  formal_product_layer: P0
+  objective: Replace timestamp-only menu projection invalidation with a content-digest signal that detects same-transaction and delayed-commit source edits without a TTL, and bind the startup performance evidence to the affected product identity.

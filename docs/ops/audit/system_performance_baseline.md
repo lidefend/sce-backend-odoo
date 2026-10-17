@@ -6,7 +6,7 @@ production acceptance.
 
 - schema: `system-performance-baseline/v1`
 - status: `baseline`
-- generated_at: `2026-10-17T06:19:43.975454+00:00`
+- generated_at: `2026-10-17T09:50:22.220401+00:00`
 - samples observed / retained: `142` / `142`
 - stage timings summed: `no`
 - gaps: `0`
@@ -37,13 +37,13 @@ production acceptance.
 
 | source | schema | mode | samples | identity |
 | --- | --- | --- | ---: | --- |
-| `artifacts/backend/system-performance-baseline/sla-guard.json` | platform-sla-guard/v1 | - | 3 | unknown |
+| `artifacts/backend/system-performance-baseline/sla-guard.json` | platform-sla-guard/v1 | - | 3 | match |
 | `artifacts/backend/system-performance-baseline/observe.log` | runtime-performance-observation/v1 | observe | 6 | match |
-| `artifacts/backend/system-performance-baseline/contract-profile.log` | runtime-performance-observation/v1 | contract_profile | 9 | match |
 | `artifacts/backend/system-performance-baseline/permission.log` | runtime-permission-probe/v1 | - | 0 | match |
 | `artifacts/backend/system-performance-baseline/contract-request.log` | runtime-contract-request-probe/v1 | - | 28 | match |
-| `artifacts/backend/system-performance-baseline/cache-identity.log` | runtime-cache-identity-probe/v1 | - | 0 | unknown |
 | `artifacts/backend/system-performance-baseline/role-matrix.log` | runtime-contract-role-matrix-probe/v1 | - | 96 | match |
+| `artifacts/backend/system-performance-baseline/contract-profile.log` | runtime-performance-observation/v1 | contract_profile | 9 | match |
+| `artifacts/backend/system-performance-baseline/cache-identity.log` | runtime-cache-identity-probe/v1 | - | 0 | unknown |
 
 ## Acceptance layers
 
@@ -69,13 +69,13 @@ budgets and is not a capacity or production acceptance.
 
 | target | tier | agg | basis | samples | observed ms | target ms | tolerance ms | historical gate | verdict |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |
-| warm_contract_dispatch | instant_interaction | p95 | unprofiled | 24 | 70.66 | 100 | 200 | 5000 (50x) | met |
-| cold_contract_assembly | keeps_flow | max | unprofiled | 1 | 200.11 | 1000 | 3000 | 5000 (5x) | met |
+| warm_contract_dispatch | instant_interaction | p95 | unprofiled | 24 | 75.90 | 100 | 200 | 5000 (50x) | met |
+| cold_contract_assembly | keeps_flow | max | unprofiled | 1 | 193.04 | 1000 | 3000 | 5000 (5x) | met |
 | profile_first_contract_assembly | keeps_flow | first | profiled | 0 | - (profiled 3575.05) | 1000 | 3000 | 5000 (5x) | not_evaluated |
-| first_contract_assembly | keeps_flow | first | unprofiled | 1 | 1644.24 | 1000 | 3000 | 5000 (5x) | within_tolerance |
-| startup_system_init_first | good_ttfb | first | unprofiled | 1 | 1701.10 | 800 | 3000 | 8000 (10x) | within_tolerance |
-| startup_system_init_http | good_ttfb | p95 | unprofiled | 1 | 630.90 | 800 | 3000 | 8000 (10x) | met |
-| warm_startup_repeat | keeps_flow | p95 | unprofiled | 5 | 444.49 | 1000 | 3000 | 8000 (8x) | met |
+| first_contract_assembly | keeps_flow | first | unprofiled | 1 | 1758.97 | 1000 | 3000 | 5000 (5x) | within_tolerance |
+| startup_system_init_first | good_ttfb | first | unprofiled | 1 | 1834.89 | 800 | 3000 | 8000 (10x) | within_tolerance |
+| startup_system_init_http | good_ttfb | p95 | unprofiled | 1 | 736.93 | 800 | 3000 | 8000 (10x) | met |
+| warm_startup_repeat | keeps_flow | p95 | unprofiled | 5 | 491.02 | 1000 | 3000 | 8000 (8x) | met |
 
 ### First-call boundary
 
@@ -109,5 +109,5 @@ substituted contract.
 
 | case | dispatched | refused | unavailable | identity refs | surface digests | cold ms (min/median/max) | hot ms (per role) |
 | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| `form_action_open` | 4 | 0 | 5 | 4 | 4 | 411.833/683.028/709.904 | cap_project_manager=650.2, role_executive=415.4, role_finance=626.8, role_project_a_member=377.0 |
-| `list_action_open` | 6 | 3 | 0 | 6 | 6 | 108.092/117.719/262.874 | cap_project_manager=16.0, cap_project_read=14.0, cap_project_user=14.2, role_executive=15.0, role_finance=14.3, role_project_a_member=13.3 |
+| `form_action_open` | 4 | 0 | 5 | 4 | 4 | 429.51/667.747/709.317 | cap_project_manager=665.1, role_executive=436.9, role_finance=645.6, role_project_a_member=388.0 |
+| `list_action_open` | 6 | 3 | 0 | 6 | 6 | 117.658/127.109/298.786 | cap_project_manager=16.0, cap_project_read=15.7, cap_project_user=16.1, role_executive=14.6, role_finance=14.9, role_project_a_member=16.1 |

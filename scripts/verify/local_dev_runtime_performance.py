@@ -952,10 +952,21 @@ try:
     source = Path(inspect.getsourcefile(SystemInitHandler))
     expected_hash = os.environ.get('PRODUCT_PERFORMANCE_HANDLER_SHA256')
     assert expected_hash == hashlib.sha256(source.read_bytes()).hexdigest(), 'candidate handler identity mismatch'
+    # Odoo builds model classes dynamically, so ``type(model)`` points at
+    # odoo/api.py rather than the addon file. Resolve the defining module
+    # through a method that lives in the model implementation.
+    menu_config_owner = type(env['app.menu.config'])
+    menu_config_method = getattr(menu_config_owner, '_menu_metadata_changed_since', None)
+    assert menu_config_method is not None, 'menu config owner method unavailable'
+    menu_config_source = Path(inspect.getsourcefile(menu_config_method))
+    menu_config_hash = hashlib.sha256(menu_config_source.read_bytes()).hexdigest()
+    assert menu_config_hash == os.environ.get('PRODUCT_PERFORMANCE_MENU_CONFIG_SHA256'), \
+        'menu config owner identity mismatch'
     report = {'schema': 'runtime-performance-observation/v1', 'status': 'observed',
               'measurement_mode': mode, 'request_case': request_case, 'request_params': request_params, 'acceptance_pass': False, 'scope': 'local_demo_backend_only',
               'database': env.cr.dbname, 'principal_xmlid': 'smart_construction_demo.user_demo_role_finance',
               'handler_sha256': hashlib.sha256(source.read_bytes()).hexdigest(),
+              'menu_config_sha256': menu_config_hash,
               'companies': [], 'limitations': ['no_http_browser_or_authentication_measurement',
               'no_true_cold_cache_claim', 'no_capacity_claim', 'not_delivery_baseline']}
     if mode in {'preference_profile', 'preference_compare', 'contract_profile', 'relation_attribution', 'relation_stage_probe', 'relation_demand_probe', 'cache_clone_split'}:

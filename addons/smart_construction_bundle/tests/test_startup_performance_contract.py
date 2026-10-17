@@ -105,15 +105,161 @@ class TestStartupPerformanceContract(TransactionCase):
         model = self.env['app.menu.config']
         cfg = model._generate_from_menus(scene='web')
         before = (cfg.version, cfg.config_hash, copy.deepcopy(cfg.menu_tree))
-        cfg.write({'last_generated': '2000-01-01 00:00:00'})
+        stored_digest = cfg.meta_info['source_digest']
+        # Change action metadata that no menu projects: the source digest moves,
+        # the projection tree does not.
+        self.env['ir.actions.act_window'].create({
+            'name': 'Digest-only metadata fixture',
+            'res_model': 'res.partner',
+            'view_mode': 'tree',
+        })
         self.assertTrue(model._menu_metadata_changed_since(cfg))
         same = model._get_or_generate_from_menus(scene='web')
         self.assertEqual(same.id, cfg.id)
         self.assertEqual((same.version, same.config_hash, same.menu_tree), before)
-        self.assertGreater(str(same.last_generated), '2000-01-01 00:00:00')
+        self.assertNotEqual(same.meta_info['source_digest'], stored_digest)
+        self.assertEqual(same.meta_info['source_digest'], model._menu_source_digest())
         # A second lookup must consume the validated projection, not rebuild it.
         with patch.object(type(model), '_generate_from_menus', side_effect=AssertionError('repeated rebuild')):
             self.assertEqual(model._get_or_generate_from_menus(scene='web').id, cfg.id)
+
+    def test_same_transaction_edit_after_generation_invalidates_projection(self):
+        model = self.env['app.menu.config']
+        menu = self.env['ir.ui.menu'].create({'name': 'Same-transaction fixture', 'active': True})
+        cfg = model._generate_from_menus(scene='web')
+        self.assertFalse(model._menu_metadata_changed_since(cfg))
+        menu.write({'name': 'Same-transaction fixture renamed'})
+        # The timestamp watermark cannot see this edit: both writes share the
+        # transaction clock, so no source row is strictly newer than it.
+        self.assertEqual(menu.write_date, cfg.last_generated)
+        self.assertEqual(self.env['ir.ui.menu'].sudo().with_context(
+            **{'ir.ui.menu.full_list': True, 'active_test': False}
+        ).search_count([('write_date', '>', cfg.last_generated)]), 0)
+        self.assertTrue(model._menu_metadata_changed_since(cfg))
+        regenerated = model._get_or_generate_from_menus(scene='web')
+        names = []
+
+        def collect(nodes):
+            for node in nodes:
+                names.append(node['name'])
+                collect(node.get('children') or [])
+
+        collect(regenerated.menu_tree)
+        self.assertIn('Same-transaction fixture renamed', names)
+
+    def test_delayed_commit_clock_edit_invalidates_projection(self):
+        model = self.env['app.menu.config']
+        menu = self.env['ir.ui.menu'].create({'name': 'Delayed-commit fixture', 'active': True})
+        cfg = model._generate_from_menus(scene='web')
+        older = cfg.last_generated - datetime.timedelta(minutes=5)
+        # A transaction that began before generation commits its edit with the
+        # earlier clock, so a strict `>` comparison is blind to it.
+        with patch.object(self.env.cr, 'now', return_value=older):
+            menu.write({'name': 'Delayed-commit fixture renamed'})
+        self.assertLess(menu.write_date, cfg.last_generated)
+        self.assertFalse(self.env['ir.ui.menu'].sudo().with_context(
+            **{'ir.ui.menu.full_list': True, 'active_test': False}
+        ).search([('write_date', '>', cfg.last_generated)], limit=1))
+        self.assertTrue(model._menu_metadata_changed_since(cfg))
+
+    def test_menu_deletion_invalidates_projection(self):
+        model = self.env['app.menu.config']
+        menu = self.env['ir.ui.menu'].create({'name': 'Deletion fixture', 'active': True})
+        cfg = model._generate_from_menus(scene='web')
+        self.assertFalse(model._menu_metadata_changed_since(cfg))
+        menu.unlink()
+        self.assertTrue(model._menu_metadata_changed_since(cfg))
+
+    def test_menu_xmlid_rename_invalidates_projection(self):
+        model = self.env['app.menu.config']
+        menu = self.env['ir.ui.menu'].create({'name': 'XML-ID fixture', 'active': True})
+        alias = self.env['ir.model.data'].create({
+            'module': 'performance_test',
+            'name': 'menu_xmlid_fixture',
+            'model': 'ir.ui.menu',
+            'res_id': menu.id,
+        })
+        cfg = model._generate_from_menus(scene='web')
+        self.assertFalse(model._menu_metadata_changed_since(cfg))
+        # The projection persists xml_id/module; ir.ui.menu itself is unchanged.
+        alias.write({'name': 'menu_xmlid_fixture_renamed'})
+        self.assertTrue(model._menu_metadata_changed_since(cfg))
+
+    def test_referenced_view_type_change_invalidates_projection(self):
+        model = self.env['app.menu.config']
+        action = self.env['ir.actions.act_window'].create({
+            'name': 'View-type digest fixture',
+            'res_model': 'res.partner',
+            'view_mode': 'tree',
+        })
+        view = self.env['ir.ui.view'].create({
+            'name': 'View-type digest fixture',
+            'model': 'res.partner',
+            'type': 'tree',
+            'arch': '<tree/>',
+        })
+        self.env['ir.actions.act_window.view'].create({
+            'act_window_id': action.id,
+            'view_id': view.id,
+            'view_mode': 'tree',
+            'sequence': 1,
+        })
+        cfg = model._generate_from_menus(scene='web')
+        self.assertFalse(model._menu_metadata_changed_since(cfg))
+        stored_digest = cfg.meta_info['source_digest']
+        # The projection persists `(view_id, view_id.type)` and picks a default
+        # view by type, while no menu/action/act_window row changes here.
+        view.write({'type': 'form'})
+        self.assertTrue(model._menu_metadata_changed_since(cfg))
+        regenerated = model._get_or_generate_from_menus(scene='web')
+        self.assertEqual(regenerated.id, cfg.id)
+        self.assertNotEqual(regenerated.meta_info['source_digest'], stored_digest)
+        self.assertEqual(regenerated.meta_info['source_digest'], model._menu_source_digest())
+
+    def test_archived_referenced_view_type_change_invalidates_projection(self):
+        model = self.env['app.menu.config']
+        action = self.env['ir.actions.act_window'].create({
+            'name': 'Archived view-type fixture',
+            'res_model': 'res.partner',
+            'view_mode': 'tree',
+        })
+        view = self.env['ir.ui.view'].create({
+            'name': 'Archived view-type fixture',
+            'model': 'res.partner',
+            'type': 'tree',
+            'arch': '<tree/>',
+            'active': False,
+        })
+        self.env['ir.actions.act_window.view'].create({
+            'act_window_id': action.id,
+            'view_id': view.id,
+            'view_mode': 'tree',
+            'sequence': 1,
+        })
+        cfg = model._generate_from_menus(scene='web')
+        self.assertFalse(model._menu_metadata_changed_since(cfg))
+        stored_digest = cfg.meta_info['source_digest']
+        # The projection persists referenced view types without an active
+        # filter, so an already-archived view must still move the digest on a
+        # type change. Writing `active` here as well would make the counter-
+        # example pass on the old code, where the row simply dropped out.
+        self.assertFalse(view.active)
+        view.write({'type': 'form'})
+        self.assertTrue(model._menu_metadata_changed_since(cfg))
+        regenerated = model._get_or_generate_from_menus(scene='web')
+        self.assertNotEqual(regenerated.meta_info['source_digest'], stored_digest)
+        self.assertEqual(regenerated.meta_info['source_digest'], model._menu_source_digest())
+
+    def test_legacy_row_without_digest_is_rebuilt_once(self):
+        model = self.env['app.menu.config']
+        cfg = model._generate_from_menus(scene='web')
+        meta = dict(cfg.meta_info)
+        meta.pop('source_digest')
+        cfg.write({'meta_info': meta})
+        self.assertTrue(model._menu_metadata_changed_since(cfg))
+        rebuilt = model._get_or_generate_from_menus(scene='web')
+        self.assertTrue(rebuilt.meta_info['source_digest'])
+        self.assertFalse(model._menu_metadata_changed_since(rebuilt))
 
     def test_menu_edit_during_generation_remains_newer_than_snapshot(self):
         model = self.env['app.menu.config']
