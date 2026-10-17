@@ -62,7 +62,7 @@
     },
     "lane_bindings": {
       "demo": "/home/lidefend/workspace/sce-backend-odoo",
-      "user": "/home/lidefend/workspace/sce-customer-baosheng-odoo",
+      "user": "/home/lidefend/workspace/sce-customer-odoo",
       "frontend": "/home/lidefend/workspace/sce-product-odoo-clean-root",
       "environment": "/home/lidefend/workspace/sce-backend-odoo-local-env",
       "pilot": "/home/lidefend/workspace/sce-backend-odoo-local-env"

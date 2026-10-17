@@ -27,7 +27,7 @@
 | lane | repository | 说明 |
 | --- | --- | --- |
 | `demo` | `/home/lidefend/workspace/sce-backend-odoo` | 既有 Demo 工作树 |
-| `user` | `/home/lidefend/workspace/sce-customer-baosheng-odoo` | 客户模块工作树 |
+| `user` | `/home/lidefend/workspace/sce-customer-odoo` | 客户模块工作树 |
 | `frontend` | `/home/lidefend/workspace/sce-product-odoo-clean-root` | 产品净根仓库，含 `frontend/apps/web` |
 | `environment` | `/home/lidefend/workspace/sce-backend-odoo-local-env` | 已登记本地环境仓库 |
 | `pilot` | `/home/lidefend/workspace/sce-backend-odoo-local-env` | 机制试点工作树 |
