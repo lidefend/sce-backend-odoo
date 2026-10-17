@@ -1309,7 +1309,9 @@ verify.local.dev.demo_loaded_chains.orm: guard.prod.forbid
 .PHONY: verify.local.dev.runtime.performance.unit
 verify.local.dev.runtime.performance.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/local_dev_runtime_performance.py scripts/verify/test_local_dev_runtime_performance.py
+	@python3 -m py_compile scripts/verify/local_dev_runtime_permission_probe.py scripts/verify/test_local_dev_runtime_permission_probe.py
 	@python3 scripts/verify/test_local_dev_runtime_performance.py
+	@python3 -m unittest scripts.verify.test_local_dev_runtime_permission_probe
 
 .PHONY: local.dev.runtime.performance.observe
 local.dev.runtime.performance.observe: guard.prod.forbid local.dev.ready

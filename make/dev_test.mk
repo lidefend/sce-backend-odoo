@@ -2920,6 +2920,11 @@ verify.product.menu.monotonic.unit: guard.prod.forbid
 verify.product.menu.native_inventory.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_product_native_menu_inventory
 
+.PHONY: verify.product.menu.metadata_batch.unit
+verify.product.menu.metadata_batch.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/test_menu_metadata_batch.py
+	@python3 -m unittest scripts.verify.test_menu_metadata_batch
+
 .PHONY: verify.local.clean.frontend_output.unit
 verify.local.clean.frontend_output.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_local_clean_frontend_output
