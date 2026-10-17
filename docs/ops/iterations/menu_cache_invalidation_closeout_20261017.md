@@ -163,7 +163,7 @@ Each role re-checked only its own finding against the new candidate.
 
 | role | verdict | detail |
 | --- | --- | --- |
-| A | REQUEST_CHANGES, then fixed | the referenced-view read used Odoo's default `active_test=True`, so an archived but still referenced view kept its old type in a permanently fresh projection. Fixed with `with_context(active_test=False)` plus `test_archived_referenced_view_type_change_invalidates_projection`. |
+| A | REQUEST_CHANGES, then fixed | (1) the referenced-view read used Odoo's default `active_test=True`, so an archived but still referenced view kept its old type in a permanently fresh projection. Fixed with `with_context(active_test=False)` plus an archived-view counter-example. (2) the first version of that counter-example wrote `active` and `type` together, so the row simply dropped out of the read and the assertion passed on the old code too. Rebuilt it to create the view archived, then change only `type`. |
 | B | APPROVE | both probes bind 8 product hashes including `menu_service.py` and `app_nav_config.py`; identities `match`, no residual S0-S2. |
 | C | REQUEST_CHANGES on two index items | `next_exact_step` described already-finished work, and the final fingerprint/Quick were not registered in the run index. |
 
@@ -173,6 +173,12 @@ so writing the hash of the final commit's own Quick receipt would change the
 commit. The hash binding therefore lives in the archive `identity.json` and
 manifest, and is verified with `local_quick_evidence.py verify` and the
 fingerprint validator.
+
+The rebuilt counter-example was checked for discriminating power: with
+`active_test=False` removed from the digest read, the single test fails
+(`1 failed, 0 error(s)`), and passes again with the fix restored. That failed
+run is retained as `mutation-check-archived-view-test.log`; it is a
+deliberate negative control, not a candidate failure.
 
 ### Status boundaries
 

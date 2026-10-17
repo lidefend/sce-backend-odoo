@@ -93,22 +93,31 @@
     },
     "l2-startup-performance-contract.log": {
       "path": "artifacts/menu-cache-invalidation-closeout-20261017/logs/l2-startup-performance-contract.log",
-      "sha256": "058b81d48224dcbb587f2927e1f5cd8df60b786c129889a9fd20124e100c384f",
+      "sha256": "921b4003a19970c53a85866adb44264b903bc31b769845d693cd18256f13d713",
       "layer": "L2",
       "command": "make local.dev.test MODULE=smart_construction_bundle TEST_TAGS=/smart_construction_bundle:TestStartupPerformanceContract",
       "test_count": 14,
       "status": "passed"
     },
+    "mutation-check-archived-view-test.log": {
+      "path": "artifacts/menu-cache-invalidation-closeout-20261017/logs/mutation-check-archived-view-test.log",
+      "sha256": "3be3ea1eaaa0bf5af70a3efb5b72788d78d6e2a863931c17baa3320d9af551b6",
+      "layer": "L2",
+      "command": "same single test with active_test=False removed from the digest read",
+      "test_count": 1,
+      "status": "failed_as_expected",
+      "note": "proves the archived-view counter-example discriminates: the assertion fails on the pre-fix read and passes with the fix restored"
+    },
     "ci-local-iteration.log": {
       "path": "artifacts/menu-cache-invalidation-closeout-20261017/logs/ci-local-iteration.log",
-      "sha256": "e802a8607992eaa1da2a3ee63537af8f0cd103b37099058312185e285148fbb9",
+      "sha256": "715a0c8a07af8c498f1732625af433403fbdcf0fd2054d5e0f0acd09b5394854",
       "layer": "L1",
       "command": "make ci.local.iteration",
       "status": "passed"
     },
     "freeze-prepare.log": {
       "path": "artifacts/menu-cache-invalidation-closeout-20261017/logs/freeze-prepare.log",
-      "sha256": "0045188279bf1a5d1c9268b502eb409ecaa6c388a99d4c4b9f965628308eff23",
+      "sha256": "2e094775a8e4ec693ed423f346fbfc2a4d1af3978fe026959e18ecb5fafe339b",
       "layer": "L5",
       "command": "make ci.delivery.freeze.prepare",
       "status": "passed"
