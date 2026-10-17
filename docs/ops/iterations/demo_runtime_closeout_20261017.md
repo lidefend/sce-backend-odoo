@@ -183,7 +183,7 @@
 | 本机 SSH 别名 | `sc-root`、`sc-prod` | 无第三个新载体别名 |
 | `sc-root` | 承载既有 `platform_control`、`demo`、`customer_tenant_dev` 三个职责及历史来源 | 旧载体，继续暂停写入 |
 | `sc-prod` | 主机名 `ecs-f99b-7619`；运行 `sc_production`；`/opt/projects` 为空 | 生产宿主，不是待入驻空载体 |
-| 受管 duty 实例 | `daily_runtime_duty_instances.v1.json` 仅含 `customer_tenant_dev` / `sc_tenant_baosheng_dev` | 新载体若为 customer duty，需走 managed 文档；若为 demo duty，需改模板声明 |
+| 受管 duty 实例 | `daily_runtime_duty_instances.v1.json` 仅含 `customer_tenant_dev` / `sc_tenant_demo_dev` | 新载体若为 customer duty，需走 managed 文档；若为 demo duty，需改模板声明 |
 | 仓库声明 | `config/ops/daily_runtime_database_duties.v1.json` 仅含 `platform_control`、`demo` | 无新载体 duty 身份 |
 
 本次盘点只读，未连接新载体、未安装服务、未创建目录、未写数据库。
