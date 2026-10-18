@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-COMPANY-IDENTITY-20261018",
+  "branch": "codex/daily-platform-demo-20261018",
+  "status": "active",
+  "goal": ".agent/goals/DEMO-COMPANY-IDENTITY-20261018.yaml",
+  "record": "docs/ops/iterations/demo_company_identity_20261018.md",
+  "baseline_sha": "73c7050eb798be41073cfe73302d639cb432f03d",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DEMO-COMPANY-IDENTITY-20261018.yaml",
+    ".agent/runs/DEMO-COMPANY-IDENTITY-20261018/run.json",
+    "demo_addons/smart_construction_demo/seed/steps/__init__.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_company_identity.py",
+    "demo_addons/smart_construction_demo/seed/registry.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_90_verify_demo.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+    "docs/ops/iterations/demo_company_identity_20261018.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Owner-authorized daily development server through governed daily.runtime.* entries; demo duty sc_demo on sc-demo-dev only; no production, history, tenant or user-module data.",
+    "cluster": "sc-demo-dev",
+    "database": "sc_demo",
+    "duty": "demo",
+    "base_url": "http://1.95.85.92:18081"
+  },
+  "checks": {
+    "demo_seed_offline": {
+      "target": "verify.demo.supplemental.unit",
+      "inputs": [
+        "demo_addons/smart_construction_demo/seed/registry.py",
+        "demo_addons/smart_construction_demo/seed/steps/__init__.py",
+        "demo_addons/smart_construction_demo/seed/steps/step_company_identity.py",
+        "demo_addons/smart_construction_demo/seed/steps/step_90_verify_demo.py",
+        "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the governed candidate bundle sync for the new SHA, replay the declared demo seed, and read back res_company.name as demo演示公司."
+}

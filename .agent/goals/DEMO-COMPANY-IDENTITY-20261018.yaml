@@ -1,0 +1,17 @@
+schema_version: 1
+goal:
+  id: DEMO-COMPANY-IDENTITY-20261018
+  title: Demo company identity in the formal seed chain
+  status: active
+  formal_product_layer: P4
+  layer_target: demo delivery carrier smart_construction_demo seed profile
+  module: [smart_construction_demo]
+  objective: Make the demo company's visible name demo演示公司 part of the product's formal seed chain, so a rebuild or reseed cannot fall back to Odoo's My Company. Verify ordering before project data and assert the identity in the final demo self-check.
+  baseline:
+    branch: codex/daily-platform-demo-20261018
+    full_sha: 73c7050eb798be41073cfe73302d639cb432f03d
+  constraints:
+    - demo carrier only; sc_demo on sc-demo-dev
+    - no production, history, tenant, or user-module writes
+    - the seed step stays idempotent and under the existing demo scope guard
+  next_exact_step: Sync the exact candidate SHA to the daily product root, replay the governed demo seed, and read back the company identity.

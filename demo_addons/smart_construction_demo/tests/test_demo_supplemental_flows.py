@@ -32,6 +32,37 @@ class RetiredExperimentalSeeds(unittest.TestCase):
                 self.assertNotIn(name, registry["_PROFILES"]["demo_full"])
 
 
+class DemoCompanyIdentity(unittest.TestCase):
+    def test_company_identity_is_first_in_the_full_profile(self):
+        tree = ast.parse((ROOT / "seed/registry.py").read_text())
+        profiles = next(ast.literal_eval(n.value) for n in tree.body
+                        if isinstance(n, ast.AnnAssign) and n.target.id == "_PROFILES")
+        steps = profiles["demo_full"]
+        self.assertEqual(steps[0], "demo_company_identity")
+        self.assertLess(steps.index("demo_company_identity"), steps.index("demo_20_projects"))
+
+    def test_step_renames_company_and_partner_idempotently(self):
+        partner = SimpleNamespace(name="My Company")
+        company = SimpleNamespace(name="My Company", partner_id=partner)
+        writes = []
+
+        def write(values):
+            writes.append(dict(values))
+            for field, value in values.items():
+                setattr(company, field, value)
+                if field == "name":
+                    partner.name = value
+
+        company.write = write
+        run = function("step_company_identity.py", "_run", DEMO_COMPANY_NAME="demo演示公司")
+        run(SimpleNamespace(ref=lambda xmlid: company))
+        self.assertEqual(company.name, "demo演示公司")
+        self.assertEqual(partner.name, "demo演示公司")
+        self.assertEqual(writes, [{"name": "demo演示公司"}])
+        run(SimpleNamespace(ref=lambda xmlid: company))
+        self.assertEqual(writes, [{"name": "demo演示公司"}])
+
+
 class Opening:
     def __init__(self):
         self.id = 7
