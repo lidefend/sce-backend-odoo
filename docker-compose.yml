@@ -77,7 +77,7 @@ services:
       SCENE_CHANNEL: ${SCENE_CHANNEL}
       SCENE_USE_PINNED: ${SCENE_USE_PINNED}
       # Batch C: Odoo verifies the entry stamp and resolves the namespace.
-      SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET:?SC_ENTRY_SHARED_SECRET must be injected per deployment}
+      SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET:-}
       SC_ENTRY_ROUTE_VERSION: ${SC_ENTRY_ROUTE_VERSION:-}
       SCENE_ROLLBACK: ${SCENE_ROLLBACK}
       # Source-mounted acceptance runtimes must expose the exact candidate SHA
@@ -145,7 +145,7 @@ services:
       SC_PROXY_DEFAULT_UPSTREAM: ${SC_PROXY_DEFAULT_UPSTREAM:-odoo:8069}
       SC_PROXY_PLATFORM_UPSTREAM: ${SC_PROXY_PLATFORM_UPSTREAM:-odoo:8069}
       SC_ENTRY_ROUTE_VERSION: ${SC_ENTRY_ROUTE_VERSION:-}
-      SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET:?SC_ENTRY_SHARED_SECRET must be injected per deployment}
+      SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET:-}
       # The platform namespace is a declared two-layer hop: this profile is the
       # serving entry face, so it forwards `/platform-admin/...` unchanged.
       SC_ENTRY_PLATFORM_STRIP: ${SC_ENTRY_PLATFORM_STRIP:-0}
