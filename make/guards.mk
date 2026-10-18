@@ -176,14 +176,23 @@ verify.daily_dev.acceptance.env.guard:
 # published scope, so a lane can never silently narrow its way past drift.
 DAILY_PRODUCT_MENU_PRODUCT_KEYS ?= construction.standard,construction.preview
 DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN ?= $(or $(PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN),$(ACCEPTANCE_LOGIN))
+DAILY_DEV_PRODUCT_MENU_DUTY ?= demo
 
 verify.product_menu_release_gate.contract.unit:
 	@python3 -m py_compile scripts/verify/production_menu_release_gate_guard.py scripts/verify/test_product_menu_release_gate_contract.py
 	@python3 scripts/verify/test_product_menu_release_gate_contract.py
 
-verify.daily_dev.product_menu_release_gate.guard: guard.prod.forbid check-compose-project check-compose-env verify.product_menu_release_gate.contract.unit
+verify.daily_dev.product_menu_release_gate.guard: guard.prod.forbid verify.product_menu_release_gate.contract.unit
 	@test -n "$(DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN)" || { echo "[DENY] DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN must name the daily full-product principal (set PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN or ACCEPTANCE_LOGIN)" >&2; exit 2; }
-	@$(RUN_ENV) DB_NAME=$(DB_NAME) SC_ENVIRONMENT=dev PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN="$(DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN)" PRODUCT_MENU_CATALOG_PRODUCT_KEYS="$(DAILY_PRODUCT_MENU_PRODUCT_KEYS)" bash scripts/ops/odoo_shell_exec.sh < scripts/verify/production_menu_release_gate_guard.py
+	@python3 -m py_compile scripts/ops/daily_runtime_duty_odoo_shell.py scripts/ops/test_daily_runtime_duty_odoo_shell.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_duty_odoo_shell
+	@python3 scripts/ops/daily_runtime_duty_odoo_shell.py \
+		--duty "$(DAILY_DEV_PRODUCT_MENU_DUTY)" \
+		--database "$(DB_NAME)" \
+		--env SC_ENVIRONMENT=dev \
+		--env PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN="$(DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN)" \
+		--env PRODUCT_MENU_CATALOG_PRODUCT_KEYS="$(DAILY_PRODUCT_MENU_PRODUCT_KEYS)" \
+		< scripts/verify/production_menu_release_gate_guard.py
 
 gate.compose.config: check-compose-env
 	@echo "[gate.compose.config] checking container_name..."

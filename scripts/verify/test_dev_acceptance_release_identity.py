@@ -754,6 +754,131 @@ class CanonicalNavigationTest(unittest.TestCase):
         self.assertIn('canonical_navigation_nav_missing_or_invalid', self.probe(None)['errors'])
 
 
+class NamespaceEntryProbeTest(unittest.TestCase):
+    """Batch C: the path prefix is the only database selector."""
+
+    BASE = "http://daily.example.test/t/demo"
+
+    def test_entry_namespace_detection(self):
+        self.assertEqual(MODULE.entry_namespace(self.BASE), "demo")
+        self.assertEqual(MODULE.entry_namespace(self.BASE + "/"), "demo")
+        self.assertEqual(MODULE.entry_namespace("https://daily.example.test/platform-admin"), "platform")
+        self.assertEqual(MODULE.entry_namespace("https://daily.example.test"), "")
+
+    def test_frontend_has_no_embedded_db_and_asserts_explicit_refusals(self):
+        seen = []
+
+        def requester(url, method="GET", data=None, headers=None, cookie_jar=None, timeout=20):
+            seen.append((url, method, dict(headers or {})))
+            if url.endswith("/t/demo/"):
+                return 200, '<script type="module" src="/assets/index-test.js"></script>', {"Content-Type": "text/html"}
+            if url.endswith("/assets/index-test.js"):
+                return 200, 'const APP_ENV="dev".trim()||"default"', {}
+            if "?db=" in url:
+                return 409, '{"error":"NS_DATABASE_HINT_CONFLICT"}', {}
+            if headers and "X-Odoo-DB" in headers:
+                return 409, '{"error":"NS_DATABASE_HINT_CONFLICT"}', {}
+            if url.endswith("/t/demo/api/v1/intent"):
+                return (204, "", {}) if method == "OPTIONS" else (405, "", {})
+            if url == "http://daily.example.test/api/v1/intent":
+                return 400, '{"error":"NS_NAMESPACE_REQUIRED"}', {}
+            if "namespace-probe-unknown" in url:
+                return 404, '{"error":"NS_UNKNOWN_NAMESPACE"}', {}
+            return 500, "", {}
+
+        with mock.patch.object(MODULE, "http_request", side_effect=requester):
+            result = MODULE.probe_frontend(self.BASE, "sc_demo", "dev", "sc_prod_sim")
+
+        self.assertEqual(result["status"], "PASS", result)
+        self.assertFalse(result["checks"]["asset_has_db"])
+        self.assertEqual(result["checks"]["db_query_conflict_status"], 409)
+        self.assertEqual(result["checks"]["db_header_conflict_status"], 409)
+        self.assertEqual(result["checks"]["missing_namespace_status"], 400)
+        self.assertEqual(result["checks"]["unknown_namespace_status"], 404)
+        clean_calls = [row for row in seen if row[0] == self.BASE + "/api/v1/intent" and not row[2]]
+        self.assertEqual(len(clean_calls), 2, clean_calls)
+        self.assertEqual(sorted(row[1] for row in clean_calls), ["GET", "OPTIONS"])
+
+    def test_namespace_login_uses_login_intent_and_binds_session_database(self):
+        class Response:
+            status = 200
+
+            def __init__(self, payload):
+                self.payload = payload
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return None
+
+            def read(self):
+                return json.dumps(self.payload).encode()
+
+        opener = mock.Mock()
+        opener.open.side_effect = [
+            Response(
+                {
+                    "ok": True,
+                    "data": {
+                        "session": {"token": "token", "db": "sc_demo", "entry_kind": "tenant"},
+                        "user": {"id": 16, "name": "Reader"},
+                    },
+                }
+            ),
+            Response(
+                {
+                    "ok": True,
+                    "data": {
+                        "role_surface": {"role_code": "reader"},
+                        "navigation": {"nav": [{"name": "Canonical", "action_id": 5}]},
+                    },
+                }
+            ),
+        ]
+        with mock.patch.object(MODULE.urllib.request, "build_opener", return_value=opener):
+            result = MODULE.probe_login(self.BASE, "sc_demo", "test-reader", "synthetic-test-secret", nav_min_actions=1)
+
+        self.assertEqual(result["status"], "PASS", result)
+        self.assertEqual(result["checks"]["session_database"], "sc_demo")
+        requests = [call.args[0] for call in opener.open.call_args_list]
+        self.assertTrue(requests[0].full_url.endswith("/t/demo/api/v1/intent"))
+        login_payload = json.loads(requests[0].data.decode())
+        self.assertEqual(login_payload["intent"], "login")
+        self.assertNotIn("db", login_payload["params"])
+        self.assertEqual(requests[1].get_header("Authorization"), "Bearer token")
+        self.assertIsNone(requests[1].get_header("X-odoo-db"))
+
+    def test_namespace_login_database_drift_fails(self):
+        class Response:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return None
+
+            def read(self):
+                return json.dumps(
+                    {
+                        "ok": True,
+                        "data": {
+                            "session": {"token": "token", "db": "sc_other", "entry_kind": "tenant"},
+                            "user": {"id": 16, "name": "Reader"},
+                        },
+                    }
+                ).encode()
+
+        opener = mock.Mock()
+        opener.open.return_value = Response()
+        with mock.patch.object(MODULE.urllib.request, "build_opener", return_value=opener):
+            result = MODULE.probe_login(self.BASE, "sc_demo", "test-reader", "synthetic-test-secret")
+
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("login_session_database_mismatch", result["errors"])
+
+
 class DailyAcceptanceLaneSelfConsistencyTest(unittest.TestCase):
     """The daily publication lane quotes the governed release probe artifact."""
 
