@@ -31,6 +31,9 @@ from odoo.addons.smart_core.core.request_diagnostics import RequestDiagnosticsCo
 from odoo.addons.smart_core.core.scene_channel_policy import SceneChannelPolicy
 from odoo.addons.smart_core.core.scene_diagnostics_builder import SceneDiagnosticsBuilder
 from odoo.addons.smart_core.core.system_init_diagnostics_helper import SystemInitDiagnosticsHelper
+from odoo.addons.smart_core.core.platform_duty_contract import (
+    build_capability_rows as build_platform_duty_capability_rows,
+)
 from odoo.addons.smart_core.core.system_init_identity_payload import SystemInitIdentityPayload
 from odoo.addons.smart_core.core.system_init_nav_request_builder import SystemInitNavRequestBuilder
 from odoo.addons.smart_core.core.system_init_payload_builder import SystemInitPayloadBuilder
@@ -122,6 +125,44 @@ def _load_capabilities_for_user(env, user) -> List[dict]:
 
 def _load_capabilities_for_user_with_timings(env, user) -> tuple[List[dict], dict[str, int]]:
     return provider_load_capabilities_for_user_with_timings(env, user)
+
+
+def _merge_platform_duty_capabilities(data: dict) -> dict:
+    """Project the declared platform duties into the startup capability surface.
+
+    The platform-control instance installs no product capability catalogue, so
+    without this projection a verified platform administrator would receive an
+    empty ``capabilities`` list even though the contract declares duties.  The
+    rows are normalised with the same helpers the product catalogue uses, and
+    only a ``platform-admin`` audience produces them.
+    """
+
+    if not isinstance(data, dict):
+        return data
+    user_dict = data.get("user") if isinstance(data.get("user"), dict) else {}
+    rows = build_platform_duty_capability_rows(user_dict.get("platform_duty"))
+    if not rows:
+        return data
+    extra = normalize_capabilities(rows)
+    extra_keys = {str(item.get("key") or "") for item in extra}
+    existing = [
+        item
+        for item in (data.get("capabilities") or [])
+        if isinstance(item, dict) and str(item.get("key") or "") not in extra_keys
+    ]
+    data["capabilities"] = existing + extra
+    platform_groups = [
+        group
+        for group in provider_build_capability_groups(extra)
+        if str(group.get("key") or "") == "platform_control"
+    ]
+    other_groups = [
+        group
+        for group in (data.get("capability_groups") or [])
+        if isinstance(group, dict) and str(group.get("key") or "") != "platform_control"
+    ]
+    data["capability_groups"] = other_groups + platform_groups
+    return data
 
 
 def _bind_scene_assets(*args, **kwargs):
@@ -1908,6 +1949,7 @@ class SystemInitHandler(BaseIntentHandler):
             apply_contract_governance_fn=apply_contract_governance,
         )
         data, scene_diagnostics = SystemInitSurfaceBuilder.apply(surface_ctx=surface_ctx)
+        data = _merge_platform_duty_capabilities(data)
         stage_ts = _mark("apply_surface", stage_ts)
         with_tokens = _parse_with_tokens(params.get("with"))
         include_workspace_home = parse_bool(params.get("with_preload"), False) or "workspace_home" in with_tokens

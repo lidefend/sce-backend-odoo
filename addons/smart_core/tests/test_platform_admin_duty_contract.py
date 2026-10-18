@@ -160,6 +160,33 @@ class ContractDeclarationTests(unittest.TestCase):
         # The only instance fact is a verified boolean, never a physical name.
         self.assertIs(surface["trusted_instance_verified"], True)
 
+    def test_platform_capability_rows_cover_every_declared_capability(self):
+        surface = self.contract.build_platform_duty_surface(
+            is_platform_control_admin=True, is_tenant_config_admin=False
+        )
+        rows = self.contract.build_capability_rows(surface)
+        self.assertEqual(
+            sorted(row["key"] for row in rows),
+            self.contract.declared_platform_capabilities(),
+        )
+        self.assertIn("READY", {row["state"] for row in rows})
+        for row in rows:
+            self.assertEqual(row["group_key"], "platform_control")
+            self.assertIn(row["state"], {"READY", "PREVIEW"})
+            self.assertTrue(row["ui_label"])
+            self.assertTrue(row["default_payload"].get("route") or row["default_payload"].get("intent"))
+
+    def test_tenant_and_plain_surfaces_produce_no_platform_rows(self):
+        tenant = self.contract.build_platform_duty_surface(
+            is_platform_control_admin=False, is_tenant_config_admin=True
+        )
+        plain = self.contract.build_platform_duty_surface(
+            is_platform_control_admin=False, is_tenant_config_admin=False
+        )
+        self.assertEqual(self.contract.build_capability_rows(tenant), [])
+        self.assertEqual(self.contract.build_capability_rows(plain), [])
+        self.assertEqual(self.contract.build_capability_rows(None), [])
+
     def test_break_glass_cannot_manufacture_platform_duty(self):
         # The contract takes only the two verified booleans; there is no user,
         # group or break-glass parameter that could widen the surface.
@@ -272,6 +299,12 @@ class ProjectionAndRouteTests(unittest.TestCase):
         ops_source = (CONTROLLERS / "platform_ops_controller.py").read_text(encoding="utf-8")
         self.assertIn("user_is_platform_control_admin", ops_source)
 
+    def test_system_init_projects_platform_duties_into_top_level_capabilities(self):
+        source = (ROOT / "handlers" / "system_init.py").read_text(encoding="utf-8")
+        self.assertIn("_merge_platform_duty_capabilities", source)
+        self.assertIn("build_platform_duty_capability_rows", source)
+        self.assertIn('data["capability_groups"] = other_groups + platform_groups', source)
+
     def test_tenants_endpoint_is_registry_driven(self):
         ops_source = (CONTROLLERS / "platform_ops_controller.py").read_text(encoding="utf-8")
         self.assertIn('"/api/ops/tenants"', ops_source)
@@ -281,6 +314,61 @@ class ProjectionAndRouteTests(unittest.TestCase):
         # `res.company` is no longer enumerated as the tenant list.
         self.assertNotIn("res.company\"]", ops_source)
         self.assertNotIn("Company.search([])", ops_source)
+
+    def test_platform_duty_panel_never_routes_an_api_path(self):
+        """A duty that is an API endpoint must be consumed, not navigated.
+
+        ``router.push('/api/ops/tenants')`` would unmount the SPA and show raw
+        JSON, so the panel may only navigate to a declared frontend route.
+        """
+        web = Path(__file__).resolve().parents[3] / "frontend" / "apps" / "web" / "src"
+        action_source = (web / "components" / "platform-duty" / "dutyAction.ts").read_text(encoding="utf-8")
+        panel_source = (web / "components" / "platform-duty" / "PlatformDutyPanel.vue").read_text(encoding="utf-8")
+
+        self.assertIn("export function resolveDutyAction", action_source)
+        self.assertIn("isApiEndpoint", action_source)
+        self.assertIn("kind: 'inline'", action_source)
+        self.assertIn("SPA_ROUTE_PREFIXES = ['/admin/']", action_source)
+
+        self.assertIn("resolveDutyAction", panel_source)
+        self.assertEqual(1, panel_source.count("router.push("))
+        self.assertIn("router.push(action.route)", panel_source)
+        self.assertIn("action.kind !== 'navigate'", panel_source)
+        # The pre-fix shape: a route of any kind was pushed straight to the router.
+        self.assertNotIn('@click="open(duty.route)"', panel_source)
+        self.assertNotIn("router.push(route)", panel_source)
+
+    def test_platform_duty_panel_renders_the_tenant_registry_table(self):
+        web = Path(__file__).resolve().parents[3] / "frontend" / "apps" / "web" / "src"
+        panel_source = (web / "components" / "platform-duty" / "PlatformDutyPanel.vue").read_text(encoding="utf-8")
+
+        self.assertIn("const TENANT_REGISTRY_ENDPOINT = '/api/ops/tenants'", panel_source)
+        self.assertIn("apiRequest<OpsTenantsResponse>(TENANT_REGISTRY_ENDPOINT)", panel_source)
+        for field in ("namespace_id", "tenant_name", "lifecycle_state", "alias", "path_prefix", "billing_bound"):
+            self.assertIn(field, panel_source)
+        self.assertIn("data-tenant-registry-table", panel_source)
+        self.assertIn("当前没有已登记的租户命名空间", panel_source)
+        # The table is the platform registration, never a cross-database company read.
+        self.assertNotIn("res.company", panel_source)
+
+    def test_demo_tenant_name_is_declared_in_the_platform_registry(self):
+        seed = (ROOT / "data" / "sc_platform_namespace_seed.xml").read_text(encoding="utf-8")
+        self.assertIn("<field name=\"display_name\">Demo演示公司</field>", seed)
+        self.assertNotIn("Demo tenant", seed)
+        migration = ROOT / "migrations" / "17.0.1.1.16" / "post-migration.py"
+        self.assertTrue(migration.exists())
+        migration_source = migration.read_text(encoding="utf-8")
+        self.assertIn('DEMO_TENANT_NAME = "Demo演示公司"', migration_source)
+        self.assertIn("sc_platform_namespace", migration_source)
+
+    def test_tenants_payload_uses_the_registry_name_and_no_cross_db_company(self):
+        ops_source = (CONTROLLERS / "platform_ops_controller.py").read_text(encoding="utf-8")
+        self.assertIn('"tenant_name": namespace.display_name', ops_source)
+        # Unbound namespaces keep company_id/company_name empty instead of
+        # borrowing the platform instance's own company.
+        self.assertIn('"company_id": company.id if company is not None else None', ops_source)
+        self.assertIn('"company_name": company.name if company is not None else None', ops_source)
+        self.assertIn('"billing_bound": bool(company is not None)', ops_source)
 
 
 if __name__ == "__main__":

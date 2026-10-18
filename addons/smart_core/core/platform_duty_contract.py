@@ -210,3 +210,59 @@ def validate_surface(surface: dict) -> dict:
     if str(surface.get("audience")) == AUDIENCE_PLATFORM_CONTROL and not surface.get("capabilities"):
         raise ValueError("platform-control surface must not be empty")
     return surface
+
+
+PLATFORM_CAPABILITY_GROUP_KEY = "platform_control"
+PLATFORM_CAPABILITY_GROUP_LABEL = "平台管理"
+PLATFORM_CAPABILITY_GROUP_ICON = "shield"
+
+
+def build_capability_rows(surface: dict) -> list[dict]:
+    """Raw capability rows for the platform duty surface.
+
+    The rows use the same field names as the product capability catalogue, so
+    the caller normalises them with the existing capability helpers instead of
+    inventing a second schema.  Only a platform-control audience produces rows;
+    a tenant surface can never leak a ``platform.*`` capability this way.
+    """
+
+    if not isinstance(surface, dict) or surface.get("audience") != AUDIENCE_PLATFORM_CONTROL:
+        return []
+    rows = []
+    for duty in surface.get("duties") or []:
+        if not isinstance(duty, dict):
+            continue
+        state = str(duty.get("state") or "available")
+        for capability in duty.get("capabilities") or []:
+            row = {
+                "key": str(capability),
+                "name": str(duty.get("label") or duty.get("key") or ""),
+                "ui_label": str(duty.get("label") or duty.get("key") or ""),
+                "status": "ga" if state == "available" else "beta",
+                "group_key": PLATFORM_CAPABILITY_GROUP_KEY,
+                "group_label": PLATFORM_CAPABILITY_GROUP_LABEL,
+                "group_icon": PLATFORM_CAPABILITY_GROUP_ICON,
+                "group_sequence": 1,
+                "state": "READY" if state == "available" else "PREVIEW",
+                "tags": ["platform_duty"],
+                "duty_key": str(duty.get("key") or ""),
+            }
+            payload = {}
+            if duty.get("route"):
+                payload["route"] = str(duty["route"])
+            if duty.get("intent"):
+                payload["intent"] = str(duty["intent"])
+            if duty.get("scene_key"):
+                payload["scene_key"] = str(duty["scene_key"])
+            if payload:
+                row["default_payload"] = payload
+            entry_target = {}
+            if duty.get("scene_key"):
+                entry_target["scene_key"] = str(duty["scene_key"])
+                entry_target["route"] = str(duty.get("route") or "/")
+            elif duty.get("route"):
+                entry_target["route"] = str(duty["route"])
+            if entry_target:
+                row["entry_target"] = entry_target
+            rows.append(row)
+    return rows

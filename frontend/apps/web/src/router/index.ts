@@ -323,6 +323,7 @@ const router = createRouter({
     { path: '/admin/scene-packages', name: 'scene-packages', component: () => import('../views/ScenePackagesView.vue'), meta: { layout: 'shell', adminOnly: true } },
     { path: '/admin/usage-analytics', name: 'usage-analytics', component: () => import('../views/UsageAnalyticsView.vue'), meta: { layout: 'shell', adminOnly: true } },
     { path: '/admin/release-operator', name: 'release-operator', component: () => import('../views/ReleaseOperatorView.vue'), meta: { layout: 'shell', adminOnly: true, platformAdminOnly: true } },
+    { path: '/platform', name: 'platform-duty', component: () => import('../views/PlatformDutyView.vue'), meta: { layout: 'shell', adminOnly: true, platformAdminOnly: true } },
     { path: '/admin/business-config', name: 'business-config', component: () => import('../views/BusinessConfigSurfaceView.vue'), meta: { layout: 'shell' } },
     { path: '/admin/menu-config', name: 'menu-config', component: () => import('../views/MenuConfigView.vue'), meta: { layout: 'shell' } },
     { path: '/admin/form-field-config', name: 'form-field-config', component: () => import('../views/ActionViewShell.vue'), meta: { layout: 'shell' } },
