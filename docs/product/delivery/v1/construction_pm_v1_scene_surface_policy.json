@@ -17,7 +17,6 @@
       ],
       "deep_link_allowlist": [
         "projects.dashboard",
-        "projects.dashboard_showcase",
         "projects.execution",
         "projects.intake",
         "portal.capability_matrix",
