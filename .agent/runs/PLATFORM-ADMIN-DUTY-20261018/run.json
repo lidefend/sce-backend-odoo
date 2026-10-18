@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "id": "PLATFORM-ADMIN-DUTY-20261018",
+  "branch": "codex/daily-platform-demo-20261018",
+  "status": "blocked",
+  "stage_identity": {
+    "captured_head": "d52ce8a0b81c7ddbc6644bd04d66b56440fe8cc2",
+    "observed_head_at_inventory": "eb9b5bcb17b13e675bb0735697cdfd4b0a90eb7e",
+    "note": "盘点开始时 HEAD=d52ce8a0；暂停写入期间并行 lane 提交 demo seed 收尾（75e81bf05、eb9b5bcb1），HEAD 前移至 eb9b5bcb17b13e675bb0735697cdfd4b0a90eb7e。本记录不做身份对齐，差异如实保留。"
+  },
+  "executor": "Aquinas",
+  "lane": "demo",
+  "authorization": {
+    "id": "owner-standing-auth-20261018",
+    "status": "active",
+    "sha256": "c13e3fa6ab0f1857ed34d746dc2bacc563835668b60b5f0b487f9d1b1b47e83c"
+  },
+  "objective": "Make the platform administrator duty real: declared non-empty platform capability surface and contract-enforced platform/tenant boundary.",
+  "write_window": "paused_by_dispatcher_pending_batch_c",
+  "product_files_modified": [],
+  "commits_created": [],
+  "inventory": {
+    "path": ".runtime/platform-admin-duty-20261018/inventory.md",
+    "sha256": "0cbef11bb34fd93dcaa0501d0e7a3c9cec574d3bd5600924db40d369f061b4b1"
+  },
+  "findings": {
+    "platform_capability_count_live": 0,
+    "platform_has_sc_capability_model": false,
+    "platform_installed_modules": [
+      "auth_totp",
+      "base",
+      "base_import",
+      "base_import_module",
+      "base_setup",
+      "bus",
+      "iap",
+      "smart_core",
+      "web",
+      "web_editor",
+      "web_tour",
+      "web_unsplash"
+    ],
+    "demo_capability_count_live": 5,
+    "platform_navigation_root_nodes": 1,
+    "platform_minimum_surface": true,
+    "declared_duty_carrier_present": false,
+    "platform_duty_endpoint_present": false,
+    "ops_tenants_status_for_platform_admin": 200,
+    "platform_duty_endpoint_status": 404,
+    "demo_company_name_actual": "demo演示公司",
+    "demo_company_name_target": "Demo演示公司",
+    "demo_company_name_diff": "first char case only: d vs D; remaining 5 chars identical; length 7 both",
+    "demo_admin_login": "200 admin/123456 token_len=1620 uid=2",
+    "platform_admin_login": "200 admin/123456 token_len=876 uid=2",
+    "admin_classes": {
+      "platform_db_admin": {
+        "is_platform_control_admin": true,
+        "is_tenant_config_admin": true,
+        "is_break_glass_technical_admin": true,
+        "is_security_admin": false
+      },
+      "demo_db_admin": {
+        "is_platform_control_admin": false,
+        "is_tenant_config_admin": true,
+        "is_break_glass_technical_admin": true,
+        "is_security_admin": false
+      }
+    },
+    "platform_capabilities_usable_immediately": [
+      "platform.tenant_registry.read -> GET /api/ops/tenants (200, count=1)",
+      "platform.maintenance_access.read -> GET /api/ops/maintenance/access (200, records)",
+      "platform.job_status.read -> GET /api/ops/job/status (404 NOT_FOUND, endpoint healthy)",
+      "platform.release_operator.read -> intent release.operator.surface (200, release_operator_surface_v1)",
+      "platform.workspace.home -> scene workspace.home (nav root 1)"
+    ]
+  },
+  "code_locations": {
+    "capability_provider_empty_path": "addons/smart_core/core/capability_provider.py:111,134,136",
+    "system_init_capability_wiring": "addons/smart_core/handlers/system_init.py:1737,1745,1769",
+    "delivery_capability_policy": "addons/smart_core/delivery/delivery_engine.py:265,269,324",
+    "platform_minimum_nav": "addons/smart_core/core/platform_minimum_nav_contract.py:62",
+    "identity_payload": "addons/smart_core/core/system_init_identity_payload.py (no platform_duty field)",
+    "platform_ops_controller": "addons/smart_core/controllers/platform_ops_controller.py:16,75,83,121,154",
+    "control_predicate": "addons/smart_core/security/platform_admin.py:179",
+    "tenant_predicate": "addons/smart_core/security/platform_admin.py:219",
+    "deprecated_alias": "addons/smart_core/security/platform_admin.py:232",
+    "group_only_convention": "addons/smart_core/security/platform_admin.py:274,284",
+    "module_local_consumers": [
+      "addons/smart_core/handlers/app_shell.py:262,277,251,524,631",
+      "addons/smart_core/delivery/menu_service.py:1742",
+      "addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py:115,166,205,556"
+    ],
+    "hardcoded_identity": [
+      "addons/smart_core/model/ui_tenant_extension_field.py:192,202,877",
+      "addons/smart_core/security/tenant_payload_operator.py:306"
+    ]
+  },
+  "tests_observed": {
+    "addons/smart_core/tests/test_platform_admin_boundary.py": "Ran 15 tests, FAILED (failures=7) - batch C mid-flight audience seam",
+    "addons/smart_core/tests/test_admin_predicate_split.py": "Ran 10 tests, FAILED (failures=2) - batch C mid-flight audience seam"
+  },
+  "blockers": [
+    {
+      "id": "BLOCKER-BATCH-C-WRITE-WINDOW",
+      "status": "open",
+      "detail": "C 批未提交改动覆盖 addons/smart_core auth/login/namespace 与 platform_admin.py audience 语义；调度指示暂停本 lane 写入，等写集释放。",
+      "evidence": [
+        ".runtime/platform-admin-duty-20261018/00_worktree_state.txt"
+      ]
+    },
+    {
+      "id": "BLOCKER-PLATFORM-CAPABILITY-SURFACE-EMPTY",
+      "status": "open",
+      "detail": "平台库 system.init capabilities=0，且无 sc.capability 模型、无声明载体，平台 admin 无已声明能力面。",
+      "evidence": [
+        ".runtime/platform-admin-duty-20261018/01_platform_capability_shell.txt",
+        ".runtime/platform-admin-duty-20261018/03_live_surface_probe.txt"
+      ]
+    },
+    {
+      "id": "BLOCKER-MODULE-LOCAL-ADMIN-CONVENTION",
+      "status": "open",
+      "detail": "can_discover_platform_capabilities 仅按组判定，却被 app_shell/menu_service/nav_dispatcher 当作平台管理员可见性门禁。",
+      "evidence": [
+        ".runtime/platform-admin-duty-20261018/inventory.md"
+      ]
+    },
+    {
+      "id": "BLOCKER-TEST-BASELINE-RED-DURING-C",
+      "status": "open",
+      "detail": "C 提交前 test_platform_admin_boundary 7/15、test_admin_predicate_split 2/10 失败，不能作为本任务回归基线。",
+      "evidence": [
+        ".runtime/platform-admin-duty-20261018/inventory.md"
+      ]
+    },
+    {
+      "id": "BLOCKER-RUNTIME-CODE-DRIFT",
+      "status": "open",
+      "detail": "运行容器挂载 sce-product-odoo HEAD fb1815519，不等于本仓库工作树；新声明文件需显式部署步骤才能实机验证。",
+      "evidence": [
+        ".runtime/platform-admin-duty-20261018/03_live_surface_probe.txt"
+      ]
+    }
+  ],
+  "next_exact_step": "C 批提交并确认写集释放后：重读 security/platform_admin.py 最终版本与 audience 接缝，按 design_platform_capability_contract.md 第 E 节的 5 文件最小清单落地；随后跑第 G 节验收命令，部署到 sce-product-odoo 挂载并重启平台容器做实机回读，再提交带 platform_duty 证据的新回执。",
+  "evidence": {
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/00_worktree_state.txt": "cc670aea69fa651436657a1dddb9df147d6f884e6b8574a180b45317adac1181",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/01_platform_capability_shell.txt": "0165259cbbebe7717bb586d1c64e8e83a81c41757892cd1c18983e3bacb4c2de",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/02_demo_capability_shell.txt": "19b20f38121781b369707dde0e28199f6813267d5efae9f137be8e0b2af91c8f",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/03_live_surface_probe.txt": "1aa49064cbbb7c8deb036402622c51eef7ec983f1ab856b6e77a54dd294291bd",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/04_navigation_probe.txt": "5877cba1248c6a1eaf53303b08dffac7744eb415b623fa65bb4886b0d42cc327",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/05_platform_duty_endpoint.txt": "6e64d4ea48b1b30aaa56f950b061e716f1db476689d11f98bd432a5b77912f81",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/06_admin_class_matrix.txt": "5653b6b845f56c5f9594e30a8908e155ff2f176bc97f04285e59f59459a6a680",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/07_login_company.txt": "794a47544b31f80f2e83166f08a3144741cf2c4032e9daa7d80de1008b2f43d0",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/08_ops_surface_matrix.txt": "d14f798f8f9a89dd2d910b8ce3fdacf69748f8c5d0c349efafc0ccaff3e026fa",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/inventory.md": "001e99038be3c6170a83e1b5e26891267a8480dc5530e78d32e541efdc001e2b",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/design_platform_capability_contract.md": "b37cb5b23cd19a567c9ed81c7b3aeaa86d8f212e0bc109bc5979b7898736b937"
+  },
+  "phase": "phase1_readonly_inventory_and_design",
+  "deliverables": {
+    "inventory": ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/inventory.md",
+    "design": ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/design_platform_capability_contract.md"
+  }
+}

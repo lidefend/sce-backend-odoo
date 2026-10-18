@@ -1,0 +1,3 @@
+captured_at=2026-10-18T06:52:51Z
+# read-only login probe: admin/123456
+RESULT_JSON=[{"db": "sc_platform_control", "ok": true, "token_len": 876, "entry_kind": "explicit", "uid": 2, "login": "admin", "company_id": 1, "company_name": "My Company", "company_display": "My Company"}, {"db": "sc_demo", "ok": true, "token_len": 1620, "entry_kind": "explicit", "uid": 2, "login": "admin", "company_id": 1, "company_name": "demo演示公司", "company_display": "demo演示公司"}]

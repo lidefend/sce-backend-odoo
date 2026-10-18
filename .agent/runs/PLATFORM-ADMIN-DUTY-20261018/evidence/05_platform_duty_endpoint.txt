@@ -1,0 +1,8 @@
+captured_at=2026-10-18T06:51:19Z
+# cmd: curl -i http://127.0.0.1:18082/api/ops/platform-duty (platform admin token)
+token_len=876
+GET /api/ops/platform-duty status=404
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<title>404 Not Found</title>
+<h1>Not Found</h1>
+<p>The requested URL was not found on the server. If you entered the URL manually please check y
