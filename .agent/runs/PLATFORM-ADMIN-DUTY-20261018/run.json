@@ -154,11 +154,36 @@
     ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/07_login_company.txt": "794a47544b31f80f2e83166f08a3144741cf2c4032e9daa7d80de1008b2f43d0",
     ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/08_ops_surface_matrix.txt": "d14f798f8f9a89dd2d910b8ce3fdacf69748f8c5d0c349efafc0ccaff3e026fa",
     ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/inventory.md": "001e99038be3c6170a83e1b5e26891267a8480dc5530e78d32e541efdc001e2b",
-    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/design_platform_capability_contract.md": "b37cb5b23cd19a567c9ed81c7b3aeaa86d8f212e0bc109bc5979b7898736b937"
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/design_platform_capability_contract.md": "c091736f078a696672174380664957455e20861a10b97970437cf7393c5435a7"
   },
   "phase": "phase1_readonly_inventory_and_design",
   "deliverables": {
     "inventory": ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/inventory.md",
     "design": ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/design_platform_capability_contract.md"
+  },
+  "design_corrections": [
+    {
+      "id": "CORRECTION-NAMESPACE-LOGIN",
+      "applied_at": "2026-10-18",
+      "detail": "C 批后带 db 的 auth.login 会被 409 拒绝；验收与实机回读统一改为 POST /platform-admin/api/v1/intent，body 不带 db。"
+    },
+    {
+      "id": "CORRECTION-NO-PHYSICAL-DB-NAME",
+      "applied_at": "2026-10-18",
+      "detail": "build_platform_duty_surface 不再输出 trusted_instance=\"sc_platform_control\"；改为 trusted_instance_verified(bool)+audience+namespace_id 逻辑标识，物理库名仅留在 platform_control_scope 内部校验。"
+    }
+  ],
+  "prepared_state": {
+    "design_ready": true,
+    "awaiting": "batch C commit and addons/smart_core write-set release",
+    "files_to_touch": [
+      "addons/smart_core/core/platform_duty_contract.py (new)",
+      "addons/smart_core/core/system_init_identity_payload.py (append platform_duty)",
+      "addons/smart_core/controllers/platform_duty_controller.py (new)",
+      "addons/smart_core/controllers/__init__.py (+1 import)",
+      "addons/smart_core/tests/test_platform_admin_duty_contract.py (new)"
+    ],
+    "tests_planned": 9,
+    "product_code_modified_in_phase1": false
   }
 }

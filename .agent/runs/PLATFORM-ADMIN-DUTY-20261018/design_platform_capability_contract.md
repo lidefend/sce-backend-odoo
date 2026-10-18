@@ -3,6 +3,10 @@
 状态：设计已定稿，等待 C 批释放 `addons/smart_core` 写集后落地。
 本文件不描述"概念空壳"：每一项能力都对应一个已存在、已验证的端点或场景。
 
+> 修订（2026-10-18，调度复核）：
+> 1. C 批之后 `auth.login` 携带 `db` 参数会被 409 拒绝；实机回读统一走命名空间入口 `/platform-admin/api/v1/intent`，body 不带 `db`。
+> 2. 契约投影**不得**输出物理库名；`trusted_instance` 由布尔 + audience + `namespace_id` 等逻辑标识替代，物理库名只在后端校验内部使用。
+
 ## A. 契约目标
 
 平台管理员登录后必须拿到**已声明的、非空的**能力集合，且该集合可被后端、前端与测试三方消费：
@@ -11,6 +15,11 @@
 2. 一个**身份投影**：`system.init` 的 `user.platform_duty`（追加字段，不改既有两个布尔）。
 3. 一个**只读消费端点**：`GET /api/ops/platform-duty`。
 4. 一个**强制边界**：平台控制端点必须同时通过"受信实例 + token 受众 + 当前权限"三重校验。
+
+契约输出禁止项（不得写入前端可见结构）：
+- 物理库名（如 `sc_platform_control`）、`db_name`、连接串、主机/端口；
+- 任何可用于推断部署拓扑的标识。
+允许的逻辑标识：`trusted_instance_verified`（布尔）、`audience`、`namespace_id`（逻辑命名空间标识，缺省 `None`）。
 
 ## B. 登录后即可使用的平台能力（已实测）
 
@@ -27,6 +36,8 @@
 证据：`evidence/08_ops_surface_matrix.txt`、`evidence/04_navigation_probe.txt`。
 
 写类能力（`platform.subscription.write`、`platform.maintenance_access.decide`）端点已存在但本轮**未调用**，契约中标记为 `state="available_unverified"`，不得声称已验收。
+
+注：上表的复现命令使用 `db` 参数，属 C 批之前的采集方式；C 批落地后按第 G 节的命名空间入口复现，不得再带 `db`。
 
 ## C. 声明载体结构（`platform_duty_contract.py`）
 
@@ -56,10 +67,15 @@ TENANT_DUTIES = (
 )
 ```
 
-投影函数（fail-closed，未声明/不匹配一律空集，不抛默认值）：
+投影函数（fail-closed，未声明/不匹配一律空集，不抛默认值）。**不输出物理库名**：
 
 ```python
-def build_platform_duty_surface(*, is_platform_control_admin, is_tenant_config_admin) -> dict:
+def build_platform_duty_surface(
+    *,
+    is_platform_control_admin: bool,
+    is_tenant_config_admin: bool,
+    namespace_id: str | None = None,
+) -> dict:
     if is_platform_control_admin:
         audience, duties = AUDIENCE_PLATFORM_CONTROL, PLATFORM_DUTIES + TENANT_DUTIES
     elif is_tenant_config_admin:
@@ -72,7 +88,10 @@ def build_platform_duty_surface(*, is_platform_control_admin, is_tenant_config_a
         "capabilities": sorted({c for d in duties for c in d["capabilities"]}),
         "contract_version": CONTRACT_VERSION,
         "source": "platform_duty_contract",
-        "trusted_instance": "sc_platform_control",
+        # 逻辑标识，禁止物理库名：受信实例判定只在这里折算成布尔，
+        # 库名本身留在后端 platform_control_scope() 内部。
+        "trusted_instance_verified": bool(is_platform_control_admin),
+        "namespace_id": str(namespace_id) if namespace_id else None,
     }
 ```
 
@@ -81,6 +100,7 @@ def build_platform_duty_surface(*, is_platform_control_admin, is_tenant_config_a
 - 租户 admin：`capabilities` 不含任何 `platform.*` key。
 - 普通用户：`duty_keys=[]`、`capabilities=[]`、`audience="none"`。
 - 声明 key 唯一且稳定排序；未声明 key 不得出现在输出。
+- 投影 JSON 中不得出现 `sc_platform_control`、`db_name`、`trusted_instance`（物理库名字段）；测试用负向断言锁定。
 
 ## D. 三重校验落地
 
@@ -94,12 +114,14 @@ platform control API
 
 技术恢复管理员（`base.group_system`）**不自动获得平台 duty**：两库实测均为 `true`，因此只能作为"恢复通道"，必须带审计与实例范围，不得进入平台能力集合。这一条写入契约注释与测试（负向用例）。
 
+物理库名只出现在后端校验 `is_declared_platform_control_database(env.cr.dbname)`（`platform_admin.py:84`）内部；对外只暴露 `trusted_instance_verified` 布尔。
+
 ## E. 最小实现清单（C 提交后执行，5 个文件 + 1 个测试）
 
 | # | 文件 | 动作 | 规模 | 说明 |
 | --- | --- | --- | --- | --- |
 | 1 | `addons/smart_core/core/platform_duty_contract.py` | 新增 | ~90 行 | 纯声明 + `build_platform_duty_surface`；不 import odoo |
-| 2 | `addons/smart_core/core/system_init_identity_payload.py` | 修改 | +6 行 | 先算两个布尔，再追加 `platform_duty` 字段；不改其他字段 |
+| 2 | `addons/smart_core/core/system_init_identity_payload.py` | 修改 | +8 行 | 先算两个布尔与 `namespace_id`，再追加 `platform_duty` 字段；不改其他字段 |
 | 3 | `addons/smart_core/controllers/platform_duty_controller.py` | 新增 | ~45 行 | `GET /api/ops/platform-duty`；复用 `_platform_env()` 语义；403/401 分支 |
 | 4 | `addons/smart_core/controllers/__init__.py` | 修改 | +1 行 | `from . import platform_duty_controller` |
 | 5 | `addons/smart_core/tests/test_platform_admin_duty_contract.py` | 新增 | ~140 行 | 7–8 个用例，见 F |
@@ -119,6 +141,7 @@ platform control API
 6. `test_break_glass_admin_does_not_get_platform_duty` — 技术恢复管理员布尔不参与 duty 判定。
 7. `test_identity_payload_projects_platform_duty` — `SystemInitIdentityPayload.build` 输出 `platform_duty`，平台 admin 非空、Demo admin `platform.*` 为空。
 8. `test_controller_route_is_declared` — 静态断言 `platform_duty_controller.py` 含 `/api/ops/platform-duty` 路由且调用 control 谓词。
+9. `test_surface_exposes_no_physical_database_name` — 序列化结果不含 `sc_platform_control`、`db_name`、`trusted_instance`；只允许 `trusted_instance_verified` 布尔与 `namespace_id` 逻辑标识。
 
 ## G. 验收命令（落地后执行）
 
@@ -134,8 +157,14 @@ make verify                                                        # 精确 HEAD
 实机回读（需部署到 `sce-product-odoo` 挂载并重启平台容器后）：
 
 ```
-POST /api/v1/intent auth.login  {"login":"admin","password":"123456","db":"sc_platform_control"}
-POST /api/v1/intent system.init  → user.platform_duty.capabilities 非空
-GET  /api/ops/platform-duty      → 200，返回同一份声明
-GET  /api/ops/tenants            → 200（现有能力仍可用）
+# 命名空间入口登录：body 不带 db（C 批后带 db 会 409）
+POST /platform-admin/api/v1/intent  {"intent":"auth.login","params":{"login":"admin","password":"123456"}}
+POST /platform-admin/api/v1/intent  {"intent":"system.init","params":{"scene":"web"}}
+  → user.platform_duty.capabilities 非空；无 db_name / 无物理库名字段
+GET  /api/ops/platform-duty         → 200，返回同一份声明
+GET  /api/ops/tenants               → 200（现有能力仍可用）
 ```
+
+验收时同时断言：
+- 带 `db` 的旧写法返回 409（证明命名空间入口已生效）；
+- `platform_duty` 结构中不含 `sc_platform_control`、`db_name`、`trusted_instance` 物理字段。
