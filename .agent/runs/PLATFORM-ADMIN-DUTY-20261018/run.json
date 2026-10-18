@@ -153,8 +153,9 @@
     ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/06_admin_class_matrix.txt": "5653b6b845f56c5f9594e30a8908e155ff2f176bc97f04285e59f59459a6a680",
     ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/07_login_company.txt": "794a47544b31f80f2e83166f08a3144741cf2c4032e9daa7d80de1008b2f43d0",
     ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/08_ops_surface_matrix.txt": "d14f798f8f9a89dd2d910b8ce3fdacf69748f8c5d0c349efafc0ccaff3e026fa",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/09_namespace_entry_prestate.txt": "748b09e40d29f9b7dbf197a7eee902346e92c5a8a4bb2064d96dec2f6281f4eb",
     ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/inventory.md": "001e99038be3c6170a83e1b5e26891267a8480dc5530e78d32e541efdc001e2b",
-    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/design_platform_capability_contract.md": "c091736f078a696672174380664957455e20861a10b97970437cf7393c5435a7"
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/design_platform_capability_contract.md": "70f1641926f6578804cf95aaee8143d762c42c4df4877392f879bcfdff30faf7"
   },
   "phase": "phase1_readonly_inventory_and_design",
   "deliverables": {
@@ -185,5 +186,31 @@
     ],
     "tests_planned": 9,
     "product_code_modified_in_phase1": false
+  },
+  "prep_checks": {
+    "checked_at": "2026-10-18T07:07:47Z",
+    "namespace_entry": {
+      "path": "/platform-admin/api/v1/intent",
+      "current_status": 405,
+      "expected_after_c": 200,
+      "note": "nginx 尚未配置该前缀；后端路由仍为 /api/v1/intent (intent_dispatcher.py:312)"
+    },
+    "db_hint_rejection": {
+      "current_status_with_db": 200,
+      "expected_after_c": 409,
+      "code": "NS_DATABASE_HINT_CONFLICT",
+      "location": "handlers/login.py:242"
+    },
+    "namespace_id_source": {
+      "field": "namespace_id",
+      "pattern": "ns_<12 hex>",
+      "resolver": "security/namespace_resolver.py:195 resolve_instance",
+      "seed": {
+        "platform": "ns_000000000001",
+        "demo": "ns_000000000002"
+      }
+    },
+    "planned_file_collisions": [],
+    "c_landing_precondition": "两库各需存在绑定本库的 sc.platform.namespace 行；否则 resolve_instance 抛错导致平台身份 fail-closed、能力面为空。C 部署须包含 smart_core 升级导入 seed。"
   }
 }

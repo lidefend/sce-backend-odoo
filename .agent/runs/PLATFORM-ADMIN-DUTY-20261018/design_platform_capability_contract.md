@@ -168,3 +168,27 @@ GET  /api/ops/tenants               → 200（现有能力仍可用）
 验收时同时断言：
 - 带 `db` 的旧写法返回 409（证明命名空间入口已生效）；
 - `platform_duty` 结构中不含 `sc_platform_control`、`db_name`、`trusted_instance` 物理字段。
+
+## H. C 批就绪前置核对（只读，2026-10-18T07:07Z）
+
+核对 C 批未提交代码，确认本设计的入口与标识假设成立：
+
+| 项 | 事实 | 位置 |
+| --- | --- | --- |
+| 后端路由 | `/api/v1/intent`（POST/OPTIONS）不变；`/platform-admin` 是入口前缀，由 nginx 转发并加签 | `controllers/intent_dispatcher.py:312`、`security/namespace_resolver.py:30` |
+| 入口头 | `X-SC-Namespace`、`X-SC-Audience`、`X-SC-Route-Version`、`X-SC-Entry-Secret` | `security/namespace_resolver.py:34-37` |
+| db 拒绝 | `login.py:242` 返回 409 `NS_DATABASE_HINT_CONFLICT`；dispatcher 映射 409 | `handlers/login.py:242`、`controllers/intent_dispatcher.py:176,432` |
+| 逻辑标识 | `namespace_id` 形如 `ns_<12 hex>`，不可变；`resolve_instance(env)` 返回 `NamespaceRef(namespace_id, alias, duty_key, audience, lifecycle_state)` | `models/platform_namespace.py:29`、`security/namespace_resolver.py:195-199` |
+| 种子值 | 平台 `ns_000000000001`（audience=platform-admin，duty_key=platform_control）；Demo `ns_000000000002`（tenant） | `data/sc_platform_namespace_seed.xml` |
+| 文件占位 | `core/platform_duty_contract.py`、`controllers/platform_duty_controller.py`、`tests/test_platform_admin_duty_contract.py` 均不存在 | 实测 |
+
+当前运行态基线（容器仍是 B 代码，供 C 落地后对照）：
+
+| 探测 | 现状 | 期望（C 落地后） |
+| --- | --- | --- |
+| `POST /platform-admin/api/v1/intent`（18082/18081，无 db） | `405 Not Allowed`（nginx 未配置该前缀） | `200`，登录成功 |
+| `POST /api/v1/intent` 带 `db` | `200` | `409 NS_DATABASE_HINT_CONFLICT` |
+
+证据：`evidence/09_namespace_entry_prestate.txt`。
+
+**C 落地后必须先满足的前置（事实前提，不是授权）**：两个库都要存在绑定本库的 `sc.platform.namespace` 行（`resolve_instance` 的输入）。缺行时 `resolve_instance` 抛错 → `_current_identity_audience()` 返回 `""` → `user_is_platform_control_admin` fail-closed → 平台能力面为空。因此 C 部署步骤必须包含 `smart_core` 升级以导入 `sc_platform_namespace_seed.xml`，并在两库各做一次 `resolve_instance` 只读核验后再跑本批验收。
