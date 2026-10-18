@@ -141,9 +141,7 @@
       ]
     }
   },
-  "blockers": [
-    "BATCH-B-LIVE-LOGIN-NOT-VERIFIED: 仅完成本地定向单测与构建，未在运行实例回读平台入口登录与租户入口响应"
-  ],
+  "blockers": [],
   "evidence": {
     "candidate_head": "f57aea51b8ad78be01a2f92111696c45f8a5eab9",
     "worktree_dirty": true,
@@ -186,7 +184,16 @@
     "frontend_evidence": ".runtime/path-ns-b-20261018/r3/",
     "commit_sha": "f57aea51b8ad78be01a2f92111696c45f8a5eab9",
     "commit_evidence": ".runtime/path-ns-b-20261018/r4/00_commit.json",
-    "authorization_id": "owner-standing-auth-20261018"
+    "authorization_id": "owner-standing-auth-20261018",
+    "runtime_instance": {
+      "host_head": "fb181551973ef13a0b44cdc27427f2fffba1ec91",
+      "demo_odoo_started_at": "2026-10-18T05:55:16.204145345Z",
+      "platform_odoo_started_at": "2026-10-18T05:55:16.788877034Z",
+      "restart_loaded_batch_b": true,
+      "demo_admin_password": "reset_to_123456_dev_only",
+      "platform_admin_password": "reset_to_123456_dev_only"
+    },
+    "live_login_readback": ".runtime/path-ns-b-20261018/r5/live_login_readback.json"
   },
   "blocker_closures": [
     {
@@ -208,6 +215,14 @@
         ".runtime/path-ns-b-20261018/r4/02_frontend_route_test.log",
         ".runtime/path-ns-b-20261018/r4/03_typecheck_strict.log",
         ".runtime/path-ns-b-20261018/r4/04_build.log"
+      ]
+    },
+    {
+      "blocker": "BATCH-B-LIVE-LOGIN-NOT-VERIFIED: 仅完成本地定向单测，未在运行实例回读平台入口登录与租户入口响应",
+      "reason": "平台与 Demo 实例于 2026-10-18T05:55:16Z 重启并加载 fb181551；Demo admin 登录后 is_platform_admin=false、is_tenant_config_admin=true；平台 admin is_platform_admin=true；普通用户两项均为 false；无 db 参数登录解析为 tenant 而非 platform_admin；Demo token 调平台接口、平台 token 调 Demo 接口均返回 401。",
+      "evidence": [
+        ".runtime/path-ns-b-20261018/r5/live_login_readback.json",
+        ".runtime/path-ns-b-20261018/r5/runtime_identity.txt"
       ]
     }
   ]
