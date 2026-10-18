@@ -3,7 +3,7 @@
 Date: 2026-08-08
 Owner: Platform owner
 Target file: `addons/smart_core/handlers/ui_contract_v2.py`
-Current size: 3,473 lines
+Current size: 4,086 lines
 Phase: Stage 4 contract authority helper split
 
 ## 2026-08-21 Runtime Cutover Note
@@ -46,7 +46,7 @@ permission truth, persistence rules, or industry-owned policy.
 | Source contract orchestration | Parameter normalization, `UiContractHandler` invocation, entry contract resolution, v2 assembly, extension hook sequencing, trimming, and envelope creation. | Keep in handler until transaction map is complete. |
 | V2 contract mutation helpers | Set container tree, widget status, data meta, governance patch, and content replacement. | Small pure helper module. |
 | Policy projection | Delete/surface/list profile projection, source authority envelopes, field status projection, native widget visibility. | Projection helper module with no ORM access. |
-| Business config form layout | Business config group movement, form layout governance, relation entry policy injection, business category form policy, form structure contract creation. | Split only after tests cover form policy and configured group order. |
+| Business config form layout | Business config group movement, form layout governance, relation entry policy injection, business category form policy, form structure contract creation. | `ui_contract_v2_form_structure.py` owns form structure contract assembly; layout governance helpers remain in `ui_contract_v2_projection.py`. |
 | List and kanban projection | Formal legacy-archive labels, business list profile merge, and kanban field merge. | Read-side list projection module; keep action/view ORM boundaries explicit. |
 | Collaboration and header actions | Chatter/attachment contract, standard submit button, file hook allowlists. | Collaboration projection module; hook reads allowed, no writes. |
 | Record and view hydration | Record snapshot read, attachment display values, native group column extraction from `ir.ui.view` XML. | Read-side hydration module with strict field-count limits and tests. |
@@ -156,6 +156,19 @@ than becoming another policy branch inside the main handler:
 - action and menu access remain independently enforced by the normal backend
   contract security path;
 - `ui_contract_v2.py` is locked at `<=3475` lines for this stage.
+
+## Stage 5 Form Structure Builder Split
+
+The form structure contract builder is extracted from the handler shell:
+
+- `ui_contract_v2_form_structure.py` owns `build_form_structure_contract`,
+  including native-authority and governance-driven group/slot assembly,
+  history-field filtering, and surface projection;
+- `UiContractV2Handler._build_form_structure_contract` remains the thin
+  orchestration facade and delegates to the extracted module;
+- the extracted module stays projection-only: no ORM calls, env access,
+  registry mutation, HTTP calls, or persistence;
+- `ui_contract_v2.py` is locked at `<=4086` lines for this stage.
 
 ## Verification Gaps
 
