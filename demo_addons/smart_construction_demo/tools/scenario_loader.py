@@ -7,7 +7,12 @@ from typing import Dict, List
 from odoo.tools import convert
 from odoo.tools.misc import file_path
 
-from ..hooks import apply_demo_user_passwords, guard_demo_scope, guard_demo_data_space
+from ..hooks import (
+    apply_demo_company_identity,
+    apply_demo_user_passwords,
+    guard_demo_data_space,
+    guard_demo_scope,
+)
 
 
 BASE_SEED_FILES: List[str] = [
@@ -937,6 +942,9 @@ def load_scenario(
         raise ValueError(f"unknown scenario '{scenario}'. known: {known}")
 
     guard_demo_scope(env)
+    # Reseed must restore the published company identity before any demo
+    # record is loaded; otherwise a rebuilt tenant keeps "My Company".
+    apply_demo_company_identity(env)
     if scenario == "s50_repairable_paths":
         _reset_s50_repairable_records(env)
 
@@ -1005,6 +1013,7 @@ def load_base_seed(env, mode: str = "update") -> None:
     Scenario replay restores shared records by their demo-owned XML-IDs.
     """
     guard_demo_scope(env)
+    apply_demo_company_identity(env)
     module = "smart_construction_demo"
     idref = {}
     for relpath in BASE_SEED_FILES:

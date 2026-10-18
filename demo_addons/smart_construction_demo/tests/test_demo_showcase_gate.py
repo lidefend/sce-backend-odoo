@@ -178,3 +178,47 @@ class TestDemoShowcaseGate(TransactionCase):
 
     def test_demo_scope_rejects_missing_secret_before_orm(self):
         self._assert_scope_denied("sc_demo", "demo", "1", "", "SC_DEMO_USER_PASSWORD")
+
+
+@tagged("post_install", "-at_install", "sc_gate", "demo_gate")
+class TestDemoSeedReproducibilityContract(TransactionCase):
+    """Rebuild/reseed must restore the published demo identity from the module."""
+
+    def test_published_identity_and_password_are_authored_in_the_module(self):
+        from ..hooks import DEMO_COMPANY_NAME, DEMO_PRINCIPAL_LOGINS, DEMO_USER_PASSWORD
+        self.assertEqual(DEMO_COMPANY_NAME, "demo演示公司")
+        self.assertEqual(DEMO_USER_PASSWORD, "123456")
+        self.assertIn("wutao", DEMO_PRINCIPAL_LOGINS)
+        self.assertIn("demo_full", DEMO_PRINCIPAL_LOGINS)
+
+    def test_post_init_restores_identity_before_applying_passwords(self):
+        demo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+        with open(os.path.join(demo_root, "hooks.py"), "r", encoding="utf-8") as handle:
+            source = handle.read()
+        body = source.split("def post_init_hook(env):", 1)[1]
+        self.assertLess(body.index("apply_demo_company_identity(env)"),
+                        body.index("apply_demo_user_passwords(env)"))
+
+    def test_reseed_entries_restore_company_identity(self):
+        import ast
+        demo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+        path = os.path.join(demo_root, "tools", "scenario_loader.py")
+        with open(path, "r", encoding="utf-8") as handle:
+            source = handle.read()
+        tree = ast.parse(source)
+        for name in ("load_base_seed", "load_scenario"):
+            node = next(n for n in tree.body
+                        if isinstance(n, ast.FunctionDef) and n.name == name)
+            body = ast.get_source_segment(source, node)
+            self.assertIn("apply_demo_company_identity(env)", body, name)
+
+    def test_seed_profile_starts_with_identity_and_ends_with_verify(self):
+        import ast
+        demo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+        with open(os.path.join(demo_root, "seed", "registry.py"), "r", encoding="utf-8") as handle:
+            tree = ast.parse(handle.read())
+        profiles = next(ast.literal_eval(n.value) for n in tree.body
+                        if isinstance(n, ast.AnnAssign) and n.target.id == "_PROFILES")
+        steps = profiles["demo_full"]
+        self.assertEqual(steps[0], "demo_company_identity")
+        self.assertEqual(steps[-1], "demo_90_verify")

@@ -1,8 +1,10 @@
 """Offline orchestration tests; not proof of ORM authorization or installation."""
 import ast
+import os
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -529,13 +531,14 @@ class SupplementalFlows(unittest.TestCase):
         events = []
         namespace = {
             "guard_demo_scope": lambda env: events.append("scope"),
+            "apply_demo_company_identity": lambda env: events.append("identity"),
             "BASE_SEED_FILES": ["declared-users.xml"], "file_path": lambda path: path,
             "convert": SimpleNamespace(convert_file=lambda *args, **kwargs: events.append("users")),
             "guard_demo_data_space": lambda env: events.append("enroll"),
         }
         exec(compile(ast.Module(body=[node], type_ignores=[]), "load_base_seed", "exec"), namespace)
         namespace["load_base_seed"](SimpleNamespace(cr=SimpleNamespace(commit=lambda: events.append("commit"))))
-        self.assertEqual(events, ["scope", "users", "enroll", "commit"])
+        self.assertEqual(events, ["scope", "identity", "users", "enroll", "commit"])
 
     def test_payment_ledger_prepares_settlement_operator_and_reviewers(self):
         tree = ast.parse((ROOT / "tools/scenario_loader.py").read_text())
@@ -715,6 +718,207 @@ class StageFinalizationTests(unittest.TestCase):
         steps = profiles["demo_full"]
         self.assertLess(steps.index("z_demo_full_my_work"), steps.index("demo_80_finalize_stages"))
         self.assertLess(steps.index("demo_80_finalize_stages"), steps.index("demo_90_verify"))
+
+
+class DemoSeedReproducibility(unittest.TestCase):
+    """The demo tenant must reproduce its identity and demo-only payload."""
+
+    PROFILE = "demo_full"
+    DEMO_ENV = {
+        "SC_ENVIRONMENT": "demo",
+        "SC_ALLOW_DEMO_DATA": "1",
+        "SC_DEMO_USER_PASSWORD": "123456",
+    }
+
+    def registry(self):
+        import runpy
+        return runpy.run_path(str(ROOT / "seed/registry.py"))
+
+    class Env(dict):
+        def __init__(self, values=None, company=None):
+            super().__init__(values or {})
+            self.company = company or SimpleNamespace(id=1)
+
+        def ref(self, xmlid, raise_if_not_found=False):
+            return self.company
+
+    def guarded(self, dbname, **overrides):
+        registry = self.registry()
+        values = dict(self.DEMO_ENV)
+        values.update(overrides)
+        with patch.dict(os.environ, values, clear=False):
+            return registry["_guard_demo_scope"](SimpleNamespace(cr=SimpleNamespace(dbname=dbname)))
+
+    def test_seed_guard_rejects_non_demo_databases(self):
+        for dbname in ("production", "sc_production", "sc_dev_sample", ""):
+            with self.subTest(dbname=dbname):
+                with self.assertRaisesRegex(RuntimeError, "authorized demo database"):
+                    self.guarded(dbname)
+
+    def test_seed_guard_rejects_non_demo_environment(self):
+        with self.assertRaisesRegex(RuntimeError, "SC_ENVIRONMENT"):
+            self.guarded("sc_demo", SC_ENVIRONMENT="production")
+        with self.assertRaisesRegex(RuntimeError, "SC_ALLOW_DEMO_DATA"):
+            self.guarded("sc_demo", SC_ALLOW_DEMO_DATA="0")
+
+    def test_seed_guard_rejects_missing_demo_password(self):
+        with self.assertRaisesRegex(RuntimeError, "SC_DEMO_USER_PASSWORD"):
+            self.guarded("sc_demo", SC_DEMO_USER_PASSWORD="")
+
+    def test_seed_guard_accepts_declared_demo_databases(self):
+        for dbname in ("sc_demo", "sc_dev_demo", "sc_demo_rehearsal"):
+            with self.subTest(dbname=dbname):
+                self.guarded(dbname)
+
+    def test_profile_starts_with_identity_and_ends_with_verify(self):
+        registry = self.registry()
+        steps = registry["_PROFILES"][self.PROFILE]
+        self.assertEqual(steps[0], "demo_company_identity")
+        self.assertEqual(steps[-1], "demo_90_verify")
+        self.assertLess(steps.index("demo_85_passwords"), steps.index("demo_90_verify"))
+
+    def test_replaying_the_profile_repeats_each_step_once_in_order(self):
+        registry = self.registry()
+        executed = []
+        registry["_REGISTRY"].update({
+            name: registry["SeedStep"](name, name, lambda env, name=name: executed.append(name))
+            for name in registry["_PROFILES"][self.PROFILE]
+        })
+        env = SimpleNamespace(cr=SimpleNamespace(dbname="sc_demo"))
+        with patch.dict(os.environ, self.DEMO_ENV, clear=False):
+            first = registry["run_steps"](env, "profile:" + self.PROFILE)
+            second = registry["run_steps"](env, "profile:" + self.PROFILE)
+        self.assertEqual(first, registry["_PROFILES"][self.PROFILE])
+        self.assertEqual(second, first)
+        self.assertEqual(executed, first + second)
+
+    def test_reseed_entries_restore_company_identity_before_loading(self):
+        source = (ROOT / "tools/scenario_loader.py").read_text()
+        tree = ast.parse(source)
+        for name in ("load_base_seed", "load_scenario"):
+            with self.subTest(function=name):
+                node = next(n for n in tree.body
+                            if isinstance(n, ast.FunctionDef) and n.name == name)
+                body = ast.get_source_segment(source, node)
+                self.assertIn("apply_demo_company_identity(env)", body)
+                self.assertLess(body.index("apply_demo_company_identity(env)"),
+                                body.index("convert_file") if "convert_file" in body else len(body))
+
+    def test_only_the_identity_step_writes_the_company_name(self):
+        for path in sorted((ROOT / "seed/steps").glob("*.py")):
+            source = path.read_text()
+            if path.name == "step_company_identity.py":
+                continue
+            self.assertNotIn('{"name": "demo演示公司"}', source, path.name)
+            self.assertNotIn('company.write({"name"', source, path.name)
+
+    def test_existing_user_is_updated_instead_of_duplicated(self):
+        class Users:
+            def __init__(self, existing):
+                self.existing = existing
+                self.created = []
+                self.updated = []
+
+            def sudo(self):
+                return self
+
+            def search(self, domain, limit=None):
+                return self.existing
+
+            def create(self, values):
+                self.created.append(values)
+                return SimpleNamespace(id=99)
+
+        user = SimpleNamespace(write=lambda values: updated.append(values))
+        updated = []
+        users = Users(user)
+        env = self.Env({"res.users": users})
+        ensure = function("step_10_users_demo.py", "_ensure_user",
+                          _resolve_groups=lambda env, xmlids: [])
+        ensure(env, "demo_full", "Demo", [], "123456", "zh_CN", "Asia/Shanghai")
+        self.assertEqual(users.created, [])
+        self.assertEqual(len(updated), 1)
+        self.assertEqual(updated[0]["password"], "123456")
+        self.assertEqual(updated[0]["login"], "demo_full")
+        self.assertEqual(users.search([("login", "=", "demo_full")], limit=1), user)
+
+    def test_missing_user_is_created_with_the_demo_password(self):
+        class Users:
+            def __init__(self):
+                self.created = []
+
+            def sudo(self):
+                return self
+
+            def search(self, domain, limit=None):
+                return False
+
+            def create(self, values):
+                self.created.append(values)
+                return SimpleNamespace(id=100)
+
+        users = Users()
+        env = self.Env({"res.users": users})
+        ensure = function("step_10_users_demo.py", "_ensure_user",
+                          _resolve_groups=lambda env, xmlids: [])
+        ensure(env, "demo_full", "Demo", [], "123456", "zh_CN", "Asia/Shanghai")
+        self.assertEqual(len(users.created), 1)
+        self.assertEqual(users.created[0]["password"], "123456")
+
+    def test_existing_project_is_updated_instead_of_duplicated(self):
+        company = SimpleNamespace(id=1)
+        writes = []
+        project = SimpleNamespace(
+            id=7, company_id=company, project_code="DEMO-PJ-INIT",
+            display_name="Demo", write=lambda values: writes.append(values),
+        )
+        created = []
+
+        class Projects:
+            @staticmethod
+            def search(domain, limit=None):
+                return project if domain[0] == ("project_code", "=", "DEMO-PJ-INIT") else False
+
+            @staticmethod
+            def create(values):
+                created.append(values)
+                return project
+
+        env = self.Env(company=company)
+        ensure = function("step_20_projects_demo.py", "_ensure_project",
+                          business_model=lambda env, model: Projects,
+                          prepare_project=lambda env, record: record,
+                          UserError=ValueError)
+        ensure(env, "DEMO-PJ-INIT", {"name": "Demo", "lifecycle_state": "closed"})
+        self.assertEqual(created, [])
+        self.assertEqual(len(writes), 1)
+        self.assertNotIn("lifecycle_state", writes[0])
+        self.assertEqual(writes[0]["project_code"], "DEMO-PJ-INIT")
+
+    def test_new_project_enters_through_draft_lifecycle(self):
+        company = SimpleNamespace(id=1)
+        created = []
+        project = SimpleNamespace(id=8, company_id=company, project_code="DEMO-PJ-NEW",
+                                  display_name="Demo", write=lambda values: None)
+
+        class Projects:
+            @staticmethod
+            def search(domain, limit=None):
+                return False
+
+            @staticmethod
+            def create(values):
+                created.append(values)
+                return project
+
+        env = self.Env(company=company)
+        ensure = function("step_20_projects_demo.py", "_ensure_project",
+                          business_model=lambda env, model: Projects,
+                          prepare_project=lambda env, record: record,
+                          UserError=ValueError)
+        ensure(env, "DEMO-PJ-NEW", {"name": "Demo"})
+        self.assertEqual(len(created), 1)
+        self.assertEqual(created[0]["lifecycle_state"], "draft")
 
 
 if __name__ == "__main__":
