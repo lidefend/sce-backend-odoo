@@ -87,6 +87,18 @@ LAYER_FORBIDDEN_RESPONSIBILITIES = {
 DATABASE_LIFECYCLE_STATES = ("declared", "provisioned", "active", "suspended", "retired")
 DATABASE_LIFECYCLE_INITIAL_STATE = "declared"
 DATABASE_LIFECYCLE_TERMINAL_STATES = ("retired",)
+DATABASE_LIFECYCLE_STATE_LABELS = {
+    "declared": "已声明",
+    "provisioned": "已分配",
+    "active": "运行中",
+    "suspended": "已暂停",
+    "retired": "已退役",
+}
+DATABASE_DATA_PURPOSE_LABELS = {
+    "customer": "客户业务",
+    "demo": "演示数据",
+    "test": "测试数据",
+}
 DATABASE_LIFECYCLE_TRANSITIONS = {
     "declared": ("provisioned", "retired"),
     "provisioned": ("active", "retired"),
@@ -123,6 +135,20 @@ DATABASE_OPERATION_SOURCE_STATES = {
 DATABASE_OPERATIONS = tuple(sorted(DATABASE_OPERATION_TARGET_STATE))
 
 MAINTENANCE_ACCESS_CAPABILITIES = ("backup", "restore", "upgrade", "inspect", "migrate")
+MAINTENANCE_ACCESS_CAPABILITY_LABELS = {
+    "backup": "备份",
+    "restore": "恢复",
+    "upgrade": "升级",
+    "inspect": "巡检",
+    "migrate": "迁移",
+}
+MAINTENANCE_ACCESS_STATE_LABELS = {
+    "requested": "待审批",
+    "approved": "已批准",
+    "rejected": "已拒绝",
+    "expired": "已过期",
+    "revoked": "已撤销",
+}
 #: Which maintenance operations a maintenance access may authorize.  These are
 #: the operation names the governed duty entries actually execute, so an
 #: authorization and its consumer read one vocabulary instead of two: an access

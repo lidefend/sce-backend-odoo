@@ -111,6 +111,10 @@ class ContractDeclarationTests(unittest.TestCase):
         self.assertEqual(surface["duty_keys"], self.contract.declared_platform_duty_keys())
         self.assertFalse([key for key in surface["duty_keys"] if key.startswith("tenant.")])
         self.assertIn("platform.home.open", surface["capabilities"])
+        for duty in surface["duties"]:
+            self.assertTrue(duty.get("label"), duty)
+            self.assertTrue(duty.get("description"), duty)
+            self.assertTrue(duty.get("state_label"), duty)
         self.assertTrue(surface["trusted_instance_verified"])
         self.assertEqual(surface["namespace_id"], "ns_000000000001")
         self.assertEqual(surface["contract_version"], self.contract.CONTRACT_VERSION)
@@ -526,6 +530,15 @@ class ProjectionAndRouteTests(unittest.TestCase):
         self.assertIn('id="view_sc_platform_maintenance_access_form"', views)
         self.assertIn('id="action_sc_platform_maintenance_access"', views)
         self.assertIn('res_model">sc.platform.maintenance.access', views)
+        # The platform administrator works with logical namespace identity and
+        # operator-facing labels; physical database names and internal access
+        # ids stay out of the list/form projections.
+        namespace_tree = views.split('id="view_sc_platform_namespace_tree"', 1)[1].split('</record>', 1)[0]
+        self.assertIn('name="primary_alias"', namespace_tree)
+        self.assertNotIn('name="database_name"', namespace_tree)
+        maintenance_tree = views.split('id="view_sc_platform_maintenance_access_tree"', 1)[1].split('</record>', 1)[0]
+        self.assertIn('name="access_label"', maintenance_tree)
+        self.assertNotIn('<field name="name"/>', maintenance_tree)
 
         web = Path(__file__).resolve().parents[3] / "frontend" / "apps" / "web" / "src"
         panel_source = (web / "components" / "platform-duty" / "PlatformDutyPanel.vue").read_text(encoding="utf-8")
@@ -542,6 +555,12 @@ class ProjectionAndRouteTests(unittest.TestCase):
         migration_source = migration.read_text(encoding="utf-8")
         self.assertIn('DEMO_TENANT_NAME = "Demo演示公司"', migration_source)
         self.assertIn("sc_platform_namespace", migration_source)
+        self.assertIn("<field name=\"display_name\">平台控制台</field>", seed)
+        platform_migration = ROOT / "migrations" / "17.0.1.1.17" / "post-migration.py"
+        self.assertTrue(platform_migration.exists())
+        platform_source = platform_migration.read_text(encoding="utf-8")
+        self.assertIn('PLATFORM_NAMESPACE_NAME = "平台控制台"', platform_source)
+        self.assertIn("sc_platform_namespace", platform_source)
 
     def test_tenants_payload_uses_the_registry_name_and_no_cross_db_company(self):
         ops_source = (CONTROLLERS / "platform_ops_controller.py").read_text(encoding="utf-8")

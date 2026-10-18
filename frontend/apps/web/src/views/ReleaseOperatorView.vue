@@ -2,7 +2,7 @@
   <main v-if="pageSectionsReady" class="release-operator" :style="pageSectionStyle('root')" :data-contract-sections="pageSectionsFingerprint">
     <section class="release-operator__header">
       <div>
-        <p class="eyebrow">{{ copy.eyebrow || 'Release Operator Surface' }}</p>
+        <p class="eyebrow">{{ copy.eyebrow || '发布运营' }}</p>
         <h1>{{ copy.title || '发布控制台' }}</h1>
         <p>{{ copy.description || '查看当前发布状态、候选快照、待审批动作与回滚目标。' }}</p>
       </div>
@@ -52,18 +52,18 @@
       <section class="release-operator__metrics">
         <article class="release-operator__metric">
           <span>{{ copy.metric_current_product || '当前产品' }}</span>
-          <strong>{{ identity.product_key || '-' }}</strong>
+          <strong>{{ identity.label || identity.product_key || '-' }}</strong>
         </article>
         <article class="release-operator__metric">
-          <span>{{ copy.metric_active_snapshot || 'Active Released Snapshot' }}</span>
+          <span>{{ copy.metric_active_snapshot || '当前生效快照' }}</span>
           <strong>{{ activeSnapshot.version || activeSnapshot.id || '-' }}</strong>
         </article>
         <article class="release-operator__metric">
-          <span>{{ copy.metric_latest_action || 'Latest Action' }}</span>
+          <span>{{ copy.metric_latest_action || '最近发布动作' }}</span>
           <strong>{{ runtimeSummary.latest_action_type || '-' }}</strong>
         </article>
         <article class="release-operator__metric">
-          <span>{{ copy.metric_approval_state || 'Approval State' }}</span>
+          <span>{{ copy.metric_approval_state || '审批状态' }}</span>
           <strong>{{ runtimeSummary.latest_action_approval_state || '-' }}</strong>
         </article>
       </section>
@@ -87,7 +87,7 @@
           <article>
             <span>交付就绪</span>
             <strong>{{ readinessLabel(productReadiness.status) }}</strong>
-            <small>阻断 {{ productReadiness.blocking_count ?? 0 }} / 警告 {{ productReadiness.warn_count ?? 0 }}</small>
+            <small>阻断 {{ productReadiness.blocking_count ?? 0 }} / 警告 {{ productReadiness.warn_count ?? 0 }}<template v-if="productReadiness.unconfigured_count"> / 未配置 {{ productReadiness.unconfigured_count }}</template></small>
           </article>
           <article>
             <span>受控页面</span>
@@ -215,13 +215,13 @@
 
       <section class="release-operator__section">
         <div class="release-operator__section-head">
-          <h2>{{ copy.section_candidate || '可 Promote 候选' }}</h2>
+          <h2>{{ copy.section_candidate || '可晋升候选' }}</h2>
           <p>{{ copy.hint_candidate || '仅展示当前产品下 candidate / approved 状态的候选快照。' }}</p>
         </div>
         <div v-if="candidateSnapshots.length" class="release-operator__table-wrap">
           <ScTable class="release-operator__table" label="可发布候选" :data="candidateTableRows" :columns="candidateColumns" row-key="id" size="small" />
         </div>
-        <ScEmptyState v-else class="release-operator__empty" :title="copy.empty_candidate || '当前没有可 Promote 的候选快照。'" :heading-level="3" density="compact" />
+        <ScEmptyState v-else class="release-operator__empty" :title="copy.empty_candidate || '当前没有可晋升的候选快照。'" :heading-level="3" density="compact" />
       </section>
 
       <section class="release-operator__section">
@@ -256,7 +256,7 @@
         </div>
         <div class="release-operator__history">
           <div>
-            <h3>{{ copy.history_snapshots_title || 'Snapshots' }}</h3>
+            <h3>{{ copy.history_snapshots_title || '发布快照' }}</h3>
             <ul>
               <li v-for="snapshot in historySnapshots" :key="`history-snapshot-${snapshot.id}`">
                 <strong>{{ snapshot.version || snapshot.id }}</strong>
@@ -265,7 +265,7 @@
             </ul>
           </div>
           <div>
-            <h3>{{ copy.history_actions_title || 'Actions' }}</h3>
+            <h3>{{ copy.history_actions_title || '发布动作' }}</h3>
             <ul>
               <li v-for="action in historyActions" :key="`history-action-${action.id}`">
                 <strong>{{ action.action_type || action.id }}</strong>
@@ -536,6 +536,7 @@ function readinessLabel(value: unknown) {
     ready: '可交付',
     warn: '需关注',
     blocked: '有阻断',
+    not_configured: '未配置',
   };
   return labels[status] || status || '-';
 }

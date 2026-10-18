@@ -30,11 +30,15 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 
 from odoo.addons.smart_core.security import data_space_provisioning as provisioning
 from odoo.addons.smart_core.security.database_governance import (
+    DATABASE_DATA_PURPOSE_LABELS,
     DATABASE_LIFECYCLE_INITIAL_STATE,
+    DATABASE_LIFECYCLE_STATE_LABELS,
     DATABASE_LIFECYCLE_STATES,
     MAINTENANCE_ACCESS_CAPABILITIES,
+    MAINTENANCE_ACCESS_CAPABILITY_LABELS,
     MAINTENANCE_ACCESS_OPERATIONS,
     MAINTENANCE_ACCESS_MAX_VALIDITY_HOURS,
+    MAINTENANCE_ACCESS_STATE_LABELS,
     maintenance_access_grants_business_data_scope,
     resolve_operation_target_state,
     validate_database_governance_principal,
@@ -54,37 +58,60 @@ class ScPlatformDatabaseRegistration(models.Model):
 
     _name = "sc.platform.database.registration"
     _description = "Platform Database Registration"
+    _rec_name = "label"
     _order = "db_name"
 
-    db_name = fields.Char(required=True, index=True, readonly=True)
-    dbfilter = fields.Char(readonly=True, help="Declared dbfilter; empty means the database name.")
-    environment_role = fields.Char(required=True, index=True, readonly=True)
-    strategy = fields.Char(required=True, readonly=True)
+    db_name = fields.Char(string="物理库（内部）", required=True, index=True, readonly=True)
+    dbfilter = fields.Char(
+        string="数据库过滤规则",
+        readonly=True,
+        help="Declared dbfilter; empty means the database name.",
+    )
+    environment_role = fields.Char(string="环境职责", required=True, index=True, readonly=True)
+    strategy = fields.Char(string="数据库策略", required=True, readonly=True)
     data_purpose = fields.Selection(
-        [("customer", "Customer business"), ("demo", "Demonstration"), ("test", "Test")],
+        [(key, label) for key, label in DATABASE_DATA_PURPOSE_LABELS.items()],
+        string="数据用途",
         required=True,
         readonly=True,
         index=True,
     )
-    tenant_key = fields.Char(readonly=True)
+    tenant_key = fields.Char(string="租户标识", readonly=True)
     lifecycle_state = fields.Selection(
-        [(state, state) for state in DATABASE_LIFECYCLE_STATES],
+        [(state, DATABASE_LIFECYCLE_STATE_LABELS[state]) for state in DATABASE_LIFECYCLE_STATES],
+        string="生命周期",
         default=DATABASE_LIFECYCLE_INITIAL_STATE,
         required=True,
         readonly=True,
         index=True,
     )
-    registered_by = fields.Many2one("res.users", readonly=True)
-    registered_at = fields.Datetime(readonly=True)
-    last_operation = fields.Char(readonly=True)
-    last_operation_at = fields.Datetime(readonly=True)
-    last_readback = fields.Json(readonly=True)
+    label = fields.Char(string="登记名称", compute="_compute_label")
+    registered_by = fields.Many2one("res.users", string="登记人", readonly=True)
+    registered_at = fields.Datetime(string="登记时间", readonly=True)
+    last_operation = fields.Char(string="最近操作", readonly=True)
+    last_operation_at = fields.Datetime(string="最近操作时间", readonly=True)
+    last_readback = fields.Json(string="最近回读", readonly=True)
     operation_ids = fields.One2many(
-        "sc.platform.database.operation", "registration_id", readonly=True
+        "sc.platform.database.operation",
+        "registration_id",
+        string="操作记录",
+        readonly=True,
     )
     maintenance_access_ids = fields.One2many(
-        "sc.platform.maintenance.access", "registration_id", readonly=True
+        "sc.platform.maintenance.access",
+        "registration_id",
+        string="维护访问",
+        readonly=True,
     )
+
+    @api.depends("tenant_key", "environment_role", "db_name", "data_purpose", "lifecycle_state")
+    def _compute_label(self):
+        for record in self:
+            identity = record.tenant_key or record.environment_role or record.db_name
+            purpose = DATABASE_DATA_PURPOSE_LABELS.get(record.data_purpose, record.data_purpose or "")
+            state = DATABASE_LIFECYCLE_STATE_LABELS.get(record.lifecycle_state, record.lifecycle_state or "")
+            parts = [part for part in (identity, purpose, state) if part]
+            record.label = " · ".join(parts) or record.db_name
 
     _sql_constraints = [
         (
@@ -284,52 +311,62 @@ class ScPlatformMaintenanceAccess(models.Model):
 
     _name = "sc.platform.maintenance.access"
     _description = "Platform Maintenance Access Authorization"
+    _rec_name = "access_label"
     _order = "id desc"
 
-    name = fields.Char(required=True, readonly=True, default="New")
+    name = fields.Char(string="内部编号", required=True, readonly=True, default="New")
     registration_id = fields.Many2one(
-        "sc.platform.database.registration", required=True, ondelete="restrict", index=True
+        "sc.platform.database.registration",
+        string="数据库登记",
+        required=True,
+        ondelete="restrict",
+        index=True,
     )
     capability = fields.Selection(
-        [(capability, capability) for capability in MAINTENANCE_ACCESS_CAPABILITIES],
+        [
+            (capability, MAINTENANCE_ACCESS_CAPABILITY_LABELS[capability])
+            for capability in MAINTENANCE_ACCESS_CAPABILITIES
+        ],
+        string="维护能力",
         required=True,
         readonly=True,
     )
-    reason = fields.Char(required=True, readonly=True)
+    reason = fields.Char(string="事由", required=True, readonly=True)
     # The authority the request rests on.  It is declared by the requester and
     # is immutable afterwards, because it is one of the facts the approver
     # signs off on: an authorization whose evidence could be rewritten after
     # approval would let the approval mean something else than what was read.
     evidence_reference = fields.Char(
+        string="授权依据",
         required=True,
         readonly=True,
         help="Reference to the authorization this maintenance access rests on.",
     )
-    requested_by = fields.Many2one("res.users", required=True, readonly=True)
-    approved_by = fields.Many2one("res.users", readonly=True)
+    requested_by = fields.Many2one("res.users", string="申请人", required=True, readonly=True)
+    approved_by = fields.Many2one("res.users", string="审批人", readonly=True)
     state = fields.Selection(
         [
-            ("requested", "Requested"),
-            ("approved", "Approved"),
-            ("rejected", "Rejected"),
-            ("expired", "Expired"),
-            ("revoked", "Revoked"),
+            (state, MAINTENANCE_ACCESS_STATE_LABELS[state])
+            for state in ("requested", "approved", "rejected", "expired", "revoked")
         ],
+        string="状态",
         default="requested",
         required=True,
         readonly=True,
         index=True,
     )
-    valid_from = fields.Datetime(readonly=True)
-    valid_until = fields.Datetime(readonly=True)
+    valid_from = fields.Datetime(string="生效时间", readonly=True)
+    valid_until = fields.Datetime(string="失效时间", readonly=True)
     # A maintenance capability that moves business data must name *which*
     # mechanism identity performs it and *which* subject it is allowed to
     # carry.  Both are facts the approver signs off on, so they are set at
     # request time and are never writable afterwards.
     operator_identity_key = fields.Char(
+        string="执行身份",
         readonly=True, help="Declared external id of the mechanism identity that executes the capability."
     )
     subject_checksum = fields.Char(
+        string="主体摘要",
         readonly=True, help="Digest of the subject the approved capability may carry."
     )
     # A maintenance access authorizes an explicit *operation set*, never an
@@ -337,15 +374,31 @@ class ScPlatformMaintenanceAccess(models.Model):
     # execute, so an approval that names only the payload import can never cover
     # creating a service identity as well.
     authorized_operations = fields.Json(
+        string="授权操作",
         readonly=True,
         help="Declared maintenance operations this access authorizes, e.g. provision, grant.",
     )
     decision_note = fields.Char(
+        string="审批说明",
         readonly=True, help="Why this access was rejected or revoked, as recorded by its decider."
     )
     grants_business_data_scope = fields.Boolean(
-        compute="_compute_grants_business_data_scope", readonly=True
+        string="授予业务数据范围",
+        compute="_compute_grants_business_data_scope",
+        readonly=True,
     )
+    access_label = fields.Char(string="维护事项", compute="_compute_access_label")
+
+    @api.depends("capability", "state", "name", "registration_id.label", "registration_id.db_name")
+    def _compute_access_label(self):
+        for record in self:
+            capability = MAINTENANCE_ACCESS_CAPABILITY_LABELS.get(
+                record.capability, record.capability or ""
+            )
+            registration = record.registration_id.label or record.registration_id.db_name
+            state = MAINTENANCE_ACCESS_STATE_LABELS.get(record.state, record.state or "")
+            parts = [part for part in (capability, registration, state) if part]
+            record.access_label = " · ".join(parts) or record.name
 
     def _compute_grants_business_data_scope(self):
         grants = maintenance_access_grants_business_data_scope()

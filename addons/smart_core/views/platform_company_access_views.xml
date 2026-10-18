@@ -233,13 +233,12 @@
             <field name="name">sc.platform.namespace.tree</field>
             <field name="model">sc.platform.namespace</field>
             <field name="arch" type="xml">
-                <tree>
+                <tree create="0" edit="0" delete="0">
                     <field name="namespace_id"/>
                     <field name="display_name"/>
+                    <field name="primary_alias"/>
                     <field name="lifecycle_state"/>
                     <field name="audience"/>
-                    <field name="duty_key"/>
-                    <field name="database_name"/>
                 </tree>
             </field>
         </record>
@@ -248,15 +247,14 @@
             <field name="name">sc.platform.namespace.form</field>
             <field name="model">sc.platform.namespace</field>
             <field name="arch" type="xml">
-                <form>
+                <form create="0" edit="0" delete="0">
                     <sheet>
                         <group>
                             <field name="namespace_id"/>
                             <field name="display_name"/>
+                            <field name="primary_alias"/>
                             <field name="lifecycle_state"/>
                             <field name="audience"/>
-                            <field name="duty_key"/>
-                            <field name="database_name"/>
                         </group>
                         <group string="路径别名">
                             <field name="alias_ids" nolabel="1">
@@ -285,7 +283,7 @@
             <field name="model">sc.platform.maintenance.access</field>
             <field name="arch" type="xml">
                 <tree create="0" edit="0" delete="0">
-                    <field name="name"/>
+                    <field name="access_label"/>
                     <field name="registration_id"/>
                     <field name="capability"/>
                     <field name="state"/>
@@ -304,7 +302,7 @@
                 <form create="0" edit="0" delete="0">
                     <sheet>
                         <group>
-                            <field name="name"/>
+                            <field name="access_label"/>
                             <field name="registration_id"/>
                             <field name="capability"/>
                             <field name="state"/>

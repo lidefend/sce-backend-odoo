@@ -14,7 +14,8 @@
     "fix/agent-dispatch-inbox-20261017": ".agent/runs/AGENT-DISPATCH-INBOX-20261017/run.json",
     "fix/frontend-static-image-decoupling-20261018": ".agent/runs/FRONTEND-STATIC-IMAGE-DECOUPLING-20261018/run.json",
     "fix/daily-platform-job-status-20261018": ".agent/runs/PLATFORM-DUTY-JOB-LIST-20261018/run.json",
-    "fix/daily-entry-registry-closure-20261018": ".agent/runs/DAILY-ENTRY-REGISTRY-CLOSURE-20261018/run.json"
+    "fix/daily-entry-registry-closure-20261018": ".agent/runs/DAILY-ENTRY-REGISTRY-CLOSURE-20261018/run.json",
+    "fix/platform-admin-surface-closure-20261018": ".agent/runs/PLATFORM-ADMIN-SURFACE-CLOSURE-20261018/run.json"
   },
   "schema_version": 1
 }

@@ -44,6 +44,16 @@ map $arg_db $sc_client_db_query_present {
   ""      0;
 }
 
+# Both duty upstreams are Odoo and both emit the session_id cookie with
+# Path=/.  Sharing that path across namespaces lets a second tab overwrite the
+# first tab's authenticated session.  The entry rewrites the cookie path to the
+# namespace prefix it served, so each namespace has its own browser session.
+map $request_uri $sc_entry_cookie_path {
+  ~^/t/([a-z0-9][a-z0-9-]*)(?:/|\?|$)  /t/$1/;
+  ~^/platform-admin(?:/|\?|$)          /platform-admin/;
+  default                               /;
+}
+
 server {
   listen 80;
   server_name _;
@@ -143,6 +153,7 @@ server {
     rewrite ^/t/[a-z0-9][a-z0-9-]*(/api/.*)$ $1 break;
     proxy_pass http://$sc_entry_upstream;
     proxy_redirect off;
+    proxy_cookie_path / $sc_entry_cookie_path;
 
     proxy_set_header Host              $http_host;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -171,6 +182,7 @@ server {
     }
     proxy_pass http://$sc_entry_upstream;
     proxy_redirect off;
+    proxy_cookie_path / $sc_entry_cookie_path;
 
     proxy_set_header Host              $http_host;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -202,6 +214,7 @@ server {
     rewrite ^/t/[a-z0-9][a-z0-9-]*(/.*)$ $1 break;
     proxy_pass http://$sc_entry_upstream;
     proxy_redirect off;
+    proxy_cookie_path / $sc_entry_cookie_path;
 
     proxy_set_header Host              $http_host;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -230,6 +243,7 @@ server {
     }
     proxy_pass http://$sc_entry_upstream;
     proxy_redirect off;
+    proxy_cookie_path / $sc_entry_cookie_path;
 
     proxy_set_header Host              $http_host;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -325,6 +339,7 @@ server {
   location /api/ {
     proxy_pass http://$sc_proxy_upstream;
     proxy_redirect off;
+    proxy_cookie_path / $sc_entry_cookie_path;
 
     proxy_set_header Host              $http_host;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -347,6 +362,7 @@ server {
   location = /web {
     proxy_pass http://$sc_proxy_upstream;
     proxy_redirect off;
+    proxy_cookie_path / $sc_entry_cookie_path;
 
     proxy_set_header Host              $http_host;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -369,6 +385,7 @@ server {
   location ^~ /web/ {
     proxy_pass http://$sc_proxy_upstream;
     proxy_redirect off;
+    proxy_cookie_path / $sc_entry_cookie_path;
 
     proxy_set_header Host              $http_host;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -391,6 +408,7 @@ server {
   location ^~ /web_editor/ {
     proxy_pass http://$sc_proxy_upstream;
     proxy_redirect off;
+    proxy_cookie_path / $sc_entry_cookie_path;
 
     proxy_set_header Host              $http_host;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -413,6 +431,7 @@ server {
   location ^~ /mail/ {
     proxy_pass http://$sc_proxy_upstream;
     proxy_redirect off;
+    proxy_cookie_path / $sc_entry_cookie_path;
 
     proxy_set_header Host              $http_host;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -435,6 +454,7 @@ server {
   location ^~ /report/ {
     proxy_pass http://$sc_proxy_upstream;
     proxy_redirect off;
+    proxy_cookie_path / $sc_entry_cookie_path;
 
     proxy_set_header Host              $http_host;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -457,6 +477,7 @@ server {
   location ^~ /longpolling/ {
     proxy_pass http://$sc_proxy_upstream;
     proxy_redirect off;
+    proxy_cookie_path / $sc_entry_cookie_path;
 
     proxy_set_header Host              $http_host;
     proxy_set_header X-Real-IP         $remote_addr;

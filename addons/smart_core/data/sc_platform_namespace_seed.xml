@@ -3,7 +3,7 @@
   <data noupdate="1">
     <record id="namespace_platform" model="sc.platform.namespace">
       <field name="namespace_id">ns_000000000001</field>
-      <field name="display_name">Platform administration</field>
+      <field name="display_name">平台控制台</field>
       <field name="lifecycle_state">active</field>
       <field name="database_name">sc_platform_control</field>
       <field name="duty_key">platform_control</field>

@@ -10,36 +10,28 @@
       <h2 class="platform-duty__title">{{ audienceLabel }}</h2>
       <p class="platform-duty__meta">契约 {{ contractVersion }} · 来源 {{ source }}</p>
     </header>
-    <ul class="platform-duty__grid">
-      <li
-        v-for="duty in duties"
-        :key="duty.key"
-        class="platform-duty__card"
-        :data-duty-key="duty.key"
-        :data-duty-state="duty.state || 'available'"
-        :data-duty-action="actionOf(duty).kind"
-      >
-        <h3 class="platform-duty__card-title">{{ duty.label || duty.key }}</h3>
-        <p class="platform-duty__capabilities">{{ (duty.capabilities || []).join(' · ') }}</p>
+    <ScTable
+      class="platform-duty__table"
+      :label="`${audienceLabel}职责列表`"
+      :data="duties"
+      :columns="columns"
+      row-key="key"
+      size="small"
+      :row-attributes="rowAttributes"
+    >
+      <template #action="{ row }">
         <ScButton
-          v-if="actionOf(duty).kind === 'navigate'"
+          v-if="actionOf(row).kind === 'navigate'"
           type="button"
-          class="platform-duty__action"
-          appearance="outline-action"
+          variant="secondary"
           size="small"
-          @click="open(duty)"
+          @click="open(row)"
         >
           打开
         </ScButton>
-        <span v-else-if="actionOf(duty).kind === 'inline'" class="platform-duty__pending">
-          该职责需在官方页面打开
-        </span>
-        <span v-else-if="actionOf(duty).kind === 'intent'" class="platform-duty__pending">
-          入口：{{ duty.intent }}
-        </span>
-        <span v-else class="platform-duty__pending">暂无入口</span>
-      </li>
-    </ul>
+        <span v-else class="platform-duty__pending">{{ actionHint(row) }}</span>
+      </template>
+    </ScTable>
   </section>
 </template>
 
@@ -49,12 +41,14 @@ import { useRouter } from 'vue-router';
 import { useSessionStore } from '../../stores/session';
 import { resolveDutyAction, type DutyAction } from './dutyAction';
 import ScButton from '../design-system/ScButton.vue';
+import ScTable from '../design-system/ScTable.vue';
 
-interface PlatformDutyEntry {
-  key?: string;
+interface PlatformDutyEntry extends Record<string, unknown> {
+  key: string;
   label?: string;
-  capabilities?: string[];
+  description?: string;
   state?: string;
+  state_label?: string;
   route?: string | null;
   intent?: string | null;
   scene_key?: string;
@@ -72,8 +66,32 @@ const audienceLabel = computed(() => (audience.value === 'platform-admin' ? '平
 const contractVersion = computed(() => surface.value?.contract_version || '-');
 const source = computed(() => surface.value?.source || '-');
 
+const columns = [
+  { colKey: 'label', title: '职责', width: 180 },
+  { colKey: 'description', title: '说明', ellipsis: true },
+  { colKey: 'state_label', title: '状态', width: 100 },
+  { colKey: 'action', title: '操作', width: 120, align: 'right' },
+];
+
 function actionOf(duty: PlatformDutyEntry): DutyAction {
   return resolveDutyAction(duty);
+}
+
+function actionHint(duty: PlatformDutyEntry): string {
+  const action = actionOf(duty);
+  if (action.kind === 'inline') return '需在官方页面打开';
+  if (action.kind === 'intent') return `入口：${action.intent}`;
+  return '暂无入口';
+}
+
+function rowAttributes(context: unknown) {
+  const candidate = context && typeof context === 'object' ? context as Record<string, unknown> : {};
+  const row = (candidate.row && typeof candidate.row === 'object' ? candidate.row : candidate) as PlatformDutyEntry;
+  return {
+    'data-duty-key': row.key,
+    'data-duty-state': row.state || 'available',
+    'data-duty-action': actionOf(row).kind,
+  };
 }
 
 function open(duty: PlatformDutyEntry) {
@@ -112,87 +130,11 @@ function open(duty: PlatformDutyEntry) {
   font-size: 0.75rem;
   opacity: 0.65;
 }
-.platform-duty__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-  gap: 0.75rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.platform-duty__card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.875rem 1rem;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  border-radius: 0.75rem;
-  background: #ffffff;
-}
-.platform-duty__card[data-duty-state='available_unverified'] {
-  border-style: dashed;
-}
-.platform-duty__card-title {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-.platform-duty__capabilities {
-  margin: 0;
-  font-size: 0.75rem;
-  opacity: 0.7;
-  word-break: break-all;
-}
-.platform-duty__action {
-  align-self: flex-start;
+.platform-duty__table {
+  min-width: 0;
 }
 .platform-duty__pending {
   font-size: 0.75rem;
   color: #64748b;
-}
-.platform-duty__inline {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.875rem 1rem;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  border-radius: 0.75rem;
-  background: #ffffff;
-}
-.platform-duty__inline-header {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-}
-.platform-duty__inline-title {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-.platform-duty__inline-meta {
-  margin: 0;
-  font-size: 0.75rem;
-  opacity: 0.65;
-}
-.platform-duty__muted {
-  opacity: 0.65;
-}
-.platform-duty__empty,
-.platform-duty__error {
-  margin: 0;
-  font-size: 0.8rem;
-  color: #64748b;
-}
-.platform-duty__error {
-  color: #b91c1c;
-}
-.platform-duty__payload {
-  margin: 0;
-  max-height: 18rem;
-  overflow: auto;
-  font-size: 0.75rem;
-  background: #f8fafc;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
 }
 </style>
