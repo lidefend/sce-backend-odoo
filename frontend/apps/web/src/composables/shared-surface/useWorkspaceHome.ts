@@ -88,6 +88,13 @@ export function useWorkspaceHome() {
       workWorkspace.value = null;
       return;
     }
+    const navMeta = ((session.initMeta as Record<string, unknown> | null)?.nav_meta ?? {}) as Record<string, unknown>;
+    if (navMeta.platform_minimum_surface === true) {
+      workWorkspace.value = null;
+      error.value = '';
+      unsupported.value = true;
+      return;
+    }
     const requestEpoch = currentContextEpoch();
     loading.value = true;
     error.value = '';
