@@ -27,11 +27,11 @@ AUDIENCE_PLATFORM = "platform-admin"
 AUDIENCE_TENANT = "tenant"
 
 LIFECYCLE_STATES = (
-    ("declared", "Declared"),
-    ("provisioned", "Provisioned"),
-    ("active", "Active"),
-    ("suspended", "Suspended"),
-    ("retired", "Retired"),
+    ("declared", "已声明"),
+    ("provisioned", "已分配"),
+    ("active", "运行中"),
+    ("suspended", "已暂停"),
+    ("retired", "已退役"),
 )
 
 
@@ -40,19 +40,60 @@ class ScPlatformNamespace(models.Model):
     _description = "Platform Namespace Identity"
     _order = "namespace_id"
 
-    namespace_id = fields.Char(required=True, index=True, readonly=True, copy=False)
-    display_name = fields.Char(required=True)
-    lifecycle_state = fields.Selection(
-        LIFECYCLE_STATES, default="declared", required=True, index=True
+    namespace_id = fields.Char(
+        string="命名空间",
+        required=True,
+        index=True,
+        readonly=True,
+        copy=False,
     )
-    database_name = fields.Char(required=True, index=True)
-    duty_key = fields.Char(required=True, index=True)
+    display_name = fields.Char(string="租户名称", required=True)
+    lifecycle_state = fields.Selection(
+        LIFECYCLE_STATES,
+        string="生命周期",
+        default="declared",
+        required=True,
+        index=True,
+    )
+    # The physical database is an internal binding fact.  It is deliberately
+    # kept out of every list/form projection: the platform administrator works
+    # with the logical namespace identity, not the storage name behind it.
+    database_name = fields.Char(
+        string="物理库（内部）",
+        required=True,
+        index=True,
+    )
+    duty_key = fields.Char(string="职责标识", required=True, index=True)
     audience = fields.Selection(
-        [(AUDIENCE_PLATFORM, "Platform administration"), (AUDIENCE_TENANT, "Tenant")],
+        [(AUDIENCE_PLATFORM, "平台管理"), (AUDIENCE_TENANT, "租户")],
+        string="职责域",
         default=AUDIENCE_TENANT,
         required=True,
     )
-    alias_ids = fields.One2many("sc.platform.namespace.alias", "namespace_id", readonly=True)
+    primary_alias = fields.Char(
+        string="入口别名",
+        compute="_compute_primary_alias",
+    )
+    alias_ids = fields.One2many(
+        "sc.platform.namespace.alias",
+        "namespace_id",
+        string="路径别名",
+        readonly=True,
+    )
+
+    @api.depends(
+        "alias_ids.alias",
+        "alias_ids.alias_kind",
+        "alias_ids.is_primary",
+        "alias_ids.retired_at",
+    )
+    def _compute_primary_alias(self):
+        for record in self:
+            aliases = record.alias_ids.filtered(
+                lambda row: row.alias_kind == "path" and not row.retired_at
+            )
+            primary = aliases.filtered("is_primary")[:1] or aliases[:1]
+            record.primary_alias = primary.alias or ""
 
     _sql_constraints = [
         (
@@ -146,18 +187,23 @@ class ScPlatformNamespaceAlias(models.Model):
     _description = "Platform Namespace Alias"
     _order = "alias"
 
-    alias = fields.Char(required=True, index=True)
+    alias = fields.Char(string="别名", required=True, index=True)
     alias_kind = fields.Selection(
-        [("path", "Path prefix"), ("subdomain", "Subdomain")],
+        [("path", "路径前缀"), ("subdomain", "子域")],
+        string="别名类型",
         default="path",
         required=True,
         index=True,
     )
     namespace_id = fields.Many2one(
-        "sc.platform.namespace", required=True, ondelete="cascade", index=True
+        "sc.platform.namespace",
+        string="命名空间",
+        required=True,
+        ondelete="cascade",
+        index=True,
     )
-    is_primary = fields.Boolean(default=False)
-    retired_at = fields.Datetime(readonly=True)
+    is_primary = fields.Boolean(string="主别名", default=False)
+    retired_at = fields.Datetime(string="退役时间", readonly=True)
 
     _sql_constraints = [
         (

@@ -125,6 +125,7 @@ class ReleaseOperatorReadModelService:
     def _product_label(self, identity: dict[str, str]) -> str:
         base_label = {
             "platform": "平台内核",
+            "construction": "施工管理",
         }.get(_text(identity.get("base_product_key")), _text(identity.get("base_product_key")).title())
         edition_label = "标准版" if _text(identity.get("edition_key")) == "standard" else "预览版"
         return f"{base_label}{edition_label}"
@@ -134,7 +135,7 @@ class ReleaseOperatorReadModelService:
         edition_key = _text(identity.get("edition_key")) or "standard"
         edition_label = "标准版" if edition_key == "standard" else "预览版"
         return {
-            "eyebrow": "Release Operator Surface",
+            "eyebrow": "发布运营",
             "title": "发布控制台",
             "description": f"查看 {edition_label} 当前发布状态、候选快照、待审批动作与回滚目标。",
             "error_title": "加载失败",
@@ -144,14 +145,14 @@ class ReleaseOperatorReadModelService:
             "section_product_delivery_console": "产品交付控制台",
             "section_control_scope": "受控内容",
             "section_policy_control": "产品策略管控",
-            "section_candidate": "可 Promote 候选",
+            "section_candidate": "可晋升候选",
             "section_pending": "待审批动作",
             "section_rollback": "回滚",
             "section_history": "发布历史",
-            "hint_candidate": "仅展示当前产品下 candidate / approved 状态的候选快照。",
+            "hint_candidate": "仅展示当前产品下候选或已批准状态的候选快照。",
             "hint_pending_count_prefix": "当前数量：",
-            "hint_rollback": "仅当当前 active released snapshot 存在 rollback target 时可执行。",
-            "hint_history": "最近 action 与 snapshot。",
+            "hint_rollback": "仅当当前生效快照存在可回滚目标时可执行。",
+            "hint_history": "最近的发布动作与发布快照。",
             "freeze_action_label": "冻结候选快照",
             "sync_policy_action_label": "同步用户可见菜单",
             "save_policy_action_label": "保存策略",
@@ -163,16 +164,16 @@ class ReleaseOperatorReadModelService:
             "metric_controlled_capabilities": "受控能力",
             "page_control_action_enable": "启用",
             "page_control_action_disable": "停用",
-            "empty_candidate": "当前没有可 Promote 的候选快照。",
+            "empty_candidate": "当前没有可晋升的候选快照。",
             "empty_pending": "当前没有待审批动作。",
             "metric_current_product": "当前产品",
-            "metric_active_snapshot": "Active Released Snapshot",
-            "metric_latest_action": "Latest Action",
-            "metric_approval_state": "Approval State",
-            "rollback_target_label": "Rollback Target",
+            "metric_active_snapshot": "当前生效快照",
+            "metric_latest_action": "最近发布动作",
+            "metric_approval_state": "审批状态",
+            "rollback_target_label": "回滚目标",
             "rollback_action_label": "执行回滚",
-            "history_actions_title": "Actions",
-            "history_snapshots_title": "Snapshots",
+            "history_actions_title": "发布动作",
+            "history_snapshots_title": "发布快照",
             "approve_action_label": "审批并执行",
         }
 
@@ -216,6 +217,7 @@ class ReleaseOperatorReadModelService:
         checks = [row for row in _list(release_pipeline.get("preflight_checks")) if isinstance(row, dict)]
         blocking_count = len([row for row in checks if _text(row.get("status")) == "fail"])
         warn_count = len([row for row in checks if _text(row.get("status")) == "warn"])
+        unconfigured_count = len([row for row in checks if _text(row.get("status")) == "not_configured"])
         return {
             "product_key": identity.get("product_key") or profile.get("product_key") or "",
             "base_product_key": identity.get("base_product_key") or "",
@@ -232,9 +234,14 @@ class ReleaseOperatorReadModelService:
             },
             "license": license_payload,
             "readiness": {
-                "status": "blocked" if blocking_count else ("warn" if warn_count else "ready"),
+                "status": (
+                    "blocked"
+                    if blocking_count
+                    else "not_configured" if unconfigured_count else "warn" if warn_count else "ready"
+                ),
                 "blocking_count": blocking_count,
                 "warn_count": warn_count,
+                "unconfigured_count": unconfigured_count,
                 "controlled_page_count": int(control_scope.get("page_count") or 0),
                 "released_page_count": int(control_scope.get("released_page_count") or 0),
                 "candidate_snapshot_count": int(_dict(release_pipeline.get("change_summary")).get("candidate_snapshot_count") or 0),
@@ -396,7 +403,7 @@ class ReleaseOperatorReadModelService:
                 {
                     "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
                     "key": f"promote:{snapshot_id}",
-                    "label": f"Promote {row.get('version') or 'v1'}",
+                    "label": f"晋升 {row.get('version') or 'v1'}",
                     "intent": "release.operator.promote",
                     "enabled": bool(allowed),
                     "reason_code": "OK" if allowed else "RELEASE_EXECUTOR_NOT_ALLOWED",
@@ -506,22 +513,31 @@ class ReleaseOperatorReadModelService:
     def _build_preflight_checks(
         self,
         *,
+        product_key: str,
         control_scope: dict[str, Any],
         pending_approval_queue: dict[str, Any],
         active_snapshot: dict[str, Any],
     ) -> list[dict[str, Any]]:
         checks: list[dict[str, Any]] = []
+        identity = self._resolve_identity(product_key=product_key)
+        is_platform_kernel = _text(identity.get("base_product_key")) == "platform"
         total_pages = int(control_scope.get("total_page_count") or 0)
         effective_pages = int(control_scope.get("page_count") or 0)
         preview_pages = int(control_scope.get("preview_page_count") or 0)
         hidden_pages = int(control_scope.get("hidden_page_count") or 0)
         pending_count = int(pending_approval_queue.get("count") or 0)
+        if total_pages <= 0 and is_platform_kernel:
+            page_status = "not_configured"
+            page_message = "平台内核暂不发布业务页面"
+        else:
+            page_status = "pass" if effective_pages > 0 else "fail"
+            page_message = f"有效发布页面 {effective_pages}/{total_pages}"
         checks.append(
             {
                 "key": "has_product_pages",
                 "label": "产品页面范围",
-                "status": "pass" if effective_pages > 0 else "fail",
-                "message": f"有效发布页面 {effective_pages}/{total_pages}",
+                "status": page_status,
+                "message": page_message,
             }
         )
         checks.append(
@@ -555,7 +571,7 @@ class ReleaseOperatorReadModelService:
                 "key": "active_release",
                 "label": "当前发布版",
                 "status": "pass" if active_snapshot_id > 0 else "warn",
-                "message": f"active snapshot: {active_snapshot_version or 'none'}",
+                "message": f"当前生效版本：{active_snapshot_version or '无'}",
             }
         )
         return checks
@@ -578,12 +594,14 @@ class ReleaseOperatorReadModelService:
         hidden_page_count = int(control_scope.get("hidden_page_count") or 0)
         candidate_count = len(candidate_snapshots)
         checks = self._build_preflight_checks(
+            product_key=product_key,
             control_scope=control_scope,
             pending_approval_queue=pending_approval_queue,
             active_snapshot=active_snapshot,
         )
         blocking_count = len([item for item in checks if item.get("status") == "fail"])
         warn_count = len([item for item in checks if item.get("status") == "warn"])
+        unconfigured_count = len([item for item in checks if item.get("status") == "not_configured"])
         runtime_user_probe = self._build_runtime_user_probe(product_key=product_key)
         runtime_probe_status = _text(runtime_user_probe.get("status"))
         return {
@@ -607,7 +625,16 @@ class ReleaseOperatorReadModelService:
             "stages": [
                 {"key": "source", "label": "真实菜单源", "status": "done", "count": int(control_scope.get("total_page_count") or 0)},
                 {"key": "draft", "label": "产品配置草案", "status": "active", "count": draft_page_count},
-                {"key": "preflight", "label": "发布前检查", "status": "blocked" if blocking_count else ("warn" if warn_count else "done"), "count": len(checks)},
+                {
+                    "key": "preflight",
+                    "label": "发布前检查",
+                    "status": (
+                        "blocked"
+                        if blocking_count
+                        else "not_configured" if unconfigured_count else "warn" if warn_count else "done"
+                    ),
+                    "count": len(checks),
+                },
                 {"key": "candidate", "label": "候选快照", "status": "active" if candidate_count else "pending", "count": candidate_count},
                 {"key": "release", "label": "审批发布", "status": "pending" if candidate_count else "waiting", "count": int(pending_approval_queue.get("count") or 0)},
                 {
@@ -766,6 +793,7 @@ class ReleaseOperatorReadModelService:
             "copy": surface_copy,
             "identity": {
                 "product_key": identity["product_key"],
+                "label": self._product_label(identity),
                 "base_product_key": identity["base_product_key"],
                 "edition_key": identity["edition_key"],
                 "source": identity.get("source") or "",

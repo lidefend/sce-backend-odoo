@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "id": "PLATFORM-ADMIN-SURFACE-CLOSURE-20261018",
+  "branch": "fix/platform-admin-surface-closure-20261018",
+  "baseline_sha": "fedb92e0e3aaf7e4ccd4c6e1cac28f422ab015f2",
+  "status": "active",
+  "goal": ".agent/goals/PLATFORM-ADMIN-SURFACE-CLOSURE-20261018.yaml",
+  "record": "docs/ops/iterations/platform_admin_surface_closure_20261018.md",
+  "scope": [
+    "addons/smart_core/__manifest__.py",
+    "addons/smart_core/core/platform_duty_contract.py",
+    "addons/smart_core/data/sc_platform_namespace_seed.xml",
+    "addons/smart_core/delivery/release_operator_read_model_service.py",
+    "addons/smart_core/migrations/17.0.1.1.17/",
+    "addons/smart_core/models/platform_database_registry.py",
+    "addons/smart_core/models/platform_namespace.py",
+    "addons/smart_core/security/database_governance.py",
+    "addons/smart_core/tests/test_platform_admin_duty_contract.py",
+    "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
+    "addons/smart_core/views/platform_company_access_views.xml",
+    "config/nginx/templates/default.conf.template",
+    "frontend/apps/web/src/components/platform-duty/PlatformDutyPanel.vue",
+    "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+    "scripts/verify/daily_runtime_entry_guard.py",
+    ".agent/active-runs.json",
+    ".agent/goals/PLATFORM-ADMIN-SURFACE-CLOSURE-20261018.yaml",
+    ".agent/runs/PLATFORM-ADMIN-SURFACE-CLOSURE-20261018/run.json",
+    "docs/ops/iterations/platform_admin_surface_closure_20261018.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "docs/engineering_convergence/module_dependency_map.md",
+    "docs/engineering_convergence/complexity_budget_report.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "governed local Make targets and the local frontend toolchain"
+  },
+  "checks": {
+    "platform": {
+      "target": "verify.platform.duty.contract.unit",
+      "inputs": [
+        "addons/smart_core/core/platform_duty_contract.py",
+        "addons/smart_core/core/system_init_identity_payload.py",
+        "addons/smart_core/controllers/platform_duty_controller.py",
+        "addons/smart_core/controllers/platform_ops_controller.py",
+        "addons/smart_core/tests/test_platform_admin_duty_contract.py",
+        "addons/smart_core/views/platform_company_access_views.xml",
+        "frontend/apps/web/src/components/platform-duty"
+      ],
+      "kind": "offline"
+    },
+    "entry": {
+      "target": "verify.daily.runtime.entry",
+      "inputs": [
+        "config/nginx/templates/default.conf.template",
+        "config/ops/daily_runtime_entry.v1.json",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "config/ops/daily_runtime_duty_stack.yml",
+        "config/ops/daily_runtime_duty_stack.env",
+        "docker-compose.yml",
+        "scripts/ops/daily_runtime_database_duty.py",
+        "scripts/verify/daily_runtime_entry_guard.py",
+        "scripts/verify/nginx_proxy_db_authority_guard.py",
+        "scripts/verify/test_nginx_proxy_db_authority_guard.py",
+        "scripts/render_nginx_conf.sh"
+      ],
+      "kind": "offline"
+    },
+    "frontend": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/components/platform-duty",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/package.json"
+      ],
+      "kind": "offline"
+    },
+    "ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/PLATFORM-ADMIN-SURFACE-CLOSURE-20261018.yaml",
+        ".agent/runs/PLATFORM-ADMIN-SURFACE-CLOSURE-20261018/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run ci.local.iteration, commit on the fix branch, publish through the protected GitHub PR path, then deploy demo and platform_control."
+}

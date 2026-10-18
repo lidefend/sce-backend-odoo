@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import importlib.util
+import json
 import sys
 import types
 import unittest
@@ -148,7 +149,12 @@ class _Env(dict):
         super().__init__()
         self.user = object()
         self["sc.release.action"] = _RecordSet([_ReleaseActionRow()])
-        self["ir.config_parameter"] = _ConfigParameter("")
+        # A deployment with the construction bundle installed publishes both
+        # product bases; the platform-only deployment publishes just `platform`.
+        self["ir.config_parameter"] = _ConfigParameter(
+            "",
+            params={"smart_core.release_operator.product_base_keys": "construction,platform"},
+        )
 
 
 class _ConfigParameter:
@@ -188,6 +194,40 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
         self.assertEqual((((payload.get("available_actions") or {}).get("update_page_policy") or {}).get("intent")), "release.operator.update_page_policy")
         self.assertEqual((((payload.get("available_actions") or {}).get("runtime_probe") or {}).get("intent")), "release.operator.runtime_probe")
         self.assertIn("runtime_user_probe", (payload.get("release_pipeline") or {}))
+
+    def test_surface_copy_has_no_legacy_english_operator_labels(self):
+        service = TARGET.ReleaseOperatorSurfaceService(_Env())
+        service.read_model_service.audit_service = _AuditTrailService()
+        service.read_model_service.approval_policy_service = _ApprovalPolicyService()
+
+        payload = service.build_surface(product_key="construction.standard", action_limit=5)
+        encoded = json.dumps(payload.get("copy") or {}, ensure_ascii=False)
+
+        for retired in (
+            "Release Operator Surface",
+            "Active Released Snapshot",
+            "Latest Action",
+            "Approval State",
+            "Rollback Target",
+            "Promote",
+        ):
+            self.assertNotIn(retired, encoded)
+
+    def test_platform_kernel_empty_surface_is_not_reported_as_blocked(self):
+        service = TARGET.ReleaseOperatorSurfaceService(_Env())
+        service.read_model_service.audit_service = _AuditTrailService()
+        service.read_model_service.approval_policy_service = _ApprovalPolicyService()
+
+        payload = service.build_surface(product_key="platform.standard", action_limit=5)
+        readiness = (payload.get("product_delivery_console") or {}).get("readiness") or {}
+        self.assertEqual(readiness.get("status"), "not_configured")
+        self.assertEqual(readiness.get("blocking_count"), 0)
+        self.assertEqual(readiness.get("unconfigured_count"), 1)
+        checks = (payload.get("release_pipeline") or {}).get("preflight_checks") or []
+        page_check = next((row for row in checks if row.get("key") == "has_product_pages"), {})
+        self.assertEqual(page_check.get("status"), "not_configured")
+        self.assertIn("平台内核", page_check.get("message", ""))
+        self.assertEqual((payload.get("read_model_v1") or {}).get("identity", {}).get("label"), "平台内核标准版")
 
     def test_preview_product_copy_mentions_preview_edition(self):
         service = TARGET.ReleaseOperatorSurfaceService(_Env())

@@ -1,0 +1,31 @@
+schema_version: 1
+goal:
+  id: PLATFORM-ADMIN-SURFACE-CLOSURE-20261018
+  title: 平台管理员可见面、职责文案与入口会话隔离收口
+  status: active
+  formal_product_layer: P0
+  layer_target: platform admin surface, namespace registry labels, release operator read model, entry cookie scope
+  module: [smart_core, frontend, nginx]
+  objective: >-
+    让平台管理员登录后看到可直接使用的职责入口与中文业务标签，不再暴露内部库名、
+    技术能力串和维护记录主键；让平台与租户入口的会话 cookie 按路径隔离，避免同名
+    admin 在两个职责之间串会话；让没有业务页面的平台内核显示“未配置”而不是阻断。
+  baseline:
+    branch: fix/platform-admin-surface-closure-20261018
+    full_sha: fedb92e0e3aaf7e4ccd4c6e1cac28f422ab015f2
+  exclusions:
+    - No direct main push, force push, or required-check bypass.
+    - No client database hint as a routing input.
+    - No hand-built platform table or raw JSON duty surface in the frontend.
+    - No customer tenant deployment changes in this batch.
+    - No new authentication engine or platform-side tenant password verification.
+  acceptance:
+    - Platform duty panel renders official ScTable rows without platform.* capability strings.
+    - Tenant registry list hides physical database names and shows namespace aliases and lifecycle labels.
+    - Maintenance access list shows human-readable access labels instead of MA-sc_ identifiers.
+    - Release operator shows an unconfigured state instead of a blocked state for an empty platform kernel surface.
+    - Platform and tenant entries set distinct session cookie paths through nginx.
+    - Focused platform, entry, company access, backend copy and frontend typecheck gates pass.
+  rollback: >-
+    Revert this branch's tracked changes; previous views, duty contract, read model
+    and nginx entry template remain recoverable from main.

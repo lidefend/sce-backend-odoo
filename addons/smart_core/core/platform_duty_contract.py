@@ -27,6 +27,7 @@ PLATFORM_DUTIES = (
     {
         "key": "platform.home",
         "label": "平台首页",
+        "description": "查看平台运行概览与各职责入口。",
         "capabilities": ("platform.home.open",),
         "scene_key": "workspace.home",
         "route": "/",
@@ -36,6 +37,7 @@ PLATFORM_DUTIES = (
     {
         "key": "platform.tenant_registry",
         "label": "租户登记表",
+        "description": "查看已登记租户、入口别名与生命周期状态。",
         "capabilities": ("platform.tenant_registry.read",),
         "action_xmlid": "smart_core.action_sc_platform_namespace",
         "state": "available",
@@ -44,6 +46,7 @@ PLATFORM_DUTIES = (
     {
         "key": "platform.maintenance_access",
         "label": "维护访问",
+        "description": "查看受控维护授权的审批、有效期与授权范围。",
         "capabilities": ("platform.maintenance_access.read",),
         "action_xmlid": "smart_core.action_sc_platform_maintenance_access",
         "state": "available",
@@ -52,6 +55,7 @@ PLATFORM_DUTIES = (
     {
         "key": "platform.job_status",
         "label": "运维任务",
+        "description": "查看平台运维任务及最近执行结果。",
         "capabilities": ("platform.job_status.read",),
         "action_xmlid": "smart_core.action_sc_ops_job",
         "state": "available",
@@ -60,6 +64,7 @@ PLATFORM_DUTIES = (
     {
         "key": "platform.release_operator",
         "label": "发布运营",
+        "description": "查看并管理产品发布、候选快照与回滚。",
         "capabilities": ("platform.release_operator.read",),
         "route": "/admin/release-operator",
         "state": "available",
@@ -68,6 +73,7 @@ PLATFORM_DUTIES = (
     {
         "key": "platform.subscription",
         "label": "订阅实例",
+        "description": "查看租户订阅套餐与授权实例。",
         "capabilities": ("platform.subscription.write",),
         "action_xmlid": "smart_core.action_sc_subscription",
         "state": "available",
@@ -101,6 +107,12 @@ TENANT_DUTIES = (
         "sequence": 30,
     },
 )
+
+DUTY_STATE_LABELS = {
+    "available": "可用",
+    "available_unverified": "待验证",
+    "blocked": "不可用",
+}
 
 DEFAULT_LANDING = {
     "scene_key": "workspace.home",
@@ -233,11 +245,14 @@ def _project_duties(duties, action_routes=None) -> list[dict]:
     action_routes = action_routes or {}
     rows = []
     for duty in sorted(duties, key=lambda item: (int(item.get("sequence") or 0), str(item["key"]))):
+        state = str(duty.get("state") or "available")
         row = {
             "key": str(duty["key"]),
             "label": str(duty.get("label") or duty["key"]),
+            "description": str(duty.get("description") or ""),
             "capabilities": sorted(str(cap) for cap in duty.get("capabilities") or ()),
-            "state": str(duty.get("state") or "available"),
+            "state": state,
+            "state_label": DUTY_STATE_LABELS.get(state, state),
         }
         action_xmlid = str(duty.get("action_xmlid") or "")
         resolved_route = str(action_routes.get(action_xmlid) or "")

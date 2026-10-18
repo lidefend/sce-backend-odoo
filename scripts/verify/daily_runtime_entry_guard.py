@@ -63,6 +63,8 @@ def probe() -> list[str]:
             "return 400 '{\"error\":\"NS_NAMESPACE_REQUIRED\"}';",
             "return 404 '{\"error\":\"NS_UNKNOWN_NAMESPACE\"}';",
             "proxy_set_header X-SC-Namespace",
+            "map $request_uri $sc_entry_cookie_path {",
+            "proxy_cookie_path / $sc_entry_cookie_path;",
             "proxy_pass http://$sc_entry_upstream;",
             "proxy_pass http://$sc_proxy_upstream;",
             "resolver 127.0.0.11 valid=10s ipv6=off;",
