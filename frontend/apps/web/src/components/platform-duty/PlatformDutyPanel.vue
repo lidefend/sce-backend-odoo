@@ -30,7 +30,7 @@
           打开
         </button>
         <button
-          v-else-if="actionOf(duty).kind === 'inline'"
+          v-else-if="actionOf(duty).kind === 'inline' && !isWriteAction(duty)"
           type="button"
           class="platform-duty__action"
           :disabled="inlineOf(duty.key).status === 'loading'"
@@ -38,6 +38,9 @@
         >
           {{ inlineActionLabel(duty.key) }}
         </button>
+        <span v-else-if="isWriteAction(duty)" class="platform-duty__pending">
+          写操作入口，需专用表单，未启用
+        </span>
         <span v-else-if="actionOf(duty).kind === 'intent'" class="platform-duty__pending">
           入口：{{ duty.intent }}
         </span>
@@ -172,6 +175,11 @@ const generic = reactive({
 
 function actionOf(duty: PlatformDutyEntry): DutyAction {
   return resolveDutyAction(duty);
+}
+
+function isWriteAction(duty: PlatformDutyEntry) {
+  const action = actionOf(duty);
+  return action.kind === 'inline' && isWriteEndpoint(action.endpoint);
 }
 
 function inlineOf(key: string) {
