@@ -45,6 +45,31 @@ COMPOSE_FILE = ROOT / "config/ops/daily_runtime_duty_stack.yml"
 #: tests.
 FRONTEND_BUILD_FINGERPRINT = "0123456789abcdef" * 4
 
+#: The reviewed entry declaration the rendered stack consumes.  The render
+#: resolves the public bind face and the namespace alias whitelist from this
+#: document, so a fixture without it can no longer describe a valid duty.
+ENTRY_PAYLOAD = {
+    "public_entry": {"serving_duty": "demo", "bind_host": "0.0.0.0", "port": 18081},
+    "network": {"name": "sc-daily-entry"},
+    "routes": [
+        {"database": "sc_demo", "duty": "demo", "upstream": "odoo:8069", "default": True},
+        {
+            "database": "sc_platform_control",
+            "duty": "platform_control",
+            "upstream": "sc-platform-control-dev-nginx-1:80",
+            "default": False,
+        },
+    ],
+    "namespace_routes": {
+        "namespaces": [
+            {"alias": "platform", "namespace_id": "ns_000000000001",
+             "database": "sc_platform_control", "duty": "platform_control"},
+            {"alias": "demo", "namespace_id": "ns_000000000002",
+             "database": "sc_demo", "duty": "demo"},
+        ]
+    },
+}
+
 
 def provision_frontend_artifact(root, duties, fingerprint=FRONTEND_BUILD_FINGERPRINT):
     """Give every declared duty the served frontend artifact its render requires.
@@ -2177,7 +2202,8 @@ class CarrierExecutionTests(unittest.TestCase):
                         "maintenance_role": "sc_platform_control_maintenance"},
             "storage": {"redis_data_volume": "sc_platform_control_redis_data",
                         "odoo_data_volume": "sc_platform_control_odoo_data"},
-            "routing": {"odoo_loopback_port": 18083, "nginx_host_port": 18082},
+            "routing": {"odoo_loopback_port": 18083, "nginx_host_port": 18082,
+                        "odoo_bind_host": "127.0.0.1", "nginx_bind_host": "127.0.0.1"},
             "stack": {
                 "services": ["db", "redis", "odoo", "nginx"],
                 "modules": ["smart_core"],
@@ -2211,7 +2237,8 @@ class CarrierExecutionTests(unittest.TestCase):
                         "maintenance_role": "sc_demo_maintenance"},
             "storage": {"redis_data_volume": "sc_demo_redis_data",
                         "odoo_data_volume": "sc_demo_odoo_data"},
-            "routing": {"odoo_loopback_port": 8070, "nginx_host_port": 18081},
+            "routing": {"odoo_loopback_port": 8070, "nginx_host_port": 18081,
+                        "odoo_bind_host": "127.0.0.1", "nginx_bind_host": "0.0.0.0"},
             "stack": {
                 "services": ["db", "redis", "odoo", "nginx"],
                 "modules": ["smart_core", "smart_construction_core", "smart_construction_demo"],
@@ -2269,6 +2296,7 @@ class CarrierExecutionTests(unittest.TestCase):
             "data_destination": "/var/lib/postgresql/data",
             "bootstrap_timeout": bootstrap_timeout,
             "bootstrap_poll": bootstrap_poll,
+            "entry": ENTRY_PAYLOAD,
             "duties": duties,
         }
 
@@ -2702,7 +2730,8 @@ class ApplicationCredentialTests(unittest.TestCase):
                         "maintenance_role": "odoo"},
             "storage": {"redis_data_volume": "sc_dev_redis_data",
                         "odoo_data_volume": "sc_dev_odoo_data"},
-            "routing": {"odoo_loopback_port": 8070, "nginx_host_port": 18081},
+            "routing": {"odoo_loopback_port": 8070, "nginx_host_port": 18081,
+                        "odoo_bind_host": "127.0.0.1", "nginx_bind_host": "0.0.0.0"},
             "stack": {"compose_file": "config/ops/daily_runtime_duty_stack.yml",
                       "env_template": "config/ops/daily_runtime_duty_stack.env",
                       "runtime_env": "dev", "odoo_image": "odoo17-odoo:latest",
@@ -2733,6 +2762,7 @@ class ApplicationCredentialTests(unittest.TestCase):
                 "stack": {"compose_text": self.COMPOSE_TEXT},
                 "env_template": self.ENV_TEMPLATE,
                 "data_destination": "/var/lib/postgresql/data",
+                "entry": ENTRY_PAYLOAD,
                 "duties": [],
             }
             rendered = duty_entry.render_remote_program(payload)

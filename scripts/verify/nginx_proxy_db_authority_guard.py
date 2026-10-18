@@ -32,6 +32,8 @@ TENANT_RULE = "~^/t/([a-z0-9][a-z0-9-]*)(/|$)  $1;"
 PLATFORM_RULE = "~^/platform-admin(/|$)               platform;"
 AUDIENCE_MAP = "map $sc_path_ns $sc_ns_audience {"
 UPSTREAM_MAP = "map $sc_path_ns $sc_proxy_upstream {"
+ALIAS_MAP = "map $sc_path_ns $sc_declared_ns {"
+ALIAS_PATTERN = "~^(${SC_DECLARED_NAMESPACE_ALIASES})$"
 EMPTY_DB_HEADER = 'proxy_set_header X-Odoo-DB         "";'
 NAMESPACE_HEADER = "proxy_set_header X-SC-Namespace"
 SECRET_HEADER = "proxy_set_header X-SC-Entry-Secret"
@@ -60,6 +62,7 @@ PLATFORM_STRIP_BLOCK = re.compile(
 COMPOSE_REQUIRED = (
     "SC_PROXY_DEFAULT_UPSTREAM:",
     "SC_PROXY_PLATFORM_UPSTREAM:",
+    "SC_DECLARED_NAMESPACE_ALIASES: ${SC_DECLARED_NAMESPACE_ALIASES:-demo}",
     "SC_ENTRY_SHARED_SECRET:",
     "SC_ENTRY_ROUTE_VERSION:",
     "SC_ENTRY_PLATFORM_STRIP:",
@@ -67,6 +70,7 @@ COMPOSE_REQUIRED = (
 STACK_REQUIRED = (
     "SC_PROXY_DEFAULT_UPSTREAM:",
     "SC_PROXY_PLATFORM_UPSTREAM:",
+    "SC_DECLARED_NAMESPACE_ALIASES:",
     "SC_ENTRY_SHARED_SECRET:",
     "SC_ENTRY_ROUTE_VERSION:",
     "SC_ENTRY_PLATFORM_STRIP:",
@@ -79,6 +83,7 @@ STACK_RETIRED = (
 ENV_REQUIRED = (
     "SC_PROXY_DEFAULT_UPSTREAM=@SC_PROXY_DEFAULT_UPSTREAM@",
     "SC_PROXY_PLATFORM_UPSTREAM=@SC_PROXY_PLATFORM_UPSTREAM@",
+    "SC_DECLARED_NAMESPACE_ALIASES=@SC_DECLARED_NAMESPACE_ALIASES@",
     "SC_ENTRY_SHARED_SECRET=@SC_ENTRY_SHARED_SECRET@",
     "SC_ENTRY_ROUTE_VERSION=@SC_ENTRY_ROUTE_VERSION@",
     "SC_ENTRY_PLATFORM_STRIP=@SC_ENTRY_PLATFORM_STRIP@",
@@ -117,6 +122,8 @@ def probe(
             (PLATFORM_RULE, "the /platform-admin prefix must resolve to the platform namespace"),
             (AUDIENCE_MAP, "the audience must be derived from the namespace"),
             (UPSTREAM_MAP, "the upstream must be derived from the namespace, not a database hint"),
+            (ALIAS_MAP, "the declared-alias whitelist must gate path namespaces"),
+            (ALIAS_PATTERN, "the declared-alias whitelist must be rendered by the entry"),
         ):
             if needle not in template:
                 errors.append(f"config/nginx/templates/default.conf.template: {reason} (`{needle}`)")
@@ -187,6 +194,11 @@ def probe(
             errors.append(
                 "config/nginx/templates/default.conf.template: an illegal `/t/` prefix must be refused "
                 "with HTTP 404 `NS_UNKNOWN_NAMESPACE`, never served the SPA fallback"
+            )
+        if "$sc_declared_ns" not in template:
+            errors.append(
+                "config/nginx/templates/default.conf.template: every tenant route must gate on the "
+                "rendered declared-alias whitelist, never on the alias-shaped path alone"
             )
         if "SC_ENTRY_PLATFORM_STRIP" not in template or PLATFORM_STRIP_GUARD not in template:
             errors.append(

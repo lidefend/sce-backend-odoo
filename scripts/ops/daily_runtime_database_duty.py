@@ -338,6 +338,25 @@ def validate_entry(entry, declaration):
         if str(public.get("bind_host") or "") != "0.0.0.0":
             failures.append("the single public entry must bind 0.0.0.0")
 
+    # A bind host is deployment authority, not a stack default.  Resolve it from
+    # the reviewed duty declaration here so an omitted routing field can never
+    # become an unnoticed 0.0.0.0 publication in the rendered compose file.
+    for duty_name, duty in duties.items():
+        routing = duty.get("routing") or {}
+        for label, key, expected in (
+            ("nginx", "nginx_bind_host", "0.0.0.0" if duty_name == serving_name else "127.0.0.1"),
+            ("odoo", "odoo_bind_host", "127.0.0.1"),
+        ):
+            host = str(routing.get(key) or "")
+            if not ENTRY_BIND_HOST.fullmatch(host):
+                failures.append(
+                    "duty %s routing.%s must be an IPv4 bind address" % (duty_name, key)
+                )
+            elif host != expected:
+                failures.append(
+                    "duty %s routing.%s must be %s" % (duty_name, key, expected)
+                )
+
     network = entry.get("network") or {}
     name = str(network.get("name") or "")
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", name):
@@ -1085,6 +1104,49 @@ def marker_payload(output):
     return None
 
 
+def entry_namespace_alias_pattern(entry):
+    """Return the rendered nginx whitelist for declared path aliases.
+
+    ``map $sc_path_ns`` only extracts the shape of a tenant prefix.  The second
+    map must consult this list before any route is served, otherwise a
+    well-formed but undeclared alias falls through to the SPA shell.  Aliases
+    are escaped because they are interpolated into an nginx regex.
+    """
+
+    namespace_routes = (entry or {}).get("namespace_routes") or {}
+    aliases = []
+    for row in namespace_routes.get("namespaces") or []:
+        alias = str((row or {}).get("alias") or "")
+        if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,62}", alias):
+            raise RuntimeError("DAILY_ENTRY_NAMESPACE_ALIAS_INVALID:%s" % (alias or "<empty>",))
+        aliases.append(re.escape(alias))
+    if not aliases:
+        raise RuntimeError("DAILY_ENTRY_NAMESPACE_ALIASES_EMPTY")
+    return "|".join(sorted(set(aliases)))
+
+
+def declared_bind_host(duty, service, serving_duty):
+    """Resolve one bind host and fail closed on a non-loopback internal face."""
+
+    routing = duty.get("routing") or {}
+    key = "nginx_bind_host" if service == "nginx" else "odoo_bind_host"
+    host = str(routing.get(key) or "")
+    if not ENTRY_BIND_HOST.fullmatch(host):
+        raise RuntimeError(
+            "DAILY_DUTY_BIND_HOST_INVALID:%s:%s" % (duty.get("duty") or "<unset>", key)
+        )
+    public = service == "nginx" and duty.get("duty") == serving_duty
+    if public and host != "0.0.0.0":
+        raise RuntimeError(
+            "DAILY_DUTY_PUBLIC_BIND_HOST_INVALID:%s:%s" % (duty.get("duty"), host)
+        )
+    if not public and host != "127.0.0.1":
+        raise RuntimeError(
+            "DAILY_DUTY_INTERNAL_BIND_HOST_INVALID:%s:%s" % (duty.get("duty"), host)
+        )
+    return host
+
+
 REMOTE_PROGRAM = r'''
 import hashlib
 import json
@@ -1111,6 +1173,7 @@ ENTRYPOINT_RENDER_MARKER = "[entrypoint] render odoo.conf"
 ENTRYPOINT_SERVER_MARKER = "[entrypoint] start odoo"
 ENTRYPOINT_BOOTSTRAP_FAILURE_MARKER = "base bootstrap returned non-zero"
 PLACEHOLDER = re.compile(r"@[A-Z0-9_]+@")
+ENTRY_BIND_HOST = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 SECRET_KEYS = (
     "DB_PASSWORD", "DB_MAINTENANCE_PASSWORD", "ADMIN_PASSWD", "JWT_SECRET",
     "SC_BOOTSTRAP_SECRET",
@@ -1563,6 +1626,12 @@ def entry_shared_secret():
     return value
 
 
+__ENTRY_NAMESPACE_ALIAS_PATTERN__
+
+
+__DECLARED_BIND_HOST__
+
+
 def render_env(duty, credentials):
     is_demo = duty.get("data_purpose") == DEMO_PURPOSE
     served = frontend_build_facts(duty)
@@ -1619,11 +1688,12 @@ def render_env(duty, credentials):
         "ODOO_DATA": duty["storage"]["odoo_data_volume"],
         "ODOO_IMAGE": duty["stack"]["odoo_image"],
         "ODOO_PORT": str(duty["routing"]["odoo_loopback_port"]),
-        "ODOO_BIND_HOST": str(duty["routing"].get("odoo_bind_host") or "0.0.0.0"),
+        "ODOO_BIND_HOST": declared_bind_host(duty, "odoo", serving),
         "NGINX_PORT": str(duty["routing"]["nginx_host_port"]),
-        "NGINX_BIND_HOST": str(duty["routing"].get("nginx_bind_host") or "0.0.0.0"),
+        "NGINX_BIND_HOST": declared_bind_host(duty, "nginx", serving),
         "SC_PROXY_DEFAULT_UPSTREAM": "odoo:8069",
         "SC_PROXY_PLATFORM_UPSTREAM": platform_upstream,
+        "SC_DECLARED_NAMESPACE_ALIASES": entry_namespace_alias_pattern(entry),
         "SC_ENTRY_SHARED_SECRET": entry_shared_secret(),
         "SC_ENTRY_ROUTE_VERSION": route_version,
         "SC_ENTRY_PLATFORM_STRIP": platform_strip,
@@ -2724,6 +2794,12 @@ def render_remote_program(payload):
     """
     return REMOTE_PROGRAM.replace("__MARKER__", json.dumps(MARKER)).replace(
         "__PSQL_READBACK__", json.dumps(list(PSQL_READBACK)),
+    ).replace(
+        "__ENTRY_NAMESPACE_ALIAS_PATTERN__",
+        textwrap.dedent(inspect.getsource(entry_namespace_alias_pattern)),
+    ).replace(
+        "__DECLARED_BIND_HOST__",
+        textwrap.dedent(inspect.getsource(declared_bind_host)),
     ).replace(
         "__BASE_BOOTSTRAP_PLAN__", textwrap.dedent(inspect.getsource(base_bootstrap_plan)),
     ).replace(

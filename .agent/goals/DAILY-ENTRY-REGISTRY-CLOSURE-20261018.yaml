@@ -1,0 +1,29 @@
+schema_version: 1
+goal:
+  id: DAILY-ENTRY-REGISTRY-CLOSURE-20261018
+  title: 日常入口命名空间拒绝与平台职责官方入口收口
+  status: active
+  formal_product_layer: P0
+  layer_target: entry path namespace resolution, platform duty contract, official window actions, local entry defaults
+  module: [smart_core, frontend]
+  objective: >-
+    让未登记的路径命名空间在入口明确拒绝而不是回落到 Demo；让平台职责全部落到
+    官方 window action 或已声明 SPA 路由；让日常 duty 渲染从受管声明解析绑定地址，
+    并保持本地开发入口可用。
+  baseline:
+    branch: fix/daily-entry-registry-closure-20261018
+    full_sha: 5f177d4b7207022902c63a1582a9362faf4ea350
+  exclusions:
+    - No direct main push, force push, or required-check bypass.
+    - No client database hint as a routing input.
+    - No hand-built platform table or raw JSON duty surface in the frontend.
+    - No customer tenant deployment changes in this batch.
+  acceptance:
+    - Undeclared but alias-shaped path namespaces return 404 NS_UNKNOWN_NAMESPACE.
+    - Missing namespace returns 400 NS_NAMESPACE_REQUIRED; database hints return 409.
+    - Every platform duty resolves to an official window action or a declared SPA route.
+    - Internal duty faces declare loopback bind hosts; only the serving nginx is public.
+    - Focused backend, entry, duty and frontend typecheck gates pass.
+  rollback: >-
+    Revert this branch's tracked changes; the previous entry template and
+    platform duty projection remain recoverable from main.

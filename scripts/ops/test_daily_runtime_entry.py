@@ -147,6 +147,47 @@ class DailyRuntimeEntryTest(unittest.TestCase):
         declared = {row["alias"] for row in entry_doc["namespace_routes"]["namespaces"]}
         self.assertNotIn(alias, declared)
 
+    def test_declared_alias_whitelist_is_rendered_from_the_entry(self):
+        entry_doc, _ = shipped()
+        self.assertEqual(
+            "demo|platform", entry.entry_namespace_alias_pattern(entry_doc)
+        )
+        template = TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn("map $sc_path_ns $sc_declared_ns {", template)
+        self.assertIn("~^(${SC_DECLARED_NAMESPACE_ALIASES})$", template)
+        self.assertIn('if ($sc_declared_ns = "")', template)
+
+    def test_an_empty_alias_declaration_cannot_render_an_open_whitelist(self):
+        entry_doc, _ = shipped()
+        entry_doc["namespace_routes"]["namespaces"] = []
+        with self.assertRaisesRegex(RuntimeError, "ALIASES_EMPTY"):
+            entry.entry_namespace_alias_pattern(entry_doc)
+
+    def test_non_serving_faces_must_bind_loopback(self):
+        entry_doc, declaration = shipped()
+        platform = next(
+            duty for duty in declaration["duties"] if duty["duty"] == "platform_control"
+        )
+        platform["routing"]["odoo_bind_host"] = "0.0.0.0"
+        failures = entry.validate_entry(entry_doc, declaration)
+        self.assertTrue(
+            any("platform_control routing.odoo_bind_host must be 127.0.0.1" in item for item in failures),
+            failures,
+        )
+
+    def test_the_public_serving_face_is_the_only_zero_bind(self):
+        entry_doc, declaration = shipped()
+        demo = next(duty for duty in declaration["duties"] if duty["duty"] == "demo")
+        self.assertEqual(
+            "0.0.0.0", entry.declared_bind_host(demo, "nginx", "demo")
+        )
+        self.assertEqual(
+            "127.0.0.1", entry.declared_bind_host(demo, "odoo", "demo")
+        )
+        demo["routing"]["odoo_bind_host"] = "0.0.0.0"
+        with self.assertRaisesRegex(RuntimeError, "INTERNAL_BIND_HOST_INVALID"):
+            entry.declared_bind_host(demo, "odoo", "platform_control")
+
     def test_detection_maps_are_not_database_selectors(self):
         conf = (
             "map \"$http_x_odoo_db:$http_x_db:$http_x_odoo_db_locked\" "

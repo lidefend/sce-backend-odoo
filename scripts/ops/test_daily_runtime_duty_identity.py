@@ -77,7 +77,13 @@ def synthetic_instance(**overrides) -> dict:
             "session_namespace": "sc_tenant_sample_dev",
             "backup_namespace": "/data/backups/daily-tenant-sample-dev",
         },
-        "routing": {"nginx_host_port": 18090, "odoo_loopback_port": 18091, "list_db": False},
+        "routing": {
+            "nginx_host_port": 18090,
+            "nginx_bind_host": "127.0.0.1",
+            "odoo_loopback_port": 18091,
+            "odoo_bind_host": "127.0.0.1",
+            "list_db": False,
+        },
         "section_11": {
             "TARGET_DATABASE_ROLE": "customer_tenant",
             "TARGET_TENANT_ID": "sample",

@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-ENTRY-REGISTRY-CLOSURE-20261018",
+  "branch": "fix/daily-entry-registry-closure-20261018",
+  "baseline_sha": "5f177d4b7207022902c63a1582a9362faf4ea350",
+  "status": "active",
+  "goal": ".agent/goals/DAILY-ENTRY-REGISTRY-CLOSURE-20261018.yaml",
+  "record": "docs/ops/iterations/daily_entry_registry_closure_20261018.md",
+  "scope": [
+    "addons/smart_core/core/platform_duty_contract.py",
+    "addons/smart_core/tests/test_platform_admin_duty_contract.py",
+    "addons/smart_core/views/platform_company_access_views.xml",
+    "config/nginx/templates/default.conf.template",
+    "config/ops/daily_runtime_duty_stack.env",
+    "config/ops/daily_runtime_duty_stack.yml",
+    "docker-compose.yml",
+    "frontend/apps/web/src/components/platform-duty/PlatformDutyPanel.vue",
+    "frontend/apps/web/src/components/platform-duty/dutyAction.test.ts",
+    "frontend/apps/web/src/components/platform-duty/dutyAction.ts",
+    "scripts/ops/daily_runtime_database_duty.py",
+    "scripts/ops/daily_runtime_entry_verify.py",
+    "scripts/ops/synthetic_duty_instances.sample.json",
+    "scripts/ops/test_daily_runtime_database_duty.py",
+    "scripts/ops/test_daily_runtime_duty_identity.py",
+    "scripts/ops/test_daily_runtime_entry.py",
+    "scripts/render_nginx_conf.sh",
+    "scripts/verify/daily_runtime_entry_guard.py",
+    "scripts/verify/nginx_proxy_db_authority_guard.py",
+    "scripts/verify/test_nginx_proxy_db_authority_guard.py",
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-ENTRY-REGISTRY-CLOSURE-20261018.yaml",
+    ".agent/runs/DAILY-ENTRY-REGISTRY-CLOSURE-20261018/run.json",
+    "docs/ops/iterations/daily_entry_registry_closure_20261018.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "governed local Make targets and the local frontend toolchain"
+  },
+  "checks": {
+    "entry": {
+      "target": "verify.daily.runtime.entry",
+      "inputs": [
+        "config/nginx/templates/default.conf.template",
+        "config/ops/daily_runtime_entry.v1.json",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "config/ops/daily_runtime_duty_stack.yml",
+        "config/ops/daily_runtime_duty_stack.env",
+        "docker-compose.yml",
+        "scripts/ops/daily_runtime_database_duty.py",
+        "scripts/verify/daily_runtime_entry_guard.py",
+        "scripts/verify/nginx_proxy_db_authority_guard.py",
+        "scripts/verify/test_nginx_proxy_db_authority_guard.py",
+        "scripts/render_nginx_conf.sh"
+      ],
+      "kind": "offline"
+    },
+    "duty": {
+      "target": "verify.daily.runtime.database.duty",
+      "inputs": [
+        "scripts/ops/daily_runtime_database_duty.py",
+        "scripts/ops/test_daily_runtime_database_duty.py",
+        "scripts/ops/test_daily_runtime_duty_identity.py",
+        "scripts/ops/synthetic_duty_instances.sample.json",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "config/ops/daily_runtime_entry.v1.json",
+        "config/ops/daily_runtime_duty_stack.yml",
+        "config/ops/daily_runtime_duty_stack.env",
+        "config/nginx/templates/default.conf.template"
+      ],
+      "kind": "offline"
+    },
+    "platform": {
+      "target": "verify.platform.duty.contract.unit",
+      "inputs": [
+        "addons/smart_core/core/platform_duty_contract.py",
+        "addons/smart_core/tests/test_platform_admin_duty_contract.py",
+        "addons/smart_core/views/platform_company_access_views.xml",
+        "frontend/apps/web/src/components/platform-duty"
+      ],
+      "kind": "offline"
+    },
+    "frontend": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/components/platform-duty",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/package.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run ci.local.iteration, commit on the fix branch, publish through the protected GitHub PR path, then deploy demo and platform_control."
+}

@@ -341,8 +341,10 @@ header_hint_code, header_hint_payload, header_hint_type = probe(
 query_hint_code, query_hint_payload, query_hint_type = probe(
     "%s/api/runtime-version" % tenant_base, query=platform_db)
 unknown_path = "%s/%s/api/runtime-version" % (tenant_prefix, __UNKNOWN_ALIAS__)
+unknown_shell_path = "%s/%s/" % (tenant_prefix, __UNKNOWN_ALIAS__)
 invalid_prefix_path = "%s/%s/" % (tenant_prefix, "sc_undeclared_entry_probe")
 unknown_status_observed, unknown_payload, unknown_type = probe(unknown_path)
+unknown_shell_status, unknown_shell_payload, unknown_shell_type = probe(unknown_shell_path)
 invalid_prefix_status, invalid_prefix_payload, invalid_prefix_type = probe(invalid_prefix_path)
 
 add("tenant_namespace_lands_on_the_serving_database",
@@ -355,36 +357,42 @@ add("platform_namespace_lands_on_the_platform_database",
      "observed": platform_version.get("database"), "declared": platform_db})
 add("root_api_requires_a_namespace",
     root_code == missing_status and root_payload.get("error") == missing_code
-    and (not missing_type or missing_type in root_type),
+    and missing_type and root_type == missing_type,
     {"path": "/api/runtime-version", "code": root_code, "body": root_payload,
      "content_type": root_type, "expected_status": missing_status, "expected_code": missing_code})
 add("root_login_contract_requires_a_namespace",
     root_login_code == missing_status and root_login_payload.get("error") == missing_code
-    and (not missing_type or missing_type in root_login_type),
+    and missing_type and root_login_type == missing_type,
     {"path": "/api/v1/auth/page-contracts", "code": root_login_code,
      "body": root_login_payload, "content_type": root_login_type,
      "expected_status": missing_status, "expected_code": missing_code})
 add("client_database_header_is_refused",
     header_hint_code == hint_status and header_hint_payload.get("error") == hint_code
-    and "application/json" in header_hint_type,
+    and header_hint_type == "application/json",
     {"path": "%s/api/runtime-version" % tenant_base, "header": platform_db,
      "code": header_hint_code, "body": header_hint_payload,
      "content_type": header_hint_type, "expected_status": hint_status, "expected_code": hint_code})
 add("client_database_query_is_refused",
     query_hint_code == hint_status and query_hint_payload.get("error") == hint_code
-    and "application/json" in query_hint_type,
+    and query_hint_type == "application/json",
     {"path": "%s/api/runtime-version" % tenant_base, "query": platform_db,
      "code": query_hint_code, "body": query_hint_payload,
      "content_type": query_hint_type, "expected_status": hint_status, "expected_code": hint_code})
 add("unknown_namespace_is_refused",
     unknown_status_observed == unknown_status and unknown_payload.get("error") == unknown_code
-    and (not unknown_type_expected or unknown_type_expected in unknown_type),
+    and unknown_type_expected and unknown_type == unknown_type_expected,
     {"path": unknown_path, "code": unknown_status_observed, "body": unknown_payload,
      "content_type": unknown_type, "expected_status": unknown_status,
      "expected_code": unknown_code})
+add("unknown_namespace_page_shell_is_refused",
+    unknown_shell_status == unknown_status and unknown_shell_payload.get("error") == unknown_code
+    and unknown_type_expected and unknown_shell_type == unknown_type_expected,
+    {"path": unknown_shell_path, "code": unknown_shell_status, "body": unknown_shell_payload,
+     "content_type": unknown_shell_type, "expected_status": unknown_status,
+     "expected_code": unknown_code})
 add("invalid_namespace_prefix_is_refused",
     invalid_prefix_status == unknown_status and invalid_prefix_payload.get("error") == unknown_code
-    and (not unknown_type_expected or unknown_type_expected in invalid_prefix_type),
+    and unknown_type_expected and invalid_prefix_type == unknown_type_expected,
     {"path": invalid_prefix_path, "code": invalid_prefix_status,
      "body": invalid_prefix_payload, "content_type": invalid_prefix_type,
      "expected_status": unknown_status, "expected_code": unknown_code})

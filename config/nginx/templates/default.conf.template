@@ -12,6 +12,15 @@ map $uri $sc_path_ns {
   default                              "";
 }
 
+# The path parser above only extracts an alias-shaped token.  It must never be
+# treated as a declared namespace by itself: the alias whitelist is rendered
+# from the entry declaration so an undeclared but well-formed `/t/<alias>/`
+# cannot fall through to the SPA shell or the default upstream.
+map $sc_path_ns $sc_declared_ns {
+  default                                  "";
+  ~^(${SC_DECLARED_NAMESPACE_ALIASES})$    $sc_path_ns;
+}
+
 map $sc_path_ns $sc_ns_audience {
   default   tenant;
   platform  platform-admin;
@@ -125,8 +134,11 @@ server {
     set $sc_entry_ns $sc_path_ns;
     set $sc_entry_audience $sc_ns_audience;
     set $sc_entry_upstream $sc_proxy_upstream;
-    if ($sc_entry_ns = "") {
+    if ($sc_path_ns = "") {
       return 400 '{"error":"NS_NAMESPACE_REQUIRED"}';
+    }
+    if ($sc_declared_ns = "") {
+      return 404 '{"error":"NS_UNKNOWN_NAMESPACE"}';
     }
     rewrite ^/t/[a-z0-9][a-z0-9-]*(/api/.*)$ $1 break;
     proxy_pass http://$sc_entry_upstream;
@@ -151,7 +163,7 @@ server {
     set $sc_entry_ns $sc_path_ns;
     set $sc_entry_audience $sc_ns_audience;
     set $sc_entry_upstream $sc_proxy_upstream;
-    if ($sc_entry_ns = "") {
+    if ($sc_declared_ns = "") {
       return 400 '{"error":"NS_NAMESPACE_REQUIRED"}';
     }
     if ($sc_entry_platform_strip = "1") {
@@ -181,8 +193,11 @@ server {
     set $sc_entry_ns $sc_path_ns;
     set $sc_entry_audience $sc_ns_audience;
     set $sc_entry_upstream $sc_proxy_upstream;
-    if ($sc_entry_ns = "") {
+    if ($sc_path_ns = "") {
       return 400 '{"error":"NS_NAMESPACE_REQUIRED"}';
+    }
+    if ($sc_declared_ns = "") {
+      return 404 '{"error":"NS_UNKNOWN_NAMESPACE"}';
     }
     rewrite ^/t/[a-z0-9][a-z0-9-]*(/.*)$ $1 break;
     proxy_pass http://$sc_entry_upstream;
@@ -207,7 +222,7 @@ server {
     set $sc_entry_ns $sc_path_ns;
     set $sc_entry_audience $sc_ns_audience;
     set $sc_entry_upstream $sc_proxy_upstream;
-    if ($sc_entry_ns = "") {
+    if ($sc_declared_ns = "") {
       return 400 '{"error":"NS_NAMESPACE_REQUIRED"}';
     }
     if ($sc_entry_platform_strip = "1") {
@@ -236,8 +251,11 @@ server {
     set $sc_entry_ns $sc_path_ns;
     set $sc_entry_audience $sc_ns_audience;
     set $sc_entry_upstream $sc_proxy_upstream;
-    if ($sc_entry_ns = "") {
+    if ($sc_path_ns = "") {
       return 400 '{"error":"NS_NAMESPACE_REQUIRED"}';
+    }
+    if ($sc_declared_ns = "") {
+      return 404 '{"error":"NS_UNKNOWN_NAMESPACE"}';
     }
     rewrite ^/t/[a-z0-9][a-z0-9-]*(/.*)$ $1 break;
     proxy_pass http://$sc_entry_upstream;
@@ -265,7 +283,7 @@ server {
     set $sc_entry_ns $sc_path_ns;
     set $sc_entry_audience $sc_ns_audience;
     set $sc_entry_upstream $sc_proxy_upstream;
-    if ($sc_entry_ns = "") {
+    if ($sc_declared_ns = "") {
       return 400 '{"error":"NS_NAMESPACE_REQUIRED"}';
     }
     if ($sc_entry_platform_strip = "1") {
@@ -297,7 +315,7 @@ server {
   # 200 for an undeclared route.  Declared aliases still serve the SPA; the
   # API/web/websocket regexes above take precedence over this fallback.
   location ~ ^/t/ {
-    if ($sc_path_ns = "") {
+    if ($sc_declared_ns = "") {
       return 404 '{"error":"NS_UNKNOWN_NAMESPACE"}';
     }
     add_header Cache-Control "no-cache, no-store, must-revalidate";
