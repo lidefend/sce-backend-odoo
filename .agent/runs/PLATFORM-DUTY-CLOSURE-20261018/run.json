@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "id": "PLATFORM-DUTY-CLOSURE-20261018",
+  "task_ref": "PLATFORM-DUTY-CLOSURE-20261018",
+  "executor": "Aquinas",
+  "lane": "demo",
+  "branch": "codex/daily-platform-demo-20261018",
+  "status": "reported",
+  "authorization": {
+    "id": "owner-standing-auth-20261018",
+    "status": "active",
+    "sha256": "b94bb85f18556111051e815f4d787b7e3868c0cd2a3222952955cd8cc85ee499",
+    "source": "agent_dispatch_inbox authorization"
+  },
+  "stage_identity": {
+    "head_at_closure": "8a6efdc7653d78d289e2c6893e2f8d40cb65c4e3",
+    "commits": [
+      "a4cf11f9f1d933b43df8aeff941419542c8517ae",
+      "1efbd7e814e4aa8e7e02e0dff3aa58f608e429f3"
+    ],
+    "server_application_head": "6399e81658c10a84582c3a6390529891094b783c",
+    "note": "本 lane 的候选提交为 a4cf11f9f、1efbd7e81；同一工作树随后由并行 lane 追加 b81166475（把服务器应用提交 6399e8165 与本地提交合并）与 8a6efdc76（写操作职责不渲染只读按钮）。全部定向测试在 8a6efdc76 上重跑通过；服务器应用提交为 6399e8165。",
+    "reconciliation_commits": [
+      "b81166475",
+      "8a6efdc76"
+    ],
+    "verified_at_head": "8a6efdc7653d78d289e2c6893e2f8d40cb65c4e3"
+  },
+  "objective": "Close the platform administrator duty end-to-end: non-empty declared platform capability surface, usable platform landing with the tenant registry table, and platform/tenant identity separation verified on the daily development server.",
+  "scope": [
+    "addons/smart_core/core/platform_duty_contract.py",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/controllers/platform_duty_controller.py",
+    "addons/smart_core/controllers/platform_ops_controller.py",
+    "addons/smart_core/security/platform_admin.py",
+    "addons/smart_core/data/sc_platform_namespace_seed.xml",
+    "addons/smart_core/migrations/17.0.1.1.16/post-migration.py",
+    "frontend/apps/web/src/components/platform-duty/*",
+    "frontend/apps/web/src/views/PlatformDutyView.vue",
+    "frontend/apps/web/src/views/HomeView.vue",
+    "frontend/apps/web/src/router/index.ts",
+    "frontend/packages/schema/src/index.ts",
+    "targeted backend and frontend duty tests"
+  ],
+  "deliverables": {
+    "platform_capability_surface": "system.init projects platform.duty into top-level capabilities (6) and capability_groups=[platform_control]",
+    "platform_landing": "PlatformDutyPanel renders declared duties; /api duties are consumed in-panel, only declared SPA routes navigate",
+    "tenant_registry_table": "GET /api/ops/tenants rendered as a table (namespace_id, tenant_name, lifecycle_state, alias/path_prefix, billing_bound)",
+    "tenant_name_source": "platform namespace registry declaration (Demo演示公司), never a cross-database res.company read",
+    "identity_separation": "platform admin is_platform_admin=true / is_tenant_config_admin=false; demo admin is the inverse"
+  },
+  "verification": {
+    "backend": {
+      "test_platform_admin_duty_contract.py": 20,
+      "test_platform_admin_boundary.py": 15,
+      "test_admin_predicate_split.py": 10,
+      "test_login_identity_semantics.py": 11,
+      "test_login_company_boundary.py": 7,
+      "test_app_shell_boundaries.py": 14,
+      "test_load_view_handler.py": 7,
+      "test_final_menu_navigation_service.py": 5,
+      "test_api_server_time_boundaries.py": 2,
+      "test_platform_minimum_nav_contract.py": 4,
+      "test_stable_serialization_boundaries.py": 5,
+      "test_backend_scene_surface_boundary.py": 22
+    },
+    "frontend": {
+      "typecheck": "exit 0",
+      "dutyAction.test.ts": 6,
+      "admin_route_access_test.ts": 10
+    },
+    "logs": ".runtime/platform-duty-closure-20261018/",
+    "rechecked_at_head": "8a6efdc7653d78d289e2c6893e2f8d40cb65c4e3"
+  },
+  "runtime_readback": {
+    "path": ".runtime/platform-admin-duty-20261018/phase2/runtime_readback_20261018.txt",
+    "login": {
+      "status": 200,
+      "session_db": "sc_platform_control",
+      "token_len": 951
+    },
+    "system_init": {
+      "is_platform_admin": true,
+      "is_tenant_config_admin": false,
+      "capabilities_len": 6,
+      "capability_groups": [
+        "platform_control"
+      ],
+      "platform_duty_audience": "platform-admin",
+      "default_landing": {
+        "scene_key": "workspace.home",
+        "route": "/",
+        "source": "platform_duty_contract"
+      }
+    },
+    "tenants": [
+      {
+        "namespace_id": "ns_000000000002",
+        "tenant_name": "Demo演示公司",
+        "lifecycle_state": "active",
+        "alias": "demo",
+        "path_prefix": "/t/demo",
+        "billing_bound": false,
+        "company_id": null,
+        "company_name": null
+      }
+    ],
+    "runtime_version_source_revision": "6399e81658c10a84582c3a6390529891094b783c",
+    "demo_token_on_platform": 401
+  },
+  "blocker_inheritance": {
+    "from_run": ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/run.json",
+    "closed": [
+      "BLOCKER-BATCH-C-WRITE-WINDOW",
+      "BLOCKER-PLATFORM-CAPABILITY-SURFACE-EMPTY",
+      "BLOCKER-MODULE-LOCAL-ADMIN-CONVENTION",
+      "BLOCKER-TEST-BASELINE-RED-DURING-C",
+      "BLOCKER-RUNTIME-CODE-DRIFT"
+    ],
+    "open": []
+  },
+  "residual_risks": [
+    "前端静态产物由 environment lane 构建并由 nginx 挂载；本 lane 未执行静态构建与发布。",
+    ".runtime 证据目录不进入版本库，回执以路径引用。"
+  ],
+  "evidence": {
+    ".runtime/platform-duty-closure-20261018/backend_tests_summary.log": "12 backend modules, exact counts, exit 0",
+    ".runtime/platform-duty-closure-20261018/frontend_typecheck.log": "pnpm typecheck exit 0",
+    ".runtime/platform-duty-closure-20261018/dutyAction_test.log": "6 tests pass",
+    ".runtime/platform-duty-closure-20261018/admin_route_access_test.log": "PASS cases=10",
+    ".runtime/platform-admin-duty-20261018/phase2/runtime_readback_20261018.txt": "live platform readback",
+    ".runtime/platform-duty-closure-20261018/deploy_readback_20261018.txt": "server HEAD + container revision"
+  }
+}

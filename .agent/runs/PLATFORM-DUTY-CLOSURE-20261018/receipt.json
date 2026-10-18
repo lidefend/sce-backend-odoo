@@ -1,0 +1,143 @@
+{
+  "schema": 2,
+  "task_id": "PLATFORM-ADMIN-DUTY-20261018",
+  "task_ref": "PLATFORM-DUTY-CLOSURE-20261018",
+  "executor": "Aquinas",
+  "lane": "demo",
+  "run": ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/run.json",
+  "status": "reported",
+  "summary": "平台管理员职责闭环在 HEAD 8a6efdc76 上重跑验证：候选提交 a4cf11f9f（平台职责面 + 前端面板 + 租户登记表 + Demo 租户名声明）与 1efbd7e81（登录公司边界测试对齐 C 批）已提交；并行 lane 追加 b81166475（合并服务器应用提交 6399e8165）与 8a6efdc76（写操作职责不渲染只读按钮）。服务器应用提交 6399e8165 与容器 SC_SOURCE_REVISION 一致，平台容器 healthy。运行态回读：admin 登录 200（session.db=sc_platform_control）；system.init 返回 capabilities=6、capability_groups=[platform_control]、is_platform_admin=true、is_tenant_config_admin=false、default_landing=/；GET /platform-admin/api/ops/tenants 返回平台登记行 ns_000000000002/Demo演示公司/active/demo//t/demo，billing_bound=false 且 company_id/company_name 为 null；demo token 反向调用平台接口 401。12 个后端测试模块（20/15/10/11/7/14/7/5/2/4/5/22）与前端 typecheck、dutyAction 6、admin_route_access 10 在 8a6efdc76 上全部非零通过。上一版回执 533df1cd 因并行 lane 在此期间追加提交导致仓库身份变化被判 blocked，本回执在同一分支新 HEAD 上重取身份与证据；六条历史阻断的关闭事实记录在 run.json 的 blockers 中。",
+  "next_step": "environment lane 用本批前端源码构建静态产物并由 nginx 挂载后，做一次平台首页视觉验收（平台控制台卡片 + 租户登记表数据），并刷新 FRONTEND_BUILD_SHA256；本 lane 不再写入。",
+  "supersedes": [
+    "533df1cd6de9c38769163854e9d0f5e4bec02eb79b05c0b04cb45ec500b0e793"
+  ],
+  "blockers": [],
+  "closed_blockers": [],
+  "evidence": [
+    {
+      "path": ".runtime/platform-duty-closure-20261018/backend_tests_summary.log",
+      "nonempty": true,
+      "format": "log",
+      "assert": [
+        "contains:PASS test_platform_admin_duty_contract.py: ran=20",
+        "contains:PASS test_platform_admin_boundary.py: ran=15",
+        "contains:PASS test_login_company_boundary.py: ran=7",
+        "contains:PASS test_backend_scene_surface_boundary.py: ran=22",
+        "contains:SUMMARY ALL PASS",
+        "not_contains:FAIL "
+      ]
+    },
+    {
+      "path": ".runtime/platform-admin-duty-20261018/phase2/runtime_readback_20261018.txt",
+      "nonempty": true,
+      "format": "log",
+      "assert": [
+        "contains:is_platform_admin= True",
+        "contains:is_tenant_config_admin= False",
+        "contains:capabilities_len= 6",
+        "contains:capability_groups= ['platform_control']",
+        "contains:Demo演示公司",
+        "contains:tenants_ok= True",
+        "contains:runtime_revision= 6399e81658c10a84582c3a6390529891094b783c",
+        "contains:demo_token_on_platform_http=401"
+      ]
+    },
+    {
+      "path": ".runtime/platform-duty-closure-20261018/deploy_readback_20261018.txt",
+      "nonempty": true,
+      "format": "log",
+      "assert": [
+        "contains:6399e81658c10a84582c3a6390529891094b783c",
+        "contains:SC_SOURCE_REVISION=6399e81658c10a84582c3a6390529891094b783c",
+        "contains:healthy"
+      ]
+    },
+    {
+      "path": ".runtime/platform-duty-closure-20261018/git_state.log",
+      "nonempty": true,
+      "format": "log",
+      "assert": [
+        "contains:a4cf11f9f",
+        "contains:1efbd7e81",
+        "contains:.agent/runs/DEMO-COMPANY-NAME-20261018/"
+      ]
+    },
+    {
+      "path": ".runtime/platform-duty-closure-20261018/frontend_summary.txt",
+      "nonempty": true,
+      "format": "text",
+      "assert": [
+        "contains:frontend_typecheck_exit=0",
+        "contains:dutyAction_tests=6 pass=6 fail=0 exit=0",
+        "contains:admin_route_access=PASS cases=10 exit=0"
+      ]
+    },
+    {
+      "path": ".runtime/platform-duty-closure-20261018/dutyAction_test.log",
+      "nonempty": true,
+      "format": "log",
+      "assert": [
+        "contains:tests 6",
+        "contains:pass 6",
+        "contains:fail 0"
+      ]
+    },
+    {
+      "path": ".runtime/platform-duty-closure-20261018/admin_route_access_test.log",
+      "nonempty": true,
+      "format": "log",
+      "assert": [
+        "contains:[admin_route_access_test] PASS cases=10"
+      ]
+    },
+    {
+      "path": ".runtime/platform-duty-closure-20261018/demo_company_name.txt",
+      "nonempty": true,
+      "format": "text",
+      "assert": [
+        "contains:1|Demo演示公司",
+        "contains:ns_000000000002|Demo演示公司|tenant"
+      ]
+    },
+    {
+      "path": ".runtime/platform-duty-closure-20261018/test_platform_admin_duty_contract.py.log",
+      "nonempty": true,
+      "format": "log",
+      "assert": [
+        "contains:RESULT ran=20 failures=0 errors=0",
+        "contains:OK"
+      ]
+    },
+    {
+      "path": ".runtime/platform-duty-closure-20261018/test_app_shell_boundaries.py.log",
+      "nonempty": true,
+      "format": "log",
+      "assert": [
+        "contains:RESULT ran=14 failures=0 errors=0",
+        "contains:OK"
+      ]
+    },
+    {
+      "path": ".runtime/platform-duty-closure-20261018/test_final_menu_navigation_service.py.log",
+      "nonempty": true,
+      "format": "log",
+      "assert": [
+        "contains:RESULT ran=5 failures=0 errors=0",
+        "contains:OK"
+      ]
+    },
+    {
+      "path": ".runtime/platform-duty-closure-20261018/test_admin_predicate_split.py.log",
+      "nonempty": true,
+      "format": "log",
+      "assert": [
+        "contains:RESULT ran=10 failures=0 errors=0",
+        "contains:OK"
+      ]
+    }
+  ],
+  "resources": [
+    "worktree:/home/lidefend/workspace/sce-backend-odoo"
+  ],
+  "execution_authorized": false
+}
