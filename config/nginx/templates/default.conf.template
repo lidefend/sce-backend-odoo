@@ -7,7 +7,7 @@ map $http_upgrade $connection_upgrade {
 # (X-Odoo-DB / X-DB / ?db=) is no longer a routing input: it is stripped before
 # proxying and refused by Odoo as a conflict.
 map $uri $sc_path_ns {
-  ~"^/t/([a-z0-9][a-z0-9-]*)(/|$)"  $1;
+  ~^/t/([a-z0-9][a-z0-9-]*)(/|$)  $1;
   ~^/platform-admin(/|$)               platform;
   default                              "";
 }
@@ -113,7 +113,7 @@ server {
 
   # Namespace-prefixed API surface: the prefix is the only database selector
   # and is preserved on the upstream request.
-  location ~ "^/t/[a-z0-9][a-z0-9-]*/api/" {
+  location ~ ^/t/[a-z0-9][a-z0-9-]*/api/ {
     # Capture the namespace before the rewrite changes $uri, then strip the
     # prefix so Odoo receives its native /api/... route.
     set $sc_entry_ns $sc_path_ns;
@@ -122,7 +122,7 @@ server {
     if ($sc_entry_ns = "") {
       return 400 '{"error":"NS_NAMESPACE_REQUIRED"}';
     }
-    rewrite "^/t/[a-z0-9][a-z0-9-]*(/api/.*)$" $1 break;
+    rewrite ^/t/[a-z0-9][a-z0-9-]*(/api/.*)$ $1 break;
     proxy_pass http://$sc_entry_upstream;
     proxy_redirect off;
 
@@ -171,14 +171,14 @@ server {
 
   # Prefixed Odoo web faces: strip the namespace prefix so /web, /mail,
   # /report and /longpolling resolve to Odoo's native routes.
-  location ~ "^/t/[a-z0-9][a-z0-9-]*/(web|web_editor|mail|report|longpolling)(/|$)" {
+  location ~ ^/t/[a-z0-9][a-z0-9-]*/(web|web_editor|mail|report|longpolling)(/|$) {
     set $sc_entry_ns $sc_path_ns;
     set $sc_entry_audience $sc_ns_audience;
     set $sc_entry_upstream $sc_proxy_upstream;
     if ($sc_entry_ns = "") {
       return 400 '{"error":"NS_NAMESPACE_REQUIRED"}';
     }
-    rewrite "^/t/[a-z0-9][a-z0-9-]*(/.*)$" $1 break;
+    rewrite ^/t/[a-z0-9][a-z0-9-]*(/.*)$ $1 break;
     proxy_pass http://$sc_entry_upstream;
     proxy_redirect off;
 
@@ -226,14 +226,14 @@ server {
   }
 
   # Namespace-prefixed websocket face (longpolling upgrade).
-  location ~ "^/t/[a-z0-9][a-z0-9-]*/websocket" {
+  location ~ ^/t/[a-z0-9][a-z0-9-]*/websocket {
     set $sc_entry_ns $sc_path_ns;
     set $sc_entry_audience $sc_ns_audience;
     set $sc_entry_upstream $sc_proxy_upstream;
     if ($sc_entry_ns = "") {
       return 400 '{"error":"NS_NAMESPACE_REQUIRED"}';
     }
-    rewrite "^/t/[a-z0-9][a-z0-9-]*(/.*)$" $1 break;
+    rewrite ^/t/[a-z0-9][a-z0-9-]*(/.*)$ $1 break;
     proxy_pass http://$sc_entry_upstream;
     proxy_http_version 1.1;
     proxy_set_header Upgrade    $http_upgrade;

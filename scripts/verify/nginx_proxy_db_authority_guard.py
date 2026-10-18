@@ -28,7 +28,7 @@ DUTY_ENV = ROOT / "config/ops/daily_runtime_duty_stack.env"
 LEGACY_LITERAL_CONF = ROOT / "config/nginx/conf.d/default.conf"
 
 PATH_MAP = "map $uri $sc_path_ns {"
-TENANT_RULE = '~"^/t/([a-z0-9][a-z0-9-]*)(/|$)"  $1;'
+TENANT_RULE = "~^/t/([a-z0-9][a-z0-9-]*)(/|$)  $1;"
 PLATFORM_RULE = "~^/platform-admin(/|$)               platform;"
 AUDIENCE_MAP = "map $sc_path_ns $sc_ns_audience {"
 UPSTREAM_MAP = "map $sc_path_ns $sc_proxy_upstream {"
