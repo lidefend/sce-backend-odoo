@@ -11,12 +11,16 @@ import json
 import unittest
 from pathlib import Path
 
+import re
+
 from scripts.ops import daily_runtime_database_duty as entry
+from scripts.ops import daily_runtime_entry_verify as verifier
 
 
 ROOT = Path(__file__).resolve().parents[2]
 ENTRY = ROOT / "config/ops/daily_runtime_entry.v1.json"
 DECLARATION = ROOT / "config/ops/daily_runtime_database_duties.v1.json"
+TEMPLATE = ROOT / "config/nginx/templates/default.conf.template"
 
 
 def shipped():
@@ -135,6 +139,33 @@ class DailyRuntimeEntryTest(unittest.TestCase):
                 row["database"] = "sc_demo"
         failures = entry.validate_entry(entry_doc, declaration)
         self.assertTrue(any("platform" in item.lower() for item in failures), failures)
+
+    def test_unknown_namespace_probe_uses_an_alias_the_nginx_map_accepts(self):
+        alias = verifier.UNKNOWN_NAMESPACE_ALIAS
+        self.assertTrue(re.fullmatch(r"[a-z0-9][a-z0-9-]*", alias), alias)
+        entry_doc, _ = shipped()
+        declared = {row["alias"] for row in entry_doc["namespace_routes"]["namespaces"]}
+        self.assertNotIn(alias, declared)
+
+    def test_detection_maps_are_not_database_selectors(self):
+        conf = (
+            "map \"$http_x_odoo_db:$http_x_db:$http_x_odoo_db_locked\" "
+            "$sc_client_db_header_present {\n  default 1;\n}\n"
+            "map $arg_db $sc_client_db_query_present {\n  default 1;\n}\n"
+            'proxy_set_header X-Odoo-DB         "";\n'
+        )
+        self.assertEqual([], verifier.database_selector_offenders(conf))
+
+    def test_forwarding_a_client_hint_is_a_database_selector(self):
+        offenders = verifier.database_selector_offenders(
+            "proxy_set_header X-Odoo-DB $http_x_odoo_db;"
+        )
+        self.assertEqual(["proxy_set_header X-Odoo-DB $http_x_odoo_db;"], offenders)
+
+    def test_shipped_template_has_no_database_selector(self):
+        self.assertEqual(
+            [], verifier.database_selector_offenders(TEMPLATE.read_text(encoding="utf-8"))
+        )
 
     def test_mutating_a_route_database_does_not_change_the_declaration_digest(self):
         entry_doc, _ = shipped()

@@ -80,6 +80,28 @@ class NginxProxyDbAuthorityGuardTest(unittest.TestCase):
             errors,
         )
 
+    def test_dropping_the_relative_root_redirect_is_refused(self):
+        mutated = self.template.replace("  absolute_redirect off;\n", "", 1)
+        errors = self.probe(template=mutated)
+        self.assertTrue(any("absolute_redirect off" in item for item in errors), errors)
+
+    def test_dropping_the_json_default_type_is_refused(self):
+        mutated = self.template.replace("  default_type application/json;\n", "", 1)
+        errors = self.probe(template=mutated)
+        self.assertTrue(any("application/json" in item for item in errors), errors)
+
+    def test_dropping_the_illegal_prefix_refusal_is_refused(self):
+        mutated = self.template.replace(
+            '      return 404 \'{"error":"NS_UNKNOWN_NAMESPACE"}\';\n', ""
+        )
+        errors = self.probe(template=mutated)
+        self.assertTrue(any("NS_UNKNOWN_NAMESPACE" in item for item in errors), errors)
+
+    def test_dropping_the_tenant_fallback_location_is_refused(self):
+        mutated = self.template.replace("  location ~ ^/t/ {", "  location ~ ^/t-disabled/ {", 1)
+        errors = self.probe(template=mutated)
+        self.assertTrue(any("NS_UNKNOWN_NAMESPACE" in item for item in errors), errors)
+
     def test_dropping_the_shared_secret_injection_is_refused(self):
         mutated = self.compose.replace("SC_ENTRY_SHARED_SECRET:", "SC_ENTRY_SHARED_SECRET_RETIRED:")
         errors = self.probe(compose=mutated)

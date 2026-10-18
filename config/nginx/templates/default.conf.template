@@ -40,6 +40,12 @@ server {
   server_name _;
   client_max_body_size 512m;
 
+  # Batch C: refusals are JSON and the bare-root redirect must keep the
+  # client's own port (18081).  nginx defaults to absolute Locations and
+  # text/plain bodies; both broke the declared entry contract.
+  absolute_redirect off;
+  default_type application/json;
+
   # Batch C: the platform entry is two nginx layers.  The serving (entry) face
   # forwards `/platform-admin/...` unchanged to the platform duty face; the
   # platform duty face strips the prefix before its own Odoo, whose routes are
@@ -284,6 +290,18 @@ server {
     proxy_set_header X-SC-Entry-Secret ${SC_ENTRY_SHARED_SECRET};
 
     proxy_read_timeout 1800s;
+  }
+
+  # Batch C: a `/t/` prefix that does not even parse as an alias is not a
+  # namespace.  Refuse it as JSON instead of letting the SPA fallback answer
+  # 200 for an undeclared route.  Declared aliases still serve the SPA; the
+  # API/web/websocket regexes above take precedence over this fallback.
+  location ~ ^/t/ {
+    if ($sc_path_ns = "") {
+      return 404 '{"error":"NS_UNKNOWN_NAMESPACE"}';
+    }
+    add_header Cache-Control "no-cache, no-store, must-revalidate";
+    try_files $uri $uri/ /index.html;
   }
 
   location /api/ {

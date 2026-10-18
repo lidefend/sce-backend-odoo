@@ -23,6 +23,7 @@ import argparse
 import json
 import re
 import shlex
+import inspect
 import subprocess
 from pathlib import Path
 
@@ -33,6 +34,32 @@ REMOTE_DIST = REMOTE_ROOT + "/frontend/apps/web/dist-dev"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 
+# The probe alias must satisfy the nginx tenant rule `[a-z0-9][a-z0-9-]*`.
+# An underscore alias never reaches the namespace resolver: it falls through
+# every `/t/<alias>/api/` location, so the probe would test the SPA fallback
+# instead of an unknown namespace.
+UNKNOWN_NAMESPACE_ALIAS = "nope"
+
+
+def database_selector_offenders(conf):
+    """Return lines that turn a client database hint into a routing input.
+
+    A hint may appear as the *key* of a detection map: that is how the entry
+    recognises and refuses it.  It is an offender only when it becomes a
+    header value or an upstream, because then the client hint selects a route
+    again.  The remote program below embeds this exact function.
+    """
+
+    offenders = []
+    for line in (conf or "").splitlines():
+        stripped = line.strip()
+        if not any(token in stripped for token in ("$http_x_odoo_db", "$arg_db", "$sc_proxy_db")):
+            continue
+        if stripped.startswith("map "):
+            continue
+        offenders.append(stripped)
+    return offenders
+
 
 REMOTE_PROGRAM = r'''
 import json
@@ -41,6 +68,8 @@ import subprocess
 import urllib.error
 import urllib.parse
 import urllib.request
+
+__SELECTOR_HELPER__
 
 ENTRY = json.loads(__ENTRY__)
 DUTIES = json.loads(__DUTIES__)
@@ -279,6 +308,12 @@ add("bare_root_requires_a_namespace",
      "location": root_redirect_header, "expected_status": root_redirect_status,
      "expected_location": root_redirect_location,
      "served_spa": bool(entry_asset(root_redirect_body))})
+add("bare_root_redirect_keeps_the_client_authority",
+    root_redirect_code == root_redirect_status
+    and root_redirect_header.startswith("/")
+    and not root_redirect_header.startswith("//")
+    and "://" not in root_redirect_header,
+    {"location": root_redirect_header, "expected_relative": root_redirect_location})
 add("platform_admin_path_answers", admin_code == 200, {"code": admin_code})
 add("both_paths_serve_the_same_spa_entry", bool(served_entry) and served_entry == admin_entry,
     {"root": served_entry, "platform_admin": admin_entry})
@@ -305,8 +340,10 @@ header_hint_code, header_hint_payload, header_hint_type = probe(
     "%s/api/runtime-version" % tenant_base, header=platform_db)
 query_hint_code, query_hint_payload, query_hint_type = probe(
     "%s/api/runtime-version" % tenant_base, query=platform_db)
-unknown_path = "%s/%s/api/runtime-version" % (tenant_prefix, "sc_undeclared_entry_probe")
+unknown_path = "%s/%s/api/runtime-version" % (tenant_prefix, __UNKNOWN_ALIAS__)
+invalid_prefix_path = "%s/%s/" % (tenant_prefix, "sc_undeclared_entry_probe")
 unknown_status_observed, unknown_payload, unknown_type = probe(unknown_path)
+invalid_prefix_status, invalid_prefix_payload, invalid_prefix_type = probe(invalid_prefix_path)
 
 add("tenant_namespace_lands_on_the_serving_database",
     tenant_code == 200 and tenant_version.get("database") == serving_db,
@@ -345,6 +382,12 @@ add("unknown_namespace_is_refused",
     {"path": unknown_path, "code": unknown_status_observed, "body": unknown_payload,
      "content_type": unknown_type, "expected_status": unknown_status,
      "expected_code": unknown_code})
+add("invalid_namespace_prefix_is_refused",
+    invalid_prefix_status == unknown_status and invalid_prefix_payload.get("error") == unknown_code
+    and (not unknown_type_expected or unknown_type_expected in invalid_prefix_type),
+    {"path": invalid_prefix_path, "code": invalid_prefix_status,
+     "body": invalid_prefix_payload, "content_type": invalid_prefix_type,
+     "expected_status": unknown_status, "expected_code": unknown_code})
 
 for label, version in (("tenant", tenant_version), ("platform", platform_version)):
     add("%s_runtime_publishes_the_deployed_revision" % label,
@@ -407,13 +450,13 @@ for label, container, expected_strip in (
         and "NS_NAMESPACE_REQUIRED" in conf
         and "$sc_path_ns" in conf,
         {"container": container})
+    offenders = database_selector_offenders(conf)
     add("%s_rendered_config_has_no_database_selector" % label,
         bool(conf)
         and "$sc_proxy_db" not in conf
         and "unknown_database" not in conf
-        and "$http_x_odoo_db" not in conf
-        and "$arg_db" not in conf,
-        {"container": container})
+        and not offenders,
+        {"container": container, "routing_inputs": offenders})
     add("%s_rendered_config_gates_the_platform_prefix_rewrite" % label,
         bool(conf)
         and "$sc_entry_platform_strip" in conf
@@ -458,7 +501,7 @@ print("DAILY_ENTRY_VERIFY=" + json.dumps({
     "network_members": sorted(members),
     "checks": checks,
 }, ensure_ascii=False, sort_keys=True))
-'''
+'''.replace("__SELECTOR_HELPER__", inspect.getsource(database_selector_offenders))
 
 
 def main() -> int:
@@ -476,7 +519,7 @@ def main() -> int:
     entry = json.loads((ROOT / args.entry).read_text(encoding="utf-8"))
     duties = json.loads((ROOT / args.declaration).read_text(encoding="utf-8"))
     program = (
-        REMOTE_PROGRAM.replace(
+        REMOTE_PROGRAM.replace("__UNKNOWN_ALIAS__", json.dumps(UNKNOWN_NAMESPACE_ALIAS)).replace(
             "__ENTRY__", json.dumps(json.dumps(entry, ensure_ascii=False, sort_keys=True))
         )
         .replace(

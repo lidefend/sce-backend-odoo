@@ -42,6 +42,8 @@ ROOT_API_REFUSAL = re.compile(
     re.S,
 )
 HINT_REFUSAL = 'return 409 \'{"error":"NS_DATABASE_HINT_CONFLICT"}\';'
+TENANT_FALLBACK = "location ~ ^/t/ {"
+UNKNOWN_NAMESPACE_REFUSAL = 'return 404 \'{"error":"NS_UNKNOWN_NAMESPACE"}\';'
 VARIABLE_PROXY_PASSES = (
     "proxy_pass http://$sc_entry_upstream;",
     "proxy_pass http://$sc_proxy_upstream;",
@@ -170,6 +172,21 @@ def probe(
             errors.append(
                 "config/nginx/templates/default.conf.template: a client database hint must be refused with "
                 "HTTP 409 `NS_DATABASE_HINT_CONFLICT`"
+            )
+        if not re.search(r"server\s*\{[^}]*absolute_redirect off;", template):
+            errors.append(
+                "config/nginx/templates/default.conf.template: the bare-root redirect must set "
+                "`absolute_redirect off` at server level, or the public port is dropped from Location"
+            )
+        if not re.search(r"server\s*\{[^}]*default_type application/json;", template):
+            errors.append(
+                "config/nginx/templates/default.conf.template: refusals must default to "
+                "`application/json` at server level"
+            )
+        if TENANT_FALLBACK not in template or UNKNOWN_NAMESPACE_REFUSAL not in template:
+            errors.append(
+                "config/nginx/templates/default.conf.template: an illegal `/t/` prefix must be refused "
+                "with HTTP 404 `NS_UNKNOWN_NAMESPACE`, never served the SPA fallback"
             )
         if "SC_ENTRY_PLATFORM_STRIP" not in template or PLATFORM_STRIP_GUARD not in template:
             errors.append(
