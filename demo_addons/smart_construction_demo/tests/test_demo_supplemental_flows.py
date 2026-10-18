@@ -239,6 +239,38 @@ class DemoCompanyIdentity(unittest.TestCase):
         self.assertEqual([record.login for record in records], ["xmlid-39", "demo_full"])
 
 
+class AttachmentIdempotency(unittest.TestCase):
+    class Attachments:
+        def __init__(self, values):
+            self.values = list(values)
+
+        def filtered(self, predicate):
+            return type(self)([value for value in self.values if predicate(value)])
+
+        def __getitem__(self, index):
+            if isinstance(index, slice):
+                return type(self)(self.values[index])
+            return self.values[index]
+
+    def test_existing_named_attachment_is_reused(self):
+        wanted = SimpleNamespace(name="合同附件清单 · DEMO-PJ-EXEC.txt")
+        other = SimpleNamespace(name="其他附件.txt")
+        document = SimpleNamespace(
+            attachment_ids=self.Attachments([other, wanted]),
+        )
+        find = function("step_60_attachments_demo.py", "_find_document_attachment")
+        self.assertEqual(list(find(document, wanted.name)), [wanted])
+
+    def test_missing_named_attachment_is_not_fabricated(self):
+        document = SimpleNamespace(
+            attachment_ids=self.Attachments(
+                [SimpleNamespace(name="其他附件.txt")]
+            ),
+        )
+        find = function("step_60_attachments_demo.py", "_find_document_attachment")
+        self.assertEqual(list(find(document, "合同附件清单 · DEMO-PJ-EXEC.txt")), [])
+
+
 class DemoFullPrincipalMigration(unittest.TestCase):
     class Cursor:
         def __init__(self, user_ids=(), existing=None):

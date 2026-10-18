@@ -58,6 +58,18 @@ def _create_attachment(env, name, content, mimetype="text/plain"):
     )
 
 
+def _find_document_attachment(document, filename):
+    """Return the demo attachment already linked to a document, if any.
+
+    Draft documents are rewritten on every seed run. Reusing the named
+    attachment keeps the seed idempotent and avoids orphaning the previous
+    file when the document relation is replaced.
+    """
+    return document.attachment_ids.filtered(
+        lambda attachment: attachment.name == filename
+    )[:1]
+
+
 def _advance_document(document, target_state):
     """把演示资料推进到声明状态，只使用产品自己的办理动作。
 
@@ -161,8 +173,23 @@ def run(env):
                 "is_mandatory": doc["is_mandatory"],
             }
             if not existing or existing.state == "draft":
-                attachment = _create_attachment(ScDoc.env, f"{name}.txt", doc["content"])
-                vals["attachment_ids"] = [(6, 0, [attachment.id])]
+                filename = f"{name}.txt"
+                attachment = (
+                    _find_document_attachment(existing, filename)
+                    if existing
+                    else False
+                )
+                if not existing:
+                    attachment = _create_attachment(
+                        ScDoc.env, filename, doc["content"]
+                    )
+                    vals["attachment_ids"] = [(6, 0, [attachment.id])]
+                elif not attachment:
+                    attachment = _create_attachment(
+                        ScDoc.env, filename, doc["content"]
+                    )
+                    # Add the missing file without dropping any user attachment.
+                    vals["attachment_ids"] = [(4, attachment.id)]
             if existing:
                 # 已归档/已作废的资料受保护，只有草稿可以改写内容字段。
                 if existing.state == "draft":
