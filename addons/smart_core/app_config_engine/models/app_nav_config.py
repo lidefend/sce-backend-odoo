@@ -181,6 +181,24 @@ class AppMenuConfig(models.Model):
             ('lang', '=', self.env.lang or 'zh_CN'),
         ]
 
+    def _menu_config_lock_key(self, model_name=None, scene='web'):
+        """Stable text key for the per-dimension first-insert lock.
+
+        The cache is keyed by target_model+scene+company+lang. Two concurrent
+        ``system.init`` requests can both miss it and build the same projection;
+        without an ordering point the loser's INSERT trips the unique dimension
+        key and the request fails with 500 even though the winner's row is
+        exactly what it needs.
+        """
+
+        return "|".join((
+            str(self.env.cr.dbname or ""),
+            str(model_name or "__all__"),
+            self._normalize_scene(scene),
+            str(self.env.company.id or ""),
+            str(self.env.lang or "zh_CN"),
+        ))
+
     @api.model
     def _get_or_generate_from_menus(self, model_name=None, scene='web', force=False):
         scene = self._normalize_scene(scene)
@@ -433,6 +451,24 @@ class AppMenuConfig(models.Model):
                 'is_active': True,
             }
 
+            if not cfg:
+                # Serialize the first insert on the dimension key. The lock is
+                # transaction-scoped, so it is released by the same commit that
+                # publishes the row. Re-search afterwards: the statement that
+                # runs once the lock is granted takes a fresh snapshot and sees
+                # the row committed by the worker that held the lock before us.
+                self.env.cr.execute(
+                    "SELECT pg_advisory_xact_lock(hashtext(%s), hashtext(%s))",
+                    (
+                        "app.menu.config",
+                        self._menu_config_lock_key(model_name=model_name, scene=scene),
+                    ),
+                )
+                cfg = self.sudo().with_context(active_test=False).search(
+                    self._menu_config_domain(model_name=model_name, scene=scene),
+                    limit=1,
+                )
+
             if cfg:
                 hash_changed = cfg.config_hash != new_hash
                 if hash_changed or not cfg.is_active:
@@ -455,15 +491,26 @@ class AppMenuConfig(models.Model):
                         cfg = self.sudo().create(vals)
                     _logger.info("Menu config created: %s/%s v1", target_key, scene)
                 except IntegrityError:
-                    # Another request may create the same company/lang cache after
-                    # our initial search. Roll back only the create savepoint and
-                    # consume the now-authoritative row instead of failing system.init.
-                    cfg = self.sudo().with_context(active_test=False).search(
-                        self._menu_config_domain(model_name=model_name, scene=scene),
-                        limit=1,
+                    # Defense in depth: a writer outside this lock (for example
+                    # a direct import) can still have inserted the dimension.
+                    # Roll back only the create savepoint, then read the
+                    # authoritative id with SQL so the ORM cache from the
+                    # rolled-back savepoint cannot mask the committed row.
+                    self.env.cr.execute(
+                        "SELECT id FROM app_menu_config "
+                        "WHERE target_model = %s AND scene = %s "
+                        "AND company_id = %s AND lang = %s LIMIT 1",
+                        (
+                            target_key,
+                            scene,
+                            self.env.company.id,
+                            self.env.lang or 'zh_CN',
+                        ),
                     )
-                    if not cfg:
+                    row = self.env.cr.fetchone()
+                    if not row:
                         raise
+                    cfg = self.sudo().browse(row[0])
                     if cfg.config_hash != new_hash:
                         vals['version'] = cfg.version + 1
                         cfg.write(vals)

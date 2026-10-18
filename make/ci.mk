@@ -1205,6 +1205,7 @@ verify.contract.architecture.suite: \
 	@python3 scripts/verify/construction_core_extension_actor_roles_split_guard.py
 	@python3 scripts/verify/construction_core_extension_relation_entry_policy_split_guard.py
 	@python3 scripts/verify/file_line_budget_uniform_guard.py
+	@python3 addons/smart_core/tests/test_app_menu_config_insert_lock.py
 	@python3 -m unittest scripts.verify.test_construction_create_default_hooks
 	@python3 scripts/verify/construction_core_extension_responsibility_map_guard.py
 	@python3 scripts/verify/ui_contract_v2_responsibility_map_guard.py
