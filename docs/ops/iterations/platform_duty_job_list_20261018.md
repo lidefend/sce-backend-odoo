@@ -27,7 +27,8 @@
 
 ## 验证
 
-- `make verify.platform.duty.contract.unit`：31 项通过（Python 25 + Node 6）。
+- `make verify.platform.duty.contract.unit`：31 项通过（Python 25 + Node 6；
+  前端测试先用 esbuild 打包，避免 CI Node 版本不支持直接执行 `.ts`）。
 - `make verify.agent.ledger.unit`：18 项通过。
 - `make audit.verification.lane_coverage.check` 与
   `make verify.unified_page_contract.v2.assembler` 通过。
