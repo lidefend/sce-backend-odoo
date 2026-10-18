@@ -88,7 +88,7 @@ for (const transition of ['policy', 'A-B-A']) {
     const applied: Value[] = [];
     const runtime = createScopedPreferenceRuntime({
       waitForWrites: () => writes,
-      load: async (_scope: string) => { reads += 1; return stored; },
+      load: async () => { reads += 1; return stored; },
       apply: value => applied.push(value), clear: () => {}, onError: error => { throw error; },
     });
     runtime.sync('A', 'scope-A', 'allow'); await tick();
@@ -148,7 +148,7 @@ await check('missing or invalid policy never defaults to allowed', () => {
 await check('deferred contract application errors reach the page error channel', async () => {
   const errors: unknown[] = [];
   let clears = 0;
-  const runtime = createScopedPreferenceRuntime({load: async (_scope: string) => ({}), apply: () => {throw new Error('contract gap');}, clear: () => {clears++;}, onError: error => errors.push(error)});
+  const runtime = createScopedPreferenceRuntime({load: async () => ({}), apply: () => {throw new Error('contract gap');}, clear: () => {clears++;}, onError: error => errors.push(error)});
   runtime.sync('A','scope',null); await tick();
   runtime.sync('A','scope','policy');
   assert.equal(errors.length,1); assert.ok(clears >= 2);

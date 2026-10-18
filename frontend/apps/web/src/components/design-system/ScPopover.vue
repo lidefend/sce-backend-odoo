@@ -7,8 +7,8 @@
     :disabled="disabled"
     :overlay-class-name="overlayClassName"
     :overlay-style="overlayStyle"
-    @visible-change="visible = $event"
     destroy-on-close
+    @visible-change="visible = $event"
   >
     <template #content>
       <slot />
@@ -54,6 +54,8 @@ withDefaults(
   {
     trigger: 'click',
     placement: 'bottom',
+    overlayClassName: undefined,
+    overlayStyle: undefined,
     showArrow: false,
     disabled: false,
   },

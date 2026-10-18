@@ -45,8 +45,9 @@
             <p>{{ pageText('hint_code', '请输入经批准渠道单独收到的激活码，并设置自己的正式密码。') }}</p>
           </ScPanel>
 
-          <ScForm key="code" novalidate
-            v-if="stage === 'code' && pageSectionEnabled('code_form', true) && pageSectionTagIs('code_form', 'section')"
+          <ScForm
+            v-if="stage === 'code' && pageSectionEnabled('code_form', true) && pageSectionTagIs('code_form', 'section')" key="code"
+            novalidate
             :style="pageSectionStyle('code_form')"
             :data="{ activationCode }"
             layout="vertical" label-align="top" :required-mark="false"
@@ -54,13 +55,14 @@
             data-auth-composition="official-credential-form"
             @submit="onCodeValidated"
           >
-            <ScFormItem name="activationCode" :label="pageText('activation_code_label', '激活码')" :show-error-message="true"
+            <ScFormItem
+              name="activationCode" :label="pageText('activation_code_label', '激活码')" :show-error-message="true"
               :rules="[{ required: true, message: pageText('activation_code_placeholder', '请输入激活码') }]">
               <ScInput
                 id="activation-code"
-                :aria-label="pageText('activation_code_label', '激活码')"
                 ref="codeInput"
                 v-model="activationCode"
+                :aria-label="pageText('activation_code_label', '激活码')"
                 size="large"
                 autocomplete="one-time-code"
                 spellcheck="false"
@@ -76,8 +78,9 @@
             </ScFormItem>
           </ScForm>
 
-          <ScForm key="password" novalidate
-            v-else-if="stage === 'password' && pageSectionEnabled('password_form', true) && pageSectionTagIs('password_form', 'section')"
+          <ScForm
+            v-else-if="stage === 'password' && pageSectionEnabled('password_form', true) && pageSectionTagIs('password_form', 'section')" key="password"
+            novalidate
             :style="pageSectionStyle('password_form')"
             :data="{ password, confirmPassword }"
             layout="vertical" label-align="top" :required-mark="false"
@@ -88,13 +91,15 @@
             <ScPanel tone="subtle" class="activation-note">
               <p>{{ pageText('hint_password', '密码至少12位，并同时包含字母和数字。') }}</p>
             </ScPanel>
-            <ScFormItem name="password" :label="pageText('password_label', '正式密码')" :show-error-message="true"
+            <ScFormItem
+              name="password" :label="pageText('password_label', '正式密码')" :show-error-message="true"
               :rules="[{ required: true, message: pageText('password_label', '正式密码') }, { validator: () => password.length >= 12, message: pageText('hint_password', '密码至少12位，并同时包含字母和数字。') }]">
-              <ScInput id="activation-password" :aria-label="pageText('password_label', '正式密码')" v-model="password" size="large" type="password" autocomplete="new-password" :min-length="12" required :disabled="busy" />
+              <ScInput id="activation-password" v-model="password" :aria-label="pageText('password_label', '正式密码')" size="large" type="password" autocomplete="new-password" :min-length="12" required :disabled="busy" />
             </ScFormItem>
-            <ScFormItem name="confirmPassword" :label="pageText('password_confirm_label', '确认正式密码')" :show-error-message="true"
+            <ScFormItem
+              name="confirmPassword" :label="pageText('password_confirm_label', '确认正式密码')" :show-error-message="true"
               :rules="[{ required: true, message: pageText('password_confirm_label', '确认正式密码') }, { validator: () => confirmPassword.length >= 12, message: pageText('hint_password', '密码至少12位，并同时包含字母和数字。') }]">
-              <ScInput id="activation-password-confirm" :aria-label="pageText('password_confirm_label', '确认正式密码')" v-model="confirmPassword" size="large" type="password" autocomplete="new-password" :min-length="12" required :disabled="busy" />
+              <ScInput id="activation-password-confirm" v-model="confirmPassword" :aria-label="pageText('password_confirm_label', '确认正式密码')" size="large" type="password" autocomplete="new-password" :min-length="12" required :disabled="busy" />
             </ScFormItem>
             <ScFormItem>
             <ScButton type="submit" variant="primary" size="large" :disabled="busy || !password || !confirmPassword" :loading="busy">

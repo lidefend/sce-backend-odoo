@@ -1,3 +1,4 @@
+/* eslint-disable vue/one-component-per-file -- test harness declares several inline components on purpose */
 import assert from 'node:assert/strict';
 import { createRenderer, defineAsyncComponent, defineComponent, h, nextTick, ref, Teleport } from 'vue';
 import { useConfig } from '../../../packages/ui/node_modules/tdesign-vue-next/es/config-provider/hooks/useConfig.mjs';

@@ -38,7 +38,8 @@
         <ScButton type="button" title="移除" :aria-label="`移除${fieldDisplayLabel(name)}`" @click="$emit('removeName', name)">移除</ScButton>
       </span>
     </div>
-    <ScForm v-if="advancedPanelOpen" class="field-chip-add" :data="{ draftValue }" layout="inline"
+    <ScForm
+      v-if="advancedPanelOpen" class="field-chip-add" :data="{ draftValue }" layout="inline"
       :prevent-submit-default="true" :show-error-message="true" data-editor-composition="official-field-configuration"
       @submit="onAddValidated">
       <ScFormItem name="draftValue" :show-error-message="true">

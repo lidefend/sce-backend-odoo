@@ -13,11 +13,13 @@
     <template v-if="field.readonly">
       <slot v-if="hasReadonlyOverride" name="readonly" :field="field" />
       <template v-else>
+        <!-- eslint-disable vue/no-v-html -- readonlyHtml 已由 sanitizeReadonlyHtml 净化 -->
         <div
           v-if="field.type === 'html'"
           class="professional-base-field-control__readonly professional-base-field-control__readonly--html"
           v-html="readonlyHtml"
         />
+        <!-- eslint-enable vue/no-v-html -->
         <div
           v-else-if="taskActionFor(props.field)"
           role="button"

@@ -247,7 +247,8 @@
               <span v-if="chip.isDefault" class="menu-badge">{{ uiLabel('default', '默认') }}</span>
               <span v-if="chip.isShared" class="menu-badge">{{ uiLabel('shared', '共享') }}</span>
             </ScButton>
-            <ScButton v-if="chip.deleteAction && deleteFavorite" variant="ghost" size="small"
+            <ScButton
+              v-if="chip.deleteAction && deleteFavorite" variant="ghost" size="small"
               :aria-label="`${chip.deleteAction.label}：${chip.label}`" :disabled="loading || favoriteDeleting || favoriteSaving"
               @click="openFavoriteDelete(chip)">{{ chip.deleteAction.label }}</ScButton>
             </div>

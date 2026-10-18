@@ -9,5 +9,5 @@ import { TDesignDescriptions, TDesignDescriptionsItem } from './tdesignPrimitive
 import { semanticPrimitiveIdentity } from './primitiveAdapter';
 export type ScDescriptionItem = { key: string | number; label: string; value?: unknown; [key: string]: unknown };
 defineOptions({ inheritAttrs: false });
-withDefaults(defineProps<{ title?: string; column?: number; bordered?: boolean; items?: ScDescriptionItem[] }>(), { column: 2, bordered: false, items: () => [] });
+withDefaults(defineProps<{ title?: string; column?: number; bordered?: boolean; items?: ScDescriptionItem[] }>(), { title: '', column: 2, bordered: false, items: () => [] });
 </script>

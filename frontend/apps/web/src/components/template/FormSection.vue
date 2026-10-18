@@ -43,7 +43,8 @@
         </ScPopover>
       </template>
       <template #item="{ item }">
-        <div class="detail-fact-value"
+        <div
+          class="detail-fact-value"
           :data-field-name="detailFactField(item).name"
           :data-field-key="detailFactField(item).key"
           :data-field-type="detailFactField(item).type"
@@ -67,11 +68,13 @@
           :aria-label="detailFactField(item).many2oneOpenLabel || `打开${detailFactField(item).label}`"
           @click="emitFieldChange(detailFactField(item), detailFactField(item).many2oneOpenToken)"
         ><span class="readonly-relation-label">{{ readonlyText(detailFactField(item)) }}</span></ScButton>
+        <!-- eslint-disable vue/no-v-html -- readonlyHtml 经 sanitizeReadonlyHtml 净化 -->
         <div
           v-else-if="detailFactField(item).type === 'html'"
           class="readonly-value readonly-value--html"
           v-html="readonlyHtml(detailFactField(item))"
         />
+        <!-- eslint-enable vue/no-v-html -->
         <div
           v-else-if="taskActionFor(detailFactField(item))"
           role="button"
@@ -262,11 +265,13 @@
                    呈现，而不是把对象值交给可编辑兜底控件。 -->
               <template v-else-if="field.readonly || isJsonField(field)">
                 <slot name="readonly" :field="field">
+                  <!-- eslint-disable vue/no-v-html -- readonlyHtml 经 sanitizeReadonlyHtml 净化 -->
                   <div
                     v-if="field.type === 'html'"
                     class="readonly-value readonly-value--html"
                     v-html="readonlyHtml(field)"
                   />
+                  <!-- eslint-enable vue/no-v-html -->
                   <div
                     v-else-if="taskActionFor(field)"
                     role="button"
@@ -490,6 +495,7 @@ const props = withDefaults(defineProps<{
   fillOrphanRows?: boolean;
 }>(), {
   frame: true,
+  columns: undefined,
   tone: 'core',
   fields: () => [],
   relationAdapter: undefined,

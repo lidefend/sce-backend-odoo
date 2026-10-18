@@ -1,5 +1,6 @@
 <template>
-  <TDesignButton ref="buttonRef" variant="text" theme="default" shape="square" size="medium"
+  <TDesignButton
+    ref="buttonRef" variant="text" theme="default" shape="square" size="medium"
     :class="['sc-icon-button', attrs.class]" :style="attrs.style" type="button" :aria-label="label" :title="label" :disabled="disabled"
     :data-appearance="appearance"
     data-semantic-component="ScIconButton" data-semantic-primitive="ScIconButton" data-semantic-driver="tdesign-button" data-semantic-layer="primitive"

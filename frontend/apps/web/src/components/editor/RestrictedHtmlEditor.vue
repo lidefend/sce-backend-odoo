@@ -30,8 +30,8 @@
     </div>
 
     <div
-      ref="editorRef"
       :id="id"
+      ref="editorRef"
       class="restricted-html-editor__surface"
       contenteditable="true"
       role="textbox"

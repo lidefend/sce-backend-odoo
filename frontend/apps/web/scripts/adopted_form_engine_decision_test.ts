@@ -1,3 +1,4 @@
+/* eslint-disable vue/one-component-per-file -- test harness declares several inline components on purpose */
 /**
  * Executable proof for FE-TPL-02: a real official form engine decides whether a
  * save happens.

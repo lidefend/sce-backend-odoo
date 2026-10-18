@@ -118,6 +118,12 @@ const props = withDefaults(defineProps<{
   appearance?: 'default' | 'surface' | 'flush' | 'collection' | 'worksheet' | 'relation-detail';
 }>(), {
   data: () => [],
+  rowClassName: undefined,
+  rowAttributes: undefined,
+  tableContentWidth: undefined,
+  height: undefined,
+  maxHeight: undefined,
+  rowSelectionType: undefined,
   columns: () => [],
   rowKey: 'id',
   size: 'medium',
