@@ -30,7 +30,10 @@
     ".agent/active-runs.json",
     ".agent/goals/DAILY-ENTRY-REGISTRY-CLOSURE-20261018.yaml",
     ".agent/runs/DAILY-ENTRY-REGISTRY-CLOSURE-20261018/run.json",
-    "docs/ops/iterations/daily_entry_registry_closure_20261018.md"
+    "docs/ops/iterations/daily_entry_registry_closure_20261018.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
   ],
   "environment": {
     "kind": "offline",

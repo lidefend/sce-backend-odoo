@@ -26,13 +26,13 @@ Generated from repository source files. This report is informational during the 
 | 3692 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3641 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3472 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
+| 3432 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3416 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
-| 3356 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3312 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3131 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 3089 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
+| 3012 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3011 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
-| 2982 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 2934 | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2875 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
@@ -161,9 +161,9 @@ Generated from repository source files. This report is informational during the 
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 976 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
+| 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
 | 962 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 959 | Python source | `addons/smart_construction_core/tests/test_cost_fact_model_v2.py` |
-| 959 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 932 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
@@ -240,13 +240,13 @@ Generated from repository source files. This report is informational during the 
 | 3692 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3641 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3472 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
+| 3432 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3416 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
-| 3356 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3312 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3131 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 3089 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
+| 3012 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3011 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
-| 2982 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 2934 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2875 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
