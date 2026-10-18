@@ -19,10 +19,17 @@
 - `GET /api/ops/job/status` 无 `job_id` 时返回有上限的任务列表；仍保留按
   `job_id` 查询详情，非法 id 明确返回 400。
 - 平台面板不再手写运维任务表格或直接读取该 API。
+- 平台职责声明的窗口动作同时注入 `route_authority.admin_actions`
+  （`menu_id=0`、`route=/a/<action_id>`），使无原生菜单的动作也能通过 SPA
+  路由授权；该注入只对已验证的平台身份生效。
+- 补齐验证面：平台职责契约测试登记进前端 PR/发布车道；装配缓存指纹随
+  `ui_contract_v2` 变更重钉并升级缓存版本，避免旧装配继续被命中。
 
 ## 验证
 
-- `python3 addons/smart_core/tests/test_platform_admin_duty_contract.py`：22 项通过。
-- 前端 `vue-tsc` 与 `vite build` 通过。
+- `make verify.platform.duty.contract.unit`：31 项通过（Python 25 + Node 6）。
+- `make verify.agent.ledger.unit`：18 项通过。
+- `make audit.verification.lane_coverage.check` 与
+  `make verify.unified_page_contract.v2.assembler` 通过。
 - 部署后以平台管理员登录回读 `/platform-admin/api/ops/platform-duty`、登录后
   点击“运维任务”，确认进入官方列表页且无 400。
