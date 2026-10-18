@@ -223,7 +223,7 @@
       "literal": "release.operator.surface",
       "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
       "lines": [
-        598
+        599
       ],
       "occurrences": 1,
       "classification": "contract-derived",
