@@ -239,6 +239,54 @@ class DemoCompanyIdentity(unittest.TestCase):
         self.assertEqual([record.login for record in records], ["xmlid-39", "demo_full"])
 
 
+class DemoFullPrincipalMigration(unittest.TestCase):
+    class Cursor:
+        def __init__(self, user_ids=(), existing=None):
+            self.user_ids = user_ids
+            self.existing = existing
+            self.inserted = []
+            self.result = []
+
+        def execute(self, statement, params):
+            if "FROM res_users" in statement:
+                self.result = [(user_id,) for user_id in self.user_ids]
+            elif "FROM ir_model_data" in statement:
+                self.result = [self.existing] if self.existing else []
+            elif statement.strip().startswith("INSERT"):
+                self.inserted.append(params)
+                self.result = []
+
+        def fetchall(self):
+            return self.result
+
+        def fetchone(self):
+            return self.result[0] if self.result else None
+
+    def migrate(self):
+        import runpy
+        return runpy.run_path(str(ROOT / "migrations/0.3.1/pre-migration.py"))["migrate"]
+
+    def test_existing_seed_principal_is_bound_to_the_managed_xmlid(self):
+        cursor = self.Cursor(user_ids=(60,))
+        self.migrate()(cursor, "0.3.0")
+        self.assertEqual(cursor.inserted, [("smart_construction_demo", "user_demo_full", 60)])
+
+    def test_fresh_install_needs_no_migration_write(self):
+        cursor = self.Cursor()
+        self.migrate()(cursor, "0.3.0")
+        self.assertEqual(cursor.inserted, [])
+
+    def test_existing_xmlid_is_not_rewritten(self):
+        cursor = self.Cursor(user_ids=(60,), existing=(60,))
+        self.migrate()(cursor, "0.3.0")
+        self.assertEqual(cursor.inserted, [])
+
+    def test_conflicting_xmlid_stops_the_upgrade(self):
+        cursor = self.Cursor(user_ids=(60,), existing=(61,))
+        with self.assertRaisesRegex(RuntimeError, "different user"):
+            self.migrate()(cursor, "0.3.0")
+
+
 class Opening:
     def __init__(self):
         self.id = 7
