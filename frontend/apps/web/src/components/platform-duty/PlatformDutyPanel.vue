@@ -25,6 +25,8 @@
           v-if="actionOf(duty).kind === 'navigate'"
           type="button"
           class="platform-duty__action"
+          appearance="outline-action"
+          size="small"
           @click="open(duty)"
         >
           打开
@@ -33,6 +35,8 @@
           v-else-if="actionOf(duty).kind === 'inline' && !isWriteAction(duty)"
           type="button"
           class="platform-duty__action"
+          appearance="outline-action"
+          size="small"
           :disabled="inlineOf(duty.key).status === 'loading'"
           @click="loadInline(duty.key, actionOf(duty))"
         >
@@ -63,7 +67,15 @@
       <p v-if="tenantRegistry.status === 'loading'" class="platform-duty__pending">正在读取登记数据…</p>
       <p v-else-if="tenantRegistry.status === 'error'" class="platform-duty__error">
         读取失败：{{ tenantRegistry.message }}
-        <ScButton type="button" class="platform-duty__action" @click="loadTenantRegistry">重试</ScButton>
+        <ScButton
+          type="button"
+          class="platform-duty__action"
+          appearance="outline-action"
+          size="small"
+          @click="loadTenantRegistry"
+        >
+          重试
+        </ScButton>
       </p>
       <p v-else-if="!tenantRegistry.rows.length" class="platform-duty__empty" data-tenant-registry-empty="true">
         当前没有已登记的租户命名空间。租户需先完成平台登记与数据库注册，登记后会出现在此表。
@@ -77,6 +89,7 @@
         :columns="TENANT_COLUMNS"
         row-key="namespace_id"
         size="small"
+        appearance="flush"
       >
         <template #tenant_name="{ row }">{{ row.tenant_name || '-' }}</template>
         <template #lifecycle_state="{ row }">{{ row.lifecycle_state || '-' }}</template>
@@ -332,17 +345,6 @@ onMounted(() => {
 }
 .platform-duty__action {
   align-self: flex-start;
-  padding: 0.35rem 0.9rem;
-  border: 1px solid rgba(37, 99, 235, 0.4);
-  border-radius: 0.5rem;
-  background: rgba(37, 99, 235, 0.08);
-  color: #1d4ed8;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-.platform-duty__action:disabled {
-  opacity: 0.6;
-  cursor: progress;
 }
 .platform-duty__pending {
   font-size: 0.75rem;
@@ -371,21 +373,6 @@ onMounted(() => {
   margin: 0;
   font-size: 0.75rem;
   opacity: 0.65;
-}
-.platform-duty__table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8rem;
-}
-.platform-duty__table th,
-.platform-duty__table td {
-  padding: 0.4rem 0.6rem;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-  text-align: left;
-}
-.platform-duty__table th {
-  font-weight: 600;
-  color: #475569;
 }
 .platform-duty__muted {
   opacity: 0.65;
