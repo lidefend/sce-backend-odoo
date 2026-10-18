@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="1">
+    <record id="namespace_platform" model="sc.platform.namespace">
+      <field name="namespace_id">ns_000000000001</field>
+      <field name="display_name">Platform administration</field>
+      <field name="lifecycle_state">active</field>
+      <field name="database_name">sc_platform_control</field>
+      <field name="duty_key">platform_control</field>
+      <field name="audience">platform-admin</field>
+    </record>
+    <record id="namespace_demo" model="sc.platform.namespace">
+      <field name="namespace_id">ns_000000000002</field>
+      <field name="display_name">Demo tenant</field>
+      <field name="lifecycle_state">active</field>
+      <field name="database_name">sc_demo</field>
+      <field name="duty_key">demo</field>
+      <field name="audience">tenant</field>
+    </record>
+    <record id="namespace_alias_platform" model="sc.platform.namespace.alias">
+      <field name="alias">platform</field>
+      <field name="alias_kind">path</field>
+      <field name="namespace_id" ref="namespace_platform"/>
+      <field name="is_primary" eval="True"/>
+    </record>
+    <record id="namespace_alias_demo" model="sc.platform.namespace.alias">
+      <field name="alias">demo</field>
+      <field name="alias_kind">path</field>
+      <field name="namespace_id" ref="namespace_demo"/>
+      <field name="is_primary" eval="True"/>
+    </record>
+  </data>
+</odoo>

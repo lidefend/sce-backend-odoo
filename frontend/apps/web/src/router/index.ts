@@ -19,6 +19,7 @@ import { intentRequest } from '../api/intents';
 import { validateRelationReadRoute } from '../app/relationReadRouteAuthority';
 import { currentContextEpoch } from '../app/contextEpoch';
 import { isAdminRouteAccessDenied } from '../app/adminRouteAccess';
+import { resolveEntryBasePath } from '../services/entryNamespace';
 
 function routeTitle(routeName: string | symbol | null | undefined): string {
   const name = typeof routeName === 'string' ? routeName : '';
@@ -302,7 +303,7 @@ function registerRouteActivity(to: RouteLocationNormalized, options: { settling?
 }
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(resolveEntryBasePath()),
   routes: [
     { path: '/login', name: 'login', component: LoginView },
     { path: '/platform-admin/login', name: 'platform-admin-login', component: LoginView },

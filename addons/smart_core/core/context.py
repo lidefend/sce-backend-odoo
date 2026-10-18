@@ -44,12 +44,19 @@ class RequestContext:
         intent_name = (params.get("intent") or "").strip()
         req = request_obj or request
 
+        namespace = None
         if is_public_context_intent(intent_name):
             user = None
             principal = None
             env = req.env
         else:
             principal = get_principal_from_token()
+            from ..security.namespace_resolver import resolve_entry
+
+            httprequest = getattr(req, "httprequest", None)
+            namespace = resolve_entry(req.env, getattr(httprequest, "headers", None) or {})
+            if str(principal.get("namespace_id") or "") != namespace.namespace_id:
+                raise AccessDenied("NS_TOKEN_NAMESPACE_MISMATCH token does not belong to this namespace")
             user = principal["user"]
             user_id = identity_id(user)
             if not user_id:
@@ -65,6 +72,7 @@ class RequestContext:
             )
 
         ctx = cls(env, user, params, req, principal=principal)
+        ctx.namespace = namespace
         try:
             ctx.trace_id = get_trace_id(req.httprequest.headers)
         except Exception:

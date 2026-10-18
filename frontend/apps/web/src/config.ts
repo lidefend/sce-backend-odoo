@@ -1,11 +1,14 @@
-import { isConfiguredDbPinned, isPlatformAdminEntryRuntime, resolveConfiguredDb } from './services/dbContext';
+import { isPlatformAdminEntryRuntime, resolveConfiguredDb } from './services/dbContext';
 import { runtimeOdooDb, runtimeOdooDbLocked } from './services/runtimeConfig';
+import { resolveEntryBasePath } from './services/entryNamespace';
 
 const appEnv = String(import.meta.env.VITE_APP_ENV ?? 'dev').trim();
-const envDb = runtimeOdooDb || String(import.meta.env.VITE_ODOO_DB ?? '').trim();
-const platformAdminDb = String(import.meta.env.VITE_PLATFORM_ADMIN_DB ?? '').trim();
-const envDbLocked = runtimeOdooDbLocked
-  || Boolean(envDb && String(import.meta.env.VITE_ODOO_DB_LOCKED ?? '1').trim() !== '0');
+// Batch C: the entry namespace is a runtime property of the URL, not a build
+// artifact. One bundle serves /t/<alias>/ and /platform-admin/.
+const entryBasePath = resolveEntryBasePath();
+const envDb = runtimeOdooDb;
+const platformAdminDb = '';
+const envDbLocked = runtimeOdooDbLocked;
 const startupRootXmlid = String(import.meta.env.VITE_STARTUP_ROOT_XMLID ?? '').trim();
 const appTitle = String(import.meta.env.VITE_APP_TITLE ?? '企业业务管理平台').trim();
 const appBrand = {
@@ -24,44 +27,25 @@ const appBrand = {
     String(import.meta.env.VITE_VALUE_LINE_4 ?? '').trim(),
   ].filter(Boolean),
 };
-const isLocalHost = typeof window !== 'undefined'
-  ? ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)
-  : false;
-const isLocalDevPort = typeof window !== 'undefined'
-  ? ['18081', '5174', '8070', '8073'].includes(window.location.port)
-  : false;
-const isLocalDevRuntime = isLocalHost && isLocalDevPort;
-const runtimeDbRaw = typeof window !== 'undefined'
-  ? String(new URLSearchParams(window.location.search).get('db') || '').trim()
-  : '';
 const isPlatformAdminEntry = isPlatformAdminEntryRuntime();
-const runtimeDb = isLocalHost && isLocalDevPort && ['sc_delivery_local', 'sc_prod_sim'].includes(runtimeDbRaw.toLowerCase())
-  ? ''
-  : runtimeDbRaw;
-// Do not auto-force a db by APP_ENV. Always prefer explicit VITE_ODOO_DB.
-// Auto-forcing may cause token/db mismatch when frontend host is not localhost.
-const enforcedDb = '';
-const envDbNormalized = envDb.toLowerCase();
-const localBlockedProductionDb = isLocalHost && ['sc_delivery_local', 'sc_prod_sim'].includes(envDbNormalized);
-const localBlockedEnvDb = localBlockedProductionDb ? '' : envDb;
-const allowLocalFallbackDb = isLocalHost || appEnv === 'dev' || appEnv === 'test' || appEnv === 'local';
-// For local dev/test only, fallback to the restored daily development DB.
-const localDefaultDb = allowLocalFallbackDb && !runtimeDb && !localBlockedEnvDb && isLocalHost ? 'sc_dev_demo' : '';
-const localDevPinnedDb = isLocalDevRuntime && !runtimeDb && !localBlockedEnvDb ? 'sc_dev_demo' : '';
-const pinnedDb = isPlatformAdminEntry && platformAdminDb
-  ? platformAdminDb
-  : envDbLocked ? localBlockedEnvDb : runtimeDb || localBlockedEnvDb || enforcedDb || localDevPinnedDb;
+// Batch C: a physical database name is never a build artifact.  The only
+// database value here can come from the runtime entry contract written by
+// nginx, and it is display state only -- requests never carry it as a hint.
+const pinnedDb = isPlatformAdminEntry && platformAdminDb ? platformAdminDb : envDbLocked ? envDb : '';
 
 export const config = {
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL ?? '',
+  // Batch C: the entry namespace owns the API base.  A build-time absolute base
+  // would escape `/t/<alias>/` and `/platform-admin/`, so it is not accepted.
+  apiBaseUrl: entryBasePath,
+  entryBasePath,
   appEnv,
   tenant: import.meta.env.VITE_TENANT ?? 'default',
   featureFlags: (import.meta.env.VITE_FEATURE_FLAGS ?? '')
     .split(',')
     .map((flag: string) => flag.trim())
     .filter(Boolean),
-  odooDb: pinnedDb || (localBlockedProductionDb ? localDefaultDb : resolveConfiguredDb(localDefaultDb)),
-  odooDbPinned: Boolean(pinnedDb) || isConfiguredDbPinned(),
+  odooDb: pinnedDb || resolveConfiguredDb(''),
+  odooDbPinned: Boolean(pinnedDb),
   platformAdminDb,
   isPlatformAdminEntry,
   startupRootXmlid,
@@ -69,18 +53,5 @@ export const config = {
   appBrand,
 };
 
-// C1: 在开发模式下打印环境变量
-if (import.meta.env.DEV) {
-  console.group('[C1] 环境变量配置');
-  console.log('VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
-  console.log('VITE_ODOO_DB:', import.meta.env.VITE_ODOO_DB);
-  console.log('VITE_ODOO_DB_LOCKED:', import.meta.env.VITE_ODOO_DB_LOCKED);
-  console.log('VITE_PLATFORM_ADMIN_DB:', import.meta.env.VITE_PLATFORM_ADMIN_DB);
-  console.log('VITE_STARTUP_ROOT_XMLID:', import.meta.env.VITE_STARTUP_ROOT_XMLID);
-  console.log('VITE_APP_TITLE:', import.meta.env.VITE_APP_TITLE);
-  console.log('Platform admin entry:', isPlatformAdminEntry);
-  console.log('URL db override:', runtimeDb);
-  console.log('VITE_APP_ENV:', import.meta.env.VITE_APP_ENV);
-  console.log('最终配置:', config);
-  console.groupEnd();
-}
+// Batch C: no build-time database or base override is logged or consumed.  The
+// entry namespace is the only routing input, so there is nothing here to dump.

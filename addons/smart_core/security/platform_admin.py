@@ -35,7 +35,7 @@ PLATFORM_CONTROL_DB_ENV = "SC_PLATFORM_CONTROL_DB"
 # Batch C hook: once the namespace resolver exists, the platform-admin token
 # audience is bound here.  It stays unbound in batch B on purpose so that no
 # caller can mistake group membership for a namespace-scoped identity.
-PLATFORM_ADMIN_IDENTITY_AUDIENCE = None
+PLATFORM_ADMIN_IDENTITY_AUDIENCE = "platform-admin"
 
 CAPABILITY_DISCOVERY_ADMIN_GROUPS = (
     PLATFORM_CONFIGURATION_ADMIN_GROUP,
@@ -102,20 +102,41 @@ def platform_instance_scope(env=None) -> dict:
     }
 
 
-def _identity_audience_allows(identity_audience) -> bool:
-    """Batch C seam for token identity-domain/audience checks.
+def _current_identity_audience(env=None) -> str:
+    """Resolve the audience this request/instance actually belongs to.
 
-    ``None`` means the caller did not supply an audience: batch B keeps the
-    group+instance checks and does not pretend an audience was verified.  A
-    supplied audience is only accepted once a declared audience exists.
+    The entry namespace is authoritative; internal callers fall back to the
+    namespace the instance database declares.  Anything unresolved is "".
     """
 
-    if identity_audience is None:
-        return True
+    try:
+        from .namespace_resolver import resolve_entry, resolve_instance
+        from odoo.http import request as http_request
+
+        httprequest = getattr(http_request, "httprequest", None)
+        headers = getattr(httprequest, "headers", None) or {}
+        target_env = env if env is not None else getattr(http_request, "env", None)
+        if headers:
+            return resolve_entry(target_env, headers).audience
+        return resolve_instance(target_env).audience
+    except Exception:
+        return ""
+
+
+def _identity_audience_allows(identity_audience) -> bool:
+    """Batch C: a platform-admin identity only exists in the platform audience.
+
+    An unsupplied audience is resolved from the request/instance namespace; if
+    it cannot be resolved the check fails closed instead of assuming one.
+    """
+
+    effective = identity_audience
+    if effective is None:
+        effective = _current_identity_audience()
     declared = PLATFORM_ADMIN_IDENTITY_AUDIENCE
-    if not declared:
+    if not declared or not str(effective or "").strip():
         return False
-    return str(identity_audience).strip() == str(declared).strip()
+    return str(effective).strip() == str(declared).strip()
 
 
 def platform_control_scope(

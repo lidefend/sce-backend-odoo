@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Batch B identity semantics: no implicit platform_admin entry.
+"""Batch C login identity semantics: the entry namespace is the only selector.
 
-Covers the four behaviours required by ADR-007 execution batch B:
-unresolved fallback, tenant route labelling, platform-instance determination
-and tenant accounts never being reported as platform administrators.
-
-Namespace isolation is NOT implemented here; these tests only prove that the
-old over-broad labelling is gone and that explicit ``db`` still works.
+Batch B proved the old over-broad platform labelling was gone.  Batch C removes
+the explicit ``db`` request path entirely: a login without a resolved namespace
+is refused, a client database hint is a 409 conflict, and the namespace decides
+both the target database and the reported entry kind.
 """
 
 import importlib.util
@@ -40,12 +38,9 @@ class _Config:
 
 
 class _Env(dict):
-    def __init__(self, dbname=TENANT_DB, route=None, params=None):
+    def __init__(self, dbname=TENANT_DB, params=None):
         self.cr = types.SimpleNamespace(dbname=dbname)
-        data = {"ir.config_parameter": _Config(params)}
-        if route is not None:
-            data["sc.login.route"] = route
-        super().__init__(data)
+        super().__init__({"ir.config_parameter": _Config(params)})
 
 
 class _Principal:
@@ -107,6 +102,17 @@ class _SeedModel:
     def create(self, vals):
         self.created.append(dict(vals))
         return None
+
+
+def _namespace(audience="tenant", database=TENANT_DB):
+    return types.SimpleNamespace(
+        namespace_id="ns_platform" if audience == "platform-admin" else "ns_demo",
+        database_name=database,
+        audience=audience,
+        alias="platform" if audience == "platform-admin" else "demo",
+        duty_key="demo",
+        lifecycle_state="active",
+    )
 
 
 def _install_module(name, **attrs):
@@ -187,7 +193,7 @@ def _load_login_handler():
     _install_module(
         "odoo.addons.smart_core.security.auth",
         authenticate_user=lambda login, password, db=None: {"id": 5, "db": db, "principal": _Principal()},
-        generate_token=lambda user_id=None, token_version=0, db=None, **kwargs: "token",
+        generate_token=lambda principal=None, **kwargs: "token",
         get_token_exp_seconds=lambda: 3600,
         get_user_from_token=lambda: None,
     )
@@ -209,40 +215,118 @@ def _load_login_handler():
 
 
 class TestLoginIdentitySemantics(unittest.TestCase):
-    # --- requirement 1: unresolved fallback is explicit -------------------
+    # --- the namespace is the only entry ---------------------------------
 
-    def test_unresolved_fallback_is_explicit_and_never_platform_admin(self):
+    def test_login_without_a_resolved_namespace_is_refused(self):
+        module = _load_login_handler()
+        handler = module.LoginHandler(
+            env=_Env(TENANT_DB), params={"login": "demo", "password": "pw"}
+        )
+
+        data = handler.handle()
+
+        self.assertFalse(data["ok"])
+        self.assertEqual(data["code"], 400)
+        self.assertTrue(data["error"]["message"].startswith("NS_NAMESPACE_REQUIRED"), data)
+
+    def test_unresolved_entry_never_falls_back_to_a_default_tenant(self):
         module = _load_login_handler()
 
-        contract = module._resolve_login_route(_Env(TENANT_DB), login="nobody")
+        with self.assertRaises(Exception) as raised:
+            module._resolve_login_route(_Env(TENANT_DB), login="admin", namespace=None)
 
-        self.assertEqual(contract["mode"], "unresolved")
-        self.assertFalse(contract["resolved"])
-        self.assertEqual(contract["entry_kind"], "unresolved")
-        self.assertEqual(contract["target_db"], "")
-        self.assertEqual(contract["db_authority"], "none")
-        self.assertEqual(contract["unresolved_reason"], "no_login_route_declared")
-        self.assertNotEqual(contract["entry_kind"], "platform_admin")
+        self.assertEqual(getattr(raised.exception, "code", ""), "NS_NAMESPACE_REQUIRED")
 
-    # --- requirement 2: tenant route labelling ---------------------------
+    def test_explicit_database_parameter_is_a_conflict(self):
+        module = _load_login_handler()
+        handler = module.LoginHandler(
+            env=_Env(TENANT_DB),
+            params={"login": "demo", "password": "pw", "db": TENANT_DB},
+        )
+
+        data = handler.handle()
+
+        self.assertEqual(data["code"], 409)
+        self.assertTrue(data["error"]["message"].startswith("NS_DATABASE_HINT_CONFLICT"), data)
+
+    def test_tenant_namespace_selects_its_own_database(self):
+        module = _load_login_handler()
+        module._resolve_request_namespace = lambda env: _namespace("tenant", TENANT_DB)
+        seen = {}
+
+        def _auth(login, password, db=None):
+            seen["db"] = db
+            return {"id": 5, "db": db, "principal": _Principal()}
+
+        module.authenticate_user = _auth
+        handler = module.LoginHandler(
+            env=_Env(TENANT_DB), params={"login": "admin", "password": "pw"}
+        )
+
+        data, _meta = handler.handle()
+
+        self.assertEqual(seen["db"], TENANT_DB)
+        self.assertEqual(data["session"]["entry_kind"], "tenant")
+        self.assertEqual(data["session"]["db"], TENANT_DB)
+        self.assertEqual(data["contract"]["entry_resolution"], "resolved")
+        self.assertEqual(data["contract"]["namespace_id"], "ns_demo")
+        self.assertFalse(data["contract"]["explicit_db_deprecated"])
+
+    def test_platform_namespace_reports_platform_admin(self):
+        module = _load_login_handler()
+        module._resolve_request_namespace = lambda env: _namespace("platform-admin", PLATFORM_DB)
+        seen = {}
+
+        def _auth(login, password, db=None):
+            seen["db"] = db
+            return {"id": 5, "db": db, "principal": _Principal()}
+
+        module.authenticate_user = _auth
+        handler = module.LoginHandler(
+            env=_Env(PLATFORM_DB), params={"login": "admin", "password": "pw"}
+        )
+
+        data, _meta = handler.handle()
+
+        self.assertEqual(seen["db"], PLATFORM_DB)
+        self.assertEqual(data["session"]["entry_kind"], "platform_admin")
+        self.assertEqual(data["contract"]["namespace_id"], "ns_platform")
+
+    def test_namespace_route_contract_is_namespace_authority(self):
+        module = _load_login_handler()
+
+        contract = module._resolve_login_route(
+            _Env(TENANT_DB), login="admin", namespace=_namespace("tenant", TENANT_DB)
+        )
+
+        self.assertEqual(contract["mode"], "namespace")
+        self.assertEqual(contract["db_authority"], "entry_namespace")
+        self.assertEqual(contract["target_db"], TENANT_DB)
+        self.assertEqual(contract["identity_audience"], "tenant")
+
+    # --- unchanged batch B routing labels --------------------------------
 
     def test_tenant_database_admin_route_is_labelled_tenant(self):
         routing = _load_login_routing()
         module = _load_login_handler()
         record = _RouteRecord(routing.normalize_entry_kind, target_db=TENANT_DB, entry_kind="platform_admin")
+        env = _Env(TENANT_DB)
+        env["sc.login.route"] = _RouteModel(record)
 
-        contract = module._resolve_login_route(_Env(TENANT_DB, route=_RouteModel(record)), login="admin")
+        contract = module._resolve_login_route(
+            env, login="admin", namespace=_namespace("tenant", TENANT_DB)
+        )
 
         self.assertTrue(contract["resolved"])
         self.assertEqual(contract["entry_kind"], "tenant")
         self.assertEqual(contract["target_db"], TENANT_DB)
 
     def test_platform_database_admin_route_stays_platform_admin(self):
-        routing = _load_login_routing()
         module = _load_login_handler()
-        record = _RouteRecord(routing.normalize_entry_kind, target_db=PLATFORM_DB, entry_kind="platform_admin")
 
-        contract = module._resolve_login_route(_Env(PLATFORM_DB, route=_RouteModel(record)), login="admin")
+        contract = module._resolve_login_route(
+            _Env(PLATFORM_DB), login="admin", namespace=_namespace("platform-admin", PLATFORM_DB)
+        )
 
         self.assertEqual(contract["entry_kind"], "platform_admin")
 
@@ -272,96 +356,6 @@ class TestLoginIdentitySemantics(unittest.TestCase):
         for row in model.created:
             self.assertEqual(row["entry_kind"], "platform_admin")
             self.assertEqual(row["target_db"], PLATFORM_DB)
-
-    # --- requirement 4 + 5: response contract and tenant accounts --------
-
-    def test_tenant_login_response_never_reports_platform_admin(self):
-        routing = _load_login_routing()
-        module = _load_login_handler()
-        record = _RouteRecord(routing.normalize_entry_kind, target_db=TENANT_DB, entry_kind="platform_admin")
-        seen = {}
-
-        def _auth(login, password, db=None):
-            seen["db"] = db
-            return {"id": 5, "db": db or TENANT_DB, "principal": _Principal()}
-
-        module.authenticate_user = _auth
-        handler = module.LoginHandler(
-            env=_Env(TENANT_DB, route=_RouteModel(record)),
-            params={"login": "admin", "password": "pw"},
-        )
-
-        data, _meta = handler.handle()
-
-        self.assertEqual(seen["db"], TENANT_DB)
-        self.assertEqual(data["session"]["entry_kind"], "tenant")
-        self.assertEqual(data["login_route"]["entry_kind"], "tenant")
-        self.assertEqual(data["contract"]["entry_resolution"], "resolved")
-        self.assertFalse(data["contract"]["explicit_db_deprecated"])
-
-    def test_platform_admin_login_still_works_on_platform_instance(self):
-        routing = _load_login_routing()
-        module = _load_login_handler()
-        record = _RouteRecord(routing.normalize_entry_kind, target_db=PLATFORM_DB, entry_kind="platform_admin")
-        seen = {}
-
-        def _auth(login, password, db=None):
-            seen["db"] = db
-            return {"id": 5, "db": db or PLATFORM_DB, "principal": _Principal()}
-
-        module.authenticate_user = _auth
-        handler = module.LoginHandler(
-            env=_Env(PLATFORM_DB, route=_RouteModel(record)),
-            params={"login": "admin", "password": "pw"},
-        )
-
-        data, _meta = handler.handle()
-
-        self.assertEqual(seen["db"], PLATFORM_DB)
-        self.assertEqual(data["session"]["db"], PLATFORM_DB)
-        self.assertEqual(data["session"]["entry_kind"], "platform_admin")
-        self.assertEqual(data["login_route"]["entry_kind"], "platform_admin")
-
-    def test_explicit_db_entry_is_kept_and_marked_deprecated(self):
-        module = _load_login_handler()
-        seen = {}
-
-        def _auth(login, password, db=None):
-            seen["db"] = db
-            return {"id": 5, "db": db or TENANT_DB, "principal": _Principal()}
-
-        module.authenticate_user = _auth
-        handler = module.LoginHandler(
-            env=_Env(TENANT_DB),
-            params={"login": "demo", "password": "pw", "db": TENANT_DB},
-        )
-
-        data, _meta = handler.handle()
-
-        self.assertEqual(seen["db"], TENANT_DB)
-        self.assertEqual(data["login_route"]["mode"], "explicit_db")
-        self.assertEqual(data["login_route"]["entry_kind"], "explicit")
-        self.assertTrue(data["login_route"]["deprecated"])
-        self.assertEqual(data["login_route"]["removal_batch"], "C")
-        self.assertTrue(data["contract"]["explicit_db_deprecated"])
-
-    def test_unresolved_entry_is_visible_and_does_not_block_login(self):
-        module = _load_login_handler()
-        seen = {}
-
-        def _auth(login, password, db=None):
-            seen["db"] = db
-            return {"id": 5, "db": db or TENANT_DB, "principal": _Principal()}
-
-        module.authenticate_user = _auth
-        handler = module.LoginHandler(env=_Env(TENANT_DB), params={"login": "demo", "password": "pw"})
-
-        data, _meta = handler.handle()
-
-        self.assertEqual(data["contract"]["entry_resolution"], "unresolved")
-        self.assertEqual(data["session"]["entry_kind"], "unresolved")
-        self.assertEqual(seen["db"], "")
-        self.assertEqual(data["session"]["db"], TENANT_DB)
 
 
 if __name__ == "__main__":

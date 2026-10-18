@@ -433,50 +433,94 @@ def validate_entry(entry, declaration):
         elif str(row.get("bind_host") or "") != "127.0.0.1":
             failures.append("every non-public face must bind the loopback interface")
 
-    hint = entry.get("database_hint")
+    namespace_routes = entry.get("namespace_routes")
+    if not isinstance(namespace_routes, dict):
+        failures.append("entry.namespace_routes must declare the path namespace contract")
+        namespace_routes = {}
+    if str(namespace_routes.get("kind") or "") != "path":
+        failures.append("entry.namespace_routes.kind must be path")
+    if str(namespace_routes.get("platform_prefix") or "") != "/platform-admin":
+        failures.append("entry.namespace_routes.platform_prefix must be /platform-admin")
+    if str(namespace_routes.get("tenant_prefix") or "") != "/t":
+        failures.append("entry.namespace_routes.tenant_prefix must be /t")
+    declared_namespaces = namespace_routes.get("namespaces")
+    if not isinstance(declared_namespaces, list) or not declared_namespaces:
+        failures.append("entry.namespace_routes.namespaces must be a non-empty list")
+        declared_namespaces = []
+    by_database = {
+        str(row.get("database") or ""): row
+        for row in declared_namespaces
+        if isinstance(row, dict)
+    }
+    if set(by_database) != seen_databases:
+        failures.append("entry.namespace_routes.namespaces must cover exactly the declared routes")
+    seen_aliases = set()
+    for database, row in by_database.items():
+        route = route_by_database.get(database) or {}
+        if str(row.get("duty") or "") != str(route.get("duty") or ""):
+            failures.append("entry.namespace_routes namespace %s duty contradicts the route" % (database,))
+        if not re.fullmatch(r"ns_[0-9a-f]{12}", str(row.get("namespace_id") or "")):
+            failures.append(
+                "entry.namespace_routes namespace %s namespace_id must be ns_<12 lowercase hex>" % (database,)
+            )
+        alias = str(row.get("alias") or "")
+        if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,62}", alias):
+            failures.append("entry.namespace_routes namespace %s alias is invalid" % (database,))
+        if alias in seen_aliases:
+            failures.append("entry.namespace_routes alias %s is duplicated" % (alias,))
+        seen_aliases.add(alias)
+    platform_namespaces = [
+        row for row in by_database.values() if str(row.get("duty") or "") == "platform_control"
+    ]
+    if platform_database and len(platform_namespaces) != 1:
+        failures.append(
+            "entry.namespace_routes must declare exactly one platform administration namespace"
+        )
+    elif platform_database and str(platform_namespaces[0].get("database") or "") != platform_database:
+        failures.append(
+            "entry.namespace_routes platform namespace must bind the platform administration database"
+        )
+
+    hint = namespace_routes.get("client_database_hint")
     if not isinstance(hint, dict):
-        failures.append("entry.database_hint must declare the accepted hint sources")
+        failures.append("entry.namespace_routes.client_database_hint must declare the refusal contract")
         hint = {}
-    header = str(hint.get("header") or "")
-    query = str(hint.get("query") or "")
-    if header != "X-Odoo-DB":
-        failures.append("entry.database_hint.header must be X-Odoo-DB")
-    if query != "db":
-        failures.append("entry.database_hint.query must be db")
-    expected_sources = ["header:X-Odoo-DB", "query:db"]
-    if hint.get("sources") != expected_sources:
-        failures.append("entry.database_hint.sources must be %s" % (expected_sources,))
-    expected_precedence = ["header:X-Odoo-DB", "query:db", "default"]
-    if hint.get("precedence") != expected_precedence:
-        failures.append("entry.database_hint.precedence must be %s (header wins)"
-                        % (expected_precedence,))
-    if str(hint.get("conflict") or "") != "header_wins":
-        failures.append("entry.database_hint.conflict must be header_wins")
-    default_database = next(
-        (str(route.get("database") or "") for route in routes if route.get("default") is True),
-        "",
-    )
-    if str(hint.get("default_database") or "") != default_database:
-        failures.append("entry.database_hint.default_database must be the default route database")
-    expected_allowed = [str(route.get("database") or "") for route in routes]
-    if hint.get("allowed_databases") != expected_allowed:
-        failures.append("entry.database_hint.allowed_databases must equal the declared routes")
-    unknown = hint.get("unknown_database")
+    if hint.get("headers") != ["X-Odoo-DB", "X-DB", "X-Odoo-DB-Locked"]:
+        failures.append("entry.namespace_routes.client_database_hint.headers must name every client hint")
+    if str(hint.get("query") or "") != "db":
+        failures.append("entry.namespace_routes.client_database_hint.query must be db")
+    if str(hint.get("action") or "") != "reject":
+        failures.append("entry.namespace_routes.client_database_hint.action must be reject")
+    if hint.get("status") != 409:
+        failures.append("entry.namespace_routes.client_database_hint.status must be 409")
+    if str(hint.get("code") or "") != "NS_DATABASE_HINT_CONFLICT":
+        failures.append(
+            "entry.namespace_routes.client_database_hint.code must be NS_DATABASE_HINT_CONFLICT"
+        )
+    unknown = namespace_routes.get("unknown_namespace")
     if not isinstance(unknown, dict):
-        failures.append("entry.database_hint.unknown_database must declare the refusal contract")
+        failures.append("entry.namespace_routes.unknown_namespace must declare the refusal contract")
         unknown = {}
-    if unknown.get("status") != 400:
-        failures.append("entry.database_hint.unknown_database.status must be 400")
-    if str(unknown.get("code") or "") != "unknown_database":
-        failures.append("entry.database_hint.unknown_database.code must be unknown_database")
+    if unknown.get("status") != 404:
+        failures.append("entry.namespace_routes.unknown_namespace.status must be 404")
+    if str(unknown.get("code") or "") != "NS_UNKNOWN_NAMESPACE":
+        failures.append("entry.namespace_routes.unknown_namespace.code must be NS_UNKNOWN_NAMESPACE")
     if str(unknown.get("content_type") or "") != "application/json":
-        failures.append("entry.database_hint.unknown_database.content_type must be application/json")
+        failures.append("entry.namespace_routes.unknown_namespace.content_type must be application/json")
+    missing = namespace_routes.get("missing_namespace")
+    if not isinstance(missing, dict):
+        failures.append("entry.namespace_routes.missing_namespace must declare the refusal contract")
+        missing = {}
+    if missing.get("status") != 400:
+        failures.append("entry.namespace_routes.missing_namespace.status must be 400")
+    if str(missing.get("code") or "") != "NS_NAMESPACE_REQUIRED":
+        failures.append("entry.namespace_routes.missing_namespace.code must be NS_NAMESPACE_REQUIRED")
 
     assertions = entry.get("assertions") or {}
     for key in ("one_public_entry", "no_second_public_route",
-                "database_hint_sources_are_declared",
-                "database_hint_conflicts_resolve_by_declared_precedence",
-                "unknown_database_is_rejected",
+                "namespace_is_the_only_database_selector",
+                "client_database_hints_are_refused",
+                "unknown_namespace_is_rejected",
                 "never_route_to_an_undeclared_database"):
         if assertions.get(key) is not True:
             failures.append("entry.assertions.%s must be true" % (key,))
@@ -1497,6 +1541,28 @@ def duty_credentials(duty):
     return values, path, created
 
 
+def entry_shared_secret():
+    """One entry, one secret: every face of the entry reads the same value.
+
+    The value is deployment credential material: it is minted into the ops root
+    with mode 0600, never committed and never printed in evidence.  A duty whose
+    env file disagreed with the others would make Odoo refuse every stamped
+    request, so the value lives once for the whole entry rather than per duty.
+    """
+
+    ensure_ops_root()
+    path = os.path.join(OPS_ROOT, "entry-shared-secret")
+    try:
+        value = read_text(path).strip()
+    except OSError:
+        value = ""
+    if value:
+        return value
+    value = secrets.token_hex(32)
+    write_file(path, value + "\n", 0o600)
+    return value
+
+
 def render_env(duty, credentials):
     is_demo = duty.get("data_purpose") == DEMO_PURPOSE
     served = frontend_build_facts(duty)
@@ -1512,26 +1578,22 @@ def render_env(duty, credentials):
     entry = PAYLOAD.get("entry") or {}
     serving = str((entry.get("public_entry") or {}).get("serving_duty") or "")
     platform_upstream = "odoo:8069"
-    if serving == duty.get("duty"):
-        for route in entry.get("routes") or []:
-            if route.get("database") == PAYLOAD["platform_admin_database"]:
+    platform_duty = ""
+    for route in entry.get("routes") or []:
+        if route.get("database") == PAYLOAD["platform_admin_database"]:
+            platform_duty = str(route.get("duty") or "")
+            if serving == duty.get("duty"):
                 platform_upstream = str(route.get("upstream") or "odoo:8069")
-                break
+            break
     entry_network = str((entry.get("network") or {}).get("name") or "sc-daily-entry")
-    allowed_databases = [
-        str(route.get("database") or "")
-        for route in entry.get("routes") or []
-        if str(route.get("database") or "")
-    ]
-    if not allowed_databases:
-        # The governed entry always declares its routes; the carrier unit tests
-        # exercise render_env without one.  Keep the rendered set explicit in
-        # that case rather than widening it to "anything".
-        allowed_databases = [str(duty["database"])]
-        platform_database = str(PAYLOAD.get("platform_admin_database") or "")
-        if platform_database and platform_database not in allowed_databases:
-            allowed_databases.append(platform_database)
-    allowed_pattern = "~^(%s)$" % "|".join(re.escape(database) for database in allowed_databases)
+    # Batch C: the entry is the only selector, so no database name is rendered
+    # into the proxy.  The platform namespace is a declared two-layer hop: the
+    # serving entry face forwards the prefix unchanged (0) and the platform duty
+    # face strips it for its own Odoo (1).
+    platform_strip = "1" if duty.get("duty") and duty.get("duty") == platform_duty else "0"
+    route_version = "entry-" + hashlib.sha256(
+        json.dumps(entry, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()[:16]
     values = {
         "DUTY_NAME": duty["duty"],
         "COMPOSE_PROJECT_NAME": duty["cluster"]["compose_project"],
@@ -1560,11 +1622,11 @@ def render_env(duty, credentials):
         "ODOO_BIND_HOST": str(duty["routing"].get("odoo_bind_host") or "0.0.0.0"),
         "NGINX_PORT": str(duty["routing"]["nginx_host_port"]),
         "NGINX_BIND_HOST": str(duty["routing"].get("nginx_bind_host") or "0.0.0.0"),
-        "SC_PROXY_PLATFORM_DB": PAYLOAD["platform_admin_database"],
+        "SC_PROXY_DEFAULT_UPSTREAM": "odoo:8069",
         "SC_PROXY_PLATFORM_UPSTREAM": platform_upstream,
-        # Quote the alternation so the rendered env file stays shell-sourceable;
-        # docker compose strips the pair, so the container still sees the regex.
-        "SC_PROXY_ALLOWED_DB_PATTERN": "'%s'" % allowed_pattern,
+        "SC_ENTRY_SHARED_SECRET": entry_shared_secret(),
+        "SC_ENTRY_ROUTE_VERSION": route_version,
+        "SC_ENTRY_PLATFORM_STRIP": platform_strip,
         "SC_DAILY_ENTRY_NETWORK": entry_network,
         "FRONTEND_DIST_DIR": duty["stack"]["frontend_dist_dir"],
         "DEMO_ADDONS_ROOT": duty["stack"]["demo_addons_root"],

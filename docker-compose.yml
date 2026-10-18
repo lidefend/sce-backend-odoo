@@ -76,6 +76,9 @@ services:
       SC_BOOTSTRAP_LOGIN: ${SC_BOOTSTRAP_LOGIN}
       SCENE_CHANNEL: ${SCENE_CHANNEL}
       SCENE_USE_PINNED: ${SCENE_USE_PINNED}
+      # Batch C: Odoo verifies the entry stamp and resolves the namespace.
+      SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET:?SC_ENTRY_SHARED_SECRET must be injected per deployment}
+      SC_ENTRY_ROUTE_VERSION: ${SC_ENTRY_ROUTE_VERSION:-}
       SCENE_ROLLBACK: ${SCENE_ROLLBACK}
       # Source-mounted acceptance runtimes must expose the exact candidate SHA
       # through system.init; callers set this explicitly and unknown fails
@@ -135,19 +138,18 @@ services:
         condition: service_healthy
     environment:
       # Rendered into the proxy's database fallback by the image's envsubst
-      # entrypoint.  Only these proxy variables are substituted, so nginx's own
-      # $variables in the template survive verbatim.  The platform route is a
-      # declared database-to-upstream mapping; a profile that does not serve the
-      # platform control duty points it back at its own application, where the
-      # exact dbfilter refuses a database it does not own.
-      SC_PROXY_DEFAULT_DB: ${DB_NAME}
-      SC_PROXY_PLATFORM_DB: ${SC_PROXY_PLATFORM_DB:-sc_platform_control}
+      # entrypoint.  Only these entry variables are substituted, so nginx's own
+      # $variables in the template survive verbatim.  Batch C routes by path
+      # namespace: the serving duty owns "/", the platform administration
+      # namespace has its own upstream, and no database name is rendered.
+      SC_PROXY_DEFAULT_UPSTREAM: ${SC_PROXY_DEFAULT_UPSTREAM:-odoo:8069}
       SC_PROXY_PLATFORM_UPSTREAM: ${SC_PROXY_PLATFORM_UPSTREAM:-odoo:8069}
-      # The governed daily stack always renders the exact entry route set.  The
-      # generic local profile keeps its previous pass-through behaviour so an
-      # unrelated development database is not refused by this default.
-      SC_PROXY_ALLOWED_DB_PATTERN: '${SC_PROXY_ALLOWED_DB_PATTERN:-~^.+$}'
-      NGINX_ENVSUBST_FILTER: '^SC_PROXY_(DEFAULT_DB|PLATFORM_DB|PLATFORM_UPSTREAM|ALLOWED_DB_PATTERN)$'
+      SC_ENTRY_ROUTE_VERSION: ${SC_ENTRY_ROUTE_VERSION:-}
+      SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET:?SC_ENTRY_SHARED_SECRET must be injected per deployment}
+      # The platform namespace is a declared two-layer hop: this profile is the
+      # serving entry face, so it forwards `/platform-admin/...` unchanged.
+      SC_ENTRY_PLATFORM_STRIP: ${SC_ENTRY_PLATFORM_STRIP:-0}
+      NGINX_ENVSUBST_FILTER: '^SC_(PROXY_(DEFAULT_UPSTREAM|PLATFORM_UPSTREAM)|ENTRY_(ROUTE_VERSION|SHARED_SECRET|PLATFORM_STRIP))$'
     volumes:
       - ./config/nginx/templates:/etc/nginx/templates:ro
       - ${FRONTEND_DIST_DIR:-./frontend/apps/web/dist}:/usr/share/nginx/html:ro

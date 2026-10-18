@@ -90,6 +90,9 @@ services:
       SCENE_USE_PINNED: ${SCENE_USE_PINNED}
       SCENE_ROLLBACK: ${SCENE_ROLLBACK}
       SC_SOURCE_REVISION: ${SC_SOURCE_REVISION}
+      # Batch C: Odoo verifies the entry stamp and resolves the namespace.
+      SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET}
+      SC_ENTRY_ROUTE_VERSION: ${SC_ENTRY_ROUTE_VERSION}
       # The build identity the application *publishes* for what it serves. The
       # source revision alone is not the served bundle: a merge that changes no
       # frontend source leaves the artifact at its previous generation, so the
@@ -133,11 +136,17 @@ services:
       odoo:
         condition: service_healthy
     environment:
-      SC_PROXY_DEFAULT_DB: ${DB_NAME}
-      SC_PROXY_PLATFORM_DB: ${SC_PROXY_PLATFORM_DB}
+      # Batch C: the entry routes by path namespace.  The serving duty owns "/"
+      # and the platform administration namespace has its own upstream; no
+      # database name is rendered into the proxy any more.
+      SC_PROXY_DEFAULT_UPSTREAM: ${SC_PROXY_DEFAULT_UPSTREAM}
       SC_PROXY_PLATFORM_UPSTREAM: ${SC_PROXY_PLATFORM_UPSTREAM}
-      SC_PROXY_ALLOWED_DB_PATTERN: ${SC_PROXY_ALLOWED_DB_PATTERN}
-      NGINX_ENVSUBST_FILTER: '^SC_PROXY_(DEFAULT_DB|PLATFORM_DB|PLATFORM_UPSTREAM|ALLOWED_DB_PATTERN)$'
+      # The entry stamp Odoo verifies, and the declared two-layer platform hop:
+      # the serving entry face renders 0, the platform_control duty renders 1.
+      SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET}
+      SC_ENTRY_ROUTE_VERSION: ${SC_ENTRY_ROUTE_VERSION}
+      SC_ENTRY_PLATFORM_STRIP: ${SC_ENTRY_PLATFORM_STRIP}
+      NGINX_ENVSUBST_FILTER: '^SC_(PROXY_(DEFAULT_UPSTREAM|PLATFORM_UPSTREAM)|ENTRY_(SHARED_SECRET|ROUTE_VERSION|PLATFORM_STRIP))$'
     volumes:
       - ${SC_PRODUCT_ROOT}/config/nginx/templates:/etc/nginx/templates:ro
       - ${FRONTEND_DIST_DIR}:/usr/share/nginx/html:ro

@@ -36,6 +36,8 @@ class AuthenticatedPrincipal:
     credential_id: str
     scopes: tuple[str, ...]
     token_version: int
+    namespace_id: str = ""
+    audience: str = ""
     credential_epoch: int = 0
 
     def claims(self):
@@ -50,6 +52,8 @@ class AuthenticatedPrincipal:
             "credential_id": self.credential_id,
             "scope": list(self.scopes),
             "token_version": self.token_version,
+            "namespace_id": self.namespace_id,
+            "aud": self.audience,
             "credential_epoch": self.credential_epoch,
         }
 
@@ -73,10 +77,23 @@ def _role_xmlids(user):
     return tuple(sorted(mapping[group.id] for group in user.groups_id if mapping.get(group.id)))
 
 
-def _principal_for_user(user, *, database, principal_type, auth_method, credential_id="", scopes=(), credential_epoch=0):
+def _namespace_binding(user, database):
+    """Resolve the instance namespace; no request data selects it."""
+
+    from .namespace_resolver import resolve_instance
+
+    ref = resolve_instance(user.env)
+    if str(ref.database_name) != str(database or "").strip():
+        raise AccessDenied("NS_TOKEN_NAMESPACE_MISMATCH database is not this namespace")
+    return ref.namespace_id, ref.audience
+
+
+def _principal_for_user(user, *, database, principal_type, auth_method, credential_id="", scopes=(), credential_epoch=0, namespace_id="", audience=""):
     user = user.sudo()
     if not user.exists() or not user.active:
         raise AccessDenied("credential principal is inactive")
+    if not namespace_id or not audience:
+        namespace_id, audience = _namespace_binding(user, database)
     allowed = tuple(sorted(set(int(value) for value in user.company_ids.ids)))
     company_id = int(user.company_id.id or 0)
     if not company_id or company_id not in allowed:
@@ -92,6 +109,8 @@ def _principal_for_user(user, *, database, principal_type, auth_method, credenti
         credential_id=str(credential_id or ""),
         scopes=tuple(scopes),
         token_version=int(getattr(user, "token_version", 0) or 0),
+        namespace_id=namespace_id,
+        audience=audience,
         credential_epoch=int(credential_epoch or 0),
     )
 

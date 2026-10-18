@@ -11,7 +11,6 @@ from werkzeug.exceptions import Unauthorized, Forbidden, BadRequest, NotFound
 from odoo.exceptions import AccessError, MissingError, AccessDenied
 
 from ..core.intent_router import route_intent_payload
-from ..core.database_request_boundary import normalize_database_params
 from ..core.context import RequestContext
 from ..core.http_result_policy import (
     normalize_result_ok,
@@ -24,6 +23,7 @@ from ..core.intent_access_policy import ANONYMOUS_INTENTS, is_anonymous_allowed_
 from ..core.intent_operation_policy import is_write_intent, nested_params, normalize_intent_operation
 from ..core.request_transaction import rollback_request_env
 from ..security.intent_permission import check_intent_permission
+from ..security.namespace_errors import NamespaceError
 from ..security.platform_admin import user_is_tenant_config_admin
 from ..core.trace import get_trace_id
 from ..core.exceptions import (
@@ -165,6 +165,32 @@ def _error_response(
 
 def _rollback_request_env(intent_name: str | None, trace_id: str | None):
     rollback_request_env(_logger, reason=f"intent:{intent_name or ''}", trace_id=trace_id, request_obj=request)
+
+
+_NAMESPACE_STATUS = {
+    "NS_NAMESPACE_REQUIRED": 400,
+    "NS_UNKNOWN_NAMESPACE": 404,
+    "NS_NAMESPACE_SUSPENDED": 403,
+    "NS_NAMESPACE_CONFLICT": 409,
+    "NS_NAMESPACE_AMBIGUOUS": 409,
+    "NS_DATABASE_HINT_CONFLICT": 409,
+    "NS_NAMESPACE_SIGNATURE_INVALID": 401,
+    "NS_ROUTE_VERSION_MISMATCH": 503,
+    "NS_TOKEN_NAMESPACE_MISMATCH": 401,
+    "NS_TOKEN_AUDIENCE_MISMATCH": 401,
+    "NS_PLATFORM_ADMIN_REQUIRED": 403,
+    "NS_UPSTREAM_UNAVAILABLE": 503,
+}
+
+
+def _namespace_error(exc):
+    """Surface a stable namespace code carried by the exception message."""
+
+    text = str(exc or "").strip()
+    if text.startswith("NS_"):
+        code = text.split(" ", 1)[0]
+        return code, _NAMESPACE_STATUS.get(code, 401)
+    return "", 0
 
 
 def _permission_error_details(intent_name: str, params: Dict[str, Any], message: str) -> dict:
@@ -389,52 +415,24 @@ class IntentDispatcher(http.Controller):
                     return request.env.cr.dbname
                 return None
 
-            # DB 解析优先级: locked header > params > query > header > session > env
-            effective_db = None
-            db_source = "unknown"
-
-            if x_db_locked_hdr:
-                effective_db = x_db_locked_hdr
-                db_source = "locked_header"
-            elif params.get("db"):
-                effective_db = params.get("db")
-                db_source = "params"
-            elif kwargs.get("db"):
-                effective_db = kwargs.get("db")
-                db_source = "query"
-            elif x_db_hdr:
-                effective_db = x_db_hdr
-                db_source = "header"
-            elif request.session.db:
-                effective_db = request.session.db
-                db_source = "session"
-
-            # 非 DEV 且非管理员：禁止通过 params/query/header 覆盖 DB；反代锁库头除外。
-            if effective_db and db_source in {"params", "query", "header"} and not _env_is_dev() and not _user_is_admin():
-                _logger.warning("Blocked db override from %s in non-dev env", db_source)
-                effective_db = _default_db()
-                db_source = "session" if request.session.db else "env_default"
-
-            if not effective_db:
-                effective_db = _default_db()
-                db_source = "session" if request.session.db else "env_default"
-
-            if effective_db:
-                db_is_login_routing_context = (
-                    intent_name in {"login", "auth.login"}
-                    and not request_explicit_db_param
-                    and db_source in {"locked_header", "query", "header", "session", "env_default"}
+            # Batch C: the entry resolves the namespace.  A client database
+            # hint is no longer a routing input, it is a conflict.
+            hinted = (
+                "db" in params
+                or "database" in params
+                or bool(str(x_db_hdr or "").strip())
+                or bool(str(x_db_locked_hdr or "").strip())
+                or bool(kwargs.get("db"))
+            )
+            if hinted:
+                _logger.warning("Rejected client database hint on intent %s", intent_name)
+                return _error_response(
+                    "NS_DATABASE_HINT_CONFLICT",
+                    "database hints are not accepted; the entry namespace decides the database",
+                    409,
+                    trace_id,
+                    intent_name=intent_name,
                 )
-                if not db_is_login_routing_context:
-                    params, effective_db = normalize_database_params(
-                        params,
-                        effective_db=effective_db,
-                        trusted_lock=db_source == "locked_header",
-                    )
-                elif intent_name in {"login", "auth.login"}:
-                    params["_login_routing_db"] = effective_db
-                if request.session.db != effective_db:
-                    request.session.db = effective_db
 
             is_anon = _is_anon_req(hdr) or intent_name == "session.bootstrap"
 
@@ -564,8 +562,16 @@ class IntentDispatcher(http.Controller):
                 f"{name};dur={duration:.3f}" for name, duration in phase_times + dispatch_times
             )
             return response
-        except AccessDenied:
+        except NamespaceError as e:
+            # Batch C: the entry guard raises a typed rejection.  Dispatch it by
+            # the code's own status instead of guessing from the message text.
             _rollback_request_env(intent_name, trace_id)
+            return _error_response(e.code, e.message, e.http_status, trace_id, intent_name=intent_name)
+        except AccessDenied as e:
+            _rollback_request_env(intent_name, trace_id)
+            ns_code, ns_status = _namespace_error(e)
+            if ns_code:
+                return _error_response(ns_code, str(e), ns_status, trace_id, intent_name=intent_name)
             return _error_response(AUTH_REQUIRED, "认证失败或 token 无效", 401, trace_id, intent_name=intent_name)
         except AccessError as e:
             _rollback_request_env(intent_name, trace_id)
@@ -597,6 +603,9 @@ class IntentDispatcher(http.Controller):
         except Exception as e:
             if isinstance(e, AccessDenied) or e.__class__.__name__ == "AccessDenied":
                 _rollback_request_env(intent_name, trace_id)
+                ns_code, ns_status = _namespace_error(e)
+                if ns_code:
+                    return _error_response(ns_code, str(e), ns_status, trace_id, intent_name=intent_name)
                 return _error_response(AUTH_REQUIRED, "认证失败或 token 无效", 401, trace_id, intent_name=intent_name)
             _rollback_request_env(intent_name, trace_id)
             _logger.exception("intent dispatcher failed: %s", e)

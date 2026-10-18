@@ -24,6 +24,7 @@
         "security/groups.xml",
         "security/ir.model.access.csv",
         "data/platform_bootstrap_company.xml",
+        "data/sc_platform_namespace_seed.xml",
         "data/sc_subscription_default.xml",
         "data/ui_base_contract_asset_cron.xml",
         "data/contract_slo_retention_cron.xml",

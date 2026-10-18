@@ -17,3 +17,5 @@ from . import auth_credential_policy
 from . import idempotency_record
 from . import contract_slo_observation
 from . import platform_database_registry
+from . import platform_namespace
+from . import ir_http

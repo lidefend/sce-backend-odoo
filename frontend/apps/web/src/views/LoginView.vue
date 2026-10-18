@@ -87,7 +87,7 @@
             v-if="pageSectionEnabled('form', true) && pageSectionTagIs('form', 'section')"
             class="sc-form"
             :style="pageSectionStyle('form')"
-            :data="{ username, password, dbName }"
+            :data="{ username, password }"
             novalidate
             layout="vertical"
             label-align="top"
@@ -146,16 +146,6 @@
                 {{ passwordRecoveryAction.label || passwordRecoveryAction.key }}
               </ScButton>
             </div>
-            <ScFormItem v-if="!dbInputDisabled" name="dbName" :label="pageText('db_label', '数据库')">
-              <ScInput
-                v-model="dbName"
-                class="sc-input"
-                size="large"
-                autocomplete="off"
-                :placeholder="pageText('db_placeholder', '请输入数据库名（如 sc_minimal）')"
-                :disabled="dbInputDisabled"
-              />
-            </ScFormItem>
             <p
               v-if="pageSectionEnabled('error', true) && pageSectionTagIs('error', 'section') && error"
               id="login-error"
@@ -184,7 +174,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useSessionStore } from '../stores/session';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
-import { isConfiguredDbPinned, isPlatformAdminEntryRuntime, resolveConfiguredDb } from '../services/dbContext';
+import { isPlatformAdminEntryRuntime } from '../services/dbContext';
 import { config } from '../config';
 import { normalizeLegacyWorkbenchPath } from '../app/routeQuery';
 import { authorityBoundTargetResolvable } from '../app/routeAuthority';
@@ -215,9 +205,6 @@ const pageGlobalActions = pageContract.globalActions;
 
 const username = ref('');
 const password = ref('');
-const dbName = ref(
-  resolveConfiguredDb(String(config.odooDb || '').trim()),
-);
 const loading = ref(false);
 const error = ref('');
 const sessionExpired = computed(() => route.query.reason === 'session_expired');
@@ -226,7 +213,6 @@ const authEntryActions = computed(() => pageGlobalActions.value.filter((action) 
 const activationAction = computed(() => authEntryActions.value.find((action) => action.key === 'open_account_activation'));
 const passwordRecoveryAction = computed(() => authEntryActions.value.find((action) => action.key === 'open_password_recovery'));
 const headerActions = computed(() => pageGlobalActions.value.filter((action) => !authActionKeys.has(action.key)));
-const dbInputDisabled = computed(() => loading.value || isConfiguredDbPinned());
 const loginTitleFallback = computed(() => isPlatformAdminEntryRuntime() ? '登录到平台管理端' : '登录到');
 const brandSlogan = computed(() => pageText('brand_slogan', config.appBrand.slogan).trim());
 const valueLines = computed(() => config.appBrand.valueLines.map((line, index) => pageText(`value_line_${index + 1}`, line)));
@@ -235,15 +221,6 @@ const footerPrimary = computed(() => config.appBrand.footerPrimary || `Copyright
 watch([username, password], () => {
   if (error.value) error.value = '';
 });
-
-watch(
-  () => route.fullPath,
-  () => {
-    if (!loading.value) {
-      dbName.value = resolveConfiguredDb(String(config.odooDb || '').trim());
-    }
-  },
-);
 
 function normalizeLoginError(err: unknown): string {
   const fallback = pageText('error_login_failed', '登录失败，请稍后重试');
@@ -269,7 +246,9 @@ async function onSubmit() {
   error.value = '';
   loading.value = true;
   try {
-    await session.login(username.value, password.value, dbName.value);
+    // Batch C: the path namespace decides the database.  The form never sends
+    // a database hint, and Odoo refuses one with 409.
+    await session.login(username.value, password.value);
     await session.loadAppInit();
     const recoveringExpiredSession = sessionExpired.value;
     const queryRedirect = typeof route.query.redirect === 'string' ? route.query.redirect : '';
