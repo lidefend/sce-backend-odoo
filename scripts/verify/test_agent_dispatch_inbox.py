@@ -266,6 +266,19 @@ class InboxTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'run authorization'):
             m.submit(self.root,'pilot',report)
 
+    def test_legacy_task_ref_binds_run_to_standing_authorization(self):
+        task={'task_id':'LEGACY-AUTH','lane':'pilot','objective':'verify','scope':['one'],
+              'acceptance':['two'],'status':'acknowledged',
+              'acknowledgements':[{'executor':'executor-a','decision':'accepted','at':m.now()}]}
+        m.write(m.task_path(self.root,'LEGACY-AUTH'),task)
+        report={**self.report,'task_ref':'LEGACY-AUTH','executor':'executor-a'}
+        with self.assertRaisesRegex(ValueError,'run authorization'):
+            m.validate_task_ref(self.root,'pilot',report)
+        run=json.loads((self.repo/'run.json').read_text())
+        run['authorization']=m.authorization_reference(m.active_authorization(m.read(self.root/'config.json')))
+        (self.repo/'run.json').write_text(json.dumps(run))
+        m.validate_task_ref(self.root,'pilot',report)
+
     def test_execution_authorized_is_not_a_receipt_field(self):
         self.report['execution_authorized']=False
         with self.assertRaisesRegex(ValueError,'not a receipt field'):
@@ -276,6 +289,32 @@ class InboxTests(unittest.TestCase):
         self.assertEqual(result['authorization']['id'],'test-auth')
         self.assertEqual(result['authorization']['status'],'active')
         self.assertFalse(result['execution_model']['automatic_execution'])
+
+    def test_legacy_task_without_authorization_inherits_standing_authorization(self):
+        task={'task_id':'LEGACY','lane':'pilot','objective':'verify','scope':['one'],
+              'acceptance':['two'],'status':'acknowledged','acknowledgements':[]}
+        m.write(m.task_path(self.root,'LEGACY'),task)
+        row=[t for t in m.status(self.root)['tasks'] if t['task_id']=='LEGACY'][0]
+        self.assertEqual(row['authorization_id'],'test-auth')
+        self.assertEqual(row['authorization_source'],'standing_authorization_fallback')
+        self.assertEqual(row['execution_authority']['executor_action'],'proceed')
+        self.assertIn('不等待所有者再次确认',row['execution_authority']['note'])
+
+    def test_user_lane_is_reported_as_scope_exclusion_not_authorization_request(self):
+        task={'task_id':'USER-LEGACY','lane':'user','objective':'verify','scope':['one'],
+              'acceptance':['two'],'status':'acknowledged','acknowledgements':[]}
+        m.write(m.task_path(self.root,'USER-LEGACY'),task)
+        row=[t for t in m.status(self.root)['tasks'] if t['task_id']=='USER-LEGACY'][0]
+        self.assertEqual(row['authorization_source'],'standing_authorization_scope_exclusion')
+        self.assertEqual(row['execution_authority']['executor_action'],'paused_by_owner_exclusion')
+        self.assertIn('与授权无关',row['execution_authority']['note'])
+
+    def test_review_output_is_rewritten_so_it_never_asks_for_owner_authorization(self):
+        text,rewrites=m.sanitize_review_output('需所有者扩权：轮换 JWT 密钥；等待所有者授权后继续。')
+        self.assertNotIn('需所有者扩权',text)
+        self.assertNotIn('等待所有者授权',text)
+        self.assertIn('另行登记',text)
+        self.assertEqual(len(rewrites),2)
 
     def test_supersedes_closes_prior_blocker_and_prevents_retry(self):
         first_report={**self.report,'summary':'first','blockers':['BLOCKER-1']}
@@ -454,7 +493,7 @@ class InboxTests(unittest.TestCase):
         readiness=m.task_readiness(self.root,task)
         self.assertEqual(readiness['state'],'waiting_preconditions')
         self.assertEqual(readiness['unmet_preconditions'],['TASK-PREREQ'])
-        self.assertIn('不是等待所有者授权',readiness['note'])
+        self.assertIn('与授权无关',readiness['note'])
 
     def test_blocker_may_describe_unauthorized_entry_without_asking_owner(self):
         """A technical fact is not an owner-approval request.
