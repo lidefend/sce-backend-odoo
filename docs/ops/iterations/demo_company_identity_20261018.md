@@ -12,7 +12,8 @@
 - 正式产品层：P4 demo 交付载体
 - 模块：`demo_addons/smart_construction_demo`，版本 `0.3.1`
 - 数据职责：`sc_demo`（`sc-demo-dev`）
-- 最终候选：`e340b43d70c91762aee59d8b1fee232ec9680926`
+- 最终运行身份：`94b125ed05222703bbaac0f8efc13ff543e451a2`；功能修复提交为
+  `e340b43d70c91762aee59d8b1fee232ec9680926`。
 
 ## 根因与修复
 
@@ -36,9 +37,10 @@
 - `make verify.demo.supplemental.unit`：46 项 PASS。
 - `daily.runtime.candidate.bundle_sync`：`ffab2696…` → `e340b43d…` PASS，
   `origin_main_mutated=false`。
-- `daily.runtime.database.duty.refresh/upgrade/seed`：最终 SHA 上均 PASS；
-  两次 seed 执行链均包含 `demo_company_identity`、`demo_60_attachments`、
-  `demo_85_passwords`、`demo_90_verify`。
+- 功能候选 `e340b43d…` 上 `daily.runtime.database.duty.refresh/upgrade/seed`
+  均 PASS；两次 seed 执行链均包含 `demo_company_identity`、
+  `demo_60_attachments`、`demo_85_passwords`、`demo_90_verify`。最终文档
+  提交 `94b125ed…` 同步后仅刷新容器以对齐运行身份，未再写业务数据。
 - 库内回读：`smart_construction_demo.user_demo_full` 唯一指向 `demo_full`
   （`res_id=60`）；公司与往来单位均为 `demo演示公司`；模块状态
   `installed`，版本 `17.0.0.3.1`。
