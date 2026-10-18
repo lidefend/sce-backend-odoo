@@ -11,7 +11,7 @@
     </record>
     <record id="namespace_demo" model="sc.platform.namespace">
       <field name="namespace_id">ns_000000000002</field>
-      <field name="display_name">Demo tenant</field>
+      <field name="display_name">Demo演示公司</field>
       <field name="lifecycle_state">active</field>
       <field name="database_name">sc_demo</field>
       <field name="duty_key">demo</field>
