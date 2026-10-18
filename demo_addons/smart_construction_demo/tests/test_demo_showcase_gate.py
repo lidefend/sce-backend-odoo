@@ -186,7 +186,7 @@ class TestDemoSeedReproducibilityContract(TransactionCase):
 
     def test_published_identity_and_password_are_authored_in_the_module(self):
         from ..hooks import DEMO_COMPANY_NAME, DEMO_PRINCIPAL_LOGINS, DEMO_USER_PASSWORD
-        self.assertEqual(DEMO_COMPANY_NAME, "demo演示公司")
+        self.assertEqual(DEMO_COMPANY_NAME, "Demo演示公司")
         self.assertEqual(DEMO_USER_PASSWORD, "123456")
         self.assertIn("wutao", DEMO_PRINCIPAL_LOGINS)
         self.assertIn("demo_full", DEMO_PRINCIPAL_LOGINS)

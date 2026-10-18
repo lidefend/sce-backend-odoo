@@ -63,15 +63,15 @@ class DemoCompanyIdentity(unittest.TestCase):
         apply_identity = function_from(
             ROOT / "hooks.py",
             "apply_demo_company_identity",
-            DEMO_COMPANY_NAME="demo演示公司",
+            DEMO_COMPANY_NAME="Demo演示公司",
         )
         env = SimpleNamespace(ref=lambda xmlid: company)
         apply_identity(env)
-        self.assertEqual(company.name, "demo演示公司")
-        self.assertEqual(partner.name, "demo演示公司")
-        self.assertEqual(writes, [{"name": "demo演示公司"}])
+        self.assertEqual(company.name, "Demo演示公司")
+        self.assertEqual(partner.name, "Demo演示公司")
+        self.assertEqual(writes, [{"name": "Demo演示公司"}])
         apply_identity(env)
-        self.assertEqual(writes, [{"name": "demo演示公司"}])
+        self.assertEqual(writes, [{"name": "Demo演示公司"}])
         run = function(
             "step_company_identity.py",
             "_run",
@@ -809,7 +809,7 @@ class DemoSeedReproducibility(unittest.TestCase):
             source = path.read_text()
             if path.name == "step_company_identity.py":
                 continue
-            self.assertNotIn('{"name": "demo演示公司"}', source, path.name)
+            self.assertNotIn('{"name": "Demo演示公司"}', source, path.name)
             self.assertNotIn('company.write({"name"', source, path.name)
 
     def test_existing_user_is_updated_instead_of_duplicated(self):

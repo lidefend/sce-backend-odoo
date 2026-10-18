@@ -3,7 +3,7 @@
 ## 目标
 
 `smart_construction_demo` 必须从模块安装、升级和正式 seed 三条路径都生成
-可发布的 demo 数据：公司名为 `demo演示公司`，公开账号统一使用 `123456`，
+可发布的 demo 数据：公司名为 `Demo演示公司`，公开账号统一使用 `123456`，
 `demo_full` 有稳定 XMLID，重复 seed 不再制造重复附件。重建或重跑种子不得
 回到 Odoo 默认的 `My Company`。
 
@@ -42,10 +42,10 @@
   `demo_60_attachments`、`demo_85_passwords`、`demo_90_verify`。最终文档
   提交 `94b125ed…` 同步后仅刷新容器以对齐运行身份，未再写业务数据。
 - 库内回读：`smart_construction_demo.user_demo_full` 唯一指向 `demo_full`
-  （`res_id=60`）；公司与往来单位均为 `demo演示公司`；模块状态
+  （`res_id=60`）；公司与往来单位均为 `Demo演示公司`；模块状态
   `installed`，版本 `17.0.0.3.1`。
 - 八个公开账号用 `123456` 逐一通过 Odoo 凭据校验，均返回
-  `demo演示公司`。
+  `Demo演示公司`。
 - 两次 seed 前后附件均保持 `883` 行、`1,279,088` 字节，未继续增长；
   历史重复 seed 留下的 100 个无主演示附件保留未删，作为审计残留。
 

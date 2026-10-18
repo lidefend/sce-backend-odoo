@@ -26,7 +26,7 @@ WARN_PROJECT_CODES = {
 # 与 payment.request._check_project_lifecycle 一致：这些终态项目不允许再新增
 # 提交/审批中的付款申请，演示数据的自检必须遵循同一产品规则。
 TERMINAL_PROJECT_LIFECYCLES = ("warranty", "closed")
-DEMO_COMPANY_NAME = "demo演示公司"
+DEMO_COMPANY_NAME = "Demo演示公司"
 ALL_DEMO_PROJECT_CODES = [
     "DEMO-PJ-INIT",
     "DEMO-PJ-TENDER",
