@@ -29,12 +29,14 @@ withDefaults(defineProps<{state?:'info'|'loading'|'empty'|'error'|'success';dens
    reserves for it, and long copy plus nested grid facts wrap inside the band. */
 .sc-inline-state__description{display:grid;grid-template-columns:minmax(0,1fr);inline-size:100%;max-inline-size:100%;min-inline-size:0;overflow-wrap:anywhere}
 .sc-inline-state__description::after{content:"";display:block;block-size:0;inline-size:100cqi}
-.sc-inline-state[data-state='info'] {
+.sc-inline-state[data-state='info'],
+.sc-inline-state[data-state='empty'] {
   border-color: var(--sc-app-info-border);
   background: var(--sc-app-info-bg);
   color: var(--sc-app-info-text);
 }
-.sc-inline-state[data-state='info'] .sc-inline-state__description {
+.sc-inline-state[data-state='info'] .sc-inline-state__description,
+.sc-inline-state[data-state='empty'] .sc-inline-state__description {
   color: var(--sc-app-info-text);
 }
 @media (prefers-reduced-motion: reduce) {
