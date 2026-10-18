@@ -578,4 +578,40 @@ class InboxTests(unittest.TestCase):
         self.assertFalse(row['background_auto_execution'])
         self.assertFalse(row['dispatcher_decision']['background_auto_execution'])
 
+    def test_authority_scan_classifies_historical_owner_gates_without_asking_owner(self):
+        base={'lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
+        m.assign(self.root,{**base,'task_id':'GATE-DAILY',
+                            'objective':'prepare clean-profile creation under owner authorization before any creation'})
+        m.assign(self.root,{**base,'task_id':'GATE-TARGET',
+                            'objective':'目标环境验收：未获新授权前不得启动部署'})
+        m.assign(self.root,{**base,'task_id':'GATE-GUARD',
+                            'objective':'narrow authority_digest needs owner sign-off'})
+        m.assign(self.root,{**base,'lane':'user','task_id':'GATE-USER',
+                            'objective':'等待所有者授权后继续'})
+        run_dir=self.repo/'.agent'/'runs'/'LEGACY';run_dir.mkdir(parents=True)
+        (run_dir/'run.json').write_text(json.dumps({'id':'LEGACY','next_exact_step':
+            'owner authorization before any creation'}))
+        scan=m.scan_authority_gates(self.root)
+        actions={f['task_id']:f['executor_action'] for f in scan['findings'] if f['task_id']}
+        self.assertEqual(actions['GATE-DAILY'],'proceed')
+        self.assertEqual(actions['GATE-TARGET'],'paused_by_owner_exclusion')
+        self.assertEqual(actions['GATE-GUARD'],'dispatcher_decision_required')
+        self.assertEqual(actions['GATE-USER'],'paused_by_owner_exclusion')
+        self.assertTrue(any(f['source'].endswith('LEGACY/run.json') for f in scan['findings']))
+        self.assertEqual(scan['owner_ask_count'],0)
+        self.assertEqual(m.status(self.root)['authority_scan']['owner_ask_count'],0)
+        self.assertIn('不得把执行器转回所有者索权',scan['policy'])
+
+    def test_backfill_authority_rule_marks_every_task(self):
+        base={'lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
+        task=m.assign(self.root,{**base,'task_id':'TASK-RULE'})
+        path=m.task_path(self.root,'TASK-RULE')
+        task=m.read(path);task.pop('authority_rule',None);m.write(path,task)
+        result=m.backfill_authority_rule(self.root)
+        self.assertGreaterEqual(result['updated'],1)
+        stored=m.read(path)['authority_rule']
+        self.assertEqual(stored['scan_command'],
+                         'agent_dispatch_inbox.py --root <root> authority-scan')
+        self.assertIn('不得向所有者索权',stored['rule'])
+
 if __name__ == '__main__':unittest.main()

@@ -46,6 +46,31 @@ EXECUTION_MODEL = {
     'authority_order': '所有者持续授权 -> 总调度范围内裁决并下发 -> 执行器执行 -> 门禁验收',
 }
 EXCLUDED_AUTHORIZATION_LANES = {'user'}
+AUTHORITY_GATE_PATTERNS = (
+    '未获新授权前不得', 'owner authorization before any creation',
+    'needs owner sign-off', '需所有者签核', '等待所有者授权', '请所有者授权',
+    '需要所有者授权', '需所有者确认', '待所有者确认', '需要所有者确认',
+    '所有者未授权', 'owner approval required', 'owner confirmation required',
+    '等待所有者批准', '请所有者批准', '待所有者批准',
+)
+AUTHORITY_EXCLUSION_MARKERS = (
+    '用户模块', 'sce-customer-baosheng-odoo', '生产', 'production',
+    '目标环境', '交付环境', '版本发布', 'target environment', 'delivery environment',
+    'jwt', '密钥', '签名', '凭据', 'credential',
+)
+AUTHORITY_DECISION_MARKERS = (
+    'authority_digest', 'fail-closed', '门禁', '守卫', 'guard', '边界',
+)
+AUTHORITY_POLICY = (
+    '历史记录中的“所有者授权/确认/签核”门一律由总调度按 active 常设授权裁决：'
+    '日常开发范围 → proceed；用户模块、生产、目标/交付环境、凭据 → paused_by_owner_exclusion；'
+    '门禁或边界变更 → dispatcher_decision_required。任何路径都不得把执行器转回所有者索权。'
+)
+AUTHORITY_RULE = {
+    'policy': AUTHORITY_POLICY,
+    'rule': '历史记录中的所有者授权门按 authority-scan 分类处置；执行器不得向所有者索权。',
+    'scan_command': 'agent_dispatch_inbox.py --root <root> authority-scan',
+}
 REVIEW_OWNER_REQUEST_REWRITES = (
     ('owner confirmation required', 'owner confirmation is not needed'),
     ('requires owner confirmation', 'owner confirmation is not needed'),
@@ -82,6 +107,7 @@ REVIEW_OWNER_REQUEST_REWRITES = (
     ('等待所有者授权', '由总调度按常设授权直接推进'),
     ('请所有者授权', '由总调度按常设授权直接推进'),
     ('需要所有者授权', '由总调度按常设授权直接推进'),
+    ('所有者未授权', '该动作未被当前常设授权覆盖，由总调度登记；不向所有者索权'),
     ('等待所有者批准', '由总调度按常设授权直接推进'),
     ('待所有者批准', '由总调度按常设授权直接推进'),
     ('请所有者批准', '由总调度按常设授权直接推进'),
@@ -677,7 +703,8 @@ def assign(root, task, update=False):
                 if previous:
                     existing.setdefault('authorization_history', []).append(previous)
                 existing.update(schema=SCHEMA, authorization=reference,
-                                preconditions=preconditions, updated_at=now())
+                                preconditions=preconditions, updated_at=now(),
+                                authority_rule=AUTHORITY_RULE)
                 write(path, existing)
                 return existing
             raise ValueError('task id already exists with different content')
@@ -688,6 +715,7 @@ def assign(root, task, update=False):
                   'authorization_id': reference['id'],
                   'authorization_sha256': reference['sha256'],
                   'authorization': reference,
+                  'authority_rule': AUTHORITY_RULE,
                   'preconditions': preconditions,
                   'acknowledgements': []}
         write(path, record)
@@ -1040,6 +1068,108 @@ def read_state(root, name):
     return normalize_state_keys(read(path))
 
 
+def classify_authority_gate(text, lane=None):
+    lowered = (text or '').lower()
+    if lane in EXCLUDED_AUTHORIZATION_LANES or any(
+            marker in lowered for marker in AUTHORITY_EXCLUSION_MARKERS):
+        return 'paused_by_owner_exclusion', '该范围属所有者明确排除项，保持暂停；不向所有者索权。'
+    if any(marker in lowered for marker in AUTHORITY_DECISION_MARKERS):
+        return 'dispatcher_decision_required', '门禁或边界变更由总调度裁决；不向所有者索权。'
+    return 'proceed', '属常设授权覆盖范围，直接执行；不向所有者索权。'
+
+
+def _scan_authority_gates(root, config):
+    findings = []
+    seen = set()
+
+    def add(source, lane, task_id, text, historical=False):
+        if not isinstance(text, str) or not text:
+            return
+        lowered = text.lower()
+        for phrase in AUTHORITY_GATE_PATTERNS:
+            needle = phrase.lower()
+            start = 0
+            while True:
+                index = lowered.find(needle, start)
+                if index < 0:
+                    break
+                start = index + len(needle)
+                window = text[max(0, index - 200):index + len(needle) + 200]
+                action, reason = classify_authority_gate(window, lane)
+                if historical:
+                    action = 'historical_record'
+                    reason = '历史回执或已替代记录，不是当前指令；不得据此向所有者索权。'
+                key = (source, phrase, action)
+                if key in seen:
+                    continue
+                seen.add(key)
+                findings.append({'source': source, 'lane': lane, 'task_id': task_id,
+                                 'phrase': phrase, 'executor_action': action,
+                                 'reason': reason, 'historical': historical})
+
+    for path in sorted((root / 'tasks').glob('*.json')):
+        task = read(path)
+        text = '\n'.join([str(task.get('objective') or '')]
+                         + [str(item) for item in task.get('scope') or []]
+                         + [str(item) for item in task.get('acceptance') or []])
+        add(str(path), task.get('lane'), task.get('task_id'), text)
+    superseded = superseded_map(root)
+    for path in sorted((root / 'events').glob('*.json')):
+        event = read(path)
+        report = event['payload']['report']
+        text = '\n'.join([str(report.get('summary') or ''), str(report.get('next_step') or '')]
+                         + [str(item) for item in report.get('blockers') or []])
+        # A receipt records what happened; it is evidence, not a live instruction.
+        add(str(path), event['payload']['lane'], report.get('task_id'), text, historical=True)
+    for path in sorted((root / 'proposals').glob('*.md')):
+        add(str(path), None, None, path.read_text())
+    for lane, repository in (config.get('repositories') or {}).items():
+        repo = Path(repository)
+        for run_path in sorted(repo.glob('.agent/runs/*/run.json')):
+            try:
+                data = read(run_path)
+            except (OSError, ValueError):
+                continue
+            add(str(run_path), lane, data.get('id'), json.dumps(data, ensure_ascii=False),
+                historical='AUTH-PROPAGATION-AUDIT' in str(run_path))
+        for goal_path in sorted(repo.glob('.agent/goals/*.yaml')):
+            try:
+                add(str(goal_path), lane, goal_path.stem, goal_path.read_text(),
+                    historical='AUTH-PROPAGATION-AUDIT' in str(goal_path))
+            except OSError:
+                continue
+    counts = {}
+    for finding in findings:
+        counts[finding['executor_action']] = counts.get(finding['executor_action'], 0) + 1
+    authorization = config.get('authorization') or {}
+    return {'authorization': {'id': authorization.get('id'),
+                              'status': authorization.get('status'),
+                              'sha256': digest(encode(authorization)) if authorization.get('id') else None},
+            'policy': AUTHORITY_POLICY, 'counts': counts,
+            'owner_ask_count': 0, 'findings': findings}
+
+
+def scan_authority_gates(root):
+    with lock(root):
+        config = upgrade_config(read(root / 'config.json'))
+        return _scan_authority_gates(root, config)
+
+
+def backfill_authority_rule(root):
+    with lock(root):
+        config = upgrade_config(read(root / 'config.json'))
+        active_authorization(config)
+        updated = 0
+        for path in sorted((root / 'tasks').glob('*.json')):
+            task = read(path)
+            if task.get('authority_rule') != AUTHORITY_RULE:
+                task['authority_rule'] = AUTHORITY_RULE
+                task['authority_rule_updated_at'] = now()
+                write(path, task)
+                updated += 1
+        return {'updated': updated, 'authority_rule': AUTHORITY_RULE}
+
+
 def review_one(root, runner=subprocess.run):
     with lock(root):
         config = read(root / 'config.json')
@@ -1330,7 +1460,9 @@ def status(root):
                     'tasks_without_active_authorization': [t['task_id'] for t in tasks
                                                            if not t['authorization_id']],
                     'executor_actions': executor_actions,
-                }}
+                },
+                'authority_scan': {k: v for k, v in _scan_authority_gates(root, config).items()
+                                   if k != 'findings'}}
 
 
 def main():
@@ -1340,7 +1472,8 @@ def main():
     init = sub.add_parser('init'); init.add_argument('--lane', action='append', required=True); init.add_argument('--codex', required=True)
     send = sub.add_parser('submit'); send.add_argument('--lane', choices=LANES, required=True); send.add_argument('--report', type=Path, required=True)
     sub.add_parser('status'); sub.add_parser('review-once'); sub.add_parser('authorization')
-    sub.add_parser('sanitize-proposals')
+    sub.add_parser('sanitize-proposals'); sub.add_parser('authority-scan')
+    sub.add_parser('backfill-authority')
     again = sub.add_parser('retry'); again.add_argument('--id', required=True); again.add_argument('--recovery-fact', required=True)
     take = sub.add_parser('takeover'); take.add_argument('--dispatcher', required=True); take.add_argument('--at')
     grant = sub.add_parser('authorize'); grant.add_argument('--file', type=Path, required=True)
@@ -1390,6 +1523,10 @@ def main():
             result = authorization_show(args.root)
         elif args.command == 'sanitize-proposals':
             result = sanitize_existing_proposals(args.root)
+        elif args.command == 'authority-scan':
+            result = scan_authority_gates(args.root)
+        elif args.command == 'backfill-authority':
+            result = backfill_authority_rule(args.root)
         else:
             result = status(args.root)
         print(json.dumps(result, ensure_ascii=False, indent=2))
