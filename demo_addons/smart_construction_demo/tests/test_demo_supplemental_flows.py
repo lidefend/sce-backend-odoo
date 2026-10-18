@@ -241,6 +241,182 @@ class DemoCompanyIdentity(unittest.TestCase):
         self.assertEqual([record.login for record in records], ["xmlid-39", "demo_full"])
 
 
+class DemoAdminPassword(unittest.TestCase):
+    """The published admin/123456 login is a demo-surface guarantee, not a hope."""
+
+    @staticmethod
+    def _admin(events, login="admin", active=True, share=False):
+        admin = SimpleNamespace(id=2, login=login, active=active, share=share)
+        admin.sudo = lambda: admin
+        admin.write = lambda values: events.append(dict(values))
+        return admin
+
+    def test_admin_password_hook_writes_the_published_password(self):
+        events, guards = [], []
+        admin = self._admin(events)
+        apply_admin = function_from(
+            ROOT / "hooks.py",
+            "apply_demo_admin_password",
+            DEMO_ADMIN_LOGIN="admin",
+            DEMO_USER_PASSWORD="123456",
+            demo_admin_record=lambda env: admin,
+            guard_demo_scope=lambda env: guards.append(env),
+        )
+        env = SimpleNamespace(ref=lambda xmlid, **kwargs: admin)
+        self.assertIs(apply_admin(env), admin)
+        self.assertEqual(events, [{"password": "123456"}])
+        self.assertEqual(guards, [env])
+
+    def test_admin_password_hook_fails_closed_outside_demo_scope(self):
+        events = []
+
+        def refuse(env):
+            raise RuntimeError(
+                "smart_construction_demo requires an authorized demo database")
+
+        apply_admin = function_from(
+            ROOT / "hooks.py",
+            "apply_demo_admin_password",
+            DEMO_ADMIN_LOGIN="admin",
+            DEMO_USER_PASSWORD="123456",
+            demo_admin_record=lambda env: self._admin(events),
+            guard_demo_scope=refuse,
+        )
+        with self.assertRaisesRegex(RuntimeError, "authorized demo database"):
+            apply_admin(object())
+        self.assertEqual(events, [])
+
+    def test_admin_password_hook_skips_a_renamed_login(self):
+        events = []
+        apply_admin = function_from(
+            ROOT / "hooks.py",
+            "apply_demo_admin_password",
+            DEMO_ADMIN_LOGIN="admin",
+            DEMO_USER_PASSWORD="123456",
+            demo_admin_record=lambda env: self._admin(events, login="sysadmin"),
+            guard_demo_scope=lambda env: None,
+        )
+        self.assertIsNone(apply_admin(object()))
+        self.assertEqual(events, [])
+
+    def test_admin_record_requires_the_published_login(self):
+        record = function_from(
+            ROOT / "hooks.py", "demo_admin_record", DEMO_ADMIN_LOGIN="admin")
+        renamed = SimpleNamespace(ref=lambda xmlid, **kwargs: SimpleNamespace(login="sysadmin"))
+        missing = SimpleNamespace(ref=lambda xmlid, **kwargs: None)
+        published = SimpleNamespace(
+            ref=lambda xmlid, **kwargs: SimpleNamespace(login="admin"))
+        self.assertIsNone(record(renamed))
+        self.assertIsNone(record(missing))
+        self.assertEqual(record(published).login, "admin")
+
+    def test_scope_guard_refuses_the_platform_database(self):
+        guard = function_from(
+            ROOT / "hooks.py",
+            "guard_demo_scope",
+            os=SimpleNamespace(environ={
+                "SC_ENVIRONMENT": "demo",
+                "SC_ALLOW_DEMO_DATA": "1",
+                "SC_DEMO_USER_PASSWORD": "123456",
+            }),
+        )
+        platform = SimpleNamespace(cr=SimpleNamespace(dbname="sc_platform_control"))
+        with self.assertRaisesRegex(RuntimeError, "authorized demo database"):
+            guard(platform)
+        demo = SimpleNamespace(cr=SimpleNamespace(dbname="sc_demo"))
+        self.assertIsNone(guard(demo))
+        dev = SimpleNamespace(cr=SimpleNamespace(dbname="sc_dev_demo"))
+        self.assertIsNone(guard(dev))
+
+    def test_password_hook_always_applies_the_admin_password(self):
+        calls = []
+        apply_passwords = function_from(
+            ROOT / "hooks.py",
+            "apply_demo_user_passwords",
+            DEMO_USER_PASSWORD="123456",
+            guard_demo_scope=lambda env: None,
+            guard_demo_data_space=lambda env: None,
+            demo_user_records=lambda env: [],
+            apply_demo_admin_password=lambda env: calls.append(env),
+        )
+        env = object()
+        apply_passwords(env)
+        self.assertEqual(calls, [env])
+
+    def _verify(self, admin, checked):
+        class AccessDenied(Exception):
+            pass
+
+        class UserError(Exception):
+            pass
+
+        return function(
+            "step_90_verify_demo.py",
+            "_verify_demo_admin_credential",
+            DEMO_ADMIN_LOGIN="admin",
+            UserError=UserError,
+            AccessDenied=AccessDenied,
+            demo_admin_record=lambda env: admin,
+            _check_user_credential=lambda env, user: checked.append(user.login),
+        ), UserError
+
+    def test_seed_self_check_verifies_the_admin_credential(self):
+        checked = []
+        admin = SimpleNamespace(id=2, login="admin", active=True, share=False)
+        verify, _ = self._verify(admin, checked)
+        verify(object())
+        self.assertEqual(checked, ["admin"])
+
+    def test_seed_self_check_requires_the_admin_login(self):
+        verify, UserError = self._verify(None, [])
+        with self.assertRaisesRegex(UserError, "admin"):
+            verify(object())
+
+    def test_seed_self_check_rejects_an_inactive_admin(self):
+        admin = SimpleNamespace(id=2, login="admin", active=False, share=False)
+        verify, UserError = self._verify(admin, [])
+        with self.assertRaisesRegex(UserError, "active internal user"):
+            verify(object())
+
+    def test_seed_self_check_rejects_a_portal_admin(self):
+        admin = SimpleNamespace(id=2, login="admin", active=True, share=True)
+        verify, UserError = self._verify(admin, [])
+        with self.assertRaisesRegex(UserError, "active internal user"):
+            verify(object())
+
+    def test_seed_self_check_reports_the_password_failure(self):
+        class AccessDenied(Exception):
+            pass
+
+        class UserError(Exception):
+            pass
+
+        def reject(env, user):
+            raise AccessDenied("bad credentials")
+
+        admin = SimpleNamespace(id=2, login="admin", active=True, share=False)
+        verify = function(
+            "step_90_verify_demo.py",
+            "_verify_demo_admin_credential",
+            DEMO_ADMIN_LOGIN="admin",
+            UserError=UserError,
+            AccessDenied=AccessDenied,
+            demo_admin_record=lambda env: admin,
+            _check_user_credential=reject,
+        )
+        with self.assertRaisesRegex(UserError, "authentication failed for admin"):
+            verify(object())
+
+    def test_seed_run_checks_the_admin_credential(self):
+        tree = ast.parse((ROOT / "seed/steps/step_90_verify_demo.py").read_text())
+        node = next(n for n in tree.body
+                    if isinstance(n, ast.FunctionDef) and n.name == "run")
+        called = [call.func.id for call in ast.walk(node)
+                  if isinstance(call, ast.Call) and isinstance(call.func, ast.Name)]
+        self.assertIn("_verify_demo_admin_credential", called)
+        self.assertIn("_verify_demo_credentials", called)
+
+
 class AttachmentIdempotency(unittest.TestCase):
     class Attachments:
         def __init__(self, values):

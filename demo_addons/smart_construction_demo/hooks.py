@@ -113,12 +113,50 @@ def demo_user_records(env):
     return users.exists()
 
 
+DEMO_ADMIN_LOGIN = "admin"
+
+
+def demo_admin_record(env):
+    """The published demo admin login, or ``None`` when that login was renamed.
+
+    ``admin`` is ``base.user_admin``: the demo module owns no XML record for it,
+    so ``demo_user_records`` never selected it and a rebuild from
+    ``--without-demo=all`` kept whatever ``base`` created. It is still part of
+    the published demo surface, so the password hook and the seed self-check
+    name it through this one accessor instead of widening the module's XML
+    ownership.
+    """
+    admin = env.ref("base.user_admin", raise_if_not_found=False)
+    if not admin or admin.login != DEMO_ADMIN_LOGIN:
+        return None
+    return admin
+
+
+def apply_demo_admin_password(env):
+    """Give the published demo admin login the showcase password.
+
+    ``guard_demo_scope`` runs first and refuses every database that is not a
+    demo duty, so this write can never reach the platform duty's admin login.
+    A renamed ``base.user_admin`` is left alone rather than rewritten, so the
+    hook never turns an operator's login change into a published credential.
+    """
+    guard_demo_scope(env)
+    admin = demo_admin_record(env)
+    if admin is None:
+        return None
+    if admin.login != DEMO_ADMIN_LOGIN:
+        return None
+    admin.sudo().write({"password": DEMO_USER_PASSWORD})
+    return admin
+
+
 def apply_demo_user_passwords(env):
     guard_demo_scope(env)
     guard_demo_data_space(env)
     users = demo_user_records(env)
     if users:
         users.write({"password": DEMO_USER_PASSWORD})
+    apply_demo_admin_password(env)
 
 
 def pre_init_hook(env):
