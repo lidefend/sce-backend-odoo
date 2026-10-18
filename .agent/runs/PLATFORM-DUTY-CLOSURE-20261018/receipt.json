@@ -156,6 +156,5 @@
   ],
   "resources": [
     "worktree:/home/lidefend/workspace/sce-backend-odoo"
-  ],
-  "execution_authorized": false
+  ]
 }
