@@ -22,7 +22,15 @@ class InboxTests(unittest.TestCase):
         self.root = self.base/'inbox'
         m.initialize(self.root, {'pilot':str(self.repo)}, '/bin/codex')
         m.takeover(self.root, 'test-dispatcher', '2026-10-17T00:00:00Z')
+        self.authorization=m.authorize(self.root,self.authorization_spec())
         self.report = dict(task_id='TEST',run='run.json',status='paused',summary='test',next_step='review',evidence=['evidence.txt'],blockers=[],resources=['worktree:test'])
+    def authorization_spec(self,status='active'):
+        spec={'id':'test-auth','source':'owner test instruction','granted_at':'2026-10-17T00:00:00Z',
+              'status':status,'scope':['test task scope'],'allowed_actions':['modify test files','run tests','local commit'],
+              'exclusions':['production'],'revocation':{'conditions':['owner revokes in writing'],'by':'owner','recorded_at':'2026-10-17T00:00:00Z'}}
+        if status=='revoked':
+            spec.update(revoked_at='2026-10-17T01:00:00Z',revoked_reason='test revocation')
+        return spec
     def submit(self): return m.submit(self.root,'pilot',self.report)
     def review_success(self,args,**kwargs):
         Path(args[args.index('--output-last-message')+1]).write_text('待调度确认：草案')
@@ -84,7 +92,7 @@ class InboxTests(unittest.TestCase):
             Path(args[args.index('--output-last-message')+1]).write_text('待调度确认：下一任务草案')
             return subprocess.CompletedProcess(args,0,json.dumps({'item':{'type':'agent_message','text':'draft'}}),'')
         result=m.review_one(self.root,success)
-        self.assertEqual(result['status'],'proposal_ready');self.assertFalse(result['execution_authorized'])
+        self.assertEqual(result['status'],'proposal_ready');self.assertFalse(result['background_auto_execution'])
         self.assertEqual(m.review_one(self.root)['status'],'idle')
     def test_review_time_mutation_blocks(self):
         self.submit()
@@ -206,10 +214,26 @@ class InboxTests(unittest.TestCase):
         with self.assertRaises(ValueError):m.ack(self.root,'TASK-1','executor-a','declined','')
         accepted=m.ack(self.root,'TASK-1','executor-a','accepted')
         self.assertEqual(accepted['status'],'acknowledged')
+        task_row=[t for t in m.status(self.root)['tasks'] if t['task_id']=='TASK-1'][0]
+        self.assertEqual(task_row['execution_authority']['authorization_id'],'test-auth')
+        self.assertIn('local commit',task_row['execution_authority']['allowed_actions'])
+        self.assertIn('不是二次授权',task_row['execution_authority']['note'])
         self.assertEqual(len(accepted['acknowledgements']),1)
         self.assertEqual(len(m.ack(self.root,'TASK-1','executor-a','accepted')['acknowledgements']),1)
         declined=m.ack(self.root,'TASK-1','executor-a','declined','not ready')
         self.assertEqual(declined['status'],'declined')
+
+    def test_task_update_refreshes_stale_authorization_reference(self):
+        spec={'task_id':'TASK-REFRESH','lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
+        task=m.assign(self.root,spec)
+        stale=dict(task['authorization'])
+        stale.pop('status'); stale.pop('scope')
+        task['authorization']=stale
+        m.write(m.task_path(self.root,'TASK-REFRESH'),task)
+        refreshed=m.assign(self.root,{**spec,'authorization_ref':'test-auth'},update=True)
+        self.assertEqual(refreshed['authorization'],m.authorization_reference(m.active_authorization(m.read(self.root/'config.json'))))
+        self.assertIn('status',refreshed['authorization'])
+        self.assertIn('scope',refreshed['authorization'])
 
     def test_task_ref_requires_lane_and_latest_acceptance(self):
         spec={'task_id':'TEST','lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
@@ -249,7 +273,7 @@ class InboxTests(unittest.TestCase):
         rows={row['id']:row for row in m.status(self.root)['receipts']}
         self.assertEqual(rows[first_id]['status'],'superseded')
         self.assertEqual(rows[first_id]['superseded_by'],[second_id])
-        self.assertFalse(rows[first_id]['execution_authorized'])
+        self.assertFalse(rows[first_id]['background_auto_execution'])
         with self.assertRaises(ValueError):m.retry(self.root,first_id,'recovered')
         self.assertEqual(m.review_one(self.root,self.review_success)['status'],'proposal_ready')
         rows={row['id']:row for row in m.status(self.root)['receipts']}
@@ -288,8 +312,8 @@ class InboxTests(unittest.TestCase):
         self.assertEqual(rows[second_id]['status'],'superseded')
         self.assertEqual(rows[first_id]['superseded_by'],[third_id])
         self.assertEqual(rows[second_id]['superseded_by'],[third_id])
-        self.assertFalse(rows[first_id]['execution_authorized'])
-        self.assertFalse(rows[second_id]['execution_authorized'])
+        self.assertFalse(rows[first_id]['background_auto_execution'])
+        self.assertFalse(rows[second_id]['background_auto_execution'])
         with self.assertRaises(ValueError):m.retry(self.root,first_id,'recovered')
         with self.assertRaises(ValueError):m.retry(self.root,second_id,'recovered')
         self.assertEqual(rows[third_id]['status'],'pending')
@@ -359,6 +383,56 @@ class InboxTests(unittest.TestCase):
         m.submit(root,'pilot',dict(self.report))
         result=m.review_one(root)
         self.assertEqual(result['status'],'blocked')
-        self.assertFalse(result['execution_authorized'])
+        self.assertFalse(result['background_auto_execution'])
+
+    def test_assign_requires_registered_owner_authorization(self):
+        root=self.base/'no-auth'
+        m.initialize(root,{'pilot':str(self.repo)},'/bin/codex')
+        m.takeover(root,'dispatcher-no-auth','2026-10-17T00:00:00Z')
+        spec={'task_id':'TASK-NOAUTH','lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
+        with self.assertRaisesRegex(ValueError,'authorization is not registered'):
+            m.assign(root,spec)
+
+    def test_takeover_inherits_active_authorization(self):
+        result=m.takeover(self.root,'dispatcher-c','2026-10-17T02:00:00+00:00')
+        self.assertEqual(result['authorization_id'],'test-auth')
+        self.assertEqual(result['authorization_sha256'],m.digest(m.encode(self.authorization['authorization'])))
+        self.assertTrue(result['authorization_inherited'])
+        self.assertEqual(m.status(self.root)['dispatcher']['authorization_id'],'test-auth')
+
+    def test_authorization_reference_validates_itself(self):
+        reference=m.authorization_reference(self.authorization['authorization'])
+        m.validate_authorization_reference(reference)
+        self.assertEqual(reference['scope'],['test task scope'])
+        self.assertEqual(reference['status'],'active')
+        bad=dict(reference);bad['sha256']='0'*64
+        with self.assertRaisesRegex(ValueError,'digest mismatch'):
+            m.validate_authorization_reference(bad)
+
+    def test_revoked_authorization_blocks_task_assignment(self):
+        m.authorize(self.root,self.authorization_spec('revoked'))
+        spec={'task_id':'TASK-REVOKED','lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
+        with self.assertRaisesRegex(ValueError,'not active'):
+            m.assign(self.root,spec)
+
+    def test_precondition_is_not_authorization_wait(self):
+        base={'lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
+        m.assign(self.root,{**base,'task_id':'TASK-PREREQ'})
+        task=m.assign(self.root,{**base,'task_id':'TASK-DEPENDENT','preconditions':['TASK-PREREQ']})
+        readiness=m.task_readiness(self.root,task)
+        self.assertEqual(readiness['state'],'waiting_preconditions')
+        self.assertEqual(readiness['unmet_preconditions'],['TASK-PREREQ'])
+        self.assertIn('不是等待所有者授权',readiness['note'])
+
+    def test_status_normalizes_legacy_execution_authorized_field(self):
+        event_id=self.submit()
+        m.write(self.root/'reviews'/f'{event_id}.json',
+                {'status':'proposal_ready','attempts':1,'execution_authorized':False,
+                 'dispatcher_decision':{'decision':'accepted','execution_authorized':False}})
+        row=[x for x in m.status(self.root)['receipts'] if x['id']==event_id][0]
+        self.assertNotIn('execution_authorized',row)
+        self.assertNotIn('execution_authorized',row['dispatcher_decision'])
+        self.assertFalse(row['background_auto_execution'])
+        self.assertFalse(row['dispatcher_decision']['background_auto_execution'])
 
 if __name__ == '__main__':unittest.main()
