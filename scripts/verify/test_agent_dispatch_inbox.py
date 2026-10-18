@@ -316,6 +316,60 @@ class InboxTests(unittest.TestCase):
         self.assertIn('另行登记',text)
         self.assertEqual(len(rewrites),2)
 
+    def test_review_rewrites_account_owner_confirmation_variant(self):
+        text,rewrites=m.sanitize_review_output('还需账户所有者确认计费锁定状态及处置权限。')
+        self.assertNotIn('账户所有者确认',text)
+        self.assertIn('外部事实前提',text)
+        self.assertIn('不阻断已授权工作',text)
+        self.assertEqual(len(rewrites),1)
+
+    def test_system_authorization_findings_are_not_treated_as_owner_requests(self):
+        findings=('调用该接口需要授权，返回 401。',
+                  '平台管理员可另行授权租户配置管理员。',
+                  '公司切换须先确认用户仍是该公司成员。',
+                  '验收覆盖平台管理员授权范围与租户 ACL。')
+        for finding in findings:
+            text,rewrites=m.sanitize_review_output(finding)
+            self.assertEqual(text,finding)
+            self.assertEqual(rewrites,[])
+            self.assertEqual(m.owner_request_phrases(finding),[])
+
+    def test_review_rewrites_slash_dispatcher_variants(self):
+        text,rewrites=m.sanitize_review_output(
+            '所有者／主调度须先确认范围；所有者/主调度明确后续授权。')
+        self.assertNotIn('所有者／主调度须先确认',text)
+        self.assertNotIn('所有者/主调度明确后续授权',text)
+        self.assertIn('由总调度按常设授权裁决',text)
+        self.assertIn('由总调度按常设授权直接下发',text)
+
+    def test_sanitizer_is_idempotent_and_keeps_technical_billing_fact(self):
+        original='账户计费锁导致 job 未启动；所有者常设授权已为 active。'
+        text,rewrites=m.sanitize_review_output(original)
+        self.assertEqual(text,original)
+        self.assertEqual(rewrites,[])
+        once,_=m.sanitize_review_output('等待所有者授权后继续')
+        twice,rewrites=m.sanitize_review_output(once)
+        self.assertEqual(twice,once)
+        self.assertEqual(rewrites,[])
+
+    def test_existing_proposal_is_sanitized_and_hash_updated(self):
+        event_id=self.submit()
+        proposal=self.root/'proposals'/f'{event_id}-attempt-1.md'
+        proposal.parent.mkdir(parents=True,exist_ok=True)
+        proposal.write_text('还需账户所有者确认后继续。')
+        original_sha=m.digest(proposal.read_bytes())
+        m.write(self.root/'reviews'/f'{event_id}.json',
+                {'status':'proposal_ready','attempts':1,'proposal':str(proposal),
+                 'proposal_sha256':original_sha})
+        result=m.sanitize_existing_proposals(self.root)
+        self.assertEqual(result['rewritten_count'],1)
+        self.assertNotIn('账户所有者确认',proposal.read_text())
+        updated=m.read(self.root/'reviews'/f'{event_id}.json')
+        self.assertEqual(updated['original_proposal_sha256'],original_sha)
+        self.assertEqual(updated['proposal_sha256'],m.digest(proposal.read_bytes()))
+        self.assertEqual(updated['owner_requests_superseded_by']['id'],'test-auth')
+        self.assertEqual(m.status(self.root)['owner_request_audit']['active_owner_request_count'],0)
+
     def test_supersedes_closes_prior_blocker_and_prevents_retry(self):
         first_report={**self.report,'summary':'first','blockers':['BLOCKER-1']}
         first_id=m.submit(self.root,'pilot',first_report)
@@ -503,6 +557,10 @@ class InboxTests(unittest.TestCase):
         response, and could push it into asking the owner instead.
         """
         self.report['blockers']=['18082 未授权入口仍对外监听；未授权请求返回 401']
+        self.assertEqual(self.submit(),self.submit())
+
+    def test_blocker_may_state_system_authorization_requirement(self):
+        self.report['blockers']=['平台管理员接口返回 401，调用需要授权；租户 ACL 仍待复核']
         self.assertEqual(self.submit(),self.submit())
 
     def test_blocker_requesting_owner_authorization_is_rejected(self):

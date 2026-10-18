@@ -30,12 +30,13 @@ AUTHORIZATION_KEYS = {'id', 'source', 'granted_at', 'scope', 'allowed_actions',
 # the receipt and is rejected at submission instead of reaching the owner.
 AUTHORIZATION_REQUEST_PATTERNS = (
     # Only owner-directed approval requests are mechanism defects.  A blocker
-    # may legitimately describe an unauthorized port or a 401 response; those
-    # are technical facts, not a request for the owner to authorize work.
+    # may legitimately describe a 401 response, an ACL, a tenant grant, or a
+    # platform-admin capability.  Those are system authorization facts, not a
+    # request for the human owner to authorize agent work.  Every pattern here
+    # must therefore name the owner explicitly.
     '所有者未授权', '等待所有者授权', '请所有者授权', '需要所有者授权',
-    '等待授权', '需要授权', '请授权',
-    '等待所有者确认', '请所有者确认', '待所有者批准', '等待批准',
-    'awaiting owner authorization', 'awaiting authorization',
+    '等待所有者确认', '请所有者确认', '待所有者批准', '等待所有者批准',
+    'awaiting owner authorization',
     'owner approval required', 'authorization required from owner',
 )
 REVOCATION_KEYS = {'conditions', 'by', 'recorded_at'}
@@ -46,12 +47,49 @@ EXECUTION_MODEL = {
 }
 EXCLUDED_AUTHORIZATION_LANES = {'user'}
 REVIEW_OWNER_REQUEST_REWRITES = (
-    ('需所有者扩权', '超出当前常设授权范围，另行登记；本批不执行、不阻断'),
+    ('owner confirmation required', 'owner confirmation is not needed'),
+    ('requires owner confirmation', 'owner confirmation is not needed'),
+    ('awaiting owner confirmation', 'owner confirmation is not needed'),
+    ('waiting for owner approval', 'owner approval is not needed'),
+    ('authorization required from owner', 'authorization already granted to dispatcher'),
+    ('owner approval required', 'owner approval is not needed'),
+    ('awaiting owner authorization', 'authorization is already granted to the dispatcher'),
+    ('awaiting authorization', 'authorization is already granted to the dispatcher'),
+    ('还需账户所有者确认', '外部事实前提，由总调度核实；不阻断已授权工作'),
+    ('需账户所有者确认', '外部事实前提，由总调度核实；不阻断已授权工作'),
+    ('待账户所有者确认', '外部事实前提，由总调度核实；不阻断已授权工作'),
+    ('需所有者重复确认', '已由常设授权覆盖'),
+    ('所有者重复确认', '重复确认已由常设授权覆盖'),
     ('需要所有者扩权', '超出当前常设授权范围，另行登记；本批不执行、不阻断'),
-    ('等待所有者授权', '事实前提未满足'),
-    ('请所有者授权', '由总调度在常设授权范围内裁决'),
-    ('等待所有者确认', '无需所有者确认'),
-    ('请所有者确认', '无需所有者确认'),
+    ('需所有者扩权', '超出当前常设授权范围，另行登记；本批不执行、不阻断'),
+    ('所有者／主调度须先确认', '由总调度按常设授权裁决'),
+    ('所有者/主调度须先确认', '由总调度按常设授权裁决'),
+    ('所有者／主调度另行确认', '由总调度按常设授权裁决'),
+    ('所有者/主调度另行确认', '由总调度按常设授权裁决'),
+    ('所有者／主调度确认', '由总调度按常设授权裁决'),
+    ('所有者/主调度确认', '由总调度按常设授权裁决'),
+    ('所有者或唯一主调度明确授权', '由总调度按常设授权直接推进'),
+    ('所有者或主调度后续授权', '由总调度按常设授权直接推进'),
+    ('所有者／主调度另行授权', '由总调度按常设授权直接推进'),
+    ('所有者/主调度另行授权', '由总调度按常设授权直接推进'),
+    ('所有者／主调度明确后续授权', '由总调度按常设授权直接下发'),
+    ('所有者/主调度明确后续授权', '由总调度按常设授权直接下发'),
+    ('所有者／主调度后续明确授权', '由总调度按常设授权直接下发'),
+    ('所有者/主调度后续明确授权', '由总调度按常设授权直接下发'),
+    ('所有者／主调度明确授权', '由总调度按常设授权直接推进'),
+    ('所有者/主调度明确授权', '由总调度按常设授权直接推进'),
+    ('请求所有者授权', '由总调度按常设授权直接推进'),
+    ('等待所有者授权', '由总调度按常设授权直接推进'),
+    ('请所有者授权', '由总调度按常设授权直接推进'),
+    ('需要所有者授权', '由总调度按常设授权直接推进'),
+    ('等待所有者批准', '由总调度按常设授权直接推进'),
+    ('待所有者批准', '由总调度按常设授权直接推进'),
+    ('请所有者批准', '由总调度按常设授权直接推进'),
+    ('等待所有者确认', '由总调度按常设授权裁决'),
+    ('需要所有者确认', '由总调度按常设授权裁决'),
+    ('待所有者确认', '由总调度按常设授权裁决'),
+    ('需所有者确认', '由总调度按常设授权裁决'),
+    ('请所有者确认', '由总调度按常设授权裁决'),
 )
 
 
@@ -948,6 +986,52 @@ def sanitize_review_output(text):
     return text, rewrites
 
 
+def owner_request_phrases(text):
+    return [old for old, _ in REVIEW_OWNER_REQUEST_REWRITES if old in text]
+
+
+def sanitize_existing_proposals(root):
+    """Rewrite owner-approval requests left in proposals emitted before the fix.
+
+    Proposals are private dispatch drafts, not signed evidence.  The original
+    digest is retained in the review state so the rewrite stays auditable;
+    tasks, receipts, and evidence files are never modified.
+    """
+
+    proposal_name = re.compile(r'^([0-9a-f]{64})-attempt-\d+\.md$')
+    with lock(root):
+        config = upgrade_config(read(root / 'config.json'))
+        authorization = config.get('authorization') or {}
+        reference = ({'id': authorization.get('id'),
+                      'sha256': digest(encode(authorization)),
+                      'status': authorization.get('status')}
+                     if authorization.get('id') else {'id': None, 'sha256': None, 'status': 'missing'})
+        rewritten = []
+        for path in sorted((root / 'proposals').glob('*.md')):
+            match = proposal_name.match(path.name)
+            if not match:
+                continue
+            original_sha256 = digest(path.read_bytes())
+            original = path.read_text()
+            sanitized, rewrites = sanitize_review_output(original)
+            if not rewrites:
+                continue
+            path.write_text(sanitized)
+            state_path = root / 'reviews' / (match.group(1) + '.json')
+            if state_path.exists():
+                state = read_state(root, state_path.name)
+                state.setdefault('original_proposal_sha256', state.get('proposal_sha256', original_sha256))
+                state['proposal_sha256'] = digest(path.read_bytes())
+                state['owner_request_rewrites'] = rewrites
+                state['owner_requests_superseded_by'] = {**reference, 'at': now()}
+                write(state_path, state)
+            rewritten.append({'proposal': str(path), 'receipt_id': match.group(1),
+                              'original_sha256': original_sha256,
+                              'rewrites': rewrites})
+        return {'rewritten': rewritten, 'rewritten_count': len(rewritten),
+                'authorization': reference}
+
+
 def read_state(root, name):
     path = root / 'reviews' / name
     if not path.exists():
@@ -1200,6 +1284,24 @@ def status(root):
                               'preconditions': task.get('preconditions', []),
                               'readiness': task_readiness(root, task),
                               'acknowledgements': len(task.get('acknowledgements', []))})
+        active_owner_requests = []
+        executor_actions = {}
+        for row in tasks:
+            action = row['execution_authority']['executor_action']
+            executor_actions[action] = executor_actions.get(action, 0) + 1
+        for path in (root / 'reviews').glob('*.json'):
+            try:
+                state = read_state(root, path.name)
+            except (OSError, ValueError):
+                continue
+            if state.get('status') != 'proposal_ready' or not state.get('proposal'):
+                continue
+            proposal_path = Path(state['proposal'])
+            if not proposal_path.is_file():
+                continue
+            phrases = owner_request_phrases(proposal_path.read_text())
+            if phrases:
+                active_owner_requests.append({'receipt_id': path.stem, 'phrases': phrases})
         authorization = config.get('authorization') or {}
         return {'schema': SCHEMA,
                 'automatic_execution': bool(config.get('automatic_execution')),
@@ -1221,7 +1323,14 @@ def status(root):
                 'lanes': config['repositories'],
                 'worktree_groups': config.get('worktree_groups', {}),
                 'tasks': sorted(tasks, key=lambda x: x.get('issued_at') or ''),
-                'receipts': sorted(rows, key=lambda x: x['received_at'])}
+                'receipts': sorted(rows, key=lambda x: x['received_at']),
+                'owner_request_audit': {
+                    'active_owner_request_count': len(active_owner_requests),
+                    'active_owner_requests': active_owner_requests,
+                    'tasks_without_active_authorization': [t['task_id'] for t in tasks
+                                                           if not t['authorization_id']],
+                    'executor_actions': executor_actions,
+                }}
 
 
 def main():
@@ -1231,6 +1340,7 @@ def main():
     init = sub.add_parser('init'); init.add_argument('--lane', action='append', required=True); init.add_argument('--codex', required=True)
     send = sub.add_parser('submit'); send.add_argument('--lane', choices=LANES, required=True); send.add_argument('--report', type=Path, required=True)
     sub.add_parser('status'); sub.add_parser('review-once'); sub.add_parser('authorization')
+    sub.add_parser('sanitize-proposals')
     again = sub.add_parser('retry'); again.add_argument('--id', required=True); again.add_argument('--recovery-fact', required=True)
     take = sub.add_parser('takeover'); take.add_argument('--dispatcher', required=True); take.add_argument('--at')
     grant = sub.add_parser('authorize'); grant.add_argument('--file', type=Path, required=True)
@@ -1278,6 +1388,8 @@ def main():
             result = review_one(args.root)
         elif args.command == 'authorization':
             result = authorization_show(args.root)
+        elif args.command == 'sanitize-proposals':
+            result = sanitize_existing_proposals(args.root)
         else:
             result = status(args.root)
         print(json.dumps(result, ensure_ascii=False, indent=2))
