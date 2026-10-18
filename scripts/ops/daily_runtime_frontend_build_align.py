@@ -297,6 +297,11 @@ with lock_path.open("a+b") as lock:
         state["reused"] = True
         state["fingerprint"] = fingerprint_hint
         state["entry_asset"] = entry_hint
+        # The reuse precondition already scanned the served bundle for physical
+        # database names.  Report that fact instead of NOT_RUN, otherwise a
+        # byte-identical reuse is rejected by the caller as missing evidence.
+        state["physical_db_bakes"] = []
+        state["physical_db_sweep"] = "NO_PHYSICAL_DB_NAME"
         state["runtime_refresh_required"] = not (
             isinstance(served_before, dict)
             and served_before.get("git_sha") == expected_sha

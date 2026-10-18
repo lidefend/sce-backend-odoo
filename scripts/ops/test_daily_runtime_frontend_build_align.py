@@ -319,6 +319,19 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
         self.assertNotIn("declared_admin == platform_admin_database", reuse)
         self.assertIn("not physical_db_bakes()", reuse)
 
+    def test_reuse_reports_the_database_sweep_it_already_performed(self) -> None:
+        """A reused generation must report the sweep fact, not NOT_RUN.
+
+        The reuse precondition scans the served bundle for physical database
+        names, so leaving the evidence as NOT_RUN contradicts work that was
+        done and makes the caller reject an otherwise identical generation.
+        """
+        reuse = build_module.REMOTE_BUILD.split("if reused:", 1)[1].split(
+            "emit(\"PASS\")", 1
+        )[0]
+        self.assertIn('state["physical_db_sweep"] = "NO_PHYSICAL_DB_NAME"', reuse)
+        self.assertIn('state["physical_db_bakes"] = []', reuse)
+
     def test_align_reports_remote_failure(self) -> None:
         completed = mock.Mock(
             returncode=1, stdout=b"", stderr=b"BLOCKED remote worktree is not clean"
