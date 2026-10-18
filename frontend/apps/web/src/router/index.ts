@@ -305,6 +305,7 @@ const router = createRouter({
   routes: [
     { path: '/login', name: 'login', component: LoginView },
     { path: '/platform-admin/login', name: 'platform-admin-login', component: LoginView },
+    { path: '/platform-admin', redirect: { path: '/', query: { platform_admin: '1' } } },
     { path: '/activate-account', name: 'account-activation', component: AccountActivationView },
     { path: '/password-recovery', name: 'password-recovery', component: PasswordRecoveryView },
     { path: '/', name: 'home', component: () => import('../views/HomeView.vue'), meta: { layout: 'shell', sceneKey: 'workspace.home', shellDensity: 'minimal', pageHeadingOwner: 'content' } },

@@ -1,6 +1,6 @@
 <template>
   <ProductWorkspaceSurface main-title="待我处理" summary-title="当前状态" secondary-title="常用入口与最近访问" class="role-home-surface" data-role-home data-role-home-renderer="workspace-contract" data-semantic-component="WorkspaceHome" :data-state="loading ? 'loading' : error ? 'error' : 'ready'" :aria-busy="loading || undefined">
-    <template #main-actions>
+    <template v-if="!unsupported" #main-actions>
       <ScButton type="button" variant="ghost" appearance="dashboard-action" @click="navigate('/my-work')">查看全部</ScButton>
     </template>
       <ScInlineState v-if="loading" state="loading" label="正在加载当前事项。" />
@@ -96,6 +96,7 @@ const {
   recentItems,
   loading,
   error,
+  unsupported,
   load,
   navigate,
 } = useWorkspaceHome();
