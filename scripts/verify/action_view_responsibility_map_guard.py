@@ -18,6 +18,8 @@ NAVIGATION_CONTEXT = ROOT / "frontend/apps/web/src/app/navigationContext.ts"
 SELECTION_ACTION_RUNTIME = (
     ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewSelectionActionRuntime.ts"
 )
+FAVORITE_RUNTIME = ROOT / "frontend/apps/web/src/app/runtime/useActionViewFavoriteRuntime.ts"
+MENU_REDIRECT_RUNTIME = ROOT / "frontend/apps/web/src/app/runtime/useActionViewMenuRedirectRuntime.ts"
 CI = ROOT / "make/ci.mk"
 
 
@@ -37,6 +39,8 @@ def main() -> int:
     contract_action_runtime = _read(CONTRACT_ACTION_RUNTIME)
     navigation_context = _read(NAVIGATION_CONTEXT)
     selection_action_runtime = _read(SELECTION_ACTION_RUNTIME)
+    favorite_runtime = _read(FAVORITE_RUNTIME)
+    menu_redirect_runtime = _read(MENU_REDIRECT_RUNTIME)
     ci = _read(CI)
 
     if not doc:
@@ -49,10 +53,14 @@ def main() -> int:
         errors.append(f"missing contract action runtime: {CONTRACT_ACTION_RUNTIME.relative_to(ROOT)}")
     if not navigation_context:
         errors.append(f"missing navigation context: {NAVIGATION_CONTEXT.relative_to(ROOT)}")
+    if not favorite_runtime:
+        errors.append(f"missing favorite runtime: {FAVORITE_RUNTIME.relative_to(ROOT)}")
+    if not menu_redirect_runtime:
+        errors.append(f"missing menu redirect runtime: {MENU_REDIRECT_RUNTIME.relative_to(ROOT)}")
 
     for token in [
         "Action View Responsibility Map",
-        "Current size: 3,673 lines",
+        "Current size: 3,692 lines",
         "Phase: Stage 6 business category create nav query split",
         "## Purpose",
         "## Route Entry",
@@ -68,6 +76,7 @@ def main() -> int:
         "## Verification Gaps",
         "## Invariants",
         "`ActionView.vue` is locked at `<=3770` lines",
+        "`ActionView.vue` is locked at `<=3692` lines",
         "`usePageContract('action')`",
         "`useActionPageModel`",
         "`useActionViewActionRuntime`",
@@ -110,11 +119,12 @@ def main() -> int:
             "useActionPageModel({",
             "useActionViewActionRuntime({",
             "useActionViewSelectionActionRuntime({",
+            "const { handleDeleteFavorite, handleSaveFavorite } = useActionViewFavoriteRuntime({",
             "const listColumnPreferenceRuntime = createScopedPreferenceRuntime({",
             "readStoredListPreference(",
             "enqueuePreferenceWrite(",
             "async function handleToggleRecordFavorite",
-            "async function redirectMenuOnlyRouteIfNeeded",
+            "const { redirectMenuOnlyRouteIfNeeded } = useActionViewMenuRedirectRuntime({",
             "window.addEventListener(RECORD_CONTEXT_CHANGED_EVENT",
             "window.removeEventListener(RECORD_CONTEXT_CHANGED_EVENT",
             "router.push",
@@ -192,6 +202,33 @@ def main() -> int:
                 errors.append(f"useActionViewSelectionActionRuntime.ts missing token: {token}")
     else:
         errors.append("missing batch policy runtime module: useActionViewSelectionActionRuntime.ts")
+
+    if favorite_runtime:
+        for token in [
+            "export function useActionViewFavoriteRuntime(",
+            "async function handleDeleteFavorite(",
+            "async function handleSaveFavorite(",
+            "SAVED_SEARCH_DELETE_OUTCOME_MISMATCH",
+            "settleSavedSearchDeletion(",
+            "settleSavedSearchSubmission(",
+            "favoriteSaveEnabled",
+        ]:
+            if token not in favorite_runtime:
+                errors.append(f"useActionViewFavoriteRuntime.ts missing token: {token}")
+        for token in ["router.push", "router.replace", "window.open", "window.location.assign"]:
+            if token in favorite_runtime:
+                errors.append(f"useActionViewFavoriteRuntime.ts must not own route navigation; found: {token}")
+
+    if menu_redirect_runtime:
+        for token in [
+            "export function useActionViewMenuRedirectRuntime(",
+            "async function redirectMenuOnlyRouteIfNeeded(",
+            "resolveMenuAction(options.session.menuTree",
+            "buildEntryTargetRouteTarget(",
+            "buildCanonicalSceneRouteTarget(",
+        ]:
+            if token not in menu_redirect_runtime:
+                errors.append(f"useActionViewMenuRedirectRuntime.ts missing token: {token}")
 
     if navigation_context:
         for token in [

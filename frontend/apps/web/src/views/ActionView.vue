@@ -1064,6 +1064,8 @@ import {
   createActionViewGroupRuntimeCapsule,
 } from '../app/runtime/actionViewGroupRuntimeState';
 import { useActionViewGroupRuntime } from '../app/runtime/useActionViewGroupRuntime';
+import { useActionViewFavoriteRuntime } from '../app/runtime/useActionViewFavoriteRuntime';
+import { useActionViewMenuRedirectRuntime } from '../app/runtime/useActionViewMenuRedirectRuntime';
 import {
   extractActionResId,
   resolveActionViewType,
@@ -2287,52 +2289,6 @@ function clearAllListConditions() {
   clearBusinessListQueryState({ composing: toolbarSearchComposing, searchDraft: toolbarSearchDraft, searchTerm, filterValue, contractFilterKey: activeContractFilterKey, showMoreContractFilters, savedFilterKey: activeSavedFilterKey, showMoreSavedFilters, customFilter: activeCustomFilter, groupByField: activeGroupByField, groupByLabel: activeGroupByDisplayLabel, listOffset, groupWindowOffset, clearSelection, syncRoute: () => syncRouteListState({ preset_filter: undefined }), reload: () => void requestLoadPage() });
 }
 
-async function handleDeleteFavorite(id: number) {
-  const chip = contractSavedFilterChips.value.find((row) => row?.deleteAction?.params.filter_id === id);
-  const action = chip?.deleteAction;
-  if (!action) return { deleted: false, message: '当前页面未允许删除此收藏，请刷新后重试。' };
-  const sourceActionId = actionId.value;
-  const sourceContract = actionContract.value;
-  return settleSavedSearchDeletion(async () => {
-    const result = await intentRequest<{ deleted: boolean; id: number }>({ intent: action.intent, params: action.params });
-    if (result.deleted !== true || result.id !== id) throw new Error('SAVED_SEARCH_DELETE_OUTCOME_MISMATCH');
-  }, async () => {
-    if (actionId.value !== sourceActionId || actionContract.value !== sourceContract) return;
-    if (activeSavedFilterKey.value === chip.key) clearSavedFilter();
-    const refreshed = await loadActionContractStore(sourceActionId, { sceneKey: sceneKey.value || undefined, menuId: menuId.value || undefined });
-    if (actionId.value !== sourceActionId || actionContract.value !== sourceContract) return;
-    actionContract.value = refreshed;
-    await requestLoadPage();
-  });
-}
-
-async function handleSaveFavorite(payload: { name: string; isDefault?: boolean; isShared?: boolean }) {
-  const targetModel = String(resolvedModelRef.value || model.value || '').trim();
-  const name = String(payload.name || '').trim();
-  if (!targetModel || !name || !customSearchCapabilities.value.favoriteSaveEnabled) return { saved: false, message: '当前页面不允许保存收藏' };
-  const sourceActionId = actionId.value;
-  const sourceContract = actionContract.value;
-  return settleSavedSearchSubmission(() => saveActionViewSearchFavorite({
-    model: targetModel,
-    name,
-    domain: resolveEffectiveFilterDomain(),
-    context: resolveEffectiveRequestContext(),
-    order: sortValue.value,
-    action_id: actionId.value,
-    is_default: payload.isDefault === true,
-    is_shared: payload.isShared === true && customSearchCapabilities.value.favoriteSharedEnabled,
-  }), async () => {
-    if (actionId.value !== sourceActionId || actionContract.value !== sourceContract) return;
-    const refreshed = await loadActionContractStore(sourceActionId, {
-      sceneKey: sceneKey.value || undefined,
-      menuId: menuId.value || undefined,
-    });
-    if (actionId.value !== sourceActionId || actionContract.value !== sourceContract) return;
-    actionContract.value = refreshed;
-    await requestLoadPage();
-  });
-}
-
 const {
   resolveEffectiveFilterDomain,
   resolveEffectiveFilterDomainRaw,
@@ -2358,6 +2314,22 @@ const {
   activeGroupSummaryDomain,
   contractGroupByChips: routeGroupByChips,
   activeGroupByField,
+});
+const { handleDeleteFavorite, handleSaveFavorite } = useActionViewFavoriteRuntime({
+  actionId,
+  actionContract,
+  sceneKey,
+  menuId,
+  activeSavedFilterKey,
+  resolvedModelRef,
+  model,
+  sortValue,
+  customSearchCapabilities,
+  contractSavedFilterChips,
+  clearSavedFilter,
+  requestLoadPage,
+  resolveEffectiveFilterDomain,
+  resolveEffectiveRequestContext,
 });
 
 const {
@@ -3323,98 +3295,15 @@ const {
   reload: () => requestLoadPage(),
 });
 
-function findMenuNodeByLabel(nodes: Array<Record<string, unknown>>, label: string): Record<string, unknown> | null {
-  const expected = String(label || '').trim();
-  if (!expected || !Array.isArray(nodes)) return null;
-  for (const node of nodes) {
-    if (!node || typeof node !== 'object') continue;
-    const current = String(node.label || node.title || node.name || '').trim();
-    if (current === expected) return node;
-    const found = findMenuNodeByLabel((node.children as Array<Record<string, unknown>>) || [], expected);
-    if (found) return found;
-  }
-  return null;
-}
-
-async function redirectMenuOnlyRouteIfNeeded(): Promise<boolean> {
-  const currentMenuId = Number(menuId.value || 0);
-  if (Number(actionId.value || 0) > 0 || currentMenuId <= 0) {
-    return false;
-  }
-  let result = resolveMenuAction(session.menuTree, currentMenuId);
-  if (result.kind === 'broken' && result.reason === 'menu not found') {
-    const fallbackNode = findMenuNodeByLabel(
-      session.menuTree as unknown as Array<Record<string, unknown>>,
-      String(route.query.label || ''),
-    );
-    const fallbackMenuId = Number(fallbackNode?.menu_id || fallbackNode?.id || 0);
-    if (fallbackMenuId > 0) {
-      result = resolveMenuAction(session.menuTree, fallbackMenuId);
-    }
-  }
-  if (result.kind === 'leaf') {
-    const entryTarget = result.meta?.entry_target && typeof result.meta.entry_target === 'object'
-      ? result.meta.entry_target as Record<string, unknown>
-      : null;
-    const targetActionId = Number(result.meta.action_id || 0);
-    if (targetActionId <= 0) return false;
-    session.setActionMeta(result.meta);
-    if (entryTarget) {
-      await router.replace(buildEntryTargetRouteTarget(entryTarget, {
-        query: resolveMenuCarryQuery(result.meta),
-        menuId: currentMenuId,
-        actionId: targetActionId,
-        keepSceneRoute: keepSceneRoute.value,
-        routePath: route.path,
-      }) as never);
-      return true;
-    }
-    await router.replace({
-      name: 'action',
-      params: { actionId: targetActionId },
-      query: resolveMenuCarryQuery(result.meta, { menu_id: currentMenuId, action_id: targetActionId }),
-    });
-    return true;
-  }
-  if (result.kind === 'redirect') {
-    if (result.target.entry_target) {
-      await router.replace(buildEntryTargetRouteTarget(result.target.entry_target, {
-        query: resolveMenuCarryQuery(result.target.meta),
-        menuId: result.target.menu_id || currentMenuId,
-        actionId: result.target.action_id,
-        keepSceneRoute: keepSceneRoute.value,
-        routePath: route.path,
-      }) as never);
-      return true;
-    }
-    if (result.target.scene_key) {
-      const sceneKey = String(result.target.scene_key || '').trim();
-      await router.replace(buildCanonicalSceneRouteTarget(sceneKey, {
-        scene: getSceneByKey(sceneKey),
-        query: resolveMenuCarryQuery(result.target.meta),
-        menuId: result.target.menu_id || currentMenuId,
-        actionId: result.target.action_id,
-      }));
-      return true;
-    }
-    const targetActionId = Number(result.target.action_id || 0);
-    if (targetActionId > 0) {
-      if (result.target.meta) {
-        session.setActionMeta(result.target.meta);
-      }
-      await router.replace({
-        name: 'action',
-        params: { actionId: targetActionId },
-        query: resolveMenuCarryQuery(result.target.meta, {
-          menu_id: result.target.menu_id || currentMenuId,
-          action_id: targetActionId,
-        }),
-      });
-      return true;
-    }
-  }
-  return false;
-}
+const { redirectMenuOnlyRouteIfNeeded } = useActionViewMenuRedirectRuntime({
+  actionId,
+  menuId,
+  route,
+  router,
+  session,
+  keepSceneRoute,
+  resolveMenuCarryQuery,
+});
 
 onMounted(async () => {
   const requestedRouteFullPath = route.fullPath;
