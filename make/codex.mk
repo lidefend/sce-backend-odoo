@@ -452,7 +452,7 @@ pr.merge.local_quick_gate:
 	echo "[pr.merge.local_quick_gate] PASS"; \
 	'
 
-pr.merge: guard.prod.forbid pr.merge.local_quick_gate
+pr.merge: guard.prod.forbid pr.merge.local_quick_gate acceptance.evolution.verify
 	@bash -c '\
 	set -euo pipefail; \
 	BR="$$(git rev-parse --abbrev-ref HEAD)"; \

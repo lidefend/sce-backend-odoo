@@ -1,0 +1,235 @@
+{
+  "schema": "acceptance_evolution_binding.v1",
+  "version": 1,
+  "owner": "platform-team",
+  "policy": {
+    "unmapped_changes": "fail",
+    "evidence_max_age_hours": 72
+  },
+  "suites": {
+    "backend_contract": {
+      "description": "后端契约、单测与影响面套件",
+      "entrypoints": [
+        "make ci.professional.backend.shard-verify",
+        "backend_impact_suite"
+      ],
+      "evidence": null
+    },
+    "frontend_contract": {
+      "description": "前端组件、契约消费与发布单测",
+      "entrypoints": [
+        "make verify.frontend.pr.unit",
+        "make verify.frontend.release.unit"
+      ],
+      "evidence": null
+    },
+    "governance_static": {
+      "description": "静态守卫、结构锁与治理清单",
+      "entrypoints": [
+        "make verify.contract.architecture.suite"
+      ],
+      "evidence": null
+    },
+    "daily_runtime_entry": {
+      "description": "日常入口、双实例分流、发布身份与 Odoo 运行态验收",
+      "entrypoints": [
+        "python3 scripts/ops/daily_runtime_entry_verify.py"
+      ],
+      "evidence": {
+        "adapter": "entry_verify"
+      }
+    },
+    "path_namespace_identity": {
+      "description": "路径命名空间身份、跨域重放、退出与公司边界",
+      "entrypoints": [
+        "python3 scripts/ops/path_ns_c_acceptance.py"
+      ],
+      "evidence": {
+        "adapter": "path_ns_c"
+      }
+    },
+    "list_surface_structure": {
+      "description": "列表页结构、几何与运行时错误浏览器验收",
+      "entrypoints": [
+        "node scripts/verify/frontend_list_surface_structure_browser.mjs"
+      ],
+      "evidence": {
+        "adapter": "list_surface"
+      }
+    },
+    "relation_roundtrip": {
+      "description": "关系字段回环、入口与操作恢复浏览器验收",
+      "entrypoints": [
+        "node scripts/verify/record_relation_roundtrip_acceptance.js"
+      ],
+      "evidence": {
+        "adapter": "relation_roundtrip"
+      }
+    }
+  },
+  "rules": [
+    {
+      "id": "docs-bookkeeping",
+      "paths": [
+        "docs/**",
+        "**/*.md",
+        ".agent/**",
+        ".codex/**",
+        ".devcontainer/**"
+      ],
+      "suites": []
+    },
+    {
+      "id": "governance-static",
+      "paths": [
+        "make/**",
+        "scripts/verify/**",
+        "scripts/ci/**",
+        "scripts/audit/**",
+        ".github/**",
+        "tools/**",
+        "agent_ops/**",
+        "Makefile",
+        "AGENTS.md",
+        "ARCHITECTURE_GUARD.md"
+      ],
+      "suites": [
+        "governance_static"
+      ]
+    },
+    {
+      "id": "contracts-schemas",
+      "paths": [
+        "contracts/**",
+        "schemas/**",
+        "config/contracts/**"
+      ],
+      "suites": [
+        "governance_static",
+        "backend_contract"
+      ]
+    },
+    {
+      "id": "frontend-acceptance-config",
+      "paths": [
+        "config/frontend/**"
+      ],
+      "suites": [
+        "frontend_contract",
+        "list_surface_structure"
+      ]
+    },
+    {
+      "id": "frontend-runtime",
+      "paths": [
+        "frontend/**"
+      ],
+      "suites": [
+        "frontend_contract",
+        "list_surface_structure"
+      ]
+    },
+    {
+      "id": "smart-core-runtime",
+      "paths": [
+        "addons/smart_core/**"
+      ],
+      "suites": [
+        "backend_contract",
+        "daily_runtime_entry"
+      ]
+    },
+    {
+      "id": "construction-product-runtime",
+      "paths": [
+        "addons/smart_construction_core/**",
+        "addons/smart_construction_*/**"
+      ],
+      "suites": [
+        "backend_contract",
+        "list_surface_structure",
+        "relation_roundtrip"
+      ]
+    },
+    {
+      "id": "demo-data",
+      "paths": [
+        "demo_addons/**",
+        "addons/smart_construction_seed/**"
+      ],
+      "suites": [
+        "backend_contract",
+        "daily_runtime_entry"
+      ]
+    },
+    {
+      "id": "backend-other",
+      "paths": [
+        "addons/**",
+        "addons_external/**",
+        "customer_addons/**",
+        "backend/**"
+      ],
+      "suites": [
+        "backend_contract"
+      ]
+    },
+    {
+      "id": "ops-runtime",
+      "paths": [
+        "scripts/ops/**",
+        "scripts/release/**",
+        "config/ops/**",
+        "deploy/**",
+        "docker-compose*.yml",
+        "Dockerfile*",
+        "requirements-odoo.txt"
+      ],
+      "suites": [
+        "daily_runtime_entry",
+        "path_namespace_identity"
+      ]
+    },
+    {
+      "id": "config-other",
+      "paths": [
+        "config/**"
+      ],
+      "suites": [
+        "governance_static"
+      ]
+    },
+    {
+      "id": "release-artifacts",
+      "paths": [
+        "release/**",
+        "artifacts/**"
+      ],
+      "suites": [
+        "governance_static"
+      ]
+    },
+    {
+      "id": "scripts-other",
+      "paths": [
+        "scripts/**"
+      ],
+      "suites": [
+        "governance_static"
+      ]
+    },
+    {
+      "id": "root-metadata",
+      "paths": [
+        "README.md",
+        "LICENSE",
+        "VERSION",
+        ".gitignore",
+        ".gitattributes",
+        ".dockerignore",
+        ".env*.example"
+      ],
+      "suites": []
+    }
+  ]
+}

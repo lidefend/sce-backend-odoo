@@ -1134,6 +1134,7 @@ verify.contract.architecture.suite: \
 	verify.tenant_extension_storage \
 	verify.backend.contract_lifecycle.authority \
 	verify.g1.acceptance.baseline \
+	verify.acceptance.evolution.binding \
 	verify.login_envelope.consumption.guard \
 	verify.contract_form_split_evidence \
 	verify.guard.registry \

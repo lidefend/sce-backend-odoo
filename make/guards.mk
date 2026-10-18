@@ -279,6 +279,39 @@ verify.g1.acceptance.baseline: guard.prod.forbid
 	@python3 scripts/verify/g1_acceptance_baseline_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_g1_acceptance_baseline_guard.py
 
+# ------- Acceptance evolution binding (code change -> acceptance impact) -------
+# Every changed path must be classified by config/acceptance/evolution_binding.v1.json.
+# Runtime-facing changes also require exact-head acceptance evidence before a
+# governed merge; that half is enforced by acceptance.evolution.verify.
+ACCEPTANCE_EVOLUTION_PLAN ?= .runtime/acceptance-evolution/plan.json
+ACCEPTANCE_EVOLUTION_EVIDENCE ?= .runtime/acceptance-evolution/evidence.v1.json
+ACCEPTANCE_EVOLUTION_SUITES ?=
+
+.PHONY: verify.acceptance.evolution.binding acceptance.evolution.plan acceptance.evolution.record acceptance.evolution.verify
+verify.acceptance.evolution.binding: guard.prod.forbid acceptance.evolution.plan
+	@python3 -m py_compile scripts/verify/acceptance_evolution_binding_guard.py scripts/verify/test_acceptance_evolution_binding_guard.py scripts/ops/acceptance_evolution_record.py
+	@python3 scripts/verify/test_acceptance_evolution_binding_guard.py
+
+acceptance.evolution.plan: guard.prod.forbid
+	@python3 scripts/verify/acceptance_evolution_binding_guard.py --output "$(ACCEPTANCE_EVOLUTION_PLAN)"
+
+acceptance.evolution.record: guard.prod.forbid
+	@if [ -n "$(strip $(ACCEPTANCE_EVOLUTION_SUITES))" ]; then \
+		python3 scripts/ops/acceptance_evolution_record.py \
+			--output "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" \
+			$(foreach suite,$(ACCEPTANCE_EVOLUTION_SUITES),--suite '$(suite)'); \
+	fi
+
+acceptance.evolution.verify: guard.prod.forbid acceptance.evolution.record
+	@if [ -f "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" ]; then \
+		python3 scripts/verify/acceptance_evolution_binding_guard.py \
+			--require-evidence --manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" \
+			--output "$(ACCEPTANCE_EVOLUTION_PLAN)"; \
+	else \
+		python3 scripts/verify/acceptance_evolution_binding_guard.py \
+			--require-evidence --output "$(ACCEPTANCE_EVOLUTION_PLAN)"; \
+	fi
+
 # ------- G3.3-B dual-role five-viewport BOQ acceptance evidence -------
 # Verifies that the v1-schema evidence package emitted by
 # scripts/verify/boq_dual_role_five_viewport_browser_acceptance.mjs is structurally
