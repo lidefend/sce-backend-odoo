@@ -229,6 +229,111 @@
             <field name="groups_id" eval="[(6, 0, [ref('smart_core.group_smart_core_admin')])]"/>
         </record>
 
+        <record id="view_sc_platform_namespace_tree" model="ir.ui.view">
+            <field name="name">sc.platform.namespace.tree</field>
+            <field name="model">sc.platform.namespace</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="namespace_id"/>
+                    <field name="display_name"/>
+                    <field name="lifecycle_state"/>
+                    <field name="audience"/>
+                    <field name="duty_key"/>
+                    <field name="database_name"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_sc_platform_namespace_form" model="ir.ui.view">
+            <field name="name">sc.platform.namespace.form</field>
+            <field name="model">sc.platform.namespace</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group>
+                            <field name="namespace_id"/>
+                            <field name="display_name"/>
+                            <field name="lifecycle_state"/>
+                            <field name="audience"/>
+                            <field name="duty_key"/>
+                            <field name="database_name"/>
+                        </group>
+                        <group string="路径别名">
+                            <field name="alias_ids" nolabel="1">
+                                <tree>
+                                    <field name="alias"/>
+                                    <field name="alias_kind"/>
+                                    <field name="is_primary"/>
+                                    <field name="retired_at"/>
+                                </tree>
+                            </field>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_sc_platform_namespace" model="ir.actions.act_window">
+            <field name="name">租户登记表</field>
+            <field name="res_model">sc.platform.namespace</field>
+            <field name="view_mode">tree,form</field>
+            <field name="groups_id" eval="[(6, 0, [ref('smart_core.group_smart_core_admin')])]"/>
+        </record>
+
+        <record id="view_sc_platform_maintenance_access_tree" model="ir.ui.view">
+            <field name="name">sc.platform.maintenance.access.tree</field>
+            <field name="model">sc.platform.maintenance.access</field>
+            <field name="arch" type="xml">
+                <tree create="0" edit="0" delete="0">
+                    <field name="name"/>
+                    <field name="registration_id"/>
+                    <field name="capability"/>
+                    <field name="state"/>
+                    <field name="requested_by"/>
+                    <field name="approved_by"/>
+                    <field name="valid_from"/>
+                    <field name="valid_until"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_sc_platform_maintenance_access_form" model="ir.ui.view">
+            <field name="name">sc.platform.maintenance.access.form</field>
+            <field name="model">sc.platform.maintenance.access</field>
+            <field name="arch" type="xml">
+                <form create="0" edit="0" delete="0">
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                            <field name="registration_id"/>
+                            <field name="capability"/>
+                            <field name="state"/>
+                            <field name="requested_by"/>
+                            <field name="approved_by"/>
+                            <field name="valid_from"/>
+                            <field name="valid_until"/>
+                            <field name="grants_business_data_scope"/>
+                        </group>
+                        <group string="依据">
+                            <field name="reason"/>
+                            <field name="evidence_reference"/>
+                            <field name="operator_identity_key"/>
+                            <field name="subject_checksum"/>
+                            <field name="authorized_operations" widget="json"/>
+                            <field name="decision_note"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_sc_platform_maintenance_access" model="ir.actions.act_window">
+            <field name="name">维护访问</field>
+            <field name="res_model">sc.platform.maintenance.access</field>
+            <field name="view_mode">tree,form</field>
+            <field name="groups_id" eval="[(6, 0, [ref('smart_core.group_smart_core_admin')])]"/>
+        </record>
+
         <record id="view_sc_ops_job_tree" model="ir.ui.view">
             <field name="name">sc.ops.job.tree</field>
             <field name="model">sc.ops.job</field>

@@ -1,11 +1,12 @@
 /**
  * Platform duty action resolution (PLATFORM-ADMIN-DUTY / ADR-007 D6).
  *
- * A declared duty carries a route, an intent, or nothing.  The route is not
- * automatically a page: ``/api/ops/tenants`` is an API endpoint, and pushing it
- * into the router would unmount the SPA and show raw JSON.  Only a declared
- * frontend route may navigate; every ``/api/`` duty is consumed inside the
- * platform page so the duty is usable where it is listed.
+ * A declared duty carries a route, an action, or nothing.  The route is not
+ * automatically a page: a bare ``/api/...`` endpoint must never enter the
+ * router, because that would unmount the SPA and show raw JSON.  Platform
+ * duties therefore declare an official window action or a declared frontend
+ * route; an API-shaped route stays unresolved so the panel fails visibly
+ * instead of inventing a product surface.
  */
 
 export type DutyAction =
@@ -18,17 +19,6 @@ export type DutyAction =
 export const SPA_ROUTE_PREFIXES = ['/admin/', '/a/'] as const;
 export const SPA_ROUTE_EXACT = ['/'] as const;
 
-/** Exact platform-control routes declared by the backend duty contract. */
-export const DECLARED_PLATFORM_API_ENDPOINTS = {
-  tenantRegistry: '/api/ops/tenants',
-  maintenanceAccess: '/api/ops/maintenance/access',
-  jobStatus: '/api/ops/job/status',
-  subscriptionSet: '/api/ops/subscription/set',
-} as const;
-
-/** Endpoints that mutate state and therefore must not be auto-fetched. */
-export const WRITE_ENDPOINTS = [DECLARED_PLATFORM_API_ENDPOINTS.subscriptionSet] as const;
-
 export function isApiEndpoint(route: string): boolean {
   return String(route ?? '').trim().startsWith('/api/');
 }
@@ -39,10 +29,6 @@ export function isSpaRoute(route: string): boolean {
   if (value.startsWith('/api/')) return false;
   if ((SPA_ROUTE_EXACT as readonly string[]).includes(value)) return true;
   return SPA_ROUTE_PREFIXES.some((prefix) => value.startsWith(prefix));
-}
-
-export function isWriteEndpoint(endpoint: string): boolean {
-  return (WRITE_ENDPOINTS as readonly string[]).includes(String(endpoint ?? '').trim());
 }
 
 export function resolveDutyAction(

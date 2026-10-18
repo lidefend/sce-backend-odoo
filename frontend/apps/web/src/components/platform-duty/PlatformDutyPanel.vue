@@ -31,19 +31,8 @@
         >
           打开
         </ScButton>
-        <ScButton
-          v-else-if="actionOf(duty).kind === 'inline' && !isWriteAction(duty)"
-          type="button"
-          class="platform-duty__action"
-          appearance="outline-action"
-          size="small"
-          :disabled="inlineOf(duty.key).status === 'loading'"
-          @click="loadInline(duty.key, actionOf(duty))"
-        >
-          {{ inlineActionLabel(duty.key) }}
-        </ScButton>
-        <span v-else-if="isWriteAction(duty)" class="platform-duty__pending">
-          写操作入口，需专用表单，未启用
+        <span v-else-if="actionOf(duty).kind === 'inline'" class="platform-duty__pending">
+          该职责需在官方页面打开
         </span>
         <span v-else-if="actionOf(duty).kind === 'intent'" class="platform-duty__pending">
           入口：{{ duty.intent }}
@@ -51,83 +40,15 @@
         <span v-else class="platform-duty__pending">暂无入口</span>
       </li>
     </ul>
-
-    <section
-      v-if="tenantRegistry.visible"
-      class="platform-duty__inline"
-      data-semantic-component="PlatformTenantRegistry"
-      :data-tenant-registry-status="tenantRegistry.status"
-    >
-      <header class="platform-duty__inline-header">
-        <h3 class="platform-duty__inline-title">租户登记表</h3>
-        <p class="platform-duty__inline-meta">
-          来源 GET {{ TENANT_REGISTRY_ENDPOINT }} · 共 {{ tenantRegistry.count }} 条
-        </p>
-      </header>
-      <p v-if="tenantRegistry.status === 'loading'" class="platform-duty__pending">正在读取登记数据…</p>
-      <p v-else-if="tenantRegistry.status === 'error'" class="platform-duty__error">
-        读取失败：{{ tenantRegistry.message }}
-        <ScButton
-          type="button"
-          class="platform-duty__action"
-          appearance="outline-action"
-          size="small"
-          @click="loadTenantRegistry"
-        >
-          重试
-        </ScButton>
-      </p>
-      <p v-else-if="!tenantRegistry.rows.length" class="platform-duty__empty" data-tenant-registry-empty="true">
-        当前没有已登记的租户命名空间。租户需先完成平台登记与数据库注册，登记后会出现在此表。
-      </p>
-      <ScTable
-        v-else
-        class="platform-duty__table"
-        data-tenant-registry-table="true"
-        label="租户登记表"
-        :data="tenantRegistry.rows"
-        :columns="TENANT_COLUMNS"
-        row-key="namespace_id"
-        size="small"
-        appearance="flush"
-      >
-        <template #tenant_name="{ row }">{{ row.tenant_name || '-' }}</template>
-        <template #lifecycle_state="{ row }">{{ row.lifecycle_state || '-' }}</template>
-        <template #alias="{ row }">
-          {{ row.alias || '-' }}<span v-if="row.path_prefix" class="platform-duty__muted">（{{ row.path_prefix }}）</span>
-        </template>
-        <template #billing_bound="{ row }">{{ row.billing_bound ? '已绑定' : '未绑定' }}</template>
-      </ScTable>
-    </section>
-
-    <section
-      v-if="generic.status !== 'idle'"
-      class="platform-duty__inline"
-      data-semantic-component="PlatformDutyInlineData"
-      :data-inline-endpoint="generic.endpoint"
-    >
-      <header class="platform-duty__inline-header">
-        <h3 class="platform-duty__inline-title">{{ generic.label }}</h3>
-        <p class="platform-duty__inline-meta">来源 GET {{ generic.endpoint }}</p>
-      </header>
-      <p v-if="generic.status === 'loading'" class="platform-duty__pending">正在读取…</p>
-      <p v-else-if="generic.status === 'error'" class="platform-duty__error">
-        读取失败：{{ generic.message }}
-      </p>
-      <p v-else-if="generic.isEmpty" class="platform-duty__empty">该职责当前没有返回数据。</p>
-      <pre v-else class="platform-duty__payload">{{ generic.payload }}</pre>
-    </section>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue';
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { apiRequest } from '../../api/client';
 import { useSessionStore } from '../../stores/session';
-import { DECLARED_PLATFORM_API_ENDPOINTS, resolveDutyAction, isWriteEndpoint, type DutyAction } from './dutyAction';
+import { resolveDutyAction, type DutyAction } from './dutyAction';
 import ScButton from '../design-system/ScButton.vue';
-import ScTable from '../design-system/ScTable.vue';
 
 interface PlatformDutyEntry {
   key?: string;
@@ -138,30 +59,6 @@ interface PlatformDutyEntry {
   intent?: string | null;
   scene_key?: string;
 }
-
-interface TenantRegistryRow {
-  namespace_id: string;
-  tenant_name?: string | null;
-  lifecycle_state?: string | null;
-  alias?: string | null;
-  path_prefix?: string | null;
-  billing_bound?: boolean;
-}
-
-interface OpsTenantsResponse {
-  ok?: boolean;
-  data?: { tenants?: TenantRegistryRow[]; count?: number };
-}
-
-const TENANT_REGISTRY_ENDPOINT = DECLARED_PLATFORM_API_ENDPOINTS.tenantRegistry;
-
-const TENANT_COLUMNS = [
-  { colKey: 'namespace_id', title: '命名空间' },
-  { colKey: 'tenant_name', title: '租户名称' },
-  { colKey: 'lifecycle_state', title: '生命周期' },
-  { colKey: 'alias', title: '别名/路径前缀' },
-  { colKey: 'billing_bound', title: '计费绑定' },
-];
 
 const router = useRouter();
 const session = useSessionStore();
@@ -174,43 +71,9 @@ const duties = computed(() =>
 const audienceLabel = computed(() => (audience.value === 'platform-admin' ? '平台控制台' : '租户配置'));
 const contractVersion = computed(() => surface.value?.contract_version || '-');
 const source = computed(() => surface.value?.source || '-');
-const isPlatformAudience = computed(() => audience.value === 'platform-admin');
-
-const inlineState = reactive<Record<string, { status: string; message?: string }>>({});
-const tenantRegistry = reactive({
-  visible: false,
-  status: 'idle' as 'idle' | 'loading' | 'ready' | 'error',
-  rows: [] as TenantRegistryRow[],
-  count: 0,
-  message: '',
-});
-const generic = reactive({
-  endpoint: '',
-  label: '',
-  status: 'idle' as 'idle' | 'loading' | 'ready' | 'error',
-  payload: '',
-  isEmpty: false,
-  message: '',
-});
 
 function actionOf(duty: PlatformDutyEntry): DutyAction {
   return resolveDutyAction(duty);
-}
-
-function isWriteAction(duty: PlatformDutyEntry) {
-  const action = actionOf(duty);
-  return action.kind === 'inline' && isWriteEndpoint(action.endpoint);
-}
-
-function inlineOf(key: string) {
-  return inlineState[key] || { status: 'idle' };
-}
-
-function inlineActionLabel(key: string) {
-  const status = inlineOf(key).status;
-  if (status === 'loading') return '读取中…';
-  if (status === 'error') return '重试';
-  return '读取';
 }
 
 function open(duty: PlatformDutyEntry) {
@@ -218,69 +81,6 @@ function open(duty: PlatformDutyEntry) {
   if (action.kind !== 'navigate') return;
   void router.push(action.route);
 }
-
-async function loadTenantRegistry() {
-  tenantRegistry.visible = true;
-  tenantRegistry.status = 'loading';
-  tenantRegistry.message = '';
-  inlineState['platform.tenant_registry'] = { status: 'loading' };
-  try {
-    const payload = await apiRequest<OpsTenantsResponse>(TENANT_REGISTRY_ENDPOINT);
-    const rows = payload?.data?.tenants ?? [];
-    tenantRegistry.rows = Array.isArray(rows) ? rows : [];
-    tenantRegistry.count = Number(payload?.data?.count ?? tenantRegistry.rows.length) || tenantRegistry.rows.length;
-    tenantRegistry.status = 'ready';
-    inlineState['platform.tenant_registry'] = { status: 'ready' };
-  } catch (error) {
-    tenantRegistry.rows = [];
-    tenantRegistry.count = 0;
-    tenantRegistry.status = 'error';
-    tenantRegistry.message = error instanceof Error ? error.message : 'unknown error';
-    inlineState['platform.tenant_registry'] = { status: 'error', message: tenantRegistry.message };
-  }
-}
-
-async function loadGeneric(key: string, endpoint: string, label: string) {
-  generic.endpoint = endpoint;
-  generic.label = label;
-  generic.status = 'loading';
-  generic.message = '';
-  inlineState[key] = { status: 'loading' };
-  try {
-    const payload = await apiRequest<Record<string, unknown>>(endpoint);
-    generic.payload = JSON.stringify(payload, null, 2);
-    generic.isEmpty = !payload || Object.keys(payload).length === 0;
-    generic.status = 'ready';
-    inlineState[key] = { status: 'ready' };
-  } catch (error) {
-    generic.payload = '';
-    generic.isEmpty = false;
-    generic.status = 'error';
-    generic.message = error instanceof Error ? error.message : 'unknown error';
-    inlineState[key] = { status: 'error', message: generic.message };
-  }
-}
-
-function loadInline(key: string, action: DutyAction) {
-  if (action.kind !== 'inline') return;
-  const duty = duties.value.find((entry) => entry.key === key);
-  const label = duty?.label || key;
-  if (isWriteEndpoint(action.endpoint)) return;
-  if (action.endpoint === TENANT_REGISTRY_ENDPOINT) {
-    void loadTenantRegistry();
-    return;
-  }
-  void loadGeneric(key, action.endpoint, label);
-}
-
-onMounted(() => {
-  if (!isPlatformAudience.value) return;
-  const registryDuty = duties.value.find((duty) => duty.key === 'platform.tenant_registry');
-  const action = resolveDutyAction(registryDuty);
-  if (action.kind === 'inline' && action.endpoint === TENANT_REGISTRY_ENDPOINT && !isWriteEndpoint(action.endpoint)) {
-    void loadTenantRegistry();
-  }
-});
 </script>
 
 <style scoped>
