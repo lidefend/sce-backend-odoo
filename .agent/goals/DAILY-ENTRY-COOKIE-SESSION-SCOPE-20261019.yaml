@@ -18,7 +18,7 @@ goal:
     - No direct main push, force push, or required-check bypass.
     - No client database hint becomes a routing input.
     - No authentication engine change; each database keeps native authentication.
-    - No customer tenant (baosheng) deployment change.
+    - No customer tenant deployment change.
     - No frontend rebuild or Odoo-image embedding of frontend assets.
   acceptance:
     - Demo login response sets session_id Path exactly /t/demo/.
