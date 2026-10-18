@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `4887`
 - Files requiring split plan: `70`
-- Files above warning threshold: `136`
+- Files above warning threshold: `137`
 
 ## Split Plan Required
 
@@ -124,7 +124,6 @@ Generated from repository source files. This report is informational during the 
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1207 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
-| 1170 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1157 | Python source | `scripts/verify/fact_source_coverage_guard.py` |
 | 1147 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
@@ -151,6 +150,7 @@ Generated from repository source files. This report is informational during the 
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 1034 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1033 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
+| 1024 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1018 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
 | 1016 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |
 | 1013 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |
@@ -203,6 +203,7 @@ Generated from repository source files. This report is informational during the 
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
 | 808 | Python source | `scripts/verify/test_local_quick_evidence.py` |
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
+| 806 | Python source | `scripts/verify/frontend_decision_authority.py` |
 | 802 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
 | 802 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
