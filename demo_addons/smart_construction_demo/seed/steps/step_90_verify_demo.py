@@ -85,13 +85,13 @@ def _get_showroom_projects(env):
         ("name", "ilike", "演示项目"),
         ("project_code", "ilike", "DEMO-"),
     ]
+    return Project.search(domain)
 
 
 def _verify_company_identity(env):
     company = env.ref("base.main_company")
     if company.name != DEMO_COMPANY_NAME or company.partner_id.name != DEMO_COMPANY_NAME:
         raise UserError("Demo company identity must be %s." % DEMO_COMPANY_NAME)
-    return Project.search(domain)
 
 
 def _verify_demo_full_my_work(env):

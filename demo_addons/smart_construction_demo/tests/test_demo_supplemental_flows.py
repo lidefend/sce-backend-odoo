@@ -62,6 +62,16 @@ class DemoCompanyIdentity(unittest.TestCase):
         run(SimpleNamespace(ref=lambda xmlid: company))
         self.assertEqual(writes, [{"name": "demo演示公司"}])
 
+    def test_showroom_lookup_still_returns_the_project_search(self):
+        projects = SimpleNamespace(
+            search=lambda domain: ("searched", domain),
+        )
+        env = {"project.project": SimpleNamespace(sudo=lambda: projects)}
+        lookup = function("step_90_verify_demo.py", "_get_showroom_projects")
+        result = lookup(env)
+        self.assertEqual(result[0], "searched")
+        self.assertIn(("project_code", "ilike", "DEMO-"), result[1])
+
 
 class Opening:
     def __init__(self):
