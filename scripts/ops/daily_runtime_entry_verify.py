@@ -42,8 +42,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-ENTRY = __ENTRY__
-DUTIES = __DUTIES__
+ENTRY = json.loads(__ENTRY__)
+DUTIES = json.loads(__DUTIES__)
 EXPECTED_SHA = __EXPECTED_SHA__
 PRODUCT_ROOT = __PRODUCT_ROOT__
 DIST = __DIST__
@@ -351,8 +351,12 @@ def main() -> int:
     entry = json.loads((ROOT / args.entry).read_text(encoding="utf-8"))
     duties = json.loads((ROOT / args.declaration).read_text(encoding="utf-8"))
     program = (
-        REMOTE_PROGRAM.replace("__ENTRY__", json.dumps(entry, ensure_ascii=False, sort_keys=True))
-        .replace("__DUTIES__", json.dumps(duties, ensure_ascii=False, sort_keys=True))
+        REMOTE_PROGRAM.replace(
+            "__ENTRY__", json.dumps(json.dumps(entry, ensure_ascii=False, sort_keys=True))
+        )
+        .replace(
+            "__DUTIES__", json.dumps(json.dumps(duties, ensure_ascii=False, sort_keys=True))
+        )
         .replace("__EXPECTED_SHA__", json.dumps(args.expected_sha))
         .replace("__PRODUCT_ROOT__", json.dumps(REMOTE_ROOT))
         .replace("__DIST__", json.dumps(REMOTE_DIST))
