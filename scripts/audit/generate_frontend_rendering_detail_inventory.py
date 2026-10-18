@@ -113,7 +113,7 @@ BATCH_BINDINGS = {
             {"v-else-if": "isPublicAuthPage && !session.token && session.publicPageContractStatus === 'loading'", "role": "status"},
         ]},
         "scbutton": {"import": "ScButton", "attrs": {"@click": "session.loadPublicPageContracts(true)"}},
-        "routerview": {"attrs": {"v-slot": "{ Component, route }"}},
+        "routerview": {"attrs": {"v-slot": "{ Component, route: slotRoute }"}},
     },
     "frontend/apps/web/src/layouts/AppShell.vue": {"scinlinestate": {"states": {"loading", "error", "empty"}, "minimum": 4}},
     "frontend/apps/web/src/components/GlobalMessagePanel.vue": {"scinlinestate": {"states": {"loading", "empty", "error"}, "minimum": 3}},
@@ -200,6 +200,10 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue": {"section": {"attrs": {"data-semantic-component": "ProfessionalCollaborationComposer"}}},
     },
     "p0-shared-utility-scene-completion-v1": {
+        "frontend/apps/web/src/components/platform-duty/PlatformDutyPanel.vue": {
+            "sctable": {"import": "ScTable"},
+            "scbutton": {"import": "ScButton"},
+        },
         "frontend/apps/web/src/components/DevContextPanel.vue": {"aside": {"attrs": {"data-semantic-component": "DevContextPanel"}}},
         "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue": {"scdialog": {"attrs": {"data-dialog-purpose": "intent-confirmation"}}},
         "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue": {"productworkspacesurface": {"import": "ProductWorkspaceSurface", "import_path": "../product-page-patterns/ProductWorkspaceSurface.vue", "attrs": {"data-semantic-component": "MyWorkApprovalWorkspace", ":aria-busy": "busy || undefined", ":data-state": "busy ? 'loading' : 'ready'"}}},

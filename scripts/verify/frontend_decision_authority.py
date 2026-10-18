@@ -256,8 +256,14 @@ AUTHORITY: dict[str, dict] = {
     "R4_business_state_literal|draft": _derived(
         "addons/smart_core/models/release_management.py:24"
     ),
+    "R4_business_state_literal|done": _derived(
+        "addons/smart_core/delivery/release_operator_read_model_service.py:626"
+    ),
     "R4_business_state_literal|expired": _derived(
         "addons/smart_core/models/auth_credential_policy.py:24"
+    ),
+    "R4_business_state_literal|fail": _derived(
+        "addons/smart_core/delivery/release_operator_read_model_service.py:533"
     ),
     "R4_business_state_literal|hidden": {
         "classification": "contract-derived",
@@ -289,6 +295,9 @@ AUTHORITY: dict[str, dict] = {
         "contractEvidence": "docs/product/menu_configuration_runtime_boundary_v1.md:73",
         "guardAssertion": "frontend_decision_authority.check_menu_handling_state_projection_consumption",
     },
+    "R4_business_state_literal|warn": _derived(
+        "addons/smart_core/delivery/release_operator_read_model_service.py:547"
+    ),
     # --- R4: capability availability, now consumed from the contract projection ---
     "R4_business_state_literal|disabled_capability": {
         "classification": "contract-derived",

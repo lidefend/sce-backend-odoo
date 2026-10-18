@@ -1,282 +1,267 @@
 <template>
-  <main v-if="pageSectionsReady" class="release-operator" :style="pageSectionStyle('root')" :data-contract-sections="pageSectionsFingerprint">
-    <section class="release-operator__header">
-      <div>
-        <p class="eyebrow">{{ copy.eyebrow || '发布运营' }}</p>
-        <h1>{{ copy.title || '发布控制台' }}</h1>
-        <p>{{ copy.description || '查看当前发布状态、候选快照、待审批动作与回滚目标。' }}</p>
-      </div>
-      <div class="release-operator__actions">
-        <ScSelect v-model="selectedProduct" class="release-operator__select" :options="productOptions" @change="loadSurface" />
-        <ScButton variant="ghost" :disabled="loading" @click="loadSurface">{{ copy.action_refresh || '刷新' }}</ScButton>
-        <ScButton
-          v-for="action in pageGlobalActions"
-          :key="action.key"
-          variant="ghost"
-          :disabled="action.disabled"
-          @click="executeGlobalPageAction(action.key)"
-        >
-          {{ action.label }}
-        </ScButton>
-        <ScButton
-          variant="ghost"
-          :disabled="busyKey === 'sync_policy' || !syncPolicyAction.enabled"
-          @click="syncPolicy"
-        >
-          {{ copy.sync_policy_action_label || '同步已实现能力' }}
-        </ScButton>
-        <ScButton
-          variant="primary"
-          :disabled="busyKey === 'freeze' || !freezeAction.enabled"
-          @click="freeze"
-        >
-          {{ copy.freeze_action_label || '冻结候选快照' }}
-        </ScButton>
-      </div>
-    </section>
-
-    <StatusPanel
-      v-if="loading && !surface"
-      title="正在加载发布控制台..."
-      variant="info"
-    />
-    <StatusPanel
-      v-else-if="error"
-      :title="copy.error_title || '加载失败'"
-      :message="error"
-      variant="error"
-      :on-retry="loadSurface"
-    />
-
-    <template v-else-if="surface">
-      <section class="release-operator__metrics">
-        <article class="release-operator__metric">
-          <span>{{ copy.metric_current_product || '当前产品' }}</span>
-          <strong>{{ identity.label || identity.product_key || '-' }}</strong>
-        </article>
-        <article class="release-operator__metric">
-          <span>{{ copy.metric_active_snapshot || '当前生效快照' }}</span>
-          <strong>{{ activeSnapshot.version || activeSnapshot.id || '-' }}</strong>
-        </article>
-        <article class="release-operator__metric">
-          <span>{{ copy.metric_latest_action || '最近发布动作' }}</span>
-          <strong>{{ runtimeSummary.latest_action_type || '-' }}</strong>
-        </article>
-        <article class="release-operator__metric">
-          <span>{{ copy.metric_approval_state || '审批状态' }}</span>
-          <strong>{{ runtimeSummary.latest_action_approval_state || '-' }}</strong>
-        </article>
-      </section>
-
-      <section class="release-operator__section">
-        <div class="release-operator__section-head">
-          <h2>{{ copy.section_product_delivery_console || '产品交付控制台' }}</h2>
-          <p>{{ productProfile.label || productConsole.product_key || '-' }}</p>
-        </div>
-        <div class="release-operator__product-grid">
-          <article>
-            <span>产品包</span>
-            <strong>{{ productBundle.name || '-' }}</strong>
-            <small>{{ productBundle.default_dashboard || '-' }}</small>
-          </article>
-          <article>
-            <span>授权层级</span>
-            <strong>{{ productLicense.level || '-' }}</strong>
-                  <small>{{ productLicense.customer_visible === false ? '平台可见' : '交付可见' }}</small>
-          </article>
-          <article>
-            <span>交付就绪</span>
-            <strong>{{ readinessLabel(productReadiness.status) }}</strong>
-            <small>阻断 {{ productReadiness.blocking_count ?? 0 }} / 警告 {{ productReadiness.warn_count ?? 0 }}<template v-if="productReadiness.unconfigured_count"> / 未配置 {{ productReadiness.unconfigured_count }}</template></small>
-          </article>
-          <article>
-            <span>受控页面</span>
-            <strong>{{ productReadiness.controlled_page_count ?? 0 }}</strong>
-            <small>已发布 {{ productReadiness.released_page_count ?? 0 }}</small>
-          </article>
-        </div>
-        <div class="release-operator__delivery-lists">
-          <article>
-            <h3>能力包</h3>
-            <div class="release-operator__tag-list">
-              <span v-for="capability in productCapabilities" :key="productItemKey(capability)">
-                {{ capability.label || capability.key || '-' }}
-              </span>
-            </div>
-          </article>
-          <article>
-            <h3>场景包</h3>
-            <div class="release-operator__tag-list">
-              <span v-for="scene in productScenes" :key="productItemKey(scene)">
-                {{ scene.name || scene.code || '-' }}
-              </span>
-            </div>
-          </article>
-          <article>
-            <h3>交付资产</h3>
-            <div class="release-operator__asset-list">
-              <span v-for="asset in acceptanceAssets" :key="asset">{{ asset }}</span>
-            </div>
-          </article>
-        </div>
-        <p v-if="productLicense.upgrade_hint" class="release-operator__upgrade-hint">
-          {{ productLicense.upgrade_hint }}
-        </p>
-      </section>
-
-      <section class="release-operator__section">
-        <div class="release-operator__section-head">
-          <h2>产品配置发布线</h2>
-          <p>草案、检查、候选、发布、生效</p>
-        </div>
-        <div class="release-operator__pipeline">
-          <article v-for="stage in pipelineStages" :key="pipelineKey(stage)">
-            <span :class="['release-operator__stage-dot', `release-operator__stage-dot--${stage.status || 'pending'}`]"></span>
-            <strong>{{ stage.label || stage.key || '-' }}</strong>
-            <small>{{ stage.count ?? 0 }}</small>
-          </article>
-        </div>
-        <div class="release-operator__summary-grid">
-          <article>
-            <span>当前发布页</span>
-            <strong>{{ changeSummary.active_page_count ?? 0 }}</strong>
-          </article>
-          <article>
-            <span>草案发布页</span>
-            <strong>{{ changeSummary.draft_page_count ?? 0 }}</strong>
-          </article>
-          <article>
-            <span>差异</span>
-            <strong>{{ changeSummary.page_count_delta ?? 0 }}</strong>
-          </article>
-          <article>
-            <span>预览/下线</span>
-            <strong>{{ changeSummary.preview_page_count ?? 0 }} / {{ changeSummary.hidden_page_count ?? 0 }}</strong>
-          </article>
-        </div>
-        <div class="release-operator__checks">
-          <article v-for="check in preflightChecks" :key="pipelineKey(check)" :class="`release-operator__check--${check.status || 'pass'}`">
-            <strong>{{ check.label || check.key || '-' }}</strong>
-            <span>{{ check.message || '-' }}</span>
-          </article>
-        </div>
-        <div class="release-operator__audience">
-          <strong>生效试算</strong>
-          <span>公司 {{ audienceSimulation.company_count ?? 0 }} 个，订阅 {{ audienceSimulation.subscription_count ?? 0 }} 个，角色 {{ audienceRoles }}</span>
-        </div>
-      </section>
-
-      <section class="release-operator__section">
-        <div class="release-operator__section-head">
-          <h2>{{ copy.section_control_scope || '受控内容' }}</h2>
-          <p>{{ controlScope.policy_state || '-' }} / {{ controlScope.access_level || '-' }}</p>
-        </div>
-        <div class="release-operator__policy-control">
-          <label>
-            <span>{{ copy.policy_state_label || '发布状态' }}</span>
-            <ScSelect v-model="policyState" class="release-operator__select" :options="policyStateOptions" />
-          </label>
-          <label>
-            <span>{{ copy.policy_access_label || '访问级别' }}</span>
-            <ScSelect v-model="policyAccessLevel" class="release-operator__select" :options="policyAccessOptions" />
-          </label>
+  <ScPage
+    v-if="pageSectionsReady"
+    class="release-operator sc-product-workspace-stack"
+    content-layout="data-grid"
+    data-product-page-mode="dashboard"
+    data-semantic-component="ReleaseOperatorView"
+    :data-contract-sections="pageSectionsFingerprint"
+    :style="pageSectionStyle('root')"
+  >
+    <ProductPageHeader
+      :title="copy.title || '发布控制台'"
+      :subtitle="copy.description || '查看当前发布状态、候选快照、待审批动作与回滚目标。'"
+      :eyebrow="copy.eyebrow || '发布运营'"
+      presentation-mode="dashboard"
+      render-profile="readonly"
+      :style="pageSectionStyle('hero')"
+    >
+      <template #actions>
+        <ScActionBar label="发布控制台操作">
+          <ScSelect
+            v-model="selectedProduct"
+            class="release-operator__product-select"
+            :options="productOptions"
+            :aria-label="copy.metric_current_product || '当前产品'"
+            @change="loadSurface"
+          />
+          <ScButton variant="ghost" :disabled="loading" @click="loadSurface">{{ copy.action_refresh || '刷新' }}</ScButton>
+          <ScButton
+            v-for="action in pageGlobalActions"
+            :key="action.key"
+            variant="ghost"
+            :disabled="action.disabled"
+            @click="executeGlobalPageAction(action.key)"
+          >
+            {{ action.label }}
+          </ScButton>
           <ScButton
             variant="ghost"
-            :disabled="busyKey === 'update_policy' || !updatePolicyAction.enabled"
-            @click="savePolicy"
+            :disabled="busyKey === 'sync_policy' || !syncPolicyAction.enabled"
+            @click="syncPolicy"
           >
-            {{ copy.save_policy_action_label || '保存策略' }}
+            {{ copy.sync_policy_action_label || '同步已实现能力' }}
           </ScButton>
-        </div>
-        <div v-if="controlDefinitions.length" class="release-operator__definition-grid">
-          <article v-for="item in controlDefinitions" :key="definitionKey(item)">
-            <strong>{{ item.label || item.key || '-' }}</strong>
-            <span>{{ item.meaning || '-' }}</span>
-          </article>
-        </div>
-        <div class="release-operator__scope-grid">
-          <article>
-            <span>{{ copy.metric_controlled_menus || '受控菜单' }}</span>
-            <strong>{{ controlScope.menu_count ?? 0 }}</strong>
-          </article>
-          <article>
-            <span>{{ copy.metric_controlled_pages || '受控页面' }}</span>
-            <strong>{{ controlScope.page_count ?? controlScope.menu_count ?? 0 }}</strong>
-          </article>
-          <article>
-            <span>{{ copy.metric_controlled_capabilities || '受控能力' }}</span>
-            <strong>{{ controlScope.capability_count ?? 0 }}</strong>
-          </article>
-        </div>
-        <div v-if="controlledPages.length" class="release-operator__table-wrap release-operator__page-table">
-          <ScTable class="release-operator__table" label="受控页面" :data="controlledPageTableRows" :columns="controlledPageColumns" row-key="__rowKey" size="small" />
-        </div>
-      </section>
+          <ScButton
+            variant="primary"
+            :disabled="busyKey === 'freeze' || !freezeAction.enabled"
+            @click="freeze"
+          >
+            {{ copy.freeze_action_label || '冻结候选快照' }}
+          </ScButton>
+        </ScActionBar>
+      </template>
+    </ProductPageHeader>
 
-      <section class="release-operator__section">
-        <div class="release-operator__section-head">
-          <h2>{{ copy.section_candidate || '可晋升候选' }}</h2>
-          <p>{{ copy.hint_candidate || '仅展示当前产品下 candidate / approved 状态的候选快照。' }}</p>
-        </div>
-        <div v-if="candidateSnapshots.length" class="release-operator__table-wrap">
-          <ScTable class="release-operator__table" label="可发布候选" :data="candidateTableRows" :columns="candidateColumns" row-key="id" size="small" />
-        </div>
-        <ScEmptyState v-else class="release-operator__empty" :title="copy.empty_candidate || '当前没有可晋升的候选快照。'" :heading-level="3" density="compact" />
-      </section>
+    <DashboardPattern>
+      <StatusPanel
+        v-if="loading && !surface"
+        title="正在加载发布控制台..."
+        variant="info"
+      />
+      <StatusPanel
+        v-else-if="error"
+        :title="copy.error_title || '加载失败'"
+        :message="error"
+        variant="error"
+        :on-retry="loadSurface"
+      />
 
-      <section class="release-operator__section">
-        <div class="release-operator__section-head">
-          <h2>{{ copy.section_pending || '待审批动作' }}</h2>
-          <p>{{ copy.hint_pending_count_prefix || '当前数量：' }}{{ pendingActions.length }}</p>
-        </div>
-        <div v-if="pendingActions.length" class="release-operator__table-wrap">
-          <ScTable class="release-operator__table" label="待审批动作" :data="pendingTableRows" :columns="pendingActionColumns" row-key="id" size="small" />
-        </div>
-        <ScEmptyState v-else class="release-operator__empty" :title="copy.empty_pending || '当前没有待审批动作。'" :heading-level="3" density="compact" />
-      </section>
+      <template v-else-if="surface">
+        <section class="release-operator__metrics" aria-label="发布摘要" :style="pageSectionStyle('release_state')">
+          <ScCard
+            v-for="metric in summaryMetrics"
+            :key="metric.key"
+            class="release-operator__metric"
+            appearance="metric"
+            :data-metric-key="metric.key"
+          >
+            <h3>{{ metric.label }}</h3>
+            <p>{{ metric.value }}</p>
+          </ScCard>
+        </section>
 
-      <section class="release-operator__section release-operator__section--split">
-        <div>
-          <h2>{{ copy.section_rollback || '回滚' }}</h2>
-          <p>{{ copy.hint_rollback || '仅当当前 active released snapshot 存在 rollback target 时可执行。' }}</p>
-        </div>
-        <ScButton
-          variant="ghost"
-          :disabled="!rollbackAction.enabled || busyKey === 'rollback'"
-          @click="rollback"
+        <ScSection :title="copy.section_product_delivery_console || '产品交付控制台'">
+          <template #actions>
+            <span class="release-operator__section-meta">{{ productProfile.label || productConsole.product_key || '-' }}</span>
+          </template>
+          <ScDescriptions :items="productFacts" :column="descriptionColumns" bordered />
+          <div class="release-operator__delivery">
+            <ScCard
+              v-for="group in deliveryGroups"
+              :key="group.key"
+              appearance="section"
+              :title="group.title"
+            >
+              <ScList v-if="group.items.length" :items="group.items" :split="true">
+                <template #item="{ item }">
+                  <span class="release-operator__list-row">
+                    <span class="release-operator__list-label">{{ item.label }}</span>
+                    <span v-if="item.meta" class="release-operator__list-meta">{{ item.meta }}</span>
+                  </span>
+                </template>
+              </ScList>
+              <ScEmptyState v-else density="compact" :heading-level="4" title="暂无数据" />
+            </ScCard>
+          </div>
+          <ScInlineState v-if="productLicense.upgrade_hint" state="info" :label="String(productLicense.upgrade_hint)" />
+        </ScSection>
+
+        <ScSection title="产品配置发布线">
+          <template #actions>
+            <span class="release-operator__section-meta">草案、检查、候选、发布、生效</span>
+          </template>
+          <ScList :items="pipelineItems" class="release-operator__stage-list">
+            <template #item="{ item }">
+              <span class="release-operator__stage">
+                <ScStatusBadge :value="String(item.status || '')" :label="stageStatusLabel(String(item.status || ''))" :semantic="stageStatusSemantic(String(item.status || ''))" />
+                <span class="release-operator__list-label">{{ item.label }}</span>
+                <strong class="release-operator__list-meta">{{ item.count }}</strong>
+              </span>
+            </template>
+          </ScList>
+          <ScDescriptions class="release-operator__summary" :items="changeSummaryItems" :column="descriptionColumns" bordered />
+          <ScList :items="preflightItems" class="release-operator__check-list">
+            <template #item="{ item }">
+              <span class="release-operator__check">
+                <ScStatusBadge :value="String(item.status || '')" :label="checkStatusLabel(String(item.status || ''))" :semantic="checkStatusSemantic(String(item.status || ''))" />
+                <span class="release-operator__list-label">{{ item.label }}</span>
+                <span class="release-operator__list-meta">{{ item.message }}</span>
+              </span>
+            </template>
+          </ScList>
+          <ScCard appearance="section" title="生效试算">
+            <ScDescriptions :items="audienceItems" :column="compactDescriptionColumns" bordered />
+          </ScCard>
+        </ScSection>
+
+        <ScSection :title="copy.section_control_scope || '受控内容'">
+          <template #actions>
+            <span class="release-operator__section-meta">{{ controlScope.policy_state || '-' }} / {{ controlScope.access_level || '-' }}</span>
+          </template>
+          <ScForm layout="inline" :prevent-submit-default="true" class="release-operator__policy">
+            <ScFormItem :label="copy.policy_state_label || '发布状态'" name="policy_state">
+              <ScSelect v-model="policyState" :options="policyStateOptions" />
+            </ScFormItem>
+            <ScFormItem :label="copy.policy_access_label || '访问级别'" name="policy_access_level">
+              <ScSelect v-model="policyAccessLevel" :options="policyAccessOptions" />
+            </ScFormItem>
+            <ScFormItem>
+              <ScButton
+                variant="ghost"
+                type="button"
+                :disabled="busyKey === 'update_policy' || !updatePolicyAction.enabled"
+                @click="savePolicy"
+              >
+                {{ copy.save_policy_action_label || '保存策略' }}
+              </ScButton>
+            </ScFormItem>
+          </ScForm>
+          <ScList v-if="controlDefinitionItems.length" :items="controlDefinitionItems">
+            <template #item="{ item }">
+              <span class="release-operator__list-row">
+                <span class="release-operator__list-label">{{ item.label }}</span>
+                <span class="release-operator__list-meta release-operator__list-meta--wrap">{{ item.meta }}</span>
+              </span>
+            </template>
+          </ScList>
+          <ScDescriptions class="release-operator__summary" :items="scopeItems" :column="compactDescriptionColumns" bordered />
+          <ScCard v-if="controlledPages.length" class="release-operator__table-card" appearance="table">
+            <ScTable
+              class="release-operator__table"
+              label="受控页面"
+              :data="controlledPageTableRows"
+              :columns="controlledPageColumns"
+              row-key="__rowKey"
+              size="small"
+            />
+          </ScCard>
+        </ScSection>
+
+        <ScSection
+          :title="copy.section_candidate || '可晋升候选'"
+          :description="copy.hint_candidate || '仅展示当前产品下 candidate / approved 状态的候选快照。'"
+          :style="pageSectionStyle('candidate_snapshots')"
         >
-          {{ copy.rollback_action_label || '执行回滚' }}
-        </ScButton>
-      </section>
+          <ScCard v-if="candidateSnapshots.length" appearance="table">
+            <ScTable
+              class="release-operator__table"
+              label="可发布候选"
+              :data="candidateTableRows"
+              :columns="candidateColumns"
+              row-key="id"
+              size="small"
+            />
+          </ScCard>
+          <ScEmptyState v-else :title="copy.empty_candidate || '当前没有可晋升的候选快照。'" :heading-level="3" density="compact" />
+        </ScSection>
 
-      <section class="release-operator__section">
-        <div class="release-operator__section-head">
-          <h2>{{ copy.section_history || '发布历史' }}</h2>
-          <p>{{ copy.hint_history || '最近 action 与 snapshot。' }}</p>
-        </div>
-        <div class="release-operator__history">
-          <div>
-            <h3>{{ copy.history_snapshots_title || '发布快照' }}</h3>
-            <ul>
-              <li v-for="snapshot in historySnapshots" :key="`history-snapshot-${snapshot.id}`">
-                <strong>{{ snapshot.version || snapshot.id }}</strong>
-                <span>{{ snapshot.state || '-' }}</span>
-              </li>
-            </ul>
+        <ScSection
+          :title="copy.section_pending || '待审批动作'"
+          :description="`${copy.hint_pending_count_prefix || '当前数量：'}${pendingActions.length}`"
+          :style="pageSectionStyle('pending_approvals')"
+        >
+          <ScCard v-if="pendingActions.length" appearance="table">
+            <ScTable
+              class="release-operator__table"
+              label="待审批动作"
+              :data="pendingTableRows"
+              :columns="pendingActionColumns"
+              row-key="id"
+              size="small"
+            />
+          </ScCard>
+          <ScEmptyState v-else :title="copy.empty_pending || '当前没有待审批动作。'" :heading-level="3" density="compact" />
+        </ScSection>
+
+        <ScSection
+          :title="copy.section_rollback || '回滚'"
+          :description="copy.hint_rollback || '仅当当前 active released snapshot 存在 rollback target 时可执行。'"
+          :style="pageSectionStyle('rollback')"
+        >
+          <template #actions>
+            <ScButton
+              variant="ghost"
+              :disabled="!rollbackAction.enabled || busyKey === 'rollback'"
+              @click="rollback"
+            >
+              {{ copy.rollback_action_label || '执行回滚' }}
+            </ScButton>
+          </template>
+        </ScSection>
+
+        <ScSection
+          :title="copy.section_history || '发布历史'"
+          :description="copy.hint_history || '最近 action 与 snapshot。'"
+        >
+          <div class="release-operator__history">
+            <ScCard appearance="section" :title="copy.history_snapshots_title || '发布快照'">
+              <ScList v-if="historySnapshotItems.length" :items="historySnapshotItems">
+                <template #item="{ item }">
+                  <span class="release-operator__list-row">
+                    <span class="release-operator__list-label">{{ item.label }}</span>
+                    <span class="release-operator__list-meta">{{ item.meta }}</span>
+                  </span>
+                </template>
+              </ScList>
+              <ScEmptyState v-else density="compact" :heading-level="4" title="暂无数据" />
+            </ScCard>
+            <ScCard appearance="section" :title="copy.history_actions_title || '发布动作'">
+              <ScList v-if="historyActionItems.length" :items="historyActionItems">
+                <template #item="{ item }">
+                  <span class="release-operator__list-row">
+                    <span class="release-operator__list-label">{{ item.label }}</span>
+                    <span class="release-operator__list-meta">{{ item.meta }}</span>
+                  </span>
+                </template>
+              </ScList>
+              <ScEmptyState v-else density="compact" :heading-level="4" title="暂无数据" />
+            </ScCard>
           </div>
-          <div>
-            <h3>{{ copy.history_actions_title || '发布动作' }}</h3>
-            <ul>
-              <li v-for="action in historyActions" :key="`history-action-${action.id}`">
-                <strong>{{ action.action_type || action.id }}</strong>
-                <span>{{ action.state || '-' }} / {{ action.approval_state || '-' }}</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-    </template>
-  </main>
+        </ScSection>
+      </template>
+    </DashboardPattern>
+  </ScPage>
 </template>
 
 <script setup lang="ts">
@@ -288,6 +273,18 @@ import ScEmptyState from '../components/design-system/ScEmptyState.vue';
 import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
 import ScSelect from '../components/design-system/ScSelect.vue';
 import ScTable from '../components/design-system/ScTable.vue';
+import ScPage from '../components/design-system/ScPage.vue';
+import ScSection from '../components/design-system/ScSection.vue';
+import ScCard from '../components/design-system/ScCard.vue';
+import ScDescriptions from '../components/design-system/ScDescriptions.vue';
+import ScList from '../components/design-system/ScList.vue';
+import ScActionBar from '../components/design-system/ScActionBar.vue';
+import ScForm from '../components/design-system/ScForm.vue';
+import ScFormItem from '../components/design-system/ScFormItem.vue';
+import ScInlineState from '../components/design-system/ScInlineState.vue';
+import ProductPageHeader from '../components/product-page-header/ProductPageHeader.vue';
+import DashboardPattern from '../components/product-page-patterns/DashboardPattern.vue';
+import { useNarrowViewport } from '../composables/useNarrowViewport';
 import { intentRequest } from '../api/intents';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
@@ -476,6 +473,158 @@ const controlledPageTableRows = computed(() => controlledPages.value.map((page) 
 const candidateTableRows = computed(() => candidateSnapshots.value.map((snapshot) => ({ ...snapshot })));
 const pendingTableRows = computed(() => pendingActions.value.map((action) => ({ ...action })));
 
+type DescriptionItem = { key: string; label: string; value: string };
+type ListRow = { key: string; label: string; meta: string };
+type StageRow = { key: string; label: string; count: string; status: string };
+type CheckRow = { key: string; label: string; message: string; status: string };
+
+const narrowViewport = useNarrowViewport(900);
+const descriptionColumns = computed(() => (narrowViewport.value ? 1 : 4));
+const compactDescriptionColumns = computed(() => (narrowViewport.value ? 1 : 3));
+
+const summaryMetrics = computed(() => [
+  {
+    key: 'current_product',
+    label: copy.value.metric_current_product || '当前产品',
+    value: String(identity.value.label || identity.value.product_key || '-'),
+  },
+  {
+    key: 'active_snapshot',
+    label: copy.value.metric_active_snapshot || '当前生效快照',
+    value: String(activeSnapshot.value.version || activeSnapshot.value.id || '-'),
+  },
+  {
+    key: 'latest_action',
+    label: copy.value.metric_latest_action || '最近发布动作',
+    value: String(runtimeSummary.value.latest_action_type || '-'),
+  },
+  {
+    key: 'approval_state',
+    label: copy.value.metric_approval_state || '审批状态',
+    value: String(runtimeSummary.value.latest_action_approval_state || '-'),
+  },
+]);
+
+const productFacts = computed<DescriptionItem[]>(() => [
+  {
+    key: 'bundle',
+    label: '产品包',
+    value: String(productBundle.value.name || '-'),
+  },
+  {
+    key: 'license',
+    label: '授权层级',
+    value: `${String(productLicense.value.level || '-')}${productLicense.value.customer_visible === false ? '（平台可见）' : ''}`,
+  },
+  {
+    key: 'readiness',
+    label: '交付就绪',
+    value: `${readinessLabel(productReadiness.value.status)}（阻断 ${Number(productReadiness.value.blocking_count ?? 0)} / 警告 ${Number(productReadiness.value.warn_count ?? 0)}${productReadiness.value.unconfigured_count ? ` / 未配置 ${Number(productReadiness.value.unconfigured_count)}` : ''}）`,
+  },
+  {
+    key: 'controlled_pages',
+    label: '受控页面',
+    value: `${Number(productReadiness.value.controlled_page_count ?? 0)}（已发布 ${Number(productReadiness.value.released_page_count ?? 0)}）`,
+  },
+]);
+
+const deliveryGroups = computed(() => [
+  {
+    key: 'capabilities',
+    title: '能力包',
+    items: productCapabilities.value.map((item, index) => ({
+      key: productItemKey(item) || `capability-${index + 1}`,
+      label: String(item.label || item.key || '-'),
+      meta: String(item.tier || ''),
+    })),
+  },
+  {
+    key: 'scenes',
+    title: '场景包',
+    items: productScenes.value.map((item, index) => ({
+      key: productItemKey(item) || `scene-${index + 1}`,
+      label: String(item.name || item.code || '-'),
+      meta: String(item.tier || ''),
+    })),
+  },
+  {
+    key: 'assets',
+    title: '交付资产',
+    items: acceptanceAssets.value.map((asset, index) => ({
+      key: `asset-${index + 1}-${asset}`,
+      label: asset,
+      meta: '',
+    })),
+  },
+]);
+
+const pipelineItems = computed<StageRow[]>(() => pipelineStages.value.map((stage, index) => ({
+  key: pipelineKey(stage) || `stage-${index + 1}`,
+  label: String(stage.label || stage.key || '-'),
+  count: String(stage.count ?? 0),
+  status: String(stage.status || 'pending'),
+})));
+
+const changeSummaryItems = computed<DescriptionItem[]>(() => [
+  { key: 'active_pages', label: '当前发布页', value: String(changeSummary.value.active_page_count ?? 0) },
+  { key: 'draft_pages', label: '草案发布页', value: String(changeSummary.value.draft_page_count ?? 0) },
+  { key: 'delta', label: '差异', value: String(changeSummary.value.page_count_delta ?? 0) },
+  {
+    key: 'preview_hidden',
+    label: '预览/下线',
+    value: `${Number(changeSummary.value.preview_page_count ?? 0)} / ${Number(changeSummary.value.hidden_page_count ?? 0)}`,
+  },
+]);
+
+const preflightItems = computed<CheckRow[]>(() => preflightChecks.value.map((check, index) => ({
+  key: pipelineKey(check) || `check-${index + 1}`,
+  label: String(check.label || check.key || '-'),
+  message: String(check.message || '-'),
+  status: String(check.status || 'pass'),
+})));
+
+const audienceItems = computed<DescriptionItem[]>(() => [
+  { key: 'companies', label: '公司', value: String(audienceSimulation.value.company_count ?? 0) },
+  { key: 'subscriptions', label: '订阅', value: String(audienceSimulation.value.subscription_count ?? 0) },
+  { key: 'roles', label: '角色', value: audienceRoles.value },
+]);
+
+const controlDefinitionItems = computed<ListRow[]>(() => controlDefinitions.value.map((item, index) => ({
+  key: definitionKey(item) || `definition-${index + 1}`,
+  label: String(item.label || item.key || '-'),
+  meta: String(item.meaning || '-'),
+})));
+
+const scopeItems = computed<DescriptionItem[]>(() => [
+  {
+    key: 'menus',
+    label: copy.value.metric_controlled_menus || '受控菜单',
+    value: String(controlScope.value.menu_count ?? 0),
+  },
+  {
+    key: 'pages',
+    label: copy.value.metric_controlled_pages || '受控页面',
+    value: String(controlScope.value.page_count ?? controlScope.value.menu_count ?? 0),
+  },
+  {
+    key: 'capabilities',
+    label: copy.value.metric_controlled_capabilities || '受控能力',
+    value: String(controlScope.value.capability_count ?? 0),
+  },
+]);
+
+const historySnapshotItems = computed<ListRow[]>(() => historySnapshots.value.map((snapshot) => ({
+  key: `history-snapshot-${snapshot.id}`,
+  label: String(snapshot.version || snapshot.id),
+  meta: String(snapshot.state || '-'),
+})));
+
+const historyActionItems = computed<ListRow[]>(() => historyActions.value.map((action) => ({
+  key: `history-action-${action.id}`,
+  label: String(action.action_type || action.id),
+  meta: `${action.state || '-'} / ${action.approval_state || '-'}`,
+})));
+
 function tableText(value: unknown) { return String(value ?? '').trim() || '-'; }
 function statusNode(value: string, label: string, semantic: 'default'|'info'|'success'|'warning'|'danger' = 'default') {
   return h(ScStatusBadge, { value, label, semantic });
@@ -550,6 +699,42 @@ function releaseStateLabel(page: AnyRecord) {
   };
   return labels[state] || state || '-';
 }
+function stageStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    done: '已完成',
+    active: '进行中',
+    preview: '预览',
+    pending: '待处理',
+    warn: '警告',
+    blocked: '阻断',
+  };
+  return labels[status] || status || '-';
+}
+
+function stageStatusSemantic(status: string): 'default' | 'info' | 'success' | 'warning' | 'danger' {
+  if (status === 'done') return 'success';
+  if (status === 'active' || status === 'preview') return 'info';
+  if (status === 'warn') return 'warning';
+  if (status === 'blocked') return 'danger';
+  return 'default';
+}
+
+function checkStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    pass: '通过',
+    warn: '警告',
+    fail: '失败',
+  };
+  return labels[status] || status || '-';
+}
+
+function checkStatusSemantic(status: string): 'default' | 'info' | 'success' | 'warning' | 'danger' {
+  if (status === 'pass') return 'success';
+  if (status === 'warn') return 'warning';
+  if (status === 'fail') return 'danger';
+  return 'default';
+}
+
 function accessLevelLabel(page: AnyRecord) {
   const level = String(page.access_level || 'public');
   const labels: Record<string, string> = {
@@ -703,468 +888,137 @@ onMounted(() => {
 
 <style scoped>
 .release-operator {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding: 24px;
+  gap: var(--sc-product-workspace-stack-gap);
 }
 
-.release-operator__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
+.release-operator__product-select {
+  min-width: 220px;
 }
 
-.release-operator__header h1 {
-  margin: 2px 0 8px;
-  font-size: 28px;
-  line-height: 1.2;
-}
-
-.release-operator__header p {
-  margin: 0;
+.release-operator__section-meta {
   color: var(--sc-semantic-text-muted);
-}
-
-.release-operator__actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.release-operator__select {
-  min-width: 190px;
-  height: 38px;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: var(--sc-component-input-radius);
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  padding: 0 10px;
+  font-size: var(--sc-product-text-sm);
 }
 
 .release-operator__metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--sc-product-panel-gap);
 }
 
-.release-operator__metric,
-.release-operator__section {
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-component-panel-radius);
-  background: var(--sc-app-panel);
-}
-
-.release-operator__metric {
-  padding: 14px;
-}
-
-.release-operator__metric span {
-  display: block;
-  margin-bottom: 8px;
+.release-operator__metric h3 {
+  margin: 0;
   color: var(--sc-semantic-text-muted);
-  font-size: 12px;
+  font-size: var(--sc-product-text-sm);
+  font-weight: 500;
 }
 
-.release-operator__metric strong {
-  display: block;
-  overflow-wrap: anywhere;
+.release-operator__metric p {
+  margin: var(--sc-product-space-1) 0 0;
   color: var(--sc-app-text-primary);
-  font-size: 18px;
-}
-
-.release-operator__scope-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.release-operator__product-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.release-operator__product-grid article {
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-component-panel-radius);
-  padding: 12px;
-}
-
-.release-operator__product-grid span,
-.release-operator__product-grid small {
-  display: block;
-  color: var(--sc-semantic-text-muted);
-  font-size: 12px;
-}
-
-.release-operator__product-grid strong {
-  display: block;
-  margin: 7px 0;
-  overflow-wrap: anywhere;
-  color: var(--sc-app-text-primary);
-  font-size: 18px;
-}
-
-.release-operator__delivery-lists {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.release-operator__delivery-lists article {
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-component-panel-radius);
-  padding: 12px;
-}
-
-.release-operator__delivery-lists h3 {
-  margin: 0 0 10px;
-  font-size: 14px;
-}
-
-.release-operator__tag-list,
-.release-operator__asset-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.release-operator__tag-list span,
-.release-operator__asset-list span {
-  border: 1px solid var(--sc-app-border);
-  border-radius: 6px;
-  padding: 5px 8px;
-  color: var(--sc-app-text-primary);
-  font-size: 12px;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
-.release-operator__asset-list span {
-  max-width: 100%;
-}
-
-.release-operator__upgrade-hint {
-  margin-top: 12px;
-  color: var(--sc-semantic-text-muted);
-}
-
-.release-operator__pipeline,
-.release-operator__summary-grid,
-.release-operator__checks {
+.release-operator__delivery {
   display: grid;
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--sc-product-panel-gap);
+  margin-top: var(--sc-product-panel-gap);
 }
 
-.release-operator__pipeline {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-}
-
-.release-operator__pipeline article,
-.release-operator__summary-grid article,
-.release-operator__checks article,
-.release-operator__audience {
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-component-panel-radius);
-  padding: 10px;
-}
-
-.release-operator__pipeline article {
-  display: grid;
-  gap: 6px;
-}
-
-.release-operator__pipeline strong,
-.release-operator__summary-grid strong,
-.release-operator__checks strong,
-.release-operator__audience strong {
-  color: var(--sc-app-text-primary);
-  font-size: 13px;
-}
-
-.release-operator__pipeline small,
-.release-operator__summary-grid span,
-.release-operator__checks span,
-.release-operator__audience span {
-  color: var(--sc-semantic-text-muted);
-  font-size: 12px;
-}
-
-.release-operator__stage-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: var(--sc-app-border-strong);
-}
-
-.release-operator__stage-dot--done,
-.release-operator__stage-dot--active,
-.release-operator__stage-dot--preview {
-  background: var(--sc-semantic-surface-interactive);
-}
-
-.release-operator__stage-dot--warn {
-  background: var(--sc-app-warning-text);
-}
-
-.release-operator__stage-dot--blocked {
-  background: var(--sc-app-danger-text);
-}
-
-.release-operator__summary-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-top: 10px;
-}
-
-.release-operator__summary-grid article {
-  display: grid;
-  gap: 6px;
-}
-
-.release-operator__summary-grid strong {
-  font-size: 20px;
-}
-
-.release-operator__checks {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  margin-top: 10px;
-}
-
-.release-operator__check--fail {
-  border-color: var(--sc-app-danger-border);
-  background: var(--sc-app-danger-bg);
-}
-
-.release-operator__check--warn {
-  border-color: var(--sc-app-warning-border);
-  background: var(--sc-app-warning-bg);
-}
-
-.release-operator__audience {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 10px;
-}
-
-.release-operator__policy-control {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.release-operator__policy-control label {
-  display: grid;
-  gap: 6px;
-}
-
-.release-operator__policy-control span {
-  color: var(--sc-semantic-text-muted);
-  font-size: 12px;
-}
-
-.release-operator__definition-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.release-operator__definition-grid article {
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-component-panel-radius);
-  padding: 10px;
-}
-
-.release-operator__definition-grid strong,
-.release-operator__definition-grid span {
-  display: block;
-}
-
-.release-operator__definition-grid strong {
-  margin-bottom: 5px;
-  color: var(--sc-app-text-primary);
-  font-size: 13px;
-}
-
-.release-operator__definition-grid span {
-  color: var(--sc-semantic-text-muted);
-  font-size: 12px;
-  line-height: 1.5;
-  white-space: normal;
-}
-
-.release-operator__scope-grid article {
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-component-panel-radius);
-  padding: 12px;
-}
-
-.release-operator__scope-grid span {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--sc-semantic-text-muted);
-  font-size: 12px;
-}
-
-.release-operator__scope-grid strong {
-  color: var(--sc-app-text-primary);
-  font-size: 22px;
-}
-
-.release-operator__page-table {
-  margin-top: 12px;
-}
-
-.release-operator__section {
-  padding: 16px;
-}
-
-.release-operator__section--split {
+.release-operator__list-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--sc-product-space-2);
+  width: 100%;
+  min-width: 0;
 }
 
-.release-operator__section h2,
-.release-operator__section h3 {
-  margin: 0;
-  color: var(--sc-app-text-primary);
+.release-operator__list-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.release-operator__section-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-
-.release-operator__section p {
-  margin: 6px 0 0;
+.release-operator__list-meta {
+  flex: 0 0 auto;
   color: var(--sc-semantic-text-muted);
+  font-size: var(--sc-product-text-sm);
 }
 
-.release-operator__table-wrap {
-  overflow-x: auto;
+.release-operator__list-meta--wrap {
+  flex: 1 1 auto;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
-.release-operator__table :deep(table) {
+.release-operator__stage {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: var(--sc-product-space-2);
   width: 100%;
 }
 
-.release-operator__table :deep(th),
-.release-operator__table :deep(td) {
-  border-top: 1px solid var(--sc-app-border);
-  padding: 10px 8px;
-  text-align: left;
-  white-space: nowrap;
+.release-operator__stage strong {
+  font-variant-numeric: tabular-nums;
 }
 
-.release-operator__table :deep(th) {
-  color: var(--sc-semantic-text-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.release-operator__pill {
-  display: inline-flex;
+.release-operator__check {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) minmax(0, 1.3fr);
   align-items: center;
-  min-height: 24px;
-  border-radius: 999px;
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
-  padding: 0 9px;
-  font-size: 12px;
+  gap: var(--sc-product-space-2);
+  width: 100%;
 }
 
-.release-operator__pill--muted {
-  background: var(--sc-app-muted-bg);
-  color: var(--sc-semantic-text-muted);
+.release-operator__check .release-operator__list-meta {
+  flex: none;
 }
 
-.release-operator__pill--preview {
-  background: var(--sc-app-warning-bg);
-  color: var(--sc-app-warning-text);
+.release-operator__summary {
+  margin-top: var(--sc-product-panel-gap);
 }
 
-.release-operator__row-actions {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
-}
-
-.release-operator__row-action {
-  min-width: 52px;
-}
-
-.release-operator__empty {
-  border-top: 1px solid var(--sc-app-border);
-  padding-top: 12px;
+.release-operator__policy {
+  margin-bottom: var(--sc-product-panel-gap);
 }
 
 .release-operator__history {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--sc-product-panel-gap);
 }
 
-.release-operator__history ul {
-  display: grid;
-  gap: 8px;
-  margin: 12px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.release-operator__history li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-top: 1px solid var(--sc-app-border);
-  padding-top: 8px;
-}
-
-.release-operator__history span {
-  color: var(--sc-semantic-text-muted);
+.release-operator__table-card {
+  margin-top: var(--sc-product-panel-gap);
 }
 
 @media (max-width: 900px) {
-  .release-operator {
-    padding: 16px;
-  }
-
-  .release-operator__header,
-  .release-operator__section-head,
-  .release-operator__section--split {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .release-operator__metrics,
-  .release-operator__scope-grid,
-  .release-operator__product-grid,
-  .release-operator__delivery-lists,
-  .release-operator__pipeline,
-  .release-operator__summary-grid,
-  .release-operator__checks,
-  .release-operator__definition-grid,
+  .release-operator__delivery,
   .release-operator__history {
     grid-template-columns: 1fr;
   }
 
-  .release-operator__audience {
-    flex-direction: column;
+  .release-operator__stage,
+  .release-operator__check {
+    grid-template-columns: max-content minmax(0, 1fr);
   }
 
-  .release-operator__actions {
-    flex-wrap: wrap;
+  .release-operator__stage strong,
+  .release-operator__check .release-operator__list-meta {
+    grid-column: 2;
+    justify-self: start;
+    text-align: left;
+  }
+
+  .release-operator__product-select {
+    width: 100%;
+    min-width: 0;
   }
 }
 </style>

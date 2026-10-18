@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "52b6a3301e94d32662be68d389e070d92928bea3d03f1508b87ad29f80e8d82d",
+  "inputDigest": "df306ecb7f747b18832f72d3568e2edc6d1959ab4d773aa5b8d43b82acf1e1f8",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -318,6 +318,7 @@
         "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
         "frontend/apps/web/src/pages/ListPage.vue",
         "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
         "frontend/apps/web/src/views/SceneHealthView.vue",
         "frontend/apps/web/src/views/UsageAnalyticsView.vue"
       ],
@@ -671,7 +672,7 @@
   "schemaVersion": "frontend.official-design-alignment.inventory.v1",
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
-    "formalStyleSourceCount": 222,
+    "formalStyleSourceCount": 223,
     "internalVendorSelectorGapCount": 0,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,

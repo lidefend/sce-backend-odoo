@@ -12,7 +12,7 @@ REQUIREMENTS = {
         'class="brand-visual"',
         "pageText('brand_name', config.appBrand.name)",
         "grid-template-areas: 'auth brand'",
-        'v-if="!dbInputDisabled"',
+        'data-auth-composition="official-credential-form"',
         '<ScIcon name="user"',
         '<ScIcon name="lock"',
     ),
@@ -52,6 +52,16 @@ REQUIREMENTS = {
     ),
     "frontend/apps/web/src/pages/ListPage.vue": (
         'data-semantic-component="ListPage"',
+    ),
+    "frontend/apps/web/src/views/ReleaseOperatorView.vue": (
+        "<DashboardPattern>",
+        "<ScSection",
+        "<ScCard",
+        "<ScDescriptions",
+        "<ScList",
+        "<ScActionBar",
+        "<ScTable",
+        "<ScEmptyState",
     ),
     "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue": (
         'class="toolbar-total"',
@@ -99,6 +109,12 @@ FORBIDDEN_BY_SOURCE = {
     "frontend/apps/web/src/pages/ListPage.vue": (
         "ScPageHeader",
         "ProductPageHeader",
+    ),
+    "frontend/apps/web/src/views/ReleaseOperatorView.vue": (
+        'class="release-operator__table-wrap',
+        'class="release-operator__product-grid',
+        'class="release-operator__definition-grid',
+        'class="release-operator__section"',
     ),
 }
 FORBIDDEN_PRODUCT_HINTS = (

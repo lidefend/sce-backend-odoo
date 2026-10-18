@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ACTION_VIEW = ROOT / "frontend/apps/web/src/views/ActionView.vue"
+FAVORITE_RUNTIME = ROOT / "frontend/apps/web/src/app/runtime/useActionViewFavoriteRuntime.ts"
 REQUEST_RUNTIME = ROOT / "frontend/apps/web/src/app/runtime/actionViewRequestRuntime.ts"
 LOAD_REQUEST_RUNTIME = ROOT / "frontend/apps/web/src/app/runtime/actionViewLoadRequestRuntime.ts"
 API_DATA = ROOT / "addons/smart_core/handlers/api_data.py"
@@ -23,6 +24,7 @@ def main() -> int:
     errors: list[str] = []
     try:
         action_view = _read(ACTION_VIEW)
+        favorite_runtime = _read(FAVORITE_RUNTIME)
         request_runtime = _read(REQUEST_RUNTIME)
         load_request_runtime = _read(LOAD_REQUEST_RUNTIME)
         api_data = _read(API_DATA)
@@ -38,7 +40,6 @@ def main() -> int:
         "applySavedFilter,",
         "applyGroupBy: applyGroupByRuntime",
         "function applyGroupBy(field: string)",
-        "context: resolveEffectiveRequestContext()",
         "resolveEffectiveRequestContext,",
         "resolveEffectiveRequestContextRaw,",
         "function applyGroupBy(field: string)",
@@ -46,6 +47,14 @@ def main() -> int:
     for marker in action_markers:
         if marker not in action_view:
             errors.append(f"action_view missing marker: {marker}")
+
+    favorite_runtime_markers = [
+        "domain: options.resolveEffectiveFilterDomain(),",
+        "context: options.resolveEffectiveRequestContext(),",
+    ]
+    for marker in favorite_runtime_markers:
+        if marker not in favorite_runtime:
+            errors.append(f"favorite_runtime missing marker: {marker}")
 
     request_markers = [
         "export function resolveEffectiveRequestContext(filterContext: Dict, groupContext: Dict): Dict",
@@ -89,6 +98,7 @@ def main() -> int:
 
     print("[OK] search_groupby_savedfilters_guard")
     print(f"- action_view: {ACTION_VIEW}")
+    print(f"- favorite_runtime: {FAVORITE_RUNTIME}")
     print(f"- request_runtime: {REQUEST_RUNTIME}")
     print(f"- load_request_runtime: {LOAD_REQUEST_RUNTIME}")
     print(f"- api_data: {API_DATA}")
