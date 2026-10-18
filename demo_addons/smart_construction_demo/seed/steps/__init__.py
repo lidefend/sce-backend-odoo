@@ -23,4 +23,5 @@ from . import step_50_boq_wbs_demo  # noqa: F401
 from . import step_60_attachments_demo  # noqa: F401
 from . import step_z_demo_full_my_work  # noqa: F401
 from . import step_80_finalize_stages_demo  # noqa: F401
+from . import step_85_demo_passwords  # noqa: F401
 from . import step_90_verify_demo  # noqa: F401

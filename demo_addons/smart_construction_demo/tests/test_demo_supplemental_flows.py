@@ -7,12 +7,16 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def function(filename, name, **bindings):
-    tree = ast.parse((ROOT / "seed/steps" / filename).read_text())
+def function_from(path, name, **bindings):
+    tree = ast.parse(path.read_text())
     node = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == name)
     namespace = dict(bindings)
-    exec(compile(ast.Module(body=[node], type_ignores=[]), filename, "exec"), namespace)
+    exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), "exec"), namespace)
     return namespace[name]
+
+
+def function(filename, name, **bindings):
+    return function_from(ROOT / "seed/steps" / filename, name, **bindings)
 
 
 class RetiredExperimentalSeeds(unittest.TestCase):
@@ -54,13 +58,33 @@ class DemoCompanyIdentity(unittest.TestCase):
                     partner.name = value
 
         company.write = write
-        run = function("step_company_identity.py", "_run", DEMO_COMPANY_NAME="demo演示公司")
-        run(SimpleNamespace(ref=lambda xmlid: company))
+        apply_identity = function_from(
+            ROOT / "hooks.py",
+            "apply_demo_company_identity",
+            DEMO_COMPANY_NAME="demo演示公司",
+        )
+        env = SimpleNamespace(ref=lambda xmlid: company)
+        apply_identity(env)
         self.assertEqual(company.name, "demo演示公司")
         self.assertEqual(partner.name, "demo演示公司")
         self.assertEqual(writes, [{"name": "demo演示公司"}])
-        run(SimpleNamespace(ref=lambda xmlid: company))
+        apply_identity(env)
         self.assertEqual(writes, [{"name": "demo演示公司"}])
+        run = function(
+            "step_company_identity.py",
+            "_run",
+            apply_demo_company_identity=apply_identity,
+        )
+        self.assertIs(run(env), company)
+
+    def test_password_step_runs_after_every_demo_identity(self):
+        tree = ast.parse((ROOT / "seed/registry.py").read_text())
+        profiles = next(ast.literal_eval(n.value) for n in tree.body
+                        if isinstance(n, ast.AnnAssign) and n.target.id == "_PROFILES")
+        steps = profiles["demo_full"]
+        self.assertIn("demo_85_passwords", steps)
+        self.assertLess(steps.index("demo_80_finalize_stages"), steps.index("demo_85_passwords"))
+        self.assertLess(steps.index("demo_85_passwords"), steps.index("demo_90_verify"))
 
     def test_showroom_lookup_still_returns_the_project_search(self):
         projects = SimpleNamespace(
@@ -94,7 +118,85 @@ class DemoCompanyIdentity(unittest.TestCase):
         class UserError(Exception):
             pass
 
+        users = [
+            SimpleNamespace(id=1, login="wutao", active=True, share=False),
+            SimpleNamespace(id=2, login="demo_full", active=True, share=False),
+            SimpleNamespace(id=3, login="demo_role_project_read", active=True, share=False),
+        ]
+        checked = []
+        verify = function(
+            "step_90_verify_demo.py",
+            "_verify_demo_credentials",
+            DEMO_USER_PASSWORD="123456",
+            DEMO_PRINCIPAL_LOGINS=("wutao", "demo_full"),
+            UserError=UserError,
+            AccessDenied=AccessDenied,
+            demo_user_records=lambda env: users,
+            _check_user_credential=lambda env, user: checked.append(user.login),
+        )
+        verify(object())
+        self.assertEqual(checked, ["wutao", "demo_full", "demo_role_project_read"])
+
+    def test_demo_credentials_require_every_named_principal(self):
+        class AccessDenied(Exception):
+            pass
+
+        class UserError(Exception):
+            pass
+
+        verify = function(
+            "step_90_verify_demo.py",
+            "_verify_demo_credentials",
+            DEMO_USER_PASSWORD="123456",
+            DEMO_PRINCIPAL_LOGINS=("wutao", "demo_full"),
+            UserError=UserError,
+            AccessDenied=AccessDenied,
+            demo_user_records=lambda env: [
+                SimpleNamespace(login="wutao", active=True, share=False),
+            ],
+            _check_user_credential=lambda env, user: None,
+        )
+        with self.assertRaisesRegex(UserError, "demo_full"):
+            verify(object())
+
+    def test_credentials_read_the_target_user_not_the_seed_principal(self):
+        seen = []
+
+        class Api:
+            @staticmethod
+            def Environment(cr, uid, context):
+                return SimpleNamespace(
+                    user=SimpleNamespace(
+                        _check_credentials=lambda password, env: seen.append((uid, password))
+                    )
+                )
+
+        check = function(
+            "step_90_verify_demo.py",
+            "_check_user_credential",
+            api=Api,
+            DEMO_USER_PASSWORD="123456",
+        )
+        check(SimpleNamespace(cr="cursor", context={"lang": "zh_CN"}), SimpleNamespace(id=42))
+        self.assertEqual(seen, [(42, "123456")])
+
+    def test_password_step_reapplies_the_password(self):
+        events = []
+        run = function(
+            "step_85_demo_passwords.py",
+            "run",
+            apply_demo_user_passwords=lambda env: events.append(env),
+        )
+        env = object()
+        run(env)
+        self.assertEqual(events, [env])
+
+    def test_demo_user_records_include_seed_only_principals(self):
         class Users(list):
+            def __init__(self, items=(), seed_only=None):
+                super().__init__(items)
+                self.seed_only = seed_only
+
             def sudo(self):
                 return self
 
@@ -102,38 +204,39 @@ class DemoCompanyIdentity(unittest.TestCase):
                 return self
 
             def browse(self, ids):
-                return self
+                return Users(
+                    [SimpleNamespace(id=i, login="xmlid-%s" % i) for i in ids],
+                    self.seed_only,
+                )
+
+            def search(self, domain, limit=None):
+                return Users([self.seed_only], self.seed_only)
 
             def exists(self):
                 return self
 
-            def _check_credentials(self, password, env):
-                return self[0]._check_credentials(password, env)
+            def __or__(self, other):
+                return Users(list(self) + list(other), self.seed_only)
 
-        checked = []
-        principal = SimpleNamespace(
-            login="wutao",
-            password="hash",
-            _check_credentials=lambda password, env: checked.append(password),
-        )
-        users = Users([principal])
+        seed_only = SimpleNamespace(id=60, login="demo_full")
+        users = Users(seed_only=seed_only)
         env = {
             "ir.model.data": SimpleNamespace(
                 sudo=lambda: SimpleNamespace(
-                    search=lambda domain: SimpleNamespace(exists=lambda: [SimpleNamespace(res_id=1)])
+                    search=lambda domain: SimpleNamespace(
+                        exists=lambda: [SimpleNamespace(res_id=39)]
+                    )
                 )
             ),
-            "res.users": SimpleNamespace(sudo=lambda: users),
+            "res.users": users,
         }
-        verify = function(
-            "step_90_verify_demo.py",
-            "_verify_demo_credentials",
-            DEMO_USER_PASSWORD="123456",
-            UserError=UserError,
-            AccessDenied=AccessDenied,
-        )
-        verify(env)
-        self.assertEqual(checked, ["123456"])
+        records = function_from(
+            ROOT / "hooks.py",
+            "demo_user_records",
+            DEMO_DATA_MODULE="smart_construction_demo",
+            DEMO_PRINCIPAL_LOGINS=("demo_full",),
+        )(env)
+        self.assertEqual([record.login for record in records], ["xmlid-39", "demo_full"])
 
 
 class Opening:

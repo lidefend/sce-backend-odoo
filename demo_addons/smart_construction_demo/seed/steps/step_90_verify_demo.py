@@ -3,7 +3,7 @@ from odoo import api, fields
 from odoo.exceptions import AccessDenied, UserError
 
 from ..registry import SeedStep, register
-from ...hooks import DEMO_USER_PASSWORD
+from ...hooks import DEMO_PRINCIPAL_LOGINS, DEMO_USER_PASSWORD, demo_user_records
 
 
 PROJECT_INIT_CODE = "DEMO-PJ-INIT"
@@ -95,17 +95,31 @@ def _verify_company_identity(env):
         raise UserError("Demo company identity must be %s." % DEMO_COMPANY_NAME)
 
 
+def _check_user_credential(env, user):
+    """Check the password as the target user, not as the seed principal.
+
+    ``res.users._check_credentials`` reads ``self.env.user`` rather than the
+    record it is called on. The seed environment runs as ``__system__``, so
+    calling it on a browsed record would re-check the seed user and make every
+    demo identity look broken.
+    """
+    user_env = api.Environment(env.cr, user.id, dict(env.context))
+    user_env.user._check_credentials(DEMO_USER_PASSWORD, {"interactive": False})
+
+
 def _verify_demo_credentials(env):
-    Users = env["res.users"].sudo().with_context(active_test=False)
-    rows = env["ir.model.data"].sudo().search(
-        [("module", "=", "smart_construction_demo"), ("model", "=", "res.users")]
-    )
-    users = Users.browse([row.res_id for row in rows.exists()]).exists()
+    users = demo_user_records(env)
     if not users:
         raise UserError("Every seeded demo user must carry the showcase password.")
+    logins = {user.login for user in users}
+    missing = [login for login in DEMO_PRINCIPAL_LOGINS if login not in logins]
+    if missing:
+        raise UserError("Demo principal missing: %s" % ", ".join(missing))
     for user in users:
+        if user.login in DEMO_PRINCIPAL_LOGINS and (not user.active or user.share):
+            raise UserError("Demo principal must be an active internal user: %s" % user.login)
         try:
-            user._check_credentials(DEMO_USER_PASSWORD, {"interactive": False})
+            _check_user_credential(env, user)
         except AccessDenied as error:
             raise UserError("Demo authentication failed for %s." % user.login) from error
 

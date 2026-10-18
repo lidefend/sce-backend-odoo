@@ -12,5 +12,16 @@
             <field name="company_ids" eval="[(6, 0, [ref('base.main_company')])]"/>
             <field name="groups_id" eval="[(6, 0, [ref('base.group_user'), ref('smart_construction_core.group_sc_business_full')])]"/>
         </record>
+        <record id="user_demo_full" model="res.users">
+            <field name="name">Demo-全能力</field>
+            <field name="login">demo_full</field>
+            <field name="active" eval="True"/>
+            <field name="share" eval="False"/>
+            <field name="tz">Asia/Shanghai</field>
+            <field name="lang">zh_CN</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="company_ids" eval="[(6, 0, [ref('base.main_company')])]"/>
+            <field name="groups_id" eval="[(6, 0, [ref('base.group_user'), ref('smart_construction_core.group_sc_business_full'), ref('smart_construction_core.group_sc_cap_project_read')])]"/>
+        </record>
     </data>
 </odoo>
