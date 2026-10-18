@@ -14,6 +14,36 @@ from ..core.handler_registry import HANDLER_REGISTRY  # 全局注册表
 
 _logger = logging.getLogger(__name__)
 
+DATABASE_HINT_HEADERS = (
+    "X-Odoo-Database",
+    "X-Odoo-DB",
+    "X-DB",
+    "X-Odoo-DB-Locked",
+)
+
+
+def _request_database_hint_headers() -> list[str]:
+    """Client database hint headers present on the current request.
+
+    The entry refuses these before proxying.  Checking here as well keeps a
+    direct loopback call from turning a hint into an authentication input, and
+    an unavailable test stub simply reports no hint instead of raising.
+    """
+
+    try:
+        headers = request.httprequest.headers
+    except Exception:
+        return []
+    names = []
+    for name in DATABASE_HINT_HEADERS:
+        try:
+            value = headers.get(name)
+        except Exception:
+            value = None
+        if str(value or "").strip():
+            names.append(name)
+    return names
+
 
 def _to_bool(value: Any) -> bool:
     if isinstance(value, bool):
@@ -238,7 +268,7 @@ class LoginHandler(BaseIntentHandler):
         if password_error:
             return password_error
         # Batch C: a client database hint is a conflict, not a routing input.
-        if "db" in params or "database" in params:
+        if "db" in params or "database" in params or _request_database_hint_headers():
             return self.err(409, "NS_DATABASE_HINT_CONFLICT database hints are not accepted")
         want_company_id = params.get("company_id")
         contract_mode = _resolve_contract_mode(params)

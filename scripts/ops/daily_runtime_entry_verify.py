@@ -7,7 +7,11 @@ It proves, against the running host, that:
   serving duty's nginx;
 * every other declared face publishes only on the loopback interface;
 * a path namespace selects the immutable database binding;
-* a client database hint (``X-Odoo-DB`` / ``?db=``) is refused with 409;
+* every declared client database hint (``X-Odoo-Database`` / ``X-Odoo-DB`` /
+  ``X-DB`` / ``X-Odoo-DB-Locked`` / ``?db=``) is refused with 409;
+* a client-supplied namespace header cannot override the path namespace;
+* each namespace's login response scopes its session cookie to that namespace
+  path, so two duties cannot overwrite each other's browser session;
 * an unknown namespace is refused with 404 and a missing one with 400;
 * both duties publish the same deployed source revision and frontend artifact;
 * the platform nginx is reachable from the serving nginx on the declared
@@ -145,6 +149,48 @@ def probe(path, header=None, query=None):
     except ValueError:
         payload = {}
     return code, payload if isinstance(payload, dict) else {}, content_type
+
+
+def probe_headers(path, headers=None, query=None):
+    if query:
+        separator = "&" if "?" in path else "?"
+        path += separator + "db=" + urllib.parse.quote(query)
+    code, body, content_type = http_full(path, headers or {})
+    try:
+        payload = json.loads(body)
+    except ValueError:
+        payload = {}
+    return code, payload if isinstance(payload, dict) else {}, content_type
+
+
+def response_headers(path):
+    """Return the response headers for ``path`` without following redirects."""
+
+    request = urllib.request.Request(
+        "http://127.0.0.1:%d%s" % (int(ENTRY["public_entry"]["port"]), path))
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            return response.getcode(), response.headers
+    except urllib.error.HTTPError as error:
+        return error.code, error.headers
+    except Exception as error:
+        return 0, str(error)
+
+
+def cookie_paths(headers, name="session_id"):
+    """Return every ``Path`` value set for cookie ``name``, in response order."""
+
+    try:
+        raw_values = headers.get_all("Set-Cookie") or []
+    except Exception:
+        return []
+    paths = []
+    for raw in raw_values:
+        if not str(raw).lower().startswith(name.lower() + "="):
+            continue
+        match = re.search(r"(?i)(?:^|;)\s*Path=([^;]+)", str(raw))
+        paths.append(match.group(1).strip() if match else "<unset>")
+    return paths
 
 
 def runtime_version(path, header=None, query=None):
@@ -320,6 +366,22 @@ add("both_paths_serve_the_same_spa_entry", bool(served_entry) and served_entry =
 add("served_entry_asset_answers", bool(served_entry) and asset_code == 200,
     {"asset": served_entry, "code": asset_code})
 
+# ---- login cookie scope ---------------------------------------------------
+# Odoo emits its session cookie with `Path=/`.  The entry must scope it to the
+# namespace it served; a platform hop that also rewrites the path would produce
+# `/platform-admin/platform-admin/`, which the browser never sends back.
+demo_login_code, demo_login_headers = response_headers("%s/web/login" % tenant_base)
+platform_login_code, platform_login_headers = response_headers("%s/web/login" % platform_base)
+demo_cookie_paths = cookie_paths(demo_login_headers)
+platform_cookie_paths = cookie_paths(platform_login_headers)
+add("tenant_login_scopes_the_session_cookie_to_the_tenant_namespace",
+    demo_login_code == 200 and demo_cookie_paths == ["/t/demo/"],
+    {"code": demo_login_code, "paths": demo_cookie_paths, "expected": ["/t/demo/"]})
+add("platform_login_scopes_the_session_cookie_to_the_platform_namespace",
+    platform_login_code == 200 and platform_cookie_paths == ["/platform-admin/"],
+    {"code": platform_login_code, "paths": platform_cookie_paths,
+     "expected": ["/platform-admin/"]})
+
 hint_contract = namespace_routes.get("client_database_hint") or {}
 hint_status = int(hint_contract.get("status") or 0)
 hint_code = str(hint_contract.get("code") or "")
@@ -336,10 +398,19 @@ tenant_code, tenant_version, tenant_type = probe("%s/api/runtime-version" % tena
 platform_code, platform_version, platform_type = probe("%s/api/runtime-version" % platform_base)
 root_code, root_payload, root_type = probe("/api/runtime-version")
 root_login_code, root_login_payload, root_login_type = probe("/api/v1/auth/page-contracts")
-header_hint_code, header_hint_payload, header_hint_type = probe(
-    "%s/api/runtime-version" % tenant_base, header=platform_db)
+hint_headers = [str(name) for name in hint_contract.get("headers") or []]
+hint_results = {
+    name: probe_headers("%s/api/runtime-version" % tenant_base, headers={name: platform_db})
+    for name in hint_headers
+}
 query_hint_code, query_hint_payload, query_hint_type = probe(
     "%s/api/runtime-version" % tenant_base, query=platform_db)
+spoof_code, spoof_payload, spoof_type = probe_headers(
+    "%s/api/runtime-version" % tenant_base,
+    headers={"X-SC-Namespace": platform_ns.get("alias") or "platform",
+             "X-SC-Audience": "platform-admin"},
+)
+spoof_expected_db = serving_db
 unknown_path = "%s/%s/api/runtime-version" % (tenant_prefix, __UNKNOWN_ALIAS__)
 unknown_shell_path = "%s/%s/" % (tenant_prefix, __UNKNOWN_ALIAS__)
 invalid_prefix_path = "%s/%s/" % (tenant_prefix, "sc_undeclared_entry_probe")
@@ -366,18 +437,27 @@ add("root_login_contract_requires_a_namespace",
     {"path": "/api/v1/auth/page-contracts", "code": root_login_code,
      "body": root_login_payload, "content_type": root_login_type,
      "expected_status": missing_status, "expected_code": missing_code})
-add("client_database_header_is_refused",
-    header_hint_code == hint_status and header_hint_payload.get("error") == hint_code
-    and header_hint_type == "application/json",
-    {"path": "%s/api/runtime-version" % tenant_base, "header": platform_db,
-     "code": header_hint_code, "body": header_hint_payload,
-     "content_type": header_hint_type, "expected_status": hint_status, "expected_code": hint_code})
+for hint_header in hint_headers:
+    hint_code_seen, hint_payload, hint_type_seen = hint_results[hint_header]
+    add("client_database_hint_%s_is_refused" % hint_header.lower().replace("-", "_"),
+        hint_code_seen == hint_status and hint_payload.get("error") == hint_code
+        and hint_type_seen == "application/json",
+        {"path": "%s/api/runtime-version" % tenant_base, "header": hint_header,
+         "value": platform_db, "code": hint_code_seen, "body": hint_payload,
+         "content_type": hint_type_seen, "expected_status": hint_status,
+         "expected_code": hint_code})
 add("client_database_query_is_refused",
     query_hint_code == hint_status and query_hint_payload.get("error") == hint_code
     and query_hint_type == "application/json",
     {"path": "%s/api/runtime-version" % tenant_base, "query": platform_db,
      "code": query_hint_code, "body": query_hint_payload,
      "content_type": query_hint_type, "expected_status": hint_status, "expected_code": hint_code})
+add("client_namespace_header_cannot_override_the_path",
+    spoof_code == 200 and spoof_payload.get("database") == spoof_expected_db,
+    {"path": "%s/api/runtime-version" % tenant_base,
+     "sent_headers": {"X-SC-Namespace": str(platform_ns.get("alias") or "platform")},
+     "code": spoof_code, "observed": spoof_payload.get("database"),
+     "expected": spoof_expected_db, "content_type": spoof_type})
 add("unknown_namespace_is_refused",
     unknown_status_observed == unknown_status and unknown_payload.get("error") == unknown_code
     and unknown_type_expected and unknown_type == unknown_type_expected,
@@ -470,6 +550,22 @@ for label, container, expected_strip in (
         and "$sc_entry_platform_strip" in conf
         and "rewrite ^/platform-admin" in conf,
         {"container": container, "strip_guard_present": "$sc_entry_platform_strip" in conf})
+    add("%s_rendered_config_scopes_the_session_cookie_once" % label,
+        bool(conf)
+        and "map $sc_entry_platform_strip $sc_proxy_cookie_path {" in conf
+        and "proxy_cookie_path / $sc_proxy_cookie_path;" in conf
+        and "proxy_cookie_path / $sc_entry_cookie_path;" not in conf,
+        {"container": container,
+         "cookie_map_present": "map $sc_entry_platform_strip $sc_proxy_cookie_path {" in conf,
+         "double_rewrite_present": "proxy_cookie_path / $sc_entry_cookie_path;" in conf})
+    add("%s_rendered_config_refuses_every_declared_database_hint" % label,
+        bool(conf) and all(
+            token in conf for token in (
+                "$http_x_odoo_database", "$http_x_odoo_db", "$http_x_db",
+                "$http_x_odoo_db_locked", "$arg_db",
+            )
+        ),
+        {"container": container})
 
 expected_platform_upstream = str(platform_route.get("upstream") or "")
 add("serving_nginx_forwards_the_platform_path_to_the_platform_face",

@@ -381,7 +381,11 @@ class IntentDispatcher(http.Controller):
             # 修复 Header 传 DB 但后端不读的问题：统一 DB 解析优先级 + 安全边界
             hdr = request.httprequest.headers
             x_db_locked_hdr = hdr.get("X-Odoo-DB-Locked")
-            x_db_hdr = hdr.get("X-Odoo-DB") or hdr.get("X-DB")
+            x_db_hdr = (
+                hdr.get("X-Odoo-Database")
+                or hdr.get("X-Odoo-DB")
+                or hdr.get("X-DB")
+            )
 
             def _is_local_request() -> bool:
                 try:
