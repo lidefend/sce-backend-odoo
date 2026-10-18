@@ -5,15 +5,27 @@ The platform control database installs only ``smart_core``.  In that mode the
 startup surface and the standalone menu APIs must expose exactly the same
 minimum navigation contract; otherwise ``system.init`` succeeds while
 ``/api/menu/*`` raises ``delivery_navigation_contract_empty``.
+
+The single scene leaf is a contract-declared target, not a business menu.  It
+carries the same synthetic identity convention the scene navigation builder
+uses, so the canonical navigation projector can authorize it without inventing
+a real ``ir.ui.menu`` row or exposing platform configuration menus.
 """
 
 from __future__ import annotations
 
+import zlib
 from typing import List
 
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 
 SOURCE = "platform_minimum_surface"
+WORKSPACE_SCENE_KEY = "workspace.home"
+
+
+def _synthetic_menu_id(key: str, base: int = 700_000_000, span: int = 200_000_000) -> int:
+    raw = zlib.crc32(str(key or "").encode("utf-8")) & 0xFFFFFFFF
+    return int(base + (raw % span))
 
 
 def _is_any_module_installed(env, module_names: List[str]) -> bool:
@@ -57,24 +69,36 @@ def is_platform_minimum_surface_mode(env, delivery_identity: dict | None = None)
 
 
 def build_platform_minimum_nav_contract() -> dict:
+    workspace_menu_id = _synthetic_menu_id(f"scene:{WORKSPACE_SCENE_KEY}")
+    workspace_entry_target = {
+        "type": "scene",
+        "scene_key": WORKSPACE_SCENE_KEY,
+        "route": "/",
+    }
     workspace_leaf = {
-        "key": "scene:workspace.home",
+        "key": f"scene:{WORKSPACE_SCENE_KEY}",
         "label": "角色首页",
         "title": "角色首页",
-        "menu_id": None,
+        "menu_id": workspace_menu_id,
+        "menu_xmlid": "scene.contract.workspace_home",
         "children": [],
-        "scene_key": "workspace.home",
+        "scene_key": WORKSPACE_SCENE_KEY,
+        "route": "/",
+        "entry_target": dict(workspace_entry_target),
         "meta": {
-            "scene_key": "workspace.home",
+            "scene_key": WORKSPACE_SCENE_KEY,
             "action_type": "scene.contract",
             "scene_source": SOURCE,
+            "menu_xmlid": "scene.contract.workspace_home",
+            "route": "/",
+            "entry_target": dict(workspace_entry_target),
         },
     }
     group_node = {
         "key": "group:role_primary",
         "label": "我的场景",
         "title": "我的场景",
-        "menu_id": None,
+        "menu_id": _synthetic_menu_id("group:role_primary", base=640_000_000, span=40_000_000),
         "children": [workspace_leaf],
         "meta": {
             "group_key": "role_primary",
@@ -85,7 +109,7 @@ def build_platform_minimum_nav_contract() -> dict:
         "key": "root:scene_contract",
         "label": "场景导航",
         "title": "场景导航",
-        "menu_id": None,
+        "menu_id": _synthetic_menu_id("root:scene_contract", base=600_000_000, span=20_000_000),
         "children": [group_node],
         "meta": {
             "scene_source": SOURCE,
@@ -93,8 +117,8 @@ def build_platform_minimum_nav_contract() -> dict:
         },
     }
     default_route = {
-        "menu_id": None,
-        "scene_key": "workspace.home",
+        "menu_id": workspace_menu_id,
+        "scene_key": WORKSPACE_SCENE_KEY,
         "route": "/",
         "reason": SOURCE,
     }

@@ -42,6 +42,38 @@ def _install_stubs():
         "odoo.addons.smart_core.utils.backend_contract_boundaries",
         MENU_CONFIG_POLICY_MODEL="ui.menu.config.policy",
     )
+    _install_module(
+        "odoo.addons.smart_core.core.source_authority",
+        build_source_authority_contract=lambda *args, **kwargs: {},
+    )
+    _install_module(
+        "odoo.addons.smart_core.core.delivery_menu_defaults",
+        build_delivery_menu_child=lambda *args, **kwargs: {},
+        build_delivery_menu_group=lambda *args, **kwargs: {},
+        build_delivery_menu_root=lambda *args, **kwargs: {},
+        synthetic_menu_id=lambda *args, **kwargs: 0,
+    )
+    _install_module(
+        "odoo.addons.smart_core.core.navigation_entry_target",
+        build_web_surface_entry_target=lambda *args, **kwargs: {},
+    )
+    _install_module(
+        "odoo.addons.smart_core.delivery.menu_delivery_convergence_service",
+        MenuDeliveryConvergenceService=type("MenuDeliveryConvergenceService", (), {}),
+    )
+    _install_module(
+        "odoo.addons.smart_core.delivery.menu_fact_service",
+        MenuFactService=type("MenuFactService", (), {}),
+    )
+    _install_module(
+        "odoo.addons.smart_core.delivery.native_config_menu_projection",
+        native_config_delivery_groups=lambda *args, **kwargs: [],
+    )
+    _install_module(
+        "odoo.addons.smart_core.security.platform_admin",
+        user_is_platform_admin=lambda user: False,
+        can_discover_platform_capabilities=lambda user: False,
+    )
     return odoo
 
 
@@ -92,10 +124,14 @@ class PlatformMinimumNavContractTests(unittest.TestCase):
             "odoo.addons.smart_core.delivery.final_menu_navigation_service",
             SMART_CORE_DIR / "delivery" / "final_menu_navigation_service.py",
         )
-        return contract, service_module
+        menu_service_module = _load_module(
+            "odoo.addons.smart_core.delivery.menu_service",
+            SMART_CORE_DIR / "delivery" / "menu_service.py",
+        )
+        return contract, service_module, menu_service_module
 
     def test_platform_mode_contract_is_non_empty_and_scene_isolated(self):
-        contract, _service = self._load()
+        contract, _service, _menu_service = self._load()
 
         payload = contract.build_platform_minimum_nav_contract()
         scene_keys = []
@@ -113,9 +149,51 @@ class PlatformMinimumNavContractTests(unittest.TestCase):
         self.assertEqual(payload["default_route"]["scene_key"], "workspace.home")
         self.assertEqual(payload["default_route"]["reason"], "platform_minimum_surface")
         self.assertTrue(payload["meta"]["platform_minimum_surface"])
+        leaf = payload["nav"][0]["children"][0]["children"][0]
+        self.assertIsInstance(leaf["menu_id"], int)
+        self.assertGreater(leaf["menu_id"], 0)
+        self.assertEqual(leaf["entry_target"]["type"], "scene")
+        self.assertEqual(leaf["entry_target"]["scene_key"], "workspace.home")
+        self.assertEqual(payload["default_route"]["menu_id"], leaf["menu_id"])
+
+    def test_declared_scene_leaf_survives_route_authority_projection(self):
+        contract, _service, menu_service_module = self._load()
+        payload = contract.build_platform_minimum_nav_contract()
+        nav = payload["nav"]
+        leaf = nav[0]["children"][0]["children"][0]
+        specs = menu_service_module.MenuService._walk_nav_declared_entry_specs(nav)
+        self.assertEqual(len(specs), 1)
+        self.assertEqual(specs[0]["menu_id"], leaf["menu_id"])
+        self.assertEqual(specs[0]["entry_target"]["type"], "scene")
+        authority = {
+            "primary_actions": [],
+            "role_home_actions": [
+                {
+                    **specs[0],
+                    "route_kind": "ROLE_HOME_ACTION",
+                    "action_id": 0,
+                    "allowed_operation": "read",
+                    "required_capability": "menu_container_visible",
+                    "source": "nav.declared_entry",
+                }
+            ],
+            "contextual_actions": [],
+            "admin_actions": [],
+            "denied_actions": [],
+            "menu_containers": [],
+        }
+        filtered = menu_service_module.MenuService.filter_nav_by_route_authority(nav, authority)
+        self.assertEqual(len(filtered), 1)
+        filtered_leaf = filtered[0]["children"][0]["children"][0]
+        self.assertEqual(filtered_leaf["menu_id"], leaf["menu_id"])
+        projected = menu_service_module.MenuService.project_canonical_navigation(filtered, authority)
+        projected_leaf = projected[0]["children"][0]["children"][0]
+        self.assertEqual(projected_leaf["canonical_navigation"]["state"], "enabled")
+        self.assertEqual(projected_leaf["canonical_navigation"]["route"], "/")
+        self.assertEqual(projected_leaf["canonical_navigation"]["menu_id"], leaf["menu_id"])
 
     def test_platform_menu_service_returns_the_same_minimum_surface(self):
-        contract, service_module = self._load()
+        contract, service_module, _menu_service = self._load()
         env = _Env(installed_modules=0)
         self.assertTrue(contract.is_platform_minimum_surface_mode(env, {}))
 
@@ -131,7 +209,7 @@ class PlatformMinimumNavContractTests(unittest.TestCase):
         self.assertEqual(navigation["meta"]["nav_source"], "platform_minimum_surface")
 
     def test_industry_install_leaves_platform_minimum_mode(self):
-        contract, _service = self._load()
+        contract, _service, _menu_service = self._load()
         env = _Env(installed_modules=1)
         # The hook is stubbed to None, so configure the fallback module list.
         env._params = _RecordSet()

@@ -101,7 +101,7 @@ def _delivery_node_to_fact(node: dict) -> dict:
         "configurable": configurable,
         "synthetic": bool(runtime_menu_id and menu_id and runtime_menu_id != menu_id),
         "node_kind": "group" if children else "leaf",
-        "key": f"menu:{menu_id}" if menu_id else (_text(node.get("key")) or "menu:unknown"),
+        "key": _text(node.get("key")) or (f"menu:{menu_id}" if menu_id else "menu:unknown"),
         "name": label,
         "label": label,
         "title": label,
