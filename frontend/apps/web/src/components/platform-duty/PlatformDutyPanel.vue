@@ -57,7 +57,7 @@
       <header class="platform-duty__inline-header">
         <h3 class="platform-duty__inline-title">租户登记表</h3>
         <p class="platform-duty__inline-meta">
-          来源 GET /api/ops/tenants · 共 {{ tenantRegistry.count }} 条
+          来源 GET {{ TENANT_REGISTRY_ENDPOINT }} · 共 {{ tenantRegistry.count }} 条
         </p>
       </header>
       <p v-if="tenantRegistry.status === 'loading'" class="platform-duty__pending">正在读取登记数据…</p>
@@ -112,7 +112,7 @@ import { computed, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { apiRequest } from '../../api/client';
 import { useSessionStore } from '../../stores/session';
-import { resolveDutyAction, isWriteEndpoint, type DutyAction } from './dutyAction';
+import { DECLARED_PLATFORM_API_ENDPOINTS, resolveDutyAction, isWriteEndpoint, type DutyAction } from './dutyAction';
 import ScButton from '../design-system/ScButton.vue';
 import ScTable from '../design-system/ScTable.vue';
 
@@ -140,7 +140,7 @@ interface OpsTenantsResponse {
   data?: { tenants?: TenantRegistryRow[]; count?: number };
 }
 
-const TENANT_REGISTRY_ENDPOINT = '/api/ops/tenants';
+const TENANT_REGISTRY_ENDPOINT = DECLARED_PLATFORM_API_ENDPOINTS.tenantRegistry;
 
 const TENANT_COLUMNS = [
   { colKey: 'namespace_id', title: '命名空间' },

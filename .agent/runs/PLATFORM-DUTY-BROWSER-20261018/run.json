@@ -81,7 +81,7 @@
     "dist_index_html_sha256": "29a79f8d42e49f9dc2a3f670aa71f8a29ce2e84ab9158c1333af012a672fb358",
     "runtime_version": {
       "demo": {
-        "product_version": "1.0.0-rc.20",
+        "product_version_source": "VERSION",
         "source_revision": "0d61df8e5290b8a7d001f8713d553e6ca88295fe",
         "git_sha": "0d61df8e5290b8a7d001f8713d553e6ca88295fe",
         "database": "sc_demo",
@@ -92,7 +92,7 @@
         "audience": "tenant"
       },
       "platform": {
-        "product_version": "1.0.0-rc.20",
+        "product_version_source": "VERSION",
         "source_revision": "0d61df8e5290b8a7d001f8713d553e6ca88295fe",
         "git_sha": "0d61df8e5290b8a7d001f8713d553e6ca88295fe",
         "database": "sc_platform_control",

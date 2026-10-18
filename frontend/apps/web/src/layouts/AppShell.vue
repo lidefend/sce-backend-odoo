@@ -616,6 +616,7 @@ const recordContextSearchPlaceholder = computed(() =>
 const roleLandingPath = computed(() => session.resolveLandingPath('/'));
 const initMeta = computed(() => asDict(session.initMeta));
 const isTenantConfigAdmin = computed(() => session.user?.is_tenant_config_admin === true);
+const isPlatformAdmin = computed(() => session.user?.is_platform_admin === true);
 const visiblePublishedApps = computed(() => (isTenantConfigAdmin.value ? appCatalog.value : []));
 const showPublishedApps = computed(() => isTenantConfigAdmin.value && (visiblePublishedApps.value.length > 0 || appCatalogLoading.value));
 const activeAppId = computed(() => {
@@ -985,7 +986,7 @@ const pageTitle = computed(() => pageIdentity.title.value);
 const topbarSubtitle = computed(() => pageIdentity.subtitle.value);
 
 provide('pageTitle', pageTitle);
-const showHud = computed(() => isTenantConfigAdmin.value && hudEnabled.value && !isDeliveryMode.value);
+const showHud = computed(() => isPlatformAdmin.value && hudEnabled.value && !isDeliveryMode.value);
 const themeMode = ref<ScTheme>('system');
 const themeLabel = computed(() => (themeMode.value === 'system' ? '跟随系统' : themeMode.value === 'dark' ? '暗色' : '亮色'));
 const profileMode = ref<ScThemeProfile>('enterprise-neutral');

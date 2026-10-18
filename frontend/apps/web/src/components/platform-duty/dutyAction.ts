@@ -18,8 +18,16 @@ export type DutyAction =
 export const SPA_ROUTE_PREFIXES = ['/admin/'] as const;
 export const SPA_ROUTE_EXACT = ['/'] as const;
 
+/** Exact platform-control routes declared by the backend duty contract. */
+export const DECLARED_PLATFORM_API_ENDPOINTS = {
+  tenantRegistry: '/api/ops/tenants',
+  maintenanceAccess: '/api/ops/maintenance/access',
+  jobStatus: '/api/ops/job/status',
+  subscriptionSet: '/api/ops/subscription/set',
+} as const;
+
 /** Endpoints that mutate state and therefore must not be auto-fetched. */
-export const WRITE_ENDPOINTS = ['/api/ops/subscription/set'] as const;
+export const WRITE_ENDPOINTS = [DECLARED_PLATFORM_API_ENDPOINTS.subscriptionSet] as const;
 
 export function isApiEndpoint(route: string): boolean {
   return String(route ?? '').trim().startsWith('/api/');
