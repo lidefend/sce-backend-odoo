@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-SEED-REPRO-20261018",
+  "branch": "codex/daily-platform-demo-20261018",
+  "status": "completed",
+  "baseline_sha": "d52ce8a0b81c7ddbc6644bd04d66b56440fe8cc2",
+  "commit_sha": "75e81bf05f21add7692875e5261a6687a4f17e19",
+  "authorization_id": "owner-standing-auth-20261018",
+  "scope": [
+    "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_showcase_gate.py",
+    ".agent/runs/DEMO-SEED-REPRO-20261018/run.json",
+    ".agent/runs/DEMO-SEED-REPRO-20261018/test.log"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local python3 only; no database, container or deployment access",
+    "limitation": "odoo python package is not importable in this executor (ModuleNotFoundError: odoo); Odoo-tagged contract test is written but not executed here"
+  },
+  "change": {
+    "problem": "scenario_loader reseed paths (load_base_seed/load_scenario) reapplied demo passwords but never re-applied the published company identity, so a rebuilt tenant could keep 'My Company'.",
+    "fix": "apply_demo_company_identity(env) now runs at both reseed entry points, before any demo record conversion; idempotent because it only writes when the name differs.",
+    "unchanged": [
+      "addons/smart_core/** not modified",
+      "config/nginx, docker-compose.yml, entry/namespace files not modified",
+      "user module not touched"
+    ]
+  },
+  "checks": {
+    "demo_supplemental_offline": {
+      "command": "python3 demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+      "result": "Ran 58 tests; OK",
+      "exit_code": 0,
+      "covers": [
+        "seed guard rejects non-demo database, non-demo SC_ENVIRONMENT, missing SC_DEMO_USER_PASSWORD",
+        "profile starts with demo_company_identity and ends with demo_90_verify",
+        "profile replay executes each step once per run in stable order",
+        "reseed entry points restore company identity before conversion",
+        "only the identity step writes the company name",
+        "existing user/project updated instead of duplicated; lifecycle stays draft on create"
+      ]
+    },
+    "demo_funding_offline": {
+      "command": "python3 demo_addons/smart_construction_demo/tests/test_demo_funding_baseline_lifecycle.py",
+      "result": "Ran 30 tests; OK",
+      "exit_code": 0
+    },
+    "demo_boq_offline": {
+      "command": "python3 demo_addons/smart_construction_demo/tests/test_demo_boq_import_batch.py",
+      "result": "Ran 5 tests; OK",
+      "exit_code": 0
+    },
+    "odoo_contract_test": {
+      "command": "Odoo tagged test TestDemoSeedReproducibilityContract (sc_gate/demo_gate)",
+      "result": "not_run",
+      "reason": "Odoo runtime unavailable in this executor"
+    }
+  },
+  "acceptance_status": {
+    "company_name_authored_in_seed_layer": "pass (hooks + profile step + reseed entry)",
+    "all_demo_principals_password_123456": "pass at seed layer (apply_demo_user_passwords + demo_90_verify credential check); runtime login not re-probed here",
+    "non_demo_guard_refusal": "pass (offline tests, both hooks and registry guards)",
+    "profile_idempotent_no_duplicates_no_revert": "pass at unit level (tests above)",
+    "rebuild_reseed_runtime_readback": "not_run (no Odoo/Docker)"
+  },
+  "evidence": [
+    ".agent/runs/DEMO-SEED-REPRO-20261018/test.log"
+  ],
+  "blockers": [],
+  "next_exact_step": "Run the two offline demo suites in CI or on the demo duty host and confirm sc_demo company name and 123456 logins after a real rebuild; no further local write."
+}
