@@ -95,46 +95,6 @@ class DemoStandard(models.Model):
 '''
 
 
-# The extension fixture is declared twice on the same model and both classes
-# live in one file, so the duplicate registry names the same file in both roles.
-# The same declaration is also a money-field override, so both registries apply.
-DUPLICATE_OVERRIDE_DECLARATION = {
-    "company_field_overrides": {
-        "reason": "a redefinition is a decision, not a silent override",
-        "models": [
-            {
-                "model": "demo.overridden",
-                "field": "currency_id",
-                "file": "models/definition.py",
-                "reason": "the extension derives the currency from the owning company",
-            }
-        ],
-    },
-    "duplicate_field_declarations": {
-        "reason": "a field declared twice is the union of both definitions",
-        "models": [
-            {
-                "model": "demo.overridden",
-                "field": "currency_id",
-                "declarations": [
-                    {
-                        "file": "addons/demo_module/models/definition.py",
-                        "role": "owning class",
-                        "adds": "the base definition",
-                    },
-                    {
-                        "file": "addons/demo_module/models/definition.py",
-                        "role": "extension class",
-                        "adds": "the company-derived currency",
-                    },
-                ],
-                "reason": "the extension derives the currency from the owning company",
-            }
-        ],
-    }
-}
-
-
 COMPANY_CURRENCY_XML = """<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <record id="base.main_company" model="res.company">
@@ -214,7 +174,7 @@ class FactSourceCoverageGuardTest(unittest.TestCase):
         self.assertGreater(len(report["caller_context_currency_models"]), 0)
         self.assertGreater(len(report["currency_write_paths"]), 0)
         self.assertEqual("verified", report["company_currency_authority"]["status"])
-        self.assertGreater(len(report["duplicate_field_declarations"]), 0)
+        self.assertEqual([], report["duplicate_field_declarations"])
         self.assertGreater(len(report["company_currency_write_sites"]), 0)
 
     def test_undeclared_standard_currency_default_fails(self) -> None:
@@ -403,26 +363,18 @@ class DemoOther(models.Model):
             self.assertTrue(any("without the source relation" in f for f in report["failures"]))
             self.assertTrue(any("without a reason" in f for f in report["failures"]))
 
-    def test_extension_class_field_override_requires_declaration(self) -> None:
+    def test_extension_class_field_override_fails_closed(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             report = run(Path(raw), EXTENSION_OVERRIDE_MODEL, {"standard_currency": {"currency": "CNY", "models": []}})
             self.assertEqual("failed", report["status"])
             self.assertTrue(
-                any("redefines company_id/currency_id" in f for f in report["failures"]),
+                any("extension class declares company_id/currency_id" in f for f in report["failures"]),
                 report["failures"],
             )
             self.assertEqual(["demo.overridden"], report["company_field_overrides"])
 
-        with tempfile.TemporaryDirectory() as raw:
-            declarations = {
-                "standard_currency": {"currency": "CNY", "models": []},
-                **DUPLICATE_OVERRIDE_DECLARATION,
-            }
-            report = run(Path(raw), EXTENSION_OVERRIDE_MODEL, declarations)
-            self.assertEqual([], report["failures"])
-
-    def test_duplicate_field_declaration_requires_registration(self) -> None:
-        """A field declared by two classes is a union and must be registered."""
+    def test_duplicate_field_declaration_fails_closed(self) -> None:
+        """A field declared by two classes is a union, not an override."""
         with tempfile.TemporaryDirectory() as raw:
             report = run(
                 Path(raw), EXTENSION_OVERRIDE_MODEL,
@@ -437,60 +389,31 @@ class DemoOther(models.Model):
                 ["demo.overridden.currency_id"], report["duplicate_field_declarations"]
             )
 
-    def test_registered_duplicate_field_declaration_matches_source(self) -> None:
+    def test_duplicate_field_declaration_cannot_be_registered_away(self) -> None:
+        """There is no registration escape hatch: consolidate the declarations."""
         with tempfile.TemporaryDirectory() as raw:
             declarations = {
                 "standard_currency": {"currency": "CNY", "models": []},
-                **DUPLICATE_OVERRIDE_DECLARATION,
+                "company_field_overrides": {
+                    "reason": "historical registration must not waive a duplicate",
+                    "models": [
+                        {
+                            "model": "demo.overridden",
+                            "field": "currency_id",
+                            "file": "models/definition.py",
+                            "reason": "historical",
+                        }
+                    ],
+                },
+                "duplicate_field_declarations": {
+                    "reason": "historical registration must not waive a duplicate",
+                    "models": [],
+                },
             }
             report = run(Path(raw), EXTENSION_OVERRIDE_MODEL, declarations)
-            self.assertEqual([], report["failures"])
-            self.assertEqual(
-                ["demo.overridden.currency_id"], report["duplicate_field_declarations"]
-            )
-
-    def test_duplicate_field_declaration_without_reason_fails(self) -> None:
-        declarations = {
-            "standard_currency": {"currency": "CNY", "models": []},
-            "duplicate_field_declarations": {
-                "models": [{"model": "demo.overridden", "field": "currency_id"}]
-            },
-        }
-        with tempfile.TemporaryDirectory() as raw:
-            report = run(Path(raw), EXTENSION_OVERRIDE_MODEL, declarations)
             self.assertEqual("failed", report["status"])
             self.assertTrue(
-                any(
-                    "demo.overridden.currency_id: duplicate field declaration without a reason" in f
-                    for f in report["failures"]
-                ),
-                report["failures"],
-            )
-
-    def test_duplicate_field_declaration_site_drift_fails(self) -> None:
-        declarations = json.loads(json.dumps(DUPLICATE_OVERRIDE_DECLARATION))
-        entry = declarations["duplicate_field_declarations"]["models"][0]
-        entry["declarations"][1]["role"] = "owning class"
-        declarations["standard_currency"] = {"currency": "CNY", "models": []}
-        with tempfile.TemporaryDirectory() as raw:
-            report = run(Path(raw), EXTENSION_OVERRIDE_MODEL, declarations)
-            self.assertEqual("failed", report["status"])
-            self.assertTrue(
-                any("do not match source" in f for f in report["failures"]),
-                report["failures"],
-            )
-
-    def test_stale_duplicate_field_declaration_fails(self) -> None:
-        """A registration that no longer matches source must not stay silent."""
-        with tempfile.TemporaryDirectory() as raw:
-            declarations = {
-                "standard_currency": {"currency": "CNY", "models": []},
-                **DUPLICATE_OVERRIDE_DECLARATION,
-            }
-            report = run(Path(raw), PLAIN_MODEL, declarations)
-            self.assertEqual("failed", report["status"])
-            self.assertTrue(
-                any("no longer matches source" in f for f in report["failures"]),
+                any("declared by more than one class" in f for f in report["failures"]),
                 report["failures"],
             )
 

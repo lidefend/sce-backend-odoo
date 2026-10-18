@@ -6,9 +6,9 @@
     "gated": 3,
     "on_demand": 23,
     "unwired": 143,
-    "odoo_tag_declarations": 384,
-    "gated_declarations": 93,
-    "uncovered_declarations": 291,
+    "odoo_tag_declarations": 386,
+    "gated_declarations": 94,
+    "uncovered_declarations": 292,
     "ci_unit_scripts": 16,
     "ci_unit_scripts_wired": 16,
     "ci_unit_scripts_unwired": 0
@@ -18,7 +18,7 @@
       "group": "sc_gate",
       "status": "gated",
       "kind": "odoo_tag",
-      "declarations": 66,
+      "declarations": 67,
       "files": [
         "addons/sc_norm_engine/tests/test_boq_norm_link.py",
         "addons/smart_construction_acceptance_fixture/tests/test_acceptance_fixture_guard.py",
@@ -415,6 +415,18 @@
         "addons/smart_construction_core/tests/test_stock_cost.py"
       ],
       "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "demo_gate",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 2,
+      "files": [
+        "demo_addons/smart_construction_demo/tests/test_demo_showcase_gate.py"
+      ],
+      "owner": "demo-team",
       "evidence": [],
       "disposition": "wire-pending"
     },
@@ -844,18 +856,6 @@
         "make:verify.local.dev.demo_action_roles.orm :: demo_action_roles"
       ],
       "disposition": "class-selected"
-    },
-    {
-      "group": "demo_gate",
-      "status": "unwired",
-      "kind": "odoo_tag",
-      "declarations": 1,
-      "files": [
-        "demo_addons/smart_construction_demo/tests/test_demo_showcase_gate.py"
-      ],
-      "owner": "demo-team",
-      "evidence": [],
-      "disposition": "wire-pending"
     },
     {
       "group": "demo_loaded_chains",

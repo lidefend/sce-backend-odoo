@@ -112,7 +112,7 @@ Do not add core model fields for one customer's vocabulary, one source table acc
 
 Current enforced coverage:
 
-- model classes: 372
+- model classes: 377
 - model families: 19
 - unclassified models: 0
 - ownership specs: 18

@@ -23,11 +23,12 @@ declares a ``currency_id`` field. It reads source only and enforces:
   field-default-only scan. Extension classes (``_inherit`` without ``_name``)
   are attributed to the model they extend, so an override cannot hide there.
 * a ``company_id``/``currency_id`` field defined by an extension class instead of
-  the model's own class is declared, so a redefinition is a decision, not a
-  silent override.
-* a field declared by more than one class block on the same model is declared,
+  the model's own class fails closed, so the money fact cannot move into a second
+  file that the owning declaration does not show.
+* a field declared by more than one class block on the same model fails closed,
   because Odoo merges the two definitions attribute by attribute: the surviving
   field is a union of both, so neither file alone shows the real declaration.
+  There is no registration escape hatch; consolidate into one declaration.
 * every product source that writes ``res.company.currency_id`` -- an XML record, a
   method on the company model, or a bootstrap function that resolves the company
   model -- is declared, so the four shapes that carry the tenant standard
@@ -51,6 +52,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import backend_model_field_declarations as field_declarations  # noqa: E402
 import sc_data_scope_rule_coverage_guard as scope_guard  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -417,47 +419,12 @@ def company_currency_write_sites(root: Path, modules: list[str]) -> list[tuple[s
 def duplicate_field_declarations(root: Path, modules: list[str]) -> dict[str, list[dict]]:
     """``model.field`` declared by more than one class block, with its files.
 
-    Odoo merges two same-name field definitions attribute by attribute, so the
-    surviving definition is a union of both classes, not the nearest one. A
-    reader of either file alone therefore cannot see the real field, which makes
-    a redefinition a second declaration of the same fact. Every such pair is
-    registered in fact_source_declarations.json so it stays a decision.
-
-    The target set admits a class that extends a model declared outside the
-    product modules (``_inherit`` without ``_name``), because its field
-    declaration is still product source; the narrow ``_name``-only view used by
-    the money-fact classification cannot see such a duplicate.
+    The strict declaration guard owns the pass/fail decision; this wrapper keeps
+    the money-fact report's historical shape while sharing the scanner. A
+    duplicate has no registration escape hatch: it is a hidden union of two
+    declarations and must be consolidated.
     """
-    constants = scope_guard.model_name_constants(root, modules)
-    blocks = class_source_blocks(root, modules)
-    known: set[str] = set()
-    for _path, block in blocks:
-        name, _unresolvable = scope_guard.resolve_model_name(block, constants)
-        if name:
-            known.add(name)
-        known.update(inherit_names(block))
-
-    found: dict[str, list[dict]] = {}
-    for path, block in blocks:
-        owner = bool(scope_guard.resolve_model_name(block, constants)[0])
-        relative = path.relative_to(root).as_posix()
-        for model in target_models(block, constants, known):
-            role = "owning class" if owner else "extension class"
-            for match in FIELD_DEFINITION.finditer(block):
-                found.setdefault(f"{model}.{match.group(1)}", []).append(
-                    {"file": relative, "role": role}
-                )
-    duplicates: dict[str, list[dict]] = {}
-    for key, declarations in found.items():
-        if len(declarations) < 2:
-            continue
-        unique: list[dict] = []
-        for declaration in declarations:
-            if declaration not in unique:
-                unique.append(declaration)
-        if len(unique) > 1:
-            duplicates[key] = sorted(unique, key=lambda item: (item["file"], item["role"]))
-    return dict(sorted(duplicates.items()))
+    return field_declarations.duplicate_fields(root, modules)
 
 
 def company_currency_authority(
@@ -1066,63 +1033,35 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
             failures.append(f"{entry.get('model')}: currency write path without a reason")
 
     overrides = company_field_overrides(fields)
-    declared_overrides = {
-        (entry["model"] if isinstance(entry, dict) else entry)
-        for entry in ((declares.get("company_field_overrides") or {}).get("models") or [])
-    }
-    if overrides and overrides != declared_overrides:
-        missing = sorted(overrides - declared_overrides)
-        extra = sorted(declared_overrides - overrides)
-        if missing:
-            failures.append(
-                "an extension class redefines company_id/currency_id on a product model "
-                f"without a declaration: {', '.join(missing)}"
-            )
-        if extra:
-            failures.append(
-                "declared field override no longer matches source: " f"{', '.join(extra)}"
-            )
-    for entry in ((declares.get("company_field_overrides") or {}).get("models") or []):
-        if isinstance(entry, dict) and not (entry.get("reason") or "").strip():
-            failures.append(f"{entry.get('model')}: field override without a reason")
+    if overrides:
+        failures.append(
+            "an extension class declares company_id/currency_id on a product model; "
+            "Odoo merges the declaration into the model, so the money fact has a "
+            "second source that the owning file cannot show. Consolidate it into the "
+            f"owning declaration: {', '.join(sorted(overrides))}"
+        )
 
-    duplicates = duplicate_field_declarations(root, modules)
-    declared_duplicates = {
-        f"{entry.get('model')}.{entry.get('field')}": entry
-        for entry in ((declares.get("duplicate_field_declarations") or {}).get("models") or [])
-        if isinstance(entry, dict)
-    }
-    missing = sorted(set(duplicates) - set(declared_duplicates))
-    extra = sorted(set(declared_duplicates) - set(duplicates))
-    if missing:
+    scanned_fields = field_declarations.scan(root, modules)
+    duplicates, same_class_duplicates = field_declarations.conflicts(scanned_fields)
+    for key, items in duplicates.items():
         failures.append(
-            "a field is declared by more than one class on the same model without a "
-            "registration; Odoo merges the definitions attribute by attribute, so the "
-            f"real field is a union of both: {', '.join(missing)}"
-        )
-    if extra:
-        failures.append(
-            "registered duplicate field declaration no longer matches source: "
-            f"{', '.join(extra)}"
-        )
-    for key, entry in declared_duplicates.items():
-        if not (entry.get("reason") or "").strip():
-            failures.append(f"{key}: duplicate field declaration without a reason")
-        if key not in duplicates:
-            continue
-        declared_sites = sorted(
-            (item.get("file"), item.get("role"))
-            for item in (entry.get("declarations") or [])
-            if isinstance(item, dict)
-        )
-        measured_sites = sorted(
-            (item["file"], item["role"]) for item in duplicates[key]
-        )
-        if declared_sites != measured_sites:
-            failures.append(
-                f"{key}: declared declaring classes {declared_sites} do not match source "
-                f"{measured_sites}"
+            f"{key}: a field is declared by more than one class on the same model; "
+            "Odoo merges the definitions attribute by attribute, so the real field is "
+            "a union of both and must be consolidated into one declaration: "
+            + ", ".join(
+                f"{item['file']}:{item['line']} ({item['class_name']}, {item['role']})"
+                for item in items
             )
+        )
+    for item in same_class_duplicates:
+        failures.append(
+            f"{item['model']}.{item['field']}: declared more than once in one class; "
+            "only the last assignment survives: "
+            + ", ".join(
+                f"{declaration['file']}:{declaration['line']} ({declaration['class_name']})"
+                for declaration in item["declarations"]
+            )
+        )
 
     company_sites = company_currency_write_sites(root, modules)
     declared_sites = sorted(

@@ -573,6 +573,8 @@ def classify_model_family(path: str, model_name: str | None, inherit: Any, bucke
         )
     ):
         return "compatibility bridges and native extensions"
+    if ref == "sc.formal.display.copy.sources" or "sc.formal.display.copy" in ref:
+        return "compatibility bridges and native extensions"
     if "support/" in text:
         return "compatibility bridges and native extensions"
     return "unclassified"
