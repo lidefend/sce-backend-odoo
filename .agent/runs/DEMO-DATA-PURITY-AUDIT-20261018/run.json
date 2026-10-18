@@ -268,7 +268,7 @@
         ".runtime/demo-data-purity-20261018/10-identity-check.log"
       ],
       "kind": "live",
-      "result": "res_partner.name 中 baosheng|builderp|scbs|保盛 命中 0/71。"
+      "result": "res_partner.name 中固定客户标识（已脱敏）命中 0/71。"
     },
     "ownership_declaration_gap": {
       "inputs": [

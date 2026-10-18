@@ -33,7 +33,7 @@
 | lane | repository | 说明 |
 | --- | --- | --- |
 | `demo` | `/home/lidefend/workspace/sce-backend-odoo` | 既有 Demo 工作树 |
-| `user` | `/home/lidefend/workspace/sce-customer-baosheng-odoo` | 客户模块工作树 |
+| `user` | 客户模块工作树（路径由部署登记，不进公开仓） | 客户模块 lane |
 | `frontend` | `/home/lidefend/workspace/sce-product-odoo-clean-root` | 回执与证据根。**生产前端源码在主仓** `/home/lidefend/workspace/sce-backend-odoo/frontend/`；clean-root 内的前端树不是权威源码，不得替代。 |
 | `environment` | `/home/lidefend/workspace/sce-backend-odoo-local-env` | 已登记本地环境仓库 |
 | `pilot` | `/home/lidefend/workspace/sce-backend-odoo-local-env` | 机制试点工作树 |

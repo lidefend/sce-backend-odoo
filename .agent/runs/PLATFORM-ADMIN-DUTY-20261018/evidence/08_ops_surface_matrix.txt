@@ -1,3 +1,4 @@
+redaction: customer database and tenant key values replaced before publication; row count and state unchanged.
 captured_at=2026-10-18T06:53:21Z
 # read-only GET probes on platform 18082 (no writes)
 token_len=876
@@ -9,7 +10,7 @@ status=404
 {"ok": false, "contract_version": "v1", "server_time": "2026-10-18T06:53:21Z", "trace_id": "ac76b04d48d8", "warnings": [], "error": {"code": "NOT_FOUND", "message": "job not found", "details": {}, "trace_id": "ac76b04d48d8"}}
 --- GET /api/ops/maintenance/access
 status=200
-{"ok": true, "contract_version": "v1", "server_time": "2026-10-18T06:53:22Z", "trace_id": "8308d6ffff77", "warnings": [], "data": {"accesses": [{"access_id": 5, "db_name": "sc_tenant_baosheng_dev", "tenant_key": "baosheng", "capability": "migrate", "state": "revoked", "reason": "daily development: v
+{"ok": true, "contract_version": "v1", "server_time": "2026-10-18T06:53:22Z", "trace_id": "8308d6ffff77", "warnings": [], "data": {"accesses": [{"access_id": 5, "db_name": "sc_tenant_redacted_dev", "tenant_key": "<redacted>", "capability": "migrate", "state": "revoked", "reason": "daily development: v
 --- POST /api/v1/intent release.operator.surface (read intent)
 status=200
 {"status": "success", "ok": true, "data": {"contract_version": "release_operator_surface_v1", "contract_registry": {"contract_version": "release_operator_contract_registry_v1", "contracts": {"surface": {"contract_key": "release_operator_surface", "contract_version": "release_operator_surface_v1", "s

@@ -21,15 +21,15 @@
       >
         <h3 class="platform-duty__card-title">{{ duty.label || duty.key }}</h3>
         <p class="platform-duty__capabilities">{{ (duty.capabilities || []).join(' · ') }}</p>
-        <button
+        <ScButton
           v-if="actionOf(duty).kind === 'navigate'"
           type="button"
           class="platform-duty__action"
           @click="open(duty)"
         >
           打开
-        </button>
-        <button
+        </ScButton>
+        <ScButton
           v-else-if="actionOf(duty).kind === 'inline' && !isWriteAction(duty)"
           type="button"
           class="platform-duty__action"
@@ -37,7 +37,7 @@
           @click="loadInline(duty.key, actionOf(duty))"
         >
           {{ inlineActionLabel(duty.key) }}
-        </button>
+        </ScButton>
         <span v-else-if="isWriteAction(duty)" class="platform-duty__pending">
           写操作入口，需专用表单，未启用
         </span>
@@ -63,31 +63,28 @@
       <p v-if="tenantRegistry.status === 'loading'" class="platform-duty__pending">正在读取登记数据…</p>
       <p v-else-if="tenantRegistry.status === 'error'" class="platform-duty__error">
         读取失败：{{ tenantRegistry.message }}
-        <button type="button" class="platform-duty__action" @click="loadTenantRegistry">重试</button>
+        <ScButton type="button" class="platform-duty__action" @click="loadTenantRegistry">重试</ScButton>
       </p>
       <p v-else-if="!tenantRegistry.rows.length" class="platform-duty__empty" data-tenant-registry-empty="true">
         当前没有已登记的租户命名空间。租户需先完成平台登记与数据库注册，登记后会出现在此表。
       </p>
-      <table v-else class="platform-duty__table" data-tenant-registry-table="true">
-        <thead>
-          <tr>
-            <th scope="col">命名空间</th>
-            <th scope="col">租户名称</th>
-            <th scope="col">生命周期</th>
-            <th scope="col">别名/路径前缀</th>
-            <th scope="col">计费绑定</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="row in tenantRegistry.rows" :key="row.namespace_id" :data-namespace-id="row.namespace_id">
-            <td>{{ row.namespace_id }}</td>
-            <td>{{ row.tenant_name || '-' }}</td>
-            <td>{{ row.lifecycle_state || '-' }}</td>
-            <td>{{ row.alias || '-' }}<span v-if="row.path_prefix" class="platform-duty__muted">（{{ row.path_prefix }}）</span></td>
-            <td>{{ row.billing_bound ? '已绑定' : '未绑定' }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <ScTable
+        v-else
+        class="platform-duty__table"
+        data-tenant-registry-table="true"
+        label="租户登记表"
+        :data="tenantRegistry.rows"
+        :columns="TENANT_COLUMNS"
+        row-key="namespace_id"
+        size="small"
+      >
+        <template #tenant_name="{ row }">{{ row.tenant_name || '-' }}</template>
+        <template #lifecycle_state="{ row }">{{ row.lifecycle_state || '-' }}</template>
+        <template #alias="{ row }">
+          {{ row.alias || '-' }}<span v-if="row.path_prefix" class="platform-duty__muted">（{{ row.path_prefix }}）</span>
+        </template>
+        <template #billing_bound="{ row }">{{ row.billing_bound ? '已绑定' : '未绑定' }}</template>
+      </ScTable>
     </section>
 
     <section
@@ -116,6 +113,8 @@ import { useRouter } from 'vue-router';
 import { apiRequest } from '../../api/client';
 import { useSessionStore } from '../../stores/session';
 import { resolveDutyAction, isWriteEndpoint, type DutyAction } from './dutyAction';
+import ScButton from '../design-system/ScButton.vue';
+import ScTable from '../design-system/ScTable.vue';
 
 interface PlatformDutyEntry {
   key?: string;
@@ -142,6 +141,14 @@ interface OpsTenantsResponse {
 }
 
 const TENANT_REGISTRY_ENDPOINT = '/api/ops/tenants';
+
+const TENANT_COLUMNS = [
+  { colKey: 'namespace_id', title: '命名空间' },
+  { colKey: 'tenant_name', title: '租户名称' },
+  { colKey: 'lifecycle_state', title: '生命周期' },
+  { colKey: 'alias', title: '别名/路径前缀' },
+  { colKey: 'billing_bound', title: '计费绑定' },
+];
 
 const router = useRouter();
 const session = useSessionStore();

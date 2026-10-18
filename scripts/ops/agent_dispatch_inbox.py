@@ -54,7 +54,7 @@ AUTHORITY_GATE_PATTERNS = (
     '等待所有者批准', '请所有者批准', '待所有者批准',
 )
 AUTHORITY_EXCLUSION_MARKERS = (
-    '用户模块', 'sce-customer-baosheng-odoo', '生产', 'production',
+    '用户模块', 'sce-customer-', '生产', 'production',
     '目标环境', '交付环境', '版本发布', 'target environment', 'delivery environment',
     'jwt', '密钥', '签名', '凭据', 'credential',
 )
