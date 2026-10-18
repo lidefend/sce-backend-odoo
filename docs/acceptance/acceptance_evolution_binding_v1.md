@@ -50,7 +50,8 @@ make acceptance.evolution.verify
 ```
 
 `make pr.merge` 已依赖 `acceptance.evolution.verify`。若本次变更不需要运行期证据
-（例如纯文档），该目标自动通过，不要求证据清单。
+（例如纯文档），记录器仍会写入一份空套件的 exact-head 清单，避免旧清单造成
+假阻断；验证目标随后自动通过。
 
 ## 强制边界
 

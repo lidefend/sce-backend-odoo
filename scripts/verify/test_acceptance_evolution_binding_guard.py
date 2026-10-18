@@ -242,6 +242,13 @@ class TestGlobAndPlan(unittest.TestCase):
         base = guard.resolve_base(guard.ZERO_SHA, head)
         self.assertRegex(base, r"^[0-9a-f]{40}$")
 
+    def test_record_target_always_refreshes_the_manifest(self):
+        makefile = (ROOT / "make" / "guards.mk").read_text(encoding="utf-8")
+        start = makefile.index("acceptance.evolution.record:")
+        block = makefile[start : start + 500]
+        self.assertIn("acceptance_evolution_record.py", block)
+        self.assertNotIn("if [ -n", block)
+
 
 class TestAdapters(unittest.TestCase):
     def test_entry_verify_adapter(self):

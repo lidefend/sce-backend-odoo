@@ -296,11 +296,9 @@ acceptance.evolution.plan: guard.prod.forbid
 	@python3 scripts/verify/acceptance_evolution_binding_guard.py --output "$(ACCEPTANCE_EVOLUTION_PLAN)"
 
 acceptance.evolution.record: guard.prod.forbid
-	@if [ -n "$(strip $(ACCEPTANCE_EVOLUTION_SUITES))" ]; then \
-		python3 scripts/ops/acceptance_evolution_record.py \
-			--output "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" \
-			$(foreach suite,$(ACCEPTANCE_EVOLUTION_SUITES),--suite '$(suite)'); \
-	fi
+	@python3 scripts/ops/acceptance_evolution_record.py \
+		--output "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" \
+		$(foreach suite,$(ACCEPTANCE_EVOLUTION_SUITES),--suite '$(suite)')
 
 acceptance.evolution.verify: guard.prod.forbid acceptance.evolution.record
 	@if [ -f "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" ]; then \
