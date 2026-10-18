@@ -117,7 +117,7 @@ services:
       - ${SC_PRODUCT_ROOT}/scripts/render_odoo_conf.py:/usr/local/bin/render_odoo_conf.py:ro
       - ${SC_PRODUCT_ROOT}/scripts/odoo-entrypoint.sh:/usr/local/bin/odoo-entrypoint.sh:ro
     ports:
-      - "${ODOO_PORT}:8069"
+      - "${ODOO_BIND_HOST:-0.0.0.0}:${ODOO_PORT}:8069"
     entrypoint: [ "/bin/sh", "/usr/local/bin/odoo-entrypoint.sh" ]
     healthcheck:
       test: [ "CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8069/web/login', timeout=8)\"" ]
@@ -134,12 +134,17 @@ services:
         condition: service_healthy
     environment:
       SC_PROXY_DEFAULT_DB: ${DB_NAME}
-      NGINX_ENVSUBST_FILTER: '^SC_PROXY_DEFAULT_DB$'
+      SC_PROXY_PLATFORM_DB: ${SC_PROXY_PLATFORM_DB}
+      SC_PROXY_PLATFORM_UPSTREAM: ${SC_PROXY_PLATFORM_UPSTREAM}
+      NGINX_ENVSUBST_FILTER: '^SC_PROXY_(DEFAULT_DB|PLATFORM_DB|PLATFORM_UPSTREAM)$'
     volumes:
       - ${SC_PRODUCT_ROOT}/config/nginx/templates:/etc/nginx/templates:ro
       - ${FRONTEND_DIST_DIR}:/usr/share/nginx/html:ro
     ports:
-      - "${NGINX_PORT}:80"
+      - "${NGINX_BIND_HOST:-0.0.0.0}:${NGINX_PORT}:80"
+    networks:
+      default:
+      sc-daily-entry:
     healthcheck:
       test: [ "CMD-SHELL", "nginx -t || exit 1" ]
       interval: 30s
@@ -153,3 +158,9 @@ volumes:
     name: ${REDIS_DATA}
   odoo_data:
     name: ${ODOO_DATA}
+
+networks:
+  default:
+  sc-daily-entry:
+    external: true
+    name: ${SC_DAILY_ENTRY_NETWORK:-sc-daily-entry}

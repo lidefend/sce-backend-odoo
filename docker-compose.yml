@@ -135,10 +135,15 @@ services:
         condition: service_healthy
     environment:
       # Rendered into the proxy's database fallback by the image's envsubst
-      # entrypoint.  Only this variable is substituted, so nginx's own
-      # $variables in the template survive verbatim.
+      # entrypoint.  Only these proxy variables are substituted, so nginx's own
+      # $variables in the template survive verbatim.  The platform route is a
+      # declared database-to-upstream mapping; a profile that does not serve the
+      # platform control duty points it back at its own application, where the
+      # exact dbfilter refuses a database it does not own.
       SC_PROXY_DEFAULT_DB: ${DB_NAME}
-      NGINX_ENVSUBST_FILTER: '^SC_PROXY_DEFAULT_DB$'
+      SC_PROXY_PLATFORM_DB: ${SC_PROXY_PLATFORM_DB:-sc_platform_control}
+      SC_PROXY_PLATFORM_UPSTREAM: ${SC_PROXY_PLATFORM_UPSTREAM:-odoo:8069}
+      NGINX_ENVSUBST_FILTER: '^SC_PROXY_(DEFAULT_DB|PLATFORM_DB|PLATFORM_UPSTREAM)$'
     volumes:
       - ./config/nginx/templates:/etc/nginx/templates:ro
       - ${FRONTEND_DIST_DIR:-./frontend/apps/web/dist}:/usr/share/nginx/html:ro

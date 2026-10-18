@@ -42,7 +42,9 @@
       },
       "routing": {
         "nginx_host_port": 18082,
+        "nginx_bind_host": "127.0.0.1",
         "odoo_loopback_port": 18083,
+        "odoo_bind_host": "127.0.0.1",
         "list_db": false
       },
       "section_11": {
@@ -128,7 +130,9 @@
       },
       "routing": {
         "nginx_host_port": 18081,
+        "nginx_bind_host": "0.0.0.0",
         "odoo_loopback_port": 8070,
+        "odoo_bind_host": "127.0.0.1",
         "list_db": false
       },
       "section_11": {

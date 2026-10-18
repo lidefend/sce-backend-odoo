@@ -32,7 +32,11 @@ HEADER_MAP_DECLARATION_LINE = "map $http_x_odoo_db $sc_proxy_db_from_header {\n"
 FALLBACK_LINE = f"  ''      {FALLBACK_VAR};"
 TEMPLATE_MOUNT = "./config/nginx/templates:/etc/nginx/templates:ro"
 COMPOSE_INJECTION = "SC_PROXY_DEFAULT_DB: ${DB_NAME}"
-COMPOSE_FILTER = "NGINX_ENVSUBST_FILTER: '^SC_PROXY_DEFAULT_DB$'"
+COMPOSE_PLATFORM_DB = "SC_PROXY_PLATFORM_DB: ${SC_PROXY_PLATFORM_DB:-sc_platform_control}"
+COMPOSE_PLATFORM_UPSTREAM = "SC_PROXY_PLATFORM_UPSTREAM: ${SC_PROXY_PLATFORM_UPSTREAM:-odoo:8069}"
+COMPOSE_FILTER = "NGINX_ENVSUBST_FILTER: '^SC_PROXY_(DEFAULT_DB|PLATFORM_DB|PLATFORM_UPSTREAM)$'"
+UPSTREAM_MAP = "map $sc_proxy_db $sc_proxy_upstream {"
+VARIABLE_PROXY_PASS = "proxy_pass http://$sc_proxy_upstream;"
 
 
 def _read(path: Path, errors: list[str]) -> str:
@@ -79,6 +83,16 @@ def probe(
                 "config/nginx/templates/default.conf.template: explicit ?db= / X-Odoo-DB must still pass through "
                 f"(`{DB_ARG_DECLARATION}` and `{HEADER_MAP_DECLARATION_LINE.strip()}`)"
             )
+        if UPSTREAM_MAP not in template:
+            errors.append(
+                "config/nginx/templates/default.conf.template: the database-to-upstream map must be declared "
+                f"(`{UPSTREAM_MAP}`)"
+            )
+        if VARIABLE_PROXY_PASS not in template:
+            errors.append(
+                "config/nginx/templates/default.conf.template: proxied locations must use the mapped upstream "
+                f"(`{VARIABLE_PROXY_PASS}`)"
+            )
 
     service = _nginx_service(compose)
     if not service:
@@ -87,6 +101,14 @@ def probe(
         if COMPOSE_INJECTION not in service:
             errors.append(
                 f"docker-compose.yml nginx service must inject the profile database (`{COMPOSE_INJECTION}`)"
+            )
+        if COMPOSE_PLATFORM_DB not in service:
+            errors.append(
+                f"docker-compose.yml nginx service must inject the platform database route (`{COMPOSE_PLATFORM_DB}`)"
+            )
+        if COMPOSE_PLATFORM_UPSTREAM not in service:
+            errors.append(
+                f"docker-compose.yml nginx service must inject the platform upstream route (`{COMPOSE_PLATFORM_UPSTREAM}`)"
             )
         if COMPOSE_FILTER not in service:
             errors.append(

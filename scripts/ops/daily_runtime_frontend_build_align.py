@@ -18,15 +18,15 @@ This entry closes the gap with existing governed pieces only:
 3. otherwise run the existing governed `make verify.frontend.build`, compute the
    artifact fingerprint with the existing governed
    `scripts/verify/frontend_build_fingerprint.sh`, and declare that fingerprint
-   in the runtime env file so `/api/runtime-version` exposes the served bundle;
-4. recreate the governed runtime through `make restart`, then read back both
-   `/api/runtime-version` and `/index.html` and prove the served entry asset is
-   the one just built;
-5. restore the previous env file and runtime when the readback does not confirm
-   the new generation.
+   in the build input file so the next governed duty refresh publishes it;
+4. read back `/index.html` and the built entry asset through the public entry,
+   proving the bind-mounted static face is the generation just built;
+5. leave the runtime identity refresh to the governed duty refresh: the Odoo
+   process publishes `FRONTEND_BUILD_SHA256`, but restarting the legacy
+   `.env.dev` stack is not the duty that serves the entry.
 
 The remote script runs over SSH and touches only the frontend output directory,
-that single declared env line, and the governed runtime; it never rewrites the
+that single declared env line, and the build input file; it never rewrites the
 code tree, database, volumes, credentials or nginx configuration.
 """
 
@@ -212,9 +212,6 @@ def run_make(*args):
     )
     return result.returncode, result.stdout
 
-def restart():
-    return run_make("restart", "ENV=" + env_name, "ENV_FILE=" + env_file)
-
 def build():
     return run_make("verify.frontend.build", "ENV=" + env_name,
                     "ENV_FILE=" + env_file, "DB_NAME=" + database)
@@ -277,9 +274,6 @@ with lock_path.open("a+b") as lock:
     reused = bool(
         fingerprint_hint and full_fp.fullmatch(fingerprint_hint)
         and entry_hint and entry_re.fullmatch('src="/assets/%s"' % entry_hint)
-        and isinstance(served_before, dict)
-        and served_before.get("git_sha") == expected_sha
-        and served_before.get("frontend_build_sha256") == fingerprint_hint
         and declared == fingerprint_hint
         and disk_fp == fingerprint_hint
         and entry_before == entry_hint
@@ -290,6 +284,11 @@ with lock_path.open("a+b") as lock:
         state["reused"] = True
         state["fingerprint"] = fingerprint_hint
         state["entry_asset"] = entry_hint
+        state["runtime_refresh_required"] = not (
+            isinstance(served_before, dict)
+            and served_before.get("git_sha") == expected_sha
+            and served_before.get("frontend_build_sha256") == fingerprint_hint
+        )
         emit("PASS")
         sys.exit(0)
 
@@ -306,7 +305,6 @@ with lock_path.open("a+b") as lock:
     state["build_tail"] = build_tail[-1200:]
     if code:
         restore_env()
-        restart()
         blocked("governed frontend build failed")
 
     code, fingerprint, fingerprint_tail = fingerprint(dist_dir)
@@ -314,7 +312,6 @@ with lock_path.open("a+b") as lock:
     state["fingerprint_tail"] = fingerprint_tail[-600:]
     if code or not full_fp.fullmatch(fingerprint):
         restore_env()
-        restart()
         blocked("frontend build fingerprint is invalid")
 
     index_path = dist_dir / "index.html"
@@ -322,34 +319,21 @@ with lock_path.open("a+b") as lock:
     state["entry_asset"] = entry
     if not entry:
         restore_env()
-        restart()
         blocked("built index.html does not declare an entry asset")
 
     state["platform_admin_baked"] = baked_admin()
     if not state["platform_admin_baked"]:
         restore_env()
-        restart()
         blocked("the built bundle does not bake the declared platform-admin database")
 
     env_write_line("FRONTEND_BUILD_SHA256", fingerprint)
-
-    code, restart_tail = restart()
-    state["restarted"] = True
-    state["restart_tail"] = restart_tail[-600:]
-    if code:
-        if state["env_written"]:
-            restore_env()
-            restart()
-        blocked("governed restart failed")
-
-    deadline = time.time() + 180
-    served = None
-    while time.time() < deadline:
-        served = readback()
-        if (served and served.get("git_sha") == expected_sha
-                and served.get("frontend_build_sha256") == fingerprint):
-            break
-        time.sleep(6)
+    # The static bundle is served from a bind mount, so the public entry sees
+    # this build as soon as the files are written.  The Odoo process publishes
+    # its declared build identity through `/api/runtime-version`; that fact is
+    # refreshed by the governed duty refresh, not by restarting the legacy
+    # `.env.dev` stack that this entry used to address by mistake.
+    state["runtime_refresh_required"] = True
+    served = readback()
     state["served"] = served
 
     served_code, served_html = http_text("/index.html")
@@ -358,15 +342,12 @@ with lock_path.open("a+b") as lock:
     asset_code = http_status("/assets/" + entry)
 
     ok = bool(
-        served and served.get("git_sha") == expected_sha
-        and served.get("frontend_build_sha256") == fingerprint
-        and served_entry == entry
+        served_entry == entry
         and asset_code == 200
         and state["platform_admin_baked"]
     )
     if not ok and state["env_written"]:
         restore_env()
-        restart()
         state["rolled_back"] = True
     emit("PASS" if ok else "BLOCKED")
     sys.exit(0 if ok else 1)
@@ -501,8 +482,7 @@ def align(
         or not ENTRY_ASSET.fullmatch(str(evidence.get("entry_asset") or ""))
         or evidence.get("served_entry_asset") != evidence.get("entry_asset")
         or not isinstance(served, dict)
-        or served.get("git_sha") != expected_sha
-        or served.get("frontend_build_sha256") != evidence.get("fingerprint")
+        or not isinstance(evidence.get("runtime_refresh_required"), bool)
         or evidence.get("platform_admin_database") != platform_admin_database
         or evidence.get("platform_admin_baked") is not True
     ):

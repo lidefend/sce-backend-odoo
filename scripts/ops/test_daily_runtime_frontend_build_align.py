@@ -40,6 +40,7 @@ def evidence(**overrides: object) -> bytes:
         "env_written": True,
         "backup_path": "/opt/projects/repos/sce-product-odoo/.env.dev.bak",
         "restarted": True,
+        "runtime_refresh_required": True,
         "rolled_back": False,
         "served": {
             "git_sha": SHA,
@@ -211,7 +212,7 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
             result = call_align(fingerprint_hint=FINGERPRINT, entry_hint=ENTRY_ASSET)
         self.assertTrue(result["reused"])
 
-    def test_align_rejects_stale_served_frontend(self) -> None:
+    def test_align_accepts_stale_runtime_identity_until_duty_refresh(self) -> None:
         stale = evidence(
             served={
                 "git_sha": SHA,
@@ -224,19 +225,13 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
         with mock.patch.dict(os.environ, CONFIRM), mock.patch.object(
             build_module, "run", return_value=completed
         ):
-            with self.assertRaisesRegex(build_module.BuildError, "evidence differs"):
-                call_align()
+            result = call_align()
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(result["served"]["frontend_build_sha256"], OLD_FINGERPRINT)
 
-    def test_align_rejects_undeclared_frontend_identity(self) -> None:
-        undeclared = evidence(
-            served={
-                "git_sha": SHA,
-                "database": "sc_demo",
-                "environment": "dev",
-                "frontend_build_sha256": "",
-            }
-        )
-        completed = mock.Mock(returncode=0, stdout=undeclared, stderr=b"")
+    def test_align_rejects_a_non_boolean_runtime_refresh_marker(self) -> None:
+        malformed = evidence(runtime_refresh_required="yes")
+        completed = mock.Mock(returncode=0, stdout=malformed, stderr=b"")
         with mock.patch.dict(os.environ, CONFIRM), mock.patch.object(
             build_module, "run", return_value=completed
         ):

@@ -1,0 +1,69 @@
+{
+  "schema": "daily.runtime.entry.v1",
+  "authority": "config/ops/daily_runtime_database_duties.v1.json",
+  "owner_ruling": "2026-10-18 the daily development server exposes one public entry; the platform control plane and the demo duty stay separate databases and separate containers behind that entry",
+  "host": "sc-root",
+  "public_entry": {
+    "serving_duty": "demo",
+    "bind_host": "0.0.0.0",
+    "port": 18081,
+    "url": "http://1.95.85.92:18081",
+    "demo_path": "/",
+    "platform_admin_path": "/platform-admin",
+    "platform_admin_query": "platform_admin=1"
+  },
+  "network": {
+    "name": "sc-daily-entry",
+    "driver": "bridge"
+  },
+  "routes": [
+    {
+      "database": "sc_demo",
+      "duty": "demo",
+      "upstream": "odoo:8069",
+      "default": true
+    },
+    {
+      "database": "sc_platform_control",
+      "duty": "platform_control",
+      "upstream": "sc-platform-control-dev-nginx-1:80",
+      "default": false
+    }
+  ],
+  "exposure": [
+    {
+      "duty": "demo",
+      "service": "nginx",
+      "host_port": 18081,
+      "bind_host": "0.0.0.0",
+      "public": true
+    },
+    {
+      "duty": "platform_control",
+      "service": "nginx",
+      "host_port": 18082,
+      "bind_host": "127.0.0.1",
+      "public": false
+    },
+    {
+      "duty": "demo",
+      "service": "odoo",
+      "host_port": 8070,
+      "bind_host": "127.0.0.1",
+      "public": false
+    },
+    {
+      "duty": "platform_control",
+      "service": "odoo",
+      "host_port": 18083,
+      "bind_host": "127.0.0.1",
+      "public": false
+    }
+  ],
+  "assertions": {
+    "one_public_entry": true,
+    "no_second_public_route": true,
+    "database_header_is_the_only_switcher": true,
+    "never_route_to_an_undeclared_database": true
+  }
+}

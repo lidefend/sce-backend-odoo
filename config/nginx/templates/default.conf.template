@@ -18,10 +18,25 @@ map $arg_db $sc_proxy_db {
   ''      $sc_proxy_db_from_header;
 }
 
+# The daily development server exposes one public entry.  The serving duty's
+# nginx owns that entry, but the database hint -- not the host, port or path --
+# decides which duty's Odoo answers.  A duty that does not carry the platform
+# control database points this route at its own application, so an accidental
+# platform hint fails the target duty's exact dbfilter instead of crossing into
+# a database that duty does not own.
+map $sc_proxy_db $sc_proxy_upstream {
+  default              odoo:8069;
+  ${SC_PROXY_PLATFORM_DB}  ${SC_PROXY_PLATFORM_UPSTREAM};
+}
+
 server {
   listen 80;
   server_name _;
   client_max_body_size 512m;
+
+  # `proxy_pass` resolves a variable at request time, so it needs the Docker
+  # embedded DNS resolver rather than the startup-time resolver.
+  resolver 127.0.0.11 valid=10s ipv6=off;
 
   proxy_read_timeout 1800s;
   proxy_send_timeout 1800s;
@@ -63,7 +78,7 @@ server {
   }
 
   location /api/ {
-    proxy_pass http://odoo:8069;
+    proxy_pass http://$sc_proxy_upstream;
     proxy_redirect off;
 
     proxy_set_header Host              $http_host;
@@ -78,7 +93,7 @@ server {
   }
 
   location = /web {
-    proxy_pass http://odoo:8069;
+    proxy_pass http://$sc_proxy_upstream;
     proxy_redirect off;
 
     proxy_set_header Host              $http_host;
@@ -93,7 +108,7 @@ server {
   }
 
   location ^~ /web/ {
-    proxy_pass http://odoo:8069;
+    proxy_pass http://$sc_proxy_upstream;
     proxy_redirect off;
 
     proxy_set_header Host              $http_host;
@@ -108,7 +123,7 @@ server {
   }
 
   location ^~ /web_editor/ {
-    proxy_pass http://odoo:8069;
+    proxy_pass http://$sc_proxy_upstream;
     proxy_redirect off;
 
     proxy_set_header Host              $http_host;
@@ -123,7 +138,7 @@ server {
   }
 
   location ^~ /mail/ {
-    proxy_pass http://odoo:8069;
+    proxy_pass http://$sc_proxy_upstream;
     proxy_redirect off;
 
     proxy_set_header Host              $http_host;
@@ -138,7 +153,7 @@ server {
   }
 
   location ^~ /report/ {
-    proxy_pass http://odoo:8069;
+    proxy_pass http://$sc_proxy_upstream;
     proxy_redirect off;
 
     proxy_set_header Host              $http_host;
@@ -153,7 +168,7 @@ server {
   }
 
   location ^~ /longpolling/ {
-    proxy_pass http://odoo:8069;
+    proxy_pass http://$sc_proxy_upstream;
     proxy_redirect off;
 
     proxy_set_header Host              $http_host;
@@ -168,7 +183,7 @@ server {
   }
 
   location /websocket {
-    proxy_pass http://odoo:8069/websocket;
+    proxy_pass http://$sc_proxy_upstream;
 
     proxy_http_version 1.1;
     proxy_set_header Upgrade    $http_upgrade;

@@ -1037,6 +1037,10 @@ DAILY_RUNTIME_DATABASE_DUTY_SELECTION ?=
 DAILY_RUNTIME_DATABASE_DUTY_PHASE ?= all
 DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG ?= $(if $(DAILY_RUNTIME_EXPECTED_SHA),--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)")
 DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS ?= $(foreach duty,$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION),--duty "$(duty)")
+DAILY_RUNTIME_ENTRY_DECLARATION ?= config/ops/daily_runtime_entry.v1.json
+DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST ?=
+DAILY_RUNTIME_ENTRY_FLAGS ?= --entry "$(DAILY_RUNTIME_ENTRY_DECLARATION)" $(if $(DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST),--expect-entry-digest "$(DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST)")
+DAILY_RUNTIME_ENTRY_VERIFY_REPORT ?= .runtime/final-acceptance/daily-deployed/entry-verify.json
 
 # The resolver's own refusals and the customer-binding write path. The product
 # tree may not carry a customer identity, so the concrete binding lives 0600
@@ -1048,14 +1052,34 @@ verify.daily.runtime.duty.identity.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/daily_runtime_duty_identity.py scripts/ops/daily_runtime_database_duty.py scripts/ops/test_daily_runtime_duty_identity.py
 	@python3 -m unittest scripts.ops.test_daily_runtime_duty_identity
 
-verify.daily.runtime.database.duty: guard.prod.forbid verify.daily.runtime.duty.identity.unit
+verify.daily.runtime.database.duty: guard.prod.forbid verify.daily.runtime.duty.identity.unit verify.daily.runtime.entry
 	@python3 -m py_compile scripts/ops/daily_runtime_database_duty.py scripts/ops/test_daily_runtime_database_duty.py
 	@python3 -m unittest scripts.ops.test_daily_runtime_database_duty
+
+.PHONY: verify.daily.runtime.entry
+verify.daily.runtime.entry: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/daily_runtime_entry_guard.py scripts/ops/test_daily_runtime_entry.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_entry
+	@python3 scripts/verify/daily_runtime_entry_guard.py
+
+# Live acceptance of the one public entry.  The guard above proves the
+# declaration and the reviewed files agree; this target proves the running host
+# actually publishes exactly that face.  It is read-only against the host.
+.PHONY: daily.runtime.entry.verify
+daily.runtime.entry.verify: guard.prod.forbid verify.daily.runtime.entry
+	@python3 -m py_compile scripts/ops/daily_runtime_entry_verify.py
+	@python3 scripts/ops/daily_runtime_entry_verify.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--entry "$(DAILY_RUNTIME_ENTRY_DECLARATION)" \
+		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--report "$(DAILY_RUNTIME_ENTRY_VERIFY_REPORT)"
 
 daily.runtime.database.duty.plan: guard.prod.forbid verify.daily.runtime.database.duty
 	@python3 scripts/ops/daily_runtime_database_duty.py \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_ENTRY_FLAGS) \
 		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
 		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
 		--report "$(DAILY_RUNTIME_DATABASE_DUTY_PLAN_REPORT)"
@@ -1063,9 +1087,11 @@ daily.runtime.database.duty.plan: guard.prod.forbid verify.daily.runtime.databas
 daily.runtime.database.duty.apply: guard.prod.forbid verify.daily.runtime.database.duty
 	@test "$${SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY:-}" = "PROVISION_DAILY_RUNTIME_DATABASE_DUTY" || { echo "SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY=PROVISION_DAILY_RUNTIME_DATABASE_DUTY is required" >&2; exit 2; }
 	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST must be the digest of the reviewed declaration" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST must be the digest of the reviewed entry declaration" >&2; exit 2; }
 	@python3 scripts/ops/daily_runtime_database_duty.py \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_ENTRY_FLAGS) \
 		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
 		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
 		--apply \
@@ -1085,9 +1111,11 @@ daily.runtime.database.duty.apply: guard.prod.forbid verify.daily.runtime.databa
 daily.runtime.database.duty.initialize: guard.prod.forbid verify.daily.runtime.database.duty
 	@test "$${SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY:-}" = "PROVISION_DAILY_RUNTIME_DATABASE_DUTY" || { echo "SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY=PROVISION_DAILY_RUNTIME_DATABASE_DUTY is required" >&2; exit 2; }
 	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST must be the digest of the reviewed declaration" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST must be the digest of the reviewed entry declaration" >&2; exit 2; }
 	@python3 scripts/ops/daily_runtime_database_duty.py \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_ENTRY_FLAGS) \
 		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
 		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
 		--apply \
@@ -1109,9 +1137,11 @@ daily.runtime.database.duty.refresh: guard.prod.forbid verify.daily.runtime.data
 	@test "$${SC_CONFIRM_DAILY_RUNTIME_DUTY_REFRESH:-}" = "REFRESH_DAILY_RUNTIME_DUTY_STACK_AND_APPLICATION" || { echo "SC_CONFIRM_DAILY_RUNTIME_DUTY_REFRESH=REFRESH_DAILY_RUNTIME_DUTY_STACK_AND_APPLICATION is required" >&2; exit 2; }
 	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_SELECTION must name the duties to refresh" >&2; exit 2; }
 	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST must be the digest of the reviewed declaration" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST must be the digest of the reviewed entry declaration" >&2; exit 2; }
 	@python3 scripts/ops/daily_runtime_database_duty.py \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_ENTRY_FLAGS) \
 		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
 		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
 		--apply \
@@ -1133,9 +1163,11 @@ daily.runtime.database.duty.upgrade: guard.prod.forbid verify.daily.runtime.data
 	@test "$${SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE:-}" = "UPGRADE_DAILY_RUNTIME_DUTY_DECLARED_MODULES" || { echo "SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE=UPGRADE_DAILY_RUNTIME_DUTY_DECLARED_MODULES is required" >&2; exit 2; }
 	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_SELECTION must name the duties to upgrade" >&2; exit 2; }
 	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST must be the digest of the reviewed declaration" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST must be the digest of the reviewed entry declaration" >&2; exit 2; }
 	@python3 scripts/ops/daily_runtime_database_duty.py \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_ENTRY_FLAGS) \
 		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
 		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
 		--apply \
@@ -1156,9 +1188,11 @@ daily.runtime.database.duty.seed: guard.prod.forbid verify.daily.runtime.databas
 	@test "$${SC_CONFIRM_DAILY_RUNTIME_DUTY_SEED:-}" = "SEED_DAILY_RUNTIME_DUTY_DEMO_DATA" || { echo "SC_CONFIRM_DAILY_RUNTIME_DUTY_SEED=SEED_DAILY_RUNTIME_DUTY_DEMO_DATA is required" >&2; exit 2; }
 	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_SELECTION must name the demo duty to seed" >&2; exit 2; }
 	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST must be the digest of the reviewed declaration" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST must be the digest of the reviewed entry declaration" >&2; exit 2; }
 	@python3 scripts/ops/daily_runtime_database_duty.py \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_ENTRY_FLAGS) \
 		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
 		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
 		--apply \
