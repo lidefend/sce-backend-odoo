@@ -21,8 +21,13 @@ test('declared frontend routes may navigate', () => {
     kind: 'navigate',
     route: '/admin/release-operator',
   });
+  assert.deepEqual(resolveDutyAction({ route: '/a/92' }), {
+    kind: 'navigate',
+    route: '/a/92',
+  });
   assert.deepEqual(resolveDutyAction({ route: '/' }), { kind: 'navigate', route: '/' });
   assert.equal(isSpaRoute('/admin/scene-health'), true);
+  assert.equal(isSpaRoute('/a/92'), true);
 });
 
 test('an undeclared route never navigates', () => {

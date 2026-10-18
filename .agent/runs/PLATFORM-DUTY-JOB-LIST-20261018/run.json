@@ -11,9 +11,16 @@
     "addons/smart_core/controllers/platform_duty_controller.py",
     "addons/smart_core/core/platform_duty_contract.py",
     "addons/smart_core/core/system_init_identity_payload.py",
+    "addons/smart_core/handlers/system_init.py",
     "addons/smart_core/tests/test_platform_admin_duty_contract.py",
     "frontend/apps/web/src/components/platform-duty/dutyAction.ts",
+    "frontend/apps/web/src/components/platform-duty/dutyAction.test.ts",
     "make/ci.mk",
+    "scripts/verify/agent_ledger_consistency_guard.py",
+    "scripts/verify/test_agent_ledger_consistency_guard.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     ".agent/active-runs.json",
     ".agent/goals/PLATFORM-DUTY-JOB-LIST-20261018.yaml",
     ".agent/runs/PLATFORM-DUTY-JOB-LIST-20261018/run.json",
@@ -31,8 +38,18 @@
         "addons/smart_core/controllers/platform_duty_controller.py",
         "addons/smart_core/core/platform_duty_contract.py",
         "addons/smart_core/core/system_init_identity_payload.py",
+        "addons/smart_core/handlers/system_init.py",
         "addons/smart_core/tests/test_platform_admin_duty_contract.py",
-        "frontend/apps/web/src/components/platform-duty/dutyAction.ts"
+        "frontend/apps/web/src/components/platform-duty/dutyAction.ts",
+        "frontend/apps/web/src/components/platform-duty/dutyAction.test.ts"
+      ],
+      "kind": "offline"
+    },
+    "ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
       ],
       "kind": "offline"
     }

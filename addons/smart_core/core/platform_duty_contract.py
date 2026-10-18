@@ -140,6 +140,91 @@ def declared_platform_action_xmlids() -> list[str]:
     return sorted({str(duty["action_xmlid"]) for duty in PLATFORM_DUTIES if duty.get("action_xmlid")})
 
 
+def build_platform_duty_route_authority_entries(*, env, surface: dict | None) -> list[dict]:
+    """Project declared duty actions into executable route-authority entries.
+
+    The platform-control instance publishes only the minimum navigation surface,
+    so a duty that opens a window action has no native menu/action pair in the
+    startup navigation.  The duty declaration is the authority for that route:
+    when (and only when) the surface is the verified platform audience, resolve
+    its declared ``action_xmlid`` and publish an ``ADMIN_ROUTE`` entry.  The
+    entry carries ``menu_id = 0`` because the duty is not a navigation menu.
+
+    Fail closed: an unresolvable or non-window action is skipped, leaving the
+    duty without a route instead of inventing an action id or a fallback menu.
+    """
+
+    if not isinstance(surface, dict) or surface.get("audience") != AUDIENCE_PLATFORM_CONTROL:
+        return []
+    if env is None:
+        return []
+    entries: list[dict] = []
+    seen: set[int] = set()
+    for duty in surface.get("duties") or []:
+        if not isinstance(duty, dict):
+            continue
+        action_xmlid = str(duty.get("action_xmlid") or "").strip()
+        if not action_xmlid:
+            continue
+        try:
+            action = env.ref(action_xmlid, raise_if_not_found=False)
+        except Exception:
+            action = None
+        if not action or str(getattr(action, "_name", "")) != "ir.actions.act_window":
+            continue
+        action_id = int(getattr(action, "id", 0) or 0)
+        if action_id <= 0 or action_id in seen:
+            continue
+        raw_view_modes = str(getattr(action, "view_mode", "") or "")
+        view_modes = [item.strip() for item in raw_view_modes.split(",") if item.strip()]
+        if not view_modes:
+            continue
+        seen.add(action_id)
+        entries.append(
+            {
+                "route_kind": "ADMIN_ROUTE",
+                "menu_id": 0,
+                "menu_xmlid": "",
+                "action_id": action_id,
+                "action_xmlid": action_xmlid,
+                "name": str(getattr(action, "name", "") or action_xmlid),
+                "action_name": str(getattr(action, "name", "") or action_xmlid),
+                "model": str(getattr(action, "res_model", "") or ""),
+                "view_modes": view_modes,
+                "view_id": int(getattr(getattr(action, "view_id", None), "id", 0) or 0),
+                "domain": str(getattr(action, "domain", "") or "[]"),
+                "context": str(getattr(action, "context", "") or "{}"),
+                "route": "/a/%s" % action_id,
+                "allowed_operation": "read",
+                "required_capability": "platform_control",
+                "context_requirements": {},
+                "source": SOURCE,
+            }
+        )
+    return entries
+
+
+def merge_platform_duty_route_authority(authority: dict | None, *, env, surface: dict | None) -> dict:
+    """Add declared platform duty actions to the executable admin-authority bucket."""
+
+    if not isinstance(authority, dict):
+        return authority or {}
+    entries = build_platform_duty_route_authority_entries(env=env, surface=surface)
+    if not entries:
+        return authority
+    merged = dict(authority)
+    admin_actions = list(merged.get("admin_actions") or [])
+    existing = {
+        int(row.get("action_id") or 0)
+        for row in admin_actions
+        if isinstance(row, dict)
+    }
+    merged["admin_actions"] = admin_actions + [
+        entry for entry in entries if entry["action_id"] not in existing
+    ]
+    return merged
+
+
 def default_landing() -> dict:
     return dict(DEFAULT_LANDING)
 

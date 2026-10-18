@@ -9,6 +9,12 @@ of sync" is a mechanically detected defect instead of a recurring manual audit.
 * every run record keeps a canonical status and resolvable goal/record paths;
 * every goal declares an id, a status and, when it names a run, a resolvable path.
 
+Legacy receipts written before the goal/record schema are pinned in
+``LEGACY_ARCHIVAL_RUNS``.  Their bytes are historical evidence and are not
+rewritten to satisfy the current schema; the pin records the exact raw status
+so a silent lifecycle rewrite is still detected.  A new legacy-shaped record
+that is not pinned fails this guard.
+
 Owner-kept ledger residuals are pinned with their recorded authority. The pins are
 ratchets: the on-disk set must equal the pinned set exactly, so a new residual
 cannot appear silently and a closed one must be removed here in the same change.
@@ -85,6 +91,58 @@ RECORDED_NON_CANONICAL: dict[str, dict] = {
             "owner-pending normalisation recorded in "
             "docs/ops/iterations/product_delivery_mainline_ledger_closeout_20261008.md#4.2"
         ),
+    },
+}
+
+# Pre-schema receipts committed with the batch-C evidence set.  They predate the
+# ``goal`` + ``record`` contract and some use receipt vocabulary ("reported")
+# or only completion dimensions.  They are archival evidence, not candidates:
+# keep the files byte-identical, pin the raw status, and require an explicit
+# migration before any of them can re-enter the active ledger.
+LEGACY_ARCHIVAL_RUNS: dict[str, dict] = {
+    "DEMO-CLOSEOUT-R6-20261018": {
+        "status": None,
+        "reason": "pre-schema closeout receipt; lifecycle lives in completion_status_dimensions.batch",
+    },
+    "DEMO-COMPANY-NAME-20261018": {
+        "status": "reported",
+        "reason": "pre-schema receipt used executor vocabulary 'reported'",
+    },
+    "DEMO-DATA-PURITY-AUDIT-20261018": {
+        "status": "reported",
+        "reason": "pre-schema audit receipt used executor vocabulary 'reported'",
+    },
+    "DEMO-DOCS-CORRECTION-R5-20261018": {
+        "status": "active",
+        "reason": "pre-schema documentation receipt with no goal/record fields",
+    },
+    "DEMO-P4-DUTY-CUSTOMER-ROOT-R7-20261018": {
+        "status": None,
+        "reason": "pre-schema declaration receipt; lifecycle lives in completion_status_dimensions.batch",
+    },
+    "DEMO-PROD-CONTRACT-R2-20261018": {
+        "status": "active",
+        "reason": "pre-schema contract receipt with no goal/record fields",
+    },
+    "DEMO-SEED-REPRO-20261018": {
+        "status": "completed",
+        "reason": "pre-schema seed reproduction receipt with no goal/record fields",
+    },
+    "PATH-NS-B-IDENTITY-SEMANTICS-20261018": {
+        "status": "active",
+        "reason": "pre-schema batch-B receipt whose 'goal' field points at an ADR document, not a goal record",
+    },
+    "PLATFORM-ADMIN-DUTY-20261018": {
+        "status": "active",
+        "reason": "pre-schema platform duty receipt with no goal/record fields",
+    },
+    "PLATFORM-DUTY-BROWSER-20261018": {
+        "status": "reported",
+        "reason": "pre-schema browser receipt used executor vocabulary 'reported'",
+    },
+    "PLATFORM-DUTY-CLOSURE-20261018": {
+        "status": "reported",
+        "reason": "pre-schema closure receipt used executor vocabulary 'reported'",
     },
 }
 
@@ -168,6 +226,24 @@ def load_runs(root: Path, errors: list[str]) -> dict[str, dict]:
         if not isinstance(data, dict):
             errors.append(f"{relative}: run record must be an object")
             continue
+        run_id = path.parent.name
+        legacy_pin = LEGACY_ARCHIVAL_RUNS.get(run_id)
+        if legacy_pin is not None:
+            actual_status = data.get("status")
+            if actual_status != legacy_pin.get("status"):
+                errors.append(
+                    f"{relative}: pinned archival run status drifted "
+                    f"{legacy_pin.get('status')!r} -> {actual_status!r}; "
+                    "legacy evidence must not be rewritten silently"
+                )
+            runs[relative] = {
+                "status": actual_status,
+                "branch": data.get("branch"),
+                "goal": data.get("goal"),
+                "id": run_id,
+                "legacy": True,
+            }
+            continue
         for field in ("goal", "record"):
             value = data.get(field)
             if not isinstance(value, str) or not (root / value).is_file():
@@ -176,6 +252,8 @@ def load_runs(root: Path, errors: list[str]) -> dict[str, dict]:
             "status": data.get("status"),
             "branch": data.get("branch"),
             "goal": data.get("goal"),
+            "id": run_id,
+            "legacy": False,
         }
     return runs
 
@@ -216,6 +294,8 @@ def check(root: Path = ROOT) -> list[str]:
 
     # 2. a terminal run must not leave a non-terminal goal behind.
     for relative, run in sorted(runs.items()):
+        if run.get("legacy"):
+            continue
         if run["status"] not in TERMINAL:
             continue
         goal = next(
@@ -292,6 +372,8 @@ def check(root: Path = ROOT) -> list[str]:
 
     # 4. run record status must be canonical.
     for relative, run in sorted(runs.items()):
+        if run.get("legacy"):
+            continue
         if run.get("status") not in canonical:
             errors.append(
                 f"{relative}: run status {run.get('status')!r} is not in the canonical enum "

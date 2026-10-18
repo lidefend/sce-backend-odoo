@@ -306,6 +306,89 @@ class ProjectionAndRouteTests(unittest.TestCase):
         self.assertIn("build_platform_duty_capability_rows", source)
         self.assertIn('data["capability_groups"] = other_groups + platform_groups', source)
 
+    def test_system_init_publishes_duty_actions_into_route_authority(self):
+        """A duty route without a menu must still be executable by the SPA.
+
+        The platform-control navigation is deliberately minimal.  If the duty
+        action is absent from route authority, the SPA denies ``/a/<id>`` even
+        though the duty panel rendered the entry.  The duty declaration owns
+        that route authority for the verified platform audience.
+        """
+        source = (ROOT / "handlers" / "system_init.py").read_text(encoding="utf-8")
+        self.assertIn("merge_platform_duty_route_authority", source)
+        self.assertIn('surface=(data.get("user") or {}).get("platform_duty")', source)
+
+        contract = _load_contract()
+        surface = contract.build_platform_duty_surface(
+            is_platform_control_admin=True,
+            is_tenant_config_admin=False,
+            action_routes={"smart_core.action_sc_ops_job": "/a/42"},
+        )
+        action = types.SimpleNamespace(
+            _name="ir.actions.act_window",
+            id=42,
+            name="运营任务",
+            res_model="sc.ops.job",
+            view_mode="tree,form",
+            view_id=types.SimpleNamespace(id=7),
+            domain="[]",
+            context="{}",
+        )
+        env = types.SimpleNamespace(
+            ref=lambda xmlid, raise_if_not_found=False: (
+                action if xmlid == "smart_core.action_sc_ops_job" else None
+            ),
+        )
+        authority = {
+            "admin_actions": [],
+            "primary_actions": [],
+            "role_home_actions": [],
+            "contextual_actions": [],
+            "denied_actions": [],
+            "menu_containers": [],
+        }
+        merged = contract.merge_platform_duty_route_authority(authority, env=env, surface=surface)
+        rows = [row for row in merged["admin_actions"] if row["action_id"] == 42]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["route_kind"], "ADMIN_ROUTE")
+        self.assertEqual(rows[0]["menu_id"], 0)
+        self.assertEqual(rows[0]["action_xmlid"], "smart_core.action_sc_ops_job")
+        self.assertEqual(rows[0]["route"], "/a/42")
+        self.assertEqual(rows[0]["model"], "sc.ops.job")
+        self.assertEqual(rows[0]["view_modes"], ["tree", "form"])
+
+        # Re-merging must not duplicate the same executable action.
+        merged_again = contract.merge_platform_duty_route_authority(merged, env=env, surface=surface)
+        self.assertEqual(
+            len([row for row in merged_again["admin_actions"] if row["action_id"] == 42]),
+            1,
+        )
+
+    def test_tenant_surface_never_publishes_platform_duty_routes(self):
+        contract = _load_contract()
+        surface = contract.build_platform_duty_surface(
+            is_platform_control_admin=False,
+            is_tenant_config_admin=True,
+        )
+        action = types.SimpleNamespace(_name="ir.actions.act_window", id=42)
+        env = types.SimpleNamespace(ref=lambda xmlid, raise_if_not_found=False: action)
+        self.assertEqual(
+            contract.build_platform_duty_route_authority_entries(env=env, surface=surface),
+            [],
+        )
+
+    def test_unresolvable_duty_action_fails_closed(self):
+        contract = _load_contract()
+        surface = contract.build_platform_duty_surface(
+            is_platform_control_admin=True,
+            is_tenant_config_admin=False,
+        )
+        env = types.SimpleNamespace(ref=lambda xmlid, raise_if_not_found=False: None)
+        self.assertEqual(
+            contract.build_platform_duty_route_authority_entries(env=env, surface=surface),
+            [],
+        )
+
     def test_tenants_endpoint_is_registry_driven(self):
         ops_source = (CONTROLLERS / "platform_ops_controller.py").read_text(encoding="utf-8")
         self.assertIn('"/api/ops/tenants"', ops_source)

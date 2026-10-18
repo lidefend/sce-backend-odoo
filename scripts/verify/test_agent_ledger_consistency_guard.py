@@ -82,6 +82,15 @@ def write_run(base: Path, run_id: str, status: str, branch: str, goal_id: str | 
     )
 
 
+def write_legacy_run(base: Path, run_id: str, status: str | None) -> None:
+    directory = base / f".agent/runs/{run_id}"
+    directory.mkdir(parents=True, exist_ok=True)
+    record = {"schema_version": 1, "id": run_id, "branch": f"legacy/{run_id}", "task_ref": run_id}
+    if status is not None:
+        record["status"] = status
+    (directory / "run.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+
+
 class AgentLedgerConsistencyGuardTest(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
@@ -219,6 +228,24 @@ class AgentLedgerConsistencyGuardTest(unittest.TestCase):
         )
         errors = MODULE.check(self.base)
         self.assertTrue(any("duplicate goal id" in e for e in errors), errors)
+
+    def test_pinned_legacy_receipt_is_archival(self) -> None:
+        self.assertEqual(MODULE.check(self.build()), [])
+        write_legacy_run(self.base, "DEMO-COMPANY-NAME-20261018", "reported")
+        self.assertEqual(MODULE.check(self.base), [])
+
+    def test_pinned_legacy_receipt_status_drift_is_detected(self) -> None:
+        self.assertEqual(MODULE.check(self.build()), [])
+        write_legacy_run(self.base, "DEMO-COMPANY-NAME-20261018", "completed")
+        errors = MODULE.check(self.base)
+        self.assertTrue(any("pinned archival run status drifted" in e for e in errors), errors)
+
+    def test_unpinned_legacy_receipt_is_not_archival(self) -> None:
+        self.assertEqual(MODULE.check(self.build()), [])
+        write_legacy_run(self.base, "LEGACY-UNPINNED", "active")
+        errors = MODULE.check(self.base)
+        self.assertTrue(any("LEGACY-UNPINNED" in e and "goal does not resolve" in e for e in errors), errors)
+        self.assertTrue(any("LEGACY-UNPINNED" in e and "record does not resolve" in e for e in errors), errors)
 
 
 if __name__ == "__main__":
