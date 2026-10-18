@@ -103,6 +103,31 @@ class TestGlobAndPlan(unittest.TestCase):
         self.assertEqual(plan["required_suites"], ["governance_static"])
         self.assertEqual(plan["required_evidence_suites"], [])
 
+    def test_acceptance_runners_require_their_own_runtime_evidence(self):
+        plan = guard.build_plan(
+            self.registry,
+            ["scripts/verify/record_relation_roundtrip_acceptance.js"],
+            "base",
+            HEAD,
+        )
+        self.assertEqual(plan["required_suites"], ["governance_static", "relation_roundtrip"])
+        self.assertEqual(plan["required_evidence_suites"], ["relation_roundtrip"])
+
+        plan = guard.build_plan(
+            self.registry,
+            ["scripts/verify/lib/frontend_acceptance_environment.mjs"],
+            "base",
+            HEAD,
+        )
+        self.assertEqual(
+            plan["required_suites"],
+            ["governance_static", "list_surface_structure", "relation_roundtrip"],
+        )
+        self.assertEqual(
+            plan["required_evidence_suites"],
+            ["list_surface_structure", "relation_roundtrip"],
+        )
+
     def test_plan_fails_closed_for_unclassified_paths(self):
         plan = guard.build_plan(self.registry, ["new_surface/unknown.txt"], "base", HEAD)
         self.assertEqual(plan["status"], "FAIL")

@@ -69,6 +69,37 @@
   },
   "rules": [
     {
+      "id": "acceptance-runner-list-surface",
+      "paths": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs"
+      ],
+      "suites": [
+        "governance_static",
+        "list_surface_structure"
+      ]
+    },
+    {
+      "id": "acceptance-runner-relation-roundtrip",
+      "paths": [
+        "scripts/verify/record_relation_roundtrip_acceptance.js"
+      ],
+      "suites": [
+        "governance_static",
+        "relation_roundtrip"
+      ]
+    },
+    {
+      "id": "acceptance-runner-shared-environment",
+      "paths": [
+        "scripts/verify/lib/frontend_acceptance_environment.mjs"
+      ],
+      "suites": [
+        "governance_static",
+        "list_surface_structure",
+        "relation_roundtrip"
+      ]
+    },
+    {
       "id": "governance-static",
       "paths": [
         "make/**",
