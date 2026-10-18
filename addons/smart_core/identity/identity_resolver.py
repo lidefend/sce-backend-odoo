@@ -20,6 +20,20 @@ ROLE_SURFACE_MAP = {
         "menu_xmlids": [],
         "deny_all_navigation": True,
     },
+    "system_admin": {
+        "label": "Platform Administrator",
+        "exclusive_surface": True,
+        "landing_scene_candidates": ["workspace.home"],
+        "discover_installed_capabilities": True,
+        "system_configuration_visible": True,
+        "deny_all_navigation": False,
+        "menu_xmlids": [],
+        "primary_menu_xmlids": [],
+        "role_home_menu_xmlids": [],
+        "contextual_menu_xmlids": [],
+        "admin_menu_xmlids": [],
+        "denied_menu_xmlids": [],
+    },
     "owner": {
         "label": "Owner",
         "landing_scene_candidates": ["workspace.home", "portal.dashboard"],
@@ -50,6 +64,7 @@ ROLE_SURFACE_MAP = {
 # raising; they are never the delivered product role policy and they are
 # asserted against the contract by the role-catalog alignment guard.
 ROLE_GROUPS_EXPLICIT = {
+    "system_admin": {"smart_core.group_smart_core_admin"},
     "executive": set(),
     "pm": set(),
     "finance": set(),
@@ -60,7 +75,7 @@ ROLE_GROUPS_CAPABILITY_FALLBACK = {
     "finance": set(),
 }
 
-ROLE_PRECEDENCE = ("executive", "pm", "finance")
+ROLE_PRECEDENCE = ("system_admin", "executive", "pm", "finance")
 # Roles that are not part of the ordering but still grant a first-class
 # capability surface; roles that only act as a capability fallback; and the
 # synthetic role used when real groups match no declared role.

@@ -150,6 +150,21 @@ class TestIdentityResolverEntryTarget(unittest.TestCase):
         self.assertEqual(surface["role_label"], "项目经理")
         self.assertIn("x.menu_uat_helper", surface["menu_xmlids"])
 
+    def test_bootstrap_platform_admin_is_not_restricted(self):
+        resolver = target.IdentityResolver()
+
+        surface = resolver.build_role_surface(
+            {"smart_core.group_smart_core_admin"},
+            [],
+            {"workspace.home"},
+        )
+
+        self.assertEqual(surface["role_code"], "system_admin")
+        self.assertEqual((surface.get("role_evidence") or {}).get("source"), "explicit")
+        self.assertTrue(surface["discover_installed_capabilities"])
+        self.assertTrue(surface["system_configuration_visible"])
+        self.assertFalse(surface["deny_all_navigation"])
+
     def test_only_smart_core_admin_uses_daily_capability_discovery_surface(self):
         resolver = target.IdentityResolver()
         resolver._role_groups_explicit = construction_policy.ROLE_GROUPS_EXPLICIT
