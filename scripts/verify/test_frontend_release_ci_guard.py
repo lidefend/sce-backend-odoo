@@ -79,6 +79,17 @@ class FrontendReleaseCIGuardTests(unittest.TestCase):
         )
         self.assertIn("FRONTEND_ACCEPTANCE_URL_ALIASES_NOT_ALIGNED", findings(root))
 
+    def test_static_frontend_build_must_stay_out_of_the_odoo_compose(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        compose = root / "docker-compose.yml"
+        compose.write_text(
+            compose.read_text(encoding="utf-8")
+            + "\n# VITE_ODOO_DB: ${VITE_ODOO_DB:-sc_prod}\n",
+            encoding="utf-8",
+        )
+        self.assertIn("FRONTEND_BUILD_ENVIRONMENT_NOT_ALIGNED", findings(root))
+
     def test_isolated_compose_project_must_be_exported_to_file_and_runner(self):
         temporary, root = self.fixture()
         self.addCleanup(temporary.cleanup)

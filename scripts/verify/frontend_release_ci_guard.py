@@ -160,8 +160,8 @@ def findings(root: Path = ROOT) -> list[str]:
     if (
         "VITE_ODOO_DB=$(FRONTEND_ACCEPTANCE_DB)" not in runtime_text
         or "VITE_APP_ENV=acceptance" not in runtime_text
-        or "VITE_ODOO_DB: ${VITE_ODOO_DB:-sc_prod}" not in compose_text
-        or "VITE_APP_ENV: ${VITE_APP_ENV:-production}" not in compose_text
+        or "VITE_ODOO_DB:" in compose_text
+        or "VITE_APP_ENV:" in compose_text
     ):
         errors.append("FRONTEND_BUILD_ENVIRONMENT_NOT_ALIGNED")
     if (
