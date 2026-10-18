@@ -3,7 +3,7 @@
 Date: 2026-07-14
 Owner: Construction backend owner
 Target file: `addons/smart_construction_core/core_extension.py`
-Current size: 1,787 lines
+Current size: 1,849 lines
 Phase: staged responsibility split
 
 ## Purpose
@@ -50,6 +50,7 @@ construction-owned policy.
 | `construction_core_extension_intent_handlers_split_guard.py` | Intent handler contribution extraction, lazy handler import mapping, approval-policy intent preservation, facade registry boundary, line lock, and no env/registry side effects. |
 | `construction_core_extension_service_builders_split_guard.py` | Service builder extraction, lazy service class/factory imports, facade hook preservation, line lock, and no ORM/registry side effects. |
 | `construction_core_extension_actor_roles_split_guard.py` | Actor role resolver extraction, explicit role XMLID parsing, capability-derived release roles, line lock, and no ORM/registry side effects. |
+| `construction_core_extension_relation_entry_policy_split_guard.py` | Relation entry policy extraction, tax/partner/original-contract domains and labels, facade delegation, line lock, and no write/registry side effects. |
 | `backend_boundary_guard.py` | Core backend ownership and extension-boundary constraints. |
 | `owner_industry_isolation_probe.py` | Industry module isolation and required extension hooks. |
 
@@ -269,13 +270,25 @@ Stage 15 is complete when:
   registration side effects;
 - `core_extension.py` is locked at `<=1787` lines for this stage.
 
+## Stage 16 Target
+
+Stage 16 is complete when:
+
+- `core_extension_relation_entry_policy.py` owns read-side relation entry policy:
+  contract tax quick-create defaults, self-funding/expense contractor domains,
+  and original-contract supplement direction domains;
+- `core_extension.py` keeps the public `smart_core_relation_entry_policy`
+  facade and delegates to the extracted module;
+- the extracted helper remains read-only: no writes, registry mutation, HTTP
+  calls, or import-time registration side effects;
+- `core_extension.py` is locked at `<=1849` lines for this stage.
+
 ## Next Candidate
 
 Next candidates should be read-only first:
 
 - import-time registration facts after module load order and consumers are
   locked by tests;
-- relation entry policy after tax quick-create side effects are mapped.
 - workflow contract projection after env/service transaction boundaries are
   documented and covered by behavior tests.
 

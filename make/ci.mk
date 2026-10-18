@@ -1197,6 +1197,7 @@ verify.contract.architecture.suite: \
 	@python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py
 	@python3 scripts/verify/construction_core_extension_service_builders_split_guard.py
 	@python3 scripts/verify/construction_core_extension_actor_roles_split_guard.py
+	@python3 scripts/verify/construction_core_extension_relation_entry_policy_split_guard.py
 	@python3 scripts/verify/file_line_budget_uniform_guard.py
 	@python3 -m unittest scripts.verify.test_construction_create_default_hooks
 	@python3 scripts/verify/construction_core_extension_responsibility_map_guard.py
@@ -1387,5 +1388,6 @@ verify.construction.create_defaults.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_construction_create_default_hooks
 	@python3 addons/smart_core/tests/test_api_data_sudo_scope_order_boundaries.py
 	@python3 scripts/verify/construction_core_extension_actor_roles_split_guard.py
+	@python3 scripts/verify/construction_core_extension_relation_entry_policy_split_guard.py
 	@python3 scripts/verify/construction_core_extension_policy_accessors_split_guard.py
 	@python3 scripts/verify/construction_core_extension_policy_maps_split_guard.py
