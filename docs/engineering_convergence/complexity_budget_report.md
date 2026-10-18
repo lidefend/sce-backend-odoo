@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `4851`
 - Files requiring split plan: `69`
-- Files above warning threshold: `134`
+- Files above warning threshold: `135`
 
 ## Split Plan Required
 
@@ -56,7 +56,7 @@ Generated from repository source files. This report is informational during the 
 | 1885 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1841 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
-| 1813 | YAML workflow | `scripts/verify/registry.yaml` |
+| 1819 | YAML workflow | `scripts/verify/registry.yaml` |
 | 1810 | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1804 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1751 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
@@ -196,6 +196,7 @@ Generated from repository source files. This report is informational during the 
 | 837 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
 | 833 | JavaScript source | `scripts/verify/frontend_geometry_scroll_audit.mjs` |
 | 832 | Python source | `scripts/ops/production_acceptance_clone_runtime.py` |
+| 830 | Python source | `scripts/release/test_production_release_contract.py` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 819 | Python source | `scripts/verify/workflow_action_semantics_completeness_guard.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
@@ -269,7 +270,7 @@ Generated from repository source files. This report is informational during the 
 | 1885 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1841 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
-| 1813 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
+| 1819 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 1810 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1804 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1751 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |

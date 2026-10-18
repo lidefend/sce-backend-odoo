@@ -21,6 +21,48 @@ atexit.register(RELEASE_IDENTITY_TMP.cleanup)
 RELEASE_IDENTITY_ROOT = Path(RELEASE_IDENTITY_TMP.name)
 
 
+def workflow_job_needs(workflow_text: str, job: str) -> list[str]:
+    """Parse the ``needs`` list of one workflow job without a YAML dependency.
+
+    Supports the inline (``needs: [a, b]``) and block (``needs:`` followed by
+    ``- a``) forms, so the assertion tracks the declared dependency set instead
+    of pinning one literal line whose ordering or length drifts.
+    """
+    lines = workflow_text.splitlines()
+    start = None
+    for index, line in enumerate(lines):
+        if re.fullmatch(rf"\s{{2}}{re.escape(job)}:\s*", line):
+            start = index
+            break
+    if start is None:
+        raise AssertionError(f"workflow job not found: {job}")
+    needs: list[str] = []
+    collecting_block = False
+    for line in lines[start + 1 :]:
+        if not line.strip():
+            continue
+        if len(line) - len(line.lstrip()) <= 2:
+            break
+        stripped = line.strip()
+        if collecting_block:
+            if not stripped.startswith("- "):
+                break
+            needs.append(stripped[2:].strip().strip("'\""))
+            continue
+        inline = re.fullmatch(r"needs:\s*\[(.*)\]", stripped)
+        if inline:
+            return [
+                item.strip().strip("'\"")
+                for item in inline.group(1).split(",")
+                if item.strip()
+            ]
+        if stripped == "needs:":
+            collecting_block = True
+    if not needs:
+        raise AssertionError(f"workflow job {job} declares no needs")
+    return needs
+
+
 def formal_env(db: str = "sc_migration_rehearsal") -> dict[str, str]:
     source_sha = "a" * 40
     image_digest = "sha256:" + "b" * 64
@@ -618,9 +660,13 @@ class StaticContractTests(unittest.TestCase):
             "python -m py_compile scripts/release/production_admin_identity_baseline.py",
             "python scripts/release/test_production_admin_identity_baseline.py",
             "ENV=prod is required",
-            "needs: [professional_authorization, python310_runtime_compatibility]",
         ):
             self.assertIn(contract, self.professional_quality_workflow)
+        needs = workflow_job_needs(
+            self.professional_quality_workflow, "professional_quality_gate"
+        )
+        self.assertIn("professional_authorization", needs)
+        self.assertIn("python310_runtime_compatibility", needs)
 
     def test_user_activation_readiness_is_readonly_redacted_and_make_wrapped(self):
         target = self.release_make.split(

@@ -1110,6 +1110,12 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_agent_dispatch_inbox.py
+  status: active
+  owner: platform-team
+  date: '2026-10-17'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: test_backend_contract_closure_guard.py
   status: orphan
   owner: platform-team
