@@ -37,7 +37,8 @@ class NamespaceRejection(HTTPException):
 class IrHttp(models.AbstractModel):
     _inherit = "ir.http"
 
-    def _pre_dispatch(self, rule, args):
+    @classmethod
+    def _pre_dispatch(cls, rule, args):
         try:
             enforce_entry_namespace(
                 request.env,

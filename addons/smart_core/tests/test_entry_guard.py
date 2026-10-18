@@ -159,6 +159,62 @@ class TestEntryGuard(unittest.TestCase):
         self.assertEqual(body["error"], "NS_UNKNOWN_NAMESPACE")
         self.assertEqual(body["message"], "unknown x")
 
+    def _load_ir_http(self):
+        root = Path(__file__).resolve().parents[1]
+        odoo = types.ModuleType("odoo")
+        models = types.ModuleType("odoo.models")
+        http = types.ModuleType("odoo.http")
+        werkzeug = types.ModuleType("werkzeug")
+        exceptions = types.ModuleType("werkzeug.exceptions")
+
+        class AbstractModel:
+            @classmethod
+            def _pre_dispatch(cls, rule, args):
+                return ("base", rule, args)
+
+        class HTTPException(Exception):
+            pass
+
+        class _HttpRequest:
+            path = "/web/login"
+            headers = {}
+
+        models.AbstractModel = AbstractModel
+        http.request = types.SimpleNamespace(env=None, httprequest=_HttpRequest())
+        exceptions.HTTPException = HTTPException
+        werkzeug.exceptions = exceptions
+        odoo.models = models
+        odoo.http = http
+
+        package = types.ModuleType("smart_core.models")
+        package.__path__ = [str(root / "models")]
+        for name, module in (
+            ("odoo", odoo),
+            ("odoo.models", models),
+            ("odoo.http", http),
+            ("werkzeug", werkzeug),
+            ("werkzeug.exceptions", exceptions),
+            ("smart_core.models", package),
+        ):
+            previous = sys.modules.get(name)
+            sys.modules[name] = module
+            self.addCleanup(
+                lambda key=name, old=previous: sys.modules.__setitem__(key, old)
+                if old is not None else sys.modules.pop(key, None)
+            )
+        return _load("smart_core.models.ir_http", root / "models" / "ir_http.py")
+
+    def test_pre_dispatch_is_a_classmethod_like_odoo_core(self):
+        module = self._load_ir_http()
+        self.assertIsInstance(vars(module.IrHttp).get("_pre_dispatch"), classmethod)
+
+        class EditorFace(module.IrHttp):
+            @classmethod
+            def _pre_dispatch(cls, rule, args):
+                return super()._pre_dispatch(rule, args)
+
+        self.assertEqual(EditorFace._pre_dispatch("rule", ("a",)), ("base", "rule", ("a",)))
+
 
 if __name__ == "__main__":
     unittest.main()
