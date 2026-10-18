@@ -476,13 +476,13 @@ class PaymentRequest(models.Model):
         readonly=True,
     )
     actual_payee_unit_display = fields.Char(
-        string="实际收款单位",
+        string="实际收款单位（展示）",
         compute="_compute_payment_apply_formal_visible_fields",
         store=True,
         readonly=True,
     )
     payer_unit_display = fields.Char(
-        string="付款单位",
+        string="付款单位（展示）",
         compute="_compute_payment_apply_formal_visible_fields",
         store=True,
         readonly=True,
@@ -508,7 +508,7 @@ class PaymentRequest(models.Model):
         readonly=True,
     )
     note_display = fields.Char(
-        string="备注",
+        string="备注（展示）",
         compute="_compute_payment_apply_formal_visible_fields",
         store=True,
         readonly=True,
@@ -526,7 +526,7 @@ class PaymentRequest(models.Model):
         readonly=True,
     )
     amount_uppercase_display = fields.Char(
-        string="金额大写",
+        string="金额大写（展示）",
         compute="_compute_payment_apply_formal_visible_fields",
         store=True,
         readonly=True,

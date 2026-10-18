@@ -102,7 +102,7 @@ class ScGeneralContract(models.Model):
     prepayment_amount = fields.Monetary(string="预付款", currency_field="currency_id")
     install_debug_payment = fields.Monetary(string="安装调试款", currency_field="currency_id")
     install_commissioning_payment = fields.Monetary(
-        string="安装调试款",
+        string="安装调试款金额",
         currency_field="currency_id",
         compute="_compute_business_aliases",
     )
@@ -113,7 +113,7 @@ class ScGeneralContract(models.Model):
         domain=[("type_tax_use", "=", "none"), ("amount_type", "=", "percent"), ("price_include", "=", False)],
         help="合同办理使用的税率百分比。历史税率数值会同步保留。",
     )
-    tax_rate = fields.Float(string="税率", digits=(16, 4))
+    tax_rate = fields.Float(string="税率（数值）", digits=(16, 4))
     change_amount_total = fields.Monetary(string="累计变更金额", currency_field="currency_id")
     change_rate = fields.Float(string="变更率(%)", compute="_compute_change_rate", store=True)
     currency_id = fields.Many2one(
