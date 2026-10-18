@@ -27,7 +27,9 @@
     ".agent/runs/PLATFORM-ADMIN-SURFACE-CLOSURE-20261018/run.json",
     "docs/ops/iterations/platform_admin_surface_closure_20261018.md",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
-    "docs/frontend_productization/decision-authority-inventory-v1.json"
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "docs/engineering_convergence/module_dependency_map.md",
+    "docs/engineering_convergence/complexity_budget_report.md"
   ],
   "environment": {
     "kind": "offline",
