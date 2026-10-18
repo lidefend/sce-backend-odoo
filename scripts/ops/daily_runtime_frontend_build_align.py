@@ -62,6 +62,7 @@ DEFAULT_RECEIPT = ".runtime/final-acceptance/daily-deployed/frontend-build.json"
 CONFIRMATION = "BUILD_AND_DECLARE_DAILY_RUNTIME_FRONTEND_AT_DEPLOYED_HEAD"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 FULL_FP = re.compile(r"^[0-9a-f]{64}$")
+ENTRY_PREFIX = re.compile(r"^/(t/[a-z0-9-]+|platform-admin)$")
 ENTRY_ASSET = re.compile(r"^index-[A-Za-z0-9_-]+\.js$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 
@@ -75,7 +76,8 @@ import fcntl, json, os, re, shutil, subprocess, sys, time, urllib.request
 from pathlib import Path
 
 (expected_sha, env_name, env_file, database, base_url, remote_root,
- fingerprint_hint, entry_hint, platform_admin_database) = sys.argv[1:10]
+ fingerprint_hint, entry_hint, platform_admin_database,
+ entry_prefix) = sys.argv[1:11]
 
 tag = "[daily.runtime.frontend.build]"
 fixed_root = Path("/opt/projects/repos/sce-product-odoo")
@@ -83,11 +85,14 @@ root = Path(remote_root)
 full_sha = re.compile(r"^[0-9a-f]{40}$")
 full_fp = re.compile(r"^[0-9a-f]{64}$")
 entry_re = re.compile(r'src="/assets/(index-[^"?]+\.js)"')
+entry_prefix_re = re.compile(r"^/(t/[a-z0-9-]+|platform-admin)$")
 
 if root != fixed_root or not root.is_dir():
     raise SystemExit(tag + " BLOCKED invalid remote repository")
 if not full_sha.fullmatch(expected_sha):
     raise SystemExit(tag + " BLOCKED invalid deployed revision")
+if not entry_prefix_re.fullmatch(entry_prefix or ""):
+    raise SystemExit(tag + " BLOCKED invalid entry namespace prefix")
 
 env_path = root / env_file
 dist_dir = root / "frontend/apps/web/dist-dev"
@@ -97,6 +102,7 @@ state = {
     "fingerprint": "", "entry_asset": "", "env_file": str(env_path),
     "env_written": False, "backup_path": "", "restarted": False,
     "platform_admin_database": platform_admin_database,
+    "entry_prefix": entry_prefix,
     "physical_db_sweep": "NOT_RUN", "physical_db_bakes": [],
     "rolled_back": False, "served": None, "served_entry_asset": "",
     "dist_dir": str(dist_dir), "remote_root": str(root),
@@ -188,8 +194,13 @@ def physical_db_bakes():
     return sorted(set(found))
 
 def readback():
+    # Batch C: the namespace prefix carries the database authority. The bare
+    # /api path is refused with NS_NAMESPACE_REQUIRED, so the served identity is
+    # read from the same namespace the browser uses.
     try:
-        with urllib.request.urlopen(base_url + "/api/runtime-version", timeout=20) as resp:
+        with urllib.request.urlopen(
+            base_url + entry_prefix + "/api/runtime-version", timeout=20
+        ) as resp:
             return json.loads(resp.read().decode("utf-8"))
     except Exception:
         return None
@@ -339,10 +350,10 @@ with lock_path.open("a+b") as lock:
     served = readback()
     state["served"] = served
 
-    served_code, served_html = http_text("/index.html")
+    served_code, served_html = http_text(entry_prefix + "/index.html")
     served_entry = entry_of(served_html)
     state["served_entry_asset"] = served_entry
-    asset_code = http_status("/assets/" + entry)
+    asset_code = http_status(entry_prefix + "/assets/" + entry)
 
     ok = bool(
         served_entry == entry
@@ -366,6 +377,7 @@ def remote_command(
     fingerprint_hint: str,
     entry_hint: str,
     platform_admin_database: str,
+    entry_prefix: str,
 ) -> str:
     return " ".join(
         shlex.quote(item)
@@ -382,11 +394,14 @@ def remote_command(
             fingerprint_hint,
             entry_hint,
             platform_admin_database,
+            entry_prefix,
         )
     )
 
 
-def preflight(expected_sha: str, ssh_host: str, platform_admin_database: str) -> None:
+def preflight(
+    expected_sha: str, ssh_host: str, platform_admin_database: str, entry_prefix: str
+) -> None:
     if os.environ.get("CONFIRM_DAILY_RUNTIME_FRONTEND_BUILD") != CONFIRMATION:
         raise BuildError("exact daily runtime frontend build confirmation is required")
     if not FULL_SHA.fullmatch(expected_sha or ""):
@@ -397,6 +412,8 @@ def preflight(expected_sha: str, ssh_host: str, platform_admin_database: str) ->
         raise BuildError(
             "the platform-admin database must be the declared duty database name"
         )
+    if not ENTRY_PREFIX.fullmatch(entry_prefix or ""):
+        raise BuildError("the entry namespace prefix must be a declared path prefix")
 
 
 def reuse_hint(receipt_path: str, expected_sha: str) -> tuple[str, str]:
@@ -434,8 +451,9 @@ def align(
     fingerprint_hint: str,
     entry_hint: str,
     platform_admin_database: str,
+    entry_prefix: str,
 ) -> dict[str, object]:
-    preflight(expected_sha, ssh_host, platform_admin_database)
+    preflight(expected_sha, ssh_host, platform_admin_database, entry_prefix)
     if not DATABASE_NAME.fullmatch(database or ""):
         raise BuildError(
             "the served database must be a declared duty database name; this "
@@ -461,6 +479,7 @@ def align(
             fingerprint_hint,
             entry_hint,
             platform_admin_database,
+            entry_prefix,
         ),
     ]
     result = run(command)
@@ -489,6 +508,7 @@ def align(
         or evidence.get("platform_admin_database") != platform_admin_database
         or evidence.get("physical_db_sweep") != "NO_PHYSICAL_DB_NAME"
         or evidence.get("physical_db_bakes") != []
+        or evidence.get("entry_prefix") != entry_prefix
     ):
         raise BuildError("remote daily frontend build evidence differs")
     return evidence
@@ -503,6 +523,7 @@ def main() -> int:
     parser.add_argument("--database", default=DEFAULT_DATABASE)
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
     parser.add_argument("--platform-admin-database", required=True)
+    parser.add_argument("--entry-prefix", required=True)
     parser.add_argument("--receipt", default=DEFAULT_RECEIPT)
     parser.add_argument("--report", required=True)
     args = parser.parse_args()
@@ -518,6 +539,7 @@ def main() -> int:
             fingerprint_hint,
             entry_hint,
             args.platform_admin_database,
+            args.entry_prefix,
         )
     except BuildError as exc:
         raise SystemExit(f"[daily.runtime.frontend.build] BLOCKED: {exc}") from exc

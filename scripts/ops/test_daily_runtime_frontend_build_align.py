@@ -30,6 +30,7 @@ CONFIRM = {"CONFIRM_DAILY_RUNTIME_FRONTEND_BUILD": build_module.CONFIRMATION}
 def evidence(**overrides: object) -> bytes:
     payload: dict[str, object] = {
         "status": "PASS",
+        "entry_prefix": "/t/demo",
         "expected_sha": SHA,
         "head": SHA,
         "reused": False,
@@ -51,6 +52,7 @@ def evidence(**overrides: object) -> bytes:
         },
         "served_entry_asset": ENTRY_ASSET,
         "platform_admin_database": ADMIN_DB,
+        "entry_prefix": "/t/demo",
         "physical_db_sweep": "NO_PHYSICAL_DB_NAME",
         "physical_db_bakes": [],
         "dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
@@ -66,6 +68,7 @@ def evidence(**overrides: object) -> bytes:
 def write_receipt(directory: str, **overrides: object) -> str:
     payload: dict[str, object] = {
         "status": "PASS",
+        "entry_prefix": "/t/demo",
         "expected_sha": SHA,
         "head": SHA,
         "remote_root": build_module.REMOTE_ROOT,
@@ -89,6 +92,7 @@ def call_align(**overrides: object):
         "fingerprint_hint": "",
         "entry_hint": "",
         "platform_admin_database": ADMIN_DB,
+        "entry_prefix": "/t/demo",
     }
     args.update(overrides)
     return build_module.align(**args)  # type: ignore[arg-type]
@@ -98,25 +102,25 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
     def test_preflight_requires_confirmation(self) -> None:
         with mock.patch.dict(os.environ, {}, clear=True):
             with self.assertRaisesRegex(build_module.BuildError, "confirmation"):
-                build_module.preflight(SHA, "sc-root", ADMIN_DB)
+                build_module.preflight(SHA, "sc-root", ADMIN_DB, "/t/demo")
 
     def test_preflight_rejects_non_commit_revision(self) -> None:
         with mock.patch.dict(os.environ, CONFIRM):
             with self.assertRaisesRegex(build_module.BuildError, "commit SHA"):
-                build_module.preflight("HEAD", "sc-root", ADMIN_DB)
+                build_module.preflight("HEAD", "sc-root", ADMIN_DB, "/t/demo")
             with self.assertRaisesRegex(build_module.BuildError, "host alias"):
-                build_module.preflight(SHA, "sc-root; rm -rf /", ADMIN_DB)
+                build_module.preflight(SHA, "sc-root; rm -rf /", ADMIN_DB, "/t/demo")
 
     def test_preflight_accepts_governed_inputs(self) -> None:
         with mock.patch.dict(os.environ, CONFIRM):
-            build_module.preflight(SHA, "sc-root", ADMIN_DB)
+            build_module.preflight(SHA, "sc-root", ADMIN_DB, "/t/demo")
 
     def test_preflight_requires_the_declared_platform_admin_database(self) -> None:
         with mock.patch.dict(os.environ, CONFIRM):
             for bad in ("", "sc platform", "-control", "SC_Platform_Control"):
                 with self.assertRaisesRegex(build_module.BuildError, "platform-admin database"):
-                    build_module.preflight(SHA, "sc-root", bad)
-            build_module.preflight(SHA, "sc-root", ADMIN_DB)
+                    build_module.preflight(SHA, "sc-root", bad, "/t/demo")
+            build_module.preflight(SHA, "sc-root", ADMIN_DB, "/t/demo")
 
     def test_the_entry_ships_no_bare_database_default(self) -> None:
         """The served database is a governance fact, not an entry default.
@@ -142,7 +146,7 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
     def test_remote_command_binds_exact_revision_and_reuse_hint(self) -> None:
         command = build_module.remote_command(
             SHA, "dev", ".env.dev", "sc_demo", "http://127.0.0.1:18081", FINGERPRINT,
-            ENTRY_ASSET, ADMIN_DB,
+            ENTRY_ASSET, ADMIN_DB, "/t/demo",
         )
         self.assertEqual(
             shlex.split(command),
@@ -159,6 +163,7 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
                 FINGERPRINT,
                 ENTRY_ASSET,
                 ADMIN_DB,
+                "/t/demo",
             ],
         )
 

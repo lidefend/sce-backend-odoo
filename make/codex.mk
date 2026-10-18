@@ -773,6 +773,9 @@ DAILY_RUNTIME_FRONTEND_BUILD_REPORT ?= $(DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT)
 # a second time here: two hand-maintained copies of the authority the
 # platform-admin entry mounts would be two dialects of the same fact.
 DAILY_RUNTIME_FRONTEND_BUILD_PLATFORM_ADMIN_DB ?= $(shell python3 -c 'import json; print(json.load(open("config/ops/daily_runtime_database_duties.v1.json"))["platform_admin_database"])')
+# Batch C: the served identity is published under the demo namespace prefix,
+# not at the bare /api path, which is refused with NS_NAMESPACE_REQUIRED.
+DAILY_RUNTIME_FRONTEND_BUILD_ENTRY_PREFIX ?= $(shell python3 -c 'import json; print(json.load(open("config/ops/daily_runtime_entry.v1.json"))["public_entry"]["demo_path"])')
 
 verify.daily.runtime.frontend.build: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/daily_runtime_frontend_build_align.py scripts/ops/test_daily_runtime_frontend_build_align.py
@@ -788,6 +791,7 @@ daily.runtime.frontend.build: guard.prod.forbid verify.daily.runtime.frontend.bu
 		--database "$(DAILY_RUNTIME_FRONTEND_BUILD_DATABASE)" \
 		--base-url "$(DAILY_RUNTIME_FRONTEND_BUILD_BASE_URL)" \
 		--platform-admin-database "$(DAILY_RUNTIME_FRONTEND_BUILD_PLATFORM_ADMIN_DB)" \
+		--entry-prefix "$(DAILY_RUNTIME_FRONTEND_BUILD_ENTRY_PREFIX)" \
 		--receipt "$(DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT)" \
 		--report "$(DAILY_RUNTIME_FRONTEND_BUILD_REPORT)"
 
