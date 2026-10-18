@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import logging
 import time
 from uuid import uuid4
 
@@ -43,6 +44,8 @@ from odoo.addons.smart_construction_core.handlers.reason_codes import (
     REASON_DONE,
 )
 from odoo.addons.smart_construction_core.services import boq_dangerous_import_service as svc
+
+_logger = logging.getLogger(__name__)
 
 DANGEROUS_GROUP = "smart_construction_core.group_sc_cap_boq_dangerous_import"
 UPDATE_LINE_FIELDS = ("name", "quantity", "price", "imported_amount")
@@ -480,7 +483,7 @@ class BoqDangerousImportExecuteHandler(_DangerousImportHandlerBase):
                     res_id=version.id,
                 )
             except Exception:
-                pass
+                _logger.debug("Unable to release BOQ dangerous import idempotency row after failure.", exc_info=True)
         if claim.get("mode") == "conflict":
             payload_resp = build_idempotency_conflict_response(
                 intent_type=self.INTENT_TYPE,
@@ -769,7 +772,7 @@ class BoqDangerousImportExecuteHandler(_DangerousImportHandlerBase):
                     ),
                 )
             except Exception:
-                pass
+                _logger.debug("Unable to write BOQ dangerous import audit log.", exc_info=True)
 
         return {
             "ok": True,
