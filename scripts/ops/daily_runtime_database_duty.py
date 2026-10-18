@@ -433,9 +433,50 @@ def validate_entry(entry, declaration):
         elif str(row.get("bind_host") or "") != "127.0.0.1":
             failures.append("every non-public face must bind the loopback interface")
 
+    hint = entry.get("database_hint")
+    if not isinstance(hint, dict):
+        failures.append("entry.database_hint must declare the accepted hint sources")
+        hint = {}
+    header = str(hint.get("header") or "")
+    query = str(hint.get("query") or "")
+    if header != "X-Odoo-DB":
+        failures.append("entry.database_hint.header must be X-Odoo-DB")
+    if query != "db":
+        failures.append("entry.database_hint.query must be db")
+    expected_sources = ["header:X-Odoo-DB", "query:db"]
+    if hint.get("sources") != expected_sources:
+        failures.append("entry.database_hint.sources must be %s" % (expected_sources,))
+    expected_precedence = ["header:X-Odoo-DB", "query:db", "default"]
+    if hint.get("precedence") != expected_precedence:
+        failures.append("entry.database_hint.precedence must be %s (header wins)"
+                        % (expected_precedence,))
+    if str(hint.get("conflict") or "") != "header_wins":
+        failures.append("entry.database_hint.conflict must be header_wins")
+    default_database = next(
+        (str(route.get("database") or "") for route in routes if route.get("default") is True),
+        "",
+    )
+    if str(hint.get("default_database") or "") != default_database:
+        failures.append("entry.database_hint.default_database must be the default route database")
+    expected_allowed = [str(route.get("database") or "") for route in routes]
+    if hint.get("allowed_databases") != expected_allowed:
+        failures.append("entry.database_hint.allowed_databases must equal the declared routes")
+    unknown = hint.get("unknown_database")
+    if not isinstance(unknown, dict):
+        failures.append("entry.database_hint.unknown_database must declare the refusal contract")
+        unknown = {}
+    if unknown.get("status") != 400:
+        failures.append("entry.database_hint.unknown_database.status must be 400")
+    if str(unknown.get("code") or "") != "unknown_database":
+        failures.append("entry.database_hint.unknown_database.code must be unknown_database")
+    if str(unknown.get("content_type") or "") != "application/json":
+        failures.append("entry.database_hint.unknown_database.content_type must be application/json")
+
     assertions = entry.get("assertions") or {}
     for key in ("one_public_entry", "no_second_public_route",
-                "database_header_is_the_only_switcher",
+                "database_hint_sources_are_declared",
+                "database_hint_conflicts_resolve_by_declared_precedence",
+                "unknown_database_is_rejected",
                 "never_route_to_an_undeclared_database"):
         if assertions.get(key) is not True:
             failures.append("entry.assertions.%s must be true" % (key,))
@@ -1477,6 +1518,20 @@ def render_env(duty, credentials):
                 platform_upstream = str(route.get("upstream") or "odoo:8069")
                 break
     entry_network = str((entry.get("network") or {}).get("name") or "sc-daily-entry")
+    allowed_databases = [
+        str(route.get("database") or "")
+        for route in entry.get("routes") or []
+        if str(route.get("database") or "")
+    ]
+    if not allowed_databases:
+        # The governed entry always declares its routes; the carrier unit tests
+        # exercise render_env without one.  Keep the rendered set explicit in
+        # that case rather than widening it to "anything".
+        allowed_databases = [str(duty["database"])]
+        platform_database = str(PAYLOAD.get("platform_admin_database") or "")
+        if platform_database and platform_database not in allowed_databases:
+            allowed_databases.append(platform_database)
+    allowed_pattern = "~^(%s)$" % "|".join(re.escape(database) for database in allowed_databases)
     values = {
         "DUTY_NAME": duty["duty"],
         "COMPOSE_PROJECT_NAME": duty["cluster"]["compose_project"],
@@ -1507,6 +1562,7 @@ def render_env(duty, credentials):
         "NGINX_BIND_HOST": str(duty["routing"].get("nginx_bind_host") or "0.0.0.0"),
         "SC_PROXY_PLATFORM_DB": PAYLOAD["platform_admin_database"],
         "SC_PROXY_PLATFORM_UPSTREAM": platform_upstream,
+        "SC_PROXY_ALLOWED_DB_PATTERN": allowed_pattern,
         "SC_DAILY_ENTRY_NETWORK": entry_network,
         "FRONTEND_DIST_DIR": duty["stack"]["frontend_dist_dir"],
         "DEMO_ADDONS_ROOT": duty["stack"]["demo_addons_root"],

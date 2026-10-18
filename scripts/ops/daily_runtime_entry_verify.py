@@ -57,32 +57,44 @@ def docker(*args):
     return run(["docker", *args])
 
 
-def http(path, headers=None):
+def http_full(path, headers=None):
     request = urllib.request.Request(
         "http://127.0.0.1:%d%s" % (int(ENTRY["public_entry"]["port"]), path),
         headers=headers or {},
     )
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
-            return response.getcode(), response.read().decode("utf-8", "replace")
+            return (
+                response.getcode(),
+                response.read().decode("utf-8", "replace"),
+                response.headers.get("Content-Type", ""),
+            )
     except urllib.error.HTTPError as error:
-        return error.code, error.read().decode("utf-8", "replace")
+        return error.code, error.read().decode("utf-8", "replace"), error.headers.get("Content-Type", "")
     except Exception as error:  # connection refusal is evidence too
-        return 0, str(error)
+        return 0, str(error), ""
 
 
-def runtime_version(header=None, query=None):
-    path = "/api/runtime-version"
+def http(path, headers=None):
+    code, body, _ = http_full(path, headers)
+    return code, body
+
+
+def probe(path, header=None, query=None):
     if query:
-        path += "?db=" + urllib.parse.quote(query)
-    code, body = http(path, {"X-Odoo-DB": header} if header else {})
-    if code != 200:
-        return code, {}
+        separator = "&" if "?" in path else "?"
+        path += separator + "db=" + urllib.parse.quote(query)
+    code, body, content_type = http_full(path, {"X-Odoo-DB": header} if header else {})
     try:
         payload = json.loads(body)
     except ValueError:
-        return code, {}
-    return code, payload if isinstance(payload, dict) else {}
+        payload = {}
+    return code, payload if isinstance(payload, dict) else {}, content_type
+
+
+def runtime_version(header=None, query=None):
+    code, payload, _ = probe("/api/runtime-version", header=header, query=query)
+    return code, payload
 
 
 def entry_asset(html):
@@ -221,12 +233,30 @@ add("both_paths_serve_the_same_spa_entry", bool(served_entry) and served_entry =
 add("served_entry_asset_answers", bool(served_entry) and asset_code == 200,
     {"asset": served_entry, "code": asset_code})
 
-default_code, default_version = runtime_version()
-header_code, header_version = runtime_version(header=platform_db)
-query_code, query_version = runtime_version(query=platform_db)
-serving_header_code, serving_header_version = runtime_version(header=serving_db)
-undeclared_code, undeclared_version = runtime_version(header="sc_undeclared_entry_probe")
-undeclared_query_code, undeclared_query_version = runtime_version(query="sc_undeclared_entry_probe")
+declared_databases = {serving_db, platform_db}
+declared_database_order = [str(row.get("database") or "") for row in ENTRY.get("routes") or []]
+hint_contract = ENTRY.get("database_hint") or {}
+refusal = hint_contract.get("unknown_database") or {}
+refusal_status = int(refusal.get("status") or 0)
+refusal_code = str(refusal.get("code") or "")
+refusal_type = str(refusal.get("content_type") or "")
+
+default_code, default_version, _ = probe("/api/runtime-version")
+header_code, header_version, _ = probe("/api/runtime-version", header=platform_db)
+query_code, query_version, _ = probe("/api/runtime-version", query=platform_db)
+serving_header_code, serving_header_version, _ = probe("/api/runtime-version", header=serving_db)
+conflict_platform_code, conflict_platform_version, _ = probe(
+    "/api/runtime-version", header=platform_db, query=serving_db)
+conflict_serving_code, conflict_serving_version, _ = probe(
+    "/api/runtime-version", header=serving_db, query=platform_db)
+undeclared_code, undeclared_version, undeclared_type = probe(
+    "/api/runtime-version", header="sc_undeclared_entry_probe")
+undeclared_query_code, undeclared_query_version, undeclared_query_type = probe(
+    "/api/runtime-version", query="sc_undeclared_entry_probe")
+contract_code, contract_version, contract_type = probe(
+    "/api/v1/auth/page-contracts", header="sc_undeclared_entry_probe")
+contract_query_code, contract_query_version, contract_query_type = probe(
+    "/api/v1/auth/page-contracts", query="sc_undeclared_entry_probe")
 
 add("default_route_lands_on_the_serving_database",
     default_code == 200 and default_version.get("database") == serving_db,
@@ -248,16 +278,42 @@ add("the_platform_hint_never_returns_the_serving_database",
     header_version.get("database") != serving_db and query_version.get("database") != serving_db,
     {"serving": serving_db, "header": header_version.get("database"),
      "query": query_version.get("database")})
-
-declared_databases = {serving_db, platform_db}
-add("an_undeclared_header_hint_never_reaches_an_undeclared_database",
-    undeclared_code != 200 or undeclared_version.get("database") in declared_databases,
-    {"code": undeclared_code, "observed": undeclared_version.get("database"),
-     "declared": sorted(declared_databases)})
-add("an_undeclared_query_hint_never_reaches_an_undeclared_database",
-    undeclared_query_code != 200 or undeclared_query_version.get("database") in declared_databases,
-    {"code": undeclared_query_code, "observed": undeclared_query_version.get("database"),
-     "declared": sorted(declared_databases)})
+add("header_wins_when_it_names_the_platform_database",
+    conflict_platform_code == 200 and conflict_platform_version.get("database") == platform_db,
+    {"code": conflict_platform_code, "observed": conflict_platform_version.get("database"),
+     "header": platform_db, "query": serving_db})
+add("header_wins_when_it_names_the_serving_database",
+    conflict_serving_code == 200 and conflict_serving_version.get("database") == serving_db,
+    {"code": conflict_serving_code, "observed": conflict_serving_version.get("database"),
+     "header": serving_db, "query": platform_db})
+add("the_declared_refusal_contract_is_explicit",
+    refusal_status == 400 and refusal_code == "unknown_database"
+    and refusal_type == "application/json",
+    {"status": refusal_status, "code": refusal_code, "content_type": refusal_type})
+add("an_undeclared_header_hint_is_refused",
+    undeclared_code == refusal_status
+    and undeclared_version.get("error") == refusal_code
+    and "application/json" in undeclared_type,
+    {"code": undeclared_code, "body": undeclared_version,
+     "content_type": undeclared_type, "expected": refusal_status})
+add("an_undeclared_query_hint_is_refused",
+    undeclared_query_code == refusal_status
+    and undeclared_query_version.get("error") == refusal_code
+    and "application/json" in undeclared_query_type,
+    {"code": undeclared_query_code, "body": undeclared_query_version,
+     "content_type": undeclared_query_type, "expected": refusal_status})
+add("an_undeclared_header_hint_is_refused_on_the_login_contract",
+    contract_code == refusal_status
+    and contract_version.get("error") == refusal_code
+    and "application/json" in contract_type,
+    {"code": contract_code, "body": contract_version,
+     "content_type": contract_type, "expected": refusal_status})
+add("an_undeclared_query_hint_is_refused_on_the_login_contract",
+    contract_query_code == refusal_status
+    and contract_query_version.get("error") == refusal_code
+    and "application/json" in contract_query_type,
+    {"code": contract_query_code, "body": contract_query_version,
+     "content_type": contract_query_type, "expected": refusal_status})
 
 for label, version in (("serving", default_version), ("platform", header_version)):
     add("%s_runtime_publishes_the_deployed_revision" % label,
@@ -285,6 +341,8 @@ for label, container, database in (
         {"container": container, "observed": environment.get("FRONTEND_BUILD_SHA256"),
          "expected": dist_fingerprint})
 
+expected_allowed_pattern = "~^(%s)$" % "|".join(
+    re.escape(database) for database in declared_database_order)
 for label, container, expected_db, expected_upstream in (
     ("serving_nginx", serving_nginx, platform_db, str(platform_route.get("upstream") or "")),
     ("platform_nginx", platform_nginx, platform_db, "odoo:8069"),
@@ -297,11 +355,23 @@ for label, container, expected_db, expected_upstream in (
          "observed_db": environment.get("SC_PROXY_PLATFORM_DB"),
          "observed_upstream": environment.get("SC_PROXY_PLATFORM_UPSTREAM"),
          "expected_db": expected_db, "expected_upstream": expected_upstream})
+    add("%s_declares_the_allowed_database_set" % label,
+        environment.get("SC_PROXY_ALLOWED_DB_PATTERN") == expected_allowed_pattern,
+        {"container": container,
+         "observed": environment.get("SC_PROXY_ALLOWED_DB_PATTERN"),
+         "expected": expected_allowed_pattern})
     conf = rendered_conf(container)
     pattern = r"%s\s+%s;" % (re.escape(expected_db), re.escape(expected_upstream))
     add("%s_rendered_config_carries_the_platform_route" % label,
         bool(conf) and re.search(pattern, conf) is not None,
         {"container": container, "expected": pattern})
+    add("%s_rendered_config_refuses_unknown_databases" % label,
+        bool(conf)
+        and expected_allowed_pattern in conf
+        and "if ($sc_proxy_db_allowed = 0)" in conf
+        and 'return 400' in conf
+        and 'unknown_database' in conf,
+        {"container": container, "allowed_pattern": expected_allowed_pattern})
 
 network_name = str((ENTRY.get("network") or {}).get("name") or "")
 network = docker("network", "inspect", network_name)

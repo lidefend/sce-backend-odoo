@@ -43,16 +43,52 @@ class NginxProxyDbAuthorityGuardTest(unittest.TestCase):
         self.assertTrue(any("fallback must be" in error for error in errors), errors)
 
     def test_dropping_the_explicit_db_passthrough_is_rejected(self):
-        mutated = self.template.replace("map $arg_db $sc_proxy_db {", "map $arg_db $sc_proxy_db_disabled {")
+        mutated = self.template.replace(
+            "map $arg_db $sc_proxy_query_db {", "map $arg_db $sc_proxy_query_db_disabled {"
+        )
         self.assertNotEqual(mutated, self.template)
         errors = self.probe(template=mutated)
-        self.assertTrue(any("must still pass through" in error for error in errors), errors)
+        self.assertTrue(any("declared header > query > default precedence" in error for error in errors), errors)
+
+    def test_reversing_the_declared_precedence_is_rejected(self):
+        mutated = self.template.replace(
+            "map $sc_proxy_header_db $sc_proxy_hinted_db {",
+            "map $sc_proxy_query_db $sc_proxy_hinted_db {",
+        )
+        self.assertNotEqual(mutated, self.template)
+        errors = self.probe(template=mutated)
+        self.assertTrue(any("declared header > query > default precedence" in error for error in errors), errors)
+
+    def test_dropping_the_allowed_database_check_is_rejected(self):
+        mutated = self.template.replace(
+            "map $sc_proxy_db $sc_proxy_db_allowed {",
+            "map $sc_proxy_db $sc_proxy_db_allowed_disabled {",
+        )
+        self.assertNotEqual(mutated, self.template)
+        errors = self.probe(template=mutated)
+        self.assertTrue(any("allowed set" in error for error in errors), errors)
+
+    def test_accepting_an_unknown_database_is_rejected(self):
+        mutated = self.template.replace(
+            guard.UNKNOWN_REFUSAL_LINE, "    return 200 '{\"error\":\"unknown_database\"}';"
+        )
+        self.assertNotEqual(mutated, self.template)
+        errors = self.probe(template=mutated)
+        self.assertTrue(any("HTTP 400 `unknown_database`" in error for error in errors), errors)
 
     def test_dropping_the_profile_injection_is_rejected(self):
         mutated = self.compose.replace(guard.COMPOSE_INJECTION, "SC_PROXY_DEFAULT_DB: sc_demo")
         self.assertNotEqual(mutated, self.compose)
         errors = self.probe(compose=mutated)
         self.assertTrue(any("must inject the profile database" in error for error in errors), errors)
+
+    def test_dropping_the_allowed_pattern_injection_is_rejected(self):
+        mutated = self.compose.replace(
+            "      SC_PROXY_ALLOWED_DB_PATTERN: '${SC_PROXY_ALLOWED_DB_PATTERN:-~^.+$}'\n", ""
+        )
+        self.assertNotEqual(mutated, self.compose)
+        errors = self.probe(compose=mutated)
+        self.assertTrue(any("allowed database pattern" in error for error in errors), errors)
 
     def test_widening_envsubst_to_every_variable_is_rejected(self):
         mutated = self.compose.replace(f"      {guard.COMPOSE_FILTER}\n", "")

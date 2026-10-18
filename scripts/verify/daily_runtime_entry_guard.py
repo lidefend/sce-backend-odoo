@@ -49,6 +49,13 @@ def probe() -> list[str]:
 
     if template:
         for token in (
+            "map $http_x_odoo_db $sc_proxy_header_db {",
+            "map $arg_db $sc_proxy_query_db {",
+            "map $sc_proxy_header_db $sc_proxy_hinted_db {",
+            "map $sc_proxy_hinted_db $sc_proxy_db {",
+            "${SC_PROXY_ALLOWED_DB_PATTERN} 1;",
+            "if ($sc_proxy_db_allowed = 0) {",
+            "return 400 '{\"error\":\"unknown_database\"}';",
             "map $sc_proxy_db $sc_proxy_upstream {",
             "${SC_PROXY_PLATFORM_DB}  ${SC_PROXY_PLATFORM_UPSTREAM};",
             "proxy_pass http://$sc_proxy_upstream;",
@@ -63,7 +70,8 @@ def probe() -> list[str]:
             '"${NGINX_BIND_HOST:-0.0.0.0}:${NGINX_PORT}:80"',
             "SC_PROXY_PLATFORM_DB: ${SC_PROXY_PLATFORM_DB}",
             "SC_PROXY_PLATFORM_UPSTREAM: ${SC_PROXY_PLATFORM_UPSTREAM}",
-            "NGINX_ENVSUBST_FILTER: '^SC_PROXY_(DEFAULT_DB|PLATFORM_DB|PLATFORM_UPSTREAM)$'",
+            "SC_PROXY_ALLOWED_DB_PATTERN: ${SC_PROXY_ALLOWED_DB_PATTERN}",
+            "NGINX_ENVSUBST_FILTER: '^SC_PROXY_(DEFAULT_DB|PLATFORM_DB|PLATFORM_UPSTREAM|ALLOWED_DB_PATTERN)$'",
             "sc-daily-entry:",
             "name: ${SC_DAILY_ENTRY_NETWORK:-sc-daily-entry}",
         ):
@@ -76,6 +84,7 @@ def probe() -> list[str]:
             "NGINX_BIND_HOST=@NGINX_BIND_HOST@",
             "SC_PROXY_PLATFORM_DB=@SC_PROXY_PLATFORM_DB@",
             "SC_PROXY_PLATFORM_UPSTREAM=@SC_PROXY_PLATFORM_UPSTREAM@",
+            "SC_PROXY_ALLOWED_DB_PATTERN=@SC_PROXY_ALLOWED_DB_PATTERN@",
             "SC_DAILY_ENTRY_NETWORK=@SC_DAILY_ENTRY_NETWORK@",
         ):
             if key not in env_template:

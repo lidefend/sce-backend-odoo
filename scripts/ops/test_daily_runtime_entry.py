@@ -80,6 +80,42 @@ class DailyRuntimeEntryTest(unittest.TestCase):
         entry_doc["network"]["name"] = ""
         self.assertTrue(entry.validate_entry(entry_doc, declaration))
 
+    def test_database_hint_must_keep_header_precedence(self):
+        entry_doc, declaration = shipped()
+        entry_doc["database_hint"]["precedence"] = ["query:db", "header:X-Odoo-DB", "default"]
+        failures = entry.validate_entry(entry_doc, declaration)
+        self.assertTrue(any("precedence" in item for item in failures), failures)
+
+    def test_database_hint_must_name_both_sources(self):
+        entry_doc, declaration = shipped()
+        entry_doc["database_hint"]["sources"] = ["header:X-Odoo-DB"]
+        failures = entry.validate_entry(entry_doc, declaration)
+        self.assertTrue(any("sources" in item for item in failures), failures)
+
+    def test_unknown_database_must_be_refused_with_400(self):
+        entry_doc, declaration = shipped()
+        entry_doc["database_hint"]["unknown_database"]["status"] = 200
+        failures = entry.validate_entry(entry_doc, declaration)
+        self.assertTrue(any("status must be 400" in item for item in failures), failures)
+
+    def test_unknown_database_must_use_the_stable_error_code(self):
+        entry_doc, declaration = shipped()
+        entry_doc["database_hint"]["unknown_database"]["code"] = "fallback"
+        failures = entry.validate_entry(entry_doc, declaration)
+        self.assertTrue(any("code must be unknown_database" in item for item in failures), failures)
+
+    def test_allowed_databases_must_equal_the_declared_routes(self):
+        entry_doc, declaration = shipped()
+        entry_doc["database_hint"]["allowed_databases"].append("sc_undeclared")
+        failures = entry.validate_entry(entry_doc, declaration)
+        self.assertTrue(any("allowed_databases" in item for item in failures), failures)
+
+    def test_default_database_must_be_the_default_route(self):
+        entry_doc, declaration = shipped()
+        entry_doc["database_hint"]["default_database"] = "sc_platform_control"
+        failures = entry.validate_entry(entry_doc, declaration)
+        self.assertTrue(any("default_database" in item for item in failures), failures)
+
     def test_mutating_a_route_database_does_not_change_the_declaration_digest(self):
         entry_doc, _ = shipped()
         digest = entry.entry_digest(entry_doc)

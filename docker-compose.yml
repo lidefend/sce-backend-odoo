@@ -143,7 +143,11 @@ services:
       SC_PROXY_DEFAULT_DB: ${DB_NAME}
       SC_PROXY_PLATFORM_DB: ${SC_PROXY_PLATFORM_DB:-sc_platform_control}
       SC_PROXY_PLATFORM_UPSTREAM: ${SC_PROXY_PLATFORM_UPSTREAM:-odoo:8069}
-      NGINX_ENVSUBST_FILTER: '^SC_PROXY_(DEFAULT_DB|PLATFORM_DB|PLATFORM_UPSTREAM)$'
+      # The governed daily stack always renders the exact entry route set.  The
+      # generic local profile keeps its previous pass-through behaviour so an
+      # unrelated development database is not refused by this default.
+      SC_PROXY_ALLOWED_DB_PATTERN: '${SC_PROXY_ALLOWED_DB_PATTERN:-~^.+$}'
+      NGINX_ENVSUBST_FILTER: '^SC_PROXY_(DEFAULT_DB|PLATFORM_DB|PLATFORM_UPSTREAM|ALLOWED_DB_PATTERN)$'
     volumes:
       - ./config/nginx/templates:/etc/nginx/templates:ro
       - ${FRONTEND_DIST_DIR:-./frontend/apps/web/dist}:/usr/share/nginx/html:ro

@@ -8,14 +8,37 @@ map $http_upgrade $connection_upgrade {
 # that carries no db hint to whichever database that literal names, which is
 # wrong for any other profile.  The template is rendered at container start
 # with the profile value (see docker-compose.yml nginx service).
-map $http_x_odoo_db $sc_proxy_db_from_header {
+# The database hint precedence is declared, not incidental:
+#   X-Odoo-DB header > ?db= query parameter > the profile default.
+# The header is the per-request identity the SPA sends with every API call, so
+# it wins when both sources disagree; the query parameter remains supported for
+# the intent endpoint and for direct probes.
+map $http_x_odoo_db $sc_proxy_header_db {
   default $http_x_odoo_db;
+  ''      "";
+}
+
+map $arg_db $sc_proxy_query_db {
+  default $arg_db;
+  ''      "";
+}
+
+map $sc_proxy_header_db $sc_proxy_hinted_db {
+  default $sc_proxy_header_db;
+  ''      $sc_proxy_query_db;
+}
+
+map $sc_proxy_hinted_db $sc_proxy_db {
+  default $sc_proxy_hinted_db;
   ''      ${SC_PROXY_DEFAULT_DB};
 }
 
-map $arg_db $sc_proxy_db {
-  default $arg_db;
-  ''      $sc_proxy_db_from_header;
+# Only databases declared by the entry may be routed.  The rendered pattern is
+# the exact alternation of the entry's routes, so an unknown hint is a client
+# error instead of a silent fallback to the serving duty.
+map $sc_proxy_db $sc_proxy_db_allowed {
+  default 0;
+  ${SC_PROXY_ALLOWED_DB_PATTERN} 1;
 }
 
 # The daily development server exposes one public entry.  The serving duty's
@@ -37,6 +60,14 @@ server {
   # `proxy_pass` resolves a variable at request time, so it needs the Docker
   # embedded DNS resolver rather than the startup-time resolver.
   resolver 127.0.0.11 valid=10s ipv6=off;
+
+  # Unknown database hints are refused before any location runs.  The response
+  # is a stable machine-readable contract so acceptance can assert both the
+  # status and the reason instead of accepting a fallback to a declared duty.
+  default_type application/json;
+  if ($sc_proxy_db_allowed = 0) {
+    return 400 '{"error":"unknown_database"}';
+  }
 
   proxy_read_timeout 1800s;
   proxy_send_timeout 1800s;

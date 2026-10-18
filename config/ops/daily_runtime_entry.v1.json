@@ -1,7 +1,7 @@
 {
   "schema": "daily.runtime.entry.v1",
   "authority": "config/ops/daily_runtime_database_duties.v1.json",
-  "owner_ruling": "2026-10-18 the daily development server exposes one public entry; the platform control plane and the demo duty stay separate databases and separate containers behind that entry",
+  "owner_ruling": "2026-10-18 the daily development server exposes one public entry; the platform control plane and the demo duty stay separate databases and separate containers behind that entry. Database hints resolve header > query > default, and a hint naming an undeclared database is refused with HTTP 400 unknown_database.",
   "host": "sc-root",
   "public_entry": {
     "serving_duty": "demo",
@@ -63,7 +63,33 @@
   "assertions": {
     "one_public_entry": true,
     "no_second_public_route": true,
-    "database_header_is_the_only_switcher": true,
+    "database_hint_sources_are_declared": true,
+    "database_hint_conflicts_resolve_by_declared_precedence": true,
+    "unknown_database_is_rejected": true,
     "never_route_to_an_undeclared_database": true
+  },
+  "database_hint": {
+    "header": "X-Odoo-DB",
+    "query": "db",
+    "sources": [
+      "header:X-Odoo-DB",
+      "query:db"
+    ],
+    "precedence": [
+      "header:X-Odoo-DB",
+      "query:db",
+      "default"
+    ],
+    "conflict": "header_wins",
+    "default_database": "sc_demo",
+    "allowed_databases": [
+      "sc_demo",
+      "sc_platform_control"
+    ],
+    "unknown_database": {
+      "status": 400,
+      "code": "unknown_database",
+      "content_type": "application/json"
+    }
   }
 }

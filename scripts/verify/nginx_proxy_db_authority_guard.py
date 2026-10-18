@@ -26,15 +26,20 @@ COMPOSE = ROOT / "docker-compose.yml"
 LEGACY_LITERAL_CONF = ROOT / "config/nginx/conf.d/default.conf"
 
 FALLBACK_VAR = "${SC_PROXY_DEFAULT_DB}"
-DB_ARG_DECLARATION = "map $arg_db $sc_proxy_db {"
-DB_ARG_DECLARATION_LINE = f"{DB_ARG_DECLARATION}\n"
-HEADER_MAP_DECLARATION_LINE = "map $http_x_odoo_db $sc_proxy_db_from_header {\n"
+QUERY_MAP_DECLARATION_LINE = "map $arg_db $sc_proxy_query_db {\n"
+HEADER_MAP_DECLARATION_LINE = "map $http_x_odoo_db $sc_proxy_header_db {\n"
+PRECEDENCE_MAP_LINE = "map $sc_proxy_header_db $sc_proxy_hinted_db {\n"
+EFFECTIVE_MAP_LINE = "map $sc_proxy_hinted_db $sc_proxy_db {\n"
 FALLBACK_LINE = f"  ''      {FALLBACK_VAR};"
+ALLOWED_MAP_LINE = "map $sc_proxy_db $sc_proxy_db_allowed {\n"
+ALLOWED_PATTERN_LINE = "  ${SC_PROXY_ALLOWED_DB_PATTERN} 1;"
+UNKNOWN_REFUSAL_LINE = "    return 400 '{\"error\":\"unknown_database\"}';"
 TEMPLATE_MOUNT = "./config/nginx/templates:/etc/nginx/templates:ro"
 COMPOSE_INJECTION = "SC_PROXY_DEFAULT_DB: ${DB_NAME}"
 COMPOSE_PLATFORM_DB = "SC_PROXY_PLATFORM_DB: ${SC_PROXY_PLATFORM_DB:-sc_platform_control}"
 COMPOSE_PLATFORM_UPSTREAM = "SC_PROXY_PLATFORM_UPSTREAM: ${SC_PROXY_PLATFORM_UPSTREAM:-odoo:8069}"
-COMPOSE_FILTER = "NGINX_ENVSUBST_FILTER: '^SC_PROXY_(DEFAULT_DB|PLATFORM_DB|PLATFORM_UPSTREAM)$'"
+COMPOSE_ALLOWED_DB = "SC_PROXY_ALLOWED_DB_PATTERN:"
+COMPOSE_FILTER = "NGINX_ENVSUBST_FILTER: '^SC_PROXY_(DEFAULT_DB|PLATFORM_DB|PLATFORM_UPSTREAM|ALLOWED_DB_PATTERN)$'"
 UPSTREAM_MAP = "map $sc_proxy_db $sc_proxy_upstream {"
 VARIABLE_PROXY_PASS = "proxy_pass http://$sc_proxy_upstream;"
 
@@ -78,10 +83,27 @@ def probe(
                 "config/nginx/templates/default.conf.template: the no-hint database fallback must be "
                 f"`{FALLBACK_LINE}` so the profile supplies the database"
             )
-        if DB_ARG_DECLARATION_LINE not in template or HEADER_MAP_DECLARATION_LINE not in template:
+        if (
+            QUERY_MAP_DECLARATION_LINE not in template
+            or HEADER_MAP_DECLARATION_LINE not in template
+            or PRECEDENCE_MAP_LINE not in template
+            or EFFECTIVE_MAP_LINE not in template
+        ):
             errors.append(
-                "config/nginx/templates/default.conf.template: explicit ?db= / X-Odoo-DB must still pass through "
-                f"(`{DB_ARG_DECLARATION}` and `{HEADER_MAP_DECLARATION_LINE.strip()}`)"
+                "config/nginx/templates/default.conf.template: explicit ?db= / X-Odoo-DB must still resolve through "
+                "the declared header > query > default precedence "
+                f"(`{QUERY_MAP_DECLARATION_LINE.strip()}`, `{HEADER_MAP_DECLARATION_LINE.strip()}`, "
+                f"`{PRECEDENCE_MAP_LINE.strip()}`, `{EFFECTIVE_MAP_LINE.strip()}`)"
+            )
+        if ALLOWED_MAP_LINE not in template or ALLOWED_PATTERN_LINE not in template:
+            errors.append(
+                "config/nginx/templates/default.conf.template: the effective database must be checked against the "
+                f"entry's allowed set (`{ALLOWED_MAP_LINE.strip()}` and `{ALLOWED_PATTERN_LINE}`)"
+            )
+        if "if ($sc_proxy_db_allowed = 0) {" not in template or UNKNOWN_REFUSAL_LINE not in template:
+            errors.append(
+                "config/nginx/templates/default.conf.template: an undeclared database hint must be refused with "
+                "HTTP 400 `unknown_database`"
             )
         if UPSTREAM_MAP not in template:
             errors.append(
@@ -109,6 +131,10 @@ def probe(
         if COMPOSE_PLATFORM_UPSTREAM not in service:
             errors.append(
                 f"docker-compose.yml nginx service must inject the platform upstream route (`{COMPOSE_PLATFORM_UPSTREAM}`)"
+            )
+        if COMPOSE_ALLOWED_DB not in service:
+            errors.append(
+                f"docker-compose.yml nginx service must inject the allowed database pattern (`{COMPOSE_ALLOWED_DB}`)"
             )
         if COMPOSE_FILTER not in service:
             errors.append(
