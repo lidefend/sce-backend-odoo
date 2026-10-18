@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "id": "DEMO-P4-DUTY-CUSTOMER-ROOT-R7-20261018",
+  "task_ref": "DEMO-P4-DUTY-CUSTOMER-ROOT-R7-20261018",
+  "executor": "codex-demo-executor-20261017",
+  "lane": "demo",
+  "created_at": "2026-10-18T08:20:00+08:00",
+  "base": {
+    "branch": "main",
+    "sha": "3ee52393778d858714214bd32fbc1080b5225b3e"
+  },
+  "branch": "fix/p4-demo-customer-addons-r7-20261018",
+  "objective": "把 demo duty 的 customer_addons_root 从非受管 dev 路径切到已受管投递目录，使 P4 客户模块来源与 daily 投递契约一致。",
+  "changes": [
+    {
+      "path": "config/ops/daily_runtime_database_duties.v1.json",
+      "kind": "p4-declaration",
+      "detail": "duties[duty=demo]/stack/customer_addons_root: /opt/projects/customer-addons-dev/native-preferences-4fb25858288b2aad -> /opt/sce/tenant-addons/daily/1b5239e9c74241f22857fb8530f7f4dbf6fd9b2d。仅此一行；control 数据库（sc_platform_control）的 customer_addons_root 保持 /opt/projects/runtime-addons-empty 不变。"
+    }
+  ],
+  "declared_identity_provenance": {
+    "tenant_sha": "1b5239e9c74241f22857fb8530f7f4dbf6fd9b2d",
+    "tenant_tree_digest": "d61b3a38f4546db4bc9ae9ca8f7c757dd4b9fb898716dba34300af45a459fd96",
+    "module_count": 4,
+    "source": "调度侧 (codex-main-dispatcher) 提供的已核验 TENANT_SHA/digest/模块数；本轮未直连 sc-root，未独立复核远端目录内容",
+    "namespace_authority": "scripts/ops/daily_runtime_tenant_addons_deliver.py:52 REMOTE_ROOT = /opt/sce/tenant-addons/daily"
+  },
+  "verification": [
+    {
+      "command": "python3 -c json.load(config/ops/daily_runtime_database_duties.v1.json)",
+      "exit_code": 0,
+      "result": "JSON 合法；demo root 已为新路径，control root 未变"
+    },
+    {
+      "command": "make verify.daily.runtime.database.duty",
+      "exit_code": 0,
+      "result": "Ran 156 tests, OK"
+    },
+    {
+      "command": "make ci.generated_reports.guard",
+      "exit_code": 0,
+      "result": "8/8 [OK]（test inventory 1552 条、journey matrix、dependency map、complexity budget、split plan、remote execution plan、contract structure fingerprint、tracked generated reports）"
+    }
+  ],
+  "bounds_observed": {
+    "refresh_executed": false,
+    "sc_root_modified": false,
+    "deployment_executed": false,
+    "database_writes": false
+  },
+  "completion_status_dimensions": {
+    "batch": "in_progress",
+    "mainline": "not_merged",
+    "deployment": "not_performed",
+    "user_acceptance": "not_performed"
+  },
+  "open_items": [
+    "远端 /opt/sce/tenant-addons/daily/1b5239e9c74241f22857fb8530f7f4dbf6fd9b2d 的实际内容（TENANT_SHA 文件、digest、4 模块 __manifest__.py）由调度侧复核；本轮遵循禁止触碰 sc-root 的边界，未做远端读取。",
+    "运行态切换（duty stack 重新渲染/重启）未执行，属调度侧后续动作。"
+  ]
+}

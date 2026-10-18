@@ -153,7 +153,7 @@
         "product_root": "/opt/projects/repos/sce-product-odoo",
         "frontend_dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
         "demo_addons_root": "/opt/projects/repos/sce-product-odoo/demo_addons",
-        "customer_addons_root": "/opt/projects/customer-addons-dev/native-preferences-4fb25858288b2aad",
+        "customer_addons_root": "/opt/sce/tenant-addons/daily/1b5239e9c74241f22857fb8530f7f4dbf6fd9b2d",
         "services": [
           "db",
           "redis",
