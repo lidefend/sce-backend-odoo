@@ -9,7 +9,7 @@ import { getSceneByKey, setSceneRegistry, setSceneRegistryFromSceneReadyContract
 import type { Scene } from '../app/resolvers/sceneRegistry';
 import { normalizeLegacyWorkbenchPath } from '../app/routeQuery';
 import { applySceneValidationRecoveryStrategyRuntime, setSceneValidationRecoveryStrategy } from '../app/sceneValidationRecoveryStrategy';
-import { resolveActiveDb, resolveConfiguredDb, setActiveDb } from '../services/dbContext';
+import { setActiveDb } from '../services/dbContext';
 import { resolveEntryAudience, resolveEntryBasePath } from '../services/entryNamespace';
 import { beginContextTransition, currentContextEpoch, invalidateContextRequests, isCurrentContextEpoch } from '../app/contextEpoch';
 import { nextRouteAuthorityRecordContext, routeAuthorityForPrincipal, type RouteAuthorityContract, type RouteAuthorityRecordContextSnapshot } from '../app/routeAuthority';
