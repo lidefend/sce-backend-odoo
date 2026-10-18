@@ -18,13 +18,15 @@
       "a4cf11f9f1d933b43df8aeff941419542c8517ae",
       "1efbd7e814e4aa8e7e02e0dff3aa58f608e429f3"
     ],
-    "server_application_head": "6399e81658c10a84582c3a6390529891094b783c",
-    "note": "本 lane 的候选提交为 a4cf11f9f、1efbd7e81；同一工作树随后由并行 lane 追加 b81166475（把服务器应用提交 6399e8165 与本地提交合并）与 8a6efdc76（写操作职责不渲染只读按钮）。全部定向测试在 8a6efdc76 上重跑通过；服务器应用提交为 6399e8165。",
+    "server_application_head": "0d61df8e5290b8a7d001f8713d553e6ca88295fe",
+    "note": "本地提交 a4cf11f9f、1efbd7e81（本 lane）→ 并行 reconcile b81166475、8a6efdc76 → agent 记录 572cb4110 → environment lane 的 ops 修正 738821122、0d61df8e5。服务器应用 HEAD=0d61df8e5，容器 SC_SOURCE_REVISION 与 /platform-admin/api/runtime-version 一致；FRONTEND_BUILD_SHA256 与 nginx 挂载的 dist-dev/.build-sha256 一致（272a8a51…）。",
     "reconciliation_commits": [
       "b81166475",
       "8a6efdc76"
     ],
-    "verified_at_head": "8a6efdc7653d78d289e2c6893e2f8d40cb65c4e3"
+    "verified_at_head": "8a6efdc7653d78d289e2c6893e2f8d40cb65c4e3",
+    "served_frontend_build_sha256": "272a8a51787a67bdd5fd724a0fb95d5962adff8725eb1cb00da834a051b3ce31",
+    "final_verified_at": "2026-10-18T08:57:37Z"
   },
   "objective": "Close the platform administrator duty end-to-end: non-empty declared platform capability surface, usable platform landing with the tenant registry table, and platform/tenant identity separation verified on the daily development server.",
   "scope": [
@@ -106,7 +108,36 @@
       }
     ],
     "runtime_version_source_revision": "6399e81658c10a84582c3a6390529891094b783c",
-    "demo_token_on_platform": 401
+    "demo_token_on_platform": 401,
+    "final": {
+      "path": ".runtime/platform-admin-duty-20261018/phase2/final_readback_20261018.txt",
+      "source_revision": "0d61df8e5290b8a7d001f8713d553e6ca88295fe",
+      "frontend_build_sha256": "272a8a51787a67bdd5fd724a0fb95d5962adff8725eb1cb00da834a051b3ce31",
+      "entry_http": 200,
+      "panel_asset": "PlatformDutyPanel-C916Je8_.js",
+      "panel_has_tenant_table": true,
+      "panel_calls_tenants_endpoint": true,
+      "panel_has_empty_state": true,
+      "capabilities_len": 6,
+      "capability_groups": [
+        "platform_control"
+      ],
+      "is_platform_admin": true,
+      "is_tenant_config_admin": false,
+      "tenants": [
+        {
+          "namespace_id": "ns_000000000002",
+          "tenant_name": "Demo演示公司",
+          "lifecycle_state": "active",
+          "alias": "demo",
+          "path_prefix": "/t/demo",
+          "billing_bound": false,
+          "company_id": null,
+          "company_name": null
+        }
+      ],
+      "demo_token_on_platform": 401
+    }
   },
   "blocker_inheritance": {
     "from_run": ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/run.json",
@@ -120,7 +151,7 @@
     "open": []
   },
   "residual_risks": [
-    "前端静态产物由 environment lane 构建并由 nginx 挂载；本 lane 未执行静态构建与发布。",
+    "无浏览器自动化：页面级验收以「入口 200 + 已发布 bundle 含租户登记表标记 + 接口返回登记行」三项组合证明，未做像素级渲染截图。",
     ".runtime 证据目录不进入版本库，回执以路径引用。"
   ],
   "evidence": {
