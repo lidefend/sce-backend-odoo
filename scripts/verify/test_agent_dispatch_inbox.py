@@ -209,6 +209,8 @@ class InboxTests(unittest.TestCase):
     def test_task_assignment_and_acknowledgement_are_recorded(self):
         spec={'task_id':'TASK-1','lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
         first=m.assign(self.root,spec)
+        self.assertEqual(first['authorization_id'],'test-auth')
+        self.assertEqual(first['authorization_sha256'],first['authorization']['sha256'])
         self.assertEqual(first,m.assign(self.root,spec))
         with self.assertRaises(ValueError):m.assign(self.root,{**spec,'objective':'changed'})
         with self.assertRaises(ValueError):m.ack(self.root,'TASK-1','executor-a','declined','')
@@ -241,12 +243,39 @@ class InboxTests(unittest.TestCase):
         m.ack(self.root,'TEST','executor-a','accepted')
         report={**self.report,'task_ref':'TEST','executor':'executor-a'}
         self.submit()
+        run=m.read(self.repo/'run.json')
+        run['authorization']=m.authorization_reference(m.active_authorization(m.read(self.root/'config.json')))
+        (self.repo/'run.json').write_text(json.dumps(run))
         self.assertTrue(m.submit(self.root,'pilot',report))
         with self.assertRaises(ValueError):m.validate_task_ref(self.root,'demo',report)
         with self.assertRaises(ValueError):m.validate_task_ref(self.root,'pilot',{**report,'executor':'executor-b'})
         with self.assertRaises(ValueError):m.validate_task_ref(self.root,'pilot',{k:v for k,v in report.items() if k!='executor'})
         m.ack(self.root,'TEST','executor-a','declined','changed')
         with self.assertRaises(ValueError):m.validate_task_ref(self.root,'pilot',report)
+
+    def test_task_ref_rejects_missing_or_stale_run_authorization(self):
+        spec={'task_id':'TEST-AUTH','lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
+        m.assign(self.root,spec)
+        m.ack(self.root,'TEST-AUTH','executor-a','accepted')
+        report={**self.report,'task_ref':'TEST-AUTH','executor':'executor-a'}
+        with self.assertRaisesRegex(ValueError,'run authorization'):
+            m.submit(self.root,'pilot',report)
+        run=json.loads((self.repo/'run.json').read_text())
+        run['authorization']={'id':'other-auth','status':'active'}
+        (self.repo/'run.json').write_text(json.dumps(run))
+        with self.assertRaisesRegex(ValueError,'run authorization'):
+            m.submit(self.root,'pilot',report)
+
+    def test_execution_authorized_is_not_a_receipt_field(self):
+        self.report['execution_authorized']=False
+        with self.assertRaisesRegex(ValueError,'not a receipt field'):
+            self.submit()
+
+    def test_authorization_show_returns_the_single_active_reference(self):
+        result=m.authorization_show(self.root)
+        self.assertEqual(result['authorization']['id'],'test-auth')
+        self.assertEqual(result['authorization']['status'],'active')
+        self.assertFalse(result['execution_model']['automatic_execution'])
 
     def test_supersedes_closes_prior_blocker_and_prevents_retry(self):
         first_report={**self.report,'summary':'first','blockers':['BLOCKER-1']}
@@ -373,6 +402,9 @@ class InboxTests(unittest.TestCase):
         spec={'task_id':'TEST','lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
         m.assign(self.root,spec)
         m.ack(self.root,'TEST','executor-a','accepted')
+        run=m.read(self.repo/'run.json')
+        run['authorization']=m.authorization_reference(m.active_authorization(m.read(self.root/'config.json')))
+        (self.repo/'run.json').write_text(json.dumps(run))
         m.submit(self.root,'pilot',{**self.report,'task_ref':'TEST','executor':'executor-a'})
         m.ack(self.root,'TEST','executor-a','declined','revoked')
         self.assertEqual(m.review_one(self.root,self.review_success)['status'],'blocked')
@@ -423,6 +455,20 @@ class InboxTests(unittest.TestCase):
         self.assertEqual(readiness['state'],'waiting_preconditions')
         self.assertEqual(readiness['unmet_preconditions'],['TASK-PREREQ'])
         self.assertIn('不是等待所有者授权',readiness['note'])
+
+    def test_blocker_may_describe_unauthorized_entry_without_asking_owner(self):
+        """A technical fact is not an owner-approval request.
+
+        Rejecting every occurrence of the word would force an executor to
+        rephrase a real finding such as an unauthorized public port or a 401
+        response, and could push it into asking the owner instead.
+        """
+        self.report['blockers']=['18082 未授权入口仍对外监听；未授权请求返回 401']
+        self.assertEqual(self.submit(),self.submit())
+
+    def test_blocker_requesting_owner_authorization_is_rejected(self):
+        self.report['blockers']=['等待所有者授权后继续本地提交']
+        with self.assertRaisesRegex(ValueError,'owner authorization'):self.submit()
 
     def test_status_normalizes_legacy_execution_authorized_field(self):
         event_id=self.submit()

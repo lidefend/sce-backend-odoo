@@ -12,6 +12,10 @@
 不需要所有者对已覆盖的动作逐次确认。任务记录内的 `authorization` 引用就是该任务允许动作的依据。
 `automatic_execution=false` 只表示后台进程不会自行运行执行器，不表示执行器没有授权。
 执行器 `run.json` 仍是结果权威；回执只引用它和原始证据，不复制整套台账。
+任务记录中的 `authorization` 是执行授权的唯一依据；`run.json` 的 `authorization`
+必须与任务引用一致（id 相同且 status active）。缺少 run 授权不是“等待所有者授权”，
+而是回执事实不完整，执行器应补齐后继续。`execution_authorized` 是废弃字段，禁止写入新回执；
+如需表达后台是否自动运行，只能使用 `background_auto_execution`。
 
 共享箱位于用户私有目录 `$HOME/workspace/.sce-dispatch`，不进入公开 Git。
 目录 0700、JSON 文件 0600；不得提交密钥、原始客户数据或凭据到摘要。
@@ -20,8 +24,8 @@
 
 ## 唯一调度者与 lane 入口
 
-当前唯一调度者为 `codex-main-dispatcher-20261018`，接管时间
-`2026-10-17T20:31:59+00:00`，记录在私有 `config.json` 并由 `status` 回读。
+当前唯一调度者为 `codex-main-dispatcher-20261018C`，接管时间
+`2026-10-18T06:03:53+00:00`，记录在私有 `config.json` 并由 `status` 回读。
 接管历史保留在 `dispatcher_history`；任何时刻只允许一个当前调度者。
 
 本次接管后已核验并登记的真实 git 根：
