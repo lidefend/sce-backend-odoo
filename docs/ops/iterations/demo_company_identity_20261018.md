@@ -12,7 +12,7 @@
 - 正式产品层：P4 demo 交付载体
 - 模块：`demo_addons/smart_construction_demo`，版本 `0.3.1`
 - 数据职责：`sc_demo`（`sc-demo-dev`）
-- 最终运行身份：`94b125ed05222703bbaac0f8efc13ff543e451a2`；功能修复提交为
+- 最终运行身份以部署服务器 HEAD 为准；本轮功能修复提交为
   `e340b43d70c91762aee59d8b1fee232ec9680926`。
 
 ## 根因与修复
