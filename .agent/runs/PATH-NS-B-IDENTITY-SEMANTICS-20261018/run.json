@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "id": "PATH-NS-B-IDENTITY-SEMANTICS-20261018",
+  "branch": "codex/daily-platform-demo-20261018",
+  "status": "active",
+  "baseline_sha": "54a3fa13177c2a9c0aeb0efaf40786cea32089a8",
+  "goal": "docs/adr/ADR-007-path-namespace-tenant-identity.md",
+  "execution_order": "docs/architecture/path_namespace_execution_order_v1.md#batch-b",
+  "executor": "Aquinas",
+  "lane": "demo",
+  "scope": [
+    "addons/smart_core/security/platform_admin.py",
+    "addons/smart_core/handlers/login.py",
+    "addons/smart_core/models/login_routing.py",
+    "addons/smart_core/core/base_handler.py",
+    "addons/smart_core/core/request_diagnostics.py",
+    "addons/smart_core/core/system_init_identity_payload.py",
+    "addons/smart_core/controllers/intent_dispatcher.py",
+    "addons/smart_core/controllers/platform_ops_controller.py",
+    "addons/smart_core/controllers/platform_maintenance_access_controller.py",
+    "addons/smart_core/models/platform_database_registry.py",
+    "addons/smart_core/handlers/release_operator.py",
+    "addons/smart_core/handlers/load_view.py",
+    "addons/smart_core/handlers/usage_track.py",
+    "addons/smart_core/handlers/app_shell.py",
+    "addons/smart_core/delivery/release_approval_policy_service.py",
+    "addons/smart_core/delivery/final_menu_navigation_service.py",
+    "addons/smart_core/delivery/delivery_engine.py",
+    "addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py",
+    "addons/smart_construction_core/services/platform_admin.py",
+    "addons/smart_construction_core/core_extension_surface_bypass.py",
+    "addons/smart_construction_core/controllers/capability_catalog_controller.py",
+    "addons/smart_construction_core/controllers/scene_controller.py",
+    "addons/smart_construction_core/controllers/scene_template_controller.py",
+    "addons/smart_construction_core/controllers/pack_controller.py",
+    "addons/smart_construction_core/controllers/ops_controller.py",
+    "addons/smart_construction_core/models/support/scene_orchestration.py",
+    "addons/smart_construction_core/models/support/sc_workflow.py",
+    "addons/smart_construction_core/handlers/app_open.py",
+    "addons/smart_construction_core/handlers/app_catalog.py",
+    "addons/smart_construction_core/handlers/payment_request_approval.py",
+    "addons/smart_construction_core/handlers/payment_request_execute.py",
+    "addons/smart_construction_core/handlers/payment_request_settlement_introduce.py",
+    "addons/smart_construction_core/handlers/risk_action_execute.py",
+    "addons/smart_construction_core/handlers/my_work_complete.py",
+    "addons/smart_construction_portal/services/portal_contract_service.py",
+    "scripts/verify/platform_company_access_manifest_guard.py",
+    "addons/smart_core/tests/test_admin_predicate_split.py",
+    "addons/smart_core/tests/test_platform_admin_boundary.py",
+    "addons/smart_core/tests/test_login_identity_semantics.py",
+    "addons/smart_core/tests/test_login_company_boundary.py",
+    "addons/smart_core/tests/test_app_shell_boundaries.py",
+    "addons/smart_core/tests/test_load_view_handler.py",
+    "addons/smart_core/tests/test_final_menu_navigation_service.py",
+    "addons/smart_core/tests/test_api_server_time_boundaries.py",
+    "addons/smart_core/tests/test_platform_minimum_nav_contract.py",
+    "addons/smart_core/tests/test_stable_serialization_boundaries.py",
+    "addons/smart_core/tests/test_backend_scene_surface_boundary.py",
+    "addons/smart_construction_core/tests/test_scene_template_serialization_boundaries.py",
+    "addons/smart_construction_core/tests/test_workflow_instance_ownership.py",
+    "frontend/packages/schema/src/index.ts",
+    "frontend/apps/web/src/layouts/AppShell.vue",
+    "frontend/apps/web/src/router/index.ts",
+    "frontend/apps/web/src/app/adminRouteAccess.ts",
+    "frontend/apps/web/scripts/admin_route_access_test.ts"
+  ],
+  "predicate_contract": {
+    "user_is_tenant_config_admin": "group check evaluated in the current tenant database; product/industry/navigation/write-intent/portal surfaces",
+    "user_is_platform_control_admin": "group AND declared platform-control instance AND batch-C audience seam; platform control APIs and platform data plane",
+    "user_is_platform_admin": "deprecated explicit alias of user_is_platform_control_admin; never group-only"
+  },
+  "checks": {
+    "admin_predicate_split": {
+      "target": "python3 addons/smart_core/tests/test_admin_predicate_split.py",
+      "kind": "offline",
+      "tests": 10,
+      "inputs": [
+        "addons/smart_core/security/platform_admin.py",
+        "addons/smart_core/core/system_init_identity_payload.py",
+        "addons/smart_construction_core/handlers/app_open.py",
+        "addons/smart_construction_core/handlers/app_catalog.py"
+      ]
+    },
+    "platform_admin_boundary": {
+      "target": "python3 addons/smart_core/tests/test_platform_admin_boundary.py",
+      "kind": "offline",
+      "tests": 15,
+      "inputs": [
+        "addons/smart_core/security/platform_admin.py"
+      ]
+    },
+    "login_identity_semantics": {
+      "target": "python3 addons/smart_core/tests/test_login_identity_semantics.py",
+      "kind": "offline",
+      "tests": 10,
+      "inputs": [
+        "addons/smart_core/handlers/login.py",
+        "addons/smart_core/models/login_routing.py",
+        "addons/smart_core/security/platform_admin.py"
+      ]
+    },
+    "login_company_boundary": {
+      "target": "python3 addons/smart_core/tests/test_login_company_boundary.py",
+      "kind": "offline",
+      "tests": 7,
+      "inputs": [
+        "addons/smart_core/handlers/login.py"
+      ]
+    },
+    "platform_surface_consumers": {
+      "target": "python3 addons/smart_core/tests/test_app_shell_boundaries.py; test_load_view_handler.py; test_final_menu_navigation_service.py; test_api_server_time_boundaries.py; test_platform_minimum_nav_contract.py; test_stable_serialization_boundaries.py; test_backend_scene_surface_boundary.py",
+      "kind": "offline",
+      "tests": 59,
+      "inputs": [
+        "addons/smart_core/handlers/app_shell.py",
+        "addons/smart_core/handlers/load_view.py",
+        "addons/smart_core/delivery/final_menu_navigation_service.py",
+        "addons/smart_core/controllers/platform_ops_controller.py",
+        "addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py",
+        "addons/smart_construction_core/core_extension_surface_bypass.py"
+      ]
+    },
+    "industry_surface_consumers": {
+      "target": "python3 addons/smart_construction_core/tests/test_scene_template_serialization_boundaries.py; test_workflow_instance_ownership.py",
+      "kind": "offline",
+      "tests": 15,
+      "inputs": [
+        "addons/smart_construction_core/controllers/scene_template_controller.py",
+        "addons/smart_construction_core/models/support/sc_workflow.py"
+      ]
+    },
+    "frontend_admin_route_access": {
+      "target": "frontend/apps/web/scripts/admin_route_access_test.ts (esbuild --bundle + node)",
+      "kind": "offline",
+      "tests": 10,
+      "inputs": [
+        "frontend/apps/web/src/app/adminRouteAccess.ts",
+        "frontend/apps/web/src/router/index.ts",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/packages/schema/src/index.ts"
+      ]
+    }
+  },
+  "blockers": [
+    "BATCH-B-LIVE-LOGIN-NOT-VERIFIED: 仅完成本地定向单测与构建，未在运行实例回读平台入口登录与租户入口响应"
+  ],
+  "evidence": {
+    "candidate_head": "f57aea51b8ad78be01a2f92111696c45f8a5eab9",
+    "worktree_dirty": true,
+    "committed": true,
+    "offline_gate": {
+      "suites": 14,
+      "tests": 126,
+      "exit_code": 0,
+      "py_compile_exit_code": 0,
+      "backend_tests": 116,
+      "frontend_tests": 10,
+      "logs": [
+        ".runtime/path-ns-b-20261018/r4/01_backend_tests.log",
+        ".runtime/path-ns-b-20261018/r4/02_frontend_route_test.log",
+        ".runtime/path-ns-b-20261018/r4/03_typecheck_strict.log",
+        ".runtime/path-ns-b-20261018/r4/04_build.log"
+      ]
+    },
+    "negative_control": {
+      "head_group_only_predicate_labels_demo_admin_as_platform_admin": true,
+      "interim_strict_predicate_closes_demo_product_surface": true,
+      "tenant_predicate_restores_demo_product_surface": true,
+      "checks": "5/5"
+    },
+    "call_site_inventory": ".runtime/path-ns-b-20261018/r2/15_call_site_inventory.txt",
+    "frontend_gate_inventory": ".runtime/path-ns-b-20261018/r2/16_frontend_gate_inventory.txt",
+    "artifacts": ".runtime/path-ns-b-20261018/r2/",
+    "namespace_isolation_implemented": false,
+    "frontend_modified": false,
+    "nginx_modified": false,
+    "frontend_gate": {
+      "admin_route_access_test": {
+        "cases": 10,
+        "exit_code": 0
+      },
+      "typecheck_strict_exit_code": 0,
+      "build_exit_code": 0,
+      "frontend_flag_consumption": "AppShell 目录/HUD/loadPublishedApps → is_tenant_config_admin; router platformAdminOnly → is_platform_admin; 其余 adminOnly → is_tenant_config_admin"
+    },
+    "frontend_evidence": ".runtime/path-ns-b-20261018/r3/",
+    "commit_sha": "f57aea51b8ad78be01a2f92111696c45f8a5eab9",
+    "commit_evidence": ".runtime/path-ns-b-20261018/r4/00_commit.json",
+    "authorization_id": "owner-standing-auth-20261018"
+  },
+  "blocker_closures": [
+    {
+      "blocker": "BATCH-B-FRONTEND-CONSUMES-PLATFORM-FLAG: AppShell.vue:618,776 与 router/index.ts:464 仍以 is_platform_admin 作为管理入口开关，Demo admin 现在收到 false；前端需改用 is_tenant_config_admin，本批禁止改前端烧录",
+      "reason": "AppShell 应用目录/HUD/loadPublishedApps 已改用 is_tenant_config_admin；router 引入 platformAdminOnly 使 release-operator 走平台控制面，其余 adminOnly 走租户配置面；schema 增加 is_tenant_config_admin；10 条行为测试与 typecheck/build 均通过",
+      "evidence": [
+        ".runtime/path-ns-b-20261018/r3/04_code_inventory.txt",
+        ".runtime/path-ns-b-20261018/r3/01_admin_route_access_test.log",
+        ".runtime/path-ns-b-20261018/r3/02_typecheck_strict.log",
+        ".runtime/path-ns-b-20261018/r3/03_frontend_build.log"
+      ]
+    },
+    {
+      "blocker": "BATCH-B-COMMIT-PENDING: 本地改动未提交，所有者未授权本批 commit；主线、部署、用户验收均未完成",
+      "reason": "所有者常设授权 owner-standing-auth-20261018 已覆盖工作分支本地提交，无需逐次确认；代码与文档已提交 f57aea51b8ad78be01a2f92111696c45f8a5eab9，父提交为 54a3fa13，提交后仅 run 记录待回写。“所有者未授权 commit”不再是事实，该阻断关闭。",
+      "evidence": [
+        ".runtime/path-ns-b-20261018/r4/00_commit.json",
+        ".runtime/path-ns-b-20261018/r4/01_backend_tests.log",
+        ".runtime/path-ns-b-20261018/r4/02_frontend_route_test.log",
+        ".runtime/path-ns-b-20261018/r4/03_typecheck_strict.log",
+        ".runtime/path-ns-b-20261018/r4/04_build.log"
+      ]
+    }
+  ]
+}
