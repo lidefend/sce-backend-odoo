@@ -28,7 +28,7 @@ DUTY_ENV = ROOT / "config/ops/daily_runtime_duty_stack.env"
 LEGACY_LITERAL_CONF = ROOT / "config/nginx/conf.d/default.conf"
 
 PATH_MAP = "map $uri $sc_path_ns {"
-TENANT_RULE = "~^/t/([a-z0-9][a-z0-9-]{0,62})(/|$)  $1;"
+TENANT_RULE = '~"^/t/([a-z0-9][a-z0-9-]*)(/|$)"  $1;'
 PLATFORM_RULE = "~^/platform-admin(/|$)               platform;"
 AUDIENCE_MAP = "map $sc_path_ns $sc_ns_audience {"
 UPSTREAM_MAP = "map $sc_path_ns $sc_proxy_upstream {"
@@ -126,6 +126,15 @@ def probe(
             errors.append(
                 "config/nginx/templates/default.conf.template: a client database hint is still a routing "
                 f"input (`{line.strip()}`)"
+            )
+        # nginx cannot lex a `{n,m}` regex quantifier in map keys or location
+        # patterns; quoting does not help, and the failure only appears after
+        # the container renders the template. Bound the alias length in the
+        # resolver instead and keep the nginx pattern equivalent but brace-free.
+        if re.search(r"\{\d+,\d*\}", template):
+            errors.append(
+                "config/nginx/templates/default.conf.template: nginx cannot parse a `{n,m}` regex "
+                "quantifier; use an equivalent brace-free pattern and validate length in the resolver"
             )
         if template.count(EMPTY_DB_HEADER) < 8:
             errors.append(
