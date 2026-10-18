@@ -1562,7 +1562,9 @@ def render_env(duty, credentials):
         "NGINX_BIND_HOST": str(duty["routing"].get("nginx_bind_host") or "0.0.0.0"),
         "SC_PROXY_PLATFORM_DB": PAYLOAD["platform_admin_database"],
         "SC_PROXY_PLATFORM_UPSTREAM": platform_upstream,
-        "SC_PROXY_ALLOWED_DB_PATTERN": allowed_pattern,
+        # Quote the alternation so the rendered env file stays shell-sourceable;
+        # docker compose strips the pair, so the container still sees the regex.
+        "SC_PROXY_ALLOWED_DB_PATTERN": "'%s'" % allowed_pattern,
         "SC_DAILY_ENTRY_NETWORK": entry_network,
         "FRONTEND_DIST_DIR": duty["stack"]["frontend_dist_dir"],
         "DEMO_ADDONS_ROOT": duty["stack"]["demo_addons_root"],
