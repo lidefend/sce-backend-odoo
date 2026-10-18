@@ -19,14 +19,23 @@
       "1efbd7e814e4aa8e7e02e0dff3aa58f608e429f3"
     ],
     "server_application_head": "0d61df8e5290b8a7d001f8713d553e6ca88295fe",
-    "note": "本地提交 a4cf11f9f、1efbd7e81（本 lane）→ 并行 reconcile b81166475、8a6efdc76 → agent 记录 572cb4110 → environment lane 的 ops 修正 738821122、0d61df8e5。服务器应用 HEAD=0d61df8e5，容器 SC_SOURCE_REVISION 与 /platform-admin/api/runtime-version 一致；FRONTEND_BUILD_SHA256 与 nginx 挂载的 dist-dev/.build-sha256 一致（272a8a51…）。",
+    "note": "本地提交 a4cf11f9f、1efbd7e81（本 lane）→ 并行 reconcile b81166475、8a6efdc76 → agent 记录 572cb4110 → environment lane 的 ops 修正 738821122、0d61df8e5。服务器应用 HEAD=0d61df8e5，容器 SC_SOURCE_REVISION 与 /platform-admin/api/runtime-version 一致；FRONTEND_BUILD_SHA256 与 nginx 挂载的 dist-dev/.build-sha256 一致（272a8a51…）。 最终证据包在 0d61df8e5 上重取；其后的 7cd0ce00b、550f3e697 仅改 .agent，产品代码 diff 为 0，前端指纹未变。",
     "reconciliation_commits": [
       "b81166475",
       "8a6efdc76"
     ],
     "verified_at_head": "8a6efdc7653d78d289e2c6893e2f8d40cb65c4e3",
     "served_frontend_build_sha256": "272a8a51787a67bdd5fd724a0fb95d5962adff8725eb1cb00da834a051b3ce31",
-    "final_verified_at": "2026-10-18T08:57:37Z"
+    "final_verified_at": "2026-10-18T09:07:25.747379+00:00",
+    "server_head": "0d61df8e5290b8a7d001f8713d553e6ca88295fe",
+    "server_tree": "ae47669c8cb65eb935952723aeb9b34b85f4779e",
+    "server_dirty_files": 0,
+    "local_head": "550f3e697d157ac7c479bd8625c82750a36bab00",
+    "evidence_only_commits_after_deploy": [
+      "7cd0ce00b",
+      "550f3e697"
+    ],
+    "product_diff_after_deploy": 0
   },
   "objective": "Close the platform administrator duty end-to-end: non-empty declared platform capability surface, usable platform landing with the tenant registry table, and platform/tenant identity separation verified on the daily development server.",
   "scope": [
@@ -161,5 +170,25 @@
     ".runtime/platform-duty-closure-20261018/admin_route_access_test.log": "PASS cases=10",
     ".runtime/platform-admin-duty-20261018/phase2/runtime_readback_20261018.txt": "live platform readback",
     ".runtime/platform-duty-closure-20261018/deploy_readback_20261018.txt": "server HEAD + container revision"
+  },
+  "final_evidence": {
+    "package": ".runtime/platform-duty-closure-20261018/final/",
+    "sha256sums_sha256": "10eaeedd76a1121d75068905416471398fa16996e8695980f4e0b18d07b9444b",
+    "files": 24,
+    "build_gate": "PASS",
+    "build_gate_log": ".runtime/platform-duty-closure-20261018/final/build-gate.log",
+    "entry_verify": ".runtime/platform-duty-closure-20261018/final/entry-verify.json",
+    "deploy_facts": ".runtime/platform-duty-closure-20261018/final/deploy-facts.json",
+    "backend_tests": "12 suites / 122 tests PASS exit=0",
+    "frontend_gates": "typecheck exit=0; dutyAction 6/6; admin_route_access 10/10",
+    "browser": "10/10 PASS bound to 0d61df8e5 (receipt b73b3e59)",
+    "identity_chain": ".runtime/platform-duty-closure-20261018/final/identity-chain.md"
+  },
+  "review_gap_response": {
+    "build_gate": "make daily.runtime.frontend.build 在 0d61df8e5 PASS；复用分支此前把 physical_db_sweep 记为 NOT_RUN，已修复并加回归测试。",
+    "identity_chain": "a4cf11f9f、1efbd7e81、b81166475、8a6efdc76、572cb4110、738821122、0d61df8e5 关系与部署绑定见 identity-chain.md。",
+    "browser": "Playwright 10 项逐条断言、DOM、截图、console 与 runtime identity 见 browser/。",
+    "tenant_registry": "/api/ops/tenants 读取 platform.namespace(audience=tenant) 与 sc.tenant.company.registration，不遍历 res.company。",
+    "external_ports": "外部仅 18081 可达；18082/8070/18083/18090/18091/18095 均超时。"
   }
 }

@@ -1,0 +1,446 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-DATA-PURITY-AUDIT-20261018",
+  "task_ref": "DEMO-DATA-PURITY-AUDIT-20261018",
+  "branch": "codex/daily-platform-demo-20261018",
+  "lane": "demo",
+  "executor": "Descartes",
+  "authorization": {
+    "id": "owner-standing-auth-20261018",
+    "status": "active",
+    "sha256": "b94bb85f18556111051e815f4d787b7e3868c0cd2a3222952955cd8cc85ee499",
+    "source": "agent_dispatch_inbox authorization (owner-standing-auth-20261018)"
+  },
+  "status": "reported",
+  "updated_at": "2026-10-18T06:57:00Z",
+  "scope": [
+    "read-only database and runtime inspection of sc_demo on sc-root",
+    "no writes, no reseed, no deployment, no user-module change"
+  ],
+  "instance_identity": {
+    "host_repo_head": "fb181551973ef13a0b44cdc27427f2fffba1ec91",
+    "odoo_container": "sc-demo-dev-odoo-1",
+    "odoo_image_id": "sha256:c597eb77bb10a7e99a2acf25d1ef875ea8652a13a4a5509baf5e12a3c392ef08",
+    "db_container": "sc-demo-dev-db-1",
+    "database": "sc_demo",
+    "database_size": "156 MB",
+    "cluster_system_identifier": "7697127891101417510",
+    "runtime_source_revision": "fb181551973ef13a0b44cdc27427f2fffba1ec91",
+    "runtime_frontend_sha256": "713b2424d34e686eaf65f6221d05f8a5c92bd8b358676b76a090816c10f76842",
+    "read_only_guard": "SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY on every session"
+  },
+  "verdict": {
+    "answer": "demo_only_but_company_name_case_mismatch_and_chain_level_attribution",
+    "statement": "在 sc_demo 的 22 张关键业务表 1381 条记录范围内，按“demo/seed XML ID + demo principal 创建者”双判据，non-demo 残留为 0、来源未知为 0，可判定仅含演示数据；demo 链 XML ID 实为 429（demo 424 + seed 5）而非 424。但公司名实际为“demo演示公司”，所有者要求“Demo演示公司”，首字符 U+0064 != U+0044，MD5 一致不能替代语义一致。另有 1185 条（85.8%）记录无记录级种子标记，归属为链级可追溯（创建者账号 + seed 剖面 + 时间窗），非来源未知。",
+    "basis": ".runtime/demo-data-purity-20261018/24-EVIDENCE-GAP-REPORT.md"
+  },
+  "classification_counts": {
+    "taxonomy": "mutually_exclusive_v2",
+    "business_total_22_tables": 1381,
+    "module_owned_demo_seed_xmlid": 182,
+    "demo_principal_created": 1185,
+    "demo_principal_created_breakdown": {
+      "demo_account": 472,
+      "seed_system___system__": 713,
+      "system_bootstrap_null_create_uid": 0,
+      "unknown_creator": 0
+    },
+    "platform_base_module_owned": 14,
+    "non_demo_residual": 0,
+    "audit_only": {
+      "sc.audit.log": 169,
+      "ui.business.config.mutation.audit": 2889,
+      "total": 3058
+    },
+    "per_model": [
+      {
+        "model": "account.move",
+        "module_owned": 4,
+        "demo_principal_created": 0,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 4
+      },
+      {
+        "model": "construction.contract",
+        "module_owned": 10,
+        "demo_principal_created": 44,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 54
+      },
+      {
+        "model": "ir.attachment",
+        "module_owned": 4,
+        "demo_principal_created": 878,
+        "platform_base_module_owned": 2,
+        "non_demo_residual": 0,
+        "total": 884
+      },
+      {
+        "model": "payment.request",
+        "module_owned": 13,
+        "demo_principal_created": 54,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 67
+      },
+      {
+        "model": "project.boq.line",
+        "module_owned": 3,
+        "demo_principal_created": 26,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 29
+      },
+      {
+        "model": "project.budget.boq.line",
+        "module_owned": 3,
+        "demo_principal_created": 9,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 12
+      },
+      {
+        "model": "project.cost.ledger",
+        "module_owned": 3,
+        "demo_principal_created": 50,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 53
+      },
+      {
+        "model": "project.project",
+        "module_owned": 6,
+        "demo_principal_created": 9,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 15
+      },
+      {
+        "model": "project.settlement",
+        "module_owned": 1,
+        "demo_principal_created": 0,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 1
+      },
+      {
+        "model": "project.task",
+        "module_owned": 7,
+        "demo_principal_created": 24,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 31
+      },
+      {
+        "model": "res.company",
+        "module_owned": 0,
+        "demo_principal_created": 0,
+        "platform_base_module_owned": 1,
+        "non_demo_residual": 0,
+        "total": 1
+      },
+      {
+        "model": "res.partner",
+        "module_owned": 61,
+        "demo_principal_created": 4,
+        "platform_base_module_owned": 6,
+        "non_demo_residual": 0,
+        "total": 71
+      },
+      {
+        "model": "res.users",
+        "module_owned": 50,
+        "demo_principal_created": 0,
+        "platform_base_module_owned": 5,
+        "non_demo_residual": 0,
+        "total": 55
+      },
+      {
+        "model": "sc.general.contract",
+        "module_owned": 3,
+        "demo_principal_created": 0,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 3
+      },
+      {
+        "model": "sc.labor.settlement",
+        "module_owned": 1,
+        "demo_principal_created": 0,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 1
+      },
+      {
+        "model": "sc.material.inbound",
+        "module_owned": 1,
+        "demo_principal_created": 0,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 1
+      },
+      {
+        "model": "sc.payment.execution",
+        "module_owned": 1,
+        "demo_principal_created": 2,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 3
+      },
+      {
+        "model": "sc.project.document",
+        "module_owned": 4,
+        "demo_principal_created": 65,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 69
+      },
+      {
+        "model": "sc.project.member.assignment",
+        "module_owned": 1,
+        "demo_principal_created": 0,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 1
+      },
+      {
+        "model": "sc.receipt.income",
+        "module_owned": 1,
+        "demo_principal_created": 8,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 9
+      },
+      {
+        "model": "sc.settlement.order",
+        "module_owned": 4,
+        "demo_principal_created": 12,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 16
+      },
+      {
+        "model": "sc.subcontract.settlement",
+        "module_owned": 1,
+        "demo_principal_created": 0,
+        "platform_base_module_owned": 0,
+        "non_demo_residual": 0,
+        "total": 1
+      }
+    ],
+    "evidence": ".runtime/demo-data-purity-20261018/18-classification-matrix.log"
+  },
+  "checks": {
+    "legacy_provenance_absent": {
+      "inputs": [
+        ".runtime/demo-data-purity-20261018/06-legacy-markers.log"
+      ],
+      "kind": "live",
+      "result": "payment_request.legacy_source_table 67/67 null；sc_project_document.legacy_source_model 69/69 null；source_created_by 存在计数在 contracts/projects/settlements 均为 0。"
+    },
+    "creator_attribution": {
+      "inputs": [
+        ".runtime/demo-data-purity-20261018/11-creators.log"
+      ],
+      "kind": "live",
+      "result": "11 张关键业务表 + ir_attachment 中，由非 demo 且非系统账号创建的记录为 0。"
+    },
+    "creation_window_clustering": {
+      "inputs": [
+        ".runtime/demo-data-purity-20261018/12-cluster.log",
+        ".runtime/demo-data-purity-20261018/06-legacy-markers.log"
+      ],
+      "kind": "live",
+      "result": "业务记录仅落在 2026-10-16 05:00(199)、2026-10-18 01:00(52)、2026-10-18 04:00(1)，与 sc.seed.* 标记时间一致。"
+    },
+    "company_identity": {
+      "inputs": [
+        ".runtime/demo-data-purity-20261018/10-identity-check.log",
+        ".runtime/demo-data-purity-20261018/21-company-name-exact.log"
+      ],
+      "kind": "live",
+      "result": "res_company.name = \"demo演示公司\"（8 字符，md5 7fe75edebc51acb3eb628ccdde59fe07）；大小写敏感比较 name = \"Demo演示公司\" 为 false，首字符码点 100(d) != 68(D)；合作伙伴同名。所有权要求的首字母大写未满足。"
+    },
+    "customer_token_scan": {
+      "inputs": [
+        ".runtime/demo-data-purity-20261018/10-identity-check.log"
+      ],
+      "kind": "live",
+      "result": "res_partner.name 中 baosheng|builderp|scbs|保盛 命中 0/71。"
+    },
+    "ownership_declaration_gap": {
+      "inputs": [
+        ".runtime/demo-data-purity-20261018/02-ownership.log",
+        ".runtime/demo-data-purity-20261018/20-xmlid-coverage.log"
+      ],
+      "kind": "live",
+      "result": "smart_construction_demo XML ID 424 条（143 个 model / 84 个 res_id），加 smart_construction_seed 5 条 = 429 条 demo 链 XML ID；业务记录 1381 条中仅 182 条(13.2%)有 demo/seed XML ID，1185 条(85.8%)为种子链运行时创建，14 条(1.0%)为 base/web 模块数据。"
+    },
+    "attachment_decomposition": {
+      "inputs": [
+        ".runtime/demo-data-purity-20261018/20-xmlid-coverage.log"
+      ],
+      "kind": "live",
+      "result": "ir_attachment 884 = 4 demo XMLID + 2 web XMLID(web:image_placeholder, web:asset_styles_company_report) + 878 无 XMLID（169 demo principal + 709 __system__）；2 条余项为 Odoo Web 资源，非业务附件。"
+    },
+    "read_window_stability": {
+      "inputs": [
+        ".runtime/demo-data-purity-20261018/17-session-identity.log",
+        ".runtime/demo-data-purity-20261018/25-cluster-system-identifier.log"
+      ],
+      "kind": "live",
+      "result": "读取窗口 2026-10-18T06:54:06Z..06:55:43Z，pg_current_wal_lsn 起止均为 0/16D84708；system_identifier=7697127891101417510；全部会话以 TRANSACTION READ ONLY 开启。"
+    }
+  },
+  "blockers": [],
+  "risks": [
+    {
+      "id": "P-1",
+      "statement": "种子链创建的记录无归属标记，无法从数据自证 demo 身份。",
+      "suggestion": "seed 写入可查询 provenance（字段或批次号）。"
+    },
+    {
+      "id": "P-2",
+      "statement": "业务日期回填至 2025 年，易被误判为真实历史数据。",
+      "suggestion": "登记允许回填区间或加 is_demo_scenario 标记。"
+    },
+    {
+      "id": "P-3",
+      "statement": "wutao 为个人风格登录名，虽属 DEMO_PRINCIPAL_LOGINS，仍有 PII 观感。",
+      "suggestion": "评估改为中性演示账号名。"
+    },
+    {
+      "id": "P-4",
+      "statement": "ir_attachment 171 条 res_model 为空、702 条为基础设施附件，未逐条归类。",
+      "suggestion": "按 res_model + 文件哈希二次归类。"
+    },
+    {
+      "id": "P-5",
+      "statement": "方法学限制：无法区分 seed 脚本创建与以 demo 角色人工录入。",
+      "suggestion": "依赖 P-1 补齐 provenance。"
+    },
+    {
+      "id": "P-6",
+      "statement": "若需重置数据，直接 SQL 删除不可接受。",
+      "suggestion": "走受治理 reseed 并绑定指纹审批。"
+    },
+    {
+      "id": "P-7",
+      "statement": "公司名大小写与所有者要求不一致：DB 为 demo演示公司，要求 Demo演示公司。",
+      "suggestion": "修改 demo_addons/smart_construction_demo/hooks.py:8 DEMO_COMPANY_NAME 为 \"Demo演示公司\"，同步 step_company_identity.py:15、step_90_verify_demo.py:29、两处测试与文档，并受治理 reseed/写入迁移。"
+    },
+    {
+      "id": "P-8",
+      "statement": "sc-root .env.dev 声明 SC_SOURCE_REVISION=7d0ab5d…，实际运行 fb181551…。",
+      "suggestion": "按 A 批 residual risk 处理：确认该行不被 daily duty 消费或仅修正该行，不重启其他 dev stack。"
+    }
+  ],
+  "mutations_performed": [],
+  "next_exact_step": "按所有者要求修正公司名大小写：将 demo_addons/smart_construction_demo/hooks.py:8 的 DEMO_COMPANY_NAME 改为 \"Demo演示公司\"，并同步 seed/steps/step_company_identity.py:15、seed/steps/step_90_verify_demo.py:29、tests/test_demo_supplemental_flows.py:66,70-74,812、tests/test_demo_showcase_gate.py:189 与 docs/ops/iterations/demo_company_identity_20261018.md；随后走受治理 refresh 使运行态一致。本轮只读未改。数据清理无需执行：non-demo residual = 0。",
+  "classification_counts_legacy_round1": {
+    "xmlid_demo_owned_total": 424,
+    "res.company": {
+      "total": 1,
+      "declared": 0,
+      "seed": 0,
+      "residual": 0,
+      "note": "base 拥有；name md5 与 DEMO_COMPANY_NAME 一致"
+    },
+    "res.users": {
+      "total": 55,
+      "declared": 50,
+      "seed": 0,
+      "residual": 0,
+      "note": "5 个为 Odoo 系统账号"
+    },
+    "res.partner": {
+      "total": 71,
+      "declared": 61,
+      "seed": 4,
+      "residual": 0,
+      "other_module": 6
+    },
+    "project.project": {
+      "total": 15,
+      "declared": 6,
+      "seed": 9,
+      "residual": 0
+    },
+    "project.task": {
+      "total": 31,
+      "declared": 7,
+      "seed": 24,
+      "residual": 0
+    },
+    "construction.contract": {
+      "total": 54,
+      "declared": 10,
+      "seed": 44,
+      "residual": 0
+    },
+    "payment.request": {
+      "total": 67,
+      "declared": 13,
+      "seed": 54,
+      "residual": 0
+    },
+    "sc.settlement.order": {
+      "total": 16,
+      "declared": 4,
+      "seed": 12,
+      "residual": 0
+    },
+    "sc.project.document": {
+      "total": 69,
+      "declared": 4,
+      "seed": 65,
+      "residual": 0
+    },
+    "project.boq.line": {
+      "total": 29,
+      "declared": 3,
+      "seed": 26,
+      "residual": 0
+    },
+    "project.cost.ledger": {
+      "total": 53,
+      "declared": 3,
+      "seed": 50,
+      "residual": 0
+    },
+    "ir.attachment": {
+      "total": 884,
+      "declared": 4,
+      "seed": 878,
+      "residual": 0,
+      "note": "702 infra/avatar, 171 空 res_model, 11 业务文档"
+    }
+  },
+  "audit_rounds": [
+    {
+      "round": 1,
+      "task_ref": "DEMO-DATA-PURITY-AUDIT-20261018",
+      "receipt": "cd43e2f23f25c75df183a5c54bfe97bde2268fbdc9d2540244749e60ac2ef7b3",
+      "taxonomy": "ir_model_data_only",
+      "status": "superseded_by_round2"
+    },
+    {
+      "round": 2,
+      "task_ref": "DEMO-DATA-PURITY-EVIDENCE-GAP-20261018",
+      "requested_by": "codex-main-dispatcher-20261018C",
+      "note": "inbox task not registered; executed under parent task thread with explicit task id in receipt",
+      "taxonomy": "mutually_exclusive_v2",
+      "collection_window_utc": [
+        "2026-10-18T06:54:06Z",
+        "2026-10-18T06:55:43Z"
+      ],
+      "wal_lsn_start_end": [
+        "0/16D84708",
+        "0/16D84708"
+      ],
+      "report": ".runtime/demo-data-purity-20261018/24-EVIDENCE-GAP-REPORT.md"
+    }
+  ]
+}

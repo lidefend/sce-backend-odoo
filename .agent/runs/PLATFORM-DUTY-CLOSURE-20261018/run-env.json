@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "id": "PLATFORM-DUTY-CLOSURE-20261018",
+  "task_ref": "PLATFORM-DUTY-CLOSURE-20261018",
+  "executor": "codex-env-executor-20261017",
+  "lane": "demo",
+  "branch": "codex/daily-platform-demo-20261018",
+  "status": "reported",
+  "authorization": {
+    "id": "owner-standing-auth-20261018",
+    "status": "active",
+    "sha256": "b94bb85f18556111051e815f4d787b7e3868c0cd2a3222952955cd8cc85ee499"
+  },
+  "stage_identity": {
+    "deployed_head": "8a6efdc7653d78d289e2c6893e2f8d40cb65c4e3",
+    "server_head": "8a6efdc7653d78d289e2c6893e2f8d40cb65c4e3",
+    "server_dirty_files": 0,
+    "frontend_fingerprint": "272a8a51787a67bdd5fd724a0fb95d5962adff8725eb1cb00da834a051b3ce31",
+    "frontend_files": 105,
+    "entry_asset": "assets/index-CVKoObd0.js",
+    "previous_fingerprint_compared_only": "9e35a104e41f322104a979b5b1eb24c9a4708d20dd49a5a8562911ef0e55fd8d"
+  },
+  "deployment": {
+    "server_root": "/opt/projects/repos/sce-product-odoo",
+    "duty_refresh": {
+      "command": "daily_runtime_database_duty.py --duty demo --duty platform_control --phase refresh --apply",
+      "exit": 0,
+      "status": "PASS"
+    },
+    "duty_upgrade": {
+      "command": "daily_runtime_database_duty.py --duty demo --duty platform_control --phase upgrade --apply",
+      "exit": 0,
+      "status": "PASS"
+    },
+    "smart_core_versions": {
+      "sc_demo": "installed:17.0.1.1.16",
+      "sc_platform_control": "installed:17.0.1.1.16"
+    },
+    "containers": {
+      "sc-demo-dev-odoo-1": "healthy",
+      "sc-demo-dev-nginx-1": "healthy",
+      "sc-platform-control-dev-odoo-1": "healthy",
+      "sc-platform-control-dev-nginx-1": "healthy"
+    },
+    "odoo_identity": {
+      "SC_SOURCE_REVISION": "8a6efdc7653d78d289e2c6893e2f8d40cb65c4e3",
+      "FRONTEND_BUILD_SHA256": "272a8a51787a67bdd5fd724a0fb95d5962adff8725eb1cb00da834a051b3ce31"
+    }
+  },
+  "verification": {
+    "readback_matrix": {
+      "checks_total": 34,
+      "checks_failed": 0,
+      "status": "PASS"
+    },
+    "db_facts": {
+      "status": "PASS",
+      "demo_company": "1|Demo演示公司",
+      "business_total": 1381,
+      "non_demo_residual_total": 0
+    }
+  },
+  "evidence": {
+    ".runtime/platform-duty-closure-20261018/deploy_facts.json": "server HEAD/dirty, dist fingerprint, container identity, module versions",
+    ".runtime/platform-duty-closure-20261018/readback_matrix.json": "34-check dual-entry readback matrix",
+    ".runtime/platform-duty-closure-20261018/readback_matrix.log": "human-readable matrix",
+    ".runtime/platform-duty-closure-20261018/db_facts.json": "read-only 22-table residual recomputation",
+    ".runtime/platform-duty-closure-20261018/duty-refresh.json": "governed duty refresh PASS",
+    ".runtime/platform-duty-closure-20261018/duty-upgrade.json": "governed module upgrade PASS",
+    ".runtime/platform-duty-closure-20261018/frontend_build_make.log": "make daily.runtime.frontend.build exit 2 (stale baked-db assertion)"
+  },
+  "open_blockers": [
+    "make daily.runtime.frontend.build 的 baked_admin 断言要求 dist 内含 sc_platform_control，与 C 批不烧物理库名冲突；本批以受治理 verify.frontend.build + frontend_build_fingerprint.sh 重建，未改该脚本"
+  ],
+  "residual_risks": [
+    ".runtime 证据不进入版本库，以路径引用",
+    "前端静态产物由 nginx 只读挂载，未进入 Odoo 镜像"
+  ]
+}

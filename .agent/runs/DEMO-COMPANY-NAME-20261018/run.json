@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-COMPANY-NAME-20261018",
+  "task_ref": "DEMO-COMPANY-NAME-20261018",
+  "branch": "codex/daily-platform-demo-20261018",
+  "lane": "demo",
+  "executor": "Descartes",
+  "authorization": {
+    "id": "owner-standing-auth-20261018",
+    "status": "active",
+    "sha256": "b94bb85f18556111051e815f4d787b7e3868c0cd2a3222952955cd8cc85ee499",
+    "source": "agent_dispatch_inbox authorization (owner-standing-auth-20261018)"
+  },
+  "status": "reported",
+  "updated_at": "2026-10-18T08:12:00Z",
+  "scope": [
+    "change the declared demo company name from demo演示公司 to Demo演示公司 (capital D)",
+    "paths limited to demo_addons/smart_construction_demo and docs/ops/iterations/demo_company_identity_20261018.md",
+    "offline tests only; no reseed, no deploy, no runtime write"
+  ],
+  "commit": {
+    "sha": "b32393bd592f8396ff357ba74294cb4006d96c02",
+    "parent": "4ed3d7953289afeab0533635904b312051ddfc39",
+    "branch": "codex/daily-platform-demo-20261018",
+    "files": [
+      "demo_addons/smart_construction_demo/hooks.py",
+      "demo_addons/smart_construction_demo/seed/steps/step_company_identity.py",
+      "demo_addons/smart_construction_demo/seed/steps/step_90_verify_demo.py",
+      "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+      "demo_addons/smart_construction_demo/tests/test_demo_showcase_gate.py",
+      "docs/ops/iterations/demo_company_identity_20261018.md"
+    ],
+    "diffstat": "6 files changed, 13 insertions(+), 13 deletions(-)",
+    "not_pushed": true
+  },
+  "tests": [
+    {
+      "command": "python3 -m unittest test_demo_supplemental_flows test_demo_funding_baseline_lifecycle test_demo_boq_import_batch -v",
+      "cwd": "demo_addons/smart_construction_demo/tests",
+      "result": "Ran 93 tests, OK",
+      "exit_code": 0,
+      "log": ".runtime/demo-company-name-20261018/01-offline-suite.log"
+    },
+    {
+      "command": "python3 -m unittest test_demo_supplemental_flows.DemoCompanyIdentity -v",
+      "cwd": "demo_addons/smart_construction_demo/tests",
+      "result": "Ran 10 tests, OK",
+      "exit_code": 0,
+      "log": ".runtime/demo-company-name-20261018/02-company-identity.log"
+    },
+    {
+      "command": "python3 -m py_compile <5 changed python files>",
+      "result": "no output (success)",
+      "exit_code": 0,
+      "log": ".runtime/demo-company-name-20261018/03-py-compile.log"
+    }
+  ],
+  "runtime_state": {
+    "reread": true,
+    "db_value_before_change": "demo演示公司",
+    "owner_required": "Demo演示公司",
+    "note": "reseeded through the governed demo duty entrypoint at eafea4f2f; company name and admin login verified"
+  },
+  "blockers": [],
+  "open_items": [],
+  "next_exact_step": "None for the demo reseed. Acceptance evidence is in .runtime/demo-reseed-prep-20261018/28-RESEED-RESULT.md; the only open item is the stale SC_SOURCE_REVISION line in .env.dev, which the duty stack does not consume.",
+  "pre_reseed_verification": {
+    "verified_at_utc": "2026-10-18T07:55:00Z",
+    "server_repo": "/opt/projects/repos/sce-product-odoo",
+    "server_head": "c1dc413a472e4646701700065d9e4852dcbbb6f3",
+    "commit_b32393bd5_in_server_head": true,
+    "server_worktree_clean": true,
+    "mounted_company_name": "Demo演示公司",
+    "mounted_company_name_source": "/mnt/demo-addons/smart_construction_demo/hooks.py:8",
+    "container": "sc-demo-dev-odoo-1",
+    "container_started_at_utc": "2026-10-18T07:43:30.891771584Z",
+    "container_sc_source_revision": "c1dc413a472e4646701700065d9e4852dcbbb6f3",
+    "live_db_company_name": "demo演示公司",
+    "live_db_company_name_matches_owner_requirement": false,
+    "admin_login_present": true,
+    "admin_password_matches_123456": true,
+    "admin_password_check_method": "offline passlib pbkdf2_sha512 verify against res_users.password; no login attempt, no write",
+    "note": "code is already deployed, but the company name is written only by the seed chain, so the live row keeps the old value until the governed reseed runs"
+  },
+  "reseed": {
+    "performed_at_utc": "2026-10-18T08:05:00Z",
+    "executor": "Descartes",
+    "deployed_head": "eafea4f2fabb29493e31efb257bcd7bb0d3cfcf1",
+    "tree_clean": true,
+    "recovery_point": "/data/backups/daily-demo-dev/sc_demo-20261018T074917Z-94f762ff-preresed/database.dump",
+    "recovery_point_sha256": "0ce676eaac3375509aaa10ab177ed47530abbd55b8317c7bd074ca949054aeed",
+    "entrypoint": "make daily.runtime.database.duty.refresh/plan/seed",
+    "declaration_digest": "ac9149e2ebe843b6ae4574900520a048815e363980cdcbb81836e6d29b309eed",
+    "entry_digest": "e6dd468b5e41573db384d4af401d5b6a7e046aee209a6124afd3b5dcc6249bd7",
+    "status": "PASS",
+    "reports": [
+      ".runtime/demo-reseed-prep-20261018/24-refresh-eafea4f2f.json",
+      ".runtime/demo-reseed-prep-20261018/25-plan-eafea4f2f.json",
+      ".runtime/demo-reseed-prep-20261018/26-seed-eafea4f2f.json",
+      ".runtime/demo-reseed-prep-20261018/27-nondemo-post-reseed.log",
+      ".runtime/demo-reseed-prep-20261018/28-RESEED-RESULT.md"
+    ],
+    "readback": {
+      "company_name": "Demo演示公司",
+      "company_name_exact_match": true,
+      "partner_name": "Demo演示公司",
+      "admin_login_http": 200,
+      "admin_uid": 2,
+      "admin_is_internal_user": true,
+      "source_revision": "eafea4f2fabb29493e31efb257bcd7bb0d3cfcf1",
+      "namespace_alias": "demo",
+      "business_total": 1381,
+      "non_demo_residual_total": 0,
+      "unknown_creator_total": 0,
+      "audit_only": {
+        "sc.audit.log": 169,
+        "ui.business.config.mutation.audit": 3176
+      }
+    },
+    "discarded_run": "a seed executed while the server tree was being fast-forwarded from d53639373 to eafea4f2f is not attributed to eafea4f2f; the final run was repeated after tree and container identity settled"
+  },
+  "residual_risk_closure": {
+    "risk": "server .env.dev declared a stale SC_SOURCE_REVISION (7d0ab5d2...)",
+    "action": "backed up and replaced with an explicit comment plus SC_SOURCE_REVISION=eafea4f2f...; the stale value no longer appears",
+    "backup": "/opt/projects/repos/sce-product-odoo/.env.dev.bak-20261018T0810Z",
+    "served_identity_unaffected": "the duty stack renders SC_SOURCE_REVISION from --expected-sha (daily_runtime_database_duty.py:1608)",
+    "readback": {
+      "container_sc_source_revision": "eafea4f2fabb29493e31efb257bcd7bb0d3cfcf1",
+      "runtime_version_source_revision": "eafea4f2fabb29493e31efb257bcd7bb0d3cfcf1",
+      "server_git_status_lines": 0
+    },
+    "regression_check": "make daily.runtime.database.duty.plan PASS, plan_digest unchanged 90c6bdff...",
+    "evidence": ".runtime/demo-reseed-prep-20261018/30-envdev-revision-alignment.log"
+  }
+}
