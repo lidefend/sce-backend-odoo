@@ -53,7 +53,7 @@ PLATFORM_DUTIES = (
         "key": "platform.job_status",
         "label": "运维任务",
         "capabilities": ("platform.job_status.read",),
-        "route": "/api/ops/job/status",
+        "action_xmlid": "smart_core.action_sc_ops_job",
         "state": "available",
         "sequence": 40,
     },
@@ -135,11 +135,17 @@ def declared_tenant_capabilities() -> list[str]:
     return _capability_keys(TENANT_DUTIES)
 
 
+def declared_platform_action_xmlids() -> list[str]:
+    """Window actions the platform duties bind to, resolved by the caller."""
+    return sorted({str(duty["action_xmlid"]) for duty in PLATFORM_DUTIES if duty.get("action_xmlid")})
+
+
 def default_landing() -> dict:
     return dict(DEFAULT_LANDING)
 
 
-def _project_duties(duties) -> list[dict]:
+def _project_duties(duties, action_routes=None) -> list[dict]:
+    action_routes = action_routes or {}
     rows = []
     for duty in sorted(duties, key=lambda item: (int(item.get("sequence") or 0), str(item["key"]))):
         row = {
@@ -148,8 +154,13 @@ def _project_duties(duties) -> list[dict]:
             "capabilities": sorted(str(cap) for cap in duty.get("capabilities") or ()),
             "state": str(duty.get("state") or "available"),
         }
-        if duty.get("route"):
-            row["route"] = str(duty["route"])
+        action_xmlid = str(duty.get("action_xmlid") or "")
+        resolved_route = str(action_routes.get(action_xmlid) or "")
+        route = resolved_route or str(duty.get("route") or "")
+        if route:
+            row["route"] = route
+        if action_xmlid:
+            row["action_xmlid"] = action_xmlid
         if duty.get("intent"):
             row["intent"] = str(duty["intent"])
         if duty.get("scene_key"):
@@ -163,6 +174,7 @@ def build_platform_duty_surface(
     is_platform_control_admin: bool,
     is_tenant_config_admin: bool,
     namespace_id: str | None = None,
+    action_routes: dict | None = None,
 ) -> dict:
     """Project the declared duties for one verified identity (fail-closed).
 
@@ -185,7 +197,7 @@ def build_platform_duty_surface(
         "audience": audience,
         "duty_keys": _duty_keys(duties),
         "capabilities": _capability_keys(duties),
-        "duties": _project_duties(duties),
+        "duties": _project_duties(duties, action_routes=action_routes),
         "default_landing": default_landing() if is_platform_control_admin else None,
         "contract_version": CONTRACT_VERSION,
         "source": SOURCE,
@@ -250,6 +262,8 @@ def build_capability_rows(surface: dict) -> list[dict]:
             payload = {}
             if duty.get("route"):
                 payload["route"] = str(duty["route"])
+            if duty.get("action_xmlid"):
+                payload["action_xmlid"] = str(duty["action_xmlid"])
             if duty.get("intent"):
                 payload["intent"] = str(duty["intent"])
             if duty.get("scene_key"):

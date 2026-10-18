@@ -999,6 +999,11 @@ verify.overview.rich.text.patch.capability: guard.prod.forbid
 	@python3 addons/smart_construction_core/tests/test_overview_rich_text_patch_handler.py
 	@python3 addons/smart_construction_core/tests/test_project_overview_builder.py
 
+.PHONY: verify.platform.duty.contract.unit
+verify.platform.duty.contract.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/core/platform_duty_contract.py addons/smart_core/core/system_init_identity_payload.py addons/smart_core/controllers/platform_duty_controller.py addons/smart_core/controllers/platform_ops_controller.py
+	@python3 addons/smart_core/tests/test_platform_admin_duty_contract.py
+
 ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy
 	@python3 scripts/ops/agent_run_context.py
 	@git diff --check

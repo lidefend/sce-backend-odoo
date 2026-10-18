@@ -28,6 +28,7 @@ from odoo.addons.smart_core.core.platform_duty_contract import (
     build_platform_duty_surface,
 )
 from odoo.addons.smart_core.core.trace import get_trace_id
+from odoo.addons.smart_core.core.system_init_identity_payload import _duty_action_routes
 from odoo.addons.smart_core.controllers.platform_ops_controller import _platform_env
 from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 
@@ -81,6 +82,7 @@ class PlatformDutyController(http.Controller):
                 is_platform_control_admin=True,
                 is_tenant_config_admin=user_is_tenant_config_admin(user),
                 namespace_id=_namespace_id(env),
+                action_routes=_duty_action_routes(user),
             )
             return _envelope(True, surface, status=200)
         except AccessDenied:

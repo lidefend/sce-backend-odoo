@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
-from odoo.addons.smart_core.core.platform_duty_contract import build_platform_duty_surface
+from odoo.addons.smart_core.core.platform_duty_contract import (
+    build_platform_duty_surface,
+    declared_platform_action_xmlids,
+)
 from odoo.addons.smart_core.security.platform_admin import (
     user_is_platform_control_admin,
     user_is_tenant_config_admin,
@@ -28,6 +31,28 @@ def _instance_identity(user) -> tuple[str, str]:
         return str(instance.namespace_id or ""), str(instance.audience or "")
     except Exception:
         return "", ""
+
+
+def _duty_action_routes(user) -> dict:
+    """Resolve declared duty actions to the official action route.
+
+    A duty that names a window action must be rendered by the same
+    ``ActionViewShell`` path as every other product action; the projection
+    therefore carries ``/a/<id>`` instead of an ad-hoc data endpoint.
+    """
+
+    env = getattr(user, "env", None)
+    if env is None:
+        return {}
+    routes = {}
+    for xmlid in declared_platform_action_xmlids():
+        try:
+            action = env.ref(xmlid, raise_if_not_found=False)
+        except Exception:
+            action = None
+        if action is not None and getattr(action, "_name", "") == "ir.actions.act_window":
+            routes[xmlid] = "/a/%s" % action.id
+    return routes
 
 
 class SystemInitIdentityPayload:
@@ -95,6 +120,7 @@ class SystemInitIdentityPayload:
                 is_platform_control_admin=is_platform_admin,
                 is_tenant_config_admin=is_tenant_config_admin,
                 namespace_id=namespace_id,
+                action_routes=_duty_action_routes(user),
             ),
             "lang": user.lang,
             "tz": user.tz,
