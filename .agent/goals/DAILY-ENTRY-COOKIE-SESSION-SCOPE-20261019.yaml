@@ -1,0 +1,32 @@
+schema_version: 1
+goal:
+  id: DAILY-ENTRY-COOKIE-SESSION-SCOPE-20261019
+  title: 日常入口会话 Cookie 路径隔离与数据库提示显式拒绝
+  status: active
+  formal_product_layer: P0
+  layer_target: entry namespace routing, platform two-layer hop, session cookie scope
+  module: [smart_core, nginx, ops]
+  objective: >-
+    修复平台命名空间经两层 nginx 时 session cookie 被重复改写为
+    /platform-admin/platform-admin/ 的缺陷；让入口刷新真正重建路由容器以应用已审阅
+    模板；把入口验收从“任意非 200 即通过”收紧为对精确 Cookie 路径、全部已声明
+    数据库提示头和客户端命名空间头覆盖的确定性断言。
+  baseline:
+    branch: main
+    full_sha: 41be72a90c9e33e394d5f382daa03bad5bdbd65a
+  exclusions:
+    - No direct main push, force push, or required-check bypass.
+    - No client database hint becomes a routing input.
+    - No authentication engine change; each database keeps native authentication.
+    - No customer tenant (baosheng) deployment change.
+    - No frontend rebuild or Odoo-image embedding of frontend assets.
+  acceptance:
+    - Demo login response sets session_id Path exactly /t/demo/.
+    - Platform login response sets session_id Path exactly /platform-admin/.
+    - X-Odoo-Database, X-Odoo-DB, X-DB, X-Odoo-DB-Locked and ?db= all return 409 NS_DATABASE_HINT_CONFLICT.
+    - A client-supplied X-SC-Namespace cannot override the path namespace.
+    - duty refresh recreates route containers so the rendered nginx config matches the reviewed template.
+    - verify.daily.runtime.entry and daily.runtime.entry.verify pass on the daily server.
+  rollback: >-
+    Revert this branch; the previous entry template and route-start command remain
+    recoverable from main.

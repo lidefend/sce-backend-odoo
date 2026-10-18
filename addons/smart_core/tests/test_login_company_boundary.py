@@ -194,6 +194,17 @@ class TestLoginCompanyBoundary(unittest.TestCase):
         self.assertEqual(result["code"], 409)
         self.assertTrue(result["error"]["message"].startswith("NS_DATABASE_HINT_CONFLICT"))
 
+    def test_database_hint_header_is_a_conflict_not_a_route(self):
+        module = _load_handler()
+        sys.modules["odoo.http"].request.httprequest.headers["X-Odoo-Database"] = "sc_demo"
+        handler = module.LoginHandler(env=_Env(), params={"login": "demo", "password": "pw"})
+
+        result = handler.handle()
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["code"], 409)
+        self.assertTrue(result["error"]["message"].startswith("NS_DATABASE_HINT_CONFLICT"))
+
     def test_disallowed_company_id_returns_forbidden(self):
         module = _load_handler()
         handler = module.LoginHandler(env=_Env(), params={"login": "demo", "password": "pw", "company_id": 99})

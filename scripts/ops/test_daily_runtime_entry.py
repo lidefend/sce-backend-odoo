@@ -120,6 +120,15 @@ class DailyRuntimeEntryTest(unittest.TestCase):
         failures = entry.validate_entry(entry_doc, declaration)
         self.assertTrue(any("NS_DATABASE_HINT_CONFLICT" in item for item in failures), failures)
 
+    def test_every_published_database_hint_name_is_declared(self):
+        entry_doc, _ = shipped()
+        self.assertEqual(
+            ["X-Odoo-Database", "X-Odoo-DB", "X-DB", "X-Odoo-DB-Locked"],
+            entry_doc["namespace_routes"]["client_database_hint"]["headers"],
+        )
+        template = TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn("$http_x_odoo_database", template)
+
     def test_unknown_namespace_must_be_refused_with_404(self):
         entry_doc, declaration = shipped()
         entry_doc["namespace_routes"]["unknown_namespace"]["status"] = 400
@@ -207,6 +216,12 @@ class DailyRuntimeEntryTest(unittest.TestCase):
         self.assertEqual(
             [], verifier.database_selector_offenders(TEMPLATE.read_text(encoding="utf-8"))
         )
+
+    def test_platform_hop_does_not_double_scope_the_session_cookie(self):
+        template = TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn("map $sc_entry_platform_strip $sc_proxy_cookie_path {", template)
+        self.assertIn("proxy_cookie_path / $sc_proxy_cookie_path;", template)
+        self.assertNotIn("proxy_cookie_path / $sc_entry_cookie_path;", template)
 
     def test_mutating_a_route_database_does_not_change_the_declaration_digest(self):
         entry_doc, _ = shipped()

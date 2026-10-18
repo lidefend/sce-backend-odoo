@@ -1,7 +1,7 @@
 {
   "schema": "daily.runtime.entry.v1",
   "authority": "config/ops/daily_runtime_database_duties.v1.json",
-  "owner_ruling": "2026-10-18 the daily development server exposes one public entry. Batch C: the path prefix selects an immutable namespace, the namespace binds the database, and a client database hint (X-Odoo-DB / X-DB / ?db=) is refused with HTTP 409 NS_DATABASE_HINT_CONFLICT.",
+  "owner_ruling": "2026-10-18 the daily development server exposes one public entry. Batch C: the path prefix selects an immutable namespace, the namespace binds the database, and every client database hint (X-Odoo-Database / X-Odoo-DB / X-DB / X-Odoo-DB-Locked / ?db=) is refused with HTTP 409 NS_DATABASE_HINT_CONFLICT.",
   "host": "sc-root",
   "public_entry": {
     "serving_duty": "demo",
@@ -93,6 +93,7 @@
     ],
     "client_database_hint": {
       "headers": [
+        "X-Odoo-Database",
         "X-Odoo-DB",
         "X-DB",
         "X-Odoo-DB-Locked"

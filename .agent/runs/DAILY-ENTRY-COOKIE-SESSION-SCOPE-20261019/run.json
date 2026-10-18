@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-ENTRY-COOKIE-SESSION-SCOPE-20261019",
+  "branch": "fix/daily-entry-cookie-session-scope-20261019",
+  "baseline_sha": "41be72a90c9e33e394d5f382daa03bad5bdbd65a",
+  "status": "active",
+  "goal": ".agent/goals/DAILY-ENTRY-COOKIE-SESSION-SCOPE-20261019.yaml",
+  "record": "docs/ops/iterations/daily_entry_cookie_session_scope_20261019.md",
+  "scope": [
+    "addons/smart_core/controllers/intent_dispatcher.py",
+    "addons/smart_core/handlers/login.py",
+    "addons/smart_core/tests/test_login_company_boundary.py",
+    "config/nginx/templates/default.conf.template",
+    "config/ops/daily_runtime_entry.v1.json",
+    "scripts/ops/daily_runtime_database_duty.py",
+    "scripts/ops/daily_runtime_entry_verify.py",
+    "scripts/ops/test_daily_runtime_database_duty.py",
+    "scripts/ops/test_daily_runtime_entry.py",
+    "scripts/verify/daily_runtime_entry_guard.py",
+    "scripts/verify/nginx_proxy_db_authority_guard.py",
+    "scripts/verify/test_nginx_proxy_db_authority_guard.py",
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-ENTRY-COOKIE-SESSION-SCOPE-20261019.yaml",
+    ".agent/runs/DAILY-ENTRY-COOKIE-SESSION-SCOPE-20261019/run.json",
+    "docs/ops/iterations/daily_entry_cookie_session_scope_20261019.md"
+  ],
+  "environment": {
+    "kind": "offline_plus_hosted_readback",
+    "authority": "governed local Make targets and the daily development server"
+  },
+  "checks": {
+    "entry": {
+      "target": "verify.daily.runtime.entry",
+      "inputs": [
+        "config/nginx/templates/default.conf.template",
+        "config/ops/daily_runtime_entry.v1.json",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "config/ops/daily_runtime_duty_stack.yml",
+        "config/ops/daily_runtime_duty_stack.env",
+        "docker-compose.yml",
+        "scripts/ops/daily_runtime_database_duty.py",
+        "scripts/verify/daily_runtime_entry_guard.py",
+        "scripts/verify/nginx_proxy_db_authority_guard.py",
+        "scripts/verify/test_nginx_proxy_db_authority_guard.py",
+        "scripts/render_nginx_conf.sh"
+      ],
+      "kind": "offline"
+    },
+    "duty": {
+      "target": "verify.daily.runtime.database.duty",
+      "inputs": [
+        "scripts/ops/daily_runtime_database_duty.py",
+        "scripts/ops/test_daily_runtime_database_duty.py",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "config/ops/daily_runtime_entry.v1.json",
+        "config/ops/daily_runtime_duty_stack.yml",
+        "config/ops/daily_runtime_duty_stack.env",
+        "config/nginx/templates/default.conf.template"
+      ],
+      "kind": "offline"
+    },
+    "live_entry": {
+      "target": "daily.runtime.entry.verify",
+      "inputs": [
+        "scripts/ops/daily_runtime_entry_verify.py",
+        "config/ops/daily_runtime_entry.v1.json",
+        "config/ops/daily_runtime_database_duties.v1.json"
+      ],
+      "kind": "hosted_readback"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the focused unit and guard targets, then commit, publish the PR, and apply duty refresh plus live entry readback on the daily server."
+}

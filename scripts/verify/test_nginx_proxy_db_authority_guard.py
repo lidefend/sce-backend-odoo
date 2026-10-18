@@ -137,6 +137,29 @@ class NginxProxyDbAuthorityGuardTest(unittest.TestCase):
         errors = self.probe(renderer=mutated)
         self.assertTrue(any("must not publish a database name" in item for item in errors), errors)
 
+    def test_double_cookie_path_rewrite_is_refused(self):
+        mutated = self.template.replace(
+            "proxy_cookie_path / $sc_proxy_cookie_path;",
+            "proxy_cookie_path / $sc_entry_cookie_path;",
+            1,
+        )
+        errors = self.probe(template=mutated)
+        self.assertTrue(any("double the namespace prefix" in item for item in errors), errors)
+
+    def test_dropping_the_platform_aware_cookie_map_is_refused(self):
+        mutated = self.template.replace(
+            "map $sc_entry_platform_strip $sc_proxy_cookie_path {",
+            "map $sc_entry_platform_strip $sc_unused_cookie_path {",
+            1,
+        )
+        errors = self.probe(template=mutated)
+        self.assertTrue(any("session cookie path" in item for item in errors), errors)
+
+    def test_silently_ignoring_the_x_odoo_database_hint_is_refused(self):
+        mutated = self.template.replace("$http_x_odoo_database:", "$http_odoo_database:", 1)
+        errors = self.probe(template=mutated)
+        self.assertTrue(any("X-Odoo-Database" in item for item in errors), errors)
+
 
 if __name__ == "__main__":
     unittest.main()

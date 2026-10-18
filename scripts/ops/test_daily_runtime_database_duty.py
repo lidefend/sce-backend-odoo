@@ -1029,6 +1029,17 @@ class RemoteProgramTests(unittest.TestCase):
         rendered = self.rendered()
         self.assertEqual(rendered.count("def base_bootstrap_plan("), 1)
 
+    def test_refresh_recreates_the_route_so_the_rendered_config_is_applied(self):
+        """A template edit only takes effect when the route container restarts.
+
+        ``docker compose up -d`` leaves an unchanged container untouched, so a
+        reviewed nginx-template change would keep serving the previously
+        rendered file while every declaration read as correct.
+        """
+        rendered = self.rendered()
+        self.assertIn('"--force-recreate"', rendered)
+        self.assertIn('"up", "-d", "--wait", "--force-recreate"', rendered)
+
 
 class BootstrapOrderTests(unittest.TestCase):
     """The pure decision table behind the single-initializer wait."""

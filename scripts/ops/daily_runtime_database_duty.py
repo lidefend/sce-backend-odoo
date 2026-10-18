@@ -504,7 +504,9 @@ def validate_entry(entry, declaration):
     if not isinstance(hint, dict):
         failures.append("entry.namespace_routes.client_database_hint must declare the refusal contract")
         hint = {}
-    if hint.get("headers") != ["X-Odoo-DB", "X-DB", "X-Odoo-DB-Locked"]:
+    if hint.get("headers") != [
+        "X-Odoo-Database", "X-Odoo-DB", "X-DB", "X-Odoo-DB-Locked",
+    ]:
         failures.append("entry.namespace_routes.client_database_hint.headers must name every client hint")
     if str(hint.get("query") or "") != "db":
         failures.append("entry.namespace_routes.client_database_hint.query must be db")
@@ -1845,7 +1847,12 @@ def start_route(duty):
     route = [str(item) for item in duty["stack"]["services"] if item not in ("db", "redis", "odoo")]
     if not route:
         return {"skipped": "the declaration has no service above the application"}
-    command = compose_base(duty) + ["up", "-d", "--wait", *route]
+    # The nginx template is rendered by the container entrypoint at start, not
+    # read per request.  `up -d` alone leaves an unchanged container untouched,
+    # so a reviewed template change would keep serving the previously rendered
+    # config while every declaration looked correct.  The route services are
+    # stateless; recreating them is what applies the rendered contract.
+    command = compose_base(duty) + ["up", "-d", "--wait", "--force-recreate", *route]
     result = run(command, cwd=OPS_ROOT, timeout=900)
     return {"command": " ".join(command), "services": route,
             "returncode": result.returncode,

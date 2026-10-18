@@ -53,6 +53,9 @@ VARIABLE_PROXY_PASSES = (
 # These variables may only appear as the *key* of a detection map.  Using them
 # as a header value or an upstream would make a client hint a routing input.
 HINT_VARIABLES = ("$http_x_odoo_db", "$arg_db", "$sc_proxy_db")
+COOKIE_PATH_MAP = "map $sc_entry_platform_strip $sc_proxy_cookie_path {"
+COOKIE_PATH_REWRITE = "proxy_cookie_path / $sc_proxy_cookie_path;"
+COOKIE_PATH_DOUBLE_REWRITE = "proxy_cookie_path / $sc_entry_cookie_path;"
 PLATFORM_STRIP_GUARD = 'if ($sc_entry_platform_strip = "1") {'
 PLATFORM_API_REWRITE = "rewrite ^/platform-admin(/api/.*)$ $1 break;"
 PLATFORM_WEB_REWRITE = "rewrite ^/platform-admin(/.*)$ $1 break;"
@@ -179,6 +182,24 @@ def probe(
             errors.append(
                 "config/nginx/templates/default.conf.template: a client database hint must be refused with "
                 "HTTP 409 `NS_DATABASE_HINT_CONFLICT`"
+            )
+        if "$http_x_odoo_database" not in template:
+            errors.append(
+                "config/nginx/templates/default.conf.template: the declared `X-Odoo-Database` hint must "
+                "be detected, not silently ignored"
+            )
+        # The platform namespace crosses two nginx faces.  Only the serving face
+        # may map `Path=/` to the public prefix; the duty face must leave the
+        # path unchanged or the browser receives `/platform-admin/platform-admin/`.
+        if COOKIE_PATH_MAP not in template or COOKIE_PATH_REWRITE not in template:
+            errors.append(
+                "config/nginx/templates/default.conf.template: the session cookie path must be scoped "
+                "through the platform-strip-aware map"
+            )
+        if COOKIE_PATH_DOUBLE_REWRITE in template:
+            errors.append(
+                "config/nginx/templates/default.conf.template: both nginx faces rewrite the cookie path; "
+                "the platform hop would double the namespace prefix"
             )
         if not re.search(r"server\s*\{[^}]*absolute_redirect off;", template):
             errors.append(
