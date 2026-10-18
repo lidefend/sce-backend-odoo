@@ -51,8 +51,8 @@ def evidence(**overrides: object) -> bytes:
         },
         "served_entry_asset": ENTRY_ASSET,
         "platform_admin_database": ADMIN_DB,
-        "platform_admin_baked": True,
-        "platform_admin_written": False,
+        "physical_db_sweep": "NO_PHYSICAL_DB_NAME",
+        "physical_db_bakes": [],
         "dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
         "remote_root": build_module.REMOTE_ROOT,
         "build_tail": "",
@@ -167,7 +167,6 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
             "verify.frontend.build",
             "frontend_build_fingerprint.sh",
             "FRONTEND_BUILD_SHA256",
-            "VITE_PLATFORM_ADMIN_DB",
             "make",
             "restart",
             "/api/runtime-version",
@@ -256,14 +255,16 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
             with self.assertRaisesRegex(build_module.BuildError, "evidence differs"):
                 call_align()
 
-    def test_align_rejects_a_bundle_that_does_not_bake_the_declared_authority(self) -> None:
-        """The env line says what the next build should bake; the artifact says what is served.
+    def test_align_rejects_a_bundle_that_carries_a_physical_database_name(self) -> None:
+        """The entry namespace is the only routing input after Batch C.
 
-        A bundle built before the switch still mounts the previous database, so
-        an entry that only read the env file would report a switched authority
-        while the browser kept loading the old one.
+        A bundle that still carries a physical database name has reinstated a
+        second selector beside the path namespace, so the build must fail
+        instead of publishing two competing authorities.
         """
-        unswitched = evidence(platform_admin_baked=False)
+        unswitched = evidence(
+            physical_db_sweep="FOUND", physical_db_bakes=["sc_demo"]
+        )
         completed = mock.Mock(returncode=0, stdout=unswitched, stderr=b"")
         with mock.patch.dict(os.environ, CONFIRM), mock.patch.object(
             build_module, "run", return_value=completed
@@ -280,16 +281,14 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
             with self.assertRaisesRegex(build_module.BuildError, "evidence differs"):
                 call_align()
 
-    def test_the_build_input_is_declared_before_the_build_and_the_outcome_after(self) -> None:
+    def test_the_build_identity_is_declared_after_the_artifact_exists(self) -> None:
         program = build_module.REMOTE_BUILD
-        declare = program.index("env_write_line(\n        platform_admin_key, platform_admin_database\n    )")
+        self.assertNotIn(
+            "VITE_PLATFORM_ADMIN_DB", program,
+            "Batch C removed the build-time platform database selector",
+        )
         build_call = program.index("code, build_tail = build()")
         outcome = program.index('env_write_line("FRONTEND_BUILD_SHA256", fingerprint)')
-        self.assertLess(
-            declare, build_call,
-            "a value the build consumes must be declared before the build runs, or the "
-            "served bundle and the declaration disagree",
-        )
         self.assertLess(
             build_call, outcome,
             "the recorded build identity describes the artifact, so it is declared after it",
@@ -304,15 +303,16 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
             "drift this entry exists to prevent",
         )
 
-    def test_reuse_requires_the_baked_authority_to_match(self) -> None:
-        """A recorded generation is only reusable while it carries the declared authority.
+    def test_reuse_requires_the_bundle_to_carry_no_physical_database_name(self) -> None:
+        """A recorded generation is only reusable while it stays namespace-only.
 
-        Reusing on the fingerprint alone would re-serve the previous authority
-        whenever the recorded generation happened to be the one on disk.
+        Reusing on the fingerprint alone would re-serve a bundle that still
+        carries the retired database selector whenever that generation happened
+        to be the one on disk.
         """
         reuse = build_module.REMOTE_BUILD.split("reused = bool(", 1)[1].split("\n    )", 1)[0]
-        self.assertIn("declared_admin == platform_admin_database", reuse)
-        self.assertIn("baked_admin()", reuse)
+        self.assertNotIn("declared_admin == platform_admin_database", reuse)
+        self.assertIn("not physical_db_bakes()", reuse)
 
     def test_align_reports_remote_failure(self) -> None:
         completed = mock.Mock(

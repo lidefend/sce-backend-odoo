@@ -17,8 +17,11 @@ This entry closes the gap with existing governed pieces only:
    already agree;
 3. otherwise run the existing governed `make verify.frontend.build`, compute the
    artifact fingerprint with the existing governed
-   `scripts/verify/frontend_build_fingerprint.sh`, and declare that fingerprint
-   in the build input file so the next governed duty refresh publishes it;
+   `scripts/verify/frontend_build_fingerprint.sh`, sweep the artifact for the
+   physical database names this lane knows about (their presence would be a
+   second routing input beside the entry namespace), and declare the
+   fingerprint in the build input file so the next governed duty refresh
+   publishes it;
 4. read back `/index.html` and the built entry asset through the public entry,
    proving the bind-mounted static face is the generation just built;
 5. leave the runtime identity refresh to the governed duty refresh: the Odoo
@@ -50,9 +53,9 @@ DEFAULT_ENV_FILE = ".env.dev"
 #: its own, and a shipped literal would silently bake a stale name.
 DEFAULT_DATABASE = ""
 DEFAULT_BASE_URL = "http://127.0.0.1:18081"
-#: The frontend bakes its platform-admin authority at build time. The value is
-#: not a build preference: it is derived from the governed duty declaration, and
-#: the served bundle is what actually moves the platform-admin entry.
+#: Batch C: the entry namespace, not a physical database name, selects the
+#: platform-admin authority. The duty database is still an input here because a
+#: bundle that carries it would reintroduce the retired second selector.
 PLATFORM_ADMIN_KEY = "VITE_PLATFORM_ADMIN_DB"
 DATABASE_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 DEFAULT_RECEIPT = ".runtime/final-acceptance/daily-deployed/frontend-build.json"
@@ -80,7 +83,6 @@ root = Path(remote_root)
 full_sha = re.compile(r"^[0-9a-f]{40}$")
 full_fp = re.compile(r"^[0-9a-f]{64}$")
 entry_re = re.compile(r'src="/assets/(index-[^"?]+\.js)"')
-platform_admin_key = "VITE_PLATFORM_ADMIN_DB"
 
 if root != fixed_root or not root.is_dir():
     raise SystemExit(tag + " BLOCKED invalid remote repository")
@@ -95,7 +97,7 @@ state = {
     "fingerprint": "", "entry_asset": "", "env_file": str(env_path),
     "env_written": False, "backup_path": "", "restarted": False,
     "platform_admin_database": platform_admin_database,
-    "platform_admin_written": False, "platform_admin_baked": False,
+    "physical_db_sweep": "NOT_RUN", "physical_db_bakes": [],
     "rolled_back": False, "served": None, "served_entry_asset": "",
     "dist_dir": str(dist_dir), "remote_root": str(root),
     "build_tail": "", "fingerprint_tail": "", "restart_tail": "",
@@ -163,22 +165,27 @@ def restore_env():
     if state["env_written"] and state["backup_path"]:
         shutil.copy2(state["backup_path"], env_path)
 
-def baked_admin():
-    """Whether the built bundle really carries the declared authority.
+def physical_db_bakes():
+    """Physical database names present in the served bundle.
 
-    The env line says what the *next* build should bake; only the artifact says
-    what the *served* bundle carries. A bundle built before the switch would
-    still mount the previous database, so the two facts are read separately.
+    Batch C removed every build-time database selector: the entry namespace is
+    the only routing input. A bundle that still carries one of these names has
+    silently reinstated the selector the entry refuses to honour, so the build
+    fails instead of publishing two competing authorities.
     """
+    names = [name for name in dict.fromkeys([database, platform_admin_database]) if name]
+    found = []
     for path in sorted(dist_dir.rglob("*")):
         if path.suffix not in (".js", ".mjs", ".css") or not path.is_file():
             continue
         try:
-            if platform_admin_database in path.read_text(encoding="utf-8", errors="replace"):
-                return True
+            text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-    return False
+        for name in names:
+            if name in text:
+                found.append(name)
+    return sorted(set(found))
 
 def readback():
     try:
@@ -267,18 +274,13 @@ with lock_path.open("a+b") as lock:
     if disk_fp_path.is_file():
         disk_fp = disk_fp_path.read_text(encoding="utf-8").strip()
 
-    declared_admin = env_single(platform_admin_key)
-    if declared_admin is None:
-        blocked("env file must declare exactly one " + platform_admin_key)
-
     reused = bool(
         fingerprint_hint and full_fp.fullmatch(fingerprint_hint)
         and entry_hint and entry_re.fullmatch('src="/assets/%s"' % entry_hint)
         and declared == fingerprint_hint
         and disk_fp == fingerprint_hint
         and entry_before == entry_hint
-        and declared_admin == platform_admin_database
-        and baked_admin()
+        and not physical_db_bakes()
     )
     if reused:
         state["reused"] = True
@@ -292,14 +294,9 @@ with lock_path.open("a+b") as lock:
         emit("PASS")
         sys.exit(0)
 
-    # The bundle bakes its platform-admin authority, so the declaration has to
-    # be in the build input *before* the build: writing it afterwards would
-    # leave the served bundle mounting the previous database while the file
-    # claims the new one, which is the drift this entry exists to prevent.
-    state["platform_admin_written"] = env_write_line(
-        platform_admin_key, platform_admin_database
-    )
-
+    # Batch C: no physical database is a build input. The static build removes
+    # the legacy selectors from its environment, so writing one here would only
+    # make the declaration look like an authority the bundle no longer reads.
     code, build_tail = build()
     state["rebuilt"] = True
     state["build_tail"] = build_tail[-1200:]
@@ -321,10 +318,16 @@ with lock_path.open("a+b") as lock:
         restore_env()
         blocked("built index.html does not declare an entry asset")
 
-    state["platform_admin_baked"] = baked_admin()
-    if not state["platform_admin_baked"]:
+    state["physical_db_bakes"] = physical_db_bakes()
+    state["physical_db_sweep"] = (
+        "NO_PHYSICAL_DB_NAME" if not state["physical_db_bakes"] else "FOUND"
+    )
+    if state["physical_db_bakes"]:
         restore_env()
-        blocked("the built bundle does not bake the declared platform-admin database")
+        blocked(
+            "the built bundle carries a physical database name: "
+            + ", ".join(state["physical_db_bakes"])
+        )
 
     env_write_line("FRONTEND_BUILD_SHA256", fingerprint)
     # The static bundle is served from a bind mount, so the public entry sees
@@ -344,7 +347,7 @@ with lock_path.open("a+b") as lock:
     ok = bool(
         served_entry == entry
         and asset_code == 200
-        and state["platform_admin_baked"]
+        and state["physical_db_sweep"] == "NO_PHYSICAL_DB_NAME"
     )
     if not ok and state["env_written"]:
         restore_env()
@@ -484,7 +487,8 @@ def align(
         or not isinstance(served, dict)
         or not isinstance(evidence.get("runtime_refresh_required"), bool)
         or evidence.get("platform_admin_database") != platform_admin_database
-        or evidence.get("platform_admin_baked") is not True
+        or evidence.get("physical_db_sweep") != "NO_PHYSICAL_DB_NAME"
+        or evidence.get("physical_db_bakes") != []
     ):
         raise BuildError("remote daily frontend build evidence differs")
     return evidence
