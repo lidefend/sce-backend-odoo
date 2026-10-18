@@ -16,7 +16,7 @@ from odoo.addons.smart_core.delivery.product_policy_catalog_sync_service import 
 from odoo.addons.smart_core.delivery.release_approval_policy_service import ReleaseApprovalPolicyService
 from odoo.addons.smart_core.delivery.release_operator_surface_service import ReleaseOperatorSurfaceService
 from odoo.addons.smart_core.delivery.release_runtime_user_probe_service import ReleaseRuntimeUserProbeService
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import user_is_platform_control_admin
 from odoo.addons.smart_core.utils.reason_codes import REASON_OK
 
 
@@ -87,7 +87,7 @@ class _ReleaseOperatorBaseHandler(BaseIntentHandler):
         }
 
     def _check_permissions(self):
-        if not user_is_platform_admin(self.env.user):
+        if not user_is_platform_control_admin(self.env.user):
             raise AccessError("PERMISSION_DENIED: release operator requires platform administrator")
         return True
 

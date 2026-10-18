@@ -10,7 +10,7 @@ from odoo.exceptions import AccessDenied
 from odoo.http import request
 
 from odoo.addons.smart_core.security.auth import get_user_from_token
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import user_is_platform_control_admin
 from odoo.addons.smart_core.core.trace import get_trace_id
 
 CONTRACT_VERSION = "v1"
@@ -74,7 +74,7 @@ def _fail_from_exception(exc: Exception, http_status: int = 500):
 
 def _platform_env():
     user = get_user_from_token()
-    if not user_is_platform_admin(user):
+    if not user_is_platform_control_admin(user):
         raise AccessDenied("insufficient permissions")
     return user, request.env(user=user)
 

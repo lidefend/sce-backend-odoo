@@ -61,11 +61,14 @@ class _RouteRecord:
         self.target_db = target_db
         self.entry_kind = entry_kind
 
-    def to_runtime_dict(self):
+    def to_runtime_dict(self, current_db=None):
+        entry_kind = self.entry_kind
+        if current_db is not None and entry_kind == "platform_admin" and current_db != "sc_platform_control":
+            entry_kind = "tenant"
         return {
             "login": "demo",
             "target_db": self.target_db,
-            "entry_kind": self.entry_kind,
+            "entry_kind": entry_kind,
             "product_key": "construction",
             "label": "Demo Tenant",
         }
@@ -91,6 +94,9 @@ def _load_handler():
     root = Path(__file__).resolve().parents[1]
     api_mod = types.SimpleNamespace(Environment=lambda cr, uid, context: None)
     odoo_mod = _install_module("odoo", SUPERUSER_ID=1, api=api_mod)
+    # ``from odoo.http import request`` needs ``odoo`` to behave as a package.
+    odoo_mod.__path__ = []
+    _install_module("odoo.http", request=types.SimpleNamespace(session=None))
     _install_module("odoo.modules")
     _install_module("odoo.modules.registry", Registry=lambda db_name: None)
     _install_module("odoo.addons")

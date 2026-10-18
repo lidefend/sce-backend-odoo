@@ -46,7 +46,7 @@ def _load_handler():
             getattr(user, "is_platform_admin", False)
             or getattr(user, "is_system_admin", False)
         ),
-        user_is_platform_admin=lambda user: bool(getattr(user, "is_platform_admin", False)),
+        user_is_tenant_config_admin=lambda user: bool(getattr(user, "is_platform_admin", False)),
     )
     _install_module(
         "odoo.addons.smart_core.core.scene_provider",

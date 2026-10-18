@@ -16,7 +16,9 @@ from odoo.addons.smart_core.security.platform_admin import (
     platform_admin_groups,
     user_is_break_glass_technical_admin,
     user_is_platform_admin,
+    user_is_platform_control_admin,
     user_is_security_admin,
+    user_is_tenant_config_admin,
 )
 
 __all__ = [
@@ -32,5 +34,7 @@ __all__ = [
     "platform_admin_groups",
     "user_is_break_glass_technical_admin",
     "user_is_platform_admin",
+    "user_is_platform_control_admin",
     "user_is_security_admin",
+    "user_is_tenant_config_admin",
 ]

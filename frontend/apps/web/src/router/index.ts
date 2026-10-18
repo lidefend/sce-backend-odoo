@@ -18,6 +18,7 @@ import { resolveBusinessActivityTitle, shouldDeferActivityPageTitle } from '../a
 import { intentRequest } from '../api/intents';
 import { validateRelationReadRoute } from '../app/relationReadRouteAuthority';
 import { currentContextEpoch } from '../app/contextEpoch';
+import { isAdminRouteAccessDenied } from '../app/adminRouteAccess';
 
 function routeTitle(routeName: string | symbol | null | undefined): string {
   const name = typeof routeName === 'string' ? routeName : '';
@@ -320,7 +321,7 @@ const router = createRouter({
     { path: '/admin/scene-health', name: 'scene-health', component: () => import('../views/SceneHealthView.vue'), meta: { layout: 'shell', adminOnly: true } },
     { path: '/admin/scene-packages', name: 'scene-packages', component: () => import('../views/ScenePackagesView.vue'), meta: { layout: 'shell', adminOnly: true } },
     { path: '/admin/usage-analytics', name: 'usage-analytics', component: () => import('../views/UsageAnalyticsView.vue'), meta: { layout: 'shell', adminOnly: true } },
-    { path: '/admin/release-operator', name: 'release-operator', component: () => import('../views/ReleaseOperatorView.vue'), meta: { layout: 'shell', adminOnly: true } },
+    { path: '/admin/release-operator', name: 'release-operator', component: () => import('../views/ReleaseOperatorView.vue'), meta: { layout: 'shell', adminOnly: true, platformAdminOnly: true } },
     { path: '/admin/business-config', name: 'business-config', component: () => import('../views/BusinessConfigSurfaceView.vue'), meta: { layout: 'shell' } },
     { path: '/admin/menu-config', name: 'menu-config', component: () => import('../views/MenuConfigView.vue'), meta: { layout: 'shell' } },
     { path: '/admin/form-field-config', name: 'form-field-config', component: () => import('../views/ActionViewShell.vue'), meta: { layout: 'shell' } },
@@ -460,10 +461,8 @@ router.beforeEach(async (to) => {
       menuId,
     });
   }
-  if (to.meta?.adminOnly) {
-    if (session.user?.is_platform_admin !== true) {
-      return { path: session.resolveLandingPath('/') };
-    }
+  if (isAdminRouteAccessDenied(to.meta, session.user)) {
+    return { path: session.resolveLandingPath('/') };
   }
   return true;
 });

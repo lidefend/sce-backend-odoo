@@ -179,9 +179,9 @@ class PaymentRequestSettlementPreviewHandler(BaseIntentHandler):
     ]
 
     def _assert_access(self):
-        from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+        from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 
-        if user_is_platform_admin(self.env.user):
+        if user_is_tenant_config_admin(self.env.user):
             return
         for xmlid in self.ACCESS_GROUPS:
             try:
@@ -299,9 +299,9 @@ class PaymentRequestAddSettlementLinesHandler(BaseIntentHandler):
     ]
 
     def _assert_access(self):
-        from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+        from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 
-        if user_is_platform_admin(self.env.user):
+        if user_is_tenant_config_admin(self.env.user):
             return
         for xmlid in self.ACCESS_GROUPS:
             try:

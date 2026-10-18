@@ -14,7 +14,7 @@ The grant is deliberately narrow and contract-driven:
 * only the platform administrator identity is authorized, consumed through the
   same published check that the runtime contract exposes as
   ``identity.is_platform_admin``
-  (``smart_core.security.platform_admin.user_is_platform_admin``).
+  (``smart_core.security.platform_admin.user_is_tenant_config_admin``).
 
 No new capability key, no ACL widening and no customer role is added, so a
 customer business role can never open an unregistered surface.  This hook never
@@ -45,9 +45,9 @@ def _resolve_role_code(user) -> str:
     as the authorization source here.  A missing check or an error denies.
     """
     try:
-        from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+        from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 
-        if user_is_platform_admin(user):
+        if user_is_tenant_config_admin(user):
             return DEVELOPMENT_BYPASS_ROLES[0]
     except Exception:
         return ""

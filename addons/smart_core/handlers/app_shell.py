@@ -22,10 +22,10 @@ from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_fir
 try:
     from odoo.addons.smart_core.security.platform_admin import (
         can_discover_platform_capabilities,
-        user_is_platform_admin,
+        user_is_tenant_config_admin,
     )
 except Exception:
-    def user_is_platform_admin(user):
+    def user_is_tenant_config_admin(user):
         return False
 
     def can_discover_platform_capabilities(user):
@@ -241,20 +241,20 @@ def _scene_accessible_for_user(env, scene: dict[str, Any]) -> bool:
     declared_xmlids = [xmlid for xmlid in xmlids if xmlid]
     for xmlid in declared_xmlids:
         record = _xmlid_record(env, xmlid)
-        if _is_platform_admin_user(env) and not getattr(record, "groups_id", None):
+        if _is_tenant_config_admin_user(env) and not getattr(record, "groups_id", None):
             continue
         if record and _record_visible_to_user(record, env.user):
             return True
     if declared_xmlids:
         return False
-    if _is_platform_admin_user(env):
+    if _is_tenant_config_admin_user(env):
         return app_id in PLATFORM_ADMIN_SCENE_APP_IDS
     return True
 
 
-def _is_platform_admin_user(env) -> bool:
+def _is_tenant_config_admin_user(env) -> bool:
     try:
-        return bool(user_is_platform_admin(env.user))
+        return bool(user_is_tenant_config_admin(env.user))
     except Exception:
         return False
 

@@ -247,6 +247,7 @@ export interface AppInitResponse {
     name: string;
     groups_xmlids?: string[];
     is_platform_admin?: boolean;
+    is_tenant_config_admin?: boolean;
     lang?: string;
     tz?: string;
     company_id?: number | null;

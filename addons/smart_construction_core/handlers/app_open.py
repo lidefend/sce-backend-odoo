@@ -4,7 +4,7 @@ import json, hashlib, logging, time
 from typing import Any, Dict
 from odoo import api, SUPERUSER_ID
 from odoo.addons.smart_core.core.base_handler import BaseIntentHandler
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 from odoo.addons.smart_core.utils.reason_codes import REASON_PERMISSION_DENIED, failure_meta_for_reason
 from .app_catalog import (
     APP_DEFS,
@@ -42,7 +42,7 @@ def _is_feature_openable(env, su_env, app_id: str, feature: Dict[str, Any], perm
     need = set(feature.get("required_permissions") or [])
     is_system_admin = False
     try:
-        is_system_admin = bool(user_is_platform_admin(env.user))
+        is_system_admin = bool(user_is_tenant_config_admin(env.user))
     except Exception:
         is_system_admin = False
     if need and not need.issubset(perms) and not is_system_admin:
@@ -174,7 +174,7 @@ class AppOpenHandler(BaseIntentHandler):
         need = set(f.get("required_permissions") or [])
         is_system_admin = False
         try:
-            is_system_admin = bool(user_is_platform_admin(env.user))
+            is_system_admin = bool(user_is_tenant_config_admin(env.user))
         except Exception:
             is_system_admin = False
         if need and not need.issubset(have) and not is_system_admin:

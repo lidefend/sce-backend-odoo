@@ -44,7 +44,7 @@ from odoo.addons.smart_core.security.database_governance import (
 )
 from odoo.addons.smart_core.security.platform_admin import (
     SECURITY_ADMIN_GROUP,
-    user_is_platform_admin,
+    user_is_platform_control_admin,
     user_is_security_admin,
 )
 
@@ -634,7 +634,7 @@ class ScPlatformMaintenanceAccess(models.Model):
         authenticated principal, so the independence rule can never be satisfied
         by a caller that names someone else as the requester.
         """
-        if not user_is_platform_admin(self.env.user):
+        if not user_is_platform_control_admin(self.env.user):
             raise AccessError("DBGOV1_MAINTENANCE_REQUESTER_IDENTITY_REQUIRED")
         return self._create_access_request(
             db_name=db_name,
@@ -670,7 +670,7 @@ class ScPlatformMaintenanceAccess(models.Model):
     @api.model
     def access_projection(self, db_name=None, state=None, limit=0):
         """Read-only query entry over the maintenance authorization ledger."""
-        if not (user_is_platform_admin(self.env.user) or user_is_security_admin(self.env.user)):
+        if not (user_is_platform_control_admin(self.env.user) or user_is_security_admin(self.env.user)):
             raise AccessError("DBGOV1_MAINTENANCE_READER_IDENTITY_REQUIRED")
         domain = []
         if db_name:

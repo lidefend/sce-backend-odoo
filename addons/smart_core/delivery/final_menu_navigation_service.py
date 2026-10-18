@@ -12,7 +12,7 @@ from odoo.addons.smart_core.core.platform_minimum_nav_contract import (
     is_platform_minimum_surface_mode,
 )
 from odoo.addons.smart_core.security.platform_admin import (
-    user_is_platform_admin,
+    user_is_platform_control_admin,
 )
 from odoo.addons.smart_core.utils.backend_contract_boundaries import MENU_CONFIG_POLICY_MODEL
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
@@ -283,7 +283,7 @@ class FinalMenuNavigationService:
 
     def _is_platform_admin_user(self) -> bool:
         try:
-            return bool(user_is_platform_admin(self.env.user))
+            return bool(user_is_platform_control_admin(self.env.user))
         except Exception:
             return False
 

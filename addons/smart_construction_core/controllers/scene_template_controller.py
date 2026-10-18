@@ -9,7 +9,7 @@ from odoo.http import request
 
 from odoo.exceptions import AccessDenied, UserError
 from odoo.addons.smart_core.security.auth import get_user_from_token
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 
 from .api_base import fail, fail_from_exception, ok
 
@@ -444,7 +444,7 @@ class SceneTemplateController(http.Controller):
     def export_scenes(self, **params):
         try:
             user = get_user_from_token()
-            if not user_is_platform_admin(user):
+            if not user_is_tenant_config_admin(user):
                 raise AccessDenied("insufficient permissions")
             env = request.env(user=user)
             code = (params.get("code") or "").strip()
@@ -605,7 +605,7 @@ class SceneTemplateController(http.Controller):
     def import_scenes(self, **params):
         try:
             user = get_user_from_token()
-            if not user_is_platform_admin(user):
+            if not user_is_tenant_config_admin(user):
                 raise AccessDenied("insufficient permissions")
             env = request.env(user=user)
             body = _get_json_body()

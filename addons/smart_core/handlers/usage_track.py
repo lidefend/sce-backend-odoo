@@ -5,7 +5,7 @@ import logging
 
 from odoo import fields
 from odoo.addons.smart_core.core.base_handler import BaseIntentHandler
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 
 
@@ -47,7 +47,7 @@ class UsageTrackHandler(BaseIntentHandler):
         if isinstance(hook_roles, (list, tuple, set)):
             return sorted({str(item or "").strip() for item in hook_roles if str(item or "").strip()})
         role_codes = set()
-        if user_is_platform_admin(user):
+        if user_is_tenant_config_admin(user):
             role_codes.add("admin")
         return sorted(role_codes)
 

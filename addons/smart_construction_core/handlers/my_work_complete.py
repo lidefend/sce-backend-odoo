@@ -32,7 +32,7 @@ from odoo.addons.smart_core.utils.idempotency import (
     record_entry_as_replay_evidence,
     replay_window_seconds,
 )
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 
 
 def _unwrap_params(payload, fallback):
@@ -416,7 +416,7 @@ def _complete_activity(env, *, source, activity_id, note):
     activity = Activity.browse(activity_id).exists()
     if not activity:
         raise UserError("待办不存在")
-    if activity.user_id.id != env.user.id and not user_is_platform_admin(env.user):
+    if activity.user_id.id != env.user.id and not user_is_tenant_config_admin(env.user):
         raise AccessError("只能完成分配给自己的待办")
     feedback = note or "Completed from my-work."
     activity.action_feedback(feedback=feedback)

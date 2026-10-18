@@ -10,7 +10,7 @@ from odoo.http import request
 
 from odoo.exceptions import AccessDenied
 from odoo.addons.smart_core.security.auth import get_user_from_token
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 
 from .api_base import fail, ok
 
@@ -47,7 +47,7 @@ class SceneController(http.Controller):
             user = get_user_from_token()
             env = request.env(user=user)
             Scene = env["sc.scene"].sudo()
-            include_tests = _parse_bool(params.get("include_tests"), False) and user_is_platform_admin(user)
+            include_tests = _parse_bool(params.get("include_tests"), False) and user_is_tenant_config_admin(user)
             domain = [("active", "=", True), ("state", "=", "published")]
             if not include_tests:
                 domain.append(("is_test", "=", False))

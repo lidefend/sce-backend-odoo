@@ -4,7 +4,7 @@
 
 from ..core.base_handler import BaseIntentHandler
 from ..core.request_params import parse_positive_int
-from ..security.platform_admin import user_is_platform_admin
+from ..security.platform_admin import user_is_platform_control_admin
 from ..utils.reason_codes import REASON_PERMISSION_DENIED
 from .load_contract import LoadContractHandler
 
@@ -33,7 +33,7 @@ class LoadModelViewHandler(BaseIntentHandler):
     def run(self, **_kwargs):
         params = dict(self.params or {})
         model = str(params.get("model") or params.get("model_code") or "").strip()
-        if model in SENSITIVE_SYSTEM_MODELS and not user_is_platform_admin(
+        if model in SENSITIVE_SYSTEM_MODELS and not user_is_platform_control_admin(
             getattr(self.env, "user", None),
             include_system=True,
         ):

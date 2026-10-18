@@ -9,7 +9,7 @@ from odoo.addons.smart_core.security.platform_company_access import (
     finish_platform_ops_job,
     start_platform_ops_job,
 )
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 
 from .api_base import fail, fail_from_exception, ok
 from .pack_controller import PackController
@@ -20,7 +20,7 @@ class OpsController(http.Controller):
     def batch_upgrade(self, **params):
         try:
             user = get_user_from_token()
-            if not user_is_platform_admin(user):
+            if not user_is_tenant_config_admin(user):
                 raise AccessDenied("insufficient permissions")
             env = request.env(user=user)
             body = request.httprequest.get_json(force=True, silent=True) or {}
@@ -61,7 +61,7 @@ class OpsController(http.Controller):
     def batch_rollback(self, **params):
         try:
             user = get_user_from_token()
-            if not user_is_platform_admin(user):
+            if not user_is_tenant_config_admin(user):
                 raise AccessDenied("insufficient permissions")
             env = request.env(user=user)
             body = request.httprequest.get_json(force=True, silent=True) or {}
@@ -82,7 +82,7 @@ class OpsController(http.Controller):
     def audit_search(self, **params):
         try:
             user = get_user_from_token()
-            if not user_is_platform_admin(user):
+            if not user_is_tenant_config_admin(user):
                 raise AccessDenied("insufficient permissions")
             env = request.env(user=user)
             event = (params.get("event") or "").strip()

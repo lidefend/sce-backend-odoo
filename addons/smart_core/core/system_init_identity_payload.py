@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import (
+    user_is_platform_control_admin,
+    user_is_tenant_config_admin,
+)
 
 
 class SystemInitIdentityPayload:
@@ -52,7 +55,12 @@ class SystemInitIdentityPayload:
             "groups_xmlids": sorted(
                 str(item) for item in (user_groups_xmlids or []) if item
             ),
-            "is_platform_admin": user_is_platform_admin(user),
+            # ADR-007 D6: platform control is a distinct authority from the
+            # tenant configuration admin the product surfaces use.  Emitting
+            # both keeps the frontend from treating a product administrator
+            # as a platform administrator.
+            "is_platform_admin": user_is_platform_control_admin(user),
+            "is_tenant_config_admin": user_is_tenant_config_admin(user),
             "lang": user.lang,
             "tz": user.tz,
             "company_id": company_id,

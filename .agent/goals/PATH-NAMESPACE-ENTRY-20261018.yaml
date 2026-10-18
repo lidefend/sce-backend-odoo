@@ -1,0 +1,104 @@
+schema_version: 1
+goal:
+  id: PATH-NAMESPACE-ENTRY-20261018
+  title: path_namespace_tenant_identity_closure
+  status: active
+  formal_product_layer: P0
+  layer_target: platform_kernel_product
+  module:
+    - smart_core
+    - frontend
+    - ops
+  objective: >-
+    Freeze the path-namespace tenant identity semantics and close it through
+    three ordered batches: deployment fact correction (A), identity semantics
+    correction (B), and the namespace mechanism itself (C). Semantics are
+    frozen now; runtime state and code candidate are not.
+  authority:
+    adr: docs/adr/ADR-007-path-namespace-tenant-identity.md
+    execution_order: docs/architecture/path_namespace_execution_order_v1.md
+    database_policy: docs/governance/database_architecture_policy.md
+    identity_boundary: docs/architecture/user_identity_activation_and_saas_boundary_v1.md
+  baseline:
+    branch: codex/daily-platform-demo-20261018
+    full_sha: 54a3fa13177c2a9c0aeb0efaf40786cea32089a8
+    source: clean_local_head_before_batch_a_b
+    dirty_state: tracked_docs_added_in_this_turn
+  authorization:
+    id: owner-standing-auth-20261018
+    source: owner_standing_delegation_20261018
+    note: >-
+      Standing authorization recorded by the dispatcher; covers A/B/C within
+      scope, local commits, and daily development deployment readback.
+  execution_state: in_progress
+  frozen_documents:
+    - path: docs/adr/ADR-007-path-namespace-tenant-identity.md
+      sha256: 0caee83fa888b5f4118182aef5c49e15bae6aa086ad4e6101d33d792def4bacf
+    - path: docs/architecture/path_namespace_execution_order_v1.md
+      sha256: 681f9370d4b20301ad5d5d5d3bbe37ee1e7ef99e46aedee012b3ae9edbc30025
+    - path: docs/adr/ADR-001-single-database-colocated-platform-core.md
+      sha256: 1d7d8ff0c10cf35c9e79e9bcedeed5b4c50d1530a71e75bb9967f768f85a03b6
+  status_semantics:
+    batch: in_progress
+    mainline: not_merged
+    deployment: not_deployed
+    user_acceptance: not_started
+  batches:
+    - id: A
+      title: deployment_fact_correction
+      status: in_progress
+      scope: >-
+        All published ports, external reachability, per-instance image/mount/
+        source/frontend identity. Close unapproved public entries. No product
+        code changes.
+      exit_criteria:
+        - every_published_port_correlated_and_classified
+        - unapproved_public_entries_closed_and_externally_unreachable
+        - per_instance_source_image_mount_identity_readback_matches
+        - runtime_identity_matches_actually_loaded_files
+    - id: B
+      title: identity_semantics_correction
+      status: in_progress
+      blocked_by: []
+      scope: >-
+        Remove the platform_admin fallback, correct tenant route labels, bind
+        platform-admin determination to the declared platform instance. Keep
+        explicit db usable until batch C.
+      exit_criteria:
+        - no_fallback_returns_platform_admin
+        - tenant_accounts_not_labelled_platform
+        - existing_platform_admin_login_still_works
+        - non_zero_targeted_tests_pass
+    - id: C
+      title: namespace_mechanism
+      status: waiting_preconditions
+      blocked_by: [A, B]
+      scope: >-
+        Server-side path resolution to immutable namespace_id, path routing,
+        token identity/audience binding, API namespace context, atomic removal
+        of explicit db override.
+      exit_criteria:
+        - adr_007_acceptance_scenarios_pass
+        - same_name_accounts_isolated
+        - cross_namespace_replay_rejected
+        - dual_tab_logout_and_company_switch_verified
+  resolved_questions:
+    - id: strategy_semantics
+      question: does single_db_multi_company mean cross-tenant co-location?
+      answer: >-
+        No. addons/smart_core/data/tenant/database_strategy.v1.json declares one database with
+        several companies plus data-purpose isolation and explicitly forbids
+        multiple customers in one business database. Demo may keep this strategy
+        while remaining its own database. No rebuild-path fix needed; only the
+        wording risk is noted.
+  exclusions:
+    - platform_home_and_capability_product_closure
+    - public_signup
+    - second_authentication_engine
+    - fabricating_provision_history_for_existing_databases
+  rollback:
+    - batch_changes_revert_to_the_previous_batch_exit_point
+    - route_mapping_is_versioned_and_revert_does_not_touch_tenant_data
+  next_exact_step: >-
+    Dispatch batch A to the environment lane and batch B to the demo lane; batch
+    C stays blocked until both exit criteria are independently reviewed.

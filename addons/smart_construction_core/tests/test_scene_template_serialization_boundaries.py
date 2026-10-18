@@ -46,7 +46,7 @@ def _load_module():
     auth_mod = _install_module("odoo.addons.smart_core.security.auth")
     auth_mod.get_user_from_token = lambda env, token: None
     platform_admin = _install_module("odoo.addons.smart_core.security.platform_admin")
-    platform_admin.user_is_platform_admin = lambda env, user=None: False
+    platform_admin.user_is_tenant_config_admin = lambda env, user=None: False
 
     construction_pkg = sys.modules.setdefault(
         "odoo.addons.smart_construction_core",

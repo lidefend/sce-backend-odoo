@@ -24,7 +24,7 @@ from ..core.intent_access_policy import ANONYMOUS_INTENTS, is_anonymous_allowed_
 from ..core.intent_operation_policy import is_write_intent, nested_params, normalize_intent_operation
 from ..core.request_transaction import rollback_request_env
 from ..security.intent_permission import check_intent_permission
-from ..security.platform_admin import user_is_platform_admin
+from ..security.platform_admin import user_is_tenant_config_admin
 from ..core.trace import get_trace_id
 from ..core.exceptions import (
     BAD_REQUEST,
@@ -378,7 +378,7 @@ class IntentDispatcher(http.Controller):
 
             def _user_is_admin() -> bool:
                 try:
-                    return user_is_platform_admin(request.env.user)
+                    return user_is_tenant_config_admin(request.env.user)
                 except Exception:
                     return False
 

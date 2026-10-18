@@ -69,7 +69,7 @@ def _load_workflow_module():
     smart_core = types.ModuleType("odoo.addons.smart_core")
     smart_core_security = types.ModuleType("odoo.addons.smart_core.security")
     platform_admin = types.ModuleType("odoo.addons.smart_core.security.platform_admin")
-    platform_admin.user_is_platform_admin = lambda user: False
+    platform_admin.user_is_tenant_config_admin = lambda user, **_kwargs: False
     odoo.addons = addons
     smart_core.security = smart_core_security
     smart_core_security.platform_admin = platform_admin

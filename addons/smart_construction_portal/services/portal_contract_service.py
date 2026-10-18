@@ -6,7 +6,7 @@ from uuid import uuid4
 from odoo.addons.smart_construction_core.services.lifecycle_capability_service import (
     LifecycleCapabilityService,
 )
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 
 
 class PortalContractService:
@@ -63,7 +63,7 @@ class PortalContractService:
         return enabled and user.has_group("smart_construction_core.group_sc_internal_user")
 
     def _resolve_role(self, user):
-        if user_is_platform_admin(user):
+        if user_is_tenant_config_admin(user):
             return "admin"
         if user.has_group("smart_construction_core.group_sc_cap_project_manager"):
             return "pm"

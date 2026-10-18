@@ -7,8 +7,10 @@
 复用第二工作树，不改 Demo 工作树，不增加第三棵工作树。
 范围限回执、身份检查、任务下发/确认、后台只读审核、私有队列迁移和交接文档。
 
-业务执行器保持暂停。模型输出、后台草案、任务下发和执行者确认都不是执行授权；
-只有所有者/主调度针对精确对象、精确身份和精确前置条件给出的任务才可进入执行器。
+授权模型是：**所有者持续授权 → 总调度在范围内裁决并下发 → 执行器执行 → 门禁验收**。
+模型输出和后台草案本身不是执行授权；但已登记的总调度可以在所有者授权范围内下发并推进可执行任务，
+不需要所有者对已覆盖的动作逐次确认。任务记录内的 `authorization` 引用就是该任务允许动作的依据。
+`automatic_execution=false` 只表示后台进程不会自行运行执行器，不表示执行器没有授权。
 执行器 `run.json` 仍是结果权威；回执只引用它和原始证据，不复制整套台账。
 
 共享箱位于用户私有目录 `$HOME/workspace/.sce-dispatch`，不进入公开 Git。
@@ -18,8 +20,8 @@
 
 ## 唯一调度者与 lane 入口
 
-当前唯一调度者为 `codex-main-dispatcher-20261017`，接管时间
-`2026-10-17T13:11:30+00:00`，记录在私有 `config.json` 并由 `status` 回读。
+当前唯一调度者为 `codex-main-dispatcher-20261018`，接管时间
+`2026-10-17T20:31:59+00:00`，记录在私有 `config.json` 并由 `status` 回读。
 接管历史保留在 `dispatcher_history`；任何时刻只允许一个当前调度者。
 
 本次接管后已核验并登记的真实 git 根：
@@ -27,14 +29,33 @@
 | lane | repository | 说明 |
 | --- | --- | --- |
 | `demo` | `/home/lidefend/workspace/sce-backend-odoo` | 既有 Demo 工作树 |
-| `user` | `/home/lidefend/workspace/sce-customer-odoo` | 客户模块工作树 |
-| `frontend` | `/home/lidefend/workspace/sce-product-odoo-clean-root` | 产品净根仓库，含 `frontend/apps/web` |
+| `user` | `/home/lidefend/workspace/sce-customer-baosheng-odoo` | 客户模块工作树 |
+| `frontend` | `/home/lidefend/workspace/sce-product-odoo-clean-root` | 回执与证据根。**生产前端源码在主仓** `/home/lidefend/workspace/sce-backend-odoo/frontend/`；clean-root 内的前端树不是权威源码，不得替代。 |
 | `environment` | `/home/lidefend/workspace/sce-backend-odoo-local-env` | 已登记本地环境仓库 |
 | `pilot` | `/home/lidefend/workspace/sce-backend-odoo-local-env` | 机制试点工作树 |
 
 `environment` 与 `pilot` 共用同一仓库，但仍是两个不同回执入口。
 lane 绑定只表示该仓库可以提交回执，不代表独占写入位、环境授权、发布授权或业务执行授权。
 变更 lane 必须由已登记调度者执行 `bind-lane`，并重新核验真实 git 根；符号链接和非 git 根一律拒绝。
+
+### 所有者授权与接管继承
+
+授权记录保存在 `config.json.authorization`，包含来源、授予时间、范围、允许动作、明确排除项和撤销条件。
+`takeover` 会自动继承当前授权，并在调度者记录中写入 `authorization_id` 与 `authorization_sha256`；
+接替者不需要重新向所有者索取同一份授权。授权被撤销后，`assign` 立即 fail-closed。
+
+```bash
+python3 /home/lidefend/workspace/.sce-dispatch/lib/agent_dispatch_inbox.py authorize \
+  --file /home/lidefend/workspace/.sce-dispatch/authorizations/owner-standing-auth-20261018.json
+python3 /home/lidefend/workspace/.sce-dispatch/lib/agent_dispatch_inbox.py takeover \
+  --dispatcher codex-main-dispatcher-20261018B
+```
+
+当前有效授权为 `owner-standing-auth-20261018`：覆盖路径命名空间 A/B/C、本地提交、
+平台与 Demo 日常开发服务器部署与回读。用户模块、平台首页产品闭环、公开注册、
+第二套认证引擎、伪造证据、生产发布和凭据变更明确排除。
+事实前提缺失（测试失败、身份不明、缺少签名或恢复点）应作为阻断处理；沙箱权限审批属于工具限制，
+不得伪造或绕过，也不得表述为“所有者未授权”。
 
 `config.json` 通过 `worktree_groups` 登记共享工作树，当前为
 `local-env: [environment, pilot]`。同一资源组内的任务不得并行写入；`status` 只回读该声明，
@@ -46,7 +67,7 @@ lane 绑定只表示该仓库可以提交回执，不代表独占写入位、环
 
 ```bash
 python3 /home/lidefend/workspace/.sce-dispatch/lib/agent_dispatch_inbox.py takeover \
-  --dispatcher codex-main-dispatcher-20261017 --at 2026-10-17T13:11:30Z
+  --dispatcher codex-main-dispatcher-20261018 --at 2026-10-17T20:31:59Z
 python3 /home/lidefend/workspace/.sce-dispatch/lib/agent_dispatch_inbox.py bind-lane \
   --lane frontend --repository /home/lidefend/workspace/sce-product-odoo-clean-root
 python3 /home/lidefend/workspace/.sce-dispatch/lib/agent_dispatch_inbox.py status
@@ -55,6 +76,8 @@ python3 /home/lidefend/workspace/.sce-dispatch/lib/agent_dispatch_inbox.py statu
 ## 回执格式与证据检查
 
 Demo、用户模块、前端、环境分别使用 `demo/user/frontend/environment` lane。
+前端 lane 的仓库绑定只决定回执落在哪里；构建与审计对象是主仓 `frontend/`，
+宿主机产物为 ignored 的 `frontend/apps/web/dist-*`，两者都不进入 Odoo 镜像。
 每次完成、阻断或暂停，先保存既有 run.json 和原始证据，再在所在仓库写回执 JSON。
 
 ```json
@@ -90,9 +113,13 @@ Demo、用户模块、前端、环境分别使用 `demo/user/frontend/environmen
 
 ## 任务下发与确认
 
-任务下发写入私有 `tasks/<task_id>.json`，保存目标、范围、验收条件、下发调度者和下发时间。
-同内容重复下发幂等；同 id 不同内容拒绝覆盖。执行者必须显式确认，拒绝时必须给出原因。
+任务下发写入私有 `tasks/<task_id>.json`，保存目标、范围、验收条件、下发调度者、下发时间、
+`authorization` 引用（含授权哈希）和 `preconditions`。同内容重复下发幂等；同 id 不同内容拒绝覆盖；
+仅补充授权引用与前置条件时使用 `assign --update`。
+执行者必须显式确认，拒绝时必须给出原因；确认不是二次授权，只是接收记录。
 回执引用 `task_ref` 时，任务必须属于同一 lane，且具名 `executor` 的最近一次确认必须为 `accepted`。
+`preconditions` 引用其他任务 id；未完成时 `status` 显示 `waiting_preconditions`，
+这是前置条件未满足，不是等待所有者授权。条件满足后由总调度直接推进，无需重新授权。
 
 ```bash
 python3 /home/lidefend/workspace/.sce-dispatch/lib/agent_dispatch_inbox.py assign \
@@ -102,9 +129,12 @@ python3 /home/lidefend/workspace/.sce-dispatch/lib/agent_dispatch_inbox.py ack \
   --task-id TASK-EXAMPLE --executor executor-example --decision accepted
 python3 /home/lidefend/workspace/.sce-dispatch/lib/agent_dispatch_inbox.py ack \
   --task-id TASK-EXAMPLE --executor executor-example --decision declined --note '前置条件缺失'
+python3 /home/lidefend/workspace/.sce-dispatch/lib/agent_dispatch_inbox.py complete \
+  --task-id TASK-EXAMPLE --evidence '验收证据路径或结论'
 ```
 
-任务记录和确认记录只证明“下发过、谁确认过”，不恢复执行器，不改变 run 状态，也不构成执行授权。
+任务记录证明“谁在什么授权下下发、谁确认过”；确认记录本身不扩大授权范围。
+执行器是否开工由 `status`、确认和 `readiness` 决定，不再有全局暂停开关。
 
 ## 回执替代与阻断关闭
 
@@ -144,9 +174,9 @@ python3 /home/lidefend/workspace/.sce-dispatch/lib/agent_dispatch_inbox.py ack \
 1. 提交自动捕获仓库、分支、HEAD、dirty 范围、工作内容摘要、run/证据哈希和提交时调度者。
 2. 同内容回执去重；后台在审核前后复核身份、证据格式和关键断言。变化即 blocked。
 3. 未登记调度者时审核 fail-closed，不启动模型进程。
-4. 独立 Codex 非交互进程只收到回执、任务记录和队列资源快照；生成中文调度草案。
-5. 草案保存到 `proposals/`，状态为 `proposal_ready`，不是任务授权或独立产品验收。
-6. 主调度直接读取原始证据做实质审核，再决定是否用 `assign` 下发最小任务。
+4. 独立 Codex 非交互进程只收到回执、任务记录、当前授权和队列资源快照；生成中文调度草案。
+5. 草案保存到 `proposals/`，状态为 `proposal_ready`；草案不能直接执行，但落在已登记授权范围内的建议可由总调度直接下发。
+6. 主调度直接读取原始证据做实质审核，在授权范围内用 `assign` 下发最小任务；只有超出范围才需要所有者扩权。
 
 模型审核使用独立空工作目录、read-only sandbox、approval never；禁用 shell/apps/hooks、
 插件、多代理、浏览器、计算机、图像、技能自动安装、统一执行等功能，关闭搜索与已配置 MCP。

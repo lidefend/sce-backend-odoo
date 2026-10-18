@@ -45,7 +45,7 @@ def _load_handler():
     _install_module("addons.smart_core.handlers.load_contract", LoadContractHandler=_LoadContractHandler)
     _install_module(
         "addons.smart_core.security.platform_admin",
-        user_is_platform_admin=lambda user, **_kwargs: bool(getattr(user, "is_platform_admin", False)),
+        user_is_platform_control_admin=lambda user, **_kwargs: bool(getattr(user, "is_platform_admin", False)),
     )
 
     request_params_name = "addons.smart_core.core.request_params"

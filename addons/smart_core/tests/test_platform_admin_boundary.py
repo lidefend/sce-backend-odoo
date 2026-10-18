@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import importlib.util
 import csv
+import types
 import unittest
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -27,9 +28,27 @@ def _load_construction_policy():
     return module
 
 
+class _FakeConfig:
+    def __init__(self, params=None):
+        self._params = dict(params or {})
+
+    def sudo(self):
+        return self
+
+    def get_param(self, key, default=None):
+        return self._params.get(key, default)
+
+
+class _FakeEnv(dict):
+    def __init__(self, dbname, params=None):
+        self.cr = types.SimpleNamespace(dbname=dbname)
+        super().__init__({"ir.config_parameter": _FakeConfig(params)})
+
+
 class _FakeUser:
-    def __init__(self, groups):
+    def __init__(self, groups, env=None):
         self._groups = set(groups)
+        self.env = env if env is not None else _FakeEnv("sc_platform_control")
 
     def has_group(self, xmlid):
         return xmlid in self._groups
@@ -71,6 +90,77 @@ class TestPlatformAdminBoundary(unittest.TestCase):
 
     def test_platform_admin_group_xmlids_are_strict_by_default(self):
         self.assertEqual(self.module.platform_admin_group_xmlids(), [self.module.PLATFORM_ADMIN_GROUP])
+
+    def test_tenant_config_admin_ignores_instance_identity(self):
+        demo_admin = _FakeUser({self.module.PLATFORM_ADMIN_GROUP}, env=_FakeEnv("sc_demo"))
+        platform_admin = _FakeUser(
+            {self.module.PLATFORM_ADMIN_GROUP}, env=_FakeEnv("sc_platform_control")
+        )
+
+        self.assertTrue(self.module.user_is_tenant_config_admin(demo_admin))
+        self.assertTrue(self.module.user_is_tenant_config_admin(platform_admin))
+        self.assertFalse(self.module.user_is_platform_control_admin(demo_admin))
+        self.assertTrue(self.module.user_is_platform_control_admin(platform_admin))
+
+    def test_legacy_name_is_an_explicit_platform_control_alias(self):
+        demo_admin = _FakeUser({self.module.PLATFORM_ADMIN_GROUP}, env=_FakeEnv("sc_demo"))
+        platform_admin = _FakeUser(
+            {self.module.PLATFORM_ADMIN_GROUP}, env=_FakeEnv("sc_platform_control")
+        )
+
+        # The historical name must never degrade back to "group means platform admin".
+        self.assertFalse(self.module.user_is_platform_admin(demo_admin))
+        self.assertTrue(self.module.user_is_platform_admin(platform_admin))
+        self.assertEqual(
+            self.module.user_is_platform_admin(platform_admin),
+            self.module.user_is_platform_control_admin(platform_admin),
+        )
+
+    def test_platform_admin_requires_declared_platform_control_database(self):
+        user = _FakeUser({self.module.PLATFORM_ADMIN_GROUP}, env=_FakeEnv("sc_demo"))
+
+        self.assertFalse(self.module.user_is_platform_admin(user))
+        scope = self.module.platform_admin_scope(user)
+        self.assertTrue(scope["group_ok"])
+        self.assertFalse(scope["instance_ok"])
+        self.assertEqual(scope["database"], "sc_demo")
+        self.assertFalse(scope["is_platform_control_admin"])
+
+    def test_platform_admin_without_database_identity_fails_closed(self):
+        user = _FakeUser({self.module.PLATFORM_ADMIN_GROUP}, env=_FakeEnv(""))
+
+        self.assertFalse(self.module.user_is_platform_admin(user))
+        self.assertFalse(self.module.is_declared_platform_control_database(""))
+
+    def test_platform_admin_scope_on_declared_instance_reports_all_components(self):
+        user = _FakeUser({self.module.PLATFORM_ADMIN_GROUP}, env=_FakeEnv("sc_platform_control"))
+
+        scope = self.module.platform_admin_scope(user)
+
+        self.assertTrue(scope["group_ok"])
+        self.assertTrue(scope["instance_ok"])
+        self.assertTrue(scope["audience_ok"])
+        self.assertEqual(scope["declared_platform_control_db"], "sc_platform_control")
+        self.assertTrue(scope["is_platform_control_admin"])
+
+    def test_platform_control_database_declaration_can_be_overridden(self):
+        env = _FakeEnv("sc_platform_control_canary", {"sc.platform.control_db": "sc_platform_control_canary"})
+        user = _FakeUser({self.module.PLATFORM_ADMIN_GROUP}, env=env)
+
+        self.assertEqual(
+            self.module.declared_platform_control_dbname(env), "sc_platform_control_canary"
+        )
+        self.assertTrue(self.module.user_is_platform_admin(user))
+
+    def test_identity_audience_hook_rejects_unbound_audience(self):
+        user = _FakeUser({self.module.PLATFORM_ADMIN_GROUP})
+
+        self.assertIsNone(self.module.PLATFORM_ADMIN_IDENTITY_AUDIENCE)
+        self.assertFalse(self.module.user_is_platform_admin(user, identity_audience="platform"))
+        self.assertFalse(
+            self.module.platform_admin_scope(user, identity_audience="platform")["audience_ok"]
+        )
+        self.assertTrue(self.module.user_is_platform_admin(user))
 
     def test_customer_business_models_do_not_grant_admin_identity_groups_acl(self):
         addons_dir = Path(__file__).resolve().parents[2]

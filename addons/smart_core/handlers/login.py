@@ -130,7 +130,8 @@ def _config_param(env, key: str, default: str = "") -> str:
 
 def _route_record_for_login(env, login: str):
     try:
-        return env["sc.login.route"].sudo().search([("login", "=", login), ("active", "=", True)], limit=1)
+        route = env["sc.login.route"].sudo().search([("login", "=", login), ("active", "=", True)], limit=1)
+        return route.to_runtime_dict(current_db=_current_db_name(env)) if route else None
     except Exception:
         return None
 
@@ -143,59 +144,83 @@ def _route_payload_from_db(db_name: str, login: str) -> dict[str, Any] | None:
         with registry.cursor() as cr:
             env = api.Environment(cr, SUPERUSER_ID, {})
             route = env["sc.login.route"].sudo().search([("login", "=", login), ("active", "=", True)], limit=1)
-            return route.to_runtime_dict() if route else None
+            return route.to_runtime_dict(current_db=db_name) if route else None
     except Exception:
         return None
 
 
 def _resolve_login_route(env, *, login: str, explicit_db: str = "", routing_db: str = "") -> dict[str, Any]:
+    """Resolve the login entry for this request.
+
+    Batch B removes the old "no route found -> platform_admin" fallback.  An
+    unresolved entry is now its own contract state (``mode=unresolved``,
+    ``entry_kind=unresolved``) and carries no target database, so no caller can
+    mistake an arbitrary login name for a platform administrator.  The explicit
+    ``db`` path is kept, marked deprecated, until batch C replaces it.
+    """
+
     current_db = _current_db_name(env)
     if explicit_db:
         return {
             "contract_version": "1.0.0",
             "mode": "explicit_db",
+            "resolved": True,
             "target_db": explicit_db,
             "entry_kind": "explicit",
+            "product_key": "",
+            "label": "",
             "source": "request",
             "db_authority": "request_explicit_db",
+            "deprecated": True,
+            "deprecated_reason": "explicit_db_entry_is_kept_until_batch_c_namespace_resolver",
+            "removal_batch": "C",
+            "identity_audience": None,
         }
     payload = _route_payload_from_db(routing_db, login) if routing_db and routing_db != current_db else None
     route_source = "sc.login.route"
     if not payload:
-        route = _route_record_for_login(env, login)
-        payload = route.to_runtime_dict() if route else None
+        payload = _route_record_for_login(env, login)
     else:
         route_source = f"sc.login.route:{routing_db}"
     if payload:
         return {
             "contract_version": "1.0.0",
             "mode": "unified",
+            "resolved": True,
             "target_db": payload.get("target_db") or current_db,
             "entry_kind": payload.get("entry_kind") or "tenant",
             "product_key": payload.get("product_key") or "",
             "label": payload.get("label") or "",
             "source": route_source,
             "db_authority": "platform_login_route",
+            "identity_audience": None,
         }
     default_tenant_db = _config_param(env, "sc.login.default_tenant_db", "")
     if default_tenant_db:
         return {
             "contract_version": "1.0.0",
             "mode": "unified",
+            "resolved": True,
             "target_db": default_tenant_db,
             "entry_kind": "tenant",
             "product_key": _config_param(env, "sc.login.default_product_key", "platform"),
+            "label": "",
             "source": "ir.config_parameter",
             "db_authority": "platform_default_tenant_db",
+            "identity_audience": None,
         }
     return {
         "contract_version": "1.0.0",
-        "mode": "unified",
-        "target_db": current_db,
-        "entry_kind": "platform_admin",
-        "product_key": "platform",
-        "source": "current_db",
-        "db_authority": "platform_current_db",
+        "mode": "unresolved",
+        "resolved": False,
+        "target_db": "",
+        "entry_kind": "unresolved",
+        "product_key": "",
+        "label": "",
+        "source": "none",
+        "db_authority": "none",
+        "unresolved_reason": "no_login_route_declared",
+        "identity_audience": None,
     }
 
 
@@ -356,6 +381,11 @@ class LoginHandler(BaseIntentHandler):
                 "compat_enabled": compat_enabled,
                 "compat_deprecated": True,
                 "compat_sunset_phase": "next_iteration",
+                # Batch B: the login entry is either resolved against a
+                # declared route, or explicitly unresolved.  It is never
+                # silently promoted to platform_admin.
+                "entry_resolution": "resolved" if route_contract.get("resolved") else "unresolved",
+                "explicit_db_deprecated": bool(route_contract.get("deprecated")),
                 "credential_input": "explicit" if explicit_credential else "legacy_password_params",
             },
             "login_route": {
