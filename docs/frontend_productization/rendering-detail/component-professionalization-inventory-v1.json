@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "2b1de0c2b1f63329db70a7361ad8c5170727805c2ded56ee27daf328d442205e",
-  "generatorDigest": "756d443d1e8d43f23efd5261f5cc807baddeee40b0021335a5033e8a416577e8",
-  "ownershipDigest": "b26592aaf6b86ea982de2733542dd3998c93f6373f6478961b6c0fe34082837e",
-  "inputDigest": "80f72615fc40b5285f6c4cb9233edf83be8a299ebc73fde659ccba646ec5f29c",
+  "sourceIdentity": "fcb73e3f4a966cbc9b42255482aeba292f788f89d63b420a92319e68bc9b74a4",
+  "generatorDigest": "349d8b7947d0bf2d31e1d9e31dff64aedce1de2694efa54c01a3664b9287d80b",
+  "ownershipDigest": "7270916fa00b0bc90ff8e4a2af9a5701c0ea92fcd833d3c5c6d98961f12593cd",
+  "inputDigest": "f7eac9cdf8eada421a80c180360968740f20db817a2f12f1a0e49bfa54d1a08b",
   "scope": "repository formal-product frontend Vue rendering-detail sources, including external <template src> files",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -20,12 +20,12 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 173,
+    "surfaceCount": 174,
     "p0P1RawControlBypassSurfaceCount": 0,
     "p0P1RawControlBypassControlCount": 0,
     "deliberate_native_composite": 0,
     "gap": 0,
-    "governed_composite": 113,
+    "governed_composite": 114,
     "governed_primitive": 41,
     "p3_out_of_scope": 19
   },
@@ -1041,6 +1041,18 @@
         "ScEmptyState"
       ],
       "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/platform-duty/PlatformDutyPanel.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "empty"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-list/CollectionBatchActionBar.vue",
@@ -2189,6 +2201,7 @@
       ],
       "rawControls": {},
       "governedStatePrimitives": [
+        "ScInlineState",
         "ScEmptyState"
       ],
       "targetBatch": null

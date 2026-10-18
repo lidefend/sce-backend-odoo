@@ -152,6 +152,8 @@ export const PRODUCT_PAGE_HEADER_DIRECT_CONSUMERS = [
   'views/ActionView.vue',
   'views/HomeView.vue',
   'views/MyWorkView.vue',
+  'views/PlatformDutyView.vue',
+  'views/ReleaseOperatorView.vue',
 ] as const;
 
 const ENTRY_BY_ID = new Map(PRODUCT_PAGE_HEADER_ENTRIES.map((item) => [item.id, item]));

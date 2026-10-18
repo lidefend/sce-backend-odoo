@@ -99,6 +99,7 @@
         "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
         "frontend/apps/web/src/components/page/PageRenderer.vue",
         "frontend/apps/web/src/components/page/ZoneRenderer.vue",
+        "frontend/apps/web/src/components/platform-duty/PlatformDutyPanel.vue",
         "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
         "frontend/apps/web/src/components/product-shell/ProductIdentity.vue",
         "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",

@@ -149,6 +149,19 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     if (busyOwnerOperationId) { busyOwnerOperationId = 0; busyKind.value = null; }
   }, { flush: 'sync' });
 
+  // Save authority is not surface identity, so it is deliberately absent from
+  // the key above. It still has to invalidate a decision that was taken under
+  // different authority: a capability revoked while the adopted engine is
+  // deciding must not let that stale answer paint errors or move focus, even
+  // when the capability is granted again before the answer arrives.
+  const authorityEpoch = ref(0);
+  let observedCanSave = Boolean(canSave.value);
+  watch(() => Boolean(canSave.value), (next) => {
+    if (next === observedCanSave) return;
+    observedCanSave = next;
+    authorityEpoch.value += 1;
+  }, { flush: 'sync' });
+
   type SaveOperation = { id: number; epoch: number; contextEpoch: number; model: string; recordId: number | null };
   let saveOperationSequence = 0;
   let activeSaveOperation: SaveOperation = { id: 0, epoch: -1, contextEpoch: -1, model: '', recordId: null };
@@ -328,6 +341,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     // The operation this run belongs to. `saveRecord` opens one before calling
     // here, so the await below is bound to a surface the caller can re-verify.
     const operation = activeSaveOperation;
+    const authorityEpochAtStart = authorityEpoch.value;
     // The page's own responsibility, resolved from the effective contract and
     // read before any await, so this run's adoption belongs to the surface it
     // started on. A page that declared no responsibility gets no adoption: the
@@ -344,7 +358,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     // stale answer must not enter the error store, focus a field, or announce
     // "validation could not finish" on a page it never validated: the guard is
     // here, at the write, not only at the caller's return value.
-    if (!saveOperationOwnsSurface(operation)) {
+    if (!saveOperationOwnsSurface(operation) || authorityEpoch.value !== authorityEpochAtStart) {
       return { ok: false, coveredFieldNames: [], superseded: true };
     }
     const coveredFieldNames = outcome?.ok && Array.isArray(outcome.coveredFieldNames)

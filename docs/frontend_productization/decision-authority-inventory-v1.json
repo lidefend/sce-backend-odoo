@@ -223,7 +223,7 @@
       "literal": "release.operator.surface",
       "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
       "lines": [
-        599
+        784
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -345,7 +345,7 @@
       "literal": "/login",
       "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
       "lines": [
-        533
+        547
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -359,7 +359,7 @@
       "literal": "access-denied",
       "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
       "lines": [
-        537
+        551
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1182,14 +1182,82 @@
       "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
+      "decisionKey": "R4_business_state_literal|active|frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "active",
+      "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "lines": [
+        716
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/models/auth_credential_policy.py:24",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|blocked|frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "blocked",
+      "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "lines": [
+        718
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|done|frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "done",
+      "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "lines": [
+        715
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/delivery/release_operator_read_model_service.py:626",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|fail|frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "fail",
+      "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "lines": [
+        734
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/delivery/release_operator_read_model_service.py:533",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|pass|frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "pass",
+      "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "lines": [
+        732
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
       "decisionKey": "R4_business_state_literal|preview|frontend/apps/web/src/views/ReleaseOperatorView.vue",
       "rule": "R4_business_state_literal",
       "literal": "preview",
       "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
       "lines": [
-        492
+        641,
+        716
       ],
-      "occurrences": 1,
+      "occurrences": 2,
       "classification": "excluded-render-interaction",
       "reason": "declared UI state-machine value",
       "declaredClass": "ui_state_machine",
@@ -1201,11 +1269,25 @@
       "literal": "released",
       "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
       "lines": [
-        492
+        641
       ],
       "occurrences": 1,
       "classification": "contract-derived",
       "evidence": "addons/smart_core/delivery/release_audit_trail_service.py:167",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|warn|frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "warn",
+      "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "lines": [
+        717,
+        733
+      ],
+      "occurrences": 2,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/delivery/release_operator_read_model_service.py:547",
       "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
@@ -1498,21 +1580,21 @@
     }
   ],
   "summary": {
-    "totalFindings": 139,
-    "distinctDecisions": 99,
+    "totalFindings": 147,
+    "distinctDecisions": 105,
     "byRule": {
       "R2_intent_literal": 19,
       "R3_router_literal_destination": 18,
-      "R4_business_state_literal": 102
+      "R4_business_state_literal": 110
     },
     "byClassification": {
-      "contract-derived": 51,
-      "excluded-render-interaction": 88
+      "contract-derived": 56,
+      "excluded-render-interaction": 91
     },
     "unclassified": 0,
-    "contractDerived": 51,
+    "contractDerived": 56,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
-    "excludedRenderInteraction": 88
+    "excludedRenderInteraction": 91
   }
 }

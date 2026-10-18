@@ -39,6 +39,7 @@
         v-for="fact in visibleFacts"
         :key="fact.key"
         class="collection-mobile-record-row__fact"
+        :class="{ 'is-wide': isWideFact(fact) }"
         :data-fact-key="fact.key"
         :data-fact-role="fact.layoutRole || 'text'"
         data-fact-visibility="primary"
@@ -51,16 +52,16 @@
         >
           <b v-for="item in fact.relationItems" :key="item.id" class="collection-mobile-record-row__relation-tag">{{ item.label }}</b>
         </span>
-        <b v-else>{{ fact.value }}</b>
+        <b v-else :title="fact.value">{{ fact.value }}</b>
       </span>
       <ScDisclosure v-if="additionalFacts.length" class="collection-mobile-record-row__disclosure" :title="`查看其余 ${additionalFacts.length} 项信息`">
         <span class="collection-mobile-record-row__additional-facts">
-          <span v-for="fact in additionalFacts" :key="fact.key" class="collection-mobile-record-row__fact" :data-fact-key="fact.key" :data-fact-role="fact.layoutRole || 'text'" data-fact-visibility="additional">
+          <span v-for="fact in additionalFacts" :key="fact.key" class="collection-mobile-record-row__fact" :class="{ 'is-wide': isWideFact(fact) }" :data-fact-key="fact.key" :data-fact-role="fact.layoutRole || 'text'" data-fact-visibility="additional">
             <small>{{ fact.label }}</small>
             <span v-if="fact.relationItems?.length" class="collection-mobile-record-row__relation-tags" data-semantic-cell-kind="relation-tags">
               <b v-for="item in fact.relationItems" :key="item.id" class="collection-mobile-record-row__relation-tag" :title="item.label">{{ item.label }}</b>
             </span>
-            <b v-else>{{ fact.value }}</b>
+            <b v-else :title="fact.value">{{ fact.value }}</b>
           </span>
         </span>
       </ScDisclosure>
@@ -131,6 +132,10 @@ const prioritizedFacts = computed(() => props.facts
   .map((entry) => entry.fact));
 const visibleFacts = computed(() => prioritizedFacts.value.slice(0, Math.max(1, props.visibleFactLimit)));
 const additionalFacts = computed(() => prioritizedFacts.value.slice(visibleFacts.value.length));
+
+function isWideFact(fact: CollectionMobileRecordFact) {
+  return Boolean(fact.relationItems?.length) || String(fact.value || '').length > 24;
+}
 </script>
 
 <style scoped src="./CollectionMobileRecordRow.css"></style>
