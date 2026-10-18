@@ -65,6 +65,24 @@ class NginxProxyDbAuthorityGuardTest(unittest.TestCase):
         errors = self.probe(template=mutated)
         self.assertTrue(any("X-SC-Namespace" in item for item in errors), errors)
 
+    def test_dropping_the_declared_alias_whitelist_is_refused(self):
+        mutated = self.template.replace(
+            "map $sc_path_ns $sc_declared_ns {", "map $sc_path_ns $sc_undeclared_probe {", 1
+        )
+        errors = self.probe(template=mutated)
+        self.assertTrue(any("declared-alias whitelist" in item for item in errors), errors)
+
+    def test_an_empty_local_alias_default_is_refused(self):
+        mutated = self.compose.replace(
+            "${SC_DECLARED_NAMESPACE_ALIASES:-demo}",
+            "${SC_DECLARED_NAMESPACE_ALIASES:-}",
+            1,
+        )
+        errors = self.probe(compose=mutated)
+        self.assertTrue(
+            any("SC_DECLARED_NAMESPACE_ALIASES" in item for item in errors), errors
+        )
+
     def test_dropping_the_missing_namespace_refusal_is_refused(self):
         mutated = self.template.replace(
             '      return 400 \'{"error":"NS_NAMESPACE_REQUIRED"}\';\n', ""

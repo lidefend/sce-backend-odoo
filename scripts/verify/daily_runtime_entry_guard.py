@@ -53,6 +53,8 @@ def probe() -> list[str]:
         for token in (
             "map $uri $sc_path_ns {",
             "~^/t/([a-z0-9][a-z0-9-]*)(/|$)  $1;",
+            "map $sc_path_ns $sc_declared_ns {",
+            "~^(${SC_DECLARED_NAMESPACE_ALIASES})$",
             "map $sc_path_ns $sc_proxy_upstream {",
             "SC_ENTRY_PLATFORM_STRIP",
             "absolute_redirect off;",
@@ -76,14 +78,15 @@ def probe() -> list[str]:
 
     if stack:
         for token in (
-            '"${ODOO_BIND_HOST:-0.0.0.0}:${ODOO_PORT}:8069"',
-            '"${NGINX_BIND_HOST:-0.0.0.0}:${NGINX_PORT}:80"',
+            '"${ODOO_BIND_HOST:-127.0.0.1}:${ODOO_PORT}:8069"',
+            '"${NGINX_BIND_HOST:-127.0.0.1}:${NGINX_PORT}:80"',
             "SC_PROXY_DEFAULT_UPSTREAM: ${SC_PROXY_DEFAULT_UPSTREAM}",
             "SC_PROXY_PLATFORM_UPSTREAM: ${SC_PROXY_PLATFORM_UPSTREAM}",
+            "SC_DECLARED_NAMESPACE_ALIASES: ${SC_DECLARED_NAMESPACE_ALIASES}",
             "SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET}",
             "SC_ENTRY_ROUTE_VERSION: ${SC_ENTRY_ROUTE_VERSION}",
             "SC_ENTRY_PLATFORM_STRIP: ${SC_ENTRY_PLATFORM_STRIP}",
-            "NGINX_ENVSUBST_FILTER: '^SC_(PROXY_(DEFAULT_UPSTREAM|PLATFORM_UPSTREAM)|ENTRY_(SHARED_SECRET|ROUTE_VERSION|PLATFORM_STRIP))$'",
+            "NGINX_ENVSUBST_FILTER: '^SC_(PROXY_(DEFAULT_UPSTREAM|PLATFORM_UPSTREAM)|ENTRY_(SHARED_SECRET|ROUTE_VERSION|PLATFORM_STRIP)|DECLARED_NAMESPACE_ALIASES)$'",
             "sc-daily-entry:",
             "name: ${SC_DAILY_ENTRY_NETWORK:-sc-daily-entry}",
         ):
@@ -102,6 +105,7 @@ def probe() -> list[str]:
             "NGINX_BIND_HOST=@NGINX_BIND_HOST@",
             "SC_PROXY_DEFAULT_UPSTREAM=@SC_PROXY_DEFAULT_UPSTREAM@",
             "SC_PROXY_PLATFORM_UPSTREAM=@SC_PROXY_PLATFORM_UPSTREAM@",
+            "SC_DECLARED_NAMESPACE_ALIASES=@SC_DECLARED_NAMESPACE_ALIASES@",
             "SC_ENTRY_SHARED_SECRET=@SC_ENTRY_SHARED_SECRET@",
             "SC_ENTRY_ROUTE_VERSION=@SC_ENTRY_ROUTE_VERSION@",
             "SC_ENTRY_PLATFORM_STRIP=@SC_ENTRY_PLATFORM_STRIP@",

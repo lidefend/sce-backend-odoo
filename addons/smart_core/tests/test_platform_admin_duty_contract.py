@@ -458,21 +458,80 @@ class ProjectionAndRouteTests(unittest.TestCase):
         self.assertNotIn('@click="open(duty.route)"', panel_source)
         self.assertNotIn("router.push(route)", panel_source)
 
-    def test_platform_duty_panel_renders_the_tenant_registry_table(self):
+    def test_tenant_registry_uses_the_official_action_surface(self):
+        contract = _load_contract()
+        surface = contract.build_platform_duty_surface(
+            is_platform_control_admin=True,
+            is_tenant_config_admin=False,
+            action_routes={"smart_core.action_sc_platform_namespace": "/a/222"},
+        )
+        registry = next(
+            row for row in surface["duties"] if row["key"] == "platform.tenant_registry"
+        )
+        self.assertEqual(
+            registry["action_xmlid"], "smart_core.action_sc_platform_namespace"
+        )
+        self.assertEqual(registry["route"], "/a/222")
+
         web = Path(__file__).resolve().parents[3] / "frontend" / "apps" / "web" / "src"
         panel_source = (web / "components" / "platform-duty" / "PlatformDutyPanel.vue").read_text(encoding="utf-8")
-
-        self.assertIn(
-            "const TENANT_REGISTRY_ENDPOINT = DECLARED_PLATFORM_API_ENDPOINTS.tenantRegistry",
-            panel_source,
-        )
-        self.assertIn("apiRequest<OpsTenantsResponse>(TENANT_REGISTRY_ENDPOINT)", panel_source)
-        for field in ("namespace_id", "tenant_name", "lifecycle_state", "alias", "path_prefix", "billing_bound"):
-            self.assertIn(field, panel_source)
-        self.assertIn("data-tenant-registry-table", panel_source)
-        self.assertIn("当前没有已登记的租户命名空间", panel_source)
-        # The table is the platform registration, never a cross-database company read.
+        self.assertNotIn("PlatformTenantRegistry", panel_source)
+        self.assertNotIn("TENANT_COLUMNS", panel_source)
+        self.assertNotIn("data-tenant-registry-table", panel_source)
+        self.assertNotIn("TENANT_REGISTRY_ENDPOINT", panel_source)
+        # The registry is the platform namespace model, never a cross-database company read.
         self.assertNotIn("res.company", panel_source)
+
+        views = (ROOT / "views" / "platform_company_access_views.xml").read_text(encoding="utf-8")
+        self.assertIn('id="view_sc_platform_namespace_tree"', views)
+        self.assertIn('id="view_sc_platform_namespace_form"', views)
+        self.assertIn('id="action_sc_platform_namespace"', views)
+        self.assertIn('res_model">sc.platform.namespace', views)
+
+    def test_every_platform_duty_opens_an_official_surface(self):
+        """No platform duty may fall back to raw API JSON or a bare intent.
+
+        The owner ruling is that the platform console is usable at login: a
+        duty either opens a declared window action (rendered by the official
+        action shell) or a declared SPA route.  An ``/api/`` route would render
+        raw JSON, and an intent is a concept rather than a usable entry.
+        """
+        contract = _load_contract()
+        action_xmlids = contract.declared_platform_action_xmlids()
+        self.assertEqual(
+            action_xmlids,
+            sorted(
+                [
+                    "smart_core.action_sc_ops_job",
+                    "smart_core.action_sc_platform_maintenance_access",
+                    "smart_core.action_sc_platform_namespace",
+                    "smart_core.action_sc_subscription",
+                ]
+            ),
+        )
+        action_routes = {xmlid: "/a/%s" % (900 + index,) for index, xmlid in enumerate(action_xmlids)}
+        surface = contract.build_platform_duty_surface(
+            is_platform_control_admin=True,
+            is_tenant_config_admin=False,
+            action_routes=action_routes,
+        )
+        for duty in surface["duties"]:
+            route = str(duty.get("route") or "")
+            self.assertTrue(route.startswith("/"), duty)
+            self.assertFalse(route.startswith("/api/"), duty)
+            self.assertNotIn("intent", duty, duty)
+
+        views = (ROOT / "views" / "platform_company_access_views.xml").read_text(encoding="utf-8")
+        self.assertIn('id="view_sc_platform_maintenance_access_tree"', views)
+        self.assertIn('id="view_sc_platform_maintenance_access_form"', views)
+        self.assertIn('id="action_sc_platform_maintenance_access"', views)
+        self.assertIn('res_model">sc.platform.maintenance.access', views)
+
+        web = Path(__file__).resolve().parents[3] / "frontend" / "apps" / "web" / "src"
+        panel_source = (web / "components" / "platform-duty" / "PlatformDutyPanel.vue").read_text(encoding="utf-8")
+        self.assertNotIn("apiRequest", panel_source)
+        self.assertNotIn("<pre", panel_source)
+        self.assertNotIn("JSON.stringify", panel_source)
 
     def test_demo_tenant_name_is_declared_in_the_platform_registry(self):
         seed = (ROOT / "data" / "sc_platform_namespace_seed.xml").read_text(encoding="utf-8")
