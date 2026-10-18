@@ -4,6 +4,10 @@ import os
 
 ENVIRONMENT_ROLE = "platform_internal_demo"
 DEMO_TENANT_KEY = "sc-demo-main"
+# The showcase deliberately uses one simple password for every seeded demo
+# identity. Keeping it in the carrier, rather than only in the host secret,
+# makes a rebuild or reseed reproduce the published demo login.
+DEMO_USER_PASSWORD = "123456"
 
 
 def assert_demo_seed_principal(env):
@@ -69,14 +73,13 @@ def guard_demo_data_space(env):
 def apply_demo_user_passwords(env):
     guard_demo_scope(env)
     guard_demo_data_space(env)
-    password = os.environ["SC_DEMO_USER_PASSWORD"].strip()
     rows = env["ir.model.data"].sudo().search(
         [("module", "=", "smart_construction_demo"), ("model", "=", "res.users")]
     )
     user_ids = [row.res_id for row in rows.exists()]
     users = env["res.users"].sudo().with_context(active_test=False).browse(user_ids).exists()
     if users:
-        users.write({"password": password})
+        users.write({"password": DEMO_USER_PASSWORD})
 
 
 def pre_init_hook(env):

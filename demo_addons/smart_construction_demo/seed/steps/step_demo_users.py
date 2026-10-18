@@ -4,6 +4,7 @@ import os
 from odoo import api
 
 from ..registry import SeedStep, register
+from ...hooks import DEMO_USER_PASSWORD
 
 
 def _resolve_lang(env, preferred="zh_CN", fallback="en_US"):
@@ -52,7 +53,7 @@ def _ensure_user(env, login, name, groups_xmlids, password, lang, tz):
 
 
 def run(env):
-    password = os.environ["SC_DEMO_USER_PASSWORD"]
+    password = DEMO_USER_PASSWORD
     lang = _resolve_lang(env, preferred=os.getenv("SC_DEMO_LANG", "zh_CN"))
     tz = "Asia/Shanghai"
 

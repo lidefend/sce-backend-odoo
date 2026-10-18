@@ -72,6 +72,74 @@ class DemoCompanyIdentity(unittest.TestCase):
         self.assertEqual(result[0], "searched")
         self.assertIn(("project_code", "ilike", "DEMO-"), result[1])
 
+    def test_seeded_users_use_the_fixed_showcase_password(self):
+        events = []
+        fake_os = SimpleNamespace(environ={}, getenv=lambda key, default: default)
+        run = function(
+            "step_10_users_demo.py",
+            "run",
+            os=fake_os,
+            DEMO_USER_PASSWORD="123456",
+            _resolve_lang=lambda *args, **kwargs: "en_US",
+            _ensure_user=lambda *args, **kwargs: events.append(kwargs["password"]),
+            guard_demo_data_space=lambda env: None,
+        )
+        run(object())
+        self.assertEqual(set(events), {"123456"})
+
+    def test_demo_credentials_check_each_declared_principal(self):
+        class AccessDenied(Exception):
+            pass
+
+        class UserError(Exception):
+            pass
+
+        class Users(list):
+            def sudo(self):
+                return self
+
+            def with_context(self, **kwargs):
+                return self
+
+            def browse(self, ids):
+                return self
+
+            def exists(self):
+                return self
+
+            def _check_credentials(self, password, env):
+                return self[0]._check_credentials(password, env)
+
+            def search(self, domain, limit=1):
+                return Users([principals[domain[0][2]]])
+
+        checked = []
+        principals = {
+            "wutao": SimpleNamespace(
+                password="hash",
+                _check_credentials=lambda password, env: checked.append(password),
+            ),
+        }
+        users = Users([SimpleNamespace(password="hash")])
+        env = {
+            "ir.model.data": SimpleNamespace(
+                sudo=lambda: SimpleNamespace(
+                    search=lambda domain: SimpleNamespace(exists=lambda: [SimpleNamespace(res_id=1)])
+                )
+            ),
+            "res.users": SimpleNamespace(sudo=lambda: users),
+        }
+        verify = function(
+            "step_90_verify_demo.py",
+            "_verify_demo_credentials",
+            DEMO_USER_PASSWORD="123456",
+            DEMO_AUTHENTICATION_PRINCIPALS=("wutao",),
+            UserError=UserError,
+            AccessDenied=AccessDenied,
+        )
+        verify(env)
+        self.assertEqual(checked, ["123456"])
+
 
 class Opening:
     def __init__(self):
@@ -243,6 +311,7 @@ class SupplementalFlows(unittest.TestCase):
         fake_os = SimpleNamespace(environ={"SC_DEMO_USER_PASSWORD": "test-only"},
                                   getenv=lambda key, default: default)
         run = function("step_10_users_demo.py", "run", os=fake_os,
+                       DEMO_USER_PASSWORD="123456",
                        _resolve_lang=lambda *args, **kwargs: "en_US",
                        _ensure_user=lambda *args, **kwargs: events.append(kwargs["login"]),
                        guard_demo_data_space=lambda env: events.append("native-enrollment"))

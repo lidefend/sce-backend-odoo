@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessDenied, UserError
 
 from ..registry import SeedStep, register
+from ...hooks import DEMO_USER_PASSWORD
 
 
 PROJECT_INIT_CODE = "DEMO-PJ-INIT"
@@ -26,6 +27,16 @@ WARN_PROJECT_CODES = {
 # 提交/审批中的付款申请，演示数据的自检必须遵循同一产品规则。
 TERMINAL_PROJECT_LIFECYCLES = ("warranty", "closed")
 DEMO_COMPANY_NAME = "demo演示公司"
+DEMO_AUTHENTICATION_PRINCIPALS = (
+    "wutao",
+    "demo_full",
+    "demo_pm",
+    "demo_finance",
+    "demo_cost",
+    "demo_audit",
+    "demo_readonly",
+    "sc_test_admin",
+)
 ALL_DEMO_PROJECT_CODES = [
     "DEMO-PJ-INIT",
     "DEMO-PJ-TENDER",
@@ -92,6 +103,24 @@ def _verify_company_identity(env):
     company = env.ref("base.main_company")
     if company.name != DEMO_COMPANY_NAME or company.partner_id.name != DEMO_COMPANY_NAME:
         raise UserError("Demo company identity must be %s." % DEMO_COMPANY_NAME)
+
+
+def _verify_demo_credentials(env):
+    Users = env["res.users"].sudo().with_context(active_test=False)
+    rows = env["ir.model.data"].sudo().search(
+        [("module", "=", "smart_construction_demo"), ("model", "=", "res.users")]
+    )
+    users = Users.browse([row.res_id for row in rows.exists()]).exists()
+    if not users or any(not user.password for user in users):
+        raise UserError("Every seeded demo user must carry the showcase password.")
+    for login in DEMO_AUTHENTICATION_PRINCIPALS:
+        principal = Users.search([("login", "=", login)], limit=1)
+        if not principal:
+            raise UserError("Demo authentication principal missing: %s." % login)
+        try:
+            principal._check_credentials(DEMO_USER_PASSWORD, {"interactive": False})
+        except AccessDenied as error:
+            raise UserError("Demo authentication failed for %s." % login) from error
 
 
 def _verify_demo_full_my_work(env):
@@ -164,6 +193,7 @@ def _collect_missing(env, project):
 
 def run(env):
     _verify_company_identity(env)
+    _verify_demo_credentials(env)
     init_project = _get_project(env, PROJECT_INIT_CODE)
     tender_project = _get_project(env, PROJECT_TENDER_CODE)
     exec_project = _get_project(env, PROJECT_EXEC_CODE)
