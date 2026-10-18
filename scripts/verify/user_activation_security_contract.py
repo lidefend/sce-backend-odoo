@@ -45,15 +45,16 @@ def main() -> None:
     require(model, 'user.with_context(sc_skip_token_epoch_bump=False).write({"password": password})', MODEL)
     require(controller, 'methods=["POST"]', CONTROLLER)
     for route in (
+        "/api/v1/auth/page-contracts",
         "/api/v1/auth/activation/start",
         "/api/v1/auth/activation/complete",
         "/api/v1/auth/password-recovery/status",
     ):
         require(controller, route, CONTROLLER)
-    if controller.count("save_session=False") != 3:
+    if controller.count("save_session=False") != 4:
         raise SystemExit(
             "USER_ACTIVATION_SECURITY_CONTRACT=FAIL "
-            f"expected_save_session_false=3 actual={controller.count('save_session=False')}"
+            f"expected_save_session_false=4 actual={controller.count('save_session=False')}"
         )
     require(controller, 'Cache-Control', CONTROLLER)
     require(controller, 'Referrer-Policy', CONTROLLER)
