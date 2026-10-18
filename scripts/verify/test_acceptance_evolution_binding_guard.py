@@ -97,6 +97,12 @@ class TestGlobAndPlan(unittest.TestCase):
         self.assertEqual(plan["required_suites"], [])
         self.assertEqual(plan["required_evidence_suites"], [])
 
+    def test_governance_markdown_is_not_absorbed_by_the_docs_rule(self):
+        plan = guard.build_plan(self.registry, ["AGENTS.md"], "base", HEAD)
+        self.assertEqual(plan["status"], "PASS")
+        self.assertEqual(plan["required_suites"], ["governance_static"])
+        self.assertEqual(plan["required_evidence_suites"], [])
+
     def test_plan_fails_closed_for_unclassified_paths(self):
         plan = guard.build_plan(self.registry, ["new_surface/unknown.txt"], "base", HEAD)
         self.assertEqual(plan["status"], "FAIL")

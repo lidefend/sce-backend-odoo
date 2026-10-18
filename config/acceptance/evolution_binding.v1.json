@@ -69,17 +69,6 @@
   },
   "rules": [
     {
-      "id": "docs-bookkeeping",
-      "paths": [
-        "docs/**",
-        "**/*.md",
-        ".agent/**",
-        ".codex/**",
-        ".devcontainer/**"
-      ],
-      "suites": []
-    },
-    {
       "id": "governance-static",
       "paths": [
         "make/**",
@@ -96,6 +85,17 @@
       "suites": [
         "governance_static"
       ]
+    },
+    {
+      "id": "docs-bookkeeping",
+      "paths": [
+        "docs/**",
+        "**/*.md",
+        ".agent/**",
+        ".codex/**",
+        ".devcontainer/**"
+      ],
+      "suites": []
     },
     {
       "id": "contracts-schemas",
