@@ -17,16 +17,19 @@ This entry closes the gap with existing governed pieces only:
    already agree;
 3. otherwise run the existing governed `make verify.frontend.build`, compute the
    artifact fingerprint with the existing governed
-   `scripts/verify/frontend_build_fingerprint.sh`, and declare that fingerprint
-   in the runtime env file so `/api/runtime-version` exposes the served bundle;
-4. recreate the governed runtime through `make restart`, then read back both
-   `/api/runtime-version` and `/index.html` and prove the served entry asset is
-   the one just built;
-5. restore the previous env file and runtime when the readback does not confirm
-   the new generation.
+   `scripts/verify/frontend_build_fingerprint.sh`, sweep the artifact for the
+   physical database names this lane knows about (their presence would be a
+   second routing input beside the entry namespace), and declare the
+   fingerprint in the build input file so the next governed duty refresh
+   publishes it;
+4. read back `/index.html` and the built entry asset through the public entry,
+   proving the bind-mounted static face is the generation just built;
+5. leave the runtime identity refresh to the governed duty refresh: the Odoo
+   process publishes `FRONTEND_BUILD_SHA256`, but restarting the legacy
+   `.env.dev` stack is not the duty that serves the entry.
 
 The remote script runs over SSH and touches only the frontend output directory,
-that single declared env line, and the governed runtime; it never rewrites the
+that single declared env line, and the build input file; it never rewrites the
 code tree, database, volumes, credentials or nginx configuration.
 """
 
@@ -50,15 +53,16 @@ DEFAULT_ENV_FILE = ".env.dev"
 #: its own, and a shipped literal would silently bake a stale name.
 DEFAULT_DATABASE = ""
 DEFAULT_BASE_URL = "http://127.0.0.1:18081"
-#: The frontend bakes its platform-admin authority at build time. The value is
-#: not a build preference: it is derived from the governed duty declaration, and
-#: the served bundle is what actually moves the platform-admin entry.
+#: Batch C: the entry namespace, not a physical database name, selects the
+#: platform-admin authority. The duty database is still an input here because a
+#: bundle that carries it would reintroduce the retired second selector.
 PLATFORM_ADMIN_KEY = "VITE_PLATFORM_ADMIN_DB"
 DATABASE_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 DEFAULT_RECEIPT = ".runtime/final-acceptance/daily-deployed/frontend-build.json"
 CONFIRMATION = "BUILD_AND_DECLARE_DAILY_RUNTIME_FRONTEND_AT_DEPLOYED_HEAD"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 FULL_FP = re.compile(r"^[0-9a-f]{64}$")
+ENTRY_PREFIX = re.compile(r"^/(t/[a-z0-9-]+|platform-admin)$")
 ENTRY_ASSET = re.compile(r"^index-[A-Za-z0-9_-]+\.js$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 
@@ -72,7 +76,8 @@ import fcntl, json, os, re, shutil, subprocess, sys, time, urllib.request
 from pathlib import Path
 
 (expected_sha, env_name, env_file, database, base_url, remote_root,
- fingerprint_hint, entry_hint, platform_admin_database) = sys.argv[1:10]
+ fingerprint_hint, entry_hint, platform_admin_database,
+ entry_prefix) = sys.argv[1:11]
 
 tag = "[daily.runtime.frontend.build]"
 fixed_root = Path("/opt/projects/repos/sce-product-odoo")
@@ -80,12 +85,14 @@ root = Path(remote_root)
 full_sha = re.compile(r"^[0-9a-f]{40}$")
 full_fp = re.compile(r"^[0-9a-f]{64}$")
 entry_re = re.compile(r'src="/assets/(index-[^"?]+\.js)"')
-platform_admin_key = "VITE_PLATFORM_ADMIN_DB"
+entry_prefix_re = re.compile(r"^/(t/[a-z0-9-]+|platform-admin)$")
 
 if root != fixed_root or not root.is_dir():
     raise SystemExit(tag + " BLOCKED invalid remote repository")
 if not full_sha.fullmatch(expected_sha):
     raise SystemExit(tag + " BLOCKED invalid deployed revision")
+if not entry_prefix_re.fullmatch(entry_prefix or ""):
+    raise SystemExit(tag + " BLOCKED invalid entry namespace prefix")
 
 env_path = root / env_file
 dist_dir = root / "frontend/apps/web/dist-dev"
@@ -95,7 +102,8 @@ state = {
     "fingerprint": "", "entry_asset": "", "env_file": str(env_path),
     "env_written": False, "backup_path": "", "restarted": False,
     "platform_admin_database": platform_admin_database,
-    "platform_admin_written": False, "platform_admin_baked": False,
+    "entry_prefix": entry_prefix,
+    "physical_db_sweep": "NOT_RUN", "physical_db_bakes": [],
     "rolled_back": False, "served": None, "served_entry_asset": "",
     "dist_dir": str(dist_dir), "remote_root": str(root),
     "build_tail": "", "fingerprint_tail": "", "restart_tail": "",
@@ -163,26 +171,36 @@ def restore_env():
     if state["env_written"] and state["backup_path"]:
         shutil.copy2(state["backup_path"], env_path)
 
-def baked_admin():
-    """Whether the built bundle really carries the declared authority.
+def physical_db_bakes():
+    """Physical database names present in the served bundle.
 
-    The env line says what the *next* build should bake; only the artifact says
-    what the *served* bundle carries. A bundle built before the switch would
-    still mount the previous database, so the two facts are read separately.
+    Batch C removed every build-time database selector: the entry namespace is
+    the only routing input. A bundle that still carries one of these names has
+    silently reinstated the selector the entry refuses to honour, so the build
+    fails instead of publishing two competing authorities.
     """
+    names = [name for name in dict.fromkeys([database, platform_admin_database]) if name]
+    found = []
     for path in sorted(dist_dir.rglob("*")):
         if path.suffix not in (".js", ".mjs", ".css") or not path.is_file():
             continue
         try:
-            if platform_admin_database in path.read_text(encoding="utf-8", errors="replace"):
-                return True
+            text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-    return False
+        for name in names:
+            if name in text:
+                found.append(name)
+    return sorted(set(found))
 
 def readback():
+    # Batch C: the namespace prefix carries the database authority. The bare
+    # /api path is refused with NS_NAMESPACE_REQUIRED, so the served identity is
+    # read from the same namespace the browser uses.
     try:
-        with urllib.request.urlopen(base_url + "/api/runtime-version", timeout=20) as resp:
+        with urllib.request.urlopen(
+            base_url + entry_prefix + "/api/runtime-version", timeout=20
+        ) as resp:
             return json.loads(resp.read().decode("utf-8"))
     except Exception:
         return None
@@ -211,9 +229,6 @@ def run_make(*args):
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False,
     )
     return result.returncode, result.stdout
-
-def restart():
-    return run_make("restart", "ENV=" + env_name, "ENV_FILE=" + env_file)
 
 def build():
     return run_make("verify.frontend.build", "ENV=" + env_name,
@@ -270,43 +285,39 @@ with lock_path.open("a+b") as lock:
     if disk_fp_path.is_file():
         disk_fp = disk_fp_path.read_text(encoding="utf-8").strip()
 
-    declared_admin = env_single(platform_admin_key)
-    if declared_admin is None:
-        blocked("env file must declare exactly one " + platform_admin_key)
-
     reused = bool(
         fingerprint_hint and full_fp.fullmatch(fingerprint_hint)
         and entry_hint and entry_re.fullmatch('src="/assets/%s"' % entry_hint)
-        and isinstance(served_before, dict)
-        and served_before.get("git_sha") == expected_sha
-        and served_before.get("frontend_build_sha256") == fingerprint_hint
         and declared == fingerprint_hint
         and disk_fp == fingerprint_hint
         and entry_before == entry_hint
-        and declared_admin == platform_admin_database
-        and baked_admin()
+        and not physical_db_bakes()
     )
     if reused:
         state["reused"] = True
         state["fingerprint"] = fingerprint_hint
         state["entry_asset"] = entry_hint
+        # The reuse precondition already scanned the served bundle for physical
+        # database names.  Report that fact instead of NOT_RUN, otherwise a
+        # byte-identical reuse is rejected by the caller as missing evidence.
+        state["physical_db_bakes"] = []
+        state["physical_db_sweep"] = "NO_PHYSICAL_DB_NAME"
+        state["runtime_refresh_required"] = not (
+            isinstance(served_before, dict)
+            and served_before.get("git_sha") == expected_sha
+            and served_before.get("frontend_build_sha256") == fingerprint_hint
+        )
         emit("PASS")
         sys.exit(0)
 
-    # The bundle bakes its platform-admin authority, so the declaration has to
-    # be in the build input *before* the build: writing it afterwards would
-    # leave the served bundle mounting the previous database while the file
-    # claims the new one, which is the drift this entry exists to prevent.
-    state["platform_admin_written"] = env_write_line(
-        platform_admin_key, platform_admin_database
-    )
-
+    # Batch C: no physical database is a build input. The static build removes
+    # the legacy selectors from its environment, so writing one here would only
+    # make the declaration look like an authority the bundle no longer reads.
     code, build_tail = build()
     state["rebuilt"] = True
     state["build_tail"] = build_tail[-1200:]
     if code:
         restore_env()
-        restart()
         blocked("governed frontend build failed")
 
     code, fingerprint, fingerprint_tail = fingerprint(dist_dir)
@@ -314,7 +325,6 @@ with lock_path.open("a+b") as lock:
     state["fingerprint_tail"] = fingerprint_tail[-600:]
     if code or not full_fp.fullmatch(fingerprint):
         restore_env()
-        restart()
         blocked("frontend build fingerprint is invalid")
 
     index_path = dist_dir / "index.html"
@@ -322,51 +332,41 @@ with lock_path.open("a+b") as lock:
     state["entry_asset"] = entry
     if not entry:
         restore_env()
-        restart()
         blocked("built index.html does not declare an entry asset")
 
-    state["platform_admin_baked"] = baked_admin()
-    if not state["platform_admin_baked"]:
+    state["physical_db_bakes"] = physical_db_bakes()
+    state["physical_db_sweep"] = (
+        "NO_PHYSICAL_DB_NAME" if not state["physical_db_bakes"] else "FOUND"
+    )
+    if state["physical_db_bakes"]:
         restore_env()
-        restart()
-        blocked("the built bundle does not bake the declared platform-admin database")
+        blocked(
+            "the built bundle carries a physical database name: "
+            + ", ".join(state["physical_db_bakes"])
+        )
 
     env_write_line("FRONTEND_BUILD_SHA256", fingerprint)
-
-    code, restart_tail = restart()
-    state["restarted"] = True
-    state["restart_tail"] = restart_tail[-600:]
-    if code:
-        if state["env_written"]:
-            restore_env()
-            restart()
-        blocked("governed restart failed")
-
-    deadline = time.time() + 180
-    served = None
-    while time.time() < deadline:
-        served = readback()
-        if (served and served.get("git_sha") == expected_sha
-                and served.get("frontend_build_sha256") == fingerprint):
-            break
-        time.sleep(6)
+    # The static bundle is served from a bind mount, so the public entry sees
+    # this build as soon as the files are written.  The Odoo process publishes
+    # its declared build identity through `/api/runtime-version`; that fact is
+    # refreshed by the governed duty refresh, not by restarting the legacy
+    # `.env.dev` stack that this entry used to address by mistake.
+    state["runtime_refresh_required"] = True
+    served = readback()
     state["served"] = served
 
-    served_code, served_html = http_text("/index.html")
+    served_code, served_html = http_text(entry_prefix + "/index.html")
     served_entry = entry_of(served_html)
     state["served_entry_asset"] = served_entry
-    asset_code = http_status("/assets/" + entry)
+    asset_code = http_status(entry_prefix + "/assets/" + entry)
 
     ok = bool(
-        served and served.get("git_sha") == expected_sha
-        and served.get("frontend_build_sha256") == fingerprint
-        and served_entry == entry
+        served_entry == entry
         and asset_code == 200
-        and state["platform_admin_baked"]
+        and state["physical_db_sweep"] == "NO_PHYSICAL_DB_NAME"
     )
     if not ok and state["env_written"]:
         restore_env()
-        restart()
         state["rolled_back"] = True
     emit("PASS" if ok else "BLOCKED")
     sys.exit(0 if ok else 1)
@@ -382,6 +382,7 @@ def remote_command(
     fingerprint_hint: str,
     entry_hint: str,
     platform_admin_database: str,
+    entry_prefix: str,
 ) -> str:
     return " ".join(
         shlex.quote(item)
@@ -398,11 +399,14 @@ def remote_command(
             fingerprint_hint,
             entry_hint,
             platform_admin_database,
+            entry_prefix,
         )
     )
 
 
-def preflight(expected_sha: str, ssh_host: str, platform_admin_database: str) -> None:
+def preflight(
+    expected_sha: str, ssh_host: str, platform_admin_database: str, entry_prefix: str
+) -> None:
     if os.environ.get("CONFIRM_DAILY_RUNTIME_FRONTEND_BUILD") != CONFIRMATION:
         raise BuildError("exact daily runtime frontend build confirmation is required")
     if not FULL_SHA.fullmatch(expected_sha or ""):
@@ -413,6 +417,8 @@ def preflight(expected_sha: str, ssh_host: str, platform_admin_database: str) ->
         raise BuildError(
             "the platform-admin database must be the declared duty database name"
         )
+    if not ENTRY_PREFIX.fullmatch(entry_prefix or ""):
+        raise BuildError("the entry namespace prefix must be a declared path prefix")
 
 
 def reuse_hint(receipt_path: str, expected_sha: str) -> tuple[str, str]:
@@ -450,8 +456,9 @@ def align(
     fingerprint_hint: str,
     entry_hint: str,
     platform_admin_database: str,
+    entry_prefix: str,
 ) -> dict[str, object]:
-    preflight(expected_sha, ssh_host, platform_admin_database)
+    preflight(expected_sha, ssh_host, platform_admin_database, entry_prefix)
     if not DATABASE_NAME.fullmatch(database or ""):
         raise BuildError(
             "the served database must be a declared duty database name; this "
@@ -477,6 +484,7 @@ def align(
             fingerprint_hint,
             entry_hint,
             platform_admin_database,
+            entry_prefix,
         ),
     ]
     result = run(command)
@@ -501,10 +509,11 @@ def align(
         or not ENTRY_ASSET.fullmatch(str(evidence.get("entry_asset") or ""))
         or evidence.get("served_entry_asset") != evidence.get("entry_asset")
         or not isinstance(served, dict)
-        or served.get("git_sha") != expected_sha
-        or served.get("frontend_build_sha256") != evidence.get("fingerprint")
+        or not isinstance(evidence.get("runtime_refresh_required"), bool)
         or evidence.get("platform_admin_database") != platform_admin_database
-        or evidence.get("platform_admin_baked") is not True
+        or evidence.get("physical_db_sweep") != "NO_PHYSICAL_DB_NAME"
+        or evidence.get("physical_db_bakes") != []
+        or evidence.get("entry_prefix") != entry_prefix
     ):
         raise BuildError("remote daily frontend build evidence differs")
     return evidence
@@ -519,6 +528,7 @@ def main() -> int:
     parser.add_argument("--database", default=DEFAULT_DATABASE)
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
     parser.add_argument("--platform-admin-database", required=True)
+    parser.add_argument("--entry-prefix", required=True)
     parser.add_argument("--receipt", default=DEFAULT_RECEIPT)
     parser.add_argument("--report", required=True)
     args = parser.parse_args()
@@ -534,6 +544,7 @@ def main() -> int:
             fingerprint_hint,
             entry_hint,
             args.platform_admin_database,
+            args.entry_prefix,
         )
     except BuildError as exc:
         raise SystemExit(f"[daily.runtime.frontend.build] BLOCKED: {exc}") from exc

@@ -3,7 +3,11 @@ from __future__ import annotations
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
 from odoo.addons.smart_core.core.navigation_entry_target import build_web_surface_entry_target
-from odoo.addons.smart_core.security.platform_admin import can_discover_platform_capabilities
+from odoo.addons.smart_core.security.platform_admin import (
+    can_discover_platform_capabilities,
+    user_is_platform_control_admin,
+    user_is_tenant_config_admin,
+)
 
 from .capability_service import CapabilityService
 from .menu_service import MenuService
@@ -44,8 +48,13 @@ class DeliveryEngine:
     def _runtime_role_surface(self, runtime: dict) -> dict:
         role_surface = runtime.get("role_surface") if isinstance(runtime.get("role_surface"), dict) else {}
         resolved = dict(role_surface)
+        # ADR-007 D6: "is_platform_admin" is platform-control authority, never a
+        # bare group label.  Tenant configuration administration is published
+        # separately so the product surfaces keep their own flag.
         if "is_platform_admin" not in resolved:
-            resolved["is_platform_admin"] = self._has_group("smart_core.group_smart_core_admin")
+            resolved["is_platform_admin"] = user_is_platform_control_admin(self.env.user)
+        if "is_tenant_config_admin" not in resolved:
+            resolved["is_tenant_config_admin"] = user_is_tenant_config_admin(self.env.user)
         if "discover_installed_capabilities" not in resolved:
             resolved["discover_installed_capabilities"] = can_discover_platform_capabilities(
                 self.env.user

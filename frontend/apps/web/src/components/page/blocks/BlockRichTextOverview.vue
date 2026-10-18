@@ -19,12 +19,14 @@
       </template>
 
       <!-- 只读态：内容为服务端净化后的受限 HTML（读取直渲染，净化权威在后端） -->
+      <!-- eslint-disable vue/no-v-html -- 内容先经 sanitizeRestrictedHtml 净化，后端另有净化权威 -->
       <div
         v-if="phase === 'idle' || phase === 'saved'"
         class="block-rich-text-overview__content"
         data-state="readonly"
         v-html="renderedContent"
       ></div>
+      <!-- eslint-enable vue/no-v-html -->
       <p
         v-if="(phase === 'idle' || phase === 'saved') && !renderedContent"
         class="block-rich-text-overview__hint"

@@ -49,7 +49,7 @@ def _install_smart_core_stubs():
     core_pkg = _install_module("odoo.addons.smart_core.core")
     core_pkg.__path__ = [str(SMART_CORE_DIR / "core")]
     _install_module("odoo.addons.smart_core.security.auth", get_user_from_token=lambda: None)
-    _install_module("odoo.addons.smart_core.security.platform_admin", user_is_platform_admin=lambda user: True)
+    _install_module("odoo.addons.smart_core.security.platform_admin", user_is_platform_control_admin=lambda user, **_kwargs: True)
     _install_module("odoo.addons.smart_core.core.trace", get_trace_id=lambda: "trace_unit")
 
 

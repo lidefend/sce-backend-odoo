@@ -3,7 +3,7 @@
 Date: 2026-08-08
 Owner: Frontend owner
 Target file: `frontend/apps/web/src/views/ActionView.vue`
-Current size: 3,673 lines
+Current size: 3,692 lines
 Phase: Stage 6 business category create nav query split
 
 ## Purpose
@@ -194,6 +194,19 @@ so that collection, record, and form surfaces cannot diverge again:
   effect, or orchestration branch was moved or added;
 - future work must still modify existing owned paths or extract
   responsibilities rather than increasing the route orchestration shell.
+
+## Stage 10 Favorites and Menu Redirect Split (2026-10-18)
+
+Favorites persistence and menu-only redirect behavior moved out of the route
+shell without changing their transaction or navigation ownership:
+
+- `useActionViewFavoriteRuntime.ts` owns saved-search save/delete refresh
+  sequencing, stale-contract guards, and favorite capability checks;
+- `useActionViewMenuRedirectRuntime.ts` owns menu-tree leaf/redirect resolution
+  and entry-target route navigation;
+- `ActionView.vue` keeps only the runtime composition and template bindings;
+- `ActionView.vue` is locked at `<=3692` lines and remains tracked as P1
+  extraction debt in `split_plan_queue.md`.
 
 ## Verification Gaps
 

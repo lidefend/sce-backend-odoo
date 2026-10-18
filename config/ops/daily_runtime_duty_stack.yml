@@ -90,6 +90,9 @@ services:
       SCENE_USE_PINNED: ${SCENE_USE_PINNED}
       SCENE_ROLLBACK: ${SCENE_ROLLBACK}
       SC_SOURCE_REVISION: ${SC_SOURCE_REVISION}
+      # Batch C: Odoo verifies the entry stamp and resolves the namespace.
+      SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET}
+      SC_ENTRY_ROUTE_VERSION: ${SC_ENTRY_ROUTE_VERSION}
       # The build identity the application *publishes* for what it serves. The
       # source revision alone is not the served bundle: a merge that changes no
       # frontend source leaves the artifact at its previous generation, so the
@@ -117,7 +120,7 @@ services:
       - ${SC_PRODUCT_ROOT}/scripts/render_odoo_conf.py:/usr/local/bin/render_odoo_conf.py:ro
       - ${SC_PRODUCT_ROOT}/scripts/odoo-entrypoint.sh:/usr/local/bin/odoo-entrypoint.sh:ro
     ports:
-      - "${ODOO_PORT}:8069"
+      - "${ODOO_BIND_HOST:-0.0.0.0}:${ODOO_PORT}:8069"
     entrypoint: [ "/bin/sh", "/usr/local/bin/odoo-entrypoint.sh" ]
     healthcheck:
       test: [ "CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8069/web/login', timeout=8)\"" ]
@@ -133,13 +136,25 @@ services:
       odoo:
         condition: service_healthy
     environment:
-      SC_PROXY_DEFAULT_DB: ${DB_NAME}
-      NGINX_ENVSUBST_FILTER: '^SC_PROXY_DEFAULT_DB$'
+      # Batch C: the entry routes by path namespace.  The serving duty owns "/"
+      # and the platform administration namespace has its own upstream; no
+      # database name is rendered into the proxy any more.
+      SC_PROXY_DEFAULT_UPSTREAM: ${SC_PROXY_DEFAULT_UPSTREAM}
+      SC_PROXY_PLATFORM_UPSTREAM: ${SC_PROXY_PLATFORM_UPSTREAM}
+      # The entry stamp Odoo verifies, and the declared two-layer platform hop:
+      # the serving entry face renders 0, the platform_control duty renders 1.
+      SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET}
+      SC_ENTRY_ROUTE_VERSION: ${SC_ENTRY_ROUTE_VERSION}
+      SC_ENTRY_PLATFORM_STRIP: ${SC_ENTRY_PLATFORM_STRIP}
+      NGINX_ENVSUBST_FILTER: '^SC_(PROXY_(DEFAULT_UPSTREAM|PLATFORM_UPSTREAM)|ENTRY_(SHARED_SECRET|ROUTE_VERSION|PLATFORM_STRIP))$'
     volumes:
       - ${SC_PRODUCT_ROOT}/config/nginx/templates:/etc/nginx/templates:ro
       - ${FRONTEND_DIST_DIR}:/usr/share/nginx/html:ro
     ports:
-      - "${NGINX_PORT}:80"
+      - "${NGINX_BIND_HOST:-0.0.0.0}:${NGINX_PORT}:80"
+    networks:
+      default:
+      sc-daily-entry:
     healthcheck:
       test: [ "CMD-SHELL", "nginx -t || exit 1" ]
       interval: 30s
@@ -153,3 +168,9 @@ volumes:
     name: ${REDIS_DATA}
   odoo_data:
     name: ${ODOO_DATA}
+
+networks:
+  default:
+  sc-daily-entry:
+    external: true
+    name: ${SC_DAILY_ENTRY_NETWORK:-sc-daily-entry}

@@ -11,7 +11,7 @@ from odoo.addons.smart_core.security.platform_company_access import (
     platform_limit_for_company,
     platform_usage_value,
 )
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 
 CAPABILITY_KEY_RE = re.compile(r"^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$")
 
@@ -101,7 +101,7 @@ class ScCapability(models.Model):
         for xmlid in group_xmlids:
             if isinstance(xmlid, str) and xmlid.startswith(prefix):
                 role_codes.add(xmlid[len(prefix):])
-        if user_is_platform_admin(user):
+        if user_is_tenant_config_admin(user):
             role_codes.add("admin")
         return role_codes
 

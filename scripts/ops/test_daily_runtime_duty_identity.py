@@ -38,6 +38,7 @@ from scripts.ops import daily_runtime_duty_identity as identity
 
 ROOT = Path(__file__).resolve().parents[2]
 DECLARATION = ROOT / "config/ops/daily_runtime_database_duties.v1.json"
+ENTRY = ROOT / "config/ops/daily_runtime_entry.v1.json"
 SYNTHETIC_INSTANCES = ROOT / "scripts/ops/synthetic_duty_instances.sample.json"
 
 
@@ -917,6 +918,9 @@ class EntryWiringTests(unittest.TestCase):
             "--apply",
             "--phase", "database",
             "--expect-declaration-digest", duty_entry.declaration_digest(merged),
+            "--expect-entry-digest", duty_entry.entry_digest(
+                json.loads(ENTRY.read_text(encoding="utf-8"))
+            ),
             "--report", str(report or (self.root / "report.json")),
         ]
 

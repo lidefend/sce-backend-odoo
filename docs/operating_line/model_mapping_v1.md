@@ -28,7 +28,6 @@
 | models/support/stock_extend.py | stock.* 扩展 | 库存扩展 | 支撑 | - | 采购/库存 |
 | models/support/product_extend.py | product.* 扩展 | 资料扩展 | 支撑 | - | 物料档案 |
 | models/support/quota_spec.py | quota.spec.* | 资料 | 支撑 | QUOTA_SPEC | 导入向导 |
-| models/support/account_move_line_ext.py | account.move.line 扩展 | 财务扩展 | 支撑 | - | 报表口径 |
 | models/support/contract_center.py | contract.* 辅助 | 合同辅助 | 支撑 | boq_line_id 等 | 合同/BOQ 同步 |
 | models/support/document_center.py | sc.document.* | 文档 | 支撑 | - | 文档中心 |
 | models/support/task_extend.py | project.task 扩展 | 任务 | 支撑 | boq_line_ids | 任务成本 |

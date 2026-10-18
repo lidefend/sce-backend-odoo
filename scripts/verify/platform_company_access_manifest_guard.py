@@ -206,6 +206,14 @@ FORBIDDEN_DIRECT_SYSTEM_ADMIN_CHECKS = {
 GENERAL_AUTHENTICATED_NAVIGATION_SURFACES = {
     "addons/smart_core/controllers/platform_menu_api.py",
 }
+# ADR-007 batch B split the canonical helper into two explicit predicates.
+# This guard cares that a surface consumes a named helper instead of
+# hardcoding an admin group, not which of the two responsibilities it holds.
+PLATFORM_ADMIN_HELPER_SYMBOLS = (
+    "user_is_platform_admin",
+    "user_is_platform_control_admin",
+    "user_is_tenant_config_admin",
+)
 
 
 def _manifest_data(module: str) -> list[str]:
@@ -510,7 +518,7 @@ for custom_security_policy_path in _custom_security_policy_paths(ROOT):
 release_approval_policy_text = (ROOT / RELEASE_APPROVAL_POLICY_SERVICE).read_text(encoding="utf-8")
 assert_true(
     "smart_core.security.platform_admin" in release_approval_policy_text
-    and "user_is_platform_admin" in release_approval_policy_text,
+    and "user_is_platform_control_admin" in release_approval_policy_text,
     f"{RELEASE_APPROVAL_POLICY_SERVICE}: release approval role policy must consume canonical platform admin helper",
 )
 assert_true(
@@ -538,8 +546,8 @@ for rel_path in sorted(FORBIDDEN_DIRECT_SYSTEM_ADMIN_CHECKS):
     if text is None:
         continue
     assert_true(
-        "user_is_platform_admin" in text,
-        f"{rel_path}: must consume smart_core.security.platform_admin helper",
+        any(symbol in text for symbol in PLATFORM_ADMIN_HELPER_SYMBOLS),
+        f"{rel_path}: must consume a named smart_core.security.platform_admin helper",
     )
     assert_true(
         'has_group("base.group_system")' not in text and "has_group('base.group_system')" not in text,

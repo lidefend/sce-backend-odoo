@@ -48,6 +48,7 @@ export function useWorkspaceHome() {
   const pageContract = usePageContract('home');
   const loading = ref(false);
   const error = ref('');
+  const unsupported = ref(false);
   const workWorkspace = ref<ProductMyWorkWorkspace | null>(null);
   let loadRequestSequence = 0;
 
@@ -87,16 +88,28 @@ export function useWorkspaceHome() {
       workWorkspace.value = null;
       return;
     }
+    const navMeta = ((session.initMeta as Record<string, unknown> | null)?.nav_meta ?? {}) as Record<string, unknown>;
+    if (navMeta.platform_minimum_surface === true) {
+      workWorkspace.value = null;
+      error.value = '';
+      unsupported.value = true;
+      return;
+    }
     const requestEpoch = currentContextEpoch();
     loading.value = true;
     error.value = '';
+    unsupported.value = false;
     workWorkspace.value = null;
     try {
       const result = await fetchMyWorkSummary(undefined, undefined, { page: 1, sortBy: 'priority', sortDir: 'desc' });
       if (isCurrentContextEpoch(requestEpoch) && requestSequence === loadRequestSequence) workWorkspace.value = result.product_workspace || null;
-    } catch {
+    } catch (err) {
       if (isCurrentContextEpoch(requestEpoch) && requestSequence === loadRequestSequence) {
-        error.value = pageContract.text('load_error', '当前页面暂时无法加载，请稍后重试。');
+        if (text((err as { reasonCode?: unknown } | null)?.reasonCode) === 'INTENT_NOT_FOUND') {
+          unsupported.value = true;
+        } else {
+          error.value = pageContract.text('load_error', '当前页面暂时无法加载，请稍后重试。');
+        }
       }
     } finally {
       if (isCurrentContextEpoch(requestEpoch) && requestSequence === loadRequestSequence) loading.value = false;
@@ -117,5 +130,5 @@ export function useWorkspaceHome() {
     { immediate: true },
   );
 
-  return { title, subtitle, tasks, summaries, quickLinks, recentItems, loading, error, load, navigate };
+  return { title, subtitle, tasks, summaries, quickLinks, recentItems, loading, error, unsupported, load, navigate };
 }

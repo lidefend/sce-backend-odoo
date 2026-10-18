@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 
 
 class RequestDiagnosticsCollector:
@@ -28,7 +28,7 @@ class RequestDiagnosticsCollector:
         if env_flag in {"dev", "test", "local"}:
             return True
         try:
-            return user_is_platform_admin(env.user)
+            return user_is_tenant_config_admin(env.user)
         except Exception:
             return False
 

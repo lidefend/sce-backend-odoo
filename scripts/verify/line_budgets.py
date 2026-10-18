@@ -45,12 +45,14 @@ BASELINES: dict[str, int] = {
     # --- smart_construction_core extension shell and its split modules ---
     "addons/smart_construction_core/core_extension.py": 1830,
     "addons/smart_construction_core/core_extension_actor_roles.py": 31,
+    "addons/smart_construction_core/core_extension_relation_entry_policy.py": 149,
     "addons/smart_construction_core/core_extension_contract_normalizers.py": 399,
     "addons/smart_construction_core/core_extension_intent_handlers.py": 248,
     "addons/smart_construction_core/core_extension_service_builders.py": 110,
     # --- smart_core contract governance shell and page-contract handler ---
     "addons/smart_core/utils/contract_governance.py": 1432,
     "addons/smart_core/handlers/ui_contract_v2.py": 4138,
+    "addons/smart_core/handlers/ui_contract_v2_form_structure.py": 468,
     # --- web application shells, page patterns and record runtimes ---
     "frontend/apps/web/src/views/ActionView.vue": 3665,
     "frontend/apps/web/src/layouts/AppShell.vue": 1597,

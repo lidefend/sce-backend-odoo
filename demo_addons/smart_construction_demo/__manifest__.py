@@ -1,6 +1,6 @@
 {
     "name": "Smart Construction Demo Data",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "summary": "Demo dataset for Smart Construction Core (projects, partners, light links)",
     "category": "Smart Construction",
     "depends": [

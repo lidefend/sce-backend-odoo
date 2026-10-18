@@ -61,6 +61,7 @@ const props = withDefaults(defineProps<{
   label?: string;
   closeLabel?: string;
 }>(), {
+  activatePage: undefined,
   label: '活动页面',
   closeLabel: '关闭',
 });

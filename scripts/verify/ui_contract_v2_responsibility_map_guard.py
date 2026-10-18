@@ -16,6 +16,7 @@ HANDLER = ROOT / "addons/smart_core/handlers/ui_contract_v2.py"
 ADAPTERS = ROOT / "addons/smart_core/handlers/ui_contract_v2_adapters.py"
 PROJECTION = ROOT / "addons/smart_core/handlers/ui_contract_v2_projection.py"
 AUTHORITY = ROOT / "addons/smart_core/handlers/ui_contract_v2_authority.py"
+FORM_STRUCTURE = ROOT / "addons/smart_core/handlers/ui_contract_v2_form_structure.py"
 CONSTANTS = ROOT / "addons/smart_core/handlers/ui_contract_v2_constants.py"
 CI = ROOT / "make/ci.mk"
 
@@ -55,6 +56,7 @@ def main() -> int:
     adapters = _read(ADAPTERS)
     projection = _read(PROJECTION)
     authority = _read(AUTHORITY)
+    form_structure = _read(FORM_STRUCTURE)
     constants = _read(CONSTANTS)
     ci = _read(CI)
 
@@ -70,12 +72,15 @@ def main() -> int:
         errors.append(f"missing authority helpers: {AUTHORITY.relative_to(ROOT)}")
     if not constants:
         errors.append(f"missing constants module: {CONSTANTS.relative_to(ROOT)}")
+    if not form_structure:
+        errors.append(f"missing form structure builder: {FORM_STRUCTURE.relative_to(ROOT)}")
 
     for token in [
         "UI Contract V2 Responsibility Map",
-        "Current size: 3,473 lines",
+        "Current size: 4,086 lines",
         "Stage 3 form layout governance helper split",
         "Stage 4 contract authority helper split",
+        "Stage 5 Form Structure Builder Split",
         "## Public Entry Points",
         "## Responsibility Bands",
         "## Current Side-Effect Boundaries",
@@ -96,6 +101,8 @@ def main() -> int:
         "`ui_contract_v2_projection.py` also owns pure policy/status projection",
         "`ui_contract_v2_projection.py` also owns pure form layout governance helpers",
         "`ui_contract_v2_authority.py` owns contract authority projections",
+        "`ui_contract_v2_form_structure.py` owns form structure contract assembly",
+        "`ui_contract_v2.py` is locked at `<=4086` lines",
         "Do not move these responsibilities before behavior coverage exists",
         "UiContractHandler",
         "PageAssembler",
@@ -154,6 +161,8 @@ def main() -> int:
             "return _projection.form_layout_columns_from_governance(governance, title)",
             "return _projection.form_layout_group_visible_from_governance(governance, title)",
             "_projection.apply_form_layout_governance_to_group(",
+            "from . import ui_contract_v2_form_structure as _form_structure",
+            "return _form_structure.build_form_structure_contract(",
         ]:
             if token not in handler:
                 errors.append(f"ui_contract_v2.py missing orchestration token: {token}")
@@ -243,6 +252,21 @@ def main() -> int:
         ]:
             if token not in constants:
                 errors.append(f"ui_contract_v2_constants.py missing token: {token}")
+
+    if form_structure:
+        for token in [
+            "def build_form_structure_contract(",
+            "form_structure_common_fields",
+            "form_structure_detail_fields",
+            "BUSINESS_FORM_STRUCTURE_HISTORY_LABEL_TOKENS",
+            "form_structure_presentation_mode",
+            "governed_form_structure",
+        ]:
+            if token not in form_structure:
+                errors.append(f"ui_contract_v2_form_structure.py missing token: {token}")
+        for forbidden in ["self.env", "call_extension_hook_first", ".search(", ".browse(", "PageAssembler", "registry["]:
+            if forbidden in form_structure:
+                errors.append(f"ui_contract_v2_form_structure.py must remain projection-only; found: {forbidden}")
 
     ci_token = "python3 scripts/verify/ui_contract_v2_responsibility_map_guard.py"
     if ci_token not in ci:

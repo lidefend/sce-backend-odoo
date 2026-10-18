@@ -116,13 +116,13 @@ class TaxDeductionRegistrationFormalConfigContractFields(models.Model):
 
 
 _PAYMENTREQUEST_FORMAL_CONFIG_FIELDS = {
-    'payment_request_payment_account_no_display': ('付款账号', ('payment_account_no_display',)),
-    'payment_request_bank_name_display': ('开户行', ('payee_bank_name_display',)),
-    'payment_request_cost_type_display': ('成本分类名称', ('cost_type_display',)),
-    'payment_request_account_holder_display': ('户名', ('payee_account_name_display',)),
-    'payment_request_has_related_document_display': ('是否关联单据', ('related_document_text',)),
-    'payment_request_account_no_display': ('账号', ('payee_account_no_display',)),
-    'payment_request_attachment_text_display': ('附件', ('attachment_ids',)),
+    'payment_request_payment_account_no_display': ('付款账号（展示）', ('payment_account_no_display',)),
+    'payment_request_bank_name_display': ('开户行（展示）', ('payee_bank_name_display',)),
+    'payment_request_cost_type_display': ('成本分类名称（展示）', ('cost_type_display',)),
+    'payment_request_account_holder_display': ('户名（展示）', ('payee_account_name_display',)),
+    'payment_request_has_related_document_display': ('是否关联单据（展示）', ('related_document_text',)),
+    'payment_request_account_no_display': ('账号（展示）', ('payee_account_no_display',)),
+    'payment_request_attachment_text_display': ('附件（展示）', ('attachment_ids',)),
 }
 
 class PaymentRequestFormalConfigContractFields(models.Model):
@@ -195,7 +195,7 @@ class EquipmentSettlementFormalConfigContractFields(models.Model):
 _EQUIPMENTUSAGE_FORMAL_CONFIG_FIELDS = {
     'equipment_usage_note_display': ('备注', ('note',)),
     'equipment_usage_former_name_list_display': ('曾用名单', ('note',)),
-    'equipment_usage_attachment_text_display': ('附件', ('attachment_ids',)),
+    'equipment_usage_attachment_text_display': ('附件（展示）', ('attachment_ids',)),
 }
 
 class EquipmentUsageFormalConfigContractFields(models.Model):
@@ -218,11 +218,11 @@ class EquipmentUsageFormalConfigContractFields(models.Model):
 _FINANCINGLOAN_FORMAL_CONFIG_FIELDS = {
     'financing_loan_borrow_rate_display': ('借款利率', ('rate_label',)),
     'financing_loan_interest_amount_display': ('利息', ('rate_label',)),
-    'financing_loan_note_display': ('备注', ('note',)),
+    'financing_loan_note_display': ('备注（展示）', ('note',)),
     'financing_loan_actual_annual_rate_display': ('实际年利率', ('rate_label',)),
     'financing_loan_loan_interest_display': ('贷款利息', ('rate_label',)),
     'financing_loan_repayment_time_display': ('还款时间', ('due_date',)),
-    'financing_loan_attachment_text_display': ('附件', ('attachment_ids',)),
+    'financing_loan_attachment_text_display': ('附件（展示）', ('attachment_ids',)),
 }
 
 class FinancingLoanFormalConfigContractFields(models.Model):
@@ -276,7 +276,7 @@ class FundOperationFormalConfigContractFields(models.Model):
     _inherit = 'sc.fund.account.operation'
 
     fund_operation_attachment_text_display = fields.Char(
-        string='附件',
+        string='附件（展示）',
         compute="_compute_formal_config_contract_fields",
         readonly=True,
     )
@@ -297,13 +297,13 @@ _INVOICEREGISTRATION_FORMAL_CONFIG_FIELDS = {
     'invoice_registration_document_no_display': ('单据编号', ('document_no',)),
     'invoice_registration_contract_no_display': ('合同编号', ('contract_id',)),
     'invoice_registration_tax_included_amount_display': ('含税金额', ('amount_total',)),
-    'invoice_registration_invoice_status_display': ('开票状态', ('invoice_state',)),
-    'invoice_registration_source_created_by_display': ('录入人', ('creator_name',)),
-    'invoice_registration_push_result_display': ('推送结果', ('push_result',)),
-    'invoice_registration_applicant_display': ('申请人', ('applicant_name',)),
-    'invoice_registration_application_date_display': ('申请日期', ('application_date',)),
+    'invoice_registration_invoice_status_display': ('开票状态（展示）', ('invoice_state',)),
+    'invoice_registration_source_created_by_display': ('录入人（展示）', ('creator_name',)),
+    'invoice_registration_push_result_display': ('推送结果（展示）', ('push_result',)),
+    'invoice_registration_applicant_display': ('申请人（展示）', ('applicant_name',)),
+    'invoice_registration_application_date_display': ('申请日期（展示）', ('application_date',)),
     'invoice_registration_accumulated_invoice_amount_display': ('累计开票金额', ('amount_total',)),
-    'invoice_registration_surcharge_amount_display': ('附加税', ('surcharge_amount',)),
+    'invoice_registration_surcharge_amount_display': ('附加税（展示）', ('surcharge_amount',)),
 }
 
 class InvoiceRegistrationFormalConfigContractFields(models.Model):
@@ -377,8 +377,8 @@ class LaborSettlementFormalConfigContractFields(models.Model):
         )
 
 _MATERIALINBOUND_FORMAL_CONFIG_FIELDS = {
-    'material_inbound_document_status_display': ('单据状态', ('state',)),
-    'material_inbound_attachment_text_display': ('附件', ('attachment_ids',)),
+    'material_inbound_document_status_display': ('单据状态（展示）', ('state',)),
+    'material_inbound_attachment_text_display': ('附件（展示）', ('attachment_ids',)),
 }
 
 class MaterialInboundFormalConfigContractFields(models.Model):
@@ -432,7 +432,7 @@ _RENTALORDER_FORMAL_CONFIG_FIELDS = {
     'rental_order_total_amount_display': ('总金额', ('amount_total',)),
     'rental_order_material_name_display': ('材料名称', ('rental_material_name',)),
     'rental_order_rental_content_display': ('租赁内容', ('note',)),
-    'rental_order_rental_deposit_display': ('租赁押金', ('rental_deposit_amount_text',)),
+    'rental_order_rental_deposit_display': ('租赁押金（展示）', ('rental_deposit_amount_text',)),
     'rental_order_specification_display': ('规格型号', ('rental_material_spec',)),
 }
 
@@ -504,16 +504,16 @@ class MaterialSettlementFormalConfigContractFields(models.Model):
         )
 
 _PAYMENTEXECUTION_FORMAL_CONFIG_FIELDS = {
-    'payment_execution_payment_account_name_display': ('付款账户名称', ('partner_payment_account_name_display',)),
+    'payment_execution_payment_account_name_display': ('付款账户名称（付款执行展示）', ('partner_payment_account_name_display',)),
     'payment_execution_payment_amount_display': ('付款金额', ('paid_amount',)),
     'payment_execution_supplier_name_display': ('供应商名称', ('partner_payment_payee_unit',)),
     'payment_execution_document_status_display': ('单据状态', ('partner_payment_status_display',)),
-    'payment_execution_document_no_display': ('单据编号', ('partner_payment_document_no',)),
+    'payment_execution_document_no_display': ('单据编号（付款执行展示）', ('partner_payment_document_no',)),
     'payment_execution_bank_name_display': ('开户行', ('receipt_bank_name',)),
-    'payment_execution_source_created_by_display': ('录入人', ('partner_payment_source_created_by',)),
+    'payment_execution_source_created_by_display': ('录入人（付款执行展示）', ('partner_payment_source_created_by',)),
     'payment_execution_payment_request_no_display': ('支付申请单号', ('payment_request_id',)),
     'payment_execution_account_display': ('账户', ('receipt_account_no',)),
-    'payment_execution_attachment_text_display': ('附件', ('partner_payment_attachment_text',)),
+    'payment_execution_attachment_text_display': ('附件（付款执行展示）', ('partner_payment_attachment_text',)),
 }
 
 class PaymentExecutionFormalConfigContractFields(models.Model):
@@ -537,9 +537,9 @@ _RECEIPTINCOME_FORMAL_CONFIG_FIELDS = {
     'receipt_income_document_status_display': ('单据状态', ('legacy_document_state_label',)),
     'receipt_income_document_no_display': ('单据编号', ('document_no',)),
     'receipt_income_contract_amount_display': ('合同金额', ('amount',)),
-    'receipt_income_partner_name_display': ('往来单位', ('legacy_partner_name',)),
-    'receipt_income_contractor_company_display': ('承包单位', ('legacy_company_name',)),
-    'receipt_income_construction_management_contract_display': ('施工管理合同', ('legacy_contract_no',)),
+    'receipt_income_partner_name_display': ('往来单位（展示）', ('legacy_partner_name',)),
+    'receipt_income_contractor_company_display': ('承包单位（展示）', ('legacy_company_name',)),
+    'receipt_income_construction_management_contract_display': ('施工管理合同（展示）', ('legacy_contract_no',)),
     'receipt_income_business_time_display': ('时间', ('date_receipt',)),
     'receipt_income_current_allocated_amount_display': ('本期拨付金额合计', ('amount',)),
     'receipt_income_current_receipt_amount_display': ('本期收款', ('amount',)),
@@ -550,7 +550,7 @@ class ReceiptIncomeFormalConfigContractFields(models.Model):
     _inherit = 'sc.receipt.income'
 
     receipt_income_attachment_text_display = fields.Char(
-        string='附件',
+        string='附件（展示）',
         compute="_compute_formal_config_contract_fields",
         readonly=True,
     )
@@ -583,7 +583,7 @@ _SUBCONTRACTREGISTER_FORMAL_CONFIG_FIELDS = {
     'subcontract_register_document_no_display': ('单据编号', ('name',)),
     'subcontract_register_contract_no_display': ('合同编号', ('contract_id',)),
     'subcontract_register_title_display': ('标题', ('name',)),
-    'subcontract_register_amount_display': ('金额', ('amount_total',)),
+    'subcontract_register_amount_display': ('金额（展示）', ('amount_total',)),
 }
 
 class SubcontractRegisterFormalConfigContractFields(models.Model):
@@ -632,7 +632,7 @@ class SubcontractSettlementFormalConfigContractFields(models.Model):
         )
 
 _TAXDEDUCTION_FORMAL_CONFIG_FIELDS = {
-    'tax_deduction_is_transfer_out_display': ('是否转出', ('is_transfer_out',)),
+    'tax_deduction_is_transfer_out_display': ('是否转出（展示）', ('is_transfer_out',)),
 }
 
 class TaxDeductionFormalConfigContractFields(models.Model):

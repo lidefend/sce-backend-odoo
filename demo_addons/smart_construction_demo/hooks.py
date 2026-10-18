@@ -4,6 +4,25 @@ import os
 
 ENVIRONMENT_ROLE = "platform_internal_demo"
 DEMO_TENANT_KEY = "sc-demo-main"
+DEMO_DATA_MODULE = "smart_construction_demo"
+DEMO_COMPANY_NAME = "Demo演示公司"
+# The showcase deliberately uses one simple password for every seeded demo
+# identity. Keeping it in the carrier, rather than only in the host secret,
+# makes a rebuild or reseed reproduce the published demo login.
+DEMO_USER_PASSWORD = "123456"
+# Principals authored by the seed chain rather than by module XML. They still
+# belong to the published demo surface, so every password hook and self-check
+# has to include them explicitly.
+DEMO_PRINCIPAL_LOGINS = (
+    "wutao",
+    "demo_full",
+    "demo_pm",
+    "demo_finance",
+    "demo_cost",
+    "demo_audit",
+    "demo_readonly",
+    "sc_test_admin",
+)
 
 
 def assert_demo_seed_principal(env):
@@ -66,17 +85,78 @@ def guard_demo_data_space(env):
         )
 
 
+def apply_demo_company_identity(env):
+    """Give the demo's main company its published identity, idempotently."""
+    company = env.ref("base.main_company")
+    if company.name != DEMO_COMPANY_NAME:
+        company.write({"name": DEMO_COMPANY_NAME})
+    partner = company.partner_id
+    if partner.name != DEMO_COMPANY_NAME:
+        partner.write({"name": DEMO_COMPANY_NAME})
+    return company
+
+
+def demo_user_records(env):
+    """Every user owned by the demo module or named as a demo principal.
+
+    ``demo_full`` and the role seats are authored by the seed chain instead of
+    XML, so selecting only ``ir.model.data`` rows would leave them on an older
+    password after a reseed or rebuild.
+    """
+    Users = env["res.users"].sudo().with_context(active_test=False)
+    rows = env["ir.model.data"].sudo().search(
+        [("module", "=", DEMO_DATA_MODULE), ("model", "=", "res.users")]
+    )
+    users = Users.browse([row.res_id for row in rows.exists()]).exists()
+    for login in DEMO_PRINCIPAL_LOGINS:
+        users |= Users.search([("login", "=", login)], limit=1)
+    return users.exists()
+
+
+DEMO_ADMIN_LOGIN = "admin"
+
+
+def demo_admin_record(env):
+    """The published demo admin login, or ``None`` when that login was renamed.
+
+    ``admin`` is ``base.user_admin``: the demo module owns no XML record for it,
+    so ``demo_user_records`` never selected it and a rebuild from
+    ``--without-demo=all`` kept whatever ``base`` created. It is still part of
+    the published demo surface, so the password hook and the seed self-check
+    name it through this one accessor instead of widening the module's XML
+    ownership.
+    """
+    admin = env.ref("base.user_admin", raise_if_not_found=False)
+    if not admin or admin.login != DEMO_ADMIN_LOGIN:
+        return None
+    return admin
+
+
+def apply_demo_admin_password(env):
+    """Give the published demo admin login the showcase password.
+
+    ``guard_demo_scope`` runs first and refuses every database that is not a
+    demo duty, so this write can never reach the platform duty's admin login.
+    A renamed ``base.user_admin`` is left alone rather than rewritten, so the
+    hook never turns an operator's login change into a published credential.
+    """
+    guard_demo_scope(env)
+    admin = demo_admin_record(env)
+    if admin is None:
+        return None
+    if admin.login != DEMO_ADMIN_LOGIN:
+        return None
+    admin.sudo().write({"password": DEMO_USER_PASSWORD})
+    return admin
+
+
 def apply_demo_user_passwords(env):
     guard_demo_scope(env)
     guard_demo_data_space(env)
-    password = os.environ["SC_DEMO_USER_PASSWORD"].strip()
-    rows = env["ir.model.data"].sudo().search(
-        [("module", "=", "smart_construction_demo"), ("model", "=", "res.users")]
-    )
-    user_ids = [row.res_id for row in rows.exists()]
-    users = env["res.users"].sudo().with_context(active_test=False).browse(user_ids).exists()
+    users = demo_user_records(env)
     if users:
-        users.write({"password": password})
+        users.write({"password": DEMO_USER_PASSWORD})
+    apply_demo_admin_password(env)
 
 
 def pre_init_hook(env):
@@ -85,4 +165,5 @@ def pre_init_hook(env):
 
 
 def post_init_hook(env):
+    apply_demo_company_identity(env)
     apply_demo_user_passwords(env)

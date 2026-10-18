@@ -410,14 +410,14 @@ class ProjectProject(models.Model):
         help='用于项目入口候选硬筛选，仅展示数据补齐完成的样板项目。',
     )
     sc_demo_showcase = fields.Boolean(
-        '项目样板池',
+        '项目样板池标记',
         related='sc_project_showcase',
         readonly=False,
         store=False,
         help='项目入口优先候选标记。',
     )
     sc_demo_showcase_ready = fields.Boolean(
-        '项目样板可展示',
+        '项目样板展示状态',
         related='sc_project_showcase_ready',
         readonly=False,
         store=False,

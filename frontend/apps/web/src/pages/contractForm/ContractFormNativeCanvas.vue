@@ -99,16 +99,19 @@
       <template #readonly="{ field }">
         <div class="form-readonly-value" :class="{ 'form-readonly-value--empty': isEmptyValue(field.value, field.type) }">
           <span v-if="isEmptyValue(field.value, field.type)">{{ resolveReadonlyEmptyText(field, '未填写') }}</span>
+          <!-- eslint-disable vue/no-v-html -- 值先经 sanitizeReadonlyHtml 净化 -->
           <div
             v-else-if="field.type === 'html'"
             class="form-readonly-html"
             v-html="sanitizeReadonlyHtml(field.value)"
           />
+          <!-- eslint-enable vue/no-v-html -->
           <FieldValue v-else :value="field.value" :field="field.descriptor" />
         </div>
       </template>
       <template #chatter>
-        <component :is="adoptedDetail ? ScCard : 'div'" v-if="showCollaborationPanel"
+        <component
+          :is="adoptedDetail ? ScCard : 'div'" v-if="showCollaborationPanel"
           :bordered="adoptedDetail ? false : undefined" :data-detail-card="adoptedDetail ? 'collaboration' : undefined">
         <NativeCollaborationPanel
           v-if="showCollaborationPanel"

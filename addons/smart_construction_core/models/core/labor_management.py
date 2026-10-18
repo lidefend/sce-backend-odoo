@@ -450,7 +450,13 @@ class ScLaborUsage(models.Model):
     _state_from = ["draft", "submitted"]
     _state_to = ["approved"]
     reject_reason = fields.Text(string="审批驳回原因", readonly=True, copy=False)
-    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True)
+    company_id = fields.Many2one(
+        "res.company",
+        string="所属公司",
+        related="project_id.company_id",
+        store=True,
+        readonly=True,
+    )
     _order = "usage_date desc, id desc"
     # U-C4 G09 可办理性修正：业务事实只在草稿窗口内可录入（原生 arch 的
     # `readonly="state != 'draft'"` 是交互面），离开草稿后必须由后端拒绝修改，
@@ -480,10 +486,12 @@ class ScLaborUsage(models.Model):
         tracking=True,
     )
     labor_team = fields.Char(string="班组", required=True, index=True)
-    contractor_id = fields.Many2one("res.partner", string="劳务单位", index=True)
+    contractor_id = fields.Many2one(
+        "res.partner", string="劳务单位", index=True, help="建议补充劳务单位"
+    )
     work_content = fields.Char(string="作业内容", required=True)
-    work_type = fields.Char(string="工种")
-    construction_part = fields.Char(string="施工部位")
+    work_type = fields.Char(string="工种", help="建议补充工种")
+    construction_part = fields.Char(string="施工部位", help="建议补充施工部位")
     worker_qty = fields.Float(string="用工人数", required=True, default=1)
     work_hours = fields.Float(string="工时")
     currency_id = fields.Many2one(
@@ -492,7 +500,9 @@ class ScLaborUsage(models.Model):
         required=True,
         default=lambda self: self.env.company.currency_id.id,
     )
-    price_unit = fields.Monetary(string="用工单价", currency_field="currency_id")
+    price_unit = fields.Monetary(
+        string="用工单价", currency_field="currency_id", help="建议补充用工单价"
+    )
     amount_total = fields.Monetary(
         string="用工金额",
         currency_field="currency_id",
@@ -507,7 +517,7 @@ class ScLaborUsage(models.Model):
         required=True,
         index=True,
     )
-    foreman_name = fields.Char(string="带班人")
+    foreman_name = fields.Char(string="带班人", help="建议补充带班人")
     recorder_id = fields.Many2one("res.users", string="记录人", default=lambda self: self.env.user, index=True)
     state = fields.Selection(
         [("draft", "草稿"), ("submitted", "审批中"), ("approved", "已审批待确认"), ("confirmed", "已确认"), ("cancel", "已取消")],
@@ -522,6 +532,7 @@ class ScLaborUsage(models.Model):
         "usage_id",
         "attachment_id",
         string="附件",
+        help="建议上传用工依据",
     )
     note = fields.Text(string="用工说明")
     legacy_fact_model = fields.Char(string="来源通用模型", index=True)

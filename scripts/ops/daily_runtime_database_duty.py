@@ -58,6 +58,10 @@ REMOTE_TMP = "/tmp/sc-daily-database-duty.py"
 MARKER = "DAILY_RUNTIME_DATABASE_DUTY="
 DEFAULT_DECLARATION = "config/ops/daily_runtime_database_duties.v1.json"
 SCHEMA = "daily.runtime.database_duties.v1"
+DEFAULT_ENTRY_DECLARATION = "config/ops/daily_runtime_entry.v1.json"
+ENTRY_SCHEMA = "daily.runtime.entry.v1"
+ENTRY_UPSTREAM = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*:[0-9]{1,5}$")
+ENTRY_BIND_HOST = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 CONFIRMATION = "PROVISION_DAILY_RUNTIME_DATABASE_DUTY"
 CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY"
 #: A mutate has to say *which* mutation it intends. Creating a duty and
@@ -279,6 +283,248 @@ def managed_instances_readback(document):
 def declaration_digest(declaration):
     payload = json.dumps(declaration, ensure_ascii=False, sort_keys=True).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
+
+
+def load_entry_declaration(path):
+    """Read the single-public-entry declaration exactly once."""
+    entry_path = Path(path)
+    if not entry_path.is_file():
+        raise DutyError("DAILY_ENTRY_DECLARATION_MISSING:%s" % (entry_path,))
+    try:
+        entry = json.loads(entry_path.read_text(encoding="utf-8"))
+    except ValueError as error:
+        raise DutyError("DAILY_ENTRY_DECLARATION_INVALID_JSON:%s" % (error,)) from error
+    if entry.get("schema") != ENTRY_SCHEMA:
+        raise DutyError("DAILY_ENTRY_DECLARATION_SCHEMA_UNEXPECTED:%s" % (entry.get("schema"),))
+    return entry
+
+
+def entry_digest(entry):
+    payload = json.dumps(entry, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def validate_entry(entry, declaration):
+    """Every reason the entry declaration cannot be the one public face.
+
+    The duty declaration owns the databases, clusters, networks and ports.  The
+    entry declaration owns *which of those faces is public* and *which upstream
+    answers a database hint*.  The two documents are separate because one entry
+    spans two duties, but they may never disagree: a public port that the
+    serving duty does not publish, or an upstream that names a container the
+    platform duty does not run, is the fork this declaration exists to prevent.
+    """
+    failures = []
+    duties = {str(duty.get("duty") or ""): duty for duty in declaration.get("duties") or []}
+    if str(entry.get("host") or "") != str(declaration.get("host") or ""):
+        failures.append("entry.host must equal the duty declaration host")
+
+    public = entry.get("public_entry") or {}
+    serving_name = str(public.get("serving_duty") or "")
+    serving = duties.get(serving_name)
+    if not ENTRY_BIND_HOST.fullmatch(str(public.get("bind_host") or "")):
+        failures.append("entry.public_entry.bind_host must be an IPv4 bind address")
+    if not isinstance(public.get("port"), int) or not 1 <= int(public.get("port") or 0) <= 65535:
+        failures.append("entry.public_entry.port must be a TCP port")
+    if serving is None:
+        failures.append("entry.public_entry.serving_duty %s is not a declared duty" % (serving_name or "<unset>",))
+    else:
+        routing = serving.get("routing") or {}
+        port = public.get("port")
+        if not isinstance(port, int) or port != routing.get("nginx_host_port"):
+            failures.append("entry.public_entry.port must equal the serving duty's nginx_host_port")
+        if str(public.get("bind_host") or "") != str(routing.get("nginx_bind_host") or ""):
+            failures.append("entry.public_entry.bind_host must equal the serving duty's nginx_bind_host")
+        if str(public.get("bind_host") or "") != "0.0.0.0":
+            failures.append("the single public entry must bind 0.0.0.0")
+
+    network = entry.get("network") or {}
+    name = str(network.get("name") or "")
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", name):
+        failures.append("entry.network.name must be a Docker network name")
+    if str(network.get("driver") or "") != "bridge":
+        failures.append("entry.network.driver must be bridge")
+
+    routes = entry.get("routes")
+    if not isinstance(routes, list) or not routes:
+        failures.append("entry.routes must be a non-empty list")
+        routes = []
+    seen_databases = set()
+    defaults = []
+    route_by_database = {}
+    for route in routes:
+        database = str(route.get("database") or "")
+        duty_name = str(route.get("duty") or "")
+        upstream = str(route.get("upstream") or "")
+        duty = duties.get(duty_name)
+        if duty is None:
+            failures.append("entry route %s names undeclared duty %s" % (database or "<unset>", duty_name or "<unset>"))
+            continue
+        if database != str(duty.get("database") or ""):
+            failures.append("entry route %s contradicts duty %s database" % (database or "<unset>", duty_name))
+        if database in seen_databases:
+            failures.append("entry route database %s is duplicated" % (database,))
+        seen_databases.add(database)
+        route_by_database[database] = route
+        if route.get("default") is True:
+            defaults.append(duty_name)
+        if not ENTRY_UPSTREAM.fullmatch(upstream):
+            failures.append("entry route %s upstream is not host:port" % (database or "<unset>",))
+    if len(defaults) != 1:
+        failures.append("entry.routes must declare exactly one default route")
+    elif defaults[0] != serving_name:
+        failures.append("entry.routes default must be the serving duty")
+    # The entry unifies the platform control face and the serving duty.  A
+    # customer tenant duty is a separate public face of its own (the user module
+    # is paused and keeps its declared ports), so this entry does not have to
+    # name it -- but every route it *does* name must belong to a declared duty.
+    serving_database = str((serving or {}).get("database") or "")
+    if serving_database and serving_database not in seen_databases:
+        failures.append("entry.routes must name the serving duty database")
+
+    platform_database = str(declaration.get("platform_admin_database") or "")
+    platform_route = route_by_database.get(platform_database)
+    if platform_route is None:
+        failures.append("entry.routes must carry the platform-admin database %s" % (platform_database,))
+    else:
+        platform_duty = duties.get(str(platform_route.get("duty") or ""))
+        if platform_duty is not None:
+            expected = "%s-nginx-1:80" % (platform_duty["cluster"]["compose_project"],)
+            if str(platform_route.get("upstream") or "") != expected:
+                failures.append(
+                    "entry platform route upstream must be %s (the platform duty's own nginx)"
+                    % (expected,)
+                )
+    serving_route = route_by_database.get(str((serving or {}).get("database") or ""))
+    if serving_route is not None and str(serving_route.get("upstream") or "") != "odoo:8069":
+        failures.append("the serving duty route must point at its own odoo:8069")
+
+    exposure = entry.get("exposure")
+    if not isinstance(exposure, list) or not exposure:
+        failures.append("entry.exposure must be a non-empty list")
+        exposure = []
+    public_faces = [row for row in exposure if row.get("public") is True]
+    if len(public_faces) != 1:
+        failures.append("entry.exposure must declare exactly one public face")
+    for row in exposure:
+        duty_name = str(row.get("duty") or "")
+        duty = duties.get(duty_name)
+        if duty is None:
+            failures.append("entry exposure names undeclared duty %s" % (duty_name or "<unset>",))
+            continue
+        service = str(row.get("service") or "")
+        if service not in ("nginx", "odoo"):
+            failures.append("entry exposure %s names unknown service %s" % (duty_name, service or "<unset>"))
+            continue
+        routing = duty.get("routing") or {}
+        expected_port = routing.get("nginx_host_port") if service == "nginx" else routing.get("odoo_loopback_port")
+        expected_bind = routing.get("nginx_bind_host") if service == "nginx" else routing.get("odoo_bind_host")
+        if not ENTRY_BIND_HOST.fullmatch(str(row.get("bind_host") or "")):
+            failures.append("entry exposure %s/%s bind host must be an IPv4 bind address" % (duty_name, service))
+        if not isinstance(row.get("host_port"), int) or not 1 <= int(row.get("host_port") or 0) <= 65535:
+            failures.append("entry exposure %s/%s port must be a TCP port" % (duty_name, service))
+        if row.get("host_port") != expected_port:
+            failures.append("entry exposure %s/%s port contradicts the duty declaration" % (duty_name, service))
+        if str(row.get("bind_host") or "") != str(expected_bind or ""):
+            failures.append("entry exposure %s/%s bind host contradicts the duty declaration" % (duty_name, service))
+        if row.get("public") is True:
+            if duty_name != serving_name or service != "nginx":
+                failures.append("only the serving duty's nginx face may be public")
+        elif str(row.get("bind_host") or "") != "127.0.0.1":
+            failures.append("every non-public face must bind the loopback interface")
+
+    namespace_routes = entry.get("namespace_routes")
+    if not isinstance(namespace_routes, dict):
+        failures.append("entry.namespace_routes must declare the path namespace contract")
+        namespace_routes = {}
+    if str(namespace_routes.get("kind") or "") != "path":
+        failures.append("entry.namespace_routes.kind must be path")
+    if str(namespace_routes.get("platform_prefix") or "") != "/platform-admin":
+        failures.append("entry.namespace_routes.platform_prefix must be /platform-admin")
+    if str(namespace_routes.get("tenant_prefix") or "") != "/t":
+        failures.append("entry.namespace_routes.tenant_prefix must be /t")
+    declared_namespaces = namespace_routes.get("namespaces")
+    if not isinstance(declared_namespaces, list) or not declared_namespaces:
+        failures.append("entry.namespace_routes.namespaces must be a non-empty list")
+        declared_namespaces = []
+    by_database = {
+        str(row.get("database") or ""): row
+        for row in declared_namespaces
+        if isinstance(row, dict)
+    }
+    if set(by_database) != seen_databases:
+        failures.append("entry.namespace_routes.namespaces must cover exactly the declared routes")
+    seen_aliases = set()
+    for database, row in by_database.items():
+        route = route_by_database.get(database) or {}
+        if str(row.get("duty") or "") != str(route.get("duty") or ""):
+            failures.append("entry.namespace_routes namespace %s duty contradicts the route" % (database,))
+        if not re.fullmatch(r"ns_[0-9a-f]{12}", str(row.get("namespace_id") or "")):
+            failures.append(
+                "entry.namespace_routes namespace %s namespace_id must be ns_<12 lowercase hex>" % (database,)
+            )
+        alias = str(row.get("alias") or "")
+        if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,62}", alias):
+            failures.append("entry.namespace_routes namespace %s alias is invalid" % (database,))
+        if alias in seen_aliases:
+            failures.append("entry.namespace_routes alias %s is duplicated" % (alias,))
+        seen_aliases.add(alias)
+    platform_namespaces = [
+        row for row in by_database.values() if str(row.get("duty") or "") == "platform_control"
+    ]
+    if platform_database and len(platform_namespaces) != 1:
+        failures.append(
+            "entry.namespace_routes must declare exactly one platform administration namespace"
+        )
+    elif platform_database and str(platform_namespaces[0].get("database") or "") != platform_database:
+        failures.append(
+            "entry.namespace_routes platform namespace must bind the platform administration database"
+        )
+
+    hint = namespace_routes.get("client_database_hint")
+    if not isinstance(hint, dict):
+        failures.append("entry.namespace_routes.client_database_hint must declare the refusal contract")
+        hint = {}
+    if hint.get("headers") != ["X-Odoo-DB", "X-DB", "X-Odoo-DB-Locked"]:
+        failures.append("entry.namespace_routes.client_database_hint.headers must name every client hint")
+    if str(hint.get("query") or "") != "db":
+        failures.append("entry.namespace_routes.client_database_hint.query must be db")
+    if str(hint.get("action") or "") != "reject":
+        failures.append("entry.namespace_routes.client_database_hint.action must be reject")
+    if hint.get("status") != 409:
+        failures.append("entry.namespace_routes.client_database_hint.status must be 409")
+    if str(hint.get("code") or "") != "NS_DATABASE_HINT_CONFLICT":
+        failures.append(
+            "entry.namespace_routes.client_database_hint.code must be NS_DATABASE_HINT_CONFLICT"
+        )
+    unknown = namespace_routes.get("unknown_namespace")
+    if not isinstance(unknown, dict):
+        failures.append("entry.namespace_routes.unknown_namespace must declare the refusal contract")
+        unknown = {}
+    if unknown.get("status") != 404:
+        failures.append("entry.namespace_routes.unknown_namespace.status must be 404")
+    if str(unknown.get("code") or "") != "NS_UNKNOWN_NAMESPACE":
+        failures.append("entry.namespace_routes.unknown_namespace.code must be NS_UNKNOWN_NAMESPACE")
+    if str(unknown.get("content_type") or "") != "application/json":
+        failures.append("entry.namespace_routes.unknown_namespace.content_type must be application/json")
+    missing = namespace_routes.get("missing_namespace")
+    if not isinstance(missing, dict):
+        failures.append("entry.namespace_routes.missing_namespace must declare the refusal contract")
+        missing = {}
+    if missing.get("status") != 400:
+        failures.append("entry.namespace_routes.missing_namespace.status must be 400")
+    if str(missing.get("code") or "") != "NS_NAMESPACE_REQUIRED":
+        failures.append("entry.namespace_routes.missing_namespace.code must be NS_NAMESPACE_REQUIRED")
+
+    assertions = entry.get("assertions") or {}
+    for key in ("one_public_entry", "no_second_public_route",
+                "namespace_is_the_only_database_selector",
+                "client_database_hints_are_refused",
+                "unknown_namespace_is_rejected",
+                "never_route_to_an_undeclared_database"):
+        if assertions.get(key) is not True:
+            failures.append("entry.assertions.%s must be true" % (key,))
+    return failures
 
 
 def declared_duties(declaration, wanted):
@@ -1295,6 +1541,28 @@ def duty_credentials(duty):
     return values, path, created
 
 
+def entry_shared_secret():
+    """One entry, one secret: every face of the entry reads the same value.
+
+    The value is deployment credential material: it is minted into the ops root
+    with mode 0600, never committed and never printed in evidence.  A duty whose
+    env file disagreed with the others would make Odoo refuse every stamped
+    request, so the value lives once for the whole entry rather than per duty.
+    """
+
+    ensure_ops_root()
+    path = os.path.join(OPS_ROOT, "entry-shared-secret")
+    try:
+        value = read_text(path).strip()
+    except OSError:
+        value = ""
+    if value:
+        return value
+    value = secrets.token_hex(32)
+    write_file(path, value + "\n", 0o600)
+    return value
+
+
 def render_env(duty, credentials):
     is_demo = duty.get("data_purpose") == DEMO_PURPOSE
     served = frontend_build_facts(duty)
@@ -1307,6 +1575,25 @@ def render_env(duty, credentials):
             duty["duty"],
             served["fingerprint_error"] or "the served frontend fingerprint is absent",
         ))
+    entry = PAYLOAD.get("entry") or {}
+    serving = str((entry.get("public_entry") or {}).get("serving_duty") or "")
+    platform_upstream = "odoo:8069"
+    platform_duty = ""
+    for route in entry.get("routes") or []:
+        if route.get("database") == PAYLOAD["platform_admin_database"]:
+            platform_duty = str(route.get("duty") or "")
+            if serving == duty.get("duty"):
+                platform_upstream = str(route.get("upstream") or "odoo:8069")
+            break
+    entry_network = str((entry.get("network") or {}).get("name") or "sc-daily-entry")
+    # Batch C: the entry is the only selector, so no database name is rendered
+    # into the proxy.  The platform namespace is a declared two-layer hop: the
+    # serving entry face forwards the prefix unchanged (0) and the platform duty
+    # face strips it for its own Odoo (1).
+    platform_strip = "1" if duty.get("duty") and duty.get("duty") == platform_duty else "0"
+    route_version = "entry-" + hashlib.sha256(
+        json.dumps(entry, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()[:16]
     values = {
         "DUTY_NAME": duty["duty"],
         "COMPOSE_PROJECT_NAME": duty["cluster"]["compose_project"],
@@ -1332,7 +1619,15 @@ def render_env(duty, credentials):
         "ODOO_DATA": duty["storage"]["odoo_data_volume"],
         "ODOO_IMAGE": duty["stack"]["odoo_image"],
         "ODOO_PORT": str(duty["routing"]["odoo_loopback_port"]),
+        "ODOO_BIND_HOST": str(duty["routing"].get("odoo_bind_host") or "0.0.0.0"),
         "NGINX_PORT": str(duty["routing"]["nginx_host_port"]),
+        "NGINX_BIND_HOST": str(duty["routing"].get("nginx_bind_host") or "0.0.0.0"),
+        "SC_PROXY_DEFAULT_UPSTREAM": "odoo:8069",
+        "SC_PROXY_PLATFORM_UPSTREAM": platform_upstream,
+        "SC_ENTRY_SHARED_SECRET": entry_shared_secret(),
+        "SC_ENTRY_ROUTE_VERSION": route_version,
+        "SC_ENTRY_PLATFORM_STRIP": platform_strip,
+        "SC_DAILY_ENTRY_NETWORK": entry_network,
         "FRONTEND_DIST_DIR": duty["stack"]["frontend_dist_dir"],
         "DEMO_ADDONS_ROOT": duty["stack"]["demo_addons_root"],
         "CUSTOMER_ADDONS_ROOT": duty["stack"]["customer_addons_root"],
@@ -1354,6 +1649,32 @@ def write_file(path, text, mode=0o600):
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
     with os.fdopen(descriptor, "w") as stream:
         stream.write(text)
+
+
+def ensure_entry_network():
+    """Create the declared cross-duty network once, before any stack uses it."""
+    entry = PAYLOAD.get("entry") or {}
+    network = entry.get("network") or {}
+    name = str(network.get("name") or "")
+    if not name:
+        return {"skipped": "the entry declaration names no network"}
+    inspected = run(["docker", "network", "inspect", name])
+    if inspected.returncode == 0:
+        return {"name": name, "present": True, "created": False}
+    created = run([
+        "docker", "network", "create",
+        "--driver", str(network.get("driver") or "bridge"),
+        name,
+    ])
+    if created.returncode:
+        raise RuntimeError(
+            "ENTRY_NETWORK_CREATE_FAILED:%s"
+            % ((created.stderr or created.stdout or "").strip()[:600],)
+        )
+    readback = run(["docker", "network", "inspect", name])
+    if readback.returncode:
+        raise RuntimeError("ENTRY_NETWORK_READBACK_FAILED:%s" % (name,))
+    return {"name": name, "present": True, "created": True}
 
 
 def materialise_stack_files(duty):
@@ -1380,6 +1701,7 @@ def materialise_stack_files(duty):
     return {
         "compose_path": compose_path,
         "compose_sha256": digest,
+        "entry_network": ensure_entry_network(),
         "superseded_stacks_removed": superseded,
         "env_path": env_path,
         "env_sha256": hashlib.sha256(read_text(env_path).encode("utf-8")).hexdigest(),
@@ -2849,11 +3171,13 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ssh-host", required=True)
     parser.add_argument("--declaration", default=DEFAULT_DECLARATION)
+    parser.add_argument("--entry", default=DEFAULT_ENTRY_DECLARATION)
     parser.add_argument("--duty", action="append", default=[], help="repeatable; default all")
     parser.add_argument("--expected-sha", default="")
     parser.add_argument("--phase", choices=PHASES, default="plan")
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--expect-declaration-digest", default="")
+    parser.add_argument("--expect-entry-digest", default="")
     parser.add_argument("--report", required=True)
     options = parser.parse_args(argv)
 
@@ -2863,6 +3187,11 @@ def main(argv=None):
         if options.expected_sha and not FULL_SHA.fullmatch(options.expected_sha):
             raise DutyError("expected SHA must be a full lowercase commit identity")
         declaration, document = load_managed_declaration(options.declaration, options.ssh_host)
+        entry = load_entry_declaration(options.entry)
+        entry_failures = validate_entry(entry, declaration)
+        if entry_failures:
+            raise DutyError("DAILY_ENTRY_DECLARATION_INVALID:%s" % ("; ".join(entry_failures),))
+        reviewed_entry_digest = entry_digest(entry)
         managed = managed_instances_readback(document)
         selected = declared_duties(declaration, options.duty)
         if options.apply:
@@ -2876,6 +3205,10 @@ def main(argv=None):
                 raise DutyError("DAILY_DUTY_REVIEWED_DECLARATION_DIGEST_REQUIRED")
             if options.expect_declaration_digest != declaration_digest(declaration):
                 raise DutyError("DAILY_DUTY_DECLARATION_DIGEST_MISMATCH")
+            if not options.expect_entry_digest:
+                raise DutyError("DAILY_ENTRY_REVIEWED_DECLARATION_DIGEST_REQUIRED")
+            if options.expect_entry_digest != reviewed_entry_digest:
+                raise DutyError("DAILY_ENTRY_DECLARATION_DIGEST_MISMATCH")
         product_roots = sorted({duty["stack"]["product_root"] for duty in selected})
         compose_files = sorted({duty["stack"]["compose_file"] for duty in selected})
         env_templates = sorted({duty["stack"]["env_template"] for duty in selected})
@@ -2911,6 +3244,8 @@ def main(argv=None):
             "ops_root": declaration["ops_root"],
             "platform_admin_database": declaration["platform_admin_database"],
             "frontend_build_env_file": declaration["frontend_build_env_file"],
+            "entry": entry,
+            "entry_sha256": reviewed_entry_digest,
             "source_revision": remote_head,
             "compose_sha256": hashlib.sha256(compose_text.encode("utf-8")).hexdigest(),
             "stack": {"compose_text": compose_text},
@@ -2966,6 +3301,8 @@ def main(argv=None):
         },
         "platform_admin_database": payload["platform_admin_database"],
         "frontend_build_env_file": payload["frontend_build_env_file"],
+        "entry": options.entry,
+        "entry_digest": reviewed_entry_digest,
         "frontend_build": result.get("frontend_build") or {},
         "managed_instances": dict(managed, observed=materialised),
         "deployment_binding": binding,
@@ -3002,6 +3339,7 @@ def main(argv=None):
         "plan_digest": summary["plan_sha256"],
         "compose_sha256": payload["compose_sha256"],
         "platform_admin_database": payload["platform_admin_database"],
+        "entry_digest": reviewed_entry_digest,
         "deployment_binding": binding,
         "report": str(report_path),
         "duties": [

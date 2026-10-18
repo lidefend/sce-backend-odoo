@@ -54,6 +54,7 @@ def main() -> int:
         "NotFoundView.vue",
         "PlaceholderView.vue",
         "PasswordRecoveryView.vue",
+        "PlatformDutyView.vue",
         "ReleaseOperatorView.vue",
         "SceneContractBlockGridView.vue",
         "SceneHealthView.vue",
@@ -131,6 +132,7 @@ def main() -> int:
         "NotFoundView.vue",
         "ActionViewShell.vue",
         "MyWorkView.vue",
+        "PlatformDutyView.vue",
     }
 
     # A view may keep its extracted parts in a companion module directory of the
@@ -170,6 +172,11 @@ def main() -> int:
             _check_forbidden(text, ["listRecords("], rel, errors)
 
     per_view_required = {
+        "PlatformDutyView.vue": [
+            "import PlatformDutyPanel from '../components/platform-duty/PlatformDutyPanel.vue';",
+            "<PlatformDutyPanel />",
+            'data-semantic-component="PlatformDutyView"',
+        ],
         "ApiKeyManagementView.vue": [
             "data-evidence-sensitive=\"api_key\"",
             "data-secret-display=\"once\"",

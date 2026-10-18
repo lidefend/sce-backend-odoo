@@ -30,6 +30,7 @@ CONFIRM = {"CONFIRM_DAILY_RUNTIME_FRONTEND_BUILD": build_module.CONFIRMATION}
 def evidence(**overrides: object) -> bytes:
     payload: dict[str, object] = {
         "status": "PASS",
+        "entry_prefix": "/t/demo",
         "expected_sha": SHA,
         "head": SHA,
         "reused": False,
@@ -40,6 +41,7 @@ def evidence(**overrides: object) -> bytes:
         "env_written": True,
         "backup_path": "/opt/projects/repos/sce-product-odoo/.env.dev.bak",
         "restarted": True,
+        "runtime_refresh_required": True,
         "rolled_back": False,
         "served": {
             "git_sha": SHA,
@@ -50,8 +52,9 @@ def evidence(**overrides: object) -> bytes:
         },
         "served_entry_asset": ENTRY_ASSET,
         "platform_admin_database": ADMIN_DB,
-        "platform_admin_baked": True,
-        "platform_admin_written": False,
+        "entry_prefix": "/t/demo",
+        "physical_db_sweep": "NO_PHYSICAL_DB_NAME",
+        "physical_db_bakes": [],
         "dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
         "remote_root": build_module.REMOTE_ROOT,
         "build_tail": "",
@@ -65,6 +68,7 @@ def evidence(**overrides: object) -> bytes:
 def write_receipt(directory: str, **overrides: object) -> str:
     payload: dict[str, object] = {
         "status": "PASS",
+        "entry_prefix": "/t/demo",
         "expected_sha": SHA,
         "head": SHA,
         "remote_root": build_module.REMOTE_ROOT,
@@ -88,6 +92,7 @@ def call_align(**overrides: object):
         "fingerprint_hint": "",
         "entry_hint": "",
         "platform_admin_database": ADMIN_DB,
+        "entry_prefix": "/t/demo",
     }
     args.update(overrides)
     return build_module.align(**args)  # type: ignore[arg-type]
@@ -97,25 +102,25 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
     def test_preflight_requires_confirmation(self) -> None:
         with mock.patch.dict(os.environ, {}, clear=True):
             with self.assertRaisesRegex(build_module.BuildError, "confirmation"):
-                build_module.preflight(SHA, "sc-root", ADMIN_DB)
+                build_module.preflight(SHA, "sc-root", ADMIN_DB, "/t/demo")
 
     def test_preflight_rejects_non_commit_revision(self) -> None:
         with mock.patch.dict(os.environ, CONFIRM):
             with self.assertRaisesRegex(build_module.BuildError, "commit SHA"):
-                build_module.preflight("HEAD", "sc-root", ADMIN_DB)
+                build_module.preflight("HEAD", "sc-root", ADMIN_DB, "/t/demo")
             with self.assertRaisesRegex(build_module.BuildError, "host alias"):
-                build_module.preflight(SHA, "sc-root; rm -rf /", ADMIN_DB)
+                build_module.preflight(SHA, "sc-root; rm -rf /", ADMIN_DB, "/t/demo")
 
     def test_preflight_accepts_governed_inputs(self) -> None:
         with mock.patch.dict(os.environ, CONFIRM):
-            build_module.preflight(SHA, "sc-root", ADMIN_DB)
+            build_module.preflight(SHA, "sc-root", ADMIN_DB, "/t/demo")
 
     def test_preflight_requires_the_declared_platform_admin_database(self) -> None:
         with mock.patch.dict(os.environ, CONFIRM):
             for bad in ("", "sc platform", "-control", "SC_Platform_Control"):
                 with self.assertRaisesRegex(build_module.BuildError, "platform-admin database"):
-                    build_module.preflight(SHA, "sc-root", bad)
-            build_module.preflight(SHA, "sc-root", ADMIN_DB)
+                    build_module.preflight(SHA, "sc-root", bad, "/t/demo")
+            build_module.preflight(SHA, "sc-root", ADMIN_DB, "/t/demo")
 
     def test_the_entry_ships_no_bare_database_default(self) -> None:
         """The served database is a governance fact, not an entry default.
@@ -141,7 +146,7 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
     def test_remote_command_binds_exact_revision_and_reuse_hint(self) -> None:
         command = build_module.remote_command(
             SHA, "dev", ".env.dev", "sc_demo", "http://127.0.0.1:18081", FINGERPRINT,
-            ENTRY_ASSET, ADMIN_DB,
+            ENTRY_ASSET, ADMIN_DB, "/t/demo",
         )
         self.assertEqual(
             shlex.split(command),
@@ -158,6 +163,7 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
                 FINGERPRINT,
                 ENTRY_ASSET,
                 ADMIN_DB,
+                "/t/demo",
             ],
         )
 
@@ -166,7 +172,6 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
             "verify.frontend.build",
             "frontend_build_fingerprint.sh",
             "FRONTEND_BUILD_SHA256",
-            "VITE_PLATFORM_ADMIN_DB",
             "make",
             "restart",
             "/api/runtime-version",
@@ -211,7 +216,7 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
             result = call_align(fingerprint_hint=FINGERPRINT, entry_hint=ENTRY_ASSET)
         self.assertTrue(result["reused"])
 
-    def test_align_rejects_stale_served_frontend(self) -> None:
+    def test_align_accepts_stale_runtime_identity_until_duty_refresh(self) -> None:
         stale = evidence(
             served={
                 "git_sha": SHA,
@@ -224,19 +229,13 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
         with mock.patch.dict(os.environ, CONFIRM), mock.patch.object(
             build_module, "run", return_value=completed
         ):
-            with self.assertRaisesRegex(build_module.BuildError, "evidence differs"):
-                call_align()
+            result = call_align()
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(result["served"]["frontend_build_sha256"], OLD_FINGERPRINT)
 
-    def test_align_rejects_undeclared_frontend_identity(self) -> None:
-        undeclared = evidence(
-            served={
-                "git_sha": SHA,
-                "database": "sc_demo",
-                "environment": "dev",
-                "frontend_build_sha256": "",
-            }
-        )
-        completed = mock.Mock(returncode=0, stdout=undeclared, stderr=b"")
+    def test_align_rejects_a_non_boolean_runtime_refresh_marker(self) -> None:
+        malformed = evidence(runtime_refresh_required="yes")
+        completed = mock.Mock(returncode=0, stdout=malformed, stderr=b"")
         with mock.patch.dict(os.environ, CONFIRM), mock.patch.object(
             build_module, "run", return_value=completed
         ):
@@ -261,14 +260,16 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
             with self.assertRaisesRegex(build_module.BuildError, "evidence differs"):
                 call_align()
 
-    def test_align_rejects_a_bundle_that_does_not_bake_the_declared_authority(self) -> None:
-        """The env line says what the next build should bake; the artifact says what is served.
+    def test_align_rejects_a_bundle_that_carries_a_physical_database_name(self) -> None:
+        """The entry namespace is the only routing input after Batch C.
 
-        A bundle built before the switch still mounts the previous database, so
-        an entry that only read the env file would report a switched authority
-        while the browser kept loading the old one.
+        A bundle that still carries a physical database name has reinstated a
+        second selector beside the path namespace, so the build must fail
+        instead of publishing two competing authorities.
         """
-        unswitched = evidence(platform_admin_baked=False)
+        unswitched = evidence(
+            physical_db_sweep="FOUND", physical_db_bakes=["sc_demo"]
+        )
         completed = mock.Mock(returncode=0, stdout=unswitched, stderr=b"")
         with mock.patch.dict(os.environ, CONFIRM), mock.patch.object(
             build_module, "run", return_value=completed
@@ -285,16 +286,14 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
             with self.assertRaisesRegex(build_module.BuildError, "evidence differs"):
                 call_align()
 
-    def test_the_build_input_is_declared_before_the_build_and_the_outcome_after(self) -> None:
+    def test_the_build_identity_is_declared_after_the_artifact_exists(self) -> None:
         program = build_module.REMOTE_BUILD
-        declare = program.index("env_write_line(\n        platform_admin_key, platform_admin_database\n    )")
+        self.assertNotIn(
+            "VITE_PLATFORM_ADMIN_DB", program,
+            "Batch C removed the build-time platform database selector",
+        )
         build_call = program.index("code, build_tail = build()")
         outcome = program.index('env_write_line("FRONTEND_BUILD_SHA256", fingerprint)')
-        self.assertLess(
-            declare, build_call,
-            "a value the build consumes must be declared before the build runs, or the "
-            "served bundle and the declaration disagree",
-        )
         self.assertLess(
             build_call, outcome,
             "the recorded build identity describes the artifact, so it is declared after it",
@@ -309,15 +308,29 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
             "drift this entry exists to prevent",
         )
 
-    def test_reuse_requires_the_baked_authority_to_match(self) -> None:
-        """A recorded generation is only reusable while it carries the declared authority.
+    def test_reuse_requires_the_bundle_to_carry_no_physical_database_name(self) -> None:
+        """A recorded generation is only reusable while it stays namespace-only.
 
-        Reusing on the fingerprint alone would re-serve the previous authority
-        whenever the recorded generation happened to be the one on disk.
+        Reusing on the fingerprint alone would re-serve a bundle that still
+        carries the retired database selector whenever that generation happened
+        to be the one on disk.
         """
         reuse = build_module.REMOTE_BUILD.split("reused = bool(", 1)[1].split("\n    )", 1)[0]
-        self.assertIn("declared_admin == platform_admin_database", reuse)
-        self.assertIn("baked_admin()", reuse)
+        self.assertNotIn("declared_admin == platform_admin_database", reuse)
+        self.assertIn("not physical_db_bakes()", reuse)
+
+    def test_reuse_reports_the_database_sweep_it_already_performed(self) -> None:
+        """A reused generation must report the sweep fact, not NOT_RUN.
+
+        The reuse precondition scans the served bundle for physical database
+        names, so leaving the evidence as NOT_RUN contradicts work that was
+        done and makes the caller reject an otherwise identical generation.
+        """
+        reuse = build_module.REMOTE_BUILD.split("if reused:", 1)[1].split(
+            "emit(\"PASS\")", 1
+        )[0]
+        self.assertIn('state["physical_db_sweep"] = "NO_PHYSICAL_DB_NAME"', reuse)
+        self.assertIn('state["physical_db_bakes"] = []', reuse)
 
     def test_align_reports_remote_failure(self) -> None:
         completed = mock.Mock(

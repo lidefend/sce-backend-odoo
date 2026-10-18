@@ -186,7 +186,7 @@ class ConstructionContract(models.Model):
         help="使用合同税率百分比进行税额计算。",
     )
     amount_untaxed = fields.Monetary(
-        string="合同金额",
+        string="平台合同金额",
         compute="_compute_amount_total",
         store=True,
         tracking=True,

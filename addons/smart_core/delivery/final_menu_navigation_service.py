@@ -7,8 +7,12 @@ except Exception:  # pragma: no cover - lightweight unit-test stubs
     SUPERUSER_ID = 1
     api = None
 
+from odoo.addons.smart_core.core.platform_minimum_nav_contract import (
+    build_platform_minimum_nav_contract,
+    is_platform_minimum_surface_mode,
+)
 from odoo.addons.smart_core.security.platform_admin import (
-    user_is_platform_admin,
+    user_is_platform_control_admin,
 )
 from odoo.addons.smart_core.utils.backend_contract_boundaries import MENU_CONFIG_POLICY_MODEL
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
@@ -86,6 +90,9 @@ def _delivery_node_to_fact(node: dict) -> dict:
     action_id = _to_int(node.get("action_id") or meta.get("action_id"))
     model = _text(node.get("model") or meta.get("model"))
     action_raw = _text(node.get("action") or meta.get("action") or (f"ir.actions.act_window,{action_id}" if action_id else ""))
+    action_type = _text(node.get("action_type") or meta.get("action_type")) or (
+        "ir.actions.act_window" if action_id else ""
+    )
     out = {
         "menu_id": menu_id,
         "runtime_menu_id": runtime_menu_id,
@@ -94,7 +101,7 @@ def _delivery_node_to_fact(node: dict) -> dict:
         "configurable": configurable,
         "synthetic": bool(runtime_menu_id and menu_id and runtime_menu_id != menu_id),
         "node_kind": "group" if children else "leaf",
-        "key": f"menu:{menu_id}" if menu_id else "menu:unknown",
+        "key": _text(node.get("key")) or (f"menu:{menu_id}" if menu_id else "menu:unknown"),
         "name": label,
         "label": label,
         "title": label,
@@ -105,7 +112,9 @@ def _delivery_node_to_fact(node: dict) -> dict:
         "web_icon": _text(node.get("web_icon") or meta.get("web_icon")),
         "has_children": bool(children),
         "action_raw": action_raw,
-        "action_type": "ir.actions.act_window" if action_id else "",
+        "action_type": action_type,
+        "scene_key": _text(node.get("scene_key") or meta.get("scene_key")),
+        "route": _text(node.get("route") or meta.get("route")),
         "action_id": action_id or None,
         "action_exists": bool(action_id),
         "action_meta": {
@@ -201,9 +210,32 @@ class FinalMenuNavigationService:
         identity = call_extension_hook_first(self.env, "smart_core_resolve_startup_delivery_identity", self.env, {})
         return identity if isinstance(identity, dict) else {}
 
+    def _build_platform_minimum_navigation_contract(self) -> dict:
+        contract = build_platform_minimum_nav_contract()
+        tree = [_delivery_node_to_fact(node) for node in contract.get("nav") or [] if isinstance(node, dict)]
+        flat = _flatten_fact_tree(tree)
+        if not flat:
+            raise RuntimeError("platform_minimum_navigation_fact_empty")
+        return {
+            "nav_fact": {"flat": flat, "tree": tree},
+            "nav_explained": {"flat": flat, "tree": tree},
+            "meta": {
+                "source_authority": source_authority_contract(),
+                "menu_fact_source_authority": {},
+                "delivery_convergence": {"source": "platform_minimum_surface"},
+                "user_menu_config": {},
+                "platform_minimum_surface": True,
+                "nav_source": "platform_minimum_surface",
+                "default_route": dict(contract.get("default_route") or {}),
+            },
+        }
+
     def _build_delivery_navigation_contract(self) -> dict:
         if api is None:
             raise RuntimeError("odoo_api_unavailable")
+        identity = self._current_delivery_identity()
+        if is_platform_minimum_surface_mode(self.env, identity):
+            return self._build_platform_minimum_navigation_contract()
         from odoo.addons.smart_core.adapters.nav_tree_cleaner import NavTreeCleaner
         from odoo.addons.smart_core.adapters.odoo_nav_adapter import OdooNavAdapter
         from odoo.addons.smart_core.app_config_engine.services.dispatchers.nav_dispatcher import NavDispatcher
@@ -219,7 +251,6 @@ class FinalMenuNavigationService:
         nav_data, nav_versions = NavDispatcher(self.env, su_env).build_nav(nav_request)
         native_nav = NavTreeCleaner().clean(nav_data.get("nav") if isinstance(nav_data, dict) else [])
         OdooNavAdapter().enrich(self.env, native_nav)
-        identity = self._current_delivery_identity()
         delivery_payload = DeliveryEngine(self.env).build(
             data={"role_surface": self._runtime_role_surface(identity, native_nav)},
             product_key=_text(identity.get("product_key")) if isinstance(identity, dict) else "",
@@ -252,7 +283,7 @@ class FinalMenuNavigationService:
 
     def _is_platform_admin_user(self) -> bool:
         try:
-            return bool(user_is_platform_admin(self.env.user))
+            return bool(user_is_platform_control_admin(self.env.user))
         except Exception:
             return False
 

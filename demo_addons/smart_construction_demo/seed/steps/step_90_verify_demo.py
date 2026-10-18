@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessDenied, UserError
 
 from ..registry import SeedStep, register
+from ...hooks import (
+    DEMO_ADMIN_LOGIN,
+    DEMO_PRINCIPAL_LOGINS,
+    DEMO_USER_PASSWORD,
+    demo_admin_record,
+    demo_user_records,
+)
 
 
 PROJECT_INIT_CODE = "DEMO-PJ-INIT"
@@ -25,6 +32,7 @@ WARN_PROJECT_CODES = {
 # 与 payment.request._check_project_lifecycle 一致：这些终态项目不允许再新增
 # 提交/审批中的付款申请，演示数据的自检必须遵循同一产品规则。
 TERMINAL_PROJECT_LIFECYCLES = ("warranty", "closed")
+DEMO_COMPANY_NAME = "Demo演示公司"
 ALL_DEMO_PROJECT_CODES = [
     "DEMO-PJ-INIT",
     "DEMO-PJ-TENDER",
@@ -85,6 +93,61 @@ def _get_showroom_projects(env):
         ("project_code", "ilike", "DEMO-"),
     ]
     return Project.search(domain)
+
+
+def _verify_company_identity(env):
+    company = env.ref("base.main_company")
+    if company.name != DEMO_COMPANY_NAME or company.partner_id.name != DEMO_COMPANY_NAME:
+        raise UserError("Demo company identity must be %s." % DEMO_COMPANY_NAME)
+
+
+def _check_user_credential(env, user):
+    """Check the password as the target user, not as the seed principal.
+
+    ``res.users._check_credentials`` reads ``self.env.user`` rather than the
+    record it is called on. The seed environment runs as ``__system__``, so
+    calling it on a browsed record would re-check the seed user and make every
+    demo identity look broken.
+    """
+    user_env = api.Environment(env.cr, user.id, dict(env.context))
+    user_env.user._check_credentials(DEMO_USER_PASSWORD, {"interactive": False})
+
+
+def _verify_demo_credentials(env):
+    users = demo_user_records(env)
+    if not users:
+        raise UserError("Every seeded demo user must carry the showcase password.")
+    logins = {user.login for user in users}
+    missing = [login for login in DEMO_PRINCIPAL_LOGINS if login not in logins]
+    if missing:
+        raise UserError("Demo principal missing: %s" % ", ".join(missing))
+    for user in users:
+        if user.login in DEMO_PRINCIPAL_LOGINS and (not user.active or user.share):
+            raise UserError("Demo principal must be an active internal user: %s" % user.login)
+        try:
+            _check_user_credential(env, user)
+        except AccessDenied as error:
+            raise UserError("Demo authentication failed for %s." % user.login) from error
+
+
+def _verify_demo_admin_credential(env):
+    """Prove the published admin login carries the showcase password.
+
+    ``admin`` is ``base.user_admin``, not a demo-module record, so the principal
+    loop in ``_verify_demo_credentials`` can never reach it. Without this check a
+    rebuild could publish a demo whose admin still carries the bootstrap
+    password while the seed reports a complete chain.
+    """
+    admin = demo_admin_record(env)
+    if admin is None:
+        raise UserError("Demo admin login missing: %s" % DEMO_ADMIN_LOGIN)
+    if not admin.active or admin.share:
+        raise UserError(
+            "Demo admin login must be an active internal user: %s" % DEMO_ADMIN_LOGIN)
+    try:
+        _check_user_credential(env, admin)
+    except AccessDenied as error:
+        raise UserError("Demo authentication failed for %s." % DEMO_ADMIN_LOGIN) from error
 
 
 def _verify_demo_full_my_work(env):
@@ -156,6 +219,9 @@ def _collect_missing(env, project):
 
 
 def run(env):
+    _verify_company_identity(env)
+    _verify_demo_credentials(env)
+    _verify_demo_admin_credential(env)
     init_project = _get_project(env, PROJECT_INIT_CODE)
     tender_project = _get_project(env, PROJECT_TENDER_CODE)
     exec_project = _get_project(env, PROJECT_EXEC_CODE)

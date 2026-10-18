@@ -76,6 +76,9 @@ services:
       SC_BOOTSTRAP_LOGIN: ${SC_BOOTSTRAP_LOGIN}
       SCENE_CHANNEL: ${SCENE_CHANNEL}
       SCENE_USE_PINNED: ${SCENE_USE_PINNED}
+      # Batch C: Odoo verifies the entry stamp and resolves the namespace.
+      SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET:-}
+      SC_ENTRY_ROUTE_VERSION: ${SC_ENTRY_ROUTE_VERSION:-}
       SCENE_ROLLBACK: ${SCENE_ROLLBACK}
       # Source-mounted acceptance runtimes must expose the exact candidate SHA
       # through system.init; callers set this explicitly and unknown fails
@@ -135,10 +138,18 @@ services:
         condition: service_healthy
     environment:
       # Rendered into the proxy's database fallback by the image's envsubst
-      # entrypoint.  Only this variable is substituted, so nginx's own
-      # $variables in the template survive verbatim.
-      SC_PROXY_DEFAULT_DB: ${DB_NAME}
-      NGINX_ENVSUBST_FILTER: '^SC_PROXY_DEFAULT_DB$'
+      # entrypoint.  Only these entry variables are substituted, so nginx's own
+      # $variables in the template survive verbatim.  Batch C routes by path
+      # namespace: the serving duty owns "/", the platform administration
+      # namespace has its own upstream, and no database name is rendered.
+      SC_PROXY_DEFAULT_UPSTREAM: ${SC_PROXY_DEFAULT_UPSTREAM:-odoo:8069}
+      SC_PROXY_PLATFORM_UPSTREAM: ${SC_PROXY_PLATFORM_UPSTREAM:-odoo:8069}
+      SC_ENTRY_ROUTE_VERSION: ${SC_ENTRY_ROUTE_VERSION:-}
+      SC_ENTRY_SHARED_SECRET: ${SC_ENTRY_SHARED_SECRET:-}
+      # The platform namespace is a declared two-layer hop: this profile is the
+      # serving entry face, so it forwards `/platform-admin/...` unchanged.
+      SC_ENTRY_PLATFORM_STRIP: ${SC_ENTRY_PLATFORM_STRIP:-0}
+      NGINX_ENVSUBST_FILTER: '^SC_(PROXY_(DEFAULT_UPSTREAM|PLATFORM_UPSTREAM)|ENTRY_(ROUTE_VERSION|SHARED_SECRET|PLATFORM_STRIP))$'
     volumes:
       - ./config/nginx/templates:/etc/nginx/templates:ro
       - ${FRONTEND_DIST_DIR:-./frontend/apps/web/dist}:/usr/share/nginx/html:ro

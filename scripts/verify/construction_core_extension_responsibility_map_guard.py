@@ -43,7 +43,7 @@ def main() -> int:
 
     for token in [
         "Construction Core Extension Responsibility Map",
-        "Current size: 1,787 lines",
+        "Current size: 1,849 lines",
         "staged responsibility split",
         "## Public Entry Points",
         "## Responsibility Bands",
@@ -78,7 +78,9 @@ def main() -> int:
         "`core_extension_policy_accessors.py` also owns API data search-field",
         "`core_extension_contract_normalizers.py` also owns pure form contract policy",
         "`core_extension_actor_roles.py` owns release/usage actor role resolution",
+        "`core_extension_relation_entry_policy.py` owns read-side relation entry policy",
         "`core_extension.py` is locked at `<=1787` lines",
+        "`core_extension.py` is locked at `<=1849` lines",
         "Do not move import-time registration side effects",
         "workflow projection reads `env`, registry, records",
         "`smart_core_register(registry)` because registry writes",
@@ -99,6 +101,7 @@ def main() -> int:
         "construction_core_extension_intent_handlers_split_guard.py",
         "construction_core_extension_service_builders_split_guard.py",
         "construction_core_extension_actor_roles_split_guard.py",
+        "construction_core_extension_relation_entry_policy_split_guard.py",
         "backend_boundary_guard.py",
         "owner_industry_isolation_probe.py",
     ]:
@@ -198,6 +201,7 @@ def main() -> int:
         "python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py",
         "python3 scripts/verify/construction_core_extension_service_builders_split_guard.py",
         "python3 scripts/verify/construction_core_extension_actor_roles_split_guard.py",
+        "python3 scripts/verify/construction_core_extension_relation_entry_policy_split_guard.py",
         "python3 scripts/verify/construction_core_extension_responsibility_map_guard.py",
     ]:
         if ci_token not in ci:

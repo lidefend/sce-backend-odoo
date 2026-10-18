@@ -210,7 +210,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1436
+        1438
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -387,7 +387,7 @@
       "literal": "scene",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1426
+        1428
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -401,7 +401,7 @@
       "literal": "/",
       "path": "frontend/apps/web/src/views/LoginView.vue",
       "lines": [
-        323
+        304
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -415,7 +415,7 @@
       "literal": "/activate-account",
       "path": "frontend/apps/web/src/views/LoginView.vue",
       "lines": [
-        315
+        296
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -429,7 +429,7 @@
       "literal": "/password-recovery",
       "path": "frontend/apps/web/src/views/LoginView.vue",
       "lines": [
-        319
+        300
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1084,7 +1084,7 @@
       "literal": "saved",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        3070
+        3042
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",

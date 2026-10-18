@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Set
 
 from odoo import api, SUPERUSER_ID
 from odoo.addons.smart_core.core.base_handler import BaseIntentHandler
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 
 _logger = logging.getLogger(__name__)
 
@@ -164,7 +164,7 @@ def _current_perms(env) -> Set[str]:
 
 def _is_system_admin(env) -> bool:
     try:
-        return bool(user_is_platform_admin(env.user))
+        return bool(user_is_tenant_config_admin(env.user))
     except Exception:
         return False
 

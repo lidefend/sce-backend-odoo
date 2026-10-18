@@ -9,7 +9,8 @@ import { getSceneByKey, setSceneRegistry, setSceneRegistryFromSceneReadyContract
 import type { Scene } from '../app/resolvers/sceneRegistry';
 import { normalizeLegacyWorkbenchPath } from '../app/routeQuery';
 import { applySceneValidationRecoveryStrategyRuntime, setSceneValidationRecoveryStrategy } from '../app/sceneValidationRecoveryStrategy';
-import { isConfiguredDbPinned, resolveActiveDb, resolveConfiguredDb, resolveLoginRoutingDb, setActiveDb } from '../services/dbContext';
+import { setActiveDb } from '../services/dbContext';
+import { resolveEntryAudience, resolveEntryBasePath } from '../services/entryNamespace';
 import { beginContextTransition, currentContextEpoch, invalidateContextRequests, isCurrentContextEpoch } from '../app/contextEpoch';
 import { nextRouteAuthorityRecordContext, routeAuthorityForPrincipal, type RouteAuthorityContract, type RouteAuthorityRecordContextSnapshot } from '../app/routeAuthority';
 import { createCanonicalNavigationModel } from '../app/canonicalNavigation';
@@ -311,7 +312,13 @@ const ACTIVITY_RUNTIME_QUERY_KEYS = new Set([
 ]);
 
 function currentDbScope(): string {
-  return String(resolveActiveDb('') || resolveConfiguredDb(String(config.odooDb || '').trim()) || config.odooDb || 'default').trim() || 'default';
+  // Batch C: session state is keyed by the entry namespace and audience, never
+  // by a physical database name.  `/t/demo/` and `/platform-admin/` are two
+  // identity domains even on one host, so one scope can never see the other's
+  // cached snapshot; the token itself stays in per-tab sessionStorage.
+  const base = resolveEntryBasePath() || 'root';
+  const audience = resolveEntryAudience() || 'unscoped';
+  return `${audience}:${base}`;
 }
 
 function sessionStorageKey(): string {
@@ -1241,17 +1248,13 @@ export const useSessionStore = defineStore('session', {
       this.lastWriteMode = params.writeMode ?? '';
       this.persist();
     },
-    async login(username: string, password: string, dbOverride?: string) {
+    async login(username: string, password: string) {
       this.clearSession();
-      const loginRoutingDb = resolveLoginRoutingDb();
-      const configuredDb = resolveConfiguredDb(String(config.odooDb || '').trim());
-      const db = String(loginRoutingDb ? '' : isConfiguredDbPinned() ? configuredDb : dbOverride || configuredDb).trim();
-      if (db) {
-        setActiveDb(db, true);
-      }
+      // Batch C: the entry namespace decides the database.  The client sends no
+      // database hint at all, so an explicit `db` can never reach the server.
       const result = await intentRequest<LoginResponse>({
         intent: 'login',
-        params: { login: username, password, contract_mode: 'default', ...(db ? { db } : {}) },
+        params: { login: username, password, contract_mode: 'default' },
       });
       const token = String(result.session?.token || result.token || '').trim();
       if (!token) {
@@ -1263,10 +1266,11 @@ export const useSessionStore = defineStore('session', {
         throw new Error(`login bootstrap next_intent unsupported: ${nextIntent}`);
       }
       this.bootstrapNextIntent = nextIntent;
-      const sessionDb = String(result.session?.db || (result as LoginResponse & { login_route?: { target_db?: string } }).login_route?.target_db || db || '').trim();
+      const sessionDb = String(result.session?.db || (result as LoginResponse & { login_route?: { target_db?: string } }).login_route?.target_db || '').trim();
       this.sessionDb = sessionDb;
       if (sessionDb) {
-        setActiveDb(sessionDb, true);
+        // Recorded for local display only; it is never sent back as a hint.
+        setActiveDb(sessionDb);
       }
       this.setToken(token);
     },
@@ -1347,9 +1351,9 @@ export const useSessionStore = defineStore('session', {
       // A1: 打印本次 system.init 的有效参数
       if (debugIntent) {
         console.group('[A1] system.init 请求诊断');
-        console.log('1. API Base URL:', import.meta.env.VITE_API_BASE_URL);
+        console.log('1. API Base URL:', config.apiBaseUrl);
         console.log('2. Authorization 存在:', !!this.token);
-        console.log('3. X-Odoo-DB 环境变量:', import.meta.env.VITE_ODOO_DB);
+        console.log('3. 入口命名空间:', config.entryBasePath);
       }
 
       const requestParams = {

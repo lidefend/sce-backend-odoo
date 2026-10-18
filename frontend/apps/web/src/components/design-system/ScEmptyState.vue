@@ -13,7 +13,7 @@ const props = withDefaults(defineProps<{
   description?: string;
   density?: 'regular' | 'compact';
   headingLevel?: 2 | 3 | 4 | 5 | 6;
-}>(), { density: 'regular', headingLevel: 2 });
+}>(), { description: '', density: 'regular', headingLevel: 2 });
 const titleId = `sc-empty-${useId()}`;
 const titleTag = computed(() => `h${props.headingLevel}`);
 </script>

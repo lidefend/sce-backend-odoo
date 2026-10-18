@@ -1,7 +1,7 @@
 # Frontend Page Contract Boundary Report
 
 - ok: `True`
-- checked_views: `21`
+- checked_views: `22`
 - checked_layouts: `2`
 - boundary: `all-pages-contract-driven`
 - error_count: `0`
@@ -21,6 +21,7 @@
 - `frontend/apps/web/src/views/NotFoundView.vue`
 - `frontend/apps/web/src/views/PasswordRecoveryView.vue`
 - `frontend/apps/web/src/views/PlaceholderView.vue`
+- `frontend/apps/web/src/views/PlatformDutyView.vue`
 - `frontend/apps/web/src/views/ReleaseOperatorView.vue`
 - `frontend/apps/web/src/views/SceneContractBlockGridView.vue`
 - `frontend/apps/web/src/views/SceneHealthView.vue`

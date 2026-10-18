@@ -502,6 +502,20 @@ verify.fact_source.coverage: guard.prod.forbid
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_fact_source_coverage_guard.py
 	@python3 scripts/verify/fact_source_coverage_guard.py
 
+# One backend field fact has exactly one declaration site. Odoo merges
+# same-name definitions across class blocks attribute by attribute, so a second
+# declaration is a hidden union, not an override. This lane is intentionally
+# zero-tolerance: there is no registration escape hatch. Use it before changing
+# an inherited core model or adding a field to an owned model.
+.PHONY: verify.backend.model_declaration.guard
+verify.backend.model_declaration.guard: guard.prod.forbid
+	@python3 -m py_compile \
+	  scripts/verify/backend_model_field_declarations.py \
+	  scripts/verify/backend_model_field_declaration_guard.py \
+	  scripts/verify/test_backend_model_field_declaration_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_backend_model_field_declaration_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/backend_model_field_declaration_guard.py
+
 .PHONY: verify.workflow_contract.backend
 verify.workflow_contract.backend: guard.prod.forbid audit.workflow_state.inventory verify.workflow_action_semantics.guard verify.workflow_instance.ownership_boundary
 	@python3 -m py_compile addons/smart_core/core/action_semantics_vocabulary.py addons/smart_construction_core/models/support/workflow_contract_service.py addons/smart_construction_core/tests/test_workflow_contract_backend.py addons/smart_construction_core/tests/test_user_feedback_business_views.py scripts/audit/workflow_state_inventory.py scripts/verify/workflow_inventory_profile_method_guard.py scripts/verify/workflow_contract_custom_coverage_guard.py scripts/verify/workflow_action_semantics_completeness_guard.py
@@ -1138,6 +1152,8 @@ verify.contract.architecture.suite: \
 	verify.local.dev.layout_authority.unit \
 	verify.sc_price.company_ownership_boundary \
 	verify.sc_data_scope.rule_coverage \
+	verify.agent.dispatch.unit \
+	verify.backend.model_declaration.guard \
 	verify.fact_source.coverage
 	@python3 scripts/verify/static_suite_frontend_toolchain_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_static_suite_frontend_toolchain_guard.py
@@ -1181,6 +1197,7 @@ verify.contract.architecture.suite: \
 	@python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py
 	@python3 scripts/verify/construction_core_extension_service_builders_split_guard.py
 	@python3 scripts/verify/construction_core_extension_actor_roles_split_guard.py
+	@python3 scripts/verify/construction_core_extension_relation_entry_policy_split_guard.py
 	@python3 scripts/verify/file_line_budget_uniform_guard.py
 	@python3 -m unittest scripts.verify.test_construction_create_default_hooks
 	@python3 scripts/verify/construction_core_extension_responsibility_map_guard.py
@@ -1196,7 +1213,7 @@ verify.contract.architecture.suite: \
 	@python3 scripts/ci/node_syntax_check.py
 	@echo "[OK] contract & architecture guard suite passed"
 
-ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.pr.push.unit verify.frontend.dev.incremental.unit verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit verify.menu_config_tree_editor.behavior verify.contract_form_runtime_state.behavior verify.action_view_runtime_smoke.behavior verify.frontend.lint.src verify.ui_contract.delivery_surface.unit verify.contract.architecture.suite verify.contract.list_preference.single_application verify.contract.gate_case_normalisation.unit verify.product.menu.metadata_batch.unit verify.local.dev.runtime.performance.unit verify.system.performance.baseline.unit verify.frontend.scoped_preference.runtime.unit
+ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.pr.push.unit verify.frontend.dev.incremental.unit verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit verify.menu_config_tree_editor.behavior verify.contract_form_runtime_state.behavior verify.action_view_runtime_smoke.behavior verify.frontend.lint.src verify.ui_contract.delivery_surface.unit verify.contract.architecture.suite verify.contract.list_preference.single_application verify.contract.gate_case_normalisation.unit verify.product.menu.metadata_batch.unit verify.local.dev.runtime.performance.unit verify.system.performance.baseline.unit verify.frontend.scoped_preference.runtime.unit verify.frontend.static.image.decoupling
 	@git diff --check
 	@echo "[OK] local quick gate passed"
 
@@ -1371,5 +1388,6 @@ verify.construction.create_defaults.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_construction_create_default_hooks
 	@python3 addons/smart_core/tests/test_api_data_sudo_scope_order_boundaries.py
 	@python3 scripts/verify/construction_core_extension_actor_roles_split_guard.py
+	@python3 scripts/verify/construction_core_extension_relation_entry_policy_split_guard.py
 	@python3 scripts/verify/construction_core_extension_policy_accessors_split_guard.py
 	@python3 scripts/verify/construction_core_extension_policy_maps_split_guard.py

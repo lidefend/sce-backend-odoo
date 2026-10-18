@@ -1,0 +1,116 @@
+{
+  "schema": "daily.runtime.entry.v1",
+  "authority": "config/ops/daily_runtime_database_duties.v1.json",
+  "owner_ruling": "2026-10-18 the daily development server exposes one public entry. Batch C: the path prefix selects an immutable namespace, the namespace binds the database, and a client database hint (X-Odoo-DB / X-DB / ?db=) is refused with HTTP 409 NS_DATABASE_HINT_CONFLICT.",
+  "host": "sc-root",
+  "public_entry": {
+    "serving_duty": "demo",
+    "bind_host": "0.0.0.0",
+    "port": 18081,
+    "url": "http://1.95.85.92:18081",
+    "demo_path": "/t/demo",
+    "platform_admin_path": "/platform-admin",
+    "root_path": "/",
+    "root_path_action": "redirect",
+    "root_path_redirect_status": 308,
+    "root_path_redirect_location": "/t/demo/"
+  },
+  "network": {
+    "name": "sc-daily-entry",
+    "driver": "bridge"
+  },
+  "routes": [
+    {
+      "database": "sc_demo",
+      "duty": "demo",
+      "upstream": "odoo:8069",
+      "default": true
+    },
+    {
+      "database": "sc_platform_control",
+      "duty": "platform_control",
+      "upstream": "sc-platform-control-dev-nginx-1:80",
+      "default": false
+    }
+  ],
+  "exposure": [
+    {
+      "duty": "demo",
+      "service": "nginx",
+      "host_port": 18081,
+      "bind_host": "0.0.0.0",
+      "public": true
+    },
+    {
+      "duty": "platform_control",
+      "service": "nginx",
+      "host_port": 18082,
+      "bind_host": "127.0.0.1",
+      "public": false
+    },
+    {
+      "duty": "demo",
+      "service": "odoo",
+      "host_port": 8070,
+      "bind_host": "127.0.0.1",
+      "public": false
+    },
+    {
+      "duty": "platform_control",
+      "service": "odoo",
+      "host_port": 18083,
+      "bind_host": "127.0.0.1",
+      "public": false
+    }
+  ],
+  "assertions": {
+    "one_public_entry": true,
+    "root_path_requires_a_namespace": true,
+    "root_api_without_a_namespace_is_refused": true,
+    "no_second_public_route": true,
+    "namespace_is_the_only_database_selector": true,
+    "client_database_hints_are_refused": true,
+    "unknown_namespace_is_rejected": true,
+    "never_route_to_an_undeclared_database": true
+  },
+  "namespace_routes": {
+    "kind": "path",
+    "platform_prefix": "/platform-admin",
+    "tenant_prefix": "/t",
+    "namespaces": [
+      {
+        "alias": "platform",
+        "namespace_id": "ns_000000000001",
+        "database": "sc_platform_control",
+        "duty": "platform_control"
+      },
+      {
+        "alias": "demo",
+        "namespace_id": "ns_000000000002",
+        "database": "sc_demo",
+        "duty": "demo"
+      }
+    ],
+    "client_database_hint": {
+      "headers": [
+        "X-Odoo-DB",
+        "X-DB",
+        "X-Odoo-DB-Locked"
+      ],
+      "query": "db",
+      "action": "reject",
+      "status": 409,
+      "code": "NS_DATABASE_HINT_CONFLICT"
+    },
+    "missing_namespace": {
+      "status": 400,
+      "code": "NS_NAMESPACE_REQUIRED",
+      "content_type": "application/json"
+    },
+    "unknown_namespace": {
+      "status": 404,
+      "code": "NS_UNKNOWN_NAMESPACE",
+      "content_type": "application/json"
+    }
+  }
+}

@@ -11,7 +11,6 @@ if [[ ! -f "${ENV_FILE}" ]]; then
 fi
 
 _pre_DB_NAME="${DB_NAME:-}"
-_pre_VITE_ODOO_DB="${VITE_ODOO_DB:-}"
 _pre_VITE_APP_ENV="${VITE_APP_ENV:-}"
 _pre_FRONTEND_DIST_DIR="${FRONTEND_DIST_DIR:-}"
 
@@ -21,13 +20,15 @@ source "${ENV_FILE}"
 set +a
 
 [[ -n "${_pre_DB_NAME}" ]] && DB_NAME="${_pre_DB_NAME}"
-[[ -n "${_pre_VITE_ODOO_DB}" ]] && VITE_ODOO_DB="${_pre_VITE_ODOO_DB}"
 [[ -n "${_pre_VITE_APP_ENV}" ]] && VITE_APP_ENV="${_pre_VITE_APP_ENV}"
 [[ -n "${_pre_FRONTEND_DIST_DIR}" ]] && FRONTEND_DIST_DIR="${_pre_FRONTEND_DIST_DIR}"
 
 : "${DB_NAME:?DB_NAME is required for frontend static build}"
 
-export VITE_ODOO_DB="${VITE_ODOO_DB:-${DB_NAME}}"
+# Batch C: the entry namespace decides the database at runtime.  A physical
+# database name baked into the bundle would be a second selector, so any
+# database variable the env file exports is removed before the build starts.
+unset VITE_ODOO_DB VITE_PLATFORM_ADMIN_DB VITE_ODOO_DB_LOCKED
 export VITE_APP_ENV="${VITE_APP_ENV:-${ENV_NAME}}"
 case "${ENV_NAME}" in
   prod|production)
@@ -48,7 +49,7 @@ case "${FRONTEND_DIST_DIR}" in
 esac
 export VITE_BUILD_OUT_DIR="${FRONTEND_DIST_ABS}"
 
-echo "[frontend.static.build] env_file=${ENV_FILE} vite_db=${VITE_ODOO_DB} app_env=${VITE_APP_ENV} mode=${VITE_BUILD_MODE} out_dir=${VITE_BUILD_OUT_DIR}"
+echo "[frontend.static.build] env_file=${ENV_FILE} app_env=${VITE_APP_ENV} mode=${VITE_BUILD_MODE} out_dir=${VITE_BUILD_OUT_DIR}"
 mkdir -p "${FRONTEND_DIST_ABS}"
 find "${FRONTEND_DIST_ABS}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 cd "${ROOT_DIR}"
@@ -60,3 +61,13 @@ if [[ "${ENV_NAME}" != "prod" && "${ENV_NAME}" != "production" ]]; then
     exit 1
   fi
 fi
+
+# Batch C: the artifact must not carry a physical database name.  The entry
+# contract (runtime-config.js, written by the nginx entry at container start) is
+# the only allowed place to name an entry, and it never ships in this bundle.
+for forbidden in sc_demo sc_dev_demo sc_platform_control sc_prod; do
+  if grep -Rqs "${forbidden}" "${FRONTEND_DIST_ABS}"; then
+    echo "frontend static build produced physical database name ${forbidden}; refuse to publish" >&2
+    exit 1
+  fi
+done

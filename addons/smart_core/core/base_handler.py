@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict, Optional
 from odoo import api, SUPERUSER_ID
 from odoo.exceptions import AccessError
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 import  inspect
 from .intent_operation_policy import is_write_intent, preview_write_error
 
@@ -109,7 +109,7 @@ class BaseIntentHandler:
             raise AccessError(f"PERMISSION_DENIED: write intent requires REQUIRED_GROUPS ({self.__class__.__name__})")
         user = self.env.user
         try:
-            if user and user_is_platform_admin(user):
+            if user and user_is_tenant_config_admin(user):
                 return True
         except Exception:
             pass

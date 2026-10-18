@@ -31,6 +31,9 @@ from odoo.addons.smart_core.core.request_diagnostics import RequestDiagnosticsCo
 from odoo.addons.smart_core.core.scene_channel_policy import SceneChannelPolicy
 from odoo.addons.smart_core.core.scene_diagnostics_builder import SceneDiagnosticsBuilder
 from odoo.addons.smart_core.core.system_init_diagnostics_helper import SystemInitDiagnosticsHelper
+from odoo.addons.smart_core.core.platform_duty_contract import (
+    build_capability_rows as build_platform_duty_capability_rows,
+)
 from odoo.addons.smart_core.core.system_init_identity_payload import SystemInitIdentityPayload
 from odoo.addons.smart_core.core.system_init_nav_request_builder import SystemInitNavRequestBuilder
 from odoo.addons.smart_core.core.system_init_payload_builder import SystemInitPayloadBuilder
@@ -68,6 +71,11 @@ from odoo.addons.smart_core.core.ui_base_contract_asset_event_queue import get_q
 from odoo.addons.smart_core.core.platform_database_contract import (
     PlatformDatabaseContractError,
     resolve_platform_database,
+)
+from odoo.addons.smart_core.core.platform_minimum_nav_contract import (
+    build_platform_minimum_nav_contract as build_shared_platform_minimum_nav_contract,
+    is_platform_minimum_surface_mode as is_shared_platform_minimum_surface_mode,
+    resolve_industry_extension_modules as resolve_shared_industry_extension_modules,
 )
 from odoo.addons.smart_core.core.request_params import parse_bool
 from odoo.addons.smart_core.core.scene_delivery_policy import (
@@ -119,40 +127,50 @@ def _load_capabilities_for_user_with_timings(env, user) -> tuple[List[dict], dic
     return provider_load_capabilities_for_user_with_timings(env, user)
 
 
+def _merge_platform_duty_capabilities(data: dict) -> dict:
+    """Project the declared platform duties into the startup capability surface.
+
+    The platform-control instance installs no product capability catalogue, so
+    without this projection a verified platform administrator would receive an
+    empty ``capabilities`` list even though the contract declares duties.  The
+    rows are normalised with the same helpers the product catalogue uses, and
+    only a ``platform-admin`` audience produces them.
+    """
+
+    if not isinstance(data, dict):
+        return data
+    user_dict = data.get("user") if isinstance(data.get("user"), dict) else {}
+    rows = build_platform_duty_capability_rows(user_dict.get("platform_duty"))
+    if not rows:
+        return data
+    extra = normalize_capabilities(rows)
+    extra_keys = {str(item.get("key") or "") for item in extra}
+    existing = [
+        item
+        for item in (data.get("capabilities") or [])
+        if isinstance(item, dict) and str(item.get("key") or "") not in extra_keys
+    ]
+    data["capabilities"] = existing + extra
+    platform_groups = [
+        group
+        for group in provider_build_capability_groups(extra)
+        if str(group.get("key") or "") == "platform_control"
+    ]
+    other_groups = [
+        group
+        for group in (data.get("capability_groups") or [])
+        if isinstance(group, dict) and str(group.get("key") or "") != "platform_control"
+    ]
+    data["capability_groups"] = other_groups + platform_groups
+    return data
+
+
 def _bind_scene_assets(*args, **kwargs):
     return bind_scene_assets(*args, **kwargs)
 
 
-def _is_any_module_installed(env, module_names: List[str]) -> bool:
-    safe_names = [str(name or "").strip() for name in (module_names or []) if str(name or "").strip()]
-    if not safe_names:
-        return False
-    try:
-        count = env["ir.module.module"].sudo().search_count([
-            ("name", "in", safe_names),
-            ("state", "=", "installed"),
-        ])
-        return bool(count)
-    except Exception:
-        return False
-
-
 def _resolve_industry_extension_modules(env) -> list[str]:
-    hook_modules = call_extension_hook_first(
-        env,
-        "smart_core_industry_extension_module_names",
-        env,
-    )
-    if isinstance(hook_modules, (list, tuple, set)):
-        modules = [str(name or "").strip() for name in hook_modules if str(name or "").strip()]
-        if modules:
-            return modules
-    try:
-        raw = env["ir.config_parameter"].sudo().get_param("smart_core.industry_extension_modules", "")
-    except Exception:
-        raw = ""
-    modules = [item.strip() for item in str(raw or "").split(",") if item.strip()]
-    return modules
+    return resolve_shared_industry_extension_modules(env)
 
 
 def _resolve_user_acceptance_nav_contract(env) -> dict:
@@ -242,72 +260,11 @@ def _resolve_startup_delivery_identity(env, params: dict | None) -> dict:
 
 
 def _is_platform_minimum_surface_mode(env, delivery_identity: dict | None = None) -> bool:
-    identity = delivery_identity if isinstance(delivery_identity, dict) else {}
-    base_product_key = str(identity.get("base_product_key") or "").strip()
-    product_key = str(identity.get("product_key") or "").strip()
-    if base_product_key == "platform" or product_key.startswith("platform."):
-        return True
-    return not _is_any_module_installed(env, _resolve_industry_extension_modules(env))
+    return is_shared_platform_minimum_surface_mode(env, delivery_identity)
 
 
 def _build_platform_minimum_nav_contract() -> dict:
-    workspace_leaf = {
-        "key": "scene:workspace.home",
-        "label": "角色首页",
-        "title": "角色首页",
-        "menu_id": None,
-        "children": [],
-        "scene_key": "workspace.home",
-        "meta": {
-            "scene_key": "workspace.home",
-            "action_type": "scene.contract",
-            "scene_source": "platform_minimum_surface",
-        },
-    }
-    group_node = {
-        "key": "group:role_primary",
-        "label": "我的场景",
-        "title": "我的场景",
-        "menu_id": None,
-        "children": [workspace_leaf],
-        "meta": {
-            "group_key": "role_primary",
-            "scene_source": "platform_minimum_surface",
-        },
-    }
-    root_node = {
-        "key": "root:scene_contract",
-        "label": "场景导航",
-        "title": "场景导航",
-        "menu_id": None,
-        "children": [group_node],
-        "meta": {
-            "scene_source": "platform_minimum_surface",
-            "menu_xmlid": "scene.contract.root",
-        },
-    }
-    default_route = {
-        "menu_id": None,
-        "scene_key": "workspace.home",
-        "route": "/",
-        "reason": "platform_minimum_surface",
-    }
-    return {
-        "source": "platform_minimum_surface",
-        "nav": [root_node],
-        "default_route": default_route,
-        "meta": {
-            "platform_minimum_surface": True,
-            "scene_count": 1,
-            "scene_input_count": 1,
-            "excluded_scene_count": 0,
-            "candidate_count": 1,
-            "group_count": 1,
-            "remaining_group_count": 0,
-            "remaining_hidden": False,
-            "policy_applied": False,
-        },
-    }
+    return build_shared_platform_minimum_nav_contract()
 
 
 def _normalize_access_suggested_action(data: dict) -> dict:
@@ -1992,6 +1949,7 @@ class SystemInitHandler(BaseIntentHandler):
             apply_contract_governance_fn=apply_contract_governance,
         )
         data, scene_diagnostics = SystemInitSurfaceBuilder.apply(surface_ctx=surface_ctx)
+        data = _merge_platform_duty_capabilities(data)
         stage_ts = _mark("apply_surface", stage_ts)
         with_tokens = _parse_with_tokens(params.get("with"))
         include_workspace_home = parse_bool(params.get("with_preload"), False) or "workspace_home" in with_tokens

@@ -9,6 +9,7 @@ from odoo.http import request
 from odoo.modules.registry import Registry
 from ..core.base_handler import BaseIntentHandler
 from ..security.auth import authenticate_user, generate_token, get_token_exp_seconds, get_user_from_token
+from ..security.namespace_errors import NamespaceError, NamespaceRequired
 from ..core.handler_registry import HANDLER_REGISTRY  # 全局注册表
 
 _logger = logging.getLogger(__name__)
@@ -130,7 +131,8 @@ def _config_param(env, key: str, default: str = "") -> str:
 
 def _route_record_for_login(env, login: str):
     try:
-        return env["sc.login.route"].sudo().search([("login", "=", login), ("active", "=", True)], limit=1)
+        route = env["sc.login.route"].sudo().search([("login", "=", login), ("active", "=", True)], limit=1)
+        return route.to_runtime_dict(current_db=_current_db_name(env)) if route else None
     except Exception:
         return None
 
@@ -143,60 +145,48 @@ def _route_payload_from_db(db_name: str, login: str) -> dict[str, Any] | None:
         with registry.cursor() as cr:
             env = api.Environment(cr, SUPERUSER_ID, {})
             route = env["sc.login.route"].sudo().search([("login", "=", login), ("active", "=", True)], limit=1)
-            return route.to_runtime_dict() if route else None
+            return route.to_runtime_dict(current_db=db_name) if route else None
     except Exception:
         return None
 
 
-def _resolve_login_route(env, *, login: str, explicit_db: str = "", routing_db: str = "") -> dict[str, Any]:
-    current_db = _current_db_name(env)
-    if explicit_db:
-        return {
-            "contract_version": "1.0.0",
-            "mode": "explicit_db",
-            "target_db": explicit_db,
-            "entry_kind": "explicit",
-            "source": "request",
-            "db_authority": "request_explicit_db",
-        }
-    payload = _route_payload_from_db(routing_db, login) if routing_db and routing_db != current_db else None
-    route_source = "sc.login.route"
-    if not payload:
-        route = _route_record_for_login(env, login)
-        payload = route.to_runtime_dict() if route else None
-    else:
-        route_source = f"sc.login.route:{routing_db}"
-    if payload:
-        return {
-            "contract_version": "1.0.0",
-            "mode": "unified",
-            "target_db": payload.get("target_db") or current_db,
-            "entry_kind": payload.get("entry_kind") or "tenant",
-            "product_key": payload.get("product_key") or "",
-            "label": payload.get("label") or "",
-            "source": route_source,
-            "db_authority": "platform_login_route",
-        }
-    default_tenant_db = _config_param(env, "sc.login.default_tenant_db", "")
-    if default_tenant_db:
-        return {
-            "contract_version": "1.0.0",
-            "mode": "unified",
-            "target_db": default_tenant_db,
-            "entry_kind": "tenant",
-            "product_key": _config_param(env, "sc.login.default_product_key", "platform"),
-            "source": "ir.config_parameter",
-            "db_authority": "platform_default_tenant_db",
-        }
+def _resolve_login_route(env, *, login: str, namespace) -> dict[str, Any]:
+    """Resolve the login entry from the entry namespace (batch C).
+
+    There is no explicit ``db`` request path and no default-tenant fallback:
+    the entry decides the namespace and the namespace binds the database.
+    """
+
+    if namespace is None:
+        raise NamespaceRequired("no namespace was resolved for this entry")
+    audience = str(getattr(namespace, "audience", "") or "")
     return {
-        "contract_version": "1.0.0",
-        "mode": "unified",
-        "target_db": current_db,
-        "entry_kind": "platform_admin",
-        "product_key": "platform",
-        "source": "current_db",
-        "db_authority": "platform_current_db",
+        "contract_version": "1.1.0",
+        "mode": "namespace",
+        "resolved": True,
+        "target_db": str(getattr(namespace, "database_name", "") or ""),
+        "entry_kind": "platform_admin" if audience == "platform-admin" else "tenant",
+        "product_key": "",
+        "label": "",
+        "source": "entry_namespace",
+        "db_authority": "entry_namespace",
+        "namespace_id": str(getattr(namespace, "namespace_id", "") or ""),
+        "identity_audience": audience,
+        "login": str(login or ""),
     }
+
+
+def _entry_headers() -> dict:
+    from odoo.http import request
+
+    httprequest = getattr(request, "httprequest", None)
+    return dict(getattr(httprequest, "headers", None) or {})
+
+
+def _resolve_request_namespace(env):
+    from ..security.namespace_resolver import resolve_entry
+
+    return resolve_entry(env, _entry_headers())
 
 
 class LoginHandler(BaseIntentHandler):
@@ -247,14 +237,9 @@ class LoginHandler(BaseIntentHandler):
         password, password_error = self._text_param(effective_params, "password")
         if password_error:
             return password_error
-        # 可选：db/公司/语言/时区（按需扩展）
-        db_key = "db" if "db" in params else "database"
-        db, db_error = self._text_param(params, db_key, allow_empty=True)
-        if db_error:
-            return db_error
-        routing_db, routing_db_error = self._text_param(params, "_login_routing_db", allow_empty=True)
-        if routing_db_error:
-            return routing_db_error
+        # Batch C: a client database hint is a conflict, not a routing input.
+        if "db" in params or "database" in params:
+            return self.err(409, "NS_DATABASE_HINT_CONFLICT database hints are not accepted")
         want_company_id = params.get("company_id")
         contract_mode = _resolve_contract_mode(params)
         compat_requested = contract_mode == "compat"
@@ -265,8 +250,12 @@ class LoginHandler(BaseIntentHandler):
         if not login or not password:
             return self.err(400, "缺少登录信息")
 
-        route_contract = _resolve_login_route(self.env, login=login, explicit_db=db, routing_db=routing_db)
-        target_db = (route_contract.get("target_db") or db or "").strip()
+        try:
+            namespace = _resolve_request_namespace(self.env)
+        except NamespaceError as exc:
+            return self.err(exc.http_status, "%s %s" % (exc.code, exc.message))
+        route_contract = _resolve_login_route(self.env, login=login, namespace=namespace)
+        target_db = (route_contract.get("target_db") or "").strip()
 
         # 2) 鉴权（自定义逻辑，建议内部做 active 检查 / 锁定策略 / 审计）
         try:
@@ -278,7 +267,7 @@ class LoginHandler(BaseIntentHandler):
             return self.err(401, "用户名或密码错误")
 
         user_id = int(user_dict["id"])
-        auth_db = (user_dict.get("db") or target_db or db or "").strip()
+        auth_db = (user_dict.get("db") or target_db or "").strip()
         if not auth_db:
             return self.err(400, "缺少数据库参数")
         try:
@@ -356,6 +345,12 @@ class LoginHandler(BaseIntentHandler):
                 "compat_enabled": compat_enabled,
                 "compat_deprecated": True,
                 "compat_sunset_phase": "next_iteration",
+                # Batch B: the login entry is either resolved against a
+                # declared route, or explicitly unresolved.  It is never
+                # silently promoted to platform_admin.
+                "entry_resolution": "resolved" if route_contract.get("resolved") else "unresolved",
+                "explicit_db_deprecated": False,
+                "namespace_id": route_contract.get("namespace_id") or "",
                 "credential_input": "explicit" if explicit_credential else "legacy_password_params",
             },
             "login_route": {

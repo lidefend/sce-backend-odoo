@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "id": "PLATFORM-DUTY-BROWSER-20261018",
+  "task_ref": "PLATFORM-DUTY-BROWSER-20261018",
+  "branch": "codex/daily-platform-demo-20261018",
+  "lane": "demo",
+  "executor": "Descartes",
+  "authorization": {
+    "id": "owner-standing-auth-20261018",
+    "status": "active",
+    "sha256": "b94bb85f18556111051e815f4d787b7e3868c0cd2a3222952955cd8cc85ee499",
+    "source": "agent_dispatch_inbox authorization (owner-standing-auth-20261018)"
+  },
+  "status": "reported",
+  "updated_at": "2026-10-18T09:02:00Z",
+  "target": {
+    "head_dispatched": "8a6efdc7653d78d289e2c6893e2f8d40cb65c4e3",
+    "head_observed_served": "0d61df8e5290b8a7d001f8713d553e6ca88295fe",
+    "head_note": "8a6efdc7 is a real ancestor commit; three later commits (572cb4110, 738821122, 0d61df8e5) supersede it. Served and verified HEAD is 0d61df8e5.",
+    "frontend_build_sha256": "272a8a51787a67bdd5fd724a0fb95d5962adff8725eb1cb00da834a051b3ce31",
+    "public_entry": "http://1.95.85.92:18081"
+  },
+  "tooling": {
+    "playwright": "1.59.1",
+    "browser": "chromium-1217",
+    "mode": "headless"
+  },
+  "assertions": {
+    "total": 10,
+    "passed": 10,
+    "failed": [],
+    "ids": [
+      "P1_login_lands_on_platform_home",
+      "P2_platform_duty_panel_present",
+      "P3_duty_cards_at_least_6",
+      "P4_tenant_registry_shows_demo_company",
+      "P5_no_card_navigates_to_api",
+      "P6_platform_console_errors_zero",
+      "D1_demo_login_succeeds",
+      "D2_no_platform_duty_panel",
+      "D3_no_platform_duty_cards",
+      "D4_demo_console_errors"
+    ]
+  },
+  "observed": {
+    "platform_final_url": "http://1.95.85.92:18081/platform-admin/",
+    "demo_final_url": "http://1.95.85.92:18081/t/demo/",
+    "duty_cards": [
+      "平台首页",
+      "租户登记表",
+      "维护访问",
+      "运维任务",
+      "发布运营",
+      "订阅管理"
+    ],
+    "tenant_registry_row": "ns_000000000002 | Demo演示公司 | active | demo（/t/demo） | 未绑定",
+    "platform_console_errors": 0,
+    "demo_console_errors": 0,
+    "captured_at_utc": "2026-10-18T08:58:54.933Z"
+  },
+  "evidence_dir": ".runtime/platform-duty-closure-20261018/browser-r2",
+  "blockers": [],
+  "next_exact_step": "None. Browser acceptance re-verified and bound to host HEAD 0d61df8e5 / frontend 272a8a51 under .runtime/platform-duty-closure-20261018/browser-r2/.",
+  "identity_binding": {
+    "captured_at_utc": "2026-10-18T08:59:13Z",
+    "host_head": "0d61df8e5290b8a7d001f8713d553e6ca88295fe",
+    "host_dirty_files": 0,
+    "container": "sc-demo-dev-odoo-1",
+    "container_image_id": "sha256:c597eb77bb10a7e99a2acf25d1ef875ea8652a13a4a5509baf5e12a3c392ef08",
+    "container_started_at": "2026-10-18T08:47:38.483436538Z",
+    "container_health": "healthy",
+    "container_env_SC_SOURCE_REVISION": "0d61df8e5290b8a7d001f8713d553e6ca88295fe",
+    "container_env_FRONTEND_BUILD_SHA256": "272a8a51787a67bdd5fd724a0fb95d5962adff8725eb1cb00da834a051b3ce31",
+    "loaded_file_binding": {
+      "file": "/mnt/source-addons/smart_core/security/platform_admin.py",
+      "container_sha256": "3346c463766ff901d8f875f39fc9b111f8187b3da972529b6013fdfa18c1561e",
+      "host_sha256": "3346c463766ff901d8f875f39fc9b111f8187b3da972529b6013fdfa18c1561e",
+      "match": true
+    },
+    "served_entry_html_sha256": "29a79f8d42e49f9dc2a3f670aa71f8a29ce2e84ab9158c1333af012a672fb358",
+    "dist_index_html_sha256": "29a79f8d42e49f9dc2a3f670aa71f8a29ce2e84ab9158c1333af012a672fb358",
+    "runtime_version": {
+      "demo": {
+        "product_version_source": "VERSION",
+        "source_revision": "0d61df8e5290b8a7d001f8713d553e6ca88295fe",
+        "git_sha": "0d61df8e5290b8a7d001f8713d553e6ca88295fe",
+        "database": "sc_demo",
+        "environment": "demo",
+        "frontend_build_sha256": "272a8a51787a67bdd5fd724a0fb95d5962adff8725eb1cb00da834a051b3ce31",
+        "namespace_id": "ns_000000000002",
+        "namespace_alias": "demo",
+        "audience": "tenant"
+      },
+      "platform": {
+        "product_version_source": "VERSION",
+        "source_revision": "0d61df8e5290b8a7d001f8713d553e6ca88295fe",
+        "git_sha": "0d61df8e5290b8a7d001f8713d553e6ca88295fe",
+        "database": "sc_platform_control",
+        "environment": "dev",
+        "frontend_build_sha256": "272a8a51787a67bdd5fd724a0fb95d5962adff8725eb1cb00da834a051b3ce31",
+        "namespace_id": "ns_000000000001",
+        "namespace_alias": "platform",
+        "audience": "platform-admin"
+      }
+    },
+    "separation": {
+      "backend_has_/opt/sce/frontend": false,
+      "backend_has_nginx": false,
+      "backend_has_nginx_html": false,
+      "nginx_mount": "frontend/apps/web/dist-dev -> /usr/share/nginx/html (ro)"
+    }
+  },
+  "supersedes_receipt": "6f9a7f9399c123abc6c7704d66df3d0c7737485fc973f67a559bed2858d79c23",
+  "notes": [
+    "First r2 capture at 08:58:07Z hit 404 because frontend/apps/web/dist-dev was emptied by a concurrent rebuild; polling confirmed rebuild landed at 08:58:48Z with the same fingerprint 272a8a51, then the full browser suite was re-run and captured.",
+    "r1 artifacts under .runtime/platform-duty-closure-20261018/browser/ remain untouched; r2 adds runtime identity binding."
+  ]
+}

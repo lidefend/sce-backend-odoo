@@ -7,7 +7,7 @@
     <ScPanel v-else-if="isPublicAuthPage && !session.token && session.publicPageContractStatus === 'loading'" role="status">
       正在加载账号入口…
     </ScPanel>
-    <RouterView v-slot="{ Component, route }">
+    <RouterView v-slot="{ Component, route: slotRoute }">
       <AppShell
         v-if="shellComposition.adopted"
         :data-shell-composition="shellComposition.composition"
@@ -16,14 +16,14 @@
         <KeepAlive :max="6">
           <component
             :is="Component"
-            v-if="activityCacheKey(route)"
-            :key="activityCacheKey(route)"
+            v-if="activityCacheKey(slotRoute)"
+            :key="activityCacheKey(slotRoute)"
           />
         </KeepAlive>
         <component
           :is="Component"
-          v-if="!activityCacheKey(route)"
-          :key="route.fullPath"
+          v-if="!activityCacheKey(slotRoute)"
+          :key="slotRoute.fullPath"
         />
       </AppShell>
       <component :is="Component" v-else />

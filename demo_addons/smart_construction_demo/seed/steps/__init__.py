@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from . import step_dictionary  # noqa: F401
+from . import step_company_identity  # noqa: F401
 from . import step_project_skeleton  # noqa: F401
 from . import step_project_owner_demo_pm  # noqa: F401
 from . import step_demo_pm_landing  # noqa: F401
@@ -22,4 +23,5 @@ from . import step_50_boq_wbs_demo  # noqa: F401
 from . import step_60_attachments_demo  # noqa: F401
 from . import step_z_demo_full_my_work  # noqa: F401
 from . import step_80_finalize_stages_demo  # noqa: F401
+from . import step_85_demo_passwords  # noqa: F401
 from . import step_90_verify_demo  # noqa: F401

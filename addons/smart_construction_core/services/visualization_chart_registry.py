@@ -96,7 +96,7 @@ def register_chart(defn: Dict[str, Any]) -> None:
 
 
 def unregister_chart(key: str) -> None:
-    """仅供测试/演示重建用；生产路径不应卸载已登记 capability。"""
+    """仅供测试数据重建工具使用；生产路径不应卸载已登记 capability。"""
     _CHARTS.pop(key, None)
 
 

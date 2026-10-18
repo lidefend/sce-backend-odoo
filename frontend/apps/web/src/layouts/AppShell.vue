@@ -615,9 +615,10 @@ const recordContextSearchPlaceholder = computed(() =>
 );
 const roleLandingPath = computed(() => session.resolveLandingPath('/'));
 const initMeta = computed(() => asDict(session.initMeta));
+const isTenantConfigAdmin = computed(() => session.user?.is_tenant_config_admin === true);
 const isPlatformAdmin = computed(() => session.user?.is_platform_admin === true);
-const visiblePublishedApps = computed(() => (isPlatformAdmin.value ? appCatalog.value : []));
-const showPublishedApps = computed(() => isPlatformAdmin.value && (visiblePublishedApps.value.length > 0 || appCatalogLoading.value));
+const visiblePublishedApps = computed(() => (isTenantConfigAdmin.value ? appCatalog.value : []));
+const showPublishedApps = computed(() => isTenantConfigAdmin.value && (visiblePublishedApps.value.length > 0 || appCatalogLoading.value));
 const activeAppId = computed(() => {
   return String(route.meta?.appId || '').trim();
 });
@@ -773,7 +774,7 @@ function resolvePublishedAppLabel(appId: string, rawLabel: string | undefined, k
 
 async function loadPublishedApps() {
   const requestSequence = ++appCatalogRequestSequence;
-  if (!session.token || session.initStatus !== 'ready' || session.user?.is_platform_admin !== true) {
+  if (!session.token || session.initStatus !== 'ready' || session.user?.is_tenant_config_admin !== true) {
     appCatalog.value = [];
     appCatalogLoading.value = false;
     return;

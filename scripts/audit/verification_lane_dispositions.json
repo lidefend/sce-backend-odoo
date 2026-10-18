@@ -72,6 +72,21 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/long_running_agent_control_v1.en.md。登记待接线或退役，B3 按族处理。"
     },
+    "agent.dispatch.review": {
+      "disposition": "ops_tooling",
+      "owner": "platform-team",
+      "reason": "私有回执队列的人工审核入口，读取本机 owner 私有路径，不应由共享 CI 车道自动执行；由 docs/ops/agent_dispatch_inbox.md 规定人工运行。"
+    },
+    "agent.dispatch.status": {
+      "disposition": "ops_tooling",
+      "owner": "platform-team",
+      "reason": "私有回执队列的人工状态入口，读取本机 owner 私有路径，不应由共享 CI 车道自动执行；由 docs/ops/agent_dispatch_inbox.md 规定人工运行。"
+    },
+    "agent.dispatch.submit": {
+      "disposition": "ops_tooling",
+      "owner": "platform-team",
+      "reason": "私有回执队列的人工提交入口，写入本机 owner 私有路径，必须保留显式人工调用；由 docs/ops/agent_dispatch_inbox.md 规定运行方式。"
+    },
     "agent.feishu_bridge.config.check": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
@@ -3999,6 +4014,11 @@
       "disposition": "ops_tooling",
       "owner": "platform-team",
       "reason": "运维工具：仓库内零引用；登记待接线或退役。"
+    },
+    "scripts/ops/install_agent_dispatch_inbox.sh": {
+      "disposition": "ops_tooling",
+      "owner": "platform-team",
+      "reason": "私有回执队列安装器：目标路径属于 owner 本机环境，安装动作必须由人工显式执行，不能由仓库 CI 自动改写本机；运行说明见 docs/ops/agent_dispatch_inbox.md。"
     },
     "scripts/ops/setup_mobile_device_acceptance_wsl.sh": {
       "disposition": "ops_tooling",

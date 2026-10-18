@@ -1,0 +1,61 @@
+platform_token_len=876 demo_token_len=1620
+--- platform /api/ops/tenants ---
+status=200
+{"ok": true, "contract_version": "v1", "server_time": "2026-10-18T06:49:04Z", "trace_id": "bd7f22152494", "warnings": [], "data": {"tenants": [{"company_id": 1, "company_name": "My Company", "plan_code": "default", "flags": {}, "limits": {}, "usage": {}, "subscription_state": null}], "count": 1}}
+--- platform system.init surface ---
+{
+ "ok": true,
+ "capability_count": 0,
+ "capability_keys": [],
+ "capability_group_count": 0,
+ "capability_groups": [],
+ "nav_root_count": 0,
+ "is_platform_admin": true,
+ "is_tenant_config_admin": true,
+ "platform_duty_present": false,
+ "delivery_capability_count": null,
+ "data_keys_sample": [
+  "capabilities",
+  "capability_groups",
+  "contract_mode",
+  "default_route",
+  "edition_runtime",
+  "feature_flags",
+  "init_meta",
+  "intents",
+  "nav_meta",
+  "navigation",
+  "page_contracts",
+  "product_version",
+  "record_context",
+  "released_scene_semantic_surface",
+  "role_surface",
+  "role_surface_map",
+  "role_surface_provider_meta",
+  "scene_action_surface_strategy",
+  "scene_channel",
+  "scene_contract_ref",
+  "scene_ready_contract",
+  "scenes",
+  "semantic_runtime",
+  "source_revision",
+  "user",
+  "version",
+  "workspace_home_ref"
+ ]
+}
+--- demo system.init surface ---
+{
+ "ok": true,
+ "capability_count": 5,
+ "capability_keys": [
+  "project.list.open",
+  "project.board.open",
+  "project.task.list",
+  "workspace.today.focus",
+  "workspace.project.watch"
+ ],
+ "is_platform_admin": false,
+ "is_tenant_config_admin": true,
+ "platform_duty_present": false
+}

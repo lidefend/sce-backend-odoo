@@ -22,7 +22,15 @@ class InboxTests(unittest.TestCase):
         self.root = self.base/'inbox'
         m.initialize(self.root, {'pilot':str(self.repo)}, '/bin/codex')
         m.takeover(self.root, 'test-dispatcher', '2026-10-17T00:00:00Z')
+        self.authorization=m.authorize(self.root,self.authorization_spec())
         self.report = dict(task_id='TEST',run='run.json',status='paused',summary='test',next_step='review',evidence=['evidence.txt'],blockers=[],resources=['worktree:test'])
+    def authorization_spec(self,status='active'):
+        spec={'id':'test-auth','source':'owner test instruction','granted_at':'2026-10-17T00:00:00Z',
+              'status':status,'scope':['test task scope'],'allowed_actions':['modify test files','run tests','local commit'],
+              'exclusions':['production'],'revocation':{'conditions':['owner revokes in writing'],'by':'owner','recorded_at':'2026-10-17T00:00:00Z'}}
+        if status=='revoked':
+            spec.update(revoked_at='2026-10-17T01:00:00Z',revoked_reason='test revocation')
+        return spec
     def submit(self): return m.submit(self.root,'pilot',self.report)
     def review_success(self,args,**kwargs):
         Path(args[args.index('--output-last-message')+1]).write_text('待调度确认：草案')
@@ -84,7 +92,7 @@ class InboxTests(unittest.TestCase):
             Path(args[args.index('--output-last-message')+1]).write_text('待调度确认：下一任务草案')
             return subprocess.CompletedProcess(args,0,json.dumps({'item':{'type':'agent_message','text':'draft'}}),'')
         result=m.review_one(self.root,success)
-        self.assertEqual(result['status'],'proposal_ready');self.assertFalse(result['execution_authorized'])
+        self.assertEqual(result['status'],'proposal_ready');self.assertFalse(result['background_auto_execution'])
         self.assertEqual(m.review_one(self.root)['status'],'idle')
     def test_review_time_mutation_blocks(self):
         self.submit()
@@ -201,15 +209,33 @@ class InboxTests(unittest.TestCase):
     def test_task_assignment_and_acknowledgement_are_recorded(self):
         spec={'task_id':'TASK-1','lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
         first=m.assign(self.root,spec)
+        self.assertEqual(first['authorization_id'],'test-auth')
+        self.assertEqual(first['authorization_sha256'],first['authorization']['sha256'])
         self.assertEqual(first,m.assign(self.root,spec))
         with self.assertRaises(ValueError):m.assign(self.root,{**spec,'objective':'changed'})
         with self.assertRaises(ValueError):m.ack(self.root,'TASK-1','executor-a','declined','')
         accepted=m.ack(self.root,'TASK-1','executor-a','accepted')
         self.assertEqual(accepted['status'],'acknowledged')
+        task_row=[t for t in m.status(self.root)['tasks'] if t['task_id']=='TASK-1'][0]
+        self.assertEqual(task_row['execution_authority']['authorization_id'],'test-auth')
+        self.assertIn('local commit',task_row['execution_authority']['allowed_actions'])
+        self.assertIn('不是二次授权',task_row['execution_authority']['note'])
         self.assertEqual(len(accepted['acknowledgements']),1)
         self.assertEqual(len(m.ack(self.root,'TASK-1','executor-a','accepted')['acknowledgements']),1)
         declined=m.ack(self.root,'TASK-1','executor-a','declined','not ready')
         self.assertEqual(declined['status'],'declined')
+
+    def test_task_update_refreshes_stale_authorization_reference(self):
+        spec={'task_id':'TASK-REFRESH','lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
+        task=m.assign(self.root,spec)
+        stale=dict(task['authorization'])
+        stale.pop('status'); stale.pop('scope')
+        task['authorization']=stale
+        m.write(m.task_path(self.root,'TASK-REFRESH'),task)
+        refreshed=m.assign(self.root,{**spec,'authorization_ref':'test-auth'},update=True)
+        self.assertEqual(refreshed['authorization'],m.authorization_reference(m.active_authorization(m.read(self.root/'config.json'))))
+        self.assertIn('status',refreshed['authorization'])
+        self.assertIn('scope',refreshed['authorization'])
 
     def test_task_ref_requires_lane_and_latest_acceptance(self):
         spec={'task_id':'TEST','lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
@@ -217,12 +243,132 @@ class InboxTests(unittest.TestCase):
         m.ack(self.root,'TEST','executor-a','accepted')
         report={**self.report,'task_ref':'TEST','executor':'executor-a'}
         self.submit()
+        run=m.read(self.repo/'run.json')
+        run['authorization']=m.authorization_reference(m.active_authorization(m.read(self.root/'config.json')))
+        (self.repo/'run.json').write_text(json.dumps(run))
         self.assertTrue(m.submit(self.root,'pilot',report))
         with self.assertRaises(ValueError):m.validate_task_ref(self.root,'demo',report)
         with self.assertRaises(ValueError):m.validate_task_ref(self.root,'pilot',{**report,'executor':'executor-b'})
         with self.assertRaises(ValueError):m.validate_task_ref(self.root,'pilot',{k:v for k,v in report.items() if k!='executor'})
         m.ack(self.root,'TEST','executor-a','declined','changed')
         with self.assertRaises(ValueError):m.validate_task_ref(self.root,'pilot',report)
+
+    def test_task_ref_rejects_missing_or_stale_run_authorization(self):
+        spec={'task_id':'TEST-AUTH','lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
+        m.assign(self.root,spec)
+        m.ack(self.root,'TEST-AUTH','executor-a','accepted')
+        report={**self.report,'task_ref':'TEST-AUTH','executor':'executor-a'}
+        with self.assertRaisesRegex(ValueError,'run authorization'):
+            m.submit(self.root,'pilot',report)
+        run=json.loads((self.repo/'run.json').read_text())
+        run['authorization']={'id':'other-auth','status':'active'}
+        (self.repo/'run.json').write_text(json.dumps(run))
+        with self.assertRaisesRegex(ValueError,'run authorization'):
+            m.submit(self.root,'pilot',report)
+
+    def test_legacy_task_ref_binds_run_to_standing_authorization(self):
+        task={'task_id':'LEGACY-AUTH','lane':'pilot','objective':'verify','scope':['one'],
+              'acceptance':['two'],'status':'acknowledged',
+              'acknowledgements':[{'executor':'executor-a','decision':'accepted','at':m.now()}]}
+        m.write(m.task_path(self.root,'LEGACY-AUTH'),task)
+        report={**self.report,'task_ref':'LEGACY-AUTH','executor':'executor-a'}
+        with self.assertRaisesRegex(ValueError,'run authorization'):
+            m.validate_task_ref(self.root,'pilot',report)
+        run=json.loads((self.repo/'run.json').read_text())
+        run['authorization']=m.authorization_reference(m.active_authorization(m.read(self.root/'config.json')))
+        (self.repo/'run.json').write_text(json.dumps(run))
+        m.validate_task_ref(self.root,'pilot',report)
+
+    def test_execution_authorized_is_not_a_receipt_field(self):
+        self.report['execution_authorized']=False
+        with self.assertRaisesRegex(ValueError,'not a receipt field'):
+            self.submit()
+
+    def test_authorization_show_returns_the_single_active_reference(self):
+        result=m.authorization_show(self.root)
+        self.assertEqual(result['authorization']['id'],'test-auth')
+        self.assertEqual(result['authorization']['status'],'active')
+        self.assertFalse(result['execution_model']['automatic_execution'])
+
+    def test_legacy_task_without_authorization_inherits_standing_authorization(self):
+        task={'task_id':'LEGACY','lane':'pilot','objective':'verify','scope':['one'],
+              'acceptance':['two'],'status':'acknowledged','acknowledgements':[]}
+        m.write(m.task_path(self.root,'LEGACY'),task)
+        row=[t for t in m.status(self.root)['tasks'] if t['task_id']=='LEGACY'][0]
+        self.assertEqual(row['authorization_id'],'test-auth')
+        self.assertEqual(row['authorization_source'],'standing_authorization_fallback')
+        self.assertEqual(row['execution_authority']['executor_action'],'proceed')
+        self.assertIn('不等待所有者再次确认',row['execution_authority']['note'])
+
+    def test_user_lane_is_reported_as_scope_exclusion_not_authorization_request(self):
+        task={'task_id':'USER-LEGACY','lane':'user','objective':'verify','scope':['one'],
+              'acceptance':['two'],'status':'acknowledged','acknowledgements':[]}
+        m.write(m.task_path(self.root,'USER-LEGACY'),task)
+        row=[t for t in m.status(self.root)['tasks'] if t['task_id']=='USER-LEGACY'][0]
+        self.assertEqual(row['authorization_source'],'standing_authorization_scope_exclusion')
+        self.assertEqual(row['execution_authority']['executor_action'],'paused_by_owner_exclusion')
+        self.assertIn('与授权无关',row['execution_authority']['note'])
+
+    def test_review_output_is_rewritten_so_it_never_asks_for_owner_authorization(self):
+        text,rewrites=m.sanitize_review_output('需所有者扩权：轮换 JWT 密钥；等待所有者授权后继续。')
+        self.assertNotIn('需所有者扩权',text)
+        self.assertNotIn('等待所有者授权',text)
+        self.assertIn('另行登记',text)
+        self.assertEqual(len(rewrites),2)
+
+    def test_review_rewrites_account_owner_confirmation_variant(self):
+        text,rewrites=m.sanitize_review_output('还需账户所有者确认计费锁定状态及处置权限。')
+        self.assertNotIn('账户所有者确认',text)
+        self.assertIn('外部事实前提',text)
+        self.assertIn('不阻断已授权工作',text)
+        self.assertEqual(len(rewrites),1)
+
+    def test_system_authorization_findings_are_not_treated_as_owner_requests(self):
+        findings=('调用该接口需要授权，返回 401。',
+                  '平台管理员可另行授权租户配置管理员。',
+                  '公司切换须先确认用户仍是该公司成员。',
+                  '验收覆盖平台管理员授权范围与租户 ACL。')
+        for finding in findings:
+            text,rewrites=m.sanitize_review_output(finding)
+            self.assertEqual(text,finding)
+            self.assertEqual(rewrites,[])
+            self.assertEqual(m.owner_request_phrases(finding),[])
+
+    def test_review_rewrites_slash_dispatcher_variants(self):
+        text,rewrites=m.sanitize_review_output(
+            '所有者／主调度须先确认范围；所有者/主调度明确后续授权。')
+        self.assertNotIn('所有者／主调度须先确认',text)
+        self.assertNotIn('所有者/主调度明确后续授权',text)
+        self.assertIn('由总调度按常设授权裁决',text)
+        self.assertIn('由总调度按常设授权直接下发',text)
+
+    def test_sanitizer_is_idempotent_and_keeps_technical_billing_fact(self):
+        original='账户计费锁导致 job 未启动；所有者常设授权已为 active。'
+        text,rewrites=m.sanitize_review_output(original)
+        self.assertEqual(text,original)
+        self.assertEqual(rewrites,[])
+        once,_=m.sanitize_review_output('等待所有者授权后继续')
+        twice,rewrites=m.sanitize_review_output(once)
+        self.assertEqual(twice,once)
+        self.assertEqual(rewrites,[])
+
+    def test_existing_proposal_is_sanitized_and_hash_updated(self):
+        event_id=self.submit()
+        proposal=self.root/'proposals'/f'{event_id}-attempt-1.md'
+        proposal.parent.mkdir(parents=True,exist_ok=True)
+        proposal.write_text('还需账户所有者确认后继续。')
+        original_sha=m.digest(proposal.read_bytes())
+        m.write(self.root/'reviews'/f'{event_id}.json',
+                {'status':'proposal_ready','attempts':1,'proposal':str(proposal),
+                 'proposal_sha256':original_sha})
+        result=m.sanitize_existing_proposals(self.root)
+        self.assertEqual(result['rewritten_count'],1)
+        self.assertNotIn('账户所有者确认',proposal.read_text())
+        updated=m.read(self.root/'reviews'/f'{event_id}.json')
+        self.assertEqual(updated['original_proposal_sha256'],original_sha)
+        self.assertEqual(updated['proposal_sha256'],m.digest(proposal.read_bytes()))
+        self.assertEqual(updated['owner_requests_superseded_by']['id'],'test-auth')
+        self.assertEqual(m.status(self.root)['owner_request_audit']['active_owner_request_count'],0)
 
     def test_supersedes_closes_prior_blocker_and_prevents_retry(self):
         first_report={**self.report,'summary':'first','blockers':['BLOCKER-1']}
@@ -249,7 +395,7 @@ class InboxTests(unittest.TestCase):
         rows={row['id']:row for row in m.status(self.root)['receipts']}
         self.assertEqual(rows[first_id]['status'],'superseded')
         self.assertEqual(rows[first_id]['superseded_by'],[second_id])
-        self.assertFalse(rows[first_id]['execution_authorized'])
+        self.assertFalse(rows[first_id]['background_auto_execution'])
         with self.assertRaises(ValueError):m.retry(self.root,first_id,'recovered')
         self.assertEqual(m.review_one(self.root,self.review_success)['status'],'proposal_ready')
         rows={row['id']:row for row in m.status(self.root)['receipts']}
@@ -288,8 +434,8 @@ class InboxTests(unittest.TestCase):
         self.assertEqual(rows[second_id]['status'],'superseded')
         self.assertEqual(rows[first_id]['superseded_by'],[third_id])
         self.assertEqual(rows[second_id]['superseded_by'],[third_id])
-        self.assertFalse(rows[first_id]['execution_authorized'])
-        self.assertFalse(rows[second_id]['execution_authorized'])
+        self.assertFalse(rows[first_id]['background_auto_execution'])
+        self.assertFalse(rows[second_id]['background_auto_execution'])
         with self.assertRaises(ValueError):m.retry(self.root,first_id,'recovered')
         with self.assertRaises(ValueError):m.retry(self.root,second_id,'recovered')
         self.assertEqual(rows[third_id]['status'],'pending')
@@ -349,6 +495,9 @@ class InboxTests(unittest.TestCase):
         spec={'task_id':'TEST','lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
         m.assign(self.root,spec)
         m.ack(self.root,'TEST','executor-a','accepted')
+        run=m.read(self.repo/'run.json')
+        run['authorization']=m.authorization_reference(m.active_authorization(m.read(self.root/'config.json')))
+        (self.repo/'run.json').write_text(json.dumps(run))
         m.submit(self.root,'pilot',{**self.report,'task_ref':'TEST','executor':'executor-a'})
         m.ack(self.root,'TEST','executor-a','declined','revoked')
         self.assertEqual(m.review_one(self.root,self.review_success)['status'],'blocked')
@@ -359,6 +508,110 @@ class InboxTests(unittest.TestCase):
         m.submit(root,'pilot',dict(self.report))
         result=m.review_one(root)
         self.assertEqual(result['status'],'blocked')
-        self.assertFalse(result['execution_authorized'])
+        self.assertFalse(result['background_auto_execution'])
+
+    def test_assign_requires_registered_owner_authorization(self):
+        root=self.base/'no-auth'
+        m.initialize(root,{'pilot':str(self.repo)},'/bin/codex')
+        m.takeover(root,'dispatcher-no-auth','2026-10-17T00:00:00Z')
+        spec={'task_id':'TASK-NOAUTH','lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
+        with self.assertRaisesRegex(ValueError,'authorization is not registered'):
+            m.assign(root,spec)
+
+    def test_takeover_inherits_active_authorization(self):
+        result=m.takeover(self.root,'dispatcher-c','2026-10-17T02:00:00+00:00')
+        self.assertEqual(result['authorization_id'],'test-auth')
+        self.assertEqual(result['authorization_sha256'],m.digest(m.encode(self.authorization['authorization'])))
+        self.assertTrue(result['authorization_inherited'])
+        self.assertEqual(m.status(self.root)['dispatcher']['authorization_id'],'test-auth')
+
+    def test_authorization_reference_validates_itself(self):
+        reference=m.authorization_reference(self.authorization['authorization'])
+        m.validate_authorization_reference(reference)
+        self.assertEqual(reference['scope'],['test task scope'])
+        self.assertEqual(reference['status'],'active')
+        bad=dict(reference);bad['sha256']='0'*64
+        with self.assertRaisesRegex(ValueError,'digest mismatch'):
+            m.validate_authorization_reference(bad)
+
+    def test_revoked_authorization_blocks_task_assignment(self):
+        m.authorize(self.root,self.authorization_spec('revoked'))
+        spec={'task_id':'TASK-REVOKED','lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
+        with self.assertRaisesRegex(ValueError,'not active'):
+            m.assign(self.root,spec)
+
+    def test_precondition_is_not_authorization_wait(self):
+        base={'lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
+        m.assign(self.root,{**base,'task_id':'TASK-PREREQ'})
+        task=m.assign(self.root,{**base,'task_id':'TASK-DEPENDENT','preconditions':['TASK-PREREQ']})
+        readiness=m.task_readiness(self.root,task)
+        self.assertEqual(readiness['state'],'waiting_preconditions')
+        self.assertEqual(readiness['unmet_preconditions'],['TASK-PREREQ'])
+        self.assertIn('与授权无关',readiness['note'])
+
+    def test_blocker_may_describe_unauthorized_entry_without_asking_owner(self):
+        """A technical fact is not an owner-approval request.
+
+        Rejecting every occurrence of the word would force an executor to
+        rephrase a real finding such as an unauthorized public port or a 401
+        response, and could push it into asking the owner instead.
+        """
+        self.report['blockers']=['18082 未授权入口仍对外监听；未授权请求返回 401']
+        self.assertEqual(self.submit(),self.submit())
+
+    def test_blocker_may_state_system_authorization_requirement(self):
+        self.report['blockers']=['平台管理员接口返回 401，调用需要授权；租户 ACL 仍待复核']
+        self.assertEqual(self.submit(),self.submit())
+
+    def test_blocker_requesting_owner_authorization_is_rejected(self):
+        self.report['blockers']=['等待所有者授权后继续本地提交']
+        with self.assertRaisesRegex(ValueError,'owner authorization'):self.submit()
+
+    def test_status_normalizes_legacy_execution_authorized_field(self):
+        event_id=self.submit()
+        m.write(self.root/'reviews'/f'{event_id}.json',
+                {'status':'proposal_ready','attempts':1,'execution_authorized':False,
+                 'dispatcher_decision':{'decision':'accepted','execution_authorized':False}})
+        row=[x for x in m.status(self.root)['receipts'] if x['id']==event_id][0]
+        self.assertNotIn('execution_authorized',row)
+        self.assertNotIn('execution_authorized',row['dispatcher_decision'])
+        self.assertFalse(row['background_auto_execution'])
+        self.assertFalse(row['dispatcher_decision']['background_auto_execution'])
+
+    def test_authority_scan_classifies_historical_owner_gates_without_asking_owner(self):
+        base={'lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
+        m.assign(self.root,{**base,'task_id':'GATE-DAILY',
+                            'objective':'prepare clean-profile creation under owner authorization before any creation'})
+        m.assign(self.root,{**base,'task_id':'GATE-TARGET',
+                            'objective':'目标环境验收：未获新授权前不得启动部署'})
+        m.assign(self.root,{**base,'task_id':'GATE-GUARD',
+                            'objective':'narrow authority_digest needs owner sign-off'})
+        m.assign(self.root,{**base,'lane':'user','task_id':'GATE-USER',
+                            'objective':'等待所有者授权后继续'})
+        run_dir=self.repo/'.agent'/'runs'/'LEGACY';run_dir.mkdir(parents=True)
+        (run_dir/'run.json').write_text(json.dumps({'id':'LEGACY','next_exact_step':
+            'owner authorization before any creation'}))
+        scan=m.scan_authority_gates(self.root)
+        actions={f['task_id']:f['executor_action'] for f in scan['findings'] if f['task_id']}
+        self.assertEqual(actions['GATE-DAILY'],'proceed')
+        self.assertEqual(actions['GATE-TARGET'],'paused_by_owner_exclusion')
+        self.assertEqual(actions['GATE-GUARD'],'dispatcher_decision_required')
+        self.assertEqual(actions['GATE-USER'],'paused_by_owner_exclusion')
+        self.assertTrue(any(f['source'].endswith('LEGACY/run.json') for f in scan['findings']))
+        self.assertEqual(scan['owner_ask_count'],0)
+        self.assertEqual(m.status(self.root)['authority_scan']['owner_ask_count'],0)
+        self.assertIn('不得把执行器转回所有者索权',scan['policy'])
+
+    def test_backfill_authority_rule_marks_every_task(self):
+        base={'lane':'pilot','objective':'verify','scope':['one'],'acceptance':['two']}
+        task=m.assign(self.root,{**base,'task_id':'TASK-RULE'})
+        path=m.task_path(self.root,'TASK-RULE')
+        task=m.read(path);task.pop('authority_rule',None);m.write(path,task)
+        result=m.backfill_authority_rule(self.root)
+        self.assertGreaterEqual(result['updated'],1)
+        stored=m.read(path)['authority_rule']
+        self.assertEqual(stored['scan_command'],
+                         'agent_dispatch_inbox.py --root <root> authority-scan')
+        self.assertIn('不得向所有者索权',stored['rule'])
 
 if __name__ == '__main__':unittest.main()

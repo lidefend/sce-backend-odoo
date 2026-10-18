@@ -125,7 +125,8 @@ def _load_nav_dispatcher():
     security_pkg.__path__ = [str(SMART_CORE / "security")]
 
     platform_admin = _install_module("odoo.addons.smart_core.security.platform_admin")
-    platform_admin.user_is_platform_admin = lambda env, user=None: False
+    platform_admin.user_is_tenant_config_admin = lambda env, user=None: False
+    platform_admin.can_discover_platform_capabilities = lambda user: False
     action_resolver = _install_module("odoo.addons.smart_core.app_config_engine.services.resolvers.action_resolver")
     action_resolver.ActionResolver = type("ActionResolver", (), {"__init__": lambda self, *args, **kwargs: None})
     return _load_module(

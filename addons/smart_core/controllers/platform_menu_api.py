@@ -164,6 +164,9 @@ class PlatformMenuAPI(http.Controller):
                     'menu_fact_source_authority': meta.get("menu_fact_source_authority") or {},
                     'delivery_convergence': meta.get("delivery_convergence") or {},
                     'user_menu_config': (meta.get("user_menu_config") or {}).get("nav_fact") or {},
+                    'platform_minimum_surface': bool(meta.get("platform_minimum_surface")),
+                    'nav_source': meta.get("nav_source") or "",
+                    'default_route': meta.get("default_route") or {},
                 },
             })
         except AccessDenied as exc:
@@ -212,6 +215,9 @@ class PlatformMenuAPI(http.Controller):
                         'menu_fact_source_authority': meta.get("menu_fact_source_authority") or {},
                         'delivery_convergence': meta.get("delivery_convergence") or {},
                         'user_menu_config': meta.get("user_menu_config") or {},
+                        'platform_minimum_surface': bool(meta.get("platform_minimum_surface")),
+                        'nav_source': meta.get("nav_source") or "",
+                        'default_route': meta.get("default_route") or {},
                     },
                 }
             )

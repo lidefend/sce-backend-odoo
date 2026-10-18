@@ -135,7 +135,7 @@ class ScTaxDeductionRegistration(models.Model):
         readonly=True,
     )
     deduction_bill_document_no = fields.Char(
-        string="单据编号",
+        string="单据编号（扣款单）",
         compute="_compute_deduction_bill_visible_fields",
         store=True,
         readonly=True,
@@ -147,31 +147,31 @@ class ScTaxDeductionRegistration(models.Model):
         readonly=True,
     )
     deduction_bill_unit_name = fields.Char(
-        string="扣款单位",
+        string="扣款单位（扣款单）",
         compute="_compute_deduction_bill_visible_fields",
         store=True,
         readonly=True,
     )
     deduction_bill_amount_display = fields.Char(
-        string="扣款金额",
+        string="扣款金额（扣款单）",
         compute="_compute_deduction_bill_visible_fields",
         store=True,
         readonly=True,
     )
     deduction_bill_reason_display = fields.Char(
-        string="扣款事由",
+        string="扣款事由（扣款单）",
         compute="_compute_deduction_bill_visible_fields",
         store=True,
         readonly=True,
     )
     deduction_bill_date_display = fields.Char(
-        string="单据日期",
+        string="单据日期（扣款单）",
         compute="_compute_deduction_bill_visible_fields",
         store=True,
         readonly=True,
     )
     deduction_bill_attachment_text = fields.Char(
-        string="附件",
+        string="附件（扣款单）",
         compute="_compute_deduction_bill_visible_fields",
         store=True,
         readonly=True,

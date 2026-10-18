@@ -676,7 +676,7 @@ class ProjectCostPlanNode(models.Model):
     project_id = fields.Many2one("project.project", related="plan_id.project_id", store=True, readonly=True, index=True)
     plan_state = fields.Selection(related="plan_id.state", string="计划状态", store=True, readonly=True)
     parent_id = fields.Many2one("project.cost.plan.node", string="上级节点", ondelete="cascade", index=True)
-    parent_path = fields.Char(index=True)
+    parent_path = fields.Char(index=True, unaccent=False)
     child_ids = fields.One2many("project.cost.plan.node", "parent_id", string="下级节点", readonly=True)
     sequence = fields.Integer("序号", default=10, readonly=True)
     code = fields.Char("编码", readonly=True)

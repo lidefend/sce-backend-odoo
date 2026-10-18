@@ -247,6 +247,30 @@ export interface AppInitResponse {
     name: string;
     groups_xmlids?: string[];
     is_platform_admin?: boolean;
+    is_tenant_config_admin?: boolean;
+    platform_duty?: {
+      audience?: 'platform-admin' | 'tenant' | 'none' | string;
+      duty_keys?: string[];
+      capabilities?: string[];
+      duties?: Array<{
+        key?: string;
+        label?: string;
+        capabilities?: string[];
+        state?: string;
+        route?: string;
+        intent?: string;
+        scene_key?: string;
+      }>;
+      default_landing?: {
+        scene_key?: string;
+        route?: string;
+        source?: string;
+      } | null;
+      contract_version?: string;
+      source?: string;
+      trusted_instance_verified?: boolean;
+      namespace_id?: string | null;
+    };
     lang?: string;
     tz?: string;
     company_id?: number | null;

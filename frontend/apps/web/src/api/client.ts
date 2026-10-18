@@ -1,7 +1,6 @@
 import { config } from '../config';
 import { buildIdempotentIntentIdentity } from './intentRequestIdentity';
 import { useSessionStore } from '../stores/session';
-import { resolveConfiguredDb, resolveLoginRoutingDb } from '../services/dbContext';
 import { currentContextEpoch, currentContextSignal } from '../app/contextEpoch';
 import { redirectForExpiredSession } from '../app/sessionExpiredRecovery';
 
@@ -93,14 +92,10 @@ function asObject(value: unknown): UnknownObject | null {
   return value as UnknownObject;
 }
 
-function resolveApiPath(path: string, dbHeader: string) {
-  const raw = String(path || '').trim() || '/';
-  // Force db query on intent endpoint to avoid multi-db ambiguity.
-  if (!raw.startsWith('/api/v1/intent')) return raw;
-  if (!dbHeader) return raw;
-  const hasDb = /(?:\?|&)db=/.test(raw);
-  if (hasDb) return raw;
-  return `${raw}${raw.includes('?') ? '&' : '?'}db=${encodeURIComponent(dbHeader)}`;
+function resolveApiPath(path: string) {
+  // Batch C: the entry namespace is the only database authority. A client
+  // database hint is rejected with 409 NS_DATABASE_HINT_CONFLICT, so never add one.
+  return String(path || '').trim() || '/';
 }
 
 async function apiRequestRawUncoalesced<T>(path: string, options: RequestInit = {}) {
@@ -126,12 +121,8 @@ async function apiRequestRawUncoalesced<T>(path: string, options: RequestInit = 
     }
   }
   const isAnonymousIntent = intentName === 'login' || intentName === 'auth.login' || intentName === 'session.bootstrap' || intentName === 'sys.intents';
-  const loginRoutingDb = intentName === 'login' || intentName === 'auth.login' ? resolveLoginRoutingDb() : '';
-  const sessionDb = String(session.sessionDb || '').trim();
-  const dbHeader = loginRoutingDb || (session.token && sessionDb ? sessionDb : resolveConfiguredDb(String(config.odooDb || '').trim()));
-  if (dbHeader) {
-    headers.set('X-Odoo-DB', dbHeader);
-  }
+  // Batch C: never send a client database header. The entry namespace selects
+  // the database; a client hint is a conflict (409 NS_DATABASE_HINT_CONFLICT).
   if (isAnonymousIntent) {
     headers.set('X-Anonymous-Intent', '1');
   }
@@ -144,7 +135,7 @@ async function apiRequestRawUncoalesced<T>(path: string, options: RequestInit = 
     new URLSearchParams(window.location.search).get('debug') === '1';
 
   // A2: 网络级别校验 - 针对 system.init 请求
-  const resolvedPath = resolveApiPath(path, dbHeader);
+  const resolvedPath = resolveApiPath(path);
 
   let appInitPayload: AppInitIntentPayload | null = null;
   let isAppInitRequest = false;
@@ -163,7 +154,7 @@ async function apiRequestRawUncoalesced<T>(path: string, options: RequestInit = 
     console.log('Request URL:', `${config.apiBaseUrl}${resolvedPath}`);
     console.log('Request Headers:');
     console.log('  Authorization:', headers.has('Authorization') ? '存在' : '不存在');
-    console.log('  X-Odoo-DB:', headers.get('X-Odoo-DB'));
+    console.log('  entryBasePath:', config.entryBasePath);
     console.log('Request Payload:');
     console.log('  intent:', appInitPayload.intent);
     console.log('  params.root_xmlid:', appInitPayload.params?.root_xmlid);

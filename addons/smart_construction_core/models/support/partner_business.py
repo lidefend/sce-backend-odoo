@@ -146,7 +146,7 @@ class ResPartner(models.Model):
     sc_establishment_date = fields.Date(string="成立日期")
     sc_business_term = fields.Char(string="营业期限")
     sc_legal_representative = fields.Char(string="法定代表人")
-    sc_contact_name = fields.Char(string="联系人")
+    sc_contact_name = fields.Char(string="联系人（展示）")
     sc_business_scope = fields.Text(string="经营范围")
     sc_default_tax_rate = fields.Float(string="默认税率%", digits=(16, 4))
     sc_default_tax_rate_text = fields.Char(string="税率文本")

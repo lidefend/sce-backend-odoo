@@ -99,11 +99,22 @@ def decode_token(token):
             token,
             _get_secret_key(),
             algorithms=[ALGORITHM],
-            options={"require": [
-                "exp", "iat", "jti", "token_version", "user_id", "db",
-                "principal_type", "auth_method", "credential_id", "scope",
-                "company_id", "allowed_company_ids", "role_xmlids", "credential_epoch",
-            ]},
+            options={
+                # `aud` is a namespace identity claim, not a PyJWT verification
+                # input.  With `require: ["aud"]` and no `audience=` argument,
+                # PyJWT raises InvalidAudienceError for every token that carries
+                # the claim, which would invalidate all batch-C tokens.  The
+                # claim stays mandatory and its value is enforced against the
+                # resolved request namespace in
+                # `_ensure_token_db_matches_request`.
+                "verify_aud": False,
+                "require": [
+                    "exp", "iat", "jti", "token_version", "user_id", "db",
+                    "principal_type", "auth_method", "credential_id", "scope",
+                    "company_id", "allowed_company_ids", "role_xmlids", "credential_epoch",
+                    "namespace_id", "aud",
+                ],
+            },
         )
     except jwt.ExpiredSignatureError:
         raise AccessDenied("Token 已过期")
@@ -120,35 +131,55 @@ def _extract_bearer_token(auth_header):
     return parts[1].strip()
 
 
-def _request_db_name():
+def _request_namespace():
+    """Resolve the namespace the entry declared for this request."""
+
+    from .namespace_resolver import resolve_entry
+
     httprequest = getattr(request, "httprequest", None)
-    if httprequest is not None:
-        try:
-            header_db = httprequest.headers.get("X-Odoo-DB") or httprequest.headers.get("X-DB")
-        except Exception:
-            header_db = None
-        if str(header_db or "").strip():
-            return str(header_db).strip()
-        try:
-            query_db = httprequest.args.get("db")
-        except Exception:
-            query_db = None
-        if str(query_db or "").strip():
-            return str(query_db).strip()
-    session_db = getattr(getattr(request, "session", None), "db", None)
-    if str(session_db or "").strip():
-        return str(session_db).strip()
+    headers = getattr(httprequest, "headers", None) or {}
+    return resolve_entry(getattr(request, "env", None), headers)
+
+
+def _request_db_name():
+    """The only authoritative database is the one the entry namespace binds."""
+
+    return _request_namespace().database_name
+
+
+def _ensure_token_db_matches_request(token_db, token_namespace="", token_audience=""):
+    namespace = _request_namespace()
+    env = getattr(request, "env", None)
+    instance_db = str(getattr(getattr(env, "cr", None), "dbname", "") or "").strip()
+    if not instance_db or str(namespace.database_name or "").strip() != instance_db:
+        raise AccessDenied(
+            "NS_NAMESPACE_TARGET_MISMATCH namespace %s binds %s but this instance serves %s"
+            % (
+                str(getattr(namespace, "namespace_id", "") or "<unknown>"),
+                str(getattr(namespace, "database_name", "") or "<unset>"),
+                instance_db or "<unset>",
+            )
+        )
+    if str(token_db or "").strip() != namespace.database_name:
+        raise AccessDenied("NS_TOKEN_NAMESPACE_MISMATCH token database is not this namespace")
+    if token_namespace and str(token_namespace) != namespace.namespace_id:
+        raise AccessDenied("NS_TOKEN_NAMESPACE_MISMATCH token namespace is not this namespace")
+    if token_audience and str(token_audience) != namespace.audience:
+        raise AccessDenied("NS_TOKEN_AUDIENCE_MISMATCH token audience is not this entry")
+
+
+def token_version_is_current(token_version, current_version) -> bool:
+    """Rollback primitive: bumping the user's version invalidates every old token.
+
+    This is deliberately independent of the JWT signing secret so a rollback can
+    revoke C-era tokens without rotating the key (rotation is outside the batch C
+    authorization scope).
+    """
+
     try:
-        return str(getattr(getattr(request.env, "cr", None), "dbname", "") or "").strip()
-    except Exception:
-        return ""
-
-
-def _ensure_token_db_matches_request(token_db):
-    expected = str(token_db or "").strip()
-    current = _request_db_name()
-    if expected and current and expected != current:
-        raise AccessDenied("Token 数据库与当前请求数据库不一致")
+        return int(token_version or 0) == int(current_version or 0)
+    except (TypeError, ValueError):
+        return False
 
 
 def _token_user_id(payload):
@@ -201,6 +232,10 @@ def _validated_token_principal(payload, user, env):
     allowed_company_ids = _validated_int_claims(payload, "allowed_company_ids")
     role_xmlids = tuple(str(value or "").strip() for value in _validate_claim_list(payload, "role_xmlids"))
     company_id = int(payload.get("company_id") or 0)
+    namespace_id = str(payload.get("namespace_id") or "").strip()
+    audience = str(payload.get("aud") or "").strip()
+    if not namespace_id or not audience:
+        raise AccessDenied("NS_TOKEN_NAMESPACE_MISMATCH token lacks namespace identity")
     if (
         not scopes
         or not company_id
@@ -251,6 +286,8 @@ def _validated_token_principal(payload, user, env):
         "company_id": company_id,
         "allowed_company_ids": allowed_company_ids,
         "role_xmlids": role_xmlids,
+        "namespace_id": namespace_id,
+        "audience": audience,
     }
 
 
@@ -267,11 +304,13 @@ def get_principal_from_token():
         payload = decode_token(token)
         user_id = _token_user_id(payload)
         token_db = str(payload.get("db") or "").strip()
-        db_name = token_db or getattr(getattr(request, "session", None), "db", None) or getattr(request, "db", None)
-        if not db_name:
-            raise AccessDenied("Token 缺少数据库信息")
-        if token_db:
-            _ensure_token_db_matches_request(token_db)
+        token_namespace = str(payload.get("namespace_id") or "").strip()
+        token_audience = str(payload.get("aud") or "").strip()
+        if not token_db or not token_namespace or not token_audience:
+            raise AccessDenied("NS_TOKEN_NAMESPACE_MISMATCH token lacks namespace identity")
+        namespace = _request_namespace()
+        _ensure_token_db_matches_request(token_db, token_namespace, token_audience)
+        db_name = namespace.database_name
         registry = Registry(db_name)
         with registry.cursor() as cr:
             env = api.Environment(cr, SUPERUSER_ID, {})
@@ -280,7 +319,7 @@ def get_principal_from_token():
                 raise AccessDenied("Token 中指定的用户不存在")
             current_version = int(getattr(user, "token_version", 0) or 0)
         token_version = int(payload.get("token_version") or 0)
-        if token_version != current_version:
+        if not token_version_is_current(token_version, current_version):
             raise AccessDenied("Token 已撤销")
         # Return a user record bound to the current request env/cursor.
         # The `user` record above was created on a temporary cursor.
@@ -318,12 +357,6 @@ def authenticate_user(login, password, db: str | None = None):
     基于用户名和密码校验用户身份，并返回登录用户对象
     """
     session_db = getattr(getattr(request, "session", None), "db", None)
-    query_db = None
-    if getattr(request, "httprequest", None) is not None:
-        try:
-            query_db = request.httprequest.args.get("db")
-        except Exception:
-            query_db = None
     env_db = getattr(getattr(getattr(request, "env", None), "cr", None), "dbname", None)
     config_db = config.get("db_name")
     if isinstance(config_db, str) and "," in config_db:
@@ -331,7 +364,7 @@ def authenticate_user(login, password, db: str | None = None):
     elif isinstance(config_db, (list, tuple)):
         config_db = next((str(item).strip() for item in config_db if str(item).strip()), None)
 
-    db = db or session_db or query_db or env_db or config_db
+    db = db or session_db or env_db or config_db
     if not db:
         raise AccessDenied("未指定数据库")
     from .credential_service import authenticate_password

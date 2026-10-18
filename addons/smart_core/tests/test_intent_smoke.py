@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import hashlib
 import json
 
 from odoo.tests.common import HttpCase, tagged
@@ -12,12 +13,50 @@ class TestIntentSmoke(HttpCase):
         super().setUpClass()
         cls.test_login = "smart_core_tester"
         cls.test_password = "pass1234"
+        cls.entry_secret = "suite-entry-secret"
+        cls.entry_route_version = "suite-route-v1"
+        cls.entry_namespace = "suite-entry"
         cls.test_user = cls.env["res.users"].sudo().create({
             "name": "Smart Core Tester",
             "login": cls.test_login,
             "password": cls.test_password,
             "groups_id": [(6, 0, [cls.env.ref("base.group_user").id])],
         })
+        # Batch C: /api traffic is only served through an entry namespace.
+        # The suite binds its own database to a dedicated namespace so the
+        # test exercises the real guard instead of bypassing it.
+        database = cls.env.cr.dbname
+        namespace = cls.env["sc.platform.namespace"].sudo().search(
+            [("database_name", "=", database)], limit=1
+        )
+        if not namespace:
+            namespace = cls.env["sc.platform.namespace"].sudo().create({
+                "namespace_id": "ns_" + hashlib.sha256(
+                    database.encode("utf-8")
+                ).hexdigest()[:12],
+                "display_name": "Smart core CI suite",
+                "lifecycle_state": "active",
+                "database_name": database,
+                "duty_key": "ci_suite",
+                "audience": "tenant",
+            })
+        alias = cls.env["sc.platform.namespace.alias"].sudo().search([
+            ("alias", "=", cls.entry_namespace),
+            ("alias_kind", "=", "path"),
+        ], limit=1)
+        if not alias:
+            cls.env["sc.platform.namespace.alias"].sudo().create({
+                "alias": cls.entry_namespace,
+                "alias_kind": "path",
+                "namespace_id": namespace.id,
+                "is_primary": True,
+            })
+        cls.env["ir.config_parameter"].sudo().set_param(
+            "sc.entry.shared_secret", cls.entry_secret
+        )
+        cls.env["ir.config_parameter"].sudo().set_param(
+            "sc.entry.route_version", cls.entry_route_version
+        )
 
     def _json_response(self, response):
         body = response
@@ -47,14 +86,20 @@ class TestIntentSmoke(HttpCase):
             return body
         return json.loads(body or "{}")
 
-    def _post_intent(self, payload, headers=None, with_db=False):
-        url = "/api/v1/intent"
-        if with_db:
-            url = f"{url}?db={self.env.cr.dbname}"
+    def _entry_headers(self):
+        return {
+            "X-SC-Namespace": self.entry_namespace,
+            "X-SC-Audience": "tenant",
+            "X-SC-Entry-Secret": self.entry_secret,
+            "X-SC-Route-Version": self.entry_route_version,
+        }
+
+    def _post_intent(self, payload, headers=None):
         req_headers = {"Content-Type": "application/json"}
+        req_headers.update(self._entry_headers())
         if headers:
             req_headers.update(headers)
-        resp = self.url_open(url, data=json.dumps(payload), headers=req_headers)
+        resp = self.url_open("/api/v1/intent", data=json.dumps(payload), headers=req_headers)
         return self._json_response(resp)
 
     def test_anon_login_intent(self):
@@ -65,7 +110,6 @@ class TestIntentSmoke(HttpCase):
         data = self._post_intent(
             payload,
             headers={"X-Anonymous-Intent": "true"},
-            with_db=True,
         )
         self.assertTrue(data.get("ok"), data)
         self.assertTrue(data.get("data", {}).get("token"), data)
@@ -82,7 +126,6 @@ class TestIntentSmoke(HttpCase):
         data = self._post_intent(
             payload,
             headers={"X-Anonymous-Intent": "true"},
-            with_db=True,
         )
         self.assertTrue(data.get("ok"), data)
         row = data.get("data", {}) or {}
@@ -106,18 +149,21 @@ class TestIntentSmoke(HttpCase):
         self.assertNotIn("system", row)
         self.assertNotIn("groups", (row.get("user") or {}))
 
-    def test_anon_login_intent_without_db_query_param(self):
+    def test_explicit_database_hint_is_refused(self):
         payload = {
             "intent": "login",
             "params": {"login": self.test_login, "password": self.test_password, "contract_mode": "compat"},
         }
-        data = self._post_intent(
-            payload,
-            headers={"X-Anonymous-Intent": "true"},
-            with_db=False,
+        headers = {"Content-Type": "application/json", "X-Anonymous-Intent": "true"}
+        headers.update(self._entry_headers())
+        resp = self.url_open(
+            f"/api/v1/intent?db={self.env.cr.dbname}",
+            data=json.dumps(payload),
+            headers=headers,
         )
-        self.assertTrue(data.get("ok"), data)
-        self.assertTrue(data.get("data", {}).get("token"), data)
+        self.assertEqual(resp.status_code, 409)
+        data = self._json_response(resp)
+        self.assertEqual((data.get("error") or {}).get("code"), "NS_DATABASE_HINT_CONFLICT", data)
 
     def test_anon_login_intent_compat_disabled_fallbacks_to_default(self):
         self.env["ir.config_parameter"].sudo().set_param("smart_core.login.compat_enabled", "0")
@@ -132,7 +178,6 @@ class TestIntentSmoke(HttpCase):
         data = self._post_intent(
             payload,
             headers={"X-Anonymous-Intent": "true"},
-            with_db=True,
         )
         self.assertTrue(data.get("ok"), data)
         row = data.get("data", {}) or {}
@@ -153,7 +198,6 @@ class TestIntentSmoke(HttpCase):
         data = self._post_intent(
             payload,
             headers={"X-Anonymous-Intent": "true"},
-            with_db=True,
         )
         self.assertTrue(data.get("ok"), data)
         row = data.get("data", {}) or {}
@@ -172,7 +216,6 @@ class TestIntentSmoke(HttpCase):
         data = self._post_intent(
             payload,
             headers={"X-Anonymous-Intent": "true"},
-            with_db=True,
         )
         self.assertTrue(data.get("ok"), data)
         row = data.get("data", {}) or {}
@@ -189,7 +232,6 @@ class TestIntentSmoke(HttpCase):
         login_data = self._post_intent(
             login_payload,
             headers={"X-Anonymous-Intent": "true"},
-            with_db=True,
         )
         login_row = login_data.get("data", {}) or {}
         token = (login_row.get("session") or {}).get("token") or login_row.get("token")
@@ -292,7 +334,6 @@ class TestIntentSmoke(HttpCase):
         login_data = self._post_intent(
             login_payload,
             headers={"X-Anonymous-Intent": "true"},
-            with_db=True,
         )
         login_row = login_data.get("data", {}) or {}
         token = (login_row.get("session") or {}).get("token") or login_row.get("token")
@@ -381,7 +422,6 @@ class TestIntentSmoke(HttpCase):
         login_data = self._post_intent(
             login_payload,
             headers={"X-Anonymous-Intent": "true"},
-            with_db=True,
         )
         login_row = login_data.get("data", {}) or {}
         token = (login_row.get("session") or {}).get("token") or login_row.get("token")
@@ -403,7 +443,6 @@ class TestIntentSmoke(HttpCase):
         login_data = self._post_intent(
             login_payload,
             headers={"X-Anonymous-Intent": "true"},
-            with_db=True,
         )
         login_row = login_data.get("data", {}) or {}
         token = (login_row.get("session") or {}).get("token") or login_row.get("token")

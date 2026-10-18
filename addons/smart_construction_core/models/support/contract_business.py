@@ -5,7 +5,6 @@ from odoo import api, fields, models
 class ConstructionContractBusiness(models.Model):
     _inherit = "construction.contract"
 
-    amount_untaxed = fields.Monetary(string="平台合同金额")
     visible_contract_amount = fields.Monetary(
         string="合同金额",
         currency_field="currency_id",
@@ -44,13 +43,13 @@ class ConstructionContractBusiness(models.Model):
         store=True,
     )
     expense_execution_status_display = fields.Char(
-        string="单据状态", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
+        string="单据状态（执行展示）", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
     )
     expense_execution_document_no = fields.Char(
         string="单据编号", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
     )
     expense_execution_project_name = fields.Char(
-        string="项目名称", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
+        string="项目名称（执行展示）", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
     )
     expense_execution_contract_date = fields.Char(
         string="签订日期", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
@@ -62,13 +61,13 @@ class ConstructionContractBusiness(models.Model):
         string="往来单位", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
     )
     expense_execution_engineering_content = fields.Text(
-        string="合同内容", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
+        string="合同内容（执行展示）", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
     )
     expense_execution_category = fields.Char(
-        string="合同类别", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
+        string="合同类别（执行展示）", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
     )
     expense_execution_amount_display = fields.Char(
-        string="合同金额", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
+        string="合同金额（执行展示）", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
     )
     expense_execution_invoice_amount = fields.Char(
         string="已开票金额", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
@@ -77,22 +76,22 @@ class ConstructionContractBusiness(models.Model):
         string="已付款金额", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
     )
     expense_execution_unpaid_amount = fields.Char(
-        string="未付款金额", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
+        string="未付款金额（执行展示）", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
     )
     expense_execution_uninvoiced_amount = fields.Char(
-        string="未开票金额", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
+        string="未开票金额（执行展示）", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
     )
     expense_execution_contract_no = fields.Char(
         string="合同编号", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
     )
     expense_execution_attachment_text = fields.Text(
-        string="附件", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
+        string="附件（执行展示）", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
     )
     expense_execution_source_created_by = fields.Char(
-        string="录入人", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
+        string="录入人（执行展示）", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
     )
     expense_execution_source_created_at = fields.Char(
-        string="录入时间", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
+        string="录入时间（执行展示）", compute="_compute_expense_execution_formal_visible_fields", store=True, readonly=True
     )
     contract_unreceived_amount = fields.Monetary(
         string="平台未收款",

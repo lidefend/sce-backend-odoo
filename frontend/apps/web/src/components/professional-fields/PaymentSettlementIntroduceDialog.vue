@@ -54,7 +54,7 @@
         <div class="settle-preview-head">
           <div class="settle-preview-title">
             <strong>{{ previewData.settlement.display_name }}</strong>
-            <span class="settle-preview-sub" v-if="previewData.settlement.contract_name">{{ contract.resultContractLabel }}：{{ previewData.settlement.contract_name }}</span>
+            <span v-if="previewData.settlement.contract_name" class="settle-preview-sub">{{ contract.resultContractLabel }}：{{ previewData.settlement.contract_name }}</span>
           </div>
           <ScButton type="button" variant="ghost" size="small" @click="backToSettlementSearch">{{ contract.switchSourceLabel }}</ScButton>
         </div>

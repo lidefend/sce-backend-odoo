@@ -53,7 +53,7 @@ def _load_module():
     _install_module(
         "odoo.addons.smart_core.security.platform_admin",
         can_discover_platform_capabilities=lambda user: False,
-        user_is_platform_admin=lambda user: False,
+        user_is_platform_control_admin=lambda user, **_kwargs: False,
     )
     _install_module("odoo.addons.smart_core.utils")
     _install_module(

@@ -1,0 +1,294 @@
+{
+  "schema_version": 1,
+  "id": "PLATFORM-ADMIN-DUTY-20261018",
+  "branch": "codex/daily-platform-demo-20261018",
+  "status": "active",
+  "stage_identity": {
+    "captured_head": "d52ce8a0b81c7ddbc6644bd04d66b56440fe8cc2",
+    "observed_head_at_inventory": "eb9b5bcb17b13e675bb0735697cdfd4b0a90eb7e",
+    "note": "盘点开始时 HEAD=d52ce8a0；暂停写入期间并行 lane 提交 demo seed 收尾（75e81bf05、eb9b5bcb1），HEAD 前移至 eb9b5bcb17b13e675bb0735697cdfd4b0a90eb7e。本记录不做身份对齐，差异如实保留。",
+    "reconciled_head": "8a6efdc7653d78d289e2c6893e2f8d40cb65c4e3",
+    "reconciliation_note": "提交后同一工作树上并行 lane 追加了 b81166475（合并服务器应用提交 6399e8165 与本地 a4cf11f9f）与 8a6efdc76（写操作职责不再渲染只读按钮，前端最小修正）。本记录按事实追加，不改写历史。"
+  },
+  "executor": "Aquinas",
+  "lane": "demo",
+  "authorization": {
+    "id": "owner-standing-auth-20261018",
+    "status": "active",
+    "sha256": "b94bb85f18556111051e815f4d787b7e3868c0cd2a3222952955cd8cc85ee499",
+    "source": "agent_dispatch_inbox authorization (owner-standing-auth-20261018)"
+  },
+  "objective": "Make the platform administrator duty real: declared non-empty platform capability surface and contract-enforced platform/tenant boundary.",
+  "write_window": "released_after_batch_c",
+  "product_files_modified": [
+    "addons/smart_core/core/platform_duty_contract.py",
+    "addons/smart_core/core/system_init_identity_payload.py",
+    "addons/smart_core/controllers/platform_duty_controller.py",
+    "addons/smart_core/controllers/__init__.py",
+    "addons/smart_core/controllers/platform_ops_controller.py",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/security/platform_admin.py",
+    "addons/smart_core/__manifest__.py",
+    "addons/smart_core/data/sc_platform_namespace_seed.xml",
+    "addons/smart_core/migrations/17.0.1.1.16/post-migration.py",
+    "addons/smart_core/tests/test_platform_admin_duty_contract.py",
+    "addons/smart_core/tests/test_platform_admin_boundary.py",
+    "addons/smart_core/tests/test_admin_predicate_split.py",
+    "addons/smart_core/tests/test_login_company_boundary.py",
+    "frontend/apps/web/src/components/platform-duty/PlatformDutyPanel.vue",
+    "frontend/apps/web/src/components/platform-duty/dutyAction.ts",
+    "frontend/apps/web/src/components/platform-duty/dutyAction.test.ts",
+    "frontend/apps/web/src/views/PlatformDutyView.vue",
+    "frontend/apps/web/src/views/HomeView.vue",
+    "frontend/apps/web/src/router/index.ts",
+    "frontend/packages/schema/src/index.ts"
+  ],
+  "commits_created": [
+    "a4cf11f9f1d933b43df8aeff941419542c8517ae",
+    "1efbd7e814e4aa8e7e02e0dff3aa58f608e429f3"
+  ],
+  "inventory": {
+    "path": ".runtime/platform-admin-duty-20261018/inventory.md",
+    "sha256": "0cbef11bb34fd93dcaa0501d0e7a3c9cec574d3bd5600924db40d369f061b4b1"
+  },
+  "findings": {
+    "platform_capability_count_live": 0,
+    "platform_has_sc_capability_model": false,
+    "platform_installed_modules": [
+      "auth_totp",
+      "base",
+      "base_import",
+      "base_import_module",
+      "base_setup",
+      "bus",
+      "iap",
+      "smart_core",
+      "web",
+      "web_editor",
+      "web_tour",
+      "web_unsplash"
+    ],
+    "demo_capability_count_live": 5,
+    "platform_navigation_root_nodes": 1,
+    "platform_minimum_surface": true,
+    "declared_duty_carrier_present": false,
+    "platform_duty_endpoint_present": false,
+    "ops_tenants_status_for_platform_admin": 200,
+    "platform_duty_endpoint_status": 404,
+    "demo_company_name_actual": "demo演示公司",
+    "demo_company_name_target": "Demo演示公司",
+    "demo_company_name_diff": "first char case only: d vs D; remaining 5 chars identical; length 7 both",
+    "demo_admin_login": "200 admin/123456 token_len=1620 uid=2",
+    "platform_admin_login": "200 admin/123456 token_len=876 uid=2",
+    "admin_classes": {
+      "platform_db_admin": {
+        "is_platform_control_admin": true,
+        "is_tenant_config_admin": true,
+        "is_break_glass_technical_admin": true,
+        "is_security_admin": false
+      },
+      "demo_db_admin": {
+        "is_platform_control_admin": false,
+        "is_tenant_config_admin": true,
+        "is_break_glass_technical_admin": true,
+        "is_security_admin": false
+      }
+    },
+    "platform_capabilities_usable_immediately": [
+      "platform.tenant_registry.read -> GET /api/ops/tenants (200, count=1)",
+      "platform.maintenance_access.read -> GET /api/ops/maintenance/access (200, records)",
+      "platform.job_status.read -> GET /api/ops/job/status (404 NOT_FOUND, endpoint healthy)",
+      "platform.release_operator.read -> intent release.operator.surface (200, release_operator_surface_v1)",
+      "platform.workspace.home -> scene workspace.home (nav root 1)"
+    ]
+  },
+  "code_locations": {
+    "capability_provider_empty_path": "addons/smart_core/core/capability_provider.py:111,134,136",
+    "system_init_capability_wiring": "addons/smart_core/handlers/system_init.py:1737,1745,1769",
+    "delivery_capability_policy": "addons/smart_core/delivery/delivery_engine.py:265,269,324",
+    "platform_minimum_nav": "addons/smart_core/core/platform_minimum_nav_contract.py:62",
+    "identity_payload": "addons/smart_core/core/system_init_identity_payload.py (no platform_duty field)",
+    "platform_ops_controller": "addons/smart_core/controllers/platform_ops_controller.py:16,75,83,121,154",
+    "control_predicate": "addons/smart_core/security/platform_admin.py:179",
+    "tenant_predicate": "addons/smart_core/security/platform_admin.py:219",
+    "deprecated_alias": "addons/smart_core/security/platform_admin.py:232",
+    "group_only_convention": "addons/smart_core/security/platform_admin.py:274,284",
+    "module_local_consumers": [
+      "addons/smart_core/handlers/app_shell.py:262,277,251,524,631",
+      "addons/smart_core/delivery/menu_service.py:1742",
+      "addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py:115,166,205,556"
+    ],
+    "hardcoded_identity": [
+      "addons/smart_core/model/ui_tenant_extension_field.py:192,202,877",
+      "addons/smart_core/security/tenant_payload_operator.py:306"
+    ]
+  },
+  "tests_observed": {
+    "addons/smart_core/tests/test_platform_admin_boundary.py": "Ran 15 tests, FAILED (failures=7) - batch C mid-flight audience seam",
+    "addons/smart_core/tests/test_admin_predicate_split.py": "Ran 10 tests, FAILED (failures=2) - batch C mid-flight audience seam"
+  },
+  "blockers": [
+    {
+      "id": "BLOCKER-BATCH-C-WRITE-WINDOW",
+      "status": "closed",
+      "closed_at": "2026-10-18",
+      "reason": "C 批已提交（e40ead8ad、ef4619b49、14801acbe、c1dc413a4、a307fcd77），写集释放；本 lane 的两个提交 a4cf11f9f、1efbd7e81 已落在 C 批之上，未与他人的文件交叉。",
+      "evidence": [
+        ".runtime/platform-duty-closure-20261018/git_state.log"
+      ]
+    },
+    {
+      "id": "BLOCKER-PLATFORM-CAPABILITY-SURFACE-EMPTY",
+      "status": "closed",
+      "closed_at": "2026-10-18",
+      "reason": "平台库 system.init 现返回 capabilities=6、capability_groups=[platform_control]，is_platform_admin=true 且 is_tenant_config_admin=false；平台职责由后端契约声明并由前端渲染。",
+      "evidence": [
+        ".runtime/platform-admin-duty-20261018/phase2/runtime_readback_20261018.txt",
+        ".runtime/platform-duty-closure-20261018/test_platform_admin_duty_contract.py.log"
+      ]
+    },
+    {
+      "id": "BLOCKER-MODULE-LOCAL-ADMIN-CONVENTION",
+      "status": "closed",
+      "closed_at": "2026-10-18",
+      "reason": "判定拆分为 user_is_platform_control_admin（组 + 声明平台实例 + 受众接缝）与 user_is_tenant_config_admin（租户库内组校验）；app_shell、final_menu_navigation、load_view、nav_dispatcher 等模块内约定改为消费显式谓词，定向测试全绿。",
+      "evidence": [
+        ".runtime/platform-duty-closure-20261018/test_app_shell_boundaries.py.log",
+        ".runtime/platform-duty-closure-20261018/test_final_menu_navigation_service.py.log",
+        ".runtime/platform-duty-closure-20261018/test_admin_predicate_split.py.log"
+      ]
+    },
+    {
+      "id": "BLOCKER-TEST-BASELINE-RED-DURING-C",
+      "status": "closed",
+      "closed_at": "2026-10-18",
+      "reason": "C 提交前的 7/15、2/10 失败已消失：12 个后端测试模块逐项非零通过（20/15/10/11/7/14/7/5/2/4/5/22），前端 typecheck、dutyAction 6、admin_route_access 10 亦通过。",
+      "evidence": [
+        ".runtime/platform-duty-closure-20261018/backend_tests_summary.log"
+      ]
+    },
+    {
+      "id": "BLOCKER-RUNTIME-CODE-DRIFT",
+      "status": "closed",
+      "closed_at": "2026-10-18",
+      "reason": "日常开发服务器 HEAD=6399e8165，平台容器 SC_SOURCE_REVISION 与之相同且 healthy；/platform-admin/api/runtime-version 回读同为 6399e8165，代码与运行态一致。",
+      "evidence": [
+        ".runtime/platform-duty-closure-20261018/deploy_readback_20261018.txt",
+        ".runtime/platform-admin-duty-20261018/phase2/runtime_readback_20261018.txt"
+      ]
+    }
+  ],
+  "next_exact_step": "已闭环：平台职责面、租户登记表与镜像身份分离均在运行态回读通过。后续仅剩环境 lane 的静态构建发布（frontend build → nginx 挂载）与最终视觉验收，由 environment lane 执行，本 lane 不再写入。",
+  "evidence": {
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/00_worktree_state.txt": "cc670aea69fa651436657a1dddb9df147d6f884e6b8574a180b45317adac1181",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/01_platform_capability_shell.txt": "0165259cbbebe7717bb586d1c64e8e83a81c41757892cd1c18983e3bacb4c2de",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/02_demo_capability_shell.txt": "19b20f38121781b369707dde0e28199f6813267d5efae9f137be8e0b2af91c8f",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/03_live_surface_probe.txt": "1aa49064cbbb7c8deb036402622c51eef7ec983f1ab856b6e77a54dd294291bd",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/04_navigation_probe.txt": "5877cba1248c6a1eaf53303b08dffac7744eb415b623fa65bb4886b0d42cc327",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/05_platform_duty_endpoint.txt": "6e64d4ea48b1b30aaa56f950b061e716f1db476689d11f98bd432a5b77912f81",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/06_admin_class_matrix.txt": "5653b6b845f56c5f9594e30a8908e155ff2f176bc97f04285e59f59459a6a680",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/07_login_company.txt": "794a47544b31f80f2e83166f08a3144741cf2c4032e9daa7d80de1008b2f43d0",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/08_ops_surface_matrix.txt": "d14f798f8f9a89dd2d910b8ce3fdacf69748f8c5d0c349efafc0ccaff3e026fa",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/evidence/09_namespace_entry_prestate.txt": "748b09e40d29f9b7dbf197a7eee902346e92c5a8a4bb2064d96dec2f6281f4eb",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/inventory.md": "001e99038be3c6170a83e1b5e26891267a8480dc5530e78d32e541efdc001e2b",
+    ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/design_platform_capability_contract.md": "70f1641926f6578804cf95aaee8143d762c42c4df4877392f879bcfdff30faf7"
+  },
+  "phase": "phase2_implemented_deployed_and_verified",
+  "deliverables": {
+    "inventory": ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/inventory.md",
+    "design": ".agent/runs/PLATFORM-ADMIN-DUTY-20261018/design_platform_capability_contract.md"
+  },
+  "design_corrections": [
+    {
+      "id": "CORRECTION-NAMESPACE-LOGIN",
+      "applied_at": "2026-10-18",
+      "detail": "C 批后带 db 的 auth.login 会被 409 拒绝；验收与实机回读统一改为 POST /platform-admin/api/v1/intent，body 不带 db。"
+    },
+    {
+      "id": "CORRECTION-NO-PHYSICAL-DB-NAME",
+      "applied_at": "2026-10-18",
+      "detail": "build_platform_duty_surface 不再输出 trusted_instance=\"sc_platform_control\"；改为 trusted_instance_verified(bool)+audience+namespace_id 逻辑标识，物理库名仅留在 platform_control_scope 内部校验。"
+    }
+  ],
+  "prepared_state": {
+    "design_ready": true,
+    "awaiting": null,
+    "released": "batch C committed; write window released",
+    "product_code_modified": true
+  },
+  "prep_checks": {
+    "checked_at": "2026-10-18T07:07:47Z",
+    "namespace_entry": {
+      "path": "/platform-admin/api/v1/intent",
+      "current_status": 405,
+      "expected_after_c": 200,
+      "note": "nginx 尚未配置该前缀；后端路由仍为 /api/v1/intent (intent_dispatcher.py:312)"
+    },
+    "db_hint_rejection": {
+      "current_status_with_db": 200,
+      "expected_after_c": 409,
+      "code": "NS_DATABASE_HINT_CONFLICT",
+      "location": "handlers/login.py:242"
+    },
+    "namespace_id_source": {
+      "field": "namespace_id",
+      "pattern": "ns_<12 hex>",
+      "resolver": "security/namespace_resolver.py:195 resolve_instance",
+      "seed": {
+        "platform": "ns_000000000001",
+        "demo": "ns_000000000002"
+      }
+    },
+    "planned_file_collisions": [],
+    "c_landing_precondition": "两库各需存在绑定本库的 sc.platform.namespace 行；否则 resolve_instance 抛错导致平台身份 fail-closed、能力面为空。C 部署须包含 smart_core 升级导入 seed。"
+  },
+  "commits_note": "a4cf11f9f = declared platform duty surface projected into top-level capabilities, in-panel /api duty consumption with tenant registry table, Demo tenant name declared in the platform namespace registry; 1efbd7e81 = login company boundary test aligned with the C-batch entry namespace contract. Server application commit 6399e8165 carries the same tree (git am of a4cf11f9f on top of the C/demo commits).",
+  "verification": {
+    "backend": {
+      "test_platform_admin_duty_contract.py": 20,
+      "test_platform_admin_boundary.py": 15,
+      "test_admin_predicate_split.py": 10,
+      "test_login_identity_semantics.py": 11,
+      "test_login_company_boundary.py": 7,
+      "test_app_shell_boundaries.py": 14,
+      "test_load_view_handler.py": 7,
+      "test_final_menu_navigation_service.py": 5,
+      "test_api_server_time_boundaries.py": 2,
+      "test_platform_minimum_nav_contract.py": 4,
+      "test_stable_serialization_boundaries.py": 5,
+      "test_backend_scene_surface_boundary.py": 22
+    },
+    "frontend": {
+      "typecheck": "exit 0",
+      "dutyAction.test.ts": 6,
+      "admin_route_access_test.ts": 10
+    },
+    "logs": ".runtime/platform-duty-closure-20261018/",
+    "rechecked_at_head": "8a6efdc7653d78d289e2c6893e2f8d40cb65c4e3",
+    "rechecked_at": "2026-10-18T08:26:27Z"
+  },
+  "runtime_readback": {
+    "path": ".runtime/platform-admin-duty-20261018/phase2/runtime_readback_20261018.txt",
+    "is_platform_admin": true,
+    "is_tenant_config_admin": false,
+    "capabilities_len": 6,
+    "capability_groups": [
+      "platform_control"
+    ],
+    "platform_duty_audience": "platform-admin",
+    "tenants": [
+      {
+        "namespace_id": "ns_000000000002",
+        "tenant_name": "Demo演示公司",
+        "lifecycle_state": "active",
+        "alias": "demo",
+        "path_prefix": "/t/demo",
+        "billing_bound": false,
+        "company_id": null,
+        "company_name": null
+      }
+    ],
+    "runtime_version_source_revision": "6399e81658c10a84582c3a6390529891094b783c",
+    "demo_token_on_platform": 401
+  }
+}

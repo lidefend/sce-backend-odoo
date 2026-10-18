@@ -475,6 +475,12 @@ def onboard_environment_business_company(env, *, tenant_key=None, declaration=No
       company is an existing company adopted without relabelling, through the
       same ``adopt_business_company`` entry the fixtures already use.
 
+    The second shape is replayable: the governed onboarding entry is run again
+    after an upgrade or a follow-up deployment, and the same main company that
+    already owns this exact tenant key and purpose is that registration -- not a
+    second one. A different tenant key or purpose still refuses, so reuse never
+    becomes relabelling.
+
     Only the ordering assumption differs; ownership, purpose and identity realm
     come from the same declared strategy either way. The purpose is the declared
     role's own data purpose, and it must be the one its strategy names, so a
@@ -508,9 +514,22 @@ def onboard_environment_business_company(env, *, tenant_key=None, declaration=No
         raise ValueError(
             "DATA_SPACE_ENVIRONMENT_MAIN_COMPANY_IS_STILL_A_CARRIER:%s" % (company.id,)
         )
+    requested_key = str(tenant_key or company.id)
+    existing = _registration_model(env).sudo().with_context(active_test=False).search([
+        ("company_id", "=", company.id),
+    ], limit=1)
+    if existing:
+        if (existing.active
+                and existing.data_purpose == purpose
+                and existing.tenant_key == requested_key):
+            return existing
+        raise ValueError(
+            "DATA_SPACE_COMPANY_ALREADY_REGISTERED:%s:%s:%s"
+            % (company.id, existing.data_purpose, existing.tenant_key)
+        )
     return adopt_business_company(
         env,
-        tenant_key=str(tenant_key or company.id),
+        tenant_key=requested_key,
         purpose=purpose,
         company_id=company.id,
         declaration=declaration,

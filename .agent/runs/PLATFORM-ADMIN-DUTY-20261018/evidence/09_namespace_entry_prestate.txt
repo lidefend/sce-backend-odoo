@@ -1,0 +1,28 @@
+captured_at=2026-10-18T07:07:47Z
+# read-only: current namespace entry state (container still runs B code)
+--- port 18082 POST /platform-admin/api/v1/intent (no db)
+status=405
+<html>
+<head><title>405 Not Allowed</title></head>
+<body>
+<center><h1>405 Not Allowed</h1></center>
+<hr><center>nginx/1.29.8</center>
+</body>
+</html>
+
+--- port 18082 POST /api/v1/intent with db (current behaviour)
+status=200
+{"ok": true, "data": {"session": {"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLCJkYiI6InNjX3BsYXRmb3JtX2NvbnRyb2wiLCJjb21wYW55X2lkIjoxLCJhbGx
+--- port 18081 POST /platform-admin/api/v1/intent (no db)
+status=405
+<html>
+<head><title>405 Not Allowed</title></head>
+<body>
+<center><h1>405 Not Allowed</h1></center>
+<hr><center>nginx/1.29.8</center>
+</body>
+</html>
+
+--- port 18081 POST /api/v1/intent with db (current behaviour)
+status=200
+{"ok": true, "data": {"session": {"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLCJkYiI6InNjX2RlbW8iLCJjb21wYW55X2lkIjoxLCJhbGxvd2VkX2NvbXBhbnl

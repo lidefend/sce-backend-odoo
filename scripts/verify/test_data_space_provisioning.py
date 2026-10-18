@@ -30,19 +30,52 @@ class _Ids:
 
 
 class _Registrations:
-    def __init__(self, company_ids):
-        self.ids = list(range(1, len(company_ids) + 1))
-        self.company_id = _Ids(company_ids)
+    """A registration recordset with the fields the onboarding decision reads."""
+
+    def __init__(self, records):
+        self._records = list(records)
+        self.ids = [record["id"] for record in self._records]
+        self.company_id = _Ids([record["company_id"] for record in self._records])
 
     def __bool__(self):
-        return bool(self.ids)
+        return bool(self._records)
+
+    def _single(self, name):
+        if len(self._records) != 1:
+            raise AssertionError("expected one registration, got %d" % len(self._records))
+        return self._records[0][name]
+
+    @property
+    def active(self):
+        return self._single("active")
+
+    @property
+    def data_purpose(self):
+        return self._single("data_purpose")
+
+    @property
+    def tenant_key(self):
+        return self._single("tenant_key")
 
 
 class _Model:
-    def __init__(self, *, ids=(), count=0, created=None, field_names=(), creates=False,
-                 carrier=False,
+    def __init__(self, *, ids=(), records=None, count=0, created=None, field_names=(),
+                 creates=False, carrier=False,
                  pending_enrollment=(), owners=None):
-        self._ids = list(ids)
+        if records is None:
+            self._records = [
+                {
+                    "id": index,
+                    "company_id": company_id,
+                    "active": True,
+                    "data_purpose": "demo",
+                    "tenant_key": None,
+                }
+                for index, company_id in enumerate(ids, 1)
+            ]
+        else:
+            self._records = [dict(record) for record in records]
+        self._ids = [record["id"] for record in self._records]
         self._count = count
         self._carrier = bool(carrier)
         self._owners = dict(owners or {})
@@ -72,9 +105,25 @@ class _Model:
     def sudo(self):
         return self
 
-    def search(self, domain):
+    def search(self, domain, limit=None):
+        """Filter like the ORM does for the two domains onboarding reads."""
         self.domains.append(domain)
-        return _Registrations(self._ids)
+        records = list(self._records)
+        for clause in domain:
+            if not isinstance(clause, (list, tuple)) or len(clause) != 3:
+                continue
+            field, operator, value = clause
+            if operator != "=":
+                continue
+            if field == "active":
+                records = [record for record in records if record["active"] == value]
+            elif field == "data_purpose":
+                records = [record for record in records if record["data_purpose"] == value]
+            elif field == "company_id":
+                records = [record for record in records if record["company_id"] == value]
+        if limit:
+            records = records[:limit]
+        return _Registrations(records)
 
     def search_count(self, domain):
         self.domains.append(domain)
@@ -290,6 +339,37 @@ class EnvironmentOnboardingTest(unittest.TestCase):
         self.assertEqual(registration._registered[0]["tenant_key"], "sc-demo-main")
         self.assertEqual(registration._registered[0]["company_id"], 1)
         self.assertEqual(registration._adopted, [])
+
+    def test_replay_returns_the_existing_registration(self):
+        registration = _Model(records=[{
+            "id": 31,
+            "company_id": 1,
+            "active": True,
+            "data_purpose": "demo",
+            "tenant_key": "sc-demo-main",
+        }])
+        env = FakeEnv(registration=registration, role="platform_internal_demo")
+        result = provisioning.onboard_environment_business_company(
+            env, tenant_key="sc-demo-main",
+        )
+        self.assertEqual(result.tenant_key, "sc-demo-main")
+        self.assertEqual(result.data_purpose, "demo")
+        self.assertEqual(registration._registered, [])
+        self.assertEqual(registration._adopted, [])
+
+    def test_replay_refuses_a_different_tenant_key_for_the_same_company(self):
+        registration = _Model(records=[{
+            "id": 31,
+            "company_id": 1,
+            "active": True,
+            "data_purpose": "demo",
+            "tenant_key": "sc-demo-main",
+        }])
+        env = FakeEnv(registration=registration, role="platform_internal_demo")
+        with self.assertRaisesRegex(ValueError, "DATA_SPACE_COMPANY_ALREADY_REGISTERED"):
+            provisioning.onboard_environment_business_company(
+                env, tenant_key="sc-demo-other",
+            )
 
     def test_acceptance_role_onboards_the_test_purpose(self):
         registration = _Model(ids=[21])

@@ -36,9 +36,9 @@
     </section>
     <component
       :is="detailComposition?.adopted.value ? ScCard : 'section'"
+      v-if="showCollaborationPanel"
       :bordered="detailComposition?.adopted.value ? false : undefined"
       :data-detail-card="detailComposition?.adopted.value ? 'collaboration' : undefined"
-      v-if="showCollaborationPanel"
       class="sc-native-contract-collaboration"
       data-form-semantic-role="activity"
       data-form-section-target="surface:activity"

@@ -1825,7 +1825,7 @@ class ProjectBoqImportWizard(models.TransientModel):
         try:
             collector.add(text)
         except Exception:
-            pass
+            _logger.debug("Unable to add BOQ collector text %r.", text, exc_info=True)
 
     def _normalize_uom_name(self, name):
         """基本规范化：去空格、全角转半角、小写。"""

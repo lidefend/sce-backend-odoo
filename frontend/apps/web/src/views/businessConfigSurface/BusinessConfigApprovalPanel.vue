@@ -11,7 +11,8 @@
     </div>
     <label class="approval-target-row">
       <span>审批对象</span>
-      <ScSelect aria-label="审批对象" :model-value="targetModel" :options="targetOptions"
+      <ScSelect
+        aria-label="审批对象" :model-value="targetModel" :options="targetOptions"
         :disabled="loading || hasDraftChanges" @update:model-value="$emit('selectTarget', String($event))" />
     </label>
     <aside class="approval-rule-panel" aria-label="审批规则设置">

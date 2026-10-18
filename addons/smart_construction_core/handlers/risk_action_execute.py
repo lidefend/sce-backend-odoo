@@ -23,7 +23,7 @@ from odoo.addons.smart_core.handlers.reason_codes import (
     REASON_UNSUPPORTED_BUTTON_TYPE,
     failure_meta_for_reason,
 )
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
 
 
 class RiskActionExecuteHandler(BaseIntentHandler):
@@ -79,7 +79,7 @@ class RiskActionExecuteHandler(BaseIntentHandler):
         user = self.env.user
         if not user:
             return False
-        if user_is_platform_admin(user):
+        if user_is_tenant_config_admin(user):
             return True
         for xmlid in (
             "smart_construction_core.group_sc_cap_project_user",

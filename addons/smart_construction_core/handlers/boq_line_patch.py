@@ -21,6 +21,7 @@
 """
 from __future__ import annotations
 
+import logging
 import time
 from uuid import uuid4
 
@@ -43,6 +44,8 @@ from odoo.addons.smart_construction_core.handlers.reason_codes import (
     REASON_DONE,
 )
 from odoo.addons.smart_construction_core.services import boq_line_patch_service as svc
+
+_logger = logging.getLogger(__name__)
 
 
 def _unwrap_params(payload, fallback):
@@ -226,7 +229,7 @@ class BoqLinePatchHandler(BaseIntentHandler):
                     res_id=line.id,
                 )
             except Exception:
-                pass
+                _logger.debug("Unable to release BOQ line patch idempotency row after failure.", exc_info=True)
 
         if claim.get("mode") == "conflict":
             payload_resp = build_idempotency_conflict_response(
@@ -413,7 +416,7 @@ class BoqLinePatchHandler(BaseIntentHandler):
                     ),
                 )
             except Exception:
-                pass
+                _logger.debug("Unable to write BOQ line patch audit log.", exc_info=True)
 
         return {
             "ok": True,

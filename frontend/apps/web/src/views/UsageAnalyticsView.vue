@@ -144,48 +144,56 @@
 
       <section v-if="pageSectionEnabled('tables_top', true) && pageSectionTagIs('tables_top', 'section')" class="tables" :style="pageSectionStyle('tables_top')">
         <ScCard class="table-card" appearance="table" :title="pageText('table_top_scenes', 'Top Scenes')">
-          <ScTable class="usage-table" :label="pageText('table_top_scenes', 'Top Scenes')" :data="sceneTop" row-key="key"
+          <ScTable
+            class="usage-table" :label="pageText('table_top_scenes', 'Top Scenes')" :data="sceneTop" row-key="key"
             :columns="usageColumns([['key', pageText('table_scene_key', 'Scene Key')], ['count', pageText('table_count', 'Count')]])" size="small" />
         </ScCard>
 
         <ScCard class="table-card" appearance="table" :title="pageText('table_top_capabilities', 'Top Capabilities')">
-          <ScTable class="usage-table" :label="pageText('table_top_capabilities', 'Top Capabilities')" :data="capabilityTop" row-key="key"
+          <ScTable
+            class="usage-table" :label="pageText('table_top_capabilities', 'Top Capabilities')" :data="capabilityTop" row-key="key"
             :columns="usageColumns([['key', pageText('table_capability_key', 'Capability Key')], ['count', pageText('table_count', 'Count')]])" size="small" />
         </ScCard>
       </section>
 
       <section v-if="pageSectionEnabled('tables_daily', true) && pageSectionTagIs('tables_daily', 'section')" class="tables" :style="pageSectionStyle('tables_daily')">
         <ScCard class="table-card" appearance="table" :title="pageText('table_scene_open_last_7_days', 'Scene Open (Last 7 Days)')">
-          <ScTable class="usage-table" :label="pageText('table_scene_open_last_7_days', 'Scene Open (Last 7 Days)')" :data="sceneDaily" row-key="day"
+          <ScTable
+            class="usage-table" :label="pageText('table_scene_open_last_7_days', 'Scene Open (Last 7 Days)')" :data="sceneDaily" row-key="day"
             :columns="usageColumns([['day', pageText('table_date', 'Date')], ['count', pageText('table_count', 'Count')]])" size="small" />
         </ScCard>
 
         <ScCard class="table-card" appearance="table" :title="pageText('table_capability_open_last_7_days', 'Capability Open (Last 7 Days)')">
-          <ScTable class="usage-table" :label="pageText('table_capability_open_last_7_days', 'Capability Open (Last 7 Days)')" :data="capabilityDaily" row-key="day"
+          <ScTable
+            class="usage-table" :label="pageText('table_capability_open_last_7_days', 'Capability Open (Last 7 Days)')" :data="capabilityDaily" row-key="day"
             :columns="usageColumns([['day', pageText('table_date', 'Date')], ['count', pageText('table_count', 'Count')]])" size="small" />
         </ScCard>
       </section>
 
       <section v-if="pageSectionEnabled('tables_visibility', true) && pageSectionTagIs('tables_visibility', 'section')" class="tables" :style="pageSectionStyle('tables_visibility')">
         <ScCard class="table-card" appearance="table" :title="pageText('table_visibility_reason_counts', 'Visibility Reason Counts')">
-          <ScTable class="usage-table" :label="pageText('table_visibility_reason_counts', 'Visibility Reason Counts')" :data="reasonCounts" row-key="reason_code"
+          <ScTable
+            class="usage-table" :label="pageText('table_visibility_reason_counts', 'Visibility Reason Counts')" :data="reasonCounts" row-key="reason_code"
             :columns="usageColumns([['reason_code', pageText('table_reason_code', 'Reason Code')], ['count', pageText('table_count', 'Count')]])" size="small" />
         </ScCard>
 
         <ScCard class="table-card" appearance="table" :title="pageText('table_hidden_capability_samples', 'Hidden Capability Samples')">
-          <ScTable class="usage-table" :label="pageText('table_hidden_capability_samples', 'Hidden Capability Samples')" :data="hiddenSampleRows" row-key="key"
+          <ScTable
+            class="usage-table" :label="pageText('table_hidden_capability_samples', 'Hidden Capability Samples')" :data="hiddenSampleRows" row-key="key"
             :columns="usageColumns([['key', pageText('table_key', 'Key')], ['reasonLabel', pageText('table_reason', 'Reason')]])" size="small" />
         </ScCard>
       </section>
 
       <section v-if="pageSectionEnabled('tables_role_user', true) && pageSectionTagIs('tables_role_user', 'section')" class="tables" :style="pageSectionStyle('tables_role_user')">
         <ScCard class="table-card" appearance="table" :title="pageText('table_role_top', 'Role Top')">
-          <ScTable class="usage-table" :label="pageText('table_role_top', 'Role Top')" :data="roleTop" row-key="role_code"
+          <ScTable
+            class="usage-table" :label="pageText('table_role_top', 'Role Top')" :data="roleTop" row-key="role_code"
             :columns="usageColumns([['role_code', pageText('table_role_code', 'Role Code')], ['scene_open_total', pageText('table_scene', 'Scene')], ['capability_open_total', pageText('table_capability', 'Capability')], ['combined_total', pageText('table_total', 'Total')]])" size="small" />
         </ScCard>
 
         <ScCard class="table-card" appearance="table" :title="pageText('table_user_top', 'User Top')">
-          <ScTable class="usage-table" :label="pageText('table_user_top', 'User Top')" :data="userTop" row-key="user_id"
+          <ScTable
+            class="usage-table" :label="pageText('table_user_top', 'User Top')" :data="userTop" row-key="user_id"
             :columns="usageColumns([['user_id', pageText('table_user_id', 'User ID')], ['scene_open_total', pageText('table_scene', 'Scene')], ['capability_open_total', pageText('table_capability', 'Capability')], ['combined_total', pageText('table_total', 'Total')]])" size="small" />
         </ScCard>
       </section>

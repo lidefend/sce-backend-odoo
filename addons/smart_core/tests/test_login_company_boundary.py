@@ -17,18 +17,44 @@ class _BaseIntentHandler:
 
 
 class _Config:
+    def __init__(self, values=None):
+        self.values = dict(values or {})
+
     def sudo(self):
         return self
 
     def get_param(self, key, default=None):
-        return default
+        return self.values.get(key, default)
+
+
+class _NamespaceRecord:
+    namespace_id = "ns_000000000002"
+    database_name = "sc_demo"
+    duty_key = "demo"
+    audience = "tenant"
+    lifecycle_state = "active"
+
+
+class _NamespaceModel:
+    def sudo(self):
+        return self
+
+    def resolve_alias(self, alias):
+        if alias != "demo":
+            raise AssertionError("unexpected namespace alias: " + str(alias))
+        return _NamespaceRecord()
 
 
 class _Env(dict):
-    cr = types.SimpleNamespace(dbname="sc_platform_core")
+    cr = types.SimpleNamespace(dbname="sc_demo")
 
     def __init__(self, route=None):
-        data = {"ir.config_parameter": _Config()}
+        data = {
+            "ir.config_parameter": _Config(
+                {"sc.entry.shared_secret": "test-secret", "sc.entry.route_version": "c1"}
+            ),
+            "sc.platform.namespace": _NamespaceModel(),
+        }
         if route is not None:
             data["sc.login.route"] = route
         super().__init__(data)
@@ -56,27 +82,12 @@ def _principal(company_id=1):
     )
 
 
-class _RouteRecord:
-    def __init__(self, target_db="sc_demo", entry_kind="tenant"):
-        self.target_db = target_db
-        self.entry_kind = entry_kind
-
-    def to_runtime_dict(self):
-        return {
-            "login": "demo",
-            "target_db": self.target_db,
-            "entry_kind": self.entry_kind,
-            "product_key": "construction",
-            "label": "Demo Tenant",
-        }
-
-
-class _RouteModel:
-    def sudo(self):
-        return self
-
-    def search(self, domain, limit=1):
-        return _RouteRecord()
+_ENTRY_HEADERS = {
+    "X-SC-Namespace": "demo",
+    "X-SC-Audience": "tenant",
+    "X-SC-Route-Version": "c1",
+    "X-SC-Entry-Secret": "test-secret",
+}
 
 
 def _install_module(name, **attrs):
@@ -91,6 +102,14 @@ def _load_handler():
     root = Path(__file__).resolve().parents[1]
     api_mod = types.SimpleNamespace(Environment=lambda cr, uid, context: None)
     odoo_mod = _install_module("odoo", SUPERUSER_ID=1, api=api_mod)
+    # ``from odoo.http import request`` needs ``odoo`` to behave as a package.
+    odoo_mod.__path__ = []
+    _install_module(
+        "odoo.http",
+        request=types.SimpleNamespace(
+            session=None, httprequest=types.SimpleNamespace(headers=dict(_ENTRY_HEADERS))
+        ),
+    )
     _install_module("odoo.modules")
     _install_module("odoo.modules.registry", Registry=lambda db_name: None)
     _install_module("odoo.addons")
@@ -137,7 +156,7 @@ def _load_handler():
 class TestLoginCompanyBoundary(unittest.TestCase):
     def test_invalid_company_id_returns_bad_request(self):
         module = _load_handler()
-        handler = module.LoginHandler(env=_Env(), params={"login": "demo", "password": "pw", "db": "test", "company_id": "bad"})
+        handler = module.LoginHandler(env=_Env(), params={"login": "demo", "password": "pw", "company_id": "bad"})
 
         result = handler.handle()
 
@@ -147,7 +166,7 @@ class TestLoginCompanyBoundary(unittest.TestCase):
 
     def test_invalid_login_returns_bad_request(self):
         module = _load_handler()
-        handler = module.LoginHandler(env=_Env(), params={"login": ["demo"], "password": "pw", "db": "test"})
+        handler = module.LoginHandler(env=_Env(), params={"login": ["demo"], "password": "pw"})
 
         result = handler.handle()
 
@@ -157,7 +176,7 @@ class TestLoginCompanyBoundary(unittest.TestCase):
 
     def test_invalid_password_returns_bad_request(self):
         module = _load_handler()
-        handler = module.LoginHandler(env=_Env(), params={"login": "demo", "password": ["pw"], "db": "test"})
+        handler = module.LoginHandler(env=_Env(), params={"login": "demo", "password": ["pw"]})
 
         result = handler.handle()
 
@@ -165,19 +184,19 @@ class TestLoginCompanyBoundary(unittest.TestCase):
         self.assertEqual(result["code"], 400)
         self.assertEqual(result["error"]["message"], "password 无效")
 
-    def test_invalid_db_returns_bad_request(self):
+    def test_database_hint_is_a_conflict_not_a_route(self):
         module = _load_handler()
-        handler = module.LoginHandler(env=_Env(), params={"login": "demo", "password": "pw", "db": ["test"]})
+        handler = module.LoginHandler(env=_Env(), params={"login": "demo", "password": "pw", "db": "sc_demo"})
 
         result = handler.handle()
 
         self.assertFalse(result["ok"])
-        self.assertEqual(result["code"], 400)
-        self.assertEqual(result["error"]["message"], "db 无效")
+        self.assertEqual(result["code"], 409)
+        self.assertTrue(result["error"]["message"].startswith("NS_DATABASE_HINT_CONFLICT"))
 
     def test_disallowed_company_id_returns_forbidden(self):
         module = _load_handler()
-        handler = module.LoginHandler(env=_Env(), params={"login": "demo", "password": "pw", "db": "test", "company_id": 99})
+        handler = module.LoginHandler(env=_Env(), params={"login": "demo", "password": "pw", "company_id": 99})
 
         result = handler.handle()
 
@@ -187,13 +206,13 @@ class TestLoginCompanyBoundary(unittest.TestCase):
 
     def test_allowed_company_id_is_reflected_in_user_payload(self):
         module = _load_handler()
-        handler = module.LoginHandler(env=_Env(), params={"login": "demo", "password": "pw", "db": "test", "company_id": 2})
+        handler = module.LoginHandler(env=_Env(), params={"login": "demo", "password": "pw", "company_id": 2})
 
         data, _meta = handler.handle()
 
         self.assertEqual(data["user"]["company_id"], 2)
 
-    def test_login_without_db_uses_backend_route_contract(self):
+    def test_login_without_db_uses_entry_namespace_contract(self):
         module = _load_handler()
         seen = {}
 
@@ -202,14 +221,15 @@ class TestLoginCompanyBoundary(unittest.TestCase):
             return {"id": 5, "db": db or "missing", "principal": _principal()}
 
         module.authenticate_user = _auth
-        handler = module.LoginHandler(env=_Env(route=_RouteModel()), params={"login": "demo", "password": "pw"})
+        handler = module.LoginHandler(env=_Env(), params={"login": "demo", "password": "pw"})
 
         data, _meta = handler.handle()
 
         self.assertEqual(seen["db"], "sc_demo")
         self.assertEqual(data["session"]["db"], "sc_demo")
-        self.assertEqual(data["login_route"]["source"], "sc.login.route")
+        self.assertEqual(data["login_route"]["source"], "entry_namespace")
         self.assertEqual(data["login_route"]["entry_kind"], "tenant")
+        self.assertEqual(data["login_route"]["namespace_id"], "ns_000000000002")
 
 
 if __name__ == "__main__":

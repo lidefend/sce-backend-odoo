@@ -181,19 +181,19 @@ class ScInvoiceRegistration(models.Model):
         readonly=True,
     )
     recipient_unit_display = fields.Char(
-        string="受票单位",
+        string="受票单位（展示）",
         compute="_compute_formal_list_visible_fields",
         store=True,
         readonly=True,
     )
     invoice_issue_company_display = fields.Char(
-        string="开票单位",
+        string="开票单位（展示）",
         compute="_compute_formal_list_visible_fields",
         store=True,
         readonly=True,
     )
     actual_invoice_issue_company_display = fields.Char(
-        string="实际开票单位",
+        string="实际开票单位（展示）",
         compute="_compute_formal_list_visible_fields",
         store=True,
         readonly=True,
@@ -205,13 +205,13 @@ class ScInvoiceRegistration(models.Model):
         readonly=True,
     )
     note_display = fields.Char(
-        string="备注",
+        string="备注（展示）",
         compute="_compute_formal_list_visible_fields",
         store=True,
         readonly=True,
     )
     invoice_attachment_text = fields.Char(
-        string="附件",
+        string="附件（展示）",
         compute="_compute_formal_list_visible_fields",
         store=True,
         readonly=True,

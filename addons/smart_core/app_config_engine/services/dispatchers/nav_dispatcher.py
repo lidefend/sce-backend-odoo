@@ -14,7 +14,7 @@ from collections.abc import Mapping
 from odoo.exceptions import AccessError, MissingError
 from odoo.addons.smart_core.security.platform_admin import (
     can_discover_platform_capabilities,
-    user_is_platform_admin,
+    user_is_tenant_config_admin,
 )
 from ..resolvers.action_resolver import ActionResolver
 
@@ -54,7 +54,7 @@ class NavDispatcher:
         if env_flag in {"dev", "test", "local"}:
             return True
         try:
-            return user_is_platform_admin(self.env.user)
+            return user_is_tenant_config_admin(self.env.user)
         except Exception:
             return False
 

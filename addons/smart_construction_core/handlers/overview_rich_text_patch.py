@@ -21,6 +21,7 @@
 """
 from __future__ import annotations
 
+import logging
 import time
 from uuid import uuid4
 
@@ -43,6 +44,8 @@ from odoo.addons.smart_construction_core.handlers.reason_codes import (
     REASON_DONE,
 )
 from odoo.addons.smart_construction_core.services import overview_rich_text_patch_service as svc
+
+_logger = logging.getLogger(__name__)
 
 
 def _unwrap_params(payload, fallback):
@@ -236,7 +239,7 @@ class OverviewRichTextPatchHandler(BaseIntentHandler):
                     res_id=project.id,
                 )
             except Exception:
-                pass
+                _logger.debug("Unable to release overview rich text patch idempotency row after failure.", exc_info=True)
 
         if claim.get("mode") == "conflict":
             payload_resp = build_idempotency_conflict_response(
@@ -412,7 +415,7 @@ class OverviewRichTextPatchHandler(BaseIntentHandler):
                     ),
                 )
             except Exception:
-                pass
+                _logger.debug("Unable to write overview rich text patch audit log.", exc_info=True)
 
         return {
             "ok": True,

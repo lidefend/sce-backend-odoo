@@ -5,7 +5,7 @@ from typing import Any
 
 from odoo import SUPERUSER_ID, fields
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import user_is_platform_control_admin
 
 from .product_identity import resolve_product_identity
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
@@ -68,7 +68,7 @@ class ReleaseApprovalPolicyService:
                     "source_authority": self.source_authority_contract(),
                 }
         roles: set[str] = set()
-        if int(user.id or 0) == int(SUPERUSER_ID) or user_is_platform_admin(user):
+        if int(user.id or 0) == int(SUPERUSER_ID) or user_is_platform_control_admin(user):
             roles.add("admin")
             roles.add("executive")
         return {

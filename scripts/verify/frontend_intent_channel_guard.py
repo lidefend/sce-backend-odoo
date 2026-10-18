@@ -20,6 +20,19 @@ DIRECT_TRANSPORT_EXCEPTIONS = {
             "/api/v1/auth/activation/start",
             "/api/v1/auth/activation/complete",
             "/api/v1/auth/password-recovery/status",
+            "/api/v1/auth/page-contracts",
+        }
+    ),
+    # Platform control is a separate declared transport surface: every route is
+    # published by the backend platform-duty contract and authorized by the
+    # platform-control instance checks, not by the tenant intent channel. Keep
+    # the literals in the one duty declaration module.
+    "frontend/apps/web/src/components/platform-duty/dutyAction.ts": frozenset(
+        {
+            "/api/ops/tenants",
+            "/api/ops/maintenance/access",
+            "/api/ops/job/status",
+            "/api/ops/subscription/set",
         }
     ),
 }

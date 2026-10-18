@@ -44,6 +44,14 @@ class _GlobalMessageBaseHandler(BaseIntentHandler):
             "meta": {"source_authority": self.source_authority_contract()},
         }
 
+    def _mail_models_available(self) -> bool:
+        try:
+            self.env["mail.message"]
+            self.env["mail.notification"]
+        except KeyError:
+            return False
+        return True
+
     def _allowed_users(self, user_ids: Iterable[int]):
         ids = [int(uid) for uid in user_ids if int(uid or 0) > 0]
         if not ids:
@@ -133,6 +141,12 @@ class GlobalMessageInboxHandler(_GlobalMessageBaseHandler):
         partner = self.env.user.partner_id
         if not partner:
             return self._err(403, "当前用户缺少联系人，无法读取消息")
+        if not self._mail_models_available():
+            return {
+                "items": [],
+                "latest_id": 0,
+                "source_authority": self.source_authority_contract(),
+            }, {"source_authority": self.source_authority_contract()}
 
         try:
             Message = self.env["mail.message"]
@@ -168,6 +182,12 @@ class GlobalMessageConversationsHandler(_GlobalMessageBaseHandler):
         partner = self.env.user.partner_id
         if not partner:
             return self._err(403, "当前用户缺少联系人，无法读取消息")
+        if not self._mail_models_available():
+            return {
+                "items": [],
+                "total_unread": 0,
+                "source_authority": self.source_authority_contract(),
+            }, {"source_authority": self.source_authority_contract()}
 
         try:
             self.env["mail.message"].check_access_rights("read")
@@ -222,6 +242,8 @@ class GlobalMessageSendHandler(_GlobalMessageBaseHandler):
             return self._err(400, "请输入消息内容")
         if not recipient_user_ids:
             return self._err(400, "请选择接收人")
+        if not self._mail_models_available():
+            return self._err(400, "当前环境未启用消息中心")
 
         try:
             self.env["mail.message"].check_access_rights("create")
@@ -306,6 +328,12 @@ class GlobalMessageReadHandler(_GlobalMessageBaseHandler):
         partner = self.env.user.partner_id
         if not partner:
             return self._err(403, "当前用户缺少联系人，无法标记已读")
+        if not self._mail_models_available():
+            return {
+                "ok": True,
+                "data": {"result": {"updated": 0}},
+                "meta": {"source_authority": self.source_authority_contract()},
+            }
         try:
             domain: list[Any] = [
                 ("res_partner_id", "=", partner.id),

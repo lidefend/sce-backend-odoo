@@ -32,12 +32,8 @@ function extractHudFromSceneQuery(sceneQuery: unknown) {
 export function isDeliveryModeEnabled() {
   const deliveryFlag = String(import.meta.env.VITE_DELIVERY_MODE || '').trim().toLowerCase();
   const appEnv = String(import.meta.env.VITE_APP_ENV || '').trim().toLowerCase();
-  const dbName = String(import.meta.env.VITE_ODOO_DB || '').trim().toLowerCase();
-  return (
-    isTruthyHudValue(deliveryFlag) ||
-    appEnv === 'delivery' ||
-    dbName.includes('delivery')
-  );
+  // Batch C: delivery/HUD mode is a build mode, never a database name.
+  return isTruthyHudValue(deliveryFlag) || appEnv === 'delivery';
 }
 
 export function isHudEnabled(route: RouteLocationNormalizedLoaded) {

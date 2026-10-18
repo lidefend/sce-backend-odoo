@@ -1,5 +1,4 @@
 import { config } from '../config';
-import { resolveConfiguredDb } from './dbContext';
 
 interface ActivationStartResponse {
   ok: boolean;
@@ -19,8 +18,7 @@ async function activationRequest<T>(path: string, body?: Record<string, string>,
     'Content-Type': 'application/json',
     'X-Tenant': config.tenant,
   });
-  const db = resolveConfiguredDb(String(config.odooDb || '').trim());
-  if (db) headers.set('X-Odoo-DB', db);
+  // Batch C: the entry namespace is the only database authority.
   const response = await fetch(`${config.apiBaseUrl}${path}`, {
     method: body ? 'POST' : 'GET',
     headers,

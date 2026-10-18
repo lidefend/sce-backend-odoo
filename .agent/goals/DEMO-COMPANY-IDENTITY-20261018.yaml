@@ -1,0 +1,21 @@
+schema_version: 1
+goal:
+  id: DEMO-COMPANY-IDENTITY-20261018
+  title: Demo company identity in the formal seed chain
+  status: completed
+  formal_product_layer: P4
+  layer_target: demo delivery carrier smart_construction_demo seed profile
+  module: [smart_construction_demo]
+  objective: >-
+    Make the demo carrier rebuild-complete: the company is demo演示公司, every
+    public demo identity uses 123456, demo_full has a stable XMLID, and repeated
+    seed runs do not create duplicate attachments. Install, upgrade and seed
+    must reproduce the same published demo data.
+  baseline:
+    branch: codex/daily-platform-demo-20261018
+    full_sha: 73c7050eb798be41073cfe73302d639cb432f03d
+  constraints:
+    - demo carrier only; sc_demo on sc-demo-dev
+    - no production, history, tenant, or user-module writes
+    - the seed step stays idempotent and under the existing demo scope guard
+  next_exact_step: Completed on candidate e340b43d70c91762aee59d8b1fee232ec9680926; no further write without a new candidate.

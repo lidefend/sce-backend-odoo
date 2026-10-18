@@ -1,5 +1,9 @@
 # ADR-001：生产平台内核单库共置
 
+> 状态说明（2026-10-18）：本 ADR 仅作为**历史生产决策**保留。其数据库架构范围已被
+> `docs/adr/ADR-007-path-namespace-tenant-identity.md` 取代；平台控制库独立与每租户独立库
+> 以 ADR-007 与 `docs/governance/database_architecture_policy.md` 为准。
+
 - 状态：Accepted
 - 范围：current production release
 - 决策：`single_database_colocated_platform_core`

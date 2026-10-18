@@ -368,20 +368,20 @@ _SENTINEL_DEFAULT = object()
 def _install_platform_admin_check(*, is_admin, raises=False):
     """Install the published platform-admin check the P1 bypass module asks for.
 
-    The module consumes ``smart_core.security.platform_admin.user_is_platform_admin``
+    The module consumes ``smart_core.security.platform_admin.user_is_tenant_config_admin``
     (the same identity the runtime contract publishes as
     ``identity.is_platform_admin``); the stub replaces it deterministically.
     """
     _install_module("odoo.addons.smart_core.security")
 
-    def _user_is_platform_admin(user, **kwargs):
+    def _user_is_tenant_config_admin(user, **kwargs):
         if raises:
             raise RuntimeError("platform admin check unavailable")
         return bool(is_admin) and user is not None
 
     _install_module(
         "odoo.addons.smart_core.security.platform_admin",
-        user_is_platform_admin=_user_is_platform_admin,
+        user_is_tenant_config_admin=_user_is_tenant_config_admin,
     )
 
 

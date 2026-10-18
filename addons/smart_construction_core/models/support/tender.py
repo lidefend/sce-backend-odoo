@@ -898,7 +898,7 @@ class TenderGuarantee(models.Model):
             "标准保证金事实必须固化项目、公司与币种身份。",
         ),
     ]
-    deposit_status_display = fields.Char("状态", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
+    deposit_status_display = fields.Char("状态（展示）", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
     deposit_push_result = fields.Char("推送结果", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
     deposit_kingdee_document_no = fields.Char("金蝶单据编号", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
     deposit_document_no = fields.Char("单据编号", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
@@ -930,8 +930,8 @@ class TenderGuarantee(models.Model):
     deposit_need_return_text = fields.Char("是否需要退回", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
     deposit_payee_unit = fields.Char("收款单位", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
     deposit_payment_account = fields.Char("支付账户", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
-    deposit_note_display = fields.Char("备注", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
-    deposit_attachment_text = fields.Char("附件", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
+    deposit_note_display = fields.Char("备注（展示）", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
+    deposit_attachment_text = fields.Char("附件（展示）", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
     deposit_source_created_by = fields.Char("录入人", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
     deposit_source_created_at = fields.Char("录入时间", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
 

@@ -12,14 +12,14 @@
     <div class="bound-design-grid">
     <ScForm :disabled="busy || !loaded || published" label-align="top" class="bound-form-fields" @submit.prevent>
       <ScFormField v-slot="control" label="选择字段" field-key="selected">
-        <ScSelect  :model-value="selected" @update:model-value="selectField(String($event))" :id="control.controlId" aria-label="选择字段" :options="fieldOptions" filterable />
+        <ScSelect  :id="control.controlId" :model-value="selected" aria-label="选择字段" :options="fieldOptions" filterable @update:model-value="selectField(String($event))" />
       </ScFormField>
       <template v-if="selectedRow">
         <ScFormField v-slot="control" label="字段显示名称" field-key="label">
-          <ScInput v-model="label" :id="control.controlId" aria-label="字段显示名称" />
+          <ScInput :id="control.controlId" v-model="label" aria-label="字段显示名称" />
         </ScFormField>
         <ScFormField v-slot="control" label="字段显示" field-key="visibility">
-          <ScSelect v-model="visibility" :id="control.controlId" aria-label="字段显示" :options="visibilityOptions" />
+          <ScSelect :id="control.controlId" v-model="visibility" aria-label="字段显示" :options="visibilityOptions" />
         </ScFormField>
         <div class="bound-form-actions">
           <ScButton type="button" @click="applyField">应用字段设置</ScButton>
@@ -27,7 +27,7 @@
           <ScButton type="button" @click="reorder(1)">下移字段</ScButton>
         </div>
         <ScFormField v-slot="control" label="新分组名称" field-key="group" help="同一区域支持一个新分组；排序在原区域内调整。">
-          <ScInput v-model="groupLabel" :id="control.controlId" aria-label="新分组名称" />
+          <ScInput :id="control.controlId" v-model="groupLabel" aria-label="新分组名称" />
         </ScFormField>
         <ScButton type="button" @click="groupField">加入新分组</ScButton>
       </template>

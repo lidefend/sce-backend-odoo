@@ -34,7 +34,7 @@ from odoo.http import request
 from odoo.addons.smart_core.core.trace import get_trace_id
 from odoo.addons.smart_core.security.auth import get_principal_from_token
 from odoo.addons.smart_core.security.platform_admin import (
-    user_is_platform_admin,
+    user_is_platform_control_admin,
     user_is_security_admin,
 )
 
@@ -133,7 +133,7 @@ def _env(*, decider: bool):
     principal = get_principal_from_token()
     user = principal["user"]
     allowed = user_is_security_admin(user) if decider else (
-        user_is_platform_admin(user) or user_is_security_admin(user)
+        user_is_platform_control_admin(user) or user_is_security_admin(user)
     )
     if not allowed:
         raise AccessDenied("insufficient permissions")
@@ -150,7 +150,7 @@ def _principal_facts(principal: dict) -> dict[str, Any]:
         "auth_method": principal.get("auth_method") or "",
         "principal_type": principal.get("principal_type") or "",
         "is_security_admin": user_is_security_admin(user),
-        "is_platform_admin": user_is_platform_admin(user),
+        "is_platform_admin": user_is_platform_control_admin(user),
     }
 
 
