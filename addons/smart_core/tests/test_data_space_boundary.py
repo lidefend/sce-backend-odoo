@@ -192,6 +192,30 @@ class TestDataSpaceBoundary(TransactionCase):
         self.assertFalse(company.is_platform_bootstrap_company)
         self.assertEqual(company.name, 'Data space unit environment main')
 
+    def test_environment_onboarding_replays_the_same_space_idempotently(self):
+        from odoo.addons.smart_core.security import data_space_provisioning as provisioning
+        provisioning.declare_environment_role(self.env, 'platform_internal_demo')
+        company = self.env['res.company'].create({'name': 'Data space unit replay main'})
+        env = self.env(user=self.env.user, context={'allowed_company_ids': [company.id]})
+        first = provisioning.onboard_environment_business_company(
+            env, tenant_key='data-space-unit-replay')
+        second = provisioning.onboard_environment_business_company(
+            env, tenant_key='data-space-unit-replay')
+        self.assertEqual(first, second)
+        self.assertEqual(self.Registration.with_context(active_test=False).search_count([
+            ('company_id', '=', company.id)]), 1)
+
+    def test_environment_onboarding_refuses_a_different_space_for_the_same_company(self):
+        from odoo.addons.smart_core.security import data_space_provisioning as provisioning
+        provisioning.declare_environment_role(self.env, 'platform_internal_demo')
+        company = self.env['res.company'].create({'name': 'Data space unit relabel main'})
+        env = self.env(user=self.env.user, context={'allowed_company_ids': [company.id]})
+        provisioning.onboard_environment_business_company(
+            env, tenant_key='data-space-unit-relabel')
+        with self.assertRaisesRegex(ValueError, 'DATA_SPACE_COMPANY_ALREADY_REGISTERED'):
+            provisioning.onboard_environment_business_company(
+                env, tenant_key='data-space-unit-relabel-other')
+
     def test_environment_onboarding_refuses_a_carrier_main_company(self):
         from odoo.addons.smart_core.security import data_space_provisioning as provisioning
         provisioning.declare_environment_role(self.env, 'platform_internal_demo')
