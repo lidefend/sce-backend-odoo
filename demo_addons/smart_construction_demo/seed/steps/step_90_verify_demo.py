@@ -27,16 +27,6 @@ WARN_PROJECT_CODES = {
 # 提交/审批中的付款申请，演示数据的自检必须遵循同一产品规则。
 TERMINAL_PROJECT_LIFECYCLES = ("warranty", "closed")
 DEMO_COMPANY_NAME = "demo演示公司"
-DEMO_AUTHENTICATION_PRINCIPALS = (
-    "wutao",
-    "demo_full",
-    "demo_pm",
-    "demo_finance",
-    "demo_cost",
-    "demo_audit",
-    "demo_readonly",
-    "sc_test_admin",
-)
 ALL_DEMO_PROJECT_CODES = [
     "DEMO-PJ-INIT",
     "DEMO-PJ-TENDER",
@@ -111,16 +101,13 @@ def _verify_demo_credentials(env):
         [("module", "=", "smart_construction_demo"), ("model", "=", "res.users")]
     )
     users = Users.browse([row.res_id for row in rows.exists()]).exists()
-    if not users or any(not user.password for user in users):
+    if not users:
         raise UserError("Every seeded demo user must carry the showcase password.")
-    for login in DEMO_AUTHENTICATION_PRINCIPALS:
-        principal = Users.search([("login", "=", login)], limit=1)
-        if not principal:
-            raise UserError("Demo authentication principal missing: %s." % login)
+    for user in users:
         try:
-            principal._check_credentials(DEMO_USER_PASSWORD, {"interactive": False})
+            user._check_credentials(DEMO_USER_PASSWORD, {"interactive": False})
         except AccessDenied as error:
-            raise UserError("Demo authentication failed for %s." % login) from error
+            raise UserError("Demo authentication failed for %s." % user.login) from error
 
 
 def _verify_demo_full_my_work(env):

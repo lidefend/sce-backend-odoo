@@ -110,17 +110,13 @@ class DemoCompanyIdentity(unittest.TestCase):
             def _check_credentials(self, password, env):
                 return self[0]._check_credentials(password, env)
 
-            def search(self, domain, limit=1):
-                return Users([principals[domain[0][2]]])
-
         checked = []
-        principals = {
-            "wutao": SimpleNamespace(
-                password="hash",
-                _check_credentials=lambda password, env: checked.append(password),
-            ),
-        }
-        users = Users([SimpleNamespace(password="hash")])
+        principal = SimpleNamespace(
+            login="wutao",
+            password="hash",
+            _check_credentials=lambda password, env: checked.append(password),
+        )
+        users = Users([principal])
         env = {
             "ir.model.data": SimpleNamespace(
                 sudo=lambda: SimpleNamespace(
@@ -133,7 +129,6 @@ class DemoCompanyIdentity(unittest.TestCase):
             "step_90_verify_demo.py",
             "_verify_demo_credentials",
             DEMO_USER_PASSWORD="123456",
-            DEMO_AUTHENTICATION_PRINCIPALS=("wutao",),
             UserError=UserError,
             AccessDenied=AccessDenied,
         )
