@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "DEMO-COMPANY-IDENTITY-20261018",
   "branch": "codex/daily-platform-demo-20261018",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/DEMO-COMPANY-IDENTITY-20261018.yaml",
   "record": "docs/ops/iterations/demo_company_identity_20261018.md",
   "baseline_sha": "73c7050eb798be41073cfe73302d639cb432f03d",
@@ -59,5 +59,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Completed. Keep this run open only for evidence reconciliation; do not replay the deployed writes without a new candidate."
+  "next_exact_step": "No further write. Reuse the recorded receipts and deployed identity; open a new candidate for any change."
 }
