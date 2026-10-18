@@ -199,20 +199,24 @@ def user_is_platform_control_admin(
 def tenant_config_scope(user, *, include_system: bool = False, env=None) -> dict:
     """Describe tenant-scoped configuration administration.
 
-    ``has_group`` is answered by the database the user's environment is bound
-    to, so the decision is inherently scoped to the current tenant database.
-    It grants no platform-control authority (ADR-007 D6).
+    The duty belongs to a **tenant** instance.  It is the configuration group
+    evaluated in the database the user's environment is bound to, and it is
+    never granted on the declared platform-control instance: the platform
+    administrator's duty is a distinct responsibility (ADR-007 D6).  The two
+    predicates are therefore mutually exclusive by construction.
     """
 
     resolved_env = env if env is not None else getattr(user, "env", None)
     group_ok = _user_has_any_group(
         user, platform_admin_group_xmlids(include_system=include_system)
     )
+    instance = platform_instance_scope(resolved_env)
     return {
         "user_id": getattr(user, "id", None) if user else None,
         "group_ok": group_ok,
-        "database": _database_name(resolved_env),
-        "is_tenant_config_admin": group_ok,
+        "database": instance["database"],
+        "is_platform_control_instance": instance["is_platform_control_instance"],
+        "is_tenant_config_admin": bool(group_ok and not instance["is_platform_control_instance"]),
     }
 
 

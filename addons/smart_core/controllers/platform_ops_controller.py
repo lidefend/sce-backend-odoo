@@ -82,35 +82,86 @@ def _platform_env():
 class PlatformOpsController(http.Controller):
     @http.route("/api/ops/tenants", type="http", auth="public", methods=["GET"], csrf=False)
     def tenants(self, **params):
+        """Return the registered tenant namespaces, not the local companies.
+
+        A company row in the platform-control database is not a tenant: the
+        platform instance may hold no customer company at all, and a tenant
+        database usually holds several companies.  The tenant registry is the
+        namespaces declared with the ``tenant`` audience, joined to the
+        governed database registration and to the explicit tenant-company
+        registration when (and only when) one exists.  Billing data is emitted
+        only for a namespace that resolves to a registered company.
+        """
         try:
             _user, env = _platform_env()
-            Company = env["res.company"].sudo()
+            Namespace = env.get("sc.platform.namespace")
+            if Namespace is None:
+                return _fail("SERVER_ERROR", "namespace registry unavailable", http_status=500)
+            Registration = env.get("sc.platform.database.registration")
+            CompanyRegistration = env.get("sc.tenant.company.registration")
             Entitlement = env.get("sc.entitlement")
             Usage = env.get("sc.usage.counter")
             Subscription = env.get("sc.subscription")
-            companies = Company.search([], order="id")
+
+            namespaces = Namespace.sudo().search(
+                [("audience", "=", "tenant"), ("lifecycle_state", "!=", "retired")],
+                order="namespace_id",
+            )
             data = []
-            for company in companies:
-                ent_payload = {}
-                if Entitlement is not None:
-                    ent = Entitlement.get_effective(company)
-                    ent_payload = {
-                        "plan_code": ent.plan_id.code if ent.plan_id else None,
-                        "flags": ent.effective_flags_json or {},
-                        "limits": ent.effective_limits_json or {},
-                    }
-                usage = Usage.get_usage_map(company) if Usage is not None else {}
-                sub = None
-                if Subscription is not None:
-                    sub = Subscription.search([("company_id", "=", company.id)], order="start_date desc, id desc", limit=1)
+            for namespace in namespaces:
+                registration = None
+                if Registration is not None:
+                    registration = Registration.sudo().search(
+                        [("db_name", "=", namespace.database_name)], limit=1
+                    )
+                tenant_key = registration.tenant_key if registration else None
+                company = None
+                if CompanyRegistration is not None and tenant_key:
+                    company_registration = CompanyRegistration.sudo().search(
+                        [("tenant_key", "=", tenant_key), ("active", "=", True)], limit=1
+                    )
+                    company = company_registration.company_id or None
+
+                plan_code = None
+                flags = {}
+                limits = {}
+                usage = {}
+                subscription_state = None
+                if company is not None:
+                    if Entitlement is not None:
+                        entitlement = Entitlement.get_effective(company)
+                        plan_code = entitlement.plan_id.code if entitlement.plan_id else None
+                        flags = entitlement.effective_flags_json or {}
+                        limits = entitlement.effective_limits_json or {}
+                    usage = Usage.get_usage_map(company) if Usage is not None else {}
+                    if Subscription is not None:
+                        subscription = Subscription.search(
+                            [("company_id", "=", company.id)],
+                            order="start_date desc, id desc",
+                            limit=1,
+                        )
+                        subscription_state = subscription.state if subscription else None
+
+                primary_alias = namespace.alias_ids.filtered(
+                    lambda alias: not alias.retired_at and alias.is_primary
+                )[:1] or namespace.alias_ids.filtered(lambda alias: not alias.retired_at)[:1]
+                alias = primary_alias.alias if primary_alias else None
                 data.append({
-                    "company_id": company.id,
-                    "company_name": company.name,
-                    "plan_code": ent_payload.get("plan_code"),
-                    "flags": ent_payload.get("flags") or {},
-                    "limits": ent_payload.get("limits") or {},
+                    "namespace_id": namespace.namespace_id,
+                    "tenant_name": namespace.display_name,
+                    "lifecycle_state": namespace.lifecycle_state,
+                    "audience": namespace.audience,
+                    "alias": alias,
+                    "path_prefix": ("/t/%s" % alias) if alias else None,
+                    "tenant_key": tenant_key,
+                    "company_id": company.id if company is not None else None,
+                    "company_name": company.name if company is not None else None,
+                    "billing_bound": bool(company is not None),
+                    "plan_code": plan_code,
+                    "flags": flags,
+                    "limits": limits,
                     "usage": usage,
-                    "subscription_state": sub.state if sub else None,
+                    "subscription_state": subscription_state,
                 })
             return _ok({"tenants": data, "count": len(data)}, status=200)
         except AccessDenied as exc:

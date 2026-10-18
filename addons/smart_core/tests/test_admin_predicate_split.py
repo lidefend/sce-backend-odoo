@@ -80,8 +80,31 @@ def _load(name, path):
     return module
 
 
+def _resolve_instance(env):
+    """Stand-in for batch C's namespace resolver in this pure-unit world."""
+
+    database = str(getattr(getattr(env, "cr", None), "dbname", "") or "")
+    platform = database == PLATFORM_DB
+    return types.SimpleNamespace(
+        namespace_id="ns_000000000001" if platform else "ns_000000000002",
+        alias="platform" if platform else "demo",
+        database_name=database,
+        duty_key="platform_control" if platform else "demo",
+        audience="platform-admin" if platform else "tenant",
+        lifecycle_state="active",
+    )
+
+
 def _load_world():
     _install_packages()
+    # Batch C resolves the audience from the instance namespace.  This suite
+    # loads smart_core modules without Odoo, so the resolver is stubbed here
+    # exactly as the registry would answer for the platform and Demo databases.
+    _install_module(
+        "odoo.addons.smart_core.security.namespace_resolver",
+        resolve_instance=_resolve_instance,
+    )
+    _install_module("odoo.http", request=types.SimpleNamespace(env=None, httprequest=None))
     predicates = _load(
         "odoo.addons.smart_core.security.platform_admin",
         ROOT / "security" / "platform_admin.py",
@@ -178,14 +201,23 @@ class TestAdminPredicateSplit(unittest.TestCase):
         self.assertFalse(self.predicates.user_is_platform_admin(user))
         self.assertEqual(self.predicates.tenant_config_scope(user)["database"], DEMO_DB)
 
-    def test_platform_control_instance_admin_is_both(self):
+    def test_platform_control_instance_admin_is_platform_not_tenant(self):
+        """PLATFORM-ADMIN-DUTY: the two responsibilities are mutually exclusive."""
+
         user, _env = self._admin(PLATFORM_DB)
 
-        self.assertTrue(self.predicates.user_is_tenant_config_admin(user))
-        self.assertTrue(self.predicates.user_is_platform_control_admin(user))
-        scope = self.predicates.platform_control_scope(user)
+        self.assertFalse(self.predicates.user_is_tenant_config_admin(user))
+        self.assertTrue(
+            self.predicates.user_is_platform_control_admin(
+                user, identity_audience="platform-admin"
+            )
+        )
+        scope = self.predicates.platform_control_scope(
+            user, identity_audience="platform-admin"
+        )
         self.assertTrue(scope["group_ok"])
         self.assertTrue(scope["instance_ok"])
+        self.assertTrue(scope["audience_ok"])
         self.assertTrue(scope["is_platform_control_admin"])
 
     def test_plain_tenant_user_is_neither(self):
@@ -275,7 +307,7 @@ class TestAdminPredicateSplit(unittest.TestCase):
             platform_user, [self.predicates.PLATFORM_ADMIN_GROUP]
         )
 
-        self.assertTrue(payload["is_tenant_config_admin"])
+        self.assertFalse(payload["is_tenant_config_admin"])
         self.assertTrue(payload["is_platform_admin"])
 
 

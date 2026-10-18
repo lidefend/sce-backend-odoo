@@ -2,10 +2,32 @@
 from __future__ import annotations
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
+from odoo.addons.smart_core.core.platform_duty_contract import build_platform_duty_surface
 from odoo.addons.smart_core.security.platform_admin import (
     user_is_platform_control_admin,
     user_is_tenant_config_admin,
 )
+
+
+def _instance_identity(user) -> tuple[str, str]:
+    """Logical namespace id and audience of the instance serving this user.
+
+    The physical database name never leaves the backend verification path; the
+    identity projection only carries the immutable identifier and the declared
+    audience.  Both are resolved once so the platform decision below is made
+    against the same instance fact that is reported.
+    """
+
+    env = getattr(user, "env", None)
+    if env is None:
+        return "", ""
+    try:
+        from odoo.addons.smart_core.security.namespace_resolver import resolve_instance
+
+        instance = resolve_instance(env)
+        return str(instance.namespace_id or ""), str(instance.audience or "")
+    except Exception:
+        return "", ""
 
 
 class SystemInitIdentityPayload:
@@ -45,6 +67,11 @@ class SystemInitIdentityPayload:
             normalized_allowed = [company_id] + [
                 candidate for candidate in normalized_allowed if candidate != company_id
             ]
+        namespace_id, audience = _instance_identity(user)
+        is_platform_admin = user_is_platform_control_admin(
+            user, identity_audience=audience or None
+        )
+        is_tenant_config_admin = user_is_tenant_config_admin(user)
         return {
             "id": user.id,
             "name": user.name,
@@ -59,8 +86,16 @@ class SystemInitIdentityPayload:
             # tenant configuration admin the product surfaces use.  Emitting
             # both keeps the frontend from treating a product administrator
             # as a platform administrator.
-            "is_platform_admin": user_is_platform_control_admin(user),
-            "is_tenant_config_admin": user_is_tenant_config_admin(user),
+            "is_platform_admin": is_platform_admin,
+            "is_tenant_config_admin": is_tenant_config_admin,
+            # Declared duty surface: identity domain, capability list and the
+            # default landing all come from the backend contract; the frontend
+            # only renders them.
+            "platform_duty": build_platform_duty_surface(
+                is_platform_control_admin=is_platform_admin,
+                is_tenant_config_admin=is_tenant_config_admin,
+                namespace_id=namespace_id,
+            ),
             "lang": user.lang,
             "tz": user.tz,
             "company_id": company_id,
