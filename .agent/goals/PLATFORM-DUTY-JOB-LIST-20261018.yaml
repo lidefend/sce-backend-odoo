@@ -1,0 +1,25 @@
+schema_version: 1
+goal:
+  id: PLATFORM-DUTY-JOB-LIST-20261018
+  title: 平台运维任务入口走官方 action 列表并消除 400
+  status: active
+  formal_product_layer: P0
+  layer_target: smart_core platform duty contract, official ActionViewShell rendering, ops job read route
+  module: [smart_core, frontend]
+  objective: >-
+    Make the declared platform.job_status duty open the official sc.ops.job
+    window action so ActionViewShell renders the list, and make the read API
+    return a bounded list instead of 400 when no job_id is supplied.
+  baseline:
+    branch: fix/daily-platform-job-status-20261018
+    full_sha: 3145206129a4ac2cc845250b8c9ac86b10281ed0
+  exclusions:
+    - No direct main push, force push, or required-check bypass.
+    - No hand-built job table in the frontend panel.
+  acceptance:
+    - platform.job_status resolves to /a/<action_id> and renders with ActionViewShell.
+    - GET /api/ops/job/status without job_id returns a bounded jobs list.
+    - Focused contract tests and frontend typecheck pass.
+  rollback: >-
+    Revert this branch's tracked changes; the previous API-only duty route and
+    the existing platform panel remain recoverable from main.

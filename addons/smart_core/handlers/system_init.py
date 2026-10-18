@@ -33,6 +33,7 @@ from odoo.addons.smart_core.core.scene_diagnostics_builder import SceneDiagnosti
 from odoo.addons.smart_core.core.system_init_diagnostics_helper import SystemInitDiagnosticsHelper
 from odoo.addons.smart_core.core.platform_duty_contract import (
     build_capability_rows as build_platform_duty_capability_rows,
+    merge_platform_duty_route_authority,
 )
 from odoo.addons.smart_core.core.system_init_identity_payload import SystemInitIdentityPayload
 from odoo.addons.smart_core.core.system_init_nav_request_builder import SystemInitNavRequestBuilder
@@ -2281,6 +2282,16 @@ class SystemInitHandler(BaseIntentHandler):
             _final_route_authority,
             filter_nodes=lambda nodes: [] if release_gate.get("fail_closed") else
                 _filter_nav_by_release_gate(nodes, release_gate, env=env)[0],
+        )
+        # A platform duty can open a window action that intentionally has no
+        # navigation menu (the platform-control surface is deliberately
+        # minimal).  The duty declaration is that route's authority; publish it
+        # only for the verified platform audience so the SPA and the API gate
+        # consume the same executable contract.
+        _final_route_authority = merge_platform_duty_route_authority(
+            _final_route_authority,
+            env=env,
+            surface=(data.get("user") or {}).get("platform_duty"),
         )
         # Startup overlays can reintroduce compatibility action nodes after
         # DeliveryEngine performed its first role-scoped projection. Reconcile

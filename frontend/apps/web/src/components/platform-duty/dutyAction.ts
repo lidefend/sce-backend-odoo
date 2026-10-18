@@ -15,7 +15,7 @@ export type DutyAction =
   | { kind: 'none' };
 
 /** Routes served by the SPA shell. Anything else is not navigable. */
-export const SPA_ROUTE_PREFIXES = ['/admin/'] as const;
+export const SPA_ROUTE_PREFIXES = ['/admin/', '/a/'] as const;
 export const SPA_ROUTE_EXACT = ['/'] as const;
 
 /** Exact platform-control routes declared by the backend duty contract. */

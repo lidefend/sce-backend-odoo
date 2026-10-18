@@ -208,22 +208,44 @@ class PlatformOpsController(http.Controller):
             _user, env = _platform_env()
             job_id = params.get("job_id")
             if not job_id:
-                return _fail("BAD_REQUEST", "job_id required", http_status=400)
-            job = env["sc.ops.job"].sudo().browse(int(job_id))
+                try:
+                    limit = int(params.get("limit") or 20)
+                except (TypeError, ValueError):
+                    return _fail("BAD_REQUEST", "limit must be an integer", http_status=400)
+                limit = max(1, min(limit, 100))
+                jobs = env["sc.ops.job"].sudo().search(
+                    [], order="started_at desc, id desc", limit=limit
+                )
+                return _ok(
+                    {
+                        "jobs": [self._serialize_job(job) for job in jobs],
+                        "count": len(jobs),
+                        "limit": limit,
+                    },
+                    status=200,
+                )
+            try:
+                job_pk = int(job_id)
+            except (TypeError, ValueError):
+                return _fail("BAD_REQUEST", "job_id must be an integer", http_status=400)
+            job = env["sc.ops.job"].sudo().browse(job_pk)
             if not job.exists():
                 return _fail("NOT_FOUND", "job not found", http_status=404)
-            data = {
-                "job_id": job.id,
-                "name": job.name,
-                "job_type": job.job_type,
-                "status": job.status,
-                "started_at": job.started_at,
-                "finished_at": job.finished_at,
-                "result": job.result_json or {},
-                "error": job.error_message or "",
-            }
-            return _ok(data, status=200)
+            return _ok(self._serialize_job(job), status=200)
         except AccessDenied as exc:
             return _fail("PERMISSION_DENIED", str(exc), http_status=403)
         except Exception as exc:
             return _fail_from_exception(exc, http_status=500)
+
+    @staticmethod
+    def _serialize_job(job):
+        return {
+            "job_id": job.id,
+            "name": job.name,
+            "job_type": job.job_type,
+            "status": job.status,
+            "started_at": job.started_at,
+            "finished_at": job.finished_at,
+            "result": job.result_json or {},
+            "error": job.error_message or "",
+        }

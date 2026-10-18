@@ -53,7 +53,7 @@ PLATFORM_DUTIES = (
         "key": "platform.job_status",
         "label": "运维任务",
         "capabilities": ("platform.job_status.read",),
-        "route": "/api/ops/job/status",
+        "action_xmlid": "smart_core.action_sc_ops_job",
         "state": "available",
         "sequence": 40,
     },
@@ -135,11 +135,102 @@ def declared_tenant_capabilities() -> list[str]:
     return _capability_keys(TENANT_DUTIES)
 
 
+def declared_platform_action_xmlids() -> list[str]:
+    """Window actions the platform duties bind to, resolved by the caller."""
+    return sorted({str(duty["action_xmlid"]) for duty in PLATFORM_DUTIES if duty.get("action_xmlid")})
+
+
+def build_platform_duty_route_authority_entries(*, env, surface: dict | None) -> list[dict]:
+    """Project declared duty actions into executable route-authority entries.
+
+    The platform-control instance publishes only the minimum navigation surface,
+    so a duty that opens a window action has no native menu/action pair in the
+    startup navigation.  The duty declaration is the authority for that route:
+    when (and only when) the surface is the verified platform audience, resolve
+    its declared ``action_xmlid`` and publish an ``ADMIN_ROUTE`` entry.  The
+    entry carries ``menu_id = 0`` because the duty is not a navigation menu.
+
+    Fail closed: an unresolvable or non-window action is skipped, leaving the
+    duty without a route instead of inventing an action id or a fallback menu.
+    """
+
+    if not isinstance(surface, dict) or surface.get("audience") != AUDIENCE_PLATFORM_CONTROL:
+        return []
+    if env is None:
+        return []
+    entries: list[dict] = []
+    seen: set[int] = set()
+    for duty in surface.get("duties") or []:
+        if not isinstance(duty, dict):
+            continue
+        action_xmlid = str(duty.get("action_xmlid") or "").strip()
+        if not action_xmlid:
+            continue
+        try:
+            action = env.ref(action_xmlid, raise_if_not_found=False)
+        except Exception:
+            action = None
+        if not action or str(getattr(action, "_name", "")) != "ir.actions.act_window":
+            continue
+        action_id = int(getattr(action, "id", 0) or 0)
+        if action_id <= 0 or action_id in seen:
+            continue
+        raw_view_modes = str(getattr(action, "view_mode", "") or "")
+        view_modes = [item.strip() for item in raw_view_modes.split(",") if item.strip()]
+        if not view_modes:
+            continue
+        seen.add(action_id)
+        entries.append(
+            {
+                "route_kind": "ADMIN_ROUTE",
+                "menu_id": 0,
+                "menu_xmlid": "",
+                "action_id": action_id,
+                "action_xmlid": action_xmlid,
+                "name": str(getattr(action, "name", "") or action_xmlid),
+                "action_name": str(getattr(action, "name", "") or action_xmlid),
+                "model": str(getattr(action, "res_model", "") or ""),
+                "view_modes": view_modes,
+                "view_id": int(getattr(getattr(action, "view_id", None), "id", 0) or 0),
+                "domain": str(getattr(action, "domain", "") or "[]"),
+                "context": str(getattr(action, "context", "") or "{}"),
+                "route": "/a/%s" % action_id,
+                "allowed_operation": "read",
+                "required_capability": "platform_control",
+                "context_requirements": {},
+                "source": SOURCE,
+            }
+        )
+    return entries
+
+
+def merge_platform_duty_route_authority(authority: dict | None, *, env, surface: dict | None) -> dict:
+    """Add declared platform duty actions to the executable admin-authority bucket."""
+
+    if not isinstance(authority, dict):
+        return authority or {}
+    entries = build_platform_duty_route_authority_entries(env=env, surface=surface)
+    if not entries:
+        return authority
+    merged = dict(authority)
+    admin_actions = list(merged.get("admin_actions") or [])
+    existing = {
+        int(row.get("action_id") or 0)
+        for row in admin_actions
+        if isinstance(row, dict)
+    }
+    merged["admin_actions"] = admin_actions + [
+        entry for entry in entries if entry["action_id"] not in existing
+    ]
+    return merged
+
+
 def default_landing() -> dict:
     return dict(DEFAULT_LANDING)
 
 
-def _project_duties(duties) -> list[dict]:
+def _project_duties(duties, action_routes=None) -> list[dict]:
+    action_routes = action_routes or {}
     rows = []
     for duty in sorted(duties, key=lambda item: (int(item.get("sequence") or 0), str(item["key"]))):
         row = {
@@ -148,8 +239,13 @@ def _project_duties(duties) -> list[dict]:
             "capabilities": sorted(str(cap) for cap in duty.get("capabilities") or ()),
             "state": str(duty.get("state") or "available"),
         }
-        if duty.get("route"):
-            row["route"] = str(duty["route"])
+        action_xmlid = str(duty.get("action_xmlid") or "")
+        resolved_route = str(action_routes.get(action_xmlid) or "")
+        route = resolved_route or str(duty.get("route") or "")
+        if route:
+            row["route"] = route
+        if action_xmlid:
+            row["action_xmlid"] = action_xmlid
         if duty.get("intent"):
             row["intent"] = str(duty["intent"])
         if duty.get("scene_key"):
@@ -163,6 +259,7 @@ def build_platform_duty_surface(
     is_platform_control_admin: bool,
     is_tenant_config_admin: bool,
     namespace_id: str | None = None,
+    action_routes: dict | None = None,
 ) -> dict:
     """Project the declared duties for one verified identity (fail-closed).
 
@@ -185,7 +282,7 @@ def build_platform_duty_surface(
         "audience": audience,
         "duty_keys": _duty_keys(duties),
         "capabilities": _capability_keys(duties),
-        "duties": _project_duties(duties),
+        "duties": _project_duties(duties, action_routes=action_routes),
         "default_landing": default_landing() if is_platform_control_admin else None,
         "contract_version": CONTRACT_VERSION,
         "source": SOURCE,
@@ -250,6 +347,8 @@ def build_capability_rows(surface: dict) -> list[dict]:
             payload = {}
             if duty.get("route"):
                 payload["route"] = str(duty["route"])
+            if duty.get("action_xmlid"):
+                payload["action_xmlid"] = str(duty["action_xmlid"])
             if duty.get("intent"):
                 payload["intent"] = str(duty["intent"])
             if duty.get("scene_key"):

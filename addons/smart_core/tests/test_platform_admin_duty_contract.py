@@ -174,7 +174,8 @@ class ContractDeclarationTests(unittest.TestCase):
             self.assertEqual(row["group_key"], "platform_control")
             self.assertIn(row["state"], {"READY", "PREVIEW"})
             self.assertTrue(row["ui_label"])
-            self.assertTrue(row["default_payload"].get("route") or row["default_payload"].get("intent"))
+            payload = row["default_payload"]
+            self.assertTrue(payload.get("route") or payload.get("intent") or payload.get("action_xmlid"))
 
     def test_tenant_and_plain_surfaces_produce_no_platform_rows(self):
         tenant = self.contract.build_platform_duty_surface(
@@ -193,7 +194,7 @@ class ContractDeclarationTests(unittest.TestCase):
         params = inspect.signature(self.contract.build_platform_duty_surface).parameters
         self.assertEqual(
             set(params),
-            {"is_platform_control_admin", "is_tenant_config_admin", "namespace_id"},
+            {"is_platform_control_admin", "is_tenant_config_admin", "namespace_id", "action_routes"},
         )
         self.assertTrue(all(param.kind is inspect.Parameter.KEYWORD_ONLY for param in params.values()))
         surface = self.contract.build_platform_duty_surface(
@@ -305,6 +306,89 @@ class ProjectionAndRouteTests(unittest.TestCase):
         self.assertIn("build_platform_duty_capability_rows", source)
         self.assertIn('data["capability_groups"] = other_groups + platform_groups', source)
 
+    def test_system_init_publishes_duty_actions_into_route_authority(self):
+        """A duty route without a menu must still be executable by the SPA.
+
+        The platform-control navigation is deliberately minimal.  If the duty
+        action is absent from route authority, the SPA denies ``/a/<id>`` even
+        though the duty panel rendered the entry.  The duty declaration owns
+        that route authority for the verified platform audience.
+        """
+        source = (ROOT / "handlers" / "system_init.py").read_text(encoding="utf-8")
+        self.assertIn("merge_platform_duty_route_authority", source)
+        self.assertIn('surface=(data.get("user") or {}).get("platform_duty")', source)
+
+        contract = _load_contract()
+        surface = contract.build_platform_duty_surface(
+            is_platform_control_admin=True,
+            is_tenant_config_admin=False,
+            action_routes={"smart_core.action_sc_ops_job": "/a/42"},
+        )
+        action = types.SimpleNamespace(
+            _name="ir.actions.act_window",
+            id=42,
+            name="运营任务",
+            res_model="sc.ops.job",
+            view_mode="tree,form",
+            view_id=types.SimpleNamespace(id=7),
+            domain="[]",
+            context="{}",
+        )
+        env = types.SimpleNamespace(
+            ref=lambda xmlid, raise_if_not_found=False: (
+                action if xmlid == "smart_core.action_sc_ops_job" else None
+            ),
+        )
+        authority = {
+            "admin_actions": [],
+            "primary_actions": [],
+            "role_home_actions": [],
+            "contextual_actions": [],
+            "denied_actions": [],
+            "menu_containers": [],
+        }
+        merged = contract.merge_platform_duty_route_authority(authority, env=env, surface=surface)
+        rows = [row for row in merged["admin_actions"] if row["action_id"] == 42]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["route_kind"], "ADMIN_ROUTE")
+        self.assertEqual(rows[0]["menu_id"], 0)
+        self.assertEqual(rows[0]["action_xmlid"], "smart_core.action_sc_ops_job")
+        self.assertEqual(rows[0]["route"], "/a/42")
+        self.assertEqual(rows[0]["model"], "sc.ops.job")
+        self.assertEqual(rows[0]["view_modes"], ["tree", "form"])
+
+        # Re-merging must not duplicate the same executable action.
+        merged_again = contract.merge_platform_duty_route_authority(merged, env=env, surface=surface)
+        self.assertEqual(
+            len([row for row in merged_again["admin_actions"] if row["action_id"] == 42]),
+            1,
+        )
+
+    def test_tenant_surface_never_publishes_platform_duty_routes(self):
+        contract = _load_contract()
+        surface = contract.build_platform_duty_surface(
+            is_platform_control_admin=False,
+            is_tenant_config_admin=True,
+        )
+        action = types.SimpleNamespace(_name="ir.actions.act_window", id=42)
+        env = types.SimpleNamespace(ref=lambda xmlid, raise_if_not_found=False: action)
+        self.assertEqual(
+            contract.build_platform_duty_route_authority_entries(env=env, surface=surface),
+            [],
+        )
+
+    def test_unresolvable_duty_action_fails_closed(self):
+        contract = _load_contract()
+        surface = contract.build_platform_duty_surface(
+            is_platform_control_admin=True,
+            is_tenant_config_admin=False,
+        )
+        env = types.SimpleNamespace(ref=lambda xmlid, raise_if_not_found=False: None)
+        self.assertEqual(
+            contract.build_platform_duty_route_authority_entries(env=env, surface=surface),
+            [],
+        )
+
     def test_tenants_endpoint_is_registry_driven(self):
         ops_source = (CONTROLLERS / "platform_ops_controller.py").read_text(encoding="utf-8")
         self.assertIn('"/api/ops/tenants"', ops_source)
@@ -314,6 +398,42 @@ class ProjectionAndRouteTests(unittest.TestCase):
         # `res.company` is no longer enumerated as the tenant list.
         self.assertNotIn("res.company\"]", ops_source)
         self.assertNotIn("Company.search([])", ops_source)
+
+    def test_job_status_duty_is_readable_without_a_job_id(self):
+        """The declared ``platform.job_status.read`` duty is a list entry.
+
+        The platform panel consumes the declared route as a read action without
+        a job id.  Requiring ``job_id`` there turned the declared duty into a
+        400 on the first click, so the route must answer with a bounded list
+        and keep the single-job detail behind an explicit id.
+        """
+        ops_source = (CONTROLLERS / "platform_ops_controller.py").read_text(encoding="utf-8")
+        self.assertNotIn('"job_id required"', ops_source)
+        self.assertIn("sc.ops.job", ops_source)
+        self.assertIn('"jobs": [self._serialize_job(job) for job in jobs]', ops_source)
+        self.assertIn('"count": len(jobs)', ops_source)
+        self.assertIn('"job_id must be an integer"', ops_source)
+
+    def test_job_status_duty_uses_the_official_action_renderer(self):
+        """The job list is rendered by ActionViewShell, not a hand-built table."""
+        contract = _load_contract()
+        surface = contract.build_platform_duty_surface(
+            is_platform_control_admin=True,
+            is_tenant_config_admin=False,
+            action_routes={"smart_core.action_sc_ops_job": "/a/321"},
+        )
+        job = next(row for row in surface["duties"] if row["key"] == "platform.job_status")
+        self.assertEqual(job["action_xmlid"], "smart_core.action_sc_ops_job")
+        self.assertEqual(job["route"], "/a/321")
+
+        web = Path(__file__).resolve().parents[3] / "frontend" / "apps" / "web" / "src"
+        action_source = (web / "components" / "platform-duty" / "dutyAction.ts").read_text(encoding="utf-8")
+        panel_source = (web / "components" / "platform-duty" / "PlatformDutyPanel.vue").read_text(encoding="utf-8")
+        self.assertIn("'/a/'", action_source)
+        self.assertIn("router.push(action.route)", panel_source)
+        # No hand-built job table or direct data fetch remains in the panel.
+        self.assertNotIn("data-job-status-table", panel_source)
+        self.assertNotIn("loadJobStatus", panel_source)
 
     def test_platform_duty_panel_never_routes_an_api_path(self):
         """A duty that is an API endpoint must be consumed, not navigated.
@@ -328,7 +448,7 @@ class ProjectionAndRouteTests(unittest.TestCase):
         self.assertIn("export function resolveDutyAction", action_source)
         self.assertIn("isApiEndpoint", action_source)
         self.assertIn("kind: 'inline'", action_source)
-        self.assertIn("SPA_ROUTE_PREFIXES = ['/admin/']", action_source)
+        self.assertIn("SPA_ROUTE_PREFIXES = ['/admin/', '/a/']", action_source)
 
         self.assertIn("resolveDutyAction", panel_source)
         self.assertEqual(1, panel_source.count("router.push("))
@@ -342,7 +462,10 @@ class ProjectionAndRouteTests(unittest.TestCase):
         web = Path(__file__).resolve().parents[3] / "frontend" / "apps" / "web" / "src"
         panel_source = (web / "components" / "platform-duty" / "PlatformDutyPanel.vue").read_text(encoding="utf-8")
 
-        self.assertIn("const TENANT_REGISTRY_ENDPOINT = '/api/ops/tenants'", panel_source)
+        self.assertIn(
+            "const TENANT_REGISTRY_ENDPOINT = DECLARED_PLATFORM_API_ENDPOINTS.tenantRegistry",
+            panel_source,
+        )
         self.assertIn("apiRequest<OpsTenantsResponse>(TENANT_REGISTRY_ENDPOINT)", panel_source)
         for field in ("namespace_id", "tenant_name", "lifecycle_state", "alias", "path_prefix", "billing_bound"):
             self.assertIn(field, panel_source)
