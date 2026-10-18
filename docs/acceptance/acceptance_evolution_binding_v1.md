@@ -8,10 +8,11 @@
 
 | 层 | 触发点 | 强制内容 |
 | --- | --- | --- |
-| 影响解析 | 每个 PR / 本地 quick / 架构守卫套件 | 每个变更路径必须在 `config/acceptance/evolution_binding.v1.json` 中被分类；未分类路径直接失败 |
-| 证据绑定 | `make pr.merge` | 运行期变更所需的验收套件必须提供 `head_sha` 等于待合并提交的证据清单，且证据文件哈希、状态和计数复核通过 |
+| 影响解析 | 每个 PR 的 `professional_quality_checks`、本地 quick、架构守卫套件 | 每个变更路径必须在 `config/acceptance/evolution_binding.v1.json` 中被分类；未分类路径直接失败 |
+| 证据绑定 | `make pr.merge` | 运行期变更所需的验收套件必须提供 `head_sha` 等于待合并提交的证据清单，且证据文件哈希、状态、关键断言和计数复核通过 |
 
-影响解析是确定性的静态门禁，远程 CI 与本地 exact-head lane 使用同一份注册表。
+影响解析是确定性的静态门禁，远程 CI 的每个质量车道都会执行
+`make verify.acceptance.evolution.binding`，而不是只在 full 车道执行。
 证据绑定发生在受管合并入口，避免用另一个提交的验收结果冒充当前提交。
 
 ## 注册表
@@ -26,10 +27,10 @@
 
 | 套件 | 证据来源 | 关键断言 |
 | --- | --- | --- |
-| `daily_runtime_entry` | `scripts/ops/daily_runtime_entry_verify.py` 报告 | `status=PASS`、`expected_sha=head`、全部 checks 通过 |
-| `path_namespace_identity` | `scripts/ops/path_ns_c_acceptance.py` 报告 | 23/23 通过、`provenance.expected_sha=head` |
-| `list_surface_structure` | 列表结构浏览器报告 | `passed=true`、零 failures、零 runtime errors、入口指纹 = head |
-| `relation_roundtrip` | 关系回环报告 | `status=pass`、零 failures、`expected_sha=head` |
+| `daily_runtime_entry` | `scripts/ops/daily_runtime_entry_verify.py` 报告 | `status=PASS`、`expected_sha=head`、至少 40 项、全部通过，且命名空间拒绝、数据库提示拒绝、运行版本等关键 checks 必须存在并通过 |
+| `path_namespace_identity` | `scripts/ops/path_ns_c_acceptance.py` 报告 | 23 项命名 checks 全部存在且为 pass、`summary` 计数一致、`provenance.expected_sha=head`、服务端 head 与目标 head 一致 |
+| `list_surface_structure` | 列表结构浏览器报告 | `passed=true`、零 failures/runtime errors、records 完整且不少于 8 项、gated 全通过且不少于 108 项、负例全部命中且不少于 5 项、入口指纹 = head |
+| `relation_roundtrip` | 关系回环报告 | `status=pass`、零 failures/console errors/denied requests、至少 13 个声明入口和 4 个可打开入口、恢复标志全部为真、`expected_sha` 与 `served_revision` 均为 head |
 
 `backend_contract`、`frontend_contract`、`governance_static` 由各自的受管套件
 直接执行，不需要额外证据文件。
@@ -50,6 +51,14 @@ make acceptance.evolution.verify
 
 `make pr.merge` 已依赖 `acceptance.evolution.verify`。若本次变更不需要运行期证据
 （例如纯文档），该目标自动通过，不要求证据清单。
+
+## 强制边界
+
+- 远程 CI 在每个 PR 质量车道执行影响解析及绑定守卫单测；未分类路径或守卫退化会直接失败。
+- 运行期 exact-head 证据由受管合并入口 `make pr.merge` 强制。GitHub 网页直接合并不会执行
+  本地 Make target，因此不能把该入口描述为平台级不可绕过。
+- 平台级不可绕过需要把证据清单接入 CI 必需检查或部署侧受信证据服务；在完成之前，
+  主线部署仍需重新运行对应运行期验收，不能复用候选证据。
 
 ## 新增变更域
 

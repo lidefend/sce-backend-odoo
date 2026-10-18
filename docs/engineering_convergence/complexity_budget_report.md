@@ -211,7 +211,7 @@ Generated from repository source files. This report is informational during the 
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
 | 488 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
-| 429 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
+| 434 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 423 | Shell script | `scripts/demo/verify.sh` |
 | 414 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 385 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |

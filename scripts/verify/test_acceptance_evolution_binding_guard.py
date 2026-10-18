@@ -17,6 +17,52 @@ import acceptance_evolution_binding_guard as guard  # noqa: E402
 HEAD = "a" * 40
 OTHER = "b" * 40
 
+PATH_NS_CHECKS = [
+    "server_head_matches_expected",
+    "server_worktree_clean",
+    "server_applied_commit_in_history",
+    "root_redirects_to_tenant_namespace",
+    "bare_api_requires_namespace",
+    "database_header_hint_refused",
+    "database_query_hint_refused",
+    "unknown_namespace_refused",
+    "tenant_entry_binds_tenant_database",
+    "platform_entry_binds_platform_database",
+    "tenant_runtime_reports_deployed_revision",
+    "platform_runtime_reports_deployed_revision",
+    "demo_entry_admin_login_succeeds",
+    "platform_entry_admin_login_succeeds",
+    "tokens_are_independent",
+    "demo_token_accepted_on_demo_entry",
+    "platform_token_accepted_on_platform_entry",
+    "demo_token_rejected_on_platform_entry",
+    "platform_token_rejected_on_demo_entry",
+    "demo_logout_succeeds",
+    "demo_token_invalid_after_demo_logout",
+    "platform_token_survives_demo_logout",
+    "unauthorized_company_is_refused",
+]
+
+ENTRY_REQUIRED_CHECKS = [
+    "entry_declares_one_serving_duty",
+    "exactly_one_container_publishes_the_public_port",
+    "bare_root_requires_a_namespace",
+    "root_api_requires_a_namespace",
+    "root_login_contract_requires_a_namespace",
+    "client_database_hint_x_odoo_database_is_refused",
+    "client_database_query_is_refused",
+    "client_namespace_header_cannot_override_the_path",
+    "unknown_namespace_is_refused",
+    "unknown_namespace_page_shell_is_refused",
+    "invalid_namespace_prefix_is_refused",
+    "tenant_namespace_lands_on_the_serving_database",
+    "platform_namespace_lands_on_the_platform_database",
+    "tenant_runtime_publishes_the_deployed_revision",
+    "platform_runtime_publishes_the_deployed_revision",
+    "serving_application_reads_the_deployed_revision",
+    "platform_application_reads_the_deployed_revision",
+]
+
 
 def _write(path: Path, payload: dict) -> Path:
     path.write_text(json.dumps(payload), encoding="utf-8")
@@ -24,22 +70,26 @@ def _write(path: Path, payload: dict) -> Path:
 
 
 def _entry_verify(head: str = HEAD, passed: bool = True) -> dict:
+    checks = [{"name": name, "passed": True} for name in ENTRY_REQUIRED_CHECKS]
+    while len(checks) < 40:
+        checks.append({"name": f"extra_{len(checks):02d}", "passed": True})
+    if not passed:
+        checks[-1]["passed"] = False
     return {
         "status": "PASS" if passed else "FAIL",
         "expected_sha": head,
         "head": head,
-        "checks": [
-            {"name": "one", "passed": True},
-            {"name": "two", "passed": passed},
-        ],
+        "checks": checks,
     }
 
 
 def _path_ns(head: str = HEAD) -> dict:
     return {
         "schema": "path-ns-c.acceptance.v1",
-        "provenance": {"expected_sha": head},
+        "provenance": {"expected_sha": head, "head": head},
+        "target": {"expected_sha": head},
         "summary": {"total": 23, "passed": 23, "failed": 0, "status": "PASS"},
+        "checks": [{"name": name, "status": "pass"} for name in PATH_NS_CHECKS],
     }
 
 
@@ -47,8 +97,14 @@ def _list_surface(head: str = HEAD) -> dict:
     return {
         "schema": "frontend_list_surface_structure_browser.v1",
         "passed": True,
-        "failures": 0,
-        "summary": {"observations": 6, "gated": {"total": 12}, "runtime_errors": 0},
+        "failures": [],
+        "summary": {
+            "observations": 6,
+            "records": {"passed": 8, "total": 8, "complete": True},
+            "gated": {"passed": 108, "total": 108, "failed": 0},
+            "negative_fixtures": {"detected": 5, "total": 5},
+            "runtime_errors": 0,
+        },
         "source": {"acceptance": {"provenance": {"expectedSha": head}}},
     }
 
@@ -58,9 +114,23 @@ def _relation(head: str = HEAD) -> dict:
         "schema": "record-relation-roundtrip-acceptance.v1",
         "status": "pass",
         "expected_sha": head,
+        "served_revision": head,
         "failures": [],
-        "declared_entry_count": 4,
+        "console_errors": [],
+        "denied_requests": [],
+        "declared_entry_count": 13,
         "declared_openable": [{}, {}, {}, {}],
+        "roundtrip": {
+            "field": "user_id",
+            "restored": {
+                "path_restored": True,
+                "title_restored": True,
+                "statusbar_restored": True,
+                "tabs_restored": True,
+                "actions_restored": True,
+                "error_free": True,
+            },
+        },
     }
 
 
@@ -141,17 +211,63 @@ class TestGlobAndPlan(unittest.TestCase):
         }
         self.assertEqual(set(self.registry["suites"]), referenced)
 
+    def test_evidence_contracts_are_non_vacuous(self):
+        for suite_id, suite in self.registry["suites"].items():
+            contract = suite.get("evidence")
+            if not contract:
+                continue
+            with self.subTest(suite=suite_id):
+                self.assertTrue(
+                    contract.get("required_checks")
+                    or contract.get("min_counts")
+                    or contract.get("min_checks"),
+                    f"{suite_id} evidence contract has no non-empty assertion",
+                )
+
+    def test_remote_quality_lane_runs_the_binding_gate_unconditionally(self):
+        workflow = (
+            ROOT / ".github" / "workflows" / "professional_quality_gate.yml"
+        ).read_text(encoding="utf-8")
+        marker = "make verify.acceptance.evolution.binding"
+        self.assertEqual(workflow.count(marker), 1)
+        index = workflow.index(marker)
+        start = workflow.rfind("      - name:", 0, index)
+        self.assertNotEqual(start, -1)
+        block = workflow[start:index]
+        self.assertNotIn("if:", block)
+        self.assertLess(index, workflow.index("Run full professional quality gate"))
+
+    def test_zero_base_sha_is_treated_as_absent(self):
+        head = guard._git("rev-parse", "HEAD")
+        base = guard.resolve_base(guard.ZERO_SHA, head)
+        self.assertRegex(base, r"^[0-9a-f]{40}$")
+
 
 class TestAdapters(unittest.TestCase):
     def test_entry_verify_adapter(self):
         counts = guard.validate_evidence_file
         self.assertEqual(
-            guard._adapter_entry_verify(_entry_verify(), HEAD)["counts"]["passed"], 2
+            guard._adapter_entry_verify(_entry_verify(), HEAD)["counts"]["passed"], 40
+        )
+        contract = {
+            "required_checks": ["entry_declares_one_serving_duty", "bare_root_requires_a_namespace"],
+            "min_checks": 40,
+        }
+        self.assertEqual(
+            guard._adapter_entry_verify(_entry_verify(), HEAD, contract)["counts"]["total"], 40
         )
         with self.assertRaises(guard.BindingError):
             guard._adapter_entry_verify(_entry_verify(OTHER), HEAD)
         with self.assertRaises(guard.BindingError):
             guard._adapter_entry_verify(_entry_verify(passed=False), HEAD)
+        broken = _entry_verify()
+        broken["checks"] = [
+            check
+            for check in broken["checks"]
+            if check["name"] != "bare_root_requires_a_namespace"
+        ]
+        with self.assertRaises(guard.BindingError):
+            guard._adapter_entry_verify(broken, HEAD, contract)
         self.assertIs(counts, guard.validate_evidence_file)
 
     def test_path_namespace_adapter(self):
@@ -159,6 +275,14 @@ class TestAdapters(unittest.TestCase):
         self.assertEqual(result["counts"], {"total": 23, "passed": 23, "failed": 0})
         with self.assertRaises(guard.BindingError):
             guard._adapter_path_ns_c(_path_ns(OTHER), HEAD)
+        broken = _path_ns()
+        broken["checks"][0]["status"] = "fail"
+        with self.assertRaises(guard.BindingError):
+            guard._adapter_path_ns_c(broken, HEAD)
+        broken = _path_ns()
+        broken["checks"].pop()
+        with self.assertRaises(guard.BindingError):
+            guard._adapter_path_ns_c(broken, HEAD)
 
     def test_list_surface_adapter(self):
         result = guard._adapter_list_surface(_list_surface(), HEAD)
@@ -169,12 +293,36 @@ class TestAdapters(unittest.TestCase):
             guard._adapter_list_surface(broken, HEAD)
         with self.assertRaises(guard.BindingError):
             guard._adapter_list_surface(_list_surface(OTHER), HEAD)
+        broken = _list_surface()
+        broken["summary"]["records"] = {"passed": 0, "total": 0, "complete": True}
+        with self.assertRaises(guard.BindingError):
+            guard._adapter_list_surface(broken, HEAD)
+        broken = _list_surface()
+        broken["summary"]["negative_fixtures"] = {"detected": 4, "total": 5}
+        with self.assertRaises(guard.BindingError):
+            guard._adapter_list_surface(broken, HEAD)
+        broken = _list_surface()
+        broken["failures"] = [{"check": "x"}]
+        with self.assertRaises(guard.BindingError):
+            guard._adapter_list_surface(broken, HEAD)
 
     def test_relation_roundtrip_adapter(self):
         result = guard._adapter_relation_roundtrip(_relation(), HEAD)
         self.assertEqual(result["counts"]["openable_entries"], 4)
         broken = _relation()
         broken["failures"] = ["x"]
+        with self.assertRaises(guard.BindingError):
+            guard._adapter_relation_roundtrip(broken, HEAD)
+        broken = _relation()
+        broken["served_revision"] = OTHER
+        with self.assertRaises(guard.BindingError):
+            guard._adapter_relation_roundtrip(broken, HEAD)
+        broken = _relation()
+        broken["roundtrip"]["restored"]["error_free"] = False
+        with self.assertRaises(guard.BindingError):
+            guard._adapter_relation_roundtrip(broken, HEAD)
+        broken = _relation()
+        broken["console_errors"] = ["boom"]
         with self.assertRaises(guard.BindingError):
             guard._adapter_relation_roundtrip(broken, HEAD)
 
@@ -250,6 +398,15 @@ class TestManifest(unittest.TestCase):
             manifest = self._manifest(Path(raw))
             payload = json.loads(manifest.read_text(encoding="utf-8"))
             payload["recorded_at"] = "2000-01-01T00:00:00Z"
+            manifest.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaises(guard.BindingError):
+                guard.validate_manifest(self.registry, self.plan, manifest, HEAD)
+
+    def test_future_manifest_fails(self):
+        with tempfile.TemporaryDirectory() as raw:
+            manifest = self._manifest(Path(raw))
+            payload = json.loads(manifest.read_text(encoding="utf-8"))
+            payload["recorded_at"] = "2999-01-01T00:00:00Z"
             manifest.write_text(json.dumps(payload), encoding="utf-8")
             with self.assertRaises(guard.BindingError):
                 guard.validate_manifest(self.registry, self.plan, manifest, HEAD)

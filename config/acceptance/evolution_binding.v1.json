@@ -36,7 +36,27 @@
         "python3 scripts/ops/daily_runtime_entry_verify.py"
       ],
       "evidence": {
-        "adapter": "entry_verify"
+        "adapter": "entry_verify",
+        "min_checks": 40,
+        "required_checks": [
+          "entry_declares_one_serving_duty",
+          "exactly_one_container_publishes_the_public_port",
+          "bare_root_requires_a_namespace",
+          "root_api_requires_a_namespace",
+          "root_login_contract_requires_a_namespace",
+          "client_database_hint_x_odoo_database_is_refused",
+          "client_database_query_is_refused",
+          "client_namespace_header_cannot_override_the_path",
+          "unknown_namespace_is_refused",
+          "unknown_namespace_page_shell_is_refused",
+          "invalid_namespace_prefix_is_refused",
+          "tenant_namespace_lands_on_the_serving_database",
+          "platform_namespace_lands_on_the_platform_database",
+          "tenant_runtime_publishes_the_deployed_revision",
+          "platform_runtime_publishes_the_deployed_revision",
+          "serving_application_reads_the_deployed_revision",
+          "platform_application_reads_the_deployed_revision"
+        ]
       }
     },
     "path_namespace_identity": {
@@ -45,7 +65,32 @@
         "python3 scripts/ops/path_ns_c_acceptance.py"
       ],
       "evidence": {
-        "adapter": "path_ns_c"
+        "adapter": "path_ns_c",
+        "required_checks": [
+          "server_head_matches_expected",
+          "server_worktree_clean",
+          "server_applied_commit_in_history",
+          "root_redirects_to_tenant_namespace",
+          "bare_api_requires_namespace",
+          "database_header_hint_refused",
+          "database_query_hint_refused",
+          "unknown_namespace_refused",
+          "tenant_entry_binds_tenant_database",
+          "platform_entry_binds_platform_database",
+          "tenant_runtime_reports_deployed_revision",
+          "platform_runtime_reports_deployed_revision",
+          "demo_entry_admin_login_succeeds",
+          "platform_entry_admin_login_succeeds",
+          "tokens_are_independent",
+          "demo_token_accepted_on_demo_entry",
+          "platform_token_accepted_on_platform_entry",
+          "demo_token_rejected_on_platform_entry",
+          "platform_token_rejected_on_demo_entry",
+          "demo_logout_succeeds",
+          "demo_token_invalid_after_demo_logout",
+          "platform_token_survives_demo_logout",
+          "unauthorized_company_is_refused"
+        ]
       }
     },
     "list_surface_structure": {
@@ -54,7 +99,12 @@
         "node scripts/verify/frontend_list_surface_structure_browser.mjs"
       ],
       "evidence": {
-        "adapter": "list_surface"
+        "adapter": "list_surface",
+        "min_counts": {
+          "records_total": 8,
+          "gated_total": 108,
+          "negative_fixtures_total": 5
+        }
       }
     },
     "relation_roundtrip": {
@@ -63,7 +113,11 @@
         "node scripts/verify/record_relation_roundtrip_acceptance.js"
       ],
       "evidence": {
-        "adapter": "relation_roundtrip"
+        "adapter": "relation_roundtrip",
+        "min_counts": {
+          "declared_entry_count": 13,
+          "declared_openable": 4
+        }
       }
     }
   },

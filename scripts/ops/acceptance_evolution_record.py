@@ -91,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
             for path in paths:
                 if not path.is_file():
                     raise binding.BindingError(f"evidence file missing: {path}")
-                counts = binding.validate_evidence_file(path, adapter, head)
+                counts = binding.validate_evidence_file(path, adapter, head, evidence_contract)
                 items.append(
                     {
                         "path": str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path),

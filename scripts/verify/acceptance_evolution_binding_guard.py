@@ -34,6 +34,7 @@ REGISTRY_SCHEMA = "acceptance_evolution_binding.v1"
 PLAN_SCHEMA = "acceptance_evolution_plan.v1"
 EVIDENCE_SCHEMA = "acceptance_evolution_evidence.v1"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+ZERO_SHA = "0" * 40
 GLOB_CACHE: dict[str, re.Pattern[str]] = {}
 
 
@@ -111,9 +112,45 @@ def load_registry(path: Path) -> dict:
             raise BindingError(f"suite {suite_id!r} needs at least one entrypoint")
         evidence = suite.get("evidence")
         if evidence is not None:
-            adapter = evidence.get("adapter") if isinstance(evidence, dict) else None
+            if not isinstance(evidence, dict):
+                raise BindingError(f"suite {suite_id!r} evidence contract must be an object")
+            adapter = evidence.get("adapter")
             if adapter not in ADAPTERS:
                 raise BindingError(f"suite {suite_id!r} has unknown evidence adapter {adapter!r}")
+            required_checks = evidence.get("required_checks")
+            if required_checks is not None:
+                if (
+                    not isinstance(required_checks, list)
+                    or not required_checks
+                    or not all(isinstance(item, str) and item for item in required_checks)
+                ):
+                    raise BindingError(
+                        f"suite {suite_id!r} required_checks must be a non-empty string array"
+                    )
+                if len(set(required_checks)) != len(required_checks):
+                    raise BindingError(f"suite {suite_id!r} required_checks contains duplicates")
+            min_checks = evidence.get("min_checks")
+            if min_checks is not None and (
+                not isinstance(min_checks, int)
+                or isinstance(min_checks, bool)
+                or min_checks < 0
+            ):
+                raise BindingError(f"suite {suite_id!r} min_checks must be a non-negative integer")
+            min_counts = evidence.get("min_counts")
+            if min_counts is not None:
+                if not isinstance(min_counts, dict) or not min_counts:
+                    raise BindingError(f"suite {suite_id!r} min_counts must be a non-empty object")
+                for key, value in min_counts.items():
+                    if (
+                        not isinstance(key, str)
+                        or not key
+                        or not isinstance(value, int)
+                        or isinstance(value, bool)
+                        or value < 0
+                    ):
+                        raise BindingError(
+                            f"suite {suite_id!r} min_counts[{key!r}] must be a non-negative integer"
+                        )
     for rule in rules:
         if not isinstance(rule, dict):
             raise BindingError("every rule must be an object")
@@ -145,10 +182,15 @@ def resolve_head(head: str | None) -> str:
 
 
 def resolve_base(base: str | None, head: str) -> str:
+    if base == ZERO_SHA:
+        base = None
+    env_base = os.environ.get("BASE_SHA")
+    if env_base == ZERO_SHA:
+        env_base = None
     if base:
         candidate = base
-    elif os.environ.get("BASE_SHA"):
-        candidate = os.environ["BASE_SHA"]
+    elif env_base:
+        candidate = env_base
     else:
         candidate = ""
         for ref in ("origin/main", "main"):
@@ -239,69 +281,215 @@ def _require(condition: bool, message: str) -> None:
         raise BindingError(message)
 
 
-def _adapter_entry_verify(data: dict, head: str) -> dict:
+def _required_checks(contract: dict | None) -> list[str]:
+    return list((contract or {}).get("required_checks") or [])
+
+
+def _min_count(contract: dict | None, key: str, default: int = 1) -> int:
+    return int(((contract or {}).get("min_counts") or {}).get(key, default))
+
+
+def _adapter_entry_verify(data: dict, head: str, contract: dict | None = None) -> dict:
     _require(str(data.get("status", "")).upper() == "PASS", "entry verify status is not PASS")
-    observed = {data.get("expected_sha"), data.get("head")}
-    _require(head in observed, f"entry verify is bound to another head: {sorted(map(str, observed))}")
+    _require(
+        data.get("expected_sha") == head,
+        f"entry verify expected_sha is {data.get('expected_sha')!r}, expected {head}",
+    )
+    if data.get("head") is not None:
+        _require(
+            data.get("head") == head,
+            f"entry verify head is {data.get('head')!r}, expected {head}",
+        )
     checks = data.get("checks")
     _require(isinstance(checks, list) and checks, "entry verify has no checks")
+    named: dict[str, dict] = {}
+    for check in checks:
+        _require(
+            isinstance(check, dict)
+            and isinstance(check.get("name"), str)
+            and bool(check.get("name")),
+            "entry verify check must be a named object",
+        )
+        named[check["name"]] = check
+    _require(len(named) == len(checks), "entry verify check names must be unique")
+    required = _required_checks(contract)
+    missing = [name for name in required if name not in named]
+    _require(not missing, f"entry verify is missing required checks: {missing}")
+    failed_required = [name for name in required if named[name].get("passed") is not True]
+    _require(not failed_required, f"entry verify required checks failed: {failed_required}")
     passed = sum(1 for check in checks if check.get("passed") is True)
     failed = len(checks) - passed
     _require(failed == 0 and passed > 0, f"entry verify checks failed={failed}")
+    min_checks = int((contract or {}).get("min_checks") or 0)
+    _require(
+        len(checks) >= min_checks,
+        f"entry verify has {len(checks)} checks, expected at least {min_checks}",
+    )
     return {"counts": {"total": len(checks), "passed": passed, "failed": failed}}
 
 
-def _adapter_path_ns_c(data: dict, head: str) -> dict:
+def _adapter_path_ns_c(data: dict, head: str, contract: dict | None = None) -> dict:
     _require(data.get("schema") == "path-ns-c.acceptance.v1", "unexpected path namespace schema")
     summary = data.get("summary") or {}
     _require(str(summary.get("status", "")).upper() == "PASS", "path namespace status is not PASS")
+    checks = data.get("checks")
+    _require(isinstance(checks, list) and checks, "path namespace has no checks")
+    statuses: dict[str, str] = {}
+    for check in checks:
+        _require(
+            isinstance(check, dict)
+            and isinstance(check.get("name"), str)
+            and bool(check.get("name")),
+            "path namespace check must be a named object",
+        )
+        statuses[check["name"]] = str(check.get("status", "")).lower()
+    _require(len(statuses) == len(checks), "path namespace check names must be unique")
+    required = _required_checks(contract)
+    missing = [name for name in required if name not in statuses]
+    _require(not missing, f"path namespace is missing required checks: {missing}")
+    failed_required = [name for name in required if statuses[name] != "pass"]
+    _require(not failed_required, f"path namespace required checks failed: {failed_required}")
     total = int(summary["total"]) if summary.get("total") is not None else 0
     passed = int(summary["passed"]) if summary.get("passed") is not None else 0
     failed = int(summary["failed"]) if summary.get("failed") is not None else -1
+    _require(
+        total == len(checks),
+        f"path namespace summary total {total} does not match {len(checks)} checks",
+    )
     _require(total > 0 and passed == total and failed == 0, "path namespace counts are not all-pass")
+    _require(
+        all(status == "pass" for status in statuses.values()),
+        "path namespace contains non-pass checks",
+    )
     provenance = data.get("provenance") or {}
-    observed = provenance.get("expected_sha") or (data.get("target") or {}).get("expected_sha")
+    observed = provenance.get("expected_sha")
     _require(observed == head, f"path namespace evidence is bound to {observed!r}, expected {head}")
+    if provenance.get("head") is not None:
+        _require(
+            provenance.get("head") == head,
+            f"path namespace server head is {provenance.get('head')!r}, expected {head}",
+        )
+    target_expected = (data.get("target") or {}).get("expected_sha")
+    if target_expected is not None:
+        _require(
+            target_expected == head,
+            f"path namespace target is bound to {target_expected!r}, expected {head}",
+        )
     return {"counts": {"total": total, "passed": passed, "failed": failed}}
 
 
-def _adapter_list_surface(data: dict, head: str) -> dict:
+def _adapter_list_surface(data: dict, head: str, contract: dict | None = None) -> dict:
     _require(
         data.get("schema") == "frontend_list_surface_structure_browser.v1",
         "unexpected list surface schema",
     )
     _require(data.get("passed") is True, "list surface did not pass")
-    _require(int(data.get("failures") or 0) == 0, "list surface recorded failures")
+    failures = data.get("failures")
+    failed_count = len(failures) if isinstance(failures, list) else int(failures or 0)
+    _require(failed_count == 0, f"list surface recorded failures={failed_count}")
     summary = data.get("summary") or {}
     _require(int(summary.get("runtime_errors") or 0) == 0, "list surface recorded runtime errors")
+    records = summary.get("records")
+    _require(isinstance(records, dict), "list surface has no records summary")
+    records_total = int(records.get("total") or 0)
+    records_passed = int(records.get("passed") or 0)
+    _require(records.get("complete") is True, "list surface records are incomplete")
+    _require(
+        records_total >= _min_count(contract, "records_total"),
+        f"list surface records total={records_total} is below the declared minimum",
+    )
+    _require(
+        records_passed == records_total,
+        f"list surface records passed={records_passed} total={records_total}",
+    )
+    gated = summary.get("gated")
+    _require(isinstance(gated, dict), "list surface has no gated summary")
+    gated_total = int(gated.get("total") or 0)
+    gated_passed = int(gated.get("passed") or 0)
+    gated_failed = int(gated.get("failed") or 0)
+    _require(
+        gated_total >= _min_count(contract, "gated_total"),
+        f"list surface gated total={gated_total} is below the declared minimum",
+    )
+    _require(
+        gated_failed == 0 and gated_passed == gated_total,
+        f"list surface gated passed={gated_passed} failed={gated_failed} total={gated_total}",
+    )
+    negative = summary.get("negative_fixtures")
+    _require(isinstance(negative, dict), "list surface has no negative fixture summary")
+    negative_total = int(negative.get("total") or 0)
+    negative_detected = int(negative.get("detected") or 0)
+    _require(
+        negative_total >= _min_count(contract, "negative_fixtures_total"),
+        f"list surface negative fixtures total={negative_total} is below the declared minimum",
+    )
+    _require(
+        negative_detected == negative_total,
+        f"list surface negative fixtures detected={negative_detected} total={negative_total}",
+    )
     acceptance = ((data.get("source") or {}).get("acceptance") or {})
     observed = (acceptance.get("provenance") or {}).get("expectedSha")
     _require(observed == head, f"list surface evidence is bound to {observed!r}, expected {head}")
     return {
         "counts": {
             "observations": int(summary.get("observations") or 0),
-            "gated": (summary.get("gated") or {}).get("total")
-            if isinstance(summary.get("gated"), dict)
-            else summary.get("gated"),
+            "records": records_total,
+            "gated": gated_total,
+            "negative_fixtures": negative_total,
             "failures": 0,
             "runtime_errors": 0,
         }
     }
 
 
-def _adapter_relation_roundtrip(data: dict, head: str) -> dict:
+def _adapter_relation_roundtrip(data: dict, head: str, contract: dict | None = None) -> dict:
     _require(
         data.get("schema") == "record-relation-roundtrip-acceptance.v1",
         "unexpected relation roundtrip schema",
     )
     _require(str(data.get("status", "")).lower() == "pass", "relation roundtrip status is not pass")
-    _require(not (data.get("failures") or []), "relation roundtrip recorded failures")
-    observed = data.get("expected_sha") or data.get("served_revision")
-    _require(observed == head, f"relation roundtrip evidence is bound to {observed!r}, expected {head}")
+    failures = data.get("failures") or []
+    _require(isinstance(failures, list) and not failures, "relation roundtrip recorded failures")
+    _require(
+        data.get("expected_sha") == head,
+        f"relation roundtrip expected_sha is {data.get('expected_sha')!r}, expected {head}",
+    )
+    _require(
+        data.get("served_revision") == head,
+        f"relation roundtrip served_revision is {data.get('served_revision')!r}, expected {head}",
+    )
+    declared_entries = int(data.get("declared_entry_count") or 0)
+    openable = data.get("declared_openable") or []
+    _require(isinstance(openable, list), "relation roundtrip declared_openable must be an array")
+    _require(
+        declared_entries >= _min_count(contract, "declared_entry_count"),
+        f"relation roundtrip declared entries={declared_entries} is below the declared minimum",
+    )
+    _require(
+        len(openable) >= _min_count(contract, "declared_openable"),
+        f"relation roundtrip openable entries={len(openable)} is below the declared minimum",
+    )
+    roundtrip = data.get("roundtrip")
+    _require(isinstance(roundtrip, dict) and roundtrip.get("field"), "relation roundtrip has no verified field")
+    restored = roundtrip.get("restored")
+    _require(isinstance(restored, dict), "relation roundtrip has no restoration record")
+    required_flags = (
+        "path_restored",
+        "title_restored",
+        "statusbar_restored",
+        "tabs_restored",
+        "actions_restored",
+        "error_free",
+    )
+    failed_flags = [flag for flag in required_flags if restored.get(flag) is not True]
+    _require(not failed_flags, f"relation roundtrip restoration failed: {failed_flags}")
+    for key in ("console_errors", "denied_requests"):
+        value = data.get(key) or []
+        _require(not value, f"relation roundtrip recorded {key}")
     return {
         "counts": {
-            "declared_entries": int(data.get("declared_entry_count") or 0),
-            "openable_entries": len(data.get("declared_openable") or []),
+            "declared_entries": declared_entries,
+            "openable_entries": len(openable),
         }
     }
 
@@ -314,14 +502,16 @@ ADAPTERS = {
 }
 
 
-def validate_evidence_file(path: Path, adapter: str, head: str) -> dict:
+def validate_evidence_file(
+    path: Path, adapter: str, head: str, contract: dict | None = None
+) -> dict:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         raise BindingError(f"evidence unreadable: {path}: {exc}") from exc
     if not isinstance(data, dict):
         raise BindingError(f"evidence must be a JSON object: {path}")
-    return ADAPTERS[adapter](data, head)
+    return ADAPTERS[adapter](data, head, contract)
 
 
 def validate_manifest(registry: dict, plan: dict, manifest_path: Path, head: str) -> dict:
@@ -330,6 +520,10 @@ def validate_manifest(registry: dict, plan: dict, manifest_path: Path, head: str
     except (OSError, ValueError) as exc:
         raise BindingError(f"evidence manifest unreadable: {manifest_path}: {exc}") from exc
     _require(manifest.get("schema") == EVIDENCE_SCHEMA, f"manifest schema must be {EVIDENCE_SCHEMA}")
+    _require(
+        SHA_RE.match(str(manifest.get("head_sha") or "")),
+        "manifest head_sha must be a full 40-character SHA",
+    )
     _require(manifest.get("head_sha") == head, "manifest head_sha does not match the evaluated head")
     recorded_at = manifest.get("recorded_at")
     _require(isinstance(recorded_at, str) and recorded_at.endswith("Z"), "manifest recorded_at is invalid")
@@ -339,6 +533,7 @@ def validate_manifest(registry: dict, plan: dict, manifest_path: Path, head: str
         raise BindingError(f"manifest recorded_at is not ISO 8601: {exc}") from exc
     max_age = int((registry.get("policy") or {}).get("evidence_max_age_hours") or 72)
     age = datetime.datetime.now(datetime.timezone.utc) - recorded
+    _require(age.total_seconds() >= -300, "manifest recorded_at is in the future")
     _require(age.total_seconds() <= max_age * 3600, f"manifest is older than {max_age}h")
     suites = manifest.get("suites")
     _require(isinstance(suites, dict), "manifest suites must be an object")
@@ -351,7 +546,8 @@ def validate_manifest(registry: dict, plan: dict, manifest_path: Path, head: str
         _require(str(record.get("status", "")).lower() == "pass", f"suite {suite_id} is not passing")
         items = record.get("evidence")
         _require(isinstance(items, list) and items, f"suite {suite_id} has no evidence records")
-        adapter = registry["suites"][suite_id]["evidence"]["adapter"]
+        contract = registry["suites"][suite_id]["evidence"]
+        adapter = contract["adapter"]
         checked = []
         for item in items:
             _require(isinstance(item, dict), f"suite {suite_id} evidence entry must be an object")
@@ -364,7 +560,7 @@ def validate_manifest(registry: dict, plan: dict, manifest_path: Path, head: str
             expected_sha = item.get("sha256")
             actual_sha = _sha256(path)
             _require(actual_sha == expected_sha, f"suite {suite_id} evidence changed after recording")
-            counts = validate_evidence_file(path, adapter, head)
+            counts = validate_evidence_file(path, adapter, head, contract)
             checked.append({"path": raw_path, "sha256": actual_sha, "adapter": adapter, **counts})
         validated[suite_id] = {"status": "pass", "evidence": checked}
     return {"status": "PASS", "suites": validated}
