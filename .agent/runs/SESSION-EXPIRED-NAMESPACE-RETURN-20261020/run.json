@@ -115,7 +115,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Completed: the entry-namespace session-expired fix merged to main as 9e2774e9 and was deployed to sc-root:/opt/projects/repos/sce-product-odoo (80aae6f5 -> 9e2774e9, frontend fingerprint 7e123292...). Tenant /t/demo browser regression passed end to end (expired redirect stays under /t/demo, return path stored as /my-work, relogin 200, recovered page /t/demo/my-work). Platform /platform-admin is verified by entry, cookie scope and runtime identity readback only; its full browser relogin journey stays an open acceptance item and is not claimed as passed.",
+  "next_exact_step": "Completed: entry-namespace session-expired recovery verified end to end on both /t/demo and /platform-admin on the daily dev server at 9e2774e9, including dual-tab same-login isolation. Registered gap: the platform admin credential exists only in sc_platform_control, so a platform database rebuild needs the password set again; declaring a governed bootstrap source is a separate follow-up.",
   "integrated_sha": "9e2774e95aa1380d85a62c463c8853e4b077843b",
   "merge_target": "main",
   "closeout_branch": "docs/session-expired-namespace-return-closure-20261020",
@@ -125,7 +125,7 @@
     "mainline": "merged_to_main: PR #696 squash-merged as 9e2774e95aa1380d85a62c463c8853e4b077843b; merge tree equals the frozen candidate tree",
     "deployment": "deployed_daily_dev_runtime_9e2774e9 (demo + platform_control duties refreshed, static frontend only)",
     "publication": "not_in_scope_by_owner_direction",
-    "product_delivery": "tenant_entry_browser_journey_passed; platform_entry_browser_relogin_not_run",
+    "product_delivery": "tenant_and_platform_entry_browser_journeys_passed: /t/demo and /platform-admin both redirect an expired session to their own entry-scoped login, keep an entry-relative return path and recover the original page after relogin; dual-tab same-login (admin) sessions stay isolated. Platform credentials were reset through the Odoo ORM per owner direction; the platform admin password has no declarative bootstrap source yet.",
     "review": "required CI green at head 9e2774e9: frontend_release_gate, professional_quality_checks, professional_quality_gate, public_guard, merge_policy_gate, release_candidate_gate, python310_runtime_compatibility; entry verify PASS with one public port 18081, loopback-only sibling duties, per-namespace dbfilter and cookie scope"
   },
   "write_replay_authorized": false,
