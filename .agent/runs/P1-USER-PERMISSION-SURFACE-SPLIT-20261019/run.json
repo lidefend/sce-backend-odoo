@@ -244,13 +244,32 @@
       "head": "2714c3a06b2006cb5f358bbbe24742fd7db93bf3",
       "report": ".runtime/p1-user-permission-closeout/record_identity_report.json",
       "writes": "remote temporary tool file only; no database writes"
+    },
+    "namespace_live": {
+      "status": "passed",
+      "checks": 23,
+      "deployed_sha": "2714c3a06b2006cb5f358bbbe24742fd7db93bf3",
+      "artifact": ".runtime/p1-user-permission-closeout/path-namespace-observe-r2.json",
+      "credential_authority": "既有历史同名admin探针口令，以实际两职责登录成功确认；用户授权直接核验日常环境",
+      "mutation": "login/logout session state only; no password/business/authorization changes"
+    },
+    "list_integration_observation": {
+      "status": "passed",
+      "gated": 108,
+      "records": 8,
+      "negative_fixtures": 5,
+      "runtime_errors": 0,
+      "artifact": ".runtime/p1-user-permission-closeout/list-personnel-r2/report.json"
+    },
+    "relation_integration_observation": {
+      "status": "passed",
+      "declared_entries": 13,
+      "openable": 4,
+      "artifact": ".runtime/p1-user-permission-closeout/relation-project/20261019T090541/summary.json"
     }
   },
-  "blockers": [
-    "集成命名空间探针旧裸根重定向断言/硬编码口令需P4最小修复；实际平台与租户admin凭据权威需确认，不修改账号或密码",
-    "列表结构与关系回环精确运行证据待补；Quick cef06因已知前置缺陷主动停止，不作为成功"
-  ],
-  "next_exact_step": "P4探针定向测试及独立复核；确认现有受管凭据来源；冻结后重采必需集成运行证据，精确Quick和受保护PR",
+  "blockers": [],
+  "next_exact_step": "冻结最终工具修正候选；受管同步/刷新身份并重采必需集成证据，精确Quick、独立复核和受保护GitHub PR合并",
   "takeover": {
     "owner": "current assistant",
     "authority": "用户明确要求接管 P1 后续收口",
@@ -261,9 +280,9 @@
     "previous_writer_stopped": "owner confirmed in conversation"
   },
   "stage_identity": {
-    "head": "cef06a367a01b08d97c1476e02ca92c89bd92434",
+    "head": "439832907044ae3eafadaf47f4bab351e4097541",
     "dirty": true,
-    "scope": "P4 namespace acceptance probe/registry/tests and current run record"
+    "scope": "P4 namespace probe consumes existing root redirect declaration; test+run+record"
   },
   "evidence_logs": {
     ".runtime/p1-user-permission-closeout/p1-permission-iteration.log": "cf2cd3bf9a6c5dd055059ce0ac6e8f15cfcc720f54716ddbd212a346a1142bf3",

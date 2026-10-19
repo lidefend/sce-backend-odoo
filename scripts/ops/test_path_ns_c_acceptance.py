@@ -7,17 +7,20 @@ from scripts.ops import path_ns_c_acceptance as probe
 
 
 class NamespaceAcceptanceTest(unittest.TestCase):
-    def test_root_requires_explicit_namespace(self):
-        self.assertTrue(probe._root_requires_namespace(400, {'Content-Type': 'application/json'}, b'{"error":"NS_NAMESPACE_REQUIRED"}'))
+    def test_root_consumes_declared_namespace_redirect(self):
+        public = {"root_path_action": "redirect", "root_path_redirect_status": 308, "root_path_redirect_location": "/t/demo/"}
+        self.assertTrue(probe._root_requires_namespace(308, {"Location": "/t/demo/"}, b'', public))
 
-    def test_old_demo_redirect_is_not_accepted(self):
-        self.assertFalse(probe._root_requires_namespace(308, {'Location': '/t/demo/'}, b''))
+    def test_undeclared_redirect_is_rejected(self):
+        self.assertFalse(probe._root_requires_namespace(308, {"Location": "/t/demo/"}, b'', {}))
 
-    def test_wrong_error_is_not_accepted(self):
-        self.assertFalse(probe._root_requires_namespace(400, {'Content-Type': 'application/json'}, b'{"error":"OTHER"}'))
+    def test_wrong_namespace_is_rejected(self):
+        public = {"root_path_action": "redirect", "root_path_redirect_status": 308, "root_path_redirect_location": "/t/other/"}
+        self.assertFalse(probe._root_requires_namespace(308, {"Location": "/t/demo/"}, b'', public))
 
-    def test_html_error_is_not_accepted(self):
-        self.assertFalse(probe._root_requires_namespace(400, {'Content-Type': 'text/html'}, b'{"error":"NS_NAMESPACE_REQUIRED"}'))
+    def test_external_authority_redirect_is_rejected(self):
+        public = {"root_path_action": "redirect", "root_path_redirect_status": 308, "root_path_redirect_location": "//evil.example/"}
+        self.assertFalse(probe._root_requires_namespace(308, {"Location": "//evil.example/"}, b'', public))
 
     def test_missing_credentials_stop_before_network(self):
         with patch.dict(os.environ, {}, clear=True), patch.object(probe, '_opener') as opener:

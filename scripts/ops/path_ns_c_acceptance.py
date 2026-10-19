@@ -98,9 +98,14 @@ def _credentials():
     return values
 
 
-def _root_requires_namespace(status, headers, raw):
-    return (status == 400 and _json(raw).get("error") == "NS_NAMESPACE_REQUIRED"
-            and _content_type(headers) == "application/json")
+def _root_requires_namespace(status, headers, raw, public):
+    if public.get("root_path_action") == "redirect":
+        location = public.get("root_path_redirect_location")
+        return (isinstance(location, str) and location.startswith("/")
+                and not location.startswith("//")
+                and status == public.get("root_path_redirect_status")
+                and headers.get("Location") == location)
+    return False
 
 
 def _login(opener, base, path, password):
@@ -171,6 +176,8 @@ def _provenance(repo, expected_sha):
 
 def run_checks(base_url, expected_sha, repo):
     credentials = _credentials()
+    declaration = json.loads((Path(repo) / "config/ops/daily_runtime_entry.v1.json").read_text())
+    public = declaration["public_entry"]
     opener = _opener()
     checks = []
     started = time.time()
@@ -224,9 +231,9 @@ def run_checks(base_url, expected_sha, repo):
     add(
         "entry_contract",
         "bare_root_requires_a_namespace",
-        {"status": 400, "error": "NS_NAMESPACE_REQUIRED"},
-        {"status": status, "error": _json(raw).get("error")},
-        _root_requires_namespace(status, headers, raw),
+        {"status": public.get("root_path_redirect_status"), "location": public.get("root_path_redirect_location")},
+        {"status": status, "location": headers.get("Location")},
+        _root_requires_namespace(status, headers, raw, public),
     )
 
     status, headers, raw = _call(opener, base_url + "/api/runtime-version")
