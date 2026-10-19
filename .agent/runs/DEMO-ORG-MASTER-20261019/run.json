@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "DEMO-ORG-MASTER-20261019",
   "branch": "feature/demo-r1-realistic-data-20261019",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/DEMO-ORG-MASTER-20261019.yaml",
   "record": "docs/demo/r1-04-organization-master-data.md",
   "baseline_sha": "9150627f10b940bf52c4f1b26cd4e50a3b9feb45",
@@ -146,7 +146,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Push feature/demo-r1-realistic-data-20261019 at the post-rebase clean SHA and open the protected GitHub PR for demo data integration; do not deploy the daily development server from this batch.",
+  "next_exact_step": "Completed: demo data integration merged as f67126ce. Daily development server deployment and upgrade to 17.0.0.4.0 remain a separate authorized batch.",
   "excluded_preexisting_changes": [
     ".agent/goals/DEMO-GUIDED-USAGE-BASELINE-20261019.yaml",
     ".agent/runs/DEMO-R1-F02-F03-CONTRACT-LABEL-20261019/run.json",
@@ -246,7 +246,8 @@
     "Existing databases still hold the pre-rework noupdate=1 visible values (including the s85 employee_name) until a governed upgrade to 17.0.0.4.0 executes the post-migration; XML reload alone does not refresh them.",
     "No database readback of renamed users, projects, scenario records or the migration outcome was performed.",
     "No browser/user acceptance and no deployment were performed.",
-    "XML data is idempotent for records created by this baseline, but it does not adopt a manually pre-existing hr.employee for the same user; a fresh governed rebuild is the supported convergence path."
+    "XML data is idempotent for records created by this baseline, but it does not adopt a manually pre-existing hr.employee for the same user; a fresh governed rebuild is the supported convergence path.",
+    "Merged code has not been deployed to the daily development server in this batch."
   ],
   "scope_note": "Branch feature/demo-r1-realistic-data-20261019 also carries earlier demo batches (realistic core seed, contract-label projection) and the demo company rename in smart_core; each was verified by its own run. They are listed in scope so this run reconciles the branch delta it is the active consolidation point for; authorship and evidence remain with those runs.",
   "integration_context": {
@@ -255,5 +256,13 @@
     "upstream_merged_at": "2026-10-19T10:21:10Z",
     "rebase": "feature/demo-r1-realistic-data-20261019 rebased onto new origin/main with --onto; only the demo consolidation commit was replayed; no manual conflict resolution required",
     "leaf_conflict_surface": ".agent/active-runs.json auto-merged; P1-own changes and demo commit shared no other file"
+  },
+  "integration": {
+    "pr": "lidefend/sce-backend-odoo#689",
+    "source_head": "14b3925ed05e79d2b4be376152eb7a3013eb54f5",
+    "base_main": "9150627f10b940bf52c4f1b26cd4e50a3b9feb45",
+    "merge_sha": "f67126ce832c658a19320b11bd182a92f9c14103",
+    "merged_at": "2026-10-19T10:57:30Z",
+    "required_checks": "all required GitHub checks success on the exact source head"
   }
 }

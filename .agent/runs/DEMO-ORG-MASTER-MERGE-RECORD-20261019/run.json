@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-ORG-MASTER-MERGE-RECORD-20261019",
+  "branch": "codex/demo-integration-record-20261019",
+  "status": "completed",
+  "goal": ".agent/goals/DEMO-ORG-MASTER-20261019.yaml",
+  "record": "docs/demo/r1-04-organization-master-data.md",
+  "baseline_sha": "f67126ce832c658a19320b11bd182a92f9c14103",
+  "environment": {
+    "kind": "offline",
+    "authority": "documentation and run-ledger bookkeeping only; no database, seed replay or deployment"
+  },
+  "checks": {},
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/runs/DEMO-ORG-MASTER-20261019/run.json",
+    ".agent/runs/DEMO-ORG-MASTER-MERGE-RECORD-20261019/run.json"
+  ],
+  "merge_record": {
+    "parent_run": "DEMO-ORG-MASTER-20261019",
+    "pr": "lidefend/sce-backend-odoo#689",
+    "merge_sha": "f67126ce832c658a19320b11bd182a92f9c14103",
+    "source_head": "14b3925ed05e79d2b4be376152eb7a3013eb54f5",
+    "merged_at": "2026-10-19T10:57:30Z"
+  },
+  "next_exact_step": "Completed: parent run closed as merged. Deployment of the daily development server remains a separate authorized batch."
+}
