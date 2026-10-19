@@ -1276,7 +1276,46 @@ __DEMO_SEED_PROGRAM__
 __REFRESH_REFUSAL__
 __UPGRADE_REFUSAL__
 __RECREATE_REFUSAL__
-__RECREATE_DATABASE__
+def recreate_database(duty):
+    """Drop and recreate one demo duty's database from the declaration.
+
+    The drop is the only operation no other phase performs, so it is bound to a
+    verified recovery point by the caller and to the declared carrier here. The
+    database is recreated through the same ``create_database`` path the
+    ``database`` phase uses, which reproduces the owner, the application role
+    and the public-schema privilege from the declaration instead of leaving a
+    database nobody declared. Restarting the application afterwards hands the
+    fresh database's base bootstrap back to the container entrypoint, exactly as
+    a first initialization does.
+    """
+    container = duty["cluster"]["container"]
+    password = read_env_file(credentials_path(duty)).get("DB_PASSWORD", "")
+    if not password:
+        return {"error": "the governed credential material is missing; run the stack phase"}
+    quoted = '"' + duty["database"].replace('"', '""') + '"'
+    dropped = run(
+        ["docker", "exec", "-i", container, "psql", "-U",
+         duty["cluster"]["maintenance_role"], "-d", "postgres",
+         "-v", "ON_ERROR_STOP=1", "-Atc",
+         "DROP DATABASE IF EXISTS %s WITH (FORCE)" % (quoted,)],
+        timeout=300,
+    )
+    entry = {
+        "container": container,
+        "database": duty["database"],
+        "drop_returncode": dropped.returncode,
+        "drop_error": (dropped.stderr or dropped.stdout or "").strip()[:300],
+    }
+    if dropped.returncode:
+        return entry
+    entry["create"] = create_database(container, duty, password)
+    failed = [step for step in entry["create"] if step.get("returncode")]
+    if failed:
+        entry["error"] = "the recreated database could not be prepared: %s" % (
+            failed[0].get("error") or failed[0].get("statement") or "unknown",)
+    return entry
+
+
 __PRUNE_SUPERSEDED_STACKS__
 
 report = {"mode": MODE, "phase": PHASE, "writes": False, "duties": []}
@@ -2895,47 +2934,6 @@ def recreate_refusal(duty, protected_sources):
     return ""
 
 
-def recreate_database(duty):
-    """Drop and recreate one demo duty's database from the declaration.
-
-    The drop is the only operation no other phase performs, so it is bound to a
-    verified recovery point by the caller and to the declared carrier here. The
-    database is recreated through the same ``create_database`` path the
-    ``database`` phase uses, which reproduces the owner, the application role
-    and the public-schema privilege from the declaration instead of leaving a
-    database nobody declared. Restarting the application afterwards hands the
-    fresh database's base bootstrap back to the container entrypoint, exactly as
-    a first initialization does.
-    """
-    container = duty["cluster"]["container"]
-    password = read_env_file(credentials_path(duty)).get("DB_PASSWORD", "")
-    if not password:
-        return {"error": "the governed credential material is missing; run the stack phase"}
-    quoted = '"' + duty["database"].replace('"', '""') + '"'
-    dropped = run(
-        ["docker", "exec", "-i", container, "psql", "-U",
-         duty["cluster"]["maintenance_role"], "-d", "postgres",
-         "-v", "ON_ERROR_STOP=1", "-Atc",
-         "DROP DATABASE IF EXISTS %s WITH (FORCE)" % (quoted,)],
-        timeout=300,
-    )
-    entry = {
-        "container": container,
-        "database": duty["database"],
-        "drop_returncode": dropped.returncode,
-        "drop_error": (dropped.stderr or dropped.stdout or "").strip()[:300],
-    }
-    if dropped.returncode:
-        return entry
-    entry["create"] = create_database(container, duty, password)
-    failed = [step for step in entry["create"] if step.get("returncode")]
-    if failed:
-        entry["error"] = "the recreated database could not be prepared: %s" % (
-            failed[0].get("error") or failed[0].get("statement") or "unknown",)
-    return entry
-
-
-
 def prune_superseded_stack_files(ops_root, current_path):
     """Delete rendered duty stacks the reviewed definition has replaced.
 
@@ -2996,8 +2994,6 @@ def render_remote_program(payload):
         "__UPGRADE_REFUSAL__", textwrap.dedent(inspect.getsource(upgrade_refusal)),
     ).replace(
         "__RECREATE_REFUSAL__", textwrap.dedent(inspect.getsource(recreate_refusal)),
-    ).replace(
-        "__RECREATE_DATABASE__", textwrap.dedent(inspect.getsource(recreate_database)),
     ).replace(
         "__PRUNE_SUPERSEDED_STACKS__",
         textwrap.dedent(inspect.getsource(prune_superseded_stack_files)),
