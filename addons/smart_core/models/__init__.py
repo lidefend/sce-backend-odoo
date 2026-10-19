@@ -19,3 +19,6 @@ from . import contract_slo_observation
 from . import platform_database_registry
 from . import platform_namespace
 from . import ir_http
+
+from . import res_users_group_authority
+from . import group_authority_reconciliation

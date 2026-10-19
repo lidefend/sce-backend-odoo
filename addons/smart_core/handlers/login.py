@@ -426,8 +426,8 @@ class LoginHandler(BaseIntentHandler):
 
 class LogoutHandler(BaseIntentHandler):
     """
-    注销处理器（幂等空操作）
-    - JWT 为无状态：后端不需“销毁”，前端丢弃即可
+    注销处理器
+    - 递增服务端令牌版本，使既有 JWT 失效
     - 若同域下曾登录过 /web，这里顺手清 Odoo session
     """
     INTENT_TYPE  = "auth.logout"
@@ -461,7 +461,7 @@ class LogoutHandler(BaseIntentHandler):
         try:
             user = get_user_from_token()
             if user and user.exists():
-                user.sudo().write({"token_version": int(getattr(user, "token_version", 0) or 0) + 1})
+                user._sc_bump_token_epoch()
         except Exception:
             # 无 token 或 token 已无效时保持幂等
             pass
