@@ -3,6 +3,34 @@ import path from 'node:path';
 import { launchChromium } from './playwright_runtime.mjs';
 
 const baseUrl = String(process.env.FRONTEND_URL || '').replace(/\/$/, '');
+
+function entryBasePath() {
+  const pathname = new URL(baseUrl).pathname.replace(/\/+$/, '');
+  if (/^\/platform-admin(?=\/|$)/.test(pathname)) return '/platform-admin';
+  const tenant = pathname.match(/^\/t\/([a-z0-9][a-z0-9-]{0,62})(?=\/|$)/);
+  return tenant ? `/t/${tenant[1]}` : '';
+}
+
+function entryScopedPath(pathname) {
+  const base = entryBasePath();
+  if (!base) return pathname;
+  if (pathname === base || pathname.startsWith(`${base}/`)) return pathname;
+  return `${base}${pathname}`;
+}
+
+function entryRelativePath(pathname) {
+  const base = entryBasePath();
+  if (!base) return pathname;
+  if (pathname === base) return '/';
+  if (pathname.startsWith(`${base}/`)) return pathname.slice(base.length) || '/';
+  return pathname;
+}
+
+function entryRootPath() {
+  const base = entryBasePath();
+  return base ? `${base}/` : '/';
+}
+
 const database = String(process.env.DB_NAME || '');
 const login = String(process.env.E2E_LOGIN || '');
 const password = String(process.env.E2E_PASSWORD || '');
@@ -791,8 +819,8 @@ try {
       if (workbenchResponse) await captureFormalEntryIdentity(await workbenchResponse, target, viewport.name, 'workbench');
       if (exerciseSessionExpiredRecovery) {
         const originalReturnUrl = `${baseUrl}${target.path}`;
-        const originalReturnPath = `${new URL(originalReturnUrl).pathname}${new URL(originalReturnUrl).search}${new URL(originalReturnUrl).hash}`;
-        await page.waitForURL((url) => url.pathname === '/login' && url.searchParams.get('reason') === 'session_expired', { timeout: 45000 });
+        const originalReturnPath = `${entryRelativePath(new URL(originalReturnUrl).pathname)}${new URL(originalReturnUrl).search}${new URL(originalReturnUrl).hash}`;
+        await page.waitForURL((url) => url.pathname === entryScopedPath('/login') && url.searchParams.get('reason') === 'session_expired', { timeout: 45000 });
         const notice = page.locator('[data-session-expired-notice]:visible');
         await notice.waitFor({ state: 'visible', timeout: 15000 });
         const noticeCount = await notice.count();
@@ -825,7 +853,7 @@ try {
           expectedReturnUrl = String(report.startup[viewport.name]?.landingUrl || `${baseUrl}/`);
           await page.waitForURL((url) => url.href === expectedReturnUrl, { timeout: 45000 });
         } else if (sessionExpiredRecoveryScenario === 'unauthorized') {
-          await page.waitForURL((url) => url.pathname === '/access-denied', { timeout: 45000 });
+          await page.waitForURL((url) => url.pathname === entryScopedPath('/access-denied'), { timeout: 45000 });
           const deniedUrl = new URL(page.url());
           const deniedTitle = page.getByText('访问受限', { exact: true });
           const safeReturn = page.getByRole('button', { name: '返回安全页面', exact: true });
@@ -838,7 +866,7 @@ try {
             safeReturnCount: await safeReturn.count(),
           };
           await safeReturn.click();
-          await page.waitForURL((url) => url.pathname === '/', { timeout: 45000 });
+          await page.waitForURL((url) => url.pathname === entryRootPath(), { timeout: 45000 });
           accessDeniedEvidence.safeReturnUrl = page.url();
         } else {
           await page.waitForURL((url) => url.href === expectedReturnUrl, { timeout: 45000 });
@@ -858,7 +886,7 @@ try {
           storedBeforeLogin,
           storedAfterLogin,
           originalStoredReturnPath,
-          expectedReturnPath: new URL(expectedReturnUrl).pathname + new URL(expectedReturnUrl).search + new URL(expectedReturnUrl).hash,
+          expectedReturnPath: entryRelativePath(new URL(expectedReturnUrl).pathname) + new URL(expectedReturnUrl).search + new URL(expectedReturnUrl).hash,
           recoveredUrl,
           scenario: sessionExpiredRecoveryScenario,
           accessDeniedEvidence,
@@ -882,7 +910,7 @@ try {
                     && accessDeniedEvidence?.reason === 'NAVIGATION_AUTHORITY_DENIED'
                     && accessDeniedEvidence?.titleCount === 1
                     && accessDeniedEvidence?.safeReturnCount === 1
-                    && new URL(accessDeniedEvidence?.safeReturnUrl || baseUrl).pathname === '/'
+                    && new URL(accessDeniedEvidence?.safeReturnUrl || baseUrl).pathname === entryRootPath()
                   : false),
         };
         await page.unroute(readFailurePattern, sessionExpiredHandler);
@@ -2955,7 +2983,7 @@ try {
           reason: deniedUrl.searchParams.get('reason') || '',
         } : null;
         if (authorityDeniedEvidence) {
-          authorityDeniedEvidence.pass = beforePath === '/access-denied'
+          authorityDeniedEvidence.pass = beforePath === entryScopedPath('/access-denied')
             && authorityDeniedEvidence.from === target.path
             && authorityDeniedEvidence.reason === 'NAVIGATION_AUTHORITY_DENIED';
         }
@@ -2980,13 +3008,13 @@ try {
           };
         });
         await returnAction.click();
-        await page.waitForURL((url) => url.pathname === '/', { timeout: 15000 });
+        await page.waitForURL((url) => url.pathname === entryRootPath(), { timeout: 15000 });
         safeReturnEvidence = { beforePath, authorityDeniedEvidence, errorText, actionCount, responsiveEvidence, afterPath: new URL(page.url()).pathname };
         safeReturnEvidence.pass = errorText.length > 0
           && actionCount === 1
           && responsiveEvidence.pass
           && (authorityDeniedEvidence?.pass ?? true)
-          && safeReturnEvidence.afterPath === '/';
+          && safeReturnEvidence.afterPath === entryRootPath();
       }
       let formValidationEvidence = null;
       if (target.exerciseFormValidation === true) {
@@ -4825,7 +4853,7 @@ const failures = report.routes.filter((item) => item.path && (!item.tokenLoaded 
 for (const item of report.routes) {
   const configuredTarget = routes.find((target) => target.name === item.name);
   const finalPath = item.finalUrl ? new URL(item.finalUrl).pathname : '';
-  if (item.path && finalPath === '/access-denied' && configuredTarget?.allowAccessDenied !== true) {
+  if (item.path && finalPath === entryScopedPath('/access-denied') && configuredTarget?.allowAccessDenied !== true) {
     failures.push({ name: item.name, expectedAuthorizedRoute: item.path, finalUrl: item.finalUrl });
   }
   if (item.path && item.primitiveDriverEvidence && !item.primitiveDriverEvidence.pass) {

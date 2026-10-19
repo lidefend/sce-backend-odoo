@@ -1,4 +1,5 @@
 import { normalizeLegacyWorkbenchPath } from './routeQuery';
+import { entryScopedPath, resolveEntryBasePath, stripEntryBasePath } from '../services/entryNamespace';
 
 const SESSION_EXPIRED_RETURN_PATH_KEY = 'sc.session_expired.return_path.v1';
 const MAX_RETURN_PATH_LENGTH = 4096;
@@ -53,7 +54,10 @@ function isAuthEntryPath(pathname: string): boolean {
   return AUTH_ENTRY_PATHS.has(String(pathname || '').replace(/\/+$/, '') || '/');
 }
 
-export function normalizeSafeLoginReturnPath(rawPath: unknown): string {
+export function normalizeSafeLoginReturnPath(
+  rawPath: unknown,
+  basePath = resolveEntryBasePath(),
+): string {
   const candidate = String(rawPath || '').trim();
   if (!candidate || candidate.length > MAX_RETURN_PATH_LENGTH) return '';
   if (!candidate.startsWith('/') || candidate.startsWith('//') || containsUnsafeEncoding(candidate)) return '';
@@ -64,9 +68,10 @@ export function normalizeSafeLoginReturnPath(rawPath: unknown): string {
   } catch {
     return '';
   }
-  if (parsed.origin !== 'https://sce.invalid' || isAuthEntryPath(parsed.pathname)) return '';
+  const pathname = stripEntryBasePath(parsed.pathname, basePath) || '/';
+  if (parsed.origin !== 'https://sce.invalid' || isAuthEntryPath(pathname)) return '';
 
-  const normalized = normalizeLegacyWorkbenchPath(`${parsed.pathname}${parsed.search}${parsed.hash}`);
+  const normalized = normalizeLegacyWorkbenchPath(`${pathname}${parsed.search}${parsed.hash}`);
   const isUnboundActionRoute = /^\/(f|a|r)\//.test(normalized)
     && !/[?&](action_id|menu_id|scene_key|scene)=/.test(normalized);
   return isUnboundActionRoute ? '' : normalized;
@@ -75,8 +80,9 @@ export function normalizeSafeLoginReturnPath(rawPath: unknown): string {
 export function rememberSessionExpiredReturnPath(
   rawPath: unknown,
   storage: SessionStorageLike | null = browserRuntime()?.sessionStorage || null,
+  basePath = resolveEntryBasePath(),
 ): boolean {
-  const returnPath = normalizeSafeLoginReturnPath(rawPath);
+  const returnPath = normalizeSafeLoginReturnPath(rawPath, basePath);
   if (!returnPath || !storage) return false;
   try {
     storage.setItem(SESSION_EXPIRED_RETURN_PATH_KEY, returnPath);
@@ -88,10 +94,11 @@ export function rememberSessionExpiredReturnPath(
 
 export function readSessionExpiredReturnPath(
   storage: SessionStorageLike | null = browserRuntime()?.sessionStorage || null,
+  basePath = resolveEntryBasePath(),
 ): string {
   if (!storage) return '';
   try {
-    return normalizeSafeLoginReturnPath(storage.getItem(SESSION_EXPIRED_RETURN_PATH_KEY));
+    return normalizeSafeLoginReturnPath(storage.getItem(SESSION_EXPIRED_RETURN_PATH_KEY), basePath);
   } catch {
     return '';
   }
@@ -111,13 +118,17 @@ export function clearSessionExpiredReturnPath(
 export function redirectForExpiredSession(
   runtime: SessionExpiredNavigationRuntime | null = browserRuntime(),
 ): boolean {
-  if (!runtime || sessionExpiredRedirectScheduled || isAuthEntryPath(runtime.location.pathname)) return false;
+  if (!runtime) return false;
+  const basePath = resolveEntryBasePath(runtime.location.pathname);
+  const currentPath = stripEntryBasePath(runtime.location.pathname, basePath) || '/';
+  if (sessionExpiredRedirectScheduled || isAuthEntryPath(currentPath)) return false;
   sessionExpiredRedirectScheduled = true;
   rememberSessionExpiredReturnPath(
-    `${runtime.location.pathname}${runtime.location.search}${runtime.location.hash}`,
+    `${currentPath}${runtime.location.search}${runtime.location.hash}`,
     runtime.sessionStorage,
+    basePath,
   );
-  runtime.location.assign('/login?reason=session_expired');
+  runtime.location.assign(entryScopedPath('/login?reason=session_expired', basePath));
   return true;
 }
 

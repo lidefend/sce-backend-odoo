@@ -5,6 +5,7 @@ import type {
   SuggestedActionParsed,
 } from './types';
 import { normalizeLegacyRecordOpenIntent, resolveRecordOpenTarget } from '../runtime/recordEntryContract';
+import { entryScopedPath, resolveEntryBasePath, stripEntryBasePath } from '../../services/entryNamespace';
 
 const ROUTE_ACTIONS = new Set<SuggestedActionKind>(['open_route', 'open_url']);
 const RETRY_ACTIONS = new Set<SuggestedActionKind>(['refresh', 'retry']);
@@ -61,7 +62,7 @@ function isSafeRelativePath(path: string) {
 
 function safeNavigate(path: string) {
   if (!isSafeRelativePath(path)) return false;
-  window.location.href = path;
+  window.location.href = entryScopedPath(path);
   return true;
 }
 
@@ -192,7 +193,9 @@ export function executeSuggestedAction(
     return finish(true);
   }
   if (parsed.kind === 'relogin') {
-    const redirect = encodeURIComponent(`${window.location.pathname}${window.location.search}`);
+    const basePath = resolveEntryBasePath();
+    const returnPath = `${stripEntryBasePath(window.location.pathname, basePath)}${window.location.search}`;
+    const redirect = encodeURIComponent(returnPath);
     return finish(safeNavigate(`/login?redirect=${redirect}`));
   }
   if (parsed.kind === 'open_login') {

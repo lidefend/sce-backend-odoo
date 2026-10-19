@@ -1,0 +1,10 @@
+schema_version: 1
+goal:
+  id: SESSION-EXPIRED-NAMESPACE-RETURN-20261020
+  status: active
+  objective: 修复登录会话过期后跳转丢失路径命名空间、安全返回路径重复前缀导致无法重新登录的问题
+  formal_product_layer: P0 platform frontend entry/session runtime
+  exclusions:
+    - 不修改认证协议、token 签发或权限模型
+    - 不改变服务端命名空间解析的权威
+    - 不引入新的登录入口或数据库提示

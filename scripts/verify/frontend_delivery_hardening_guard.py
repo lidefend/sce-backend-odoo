@@ -131,7 +131,7 @@ require(
     "frontend/apps/web/src/app/sessionExpiredRecovery.ts",
     "normalizeSafeLoginReturnPath",
     "sessionExpiredRedirectScheduled",
-    "location.assign('/login?reason=session_expired')",
+    "entryScopedPath('/login?reason=session_expired'",
 )
 require(
     "frontend/apps/web/src/views/LoginView.vue",

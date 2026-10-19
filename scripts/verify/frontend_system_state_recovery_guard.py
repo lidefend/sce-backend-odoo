@@ -22,10 +22,13 @@ def validate() -> list[str]:
         "SESSION_EXPIRED_RETURN_PATH_KEY",
         "sessionStorage",
         "sessionExpiredRedirectScheduled",
-        "location.assign('/login?reason=session_expired')",
+        "stripEntryBasePath",
+        "entryScopedPath('/login?reason=session_expired'",
     ):
         if marker not in helper:
             failures.append(f"session recovery helper missing: {marker}")
+    if "location.assign('/login" in helper:
+        failures.append("expired-session redirect must be entry-scoped, not root-absolute")
     if "redirect=${encodeURIComponent" in client or "/login?reason=session_expired&redirect=" in client:
         failures.append("401 handling must not expose the retained route in the login URL")
     if "redirectForExpiredSession();" not in client:
@@ -58,4 +61,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_system_state_recovery_guard] PASS url_leak=0 distinct_notice=1 single_redirect=1")
+    print("[frontend_system_state_recovery_guard] PASS url_leak=0 distinct_notice=1 single_redirect=1 entry_scoped=1")
