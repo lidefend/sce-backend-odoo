@@ -178,6 +178,22 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
         self.assertEqual(user.token_version, before)
         self.assertIn(self._group('partner_manager'), user.groups_id)
 
+    def test_authority_lock_does_not_block_foreign_key_reference(self):
+        """Authority writes serialize each other, but must not block FK KEY SHARE."""
+        from odoo import SUPERUSER_ID
+        from odoo.modules.registry import Registry
+        from psycopg2.errors import LockNotAvailable
+
+        self.env['res.users'].browse(SUPERUSER_ID)._sc_bump_token_epoch()
+        with Registry(self.env.cr.dbname).cursor() as cursor:
+            cursor.execute("SET LOCAL lock_timeout = '5s'")
+            cursor.execute('SELECT id FROM res_users WHERE id = %s FOR KEY SHARE', [SUPERUSER_ID])
+            self.assertEqual(cursor.fetchone()[0], SUPERUSER_ID)
+        with Registry(self.env.cr.dbname).cursor() as cursor:
+            cursor.execute("SET LOCAL lock_timeout = '2s'")
+            with self.assertRaises(LockNotAvailable):
+                cursor.execute('SELECT id FROM res_users WHERE id = %s FOR NO KEY UPDATE', [SUPERUSER_ID])
+
     def test_private_token_revocation_increments_each_time(self):
         user = self._subject('partner_manager')
         before = user.token_version

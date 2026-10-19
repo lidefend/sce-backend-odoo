@@ -97,7 +97,7 @@ class ResUsers(models.Model):
         if not self.ids:
             return
         self.env.cr.execute(
-            'SELECT id FROM res_users WHERE id = ANY(%s) ORDER BY id FOR UPDATE',
+            'SELECT id FROM res_users WHERE id = ANY(%s) ORDER BY id FOR NO KEY UPDATE',
             (self.ids,),
         )
         self.invalidate_recordset(['token_version'])

@@ -19,7 +19,7 @@ class ResUsersGroupAuthority(models.Model):
 
     def _sc_lock_group_authority(self):
         if self.ids:
-            self.env.cr.execute('SELECT id FROM res_users WHERE id = ANY(%s) ORDER BY id FOR UPDATE', (self.ids,))
+            self.env.cr.execute('SELECT id FROM res_users WHERE id = ANY(%s) ORDER BY id FOR NO KEY UPDATE', (self.ids,))
             self.invalidate_recordset([STATE_FIELD, 'groups_id'])
 
     def _sc_store_group_authority(self, roots, reason=''):
