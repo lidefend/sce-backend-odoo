@@ -167,6 +167,38 @@ def _native_view_fixture_arch(relative_path: str, record_id: str) -> str:
 
 
 class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
+
+    def test_kanban_object_fields_and_published_columns_preserve_selection(self):
+        source = {
+            "fields": {
+                "title": {"name": "title", "type": "char", "string": "名称"},
+                "strategy": {"name": "strategy", "type": "selection", "selection": [["direct", "公司直营"], ["joint", "联营项目"]]},
+            },
+            "views": {"kanban": {"fields": [{"name": "title", "type": "char"}]}},
+            "list_profile": {"columns": ["title", "strategy"]},
+        }
+        for with_meta in (False, True):
+            candidate = deepcopy(source)
+            if with_meta:
+                candidate["meta_fields"] = [candidate["fields"]["title"]]
+            rows = assembler._field_rows(candidate, candidate, view_type="kanban")
+            self.assertEqual([row["name"] for row in rows], ["title", "strategy"])
+            self.assertEqual(rows[1]["selection"], source["fields"]["strategy"]["selection"])
+            self.assertEqual(candidate["views"]["kanban"]["fields"], source["views"]["kanban"]["fields"])
+            candidate.update(model="test.document", view_type="kanban")
+            full = assembler.assemble_unified_page_contract_v2(candidate, source_type="ui.contract", client_type="web_pc", request_id="kanban.selection")
+            widgets = {w["fieldCode"]: w for c in full["layoutContract"]["containerTree"] for w in c["widgetList"]}
+            self.assertEqual(set(widgets), {"title", "strategy"})
+            self.assertEqual(widgets["strategy"]["componentConfig"]["selection"], source["fields"]["strategy"]["selection"])
+
+    def test_kanban_profile_field_without_authorized_descriptor_is_rejected(self):
+        source = {"fields": {"title": {"name": "title", "type": "char"}},
+                  "views": {"kanban": {"fields": ["title"]}},
+                  "list_profile": {"columns": ["title", "private_field"]}}
+        with self.assertRaisesRegex(ValueError, "missing authorized descriptor: private_field"):
+            assembler._field_rows(source, source, view_type="kanban")
+
+
     def test_full_profile_trim_isolates_the_input_contract(self):
         contract = {
             "pageInfo": {"clientType": "web_pc", "deliveryProfile": "full"},

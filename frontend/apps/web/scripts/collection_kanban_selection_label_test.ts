@@ -1,3 +1,4 @@
+import { groupCollectionRecords } from '../src/app/runtime/collectionViewRuntime';
 import assert from 'node:assert/strict';
 import { FIELD_VALUE_EMPTY_TEXT } from '../src/utils/fieldSemantics';
 import {
@@ -63,3 +64,11 @@ const projected = collectColumnSelections([{ name: 'state', selection: [] }, { n
 assert.deepEqual(projected, { state: [] });
 assert.throws(() => resolveCollectionCell({ field: 'state', value: 'unknown', selection: projected.state, status: true }, ordinary), { name: 'ContractGapError' });
 console.log('[collection_kanban_selection_label_test] PASS assertions=25');
+
+// The workflow lane consumes the same declared value formatter as its cards.
+const lanes = groupCollectionRecords([{state: 'draft'}, {state: 'in_progress'}, {state: 'draft'}], 'state', value =>
+  resolveCollectionCell({field: 'state', value, selection: lifecycle, status: true}, () => { throw new Error('unexpected raw formatter'); }).text);
+assert.deepEqual(lanes.map(lane => [lane.key, lane.label, lane.records.length]), [['draft', '草稿', 2], ['in_progress', '在建', 1]]);
+assert.throws(() => groupCollectionRecords([{state: 'unknown'}], 'state', value =>
+  resolveCollectionCell({field: 'state', value, selection: lifecycle, status: true}, () => { throw new Error('unexpected raw formatter'); }).text));
+console.log('lane label assertions: 2 PASS');

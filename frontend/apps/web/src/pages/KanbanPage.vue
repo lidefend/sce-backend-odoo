@@ -152,7 +152,7 @@ const displayLanes = computed(() => {
   if (!workflowBoard.value || !props.groupField) {
     return groupCollectionRecords(props.records, '');
   }
-  return groupCollectionRecords(props.records, props.groupField);
+  return groupCollectionRecords(props.records, props.groupField, (value) => semanticCell(props.groupField!, value).text);
 });
 
 function normalizedFieldName(raw: unknown): string {

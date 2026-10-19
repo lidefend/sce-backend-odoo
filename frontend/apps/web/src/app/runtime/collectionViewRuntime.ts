@@ -14,7 +14,7 @@ export function buildCollectionRouteQuery(current: Dict, patch: {
   return next;
 }
 
-export function groupCollectionRecords(records: Dict[], groupField: string): Array<{
+export function groupCollectionRecords(records: Dict[], groupField: string, labelFor?: (value: unknown) => string): Array<{
   key: string;
   label: string;
   records: Dict[];
@@ -24,7 +24,7 @@ export function groupCollectionRecords(records: Dict[], groupField: string): Arr
   records.forEach((row) => {
     const raw = row[groupField];
     const key = Array.isArray(raw) ? String(raw[0] ?? '') : String(raw ?? '');
-    const label = Array.isArray(raw) ? String(raw[1] ?? raw[0] ?? '') : String(raw ?? '');
+    const label = labelFor ? labelFor(raw) : Array.isArray(raw) ? String(raw[1] ?? raw[0] ?? '') : String(raw ?? '');
     const laneKey = key || '__unset__';
     if (!lanes.has(laneKey)) lanes.set(laneKey, { key: laneKey, label: label || '未设置', records: [] });
     lanes.get(laneKey)?.records.push(row);
