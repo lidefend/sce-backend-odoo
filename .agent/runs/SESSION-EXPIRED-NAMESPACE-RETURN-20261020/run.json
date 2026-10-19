@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "id": "SESSION-EXPIRED-NAMESPACE-RETURN-20261020",
+  "branch": "fix/session-expired-namespace-return-20261020",
+  "status": "active",
+  "baseline_sha": "aba882dfcfeb8e05dbcea321d4b7ba713f0b9b7f",
+  "goal": ".agent/goals/SESSION-EXPIRED-NAMESPACE-RETURN-20261020.yaml",
+  "record": "docs/ops/iterations/session_expired_namespace_return_20261020.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SESSION-EXPIRED-NAMESPACE-RETURN-20261020.yaml",
+    ".agent/runs/SESSION-EXPIRED-NAMESPACE-RETURN-20261020/run.json",
+    "docs/ops/iterations/session_expired_namespace_return_20261020.md",
+    "frontend/apps/web/src/services/entryNamespace.ts",
+    "frontend/apps/web/src/app/sessionExpiredRecovery.ts",
+    "frontend/apps/web/src/app/suggested_action/runtime.ts",
+    "frontend/apps/web/scripts/session_expired_recovery_test.ts",
+    "scripts/verify/frontend_system_state_recovery_guard.py",
+    "scripts/verify/test_frontend_system_state_recovery_guard.py",
+    "scripts/verify/frontend_delivery_hardening_browser.mjs",
+    "scripts/verify/frontend_delivery_hardening_guard.py",
+    "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md"
+  ],
+  "environment": {
+    "kind": "offline"
+  },
+  "checks": {
+    "system_state_recovery": {
+      "target": "verify.frontend.system_state_recovery.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/services/entryNamespace.ts",
+        "frontend/apps/web/src/app/sessionExpiredRecovery.ts",
+        "frontend/apps/web/scripts/session_expired_recovery_test.ts",
+        "scripts/verify/frontend_system_state_recovery_guard.py",
+        "scripts/verify/test_frontend_system_state_recovery_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "suggested_action_runtime": {
+      "target": "verify.frontend.suggested_action.runtime_guard",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/suggested_action/runtime.ts",
+        "scripts/verify/suggested_action_runtime_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk"
+      ]
+    },
+    "delivery_hardening_guard": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "frontend/apps/web/src/app/sessionExpiredRecovery.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "static_build": {
+      "target": "verify.frontend.build",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/package.json",
+        "scripts/dev/frontend_static_build.sh",
+        "make/frontend.mk"
+      ]
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "kind": "offline",
+      "inputs": [
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "frontend/apps/web/src",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "make/frontend.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "运行 ci.local.iteration 与变更影响检查，冻结候选后提交、推送并创建 PR"
+}

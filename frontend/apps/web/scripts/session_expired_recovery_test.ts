@@ -38,6 +38,9 @@ equal(normalizeSafeLoginReturnPath('/a/42%0a'), '', 'encoded control characters 
 equal(normalizeSafeLoginReturnPath('/login?redirect=/a/42'), '');
 equal(normalizeSafeLoginReturnPath('/platform-admin/login'), '');
 equal(normalizeSafeLoginReturnPath(`/${'x'.repeat(4096)}`), '');
+equal(normalizeSafeLoginReturnPath('/t/demo/a/42?menu_id=9', '/t/demo'), '/a/42?menu_id=9');
+equal(normalizeSafeLoginReturnPath('/t/demo/login', '/t/demo'), '');
+equal(normalizeSafeLoginReturnPath('/platform-admin/login', '/platform-admin'), '');
 
 const storage = new MemoryStorage();
 equal(rememberSessionExpiredReturnPath('/a/42?menu_id=9', storage), true);
@@ -63,12 +66,52 @@ equal(assigned.length, 1);
 equal(assigned[0], '/login?reason=session_expired');
 equal(readSessionExpiredReturnPath(storage), '/a/42?menu_id=9&search=abc#details');
 
+const tenantStorage = new MemoryStorage();
+const tenantAssigned: string[] = [];
+resetSessionExpiredRedirectForTest();
+equal(redirectForExpiredSession({
+  location: {
+    pathname: '/t/demo/a/42',
+    search: '?menu_id=9',
+    hash: '#details',
+    assign: (url: string) => tenantAssigned.push(url),
+  },
+  sessionStorage: tenantStorage,
+}), true, 'tenant session expiry must schedule one redirect');
+equal(tenantAssigned[0], '/t/demo/login?reason=session_expired');
+equal(readSessionExpiredReturnPath(tenantStorage, '/t/demo'), '/a/42?menu_id=9#details');
+
+const platformStorage = new MemoryStorage();
+const platformAssigned: string[] = [];
+resetSessionExpiredRedirectForTest();
+equal(redirectForExpiredSession({
+  location: {
+    pathname: '/platform-admin/a/42',
+    search: '?menu_id=9',
+    hash: '',
+    assign: (url: string) => platformAssigned.push(url),
+  },
+  sessionStorage: platformStorage,
+}), true, 'platform session expiry must schedule one redirect');
+equal(platformAssigned[0], '/platform-admin/login?reason=session_expired');
+equal(readSessionExpiredReturnPath(platformStorage, '/platform-admin'), '/a/42?menu_id=9');
+
+const legacyStorage = new MemoryStorage();
+equal(rememberSessionExpiredReturnPath('/t/demo/a/42?menu_id=9', legacyStorage, '/t/demo'), true);
+equal(readSessionExpiredReturnPath(legacyStorage, '/t/demo'), '/a/42?menu_id=9');
+
 resetSessionExpiredRedirectForTest();
 runtime.location.pathname = '/login';
 equal(redirectForExpiredSession(runtime), false, 'login requests must not redirect recursively');
 resetSessionExpiredRedirectForTest();
 runtime.location.pathname = '/platform-admin/login';
 equal(redirectForExpiredSession(runtime), false, 'platform administrator login must not redirect to the regular login');
+resetSessionExpiredRedirectForTest();
+runtime.location.pathname = '/t/demo/login';
+equal(redirectForExpiredSession(runtime), false, 'tenant login must not redirect recursively');
+resetSessionExpiredRedirectForTest();
+runtime.location.pathname = '/platform-admin/login';
+equal(redirectForExpiredSession(runtime), false, 'platform login under its entry prefix must not redirect recursively');
 
 for (const authEntry of ['/activate-account', '/password-recovery']) {
   resetSessionExpiredRedirectForTest();

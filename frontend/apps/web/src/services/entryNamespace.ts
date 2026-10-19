@@ -31,3 +31,11 @@ export function entryScopedPath(path: string, basePath = resolveEntryBasePath())
   if (raw === basePath || raw.startsWith(`${basePath}/`)) return raw;
   return `${basePath}${raw}`;
 }
+
+export function stripEntryBasePath(pathname: string, basePath = resolveEntryBasePath()): string {
+  const raw = String(pathname || '');
+  if (!raw || !basePath) return raw;
+  if (raw === basePath) return '/';
+  if (raw.startsWith(`${basePath}/`)) return raw.slice(basePath.length) || '/';
+  return raw;
+}

@@ -45,6 +45,22 @@ class FrontendSystemStateRecoveryGuardTest(unittest.TestCase):
         with patch("pathlib.Path.read_text", altered):
             self.assertTrue(any("sessionExpiredRedirectScheduled" in item for item in validate()))
 
+    def test_missing_entry_scoped_redirect_fails(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "sessionExpiredRecovery.ts":
+                return value.replace(
+                    "entryScopedPath('/login?reason=session_expired'",
+                    "'/login?reason=session_expired'",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            failures = validate()
+            self.assertTrue(any("entry-scoped" in item for item in failures))
+
     def test_misleading_safe_home_copy_fails(self):
         real = Path.read_text
 

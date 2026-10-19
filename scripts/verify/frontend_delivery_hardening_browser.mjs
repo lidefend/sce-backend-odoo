@@ -22,6 +22,29 @@ const axeModule = require(require.resolve('@axe-core/playwright', { paths: [path
 const AxeBuilder = axeModule.default || axeModule;
 const acceptance = resolveAcceptanceEnvironment({ tool: 'delivery-hardening', operation: 'read' });
 const BASE_URL = acceptance.baseUrl;
+
+function entryBasePath() {
+  const pathname = new URL(BASE_URL).pathname.replace(/\/+$/, '');
+  if (/^\/platform-admin(?=\/|$)/.test(pathname)) return '/platform-admin';
+  const tenant = pathname.match(/^\/t\/([a-z0-9][a-z0-9-]{0,62})(?=\/|$)/);
+  return tenant ? `/t/${tenant[1]}` : '';
+}
+
+function entryScopedPath(pathname) {
+  const base = entryBasePath();
+  if (!base) return pathname;
+  if (pathname === base || pathname.startsWith(`${base}/`)) return pathname;
+  return `${base}${pathname}`;
+}
+
+function entryRelativePath(pathname) {
+  const base = entryBasePath();
+  if (!base) return pathname;
+  if (pathname === base) return '/';
+  if (pathname.startsWith(`${base}/`)) return pathname.slice(base.length) || '/';
+  return pathname;
+}
+
 const DB_NAME = acceptance.database;
 const PASSWORD = acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
 const FINANCE_LOGIN = acceptance.roleBindings.finance || 'fixture_role_finance';
@@ -744,11 +767,14 @@ async function main() {
     errorRecovery.conflict_refresh = 'PASS';
 
     const expiredReturnUrl = page.url();
-    const expiredReturnPath = `${new URL(expiredReturnUrl).pathname}${new URL(expiredReturnUrl).search}${new URL(expiredReturnUrl).hash}`;
+    const expiredReturnPath = `${entryRelativePath(new URL(expiredReturnUrl).pathname)}${new URL(expiredReturnUrl).search}${new URL(expiredReturnUrl).hash}`;
     remove = await interceptNextBusiness(page, (route) => fulfillError(route, 401, 'SESSION_EXPIRED', 'expired'), TARGETS.payment_request);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForURL(/\/login\?reason=session_expired/, { timeout: 30000 });
-    check(!page.url().includes('redirect=') && new URL(page.url()).pathname === '/login', 'expired session retained sensitive route');
+    check(
+      !page.url().includes('redirect=') && new URL(page.url()).pathname === entryScopedPath('/login'),
+      `expired session retained sensitive route or left entry namespace actual=${page.url()} expected=${entryScopedPath('/login')}`,
+    );
     await page.locator('[data-session-expired-notice]').waitFor({ state: 'visible', timeout: 30000 });
     check(
       await page.locator('[data-session-expired-notice]').getByText('登录状态已过期', { exact: false }).count() === 1,
