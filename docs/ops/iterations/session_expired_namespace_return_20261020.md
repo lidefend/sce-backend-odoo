@@ -114,7 +114,41 @@ Goal: `.agent/goals/SESSION-EXPIRED-NAMESPACE-RETURN-20261020.yaml`
 
 回执：`.runtime/final-acceptance/daily-deployed/session-expired-namespace-return-9e2774e.json`，`pass=true`。
 
-## 8. 未覆盖范围
+## 8. 平台入口过期重登录（补齐）
 
-- 平台入口 `/platform-admin` 已通过入口、Cookie 作用域与运行期身份回读验证，但**未**用平台管理员密码执行完整浏览器过期重登录旅程；该项仍为待验收，不声明通过。
+平台管理员账号 `admin`：按所有者口径使用简单默认口令，后续由所有者自行修改维护；本文档不保存口令。原库内口令与约定不一致，已通过 Odoo ORM（`res.users` 口令字段）重置，未使用 SQL 直写，未改动模块或视图。
+
+真实浏览器，`/platform-admin`：
+
+| 步骤 | 结果 |
+| --- | --- |
+| 登录 | 200，落在 `/platform-admin/?platform_admin=1` |
+| 起始页 | `/platform-admin/?platform_admin=1` |
+| 注入 401 `SESSION_EXPIRED` | 跳转 `/platform-admin/login?reason=session_expired` |
+| 返回路径 | `/?platform_admin=1`（入口相对路径，无前缀重复） |
+| 过期提示 | 可见 |
+| 重新登录 | 200 |
+| 恢复落点 | `/platform-admin/?platform_admin=1` |
+| 登录后返回路径 | 已清空 |
+| 会话 Cookie | `session_id`，`HttpOnly`，`Path=/platform-admin/` |
+| 页面错误 | 无 |
+
+回执：`.runtime/final-acceptance/daily-deployed/session-expired-namespace-return-platform-9e2774e.json`，`pass=true`。
+
+## 9. 双入口同名账号会话隔离
+
+同一浏览器、两个标签页，两侧登录名同为 `admin`：
+
+| 断言 | 结果 |
+| --- | --- |
+| 平台登录后，租户入口未登录 | `/t/demo/login?redirect=/my-work`，未接管平台会话 |
+| 租户登录（`123456`）后平台标签页仍有效 | 仍为 `/platform-admin/?platform_admin=1`，未被踢回登录 |
+| 平台登录期间租户会话仍有效 | `/t/demo/my-work` 正常，未被平台会话覆盖 |
+| 两侧页面错误 | 无 |
+
+回执：`.runtime/final-acceptance/daily-deployed/dual-entry-session-isolation-9e2774e.json`，`pass=true`。
+
+## 10. 未覆盖范围
+
 - 未执行生产环境发布；本轮只覆盖日常开发服务器。
+- 平台管理员口令目前只存在于目标库内，没有声明式初始化来源：若平台库被重建，口令需要重新设定。这是已登记的缺口，未在本轮扩大改造范围。
