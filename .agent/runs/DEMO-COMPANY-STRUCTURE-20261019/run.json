@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-COMPANY-STRUCTURE-20261019",
+  "branch": "feature/demo-company-structure-20261019",
+  "status": "active",
+  "goal": ".agent/goals/DEMO-COMPANY-STRUCTURE-20261019.yaml",
+  "record": "docs/ops/iterations/demo_company_structure_20261019.md",
+  "baseline_sha": "86c03b7a3a502028e5ad656f7c8cb34fd3bedff4",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DEMO-COMPANY-STRUCTURE-20261019.yaml",
+    ".agent/runs/DEMO-COMPANY-STRUCTURE-20261019/run.json",
+    "demo_addons/smart_construction_demo/hooks.py",
+    "demo_addons/smart_construction_demo/seed/registry.py",
+    "demo_addons/smart_construction_demo/seed/steps/__init__.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_company_secondary.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_company_membership.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_90_verify_demo.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_organization_baseline.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+    "docs/demo/r1-04-organization-master-data.md",
+    "docs/ops/iterations/demo_company_structure_20261019.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "local Python unit tests; the governed daily demo duty is a separate runtime step"
+  },
+  "checks": {
+    "demo_lifecycle": {
+      "target": "verify.demo.lifecycle.unit",
+      "inputs": [
+        "Makefile",
+        "make/dev_test.mk",
+        "make/guards.mk",
+        "demo_addons/smart_construction_demo/__manifest__.py",
+        "demo_addons/smart_construction_demo/hooks.py",
+        "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+        "demo_addons/smart_construction_demo/data/",
+        "demo_addons/smart_construction_demo/seed/",
+        "demo_addons/smart_construction_demo/tests/"
+      ],
+      "kind": "offline"
+    },
+    "demo_supplemental": {
+      "target": "verify.demo.supplemental.unit",
+      "inputs": [
+        "Makefile",
+        "make/dev_test.mk",
+        "make/guards.mk",
+        "demo_addons/smart_construction_demo/data/",
+        "demo_addons/smart_construction_demo/seed/",
+        "demo_addons/smart_construction_demo/tests/"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "在 daily demo duty 上执行受管 seed，然后只读回读公司身份、第二公司 XMLID/登记、成员 company_ids 与 /t/demo 公司切换。"
+}

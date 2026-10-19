@@ -61,12 +61,11 @@ class DemoCompanyIdentity(unittest.TestCase):
                     partner.name = value
 
         company.write = write
-        apply_identity = function_from(
-            ROOT / "hooks.py",
-            "apply_demo_company_identity",
-            DEMO_COMPANY_NAME="四川智汇某某建设集团有限公司",
-        )
-        env = SimpleNamespace(ref=lambda xmlid: company)
+        import runpy
+        apply_identity = runpy.run_path(
+            str(ROOT / "hooks.py"), run_name="demo_company_hooks_test"
+        )["apply_demo_company_identity"]
+        env = SimpleNamespace(ref=lambda xmlid, **kwargs: company)
         apply_identity(env)
         self.assertEqual(company.name, "四川智汇某某建设集团有限公司")
         self.assertEqual(partner.name, "四川智汇某某建设集团有限公司")
