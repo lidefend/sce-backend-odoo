@@ -199,12 +199,27 @@
         "browser acceptance",
         "merge readiness"
       ]
+    },
+    "daily_deployment": {
+      "status": "passed",
+      "candidate": "2714c3a06b2006cb5f358bbbe24742fd7db93bf3",
+      "evidence_root": ".runtime/p1-user-permission-closeout/",
+      "facts_unchanged": true,
+      "browser_form_checks": 24,
+      "browser_detail_checks": 16
+    },
+    "exact_head_quick": {
+      "status": "failed",
+      "head": "2714c3a06b2006cb5f358bbbe24742fd7db93bf3",
+      "log": "/tmp/p1-exact-head-quick.log",
+      "owner": "P4 guard registry filename recognition",
+      "recovery": "equivalent unittest file-path invocation; no product/test/assertion changes"
     }
   },
   "blockers": [
-    "目标环境尚未部署候选；持久视图验证及两个入口浏览器定向验收仍待执行，不声明产品交付"
+    "精确 HEAD Quick 首轮因测试入口识别遗漏失败；已改用等价文件路径，待定向验证及新候选 Quick；远端 CI/主线集成尚未完成"
   ],
-  "next_exact_step": "提交清洁代码候选，受管 bundle_sync 后运行 daily.personnel_views plan；精确三视图 apply/verify 与 duty refresh 后验证两个入口；最后精确 HEAD Quick 与受保护 GitHub PR。",
+  "next_exact_step": "验证守卫登记和10项测试，freeze.prepare并提交工具入口修正；精确Quick、集成运行证据、独立复核、受保护PR",
   "takeover": {
     "owner": "current assistant",
     "authority": "用户明确要求接管 P1 后续收口",
@@ -215,26 +230,13 @@
     "previous_writer_stopped": "owner confirmed in conversation"
   },
   "stage_identity": {
-    "head": "7cada7699c5340bc85c40d735fba60cee1b22965",
+    "head": "2714c3a06b2006cb5f358bbbe24742fd7db93bf3",
     "dirty": true,
-    "source_sha256": {
-      "addons/smart_construction_core/views/support/runtime_user_management_views.xml": "171d5314cb6ba1bfc954b974964e4c2fe828e91d941a66095878dd579833eeae",
-      "addons/smart_construction_core/tests/test_data_permission_surface.py": "eb0f1d712ea434c58a02d4e3189d902f179995badb82fca7725cea40784c625a",
-      "addons/smart_construction_core/tests/test_user_module_product_closure.py": "4ea4b83b095111248b11f133a0f97adfbbdfb3c7192ab94043dcb5dd92acd5f5",
-      "addons/smart_core/utils/contract_governance_enterprise_forms.py": "ad28eb5254390ab39c6f69d197c1436bfd2871fab7ccdae2b2af8ab3644e0f84",
-      "addons/smart_core/utils/contract_governance_registry.py": "ae181cb154df346f2a147bef5be7b9774578e48ea112dcba61dd619dabc67014",
-      "scripts/verify/user_permission_view_contract_boundary_guard.py": "50052b440af0df035302ecf33129d1c93c1a8146f567ff2b351087ca33c9900a",
-      "scripts/verify/contract_governance_enterprise_forms_split_guard.py": "29580655ee750046bd5e7252e154d4a9757eba4ab8ec03407d3e1d76d5d1a929",
-      "scripts/verify/local_dev_personnel_authorization_browser.mjs": "0e1f9ae4e1de80a55871a14e55fde821a9d496a569656893ba5e5154133ea1f3",
-      "addons/smart_construction_core/models/support/runtime_user_management.py": "5cfad8512c86c58a4f2c172863c3392ecb20460b67767fc1f1583f7318c13026",
-      "addons/smart_construction_core/tests/test_runtime_user_management.py": "8293569f6a165d589e7dc3544c0ade9f1a0f1c7023f2f7e0d9edfd5fac4d3686",
-      "scripts/verify/test_user_permission_view_contract_boundary_guard.py": "fdde11c94132fff8b67c1f0aea0d51df35dee67838199fab8f15b105e25f37a7",
-      "make/runtime_ops.mk": "c8b920a5993efd33f1e0accce1c34adae125ac59c31f4ce6756b8895e1ef752c",
-      "make/dev.mk": "d429e64f8acbf1bf9b45b4c02e968aa5c31e15cbeb6055f8f9a70d8fe1fa96c2",
-      "scripts/ops/daily_personnel_views.py": "4e660647253650c6f1defee10ba6917716e1679ca554d7d2adbafb7179bea110",
-      "scripts/ops/daily_personnel_views_transaction.py": "d42d8482d00446beceaf5057bc8e1e745fed8c6a79433070683c6cd94b08da31",
-      "scripts/ops/test_daily_personnel_views.py": "af58b7ea0cb3881cb8e3c895813ebcd8c3a9e7b0e822fa23c3946887567eb23f"
-    }
+    "scope": [
+      "make/runtime_ops.mk",
+      ".agent/runs/P1-USER-PERMISSION-SURFACE-SPLIT-20261019/run.json",
+      "docs/ops/iterations/user_permission_surface_split_20261019.md"
+    ]
   },
   "evidence_logs": {
     ".runtime/p1-user-permission-closeout/p1-permission-iteration.log": "cf2cd3bf9a6c5dd055059ce0ac6e8f15cfcc720f54716ddbd212a346a1142bf3",

@@ -200,3 +200,9 @@ PR 必须明确包含这五个既有候选提交；既有 Demo 种子源代码�
 下一步形成清洁候选，在日常目标先 plan 后 apply/verify，刷新受影响职责并执行
 两个入口的只读浏览器验收；精确 HEAD Quick/远端必需门禁通过才按保护规则合并。
 此时仍未部署、未集成、未作用户验收完成声明。
+
+## 部署后集成收口补验
+
+候选 2714c3a06b2006cb5f358bbbe24742fd7db93bf3 已在日常服务器受管同步，三个人员视图 apply/verify、demo/platform_control refresh 和入口核验通过；10 个业务/授权事实表摘要不变，无升级、seed/reset。两入口 form-profiles 共 24 项、detail-only 共 16 项通过，1440/390 宽度均无运行错误。原始证据在 `.runtime/p1-user-permission-closeout/`；外部归档见该目录 archive receipt。权限角色显示 #117 留作关系标签来源后续调查，不宣称完整权限 UX 已收口。
+
+首轮精确 HEAD Quick 在守卫登记检查失败：unittest 模块写法被识别为文件消费但未被归类为 Make 接线。P4 最小修正为等价的 unittest 文件路径写法，测试断言不变。影响集仅 make/runtime_ops.mk 的这一验证命令及台账；产品、浏览器探针和部署工具输入未变，已完成页面/业务事实结果保留，新的候选重新取得 Quick。主线集成仍 pending。

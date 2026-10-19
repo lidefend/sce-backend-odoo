@@ -2450,7 +2450,7 @@ frontend.standard.favorite_probe.recover: guard.prod.forbid
 
 .PHONY: verify.user_permission_view_contract_boundary.unit
 verify.user_permission_view_contract_boundary.unit:
-	@python3 -m unittest scripts.verify.test_user_permission_view_contract_boundary_guard -v
+	@python3 -m unittest scripts/verify/test_user_permission_view_contract_boundary_guard.py -v
 
 # P4: metadata-only personnel cutover. Run on the exact deployed daily checkout.
 .PHONY: verify.daily.personnel_views.unit daily.personnel_views
