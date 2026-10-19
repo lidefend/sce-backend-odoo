@@ -92,6 +92,14 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: approval_scope_authority
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.local.dev.system_permission.approval_scope.orm :: approval_scope_authority local.dev.test'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: auth_signup
   kind: odoo_tag
   status: unwired
@@ -386,6 +394,15 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: group_authority_reconciliation
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.local.dev.system_permission.reconciliation.orm :: group_authority_reconciliation
+    local.dev.test'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: intent_dispatcher_permission_contract
   kind: odoo_tag
   status: unwired
@@ -1174,6 +1191,38 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: system_permission_accounting
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.local.dev.system_permission.accounting.orm :: system_permission_accounting local.dev.test'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: system_permission_business
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.local.dev.system_permission.business.orm :: system_permission_business local.dev.test'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: system_permission_http
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.local.dev.system_permission.http :: system_permission_http local.dev.test'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: system_permission_separation
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.local.dev.system_permission.separation.orm :: system_permission_separation local.dev.test'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: tax_filing
   kind: odoo_tag
   status: unwired

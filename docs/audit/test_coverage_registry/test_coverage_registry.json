@@ -602,7 +602,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.local.dev.system_permission.approval_scope.orm :: approval_scope_authority local.dev.test"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "auth_signup",
@@ -986,7 +987,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.local.dev.system_permission.reconciliation.orm :: group_authority_reconciliation local.dev.test"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "intent_dispatcher_permission_contract",
@@ -2066,7 +2068,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.local.dev.system_permission.accounting.orm :: system_permission_accounting local.dev.test"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "system_permission_business",
@@ -2079,7 +2082,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.local.dev.system_permission.business.orm :: system_permission_business local.dev.test"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "system_permission_http",
@@ -2092,7 +2096,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.local.dev.system_permission.http :: system_permission_http local.dev.test"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "system_permission_separation",
@@ -2105,7 +2110,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.local.dev.system_permission.separation.orm :: system_permission_separation local.dev.test"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "tax_filing",

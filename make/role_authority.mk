@@ -1,7 +1,7 @@
 # P4 offline role declaration inventory; never an authorization/runtime gate.
 .PHONY: verify.system.permission_role.inventory.unit audit.system.permission_role.inventory
 verify.system.permission_role.inventory.unit:
-	@python3 -m unittest scripts.verify.test_system_permission_role_inventory
+	@python3 -m unittest scripts/verify/test_system_permission_role_inventory.py
 
 audit.system.permission_role.inventory: verify.system.permission_role.inventory.unit
 	@python3 scripts/verify/system_permission_role_inventory.py --output .runtime/system-permission-roles/inventory.json
@@ -14,7 +14,7 @@ verify.system.permission_role.write_candidates: verify.system.permission_role.in
 
 .PHONY: verify.system.permission_role.runtime_probe.unit audit.system.permission_role.demo_observation
 verify.system.permission_role.runtime_probe.unit:
-	@python3 -m unittest scripts.verify.test_system_permission_runtime_observation
+	@python3 -m unittest scripts/verify/test_system_permission_runtime_observation.py
 
 # Existing daily demo duty and owner SSH identity; no deployment or credential write.
 audit.system.permission_role.demo_observation: guard.prod.forbid
@@ -53,7 +53,7 @@ local.dev.system_permission.cleanup.readback: guard.prod.forbid local.dev.ready
 
 .PHONY: verify.system.permission_role.assignment.unit
 verify.system.permission_role.assignment.unit:
-	@python3 -m unittest scripts.verify.test_group_assignment
+	@python3 -m unittest scripts/verify/test_group_assignment.py
 
 .PHONY: verify.local.dev.system_permission.approval_scope.orm
 verify.local.dev.system_permission.approval_scope.orm: guard.prod.forbid
@@ -83,7 +83,7 @@ verify.local.dev.system_permission.business.orm: guard.prod.forbid
 
 .PHONY: verify.system.permission.concurrency.unit local.contract-lifecycle.system_permission.concurrency
 verify.system.permission.concurrency.unit:
-	@python3 -m unittest scripts.verify.test_system_permission_concurrency_probe
+	@python3 -m unittest scripts/verify/test_system_permission_concurrency_probe.py
 
 # Commits synthetic fixtures/audit only in the registered disposable profile.
 # Caller must explicitly authorize preparation/execution/discard; never auto-prepare.

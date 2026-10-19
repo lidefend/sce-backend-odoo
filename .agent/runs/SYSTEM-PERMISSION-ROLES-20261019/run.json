@@ -52,7 +52,9 @@
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/module_dependency_map.md",
     "docs/engineering_convergence/test_inventory.csv",
-    "docs/engineering_convergence/test_inventory_summary.md"
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/planning/custom-frontend-integration/G1_BASELINE_EVIDENCE.json",
+    "scripts/verify/test_coverage_registry.yaml"
   ],
   "environment": {
     "kind": "offline"
@@ -1501,6 +1503,29 @@
       "iteration": "passed; integration-recovery-iteration.log",
       "targeted": "passed; complexity +10 assignment +14 inventory tests; integration-recovery-targeted.log",
       "freeze_prepare": "passed; no generated tracked changes; integration-freeze-recovery.log"
+    }
+  },
+  "integration_evidence_recovery": {
+    "failed_head": "bfcb8befe552e34f51f74b53736f01d7cfe712e5",
+    "failures": [
+      "G1 tool-matrix fingerprint stale from menu prerequisite",
+      "Sibling registry: four module-name unittest invocations not recognized as Make wiring",
+      "Six new on-demand Odoo test groups missing coverage registry; initial seed then failed stale snapshot"
+    ],
+    "changes": [
+      "Regenerated G1 asset digest with original baseline SHA preserved",
+      "Same unittest tests invoked by file path so static registry sees governed entries",
+      "Generated reviewed exact six on-demand entries and coverage export; no gate exemption or recurring-coverage claim"
+    ],
+    "impact": "Only P4 evidence/test invocation; no product/runtime/fixture changes. Re-run four affected unit targets, G1 and registry, remaining affected sibling guards before finalization.",
+    "results": {
+      "g1": "passed15 tests",
+      "evolution_binding": "passed27 tests",
+      "guard_registry": "passed1500 scripts",
+      "coverage_registry": "passed18 tests",
+      "tool_tests": "passed10+14+6+8",
+      "menu_tests": "passed6+2",
+      "sibling_checks": "backend model declaration, fact source coverage, menu metadata6 passed"
     }
   }
 }
