@@ -31,6 +31,7 @@
 - `make verify.frontend.delivery_hardening.guard`：PASS；28 项守卫单测 PASS。
 - `make verify.frontend.typecheck.strict`：PASS。
 - `make verify.frontend.build`：PASS（使用 `/tmp` 最小构建环境文件，未写入仓库；产物未包含物理数据库名）。
+- `make refresh.frontend.component_driver_takeover.inventory` + `verify.frontend.component_driver_takeover.unit`：PASS（前端源变更导致输入摘要更新，13 项测试通过）。
 - `make ci.local.iteration`：PASS（dirty 迭代态，L1 only；定向 L2 由上述非零目标覆盖）。
 
 浏览器验收断言同步改为按当前入口计算：租户入口期望 `/t/<alias>/login`，平台入口期望 `/platform-admin/login`；会话过期返回路径按入口相对路径断言，并覆盖旧值二次剥离。`local_dev_candidate_visual_smoke.mjs` 的会话恢复与安全返回断言同样改为入口作用域。

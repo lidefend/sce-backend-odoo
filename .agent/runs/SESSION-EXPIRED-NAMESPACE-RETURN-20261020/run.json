@@ -19,7 +19,8 @@
     "scripts/verify/test_frontend_system_state_recovery_guard.py",
     "scripts/verify/frontend_delivery_hardening_browser.mjs",
     "scripts/verify/frontend_delivery_hardening_guard.py",
-    "scripts/verify/local_dev_candidate_visual_smoke.mjs"
+    "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
   ],
   "environment": {
     "kind": "offline"
@@ -74,6 +75,16 @@
         "frontend/apps/web/src",
         "frontend/apps/web/package.json",
         "scripts/dev/frontend_static_build.sh",
+        "make/frontend.mk"
+      ]
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "kind": "offline",
+      "inputs": [
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "frontend/apps/web/src",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
         "make/frontend.mk"
       ]
     }
