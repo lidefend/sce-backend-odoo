@@ -297,7 +297,7 @@ workspace_menu = env.ref("smart_construction_core.menu_sc_project_project")
 payment_action = env.ref("smart_construction_core.action_payment_request_user_payment_apply")
 payment_menu = env.ref("smart_construction_core.menu_sc_user_payment_apply")
 # Resolve the governed fixture by its stable xmlid instead of a hardcoded name:
-# the managed reset step renames the carrier (DEMO-PR-FLOORPLAN-002, ...) whenever
+# the managed reset step renames the carrier (PRQ-2026-002, ...) whenever
 # the previous carrier already holds ledger history, and it rebinds this xmlid to
 # the live record. The probe must walk the declared draft carrier, so a missing,
 # renamed-away or non-draft fixture fails closed here instead of timing out in the

@@ -71,7 +71,7 @@ def run(env):
     _ensure_user(
         env,
         login="demo_full",
-        name="Demo-全能力",
+        name="综合管理岗",
         groups_xmlids=[
             base_group,
             "smart_construction_core.group_sc_business_full",
@@ -96,7 +96,7 @@ def run(env):
     _ensure_user(
         env,
         login="demo_pm",
-        name="Demo-项目经理",
+        name="项目经理岗",
         groups_xmlids=[
             base_group,
             "smart_construction_core.group_sc_cap_project_manager",
@@ -115,7 +115,7 @@ def run(env):
     _ensure_user(
         env,
         login="demo_finance",
-        name="Demo-财务经办",
+        name="财务经办岗",
         groups_xmlids=[
             base_group,
             "smart_construction_core.group_sc_cap_finance_user",
@@ -127,7 +127,7 @@ def run(env):
     _ensure_user(
         env,
         login="demo_cost",
-        name="Demo-成控经办",
+        name="成本管理岗",
         groups_xmlids=[
             base_group,
             "smart_construction_core.group_sc_cap_cost_user",
@@ -139,7 +139,7 @@ def run(env):
     _ensure_user(
         env,
         login="demo_readonly",
-        name="Demo-只读",
+        name="只读查询岗",
         groups_xmlids=[
             base_group,
             "smart_construction_core.group_sc_cap_project_read",

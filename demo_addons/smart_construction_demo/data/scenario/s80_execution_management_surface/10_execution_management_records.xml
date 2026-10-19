@@ -3,32 +3,32 @@
   <data noupdate="1">
 
     <record id="sc_demo_product_080_steel" model="product.product">
-      <field name="name">S80 三级螺纹钢 HRB400E</field>
-      <field name="default_code">S80-MAT-STEEL</field>
+      <field name="name">三级螺纹钢 HRB400E</field>
+      <field name="default_code">MAT-STEEL-001</field>
       <field name="uom_id" ref="uom.product_uom_ton"/>
       <field name="uom_po_id" ref="uom.product_uom_ton"/>
     </record>
 
     <record id="sc_demo_material_catalog_080_steel" model="sc.material.catalog">
-      <field name="name">S80 三级螺纹钢 HRB400E</field>
-      <field name="code">MAT-DEMO-STEEL-080</field>
+      <field name="name">三级螺纹钢 HRB400E</field>
+      <field name="code">MAT-STEEL-080</field>
       <field name="company_id" ref="base.main_company"/>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="spec_model">HRB400E Φ20</field>
       <field name="uom_text">吨</field>
       <field name="planned_price">4050.0</field>
       <field name="internal_price">3980.0</field>
-      <field name="depth">执行管理样例</field>
-      <field name="remark">S80 材料采购验收入出库链条样例</field>
+      <field name="depth">执行管理</field>
+      <field name="remark">材料采购验收入出库流程</field>
     </record>
 
     <record id="sc_demo_material_purchase_request_080_steel" model="sc.material.purchase.request">
-      <field name="name">S80-MPR-001</field>
+      <field name="name">CGSQ-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="request_date">2025-04-01</field>
       <field name="required_date">2025-04-08</field>
       <field name="purpose">主体结构 A 区二层钢筋施工</field>
-      <field name="note">S80 材料采购申请样例</field>
+      <field name="note">主体结构材料采购申请</field>
     </record>
 
     <record id="sc_demo_material_purchase_request_line_080_steel" model="sc.material.purchase.request.line">
@@ -43,14 +43,14 @@
     </record>
 
     <record id="sc_demo_material_rfq_080_steel" model="sc.material.rfq">
-      <field name="name">S80-RFQ-001</field>
+      <field name="name">XJ-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="purchase_request_id" ref="smart_construction_demo.sc_demo_material_purchase_request_080_steel"/>
       <field name="rfq_date">2025-04-02</field>
       <field name="due_date">2025-04-05</field>
-      <field name="contact_name">测试-材料员</field>
+      <field name="contact_name">赵鹏</field>
       <field name="selected_supplier_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
-      <field name="note">S80 材料询价比价样例</field>
+      <field name="note">主体结构材料询价比价</field>
     </record>
 
     <record id="sc_demo_material_rfq_line_080_steel" model="sc.material.rfq.line">
@@ -69,7 +69,7 @@
     </record>
 
     <record id="sc_demo_material_acceptance_080_steel" model="sc.material.acceptance">
-      <field name="name">S80-MA-001</field>
+      <field name="name">YS-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="supplier_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
       <field name="purchase_request_id" ref="smart_construction_demo.sc_demo_material_purchase_request_080_steel"/>
@@ -77,7 +77,7 @@
       <field name="dest_location_id" ref="stock.stock_location_stock"/>
       <field name="acceptance_date">2025-04-08</field>
       <field name="acceptance_flow">supervisor</field>
-      <field name="note">S80 材料到场验收合格样例</field>
+      <field name="note">主体结构材料到场验收</field>
     </record>
 
     <record id="sc_demo_material_acceptance_line_080_steel" model="sc.material.acceptance.line">
@@ -94,14 +94,14 @@
     </record>
 
     <record id="sc_demo_material_inbound_080_steel" model="sc.material.inbound">
-      <field name="name">S80-MIN-001</field>
+      <field name="name">RK-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="acceptance_id" ref="smart_construction_demo.sc_demo_material_acceptance_080_steel"/>
       <field name="supplier_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
       <field name="warehouse_id" ref="stock.warehouse0"/>
       <field name="dest_location_id" ref="stock.stock_location_stock"/>
       <field name="inbound_date">2025-04-08</field>
-      <field name="note">S80 材料入库登记样例</field>
+      <field name="note">主体结构材料入库登记</field>
     </record>
 
     <record id="sc_demo_material_inbound_line_080_steel" model="sc.material.inbound.line">
@@ -118,14 +118,14 @@
     <!-- 出库单走受控生命周期：XML 只建草稿，明细随后装载，
          由 scenario_loader 的 _ensure_s80_material_lifecycle 经 _write_cost_source_state 推进为 issued。 -->
     <record id="sc_demo_material_outbound_080_steel" model="sc.material.outbound">
-      <field name="name">S80-MOUT-001</field>
+      <field name="name">CK-2025-002</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="warehouse_id" ref="stock.warehouse0"/>
       <field name="source_location_id" ref="stock.stock_location_stock"/>
       <field name="receiver_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
       <field name="outbound_date">2025-04-10</field>
       <field name="purpose">A 区二层梁板钢筋绑扎领用</field>
-      <field name="note">S80 材料出库登记样例</field>
+      <field name="note">主体结构材料出库登记</field>
     </record>
 
     <record id="sc_demo_material_outbound_line_080_steel" model="sc.material.outbound.line">
@@ -139,12 +139,12 @@
 
     <!-- 材料结算同样走受控生命周期：草稿装载明细后由 loader 推进为 confirmed。 -->
     <record id="sc_demo_material_settlement_080_steel" model="sc.material.settlement">
-      <field name="name">S80-MSET-001</field>
+      <field name="name">JS-2025-003</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="supplier_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
       <field name="settlement_date">2025-04-15</field>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="note">S80 材料结算样例</field>
+      <field name="note">主体结构材料结算</field>
     </record>
 
     <record id="sc_demo_material_settlement_line_080_steel" model="sc.material.settlement.line">
@@ -158,7 +158,7 @@
     </record>
 
     <record id="sc_demo_plan_080_master" model="sc.plan">
-      <field name="name">S80 主体结构月度执行计划</field>
+      <field name="name">主体结构月度执行计划</field>
       <field name="plan_type">master</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="company_id" ref="base.main_company"/>
@@ -168,7 +168,7 @@
       <field name="report_cycle">weekly</field>
       <field name="planned_start">2025-04-01</field>
       <field name="planned_finish">2025-04-30</field>
-      <field name="note">S80 计划执行面样例</field>
+      <field name="note">计划执行面</field>
     </record>
 
     <record id="sc_demo_plan_line_080_rebar" model="sc.plan.line">
@@ -184,7 +184,7 @@
     </record>
 
     <record id="sc_demo_plan_report_080_weekly" model="sc.plan.report">
-      <field name="name">S80 周计划进度汇报</field>
+      <field name="name">周计划进度汇报</field>
       <field name="plan_id" ref="smart_construction_demo.sc_demo_plan_080_master"/>
       <field name="line_id" ref="smart_construction_demo.sc_demo_plan_line_080_rebar"/>
       <field name="report_date">2025-04-12</field>
@@ -196,7 +196,7 @@
     </record>
 
     <record id="sc_demo_quality_standard_080_structure" model="sc.check.standard">
-      <field name="name">S80 主体结构质量检查标准</field>
+      <field name="name">主体结构质量检查标准</field>
       <field name="standard_type">quality</field>
       <field name="scope">project</field>
       <field name="company_id" ref="base.main_company"/>
@@ -217,7 +217,7 @@
     <record id="sc_demo_quality_issue_080_rebar" model="sc.quality.issue">
       <field name="owner_id" ref="smart_construction_demo.user_sc_project_user"/>
       <field name="rechecker_id" ref="smart_construction_demo.user_sc_project_manager_cap"/>
-      <field name="name">S80 钢筋保护层垫块局部缺失</field>
+      <field name="name">钢筋保护层垫块局部缺失</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="standard_id" ref="smart_construction_demo.sc_demo_quality_standard_080_structure"/>
       <field name="standard_item_id" ref="smart_construction_demo.sc_demo_quality_standard_item_080_rebar"/>
@@ -254,7 +254,7 @@
   <data noupdate="1">
 
     <record id="sc_demo_safety_plan_080_lifting" model="sc.safety.plan">
-      <field name="name">S80 塔吊交叉作业安全专项方案</field>
+      <field name="name">塔吊交叉作业安全专项方案</field>
       <field name="plan_type">dangerous</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="plan_date">2025-04-01</field>
@@ -263,7 +263,7 @@
     </record>
 
     <record id="sc_demo_safety_disclosure_080_lifting" model="sc.safety.disclosure">
-      <field name="name">S80 塔吊交叉作业班前安全交底</field>
+      <field name="name">塔吊交叉作业班前安全交底</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="safety_plan_id" ref="smart_construction_demo.sc_demo_safety_plan_080_lifting"/>
       <field name="disclosure_date">2025-04-06</field>
@@ -272,7 +272,7 @@
     </record>
 
     <record id="sc_demo_risk_library_080_site" model="sc.risk.library">
-      <field name="name">S80 项目安全风险库</field>
+      <field name="name">大型机械作业安全风险库</field>
       <field name="company_id" ref="base.main_company"/>
       <field name="library_level">project</field>
       <field name="version_no">2025.04</field>
@@ -290,7 +290,7 @@
     </record>
 
     <record id="sc_demo_hazard_source_080_lifting" model="sc.hazard.source">
-      <field name="name">S80 A 区塔吊交叉作业危险源</field>
+      <field name="name">A 区塔吊交叉作业危险源</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="risk_item_id" ref="smart_construction_demo.sc_demo_risk_item_080_lifting"/>
       <field name="location">A 区塔吊覆盖半径</field>
@@ -303,7 +303,7 @@
     <record id="sc_demo_safety_issue_080_guardrail" model="sc.safety.issue">
       <field name="owner_id" ref="smart_construction_demo.user_sc_project_user"/>
       <field name="rechecker_id" ref="smart_construction_demo.user_sc_project_manager_cap"/>
-      <field name="name">S80 楼层临边防护局部松动</field>
+      <field name="name">楼层临边防护局部松动</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="hazard_source_id" ref="smart_construction_demo.sc_demo_hazard_source_080_lifting"/>
       <field name="issue_date">2025-04-09</field>
@@ -337,7 +337,7 @@
   <data noupdate="1">
 
     <record id="sc_demo_safety_patrol_080_weekly" model="sc.safety.patrol.task">
-      <field name="name">S80 周安全巡检任务</field>
+      <field name="name">周安全巡检任务</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="planned_date">2025-04-09</field>
       <field name="patrol_type">routine</field>
@@ -345,17 +345,17 @@
       <field name="planned_scope">A 区主体结构作业面</field>
       <field name="score">92.0</field>
       <field name="pass_rate">96.0</field>
-      <field name="note">S80 安全巡检任务样例</field>
+      <field name="note">安全巡检任务</field>
     </record>
 
     <record id="sc_demo_labor_plan_080_rebar" model="sc.labor.plan">
-      <field name="name">S80-LP-001</field>
+      <field name="name">LWP-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="plan_date">2025-04-01</field>
       <field name="start_date">2025-04-08</field>
       <field name="end_date">2025-04-16</field>
       <field name="contractor_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
-      <field name="note">S80 劳务计划样例</field>
+      <field name="note">主体结构劳务计划</field>
     </record>
 
     <record id="sc_demo_labor_plan_line_080_rebar" model="sc.labor.plan.line">
@@ -367,12 +367,12 @@
     </record>
 
     <record id="sc_demo_labor_request_080_rebar" model="sc.labor.request">
-      <field name="name">S80-LR-001</field>
+      <field name="name">LWSQ-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="request_date">2025-04-06</field>
       <field name="required_date">2025-04-08</field>
       <field name="contractor_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
-      <field name="note">S80 劳务申请样例</field>
+      <field name="note">主体结构劳务申请</field>
     </record>
 
     <record id="sc_demo_labor_request_line_080_rebar" model="sc.labor.request.line">
@@ -384,7 +384,7 @@
     </record>
 
     <record id="sc_demo_attendance_checkin_080_rebar" model="sc.attendance.checkin">
-      <field name="name">S80-ATT-001</field>
+      <field name="name">KQ-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="attendance_date">2025-04-10</field>
       <field name="labor_team">钢筋班组</field>
@@ -392,24 +392,24 @@
       <field name="attendance_qty">30.0</field>
       <field name="work_hours">240.0</field>
       <field name="contractor_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
-      <field name="note">S80 劳务考勤样例</field>
+      <field name="note">主体结构劳务考勤</field>
     </record>
 
     <record id="sc_demo_equipment_plan_080_crane" model="sc.equipment.plan">
-      <field name="name">S80-EP-001</field>
+      <field name="name">SBP-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="plan_date">2025-04-01</field>
       <field name="start_date">2025-04-08</field>
       <field name="end_date">2025-04-16</field>
       <field name="usage_location">A 区主体结构</field>
       <field name="supplier_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
-      <field name="note">S80 设备计划样例</field>
+      <field name="note">塔吊设备使用计划</field>
     </record>
 
     <record id="sc_demo_equipment_plan_line_080_crane" model="sc.equipment.plan.line">
       <field name="plan_id" ref="smart_construction_demo.sc_demo_equipment_plan_080_crane"/>
       <field name="equipment_name">塔式起重机 QTZ80</field>
-      <field name="equipment_code">S80-TC-001</field>
+      <field name="equipment_code">TC-001</field>
       <field name="planned_qty">1.0</field>
       <field name="planned_hours">80.0</field>
       <field name="usage_location">A 区主体结构</field>
@@ -417,20 +417,20 @@
     </record>
 
     <record id="sc_demo_equipment_request_080_crane" model="sc.equipment.request">
-      <field name="name">S80-ER-001</field>
+      <field name="name">SBSQ-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="plan_id" ref="smart_construction_demo.sc_demo_equipment_plan_080_crane"/>
       <field name="request_date">2025-04-06</field>
       <field name="required_date">2025-04-08</field>
       <field name="usage_location">A 区主体结构</field>
       <field name="supplier_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
-      <field name="note">S80 设备申请样例</field>
+      <field name="note">塔吊设备使用申请</field>
     </record>
 
     <record id="sc_demo_equipment_request_line_080_crane" model="sc.equipment.request.line">
       <field name="request_id" ref="smart_construction_demo.sc_demo_equipment_request_080_crane"/>
       <field name="equipment_name">塔式起重机 QTZ80</field>
-      <field name="equipment_code">S80-TC-001</field>
+      <field name="equipment_code">TC-001</field>
       <field name="requested_qty">1.0</field>
       <field name="planned_hours">80.0</field>
       <field name="usage_location">A 区主体结构</field>
@@ -438,18 +438,18 @@
     </record>
 
     <record id="sc_demo_equipment_usage_080_crane" model="sc.equipment.usage">
-      <field name="name">S80-EU-001</field>
+      <field name="name">SBSY-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="request_id" ref="smart_construction_demo.sc_demo_equipment_request_080_crane"/>
       <field name="usage_date">2025-04-10</field>
       <field name="equipment_name">塔式起重机 QTZ80</field>
-      <field name="equipment_code">S80-TC-001</field>
+      <field name="equipment_code">TC-001</field>
       <field name="usage_location">A 区主体结构</field>
-      <field name="operator_name">测试-塔吊司机</field>
+      <field name="operator_name">刘建军</field>
       <field name="usage_qty">1.0</field>
       <field name="usage_hours">8.0</field>
       <field name="supplier_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
-      <field name="note">S80 设备使用登记样例</field>
+      <field name="note">塔吊设备使用登记</field>
     </record>
 
   </data>

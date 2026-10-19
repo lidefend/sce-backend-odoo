@@ -190,26 +190,11 @@ make demo.verify DB_NAME=sc_demo
 - 结算单：`sc_demo_settlement_030_001`（model: `sc.settlement.order`，保持 draft）
 - 结算明细：`sc_demo_settlement_line_030_001`
 - 收款关联：`sc_demo_pay_req_030_001`（model: `payment.request`，type=receive）
-- 门禁样例：`sc_demo_settlement_030_bad_001`（无明细/无收款，必须保持 draft）
 
 验收命令：
 ```bash
 make demo.verify DB_NAME=sc_demo
 ```
-
----
-
-## S40 失败路径 / 边界场景
-
-场景目录：`data/scenario/s40_failure_paths/`
-
-- 结构性违规：`sc_demo_settlement_040_structural_bad`（无明细、无收款关联）
-- 金额违规：`sc_demo_settlement_040_amount_bad`（收款金额 > 结算金额）
-- 关联违规：`sc_demo_settlement_040_link_bad`（有明细但无收款关联）
-
-说明：
-- S40 数据可以正常加载，但不应推进状态。
-- demo.verify 会对 S40 的失败条件做强校验。
 
 ---
 
@@ -241,8 +226,7 @@ make demo.verify DB_NAME=sc_demo
 | S89 | 质量安全表单面 | sc.check.standard / sc.quality.* / sc.site.photo.batch / sc.safety.* / sc.risk.* / sc.hazard.source | 质量标准、质量整改复验、安全方案交底、风险危险源、巡检整改复验和照片批次均有可打开样例 |
 | S10 | 合同 + 付款申请 + 发票（draft） | construction.contract / payment.request / account.move | contract/payment_request/invoices |
 | S20 | 结算单 + 明细 + 收款关联 | sc.settlement.order / sc.settlement.order.line / payment.request | settlement/lines/payment_request.link |
-| S30 | 工作流种子 + 门禁（bad） | sc.settlement.order / sc.settlement.order.line / payment.request | draft + gate |
-| S40 | 失败路径（结构/金额/关联） | sc.settlement.order / sc.settlement.order.line / payment.request | fail conditions locked |
+| S30 | 工作流种子（草稿待推进） | sc.settlement.order / sc.settlement.order.line / payment.request | draft + complete links |
 
 发布态默认种子集合：`S00 + S10 + S20 + S30 + S60 + S65 + S66 + S67 + S68 + S69 + S70 + S71 + S72 + S73 + S74 + S75 + S76 + S77 + S78 + S79 + S80 + S85 + S86 + S87 + S88 + S89 + S90`
 
@@ -257,7 +241,8 @@ make demo.verify DB_NAME=sc_demo
 官方样板映射见：
 - `docs/product/demo_evidence_scenarios_v1.md`
 
-发布态默认不加载：`S40 + S50`（过程/失败演练数据）
+正式 Demo 只装载正常业务数据。失败路径、门禁拒绝与修复演练由产品测试覆盖，
+不在 Demo 数据集中保留演练或失败样本。
 
 ---
 
@@ -266,8 +251,7 @@ make demo.verify DB_NAME=sc_demo
 - S00: 项目数量、BOQ 节点、材料计划、发票数量
 - S10: 合同记录、付款申请、发票记录
 - S20: 结算单、结算明细、收款关联
-- S30: 结算单 draft、明细/收款关联、门禁样例 draft
-- S40: 结构/金额/关联违规均保持 draft，且失败条件可验证
+- S30: 结算单 draft、明细与收款关联完整
 
 ---
 

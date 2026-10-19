@@ -23,17 +23,17 @@ def run(env):
     admin = env.ref("smart_construction_demo.user_sc_project_manager_cap")
     today = fields.Date.context_today(env.user)
 
-    _ensure(env["hr.job"], [("name", "=", "Demo 项目成本工程师")], {
-        "name": "Demo 项目成本工程师",
+    _ensure(env["hr.job"], [("name", "=", "项目成本工程师")], {
+        "name": "项目成本工程师",
         "company_id": project.company_id.id,
     })
-    analytic_plan = _ensure(env["account.analytic.plan"], [("name", "=", "Demo 产品成本分析")], {"name": "Demo 产品成本分析"})
+    analytic_plan = _ensure(env["account.analytic.plan"], [("name", "=", "项目成本分析")], {"name": "项目成本分析"})
     if analytic_plan:
         analytic_account = _ensure(
             env["account.analytic.account"],
             [("code", "=", "DEMO-ANALYTIC-001")],
             {
-                "name": "Demo 项目成本分析账户",
+                "name": "项目成本分析账户",
                 "code": "DEMO-ANALYTIC-001",
                 "plan_id": analytic_plan.id,
                 "company_id": project.company_id.id,
@@ -51,7 +51,7 @@ def run(env):
         )
     _ensure(env["sc.office.asset"], [("asset_code", "=", "DEMO-ASSET-001")], {
         "asset_code": "DEMO-ASSET-001",
-        "name": "Demo 项目部移动工作站",
+        "name": "项目部移动工作站",
         "category": "computer",
         "company_id": project.company_id.id,
         "location": "项目部综合办公室",
@@ -59,7 +59,7 @@ def run(env):
         "purchase_value": 12800.0,
         "currency_id": project.company_id.currency_id.id,
         "status": "in_use",
-        "note": "产品 Demo 行政资产样本。",
+        "note": "产品行政资产样本。",
     })
 
     contract = env.ref("smart_construction_demo.sc_demo_contract_out_001")
@@ -67,9 +67,9 @@ def run(env):
         raise ValueError("Demo contract project differs from its declared owner")
     variation = _ensure(
         env["sc.site.variation"],
-        [("project_id", "=", project.id), ("subject", "=", "Demo 基础局部设计调整")],
+        [("project_id", "=", project.id), ("subject", "=", "基础局部设计调整")],
         {
-            "subject": "Demo 基础局部设计调整",
+            "subject": "基础局部设计调整",
             "project_id": project.id,
             "contract_id": contract.id if contract else False,
             "event_type": "design_change",
@@ -87,14 +87,14 @@ def run(env):
     if contract:
         _ensure(
             env["sc.contract.change"],
-            [("contract_id", "=", contract.id), ("subject", "=", "Demo 基础变更价款调整")],
+            [("contract_id", "=", contract.id), ("subject", "=", "基础变更价款调整")],
             {
                 "contract_id": contract.id,
                 "source_site_variation_id": variation.id,
-                "subject": "Demo 基础变更价款调整",
+                "subject": "基础变更价款调整",
                 "change_type": "price",
                 "change_date": today,
-                "reason": "承接待审批的现场设计调整样例。",
+                "reason": "承接待审批的现场设计调整。",
                 "before_summary": "按原合同基础做法执行。",
                 "after_summary": "按复核后的基础做法执行。",
                 "amount_delta": 18500.0,
@@ -104,7 +104,7 @@ def run(env):
     worker = _ensure(env["sc.labor.worker"], [
         ("project_id", "=", project.id), ("id_number", "=", "DEMO-LABOR-001")
     ], {
-        "name": "Demo 钢筋工张师傅",
+        "name": "王海峰",
         "project_id": project.id,
         "contractor_id": supplier.id,
         "labor_team": "钢筋班组",
@@ -114,26 +114,26 @@ def run(env):
         "phone": "0838-DEMO-001",
         "entry_date": today,
         "state": "active",
-        "note": "虚构的产品 Demo 人员。",
+        "note": "项目钢筋班组作业人员。",
     })
     _ensure(env["sc.labor.deduction"], [
-        ("project_id", "=", project.id), ("reason", "=", "Demo 安全文明施工整改扣款")
+        ("project_id", "=", project.id), ("reason", "=", "安全文明施工整改扣款")
     ], {
         "project_id": project.id,
         "contractor_id": supplier.id,
         "labor_team": worker.labor_team,
         "worker_id": worker.id,
         "deduction_type": "safety",
-        "reason": "Demo 安全文明施工整改扣款",
+        "reason": "安全文明施工整改扣款",
         "amount": 200.0,
         "currency_id": project.company_id.currency_id.id,
         "state": "draft",
     })
 
     _ensure(env["sc.quality.acceptance"], [
-        ("project_id", "=", project.id), ("name", "=", "Demo 首层钢筋隐蔽验收")
+        ("project_id", "=", project.id), ("name", "=", "首层钢筋隐蔽验收")
     ], {
-        "name": "Demo 首层钢筋隐蔽验收",
+        "name": "首层钢筋隐蔽验收",
         "project_id": project.id,
         "acceptance_type": "hidden_work",
         "acceptance_date": today,
@@ -157,7 +157,7 @@ def run(env):
     )
     if warehouse and location:
         _ensure(env["sc.material.supplier.return"], [
-            ("project_id", "=", project.id), ("reason", "=", "Demo 到货规格复核退货")
+            ("project_id", "=", project.id), ("reason", "=", "到货规格复核退货")
         ], {
             "project_id": project.id,
             "source_inbound_id": inbound.id if inbound else False,
@@ -165,7 +165,7 @@ def run(env):
             "warehouse_id": warehouse.id,
             "source_location_id": location.id,
             "return_date": today,
-            "reason": "Demo 到货规格复核退货",
+            "reason": "到货规格复核退货",
             "responsible_id": admin.id,
             "state": "draft",
         })
@@ -185,22 +185,22 @@ def run(env):
             "payment_reference": "DEMO-SALARY-PAY-001",
             "responsible_id": admin.id,
             "state": "draft",
-            "note": "产品 Demo 薪资发放样本。",
+            "note": "产品薪资发放样本。",
         })
 
     bid = env.ref("smart_construction_demo.sc_demo_tender_bid_086_complex")
     opportunity = _ensure(env["tender.opportunity"], [("code", "=", "DEMO-TO-001")], {
-        "name": "Demo 城市更新配套工程招标",
+        "name": "城市更新配套工程招标",
         "code": "DEMO-TO-001",
         "company_id": project.company_id.id,
         "owner_id": owner.id,
-        "contact_name": "Demo 招标联系人",
+        "contact_name": "赵春梅",
         "contact_phone": "0838-DEMO-002",
         "location": "四川省示范区",
         "publish_date": today,
         "deadline": fields.Datetime.now(),
         "estimated_amount": 3200000.0,
-        "source": "产品 Demo 招标公告",
+        "source": "产品招标公告",
         "qualification_requirements": "具备相应施工资质。",
         "project_id": project.id,
         "state": "draft",
@@ -209,15 +209,15 @@ def run(env):
         opportunity.action_follow()
     if bid:
         document = _ensure(env["tender.document"], [
-            ("bid_id", "=", bid.id), ("name", "=", "Demo 技术标响应文件")
+            ("bid_id", "=", bid.id), ("name", "=", "技术标响应文件")
         ], {
-            "name": "Demo 技术标响应文件",
+            "name": "技术标响应文件",
             "bid_id": bid.id,
             "document_type": "technical",
             "version": "V1.0",
             "responsible_id": admin.id,
             "deadline": fields.Datetime.now(),
-            "note": "产品 Demo 标书编制样本。",
+            "note": "产品标书编制样本。",
             "state": "draft",
         })
 
@@ -233,12 +233,12 @@ def run(env):
         "taxpayer_name": project.company_id.name,
         "taxpayer_identifier": "DEMO-TAXPAYER-001",
         "tax_report_management_no": "DEMO-TAX-CERT-001",
-        "cross_region_business_address": "四川省示范区 Demo 项目现场",
+        "cross_region_business_address": "四川省德阳市项目现场",
         "validity_start_date": today,
         "validity_end_date": fields.Date.add(today, months=6),
         "handler_id": env.ref("smart_construction_demo.user_sc_fin_mgr_01").id,
         "state": "draft",
-        "note": "产品 Demo 外经证样本。",
+        "note": "产品外经证样本。",
     })
     _ensure(env["sc.tax.filing"], [
         ("company_id", "=", project.company_id.id),
@@ -251,7 +251,7 @@ def run(env):
         "handler_id": env.ref("smart_construction_demo.user_sc_fin_mgr_01").id,
         "other_tax_adjustment": 0.0,
         "state": "draft",
-        "note": "产品 Demo 税务申报样本。",
+        "note": "产品税务申报样本。",
     })
 
     env["ir.config_parameter"].sudo().set_param(

@@ -141,7 +141,7 @@ AUTO_PROVISION = str(os.environ.get("ROLE_MATRIX_AUTO_PROVISION", "1")).strip().
 
 FIXTURE_SPECS = {
     "demo_role_project_read": {
-        "name": "Demo Project Read",
+        "name": "曹敏",
         "groups_xmlids": [
             "base.group_user",
             "smart_construction_core.group_sc_cap_project_read",
@@ -151,7 +151,7 @@ FIXTURE_SPECS = {
         ],
     },
     "demo_role_project_user": {
-        "name": "Demo Project User",
+        "name": "韩磊",
         "groups_xmlids": [
             "base.group_user",
             "smart_construction_core.group_sc_cap_project_user",
@@ -161,7 +161,7 @@ FIXTURE_SPECS = {
         ],
     },
     "demo_role_project_manager": {
-        "name": "Demo Project Manager",
+        "name": "王建军",
         "groups_xmlids": [
             "base.group_user",
             "smart_construction_core.group_sc_cap_project_manager",
@@ -177,19 +177,19 @@ FIXTURE_SPECS = {
         ],
     },
     "demo_role_owner": {
-        "name": "Demo Role Owner",
+        "name": "高建华",
         "groups_xmlids": ["base.group_user", "smart_construction_core.group_sc_role_owner"],
     },
     "demo_role_pm": {
-        "name": "Demo Role PM",
+        "name": "马晓峰",
         "groups_xmlids": ["base.group_user", "smart_construction_core.group_sc_role_project_manager"],
     },
     "demo_role_finance": {
-        "name": "Demo Role Finance",
+        "name": "冯丽",
         "groups_xmlids": ["base.group_user", "smart_construction_core.group_sc_role_finance_manager"],
     },
     "demo_role_executive": {
-        "name": "Demo Role Executive",
+        "name": "何明远",
         "groups_xmlids": ["base.group_user", "smart_construction_core.group_sc_role_executive"],
     },
 }

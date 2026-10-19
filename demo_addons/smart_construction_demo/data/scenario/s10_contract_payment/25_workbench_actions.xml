@@ -37,7 +37,7 @@
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
       <field name="amount">3200000.0</field>
       <field name="date_request">2025-03-18</field>
-      <field name="note">Round2 工作台演示数据：合同节点回款申请</field>
+      <field name="note">合同节点回款申请</field>
     </record>
 
     <record id="sc_demo_pay_req_010_003" model="payment.request">
@@ -46,7 +46,7 @@
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
       <field name="amount">860000.0</field>
       <field name="date_request">2025-03-22</field>
-      <field name="note">Round2 工作台演示数据：分包节点付款申请</field>
+      <field name="note">分包节点付款申请</field>
     </record>
 
     <record id="sc_demo_pay_req_010_004" model="payment.request">
@@ -55,7 +55,7 @@
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
       <field name="amount">1100000.0</field>
       <field name="date_request">2025-03-25</field>
-      <field name="note">Round2 工作台演示数据：项目里程碑收款申请</field>
+      <field name="note">项目里程碑收款申请</field>
     </record>
 
   </data>

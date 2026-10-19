@@ -20,17 +20,5 @@
             <!-- state 不写，走模型默认（draft） -->
         </record>
 
-        <!-- S30 门禁测试用：不完整结算单，必须保持 draft -->
-        <record id="sc_demo_settlement_030_bad_001" model="sc.settlement.order">
-            <field name="name">德阳智能制造项目门禁样本结算单</field>
-            <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
-            <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_010"/>
-            <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
-            <field name="currency_id" ref="base.CNY"/>
-            <field name="settlement_type">in</field>
-            <field name="settlement_amount">0.00</field>
-            <!-- 无明细 / 无付款关联，验证门禁 -->
-        </record>
-
     </data>
 </odoo>

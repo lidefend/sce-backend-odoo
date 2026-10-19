@@ -29,9 +29,7 @@ def _get_showroom_projects(env):
     Project = env["project.project"].sudo()
     domain = [
         "|",
-        "|",
         ("name", "ilike", "展厅-"),
-        ("name", "ilike", "演示项目"),
         ("project_code", "ilike", "DEMO-"),
     ]
     return Project.search(domain)
@@ -123,14 +121,14 @@ def run(env):
             "is_mandatory": True,
             "state": "done",
             "date_doc": fields.Date.context_today(env.user),
-            "content": "施工组织设计-演示版",
+            "content": "施工组织设计",
         },
         {
             "name": "监理例会纪要",
             "is_mandatory": True,
             "state": "done",
             "date_doc": fields.Date.context_today(env.user),
-            "content": "监理例会纪要-演示版",
+            "content": "监理例会纪要",
         },
         {
             "name": "合同附件清单",
@@ -139,31 +137,42 @@ def run(env):
             # 即自动通过；因此演示只声明产品能产生的“待提交”。
             "state": "draft",
             "date_doc": fields.Date.context_today(env.user),
-            "content": "合同附件清单-演示版",
+            "content": "合同附件清单",
         },
         {
             "name": "质量检验记录",
             "is_mandatory": True,
             "state": "draft",
             "date_doc": fields.Date.context_today(env.user),
-            "content": "质量检验记录-演示版",
+            "content": "质量检验记录",
         },
         {
             "name": "安全交底记录",
             "is_mandatory": False,
             "state": "done",
             "date_doc": fields.Date.context_today(env.user),
-            "content": "安全交底记录-演示版",
+            "content": "安全交底记录",
         },
     ]
 
     for project in projects:
         _demo_project_members(env, project, ("smart_construction_demo.user_sc_project_user",))
         for doc in documents:
-            name = f"{doc['name']} · {project.project_code}"
+            project_label = project.name or project.project_code
+            name = f"{doc['name']} · {project_label}"
             existing = ScDoc.search(
                 [("project_id", "=", project.id), ("name", "=", name)], limit=1
             )
+            if not existing:
+                existing = ScDoc.search(
+                    [
+                        ("project_id", "=", project.id),
+                        ("name", "=like", f"{doc['name']} · %"),
+                    ],
+                    limit=1,
+                )
+                if existing:
+                    existing.write({"name": name})
             vals = {
                 "name": name,
                 "project_id": project.id,

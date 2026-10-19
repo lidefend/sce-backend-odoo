@@ -60,7 +60,7 @@ def _ensure_funding_baseline(env, project):
             return baseline
         period_start, period_end = _annual_control_period(env)
         revision = baseline.action_create_revision(
-            "演示事实基线修订",
+            "年度资金基线修订",
             period_start=period_start,
             period_end=period_end,
         )
@@ -76,7 +76,7 @@ def _ensure_funding_baseline(env, project):
                         0,
                         {
                             "sequence": 10,
-                            "name": "演示年度资金计划",
+                            "name": "年度资金计划",
                             "planned_amount": DEMO_FUNDING_AMOUNT,
                         },
                     ),
@@ -98,7 +98,7 @@ def _ensure_funding_baseline(env, project):
                     0,
                     {
                         "sequence": 10,
-                        "name": "演示年度资金计划",
+                        "name": "年度资金计划",
                         "planned_amount": DEMO_FUNDING_AMOUNT,
                     },
                 )
@@ -120,8 +120,9 @@ def _ensure_settlement(env, project, contract):
         ],
         limit=1,
     )
+    settlement_year = fields.Date.context_today(env.user).year
     vals = {
-        "name": f"SET-{project.project_code}-01",
+        "name": f"JS-{settlement_year}-{project.id:03d}-01",
         "project_id": project.id,
         "contract_id": contract.id,
         "partner_id": contract.partner_id.id,
@@ -135,8 +136,8 @@ def _ensure_settlement(env, project, contract):
         settlement = Settlement.create(vals)
 
     line_vals = [
-        {"settlement_id": settlement.id, "name": "结算项A", "qty": 1, "price_unit": 260000.0},
-        {"settlement_id": settlement.id, "name": "结算项B", "qty": 1, "price_unit": 140000.0},
+        {"settlement_id": settlement.id, "name": "已完成工程量结算", "qty": 1, "price_unit": 260000.0},
+        {"settlement_id": settlement.id, "name": "现场签证结算", "qty": 1, "price_unit": 140000.0},
     ]
     if settlement.state == "draft":
         for vals in line_vals:
@@ -165,11 +166,11 @@ def _ensure_purchase_order(env, settlement, split_first_line=False, product=None
     if not uom_unit:
         uom_unit = env["uom.uom"].sudo().search([], limit=1)
 
-    product = product or Product.search([("name", "=", "演示采购服务")], limit=1)
+    product = product or Product.search([("name", "=", "工程采购服务")], limit=1)
     if not product:
         product = Product.create(
             {
-                "name": "演示采购服务",
+                "name": "工程采购服务",
                 "type": "service",
                 "uom_id": uom_unit.id if uom_unit else False,
                 "uom_po_id": uom_unit.id if uom_unit else False,
@@ -206,7 +207,7 @@ def _ensure_purchase_order(env, settlement, split_first_line=False, product=None
     if not settlement_lines:
         desired_lines.append(
             {
-                "name": "演示采购行",
+                "name": "工程采购行",
                 "amount": total,
                 "split": False,
             }
@@ -426,9 +427,7 @@ def _get_showroom_projects(env):
     Project = env["project.project"].sudo()
     domain = [
         "|",
-        "|",
         ("name", "ilike", "展厅-"),
-        ("name", "ilike", "演示项目"),
         ("project_code", "ilike", "DEMO-"),
     ]
     return Project.search(domain)
@@ -480,7 +479,8 @@ def _ensure_tender(env, project, owner):
     if not uom_unit:
         uom_unit = env["uom.uom"].sudo().search([], limit=1)
 
-    bid_name = f"TB-{project.project_code or project.id}-01"
+    bid_year = fields.Date.context_today(env.user).year
+    bid_name = f"TB-{bid_year}-{project.id:03d}-01"
     tender = Tender.search([("project_id", "=", project.id), ("name", "=", bid_name)], limit=1)
     vals = {
         "name": bid_name,
@@ -525,8 +525,8 @@ def run(env):
     projects.extend(_get_showroom_projects(env))
     projects = list({p.id: p for p in projects if p}.values())
 
-    owner = _get_or_create_partner(env, "演示业主 · 城市建设集团")
-    subcontract = _get_or_create_partner(env, "演示分包 · 桥梁施工队")
+    owner = _get_or_create_partner(env, "德阳市城市建设投资集团有限公司")
+    subcontract = _get_or_create_partner(env, "四川路桥建筑劳务有限公司")
 
     contract_category = _get_dictionary(
         env,

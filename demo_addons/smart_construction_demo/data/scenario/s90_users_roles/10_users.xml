@@ -4,7 +4,7 @@
 
         <!-- S90 demo users for capability groups (passwords are demo-only) -->
         <record id="sc_demo_user_pm" model="res.users">
-            <field name="name">Demo-项目经理</field>
+            <field name="name">项目经理岗</field>
             <field name="login">demo_pm</field>
             <field name="lang">zh_CN</field>
             <field name="tz">Asia/Shanghai</field>
@@ -23,7 +23,7 @@
         </record>
 
         <record id="sc_demo_user_finance" model="res.users">
-            <field name="name">Demo-财务经办</field>
+            <field name="name">财务经办岗</field>
             <field name="login">demo_finance</field>
             <field name="lang">zh_CN</field>
             <field name="tz">Asia/Shanghai</field>
@@ -33,7 +33,7 @@
         </record>
 
         <record id="sc_demo_user_cost" model="res.users">
-            <field name="name">Demo-成控经办</field>
+            <field name="name">成本管理岗</field>
             <field name="login">demo_cost</field>
             <field name="lang">zh_CN</field>
             <field name="tz">Asia/Shanghai</field>
@@ -43,7 +43,7 @@
         </record>
 
         <record id="sc_demo_user_audit" model="res.users">
-            <field name="name">Demo-数据审计</field>
+            <field name="name">数据审计岗</field>
             <field name="login">demo_audit</field>
             <field name="lang">zh_CN</field>
             <field name="tz">Asia/Shanghai</field>
@@ -53,7 +53,7 @@
         </record>
 
         <record id="sc_demo_user_readonly" model="res.users">
-            <field name="name">Demo-只读</field>
+            <field name="name">只读查询岗</field>
             <field name="login">demo_readonly</field>
             <field name="lang">zh_CN</field>
             <field name="tz">Asia/Shanghai</field>
@@ -63,7 +63,7 @@
         </record>
 
         <record id="sc_demo_user_test_admin" model="res.users">
-            <field name="name">Demo-全能力</field>
+            <field name="name">综合管理岗</field>
             <field name="login">sc_test_admin</field>
             <field name="lang">zh_CN</field>
             <field name="tz">Asia/Shanghai</field>

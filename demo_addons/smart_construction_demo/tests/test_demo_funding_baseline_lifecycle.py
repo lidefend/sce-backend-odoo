@@ -513,15 +513,20 @@ class TestDemoDerivedFacts(unittest.TestCase):
         self.assertEqual(ast.literal_eval(declaration.value)[("sc.tax.deduction.registration", "deducted")],
                          ("action_confirm", "action_deduct"))
 
-    def test_experimental_and_legacy_runtime_samples_are_not_release_seeds(self):
+    def test_every_registered_scenario_is_a_release_seed(self):
         import ast
-        tree = ast.parse(LOADER_PATH.read_text(encoding="utf-8"))
-        declaration = next(n for n in tree.body if isinstance(n, ast.AnnAssign)
-                           and getattr(n.target, "id", None) == "RELEASE_SCENARIOS")
-        release = ast.literal_eval(declaration.value)
-        self.assertNotIn("s67_scene_pack_surface", release)
-        self.assertNotIn("s71_governance_audit_surface", release)
-        self.assertNotIn("s76_workflow_compat_surface", release)
+        declarations = {}
+        for node in ast.parse(LOADER_PATH.read_text(encoding="utf-8")).body:
+            if isinstance(node, ast.AnnAssign) and getattr(node.target, "id", None) in ("SCENARIOS", "RELEASE_SCENARIOS"):
+                declarations[node.target.id] = ast.literal_eval(node.value)
+        # The demo is a tenant's full-system sample: every registered surface
+        # must be seeded by the release path. A scenario may only leave the
+        # release set by being removed from the registry as well.
+        self.assertEqual(
+            set(declarations["RELEASE_SCENARIOS"]),
+            set(declarations["SCENARIOS"]),
+            "release seeds must cover every registered scenario",
+        )
 
     def test_release_seeds_do_not_handwrite_business_terminal_states(self):
         import ast
@@ -537,6 +542,13 @@ class TestDemoDerivedFacts(unittest.TestCase):
             ("sc.subcontract.price", "active"),
             ("sc.labor.price", "active"),
             ("sc.equipment.price", "active"),
+            # Publication switches on configuration records, not workflow results.
+            ("sc.scene", "published"),
+            ("sc.workflow.def", "published"),
+            # Historical compatibility snapshot of a legacy running approval;
+            # this surface exists to show already-running instances, and the
+            # record is never advanced by the current approval runtime.
+            ("sc.workflow.instance", "running"),
         }
         for scenario in declarations["RELEASE_SCENARIOS"]:
             spec = declarations["SCENARIOS"][scenario]

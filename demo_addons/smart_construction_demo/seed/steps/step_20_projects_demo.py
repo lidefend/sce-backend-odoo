@@ -12,13 +12,13 @@ PROJECT_INIT_CODE = "DEMO-PJ-INIT"
 PROJECT_TENDER_CODE = "DEMO-PJ-TENDER"
 PROJECT_EXEC_CODE = "DEMO-PJ-EXEC"
 STAGE_PROJECTS = [
-    ("DEMO-PJ-STAGE-DRAFT", "演示项目 · 立项阶段", "draft", "initiation"),
-    ("DEMO-PJ-STAGE-RUN", "演示项目 · 在建阶段", "in_progress", "execution"),
-    ("DEMO-PJ-STAGE-PAUSE", "演示项目 · 暂停阶段", "paused", "execution"),
-    ("DEMO-PJ-STAGE-CLOSING", "演示项目 · 结算阶段", "closing", "settlement"),
-    ("DEMO-PJ-STAGE-DONE", "演示项目 · 完工阶段", "done", "settlement"),
-    ("DEMO-PJ-STAGE-WARRANTY", "演示项目 · 质保阶段", "warranty", "archive"),
-    ("DEMO-PJ-STAGE-CLOSED", "演示项目 · 归档阶段", "closed", "archive"),
+    ("DEMO-PJ-STAGE-DRAFT", "临港产业园标准厂房项目（立项阶段）", "draft", "initiation"),
+    ("DEMO-PJ-STAGE-RUN", "城北新区安置房项目（在建阶段）", "in_progress", "execution"),
+    ("DEMO-PJ-STAGE-PAUSE", "老城区雨污分流改造工程（暂停阶段）", "paused", "execution"),
+    ("DEMO-PJ-STAGE-CLOSING", "高新片区学校建设项目（结算阶段）", "closing", "settlement"),
+    ("DEMO-PJ-STAGE-DONE", "城南污水处理厂扩建工程（完工阶段）", "done", "settlement"),
+    ("DEMO-PJ-STAGE-WARRANTY", "经开区综合管廊工程（质保阶段）", "warranty", "archive"),
+    ("DEMO-PJ-STAGE-CLOSED", "城东片区安置房二期工程（归档阶段）", "closed", "archive"),
 ]
 
 
@@ -47,9 +47,7 @@ def _get_showroom_projects(env):
     Project = business_model(env, "project.project")
     domain = [
         "|",
-        "|",
         ("name", "ilike", "展厅-"),
-        ("name", "ilike", "演示项目"),
         ("project_code", "ilike", "DEMO-"),
     ]
     return Project.search(domain)
@@ -128,7 +126,7 @@ def _ensure_boq(env, project, code_prefix, uom_unit):
     if not version:
         version = Version.create(
             {
-                "name": "Demo 合同清单 V1",
+                "name": "施工合同清单 V1",
                 "code": "DEMO-V1",
                 "project_id": project.id,
                 "source_type": "contract",
@@ -204,7 +202,7 @@ def _ensure_budget(env, project, uom_unit, work_node):
                 "amount_revenue_target": 1200000.0,
                 "amount_cost_target": 900000.0,
                 "is_active": True,
-                "note": "演示用控制预算版本",
+                "note": "项目实施控制预算版本",
             }
         )
     else:
@@ -263,7 +261,7 @@ def _ensure_cost_progress(env, project, cost_material, cost_sub, uom_unit, work_
             "qty": 200,
             "uom_id": uom_unit.id if uom_unit else False,
             "amount": 120000.0,
-            "note": "演示材料成本",
+            "note": "钢筋材料成本",
         },
         {
             "project_id": project.id,
@@ -273,7 +271,7 @@ def _ensure_cost_progress(env, project, cost_material, cost_sub, uom_unit, work_
             "qty": 1,
             "uom_id": uom_unit.id if uom_unit else False,
             "amount": 80000.0,
-            "note": "演示分包成本",
+            "note": "结构分包成本",
         },
     ]
     for vals in ledger_vals:
@@ -293,7 +291,7 @@ def _ensure_cost_progress(env, project, cost_material, cost_sub, uom_unit, work_
             "qty_done": 60,
             "qty_cum": 160,
             "progress_rate": 45.0,
-            "note": "演示进度计量",
+            "note": "月度进度计量",
         }
         existing = Progress.search(
             [("project_id", "=", project.id), ("wbs_id", "=", work_node.id)], limit=1
@@ -347,9 +345,9 @@ def run(env):
     demo_pm = _get_user(env, "demo_pm")
     demo_cost = _get_user(env, "demo_cost")
 
-    owner = _get_or_create_partner(env, "演示业主 · 城市建设集团")
-    supplier = _get_or_create_partner(env, "演示供应商 · 建材科技")
-    subcontract = _get_or_create_partner(env, "演示分包 · 桥梁施工队")
+    owner = _get_or_create_partner(env, "德阳市城市建设投资集团有限公司")
+    supplier = _get_or_create_partner(env, "德阳建科建材有限公司")
+    subcontract = _get_or_create_partner(env, "四川路桥建筑劳务有限公司")
 
     project_type = _get_dictionary(
         env,
@@ -368,7 +366,7 @@ def run(env):
         env,
         PROJECT_INIT_CODE,
         {
-            "name": "演示项目 · 立项待完善",
+            "name": "城西科创园一期工程（立项阶段）",
             "partner_id": False,
             "owner_id": owner.id,
             "manager_id": demo_pm.id if demo_pm else False,
@@ -387,7 +385,7 @@ def run(env):
         env,
         PROJECT_TENDER_CODE,
         {
-            "name": "演示项目 · 市政道路提升工程",
+            "name": "滨江路市政道路提升工程（前期阶段）",
             "partner_id": owner.id,
             "owner_id": owner.id,
             "manager_id": demo_pm.id if demo_pm else False,
@@ -408,7 +406,7 @@ def run(env):
         env,
         PROJECT_EXEC_CODE,
         {
-            "name": "演示项目 · 城市快速路提升工程",
+            "name": "东环路城市快速路提升工程（在建阶段）",
             "partner_id": owner.id,
             "owner_id": owner.id,
             "manager_id": demo_pm.id if demo_pm else False,
@@ -445,7 +443,7 @@ def run(env):
                 "amount_revenue_target": 3200000.0,
                 "amount_cost_target": 2500000.0,
                 "is_active": True,
-                "note": "演示用控制预算版本",
+                "note": "项目实施控制预算版本",
             }
         )
     else:
@@ -617,13 +615,13 @@ def run(env):
                 "project_category_id": project_category.id if project_category else False,
                 "lifecycle_state": state,
                 "phase_key": phase,
-                "location": "演示园区",
+                "location": "德阳经开区",
                 "plan_percent": 50.0,
                 "actual_percent": 45.0,
                 "start_date": today,
             },
         )
-        stage_root = _ensure_wbs(env, project, f"{code}-WBS", "演示管理阶段", "phase", None)
+        stage_root = _ensure_wbs(env, project, f"{code}-WBS", "施工管理阶段", "phase", None)
         _ensure_boq(env, project, code, uom_unit)
         _ensure_budget(env, project, uom_unit, stage_root)
         _ensure_cost_progress(env, project, cost_material, cost_sub, uom_unit, stage_root)

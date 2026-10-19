@@ -82,13 +82,13 @@ def ensure_manual_boq_analysis(env, line, unit_price):
     if line.version_id.state != "draft":
         raise ValueError("Published demo BOQ lacks declared analysis; rebuild rather than backfill")
     return business_model(env, "project.boq.analysis").create({
-        "name": "Demo 手工录入单项材料分析", "boq_line_id": line.id,
+        "name": "手工录入单项材料分析", "boq_line_id": line.id,
         "source_quantity": line.quantity, "source_unit_price": unit_price,
         "uom_raw": line.uom_id.name,
         "norm_line_ids": [(0, 0, {"norm_code": "DEMO-MANUAL-MATERIAL",
-            "name": "Demo 手工材料组成", "budget_consumption": 1.0,
+            "name": "C30 混凝土材料组成", "budget_consumption": 1.0,
             "unit_material": unit_price, "amount_material": unit_price})],
-        "resource_line_ids": [(0, 0, {"name": "Demo 手工材料来源",
+        "resource_line_ids": [(0, 0, {"name": "C30 混凝土材料来源",
             "resource_type": "material", "unit_raw": line.uom_id.name,
             "budget_consumption": 1.0, "budget_unit_price": unit_price,
             "budget_unit_amount": unit_price})],

@@ -2,36 +2,11 @@
 <odoo>
   <data noupdate="1">
 
-    <record id="sc_demo_check_standard_089_quality" model="sc.check.standard">
-      <field name="name">S89 主体结构质量检查标准</field>
-      <field name="standard_type">quality</field>
-      <field name="scope">project</field>
-      <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
-      <field name="default_rechecker_id" ref="base.user_admin"/>
-      <field name="import_source">manual</field>
-      <field name="effective_from">2025-08-01</field>
-      <field name="applies_building_room">True</field>
-      <field name="active">True</field>
-    </record>
-
-    <record id="sc_demo_check_standard_item_089_rebar" model="sc.check.standard.item">
-      <field name="standard_id" ref="smart_construction_demo.sc_demo_check_standard_089_quality"/>
-      <field name="sequence">10</field>
-      <field name="name">钢筋保护层厚度</field>
-      <field name="requirement">保护层厚度满足设计和规范允许偏差要求。</field>
-      <field name="bottom_line">True</field>
-      <field name="photo_required">True</field>
-      <field name="control_type">main</field>
-      <field name="acceptance_flow">supervisor</field>
-      <field name="score_weight">40.0</field>
-      <field name="tag">主体结构</field>
-    </record>
-
     <record id="sc_demo_quality_issue_089_rebar" model="sc.quality.issue">
-      <field name="name">S89 梁底钢筋保护层偏差</field>
+      <field name="name">梁底钢筋保护层偏差</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
-      <field name="standard_id" ref="smart_construction_demo.sc_demo_check_standard_089_quality"/>
-      <field name="standard_item_id" ref="smart_construction_demo.sc_demo_check_standard_item_089_rebar"/>
+      <field name="standard_id" ref="smart_construction_demo.sc_demo_quality_standard_080_structure"/>
+      <field name="standard_item_id" ref="smart_construction_demo.sc_demo_quality_standard_item_080_rebar"/>
       <field name="issue_date">2025-08-06</field>
       <field name="source_channel">app</field>
       <field name="issue_category">quality</field>
@@ -68,7 +43,7 @@
   <data noupdate="1">
 
     <record id="sc_demo_site_photo_batch_089_quality" model="sc.site.photo.batch">
-      <field name="name">S89 质量整改复验照片</field>
+      <field name="name">质量整改复验照片</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="evidence_stage">recheck</field>
       <field name="quality_issue_id" ref="smart_construction_demo.sc_demo_quality_issue_089_rebar"/>
@@ -83,7 +58,7 @@
     </record>
 
     <record id="sc_demo_safety_plan_089_dangerous" model="sc.safety.plan">
-      <field name="name">S89 高支模专项安全施工方案</field>
+      <field name="name">高支模专项安全施工方案</field>
       <field name="plan_type">dangerous</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="owner_id" ref="smart_construction_demo.user_sc_project_user"/>
@@ -93,7 +68,7 @@
     </record>
 
     <record id="sc_demo_safety_disclosure_089_dangerous" model="sc.safety.disclosure">
-      <field name="name">S89 高支模班前安全交底</field>
+      <field name="name">高支模班前安全交底</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="safety_plan_id" ref="smart_construction_demo.sc_demo_safety_plan_089_dangerous"/>
       <field name="disclosure_date">2025-08-04</field>
@@ -104,7 +79,7 @@
     </record>
 
     <record id="sc_demo_risk_library_089_safety" model="sc.risk.library">
-      <field name="name">S89 项目安全风险库</field>
+      <field name="name">项目安全风险库</field>
       <field name="library_level">project</field>
       <field name="version_no">2025.08</field>
       <field name="active">True</field>
@@ -123,7 +98,7 @@
     </record>
 
     <record id="sc_demo_hazard_source_089_high_support" model="sc.hazard.source">
-      <field name="name">S89 1#楼高支模危险源</field>
+      <field name="name">1#楼高支模危险源</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="risk_item_id" ref="smart_construction_demo.sc_demo_risk_item_089_high_support"/>
       <field name="location">1# 楼四层中庭</field>
@@ -136,7 +111,7 @@
     </record>
 
     <record id="sc_demo_safety_issue_089_high_support" model="sc.safety.issue">
-      <field name="name">S89 高支模剪刀撑局部缺失</field>
+      <field name="name">高支模剪刀撑局部缺失</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="hazard_source_id" ref="smart_construction_demo.sc_demo_hazard_source_089_high_support"/>
       <field name="issue_date">2025-08-06</field>
@@ -173,11 +148,11 @@
   <data noupdate="1">
 
     <record id="sc_demo_safety_patrol_task_089_high_support" model="sc.safety.patrol.task">
-      <field name="name">S89 高支模专项巡检</field>
+      <field name="name">高支模专项巡检</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="planned_date">2025-08-06</field>
       <field name="patrol_type">special</field>
-      <field name="check_standard_id" ref="smart_construction_demo.sc_demo_check_standard_089_quality"/>
+      <field name="check_standard_id" ref="smart_construction_demo.sc_demo_quality_standard_080_structure"/>
       <field name="owner_id" ref="smart_construction_demo.user_sc_project_user"/>
       <field name="planned_scope">1# 楼四层中庭高支模区域。</field>
       <field name="score">92.0</field>
@@ -186,7 +161,7 @@
     </record>
 
     <record id="sc_demo_site_photo_batch_089_safety" model="sc.site.photo.batch">
-      <field name="name">S89 安全整改复验照片</field>
+      <field name="name">安全整改复验照片</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="evidence_stage">recheck</field>
       <field name="safety_issue_id" ref="smart_construction_demo.sc_demo_safety_issue_089_high_support"/>

@@ -85,4 +85,8 @@ def run_steps(env, selected: str) -> List[str]:
     for step in _resolve(selected):
         step.run(env)
         executed.append(step.name)
+    # Seed steps create translatable labels under the active (en_US) language;
+    # mirror the missing zh_CN key once the whole batch is materialized.
+    if hasattr(env, "registry"):
+        env["demo.locale.normalize"].sudo().run()
     return executed

@@ -3,7 +3,7 @@
   <data noupdate="1">
 
     <record id="sc_demo_contract_066_income" model="construction.contract">
-      <field name="subject">S66 运营服务收入合同</field>
+      <field name="subject">运营服务收入合同</field>
       <field name="type">out</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
@@ -14,7 +14,7 @@
       <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_066_income"/>
       <field name="qty_contract">1.0</field>
       <field name="price_contract">680000.0</field>
-      <field name="note">S66 收款及发票归集依据。</field>
+      <field name="note">收款及发票归集依据。</field>
     </record>
 
     <record id="sc_demo_payment_request_066_receipt" model="payment.request">
@@ -25,7 +25,7 @@
       <field name="amount">360000.0</field>
       <field name="currency_id" ref="base.CNY"/>
       <field name="date_request">2025-08-18</field>
-      <field name="note">S66 收款发票台账来源收款申请。</field>
+      <field name="note">收款发票台账来源收款申请。</field>
     </record>
 
     <record id="sc_demo_receipt_invoice_line_066_progress" model="sc.receipt.invoice.line">
@@ -35,31 +35,31 @@
       <field name="legacy_receipt_id">S66-REC-001</field>
       <field name="legacy_invoice_id">S66-INV-001</field>
       <field name="legacy_invoice_child_id">S66-INV-CHILD-001</field>
-      <field name="invoice_no">S66-RINV-NO-001</field>
+      <field name="invoice_no">FP-2025-001</field>
       <field name="invoice_date">2025-08-18</field>
-      <field name="invoice_party_name">四川智慧建设业主有限公司（示例）</field>
-      <field name="invoice_issue_company">智慧建造示例公司</field>
-      <field name="invoice_document_no">S66-RINV-DOC-001</field>
+      <field name="invoice_party_name">四川智慧新城置业有限公司</field>
+      <field name="invoice_issue_company">四川智建工程有限公司</field>
+      <field name="invoice_document_no">FP-2025-001-DOC</field>
       <field name="invoice_document_state">已登记</field>
-      <field name="source_document_no">S66-REC-DOC-001</field>
+      <field name="source_document_no">SK-2025-001</field>
       <field name="source_table_name">C_JFHKLR_FP_DETAIL</field>
       <field name="amount_source">receipt_invoice_line_demo</field>
       <field name="invoice_amount">360000.0</field>
       <field name="surcharge_amount">2080.0</field>
       <field name="current_receipt_amount">300000.0</field>
       <field name="invoiced_before_amount">120000.0</field>
-      <field name="import_batch">S66-LEDGER-DEMO</field>
-      <field name="note">S66 收款发票明细样例，同时进入销项发票总台账。</field>
+      <field name="import_batch">INV-BATCH-2026-001</field>
+      <field name="note">收款发票明细，同步计入销项发票总台账。</field>
     </record>
 
     <record id="sc_demo_general_contract_066_income" model="sc.general.contract">
-      <field name="name">S66-GC-IN-001</field>
+      <field name="name">HT-2025-001</field>
       <field name="source_origin">manual</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
-      <field name="partner_name_text">四川智慧建设业主有限公司（示例）</field>
-      <field name="contract_no">S66-GC-IN-NO-001</field>
-      <field name="contract_name">S66 运营服务收入合同</field>
+      <field name="partner_name_text">四川智慧新城置业有限公司</field>
+      <field name="contract_no">HT-2025-001</field>
+      <field name="contract_name">运营服务收入合同</field>
       <field name="contract_type">运营服务</field>
       <field name="contract_attribute">收入合同</field>
       <field name="contract_direction">income</field>
@@ -73,17 +73,17 @@
       <field name="currency_id" ref="base.CNY"/>
       <field name="tax_rate">9.0</field>
       <field name="payment_terms">按阶段验收后收款。</field>
-      <field name="note">S66 收入合同台账样例。</field>
+      <field name="note">收入合同台账。</field>
     </record>
 
     <record id="sc_demo_general_contract_066_expense" model="sc.general.contract">
-      <field name="name">S66-GC-EX-001</field>
+      <field name="name">HT-2025-002</field>
       <field name="source_origin">manual</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
-      <field name="partner_name_text">德阳某某钢材有限公司（示例）</field>
-      <field name="contract_no">S66-GC-EX-NO-001</field>
-      <field name="contract_name">S66 钢材框架采购合同</field>
+      <field name="partner_name_text">德阳宏源钢材有限公司</field>
+      <field name="contract_no">HT-2025-002</field>
+      <field name="contract_name">钢材框架采购合同</field>
       <field name="contract_type">材料采购</field>
       <field name="contract_attribute">支出合同</field>
       <field name="contract_direction">expense</field>
@@ -97,16 +97,16 @@
       <field name="currency_id" ref="base.CNY"/>
       <field name="tax_rate">9.0</field>
       <field name="payment_terms">按月对账结算后付款。</field>
-      <field name="note">S66 支出合同台账样例。</field>
+      <field name="note">支出合同台账。</field>
     </record>
 
     <record id="sc_demo_business_entity_066_project_carrier" model="sc.business.entity">
       <field name="sequence">66</field>
-      <field name="name">S66 德阳项目经营载体</field>
+      <field name="name">德阳项目经营载体</field>
       <field name="company_id" ref="base.main_company"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
       <field name="entity_type">project_carrier</field>
-      <field name="note">S66 业务核算主体样例。</field>
+      <field name="note">业务核算主体登记。</field>
       <field name="active">True</field>
     </record>
 

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- 岗位主数据。岗位只描述组织身份，不承载审批路由或权限语义；
+             审批路由仍由产品契约与审批配置声明。加载于部门树之后、
+             人员档案之前。 -->
+        <record id="sc_demo_job_project_manager" model="hr.job">
+            <field name="name">项目经理</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <record id="sc_demo_job_contract_administrator" model="hr.job">
+            <field name="name">合同管理员</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <record id="sc_demo_job_cashier" model="hr.job">
+            <field name="name">出纳</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <record id="sc_demo_job_finance_manager" model="hr.job">
+            <field name="name">财务经理</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <record id="sc_demo_job_cost_engineer" model="hr.job">
+            <field name="name">成本工程师</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <record id="sc_demo_job_material_clerk" model="hr.job">
+            <field name="name">材料员</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <record id="sc_demo_job_material_manager" model="hr.job">
+            <field name="name">物资主管</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <record id="sc_demo_job_purchaser" model="hr.job">
+            <field name="name">采购员</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <record id="sc_demo_job_general_manager" model="hr.job">
+            <field name="name">总经理</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <record id="sc_demo_job_management" model="hr.job">
+            <field name="name">管理层</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <record id="sc_demo_job_business_config_admin" model="hr.job">
+            <field name="name">业务配置管理员</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <record id="sc_demo_job_operation_supervisor" model="hr.job">
+            <field name="name">经营主管</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+        <record id="sc_demo_job_accounting_supervisor" model="hr.job">
+            <field name="name">会计主管</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+    </data>
+</odoo>

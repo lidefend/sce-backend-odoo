@@ -73,7 +73,7 @@ def run(env):
         projects.append(_get_project(env, code))
     projects = [p for p in projects if p]
 
-    owner = _get_or_create_partner(env, "演示业主 · 城市建设集团")
+    owner = _get_or_create_partner(env, "德阳市城市建设投资集团有限公司")
     uom_unit = env.ref("uom.product_uom_unit", raise_if_not_found=False)
     if not uom_unit:
         uom_unit = env["uom.uom"].sudo().search([], limit=1)
@@ -85,6 +85,7 @@ def run(env):
     Tender = _demo_action_record(env, env["tender.bid"], "action_to_submitted")
     TenderLine = env["tender.bid.line"].with_user(actor).sudo(False)
     now = fields.Datetime.now()
+    bid_year = fields.Date.context_today(env.user).year
     state_map = {
         "draft": "prepare",
         "in_progress": "submitted",
@@ -99,7 +100,7 @@ def run(env):
         state = state_map[declared_stage(project)]
         bids = [
             {
-                "name": f"TB-{project.project_code}-01",
+                "name": f"TB-{bid_year}-{project.id:03d}-01",
                 "tender_name": f"{project.name} 投标",
                 "project_id": project.id,
                 "tender_round": 1,
@@ -112,7 +113,7 @@ def run(env):
         if project.project_code == PROJECT_TENDER_CODE:
             bids.append(
                 {
-                    "name": f"TB-{project.project_code}-02",
+                    "name": f"TB-{bid_year}-{project.id:03d}-02",
                     "tender_name": f"{project.name} 投标（二次）",
                     "project_id": project.id,
                     "tender_round": 2,

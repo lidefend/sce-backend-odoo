@@ -12,7 +12,6 @@ _logger = logging.getLogger(__name__)
 class ProjectDemoCockpitSeed(models.Model):
     _inherit = "project.project"
 
-    _DEMO_COCKPIT_MARKER = "DEMO_COCKPIT_R2"
     # ``payment.request._check_project_lifecycle`` refuses to submit or approve
     # a payment on a 保修/关闭 project, so the showcase must not try to create
     # such a fact there.
@@ -21,7 +20,7 @@ class ProjectDemoCockpitSeed(models.Model):
     # lifecycle states; the seed must respect the same guard.
     _DEMO_COST_BLOCKED_LIFECYCLES = ("paused", "closed")
     _OFFICIAL_SAMPLE_PROFILES = {
-        "展厅-智慧园区运营中心": {
+        "天府数谷智慧园区运营中心": {
             "profile": "execution",
             "showcase_ready": True,
             "seed_costs": False,
@@ -30,7 +29,7 @@ class ProjectDemoCockpitSeed(models.Model):
             "execution_state": "in_progress",
             "target_lifecycle_state": "in_progress",
         },
-        "展厅-装配式住宅试点": {
+        "中江装配式住宅试点项目": {
             "profile": "payment",
             "showcase_ready": True,
             "seed_costs": True,
@@ -39,7 +38,7 @@ class ProjectDemoCockpitSeed(models.Model):
             "execution_state": "done",
             "target_lifecycle_state": "in_progress",
         },
-        "展厅-产线升级改造工程": {
+        "东汽数字化产线改造工程": {
             "profile": "settlement_complete",
             "showcase_ready": True,
             "seed_costs": True,
@@ -131,8 +130,10 @@ class ProjectDemoCockpitSeed(models.Model):
                 order="id asc",
             )
 
+        from ..seed.showroom_catalog import SHOWROOM_PROJECT_NAMES
+
         projects |= project_model.search(
-            [("active", "=", True), ("name", "ilike", "展厅-%")],
+            [("active", "=", True), ("name", "in", list(SHOWROOM_PROJECT_NAMES))],
             order="id asc",
             limit=24,
         )
@@ -178,20 +179,17 @@ class ProjectDemoCockpitSeed(models.Model):
     def _sc_demo_seed_contracts(self, project, partner, contract_model, contract_line_model):
         from ..tools.scenario_loader import drive_seeded_record
 
-        marker = self._DEMO_COCKPIT_MARKER
+        samples = [
+            ("out", f"{project.name}-补充收入合同", "补充收入合同", 8_000_000.0 + (project.id % 7) * 1_100_000.0),
+            ("in", f"{project.name}-补充支出合同", "补充支出合同", (8_000_000.0 + (project.id % 7) * 1_100_000.0) * 0.62),
+        ]
         existing = contract_model.search_count(
-            [("project_id", "=", project.id), ("subject", "ilike", marker)]
+            [("project_id", "=", project.id), ("subject", "in", [spec[1] for spec in samples])]
         )
         if existing:
             return
 
-        base_out = 8_000_000.0 + (project.id % 7) * 1_100_000.0
-        base_in = base_out * 0.62
-        samples = [
-            ("out", f"[{marker}] {project.name}-收入合同", base_out),
-            ("in", f"[{marker}] {project.name}-支出合同", base_in),
-        ]
-        for contract_type, subject, amount in samples:
+        for contract_type, subject, line_note, amount in samples:
             contract = contract_model.create(
                 {
                     "subject": subject,
@@ -205,7 +203,7 @@ class ProjectDemoCockpitSeed(models.Model):
                     "contract_id": contract.id,
                     "qty_contract": 1.0,
                     "price_contract": amount,
-                    "note": marker,
+                    "note": line_note,
                 }
             )
             if contract.state in ("draft", "confirmed"):
@@ -227,7 +225,6 @@ class ProjectDemoCockpitSeed(models.Model):
         if project.lifecycle_state in self._DEMO_COST_BLOCKED_LIFECYCLES:
             return
 
-        marker = self._DEMO_COCKPIT_MARKER
         base = date.today()
         samples = [
             ("材料采购", 1_180_000.0, 5),
@@ -236,7 +233,7 @@ class ProjectDemoCockpitSeed(models.Model):
             ("分包结算", 1_650_000.0, 35),
         ]
         for note_text, amount, days in samples:
-            entry_note = f"{marker}-{note_text}"
+            entry_note = note_text
             existing = cost_ledger_model.search_count(
                 [
                     ("project_id", "=", project.id),
@@ -274,7 +271,6 @@ class ProjectDemoCockpitSeed(models.Model):
         """
         if project.lifecycle_state in self._DEMO_PAYMENT_BLOCKED_LIFECYCLES:
             return
-        marker = self._DEMO_COCKPIT_MARKER
         contract_model = self.env["construction.contract"].sudo()
         # 申请的收付方向必须与合同方向一致（产品 _check_contract_direction），
         # 回款挂收入合同，付款挂支出合同。
@@ -283,7 +279,14 @@ class ProjectDemoCockpitSeed(models.Model):
                 [
                     ("project_id", "=", project.id),
                     ("type", "=", contract_type),
-                    ("subject", "ilike", marker),
+                    (
+                        "subject",
+                        "in",
+                        [
+                            f"{project.name}-补充收入合同",
+                            f"{project.name}-补充支出合同",
+                        ],
+                    ),
                 ],
                 limit=1,
             )
@@ -296,21 +299,20 @@ class ProjectDemoCockpitSeed(models.Model):
             ("pay", "draft", 860_000.0, "材料付款B"),
         ]
         for req_type, target_state, amount, note_text in samples:
-            req_name = f"{marker}-{project.id}-{note_text}"
+            req_note = note_text
             contract = contracts["out" if req_type == "receive" else "in"]
             request = payment_request_model.search(
-                [("project_id", "=", project.id), ("name", "=", req_name)], limit=1
+                [("project_id", "=", project.id), ("note", "=", req_note)], limit=1
             )
             if not request:
                 request = payment_request_model.create(
                     {
-                        "name": req_name,
                         "project_id": project.id,
                         "partner_id": partner.id,
                         "type": req_type,
                         "contract_id": contract.id if contract else False,
                         "amount": amount,
-                        "note": marker,
+                        "note": req_note,
                     }
                 )
             if target_state == "draft":
@@ -351,7 +353,7 @@ class ProjectDemoCockpitSeed(models.Model):
                     "contract_id": contract.id,
                     "partner_id": request.partner_id.id,
                     "amount": request.amount,
-                    "note": f"{request.note}-{note_text}",
+                    "note": request.note,
                 }
             )
         if receipt.state == "draft":
@@ -371,7 +373,6 @@ class ProjectDemoCockpitSeed(models.Model):
 
     @api.model
     def _sc_demo_seed_risk_signals(self, project, activity_model, todo_type, model_id, profile=None):
-        marker = self._DEMO_COCKPIT_MARKER
         profile = dict(profile or {})
         target_health = str(profile.get("health_state") or "warn").strip().lower() or "warn"
         if "health_state" in project._fields and (project.health_state or "") != target_health:
@@ -380,7 +381,7 @@ class ProjectDemoCockpitSeed(models.Model):
         if not todo_type or not model_id:
             return
 
-        marker_summary = f"{marker}-成本偏差复核"
+        marker_summary = "成本偏差复核"
         existing = activity_model.search_count(
             [
                 ("res_model", "=", "project.project"),
@@ -396,7 +397,7 @@ class ProjectDemoCockpitSeed(models.Model):
                 "res_model_id": model_id,
                 "res_id": project.id,
                 "summary": marker_summary,
-                "note": f"{marker}：请复核本周成本偏差。",
+                "note": "请复核本周成本偏差。",
                 "user_id": project.user_id.id or self.env.user.id,
                 "date_deadline": date.today() - timedelta(days=2),
             }

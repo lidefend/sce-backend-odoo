@@ -273,7 +273,7 @@ async function exerciseSearchMoreSelect(page) {
       reason: 'relation_search_dialog_entry_not_available_for_current_contract',
     };
   }
-  const targetRow = page.locator('.relation-dialog tbody tr').filter({ hasText: 'Demo Project User' }).first();
+  const targetRow = page.locator('.relation-dialog tbody tr').filter({ hasText: '韩磊' }).first();
   const rowText = normalize(await targetRow.innerText());
   await targetRow.locator('input[type="radio"]').check();
   const selectButton = page.locator('.relation-dialog button.primary').filter({ hasText: '选择' }).first();
@@ -285,7 +285,7 @@ async function exerciseSearchMoreSelect(page) {
     path_id: 'P08',
     level: 'L4',
     scenario: 'search_more_select',
-    status: selectEnabled && rowText.includes(after) && after === 'Demo Project User' ? 'pass' : 'fail',
+    status: selectEnabled && rowText.includes(after) && after === '韩磊' ? 'pass' : 'fail',
     row_text: rowText,
     after,
     select_enabled: selectEnabled,
@@ -326,7 +326,7 @@ async function exerciseQuickPartialMatch(page) {
     path_id: 'P07',
     level: 'L4',
     scenario: 'single_contains_or_exact_quick_fill',
-    status: after === 'Demo Project User' && panelClosed ? 'pass' : 'fail',
+    status: after === '韩磊' && panelClosed ? 'pass' : 'fail',
     keyword: 'Project User',
     after,
     option_count: optionCount,

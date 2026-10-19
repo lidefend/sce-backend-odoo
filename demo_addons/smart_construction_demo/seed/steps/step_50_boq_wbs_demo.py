@@ -12,10 +12,9 @@ def _projects(env):
     Project = business_model(env, "project.project")
     records = Project.search(
         [
-            "|", "|", "|",
+            "|", "|",
             ("project_code", "=", PROJECT_EXEC_CODE),
             ("name", "ilike", "展厅-"),
-            ("name", "ilike", "演示项目"),
             ("project_code", "ilike", "DEMO-"),
         ]
     )
@@ -58,11 +57,11 @@ def _ensure_cost_plan(env, project):
     if not plan:
         plan = Plan.create(
             {
-                "name": "Demo 目标成本计划",
+                "name": "目标成本计划",
                 "project_id": project.id,
                 "boq_version_id": version.id,
                 "version_code": "DEMO-TARGET-V1",
-                "note": "由已发布清单的手工单项材料分析生成的 Demo 成本基线。",
+                "note": "由已发布清单的手工单项材料分析生成的目标成本基线。",
             }
         )
     if not plan.line_ids:

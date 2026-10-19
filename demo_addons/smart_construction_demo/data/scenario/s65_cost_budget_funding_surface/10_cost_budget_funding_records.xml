@@ -3,27 +3,27 @@
   <data noupdate="1">
 
     <record id="sc_demo_project_065_cost_funding" model="project.project">
-      <field name="name">S65 成本资金演示项目</field>
+      <field name="name">成本资金项目</field>
       <field name="project_code">S65-COST-2025-001</field>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
       <field name="company_id" ref="base.main_company"/>
       <field name="funding_enabled">True</field>
       <field name="lifecycle_state">in_progress</field>
       <field name="active">True</field>
-      <field name="description">S65 成本预算、成本台账、进度计量和资金基线演示项目。</field>
+      <field name="description">成本预算、成本台账、进度计量和资金基线项目。</field>
     </record>
 
     <record id="sc_demo_wbs_065_unit" model="construction.work.breakdown">
-      <field name="name">S65 1#楼主体结构</field>
-      <field name="code">S65-01</field>
+      <field name="name">1#楼主体结构</field>
+      <field name="code">01</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_065_cost_funding"/>
       <field name="sequence">65</field>
       <field name="level_type">control_account</field>
     </record>
 
     <record id="sc_demo_wbs_065_sub_section" model="construction.work.breakdown">
-      <field name="name">S65 三层梁板钢筋工程</field>
-      <field name="code">S65-0101</field>
+      <field name="name">三层梁板钢筋工程</field>
+      <field name="code">0101</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_065_cost_funding"/>
       <field name="parent_id" ref="smart_construction_demo.sc_demo_wbs_065_unit"/>
       <field name="sequence">10</field>
@@ -31,27 +31,27 @@
     </record>
 
     <record id="sc_demo_budget_065_control" model="project.budget">
-      <field name="name">S65 主体结构成本控制版</field>
+      <field name="name">主体结构成本控制版</field>
       <field name="budget_kind">general</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_065_cost_funding"/>
-      <field name="version">S65-CTRL-V1</field>
+      <field name="version">2025-CTRL-V1</field>
       <field name="version_date">2025-08-01</field>
       <field name="is_active">True</field>
       <field name="target_type">dynamic_cost</field>
-      <field name="version_no">S65-CTRL-V1</field>
+      <field name="version_no">2025-CTRL-V1</field>
       <field name="is_baseline">True</field>
       <field name="source_channel">manual</field>
       <field name="amount_revenue_target">1500000.0</field>
       <field name="amount_cost_target">1180000.0</field>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="measurement_note">S65 主体结构动态成本测算。</field>
-      <field name="note">S65 成本预算表单样例。</field>
+      <field name="measurement_note">主体结构动态成本测算。</field>
+      <field name="note">主体结构施工成本预算。</field>
     </record>
 
     <record id="sc_demo_budget_line_065_rebar" model="project.budget.boq.line">
       <field name="budget_id" ref="smart_construction_demo.sc_demo_budget_065_control"/>
       <field name="sequence">10</field>
-      <field name="boq_code">S65-BOQ-001</field>
+      <field name="boq_code">BOQ-2025-001</field>
       <field name="name">三层梁板钢筋制安</field>
       <field name="wbs_id" ref="smart_construction_demo.sc_demo_wbs_065_sub_section"/>
       <field name="qty_bidded">85.0</field>
@@ -61,7 +61,7 @@
       <field name="cost_collection_method">contract</field>
       <field name="cost_allocation_method">direct</field>
       <field name="revenue_recognition">progress</field>
-      <field name="note">按吨计量的钢筋制安预算样例。</field>
+      <field name="note">按吨计量的钢筋制安成本预算。</field>
     </record>
 
     <record id="sc_demo_alloc_065_rebar_material" model="project.budget.cost.alloc">
@@ -88,17 +88,17 @@
 
     <!-- 材料成本由真实出库确认生成；下游沿用生成结果的 XMLID。 -->
     <record id="sc_demo_product_065_rebar" model="product.product">
-      <field name="name">S65 梁板钢筋</field>
-      <field name="default_code">S65-MAT-REBAR</field>
+      <field name="name">梁板钢筋</field>
+      <field name="default_code">MAT-REBAR-001</field>
       <field name="uom_id" ref="uom.product_uom_ton"/>
       <field name="uom_po_id" ref="uom.product_uom_ton"/>
     </record>
     <record id="sc_demo_material_outbound_065_rebar" model="sc.material.outbound">
-      <field name="name">S65-OUT-REBAR-001</field>
+      <field name="name">CK-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_065_cost_funding"/>
       <field name="outbound_date">2025-08-12</field>
       <field name="receiver_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
-      <field name="purpose">S65 梁板钢筋领用</field>
+      <field name="purpose">梁板钢筋领用</field>
       <field name="currency_id" ref="base.CNY"/>
     </record>
     <record id="sc_demo_material_outbound_line_065_rebar" model="sc.material.outbound.line">
@@ -116,7 +116,7 @@
       <field name="qty_done">42.0</field>
       <field name="qty_cum">42.0</field>
       <field name="progress_rate">49.41</field>
-      <field name="note">S65 三层梁板钢筋本期进度计量草稿。</field>
+      <field name="note">三层梁板钢筋本期进度计量草稿。</field>
     </record>
 
     <!-- 资金基线走受控生命周期：XML 只建草稿（含控制期与明细），

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- 部门负责人绑定。manager_id 仅用于组织展示与分组，不构成审批路由、
+             权限或数据范围声明；审批仍由产品契约与审批配置决定。
+             本文件必须在 sc_demo_employees.xml 之后加载。 -->
+        <record id="sc_demo_department_gm" model="hr.department">
+            <field name="manager_id" ref="smart_construction_demo.sc_demo_employee_demo_role_owner"/>
+        </record>
+
+        <record id="sc_demo_department_operation" model="hr.department">
+            <field name="manager_id" ref="smart_construction_demo.sc_demo_employee_operation"/>
+        </record>
+
+        <record id="sc_demo_department_project" model="hr.department">
+            <field name="manager_id" ref="smart_construction_demo.sc_demo_employee_pm1"/>
+        </record>
+
+        <record id="sc_demo_department_001" model="hr.department">
+            <field name="manager_id" ref="smart_construction_demo.sc_demo_employee_pm1"/>
+        </record>
+
+        <record id="sc_demo_department_quality" model="hr.department">
+            <field name="manager_id" ref="smart_construction_demo.sc_demo_employee_pm1"/>
+        </record>
+
+        <record id="sc_demo_department_contract" model="hr.department">
+            <field name="manager_id" ref="smart_construction_demo.sc_demo_employee_ct1"/>
+        </record>
+
+        <record id="sc_demo_department_cost" model="hr.department">
+            <field name="manager_id" ref="smart_construction_demo.sc_demo_employee_cost1"/>
+        </record>
+
+        <record id="sc_demo_department_purchase" model="hr.department">
+            <field name="manager_id" ref="smart_construction_demo.sc_demo_employee_pur1"/>
+        </record>
+
+        <record id="sc_demo_department_material" model="hr.department">
+            <field name="manager_id" ref="smart_construction_demo.sc_demo_employee_mat_mgr"/>
+        </record>
+
+        <record id="sc_demo_department_finance" model="hr.department">
+            <field name="manager_id" ref="smart_construction_demo.sc_demo_employee_fin_mgr"/>
+        </record>
+
+        <record id="sc_demo_department_hr" model="hr.department">
+            <field name="manager_id" ref="smart_construction_demo.sc_demo_employee_business_config"/>
+        </record>
+
+        <!-- sc_demo_department_001 由 noupdate="1" 的基线文件创建，record 无法
+             再更新其字段；负责人同样用 function 幂等写入。 -->
+        <function model="hr.department" name="write">
+            <value eval="[ref('smart_construction_demo.sc_demo_department_001')]"/>
+            <value eval="{'manager_id': ref('smart_construction_demo.sc_demo_employee_pm1')}"/>
+        </function>
+
+    </data>
+</odoo>

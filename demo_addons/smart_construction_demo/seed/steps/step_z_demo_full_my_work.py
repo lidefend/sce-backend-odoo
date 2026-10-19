@@ -5,9 +5,18 @@ from ..registry import SeedStep, register
 from ..business_roles import project_actor, prepare_project
 
 
-MARKER = "SC_DEMO_FULL_MY_WORK"
 PROJECT_LIMIT = 6
 TASKS_PER_PROJECT = 4
+TASK_TITLES = (
+    "图纸会审与交底",
+    "施工组织设计报审",
+    "材料进场计划确认",
+    "现场安全巡查",
+)
+LEGACY_TASK_MARKER = "SC_DEMO_FULL_MY_WORK"
+FOLLOW_MESSAGE = "请关注该项目的关键事项。"
+ACTIVITY_SUMMARY = "跟进项目关键事项"
+ACTIVITY_NOTE = "请处理项目跟进行动。"
 
 
 def _get_user(env, login):
@@ -18,9 +27,7 @@ def _demo_projects(env, limit=PROJECT_LIMIT):
     Project = env["project.project"].sudo().with_context(active_test=False)
     domain = [
         "|",
-        "|",
         ("name", "ilike", "展厅-"),
-        ("name", "ilike", "演示项目"),
         ("project_code", "ilike", "DEMO-"),
     ]
     return Project.search(domain, order="id asc", limit=max(1, int(limit or PROJECT_LIMIT)))
@@ -50,14 +57,14 @@ def _ensure_project_mention(project, demo_full):
         [
             ("model", "=", project._name),
             ("res_id", "=", project.id),
-            ("body", "ilike", MARKER),
+            ("body", "ilike", FOLLOW_MESSAGE),
             ("partner_ids", "in", demo_full.partner_id.id),
         ]
     )
     if existing:
         return False
     project.message_post(
-        body=f"{MARKER}: 请关注该演示项目的关键事项。",
+        body=FOLLOW_MESSAGE,
         partner_ids=[demo_full.partner_id.id],
         message_type="comment",
         subtype_xmlid="mail.mt_comment",
@@ -72,7 +79,7 @@ def _ensure_project_activity(project, demo_full):
     model_id = project.env["ir.model"].sudo()._get_id(project._name)
     if not todo_type or not model_id:
         return False
-    summary = f"{MARKER}-{project.id}"
+    summary = ACTIVITY_SUMMARY
     existing = Activity.search_count(
         [
             ("res_model", "=", project._name),
@@ -89,7 +96,7 @@ def _ensure_project_activity(project, demo_full):
             "res_model_id": model_id,
             "res_id": project.id,
             "summary": summary,
-            "note": f"{MARKER}: 请处理演示项目跟进行动。",
+            "note": ACTIVITY_NOTE,
             "user_id": demo_full.id,
             "date_deadline": fields.Date.today(),
         }
@@ -109,7 +116,7 @@ def _ensure_task_assignment(project, demo_full, task_limit=TASKS_PER_PROJECT):
             created.append(
                 Task.create(
                     {
-                        "name": f"{MARKER}-{project.id}-任务{index:02d}",
+                        "name": TASK_TITLES[(index - 1) % len(TASK_TITLES)],
                         "project_id": project.id,
                         "user_ids": [(6, 0, [demo_full.id])],
                     }
@@ -117,7 +124,10 @@ def _ensure_task_assignment(project, demo_full, task_limit=TASKS_PER_PROJECT):
             )
         return len(created)
     updated = 0
-    for task in tasks:
+    for index, task in enumerate(tasks, start=1):
+        title = TASK_TITLES[(index - 1) % len(TASK_TITLES)]
+        if str(task.name or "").startswith(LEGACY_TASK_MARKER):
+            task.write({"name": title})
         user_ids = set(task.user_ids.ids)
         if demo_full.id in user_ids:
             continue

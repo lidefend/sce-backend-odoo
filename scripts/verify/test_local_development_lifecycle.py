@@ -700,7 +700,7 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
             "smart_construction_demo.payment_request_floorplan_demo_record",
         ):
             self.assertIn(required, resolver)
-        self.assertNotIn('search([("name", "=", "DEMO-PR-FLOORPLAN-001")]', resolver)
+        self.assertNotIn('search([("name", "=", "PRQ-2026-001")]', resolver)
         self.assertIn("catch (error)", browser)
         self.assertIn("report.failure", browser)
         self.assertIn("locateCollectionRecord", browser)

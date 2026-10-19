@@ -3,7 +3,7 @@
   <data noupdate="1">
 
     <record id="sc_demo_labor_usage_087_masonry" model="sc.labor.usage">
-      <field name="name">S87-LU-001</field>
+      <field name="name">LW-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="usage_date">2025-07-01</field>
       <field name="labor_team">砌筑班组</field>
@@ -11,17 +11,17 @@
       <field name="work_content">A 区二次结构砌筑</field>
       <field name="worker_qty">24.0</field>
       <field name="work_hours">192.0</field>
-      <field name="foreman_name">测试-班组长</field>
-      <field name="note">S87 劳务用工样例</field>
+      <field name="foreman_name">陈国栋</field>
+      <field name="note">主体结构劳务用工</field>
     </record>
 
     <record id="sc_demo_labor_settlement_087_masonry" model="sc.labor.settlement">
-      <field name="name">S87-LS-001</field>
+      <field name="name">LWJS-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="contractor_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
       <field name="settlement_date">2025-07-05</field>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="note">S87 劳务结算样例</field>
+      <field name="note">主体结构劳务结算</field>
     </record>
 
     <record id="sc_demo_labor_settlement_line_087_masonry" model="sc.labor.settlement.line">
@@ -36,7 +36,7 @@
     </record>
 
     <record id="sc_demo_labor_price_087_masonry" model="sc.labor.price">
-      <field name="name">S87-LPRICE-001</field>
+      <field name="name">LWJ-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="contractor_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
       <field name="labor_team">砌筑班组</field>
@@ -47,22 +47,22 @@
       <field name="tax_rate">3.0</field>
       <field name="effective_date">2025-07-01</field>
       <field name="state">active</field>
-      <field name="note">S87 劳务价格库样例</field>
+      <field name="note">劳务价格库</field>
     </record>
 
     <record id="sc_demo_equipment_settlement_087_pump" model="sc.equipment.settlement">
-      <field name="name">S87-ES-001</field>
+      <field name="name">SBJS-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="supplier_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
       <field name="settlement_date">2025-07-06</field>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="note">S87 设备结算样例</field>
+      <field name="note">塔吊设备结算</field>
     </record>
 
     <record id="sc_demo_equipment_settlement_line_087_pump" model="sc.equipment.settlement.line">
       <field name="settlement_id" ref="smart_construction_demo.sc_demo_equipment_settlement_087_pump"/>
       <field name="equipment_name">混凝土输送泵 HBT80</field>
-      <field name="equipment_code">S87-PUMP-001</field>
+      <field name="equipment_code">SB-PUMP-001</field>
       <field name="qty">48.0</field>
       <field name="unit_name">台时</field>
       <field name="unit_price">280.0</field>
@@ -71,28 +71,28 @@
     </record>
 
     <record id="sc_demo_equipment_price_087_pump" model="sc.equipment.price">
-      <field name="name">S87-EPRICE-001</field>
+      <field name="name">SBJ-2025-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="supplier_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
       <field name="equipment_name">混凝土输送泵 HBT80</field>
-      <field name="equipment_code">S87-PUMP-001</field>
+      <field name="equipment_code">SB-PUMP-001</field>
       <field name="unit_name">台时</field>
       <field name="currency_id" ref="base.CNY"/>
       <field name="unit_price">280.0</field>
       <field name="tax_rate">9.0</field>
       <field name="effective_date">2025-07-01</field>
       <field name="state">active</field>
-      <field name="note">S87 设备价格库样例</field>
+      <field name="note">设备价格库</field>
     </record>
 
     <record id="sc_demo_general_contract_087_service" model="sc.general.contract">
-      <field name="name">S87-GC-001</field>
+      <field name="name">HT-2025-003</field>
       <field name="source_origin">manual</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
-      <field name="partner_name_text">德阳某某商砼有限公司（示例）</field>
-      <field name="contract_no">S87-GC-NO-001</field>
-      <field name="contract_name">S87 现场综合服务合同</field>
+      <field name="partner_name_text">德阳中联商砼有限公司</field>
+      <field name="contract_no">HT-2025-003</field>
+      <field name="contract_name">现场综合服务合同</field>
       <field name="contract_type">现场服务</field>
       <field name="contract_attribute">综合服务</field>
       <field name="contract_direction">expense</field>
@@ -106,15 +106,15 @@
       <field name="currency_id" ref="base.CNY"/>
       <field name="tax_rate">9.0</field>
       <field name="payment_terms">月度确认后支付。</field>
-      <field name="note">S87 综合合同样例</field>
+      <field name="note">综合合同台账</field>
     </record>
 
     <record id="sc_demo_contract_event_087_design_change" model="sc.contract.event">
-      <field name="name">S87 A 区二次结构深化变更</field>
+      <field name="name">A 区二次结构深化变更</field>
       <field name="event_type">design_change</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
-      <field name="event_no">S87-CE-001</field>
+      <field name="event_no">BG-2025-001</field>
       <field name="source_channel">pc</field>
       <field name="event_date">2025-07-08</field>
       <field name="applicant_id" ref="base.user_admin"/>
@@ -125,15 +125,15 @@
       <field name="limit_control_result">ok</field>
       <field name="settlement_included">True</field>
       <field name="description">二次结构局部深化调整，增加构造柱和门洞加固。</field>
-      <field name="basis">设计变更通知单 S87-DESIGN-001。</field>
+      <field name="basis">设计变更通知单 BG-2025-001。</field>
     </record>
 
     <record id="sc_demo_contract_event_087_output_value" model="sc.contract.event">
-      <field name="name">S87 七月产值申报</field>
+      <field name="name">七月产值申报</field>
       <field name="event_type">output_value_report</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
-      <field name="event_no">S87-CE-002</field>
+      <field name="event_no">BG-2025-002</field>
       <field name="source_channel">pc</field>
       <field name="event_date">2025-07-31</field>
       <field name="applicant_id" ref="base.user_admin"/>

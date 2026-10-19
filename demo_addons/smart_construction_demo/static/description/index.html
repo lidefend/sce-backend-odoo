@@ -10,8 +10,9 @@ cat > addons/smart_construction_demo/static/description/index.html <<'HTML'
     <li><b>S10</b>: contract + payment request + invoices (draft)</li>
     <li><b>S20</b>: settlement + lines + payment linkage</li>
     <li><b>S30</b>: workflow seed + gate demo (bad stays draft)</li>
-    <li><b>S40</b>: failure paths (struct/amount/link)</li>
   </ul>
+
+  <p>Failure paths and repair drills are covered by product tests and are not part of the Demo dataset.</p>
 
   <h2>Verify</h2>
   <pre>make demo.verify DB_NAME=sc_demo</pre>

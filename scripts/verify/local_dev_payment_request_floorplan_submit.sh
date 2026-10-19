@@ -69,7 +69,7 @@ before = json.loads(os.environ["BEFORE_JSON"])["actionable_record"]
 reset = json.loads(os.environ["RESET_JSON"])["actionable_record"]
 # Fixture identity is the governed xmlid already resolved above. The governed
 # reset step preserves ledger-linked history instead of reusing an issued label,
-# so the display label advances along the DEMO-PR-FLOORPLAN-### series; the
+# so the display label advances along the PRQ-2026-### series; the
 # reset therefore restores the governed facts (a submit-ready draft with the
 # unchanged amount) inside the governed series rather than repeating the prior
 # label.
@@ -77,7 +77,7 @@ if reset["state"] != "draft":
     raise SystemExit("governed fixture reset did not restore a submit-ready draft payment request")
 if reset["amount"] != before["amount"]:
     raise SystemExit("governed fixture reset changed the governed fixture amount")
-if not re.fullmatch(r"DEMO-PR-FLOORPLAN-\d+", str(reset["name"] or "")):
+if not re.fullmatch(r"PRQ-2026-\d+", str(reset["name"] or "")):
     raise SystemExit("governed fixture reset did not provision the governed fixture series")
 print("[local.dev.payment.floorplan.submit] fixture reset restored a submit-ready draft inside the governed fixture series")
 PY
