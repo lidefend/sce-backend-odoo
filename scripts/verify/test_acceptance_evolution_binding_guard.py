@@ -198,6 +198,17 @@ class TestGlobAndPlan(unittest.TestCase):
             ["list_surface_structure", "relation_roundtrip"],
         )
 
+    def test_isolated_acceptance_entry_changes_require_identity_evidence(self):
+        for path in (
+            "config/acceptance/isolated_entry_identity.v1.env",
+            "scripts/dev/frontend_acceptance_up.sh",
+            "scripts/verify/frontend_acceptance_login_probe.py",
+        ):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+            self.assertEqual(plan["status"], "PASS", path)
+            self.assertIn("path_namespace_identity", plan["required_suites"], path)
+            self.assertIn("path_namespace_identity", plan["required_evidence_suites"], path)
+
     def test_plan_fails_closed_for_unclassified_paths(self):
         plan = guard.build_plan(self.registry, ["new_surface/unknown.txt"], "base", HEAD)
         self.assertEqual(plan["status"], "FAIL")

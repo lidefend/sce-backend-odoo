@@ -154,6 +154,19 @@
       ]
     },
     {
+      "id": "isolated-acceptance-entry-identity",
+      "paths": [
+        "config/acceptance/**",
+        "scripts/dev/frontend_acceptance*",
+        "scripts/test/frontend_acceptance*",
+        "scripts/verify/frontend_acceptance*"
+      ],
+      "suites": [
+        "governance_static",
+        "path_namespace_identity"
+      ]
+    },
+    {
       "id": "governance-static",
       "paths": [
         "make/**",
