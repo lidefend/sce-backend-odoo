@@ -22,9 +22,16 @@ BASE_SEED_FILES: List[str] = [
     "data/base/cost_demo.xml",
     "data/base/10_partners.xml",
     "data/base/12_departments.xml",
+    "data/base/13_departments_tree.xml",
+    "data/base/14_jobs.xml",
+    "data/demo/sc_demo_employees.xml",
+    "data/demo/sc_demo_organization_bindings.xml",
     "data/base/20_projects.xml",
     "data/base/25_project_tasks.xml",
 ]
+# role_matrix_demo_users.xml intentionally stays manifest-only: it carries
+# business-role groups_id and must not be replayed by the organization seed
+# path. Module install/upgrade still loads it before this list runs.
 
 
 # Scenario registry: scenario_name -> ordered xml file list (relative under module root)
@@ -55,22 +62,6 @@ SCENARIOS: Dict[str, List[str]] = {
             "data/scenario/s30_settlement_workflow/10_settlement_seed.xml",
             "data/scenario/s30_settlement_workflow/20_settlement_actions.xml",
             "data/scenario/s30_settlement_workflow/30_assert_state.xml",
-        ],
-    },
-    "s40_failure_paths": {
-        "sequence": 40,
-        "files": [
-            "data/scenario/s40_failure_paths/10_invalid_settlement.xml",
-            "data/scenario/s40_failure_paths/20_invalid_amounts.xml",
-            "data/scenario/s40_failure_paths/30_invalid_links.xml",
-        ],
-    },
-    "s50_repairable_paths": {
-        "sequence": 50,
-        "files": [
-            "data/scenario/s50_repairable_paths/10_bad_seed.xml",
-            "data/scenario/s50_repairable_paths/20_fix_patch.xml",
-            "data/scenario/s50_repairable_paths/30_assert_state.xml",
         ],
     },
     "s60_project_cockpit": {
@@ -247,13 +238,16 @@ RELEASE_SCENARIOS: List[str] = [
     "s60_project_cockpit",
     "s65_cost_budget_funding_surface",
     "s66_ledger_entity_surface",
+    "s67_scene_pack_surface",
     "s68_cockpit_workbench_surface",
     "s69_payment_ledger_surface",
     "s70_daily_business_surface",
+    "s71_governance_audit_surface",
     "s72_project_governance_surface",
     "s73_risk_settlement_surface",
     "s74_partner_supplier_surface",
     "s75_summary_projection_surface",
+    "s76_workflow_compat_surface",
     "s77_data_dictionary_surface",
     "s78_project_document_wbs_surface",
     "s79_execution_structure_surface",
@@ -886,7 +880,7 @@ def _link_s70_generated_treasury_ledger(env, reconciliation):
     ledgers = receipt.treasury_ledger_id
     if (receipt.state != "received" or len(ledgers) != 1 or ledgers.state != "posted"
             or ledgers.payment_request_id != receipt.payment_request_id or ledgers.direction != "in"):
-        raise ValueError("S70 requires its native posted receipt treasury result")
+        raise ValueError("requires its native posted receipt treasury result")
     _bind_generated_demo_xmlid(env, "sc_demo_treasury_ledger_070_daily", ledgers)
     if reconciliation.treasury_ledger_id != ledgers:
         _demo_action_record(env, reconciliation, "write").write({"treasury_ledger_id": ledgers.id})
@@ -913,7 +907,7 @@ def _bind_s65_generated_cost(env):
         ("source_model", "=", source._name), ("source_id", "=", source.id),
     ])
     if len(ledger) != 1:
-        raise ValueError("S65 requires exactly one cost result from its real material issue")
+        raise ValueError("requires exactly one cost result from its real material issue")
     _bind_generated_demo_xmlid(env, "sc_demo_cost_ledger_065_rebar", ledger)
 
 
@@ -945,9 +939,6 @@ def load_scenario(
     # Reseed must restore the published company identity before any demo
     # record is loaded; otherwise a rebuilt tenant keeps "My Company".
     apply_demo_company_identity(env)
-    if scenario == "s50_repairable_paths":
-        _reset_s50_repairable_records(env)
-
     module = "smart_construction_demo"
     if ensure_base:
         load_base_seed(env, mode=mode)
@@ -1062,6 +1053,11 @@ def _import_demo_boq(env, project):
     ])
     if len(batch) != 1 or batch.file_digest != hashlib.sha256(raw).hexdigest() or batch.state != "imported":
         raise ValueError("demo BOQ existing result does not match the real import file")
+    for version in versions:
+        if "DEMO" in (version.name or "") and version.state not in ("published", "superseded"):
+            version.write({"name": f"{project.name} 清单V1"})
+    if "DEMO" in (batch.name or ""):
+        batch.write({"name": f"{project.name} 清单导入"})
     return versions, batch
 
 
@@ -1170,7 +1166,7 @@ def _prepare_s86_award_source(env):
     _demo_action_record(env, bid, "write").write({
         "award_opening_id": opening.id,
         "award_source_kind": "award_notice",
-        "award_source_reference": "S86-DEMO-AWARD-NOTICE-001",
+        "award_source_reference": "AWARD-2026-001",
     })
 
 
@@ -1296,11 +1292,11 @@ def _ensure_s86_rental_settlement_payment(env) -> None:
                     "currency_id": settlement.currency_id.id,
                     "amount": amount,
                     "date_request": "2025-07-12",
-                    "actual_payee_unit": "德阳某某周转材料租赁有限公司（示例）",
-                    "payment_account_name": "德阳某某周转材料租赁有限公司（示例）",
-                    "payment_bank_name": "中国银行德阳示范支行",
-                    "payment_account_no": "DEMO-ACCOUNT-RENTAL-086",
-                    "note": "S86 周转材料租赁费支付申请。",
+                    "actual_payee_unit": "德阳恒通周转材料租赁有限公司",
+                    "payment_account_name": "德阳恒通周转材料租赁有限公司",
+                    "payment_bank_name": "中国银行德阳分行",
+                    "payment_account_no": "6222021000000090",
+                    "note": "周转材料租赁费支付申请。",
                 }
             )
         )
@@ -1344,8 +1340,8 @@ def _ensure_s86_rental_settlement_payment(env) -> None:
                     "receipt_account_name": request.payment_account_name,
                     "receipt_bank_name": request.payment_bank_name,
                     "receipt_account_no": request.payment_account_no,
-                    "handler_name": "测试-财务经办",
-                    "note": "S86 周转材料租赁费付款登记样例。",
+                    "handler_name": "王秀兰",
+                    "note": "周转材料租赁费付款登记。",
                 }
             )
         )
@@ -1384,7 +1380,7 @@ def _ensure_s69_payment_ledger(env) -> None:
             "source_kind": "actual_outflow",
             "payment_method": "银行转账",
             "date_payment": "2025-08-24",
-            "document_no": "S69-PAY-LEDGER-001",
+            "document_no": "PAY-2025-0001",
             "planned_amount": request.amount,
             "paid_amount": request.amount,
             "invoice_amount": request.amount,
@@ -1392,8 +1388,8 @@ def _ensure_s69_payment_ledger(env) -> None:
             "receipt_account_name": request.payment_account_name,
             "receipt_bank_name": request.payment_bank_name,
             "receipt_account_no": request.payment_account_no,
-            "handler_name": "Demo-财务经办",
-            "note": "S69 支付台账样例。",
+            "handler_name": "王秀兰",
+            "note": "工程款支付登记。",
         })
     if execution.state == "draft":
         _demo_action_record(env, execution, "action_confirm").action_confirm()
@@ -1410,7 +1406,7 @@ def _ensure_s69_payment_ledger(env) -> None:
 def _ensure_s78_project_document_wbs(env) -> None:
     """Keep XML-loaded S78 WBS levels and document attachment relations stable."""
     wbs_records = env["construction.work.breakdown"].sudo().search(
-        [("code", "in", ("S78-SINGLE", "S78-UNIT", "S78-SUBDIV", "S78-INSP-001"))],
+        [("code", "in", ("SINGLE", "UNIT", "SUBDIV", "INSP-001"))],
         order="id",
     )
     if wbs_records:
@@ -1449,6 +1445,7 @@ def load_all(env, mode: str = "update") -> None:
             apply_passwords=False,
         )
     apply_demo_user_passwords(env)
+    env["demo.locale.normalize"].sudo().run()
     env.cr.commit()
 
 
@@ -1472,23 +1469,4 @@ def load_release_seed(env, mode: str = "update") -> None:
             apply_passwords=False,
         )
     apply_demo_user_passwords(env)
-    env.cr.commit()
-
-
-def _reset_s50_repairable_records(env) -> None:
-    """Replay S50 from its intended bad seed without mutating guarded fields."""
-    for xmlid in (
-        "smart_construction_demo.sc_demo_payment_050_001",
-        "smart_construction_demo.sc_demo_settlement_line_050_001",
-        "smart_construction_demo.sc_demo_settlement_050_001",
-    ):
-        model_name, res_id = env["ir.model.data"]._xmlid_to_res_model_res_id(
-            xmlid,
-            raise_if_not_found=False,
-        )
-        if not model_name or not res_id:
-            continue
-        record = env[model_name].sudo().browse(res_id).exists()
-        if record:
-            record.with_context(allow_transition=True, allow_contract_change=True).unlink()
     env.cr.commit()

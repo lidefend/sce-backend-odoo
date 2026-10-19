@@ -3,7 +3,7 @@
   <data noupdate="1">
 
     <record id="sc_demo_stage_requirement_072_funding" model="sc.project.stage.requirement.item">
-      <field name="name">S72 在建阶段资金基线已配置</field>
+      <field name="name">在建阶段资金基线已配置</field>
       <field name="active">True</field>
       <field name="sequence">72</field>
       <field name="lifecycle_state">in_progress</field>
@@ -13,7 +13,7 @@
     </record>
 
     <record id="sc_demo_stage_requirement_072_progress" model="sc.project.stage.requirement.item">
-      <field name="name">S72 在建阶段进度计量已登记</field>
+      <field name="name">在建阶段进度计量已登记</field>
       <field name="active">True</field>
       <field name="sequence">73</field>
       <field name="lifecycle_state">in_progress</field>
@@ -23,7 +23,7 @@
     </record>
 
     <record id="sc_demo_next_action_rule_072_payment" model="sc.project.next_action.rule">
-      <field name="name">S72 复核待付款申请</field>
+      <field name="name">复核待付款申请</field>
       <field name="active">True</field>
       <field name="sequence">72</field>
       <field name="lifecycle_state">in_progress</field>
@@ -34,7 +34,7 @@
     </record>
 
     <record id="sc_demo_next_action_rule_072_cost" model="sc.project.next_action.rule">
-      <field name="name">S72 查看成本台账</field>
+      <field name="name">查看成本台账</field>
       <field name="active">True</field>
       <field name="sequence">73</field>
       <field name="lifecycle_state">in_progress</field>
@@ -48,7 +48,7 @@
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_065_cost_funding"/>
       <field name="user_id" ref="base.user_admin"/>
       <field name="source">manual</field>
-      <field name="note">S72 Demo 正式项目成员授权。</field>
+      <field name="note">正式项目成员授权。</field>
       <field name="active">True</field>
     </record>
 

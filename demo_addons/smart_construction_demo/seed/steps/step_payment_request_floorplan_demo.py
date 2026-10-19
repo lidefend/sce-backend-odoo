@@ -8,9 +8,9 @@ from ..business_roles import business_model, prepare_project
 from ...tools.scenario_loader import _demo_action_record, _DEMO_APPROVAL_ACTORS
 
 
-FIXTURE_NAME = "DEMO-PR-FLOORPLAN-001"
+FIXTURE_NAME = "PRQ-2026-001"
 FIXTURE_XMLID = "smart_construction_demo.payment_request_floorplan_demo_record"
-FIXTURE_ATTACHMENT_NAME = "DEMO-PR-FLOORPLAN-M2M.txt"
+FIXTURE_ATTACHMENT_NAME = "付款申请附件清单.txt"
 FIXTURE_ATTACHMENT_XMLID = "smart_construction_demo.payment_request_floorplan_demo_attachment"
 
 
@@ -111,11 +111,11 @@ def _guidance_fixture(env):
     source = env.ref("smart_construction_demo.sc_demo_contract_in_069_payment")
     prepare_project(env, source.project_id)
     partner = owned("payment_guidance_demo_partner", "res.partner", lambda: env["res.partner"].sudo().create({
-        "name": "DEMO-GUIDANCE-专属风险往来单位", "sc_blacklisted": True,
-        "sc_blacklist_level": "blocked", "sc_blacklist_reason": "演示风险：请核实本次交易后继续。",
+        "name": "德阳华远贸易有限公司", "sc_blacklisted": True,
+        "sc_blacklist_level": "blocked", "sc_blacklist_reason": "风险提示：请核实本次交易后继续。",
     }))
     contract = owned("payment_guidance_demo_contract", "construction.contract", lambda: business_model(env, "construction.contract").create({
-        "partner_id": partner.id, "subject": "DEMO-GUIDANCE-专属验收合同",
+        "partner_id": partner.id, "subject": "德阳华远贸易有限公司材料采购合同",
         "type": source.type, "project_id": source.project_id.id,
         "company_id": source.company_id.id, "currency_id": source.currency_id.id,
         "tax_id": source.tax_id.id,
@@ -133,10 +133,10 @@ def _guidance_fixture(env):
     if len(baseline) != 1:
         raise RuntimeError("guidance fixture requires one active normalized baseline")
     record = owned("payment_guidance_demo_record", "payment.request", lambda: business_model(env, "payment.request").create({
-        "name": "DEMO-PR-GUIDANCE-001", "type": "pay", "project_id": contract.project_id.id,
+        "name": "PRQ-2026-G01", "type": "pay", "project_id": contract.project_id.id,
         "contract_id": contract.id, "partner_id": partner.id, "amount": 100.0,
         "date_request": baseline.period_start, "payment_account_name": partner.name,
-        "payment_bank_name": "演示银行", "payment_account_no": "DEMO-GUIDANCE-ONLY",
+        "payment_bank_name": "中国建设银行德阳分行", "payment_account_no": "DEMO-GUIDANCE-ONLY",
     }))
     if record.state != "draft" or record.partner_id != partner or record.contract_id != contract:
         raise RuntimeError("guidance fixture identity/state changed; refuse to overwrite")
@@ -226,16 +226,16 @@ def run(env):
             "partner_id": contract.partner_id.id,
             "amount": 10000.0,
             "date_request": funding_baseline.period_start,
-            "payment_account_name": "演示收款单位结算账户",
-            "payment_bank_name": "演示建设银行",
+            "payment_account_name": "德阳市城市某某建设投资集团有限公司结算账户",
+            "payment_bank_name": "中国建设银行德阳分行",
             "payment_account_no": "DEMO-PAYEE-0001",
-            "payer_unit": "演示付款单位基本户",
+            "payer_unit": "德阳建科建材有限公司基本户",
             # The request owns the immutable payer/payee account snapshot that a
             # payment execution inherits verbatim (``_payment_request_values``).
             # The payer side lives on the legacy_* carriers, so an incomplete
             # snapshot would force the finance operator to retype the payer
             # account on every 实付登记 create form.
-            "legacy_payment_account_name": "演示付款单位基本户",
+            "legacy_payment_account_name": "德阳建科建材有限公司基本户",
             "legacy_payment_account_no": "DEMO-PAYER-0001",
             "note": "受管付款申请黄金页面提交闭环 fixture",
         }

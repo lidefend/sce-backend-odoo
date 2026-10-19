@@ -10,7 +10,7 @@
       <field name="invoice_date">2025-09-10</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="invoice_line_ids" eval="[(0, 0, {
-        'name': 'S10 合同进度款（第一期）',
+        'name': '合同进度款（第一期）',
         'account_id': ref('sc_demo_account_revenue'),
         'project_id': ref('smart_construction_demo.sc_demo_project_001'),
         'quantity': 1.0,
@@ -26,7 +26,7 @@
       <field name="invoice_date">2025-10-05</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="invoice_line_ids" eval="[(0, 0, {
-        'name': 'S10 合同进度款（第二期）',
+        'name': '合同进度款（第二期）',
         'account_id': ref('sc_demo_account_revenue'),
         'project_id': ref('smart_construction_demo.sc_demo_project_001'),
         'quantity': 1.0,

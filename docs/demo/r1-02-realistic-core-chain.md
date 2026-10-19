@@ -18,7 +18,7 @@
 
 以下企业/人员/项目名称为系统合成的虚构演示数据，不对应任何真实企业或个人：
 
-- 自身演示公司：Demo演示公司（所有者既定演示身份，沿用）。
+- 自身租户公司：四川智汇某某建设集团有限公司（正式 Demo 标准租户身份）。
 - 业主/客户：德阳市高新智造产业投资有限公司（虚构）。
 - 商砼供应商：德阳蜀新商砼有限公司（虚构）。
 - 钢材供应商：德阳蓉钢供应链有限公司（虚构）。
@@ -42,8 +42,8 @@
    （结算金额 5,000,000.00，两条明细 3,000,000.00 + 2,000,000.00，draft）。
 5. 财务 fin1：依据结算单发起收款申请 sc_demo_payment_020_001，并通过
    settlement_id 回链结算单。
-6. s30 工作流样本 sc_demo_settlement_030_001（1,000,000.00）与
-   sc_demo_settlement_030_bad_001（0.00，保留 draft 供门禁验证）。
+6. s30 工作流样本 sc_demo_settlement_030_001（1,000,000.00），条件完整并保持 draft，
+   等待业务按正式流程推进。
 
 上述记录全部保持模型默认 draft，真实办理由后续 R1-03 通过正式 action +
 真实审批 tier 推进；禁止直接写 state。
@@ -75,7 +75,6 @@ addons/smart_construction_core/models/core/payment_request.py:1993）与 settlem
 | sc_demo_settlement_020_001（结算单） | name/title/project/contract/partner/currency/settlement_type/settlement_amount/period_start/period_end/date_settlement/document_date/entry_user_id/description | entry_user_id=结算办理角色 | 结算期间 2025-03-01→03-31，结算日 2025-03-31 | 两条明细 3,000,000.00 + 2,000,000.00 | 申报/审定/付款日期与金额尚未发生不填；附件不伪造 |
 | sc_demo_payment_020_001（收款申请，结算依据） | type/project/contract/settlement/partner/currency/amount/date_request/note | 同上，真实办理 fin1 | date_request 2025-04-01 | settlement_id 回链结算单（draft 准备数据） | 提交前置=结算单 approve/done（§2.1）；附件不伪造 |
 | sc_demo_settlement_030_001（结算单） | 同 020 + period/entry_user | entry_user_id=结算办理角色 | 结算期间 2025-04-01→04-05 | 一条明细 1,000,000.00 | 同 020 未填理由 |
-| sc_demo_settlement_030_bad_001（门禁样本） | name/project/contract/partner/currency/settlement_type/settlement_amount=0 | 无（故意不完整门禁样本） | 无（故意） | 无明细/无付款关联 | 故意保留不完整，供门禁验证，不补值 |
 | sc_demo_pay_req_030_001（收款申请，结算依据） | type/project/contract/partner/currency/amount/date_request/settlement/note | 同上 | date_request 2025-04-06 | settlement_id 回链（draft 准备数据） | 提交前置=结算单 approve/done（§2.1） |
 
 公司/人员/项目名称均为合成虚构（§1）。附件一律不伪造：本批无 ir.attachment 记录，相关

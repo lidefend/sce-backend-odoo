@@ -14,7 +14,7 @@ payment_env = env["payment.request"].with_user(user).with_company(user.company_i
     active_test=False,
 )
 request = payment_env.browse(request.id).exists()
-if not request or request.state != "draft" or not str(request.name or "").startswith("DEMO-PR-FLOORPLAN-"):
+if not request or request.state != "draft" or not str(request.name or "").startswith("PRQ-2026-"):
     raise RuntimeError("governed payment attachment M2M fixture is missing or not draft")
 request.check_access_rights("read")
 request.check_access_rights("write")
@@ -26,7 +26,7 @@ attachment_env = env["ir.attachment"].with_user(user).with_company(user.company_
     active_test=False,
 )
 attachment = attachment_env.browse(attachment.id).exists()
-if not attachment or attachment.name != "DEMO-PR-FLOORPLAN-M2M.txt":
+if not attachment or attachment.name != "付款申请附件清单.txt":
     raise RuntimeError("governed payment attachment object is missing")
 attachment.check_access_rights("read")
 attachment.check_access_rule("read")

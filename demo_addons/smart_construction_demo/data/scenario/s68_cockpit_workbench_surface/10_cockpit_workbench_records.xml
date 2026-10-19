@@ -3,7 +3,7 @@
   <data noupdate="1">
 
     <record id="sc_demo_dashboard_fact_068_fund" model="sc.dashboard.cockpit.fact">
-      <field name="name">S68 资金驾驶舱-合同回款指标</field>
+      <field name="name">资金驾驶舱-合同回款指标</field>
       <field name="fact_type">fund_cockpit</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
@@ -20,12 +20,12 @@
       <field name="metric_value">5000000.0</field>
       <field name="source_model">payment.request</field>
       <field name="source_res_id" eval="ref('smart_construction_demo.sc_demo_pay_req_010_001')"/>
-      <field name="description">S68 驾驶舱资金指标样例，来源于 S10 收款申请。</field>
+      <field name="description">驾驶舱资金指标，来源于收款申请。</field>
       <field name="result_note">用于项目资金驾驶舱表单打开和聚合展示。</field>
     </record>
 
     <record id="sc_demo_dashboard_fact_068_cost" model="sc.dashboard.cockpit.fact">
-      <field name="name">S68 成本驾驶舱-预算控制指标</field>
+      <field name="name">成本驾驶舱-预算控制指标</field>
       <field name="fact_type">cost_cockpit</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_065_cost_funding"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
@@ -42,12 +42,12 @@
       <field name="metric_value">218400.0</field>
       <field name="source_model">project.cost.ledger</field>
       <field name="source_res_id" eval="ref('smart_construction_demo.sc_demo_cost_ledger_065_rebar')"/>
-      <field name="description">S68 驾驶舱成本指标样例，来源于 S65 成本台账。</field>
+      <field name="description">驾驶舱成本指标，来源于成本台账。</field>
       <field name="result_note">用于项目成本驾驶舱表单打开和聚合展示。</field>
     </record>
 
     <record id="sc_demo_workbench_item_068_todo" model="sc.workbench.item">
-      <field name="name">S68 我的待办-处理合同回款申请</field>
+      <field name="name">我的待办-处理合同回款申请</field>
       <field name="fact_type">my_todo</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
@@ -60,12 +60,12 @@
       <field name="source_res_id" eval="ref('smart_construction_demo.sc_demo_pay_req_010_001')"/>
       <field name="priority">high</field>
       <field name="todo_deadline">2025-08-27</field>
-      <field name="description">S68 工作台待办样例，定位到 S10 收款申请。</field>
+      <field name="description">工作台待办，定位到收款申请。</field>
       <field name="result_note">用于我的待办列表和表单打开。</field>
     </record>
 
     <record id="sc_demo_workbench_item_068_approval" model="sc.workbench.item">
-      <field name="name">S68 我的审批-结算单确认</field>
+      <field name="name">我的审批-结算单确认</field>
       <field name="fact_type">my_approval</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
@@ -79,12 +79,12 @@
       <field name="source_res_id" eval="ref('smart_construction_demo.sc_demo_settlement_020_001')"/>
       <field name="priority">urgent</field>
       <field name="todo_deadline">2025-08-28</field>
-      <field name="description">S68 工作台审批样例，定位到 S20 结算单。</field>
+      <field name="description">工作台审批，定位到结算单。</field>
       <field name="result_note">用于我的审批列表和表单打开。</field>
     </record>
 
     <record id="sc_demo_workbench_item_068_recent" model="sc.workbench.item">
-      <field name="name">S68 最近访问-成本台账复核</field>
+      <field name="name">最近访问-成本台账复核</field>
       <field name="fact_type">recent_visit</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_065_cost_funding"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
@@ -97,7 +97,7 @@
       <field name="source_res_id" eval="ref('smart_construction_demo.sc_demo_cost_ledger_065_rebar')"/>
       <field name="priority">normal</field>
       <field name="todo_deadline">2025-08-29</field>
-      <field name="description">S68 最近访问样例，定位到 S65 成本台账。</field>
+      <field name="description">最近访问，定位到成本台账。</field>
       <field name="result_note">用于最近访问列表和表单打开。</field>
     </record>
 

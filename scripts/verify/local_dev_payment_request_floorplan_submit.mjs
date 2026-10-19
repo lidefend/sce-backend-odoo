@@ -1413,7 +1413,7 @@ try {
     fieldName: 'project_id',
     relationModel: 'project.project',
     query: 'S69',
-    expectedLabel: 'S69 支付台账演示项目',
+    expectedLabel: 'S69 支付台账项目',
   });
   await chooseUniqueRelationOption(page, createSurface, {
     fieldName: 'partner_id',

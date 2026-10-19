@@ -1,0 +1,26 @@
+schema_version: 1
+goal:
+  id: DEMO-ORG-MASTER-20261019
+  title: Demo 组织主数据（部门/岗位/人员档案）按完整使用路径重建
+  status: active
+  formal_product_layer: P4
+  layer_target: demo_addons/smart_construction_demo 基础设施种子
+  module: [smart_construction_demo]
+  objective: >-
+    按用户完整使用系统的路径重建 Demo 组织事实：完整部门树（保留既有
+    smart_construction_demo.sc_demo_department_001 XMLID）、岗位、以及登录账号到
+    hr.employee 的人员档案映射。组织数据只承载身份与组织事实，不写业务角色、
+    项目数据范围、允许公司等权限语义。重建路径必须可重复，模块升级/重新入住后
+    不复发为单部门、零岗位、零员工。
+  baseline:
+    branch: feature/demo-r1-realistic-data-20261019
+    full_sha: 7cada7699c5340bc85c40d735fba60cee1b22965
+  constraints:
+    - 只改 demo_addons/smart_construction_demo 的种子/测试与 docs/demo、本任务 .agent 元数据
+    - 不写 res.users 权限字段（sc_user_role_group_ids / sc_user_permission_group_ids / sc_project_member_assignment_ids / company_ids）
+    - 不修改 smart_construction_core 产品视图与模型
+    - 保留 sc_demo_department_001 及其现有业务引用；新增部门一律带 XMLID 与 parent_id
+    - 不用 SQL 直接改库；走模块 XML + 受管 seed/升级路径
+    - 不改 .agent/active-runs.json（由调度者维护）；不 commit、不 push、不部署
+  next_exact_step: 调度者执行受管 release_seed + profile replay 后只读回读部门树/岗位/员工数量与
+    主业务账号的 user_id/name/work_email/department/job 映射；能力与 fixture 账号不得进入组织树。

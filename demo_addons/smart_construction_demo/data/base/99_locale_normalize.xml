@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- 数据文件以 en_US 上下文加载，中文标签会落在 en_US 键。此处在全部
+             基线数据加载后补齐缺失的 zh_CN 键，且不覆盖已有翻译。 -->
+        <function model="demo.locale.normalize" name="run"/>
+    </data>
+</odoo>

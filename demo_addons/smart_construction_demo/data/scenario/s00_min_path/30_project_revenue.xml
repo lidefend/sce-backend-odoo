@@ -4,7 +4,7 @@
 
         <!-- 会计科目与销售日记账（demo 用，驱动收入统计） -->
         <record id="sc_demo_account_receivable" model="account.account">
-            <field name="name">DEMO 应收账款</field>
+            <field name="name">应收账款</field>
             <field name="code">131880</field>
             <field name="account_type">asset_receivable</field>
             <field name="reconcile">True</field>
@@ -12,7 +12,7 @@
         </record>
 
         <record id="sc_demo_account_revenue" model="account.account">
-            <field name="name">DEMO 工程收入</field>
+            <field name="name">工程收入</field>
             <field name="code">601880</field>
             <field name="account_type">income</field>
             <field name="internal_group">income</field>
@@ -20,7 +20,7 @@
         </record>
 
         <record id="sc_demo_journal_sale" model="account.journal">
-            <field name="name">Demo Construction Sales</field>
+        <field name="name">工程施工销售</field>
             <field name="code">DCS</field>
             <field name="type">sale</field>
             <field name="company_id" ref="base.main_company"/>
@@ -29,7 +29,7 @@
 
         <!-- 德阳项目发票：两期进度计量 -->
         <record id="sc_demo_invoice_progress" model="account.move">
-            <field name="name">SC-DEMO-INV-001</field>
+            <field name="name">INV-2025-0001</field>
             <field name="move_type">out_invoice</field>
             <field name="journal_id" ref="sc_demo_journal_sale"/>
             <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
@@ -45,7 +45,7 @@
         </record>
 
         <record id="sc_demo_invoice_progress_2" model="account.move">
-            <field name="name">SC-DEMO-INV-002</field>
+            <field name="name">INV-2025-0002</field>
             <field name="move_type">out_invoice</field>
             <field name="journal_id" ref="sc_demo_journal_sale"/>
             <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>

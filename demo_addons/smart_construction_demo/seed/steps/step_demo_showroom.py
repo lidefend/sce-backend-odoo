@@ -5,21 +5,7 @@ from odoo.exceptions import UserError
 from ..registry import SeedStep, register
 from ..business_roles import business_model, project_actor, prepare_project, ensure_manual_boq_analysis
 from ..tier_flow import advance_settlement, ensure_project_initiation_approved
-
-
-SHOWROOM_PROJECTS = [
-    {"name": "展厅-智能制造示范项目", "state": "in_progress", "with_chain": True},
-    {"name": "展厅-市政工程样板段", "state": "closing", "with_chain": True},
-    {"name": "展厅-工业园区建设一期", "state": "warranty", "with_chain": True},
-    {"name": "展厅-绿色建材基地", "state": "in_progress", "with_chain": True},
-    {"name": "展厅-智慧园区运营中心", "state": "in_progress", "with_chain": False},
-    {"name": "展厅-产线升级改造工程", "state": "done", "with_chain": False},
-    {"name": "展厅-城市更新综合体", "state": "closing", "with_chain": False},
-    {"name": "展厅-科技研发中心", "state": "warranty", "with_chain": False},
-    {"name": "展厅-海绵城市示范区", "state": "done", "with_chain": False},
-    {"name": "展厅-装配式住宅试点", "state": "in_progress", "with_chain": False},
-    {"name": "展厅-停工整改样板", "state": "paused", "with_chain": False},
-]
+from ..showroom_catalog import SHOWROOM_PROJECTS
 
 
 def _complete_settlement(settlement):
@@ -48,11 +34,11 @@ def _ensure_boq(env, project, idx):
     if not version:
         version = Version.create(
             {
-                "name": "展厅合同清单 V1",
+                "name": "施工合同清单 V1",
                 "code": "SHOWROOM-V1",
                 "project_id": project.id,
                 "source_type": "contract",
-                "note": "产品 Demo 展厅的可重放清单版本。",
+                "note": "施工合同清单版本。",
             }
         )
     uom_unit = env.ref("uom.product_uom_unit")
@@ -120,7 +106,7 @@ def _ensure_project_prereqs(env, project):
     if not project.owner_id:
         partner = env.ref("smart_construction_demo.seed_partner_contract", raise_if_not_found=False)
         if not partner:
-            partner = env["res.partner"].sudo().create({"name": "Demo-业主单位"})
+            partner = env["res.partner"].sudo().create({"name": "德阳市城市某某建设投资集团有限公司"})
         vals["owner_id"] = partner.id
         if not project.partner_id:
             vals["partner_id"] = partner.id
@@ -140,14 +126,14 @@ def _ensure_purchase_order(env, settlement):
 def _ensure_contract_chain(env, project, idx):
     partner = env.ref("smart_construction_demo.seed_partner_contract", raise_if_not_found=False)
     if not partner:
-        partner = env["res.partner"].sudo().create({"name": "Demo-合同相对方"})
+        partner = env["res.partner"].sudo().create({"name": "德阳建科建材有限公司"})
 
     Contract = business_model(env, "construction.contract")
     tax = env.ref("smart_construction_seed.tax_purchase_13", raise_if_not_found=False)
     if not tax:
         tax = Contract._get_default_tax("in")
 
-    subject = f"展厅合同-支出-{idx:02d}"
+    subject = f"{project.name}-专业分包合同-{idx:02d}"
     contract = Contract.search(
         [("subject", "=", subject), ("project_id", "=", project.id)],
         limit=1,
@@ -176,14 +162,14 @@ def _ensure_contract_chain(env, project, idx):
                 "contract_id": contract.id,
                 "partner_id": partner.id,
                 "settlement_type": "out",
-                "note": "seed:demo_showroom",
+                "note": "按合同约定节点结算。",
             }
         )
     if not settlement.line_ids:
         Line.create(
             {
                 "settlement_id": settlement.id,
-                "name": "展厅-结算行",
+                "name": "工程结算款",
                 "qty": 1.0,
                 "price_unit": 100.0,
             }
@@ -204,7 +190,7 @@ def _ensure_contract_chain(env, project, idx):
                 "settlement_id": settlement.id,
                 "partner_id": partner.id,
                 "amount": 50.0,
-                "note": "seed:demo_showroom",
+                "note": "按合同节点付款。",
             }
         )
 

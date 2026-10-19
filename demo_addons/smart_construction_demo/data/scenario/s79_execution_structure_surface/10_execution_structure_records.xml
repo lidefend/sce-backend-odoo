@@ -3,16 +3,16 @@
   <data noupdate="1">
 
     <record id="sc_demo_location_079_site" model="construction.location.breakdown">
-      <field name="name">S79 园区扩建场区</field>
-      <field name="code">S79-SITE</field>
+      <field name="name">园区扩建场区</field>
+      <field name="code">SITE</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="location_type">site</field>
       <field name="sequence">7910</field>
     </record>
 
     <record id="sc_demo_location_079_building" model="construction.location.breakdown">
-      <field name="name">S79 消防站单体</field>
-      <field name="code">S79-BUILDING</field>
+      <field name="name">消防站单体</field>
+      <field name="code">BUILDING</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="parent_id" ref="smart_construction_demo.sc_demo_location_079_site"/>
       <field name="location_type">building</field>
@@ -20,8 +20,8 @@
     </record>
 
     <record id="sc_demo_location_079_zone" model="construction.location.breakdown">
-      <field name="name">S79 消防给水施工区域</field>
-      <field name="code">S79-FIRE-ZONE</field>
+      <field name="name">消防给水施工区域</field>
+      <field name="code">FIRE-ZONE</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="parent_id" ref="smart_construction_demo.sc_demo_location_079_building"/>
       <field name="location_type">zone</field>
@@ -29,8 +29,8 @@
     </record>
 
     <record id="sc_demo_contract_section_079_fire" model="construction.contract.section">
-      <field name="name">S79 消防安装标段</field>
-      <field name="code">S79-SECTION-FIRE</field>
+      <field name="name">消防安装标段</field>
+      <field name="code">SECTION-FIRE</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="sequence">7940</field>
     </record>
@@ -48,8 +48,8 @@
       <field name="version_id" ref="smart_construction_demo.sc_demo_boq_version_contract_v1"/>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="sequence">790</field>
-      <field name="code">S79-BOQ-FIRE-PIPE</field>
-      <field name="name">S79 消防主管安装</field>
+      <field name="code">BOQ-FIRE-PIPE</field>
+      <field name="name">消防主管安装</field>
       <field name="spec">DN100 镀锌钢管，含支吊架安装和压力试验</field>
       <field name="uom_id" ref="uom.product_uom_meter"/>
       <field name="quantity">320.0</field>
@@ -59,12 +59,12 @@
       <field name="category">subitem</field>
       <field name="boq_category">boq</field>
       <field name="line_type">item</field>
-      <field name="single_name">S79 园区扩建单项工程</field>
-      <field name="unit_name">S79 机电安装单位工程</field>
-      <field name="division_name">S79 消防给水分部工程</field>
+      <field name="single_name">园区扩建单项工程</field>
+      <field name="unit_name">机电安装单位工程</field>
+      <field name="division_name">消防给水分部工程</field>
       <field name="major_name">安装工程</field>
       <field name="section_type">installation</field>
-      <field name="remark">S79 执行结构清单归属样例。</field>
+      <field name="remark">执行结构清单归属。</field>
     </record>
 
     <record id="sc_demo_boq_allocation_079_fire_pipe" model="project.boq.allocation">

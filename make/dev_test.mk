@@ -2991,6 +2991,7 @@ verify.platform.database.lifecycle.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_platform_database_lifecycle_entry.py
 
 verify.demo.lifecycle.unit: guard.prod.forbid
+	@python3 demo_addons/smart_construction_demo/tests/test_demo_organization_baseline.py
 	@python3 demo_addons/smart_construction_demo/tests/test_demo_funding_baseline_lifecycle.py
 	@python3 demo_addons/smart_construction_demo/tests/test_demo_boq_import_batch.py
 	@python3 demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py

@@ -20,7 +20,7 @@ request = env.ref(
 )
 if request:
     request = payment_env.browse(request.id).exists()
-if not request or not str(request.name or "").startswith("DEMO-PR-FLOORPLAN-") or request.state != "draft":
+if not request or not str(request.name or "").startswith("PRQ-2026-") or request.state != "draft":
     raise RuntimeError("governed settlement-introduction payment fixture is missing or not draft")
 request.check_access_rights("read")
 request.check_access_rule("read")

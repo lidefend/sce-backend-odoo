@@ -105,8 +105,14 @@ fi
 # Prefer the system curl because some managed developer environments expose a
 # reduced curl-compatible wrapper that does not implement --write-out/-w.
 CURL_BIN="${CURL_BIN:-/usr/bin/curl}"
-http_code="$("${CURL_BIN}" -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${NGINX_PORT}/" || true)"
+# The unified entry contract exposes the default tenant at /t/<namespace>/;
+# the bare root is a permanent redirect there, so follow it before judging.
+http_code="$("${CURL_BIN}" -sS -L -o /dev/null -w '%{http_code}' "http://127.0.0.1:${NGINX_PORT}/" || true)"
 check_equal frontend_http "${http_code}" 200
+if [[ "${profile}" == "persistent" ]]; then
+  demo_entry_code="$("${CURL_BIN}" -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${NGINX_PORT}/t/demo/" || true)"
+  check_equal frontend_demo_entry "${demo_entry_code}" 200
+fi
 
 if [[ "${fail}" != "0" ]]; then
   exit 1

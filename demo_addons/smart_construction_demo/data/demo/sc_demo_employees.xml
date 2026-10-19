@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- 主业务账号的人员档案。
+             加载顺序必须在 sc_demo_users.xml、role_matrix_demo_users.xml、
+             13_departments_tree.xml、14_jobs.xml 之后；只写身份与组织事实
+             （姓名、账号、公司、部门、岗位、工作邮箱），不写任何权限语义字段。
+             能力测试账号、fixture_role_* 与 svc_e2e_smoke 不进入业务组织树。 -->
+        <record id="sc_demo_employee_pm1" model="hr.employee">
+            <field name="name">张建国</field>
+            <field name="user_id" ref="smart_construction_demo.user_sc_pm_01"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="department_id" ref="smart_construction_demo.sc_demo_department_project"/>
+            <field name="job_id" ref="smart_construction_demo.sc_demo_job_project_manager"/>
+            <field name="work_email">zhangjianguo@zhihui-construction.cn</field>
+        </record>
+
+        <record id="sc_demo_employee_ct1" model="hr.employee">
+            <field name="name">李慧敏</field>
+            <field name="user_id" ref="smart_construction_demo.user_sc_contract_01"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="department_id" ref="smart_construction_demo.sc_demo_department_contract"/>
+            <field name="job_id" ref="smart_construction_demo.sc_demo_job_contract_administrator"/>
+            <field name="work_email">lihuimin@zhihui-construction.cn</field>
+        </record>
+
+        <record id="sc_demo_employee_fin1" model="hr.employee">
+            <field name="name">王秀兰</field>
+            <field name="user_id" ref="smart_construction_demo.user_sc_fin_01"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="department_id" ref="smart_construction_demo.sc_demo_department_finance"/>
+            <field name="job_id" ref="smart_construction_demo.sc_demo_job_cashier"/>
+            <field name="work_email">wangxiulan@zhihui-construction.cn</field>
+        </record>
+
+        <record id="sc_demo_employee_fin_mgr" model="hr.employee">
+            <field name="name">陈志强</field>
+            <field name="user_id" ref="smart_construction_demo.user_sc_fin_mgr_01"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="department_id" ref="smart_construction_demo.sc_demo_department_finance"/>
+            <field name="job_id" ref="smart_construction_demo.sc_demo_job_finance_manager"/>
+            <field name="work_email">chenzhiqiang@zhihui-construction.cn</field>
+        </record>
+
+        <record id="sc_demo_employee_cost1" model="hr.employee">
+            <field name="name">刘晓东</field>
+            <field name="user_id" ref="smart_construction_demo.user_sc_cost_01"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="department_id" ref="smart_construction_demo.sc_demo_department_cost"/>
+            <field name="job_id" ref="smart_construction_demo.sc_demo_job_cost_engineer"/>
+            <field name="work_email">liuxiaodong@zhihui-construction.cn</field>
+        </record>
+
+        <record id="sc_demo_employee_mat1" model="hr.employee">
+            <field name="name">赵鹏</field>
+            <field name="user_id" ref="smart_construction_demo.user_sc_material_01"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="department_id" ref="smart_construction_demo.sc_demo_department_material"/>
+            <field name="job_id" ref="smart_construction_demo.sc_demo_job_material_clerk"/>
+            <field name="work_email">zhaopeng@zhihui-construction.cn</field>
+        </record>
+
+        <record id="sc_demo_employee_mat_mgr" model="hr.employee">
+            <field name="name">孙立军</field>
+            <field name="user_id" ref="smart_construction_demo.user_sc_material_mgr_01"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="department_id" ref="smart_construction_demo.sc_demo_department_material"/>
+            <field name="job_id" ref="smart_construction_demo.sc_demo_job_material_manager"/>
+            <field name="work_email">sunlijun@zhihui-construction.cn</field>
+        </record>
+
+        <record id="sc_demo_employee_pur1" model="hr.employee">
+            <field name="name">周文静</field>
+            <field name="user_id" ref="smart_construction_demo.user_sc_purchase_01"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="department_id" ref="smart_construction_demo.sc_demo_department_purchase"/>
+            <field name="job_id" ref="smart_construction_demo.sc_demo_job_purchaser"/>
+            <field name="work_email">zhouwenjing@zhihui-construction.cn</field>
+        </record>
+
+        <record id="sc_demo_employee_demo_role_owner" model="hr.employee">
+            <field name="name">高建华</field>
+            <field name="user_id" ref="smart_construction_demo.user_demo_role_owner"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="department_id" ref="smart_construction_demo.sc_demo_department_gm"/>
+            <field name="job_id" ref="smart_construction_demo.sc_demo_job_general_manager"/>
+            <field name="work_email">gaojianhua@zhihui-construction.cn</field>
+        </record>
+
+        <record id="sc_demo_employee_demo_role_executive" model="hr.employee">
+            <field name="name">何明远</field>
+            <field name="user_id" ref="smart_construction_demo.user_demo_role_executive"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="department_id" ref="smart_construction_demo.sc_demo_department_gm"/>
+            <field name="job_id" ref="smart_construction_demo.sc_demo_job_management"/>
+            <field name="work_email">hemingyuan@zhihui-construction.cn</field>
+        </record>
+
+        <record id="sc_demo_employee_business_config" model="hr.employee">
+            <field name="name">徐磊</field>
+            <field name="user_id" ref="smart_construction_demo.user_sc_business_config_demo"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="department_id" ref="smart_construction_demo.sc_demo_department_hr"/>
+            <field name="job_id" ref="smart_construction_demo.sc_demo_job_business_config_admin"/>
+            <field name="work_email">xulei@zhihui-construction.cn</field>
+        </record>
+
+        <record id="sc_demo_employee_operation" model="hr.employee">
+            <field name="name">郑雅琴</field>
+            <field name="user_id" ref="smart_construction_demo.user_sc_operation_demo"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="department_id" ref="smart_construction_demo.sc_demo_department_operation"/>
+            <field name="job_id" ref="smart_construction_demo.sc_demo_job_operation_supervisor"/>
+            <field name="work_email">zhengyaqin@zhihui-construction.cn</field>
+        </record>
+
+        <record id="sc_demo_employee_accounting_manager" model="hr.employee">
+            <field name="name">吴海燕</field>
+            <field name="user_id" ref="smart_construction_demo.user_sc_accounting_manager_demo"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="department_id" ref="smart_construction_demo.sc_demo_department_finance"/>
+            <field name="job_id" ref="smart_construction_demo.sc_demo_job_accounting_supervisor"/>
+            <field name="work_email">wuhaiyan@zhihui-construction.cn</field>
+        </record>
+
+    </data>
+</odoo>

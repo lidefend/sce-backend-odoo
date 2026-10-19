@@ -75,3 +75,15 @@ P0 / smart_core / 通用契约装配：kanban.fields 的对象被 _text 转成�
 ### 157bf676 实际回读后的顺序缺口
 
 新候选看板正常且泳道为“草稿”；两页面 kanban widget 已具有有效字段身份和 lifecycle_state / operation_strategy selection。但卡片消费以描述发现顺序作为展示顺序，使经营方式被原有显示数量截断，中文虽已传到前端却未展示，验收判 FAIL。补充通用消费修复：现有字段身份按已发布 listProfile.columns 顺序排列，追加未列入的原生字段；不制造缺失 widget，不改变业务选择项。新增 normalized store 两个反例覆盖顺序及无描述字段不得加入，36 tests 与 typecheck PASS。旧后台投影测试输入未变，复用130 tests及缓存守卫。
+
+## 最终定向页面收口
+
+日常候选 `7cada7699c5340bc85c40d735fba60cee1b22965` 已部署；前端摘要 `2d2a898ebf745de60ef9c1dbe4967d1fbc5e2538ddbea3889ac03057b624a456`。入口66/66通过。既有受管只读账号 fixture_role_config_admin / FE Company A 实测两个项目入口：看板泳道“草稿”、台账及看板卡片“经营方式：公司直营”“项目状态：草稿”；真实契约字段身份合法且选择项存在。无 console/page error、失败响应或被只读保护拒绝的请求。
+
+证据与SHA清单：`.runtime/final-acceptance/daily-deployed/label-root-20261019/`。批次定向验收完成，日常候选部署完成；未主线合并、未重放seed、未升级模块。其他角色/非草稿状态的浏览器矩阵未运行，F01/F04和全量demo数据目标仍开放。当前结果不能代表全系统交付验收。
+
+## 所有者接管调度交接（2026-10-19T06:57:27.295989+00:00）
+
+所有者确认“已经生效”，本轮 F02/F03 效果已获确认，后续由所有者直接调度。本执行器停止派单；supervisor/reporter timer 均 inactive + disabled，service inactive；交接时未观察到本轮 codex exec、部署或浏览器验收进程，未终止用户交互终端。
+
+工作区总交接索引：`/home/lidefend/workspace/.sce-dispatch/HANDOFF-CURRENT.md`。保持产品 HEAD 等于已部署候选；本 run 与本记录的事后收口内容未提交，接任者先保留并核对这两项 dirty。新任务必须注册自己的 goal/run，并替换当前分支映射，不得复用已完成标签任务。主线工作树的 P4 未提交改动独立保留，不得混入产品发布。

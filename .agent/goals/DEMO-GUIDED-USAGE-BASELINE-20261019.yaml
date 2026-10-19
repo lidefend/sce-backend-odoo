@@ -1,0 +1,25 @@
+schema_version: 1
+goal:
+  id: DEMO-GUIDED-USAGE-BASELINE-20261019
+  title: Demo 标准租户引导式业务数据基线
+  status: planned
+  formal_product_layer: P4
+  layer_target: demo_addons/smart_construction_demo 业务数据与正式入口引导面
+  module: [smart_construction_demo]
+  objective: >-
+    Demo 库已是标准平台租户，数据不再只是“有记录”，而要承担引导用户使用系统的职责。
+    按用户完整业务旅程（组织 → 项目 → 合同/成本 → 采购/物资 → 结算/付款 → 财务 →
+    行政/人事 → 经营分析）为每个正式入口准备可理解、可操作、状态真实的业务样例，
+    并明确每条样例覆盖的入口与下一步动作。数据使用真实业务口径命名，不使用 Demo/测试 标记。
+  baseline:
+    branch: feature/demo-r1-realistic-data-20261019
+    full_sha: 7cada7699c5340bc85c40d735fba60cee1b22965
+  constraints:
+    - 先做只读覆盖盘点，再按缺口分批补数；不为凑数创建无业务意义的记录
+    - 组织事实由 DEMO-ORG-MASTER-20261019 提供，本任务不重复创建部门/岗位/员工
+    - 不写权限语义字段；不改变产品契约与前端
+    - 每条新增样例必须绑定正式入口/动作，并在批次记录登记覆盖矩阵
+    - 不 commit/push/部署；由调度者安排受管 seed 与回读
+  next_exact_step: >-
+    在组织主数据落库后，读取正式入口清单与 sc_demo 实库覆盖，产出“入口 → 现有样例 →
+    缺口 → 建议状态”的只读矩阵，再按旅程顺序分批补数。

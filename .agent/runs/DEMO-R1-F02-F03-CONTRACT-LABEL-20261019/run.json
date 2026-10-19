@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "DEMO-R1-F02-F03-CONTRACT-LABEL-20261019",
   "branch": "feature/demo-r1-realistic-data-20261019",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/DEMO-R1-F02-F03-CONTRACT-LABEL-20261019.yaml",
   "record": "docs/demo/r1-03-f02-f03-contract-label.md",
   "baseline_sha": "76aa6705685d60ca00b12184f0e1c8aa64a571a7",
@@ -45,7 +45,7 @@
   "environment": {
     "kind": "runtime",
     "authority": "Owner-authorized existing daily candidate deployment; sc-root, declared platform_control/demo; readonly browser via existing daily environment/credential/lease mechanism",
-    "readback": ".runtime/final-acceptance/daily-deployed/label-20261019/result.json"
+    "readback": ".runtime/final-acceptance/daily-deployed/label-root-20261019/result.json"
   },
   "checks": {
     "frontend_kanban_card_structure": {
@@ -65,10 +65,8 @@
       "kind": "offline"
     }
   },
-  "blockers": [
-    "New candidate page acceptance pending; prior loading-failure observation did not reproduce when waiting for request completion, original transient cause unproven."
-  ],
-  "next_exact_step": "Independent review then deploy clean root-cause candidate, verify published kanban field metadata and Chinese lane/card labels through real login.",
+  "blockers": [],
+  "next_exact_step": "Owner directly schedules next task. No automatic continuation or seed/deploy/integration action.",
   "verification_results": {
     "backend": {
       "command": "python3 addons/smart_construction_core/tests/test_project_semantic_carriers.py",
@@ -95,23 +93,30 @@
       "coverage": "L1_only"
     },
     "browser": {
-      "status": "failed",
-      "evidence": ".runtime/final-acceptance/daily-deployed/label-20261019/daily-label-observation.json",
-      "findings": [
-        "Ledger card lifecycle_state renders 草稿; operation_strategy remains direct despite declared 公司直营 in table contract. Kanban contract field descriptors are malformed stringified dicts and omit this selection carrier.",
-        "Dashboard observed loading then failed tab; response/error root cause not yet captured. No claim this is introduced by candidate."
+      "status": "passed",
+      "candidate_sha": "7cada7699c5340bc85c40d735fba60cee1b22965",
+      "evidence": ".runtime/final-acceptance/daily-deployed/label-root-20261019/result.json",
+      "scope": [
+        "Project dashboard lane 草稿",
+        "Project ledger cards operation 公司直营 and lifecycle 草稿",
+        "Both kanban field identities and selection descriptors validated"
+      ],
+      "limitations": [
+        "Other roles and actual non-draft lifecycle variants not browser-tested this round; declared variants have unit coverage.",
+        "Menu visibility F01, dashboard/ledger overlap F04, demo data completeness and fixture company removal remain separate open work.",
+        "Earlier transient load-failure observation did not reproduce under request-complete sampling; no claim its underlying cause was fixed."
       ]
     },
     "deployment": {
       "status": "passed",
-      "candidate_sha": "8a4767b8ab25a4ff71085f6a25b91385a05d352e",
-      "evidence": ".runtime/final-acceptance/daily-deployed/label-20261019/result.json"
+      "candidate_sha": "7cada7699c5340bc85c40d735fba60cee1b22965",
+      "evidence": ".runtime/final-acceptance/daily-deployed/label-root-20261019/result.json"
     },
     "diff_check": "passed",
     "independent_review": {
       "status": "passed_local_code_scope",
       "reviewer": "supervisor_review",
-      "independent_frontend_assertions": 25
+      "scope": "assembler descriptor parsing, malformed descriptor refusal, lane labels, declared column order"
     },
     "root_cause_local": {
       "status": "passed",
@@ -127,5 +132,14 @@
       "iteration": "passed"
     }
   },
-  "completion_boundary": "Daily candidate deployment completed; F02/F03 page acceptance failed, no mainline integration, no seed replay or user acceptance."
+  "completion_boundary": "F02/F03 scoped batch acceptance and daily candidate deployment completed; mainline not integrated, no seed replay, no complete Demo or user acceptance.",
+  "handoff": {
+    "at": "2026-10-19T06:57:27.295989+00:00",
+    "dispatch_owner": "user",
+    "instruction": "Owner confirmed deployed effect and will directly schedule subsequent tasks; assistant stops dispatch.",
+    "user_confirmation": "已经生效",
+    "timers": "supervisor/reporter inactive+disabled; services inactive",
+    "next_task_rule": "New task must register its own goal/run and branch mapping after identity/scope preflight; do not revive completed label run.",
+    "workspace_handoff": "/home/lidefend/workspace/.sce-dispatch/HANDOFF-CURRENT.md"
+  }
 }

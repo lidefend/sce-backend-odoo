@@ -39,7 +39,7 @@
             <field name="date_doc">2026-03-15</field>
             <field name="version">A1</field>
             <field name="is_mandatory">True</field>
-            <field name="note">用于演示工程资料中心与 WBS 关联查看。</field>
+            <field name="note">用于工程资料中心与 WBS 关联查看。</field>
         </record>
 
         <record id="sc_demo_document_060_002" model="sc.project.document">
@@ -49,7 +49,7 @@
             <field name="doc_type_id" ref="smart_construction_demo.sc_dict_doc_type_tech"/>
             <field name="date_doc">2026-03-18</field>
             <field name="version">B2</field>
-            <field name="note">用于演示工程资料列表与基础筛选；审批状态由原生办理动作产生。</field>
+            <field name="note">用于工程资料列表与基础筛选；审批状态由原生办理动作产生。</field>
         </record>
     </data>
 </odoo>

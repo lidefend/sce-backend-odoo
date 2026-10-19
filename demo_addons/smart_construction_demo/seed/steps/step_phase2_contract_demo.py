@@ -19,10 +19,10 @@ def _find_demo_partner(env):
     if partner:
         return partner
     Partner = env["res.partner"].sudo()
-    existing = Partner.search([("name", "=", "Demo-合同相对方")], limit=1)
+    existing = Partner.search([("name", "=", "德阳建科建材有限公司")], limit=1)
     if existing:
         return existing
-    return Partner.create({"name": "Demo-合同相对方"})
+    return Partner.create({"name": "德阳建科建材有限公司"})
 
 
 def run(env):
@@ -33,7 +33,7 @@ def run(env):
 
     partner = _find_demo_partner(env)
     tax = env.ref("smart_construction_seed.tax_sale_9", raise_if_not_found=False)
-    subject = "Demo 合同-收入"
+    subject = "建设工程施工合同-收入"
 
     existing = Contract.search(
         [("subject", "=", subject), ("project_id", "=", project.id)],

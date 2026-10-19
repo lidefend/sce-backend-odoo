@@ -2070,7 +2070,7 @@ async function main() {
       // Bind the accessible field identity and require the real selection.
       const userInput = createdRow.getByRole('textbox', { name: '责任人', exact: true });
       await userInput.click();
-      await page.locator('.t-select-option:visible').filter({ hasText: 'Demo-项目经理A' }).first().click();
+      await page.locator('.t-select-option:visible').filter({ hasText: '张建国' }).first().click();
     }
     const rowInputs = createdRow.locator('input');
     if (await rowInputs.count()) await rowInputs.last().fill('P4 责任新增');

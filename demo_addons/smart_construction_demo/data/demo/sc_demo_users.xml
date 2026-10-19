@@ -2,18 +2,18 @@
 <odoo>
     <data noupdate="0">
         <record id="user_sc_operation_demo" model="res.users">
-            <field name="name">Demo-经营审核</field>
+            <field name="name">郑雅琴</field>
             <field name="login">sc_demo_operation</field>
-            <field name="email">sc_demo_operation@example.invalid</field>
+            <field name="email">zhengyaqin@zhihui-construction.cn</field>
             <field name="company_id" ref="base.main_company"/>
             <field name="company_ids" eval="[(6, 0, [ref('base.main_company')])]"/>
             <field name="groups_id" eval="[(6, 0, [ref('base.group_user'), ref('smart_construction_core.group_sc_role_operation_user')])]"/>
         </record>
         <!-- 确保简体中文语言已启用，否则 res.users/res.partner 的 lang=zh_CN 会报 Wrong value -->
         <record id="user_sc_accounting_manager_demo" model="res.users">
-            <field name="name">Demo-会计账务经理</field>
+            <field name="name">吴海燕</field>
             <field name="login">sc_demo_accounting_manager</field>
-            <field name="email">sc_demo_accounting_manager@example.invalid</field>
+            <field name="email">wuhaiyan@zhihui-construction.cn</field>
             <field name="company_id" ref="base.main_company"/>
             <field name="company_ids" eval="[(6, 0, [ref('base.main_company')])]"/>
             <field name="groups_id" eval="[(6, 0, [ref('base.group_user'), ref('smart_construction_core.group_sc_cap_accounting_manager')])]"/>
@@ -23,9 +23,9 @@
         </record>
 
         <record id="user_sc_pm_01" model="res.users">
-            <field name="name">Demo-项目经理A</field>
+            <field name="name">张建国</field>
             <field name="login">pm1</field>
-            <field name="email">pm1@example.invalid</field>
+            <field name="email">zhangjianguo@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -34,9 +34,9 @@
         </record>
 
         <record id="user_sc_material_01" model="res.users">
-            <field name="name">Demo-物资员A</field>
+            <field name="name">赵鹏</field>
             <field name="login">mat1</field>
-            <field name="email">mat1@example.invalid</field>
+            <field name="email">zhaopeng@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -45,9 +45,9 @@
         </record>
 
         <record id="user_sc_material_mgr_01" model="res.users">
-            <field name="name">Demo-物资主管A</field>
+            <field name="name">孙立军</field>
             <field name="login">mat_mgr</field>
-            <field name="email">mat_mgr@example.invalid</field>
+            <field name="email">sunlijun@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -56,9 +56,9 @@
         </record>
 
         <record id="user_sc_purchase_01" model="res.users">
-            <field name="name">Demo-采购员A</field>
+            <field name="name">周文静</field>
             <field name="login">pur1</field>
-            <field name="email">pur1@example.invalid</field>
+            <field name="email">zhouwenjing@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -67,9 +67,9 @@
         </record>
 
         <record id="user_sc_fin_01" model="res.users">
-            <field name="name">Demo-出纳A</field>
+            <field name="name">王秀兰</field>
             <field name="login">fin1</field>
-            <field name="email">fin1@example.invalid</field>
+            <field name="email">wangxiulan@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -78,9 +78,9 @@
         </record>
 
         <record id="user_sc_fin_mgr_01" model="res.users">
-            <field name="name">Demo-财务经理A</field>
+            <field name="name">陈志强</field>
             <field name="login">fin_mgr</field>
-            <field name="email">fin_mgr@example.invalid</field>
+            <field name="email">chenzhiqiang@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -89,9 +89,9 @@
         </record>
 
         <record id="user_sc_contract_01" model="res.users">
-            <field name="name">Demo-合同管理员A</field>
+            <field name="name">李慧敏</field>
             <field name="login">ct1</field>
-            <field name="email">ct1@example.invalid</field>
+            <field name="email">lihuimin@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -100,9 +100,9 @@
         </record>
 
         <record id="user_sc_cost_01" model="res.users">
-            <field name="name">Demo-成本员A</field>
+            <field name="name">刘晓东</field>
             <field name="login">cost1</field>
-            <field name="email">cost1@example.invalid</field>
+            <field name="email">liuxiaodong@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -112,9 +112,9 @@
 
         <!-- 财务经理能力测试账号 -->
         <record id="user_sc_finance_mgr_test" model="res.users">
-            <field name="name">Demo-财务经理</field>
+            <field name="name">财务审批岗</field>
             <field name="login">sc_finance_mgr</field>
-            <field name="email">sc_finance_mgr@example.invalid</field>
+            <field name="email">sc_finance_mgr@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -129,9 +129,9 @@
 
         <!-- 普通复合席位：物资办理 + 受限财务只读，用于核对真实付款依据。 -->
         <record id="user_sc_rental_payment_checker_demo" model="res.users">
-            <field name="name">Demo-租赁付款核对</field>
+            <field name="name">黄倩</field>
             <field name="login">sc_demo_rental_payment_checker</field>
-            <field name="email">sc_demo_rental_payment_checker@example.invalid</field>
+            <field name="email">huangqian@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -145,9 +145,9 @@
 
         <!-- 物资主管能力测试账号 -->
         <record id="user_sc_material_mgr_test" model="res.users">
-            <field name="name">Demo-物资主管</field>
+            <field name="name">物资审批岗</field>
             <field name="login">sc_material_mgr</field>
-            <field name="email">sc_material_mgr@example.invalid</field>
+            <field name="email">sc_material_mgr@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -162,9 +162,9 @@
 
         <!-- 项目只读能力测试账号 -->
         <record id="user_sc_project_viewer_test" model="res.users">
-            <field name="name">Demo-项目只读</field>
+            <field name="name">项目查询岗</field>
             <field name="login">sc_project_viewer</field>
-            <field name="email">sc_project_viewer@example.invalid</field>
+            <field name="email">sc_project_viewer@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -179,9 +179,9 @@
 
         <!-- 项目中心 -->
         <record id="user_sc_project_user" model="res.users">
-            <field name="name">Demo-项目经办</field>
+            <field name="name">项目经办岗</field>
             <field name="login">sc_project_user</field>
-            <field name="email">sc_project_user@example.invalid</field>
+            <field name="email">sc_project_user@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -197,9 +197,9 @@
         </record>
 
         <record id="user_sc_project_manager_cap" model="res.users">
-            <field name="name">Demo-项目审批</field>
+            <field name="name">项目审批岗</field>
             <field name="login">sc_project_mgr</field>
-            <field name="email">sc_project_mgr@example.invalid</field>
+            <field name="email">sc_project_mgr@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -212,9 +212,9 @@
 
         <!-- Demo 奖金办理审批席位；不授予平台/系统管理员权限。 -->
         <record id="user_sc_business_config_demo" model="res.users">
-            <field name="name">Demo-业务配置审批</field>
+            <field name="name">徐磊</field>
             <field name="login">sc_demo_business_config</field>
-            <field name="email">sc_demo_business_config@example.invalid</field>
+            <field name="email">xulei@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -224,9 +224,9 @@
 
         <!-- 成本中心 -->
         <record id="user_sc_cost_read_cap" model="res.users">
-            <field name="name">Demo-成本只读</field>
+            <field name="name">成本查询岗</field>
             <field name="login">sc_cost_read</field>
-            <field name="email">sc_cost_read@example.invalid</field>
+            <field name="email">sc_cost_read@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -238,9 +238,9 @@
         </record>
 
         <record id="user_sc_cost_user_cap" model="res.users">
-            <field name="name">Demo-成本经办</field>
+            <field name="name">成本经办岗</field>
             <field name="login">sc_cost_user_cap</field>
-            <field name="email">sc_cost_user_cap@example.invalid</field>
+            <field name="email">sc_cost_user_cap@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -252,9 +252,9 @@
         </record>
 
         <record id="user_sc_cost_manager_cap" model="res.users">
-            <field name="name">Demo-成本审批</field>
+            <field name="name">成本审批岗</field>
             <field name="login">sc_cost_mgr</field>
-            <field name="email">sc_cost_mgr@example.invalid</field>
+            <field name="email">sc_cost_mgr@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -267,9 +267,9 @@
 
         <!-- 合同中心 -->
         <record id="user_sc_contract_read_cap" model="res.users">
-            <field name="name">Demo-合同只读</field>
+            <field name="name">合同查询岗</field>
             <field name="login">sc_contract_read</field>
-            <field name="email">sc_contract_read@example.invalid</field>
+            <field name="email">sc_contract_read@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -281,9 +281,9 @@
         </record>
 
         <record id="user_sc_contract_user_cap" model="res.users">
-            <field name="name">Demo-合同经办</field>
+            <field name="name">合同经办岗</field>
             <field name="login">sc_contract_user_cap</field>
-            <field name="email">sc_contract_user_cap@example.invalid</field>
+            <field name="email">sc_contract_user_cap@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -295,9 +295,9 @@
         </record>
 
         <record id="user_sc_contract_manager_cap" model="res.users">
-            <field name="name">Demo-合同审批</field>
+            <field name="name">合同审批岗</field>
             <field name="login">sc_contract_mgr</field>
-            <field name="email">sc_contract_mgr@example.invalid</field>
+            <field name="email">sc_contract_mgr@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -310,9 +310,9 @@
 
         <!-- 采购中心 -->
         <record id="user_sc_purchase_read_cap" model="res.users">
-            <field name="name">Demo-采购只读</field>
+            <field name="name">采购查询岗</field>
             <field name="login">sc_purchase_read</field>
-            <field name="email">sc_purchase_read@example.invalid</field>
+            <field name="email">sc_purchase_read@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -324,9 +324,9 @@
         </record>
 
         <record id="user_sc_purchase_user_cap" model="res.users">
-            <field name="name">Demo-采购经办</field>
+            <field name="name">采购经办岗</field>
             <field name="login">sc_purchase_user_cap</field>
-            <field name="email">sc_purchase_user_cap@example.invalid</field>
+            <field name="email">sc_purchase_user_cap@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -338,9 +338,9 @@
         </record>
 
         <record id="user_sc_purchase_manager_cap" model="res.users">
-            <field name="name">Demo-采购审批</field>
+            <field name="name">采购审批岗</field>
             <field name="login">sc_purchase_mgr</field>
-            <field name="email">sc_purchase_mgr@example.invalid</field>
+            <field name="email">sc_purchase_mgr@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -353,9 +353,9 @@
 
         <!-- 物资中心 -->
         <record id="user_sc_material_read_cap" model="res.users">
-            <field name="name">Demo-物资只读</field>
+            <field name="name">物资查询岗</field>
             <field name="login">sc_material_read</field>
-            <field name="email">sc_material_read@example.invalid</field>
+            <field name="email">sc_material_read@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -367,9 +367,9 @@
         </record>
 
         <record id="user_sc_material_user_cap" model="res.users">
-            <field name="name">Demo-物资经办</field>
+            <field name="name">物资经办岗</field>
             <field name="login">sc_material_user_cap</field>
-            <field name="email">sc_material_user_cap@example.invalid</field>
+            <field name="email">sc_material_user_cap@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -382,9 +382,9 @@
 
         <!-- 财务中心（补读/经办；审批账号已存在 sc_finance_mgr） -->
         <record id="user_sc_finance_read_cap" model="res.users">
-            <field name="name">Demo-财务只读</field>
+            <field name="name">财务查询岗</field>
             <field name="login">sc_finance_read</field>
-            <field name="email">sc_finance_read@example.invalid</field>
+            <field name="email">sc_finance_read@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -396,9 +396,9 @@
         </record>
 
         <record id="user_sc_finance_user_cap" model="res.users">
-            <field name="name">Demo-财务经办</field>
+            <field name="name">财务经办岗</field>
             <field name="login">sc_finance_user_cap</field>
-            <field name="email">sc_finance_user_cap@example.invalid</field>
+            <field name="email">sc_finance_user_cap@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -411,9 +411,9 @@
 
         <!-- 结算中心 -->
         <record id="user_sc_settlement_read_cap" model="res.users">
-            <field name="name">Demo-结算只读</field>
+            <field name="name">结算查询岗</field>
             <field name="login">sc_settlement_read</field>
-            <field name="email">sc_settlement_read@example.invalid</field>
+            <field name="email">sc_settlement_read@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -425,9 +425,9 @@
         </record>
 
         <record id="user_sc_settlement_user_cap" model="res.users">
-            <field name="name">Demo-结算经办</field>
+            <field name="name">结算经办岗</field>
             <field name="login">sc_settlement_user_cap</field>
-            <field name="email">sc_settlement_user_cap@example.invalid</field>
+            <field name="email">sc_settlement_user_cap@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
@@ -442,9 +442,9 @@
         </record>
 
         <record id="user_sc_settlement_manager_cap" model="res.users">
-            <field name="name">Demo-结算审批</field>
+            <field name="name">结算审批岗</field>
             <field name="login">sc_settlement_mgr</field>
-            <field name="email">sc_settlement_mgr@example.invalid</field>
+            <field name="email">sc_settlement_mgr@zhihui-construction.cn</field>
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
