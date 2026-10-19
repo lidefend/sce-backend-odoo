@@ -807,8 +807,8 @@
         },
         {
           "name": "菜单配置",
-          "delivery": "PREVIEW_FOUNDATION",
-          "release_state": "preview"
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
         },
         {
           "name": "数据权限",

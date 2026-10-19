@@ -46,6 +46,7 @@ EXPECTED_FORMAL_TOP_GROUPS = (
     "产品配置",
 )
 REQUIRED_FORMAL_MENU_XMLIDS = (
+    "smart_construction_core.menu_ui_menu_config_policy_business_config",
     "smart_construction_core.menu_sc_customer_partner",
     "smart_construction_core.menu_sc_supplier_partner",
 )
