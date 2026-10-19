@@ -35,7 +35,10 @@
     "scripts/ops/path_ns_c_acceptance.py",
     "scripts/ops/test_path_ns_c_acceptance.py",
     "config/acceptance/evolution_binding.v1.json",
-    "scripts/verify/test_acceptance_evolution_binding_guard.py"
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/audit/verification_lane_baseline.json",
+    "make/ci.mk"
   ],
   "environment": {
     "kind": "runtime",
@@ -266,10 +269,35 @@
       "declared_entries": 13,
       "openable": 4,
       "artifact": ".runtime/p1-user-permission-closeout/relation-project/20261019T090541/summary.json"
+    },
+    "quick_afdf": {
+      "status": "failed",
+      "head": "afdf8c9ca27abe6561f2f79e112aa6b2382944cb",
+      "owner": "P4 verification lane registration",
+      "reason": "four new zero-reference targets; wire pure tests, explicitly register two operational manual entrypoints"
+    },
+    "verification_lane_review": {
+      "status": "passed",
+      "reviewer": "supervisor_review",
+      "scope": "two real pure-test prerequisites; exactly two manually invoked runtime operations registered; no zero-unregistered threshold relaxation"
+    },
+    "final_runtime_afdf": {
+      "status": "passed",
+      "head": "afdf8c9ca27abe6561f2f79e112aa6b2382944cb",
+      "entry": ".runtime/p1-user-permission-closeout/final-entry.json",
+      "namespace": ".runtime/p1-user-permission-closeout/final-namespace.json",
+      "list": ".runtime/p1-user-permission-closeout/final-list/report.json",
+      "relation": ".runtime/p1-user-permission-closeout/final-relation/20261019T091619/summary.json"
+    },
+    "architecture_after_lane_fix": {
+      "status": "passed",
+      "command": "make -k verify.contract.architecture.suite",
+      "log": "/tmp/p1-architecture-final.log",
+      "node_files": 387
     }
   },
   "blockers": [],
-  "next_exact_step": "冻结最终工具修正候选；受管同步/刷新身份并重采必需集成证据，精确Quick、独立复核和受保护GitHub PR合并",
+  "next_exact_step": "提交清洁治理收口候选；精确Quick与运行身份绑定、受保护PR远端必需门禁、合并",
   "takeover": {
     "owner": "current assistant",
     "authority": "用户明确要求接管 P1 后续收口",
@@ -280,9 +308,9 @@
     "previous_writer_stopped": "owner confirmed in conversation"
   },
   "stage_identity": {
-    "head": "439832907044ae3eafadaf47f4bab351e4097541",
+    "head": "afdf8c9ca27abe6561f2f79e112aa6b2382944cb",
     "dirty": true,
-    "scope": "P4 namespace probe consumes existing root redirect declaration; test+run+record"
+    "scope": "P4 verification lane wiring/dispositions/baseline and batch record"
   },
   "evidence_logs": {
     ".runtime/p1-user-permission-closeout/p1-permission-iteration.log": "cf2cd3bf9a6c5dd055059ce0ac6e8f15cfcc720f54716ddbd212a346a1142bf3",

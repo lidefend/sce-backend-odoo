@@ -1130,6 +1130,8 @@ verify.contract.list_preference.single_application: guard.prod.forbid
 .PHONY: verify.contract.architecture.suite
 verify.contract.architecture.suite: \
 	guard.prod.forbid \
+	verify.user_permission_view_contract_boundary.unit \
+	verify.path_namespace.acceptance.unit \
 	verify.formal_product_field_purity \
 	verify.tenant_extension_storage \
 	verify.backend.contract_lifecycle.authority \
