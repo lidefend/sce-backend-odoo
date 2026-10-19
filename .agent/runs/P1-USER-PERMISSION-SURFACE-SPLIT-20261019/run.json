@@ -38,7 +38,8 @@
     "scripts/verify/test_acceptance_evolution_binding_guard.py",
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/audit/verification_lane_baseline.json",
-    "make/ci.mk"
+    "make/ci.mk",
+    "make/frontend.mk"
   ],
   "environment": {
     "kind": "runtime",
@@ -294,10 +295,17 @@
       "command": "make -k verify.contract.architecture.suite",
       "log": "/tmp/p1-architecture-final.log",
       "node_files": 387
+    },
+    "remote_frontend_d354": {
+      "status": "failed",
+      "owner": "P4 validation_tool_defect",
+      "run_id": 39231770945,
+      "reason": "Node22 strip-types cannot resolve extensionless transitive contractGap import; build passed",
+      "repair": "Use existing esbuild test bundling convention; preserve original import.meta.url for source assertions; no product changes"
     }
   },
   "blockers": [],
-  "next_exact_step": "提交清洁治理收口候选；精确Quick与运行身份绑定、受保护PR远端必需门禁、合并",
+  "next_exact_step": "修复远端 Node22 localized_display 测试加载；定向验证后更新同一 PR，保留未改变运行输入的四套证据",
   "takeover": {
     "owner": "current assistant",
     "authority": "用户明确要求接管 P1 后续收口",
