@@ -2,24 +2,21 @@
 <odoo>
   <data noupdate="1">
 
-    <!-- 结算核销行：S20 结算单明细 1 -->
+    <!-- 结算明细（金额由数量×单价计算，不写计算字段 amount） -->
     <record id="sc_demo_settle_line_020_001" model="sc.settlement.order.line">
-      <field name="name">S20-结算明细-001</field>
+      <field name="name">主体结构工程进度款</field>
       <field name="settlement_id" ref="smart_construction_demo.sc_demo_settlement_020_001"/>
-      <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_001"/>
+      <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_010"/>
       <field name="qty">1.0</field>
       <field name="price_unit">3000000.00</field>
-      <field name="amount">3000000.00</field>
     </record>
 
-    <!-- 结算核销行：S20 结算单明细 2 -->
     <record id="sc_demo_settle_line_020_002" model="sc.settlement.order.line">
-      <field name="name">S20-结算明细-002</field>
+      <field name="name">机电安装工程进度款</field>
       <field name="settlement_id" ref="smart_construction_demo.sc_demo_settlement_020_001"/>
-      <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_001"/>
+      <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_010"/>
       <field name="qty">1.0</field>
       <field name="price_unit">2000000.00</field>
-      <field name="amount">2000000.00</field>
     </record>
 
   </data>

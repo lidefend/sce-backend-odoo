@@ -2,25 +2,33 @@
 <odoo>
     <data noupdate="1">
 
-        <!-- S30 结算单（工作流演示用，保持 draft） -->
+        <!-- S30 结算单（工作流演示用，保持 draft）
+             适用字段：结算期间、录入人、结算日期；申报/审定等尚未发生的结果不填值。 -->
         <record id="sc_demo_settlement_030_001" model="sc.settlement.order">
-            <field name="name">S30-SETTLEMENT-001</field>
+            <field name="name">德阳智能制造项目2025年4月进度款结算单</field>
+            <field name="title">主体工程月度进度款结算</field>
             <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+            <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_010"/>
             <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
             <field name="currency_id" ref="base.CNY"/>
             <field name="settlement_type">in</field>
-            <field name="amount_total">1000000.00</field>
+            <field name="settlement_amount">1000000.00</field>
+            <field name="settlement_period_start">2025-04-01</field>
+            <field name="settlement_period_end">2025-04-05</field>
+            <field name="date_settlement">2025-04-05</field>
+            <field name="entry_user_id" ref="smart_construction_demo.user_sc_settlement_user_cap"/>
             <!-- state 不写，走模型默认（draft） -->
         </record>
 
         <!-- S30 门禁测试用：不完整结算单，必须保持 draft -->
         <record id="sc_demo_settlement_030_bad_001" model="sc.settlement.order">
-            <field name="name">S30-SETTLEMENT-BAD-001</field>
+            <field name="name">德阳智能制造项目门禁样本结算单</field>
             <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+            <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_010"/>
             <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
             <field name="currency_id" ref="base.CNY"/>
             <field name="settlement_type">in</field>
-            <field name="amount_total">0.00</field>
+            <field name="settlement_amount">0.00</field>
             <!-- 无明细 / 无付款关联，验证门禁 -->
         </record>
 

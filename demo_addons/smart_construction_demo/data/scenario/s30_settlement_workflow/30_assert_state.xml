@@ -2,14 +2,21 @@
 <odoo>
     <data noupdate="1">
 
-        <!-- 将 S30 付款申请关联到结算单 -->
+        <!-- 将 S30 收款申请关联到结算单（仅数据关联准备）。
+             sc_demo_settlement_030_001 在本场景保持 draft，此关联只用于后续运行态演示
+             “结算审批 -> 收款申请提交”的完整前置链：结算单必须先经结算办理角色提交并
+             审批至 approve/done（_check_settlement_state），财务经办 fin1 才能提交本
+             收款申请；本批不落库、不伪造审批终态。 -->
         <record id="sc_demo_pay_req_030_001" model="payment.request">
             <field name="type">receive</field>
             <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+            <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_010"/>
             <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
+            <field name="currency_id" ref="base.CNY"/>
             <field name="amount">1000000.00</field>
-            <field name="date_request">2025-03-01</field>
+            <field name="date_request">2025-04-06</field>
             <field name="settlement_id" ref="smart_construction_demo.sc_demo_settlement_030_001"/>
+            <field name="note">依据4月进度款结算单发起收款申请。</field>
         </record>
 
     </data>

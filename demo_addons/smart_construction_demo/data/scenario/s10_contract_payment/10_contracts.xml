@@ -2,20 +2,37 @@
 <odoo>
   <data noupdate="1">
 
-    <!-- S10: 合同（最小字段集，不触发确认/审批） -->
+    <!-- S10: 收入合同（起始态 draft，不触发确认/审批；明细只写数量/单价，合价由计算给出）
+         适用字段尽量完整：经办人=合同管理员 ct1，订立/计划开工/计划竣工日期，币种，
+         简称与备注（付款条款）。税率 tax_id 不在种子显式声明，由 construction.contract
+         默认税率机制（_get_default_tax -> smart_construction_seed.tax_9/tax_13）在受管
+         运行态解析；本批不落库，该解析归 not_run。合同附件 attachment_ids 不伪造。 -->
     <record id="sc_demo_contract_out_010" model="construction.contract">
-      <field name="subject">总包合同（S10）</field>
+      <field name="subject">德阳智能制造产教融合项目施工总承包合同</field>
+      <field name="name_short">德阳智造产教融合总承包合同</field>
       <field name="type">out</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
+      <field name="currency_id" ref="base.CNY"/>
       <field name="date_contract">2025-02-01</field>
+      <field name="date_start">2025-03-01</field>
+      <field name="date_end">2025-12-31</field>
+      <field name="handler_id" ref="smart_construction_demo.user_sc_contract_01"/>
+      <field name="note">德阳市高新智造产业投资有限公司委托施工；付款条款：按形象进度分期申请进度款，首期于主体结构工程完成形象进度后申请。税率由系统默认税率机制在受管运行态解析，种子不显式声明。</field>
     </record>
 
     <record id="sc_demo_contract_out_010_line_001" model="construction.contract.line">
       <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_010"/>
       <field name="qty_contract">1.0</field>
-      <field name="price_contract">26160000.00</field>
-      <field name="note">S10_BASELINE</field>
+      <field name="price_contract">18600000.00</field>
+      <field name="note">主体结构工程施工</field>
+    </record>
+
+    <record id="sc_demo_contract_out_010_line_002" model="construction.contract.line">
+      <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_010"/>
+      <field name="qty_contract">1.0</field>
+      <field name="price_contract">8000000.00</field>
+      <field name="note">机电安装工程</field>
     </record>
 
   </data>

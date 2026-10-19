@@ -1,30 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
 
+    <!-- 合成虚构演示数据：以下企业名称不对应任何真实企业。 -->
     <!-- 客户 / 业主 -->
     <record id="sc_demo_partner_owner_001" model="res.partner">
-        <field name="name">德阳市某产业发展有限公司（示例）</field>
+        <field name="name">德阳市高新智造产业投资有限公司</field>
         <field name="is_company">True</field>
         <field name="company_type">company</field>
-        <field name="phone">0838-0000000</field>
+        <field name="phone">0838-5560201</field>
     </record>
 
     <!-- 供应商：商砼 -->
     <record id="sc_demo_partner_vendor_concrete" model="res.partner">
-        <field name="name">德阳某某商砼有限公司（示例）</field>
+        <field name="name">德阳蜀新商砼有限公司</field>
         <field name="is_company">True</field>
         <field name="company_type">company</field>
         <field name="supplier_rank">1</field>
-        <field name="phone">0838-1111111</field>
+        <field name="phone">0838-5689102</field>
     </record>
 
     <!-- 供应商：钢材 -->
     <record id="sc_demo_partner_vendor_steel" model="res.partner">
-        <field name="name">德阳某某钢材贸易有限公司（示例）</field>
+        <field name="name">德阳蓉钢供应链有限公司</field>
         <field name="is_company">True</field>
         <field name="company_type">company</field>
         <field name="supplier_rank">1</field>
-        <field name="phone">0838-2222222</field>
+        <field name="phone">0838-5790234</field>
     </record>
 
 </odoo>

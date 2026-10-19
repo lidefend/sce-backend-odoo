@@ -2,14 +2,13 @@
 <odoo>
     <data noupdate="1">
 
-        <!-- S30 结算单明细 -->
+        <!-- S30 结算单明细（金额由数量×单价计算，不写计算字段 amount） -->
         <record id="sc_demo_settlement_line_030_001" model="sc.settlement.order.line">
-            <field name="name">主体工程结算</field>
+            <field name="name">主体工程月度进度款</field>
             <field name="settlement_id" ref="smart_construction_demo.sc_demo_settlement_030_001"/>
             <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_010"/>
-            <field name="qty">1</field>
+            <field name="qty">1.0</field>
             <field name="price_unit">1000000.00</field>
-            <field name="amount">1000000.00</field>
         </record>
 
     </data>

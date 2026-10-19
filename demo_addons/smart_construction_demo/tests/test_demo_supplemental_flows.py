@@ -1,5 +1,6 @@
 """Offline orchestration tests; not proof of ORM authorization or installation."""
 import ast
+from datetime import date
 import os
 from pathlib import Path
 from types import SimpleNamespace
@@ -1095,6 +1096,185 @@ class DemoSeedReproducibility(unittest.TestCase):
         ensure(env, "DEMO-PJ-NEW", {"name": "Demo"})
         self.assertEqual(len(created), 1)
         self.assertEqual(created[0]["lifecycle_state"], "draft")
+
+
+class RealisticCoreChainSeed(unittest.TestCase):
+    """R1-02 项目—合同—结算/付款种子：自然中文、不写计算/只读字段、关联一致。"""
+
+    def _records(self, relative, model=None):
+        import xml.etree.ElementTree as ET
+        path = ROOT / relative
+        return [record for record in ET.parse(path).iter("record")
+                if model is None or record.get("model") == model]
+
+    def _field(self, record, name):
+        field = record.find("field[@name='%s']" % name)
+        return field
+
+    def _date(self, record, name):
+        field = self._field(record, name)
+        self.assertIsNotNone(field, "missing field %s in %s" % (name, record.get("id")))
+        return date.fromisoformat(field.text.strip())
+
+    def test_partner_names_are_complete_fictional_without_placeholders(self):
+        import xml.etree.ElementTree as ET
+        bad_tokens = ("某", "XX", "xx", "示例", "测试", "Demo-", "DEMO-")
+        for relative in ("data/base/10_partners.xml", "data/base/15_seed_partners.xml"):
+            for record in ET.parse(ROOT / relative).iter("record"):
+                if record.get("model") != "res.partner":
+                    continue
+                name = self._field(record, "name")
+                self.assertIsNotNone(name, "partner missing name in %s" % relative)
+                for token in bad_tokens:
+                    self.assertNotIn(token, name.text or "", "%s contains placeholder %r" % (record.get("id"), token))
+
+    def test_settlement_orders_do_not_write_computed_or_readonly_fields(self):
+        for relative in (
+            "data/scenario/s20_settlement_clearing/30_settlement.xml",
+            "data/scenario/s30_settlement_workflow/10_settlement_seed.xml",
+        ):
+            for record in self._records(relative, model="sc.settlement.order"):
+                self.assertIsNone(self._field(record, "amount_total"), "amount_total is computed")
+                self.assertIsNone(self._field(record, "payment_request_ids"), "payment_request_ids is readonly")
+
+    def test_settlement_lines_do_not_write_computed_amount(self):
+        for relative in (
+            "data/scenario/s20_settlement_clearing/20_clearing.xml",
+            "data/scenario/s30_settlement_workflow/20_settlement_actions.xml",
+        ):
+            for record in self._records(relative, model="sc.settlement.order.line"):
+                self.assertIsNone(self._field(record, "amount"), "line amount is computed from qty x price_unit")
+
+    def test_settlement_amount_matches_line_quantity_times_price(self):
+        settlement_amount = float(
+            next(r for r in self._records("data/scenario/s20_settlement_clearing/30_settlement.xml")
+                 if r.get("id") == "sc_demo_settlement_020_001")
+            .find("field[@name='settlement_amount']").text)
+        lines = self._records("data/scenario/s20_settlement_clearing/20_clearing.xml")
+        total = sum(
+            float(line.find("field[@name='qty']").text) * float(line.find("field[@name='price_unit']").text)
+            for line in lines)
+        self.assertEqual(total, settlement_amount)
+
+    def test_s20_payment_links_to_settlement_and_contract(self):
+        payment = next(r for r in self._records("data/scenario/s20_settlement_clearing/10_payments.xml")
+                       if r.get("id") == "sc_demo_payment_020_001")
+        self.assertEqual(self._field(payment, "settlement_id").get("ref"),
+                         "smart_construction_demo.sc_demo_settlement_020_001")
+        self.assertEqual(self._field(payment, "contract_id").get("ref"),
+                         "smart_construction_demo.sc_demo_contract_out_010")
+
+    def test_s20_scenario_loads_settlement_before_payment(self):
+        tree = ast.parse((ROOT / "tools/scenario_loader.py").read_text())
+        node = next(n for n in tree.body if isinstance(n, ast.AnnAssign)
+                    and getattr(n.target, "id", None) == "SCENARIOS")
+        files = ast.literal_eval(node.value)["s20_settlement_clearing"]["files"]
+        self.assertLess(files.index("data/scenario/s20_settlement_clearing/30_settlement.xml"),
+                        files.index("data/scenario/s20_settlement_clearing/10_payments.xml"))
+
+    def test_core_chain_contract_lines_are_self_consistent(self):
+        lines = self._records("data/scenario/s10_contract_payment/10_contracts.xml",
+                              model="construction.contract.line")
+        self.assertGreaterEqual(len(lines), 2)
+        for line in lines:
+            self.assertTrue(line.find("field[@name='qty_contract']").text)
+            self.assertTrue(line.find("field[@name='price_contract']").text)
+            self.assertIsNone(self._field(line, "amount_contract"))
+
+    def test_core_chain_contract_declares_responsible_schedule_and_currency(self):
+        contract = next(
+            r for r in self._records("data/scenario/s10_contract_payment/10_contracts.xml",
+                                     model="construction.contract")
+            if r.get("id") == "sc_demo_contract_out_010"
+        )
+        self.assertEqual(
+            self._field(contract, "handler_id").get("ref"),
+            "smart_construction_demo.user_sc_contract_01",
+        )
+        self.assertEqual(self._field(contract, "currency_id").get("ref"), "base.CNY")
+        date_contract = self._date(contract, "date_contract")
+        date_start = self._date(contract, "date_start")
+        date_end = self._date(contract, "date_end")
+        self.assertLessEqual(date_contract, date_start)
+        self.assertLessEqual(date_start, date_end)
+        self.assertTrue(self._field(contract, "note").text)
+        self.assertIsNone(self._field(contract, "tax_id"), "tax resolved by default mechanism")
+
+    def test_core_chain_settlements_declare_period_and_entry_user(self):
+        contract = next(
+            r for r in self._records("data/scenario/s10_contract_payment/10_contracts.xml",
+                                     model="construction.contract")
+            if r.get("id") == "sc_demo_contract_out_010"
+        )
+        date_start = self._date(contract, "date_start")
+        for xmlid in ("sc_demo_settlement_020_001", "sc_demo_settlement_030_001"):
+            settlement = next(
+                r for r in self._records("data/scenario/s20_settlement_clearing/30_settlement.xml")
+                + self._records("data/scenario/s30_settlement_workflow/10_settlement_seed.xml")
+                if r.get("id") == xmlid
+            )
+            period_start = self._date(settlement, "settlement_period_start")
+            period_end = self._date(settlement, "settlement_period_end")
+            self.assertLessEqual(period_start, period_end)
+            self.assertGreaterEqual(period_start, date_start)
+            self.assertEqual(
+                self._field(settlement, "entry_user_id").get("ref"),
+                "smart_construction_demo.user_sc_settlement_user_cap",
+            )
+
+    def test_core_chain_dates_are_cross_record_consistent(self):
+        contract = next(
+            r for r in self._records("data/scenario/s10_contract_payment/10_contracts.xml",
+                                     model="construction.contract")
+            if r.get("id") == "sc_demo_contract_out_010"
+        )
+        date_contract = self._date(contract, "date_contract")
+        date_start = self._date(contract, "date_start")
+        date_end = self._date(contract, "date_end")
+        self.assertLessEqual(date_contract, date_start)
+        self.assertLessEqual(date_start, date_end)
+
+        pay_req_010 = next(
+            r for r in self._records("data/scenario/s10_contract_payment/20_payment_requests.xml")
+            if r.get("id") == "sc_demo_pay_req_010_001"
+        )
+        self.assertGreaterEqual(self._date(pay_req_010, "date_request"), date_start)
+
+        settlement_020 = next(
+            r for r in self._records("data/scenario/s20_settlement_clearing/30_settlement.xml")
+            if r.get("id") == "sc_demo_settlement_020_001"
+        )
+        s20_start = self._date(settlement_020, "settlement_period_start")
+        s20_end = self._date(settlement_020, "settlement_period_end")
+        s20_settled = self._date(settlement_020, "date_settlement")
+        s20_doc = self._date(settlement_020, "document_date")
+        self.assertGreaterEqual(s20_start, date_start)
+        self.assertLessEqual(s20_start, s20_end)
+        self.assertGreaterEqual(s20_settled, s20_end)
+        self.assertGreaterEqual(s20_doc, s20_end)
+
+        payment_020 = next(
+            r for r in self._records("data/scenario/s20_settlement_clearing/10_payments.xml")
+            if r.get("id") == "sc_demo_payment_020_001"
+        )
+        self.assertGreaterEqual(self._date(payment_020, "date_request"), s20_settled)
+
+        settlement_030 = next(
+            r for r in self._records("data/scenario/s30_settlement_workflow/10_settlement_seed.xml")
+            if r.get("id") == "sc_demo_settlement_030_001"
+        )
+        s30_start = self._date(settlement_030, "settlement_period_start")
+        s30_end = self._date(settlement_030, "settlement_period_end")
+        s30_settled = self._date(settlement_030, "date_settlement")
+        self.assertGreaterEqual(s30_start, s20_end)
+        self.assertLessEqual(s30_start, s30_end)
+        self.assertGreaterEqual(s30_settled, s30_end)
+
+        pay_req_030 = next(
+            r for r in self._records("data/scenario/s30_settlement_workflow/30_assert_state.xml")
+            if r.get("id") == "sc_demo_pay_req_030_001"
+        )
+        self.assertGreaterEqual(self._date(pay_req_030, "date_request"), s30_settled)
 
 
 if __name__ == "__main__":
