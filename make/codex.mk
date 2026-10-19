@@ -730,6 +730,7 @@ daily.runtime.candidate.bundle_sync: guard.prod.forbid verify.daily.runtime.cand
 DAILY_RUNTIME_SOURCE_REVISION_SHA ?= $(DAILY_CANDIDATE_EXPECTED_SHA)
 DAILY_RUNTIME_ENV_NAME ?= dev
 DAILY_RUNTIME_ENV_FILE ?= .env.dev
+DAILY_RUNTIME_SOURCE_REVISION_BASE_URL ?= http://127.0.0.1:18081$(DAILY_RUNTIME_FRONTEND_BUILD_ENTRY_PREFIX)
 DAILY_RUNTIME_SOURCE_REVISION_REPORT ?= .runtime/final-acceptance/daily-deployed/source-revision-align.json
 
 verify.daily.runtime.source_revision.align: guard.prod.forbid
@@ -738,11 +739,12 @@ verify.daily.runtime.source_revision.align: guard.prod.forbid
 
 daily.runtime.source_revision.align: guard.prod.forbid verify.daily.runtime.source_revision.align
 	@test "$${CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN:-}" = "ALIGN_DAILY_RUNTIME_SOURCE_REVISION_WITH_DEPLOYED_HEAD" || { echo "exact daily runtime source-revision alignment confirmation is required" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_source_revision_align.py \
 		--expected-sha "$(DAILY_RUNTIME_SOURCE_REVISION_SHA)" \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
-		--env-name "$(DAILY_RUNTIME_ENV_NAME)" \
-		--env-file "$(DAILY_RUNTIME_ENV_FILE)" \
+		--duty "$(DAILY_RUNTIME_DUTY)" \
+		--base-url "$(DAILY_RUNTIME_SOURCE_REVISION_BASE_URL)" \
 		--report "$(DAILY_RUNTIME_SOURCE_REVISION_REPORT)"
 
 # The daily runtime serves a prebuilt static frontend from the nginx bind mount

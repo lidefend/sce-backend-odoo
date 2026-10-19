@@ -27,11 +27,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
-DEFAULT_ENV_NAME = "dev"
-DEFAULT_ENV_FILE = ".env.dev"
 CONFIRMATION = "ALIGN_DAILY_RUNTIME_SOURCE_REVISION_WITH_DEPLOYED_HEAD"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
+DUTY = re.compile(r"^[a-z0-9_]+$")
 
 
 class AlignError(RuntimeError):
@@ -42,20 +41,27 @@ REMOTE_ALIGN = r'''
 import fcntl, json, os, re, shutil, subprocess, sys, time, urllib.request
 from pathlib import Path
 
-expected_sha, env_name, env_file, service, base_url, remote_root = sys.argv[1:7]
+expected_sha, duty_key, base_url, remote_root = sys.argv[1:5]
 fixed_root = Path("/opt/projects/repos/sce-product-odoo")
 root = Path(remote_root)
 full_sha = re.compile(r"^[0-9a-f]{40}$")
+duty_name = re.compile(r"^[a-z0-9_]+$")
 tag = "[daily.runtime.source_revision.align]"
 if root != fixed_root or not root.is_dir():
     raise SystemExit(tag + " BLOCKED invalid remote repository")
 if not full_sha.fullmatch(expected_sha):
     raise SystemExit(tag + " BLOCKED invalid deployed revision")
+if not duty_name.fullmatch(duty_key):
+    raise SystemExit(tag + " BLOCKED invalid duty")
 
 lock_path = Path("/run/lock/sc_daily-runtime-source-revision-align.lock")
 lock_path.parent.mkdir(parents=True, exist_ok=True)
 
 KEY = "SC_SOURCE_REVISION"
+DECLARATION = root / "config" / "ops" / "daily_runtime_database_duties.v1.json"
+
+sys.path.insert(0, str(root / "scripts" / "ops"))
+import daily_runtime_duty_identity as identity
 
 def git(*args):
     return subprocess.run(
@@ -64,13 +70,38 @@ def git(*args):
         env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
     )
 
-def restart():
+def inspect_label(container, label):
     result = subprocess.run(
-        ["make", "restart", "ENV=" + env_name, "ENV_FILE=" + env_file],
-        cwd=root, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        check=False,
+        ["docker", "inspect", "-f", '{{index .Config.Labels "%s"}}' % label, container],
+        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
     )
-    return result.returncode, result.stdout
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+def restart(duty, env_path):
+    project = str((duty.get("cluster") or {}).get("compose_project") or "").strip()
+    container = identity.odoo_container_of(project)
+    observed_project = inspect_label(container, "com.docker.compose.project")
+    raw_config = inspect_label(container, "com.docker.compose.project.config_files")
+    working_dir = inspect_label(container, "com.docker.compose.project.working_dir")
+    if observed_project != project:
+        raise SystemExit(tag + " BLOCKED running duty project %s != declared %s" % (observed_project or "<unknown>", project))
+    config_files = [item.strip() for item in raw_config.split(",") if item.strip()]
+    if not config_files or not all(Path(item).is_file() for item in config_files):
+        raise SystemExit(tag + " BLOCKED running duty compose file is unavailable")
+    command = ["docker", "compose"]
+    for config_file in config_files:
+        command.extend(["-f", config_file])
+    command.extend([
+        "--project-name", project,
+        "--env-file", str(env_path),
+        "up", "-d", "--wait", "--no-deps", "odoo",
+    ])
+    result = subprocess.run(
+        command, cwd=working_dir or str(root), text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False,
+    )
+    tail = " ".join(command) + "\n" + result.stdout
+    return result.returncode, tail, container, project
 
 def readback():
     try:
@@ -90,13 +121,27 @@ with lock_path.open("a+b") as lock:
     if head_sha != expected_sha:
         raise SystemExit(tag + " BLOCKED remote HEAD %s != deployed revision %s" % (head_sha or "<unknown>", expected_sha))
 
-    env_path = root / env_file
+    try:
+        declaration = identity.load_declaration(
+            DECLARATION, instances_reader=identity.read_instances_file
+        )
+        duty = next(
+            (row for row in declaration.get("duties") or []
+             if isinstance(row, dict) and row.get("duty") == duty_key),
+            None,
+        )
+        if not isinstance(duty, dict):
+            raise identity.DutyIdentityError("duty %r is not declared" % duty_key)
+        env_path = identity.duty_env_path(duty, declaration["ops_root"], reading=True)
+    except identity.DutyIdentityError as error:
+        raise SystemExit(tag + " BLOCKED " + str(error))
     if not env_path.is_file():
-        raise SystemExit(tag + " BLOCKED missing env file %s" % env_path)
+        raise SystemExit(tag + " BLOCKED missing duty env file %s" % env_path)
+
     rows = env_path.read_text(encoding="utf-8").splitlines()
     key_rows = [i for i, row in enumerate(rows) if row.startswith(KEY + "=")]
     if len(key_rows) != 1:
-        raise SystemExit(tag + " BLOCKED env file must declare exactly one " + KEY)
+        raise SystemExit(tag + " BLOCKED duty env file must declare exactly one " + KEY)
     current = rows[key_rows[0]].split("=", 1)[1].strip()
 
     changed = current != expected_sha
@@ -104,6 +149,8 @@ with lock_path.open("a+b") as lock:
     restarted = False
     rolled_back = False
     restart_tail = ""
+    container = ""
+    project = ""
 
     if changed:
         backup_path = str(env_path) + ".bak"
@@ -118,12 +165,12 @@ with lock_path.open("a+b") as lock:
         if not verified:
             shutil.copy2(backup_path, env_path)
             raise SystemExit(tag + " BLOCKED env write not verified; restored")
-        code, restart_tail = restart()
+        code, restart_tail, container, project = restart(duty, env_path)
         restarted = True
         if code:
             shutil.copy2(backup_path, env_path)
-            restart()
-            raise SystemExit(tag + " BLOCKED governed restart failed; env restored")
+            restart(duty, env_path)
+            raise SystemExit(tag + " BLOCKED governed duty restart failed; env restored")
 
     deadline = time.time() + 180
     served = None
@@ -136,13 +183,16 @@ with lock_path.open("a+b") as lock:
     ok = bool(served and served.get("git_sha") == expected_sha)
     if not ok and changed:
         shutil.copy2(backup_path, env_path)
-        restart()
+        restart(duty, env_path)
         rolled_back = True
 
     print(json.dumps({
         "status": "PASS" if ok else "BLOCKED",
         "expected_sha": expected_sha,
         "head": head_sha,
+        "duty": duty_key,
+        "compose_project": project,
+        "container": container,
         "previous_revision": current,
         "env_file": str(env_path),
         "env_written": changed,
@@ -157,9 +207,7 @@ with lock_path.open("a+b") as lock:
 '''
 
 
-def remote_command(
-    expected_sha: str, env_name: str, env_file: str, service: str, base_url: str
-) -> str:
+def remote_command(expected_sha: str, duty: str, base_url: str) -> str:
     return " ".join(
         shlex.quote(item)
         for item in (
@@ -167,22 +215,22 @@ def remote_command(
             "-c",
             REMOTE_ALIGN,
             expected_sha,
-            env_name,
-            env_file,
-            service,
+            duty,
             base_url,
             REMOTE_ROOT,
         )
     )
 
 
-def preflight(expected_sha: str, ssh_host: str) -> None:
+def preflight(expected_sha: str, ssh_host: str, duty: str) -> None:
     if os.environ.get("CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN") != CONFIRMATION:
         raise AlignError("exact daily runtime source-revision alignment confirmation is required")
     if not FULL_SHA.fullmatch(expected_sha or ""):
         raise AlignError("expected revision must be a full lowercase commit SHA")
     if not SSH_HOST.fullmatch(ssh_host or ""):
         raise AlignError("ssh host must be a configured host alias")
+    if not DUTY.fullmatch(duty or ""):
+        raise AlignError("duty must be one declared duty key")
 
 
 def run(command: list[str]) -> subprocess.CompletedProcess[bytes]:
@@ -194,12 +242,10 @@ def run(command: list[str]) -> subprocess.CompletedProcess[bytes]:
 def align(
     expected_sha: str,
     ssh_host: str,
-    env_name: str,
-    env_file: str,
-    service: str,
+    duty: str,
     base_url: str,
 ) -> dict[str, object]:
-    preflight(expected_sha, ssh_host)
+    preflight(expected_sha, ssh_host, duty)
     command = [
         "ssh",
         "-o",
@@ -211,7 +257,7 @@ def align(
         "-o",
         "ServerAliveCountMax=4",
         ssh_host,
-        remote_command(expected_sha, env_name, env_file, service, base_url),
+        remote_command(expected_sha, duty, base_url),
     ]
     result = run(command)
     if result.returncode:
@@ -229,6 +275,7 @@ def align(
         evidence.get("status") != "PASS"
         or evidence.get("expected_sha") != expected_sha
         or evidence.get("head") != expected_sha
+        or evidence.get("duty") != duty
         or evidence.get("remote_root") != REMOTE_ROOT
         or evidence.get("rolled_back") is not False
         or not isinstance(served, dict)
@@ -242,9 +289,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--ssh-host", required=True)
-    parser.add_argument("--env-name", default=DEFAULT_ENV_NAME)
-    parser.add_argument("--env-file", default=DEFAULT_ENV_FILE)
-    parser.add_argument("--service", default="odoo")
+    parser.add_argument("--duty", required=True)
     parser.add_argument("--base-url", default="http://127.0.0.1:18081")
     parser.add_argument("--report", required=True)
     args = parser.parse_args()
@@ -252,9 +297,7 @@ def main() -> int:
         evidence = align(
             args.expected_sha,
             args.ssh_host,
-            args.env_name,
-            args.env_file,
-            args.service,
+            args.duty,
             args.base_url,
         )
     except AlignError as exc:
