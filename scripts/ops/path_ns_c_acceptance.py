@@ -4,7 +4,7 @@
 The script exercises the five behaviour groups that batch C froze and writes a
 JSON report with an explicit expected/actual/status triple for every check:
 
-1. entry mapping and refusal codes (308 / 400 / 409 / 404 and DB binding);
+1. entry mapping and refusal codes (400 / 409 / 404 and DB binding);
 2. same-name ``admin`` authentication isolation across the two entries;
 3. bidirectional token replay between the tenant and platform entries;
 4. independent sessions and logout scope;
@@ -32,6 +32,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import shlex
 import subprocess
 import sys
 import time
@@ -85,13 +87,29 @@ def _content_type(headers):
     return (headers.get("Content-Type") or "").split(";")[0].strip()
 
 
-def _login(opener, base, path):
+CREDENTIAL_ENV_KEYS = ("SC_PATH_NS_TENANT_PASSWORD", "SC_PATH_NS_PLATFORM_PASSWORD")
+
+
+def _credentials():
+    values = {key: os.environ.get(key, "") for key in CREDENTIAL_ENV_KEYS}
+    missing = [key for key, value in values.items() if not value]
+    if missing:
+        raise ValueError("managed namespace acceptance credentials required: " + ", ".join(missing))
+    return values
+
+
+def _root_requires_namespace(status, headers, raw):
+    return (status == 400 and _json(raw).get("error") == "NS_NAMESPACE_REQUIRED"
+            and _content_type(headers) == "application/json")
+
+
+def _login(opener, base, path, password):
     status, headers, raw = _call(
         opener,
         base + path + "/api/v1/intent",
         method="POST",
         headers={"X-Anonymous-Intent": "1"},
-        body={"intent": "login", "params": {"login": "admin", "password": "123456"}},
+        body={"intent": "login", "params": {"login": "admin", "password": password}},
     )
     doc = _json(raw)
     token = ""
@@ -152,6 +170,7 @@ def _provenance(repo, expected_sha):
 
 
 def run_checks(base_url, expected_sha, repo):
+    credentials = _credentials()
     opener = _opener()
     checks = []
     started = time.time()
@@ -204,10 +223,10 @@ def run_checks(base_url, expected_sha, repo):
     status, headers, raw = _call(opener, base_url + "/")
     add(
         "entry_contract",
-        "root_redirects_to_tenant_namespace",
-        {"status": 308, "location": "/t/demo/"},
-        {"status": status, "location": headers.get("Location")},
-        status == 308 and headers.get("Location") == "/t/demo/",
+        "bare_root_requires_a_namespace",
+        {"status": 400, "error": "NS_NAMESPACE_REQUIRED"},
+        {"status": status, "error": _json(raw).get("error")},
+        _root_requires_namespace(status, headers, raw),
     )
 
     status, headers, raw = _call(opener, base_url + "/api/runtime-version")
@@ -291,7 +310,7 @@ def run_checks(base_url, expected_sha, repo):
         )
 
     # ---- group 2: same-name admin isolation ------------------------------
-    demo_status, demo_token, _ = _login(opener, base_url, tenant)
+    demo_status, demo_token, _ = _login(opener, base_url, tenant, credentials["SC_PATH_NS_TENANT_PASSWORD"])
     add(
         "dual_entry_auth",
         "demo_entry_admin_login_succeeds",
@@ -300,7 +319,7 @@ def run_checks(base_url, expected_sha, repo):
         demo_status == 200 and bool(demo_token),
     )
 
-    plat_status, plat_token, _ = _login(opener, base_url, platform)
+    plat_status, plat_token, _ = _login(opener, base_url, platform, credentials["SC_PATH_NS_PLATFORM_PASSWORD"])
     add(
         "dual_entry_auth",
         "platform_entry_admin_login_succeeds",
@@ -390,7 +409,7 @@ def run_checks(base_url, expected_sha, repo):
         headers={"X-Anonymous-Intent": "1"},
         body={
             "intent": "login",
-            "params": {"login": "admin", "password": "123456", "company_id": 999},
+            "params": {"login": "admin", "password": credentials["SC_PATH_NS_TENANT_PASSWORD"], "company_id": 999},
         },
     )
     doc = _json(raw)
@@ -423,7 +442,10 @@ def run_checks(base_url, expected_sha, repo):
 
 
 def _run_remote(args):
-    source = Path(__file__).read_bytes()
+    # Secrets travel only through SSH stdin, never command arguments or reports.
+    values = _credentials()
+    source = ("import os\nos.environ.update(" + repr(values) + ")\n"
+              + "exec(compile(" + repr(Path(__file__).read_bytes()) + ", 'path_ns_c_acceptance.py', 'exec'))\n").encode()
     remote = [
         "python3",
         "-",
@@ -445,7 +467,7 @@ def _run_remote(args):
             "-o",
             "BatchMode=yes",
             args.ssh_host,
-            " ".join(remote),
+            shlex.join(remote),
         ],
         input=source,
         capture_output=True,
@@ -469,6 +491,12 @@ def main():
     if args.ssh_host:
         text, err, code = _run_remote(args)
         report = json.loads(text)
+        if code != 0:
+            report["checks"].append({"group": "transport", "name": "remote_execution_succeeded",
+                                     "expected": 0, "actual": code, "status": "fail"})
+            report["summary"]["total"] += 1
+            report["summary"]["failed"] += 1
+            report["summary"]["status"] = "FAIL"
     else:
         report = run_checks(args.base_url, args.expected_sha, args.repo)
         code = 0 if report["summary"]["failed"] == 0 else 1
@@ -490,7 +518,7 @@ def main():
                     "  FAIL %s/%s expected=%s actual=%s\n"
                     % (item["group"], item["name"], item["expected"], item["actual"])
                 )
-    return 0 if report["summary"]["failed"] == 0 else 1
+    return 0 if code == 0 and report["summary"]["failed"] == 0 else 1
 
 
 if __name__ == "__main__":

@@ -31,7 +31,11 @@
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
-    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "scripts/ops/path_ns_c_acceptance.py",
+    "scripts/ops/test_path_ns_c_acceptance.py",
+    "config/acceptance/evolution_binding.v1.json",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -214,12 +218,39 @@
       "log": "/tmp/p1-exact-head-quick.log",
       "owner": "P4 guard registry filename recognition",
       "recovery": "equivalent unittest file-path invocation; no product/test/assertion changes"
+    },
+    "namespace_probe_unit": {
+      "status": "passed",
+      "tests": 9,
+      "layer": "L2",
+      "command": "make verify.path_namespace.acceptance.unit",
+      "log": "/tmp/p1-namespace-tool-unit-final.log"
+    },
+    "acceptance_binding_unit": {
+      "status": "passed",
+      "tests": 27,
+      "layer": "L2",
+      "command": "make verify.acceptance.evolution.binding",
+      "log": "/tmp/p1-namespace-tool-unit.log"
+    },
+    "quick_v2": {
+      "status": "not_run",
+      "execution": "cancelled after start; no receipt",
+      "head": "cef06a367",
+      "reason": "independent review identified stale runtime acceptance probe before finalization"
+    },
+    "readonly_record_identity": {
+      "status": "passed",
+      "head": "2714c3a06b2006cb5f358bbbe24742fd7db93bf3",
+      "report": ".runtime/p1-user-permission-closeout/record_identity_report.json",
+      "writes": "remote temporary tool file only; no database writes"
     }
   },
   "blockers": [
-    "精确 HEAD Quick 首轮因测试入口识别遗漏失败；已改用等价文件路径，待定向验证及新候选 Quick；远端 CI/主线集成尚未完成"
+    "集成命名空间探针旧裸根重定向断言/硬编码口令需P4最小修复；实际平台与租户admin凭据权威需确认，不修改账号或密码",
+    "列表结构与关系回环精确运行证据待补；Quick cef06因已知前置缺陷主动停止，不作为成功"
   ],
-  "next_exact_step": "验证守卫登记和10项测试，freeze.prepare并提交工具入口修正；精确Quick、集成运行证据、独立复核、受保护PR",
+  "next_exact_step": "P4探针定向测试及独立复核；确认现有受管凭据来源；冻结后重采必需集成运行证据，精确Quick和受保护PR",
   "takeover": {
     "owner": "current assistant",
     "authority": "用户明确要求接管 P1 后续收口",
@@ -230,13 +261,9 @@
     "previous_writer_stopped": "owner confirmed in conversation"
   },
   "stage_identity": {
-    "head": "2714c3a06b2006cb5f358bbbe24742fd7db93bf3",
+    "head": "cef06a367a01b08d97c1476e02ca92c89bd92434",
     "dirty": true,
-    "scope": [
-      "make/runtime_ops.mk",
-      ".agent/runs/P1-USER-PERMISSION-SURFACE-SPLIT-20261019/run.json",
-      "docs/ops/iterations/user_permission_surface_split_20261019.md"
-    ]
+    "scope": "P4 namespace acceptance probe/registry/tests and current run record"
   },
   "evidence_logs": {
     ".runtime/p1-user-permission-closeout/p1-permission-iteration.log": "cf2cd3bf9a6c5dd055059ce0ac6e8f15cfcc720f54716ddbd212a346a1142bf3",

@@ -2462,3 +2462,7 @@ daily.personnel_views: guard.prod.forbid verify.daily.personnel_views.unit
 		--duty "$(PERSONNEL_VIEWS_DUTY)" --expected-sha "$(EXPECTED_HEAD)" \
 		--declaration-sha256 "$(PERSONNEL_VIEWS_DECLARATION_SHA256)" \
 		--plan-sha256 "$(PERSONNEL_VIEWS_PLAN_SHA256)" --verify-target "$(or $(PERSONNEL_VIEWS_VERIFY_TARGET),apply)"
+
+.PHONY: verify.path_namespace.acceptance.unit
+verify.path_namespace.acceptance.unit: guard.prod.forbid
+	@python3 -m unittest scripts/ops/test_path_ns_c_acceptance.py -v

@@ -24,7 +24,7 @@ PATH_NS_CHECKS = [
     "server_head_matches_expected",
     "server_worktree_clean",
     "server_applied_commit_in_history",
-    "root_redirects_to_tenant_namespace",
+    "bare_root_requires_a_namespace",
     "bare_api_requires_namespace",
     "database_header_hint_refused",
     "database_query_hint_refused",

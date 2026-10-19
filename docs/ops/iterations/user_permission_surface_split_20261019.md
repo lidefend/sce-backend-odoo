@@ -206,3 +206,11 @@ PR 必须明确包含这五个既有候选提交；既有 Demo 种子源代码�
 候选 2714c3a06b2006cb5f358bbbe24742fd7db93bf3 已在日常服务器受管同步，三个人员视图 apply/verify、demo/platform_control refresh 和入口核验通过；10 个业务/授权事实表摘要不变，无升级、seed/reset。两入口 form-profiles 共 24 项、detail-only 共 16 项通过，1440/390 宽度均无运行错误。原始证据在 `.runtime/p1-user-permission-closeout/`；外部归档见该目录 archive receipt。权限角色显示 #117 留作关系标签来源后续调查，不宣称完整权限 UX 已收口。
 
 首轮精确 HEAD Quick 在守卫登记检查失败：unittest 模块写法被识别为文件消费但未被归类为 Make 接线。P4 最小修正为等价的 unittest 文件路径写法，测试断言不变。影响集仅 make/runtime_ops.mk 的这一验证命令及台账；产品、浏览器探针和部署工具输入未变，已完成页面/业务事实结果保留，新的候选重新取得 Quick。主线集成仍 pending。
+
+### 集成探针过期断言修复（P4）
+
+Quick v2 在 cef06a367 启动后，独立复核发现更早集成前置缺口，已主动停止，不记 PASS。现有 path_ns_c 探针及 evolution 绑定仍要求裸根308跳Demo，与生效入口声明要求400/NS_NAMESPACE_REQUIRED相冲突；还硬编码 admin 密码。仅修验收工具与绑定：裸根拒绝、两职责admin显式凭据输入（缺失在网络前停止）、SSH stdin传递凭据且参数安全引用。保留同名登录、跨库重放拒绝、退出隔离与公司拒绝，不改认证、入口或数据库事实。9项探针单测与27项绑定单测通过。实际凭据须取既有受管权威，不能把数据库密码/引导密钥推定为网页密码；已请求现有路径，不要求改密码。
+
+完整合并证据还要求列表结构与关系回环，其现有声明最小项不由40个定向表单项替代。复用已有只读入口和受管记录解析，不补fixture。现有测试产生的 aaaa… 空 evidence manifest不是验收回执，不得继承。待工具收敛后统一冻结、补实际证据、取得Quick及远端门禁。
+
+复核补充：远端非零退出即使返回PASS JSON也必须失败，并将传输失败写入报告。受管 `daily.runtime.record_identity.resolve` 已只读解析2714实际部署的现有记录，证据 `record_identity_report.json`；未安装或补充夹具。
