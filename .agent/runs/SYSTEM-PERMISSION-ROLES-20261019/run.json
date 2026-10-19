@@ -289,11 +289,9 @@
     }
   },
   "blockers": [
-    "Integration dependency: baseline includes unpublished product-menu commits 0f896044a and 2eb4cae26 atop authoritative GitHub main 86c03b7a3a502028e5ad656f7c8cb34fd3bedff4; no parent PR found. Do not publish unrelated baseline commits silently.",
-    "Gitee main 41c7a9dd4c6a854dc344ca1d7f4033186f66c35a is 124 commits behind task baseline; not a safe shortcut for this candidate.",
-    "Product acceptance gaps retained under product_acceptance_gaps; historical source location still awaiting owner input."
+    "Current-head Quick and GitHub required CI pending; whole-product gaps remain separate."
   ],
-  "next_exact_step": "保存P0/P1/P4责任提交与精确候选独立审查；先解决未发布菜单配置前置依赖，再按权威远端车道做最终Quick/发布。禁止直接main或夹带124历史提交。",
+  "next_exact_step": "冻结当前提交，补审仅P4 include/记录变动，运行精确HEAD Quick，随后受管GitHub PR发布与必需CI。",
   "results": {
     "inventory_unit": {
       "status": "passed",
@@ -1487,7 +1485,22 @@
       "No remote witness provisioning or executive product release",
       "No production deployment or whole-product acceptance"
     ],
-    "rationale": "AGENTS separates PR integration from selected-version/full-product acceptance. Historical unresolved state is an intentional fail-closed behavior verified by tests; missing remote witnesses and unreleased menu are unchanged product-delivery gaps, not failures introduced by the safety patch. Original goal remains incomplete."
+    "rationale": "AGENTS separates PR integration from selected-version/full-product acceptance. Historical unresolved state is an intentional fail-closed behavior verified by tests; missing remote witnesses and unreleased menu are unchanged product-delivery gaps, not failures introduced by the safety patch. Original goal remains incomplete.",
+    "target_base": "86c03b7a3a502028e5ad656f7c8cb34fd3bedff4",
+    "menu_prerequisites": "Owner requested mainline integration; 0f896044a and 2eb4cae26 explicitly included and independently reviewed."
   },
-  "post_commit_receipt": ".runtime/system-permission-roles/integration-finalization.json"
+  "post_commit_receipt": ".runtime/system-permission-roles/integration-finalization.json",
+  "integration_quick_recovery": {
+    "failed_head": "774220255981390ee878f33c350efad11f886bc8",
+    "log": ".runtime/system-permission-roles/integration-quick.log",
+    "failure": "Makefile 274 lines > 272",
+    "owning_layer": "P4",
+    "fix": "Append role_authority include to existing include line; preserve exact include order and target definitions",
+    "impact": "Makefile gate inputs changed; revalidate L1 and focused permission tool units; unchanged product source and runtime tests carried forward",
+    "results": {
+      "iteration": "passed; integration-recovery-iteration.log",
+      "targeted": "passed; complexity +10 assignment +14 inventory tests; integration-recovery-targeted.log",
+      "freeze_prepare": "passed; no generated tracked changes; integration-freeze-recovery.log"
+    }
+  }
 }

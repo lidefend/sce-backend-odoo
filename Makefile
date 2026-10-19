@@ -269,6 +269,4 @@ include make/tenant_boundary.mk
 include make/frontend.mk
 include make/codex.mk
 include make/dev_test.mk
-include make/ci.mk make/registry_audit.mk
-
-include make/role_authority.mk
+include make/ci.mk make/registry_audit.mk make/role_authority.mk

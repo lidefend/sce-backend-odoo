@@ -366,3 +366,7 @@ P4文档/生成证据准备阶段：执行ci.delivery.freeze.prepare并审阅生
 
 18项台账单测通过；改变台账输入后ci.delivery.freeze.prepare通过（freeze-prepare-after-ledger.log）。生成差异已审阅：测试资产1567→1572导致排序编号后移，扫描文件4900→4920，模块版本按本候选更新；无新增产品语义。纳入run.scope后保存P0/P1/P4责任提交。
 远端精确检查发现：GitHub权威main=86c03b7a3a502028e5ad656f7c8cb34fd3bedff4，当前任务基线在其上包含0f896044a/2eb4cae26两条菜单配置前置提交，查询对应branch全部状态PR返回空。Gitee main=41c7a9dd4c6a854dc344ca1d7f4033186f66c35a，是任务基线的祖先且落后124提交；不能将“main前进”初步判断当作事实，已纠正。不得把本专题责任提交连同无关历史悄然发布。该前置集成依赖是具体发布阻断，最终Quick/推送保持pending；仍可保存本地责任提交和准备精确候选审查，不能宣称主线集成。post-commit证据仅写既有.runtime区域，tracked run引用integration-finalization.json。
+
+### 主线集成续跑（2026-10-20）
+
+所有者要求集成主线；以 GitHub main `86c03b7a3a502028e5ad656f7c8cb34fd3bedff4` 为目标，显式纳入两条菜单前置提交并完成独立补审。首轮 clean Quick 在 `774220255` 因 Makefile 274 行超过 272 行失败。P4 修复仅合并末尾 include 行，顺序及目标定义不变，不放宽门禁。重验静态入口及权限工具单元测试；P0/P1源与原运行时测试输入不变，沿用原证据。最终身份、Quick和远端状态继续写原 run 指向的 post_commit_receipt；尚未合并、部署或全产品验收。
