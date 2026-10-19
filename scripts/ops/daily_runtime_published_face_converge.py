@@ -27,10 +27,12 @@ itself, never touches ``main``, and never lowers the released assertion.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -41,7 +43,7 @@ import daily_runtime_duty_identity as duty_identity  # noqa: E402
 
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
 DEFAULT_ENV_NAME = "dev"
-DEFAULT_ENV_FILE = ".env.dev"
+DEFAULT_ENV_FILE = ""
 DEFAULT_DATABASE = ""
 DEFAULT_PRODUCT_KEYS = "construction.standard,construction.preview"
 CONFIRMATION = "REFRESH_DAILY_RUNTIME_PUBLISHED_FACE_FROM_LOCKED_CONTRACT"
@@ -137,12 +139,92 @@ reuse_reason = (
     else "no matching verified module-tree identity; upgrade stays required"
 )
 
+sys.path.insert(0, str(root / "scripts" / "ops"))
+import daily_runtime_duty_identity as duty_identity
+
+
+def refuse(reason, **extra):
+    payload = {"status": "BLOCKED", "reason": reason, "head": head, "remote_root": str(root)}
+    payload.update(extra)
+    emit(payload, 1)
+
+
+try:
+    declaration = duty_identity.load_declaration()
+    resolved_duty = duty_identity.resolve(duty_name)
+except duty_identity.DutyIdentityError as exc:
+    refuse("DUTY_IDENTITY_UNRESOLVED", detail=str(exc))
+
+resolved_database = str(resolved_duty.get("database") or "")
+carrier = str(resolved_duty.get("compose_project") or "")
+role = str(resolved_duty.get("database_role") or "")
+if not resolved_database or not carrier or not role:
+    refuse("DUTY_IDENTITY_INCOMPLETE", duty=duty_name)
+if resolved_database != database:
+    refuse("DUTY_DATABASE_MISMATCH", duty=duty_name, resolved=resolved_database, asked=database)
+
+ops_root = Path(str(declaration.get("ops_root") or ""))
+if not str(ops_root).startswith("/"):
+    refuse("DUTY_OPS_ROOT_UNDECLARED", duty=duty_name)
+try:
+    duty_env_file = duty_identity.duty_env_path(resolved_duty, ops_root, reading=True)
+except duty_identity.DutyIdentityError as exc:
+    refuse("DUTY_ENV_UNRESOLVED", duty=duty_name, detail=str(exc))
+if not duty_env_file.is_file():
+    refuse("DUTY_ENV_MISSING", duty=duty_name, duty_env_file=str(duty_env_file))
+
+duty_values = {}
+for row in duty_env_file.read_text(encoding="utf-8").splitlines():
+    row = row.strip()
+    if not row or row.startswith("#") or "=" not in row:
+        continue
+    key, _, value = row.partition("=")
+    duty_values[key.strip()] = value.strip()
+
+# The duty environment is the only authority for the carrier, the database role
+# and the credentials of this run.  A file that disagrees with the declaration
+# is a stop, never an input: a wrong carrier here writes another deployment.
+if duty_values.get("COMPOSE_PROJECT_NAME") != carrier:
+    refuse(
+        "DUTY_ENV_CARRIER_MISMATCH",
+        duty=duty_name,
+        expected_carrier=carrier,
+        observed_carrier=duty_values.get("COMPOSE_PROJECT_NAME") or "",
+    )
+if duty_values.get("DB_USER") != role:
+    refuse("DUTY_ENV_ROLE_MISMATCH", duty=duty_name, expected_role=role)
+if duty_values.get("DB_NAME") != resolved_database:
+    refuse("DUTY_ENV_DATABASE_MISMATCH", duty=duty_name, expected_database=resolved_database)
+if not duty_values.get("DB_PASSWORD"):
+    refuse("DUTY_ENV_PASSWORD_MISSING", duty=duty_name)
+
+# An operator file that names *another* carrier is never this duty's file.  The
+# 2026-10-19 incident: ``.env.dev`` still declared the pre-governance project,
+# the make include exported its COMPOSE_PROJECT_NAME/DB_USER, and the module
+# upgrade ran against the preserved historic source.  Refusing here means the
+# same invocation can never bind one carrier's credentials to another's target.
+if env_file and str(env_file) not in (".", str(duty_env_file)):
+    candidate = Path(str(env_file))
+    if not candidate.is_absolute():
+        candidate = root / candidate
+    owner = duty_identity.carrier_owner(candidate) if candidate.is_file() else ""
+    if owner and owner != carrier:
+        refuse(
+            "OPERATOR_ENV_CARRIER_MISMATCH",
+            duty=duty_name,
+            operator_env_file=str(env_file),
+            operator_carrier=owner,
+            expected_carrier=carrier,
+        )
+
 env = dict(os.environ)
 env.update(
     {
         "ENV": env_name,
-        "ENV_FILE": env_file,
-        "DB_NAME": database,
+        "ENV_FILE": str(duty_env_file),
+        "DB_NAME": resolved_database,
+        "COMPOSE_PROJECT_NAME": carrier,
+        "DB_USER": role,
         "PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN": login,
         "PRODUCT_MENU_CATALOG_PRODUCT_KEYS": product_keys_arg,
         "CONFIRM_DAILY_PRODUCT_NAVIGATION_SNAPSHOT": "RELEASE_EXACT_DAILY_PRODUCT_NAVIGATION",
@@ -156,47 +238,33 @@ env.update(
     }
 )
 make_bin = shutil.which("make") or "/usr/bin/make"
-# The duty environment file is the container's environment, and it declares the
-# duty's own ENV (for a demo duty, ``ENV=demo``).  The make entries below are
-# operator entries: they require ``ENV=dev`` and read the database credentials
-# from the same file.  Passing those three values on the make command line is
-# what keeps the *included* file from silently overriding the declared operator
-# environment - without it the refresh reads the legacy operator defaults and
-# fails to authenticate against the duty database.
-MAKE_BINDINGS = ["ENV=" + env_name, "ENV_FILE=" + env_file, "DB_NAME=" + database]
+# The duty environment file declares the duty's own ENV (a demo duty says
+# ``ENV=demo``), while the make entries below are operator entries that require
+# ``ENV=dev``.  Command-line assignments win over the included file, so the
+# duty's *carrier* keys come from the duty file and only the operator ENV is
+# overridden.  Binding the duty file itself (instead of the checkout's
+# ``.env.dev``) is what keeps the legacy carrier and its credentials out of the
+# environment the remote make recipes inherit.
+MAKE_BINDINGS = [
+    "ENV=" + env_name,
+    "ENV_FILE=" + str(duty_env_file),
+    "DB_NAME=" + resolved_database,
+    "COMPOSE_PROJECT_NAME=" + carrier,
+    "DB_USER=" + role,
+]
 
-# The published face is frozen *from* the locked contract through the module code
-# that projects it, so the projection code must be live before the freeze: a face
-# frozen from stale projection code silently publishes the previous contract.
+# The module upgrade is *not* run here.  The checkout's ``mod.upgrade`` entry
+# drives the repository compose file with whatever carrier the included env file
+# happens to name; on 2026-10-19 that wrote the preserved historic source while
+# this entry claimed to converge the duty.  The duty upgrade is owned by the
+# governed ``daily.runtime.database.duty.upgrade`` entry, which captures a
+# verified recovery point inside the duty's own backup namespace, renders the
+# duty's own stack and upgrades the declaration's module set.  This remote step
+# only freezes the published face and proves the guard, so it starts from code
+# that the governed entry already made live.
 upgrade_returncode = 0
 upgrade_tail = ""
-upgrade_mode = "skipped"
-if reuse_upgrade:
-    upgrade_mode = "reused"
-elif modules:
-    upgrade_mode = "run"
-    upgrade = subprocess.run(
-        [make_bin, *MAKE_BINDINGS, "mod.upgrade", "MODULE=" + ",".join(modules)],
-        cwd=str(root),
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
-    upgrade_returncode = int(upgrade.returncode)
-    upgrade_tail = (upgrade.stdout or "")[-1500:]
-    if upgrade_returncode:
-        emit(
-            {
-                "status": "FAIL",
-                "reason": "MODULE_UPGRADE_FAILED",
-                "head": head,
-                "modules": modules,
-                "module_upgrade_returncode": upgrade_returncode,
-                "module_upgrade_tail": upgrade_tail,
-            },
-            1,
-        )
+upgrade_mode = "reused" if reuse_upgrade else "governed_entry"
 
 proc = subprocess.run(
     [make_bin, *MAKE_BINDINGS, "release.daily_product_navigation.converge"],
@@ -305,6 +373,11 @@ emit(
         "upgrade_mode": upgrade_mode,
         "module_tree_ids": deployed_tree_ids,
         "upgrade_reuse_reason": reuse_reason,
+        "duty": duty_name,
+        "duty_carrier": carrier,
+        "duty_database_role": role,
+        "duty_env_file": str(duty_env_file),
+        "operator_env_file_binding": str(duty_env_file),
         "module_upgrade_returncode": upgrade_returncode,
         "converge_returncode": int(proc.returncode),
         "converge_tail": (proc.stdout or "")[-1500:],
@@ -451,6 +524,7 @@ def converge(
     modules: list[str],
     duty: str,
     reuse_tree_ids: dict[str, str] | None = None,
+    binding: dict | None = None,
 ) -> dict[str, object]:
     preflight(expected_sha, ssh_host, login, product_keys, modules)
     command = [
@@ -490,9 +564,20 @@ def converge(
         or sorted(evidence.get("product_keys") or []) != sorted(product_keys)
         or evidence.get("guard_status") != "PASS"
         or sorted(evidence.get("modules") or []) != sorted(modules)
-        or (modules and evidence.get("upgrade_mode") not in ("run", "reused"))
+        or (modules and evidence.get("upgrade_mode") not in ("run", "reused", "governed_entry"))
     ):
         raise ConvergeError("daily runtime published-face evidence differs from the declared scope")
+    if binding is not None:
+        # The remote resolves the carrier from the duty declaration; a run that
+        # upgraded or frozen another carrier must never be accepted as this
+        # duty's convergence, even when every menu count happens to agree.
+        if (
+            str(evidence.get("duty") or "") != str(binding.get("duty") or "")
+            or str(evidence.get("duty_carrier") or "") != str(binding.get("compose_project") or "")
+            or str(evidence.get("duty_database_role") or "") != str(binding.get("database_role") or "")
+            or str(evidence.get("duty_env_file") or "") != str(evidence.get("operator_env_file_binding") or "")
+        ):
+            raise ConvergeError("daily runtime published-face evidence names another carrier")
     if modules:
         observed = evidence.get("module_tree_ids")
         if (
@@ -520,6 +605,101 @@ def converge(
     return evidence
 
 
+
+
+def canonical_digest(payload: dict) -> str:
+    """The digest the governed duty entry compares, over a canonical JSON form.
+
+    The entry hashes the *merged* declaration (tracked template plus the managed
+    instance document), not the raw file bytes, so hashing the file would always
+    be refused as a stale review.
+    """
+    return hashlib.sha256(
+        json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    ).hexdigest()
+
+
+def declared_duty_modules(options, *, instances_reader=None) -> list[str]:
+    """The module set the duty declaration owns.
+
+    The published-face entry declares *which* projection code must be live; the
+    declaration owns *what* the duty upgrades.  A caller asking for a module the
+    duty does not declare is stating another duty's scope, so it is refused.
+    """
+    try:
+        reader = instances_reader
+        if reader is None:
+            reader = duty_identity.ssh_instances_reader(options.ssh_host)
+        declaration = duty_identity.load_declaration(instances_reader=reader)
+    except duty_identity.DutyIdentityError as error:
+        raise ConvergeError(str(error))
+    for entry in declaration.get("duties") or []:
+        if str(entry.get("duty") or "") == str(getattr(options, "duty", "")):
+            return [str(item) for item in ((entry.get("stack") or {}).get("modules") or [])]
+    raise ConvergeError("the declared duty carries no module set: %s" % (getattr(options, "duty", ""),))
+
+
+def run_governed_duty_upgrade(options, binding: dict) -> dict:
+    """Upgrade the duty through its own governed entry, never ``mod.upgrade``.
+
+    ``mod.upgrade`` drives the repository compose file with the carrier named by
+    the included operator env file; that is how a convergence run wrote the
+    preserved historic source on 2026-10-19.  The governed entry renders the
+    duty's own stack, upgrades exactly the declaration's module set and captures
+    a verified recovery point inside the duty's own backup namespace first.
+    """
+    repository = Path(options.repository).resolve()
+    entry_declaration = repository / "config" / "ops" / "daily_runtime_entry.v1.json"
+    reader = duty_identity.ssh_instances_reader(options.ssh_host)
+    try:
+        declaration = duty_identity.load_declaration(instances_reader=reader)
+    except duty_identity.DutyIdentityError as error:
+        raise ConvergeError(str(error))
+    entry = json.loads(entry_declaration.read_text(encoding="utf-8"))
+    env = dict(os.environ)
+    env.update(
+        {
+            "SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE": "UPGRADE_DAILY_RUNTIME_DUTY_DECLARED_MODULES",
+            "DAILY_RUNTIME_DATABASE_DUTY_SELECTION": str(binding.get("duty") or ""),
+            "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST": canonical_digest(declaration),
+            "DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST": canonical_digest(entry),
+            "DAILY_RUNTIME_EXPECTED_SHA": options.expected_sha,
+            "DAILY_RUNTIME_SSH_HOST": options.ssh_host,
+        }
+    )
+    make_bin = shutil.which("make") or "/usr/bin/make"
+    completed = subprocess.run(
+        [make_bin, "--no-print-directory", "daily.runtime.database.duty.upgrade"],
+        cwd=str(repository),
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    tail = (completed.stdout or "")[-2000:]
+    if completed.returncode:
+        raise ConvergeError(
+            "governed duty upgrade failed: %s" % (tail.strip() or "no output")
+        )
+    report_path = repository / ".runtime" / "final-acceptance" / "daily-deployed" / "database-duty-upgrade.json"
+    report: dict = {}
+    try:
+        payload = json.loads(report_path.read_text(encoding="utf-8"))
+        if isinstance(payload, dict):
+            report = payload
+    except (OSError, ValueError):
+        report = {}
+    if report and str(report.get("status") or "") != "PASS":
+        raise ConvergeError("governed duty upgrade did not pass: %s" % (report.get("reason") or report.get("status")))
+    return {
+        "returncode": int(completed.returncode),
+        "report": str(report_path.relative_to(repository)),
+        "status": str(report.get("status") or ""),
+        "remote_head": str(report.get("remote_head") or ""),
+        "expected_sha": str(report.get("expected_sha") or ""),
+        "recovery_point": ((report.get("observation") or {}).get("duties") or [{}])[0].get("recovery_point") or {},
+        "tail": tail[-800:],
+    }
 
 
 def bind_target(options, *, instances_reader=None) -> dict:
@@ -550,7 +730,11 @@ def main() -> int:
         help="modules whose projection code must be live before the face is frozen (empty to skip)",
     )
     parser.add_argument("--env-name", default=DEFAULT_ENV_NAME)
-    parser.add_argument("--env-file", default=DEFAULT_ENV_FILE)
+    parser.add_argument(
+        "--env-file",
+        default=DEFAULT_ENV_FILE,
+        help="optional operator env file; the duty's own file is always resolved remotely and another carrier is refused",
+    )
     parser.add_argument("--database", default=DEFAULT_DATABASE)
     parser.add_argument("--duty", default="", help="the declared duty this entry binds; a database name alone is not a target identity")
     parser.add_argument("--report", required=True, help="report path for the governed evidence envelope")
@@ -565,9 +749,18 @@ def main() -> int:
     modules = parse_modules(args.upgrade_modules)
     tree_ids = module_tree_ids(Path(args.repository), args.expected_sha, modules)
     binding = bind_target(args)
+    declared_modules = declared_duty_modules(args)
+    if modules and not set(modules).issubset(declared_modules):
+        raise ConvergeError(
+            "requested upgrade modules are outside the duty declaration: %s"
+            % ",".join(sorted(set(modules) - set(declared_modules)))
+        )
     reuse_tree_ids = {} if args.force_upgrade else reuse_hint(
         args.report, binding["database"], modules, tree_ids,
     )
+    governed_upgrade = None
+    if modules and not reuse_tree_ids:
+        governed_upgrade = run_governed_duty_upgrade(args, binding)
     evidence = converge(
         args.expected_sha,
         args.ssh_host,
@@ -579,6 +772,7 @@ def main() -> int:
         modules,
         str(binding.get("id") or binding.get("duty") or ""),
         reuse_tree_ids,
+        binding,
     )
     report = {
         "schema": "daily.runtime.published_face_converge.v1",
@@ -593,6 +787,8 @@ def main() -> int:
         "database_binding": binding,
         "product_keys": product_keys,
         "upgrade_modules": modules,
+        "declared_duty_modules": declared_modules,
+        "governed_upgrade": governed_upgrade,
         **evidence,
     }
     target = Path(args.report)

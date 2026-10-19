@@ -82,10 +82,19 @@ UPGRADE_CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE"
 #: borrowing either one and reading as a provision.
 SEED_CONFIRMATION = "SEED_DAILY_RUNTIME_DUTY_DEMO_DATA"
 SEED_CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DUTY_SEED"
+#: Rebuilding a demo duty is the widest *data* mutation this entry offers: it
+#: drops the duty's own database, recreates it from the declaration, installs
+#: the declared module set and runs the declared demo chain. It is legal only
+#: for a duty that declares ``data_purpose=demo`` and whose carrier is not a
+#: preserved historic source, because "this demo may be rebuilt" is a property
+#: of that carrier -- not of a database name two carriers may share.
+RECREATE_CONFIRMATION = "RECREATE_DAILY_RUNTIME_DUTY_FROM_DECLARED_SEED"
+RECREATE_CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DUTY_RECREATE"
 PHASE_CONFIRMATIONS = {
     "refresh": (REFRESH_CONFIRM_ENV, REFRESH_CONFIRMATION),
     "upgrade": (UPGRADE_CONFIRM_ENV, UPGRADE_CONFIRMATION),
     "seed": (SEED_CONFIRM_ENV, SEED_CONFIRMATION),
+    "recreate": (RECREATE_CONFIRM_ENV, RECREATE_CONFIRMATION),
 }
 POSTGRES_DATA_DESTINATION = "/var/lib/postgresql/data"
 #: ``initialize`` brings up the declared services and installs the declared
@@ -98,7 +107,8 @@ POSTGRES_DATA_DESTINATION = "/var/lib/postgresql/data"
 #: an already serving duty from the deployed source tree, after capturing and
 #: verifying a pre-upgrade recovery point, and installs nothing that the
 #: declaration does not already name.
-PHASES = ("plan", "stack", "database", "initialize", "refresh", "upgrade", "seed", "all")
+PHASES = ("plan", "stack", "database", "initialize", "refresh", "upgrade", "seed",
+          "recreate", "all")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 #: Every value the declaration must supply before a duty stack can be rendered.
@@ -1265,6 +1275,8 @@ __BASE_BOOTSTRAP_PLAN__
 __DEMO_SEED_PROGRAM__
 __REFRESH_REFUSAL__
 __UPGRADE_REFUSAL__
+__RECREATE_REFUSAL__
+__RECREATE_DATABASE__
 __PRUNE_SUPERSEDED_STACKS__
 
 report = {"mode": MODE, "phase": PHASE, "writes": False, "duties": []}
@@ -2514,9 +2526,44 @@ def duty_entry(duty):
     wants_initialization = duty["custody"].get("service_face") == "to_be_initialized"
     entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
              "create": None, "bootstrap": None, "privileges": None, "initialize": None,
-             "refresh": None, "upgrade": None, "seed": None, "recovery_point": None, "route": None,
+             "refresh": None, "upgrade": None, "seed": None, "recreate": None,
+             "recovery_point": None, "route": None,
              "service": None, "application_config": None,
              "application_credential": None, "error": ""}
+    if MODE == "apply" and PHASE == "recreate":
+        # A rebuild is the one phase that removes rows no other phase can
+        # restore, so it is judged before it starts: the duty's purpose and
+        # carrier must allow it, and a *verified* recovery point must exist
+        # before the drop. Every later step is the same governed sequence a
+        # fresh initialization uses -- declared stack, container base
+        # bootstrap, declared modules, declared demo chain -- so a rebuild can
+        # never produce a duty that a first build could not.
+        reason = recreate_refusal(duty, PAYLOAD.get("protected_historic_sources") or [])
+        if reason:
+            entry["recreate"] = {"error": reason}
+        else:
+            entry["recovery_point"] = capture_duty_recovery_point(duty)
+            if entry["recovery_point"].get("verified") is not True:
+                entry["recreate"] = {
+                    "error": "no verified recovery point precedes the rebuild",
+                    "recovery_point": entry["recovery_point"],
+                }
+            else:
+                entry["recreate"] = recreate_database(duty)
+                if not entry["recreate"].get("error"):
+                    entry["stack"] = materialise_stack_files(duty)
+                    entry["stack"]["start"] = start_services(duty)
+                    container = service_container(duty, "odoo")
+                    restarted = run(["docker", "restart", container], cwd=OPS_ROOT, timeout=300)
+                    entry["recreate"]["restart"] = {
+                        "command": "docker restart %s" % (container,),
+                        "returncode": restarted.returncode,
+                    }
+                    entry["bootstrap"] = await_base_bootstrap(duty)
+                    entry["privileges"] = ensure_privileges(duty)
+                    entry["initialize"] = install_modules(duty)
+                    entry["seed"] = seed_demo(duty)
+                    entry["route"] = start_route(duty)
     if MODE == "apply" and PHASE in ("stack", "all"):
         if wants_creation:
             entry["stack"] = materialise_stack_files(duty)
@@ -2674,7 +2721,8 @@ def salvage_entry(duty, error):
     """
     entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
              "create": None, "bootstrap": None, "privileges": None, "initialize": None,
-             "refresh": None, "upgrade": None, "seed": None, "recovery_point": None, "route": None,
+             "refresh": None, "upgrade": None, "seed": None, "recreate": None,
+             "recovery_point": None, "route": None,
              "service": None, "application_config": None,
              "application_credential": None, "error": "%s: %s" % (type(error).__name__, error)}
     try:
@@ -2808,6 +2856,86 @@ def upgrade_refusal(duty, *, cluster_running, base_installed):
     return ""
 
 
+def recreate_refusal(duty, protected_sources):
+    """Why ``--phase recreate`` must not rebuild this duty, or an empty string.
+
+    A rebuild drops business rows and cannot be undone from the entry itself,
+    so it is narrowed twice. First by purpose: only a duty the declaration calls
+    ``data_purpose=demo`` may be rebuilt from demo seed, because a customer or
+    platform duty's rows are not reproducible from the product's demo chain.
+    Second by *carrier*: the declaration's preserved historic sources are
+    matched on their compose project, container and data volume, never on the
+    database name -- the pre-governance source and the rebuilt demo duty are both
+    called ``sc_demo``, and that shared name is exactly why a name alone must
+    never identify a target.
+    """
+    if str(duty.get("data_purpose") or "") != DEMO_PURPOSE:
+        return ("the duty declares data_purpose=%r; only a demo duty may be rebuilt from "
+                "the product's demo chain" % (duty.get("data_purpose") or "",))
+    carrier = duty.get("cluster") or {}
+    for source in protected_sources or []:
+        if not isinstance(source, dict):
+            continue
+        cluster = source.get("cluster") or {}
+        if (
+            (cluster.get("compose_project")
+             and cluster.get("compose_project") == carrier.get("compose_project"))
+            or (cluster.get("container")
+                and cluster.get("container") == carrier.get("container"))
+            or (cluster.get("data_volume")
+                and cluster.get("data_volume") == carrier.get("data_volume"))
+        ):
+            return ("the duty's carrier is a preserved historic source (%s); it is never "
+                    "rebuilt" % (source.get("source_id") or source.get("database") or "unnamed",))
+    seed = duty.get("demo_seed") or {}
+    if str(seed.get("carrier") or "") != DEMO_SEED_CARRIER:
+        return "the declaration names no %s demo-seed carrier" % (DEMO_SEED_CARRIER,)
+    if not [str(item) for item in duty["stack"]["modules"]]:
+        return "the declaration names no module to install on the rebuilt duty"
+    return ""
+
+
+def recreate_database(duty):
+    """Drop and recreate one demo duty's database from the declaration.
+
+    The drop is the only operation no other phase performs, so it is bound to a
+    verified recovery point by the caller and to the declared carrier here. The
+    database is recreated through the same ``create_database`` path the
+    ``database`` phase uses, which reproduces the owner, the application role
+    and the public-schema privilege from the declaration instead of leaving a
+    database nobody declared. Restarting the application afterwards hands the
+    fresh database's base bootstrap back to the container entrypoint, exactly as
+    a first initialization does.
+    """
+    container = duty["cluster"]["container"]
+    password = read_env_file(credentials_path(duty)).get("DB_PASSWORD", "")
+    if not password:
+        return {"error": "the governed credential material is missing; run the stack phase"}
+    quoted = '"' + duty["database"].replace('"', '""') + '"'
+    dropped = run(
+        ["docker", "exec", "-i", container, "psql", "-U",
+         duty["cluster"]["maintenance_role"], "-d", "postgres",
+         "-v", "ON_ERROR_STOP=1", "-Atc",
+         "DROP DATABASE IF EXISTS %s WITH (FORCE)" % (quoted,)],
+        timeout=300,
+    )
+    entry = {
+        "container": container,
+        "database": duty["database"],
+        "drop_returncode": dropped.returncode,
+        "drop_error": (dropped.stderr or dropped.stdout or "").strip()[:300],
+    }
+    if dropped.returncode:
+        return entry
+    entry["create"] = create_database(container, duty, password)
+    failed = [step for step in entry["create"] if step.get("returncode")]
+    if failed:
+        entry["error"] = "the recreated database could not be prepared: %s" % (
+            failed[0].get("error") or failed[0].get("statement") or "unknown",)
+    return entry
+
+
+
 def prune_superseded_stack_files(ops_root, current_path):
     """Delete rendered duty stacks the reviewed definition has replaced.
 
@@ -2867,6 +2995,10 @@ def render_remote_program(payload):
     ).replace(
         "__UPGRADE_REFUSAL__", textwrap.dedent(inspect.getsource(upgrade_refusal)),
     ).replace(
+        "__RECREATE_REFUSAL__", textwrap.dedent(inspect.getsource(recreate_refusal)),
+    ).replace(
+        "__RECREATE_DATABASE__", textwrap.dedent(inspect.getsource(recreate_database)),
+    ).replace(
         "__PRUNE_SUPERSEDED_STACKS__",
         textwrap.dedent(inspect.getsource(prune_superseded_stack_files)),
     ).replace(
@@ -2921,7 +3053,7 @@ def start_reached_every_declared_service(start):
 
 
 def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, upgrade=False,
-             seed=False):
+             seed=False, recreate=False):
     """Return the per-duty assertions that decide the verdict.
 
     The two phases ask different questions about the same observation. A plan
@@ -3187,6 +3319,25 @@ def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, 
             {"profile": written.get("profile"), "declared": declared_seed.get("profile"),
              "executed": written.get("executed") or [], "returncode": written.get("returncode"),
              "error": written.get("error", "")})
+    if recreate:
+        # A rebuild is only reportable as done when the way back existed before
+        # the way forward: a verified point inside the duty's own namespace, and
+        # a drop/create that reproduced the declared custody rather than an
+        # incidental owner or role.
+        point = observation.get("recovery_point") or {}
+        rebuilt = observation.get("recreate") or {}
+        add("a_verified_recovery_point_precedes_the_rebuild",
+            bool(point.get("path")) and point.get("verified") is True,
+            {"path": point.get("path"), "sha256": point.get("sha256"),
+             "bytes": point.get("bytes"), "restore_entries": point.get("restore_entries"),
+             "error": point.get("error", "")})
+        add("the_rebuilt_database_was_recreated_from_the_declared_custody",
+            rebuilt.get("drop_returncode") == 0
+            and bool(rebuilt.get("create"))
+            and not rebuilt.get("error"),
+            {"database": rebuilt.get("database"), "drop_returncode": rebuilt.get("drop_returncode"),
+             "create_steps": [step.get("returncode") for step in (rebuilt.get("create") or [])],
+             "restart": rebuilt.get("restart"), "error": rebuilt.get("error", "")})
     application = observation.get("application_config") or {}
     declared_runtime_env = str(duty["stack"]["runtime_env"])
     if "odoo" in declared_services and application.get("container"):
@@ -3258,13 +3409,13 @@ def deployment_binding(declaration, frontend_build):
 
 
 def plan_verdict(declaration, selected, observations, *, phase="plan", initialize=False,
-                 upgrade=False, seed=False):
+                 upgrade=False, seed=False, recreate=False):
     failures = validate_declaration(declaration)
     rows = []
     for duty in selected:
         observation = observations.get(duty["duty"]) or {}
         assertions = evaluate(duty, observation, declaration, phase=phase, initialize=initialize,
-                              upgrade=upgrade, seed=seed)
+                              upgrade=upgrade, seed=seed, recreate=recreate)
         rows.append({
             "duty": duty["duty"],
             "database": duty["database"],
@@ -3387,6 +3538,7 @@ def main(argv=None):
             "data_destination": POSTGRES_DATA_DESTINATION,
             "bootstrap_timeout": BASE_BOOTSTRAP_TIMEOUT,
             "bootstrap_poll": BASE_BOOTSTRAP_POLL,
+            "protected_historic_sources": declaration.get("protected_historic_sources") or [],
             "duties": selected,
             "managed_instances": dict(managed, text=document["text"]),
         }
@@ -3405,7 +3557,8 @@ def main(argv=None):
             phase="apply" if options.apply else "plan",
             initialize=bool(options.apply) and options.phase == "initialize",
             upgrade=bool(options.apply) and options.phase == "upgrade",
-            seed=bool(options.apply) and options.phase == "seed",
+            seed=bool(options.apply) and options.phase in ("seed", "recreate"),
+            recreate=bool(options.apply) and options.phase == "recreate",
         )
     except DutyError as error:
         print("[daily.runtime.database.duty] BLOCKED %s" % (error,), file=sys.stderr)

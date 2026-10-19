@@ -217,6 +217,8 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
                     mock.patch.object(module, "bind_target", return_value=dict(binding)), \
                     mock.patch.object(module, "module_tree_ids", return_value=dict(TREE_IDS)), \
                     mock.patch.object(module, "reuse_hint", return_value=dict(TREE_IDS)), \
+                    mock.patch.object(module, "declared_duty_modules", return_value=list(MODULES)), \
+                    mock.patch.object(module, "run_governed_duty_upgrade", return_value={"status": "PASS"}), \
                     mock.patch.object(module, "converge", side_effect=fake_converge), \
                     mock.patch.object(sys, "argv", argv):
                 self.assertEqual(module.main(), 0)
@@ -226,6 +228,8 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
                     mock.patch.object(module, "bind_target", return_value=dict(binding)), \
                     mock.patch.object(module, "module_tree_ids", return_value=dict(TREE_IDS)), \
                     mock.patch.object(module, "reuse_hint", return_value=dict(TREE_IDS)), \
+                    mock.patch.object(module, "declared_duty_modules", return_value=list(MODULES)), \
+                    mock.patch.object(module, "run_governed_duty_upgrade", return_value={"status": "PASS"}), \
                     mock.patch.object(module, "converge", side_effect=fake_converge), \
                     mock.patch.object(sys, "argv", argv + ["--force-upgrade"]):
                 self.assertEqual(module.main(), 0)
@@ -290,7 +294,11 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
             module.bind_target(options, instances_reader=synthetic_instances)
 
     def _converge(
-        self, stdout: bytes, returncode: int = 0, reuse_tree_ids: dict[str, str] | None = None
+        self,
+        stdout: bytes,
+        returncode: int = 0,
+        reuse_tree_ids: dict[str, str] | None = None,
+        binding: dict | None = None,
     ) -> dict[str, object]:
         completed = mock.Mock(returncode=returncode, stdout=stdout, stderr=b"")
         with mock.patch.dict(
@@ -298,7 +306,7 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
         ), mock.patch.object(module, "run", return_value=completed):
             return module.converge(
                 SHA, "sc-root", "dev", ".env.dev", "sc_demo", "wutao", PRODUCTS, MODULES,
-                "demo", reuse_tree_ids,
+                "demo", reuse_tree_ids, binding,
             )
 
     def test_converge_accepts_matching_evidence(self) -> None:
@@ -372,6 +380,21 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
             self._converge(failed)
 
 
+    def test_converge_rejects_evidence_naming_another_carrier(self) -> None:
+        binding = {
+            "duty": "demo",
+            "database_role": "sc_demo_app",
+            "compose_project": "sc-demo-dev",
+        }
+        payload = dict(evidence_payload())
+        payload.update(duty="demo", duty_carrier="sc-backend-odoo-dev",
+                       duty_database_role="sc_demo_app",
+                       duty_env_file="/opt/projects/secure/daily-runtime-duties/sc-demo-dev.env",
+                       operator_env_file_binding="/opt/projects/secure/daily-runtime-duties/sc-demo-dev.env")
+        with self.assertRaisesRegex(module.ConvergeError, "another carrier"):
+            self._converge((json.dumps(payload) + "\n").encode(), binding=binding)
+
+
 COUPLE_TARGET = "daily.runtime.candidate.release:"
 FACE_TARGET = "daily.runtime.published_face.converge:"
 GUARD_TARGET = "verify.daily_dev.product_menu_release_gate.guard"
@@ -414,24 +437,41 @@ class DailyRuntimeCandidateReleaseCouplingTests(unittest.TestCase):
     def test_remote_converge_binds_make_environment_on_the_command_line(self) -> None:
         # The duty environment file declares the *container* ENV (a demo duty says
         # ``ENV=demo``), while the make entries below it are operator entries that
-        # require ``ENV=dev`` and read the database credentials from the same file.
-        # Only a command-line assignment keeps the included file from overriding
-        # the declared operator environment.
+        # require ``ENV=dev``.  Command-line assignments keep the included file from
+        # overriding the operator ENV, and binding the duty's own file keeps the
+        # checkout's legacy carrier out of the environment the recipes inherit.
         source = SCRIPT.read_text(encoding="utf-8")
-        self.assertIn(
-            'MAKE_BINDINGS = ["ENV=" + env_name, "ENV_FILE=" + env_file, "DB_NAME=" + database]',
-            source,
-        )
-        self.assertIn('[make_bin, *MAKE_BINDINGS, "mod.upgrade"', source)
+        self.assertIn('"ENV_FILE": str(duty_env_file)', source)
+        self.assertIn('"COMPOSE_PROJECT_NAME": carrier', source)
+        self.assertIn('"DB_USER": role', source)
+        self.assertIn('"ENV_FILE=" + str(duty_env_file)', source)
+        self.assertIn('"COMPOSE_PROJECT_NAME=" + carrier', source)
+        self.assertIn('"DB_USER=" + role', source)
+        self.assertNotIn('"ENV_FILE=" + env_file', source)
+        self.assertNotIn('"mod.upgrade"', source)
+        self.assertIn('"daily.runtime.database.duty.upgrade"', source)
         self.assertIn('[make_bin, *MAKE_BINDINGS, "release.daily_product_navigation.converge"]', source)
 
-    def test_published_face_entry_accepts_the_duty_environment_file(self) -> None:
-        # A duty binds its own environment file; the entry must forward it instead
-        # of always reading the legacy operator file.
-        self.assertRegex(
-            self._recipe(FACE_TARGET),
-            r'--env-file \"\$\$\(DAILY_RUNTIME_ENV_FILE\)\"|--env-file \"\$\(DAILY_RUNTIME_ENV_FILE\)\"',
-        )
+    def test_remote_converge_refuses_an_operator_env_of_another_carrier(self) -> None:
+        # 2026-10-19: .env.dev still declared the pre-governance project, the make
+        # include exported its COMPOSE_PROJECT_NAME/DB_USER, and the module upgrade
+        # ran against the preserved historic source.  The remote must stop instead.
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn("OPERATOR_ENV_CARRIER_MISMATCH", source)
+        self.assertIn("DUTY_ENV_CARRIER_MISMATCH", source)
+        self.assertIn("DUTY_ENV_ROLE_MISMATCH", source)
+        self.assertIn("carrier_owner(candidate)", source)
+
+
+    def test_published_face_entry_does_not_forward_the_legacy_operator_env(self) -> None:
+        # The duty's own environment file is resolved remotely from the duty
+        # declaration.  Forwarding the checkout's ``.env.dev`` was the 2026-10-19
+        # defect: it still declared the pre-governance project, and the module
+        # upgrade ran against the preserved historic source.
+        recipe = self._recipe(FACE_TARGET)
+        self.assertNotIn("--env-file", recipe)
+        self.assertIn("$(DAILY_RUNTIME_DUTY_FLAG)", recipe)
+        self.assertEqual(module.DEFAULT_ENV_FILE, "")
 
     def test_face_freeze_declares_the_intentional_module_upgrade(self) -> None:
         # ``guard.codex.fast.upgrade`` blocks an undeclared upgrade, so a freeze that

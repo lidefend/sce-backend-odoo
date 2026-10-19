@@ -1037,6 +1037,7 @@ DAILY_RUNTIME_DATABASE_DUTY_INITIALIZE_REPORT ?= .runtime/final-acceptance/daily
 DAILY_RUNTIME_DATABASE_DUTY_REFRESH_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-refresh.json
 DAILY_RUNTIME_DATABASE_DUTY_UPGRADE_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-upgrade.json
 DAILY_RUNTIME_DATABASE_DUTY_SEED_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-seed.json
+DAILY_RUNTIME_DATABASE_DUTY_RECREATE_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-recreate.json
 DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST ?=
 DAILY_RUNTIME_DATABASE_DUTY_SELECTION ?=
 DAILY_RUNTIME_DATABASE_DUTY_PHASE ?= all
@@ -1204,6 +1205,32 @@ daily.runtime.database.duty.seed: guard.prod.forbid verify.daily.runtime.databas
 		--phase seed \
 		--expect-declaration-digest "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" \
 		--report "$(DAILY_RUNTIME_DATABASE_DUTY_SEED_REPORT)"
+
+
+# Rebuilding a demo duty is the only phase that drops business rows. It is
+# narrowed to duties that declare ``data_purpose=demo`` and whose carrier is not
+# a preserved historic source, captures and verifies a recovery point inside the
+# duty's own backup namespace first, then replays the same governed sequence a
+# first build uses: declared stack, container base bootstrap, declared modules,
+# declared demo chain. A demo is reproducible data, so "make it again" is a
+# supported operation; a customer duty's rows are not, and this token never
+# touches one.
+.PHONY: daily.runtime.database.duty.recreate
+daily.runtime.database.duty.recreate: guard.prod.forbid verify.daily.runtime.database.duty
+	@test "$${SC_CONFIRM_DAILY_RUNTIME_DUTY_RECREATE:-}" = "RECREATE_DAILY_RUNTIME_DUTY_FROM_DECLARED_SEED" || { echo "SC_CONFIRM_DAILY_RUNTIME_DUTY_RECREATE=RECREATE_DAILY_RUNTIME_DUTY_FROM_DECLARED_SEED is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_SELECTION must name the demo duty to rebuild" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST must be the digest of the reviewed declaration" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST must be the digest of the reviewed entry declaration" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_database_duty.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_ENTRY_FLAGS) \
+		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
+		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
+		--apply \
+		--phase recreate \
+		--expect-declaration-digest "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" \
+		--report "$(DAILY_RUNTIME_DATABASE_DUTY_RECREATE_REPORT)"
 
 
 # The daily runtime serves a customer tenant duty from a *customer* addons tree
@@ -1404,7 +1431,6 @@ daily.runtime.published_face.converge: guard.prod.forbid verify.daily.runtime.pu
 	@python3 scripts/ops/daily_runtime_published_face_converge.py \
 		--expected-sha "$(DAILY_RUNTIME_PUBLISHED_FACE_EXPECTED_SHA)" \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
-		--env-file "$(DAILY_RUNTIME_ENV_FILE)" \
 		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
 		--login "$(DAILY_RUNTIME_PUBLISHED_FACE_LOGIN)" \
