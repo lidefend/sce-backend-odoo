@@ -141,4 +141,3 @@ if __name__ == '__main__' and 'env' in globals():
     uids = os.getenv('ROLE_PERMISSION_OBSERVATION_UIDS')
     result = observe_navigation(env, json.loads(uids)) if uids else observe(env)
     print('AUTH01_OBSERVATION=' + json.dumps(result, ensure_ascii=False, sort_keys=True))
-
