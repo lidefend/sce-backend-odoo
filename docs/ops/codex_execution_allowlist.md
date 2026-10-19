@@ -1017,3 +1017,19 @@ Do not remove tracked files or traverse .git. Single-writer governance remains r
 不得把本次授权解释成通用客户租户开通。两个固定 Demo ORM 入口
 `make verify.local.dev.demo_action_roles.orm` 与 `make verify.local.dev.demo_loaded_chains.orm`
 复用既有 local.dev 身份、模块及固定测试 tag，按需执行，不能作为远端 CI 已覆盖的声明。
+
+## 系统权限收口的受管按需入口（2026-10-20）
+
+以下为同一权限批次的实际操作入口，不代表常驻 CI 覆盖，也不扩大数据库、凭据或部署授权。
+
+- `make audit.system.permission_role.inventory`：离线读取现有角色声明，输出 `.runtime/system-permission-roles/inventory.json`；用于确定声明范围，不构成运行时授权证明。
+- `make audit.system.permission_role.write_candidates`：离线枚举权限写入候选，输出同目录 `write-candidates.json`；人工按所属层核查，候选数量不是安全通过结论。
+- `make audit.system.permission_role.demo_observation`：仅经现有 `sc-root` SSH 与 demo duty shell 读取 `sc_demo` 的角色见证和 ACL 观察；保存原始 JSON 为同目录 `demo-observation.json`，不得创建账号或推定历史授权来源。
+- `make audit.system.permission_role.demo_navigation`：必须先有本批已审的观察 JSON，入口验证其中见证 UID 后读取其导航；只读，不重跑未受影响的角色集合。
+- `make audit.system.permission_role.demo_navigation.diagnostic ROLE_PERMISSION_DIAGNOSTIC_UID=<existing_uid>`：仅诊断已确认的单个现有 UID（大于1），用于计算受影响集合；不得扩大其授权，不算产品验收。
+- `make local.dev.system_permission.http.prerequisite.readback`：测试前通过既有 local.dev 身份读取命名空间等 HTTP 前提；固定 `sc-local-dev/sc_dev_demo`，不修复或写入配置。
+- `make local.dev.system_permission.cleanup.readback`：测试后读取工具声明的精确合成对象集合残留，全部为0才能报告清理通过；入口本身不删除数据。
+- `make local.contract-lifecycle.system_permission.concurrency SC_CONFIRM_PERMISSION_CONCURRENCY=RUN_ISOLATED_PERMISSION_CONCURRENCY`：仅在另已授权、已准备的 `sc-contract-lifecycle-v1/sc_contract_lifecycle` 隔离档案执行真实事务并发测试。保留工具的身份、源码摘要和显式确认；不得自动准备环境或使用 local.dev 数据库。执行前后沿用该档案既有 prepare/rebuild/discard 入口和授权，保存结果及回收回读。
+- `make verify.daily_dev.menu_config_entry.readonly.browser ACCEPTANCE_TARGET_SHA=<served_sha> ACCEPTANCE_BASE_URL=<declared_daily_url> ACCEPTANCE_LOGIN=<declared_config_admin> DB_NAME=sc_demo`：仅使用既有 daily 凭据声明与身份确认读取菜单入口、面板及刷新；结果按运行ID存入现有验收目录。检查实际服务SHA，禁止把候选源码SHA冒充部署SHA，不部署、不保存菜单配置。
+
+原两例撤权诊断薄包装已退役；需要复查时使用既有 `make local.dev.test MODULE=smart_construction_core TEST_TAGS=<exact_test_selectors>`，完整角色隔离继续用已登记 separation 入口。纯离线权限来源、观察解析和并发前提单测接入共用契约架构套件，不将 SSH 或数据库写入加入自动静态车道。

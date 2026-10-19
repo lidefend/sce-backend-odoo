@@ -41,10 +41,6 @@ audit.system.permission_role.demo_navigation.diagnostic: guard.prod.forbid
 verify.local.dev.system_permission.separation.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory MODULE=smart_construction_core TEST_TAGS=system_permission_separation local.dev.test
 
-.PHONY: verify.local.dev.system_permission.revocation_diagnosis.orm
-verify.local.dev.system_permission.revocation_diagnosis.orm: guard.prod.forbid
-	@$(MAKE) --no-print-directory MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionSeparation.test_native_membership_cannot_recover_explicit_grant_origin,/smart_construction_core:TestSystemPermissionSeparation.test_revoked_role_cannot_blacklist_partner' local.dev.test
-
 .PHONY: local.dev.system_permission.cleanup.readback
 local.dev.system_permission.cleanup.readback: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \

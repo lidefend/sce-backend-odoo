@@ -54,7 +54,13 @@
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
     "docs/planning/custom-frontend-integration/G1_BASELINE_EVIDENCE.json",
-    "scripts/verify/test_coverage_registry.yaml"
+    "scripts/verify/test_coverage_registry.yaml",
+    "config/frontend/role_surface_exposure_declarations_v1.json",
+    "docs/product/frontend_business_entry_acceptance_v1.csv",
+    "make/ci.mk",
+    "docs/ops/codex_execution_allowlist.md",
+    "scripts/audit/verification_lane_dispositions.json",
+    "docs/engineering_convergence/split_plan_queue.md"
   ],
   "environment": {
     "kind": "offline"
@@ -112,29 +118,6 @@
         "make/dev.mk",
         "addons/smart_construction_core/tests/test_runtime_user_management.py",
         "addons/smart_construction_core/tests/test_user_module_product_closure.py"
-      ],
-      "reuse_note": "No authoritative runtime dependency readback registered; execution evidence only, not reusable runtime receipt."
-    },
-    "revocation_diagnosis_orm": {
-      "target": "verify.local.dev.system_permission.revocation_diagnosis.orm",
-      "kind": "runtime",
-      "inputs": [
-        "addons/smart_construction_core/tests/test_system_permission_separation.py",
-        "addons/smart_construction_core/tests/__init__.py",
-        "addons/smart_construction_core/tests/business_case.py",
-        "addons/smart_construction_core/models/support/runtime_user_management.py",
-        "addons/smart_construction_core/models/support/formal_user_management.py",
-        "addons/smart_construction_core/security",
-        "addons/smart_core/models/res_users.py",
-        "scripts/test/test_safe.sh",
-        "make/role_authority.mk",
-        "docker-compose.yml",
-        "addons/smart_core/security/group_assignment.py",
-        "addons/smart_core/models/res_users_group_authority.py",
-        "addons/smart_core/models/__init__.py",
-        "addons/smart_core/__manifest__.py",
-        "Makefile",
-        "make/dev.mk"
       ],
       "reuse_note": "No authoritative runtime dependency readback registered; execution evidence only, not reusable runtime receipt."
     },
@@ -1526,6 +1509,26 @@
       "tool_tests": "passed10+14+6+8",
       "menu_tests": "passed6+2",
       "sibling_checks": "backend model declaration, fact source coverage, menu metadata6 passed"
+    }
+  },
+  "integration_surface_recovery": {
+    "failure_head": "0613f3da5729b9a0e08c1d92b72fa3791abc6b6f",
+    "failure_logs": [
+      ".runtime/system-permission-roles/integration-quick-final-clean.log",
+      ".runtime/system-permission-roles/integration-architecture-diagnosis.log"
+    ],
+    "changes": [
+      "Declare actual menu action as pending90th CSV entry, not false non-action carrier",
+      "Wire three pure unit tests to shared architecture suite",
+      "Document actual governed manual audit/readback/probe procedures in normative allowlist",
+      "Retire redundant two-case wrapper; original result evidence retained",
+      "Remove stale disposition now that isolated shell has real consumer"
+    ],
+    "impact": "New entry only; existing89 runtime evidence not invalidated by new row alone. No ACL/product logic changed. Do not raise lane baseline or fabricate execution references.",
+    "results": {
+      "role_declaration": "16 tests and guard passed;90 action entries+1scene=91;new entry pending",
+      "lane_check": "passed within unchanged frozen baseline",
+      "iteration_first": "failed scope omission: generated split_plan_queue.md already committed, now explicitly included"
     }
   }
 }
