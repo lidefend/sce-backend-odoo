@@ -39,7 +39,8 @@
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/audit/verification_lane_baseline.json",
     "make/ci.mk",
-    "make/frontend.mk"
+    "make/frontend.mk",
+    "scripts/verify/test_branch_governance_consistency_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -302,6 +303,11 @@
       "run_id": 39231770945,
       "reason": "Node22 strip-types cannot resolve extensionless transitive contractGap import; build passed",
       "repair": "Use existing esbuild test bundling convention; preserve original import.meta.url for source assertions; no product changes"
+    },
+    "quick_419d": {
+      "status": "failed",
+      "owner": "P4 test isolation",
+      "reason": "Merge unit harness consumed real runtime manifest; fake git cannot ls-tree real candidate. Isolate plan/evidence under existing TemporaryDirectory; no production gate bypass."
     }
   },
   "blockers": [],
