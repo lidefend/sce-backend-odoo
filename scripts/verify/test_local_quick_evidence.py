@@ -80,6 +80,34 @@ class LocalQuickEvidenceTests(unittest.TestCase):
         assert path is not None
         return path, calls
 
+    def commit_change(self, relative_path: str, content: str) -> str:
+        target = self.root / relative_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+        subprocess.run(["git", "-C", str(self.root), "add", relative_path], check=True)
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(self.root),
+                "-c",
+                "user.name=Codex Test",
+                "-c",
+                "user.email=codex-test@example.invalid",
+                "commit",
+                "-q",
+                "-m",
+                "change",
+            ],
+            check=True,
+        )
+        return subprocess.run(
+            ["git", "-C", str(self.root), "rev-parse", "HEAD"],
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+        ).stdout.strip()
+
     def test_successful_primary_quick_records_and_verifies(self) -> None:
         path, calls = self.run_success()
         self.assertEqual(evidence.verify(self.root, self.head), path)
@@ -172,6 +200,34 @@ class LocalQuickEvidenceTests(unittest.TestCase):
         self.run_success()
         with self.assertRaisesRegex(evidence.EvidenceError, "HEAD changed"):
             evidence.verify(self.root, "b" * 40)
+
+    def test_bookkeeping_only_head_reuses_runtime_tree_receipt(self) -> None:
+        path, _calls = self.run_success()
+        head = self.commit_change("docs/ops/note.md", "bookkeeping only\n")
+        self.assertEqual(evidence.verify(self.root, head), path)
+
+    def test_root_metadata_only_head_reuses_runtime_tree_receipt(self) -> None:
+        path, _calls = self.run_success()
+        head = self.commit_change("README.md", "documentation only\n")
+        self.assertEqual(evidence.verify(self.root, head), path)
+
+    def test_runtime_change_never_reuses_receipt(self) -> None:
+        self.run_success()
+        head = self.commit_change("tracked.txt", "runtime change\n")
+        with self.assertRaisesRegex(evidence.EvidenceError, "missing"):
+            evidence.verify(self.root, head)
+
+    def test_bookkeeping_delta_uses_the_same_path_definition(self) -> None:
+        head = self.commit_change(".codex/notes/decision.md", "bookkeeping only\n")
+        self.assertEqual(
+            evidence.require_bookkeeping_delta(self.root, self.head, head),
+            [".codex/notes/decision.md"],
+        )
+        runtime_head = self.commit_change("tracked.txt", "runtime change\n")
+        with self.assertRaisesRegex(evidence.EvidenceError, "non-bookkeeping paths"):
+            evidence.require_bookkeeping_delta(self.root, self.head, runtime_head)
+        with self.assertRaisesRegex(evidence.EvidenceError, "non-empty change set"):
+            evidence.require_bookkeeping_delta(self.root, self.head, self.head)
 
     def test_quick_failure_never_issues_receipt(self) -> None:
         def runner(command, **_kwargs):

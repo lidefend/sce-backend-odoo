@@ -286,6 +286,7 @@ verify.g1.acceptance.baseline: guard.prod.forbid
 ACCEPTANCE_EVOLUTION_PLAN ?= .runtime/acceptance-evolution/plan.json
 ACCEPTANCE_EVOLUTION_EVIDENCE ?= .runtime/acceptance-evolution/evidence.v1.json
 ACCEPTANCE_EVOLUTION_SUITES ?=
+ACCEPTANCE_EVOLUTION_CARRY_FORWARD ?=
 
 .PHONY: verify.acceptance.evolution.binding acceptance.evolution.plan acceptance.evolution.record acceptance.evolution.verify
 verify.acceptance.evolution.binding: guard.prod.forbid acceptance.evolution.plan
@@ -297,6 +298,7 @@ acceptance.evolution.plan: guard.prod.forbid
 
 acceptance.evolution.record: guard.prod.forbid
 	@python3 scripts/ops/acceptance_evolution_record.py \
+		$(if $(filter 1,$(ACCEPTANCE_EVOLUTION_CARRY_FORWARD)),--carry-forward) \
 		--output "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" \
 		$(foreach suite,$(ACCEPTANCE_EVOLUTION_SUITES),--suite '$(suite)')
 

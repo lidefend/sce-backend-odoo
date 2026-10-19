@@ -9,8 +9,10 @@ are either:
 * backed by an exact-head evidence manifest produced by a real runtime run.
 
 The plan half is deterministic and runs in every PR/local lane. The evidence
-half is fail-closed and is required by ``make pr.merge``: a merge through the
-governed path cannot reuse acceptance evidence from another commit.
+half is fail-closed and is required by ``make pr.merge``. HEAD is provenance,
+not an invalidation key: a suite may reuse evidence from an ancestor only while
+its declared input fingerprint and evidence bytes are identical. Any changed
+suite layer still has to be executed at the evaluated head.
 
 Exit codes: 0 pass, 1 binding/evidence failure, 2 usage or registry error.
 """
@@ -34,6 +36,7 @@ REGISTRY_SCHEMA = "acceptance_evolution_binding.v1"
 PLAN_SCHEMA = "acceptance_evolution_plan.v1"
 EVIDENCE_SCHEMA = "acceptance_evolution_evidence.v1"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 ZERO_SHA = "0" * 40
 GLOB_CACHE: dict[str, re.Pattern[str]] = {}
 
@@ -231,6 +234,71 @@ def changed_files(base: str, head: str) -> list[str]:
     if result.returncode != 0:
         raise BindingError("unable to compute changed files: " + (result.stderr or "").strip())
     return sorted({line.strip() for line in result.stdout.splitlines() if line.strip()})
+
+
+# These files define the meaning of every evidence suite.  A change here is
+# therefore an input change for all suites, not just for governance_static.
+GLOBAL_SUITE_INPUTS = (
+    "config/acceptance/evolution_binding.v1.json",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/ops/acceptance_evolution_record.py",
+    "Makefile",
+    "make/**",
+    "scripts/ci/**",
+)
+
+
+def carry_forward_policy(registry: dict) -> dict:
+    policy = (registry.get("policy") or {}).get("evidence_carry_forward") or {}
+    if policy.get("enabled") is True:
+        _require(
+            policy.get("mode") == "suite_input_fingerprint",
+            "evidence carry-forward mode must be suite_input_fingerprint",
+        )
+    return policy
+
+
+def suite_input_patterns(registry: dict, suite_id: str) -> list[str]:
+    """The declared files that can change one suite's verdict.
+
+    The rules already describe which change paths make a suite necessary.  They
+    are also the least surprising input scope for reuse: a suite may reuse an
+    earlier pass only while every file it is declared to protect is unchanged.
+    GLOBAL_SUITE_INPUTS covers the registry, guard, recorder and make/CI
+    mechanism that can change the meaning of every suite.
+    """
+
+    patterns = set(GLOBAL_SUITE_INPUTS)
+    suite = registry["suites"][suite_id]
+    patterns.update(suite.get("inputs") or [])
+    for rule in registry["rules"]:
+        if suite_id in (rule.get("suites") or []):
+            patterns.update(rule["paths"])
+    return sorted(patterns)
+
+
+def suite_input_sha256(registry: dict, suite_id: str, revision: str) -> str:
+    """Hash only the committed inputs that can change this suite's verdict."""
+
+    patterns = suite_input_patterns(registry, suite_id)
+    material: list[str] = []
+    for line in _git("ls-tree", "-r", "--full-tree", revision).splitlines():
+        _, _, path = line.partition("\t")
+        if path and any(path_matches(pattern, path) for pattern in patterns):
+            material.append(line)
+    descriptor = json.dumps(
+        {
+            "entrypoints": registry["suites"][suite_id].get("entrypoints") or [],
+            "evidence": registry["suites"][suite_id].get("evidence"),
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    digest = hashlib.sha256(descriptor.encode("utf-8") + b"\n")
+    for line in material:
+        digest.update(line.encode("utf-8") + b"\n")
+    return digest.hexdigest()
 
 
 def build_plan(registry: dict, changed: list[str], base: str, head: str) -> dict:
@@ -514,6 +582,111 @@ def validate_evidence_file(
     return ADAPTERS[adapter](data, head, contract)
 
 
+def _parse_timestamp(value: object, label: str) -> datetime.datetime:
+    _require(isinstance(value, str) and value.endswith("Z"), f"{label} is invalid")
+    try:
+        return datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise BindingError(f"{label} is not ISO 8601: {exc}") from exc
+
+
+def _assert_fresh(recorded: datetime.datetime, max_age: int, label: str) -> None:
+    age = datetime.datetime.now(datetime.timezone.utc) - recorded
+    _require(age.total_seconds() >= -300, f"{label} is in the future")
+    _require(age.total_seconds() <= max_age * 3600, f"{label} is older than {max_age}h")
+
+
+def _is_ancestor(source: str, head: str) -> bool:
+    if source == head:
+        return True
+    result = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", source, head],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def validate_suite_record(
+    registry: dict,
+    suite_id: str,
+    record: object,
+    manifest_head: str,
+    manifest_recorded_at: str,
+) -> dict:
+    """Validate one suite record, including its own carried-forward source.
+
+    A suite is bound to the head at which it was actually executed, not to the
+    latest commit id.  A later manifest may point at an older bound_head only
+    when the suite input digest is identical at both heads, so an unchanged
+    layer is reused while every changed layer still has to be executed.
+    """
+
+    _require(isinstance(record, dict), f"suite {suite_id} record must be an object")
+    _require(str(record.get("status", "")).lower() == "pass", f"suite {suite_id} is not passing")
+    bound_head = str(record.get("bound_head") or manifest_head)
+    _require(bool(SHA_RE.match(bound_head)), f"suite {suite_id} bound_head is invalid")
+    max_age = int((registry.get("policy") or {}).get("evidence_max_age_hours") or 72)
+    verified_at = record.get("verified_at") or manifest_recorded_at
+    verified = _parse_timestamp(verified_at, f"suite {suite_id} verified_at")
+    _assert_fresh(verified, max_age, f"suite {suite_id} verified_at")
+
+    input_sha = record.get("input_sha256")
+    if bound_head != manifest_head:
+        policy = carry_forward_policy(registry)
+        _require(policy.get("enabled") is True, "evidence carry-forward is not enabled")
+        _require(_is_ancestor(bound_head, manifest_head), f"suite {suite_id} source is not an ancestor of the head")
+        _require(
+            isinstance(input_sha, str) and bool(DIGEST_RE.match(input_sha)),
+            f"suite {suite_id} carried evidence needs an input fingerprint",
+        )
+        _require(
+            suite_input_sha256(registry, suite_id, bound_head) == input_sha,
+            f"suite {suite_id} source input fingerprint does not match its recorded evidence",
+        )
+        _require(
+            suite_input_sha256(registry, suite_id, manifest_head) == input_sha,
+            f"suite {suite_id} inputs changed; rerun that suite",
+        )
+    elif input_sha is not None:
+        _require(
+            isinstance(input_sha, str) and bool(DIGEST_RE.match(input_sha)),
+            f"suite {suite_id} input fingerprint is invalid",
+        )
+        _require(
+            suite_input_sha256(registry, suite_id, manifest_head) == input_sha,
+            f"suite {suite_id} input fingerprint does not match the head",
+        )
+
+    items = record.get("evidence")
+    _require(isinstance(items, list) and items, f"suite {suite_id} has no evidence records")
+    contract = registry["suites"][suite_id]["evidence"]
+    adapter = contract["adapter"]
+    checked = []
+    for item in items:
+        _require(isinstance(item, dict), f"suite {suite_id} evidence entry must be an object")
+        raw_path = item.get("path")
+        _require(isinstance(raw_path, str) and raw_path, f"suite {suite_id} evidence path missing")
+        path = Path(raw_path)
+        if not path.is_absolute():
+            path = ROOT / raw_path
+        _require(path.is_file(), f"suite {suite_id} evidence file missing: {raw_path}")
+        expected_sha = item.get("sha256")
+        actual_sha = _sha256(path)
+        _require(actual_sha == expected_sha, f"suite {suite_id} evidence changed after recording")
+        counts = validate_evidence_file(path, adapter, bound_head, contract)
+        checked.append({"path": raw_path, "sha256": actual_sha, "adapter": adapter, **counts})
+    return {
+        "status": "pass",
+        "evidence": checked,
+        "bound_head": bound_head,
+        "input_sha256": input_sha,
+        "verified_at": verified_at,
+    }
+
+
 def validate_manifest(registry: dict, plan: dict, manifest_path: Path, head: str) -> dict:
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -526,15 +699,9 @@ def validate_manifest(registry: dict, plan: dict, manifest_path: Path, head: str
     )
     _require(manifest.get("head_sha") == head, "manifest head_sha does not match the evaluated head")
     recorded_at = manifest.get("recorded_at")
-    _require(isinstance(recorded_at, str) and recorded_at.endswith("Z"), "manifest recorded_at is invalid")
-    try:
-        recorded = datetime.datetime.fromisoformat(recorded_at.replace("Z", "+00:00"))
-    except ValueError as exc:
-        raise BindingError(f"manifest recorded_at is not ISO 8601: {exc}") from exc
+    recorded = _parse_timestamp(recorded_at, "manifest recorded_at")
     max_age = int((registry.get("policy") or {}).get("evidence_max_age_hours") or 72)
-    age = datetime.datetime.now(datetime.timezone.utc) - recorded
-    _require(age.total_seconds() >= -300, "manifest recorded_at is in the future")
-    _require(age.total_seconds() <= max_age * 3600, f"manifest is older than {max_age}h")
+    _assert_fresh(recorded, max_age, "manifest recorded_at")
     suites = manifest.get("suites")
     _require(isinstance(suites, dict), "manifest suites must be an object")
     unknown = sorted(set(suites) - set(registry["suites"]))
@@ -542,29 +709,11 @@ def validate_manifest(registry: dict, plan: dict, manifest_path: Path, head: str
     validated: dict[str, dict] = {}
     for suite_id in plan["required_evidence_suites"]:
         record = suites.get(suite_id)
-        _require(isinstance(record, dict), f"manifest is missing required suite {suite_id}")
-        _require(str(record.get("status", "")).lower() == "pass", f"suite {suite_id} is not passing")
-        items = record.get("evidence")
-        _require(isinstance(items, list) and items, f"suite {suite_id} has no evidence records")
-        contract = registry["suites"][suite_id]["evidence"]
-        adapter = contract["adapter"]
-        checked = []
-        for item in items:
-            _require(isinstance(item, dict), f"suite {suite_id} evidence entry must be an object")
-            raw_path = item.get("path")
-            _require(isinstance(raw_path, str) and raw_path, f"suite {suite_id} evidence path missing")
-            path = Path(raw_path)
-            if not path.is_absolute():
-                path = ROOT / raw_path
-            _require(path.is_file(), f"suite {suite_id} evidence file missing: {raw_path}")
-            expected_sha = item.get("sha256")
-            actual_sha = _sha256(path)
-            _require(actual_sha == expected_sha, f"suite {suite_id} evidence changed after recording")
-            counts = validate_evidence_file(path, adapter, head, contract)
-            checked.append({"path": raw_path, "sha256": actual_sha, "adapter": adapter, **counts})
-        validated[suite_id] = {"status": "pass", "evidence": checked}
+        _require(record is not None, f"manifest is missing required suite {suite_id}")
+        validated[suite_id] = validate_suite_record(
+            registry, suite_id, record, head, str(recorded_at)
+        )
     return {"status": "PASS", "suites": validated}
-
 
 def write_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)

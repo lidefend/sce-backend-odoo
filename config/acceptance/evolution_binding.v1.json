@@ -4,7 +4,11 @@
   "owner": "platform-team",
   "policy": {
     "unmapped_changes": "fail",
-    "evidence_max_age_hours": 72
+    "evidence_max_age_hours": 72,
+    "evidence_carry_forward": {
+      "enabled": true,
+      "mode": "suite_input_fingerprint"
+    }
   },
   "suites": {
     "backend_contract": {

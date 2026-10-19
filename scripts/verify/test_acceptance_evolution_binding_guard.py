@@ -4,6 +4,7 @@ from __future__ import annotations
 import datetime
 import hashlib
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -11,8 +12,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(ROOT / "scripts" / "ops"))
 
 import acceptance_evolution_binding_guard as guard  # noqa: E402
+import acceptance_evolution_record as recorder  # noqa: E402
 
 HEAD = "a" * 40
 OTHER = "b" * 40
@@ -222,6 +225,12 @@ class TestGlobAndPlan(unittest.TestCase):
         }
         self.assertEqual(set(self.registry["suites"]), referenced)
 
+    def test_carry_forward_policy_rejects_an_unknown_mode(self):
+        registry = json.loads(json.dumps(self.registry))
+        registry["policy"]["evidence_carry_forward"]["mode"] = "whole_manifest"
+        with self.assertRaisesRegex(guard.BindingError, "suite_input_fingerprint"):
+            guard.carry_forward_policy(registry)
+
     def test_evidence_contracts_are_non_vacuous(self):
         for suite_id, suite in self.registry["suites"].items():
             contract = suite.get("evidence")
@@ -429,6 +438,171 @@ class TestManifest(unittest.TestCase):
             with self.assertRaises(guard.BindingError):
                 guard.validate_manifest(self.registry, self.plan, manifest, HEAD)
 
+
+class TestCarryForwardPolicy(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.repo = Path(self.temporary.name)
+        self.registry = guard.load_registry(
+            ROOT / "config" / "acceptance" / "evolution_binding.v1.json"
+        )
+        self.original_root = guard.ROOT
+        guard.ROOT = self.repo
+        self.addCleanup(setattr, guard, "ROOT", self.original_root)
+        self.addCleanup(self.temporary.cleanup)
+        self._git("init", "-q")
+        self._write("runtime.py", "VERSION = 1\n")
+        self._commit("baseline")
+
+    def _git(self, *args: str) -> str:
+        result = subprocess.run(
+            ["git", "-C", str(self.repo), *args],
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        return result.stdout.strip()
+
+    def _write(self, path: str, content: str) -> None:
+        target = self.repo / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+
+    def _commit(self, message: str) -> str:
+        self._git("add", ".")
+        self._git(
+            "-c",
+            "user.name=Codex Test",
+            "-c",
+            "user.email=codex-test@example.invalid",
+            "commit",
+            "-q",
+            "-m",
+            message,
+        )
+        return self._git("rev-parse", "HEAD")
+
+    def _write_json(self, path: Path, payload: dict) -> Path:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        return path
+
+    def _manifest(self, head: str, bound_head: str, evidence: Path, directory: Path) -> Path:
+        now = (
+            datetime.datetime.now(datetime.timezone.utc)
+            .replace(microsecond=0)
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+        payload = {
+            "schema": guard.EVIDENCE_SCHEMA,
+            "head_sha": head,
+            "base_sha": bound_head,
+            "recorded_at": now,
+            "suites": {
+                "daily_runtime_entry": {
+                    "status": "pass",
+                    "evidence": [
+                        {
+                            "path": str(evidence),
+                            "sha256": hashlib.sha256(evidence.read_bytes()).hexdigest(),
+                        }
+                    ],
+                    "bound_head": bound_head,
+                    "input_sha256": guard.suite_input_sha256(
+                        self.registry, "daily_runtime_entry", bound_head
+                    ),
+                    "verified_at": now,
+                }
+            },
+        }
+        return self._write_json(directory / "manifest.json", payload)
+
+    def test_suite_digest_changes_only_for_the_affected_layer(self):
+        base = self._git("rev-parse", "HEAD")
+        self._write("frontend/app.ts", "export const value = 1;\n")
+        head = self._commit("frontend")
+        self.assertEqual(
+            guard.suite_input_sha256(self.registry, "backend_contract", base),
+            guard.suite_input_sha256(self.registry, "backend_contract", head),
+        )
+        self.assertNotEqual(
+            guard.suite_input_sha256(self.registry, "frontend_contract", base),
+            guard.suite_input_sha256(self.registry, "frontend_contract", head),
+        )
+
+    def test_unchanged_suite_inputs_can_be_carried_across_head(self):
+        base = self._git("rev-parse", "HEAD")
+        with tempfile.TemporaryDirectory() as raw:
+            directory = Path(raw)
+            evidence = self._write_json(directory / "entry.json", _entry_verify(base))
+            self._write("frontend/app.ts", "export const value = 1;\n")
+            head = self._commit("frontend-only")
+            manifest = self._manifest(head, base, evidence, directory)
+            result = guard.validate_manifest(
+                self.registry,
+                {"required_evidence_suites": ["daily_runtime_entry"]},
+                manifest,
+                head,
+            )
+            self.assertEqual(result["status"], "PASS")
+            self.assertEqual(result["suites"]["daily_runtime_entry"]["bound_head"], base)
+
+    def test_changed_suite_inputs_refuse_carried_evidence(self):
+        base = self._git("rev-parse", "HEAD")
+        with tempfile.TemporaryDirectory() as raw:
+            directory = Path(raw)
+            evidence = self._write_json(directory / "entry.json", _entry_verify(base))
+            self._write("addons/smart_core/runtime.py", "VERSION = 2\n")
+            head = self._commit("backend-runtime")
+            manifest = self._manifest(head, base, evidence, directory)
+            with self.assertRaisesRegex(guard.BindingError, "inputs changed"):
+                guard.validate_manifest(
+                    self.registry,
+                    {"required_evidence_suites": ["daily_runtime_entry"]},
+                    manifest,
+                    head,
+                )
+
+    def test_recorder_reuses_only_unchanged_suite_layers(self):
+        base = self._git("rev-parse", "HEAD")
+        original_record_root = recorder.ROOT
+        recorder.ROOT = self.repo
+        self.addCleanup(setattr, recorder, "ROOT", original_record_root)
+        with tempfile.TemporaryDirectory() as raw:
+            directory = Path(raw)
+            entry_base = self._write_json(directory / "entry-base.json", _entry_verify(base))
+            path_ns_base = self._write_json(directory / "path-ns-base.json", _path_ns(base))
+            manifest = directory / "manifest.json"
+            plan = {"base_sha": base, "required_evidence_suites": ["daily_runtime_entry"]}
+            recorder.record_manifest(
+                self.registry,
+                plan,
+                manifest,
+                base,
+                {
+                    "daily_runtime_entry": [entry_base],
+                    "path_namespace_identity": [path_ns_base],
+                },
+            )
+            self._write("addons/smart_core/runtime.py", "VERSION = 2\n")
+            head = self._commit("backend-runtime")
+            entry_head = self._write_json(directory / "entry-head.json", _entry_verify(head))
+            _manifest, recorded, carried = recorder.record_manifest(
+                self.registry,
+                plan,
+                manifest,
+                head,
+                {"daily_runtime_entry": [entry_head]},
+            )
+            self.assertEqual(recorded, ["daily_runtime_entry"])
+            self.assertEqual(carried, ["path_namespace_identity"])
+            self.assertEqual(
+                guard.validate_manifest(
+                    self.registry, plan, manifest, head
+                )["status"],
+                "PASS",
+            )
 
 if __name__ == "__main__":
     unittest.main()

@@ -436,11 +436,10 @@ pr.merge.local_quick_gate:
 	  BB_REF="$${PR_MERGE_BOOKKEEPING_BASE_REF:-origin/main}"; \
 	  BB_BASE="$$(git merge-base "$$EXPECTED" "$$BB_REF" 2>/dev/null || true)"; \
 	  BB_CHANGED=""; \
-	  if [ -n "$$BB_BASE" ]; then BB_CHANGED="$$(git diff --name-only "$$BB_BASE" "$$EXPECTED" 2>/dev/null || true)"; fi; \
-	  if [ -n "$$BB_CHANGED" ] && [ -z "$$(printf "%s\n" "$$BB_CHANGED" | grep -vE "^(\.agent/|docs/)" || true)" ]; then \
-	    echo "[pr.merge.local_quick_gate] DENY: bookkeeping-only candidate (diff vs $$BB_BASE is confined to .agent/ and docs/)"; \
+	  if [ -n "$$BB_BASE" ] && BB_CHANGED="$$(python3 scripts/ops/local_quick_evidence.py bookkeeping-delta --base "$$BB_BASE" --expected-head "$$EXPECTED" 2>/dev/null)"; then \
+	    echo "[pr.merge.local_quick_gate] DENY: bookkeeping-only candidate without a reusable ancestor receipt (diff vs $$BB_BASE is confined to declared bookkeeping paths)"; \
 	    printf "%s\n" "$$BB_CHANGED" | sed "s|^|  bookkeeping-path: |"; \
-	    echo "[pr.merge.local_quick_gate] run/goal/docs bookkeeping must ride along with the adjacent product candidate: ci.local.quick produces one receipt per frozen commit, so a standalone bookkeeping candidate buys a full suite run and no new coverage."; \
+	    echo "[pr.merge.local_quick_gate] an unchanged runtime tree can carry an ancestor ci.local.quick receipt forward; no such receipt was usable here. Run/goal/docs bookkeeping should ride along with the adjacent product candidate, or establish one receipt with make ci.local.quick."; \
 	    echo "[pr.merge.local_quick_gate] for an actual terminal goal retirement, rerun with PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE=<reason>."; \
 	    exit 13; \
 	  fi; \

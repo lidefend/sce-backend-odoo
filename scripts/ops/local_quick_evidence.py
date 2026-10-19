@@ -265,6 +265,61 @@ def is_linked_worktree(root: Path) -> bool:
     return git_dir != common_dir
 
 
+BOOKKEEPING_PREFIXES = ("docs/", ".agent/", ".codex/", ".devcontainer/")
+BOOKKEEPING_SUFFIXES = (".md",)
+BOOKKEEPING_FILES = frozenset(
+    {"README.md", "LICENSE", "VERSION", ".gitignore", ".gitattributes", ".dockerignore"}
+)
+
+
+def is_bookkeeping_path(path: str) -> bool:
+    return (
+        path.startswith(BOOKKEEPING_PREFIXES)
+        or path.endswith(BOOKKEEPING_SUFFIXES)
+        or path in BOOKKEEPING_FILES
+        or (path.startswith(".env") and path.endswith(".example"))
+    )
+
+
+def runtime_tree_digest(root: Path, head: str) -> str:
+    """Digest the committed tree without the declared bookkeeping roots.
+
+    A bookkeeping-only commit creates a new commit id but leaves every runtime
+    input identical, so the exact-head quick receipt still proves the same
+    covered tree. The digest makes that equivalence explicit and rejects a
+    receipt whenever any runtime path differs.
+    """
+
+    material = []
+    for line in git(root, "ls-tree", "-r", "--full-tree", head).splitlines():
+        path = line.partition("\t")[2]
+        if not is_bookkeeping_path(path):
+            material.append(line)
+    return hashlib.sha256("\n".join(material).encode("utf-8")).hexdigest()
+
+
+def bookkeeping_only_delta(root: Path, source: str, head: str) -> list[str]:
+    delta = [line for line in git(root, "diff", "--name-only", source, head).splitlines() if line.strip()]
+    if not delta or any(not is_bookkeeping_path(path) for path in delta):
+        return []
+    return delta
+
+
+def require_bookkeeping_delta(root: Path, base: str, head: str) -> list[str]:
+    for value in (base, head):
+        if not FULL_SHA.fullmatch(value):
+            raise EvidenceError("bookkeeping-delta requires full lowercase commit ids")
+    delta = [line for line in git(root, "diff", "--name-only", base, head).splitlines() if line.strip()]
+    if not delta:
+        raise EvidenceError("bookkeeping-delta needs a non-empty change set")
+    foreign = [path for path in delta if not is_bookkeeping_path(path)]
+    if foreign:
+        raise EvidenceError(
+            "candidate changes non-bookkeeping paths: " + ", ".join(foreign)
+        )
+    return delta
+
+
 def require_safe_make_environment() -> None:
     if os.environ.get("MAKEFILES") or os.environ.get("MAKEOVERRIDES"):
         raise EvidenceError("makefile injection or command overrides cannot sign coverage")
@@ -380,26 +435,103 @@ def run_quick(root: Path, runner=subprocess.run, diagnostic: bool = False) -> Pa
         return _write_receipt_after_success(root, start_head, coverage)
 
 
+def _payload_matches(root: Path, head: str, tree: str, payload: dict) -> bool:
+    expected = {"schema_version": 2, "suite": SUITE, "producer": "atomic-ci-local-quick-runner-v1",
+                "head": head, "tree": tree}
+    if payload == expected:
+        return True
+    try:
+        coverage = payload['coverage']
+        expected.update(schema_version=SCHEMA_VERSION, producer=PRODUCER, coverage=coverage)
+        return (payload == expected and scans.valid_coverage(root, coverage, head)
+                and scans.equivalent_coverage(root, coverage, scans.coverage_snapshot(root)))
+    except (KeyError, TypeError, OSError, ValueError, subprocess.CalledProcessError):
+        return False
+
+
+def _ancestor(root: Path, source: str, head: str) -> bool:
+    if source == head:
+        return True
+    return subprocess.run(
+        ["git", "-C", str(root), "merge-base", "--is-ancestor", source, head],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).returncode == 0
+
+
+def _coverage_runtime_equivalent(root: Path, coverage: object, source: str, head: str) -> bool:
+    """Compare a receipt's scan coverage with the current tree at runtime scope.
+
+    Full object reachability necessarily changes with any new commit, so the
+    exact-head comparison cannot be reused for a bookkeeping-only descendant.
+    Instead the receipt must still prove the source head, and its authority
+    digests and revisions must match the current head. Refs are deliberately not
+    compared: a branch tip legitimately advances to the new commit. Combined
+    with the runtime tree digest this proves the covered runtime inputs are
+    identical while allowing the new bookkeeping commit.
+    """
+
+    try:
+        if not scans.valid_coverage(root, coverage, source):
+            return False
+        current = scans.coverage_snapshot(root)
+        for kind in scans.AUTHORITY:
+            saved_row = coverage["scanners"][kind]
+            current_row = current["scanners"][kind]
+            if saved_row["revisions"] != current_row["revisions"]:
+                return False
+            if saved_row["authority"] != scans.authority_digest(root, kind, head):
+                return False
+        return True
+    except (KeyError, TypeError, OSError, ValueError, subprocess.CalledProcessError):
+        return False
+
+
 def verify(root: Path, expected_head: str) -> Path:
     root, tree = require_exact_clean_head(root, expected_head)
     path = evidence_path(root, expected_head)
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except FileNotFoundError as exc:
-        raise EvidenceError("exact-head quick evidence is missing") from exc
-    except (OSError, json.JSONDecodeError) as exc:
-        raise EvidenceError("exact-head quick evidence is unreadable") from exc
-    expected = {"schema_version": 2, "suite": SUITE, "producer": "atomic-ci-local-quick-runner-v1",
-                "head": expected_head, "tree": tree}
-    if payload != expected:
+    if path.is_file():
         try:
-            coverage = payload['coverage']
-            expected.update(schema_version=SCHEMA_VERSION, producer=PRODUCER, coverage=coverage)
-            valid = (payload == expected and scans.valid_coverage(root, coverage, expected_head)
-                     and scans.equivalent_coverage(root, coverage, scans.coverage_snapshot(root)))
-        except (KeyError, TypeError, OSError, ValueError, subprocess.CalledProcessError): valid = False
-        if not valid: raise EvidenceError("exact-head quick evidence does not match the current candidate")
-    return path
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise EvidenceError("exact-head quick evidence is unreadable") from exc
+        if not _payload_matches(root, expected_head, tree, payload):
+            raise EvidenceError("exact-head quick evidence does not match the current candidate")
+        return path
+    folder = path.parent
+    if folder.is_dir():
+        candidates = sorted(
+            (item for item in folder.glob("*.json") if item != path),
+            key=lambda item: item.stat().st_mtime,
+            reverse=True,
+        )
+        current_digest = runtime_tree_digest(root, expected_head)
+        for candidate in candidates:
+            try:
+                payload = json.loads(candidate.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            source = str(payload.get("head") or "")
+            if not FULL_SHA.fullmatch(source) or not _ancestor(root, source, expected_head):
+                continue
+            delta = bookkeeping_only_delta(root, source, expected_head)
+            if not delta:
+                continue
+            if runtime_tree_digest(root, source) != current_digest:
+                continue
+            if payload.get("suite") != SUITE or payload.get("schema_version") not in (2, SCHEMA_VERSION):
+                continue
+            if payload.get("producer") not in ("atomic-ci-local-quick-runner-v1", PRODUCER):
+                continue
+            if not _coverage_runtime_equivalent(root, payload.get("coverage"), source, expected_head):
+                continue
+            print(
+                f"[local_quick_evidence] CARRY_FORWARD {source[:12]} -> {expected_head[:12]} "
+                f"bookkeeping_files={len(delta)}"
+            )
+            return candidate
+    raise EvidenceError("exact-head quick evidence is missing")
 
 
 def atomic_json(path: Path, payload: dict) -> None:
@@ -852,9 +984,13 @@ def result_label(mode: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("run", "verify", "shard", "compose", "prune"))
+    parser.add_argument(
+        "mode",
+        choices=("run", "verify", "shard", "compose", "prune", "bookkeeping-delta"),
+    )
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--expected-head")
+    parser.add_argument("--base")
     parser.add_argument("--shards", type=int)
     parser.add_argument("--shard", type=int, dest="shard_index")
     parser.add_argument("--diagnostic", action="store_true")
@@ -862,6 +998,17 @@ def main() -> int:
     parser.add_argument("--keep", type=int)
     args = parser.parse_args()
     try:
+        if args.mode == "bookkeeping-delta":
+            if args.base is None or args.expected_head is None:
+                raise EvidenceError("bookkeeping-delta requires --base and --expected-head")
+            if (args.shards is not None or args.shard_index is not None or args.keep is not None
+                    or args.diagnostic or args.jobs is not None):
+                raise EvidenceError("bookkeeping-delta does not accept --shards, --shard, --keep, --jobs or --diagnostic")
+            for path in require_bookkeeping_delta(
+                repository_root(args.root), args.base, args.expected_head
+            ):
+                print(path)
+            return 0
         if args.mode == "run":
             if args.expected_head is not None or args.shard_index is not None or args.keep is not None:
                 raise EvidenceError("run mode does not accept --expected-head, --shard or --keep")

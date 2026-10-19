@@ -128,11 +128,14 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
             git.write_text(
                 "#!/usr/bin/env bash\n"
                 "set -euo pipefail\n"
+                "if [[ \"$1\" == \"-C\" ]]; then shift 2; fi\n"
                 "if [[ \"$1 $2 ${3:-}\" == \"rev-parse --abbrev-ref HEAD\" ]]; then\n"
                 "  printf '%s\\n' 'fix/fixture-merge-guard-head'\n"
                 "elif [[ \"$1 $2\" == \"rev-parse HEAD\" ]]; then\n"
                 "  printf '%s\\n' 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'\n"
-                "elif [[ \"$1 $2\" == \"status --porcelain\" ]]; then\n"
+                "elif [[ \"$1 $2\" == \"rev-parse --show-toplevel\" ]]; then\n"
+                "  printf '%s\\n' \"$PWD\"\n"
+                "elif [[ \"$1 $2\" == \"status --porcelain\" ]] || [[ \"$1\" == \"status\" ]]; then\n"
                 "  exit 0\n"
                 "elif [[ \"$1 $2\" == \"cat-file -e\" ]]; then\n"
                 "  exit 0\n"
@@ -266,8 +269,11 @@ class LocalQuickEvidenceGateTests(unittest.TestCase):
             git.write_text(
                 "#!/usr/bin/env bash\n"
                 "set -euo pipefail\n"
+                "if [[ \"$1\" == \"-C\" ]]; then shift 2; fi\n"
                 "if [[ \"$1 $2\" == \"rev-parse HEAD\" ]]; then\n"
                 f"  printf '%s\\n' '{FULL_SHA}'\n"
+                "elif [[ \"$1 $2\" == \"rev-parse --show-toplevel\" ]]; then\n"
+                "  printf '%s\\n' \"$PWD\"\n"
                 "elif [[ \"$1 $2\" == \"status --porcelain=v1\" || \"$1 $2\" == \"status --porcelain\" ]]; then\n"
                 "  exit 0\n"
                 "elif [[ \"$1\" == \"merge-base\" ]]; then\n"
@@ -365,6 +371,17 @@ class LocalQuickEvidenceGateTests(unittest.TestCase):
         self.assertIn("bookkeeping-only candidate", completed.stdout)
         self.assertIn("bookkeeping-path: .agent/active-runs.json", completed.stdout)
         self.assertIn("ride along with the adjacent product candidate", completed.stdout)
+        self.assertNotIn("running make ci.local.quick", completed.stdout)
+        self.assertEqual(len(calls), 1)
+
+    def test_bookkeeping_candidate_with_ancestor_receipt_reuses_it(self) -> None:
+        completed, calls = self.run_gate(
+            evidence_mode="hit",
+            changed_files=(".agent/active-runs.json", "docs/ops/example.md"),
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout)
+        self.assertIn("REUSE: exact-head ci.local.quick evidence verified", completed.stdout)
+        self.assertNotIn("bookkeeping-only candidate", completed.stdout)
         self.assertNotIn("running make ci.local.quick", completed.stdout)
         self.assertEqual(len(calls), 1)
 
