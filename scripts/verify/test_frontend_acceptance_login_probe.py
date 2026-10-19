@@ -4,6 +4,7 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import io
+import json
 import os
 import unittest
 from email.message import Message
@@ -61,6 +62,35 @@ class FrontendAcceptanceLoginProbeTest(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertIn("PASS http=200", output)
         self.assertNotIn(token, output)
+
+    def test_sends_the_entry_stamp_and_no_database_hint(self) -> None:
+        captured = {}
+
+        def fake_urlopen(request, timeout=0):
+            captured["url"] = request.full_url
+            captured["headers"] = {key.lower(): value for key, value in request.header_items()}
+            captured["body"] = json.loads(request.data or b"{}")
+            return _Response(b'{"ok":true,"data":{"session":{"token":"token"}}}')
+
+        with mock.patch.dict(
+            os.environ,
+            {"DB_NAME": "sc_frontend_acceptance", "SC_ACCEPTANCE_FIXTURE_PASSWORD": "secret"},
+            clear=True,
+        ), mock.patch.object(PROBE.urlrequest, "urlopen", side_effect=fake_urlopen), contextlib.redirect_stdout(
+            io.StringIO()
+        ):
+            self.assertEqual(PROBE.probe(), 0)
+
+        self.assertNotIn("?db=", captured["url"])
+        self.assertNotIn("db", captured["body"]["params"])
+        self.assertEqual(captured["headers"]["x-sc-namespace"], "acceptance")
+        self.assertEqual(captured["headers"]["x-sc-audience"], "tenant")
+        self.assertEqual(
+            captured["headers"]["x-sc-entry-secret"], "sc-acceptance-entry-local-v1"
+        )
+        self.assertEqual(
+            captured["headers"]["x-sc-route-version"], "acceptance-route-v1"
+        )
 
     def test_reports_sanitized_http_rejection(self) -> None:
         headers = Message()

@@ -7,13 +7,36 @@ const port = Number(process.env.STATIC_PORT || 5175)
 const proxy = new URL(process.env.API_PROXY_TARGET || 'http://127.0.0.1:18082')
 if (!root) throw new Error('STATIC_ROOT is required')
 
+// When this preview is the isolated acceptance entry, stamp the namespace the
+// same way nginx does for a deployed entry.  An unset namespace leaves the
+// request untouched so a non-acceptance preview cannot invent an identity.
+const entryNamespace = (process.env.SC_ENTRY_NAMESPACE || '').trim()
+const entryHeaders = entryNamespace
+  ? {
+      'x-sc-namespace': entryNamespace,
+      'x-sc-audience': (process.env.SC_ENTRY_AUDIENCE || 'tenant').trim(),
+      'x-sc-entry-secret': (process.env.SC_ENTRY_SHARED_SECRET || '').trim(),
+      'x-sc-route-version': (process.env.SC_ENTRY_ROUTE_VERSION || '').trim(),
+    }
+  : {}
+if (entryNamespace && Object.values(entryHeaders).some((value) => !value)) {
+  throw new Error('isolated acceptance entry identity is incomplete')
+}
+
+function proxyHeaders(headers) {
+  const next = { ...headers }
+  if (!entryNamespace) return next
+  for (const name of ['x-odoo-db', 'x-odoo-database', 'x-db', 'x-odoo-db-locked']) delete next[name]
+  return { ...next, ...entryHeaders }
+}
+
 const contentTypes = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml' }
 
 createServer((req, res) => {
   const requestPath = (req.url || '').split('?')[0]
   const isBackendRoute = requestPath.startsWith('/api/') || requestPath === '/web' || requestPath.startsWith('/web/')
   if (isBackendRoute) {
-    const upstream = httpRequest({ hostname: proxy.hostname, port: proxy.port, method: req.method, path: req.url, headers: { ...req.headers, host: proxy.host } }, (up) => {
+    const upstream = httpRequest({ hostname: proxy.hostname, port: proxy.port, method: req.method, path: req.url, headers: { ...proxyHeaders(req.headers), host: proxy.host } }, (up) => {
       res.writeHead(up.statusCode || 502, up.headers)
       up.pipe(res)
     })
