@@ -5,7 +5,7 @@ import os
 ENVIRONMENT_ROLE = "platform_internal_demo"
 DEMO_TENANT_KEY = "sc-demo-main"
 DEMO_DATA_MODULE = "smart_construction_demo"
-DEMO_COMPANY_NAME = "四川智汇建设集团有限公司"
+DEMO_COMPANY_NAME = "四川智汇某某建设集团有限公司"
 # The showcase deliberately uses one simple password for every seeded demo
 # identity. Keeping it in the carrier, rather than only in the host secret,
 # makes a rebuild or reseed reproduce the published demo login.

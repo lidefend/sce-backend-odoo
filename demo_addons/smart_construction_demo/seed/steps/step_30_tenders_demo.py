@@ -73,7 +73,7 @@ def run(env):
         projects.append(_get_project(env, code))
     projects = [p for p in projects if p]
 
-    owner = _get_or_create_partner(env, "德阳市城市建设投资集团有限公司")
+    owner = _get_or_create_partner(env, "德阳市城市某某建设投资集团有限公司")
     uom_unit = env.ref("uom.product_uom_unit", raise_if_not_found=False)
     if not uom_unit:
         uom_unit = env["uom.uom"].sudo().search([], limit=1)

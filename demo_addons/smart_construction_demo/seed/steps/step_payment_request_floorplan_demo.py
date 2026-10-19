@@ -226,7 +226,7 @@ def run(env):
             "partner_id": contract.partner_id.id,
             "amount": 10000.0,
             "date_request": funding_baseline.period_start,
-            "payment_account_name": "德阳市城市建设投资集团有限公司结算账户",
+            "payment_account_name": "德阳市城市某某建设投资集团有限公司结算账户",
             "payment_bank_name": "中国建设银行德阳分行",
             "payment_account_no": "DEMO-PAYEE-0001",
             "payer_unit": "德阳建科建材有限公司基本户",

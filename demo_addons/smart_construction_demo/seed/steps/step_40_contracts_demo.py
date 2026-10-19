@@ -525,7 +525,7 @@ def run(env):
     projects.extend(_get_showroom_projects(env))
     projects = list({p.id: p for p in projects if p}.values())
 
-    owner = _get_or_create_partner(env, "德阳市城市建设投资集团有限公司")
+    owner = _get_or_create_partner(env, "德阳市城市某某建设投资集团有限公司")
     subcontract = _get_or_create_partner(env, "四川路桥建筑劳务有限公司")
 
     contract_category = _get_dictionary(

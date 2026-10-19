@@ -345,7 +345,7 @@ def run(env):
     demo_pm = _get_user(env, "demo_pm")
     demo_cost = _get_user(env, "demo_cost")
 
-    owner = _get_or_create_partner(env, "德阳市城市建设投资集团有限公司")
+    owner = _get_or_create_partner(env, "德阳市城市某某建设投资集团有限公司")
     supplier = _get_or_create_partner(env, "德阳建科建材有限公司")
     subcontract = _get_or_create_partner(env, "四川路桥建筑劳务有限公司")
 

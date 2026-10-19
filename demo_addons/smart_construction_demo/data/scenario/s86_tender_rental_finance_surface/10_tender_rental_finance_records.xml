@@ -109,7 +109,7 @@
       <field name="amount">1200.0</field>
       <field name="invoice_no">TB-2025-FEE-001</field>
       <field name="payment_method">银行转账</field>
-      <field name="receipt_partner_name">德阳市旌阳产业发展集团有限公司</field>
+      <field name="receipt_partner_name">德阳市旌阳产业某某发展集团有限公司</field>
       <field name="receipt_payee_name">招标代理机构</field>
       <field name="receipt_bank_name">中国银行德阳分行</field>
       <field name="receipt_bank_account">6222021000000088</field>
@@ -232,7 +232,7 @@
       <field name="amount">50000.0</field>
       <field name="currency_id" ref="base.CNY"/>
       <field name="date_request">2025-06-05</field>
-      <field name="payment_account_name">德阳市旌阳产业发展集团有限公司</field>
+      <field name="payment_account_name">德阳市旌阳产业某某发展集团有限公司</field>
       <field name="payment_bank_name">中国银行德阳示范支行</field>
       <field name="payment_account_no">6222021000000089</field>
       <field name="note">智慧园区配套工程投标保证金缴纳。</field>

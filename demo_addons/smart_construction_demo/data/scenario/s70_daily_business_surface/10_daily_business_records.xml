@@ -154,7 +154,7 @@
       <field name="receipt_type">工程进度款</field>
       <field name="income_category">主营业务收入</field>
       <field name="payment_method">银行转账</field>
-      <field name="receiving_account_name">四川华川建设集团有限公司</field>
+      <field name="receiving_account_name">四川华川某某建设集团有限公司</field>
       <field name="receiving_account_no">6222021000000071</field>
       <field name="amount">1200000.0</field>
       <field name="settlement_amount">1200000.0</field>
@@ -257,7 +257,7 @@
       <field name="title">主体结构施工日报</field>
       <field name="diary_type">日报表</field>
       <field name="category">主体结构</field>
-      <field name="construction_unit">四川华川建设集团有限公司</field>
+      <field name="construction_unit">四川华川某某建设集团有限公司</field>
       <field name="project_manager">张建国</field>
       <field name="weather">晴</field>
       <field name="manpower_count">86</field>

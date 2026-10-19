@@ -10,7 +10,7 @@ databases at request time.
 from __future__ import annotations
 
 DEMO_NAMESPACE_ID = "ns_000000000002"
-DEMO_TENANT_NAME = "四川智汇建设集团有限公司"
+DEMO_TENANT_NAME = "四川智汇某某建设集团有限公司"
 LEGACY_TENANT_NAMES = ("Demo tenant", "Demo 演示租户")
 
 

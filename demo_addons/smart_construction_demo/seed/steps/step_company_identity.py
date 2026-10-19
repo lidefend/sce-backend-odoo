@@ -12,7 +12,7 @@ def _run(env):
 register(
     SeedStep(
         name="demo_company_identity",
-        description="Name the demo company for the showcase (四川智汇建设集团有限公司).",
+        description="Name the demo company for the showcase (四川智汇某某建设集团有限公司).",
         run=_run,
     )
 )

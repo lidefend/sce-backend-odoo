@@ -22,6 +22,7 @@ assertion therefore targets the organization seeds owned by this baseline.
 from __future__ import annotations
 
 import ast
+import re
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -70,6 +71,21 @@ BANNED_VISIBLE_TOKENS = (
     "DEMO",
     "某某",
 )
+
+# Repository boundary rules require synthetic legal company identities to carry
+# an explicit marker (示例/某某); only that marker is allowed inside company names.
+LEGAL_COMPANY = re.compile(r"[\u4e00-\u9fff]{4,}(?:建设|建筑)?集团有限公司")
+SYNTHETIC_IDENTITY_MARKERS = ("示例", "某某")
+
+
+def _banned_tokens_for(value: str) -> tuple[str, ...]:
+    if LEGAL_COMPANY.search(value):
+        return tuple(
+            token for token in BANNED_VISIBLE_TOKENS
+            if token not in SYNTHETIC_IDENTITY_MARKERS
+        )
+    return BANNED_VISIBLE_TOKENS
+
 
 # Values in these fields are technical identity/format carriers, not end-user
 # labels. They may legitimately keep "demo" semantics after visible data has
@@ -467,7 +483,7 @@ class TestDemoOrganizationBaseline(unittest.TestCase):
                         if value:
                             candidates.append(("<%s %s>" % (element.tag, attribute), value))
                 for label, value in candidates:
-                    for token in BANNED_VISIBLE_TOKENS:
+                    for token in _banned_tokens_for(value):
                         self.assertNotIn(
                             token,
                             value,
@@ -484,7 +500,7 @@ class TestDemoOrganizationBaseline(unittest.TestCase):
                 for value in (field.text or "", field.get("eval") or ""):
                     if not value:
                         continue
-                    for token in BANNED_VISIBLE_TOKENS:
+                    for token in _banned_tokens_for(value):
                         self.assertNotIn(
                             token,
                             value,

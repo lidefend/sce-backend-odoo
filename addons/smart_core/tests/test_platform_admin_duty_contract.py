@@ -548,12 +548,12 @@ class ProjectionAndRouteTests(unittest.TestCase):
 
     def test_demo_tenant_name_is_declared_in_the_platform_registry(self):
         seed = (ROOT / "data" / "sc_platform_namespace_seed.xml").read_text(encoding="utf-8")
-        self.assertIn("<field name=\"display_name\">四川智汇建设集团有限公司</field>", seed)
+        self.assertIn("<field name=\"display_name\">四川智汇某某建设集团有限公司</field>", seed)
         self.assertNotIn("Demo tenant", seed)
         migration = ROOT / "migrations" / "17.0.1.1.16" / "post-migration.py"
         self.assertTrue(migration.exists())
         migration_source = migration.read_text(encoding="utf-8")
-        self.assertIn('DEMO_TENANT_NAME = "四川智汇建设集团有限公司"', migration_source)
+        self.assertIn('DEMO_TENANT_NAME = "四川智汇某某建设集团有限公司"', migration_source)
         self.assertIn("sc_platform_namespace", migration_source)
         self.assertIn("<field name=\"display_name\">平台控制台</field>", seed)
         platform_migration = ROOT / "migrations" / "17.0.1.1.17" / "post-migration.py"

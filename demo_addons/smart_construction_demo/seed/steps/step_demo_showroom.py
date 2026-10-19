@@ -106,7 +106,7 @@ def _ensure_project_prereqs(env, project):
     if not project.owner_id:
         partner = env.ref("smart_construction_demo.seed_partner_contract", raise_if_not_found=False)
         if not partner:
-            partner = env["res.partner"].sudo().create({"name": "德阳市城市建设投资集团有限公司"})
+            partner = env["res.partner"].sudo().create({"name": "德阳市城市某某建设投资集团有限公司"})
         vals["owner_id"] = partner.id
         if not project.partner_id:
             vals["partner_id"] = partner.id

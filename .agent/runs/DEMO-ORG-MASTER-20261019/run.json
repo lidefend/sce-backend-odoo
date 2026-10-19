@@ -158,20 +158,20 @@
       "command": "python3 demo_addons/smart_construction_demo/tests/test_demo_organization_baseline.py",
       "status": "passed",
       "tests": 21,
-      "log": ".runtime/agent-runs/DEMO-ORG-MASTER-20261019/test_demo_organization_baseline-rebase.log"
+      "log": ".runtime/agent-runs/DEMO-ORG-MASTER-20261019/org-baseline-post-rename.log"
     },
     "demo_lifecycle": {
       "command": "make verify.demo.lifecycle.unit",
       "status": "passed",
       "tests": 136,
-      "log": ".runtime/agent-runs/DEMO-ORG-MASTER-20261019/demo_lifecycle-rebase.log",
+      "log": ".runtime/agent-runs/DEMO-ORG-MASTER-20261019/lifecycle-post-rename2.log",
       "evidence": "post-rebase rerun at the current branch head; local receipt from the pre-rebase head was retired"
     },
     "demo_supplemental": {
       "command": "make verify.demo.supplemental.unit",
       "status": "passed",
       "tests": 80,
-      "log": ".runtime/agent-runs/DEMO-ORG-MASTER-20261019/demo_supplemental-rebase.log",
+      "log": ".runtime/agent-runs/DEMO-ORG-MASTER-20261019/supplemental-post-rename2.log",
       "evidence": "post-rebase rerun at the current branch head; local receipt from the pre-rebase head was retired"
     },
     "ci_local_iteration": {
@@ -220,6 +220,11 @@
       "status": "passed",
       "scanned_blobs": 5764,
       "note": "synthetic demo bank-account and ID placeholders registered by exact blob and classification"
+    },
+    "tenant_product_payload_boundary": {
+      "command": "python3 scripts/verify/tenant_product_payload_boundary_guard.py",
+      "status": "passed",
+      "note": "synthetic legal company identities carry the repository-sanctioned 某某 marker; demo/test markers remain banned"
     }
   },
   "realistic_visible_data_rework": {
