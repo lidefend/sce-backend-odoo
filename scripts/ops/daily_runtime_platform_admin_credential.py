@@ -53,6 +53,10 @@ SEED_CONFIRM_ENV = "SC_CONFIRM_PLATFORM_ADMIN_CREDENTIAL_SEED"
 SEED_CONFIRM_VALUE = "REPLACE_DECLARED_PLATFORM_ADMIN_CREDENTIAL"
 MODE_ENV = "SC_PLATFORM_ADMIN_CREDENTIAL_MODE"
 LOGIN_ENV = "SC_PLATFORM_ADMIN_CREDENTIAL_LOGIN"
+#: Names the declared credential key to the in-container program.  The key
+#: itself is declared; the value only ever travels through that key, so the
+#: program cannot hard-code one declaration's key name.
+PASSWORD_KEY_ENV = "SC_PLATFORM_ADMIN_CREDENTIAL_PASSWORD_KEY"
 
 #: Runs inside the duty's own Odoo, on stdin, and prints one marked receipt.
 #: It is a module constant so the text a test asserts is the text that runs.
@@ -266,6 +270,7 @@ def command_for(duty: dict, ops_root: Path, env_path: Path, stack: Path, declara
         "--label", "sc.daily-duty=%s" % duty["duty"],
         "-e", MODE_ENV,
         "-e", LOGIN_ENV,
+        "-e", PASSWORD_KEY_ENV,
         "-e", declaration["password_env"],
         "--entrypoint", duty_runtime.APPLICATION_ENTRY,
         "odoo", "shell", "-c", duty_runtime.ODOO_CONF,
@@ -336,6 +341,7 @@ def execute(action: str, declaration_path: Path | None = None) -> dict:
     environ = {
         MODE_ENV: action,
         LOGIN_ENV: declaration["login"],
+        PASSWORD_KEY_ENV: declaration["password_env"],
         declaration["password_env"]: password,
     }
     saved = {key: os.environ.get(key) for key in environ}

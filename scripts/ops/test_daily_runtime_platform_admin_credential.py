@@ -150,6 +150,15 @@ class SafetyTest(unittest.TestCase):
                          "a credential key must be forwarded by name, never by value")
         self.assertIn(entry.MODE_ENV, command)
         self.assertIn(entry.LOGIN_ENV, command)
+        self.assertIn(entry.PASSWORD_KEY_ENV, command,
+                      "the container must learn which declared key holds the value")
+
+    def test_the_password_key_indirection_is_forwarded(self):
+        """The program reads the key name from the environment, so it must be passed."""
+
+        self.assertIn(entry.PASSWORD_KEY_ENV, entry.PROGRAM)
+        self.assertIn('os.environ[os.environ["SC_PLATFORM_ADMIN_CREDENTIAL_PASSWORD_KEY"]]',
+                      entry.PROGRAM)
 
 
 class SeedTest(unittest.TestCase):
