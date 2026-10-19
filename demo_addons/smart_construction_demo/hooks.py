@@ -6,6 +6,44 @@ ENVIRONMENT_ROLE = "platform_internal_demo"
 DEMO_TENANT_KEY = "sc-demo-main"
 DEMO_DATA_MODULE = "smart_construction_demo"
 DEMO_COMPANY_NAME = "四川智汇某某建设集团有限公司"
+# The demo tenant is a group, not a single legal entity.  The second company is
+# a real operating subsidiary of the same tenant, never an acceptance fixture
+# and never a visible "demo 2" label.
+DEMO_COMPANY_SECOND_NAME = "四川智汇某某建设集团第二工程有限公司"
+DEMO_COMPANY_SECOND_XMLID = "smart_construction_demo.demo_company_second"
+# Group-level seats that must be able to switch into the subsidiary.  Project
+# staff deliberately stay scoped to the main company so the demo shows a real
+# multi-company boundary instead of giving everybody every company.
+DEMO_COMPANY_SECOND_MEMBER_LOGINS = (
+    "admin",
+    "wutao",
+    "demo_full",
+    "demo_role_owner",
+    "demo_role_executive",
+    "fin_mgr",
+    "fin1",
+    "demo_finance",
+    "demo_audit",
+    "sc_demo_accounting_manager",
+    "sc_demo_business_config",
+    "sc_demo_operation",
+)
+DEMO_COMPANY_IDENTITY = {
+    "email": "info@zhihui-construction.cn",
+    "phone": "028-8601 2000",
+    "website": "https://www.zhihui-construction.cn",
+    "street": "天府大道中段 1388 号",
+    "city": "成都",
+    "zip": "610041",
+}
+DEMO_COMPANY_SECOND_IDENTITY = {
+    "email": "gc2@zhihui-construction.cn",
+    "phone": "028-8601 2100",
+    "website": "https://www.zhihui-construction.cn",
+    "street": "天府大道中段 1388 号",
+    "city": "成都",
+    "zip": "610041",
+}
 # The showcase deliberately uses one simple password for every seeded demo
 # identity. Keeping it in the carrier, rather than only in the host secret,
 # makes a rebuild or reseed reproduce the published demo login.
@@ -86,14 +124,157 @@ def guard_demo_data_space(env):
 
 
 def apply_demo_company_identity(env):
-    """Give the demo's main company its published identity, idempotently."""
+    """Give the demo's main company its published identity, idempotently.
+
+    The company name is part of the published surface, so a rebuilt or upgraded
+    demo must never fall back to "My Company" or an old "Demo演示公司" label.
+    Country, contact and website values are converged in the same act because a
+    Chinese construction group with an empty/US identity is visibly incomplete.
+    """
     company = env.ref("base.main_company")
-    if company.name != DEMO_COMPANY_NAME:
-        company.write({"name": DEMO_COMPANY_NAME})
+    country = env.ref("base.cn", raise_if_not_found=False)
+    country_id = getattr(country, "id", False)
+    values = {"name": DEMO_COMPANY_NAME, **DEMO_COMPANY_IDENTITY}
+    if country_id:
+        values["country_id"] = country_id
+    patch = _changed_values(company, values)
+    if patch:
+        company.write(patch)
     partner = company.partner_id
-    if partner.name != DEMO_COMPANY_NAME:
-        partner.write({"name": DEMO_COMPANY_NAME})
+    partner_values = {"name": DEMO_COMPANY_NAME, **DEMO_COMPANY_IDENTITY}
+    if country_id:
+        partner_values["country_id"] = country_id
+    partner_patch = _changed_values(partner, partner_values)
+    if partner_patch:
+        partner.write(partner_patch)
     return company
+
+
+def _changed_values(record, values):
+    """Return only the fields a record can carry and that still differ.
+
+    Comparing a many2one recordset with an integer id would always look
+    different, so the current value is reduced to its id first.  Fields the
+    record does not implement are skipped, which keeps the function usable with
+    the lightweight fakes in the offline tests.
+    """
+    patch = {}
+    for field, value in values.items():
+        if not hasattr(record, field):
+            continue
+        current = getattr(record, field)
+        if hasattr(current, "id"):
+            current = current.id
+        if current != value:
+            patch[field] = value
+    return patch
+
+
+def _find_or_create_second_company(env):
+    """Resolve the second demo company by stable XMLID, never by hardcoded id."""
+    Company = env["res.company"].sudo()
+    Data = env["ir.model.data"].sudo()
+    xmlid = Data.search([
+        ("module", "=", DEMO_DATA_MODULE),
+        ("name", "=", "demo_company_second"),
+        ("model", "=", "res.company"),
+    ], limit=1)
+    company = Company.browse()
+    if xmlid:
+        company = Company.browse(xmlid.res_id).exists()
+        if not company:
+            xmlid.unlink()
+            xmlid = Data.browse()
+    if not company:
+        matches = Company.search([("name", "=", DEMO_COMPANY_SECOND_NAME)])
+        if len(matches) > 1:
+            raise RuntimeError(
+                "DEMO_COMPANY_SECOND_NAME_AMBIGUOUS:%s:%s"
+                % (DEMO_COMPANY_SECOND_NAME, len(matches))
+            )
+        company = matches
+    if not company:
+        vals = {
+            "name": DEMO_COMPANY_SECOND_NAME,
+            "parent_id": env.ref("base.main_company").id,
+        }
+        currency = env.ref("base.CNY", raise_if_not_found=False)
+        if currency:
+            vals["currency_id"] = currency.id
+        country = env.ref("base.cn", raise_if_not_found=False)
+        if country:
+            vals["country_id"] = country.id
+        company = Company.create(vals)
+    if not xmlid:
+        Data.create({
+            "module": DEMO_DATA_MODULE,
+            "name": "demo_company_second",
+            "model": "res.company",
+            "res_id": company.id,
+            "noupdate": True,
+        })
+    return company
+
+
+def apply_demo_company_secondary(env):
+    """Create or converge the demo group's second operating company.
+
+    The company is a child of the environment main company, uses the same CNY
+    currency and the Chinese country record, and is found through its stable
+    XMLID.  Re-running the seed or rebuilding the demo therefore converges the
+    same row instead of creating a duplicate company.
+    """
+    company = _find_or_create_second_company(env)
+    main = env.ref("base.main_company")
+    currency = env.ref("base.CNY", raise_if_not_found=False)
+    country = env.ref("base.cn", raise_if_not_found=False)
+    values = {
+        "name": DEMO_COMPANY_SECOND_NAME,
+        "parent_id": main.id,
+        **DEMO_COMPANY_SECOND_IDENTITY,
+    }
+    if currency:
+        values["currency_id"] = currency.id
+    if country:
+        values["country_id"] = country.id
+    patch = _changed_values(company, values)
+    if patch:
+        company.write(patch)
+    partner = company.partner_id
+    partner_values = {"name": DEMO_COMPANY_SECOND_NAME, **DEMO_COMPANY_SECOND_IDENTITY}
+    if country:
+        partner_values["country_id"] = country.id
+    partner_patch = _changed_values(partner, partner_values)
+    if partner_patch:
+        partner.write(partner_patch)
+    return company
+
+
+def register_demo_company_secondary(env, company):
+    """Register the second company as a demo data space, idempotently.
+
+    ``_sc_data_company_ids`` only returns companies with an active registration,
+    so an unregistered second company would switch to an empty surface and any
+    row created there would be invisible.  Registration is the platform's
+    ownership anchor, not a demo shortcut, and it stays under the same tenant
+    key as the main company.
+    """
+    from odoo.addons.smart_core.security import data_space_provisioning as provisioning
+
+    Registrations = env["sc.tenant.company.registration"].sudo().with_context(
+        active_test=False
+    )
+    if Registrations.search_count([("company_id", "=", company.id)]):
+        return False
+    if not getattr(env, "su", False):
+        raise RuntimeError("DEMO_COMPANY_SECOND_REGISTRATION_REQUIRES_SYSTEM_PRINCIPAL")
+    provisioning.adopt_business_company(
+        env,
+        tenant_key=DEMO_TENANT_KEY,
+        purpose="demo",
+        company_id=company.id,
+    )
+    return True
 
 
 def demo_user_records(env):

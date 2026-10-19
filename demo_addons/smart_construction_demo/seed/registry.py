@@ -15,12 +15,14 @@ _REGISTRY: Dict[str, SeedStep] = {}
 _PROFILES: Dict[str, List[str]] = {
     "demo_full": [
         "demo_company_identity",
+        "demo_company_secondary",
         "dictionary",
         "project_skeleton",
         "boq_sample",
         "metrics_smoke",
         "company_currency_cny",
         "demo_10_users",
+        "demo_company_membership",
         "demo_user_prefs",
         "demo_20_projects",
         "demo_30_tenders",
