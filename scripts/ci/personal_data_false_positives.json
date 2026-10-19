@@ -301,6 +301,34 @@
       "blob_id": "8bc8d0b5850040357811805463b0adfc92e233bc",
       "classification": "BANK_ACCOUNT_PATTERN",
       "reason": "verified_synthetic_demo_business_fixture_sequential_placeholder"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "demo_addons/smart_construction_demo/data/scenario/s70_daily_business_surface/10_daily_business_records.xml",
+      "blob_id": "704c8eb3d0760ecac7175be07d4fdbcdc19c0794",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_business_fixture_prior_revision_superseded_in_branch"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "demo_addons/smart_construction_demo/data/scenario/s85_admin_finance_surface/10_admin_finance_records.xml",
+      "blob_id": "ecc7fe04afb06221d709af7bb6d08dcd02c05c37",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_business_fixture_prior_revision_superseded_in_branch"
+    },
+    {
+      "rule_id": "PD001",
+      "path": "demo_addons/smart_construction_demo/data/scenario/s85_admin_finance_surface/10_admin_finance_records.xml",
+      "blob_id": "ecc7fe04afb06221d709af7bb6d08dcd02c05c37",
+      "classification": "GOVERNMENT_ID_PATTERN",
+      "reason": "verified_synthetic_demo_business_fixture_prior_revision_superseded_in_branch"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "demo_addons/smart_construction_demo/data/scenario/s86_tender_rental_finance_surface/10_tender_rental_finance_records.xml",
+      "blob_id": "67fb4473755bc98f1bc8ccf3e630520ad5701a79",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_business_fixture_prior_revision_superseded_in_branch"
     }
   ]
 }
