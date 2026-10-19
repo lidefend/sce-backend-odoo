@@ -40,7 +40,8 @@
     "scripts/audit/verification_lane_baseline.json",
     "make/ci.mk",
     "make/frontend.mk",
-    "scripts/verify/test_branch_governance_consistency_guard.py"
+    "scripts/verify/test_branch_governance_consistency_guard.py",
+    "docs/frontend_productization/decision-authority-inventory-v1.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -308,6 +309,13 @@
       "status": "failed",
       "owner": "P4 test isolation",
       "reason": "Merge unit harness consumed real runtime manifest; fake git cannot ls-tree real candidate. Isolate plan/evidence under existing TemporaryDirectory; no production gate bypass."
+    },
+    "remote_frontend_b424": {
+      "status": "failed",
+      "owner": "P4 generated evidence",
+      "run_id": 39234579837,
+      "reason": "Three ActionView line references stale in decision authority inventory; no semantic/classification/count changes",
+      "repair": "make verify.frontend.decision_authority.export; review exactly three line offsets"
     }
   },
   "blockers": [],

@@ -234,3 +234,5 @@ afdf候选四套精确运行证据均PASS且已外部归档；Quick在verificati
 P4 / make/frontend.mk：Node22 的 strip-types 不解析传递依赖中的无扩展名 contractGap 导入；远端 frontend_release_gate 39231770945 因 localized_display 测试无法加载而失败，产品构建通过。改用既有 esbuild 打包测试机制并保留原 import.meta.url，使源文件断言仍检查仓库实际文件。范围为验证入口及本记录/run；不改变 P0/P1/前端产品源码。L1 iteration + L2 localized_display 为最早检查；L3/L4 的四套 d354 运行证据按未变输入复用，禁止改造产品代码迁就测试解析。新精确 HEAD 仍需 Quick、独立复核、远端门禁。
 
 419d Quick 暴露既有合并单测隔离缺口：测试 fake git 读取真实工作树 acceptance manifest，无法解析其提交。仅将该单测 evidence/plan 输出指向既有 TemporaryDirectory，生产入口不变、断言不变、真实证据不再被测试污染。此测试文件只归 governance_static，四套运行输入未变，可从419d复用。make/** 共享依赖较宽导致 d354 → 419d 四套证据不可复用，已按工具要求重采，不弱化门禁。
+
+远端 b424 普通前端测试发现 decision-authority-inventory-v1.json 的 ActionView 三个行号陈旧（1438→1439、1428→1429、3042→3038）。通过权威 export 生成，仅行号变化，无站点/分类/断言豁免变化。补齐同层完整前端 PR 单测以一次发现剩余独立阻断；产品源码及运行证据输入不变，后续候选仅文档/台账变更，按既有 Quick 和 runtime 引擎判定复用。
