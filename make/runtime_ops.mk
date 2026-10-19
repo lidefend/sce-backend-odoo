@@ -2447,3 +2447,18 @@ verify.frontend.relation_navigation.diagnostic: guard.prod.forbid
 .PHONY: frontend.standard.favorite_probe.recover
 frontend.standard.favorite_probe.recover: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-favorite-recovery
+
+.PHONY: verify.user_permission_view_contract_boundary.unit
+verify.user_permission_view_contract_boundary.unit:
+	@python3 -m unittest scripts.verify.test_user_permission_view_contract_boundary_guard -v
+
+# P4: metadata-only personnel cutover. Run on the exact deployed daily checkout.
+.PHONY: verify.daily.personnel_views.unit daily.personnel_views
+verify.daily.personnel_views.unit: guard.prod.forbid
+	@python3 -m unittest scripts.ops.test_daily_personnel_views -v
+
+daily.personnel_views: guard.prod.forbid verify.daily.personnel_views.unit
+	@python3 scripts/ops/daily_personnel_views.py --action "$(PERSONNEL_VIEWS_ACTION)" \
+		--duty "$(PERSONNEL_VIEWS_DUTY)" --expected-sha "$(EXPECTED_HEAD)" \
+		--declaration-sha256 "$(PERSONNEL_VIEWS_DECLARATION_SHA256)" \
+		--plan-sha256 "$(PERSONNEL_VIEWS_PLAN_SHA256)" --verify-target "$(or $(PERSONNEL_VIEWS_VERIFY_TARGET),apply)"

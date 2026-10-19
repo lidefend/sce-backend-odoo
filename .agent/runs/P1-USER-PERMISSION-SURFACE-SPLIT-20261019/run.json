@@ -1,0 +1,305 @@
+{
+  "schema_version": 1,
+  "id": "P1-USER-PERMISSION-SURFACE-SPLIT-20261019",
+  "branch": "feature/user-permission-surface-split-20261019",
+  "status": "active",
+  "goal": ".agent/goals/P1-USER-PERMISSION-SURFACE-SPLIT-20261019.yaml",
+  "record": "docs/ops/iterations/user_permission_surface_split_20261019.md",
+  "baseline_sha": "7cada7699c5340bc85c40d735fba60cee1b22965",
+  "scope": [
+    ".agent/active-runs.json",
+    "addons/smart_construction_core/views/support/runtime_user_management_views.xml",
+    "addons/smart_construction_core/tests/test_data_permission_surface.py",
+    "addons/smart_construction_core/tests/test_user_module_product_closure.py",
+    "addons/smart_core/utils/contract_governance_enterprise_forms.py",
+    "addons/smart_core/utils/contract_governance_registry.py",
+    "scripts/verify/user_permission_view_contract_boundary_guard.py",
+    "scripts/verify/contract_governance_enterprise_forms_split_guard.py",
+    "scripts/verify/local_dev_personnel_authorization_browser.mjs",
+    "docs/ops/iterations/user_permission_surface_split_20261019.md",
+    ".agent/goals/P1-USER-PERMISSION-SURFACE-SPLIT-20261019.yaml",
+    ".agent/runs/P1-USER-PERMISSION-SURFACE-SPLIT-20261019/run.json",
+    "addons/smart_construction_core/models/support/runtime_user_management.py",
+    "addons/smart_construction_core/tests/test_runtime_user_management.py",
+    "scripts/verify/test_user_permission_view_contract_boundary_guard.py",
+    "make/runtime_ops.mk",
+    "make/dev.mk",
+    "scripts/ops/daily_personnel_views.py",
+    "scripts/ops/daily_personnel_views_transaction.py",
+    "scripts/ops/test_daily_personnel_views.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing local.dev / sc-local-dev / sc_dev_demo; canonical primary .env.dev; compose run loads current candidate; transactional tests and view rehearsal only; no persistent business-fact changes"
+  },
+  "checks": {
+    "user_module_product_boundary": {
+      "target": "verify.user_module.product_boundary",
+      "inputs": [
+        "Makefile",
+        "make/dev_test.mk",
+        "scripts/verify/user_module_product_boundary_guard.py",
+        "scripts/verify/industry_module_product_boundary_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "user_permission_view_contract_boundary": {
+      "target": "verify.user_permission_view_contract_boundary.guard",
+      "inputs": [
+        "scripts/verify/user_permission_view_contract_boundary_guard.py",
+        "addons/smart_construction_core/views/support/runtime_user_management_views.xml",
+        "addons/smart_construction_core/data/data_permission_contract.xml",
+        "addons/smart_construction_core/models/support/runtime_user_management.py",
+        "addons/smart_core/utils/contract_governance_enterprise_forms.py",
+        "addons/smart_core/utils/contract_governance_registry.py"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/P1-USER-PERMISSION-SURFACE-SPLIT-20261019/user-permission-boundary.json"
+      }
+    },
+    "readonly_guard_unit": {
+      "target": "verify.user_permission_view_contract_boundary.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/user_permission_view_contract_boundary_guard.py",
+        "scripts/verify/test_user_permission_view_contract_boundary_guard.py",
+        "make/runtime_ops.mk"
+      ]
+    }
+  },
+  "verification_results": {
+    "baseline_identity": {
+      "status": "passed",
+      "branch": "feature/user-permission-surface-split-20261019",
+      "head": "7cada7699c5340bc85c40d735fba60cee1b22965"
+    },
+    "py_compile": {
+      "status": "passed",
+      "command": "python3 -m py_compile addons/smart_construction_core/tests/test_data_permission_surface.py addons/smart_construction_core/tests/test_user_module_product_closure.py addons/smart_core/utils/contract_governance_enterprise_forms.py addons/smart_core/utils/contract_governance_registry.py scripts/verify/user_permission_view_contract_boundary_guard.py scripts/verify/contract_governance_enterprise_forms_split_guard.py scripts/verify/test_local_dev_personnel_authorization_fixture.py"
+    },
+    "xml_wellformed": {
+      "status": "passed",
+      "tool": "xml.etree.ElementTree",
+      "files": [
+        "addons/smart_construction_core/views/support/runtime_user_management_views.xml",
+        "addons/smart_construction_core/data/data_permission_contract.xml",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
+      ]
+    },
+    "contract_governance_enterprise_forms_split_guard": {
+      "status": "passed",
+      "command": "python3 scripts/verify/contract_governance_enterprise_forms_split_guard.py"
+    },
+    "local_dev_personnel_authorization_fixture_unit": {
+      "status": "passed",
+      "tests": 7,
+      "command": "python3 -m unittest scripts.verify.test_local_dev_personnel_authorization_fixture -v"
+    },
+    "verify.user_module.product_boundary": {
+      "status": "passed",
+      "command": "make verify.user_module.product_boundary"
+    },
+    "ci.local.iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "layer": "L1",
+      "log": ".runtime/p1-user-permission-closeout/p1-iteration-final.log",
+      "context_status": "resolved",
+      "outside_scope": [],
+      "coverage": "L1_only",
+      "receipt": "none"
+    },
+    "local_dev_personnel_authorization_browser_node_check": {
+      "status": "passed",
+      "command": "node --check scripts/verify/local_dev_personnel_authorization_browser.mjs"
+    },
+    "verify.user_permission_view_contract_boundary.guard": {
+      "status": "not_run",
+      "reason": "persistent installed-view check not run: candidate views were validated only inside rollback rehearsal; shared service still uses main worktree"
+    },
+    "odoo_test_data_permission_surface": {
+      "status": "not_run",
+      "executed_subset": 4,
+      "executed_subset_status": "passed",
+      "remaining": "test_personnel_form_excludes_authorization_and_allowed_company_scope needs installed candidate views; equivalent view/contract constraints checked in rollback rehearsal, not reported as this test"
+    },
+    "odoo_test_user_module_product_closure": {
+      "status": "passed",
+      "tests": 9,
+      "log": ".runtime/p1-user-permission-closeout/p1-user-closure-tests.log"
+    },
+    "generated_view_structure_contract": {
+      "status": "not_run",
+      "reason": "contracts/generated/product_view_structure_contract.json is a generated baseline from another branch and sc_clean; no worktree-bound database is available to re-export it, and the generated artifact was not hand-edited."
+    },
+    "readonly_guard_unit": {
+      "status": "passed",
+      "tests": 10,
+      "command": "make verify.user_permission_view_contract_boundary.unit",
+      "layer": "L2"
+    },
+    "runtime_user_management": {
+      "status": "passed",
+      "tests": 26,
+      "layer": "L2",
+      "command": "make local.dev.test LOCAL_DEV_ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev MODULE=smart_construction_core TEST_TAGS=runtime_user_management",
+      "log": ".runtime/p1-user-permission-closeout/p1-runtime-user-tests-v2.log",
+      "earlier_failure": "1 failure + 2 errors from unregistered default-company fixture; repaired using existing BusinessTransactionCase, no security-rule relaxation"
+    },
+    "user_closure_and_unchanged_permission_surfaces": {
+      "status": "passed",
+      "tests": 13,
+      "layer": "L2",
+      "log": ".runtime/p1-user-permission-closeout/p1-user-closure-tests.log",
+      "scope": "9 user_module_product_closure + 4 data_permission_surface; installed personnel form test excluded because views remain unupgraded"
+    },
+    "candidate_view_rehearsal": {
+      "status": "passed",
+      "layer": "L3",
+      "command": "make local.dev.user_permission.rehearsal LOCAL_DEV_ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev",
+      "log": ".runtime/p1-user-permission-closeout/p1-view-rehearsal-v4.log",
+      "temporary_metadata_writes": 3,
+      "business_fact_tables_compared": 10,
+      "facts_unchanged": true,
+      "views_restored": true,
+      "deployed": false,
+      "existing_eligible_users": 50,
+      "existing_inactive_users": 0,
+      "inactive_runtime_coverage": "not_run: no existing inactive sample; rollback ORM tests retained"
+    },
+    "git_diff_check": {
+      "status": "passed",
+      "command": "git diff --check"
+    },
+    "daily_personnel_views_unit": {
+      "status": "passed",
+      "tests": 28,
+      "command": "make verify.daily.personnel_views.unit",
+      "log": ".runtime/p1-user-permission-closeout/p1-view-deploy-unit.log",
+      "layer": "L2"
+    },
+    "freeze_prepare": {
+      "status": "passed",
+      "command": "make ci.delivery.freeze.prepare",
+      "log": ".runtime/p1-user-permission-closeout/p1-freeze-prepare-v2.log",
+      "candidate": "unfrozen"
+    },
+    "independent_code_review": {
+      "status": "passed",
+      "reviewer": "supervisor_review",
+      "scope": "P1/P0 changes and exact three-view P4 updater; all S1 resolved",
+      "not_evidence_for": [
+        "deployment",
+        "browser acceptance",
+        "merge readiness"
+      ]
+    }
+  },
+  "blockers": [
+    "目标环境尚未部署候选；持久视图验证及两个入口浏览器定向验收仍待执行，不声明产品交付"
+  ],
+  "next_exact_step": "提交清洁代码候选，受管 bundle_sync 后运行 daily.personnel_views plan；精确三视图 apply/verify 与 duty refresh 后验证两个入口；最后精确 HEAD Quick 与受保护 GitHub PR。",
+  "takeover": {
+    "owner": "current assistant",
+    "authority": "用户明确要求接管 P1 后续收口",
+    "baseline": "7cada7699c5340bc85c40d735fba60cee1b22965",
+    "dirty": true,
+    "scope": "既有人员档案/数据权限拆分及模板用户排除；保护业务与授权事实",
+    "runtime_write_authorized_by_saved_step": false,
+    "previous_writer_stopped": "owner confirmed in conversation"
+  },
+  "stage_identity": {
+    "head": "7cada7699c5340bc85c40d735fba60cee1b22965",
+    "dirty": true,
+    "source_sha256": {
+      "addons/smart_construction_core/views/support/runtime_user_management_views.xml": "171d5314cb6ba1bfc954b974964e4c2fe828e91d941a66095878dd579833eeae",
+      "addons/smart_construction_core/tests/test_data_permission_surface.py": "eb0f1d712ea434c58a02d4e3189d902f179995badb82fca7725cea40784c625a",
+      "addons/smart_construction_core/tests/test_user_module_product_closure.py": "4ea4b83b095111248b11f133a0f97adfbbdfb3c7192ab94043dcb5dd92acd5f5",
+      "addons/smart_core/utils/contract_governance_enterprise_forms.py": "ad28eb5254390ab39c6f69d197c1436bfd2871fab7ccdae2b2af8ab3644e0f84",
+      "addons/smart_core/utils/contract_governance_registry.py": "ae181cb154df346f2a147bef5be7b9774578e48ea112dcba61dd619dabc67014",
+      "scripts/verify/user_permission_view_contract_boundary_guard.py": "50052b440af0df035302ecf33129d1c93c1a8146f567ff2b351087ca33c9900a",
+      "scripts/verify/contract_governance_enterprise_forms_split_guard.py": "29580655ee750046bd5e7252e154d4a9757eba4ab8ec03407d3e1d76d5d1a929",
+      "scripts/verify/local_dev_personnel_authorization_browser.mjs": "0e1f9ae4e1de80a55871a14e55fde821a9d496a569656893ba5e5154133ea1f3",
+      "addons/smart_construction_core/models/support/runtime_user_management.py": "5cfad8512c86c58a4f2c172863c3392ecb20460b67767fc1f1583f7318c13026",
+      "addons/smart_construction_core/tests/test_runtime_user_management.py": "8293569f6a165d589e7dc3544c0ade9f1a0f1c7023f2f7e0d9edfd5fac4d3686",
+      "scripts/verify/test_user_permission_view_contract_boundary_guard.py": "fdde11c94132fff8b67c1f0aea0d51df35dee67838199fab8f15b105e25f37a7",
+      "make/runtime_ops.mk": "c8b920a5993efd33f1e0accce1c34adae125ac59c31f4ce6756b8895e1ef752c",
+      "make/dev.mk": "d429e64f8acbf1bf9b45b4c02e968aa5c31e15cbeb6055f8f9a70d8fe1fa96c2",
+      "scripts/ops/daily_personnel_views.py": "4e660647253650c6f1defee10ba6917716e1679ca554d7d2adbafb7179bea110",
+      "scripts/ops/daily_personnel_views_transaction.py": "d42d8482d00446beceaf5057bc8e1e745fed8c6a79433070683c6cd94b08da31",
+      "scripts/ops/test_daily_personnel_views.py": "af58b7ea0cb3881cb8e3c895813ebcd8c3a9e7b0e822fa23c3946887567eb23f"
+    }
+  },
+  "evidence_logs": {
+    ".runtime/p1-user-permission-closeout/p1-permission-iteration.log": "cf2cd3bf9a6c5dd055059ce0ac6e8f15cfcc720f54716ddbd212a346a1142bf3",
+    ".runtime/p1-user-permission-closeout/p1-runtime-user-tests.log": "9e9c9a0e1df29707f63ce02a20e5de802c04753f905fe069ba9274786c4856e2",
+    ".runtime/p1-user-permission-closeout/p1-runtime-user-tests-v2.log": "cb847b0403657d9e866c5fa98335db085831f390ccb50a122b49fb98e8e49b29",
+    ".runtime/p1-user-permission-closeout/p1-user-closure-tests.log": "a1b76649890bb4da218d9d3eacadbd7232e572fb2b644587e7952c566afb8902",
+    ".runtime/p1-user-permission-closeout/p1-view-rehearsal.log": "9766c243f2cfab0bb52da162bccd85875aac60b0858f3755ae9406d99303a0b7",
+    ".runtime/p1-user-permission-closeout/p1-view-rehearsal-v2.log": "c103bd3e88fc0ede7c105bd3c975a74622c2bcee5bd0bea559c191acc66fd23f",
+    ".runtime/p1-user-permission-closeout/p1-permission-final-iteration.log": "dd591bd552dbc7894975bcc3d1f8dc3c4571e2f629023d6f500e1ec7ee4439bb",
+    ".runtime/p1-user-permission-closeout/p1-view-deploy-unit.log": "a0664516fd20f74ce6b2030a92e5db96c4c382606ef09e9dbcf6a1c03ba6bfea",
+    ".runtime/p1-user-permission-closeout/p1-personnel-guard-unit.log": "e742ccf93791eacecce047ae540b3aa62ab1eb3778fdbcec99a8d72057baa08e",
+    ".runtime/p1-user-permission-closeout/p1-view-rehearsal-v4.log": "7c55eca3b4273c2b4ff95de0c3d325dc7b4abe77ba7c14c593e041a180595856",
+    ".runtime/p1-user-permission-closeout/p1-iteration-final.log": "29283d74f084ddce69cd815402c46930f7e9ad163df99a5b27f8b948b7c99db9",
+    ".runtime/p1-user-permission-closeout/p1-freeze-prepare-v2.log": "acbdcaa589f263d5ba200f3f807c00a47be80eb4c44e6db01d1d4f025e4235b5"
+  },
+  "impact_analysis": {
+    "changed": [
+      "personnel XML form/tree/search",
+      "template-user exclusion",
+      "main-company prevalidation",
+      "enterprise user projection",
+      "read-only guard and local rollback rehearsal"
+    ],
+    "affected": [
+      "personnel form/tree/search",
+      "data-permission form/entry authority",
+      "runtime user company/assignment boundaries"
+    ],
+    "not_required": [
+      "frontend build: no frontend product code changed",
+      "full browser matrix: only two affected entries",
+      "module-wide upgrade and seed: not needed for transactional candidate proof"
+    ],
+    "evidence_boundary": "transactional ORM and contract rehearsal; no installed/deployed browser claim"
+  },
+  "delivery_authorization": "用户明确授权直接推进日常开发服务器部署与主线集成；不修改既有业务/授权事实，不执行seed/reset",
+  "followup_sequencing": {
+    "authority": "用户确认：demo数据的完整调整待P1集成后独立继续",
+    "current": "P1 人员档案/数据权限收口、日常开发服务器定向部署、受保护主线集成",
+    "deferred": "Demo 真实业务数据完整调整与角色办理链路完善",
+    "start_condition": "P1 已经受保护流程合入主线，记录合并 SHA 后另立独立数据批次",
+    "current_exclusions": [
+      "不补数",
+      "不重置",
+      "不重放 seed",
+      "不以 Demo 名称/前缀定义产品权限或可见性"
+    ]
+  },
+  "deployment_plan": {
+    "layer": "P4",
+    "reason": "复用既有 duty 身份和 Odoo shell 通道，仅将三个候选人员视图同步到数据库；全模块升级会加载本轮禁止的 seed/migration",
+    "write_set": [
+      "ir.ui.view: personnel form/tree/search arch_db"
+    ],
+    "preconditions": [
+      "clean exact SHA",
+      "exact declaration and plan digests",
+      "raw translated-view backup",
+      "unchanged protected business facts"
+    ],
+    "excluded": [
+      "module upgrade",
+      "seed",
+      "fact repair",
+      "new environment"
+    ]
+  }
+}

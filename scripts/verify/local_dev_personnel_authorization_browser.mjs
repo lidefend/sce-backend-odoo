@@ -207,12 +207,17 @@ async function save(page, writes, index) {
   return write;
 }
 async function authorizationSurface(form) {
-  const tab = form.getByText('授权维护（兼容入口）', { exact: true }).first();
-  await tab.waitFor({ timeout: 15000 });
-  await tab.click();
   const root = form.locator('[data-field-name="sc_project_member_assignment_ids"]').first();
   await root.waitFor({ timeout: 15000 });
   return root;
+}
+async function assertPersonnelExcludesAuthorization(form) {
+  check(await form.getByText('授权维护（兼容入口）', { exact: true }).count() === 0,
+    'personnel entry still exposes the authorization compatibility tab');
+  check(await form.locator('[data-field-name="sc_project_member_assignment_ids"]').count() === 0,
+    'personnel entry still exposes the project assignment control');
+  check(await form.locator('[data-field-name="company_ids"]').count() === 0,
+    'personnel entry still exposes the allowed-company scope');
 }
 async function selectProject(page, root, projectName) {
   const editor = root.locator('[data-validation-target*="project_id"]:visible').first();
@@ -386,12 +391,14 @@ try {
   observationPhase = 'login';
   report.runtime_identity = await login(page, initial);
   observationPhase = 'personnel_initial_form';
-  const form = await openOwnedForm(page, initial.entries.personnel, initial.person.name);
+  const personnelForm = await openOwnedForm(page, initial.entries.personnel, initial.person.name);
+  await assertPersonnelExcludesAuthorization(personnelForm);
   let writeIndex = 0;
   let afterCreate = initial;
+  let permissionForm = await openOwnedForm(page, initial.entries.data_permission, initial.person.name);
   if (!resumeOwnedCreate) {
     observationPhase = 'assignment_create_edit';
-    const root = await authorizationSurface(form);
+    const root = await authorizationSurface(permissionForm);
     await root.getByRole('button', { name: /^添加项目成员授权$/ }).click();
     await selectProject(page, root, initial.project.name);
     await setSelection(page, root, 'source', '正式维护');
@@ -401,19 +408,18 @@ try {
     afterCreate = inspectAuthority();
     check(afterCreate.assignment.id && afterCreate.assignment.active === true && afterCreate.assignment.note === NOTE, 'authoritative create readback mismatch', afterCreate.assignment);
     check(afterCreate.assignment.person_is_follower === true, 'active assignment did not establish the owned follower', afterCreate.assignment);
-    await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
-    await page.locator(`[data-semantic-component="ContractFormPage"][data-form-record="${PERSON_ID}"]`).first().waitFor({ timeout: 45000 });
+    permissionForm = await openOwnedForm(page, initial.entries.data_permission, initial.person.name);
   }
-  const readonlyAfterCreate = await existingProjectReadonly(await authorizationSurface(page.locator(`[data-semantic-component="ContractFormPage"][data-form-record="${PERSON_ID}"]`).first()), initial.project.name);
+  const readonlyAfterCreate = await existingProjectReadonly(await authorizationSurface(permissionForm), initial.project.name);
   check(readonlyAfterCreate.disabled && readonlyAfterCreate.matches, 'persisted assignment project remains editable or changed', readonlyAfterCreate);
   report.stages.push({ name: 'create_and_readback', status: 'PASS', evidence_source: resumeOwnedCreate ? 'preserved_owned_batch_authority' : 'current_browser_write', assignment: afterCreate.assignment, project_readonly: readonlyAfterCreate });
   await page.screenshot({ path: path.join(OUT, '01-created.png'), fullPage: true });
 
-  const currentForm = page.locator(`[data-semantic-component="ContractFormPage"][data-form-record="${PERSON_ID}"]`).first();
   let afterDeactivate = initial;
   if (!resumeInactive) {
     observationPhase = 'assignment_deactivate_edit';
-    const createdRoot = await authorizationSurface(currentForm);
+    permissionForm = await openOwnedForm(page, initial.entries.data_permission, initial.person.name);
+    const createdRoot = await authorizationSurface(permissionForm);
     await setActive(createdRoot, false);
     await save(page, writes, writeIndex++);
     afterDeactivate = inspectAuthority();
@@ -422,9 +428,9 @@ try {
   report.stages.push({ name: 'deactivate_and_readback', status: 'PASS', evidence_source: resumeInactive ? 'preserved_owned_batch_authority' : 'current_browser_write', assignment: afterDeactivate.assignment });
   await page.screenshot({ path: path.join(OUT, '02-deactivated.png'), fullPage: true });
 
-  const inactivePersonnel = await existingAssignmentState(await authorizationSurface(currentForm), initial.project.name, false);
-  check(inactivePersonnel.matches && inactivePersonnel.disabled && inactivePersonnel.state_matches, 'personnel entry does not show the inactive immutable assignment', inactivePersonnel);
-  report.stages.push({ name: 'inactive_visible_personnel', status: 'PASS', assignment: inactivePersonnel });
+  const inactivePersonnelForm = await openOwnedForm(page, initial.entries.personnel, initial.person.name);
+  await assertPersonnelExcludesAuthorization(inactivePersonnelForm);
+  report.stages.push({ name: 'inactive_visible_personnel', status: 'PASS', personnel_authorization_absent: true });
 
   observationPhase = 'data_permission_inactive_form';
   const inactivePermissionForm = await openOwnedForm(page, initial.entries.data_permission, initial.person.name);
@@ -436,7 +442,7 @@ try {
   await page.screenshot({ path: path.join(OUT, '02b-inactive-data-permission.png'), fullPage: true });
 
   observationPhase = 'personnel_reactivation_form';
-  const reactivationForm = await openOwnedForm(page, initial.entries.personnel, initial.person.name);
+  const reactivationForm = await openOwnedForm(page, initial.entries.data_permission, initial.person.name);
   const inactiveRoot = await authorizationSurface(reactivationForm);
   await setActive(inactiveRoot, true);
   await save(page, writes, writeIndex++);
@@ -445,26 +451,26 @@ try {
   report.stages.push({ name: 'reactivate_and_readback', status: 'PASS', assignment: afterReactivate.assignment });
 
   observationPhase = 'reactivated_refresh';
-  await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
-  const refreshedForm = page.locator(`[data-semantic-component="ContractFormPage"][data-form-record="${PERSON_ID}"]`).first();
-  await refreshedForm.waitFor({ timeout: 45000 });
+  const refreshedForm = await openOwnedForm(page, initial.entries.data_permission, initial.person.name);
   const refreshedReadonly = await existingProjectReadonly(await authorizationSurface(refreshedForm), initial.project.name);
   check(refreshedReadonly.disabled && refreshedReadonly.matches, 'refresh lost assignment identity or project immutability', refreshedReadonly);
   report.stages.push({ name: 'refresh_consistency', status: 'PASS', project_readonly: refreshedReadonly });
   await page.screenshot({ path: path.join(OUT, '03-reactivated-refreshed.png'), fullPage: true });
 
   observationPhase = 'data_permission_same_fact_form';
-  const permissionForm = await openOwnedForm(page, initial.entries.data_permission, initial.person.name);
-  const permissionRoot = permissionForm.locator('[data-field-name="sc_project_member_assignment_ids"]').first();
+  const sameFactPersonnelForm = await openOwnedForm(page, initial.entries.personnel, initial.person.name);
+  await assertPersonnelExcludesAuthorization(sameFactPersonnelForm);
+  const sameFactPermissionForm = await openOwnedForm(page, initial.entries.data_permission, initial.person.name);
+  const permissionRoot = sameFactPermissionForm.locator('[data-field-name="sc_project_member_assignment_ids"]').first();
   await permissionRoot.waitFor({ timeout: 15000 });
   const sameFact = await existingProjectReadonly(permissionRoot, initial.project.name);
   check(sameFact.matches && sameFact.disabled, 'data-permission entry does not show the same immutable assignment fact', sameFact);
-  report.stages.push({ name: 'second_entry_same_fact', status: 'PASS', project_readonly: sameFact });
+  report.stages.push({ name: 'second_entry_same_fact', status: 'PASS', personnel_authorization_absent: true, project_readonly: sameFact });
   await page.screenshot({ path: path.join(OUT, '04-data-permission-same-fact.png'), fullPage: true });
 
   observationPhase = 'personnel_final_deactivation_form';
-  const finalPersonnelForm = await openOwnedForm(page, initial.entries.personnel, initial.person.name);
-  const finalRoot = await authorizationSurface(finalPersonnelForm);
+  const finalPermissionForm = await openOwnedForm(page, initial.entries.data_permission, initial.person.name);
+  const finalRoot = await authorizationSurface(finalPermissionForm);
   await setActive(finalRoot, false);
   await save(page, writes, writeIndex++);
   const finalInactive = inspectAuthority();

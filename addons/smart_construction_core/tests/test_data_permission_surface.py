@@ -25,12 +25,16 @@ class TestDataPermissionSurface(TransactionCase):
     def test_entry_authority_preserves_existing_business_admin_maintenance(self):
         personnel_action = self.env.ref("smart_construction_core.action_sc_runtime_user_management")
         permission_action = self.env.ref("smart_construction_core.action_sc_product_data_permission_v1")
+        permission_menu = self.env.ref("smart_construction_core.menu_sc_product_data_permission_v1")
         business_admin = self.env.ref("smart_construction_core.group_sc_cap_business_config_admin")
         industry_admin = self.env.ref("smart_construction_core.group_sc_cap_config_admin")
 
         self.assertIn(business_admin, personnel_action.groups_id)
         self.assertNotIn(industry_admin, business_admin.trans_implied_ids)
         self.assertIn(industry_admin, permission_action.groups_id)
+        self.assertIn(business_admin, permission_action.groups_id)
+        self.assertIn(industry_admin, permission_menu.groups_id)
+        self.assertIn(business_admin, permission_menu.groups_id)
         self.assertIn(business_admin, industry_admin.trans_implied_ids)
         self.assertEqual(personnel_action.res_model, permission_action.res_model)
         self.assertEqual(personnel_action.domain, permission_action.domain)
@@ -96,42 +100,51 @@ class TestDataPermissionSurface(TransactionCase):
                 self.assertIn(menu.id, industry_visible)
                 self.assertNotIn(menu.id, member_visible)
 
-    def test_personnel_form_separates_profile_account_and_compatible_authorization(self):
+    def test_personnel_form_excludes_authorization_and_allowed_company_scope(self):
         action = self.env.ref("smart_construction_core.action_sc_runtime_user_management")
         view = self.env.ref("smart_construction_core.view_sc_runtime_user_form")
         arch = etree.fromstring(view.arch_db.encode())
+        tree_arch = etree.fromstring(
+            self.env.ref("smart_construction_core.view_sc_runtime_user_tree").arch_db.encode()
+        )
+        search_arch = etree.fromstring(
+            self.env.ref("smart_construction_core.view_sc_runtime_user_search").arch_db.encode()
+        )
 
         self.assertEqual(action.name, "人员档案")
         self.assertTrue(arch.xpath("//form[@string='人员档案']"))
         self.assertTrue(arch.xpath("//group[@name='sc_personnel_profile']//field[@name='name']"))
         self.assertTrue(arch.xpath("//group[@name='sc_account_management']//field[@name='password']"))
         self.assertTrue(arch.xpath("//group[@name='sc_account_management']//field[@name='active']"))
-        self.assertTrue(arch.xpath("//group[@name='sc_company_scope']//field[@name='company_id']"))
-        self.assertTrue(arch.xpath("//group[@name='sc_company_scope']//field[@name='company_ids']"))
-        self.assertTrue(
-            arch.xpath(
-                "//page[@name='sc_compatible_authorization_maintenance']"
-                "//field[@name='sc_user_role_group_ids']"
-            )
-        )
-        self.assertTrue(
-            arch.xpath(
-                "//page[@name='sc_compatible_authorization_maintenance']"
-                "//field[@name='sc_project_member_assignment_ids']"
-            )
-        )
-        assignment_field = arch.xpath(
-            "//page[@name='sc_compatible_authorization_maintenance']"
-            "//field[@name='sc_project_member_assignment_ids']"
-        )[0]
-        project_field = assignment_field.xpath("./tree/field[@name='project_id']")[0]
-        self.assertEqual(assignment_field.get("readonly"), "not id")
-        self.assertEqual(project_field.get("readonly"), "id")
+        account_company = arch.xpath("//group[@name='sc_account_company']")[0]
+        self.assertEqual(account_company.get("string"), "账号归属公司")
+        self.assertTrue(account_company.xpath("./field[@name='company_id']"))
+        self.assertFalse(arch.xpath("//page[@name='sc_compatible_authorization_maintenance']"))
+        for field_name in (
+            "company_ids",
+            "sc_user_role_group_ids",
+            "sc_project_member_assignment_ids",
+        ):
+            with self.subTest(field=field_name):
+                self.assertFalse(arch.xpath("//field[@name='%s']" % field_name))
+                self.assertFalse(tree_arch.xpath("//field[@name='%s']" % field_name))
+                self.assertFalse(search_arch.xpath("//field[@name='%s']" % field_name))
+        self.assertTrue(tree_arch.xpath("//field[@name='company_id']"))
+        self.assertTrue(search_arch.xpath("//field[@name='company_id']"))
 
     def test_data_permission_form_keeps_identity_readonly_and_authority_editable(self):
         view = self.env.ref("smart_construction_core.view_sc_data_permission_user_form")
         arch = etree.fromstring(view.arch_db.encode())
 
+        self.assertEqual(
+            [node.get("name") for node in arch.xpath("//sheet//group[@name]")],
+            [
+                "sc_permission_identity",
+                "sc_permission_company_scope",
+                "sc_permission_business_roles",
+                "sc_permission_project_scope",
+            ],
+        )
         for field_name in ("name", "login", "active"):
             node = arch.xpath(
                 "//group[@name='sc_permission_identity']/field[@name='%s']" % field_name
@@ -145,6 +158,7 @@ class TestDataPermissionSurface(TransactionCase):
         self.assertTrue(
             arch.xpath("//group[@name='sc_permission_business_roles']/field[@name='sc_user_permission_group_ids']")
         )
+        self.assertFalse(arch.xpath("//field[@name='sc_user_role_group_ids']"))
         self.assertTrue(
             arch.xpath("//group[@name='sc_permission_project_scope']/field[@name='sc_project_member_assignment_ids']")
         )

@@ -160,7 +160,6 @@ def govern_enterprise_user_form(
         "sc_role_effective",
         "sc_role_landing_label",
     }
-    permission_fields = {"sc_user_role_group_ids"}
 
     data["visible_fields"] = selected
     data["field_groups"] = [
@@ -184,13 +183,6 @@ def govern_enterprise_user_form(
             "priority": 3,
             "collapsible": False,
             "fields": [name for name in selected if name in assignment_fields],
-        },
-        {
-            "name": "permissions",
-            "label": "业务角色",
-            "priority": 4,
-            "collapsible": False,
-            "fields": [name for name in selected if name in permission_fields],
         },
     ]
     views = _as_dict(data.get("views"))
@@ -230,16 +222,6 @@ def govern_enterprise_user_form(
                         if name in assignment_fields
                     ],
                 },
-                {
-                    "type": "group",
-                    "name": "enterprise_user_permissions_group",
-                    "string": "业务角色",
-                    "children": [
-                        make_labeled_field_node(name, fields_map)
-                        for name in selected
-                        if name in permission_fields
-                    ],
-                },
             ],
         }
     ]
@@ -251,7 +233,7 @@ def govern_enterprise_user_form(
     data["views"] = views
 
     field_policies = _as_dict(data.get("field_policies"))
-    basic_fields = {"name", "login", "password", "phone", "email", "active", "sc_user_role_group_ids"}
+    basic_fields = {"name", "login", "password", "phone", "email", "active"}
     readonly_fields = {"sc_role_effective", "sc_role_landing_label"}
     contract_required_fields = set(resolve_contract_required_fields(data, fields_map))
     for name in selected:

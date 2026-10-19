@@ -1488,3 +1488,11 @@ local.dev.runtime.performance.baseline: guard.prod.forbid local.dev.ready
 verify.system.performance.baseline.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/system_performance_baseline.py scripts/verify/test_system_performance_baseline.py scripts/verify/local_dev_runtime_contract_role_matrix_probe.py scripts/verify/local_dev_runtime_record_form_probe.py scripts/verify/test_local_dev_runtime_record_form_probe.py scripts/verify/local_dev_runtime_projection_cache_identity_probe.py scripts/ops/local_dev_performance_identity.py
 	@python3 -m unittest scripts.verify.test_system_performance_baseline scripts.verify.test_local_dev_runtime_record_form_probe
+
+# Candidate view metadata is changed only inside a rollback-only shell transaction.
+.PHONY: local.dev.user_permission.rehearsal
+local.dev.user_permission.rehearsal: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_USER_PERMISSION_REHEARSE=1 \
+	  SC_ACCEPTANCE_USER_PERMISSION_SOURCE_SHA256="$$(sha256sum addons/smart_construction_core/views/support/runtime_user_management_views.xml | cut -d ' ' -f 1)" \
+	  bash -c 'source "$$ROOT_DIR/scripts/common/env.sh"; exec bash "$$ROOT_DIR/scripts/ops/odoo_shell_exec.sh"' < scripts/verify/user_permission_view_contract_boundary_guard.py

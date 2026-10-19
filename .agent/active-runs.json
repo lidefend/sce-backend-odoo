@@ -18,7 +18,8 @@
     "fix/menu-cache-invalidation-closeout-20261017": ".agent/runs/MENU-CACHE-INVALIDATION-CLOSEOUT-20261017/run.json",
     "fix/nav-node-level-menu-acl-closeout": ".agent/runs/TARGET-ENV-ROLE-ACCEPTANCE/run.json",
     "fix/payment-request-chain-alignment-20261013": ".agent/runs/PAYMENT-REQUEST-CHAIN-ALIGNMENT/run.json",
-    "fix/platform-admin-surface-closure-20261018": ".agent/runs/PLATFORM-ADMIN-SURFACE-CLOSURE-20261018/run.json"
+    "fix/platform-admin-surface-closure-20261018": ".agent/runs/PLATFORM-ADMIN-SURFACE-CLOSURE-20261018/run.json",
+    "feature/user-permission-surface-split-20261019": ".agent/runs/P1-USER-PERMISSION-SURFACE-SPLIT-20261019/run.json"
   },
   "schema_version": 1
 }

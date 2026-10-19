@@ -136,7 +136,6 @@ def main() -> int:
                 "email": {"type": "char"},
                 "company_id": {"type": "many2one"},
                 "sc_role_effective": {"type": "char"},
-                "sc_user_role_group_ids": {"type": "many2many"},
             },
         }
         governance._govern_enterprise_user_form_for_user(user_data)
@@ -146,12 +145,15 @@ def main() -> int:
             "email",
             "company_id",
             "sc_role_effective",
-            "sc_user_role_group_ids",
         ]:
             errors.append("enterprise user form must keep enterprise field order")
         groups = user_data.get("field_groups") or []
-        if [group.get("name") for group in groups] != ["account", "contact", "assignment", "permissions"]:
+        if [group.get("name") for group in groups] != ["account", "contact", "assignment"]:
             errors.append("enterprise user form must emit expected field groups")
+        if any(group.get("name") == "permissions" for group in groups):
+            errors.append("enterprise user form must not project authorization fields")
+        if "sc_user_role_group_ids" in (user_data.get("field_policies") or {}):
+            errors.append("enterprise user form must not carry authorization field policy")
         user_form = ((user_data.get("views") or {}).get("form")) or {}
         if user_form.get("statusbar") != {"field": None, "states": []}:
             errors.append("enterprise user form must clear statusbar")
