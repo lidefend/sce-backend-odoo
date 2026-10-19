@@ -79,7 +79,7 @@ Generated from repository source files. This report is informational during the 
 | 1521 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1516 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1513 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
-| 1346 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
+| 1395 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 690 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
