@@ -1564,7 +1564,7 @@ def _field_rows(source: dict[str, Any], ui: dict[str, Any], *, view_type: str = 
                     row = row_by_name.get(name)
                     if row is None and view_type == "kanban":
                         row = _dict(ui.get("fields") or source.get("fields")).get(name)
-                    if row is None and view_type == "kanban":
+                    if view_type == "kanban" and not isinstance(row, dict):
                         raise ValueError("kanban declared field missing authorized descriptor: %s" % name)
                     item = dict(row) if isinstance(row, dict) else {}
                     item.setdefault("name", name)

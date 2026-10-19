@@ -195,8 +195,15 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         source = {"fields": {"title": {"name": "title", "type": "char"}},
                   "views": {"kanban": {"fields": ["title"]}},
                   "list_profile": {"columns": ["title", "private_field"]}}
-        with self.assertRaisesRegex(ValueError, "missing authorized descriptor: private_field"):
-            assembler._field_rows(source, source, view_type="kanban")
+        for with_meta in (False, True):
+            for descriptor in (None, "invalid", []):
+                candidate = deepcopy(source)
+                if with_meta:
+                    candidate["meta_fields"] = [candidate["fields"]["title"]]
+                candidate["fields"]["private_field"] = descriptor
+                with self.subTest(meta=with_meta, descriptor=descriptor):
+                    with self.assertRaisesRegex(ValueError, "missing authorized descriptor: private_field"):
+                        assembler._field_rows(candidate, candidate, view_type="kanban")
 
 
     def test_full_profile_trim_isolates_the_input_contract(self):
