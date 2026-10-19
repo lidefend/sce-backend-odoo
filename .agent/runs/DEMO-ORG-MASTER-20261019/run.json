@@ -97,6 +97,7 @@
     "docs/engineering_convergence/complexity_budget_report.md",
     "make/dev_test.mk",
     "scripts/audit/smoke_role_matrix.sh",
+    "scripts/ci/personal_data_false_positives.json",
     "scripts/demo/verify.sh",
     "scripts/dev/local_environment_health.sh",
     "scripts/verify/demo.sh",
@@ -213,6 +214,12 @@
       "command": "make audit.verification.lane_coverage.check",
       "status": "passed",
       "log": ".runtime/agent-runs/DEMO-ORG-MASTER-20261019/lane_coverage-rebase.log"
+    },
+    "repository_clean_history": {
+      "command": "python3 scripts/verify/repository_clean_history_guard.py --trusted-base 9150627f10b940bf52c4f1b26cd4e50a3b9feb45",
+      "status": "passed",
+      "scanned_blobs": 5764,
+      "note": "synthetic demo bank-account and ID placeholders registered by exact blob and classification"
     }
   },
   "realistic_visible_data_rework": {
