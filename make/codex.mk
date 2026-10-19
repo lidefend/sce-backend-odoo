@@ -1404,6 +1404,7 @@ daily.runtime.published_face.converge: guard.prod.forbid verify.daily.runtime.pu
 	@python3 scripts/ops/daily_runtime_published_face_converge.py \
 		--expected-sha "$(DAILY_RUNTIME_PUBLISHED_FACE_EXPECTED_SHA)" \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--env-file "$(DAILY_RUNTIME_ENV_FILE)" \
 		$(DAILY_RUNTIME_DUTY_FLAG) \
 		--database "$(DAILY_RUNTIME_DATABASE)" \
 		--login "$(DAILY_RUNTIME_PUBLISHED_FACE_LOGIN)" \

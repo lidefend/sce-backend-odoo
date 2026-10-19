@@ -156,6 +156,14 @@ env.update(
     }
 )
 make_bin = shutil.which("make") or "/usr/bin/make"
+# The duty environment file is the container's environment, and it declares the
+# duty's own ENV (for a demo duty, ``ENV=demo``).  The make entries below are
+# operator entries: they require ``ENV=dev`` and read the database credentials
+# from the same file.  Passing those three values on the make command line is
+# what keeps the *included* file from silently overriding the declared operator
+# environment - without it the refresh reads the legacy operator defaults and
+# fails to authenticate against the duty database.
+MAKE_BINDINGS = ["ENV=" + env_name, "ENV_FILE=" + env_file, "DB_NAME=" + database]
 
 # The published face is frozen *from* the locked contract through the module code
 # that projects it, so the projection code must be live before the freeze: a face
@@ -168,7 +176,7 @@ if reuse_upgrade:
 elif modules:
     upgrade_mode = "run"
     upgrade = subprocess.run(
-        [make_bin, "mod.upgrade", "MODULE=" + ",".join(modules)],
+        [make_bin, *MAKE_BINDINGS, "mod.upgrade", "MODULE=" + ",".join(modules)],
         cwd=str(root),
         env=env,
         stdout=subprocess.PIPE,
@@ -191,7 +199,7 @@ elif modules:
         )
 
 proc = subprocess.run(
-    [make_bin, "release.daily_product_navigation.converge"],
+    [make_bin, *MAKE_BINDINGS, "release.daily_product_navigation.converge"],
     cwd=str(root),
     env=env,
     stdout=subprocess.PIPE,

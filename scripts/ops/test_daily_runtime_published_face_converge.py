@@ -411,6 +411,28 @@ class DailyRuntimeCandidateReleaseCouplingTests(unittest.TestCase):
             r"DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES \?= smart_core",
         )
 
+    def test_remote_converge_binds_make_environment_on_the_command_line(self) -> None:
+        # The duty environment file declares the *container* ENV (a demo duty says
+        # ``ENV=demo``), while the make entries below it are operator entries that
+        # require ``ENV=dev`` and read the database credentials from the same file.
+        # Only a command-line assignment keeps the included file from overriding
+        # the declared operator environment.
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn(
+            'MAKE_BINDINGS = ["ENV=" + env_name, "ENV_FILE=" + env_file, "DB_NAME=" + database]',
+            source,
+        )
+        self.assertIn('[make_bin, *MAKE_BINDINGS, "mod.upgrade"', source)
+        self.assertIn('[make_bin, *MAKE_BINDINGS, "release.daily_product_navigation.converge"]', source)
+
+    def test_published_face_entry_accepts_the_duty_environment_file(self) -> None:
+        # A duty binds its own environment file; the entry must forward it instead
+        # of always reading the legacy operator file.
+        self.assertRegex(
+            self._recipe(FACE_TARGET),
+            r'--env-file \"\$\$\(DAILY_RUNTIME_ENV_FILE\)\"|--env-file \"\$\(DAILY_RUNTIME_ENV_FILE\)\"',
+        )
+
     def test_face_freeze_declares_the_intentional_module_upgrade(self) -> None:
         # ``guard.codex.fast.upgrade`` blocks an undeclared upgrade, so a freeze that
         # cannot declare its own upgrade intent can never make new projection code
