@@ -494,3 +494,11 @@ assert.equal(one2manyRowCollectionIdentity({ key: '', id: 0 } as never), '',
   'a row with neither a record id nor a draft key has no identity and is never compared');
 
 console.log('[collection-view-semantics] PASS');
+
+// Real normalized carrier order: collection declaration precedes native descriptor discovery.
+const orderedKanban = normalizedCollectionContract('kanban', {}, ['date', 'state', 'name', 'strategy']);
+orderedKanban.snapshot.layoutContract.listProfile = {columns: ['name', 'strategy', 'state']};
+assert.deepEqual(extractKanbanFieldsFromContract(orderedKanban), ['name', 'strategy', 'state', 'date']);
+orderedKanban.snapshot.layoutContract.listProfile = {columns: ['private_field', 'name']};
+assert.deepEqual(extractKanbanFieldsFromContract(orderedKanban), ['name', 'date', 'state', 'strategy']);
+console.log('kanban published ordering: 2 assertions PASS');

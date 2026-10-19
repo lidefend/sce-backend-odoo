@@ -114,11 +114,16 @@ function normalizeListMonetaryDigits(value: unknown): [number, number] | undefin
 
 export function extractKanbanFieldsFromContract(store: ContractV2NormalizedStore | null): string[] {
   if (String(store?.snapshot.pageInfo.viewType || '').trim() === 'kanban') {
-    return uniqueFields(
+    const fields = uniqueFields(
       resolveContractV2FieldWidgets(store)
         .map((widget) => String(widget.fieldCode || '').trim())
         .filter((name) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(name)),
     );
+    // Published collection order owns display ordering; widget discovery order
+    // only supplies descriptors, including native fields outside that surface.
+    const columns = resolveContractV2ListProfile(store).columns;
+    const ordered = Array.isArray(columns) ? columns.filter((name): name is string => typeof name === 'string' && fields.includes(name)) : [];
+    return uniqueFields([...ordered, ...fields]);
   }
   return [];
 }

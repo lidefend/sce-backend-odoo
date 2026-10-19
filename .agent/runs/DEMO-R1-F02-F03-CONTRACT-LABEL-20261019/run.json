@@ -38,7 +38,9 @@
     "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
     "frontend/apps/web/src/app/runtime/collectionViewRuntime.ts",
     "addons/smart_core/handlers/ui_contract_v2.py",
-    "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+    "frontend/apps/web/scripts/collection_view_semantics_test.ts"
   ],
   "environment": {
     "kind": "runtime",

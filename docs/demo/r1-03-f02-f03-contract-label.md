@@ -71,3 +71,7 @@ P0 / smart_core / 通用契约装配：kanban.fields 的对象被 _text 转成�
 本轮局部验证：130 compact（含真实装配入口投影断言）、27 label 断言、36 collection tests、11 card、15 basis、strict typecheck、assembler guard、ci.local.iteration 均通过。缓存版本变更是必要依赖，旧契约证据不可复用；未变 seed/生命周期测试复用。L3 模块升级跳过：无模型/schema/XML/安装依赖改动；L4 仅定向两个项目入口；L5 主线发布不在本次部署结论内。
 
 日常更新恢复点：`.runtime/final-acceptance/daily-deployed/label-root-20261019-before`（服务器），旧候选 8a4767b8，前端归档摘要 2e633ab4f3a094cf59c03bc913fbb99499699b0c8402ed2573f8a79670989e43。
+
+### 157bf676 实际回读后的顺序缺口
+
+新候选看板正常且泳道为“草稿”；两页面 kanban widget 已具有有效字段身份和 lifecycle_state / operation_strategy selection。但卡片消费以描述发现顺序作为展示顺序，使经营方式被原有显示数量截断，中文虽已传到前端却未展示，验收判 FAIL。补充通用消费修复：现有字段身份按已发布 listProfile.columns 顺序排列，追加未列入的原生字段；不制造缺失 widget，不改变业务选择项。新增 normalized store 两个反例覆盖顺序及无描述字段不得加入，36 tests 与 typecheck PASS。旧后台投影测试输入未变，复用130 tests及缓存守卫。
