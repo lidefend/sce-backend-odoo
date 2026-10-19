@@ -1,0 +1,1493 @@
+{
+  "schema_version": 1,
+  "id": "SYSTEM-PERMISSION-ROLES-20261019",
+  "branch": "audit/system-permission-roles-20261019",
+  "status": "verification_pending",
+  "baseline_sha": "2eb4cae26b5a013cb2cebc5706df34047ea7847e",
+  "goal": ".agent/goals/SYSTEM-PERMISSION-ROLES-20261019.yaml",
+  "record": "docs/ops/iterations/system_permission_roles_20261019.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SYSTEM-PERMISSION-ROLES-20261019.yaml",
+    ".agent/runs/SYSTEM-PERMISSION-ROLES-20261019/run.json",
+    "docs/architecture/system_permission_roles_v1.md",
+    "docs/ops/iterations/system_permission_roles_20261019.md",
+    "scripts/verify/system_permission_role_inventory.py",
+    "scripts/verify/test_system_permission_role_inventory.py",
+    "make/role_authority.mk",
+    "Makefile",
+    "scripts/verify/system_permission_runtime_observation.py",
+    "scripts/verify/test_system_permission_runtime_observation.py",
+    "addons/smart_construction_core/tests/test_system_permission_separation.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "scripts/verify/system_permission_test_cleanup_readback.py",
+    "addons/smart_core/security/group_assignment.py",
+    "addons/smart_core/models/res_users_group_authority.py",
+    "addons/smart_core/models/__init__.py",
+    "addons/smart_core/__manifest__.py",
+    "addons/smart_construction_core/models/support/runtime_user_management.py",
+    "scripts/verify/test_group_assignment.py",
+    "addons/smart_construction_core/models/support/approval_scope.py",
+    "addons/smart_construction_core/views/support/approval_scope_views.xml",
+    "addons/smart_construction_core/tests/test_approval_scope_authority.py",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_core/models/group_authority_reconciliation.py",
+    "addons/smart_core/views/group_authority_reconciliation_views.xml",
+    "addons/smart_core/security/ir.model.access.csv",
+    "addons/smart_construction_core/tests/test_group_authority_reconciliation.py",
+    "addons/smart_construction_core/tests/test_system_permission_http.py",
+    "scripts/verify/system_permission_http_prerequisite_readback.py",
+    "addons/smart_core/tests/test_intent_smoke.py",
+    "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+    "addons/smart_construction_core/tests/test_system_permission_business.py",
+    "addons/smart_core/models/res_users.py",
+    "addons/smart_core/handlers/login.py",
+    "scripts/verify/system_permission_concurrency_probe.py",
+    "scripts/verify/test_system_permission_concurrency_probe.py",
+    "addons/smart_construction_core/models/support/formal_user_management.py",
+    ".agent/goals/PRODUCT-MENU-CONFIG-ENTRY-20261019.yaml",
+    ".agent/goals/DEMO-ORG-MASTER-20261019.yaml",
+    ".agent/goals/DEMO-R1-F02-F03-CONTRACT-LABEL-20261019.yaml",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/module_dependency_map.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
+  ],
+  "environment": {
+    "kind": "offline"
+  },
+  "checks": {
+    "inventory_unit": {
+      "target": "verify.system.permission_role.inventory.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/system_permission_role_inventory.py",
+        "scripts/verify/test_system_permission_role_inventory.py",
+        "make/role_authority.mk",
+        "Makefile",
+        "addons/smart_construction_core"
+      ]
+    },
+    "write_candidates": {
+      "target": "verify.system.permission_role.write_candidates",
+      "kind": "offline",
+      "inputs": [
+        "addons",
+        "scripts",
+        "make/role_authority.mk",
+        "Makefile"
+      ]
+    },
+    "runtime_probe_unit": {
+      "target": "verify.system.permission_role.runtime_probe.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/system_permission_runtime_observation.py",
+        "scripts/verify/test_system_permission_runtime_observation.py",
+        "make/role_authority.mk"
+      ]
+    },
+    "role_separation_orm": {
+      "target": "verify.local.dev.system_permission.separation.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_system_permission_separation.py",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_construction_core/tests/business_case.py",
+        "addons/smart_construction_core/models/support/runtime_user_management.py",
+        "addons/smart_construction_core/models/support/formal_user_management.py",
+        "addons/smart_construction_core/security",
+        "addons/smart_core/models/res_users.py",
+        "scripts/test/test_safe.sh",
+        "make/role_authority.mk",
+        "docker-compose.yml",
+        "addons/smart_core/security/group_assignment.py",
+        "addons/smart_core/models/res_users_group_authority.py",
+        "addons/smart_core/models/__init__.py",
+        "addons/smart_core/__manifest__.py",
+        "Makefile",
+        "make/dev.mk",
+        "addons/smart_construction_core/tests/test_runtime_user_management.py",
+        "addons/smart_construction_core/tests/test_user_module_product_closure.py"
+      ],
+      "reuse_note": "No authoritative runtime dependency readback registered; execution evidence only, not reusable runtime receipt."
+    },
+    "revocation_diagnosis_orm": {
+      "target": "verify.local.dev.system_permission.revocation_diagnosis.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_system_permission_separation.py",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_construction_core/tests/business_case.py",
+        "addons/smart_construction_core/models/support/runtime_user_management.py",
+        "addons/smart_construction_core/models/support/formal_user_management.py",
+        "addons/smart_construction_core/security",
+        "addons/smart_core/models/res_users.py",
+        "scripts/test/test_safe.sh",
+        "make/role_authority.mk",
+        "docker-compose.yml",
+        "addons/smart_core/security/group_assignment.py",
+        "addons/smart_core/models/res_users_group_authority.py",
+        "addons/smart_core/models/__init__.py",
+        "addons/smart_core/__manifest__.py",
+        "Makefile",
+        "make/dev.mk"
+      ],
+      "reuse_note": "No authoritative runtime dependency readback registered; execution evidence only, not reusable runtime receipt."
+    },
+    "group_assignment_unit": {
+      "target": "verify.system.permission_role.assignment.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/security/group_assignment.py",
+        "addons/smart_core/models/res_users_group_authority.py",
+        "addons/smart_core/models/__init__.py",
+        "addons/smart_core/__manifest__.py",
+        "addons/smart_construction_core/models/support/runtime_user_management.py",
+        "scripts/verify/test_group_assignment.py",
+        "make/role_authority.mk"
+      ]
+    },
+    "approval_scope_orm": {
+      "target": "verify.local.dev.system_permission.approval_scope.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/models/support/approval_scope.py",
+        "addons/smart_construction_core/views/support/approval_scope_views.xml",
+        "addons/smart_construction_core/tests/test_approval_scope_authority.py",
+        "addons/smart_construction_core/tests/business_case.py",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_construction_core/__manifest__.py",
+        "addons/smart_construction_core/models/support/runtime_user_management.py",
+        "addons/smart_construction_core/models/support/approval_policy.py",
+        "addons/smart_construction_core/security",
+        "addons/smart_core/models/res_users_group_authority.py",
+        "addons/smart_core/security/group_assignment.py",
+        "scripts/test/test_safe.sh",
+        "make/dev.mk",
+        "make/dev_test.mk",
+        "docker-compose.yml",
+        "Makefile",
+        "make/role_authority.mk",
+        "addons/smart_core/models/res_users.py"
+      ],
+      "reuse_note": "No authoritative environment readback dependency; not reusable runtime receipt. Exact TEST_TAGS recorded in results."
+    },
+    "reconciliation_orm": {
+      "target": "verify.local.dev.system_permission.reconciliation.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_core/models/group_authority_reconciliation.py",
+        "addons/smart_core/models/res_users_group_authority.py",
+        "addons/smart_core/models/res_users.py",
+        "addons/smart_core/security/group_assignment.py",
+        "addons/smart_core/models/__init__.py",
+        "addons/smart_core/__manifest__.py",
+        "addons/smart_core/security/ir.model.access.csv",
+        "addons/smart_core/views/group_authority_reconciliation_views.xml",
+        "addons/smart_construction_core/tests/test_group_authority_reconciliation.py",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_construction_core/tests/business_case.py",
+        "addons/smart_construction_core/models/support/runtime_user_management.py",
+        "addons/smart_construction_core/security",
+        "scripts/test/test_safe.sh",
+        "make/role_authority.mk",
+        "make/dev.mk",
+        "make/dev_test.mk",
+        "Makefile",
+        "docker-compose.yml"
+      ],
+      "reuse_note": "No runtime receipt reuse without authoritative environment dependency readback."
+    },
+    "http_revocation": {
+      "target": "verify.local.dev.system_permission.http",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_system_permission_http.py",
+        "addons/smart_construction_core/tests/business_case.py",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_core/tests/test_intent_smoke.py",
+        "addons/smart_core/security/auth.py",
+        "addons/smart_core/security/credential_service.py",
+        "addons/smart_core/security/namespace_resolver.py",
+        "addons/smart_core/models/platform_namespace.py",
+        "addons/smart_core/models/res_users.py",
+        "addons/smart_core/models/res_users_group_authority.py",
+        "addons/smart_core/security/group_assignment.py",
+        "addons/smart_core/controllers/intent_dispatcher.py",
+        "addons/smart_core/handlers/login.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_construction_core/models/support/runtime_user_management.py",
+        "addons/smart_construction_core/models/support/partner_business.py",
+        "addons/smart_construction_core/security",
+        "scripts/test/test_safe.sh",
+        "scripts/_lib/common.sh",
+        "make/role_authority.mk",
+        "make/dev.mk",
+        "make/dev_test.mk",
+        "Makefile",
+        "docker-compose.yml",
+        "addons/smart_core/models/group_authority_reconciliation.py",
+        "addons/smart_core/models/__init__.py",
+        "addons/smart_core/__manifest__.py",
+        "addons/smart_core/security/ir.model.access.csv",
+        "addons/smart_core/views/group_authority_reconciliation_views.xml",
+        "addons/smart_construction_core/models/support/formal_user_management.py",
+        "addons/smart_construction_core/tests/test_user_module_product_closure.py"
+      ],
+      "reuse_note": "Runtime results only; no reusable receipt without declared environment dependency readback."
+    },
+    "accounting_operations": {
+      "target": "verify.local.dev.system_permission.accounting.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+        "addons/smart_construction_core/tests/business_case.py",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_construction_core/security",
+        "addons/smart_construction_core/models/support/runtime_user_management.py",
+        "addons/smart_core/models/res_users_group_authority.py",
+        "addons/smart_core/security/group_assignment.py",
+        "make/role_authority.mk",
+        "make/dev.mk",
+        "scripts/test/test_safe.sh",
+        "docker-compose.yml",
+        "Makefile",
+        "addons/smart_core/models/res_users.py"
+      ],
+      "reuse_note": "Execution observation only; no reusable runtime receipt without environment readback."
+    },
+    "business_operations": {
+      "target": "verify.local.dev.system_permission.business.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_system_permission_business.py",
+        "addons/smart_construction_core/tests/business_case.py",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_construction_core/models",
+        "addons/smart_construction_core/security",
+        "addons/smart_core/models/res_users_group_authority.py",
+        "addons/smart_core/security/group_assignment.py",
+        "make/role_authority.mk",
+        "make/dev.mk",
+        "scripts/test/test_safe.sh",
+        "docker-compose.yml",
+        "Makefile",
+        "addons/smart_core/models/res_users.py"
+      ],
+      "reuse_note": "Execution observation only; not reusable runtime receipt."
+    },
+    "concurrency_probe_unit": {
+      "target": "verify.system.permission.concurrency.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/system_permission_concurrency_probe.py",
+        "scripts/verify/test_system_permission_concurrency_probe.py",
+        "make/role_authority.mk"
+      ]
+    }
+  },
+  "blockers": [
+    "Integration dependency: baseline includes unpublished product-menu commits 0f896044a and 2eb4cae26 atop authoritative GitHub main 86c03b7a3a502028e5ad656f7c8cb34fd3bedff4; no parent PR found. Do not publish unrelated baseline commits silently.",
+    "Gitee main 41c7a9dd4c6a854dc344ca1d7f4033186f66c35a is 124 commits behind task baseline; not a safe shortcut for this candidate.",
+    "Product acceptance gaps retained under product_acceptance_gaps; historical source location still awaiting owner input."
+  ],
+  "next_exact_step": "保存P0/P1/P4责任提交与精确候选独立审查；先解决未发布菜单配置前置依赖，再按权威远端车道做最终Quick/发布。禁止直接main或夹带124历史提交。",
+  "results": {
+    "inventory_unit": {
+      "status": "passed",
+      "tests": 14,
+      "layer": "L2",
+      "command": "make audit.system.permission_role.write_candidates",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + scope dirty",
+      "log": ".runtime/system-permission-roles/write-candidates-recovered.log"
+    },
+    "inventory": {
+      "status": "inventory_complete",
+      "authority": "offline_declaration_only",
+      "path": ".runtime/system-permission-roles/inventory.json"
+    },
+    "runtime_observation": {
+      "status": "observed",
+      "identity": "654a77bda9ddad1c98c29e055df2d19c1cac2497",
+      "path": ".runtime/system-permission-roles/runtime.json",
+      "users": 16,
+      "restricted": 0,
+      "full_authorization_verdict": "not_evaluated"
+    },
+    "batch": "verification_pending",
+    "mainline": "not_run",
+    "deployment": "not_run",
+    "write_candidates": {
+      "status": "passed",
+      "layer": "L2",
+      "command": "make audit.system.permission_role.write_candidates",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (source reconciliation; not frozen)",
+      "log": ".runtime/system-permission-roles/write-candidates-reconciliation.log",
+      "tests": 14,
+      "candidates": 158,
+      "path": ".runtime/system-permission-roles/write-candidates.json",
+      "authorization_verdict": "not_evaluated",
+      "meaning": "static candidate enumeration only"
+    },
+    "iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (HTTP revocation; not frozen)",
+      "log": ".runtime/system-permission-roles/http-iteration-final.log",
+      "impact_note": "Afterward only corrected result-index dependency path, extended read-only cleanup login predicate for old smoke fixture, and documentation; new cleanup executed separately."
+    },
+    "missing_observation_role_suffixes": [
+      "accounting_manager",
+      "accounting_read",
+      "accounting_user",
+      "business_admin",
+      "general_user",
+      "partner_manager",
+      "settlement_manager"
+    ],
+    "runtime_probe_unit": {
+      "status": "passed",
+      "layer": "L2",
+      "tests": 6,
+      "command": "make verify.system.permission_role.runtime_probe.unit",
+      "log": ".runtime/system-permission-roles/runtime-probe-unit-diagnostic.log"
+    },
+    "runtime_authority_observation": {
+      "status": "observed",
+      "identity": "654a77bda9ddad1c98c29e055df2d19c1cac2497",
+      "database": "sc_demo",
+      "duty": "demo",
+      "assignable_roles": 20,
+      "roles_with_witness": 13,
+      "roles_without_witness": 7,
+      "write_implementations": 37,
+      "path": ".runtime/system-permission-roles/demo-observation.json",
+      "authorization_verdict": "not_evaluated"
+    },
+    "system_init_handler_observation": {
+      "status": "observed",
+      "users": 13,
+      "nonempty_navigation": 12,
+      "empty_navigation_uids": [
+        49
+      ],
+      "missing_authority_count": 0,
+      "http_authentication": "not_run",
+      "business_operations": "not_run",
+      "path": ".runtime/system-permission-roles/demo-navigation.json",
+      "diagnostic": ".runtime/system-permission-roles/demo-navigation-49.json"
+    },
+    "iteration_runtime_probe": {
+      "status": "passed",
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/system-permission-roles/iteration-runtime-probe.log",
+      "identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + scope dirty; before navigation diagnostics; unchanged other guards carried forward, affected probe L2 passed"
+    },
+    "role_separation_orm": {
+      "status": "passed",
+      "command": "make verify.local.dev.system_permission.separation.orm",
+      "log": ".runtime/system-permission-roles/separation-orm-authority-v1.log",
+      "layer": "L2",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (F02 implementation; not frozen)",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "failed": 0,
+      "errors": 0,
+      "impact_note": "Final helper only rejects non-list/tuple inputs earlier; all 16 ORM cases submit list/tuple commands, unchanged execution path. Runtime receipt not reusable.",
+      "tests": 16,
+      "superseded_by": "epoch_user_orm (19 actual cases including 3 new)"
+    },
+    "revocation_diagnosis_orm": {
+      "status": "passed",
+      "covered_by": "role_separation_orm",
+      "tests": 2,
+      "previous_failure_log": ".runtime/system-permission-roles/revocation-diagnosis-orm.log",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (F02 implementation; not frozen)"
+    },
+    "transaction_cleanup_readback": {
+      "status": "passed",
+      "layer": "L3",
+      "command": "make local.dev.system_permission.cleanup.readback",
+      "log": ".runtime/system-permission-roles/profile-cleanup.log",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + F11 dirty; not frozen",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "counts": {
+        "users": 0,
+        "companies": 0,
+        "jobs": 0,
+        "action_targets": 0,
+        "journals": 0,
+        "dictionaries": 0,
+        "projects": 0,
+        "project_assignments": 0,
+        "authority_rules": 0,
+        "departments": 0,
+        "employees": 0,
+        "contracts": 0,
+        "settlements": 0,
+        "settlement_lines": 0,
+        "accounts": 0,
+        "moves": 0,
+        "move_lines": 0,
+        "groups": 0,
+        "group_categories": 0,
+        "confirmations": 0,
+        "reviews": 0
+      },
+      "meaning": "Exact public-action and existing closure fixture identities absent; read-only proof"
+    },
+    "separation_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/system-permission-roles/iteration-separation.log",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope"
+    },
+    "group_assignment_unit": {
+      "status": "passed",
+      "command": "make verify.system.permission_role.assignment.unit",
+      "log": ".runtime/system-permission-roles/assignment-unit-final.log",
+      "layer": "L2",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (F02 implementation; not frozen)",
+      "tests": 10
+    },
+    "user_management_compat": {
+      "status": "passed",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=runtime_user_management,user_module_product_closure",
+      "log": ".runtime/system-permission-roles/authority-user-management-compat.log",
+      "layer": "L2",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (F02 implementation; not frozen)",
+      "failed": 0,
+      "errors": 0,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "impact_note": "Final input type guard leaves list/tuple commands unchanged; no runtime reuse receipt claimed.",
+      "tests": 35,
+      "superseded_by": "epoch_user_orm (35 actual compatibility cases)"
+    },
+    "model_declaration_guard": {
+      "status": "passed",
+      "command": "make verify.backend.model_declaration.guard",
+      "log": ".runtime/system-permission-roles/authority-model-guard.log",
+      "layer": "L1",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (F02 implementation; not frozen)"
+    },
+    "schema_upgrade": {
+      "status": "passed",
+      "command": "make local.dev.upgrade MODULE=smart_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_core",
+      "log": ".runtime/system-permission-roles/authority-upgrade-schema.log",
+      "layer": "L3",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (F02 implementation; not frozen)",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "snapshot": "artifacts/local-dev/snapshots/20261019T145836Z",
+      "snapshot_hashes": "verified",
+      "scope": "smart_core schema 17.0.1.1.18; not release or final code behavior proof"
+    },
+    "user_acceptance": "not_run",
+    "approval_scope_before": {
+      "status": "failed",
+      "layer": "L2",
+      "tests": 5,
+      "failed": 4,
+      "errors": 0,
+      "failure_owner": "P1 approval_scope legacy grant paths",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=approval_scope_authority",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (F01 candidate, not frozen) before F01 product fix",
+      "log": ".runtime/system-permission-roles/approval-scope-before.log"
+    },
+    "approval_scope_orm": {
+      "status": "passed",
+      "layer": "L2",
+      "tests": 5,
+      "failed": 0,
+      "errors": 0,
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=approval_scope_authority",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (F01 candidate, not frozen)",
+      "log": ".runtime/system-permission-roles/approval-scope-after.log",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "impact_note": "Five model cases passed before view-only cleanup and adding runtime view assertion. Product model unchanged after execution; these outcomes are historical local candidate evidence, not runtime receipts."
+    },
+    "approval_scope_runtime_view": {
+      "status": "passed",
+      "layer": "L3",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestApprovalScopeAuthority.test_runtime_view_declares_readonly_without_grant_actions'",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (F01/F02 candidate; not frozen)",
+      "log": ".runtime/system-permission-roles/approval-scope-runtime-view.log",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 2.46,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "meaning": "actual fields_get/get_view under non-sudo manager; not frontend/browser acceptance"
+    },
+    "approval_scope_upgrade": {
+      "status": "passed",
+      "layer": "L3",
+      "command": "make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (F01/F02 candidate; not frozen)",
+      "log": ".runtime/system-permission-roles/approval-scope-upgrade.log",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "module_version": "17.0.0.172",
+      "snapshot": "artifacts/local-dev/snapshots/20261019T150746Z",
+      "snapshot_hashes": "verified against manifest.txt",
+      "authority_readback": "passed"
+    },
+    "approval_scope_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (F01/F02 candidate; not frozen)",
+      "log": ".runtime/system-permission-roles/approval-scope-iteration.log",
+      "impact_note": "Subsequent removal of obsolete wizard inputs and added runtime-view test were syntax checked and verified by actual get_view test. Remaining updates only result index/docs."
+    },
+    "F01": "local_candidate_verified; no grant side effects and native declaration checked; browser acceptance not_run",
+    "reconciliation_orm": {
+      "status": "passed",
+      "layer": "L2",
+      "command": "make verify.local.dev.system_permission.reconciliation.orm",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (source reconciliation; not frozen)",
+      "log": ".runtime/system-permission-roles/reconcile-orm.log",
+      "tests": 14,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 3.23,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "impact_note": "Before appending one separate native-entry test; same product code and unchanged original cases. Not reusable runtime receipt."
+    },
+    "reconciliation_entry_view": {
+      "status": "passed",
+      "layer": "L3",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestGroupAuthorityReconciliation.test_native_user_entry_is_admin_only_and_history_is_readonly'",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (source reconciliation; not frozen)",
+      "log": ".runtime/system-permission-roles/reconcile-entry-view.log",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 2.31,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "meaning": "Actual native view/field consumption, not full browser or HTTP acceptance"
+    },
+    "reconciliation_upgrade": {
+      "status": "passed",
+      "layer": "L3",
+      "command": "make local.dev.upgrade MODULE=smart_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_core",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (source reconciliation; not frozen)",
+      "log": ".runtime/system-permission-roles/reconcile-upgrade.log",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "version": "17.0.1.1.19",
+      "snapshot": "artifacts/local-dev/snapshots/20261019T151411Z",
+      "hashes": "verified",
+      "authority_readback": "passed"
+    },
+    "reconciliation_model_guard": {
+      "status": "passed",
+      "layer": "L1",
+      "command": "make verify.backend.model_declaration.guard",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (source reconciliation; not frozen)",
+      "log": ".runtime/system-permission-roles/reconcile-model-guard.log",
+      "tests": 6,
+      "duplicates": 0
+    },
+    "http_initial": {
+      "status": "failed",
+      "tests": 0,
+      "errors": 1,
+      "failure_owner": "environment prerequisite: missing existing namespace",
+      "log": ".runtime/system-permission-roles/http-revocation.log"
+    },
+    "http_jwt_unlocked": {
+      "status": "failed",
+      "tests": 1,
+      "errors": 1,
+      "failure_owner": "validation tool: shared TestCursor race in unguarded main-thread ORM write",
+      "log": ".runtime/system-permission-roles/http-jwt-revocation.log"
+    },
+    "http_jwt_revocation": {
+      "status": "passed",
+      "layer": "L3",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionHttp.test_old_jwt_is_rejected_after_role_revocation'",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (HTTP revocation; not frozen)",
+      "log": ".runtime/system-permission-roles/http-jwt-revocation-locked.log",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 15.13,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "observed_http": [
+        200,
+        200,
+        401,
+        200,
+        200
+      ]
+    },
+    "http_native_and_fixture_compat": {
+      "status": "passed",
+      "layer": "L3",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionHttp.test_old_native_session_cannot_execute_revoked_action,/smart_core:TestIntentSmoke.test_anon_login_intent_default_contract_mode'",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (HTTP revocation; not frozen)",
+      "log": ".runtime/system-permission-roles/http-native-and-fixture-compat.log",
+      "tests": 2,
+      "failed": 0,
+      "errors": 0,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "meaning": "native session real blacklist positive/denial and old smoke fixture login compatibility"
+    },
+    "http_configuration_restoration": {
+      "status": "passed",
+      "layer": "L3",
+      "command": "make local.dev.system_permission.http.prerequisite.readback + compare exact parsed readback objects",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (HTTP revocation; not frozen)",
+      "log": ".runtime/system-permission-roles/http-config-after-smoke.log",
+      "source_log": ".runtime/system-permission-roles/http-config-before-smoke.log",
+      "configuration_fingerprint_equal": true,
+      "namespace_count": 0,
+      "suite_alias_count": 0,
+      "environment": "sc-local-dev/sc_dev_demo"
+    },
+    "concurrency_prerequisite": {
+      "status": "passed",
+      "layer": "L3",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (authorized isolated concurrency; not frozen)",
+      "meaning": "Owner-authorized new registered isolated profile; exact DB/filter, source hashes and independent cursors verified; shared TestCursor forbidden",
+      "environment": "sc-contract-lifecycle-v1/sc_contract_lifecycle"
+    },
+    "accounting_operations": {
+      "status": "passed",
+      "layer": "L2",
+      "command": "make verify.local.dev.system_permission.accounting.orm",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit run.scope dirty (accounting journal tests; not frozen)",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "tests": 3,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 1.99,
+      "log": ".runtime/system-permission-roles/accounting-orm.log",
+      "meaning": "Actual journal read/create/write denial and manager write/revocation; not full bookkeeping or remote role journey acceptance.",
+      "impact_note": "Only appended separate entry method; original three methods and shared setup unchanged. Original results retained; no reusable runtime receipt claimed."
+    },
+    "accounting_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit run.scope dirty (accounting journal tests; not frozen)",
+      "log": ".runtime/system-permission-roles/accounting-iteration.log"
+    },
+    "business_operations": {
+      "status": "passed",
+      "layer": "L2",
+      "command": "make verify.local.dev.system_permission.business.orm",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit run.scope dirty (business role operations; not frozen)",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "tests": 3,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 3.8,
+      "log": ".runtime/system-permission-roles/business-orm.log",
+      "meaning": "Dictionary read/write denial, business admin write/revoke; settlement draft and lines create/write, contract write denial and revoked line write denial. Not approval/payment journey."
+    },
+    "business_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit run.scope dirty (business role operations; not frozen)",
+      "log": ".runtime/system-permission-roles/business-iteration.log"
+    },
+    "accounting_entry_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit run.scope dirty (business role operations; not frozen)",
+      "log": ".runtime/system-permission-roles/accounting-entry-iteration.log"
+    },
+    "accounting_entry": {
+      "status": "passed",
+      "layer": "L2",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionAccounting.test_accounting_user_posts_entry_reader_and_revoked_user_cannot_create'",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit run.scope dirty (business operations and accounting entry; not frozen)",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 2.86,
+      "log": ".runtime/system-permission-roles/accounting-entry-orm.log",
+      "meaning": "Real balanced entry creation/posting by accounting_user, read by accounting_read; reader and revoked actor cannot create another entry."
+    },
+    "epoch_bypass_before": {
+      "status": "failed",
+      "layer": "L2",
+      "tests": 2,
+      "failed": 2,
+      "errors": 0,
+      "log": ".runtime/system-permission-roles/epoch-before-orm.log",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F03 token epoch; not frozen) before fix",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionSeparation.test_client_context_cannot_skip_token_revocation,/smart_construction_core:TestSystemPermissionSeparation.test_client_cannot_rewrite_token_epoch'",
+      "failure_owner": "P0 res.users token invalidation client-controlled context and token_version"
+    },
+    "epoch_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F03 token epoch; not frozen)",
+      "log": ".runtime/system-permission-roles/epoch-after-iteration.log"
+    },
+    "epoch_user_orm": {
+      "status": "passed",
+      "layer": "L2",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='system_permission_separation,runtime_user_management,user_module_product_closure'",
+      "tests": 54,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 20.4,
+      "log": ".runtime/system-permission-roles/epoch-user-orm.log",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F03 fixed; not frozen)",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "superseded_by": "reverse_epoch_orm (same 54 cases plus 4 new and 15 reconciliation cases)"
+    },
+    "epoch_http": {
+      "status": "passed",
+      "layer": "L3",
+      "command": "make verify.local.dev.system_permission.http",
+      "tests": 4,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 33.94,
+      "log": ".runtime/system-permission-roles/epoch-http.log",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F03 fixed; not frozen)",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "limitation": "search config generation logs errors; auth assertions pass, not full contract/bootstrap acceptance"
+    },
+    "epoch_configuration_restoration": {
+      "status": "passed",
+      "layer": "L3",
+      "source_log": ".runtime/system-permission-roles/epoch-config-before.log",
+      "log": ".runtime/system-permission-roles/epoch-config-after.log",
+      "command": "make local.dev.system_permission.http.prerequisite.readback + exact parsed object comparison",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F03 fixed; not frozen)",
+      "configuration_fingerprint_equal": true
+    },
+    "F03": "local_candidate_verified; 2 reproduced bypasses fixed, 54 ORM and 4 HTTP passed; not deployed",
+    "reverse_epoch_before": {
+      "status": "failed",
+      "layer": "L2",
+      "tests": 4,
+      "failed": 4,
+      "errors": 0,
+      "failure_owner": "P0 token invalidation omitted reverse group and reified writes",
+      "log": ".runtime/system-permission-roles/reverse-before-orm.log",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty before F04 fix",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionSeparation.test_reverse_member_removal_invalidates_epoch,/smart_construction_core:TestSystemPermissionSeparation.test_reverse_member_addition_invalidates_epoch,/smart_construction_core:TestSystemPermissionSeparation.test_implied_definition_write_invalidates_epoch,/smart_construction_core:TestSystemPermissionSeparation.test_native_boolean_group_removal_invalidates_epoch'"
+    },
+    "reverse_epoch_orm": {
+      "status": "passed",
+      "layer": "L2",
+      "tests": 73,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 24.75,
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F04; not frozen)",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='system_permission_separation,runtime_user_management,user_module_product_closure,group_authority_reconciliation'",
+      "log": ".runtime/system-permission-roles/reverse-user-orm.log",
+      "environment": "sc-local-dev/sc_dev_demo"
+    },
+    "reverse_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F04; not frozen)",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/system-permission-roles/reverse-after-iteration.log"
+    },
+    "reverse_write_inventory": {
+      "status": "passed",
+      "layer": "L1",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F04; not frozen)",
+      "command": "make verify.system.permission_role.write_candidates",
+      "tests": 14,
+      "candidates": 158,
+      "log": ".runtime/system-permission-roles/reverse-write-candidates.log",
+      "meaning": "static enumeration only; no complete dynamic/private write path guarantee"
+    },
+    "reverse_epoch_http": {
+      "status": "passed",
+      "layer": "L3",
+      "tests": 3,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 31.01,
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F04 fixed; not frozen)",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionHttp.test_reverse_member_removal_rejects_old_jwt,/smart_construction_core:TestSystemPermissionHttp.test_native_group_field_rejects_old_jwt,/smart_construction_core:TestSystemPermissionHttp.test_group_definition_change_rejects_old_jwt'",
+      "log": ".runtime/system-permission-roles/reverse-http.log",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "meaning": "Real login/positive system.init then group change and 401/AUTH_REQUIRED; not full contract acceptance"
+    },
+    "reverse_configuration_restoration": {
+      "status": "passed",
+      "layer": "L3",
+      "command": "make local.dev.system_permission.http.prerequisite.readback + parsed object equality",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F04 fixed; not frozen)",
+      "source_log": ".runtime/system-permission-roles/reverse-config-before.log",
+      "log": ".runtime/system-permission-roles/reverse-config-after.log",
+      "configuration_fingerprint_equal": true
+    },
+    "F04": "local_candidate_verified; 4 original failures fixed; 73 ORM + 3 HTTP passed; no deployment",
+    "lifecycle_before": {
+      "status": "failed",
+      "layer": "L2",
+      "tests": 3,
+      "failed": 1,
+      "errors": 0,
+      "passed_cases": [
+        "test_group_create_with_members_invalidates_authority_and_epoch",
+        "test_native_selection_downgrade_invalidates_authority_and_epoch"
+      ],
+      "failure_owner": "P0 group unlink omits token invalidation",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty before F05 fix",
+      "log": ".runtime/system-permission-roles/lifecycle-before-orm.log",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionSeparation.test_group_create_with_members_invalidates_authority_and_epoch,/smart_construction_core:TestSystemPermissionSeparation.test_group_delete_invalidates_authority_and_epoch,/smart_construction_core:TestSystemPermissionSeparation.test_native_selection_downgrade_invalidates_authority_and_epoch'"
+    },
+    "lifecycle_delete_orm": {
+      "status": "passed",
+      "layer": "L2",
+      "tests": 3,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 3.31,
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F05 fixed; not frozen)",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionSeparation.test_group_delete_invalidates_authority_and_epoch,/smart_construction_core:TestSystemPermissionSeparation.test_batch_group_delete_invalidates_only_affected_users,/smart_construction_core:TestSystemPermissionSeparation.test_denied_group_delete_preserves_authority_and_epoch'",
+      "log": ".runtime/system-permission-roles/lifecycle-after-orm.log",
+      "environment": "sc-local-dev/sc_dev_demo"
+    },
+    "lifecycle_create_selection": {
+      "status": "passed",
+      "layer": "L2",
+      "tests": 2,
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F05 fixed; not frozen)",
+      "source_log": ".runtime/system-permission-roles/lifecycle-before-orm.log",
+      "carried_forward_source_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty before F05 fix",
+      "impact_note": "Only appended group unlink override and separate test methods; create/selection tested paths and shared fixture unchanged. Two passing cases of original failed three-case run; no reusable runtime receipt."
+    },
+    "lifecycle_http": {
+      "status": "passed",
+      "layer": "L3",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 13.4,
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F05 fixed; not frozen)",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionHttp.test_group_deletion_rejects_old_jwt'",
+      "log": ".runtime/system-permission-roles/lifecycle-http.log",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "meaning": "Actual JWT login positive then group delete and 401/AUTH_REQUIRED; not whole bootstrap acceptance"
+    },
+    "lifecycle_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F05 fixed; not frozen)",
+      "log": ".runtime/system-permission-roles/lifecycle-after-iteration.log"
+    },
+    "lifecycle_write_inventory": {
+      "status": "passed",
+      "layer": "L1",
+      "tests": 14,
+      "command": "make verify.system.permission_role.write_candidates",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F05 fixed; not frozen)",
+      "log": ".runtime/system-permission-roles/lifecycle-write-candidates.log",
+      "candidates": 158,
+      "meaning": "candidate enumeration only"
+    },
+    "lifecycle_configuration_restoration": {
+      "status": "passed",
+      "layer": "L3",
+      "command": "make local.dev.system_permission.http.prerequisite.readback + parsed object equality",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F05 fixed; not frozen)",
+      "source_log": ".runtime/system-permission-roles/lifecycle-config-before.log",
+      "log": ".runtime/system-permission-roles/lifecycle-config-after.log",
+      "configuration_fingerprint_equal": true
+    },
+    "F05": "local_candidate_verified; create/selection 2 cases, deletion 3 cases and actual HTTP 1 case passed; no deployment",
+    "private_native_rpc": {
+      "status": "passed",
+      "layer": "L3",
+      "tests": 1,
+      "subcases": 4,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 3.04,
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (consolidated evidence review; not frozen)",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionHttp.test_native_rpc_cannot_call_private_authority_methods'",
+      "log": ".runtime/system-permission-roles/consolidation-private-rpc.log",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "meaning": "Actual authenticated native RPC denies 4 private methods; token epoch/source unchanged. No generic dynamic-config safety claim."
+    },
+    "consolidation_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (consolidated evidence review; not frozen)",
+      "log": ".runtime/system-permission-roles/consolidation-iteration.log"
+    },
+    "consolidated_evidence_review": {
+      "status": "passed",
+      "layer": "L1",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (consolidated evidence review; not frozen)",
+      "scope": "source routing and log-reference existence review only; not independent review or full batch product acceptance",
+      "record": "docs/ops/iterations/system_permission_roles_20261019.md",
+      "evidence_refs": [
+        "approval_scope_orm",
+        "approval_scope_runtime_view",
+        "reverse_epoch_orm",
+        "epoch_http",
+        "reverse_epoch_http",
+        "lifecycle_delete_orm",
+        "lifecycle_create_selection",
+        "lifecycle_http",
+        "private_native_rpc",
+        "accounting_entry",
+        "business_operations"
+      ],
+      "missing_original_logs": 0,
+      "reviewer": "implementing agent; not independent"
+    },
+    "consolidated_product_acceptance": {
+      "status": "not_run",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (consolidated evidence review; not frozen)",
+      "reason": "Evidence preparation complete; representative native views/ORM/HTTP exist, but agreed business journeys/browser review and real multi-transaction acceptance remain incomplete"
+    },
+    "concurrency_probe_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (P4 concurrency probe preparation; not frozen)",
+      "log": ".runtime/system-permission-roles/concurrency-probe-iteration.log"
+    },
+    "concurrency_probe_unit": {
+      "status": "passed",
+      "layer": "L2",
+      "tests": 7,
+      "command": "make verify.system.permission.concurrency.unit",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (P4 concurrency probe preparation; not frozen)",
+      "log": ".runtime/system-permission-roles/concurrency-probe-unit.log",
+      "meaning": "Safety precondition tests only; no database race executed"
+    },
+    "concurrency_profile_authorization": {
+      "status": "passed",
+      "authority": "Owner explicitly agreed to prepared activation/test/discard plan in current turn",
+      "scope": "new registered sc-contract-lifecycle-v1 / sc_contract_lifecycle only; stop on existing volumes/data",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty"
+    },
+    "concurrency_profile_prepare": {
+      "status": "passed",
+      "layer": "L0",
+      "command": "make local.contract-lifecycle.prepare",
+      "log": ".runtime/system-permission-roles/concurrency-profile-prepare.log",
+      "environment": "sc-contract-lifecycle-v1/sc_contract_lifecycle",
+      "meaning": "new mode-600 profile created; existing-volume guard passed; no old data overridden"
+    },
+    "concurrency_profile_rebuild": {
+      "status": "passed",
+      "layer": "L3",
+      "command": "CONFIRM_LOCAL_CONTRACT_LIFECYCLE_REBUILD=REBUILD_ISOLATED_CONTRACT_LIFECYCLE make local.contract-lifecycle.rebuild LOCAL_CONTRACT_LIFECYCLE_MODULES=smart_core",
+      "log": ".runtime/system-permission-roles/concurrency-profile-rebuild.log",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (authorized isolated concurrency; not frozen)",
+      "environment": "sc-contract-lifecycle-v1/sc_contract_lifecycle",
+      "meaning": "new synthetic P0 installation, not product deployment"
+    },
+    "real_concurrency": {
+      "status": "passed",
+      "layer": "L3",
+      "command": "SC_CONFIRM_PERMISSION_CONCURRENCY=RUN_ISOLATED_PERMISSION_CONCURRENCY make local.contract-lifecycle.system_permission.concurrency",
+      "tests": 3,
+      "failed": 0,
+      "errors": 0,
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (authorized isolated concurrency; not frozen)",
+      "environment": "sc-contract-lifecycle-v1/sc_contract_lifecycle",
+      "log": ".runtime/system-permission-roles/concurrency-runtime-first.log",
+      "readback": ".runtime/system-permission-roles/concurrency-runtime.json",
+      "evidence_hashes": ".runtime/system-permission-roles/concurrency-evidence-hashes.json",
+      "meaning": "Two simultaneous backend PIDs/transaction IDs per case; one winner per confirmation, loser fresh retry denied, exactly one immutable audit; epoch conflict retry yields +2",
+      "reuse_note": "Profile discarded after evidence capture; no live reusable environment receipt"
+    },
+    "concurrency_profile_discard": {
+      "status": "passed",
+      "layer": "L3",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (authorized isolated concurrency; not frozen)",
+      "command": "CONFIRM_LOCAL_CONTRACT_LIFECYCLE_DISCARD=DISCARD_ISOLATED_CONTRACT_LIFECYCLE make local.contract-lifecycle.discard",
+      "log": ".runtime/system-permission-roles/concurrency-profile-discard.log",
+      "removed_volumes": [
+        "sc_contract_lifecycle_db_data",
+        "sc_contract_lifecycle_redis_data",
+        "sc_contract_lifecycle_odoo_data"
+      ],
+      "meaning": "Tool verified all three volumes absent after removal; synthetic committed records removed with isolated database, no audit SQL deletion; ignored mode600 env retained by existing tool"
+    },
+    "review_readonly_before": {
+      "status": "failed",
+      "layer": "L2",
+      "tests": 1,
+      "failed_assertions": 3,
+      "errors": 0,
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestGroupAuthorityReconciliation.test_confirmed_review_cannot_change_roots_or_basis'",
+      "log": ".runtime/system-permission-roles/review-readonly-before.log",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F06; not frozen) before fix",
+      "failure_owner": "P0 confirmed wizard write lacks readonly enforcement"
+    },
+    "review_readonly_orm": {
+      "status": "passed",
+      "layer": "L2",
+      "tests": 16,
+      "failed": 0,
+      "errors": 0,
+      "command": "make verify.local.dev.system_permission.reconciliation.orm",
+      "log": ".runtime/system-permission-roles/review-readonly-orm.log",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F06; not frozen)",
+      "environment": "sc-local-dev/sc_dev_demo"
+    },
+    "editor_probe_unit": {
+      "status": "passed",
+      "layer": "L2",
+      "tests": 8,
+      "command": "make verify.system.permission.concurrency.unit",
+      "log": ".runtime/system-permission-roles/review-editor-probe-unit.log",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F06; not frozen)",
+      "meaning": "mode/identity safeguards, not real concurrency proof"
+    },
+    "editor_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/system-permission-roles/review-editor-probe-iteration.log",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F06; not frozen)"
+    },
+    "review_readonly_http": {
+      "status": "passed",
+      "layer": "L3",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F06 fixed; not frozen)",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionHttp.test_native_confirmation_journey_rejects_later_edits'",
+      "log": ".runtime/system-permission-roles/review-readonly-http.log",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "meaning": "Actual open/edit/confirm/audit native RPC journey; later note/root edits denied, membership unchanged; not browser rendering acceptance"
+    },
+    "editor_real_concurrency": {
+      "status": "passed",
+      "layer": "L3",
+      "tests": 2,
+      "failed": 0,
+      "errors": 0,
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F06 fixed; not frozen)",
+      "command": "SC_CONFIRM_PERMISSION_CONCURRENCY=RUN_ISOLATED_PERMISSION_CONCURRENCY SC_ACCEPTANCE_PERMISSION_MODE=editor_only make local.contract-lifecycle.system_permission.concurrency",
+      "log": ".runtime/system-permission-roles/editor-concurrency-runtime.log",
+      "readback": ".runtime/system-permission-roles/editor-concurrency-runtime.json",
+      "evidence_hashes": ".runtime/system-permission-roles/editor-concurrency-evidence-hashes.json",
+      "environment": "sc-contract-lifecycle-v1/sc_contract_lifecycle",
+      "meaning": "Confirm-first editor retry rejected; edit-first confirmation retry preserves edited basis; one audit and consistent wizard/audit per target; distinct concurrent backend/transaction IDs",
+      "reuse_note": "profile discarded; not reusable live receipt"
+    },
+    "editor_profile_rebuild": {
+      "status": "passed",
+      "layer": "L3",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F06 fixed; not frozen)",
+      "command": "CONFIRM_LOCAL_CONTRACT_LIFECYCLE_REBUILD=REBUILD_ISOLATED_CONTRACT_LIFECYCLE make local.contract-lifecycle.rebuild LOCAL_CONTRACT_LIFECYCLE_MODULES=smart_core",
+      "log": ".runtime/system-permission-roles/editor-profile-rebuild.log",
+      "environment": "sc-contract-lifecycle-v1/sc_contract_lifecycle"
+    },
+    "editor_profile_discard": {
+      "status": "passed",
+      "layer": "L3",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F06 fixed; not frozen)",
+      "command": "CONFIRM_LOCAL_CONTRACT_LIFECYCLE_DISCARD=DISCARD_ISOLATED_CONTRACT_LIFECYCLE make local.contract-lifecycle.discard",
+      "log": ".runtime/system-permission-roles/editor-profile-discard.log",
+      "removed_volumes": [
+        "sc_contract_lifecycle_db_data",
+        "sc_contract_lifecycle_redis_data",
+        "sc_contract_lifecycle_odoo_data"
+      ]
+    },
+    "F06": "local_candidate_verified; 16 ORM + 1 native HTTP + 2 real editor concurrency checks passed, 8 P4 prerequisite tests passed; profile discarded",
+    "evidence_reference_review_20261020": {
+      "status": "passed",
+      "layer": "L1",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty; not frozen",
+      "command": "Read run.results log/source_log/readback/evidence_hashes references; SHA256-read both concurrency evidence manifests",
+      "original_evidence_references": 74,
+      "missing": 0,
+      "verified_archived_hashes": 9,
+      "meaning": "Evidence integrity only; not new runtime results or reusable live receipts"
+    },
+    "development_independent_review_20261020": {
+      "status": "failed",
+      "layer": "L1",
+      "reviewer": "/root/permission_audit (read-only independent agent)",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty; F07 iteration, not frozen",
+      "scope": "P0 source confirmation/epoch and P1 runtime delegation; no runtime executed by reviewer",
+      "finding": "P1 company_ids related-record CRUD escapes ID-only validation into sudo; baseline defect",
+      "followup": "Independent reviewer accepted final self-only native SELF_WRITEABLE_FIELDS exception and strict relation command filtering; exact ORM/HTTP verification pending. Not frozen final review.",
+      "is_final_review": false,
+      "resolution": "Both initial safety findings and self-preference regression fixed; reviewer scoped followup found no obvious bypass in final self-only native field exception. 5 final ORM and 1 native HTTP passed. Original failed review preserved; final frozen review remains not_run."
+    },
+    "delegation_before_orm": {
+      "status": "failed",
+      "layer": "L2",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty; F07 iteration, not frozen",
+      "tests": 2,
+      "failed_assertions": 3,
+      "errors": 0,
+      "log": ".runtime/system-permission-roles/delegation-before-orm.log",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionSeparation.test_client_context_cannot_bypass_native_group_authority,/smart_construction_core:TestSystemPermissionSeparation.test_company_relation_commands_cannot_write_company_records'",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "failure_owner": "P1 runtime_user_management"
+    },
+    "delegation_after_orm": {
+      "status": "passed",
+      "layer": "L2",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty; F07 iteration, not frozen",
+      "tests": 58,
+      "failed_assertions": 0,
+      "errors": 0,
+      "log": ".runtime/system-permission-roles/delegation-after-orm.log",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='system_permission_separation,runtime_user_management'",
+      "environment": "sc-local-dev/sc_dev_demo",
+      "failure_owner": null
+    },
+    "delegation_preference_before": {
+      "status": "failed",
+      "layer": "L2",
+      "tests": 1,
+      "failed": 1,
+      "errors": 0,
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + F07 initial fix dirty",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionSeparation.test_business_manager_can_save_native_self_preferences'",
+      "log": ".runtime/system-permission-roles/delegation-preference-before.log",
+      "failure_owner": "P1 self-service compatibility; fixed with native server-owned self-writable field boundary"
+    },
+    "delegation_final_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "log": ".runtime/system-permission-roles/delegation-final-iteration.log",
+      "command": "make ci.local.iteration",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F07 final fix; not frozen)"
+    },
+    "delegation_final_orm": {
+      "status": "passed",
+      "layer": "L2",
+      "log": ".runtime/system-permission-roles/delegation-final-orm.log",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionSeparation.test_client_context_cannot_bypass_native_group_authority,/smart_construction_core:TestSystemPermissionSeparation.test_company_relation_commands_cannot_write_company_records,/smart_construction_core:TestSystemPermissionSeparation.test_company_relation_rejects_related_record_crud,/smart_construction_core:TestSystemPermissionSeparation.test_forged_sudo_context_cannot_create_privileged_user,/smart_construction_core:TestSystemPermissionSeparation.test_business_manager_can_save_native_self_preferences'",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F07 final fix; not frozen)",
+      "tests": 5,
+      "failed": 0,
+      "errors": 0,
+      "environment": "sc-local-dev/sc_dev_demo"
+    },
+    "delegation_final_http": {
+      "status": "passed",
+      "layer": "L3",
+      "log": ".runtime/system-permission-roles/delegation-final-http.log",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionHttp.test_business_manager_native_rpc_cannot_bypass_delegation'",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F07 final fix; not frozen)",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "environment": "sc-local-dev/sc_dev_demo"
+    },
+    "F07": "local_candidate_verified; context authority + related-company CRUD escape fixed, native self preference preserved; 58 initial targeted regression + 5 final exact ORM + 1 real HTTP passed (overlapping sets, not summed); independent development review only",
+    "default_before_orm": {
+      "status": "failed",
+      "layer": "L2",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F08 iteration; not frozen) before fix",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionSeparation.test_delegated_create_cannot_inject_existing_partner_default,/smart_construction_core:TestSystemPermissionSeparation.test_delegated_create_cannot_inject_project_assignment_default'",
+      "tests": 2,
+      "failed": 2,
+      "errors": 0,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "log": ".runtime/system-permission-roles/default-before-orm.log",
+      "failure_owner": "P1 untrusted ORM defaults cross delegated sudo boundary"
+    },
+    "default_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F08 iteration; not frozen)",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/system-permission-roles/default-after-iteration.log"
+    },
+    "default_after_orm": {
+      "status": "passed",
+      "layer": "L2",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F08 fixed; not frozen)",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='system_permission_separation,runtime_user_management'",
+      "tests": 61,
+      "failed": 0,
+      "errors": 0,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "log": ".runtime/system-permission-roles/default-after-orm.log"
+    },
+    "default_after_http": {
+      "status": "passed",
+      "layer": "L3",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F08 fixed; not frozen)",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionHttp.test_native_create_cannot_inject_sudo_defaults'",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "log": ".runtime/system-permission-roles/default-after-http.log"
+    },
+    "default_independent_review": {
+      "status": "passed",
+      "layer": "L1",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F08 fixed; not frozen)",
+      "reviewer": "/root/permission_audit",
+      "scope": "F08 delegated sudo default context filtering only; read-only source review",
+      "finding": "Original default context injection reproduced by implementer; reviewer found fix closes both paths and retains sc_default_initial_password and allowed_company_ids",
+      "limitations": "Not full frozen delivery review, no database execution by reviewer",
+      "record": "docs/ops/iterations/system_permission_roles_20261019.md"
+    },
+    "F08": "local_candidate_verified; both default context bypasses reproduced and fixed; 61 targeted ORM and 1 real native HTTP passed; scoped independent development source review passed",
+    "rule_before_orm": {
+      "status": "failed",
+      "layer": "L2",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F09; not frozen) before fix",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionSeparation.test_delegated_write_respects_native_record_rule,/smart_construction_core:TestSystemPermissionSeparation.test_delegated_create_respects_native_record_rule'",
+      "tests": 2,
+      "failed": 2,
+      "errors": 0,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "log": ".runtime/system-permission-roles/rule-before-orm.log",
+      "failure_owner": "P1 delegated sudo bypasses native user record rules"
+    },
+    "rule_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F09; not frozen)",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/system-permission-roles/rule-after-iteration.log"
+    },
+    "rule_after_orm": {
+      "status": "passed",
+      "layer": "L2",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F09 fixed; not frozen)",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='system_permission_separation,runtime_user_management'",
+      "tests": 63,
+      "failed": 0,
+      "errors": 0,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "log": ".runtime/system-permission-roles/rule-after-orm.log"
+    },
+    "rule_after_http": {
+      "status": "passed",
+      "layer": "L3",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F09 fixed; not frozen)",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionHttp.test_native_delegation_respects_user_record_rules'",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "log": ".runtime/system-permission-roles/rule-after-http.log"
+    },
+    "rule_independent_review": {
+      "status": "passed",
+      "layer": "L1",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F09 fixed; not frozen)",
+      "reviewer": "/root/permission_audit",
+      "scope": "F09 delegated res.users ACL/record-rule enforcement and create rollback only",
+      "finding": "Checks use original UID/context, create rejection rolls back inside owned savepoint, self-service remains native; no new scoped blocker found",
+      "limitations": "Read-only development source review, not frozen final review; reviewer did not run database tests",
+      "record": "docs/ops/iterations/system_permission_roles_20261019.md"
+    },
+    "F09": "local_candidate_verified; record-rule bypass reproduced and fixed; 63 targeted ORM and 1 real HTTP passed; scoped independent development review passed",
+    "personnel_before_orm": {
+      "status": "failed",
+      "layer": "L2",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + F10 dirty before product fix",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionSeparation.test_personnel_relations_reject_other_company,/smart_construction_core:TestSystemPermissionSeparation.test_personnel_relations_respect_native_read_rules'",
+      "tests": 2,
+      "failed_assertions": 2,
+      "errors": 2,
+      "log": ".runtime/system-permission-roles/personnel-before-orm.log",
+      "failure_owner": "P1 hidden relation read bypass (2 failures); test assertion tuple TypeError (2 errors, company operation not executed)"
+    },
+    "personnel_company_before_orm": {
+      "status": "failed",
+      "layer": "L2",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F10; not frozen) before product fix",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionSeparation.test_personnel_relations_reject_other_company'",
+      "tests": 1,
+      "failed_assertions": 2,
+      "errors": 0,
+      "log": ".runtime/system-permission-roles/personnel-company-before-orm.log",
+      "failure_owner": "P1 cross-company personnel relation accepted"
+    },
+    "personnel_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F10; not frozen)",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/system-permission-roles/personnel-after-iteration.log"
+    },
+    "personnel_after_orm": {
+      "status": "passed",
+      "layer": "L2",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F10 fixed; not frozen)",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='system_permission_separation,runtime_user_management'",
+      "tests": 67,
+      "failed": 0,
+      "errors": 0,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "log": ".runtime/system-permission-roles/personnel-after-orm.log"
+    },
+    "personnel_after_http": {
+      "status": "passed",
+      "layer": "L3",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F10 fixed; not frozen)",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionHttp.test_native_personnel_relation_respects_read_rule'",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "log": ".runtime/system-permission-roles/personnel-after-http.log"
+    },
+    "personnel_independent_review": {
+      "status": "passed",
+      "layer": "L1",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F10 fixed; not frozen)",
+      "reviewer": "/root/permission_audit",
+      "scope": "F10 delegated department/job relation existence, caller read authorization and company consistency only",
+      "finding": "Read checks run before sudo with original actor, final requested user company used; false clearing preserved; no scoped blocker found",
+      "limitations": "Read-only development review, not frozen final delivery review; no database execution by reviewer",
+      "record": "docs/ops/iterations/system_permission_roles_20261019.md"
+    },
+    "F10": "local_candidate_verified; hidden and cross-company personnel relation bypasses reproduced and fixed; 67 targeted ORM + 1 real HTTP passed; independent scoped source review passed",
+    "profile_before_orm": {
+      "status": "failed",
+      "layer": "L2",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + F11 dirty before fix",
+      "tests": 3,
+      "failed": 2,
+      "errors": 0,
+      "log": ".runtime/system-permission-roles/profile-before-orm.log",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionSeparation.test_public_profile_action_respects_user_write_rule,/smart_construction_core:TestSystemPermissionSeparation.test_public_profile_action_rejects_privileged_target,/smart_construction_core:TestSystemPermissionSeparation.test_public_profile_action_does_not_apply_client_defaults'",
+      "failure_owner": "P1 public profile action ignores user rule and protected targets; default job probe passed"
+    },
+    "profile_after_orm": {
+      "status": "passed",
+      "layer": "L2",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F11 fixed; not frozen)",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionSeparation.test_public_profile_action_respects_user_write_rule,/smart_construction_core:TestSystemPermissionSeparation.test_public_profile_action_rejects_privileged_target,/smart_construction_core:TestSystemPermissionSeparation.test_public_profile_action_does_not_apply_client_defaults,/smart_construction_core:TestSystemPermissionSeparation.test_public_profile_action_checks_whole_target_set,/smart_construction_core:TestSystemPermissionSeparation.test_public_profile_action_is_idempotent,/smart_construction_core:TestUserModuleProductClosure.test_config_admin_creates_and_maintains_employee_profile,/smart_construction_core:TestUserModuleProductClosure.test_ordinary_user_cannot_create_employee_profile'",
+      "tests": 7,
+      "failed": 0,
+      "errors": 0,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "log": ".runtime/system-permission-roles/profile-after-orm.log"
+    },
+    "profile_after_http": {
+      "status": "passed",
+      "layer": "L3",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F11 fixed; not frozen)",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestSystemPermissionHttp.test_native_public_profile_action_enforces_targets'",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "environment": "sc-local-dev/sc_dev_demo",
+      "log": ".runtime/system-permission-roles/profile-after-http.log"
+    },
+    "profile_iteration": {
+      "status": "passed",
+      "layer": "L1",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F11 fixed; not frozen)",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/system-permission-roles/profile-after-iteration.log"
+    },
+    "profile_independent_review": {
+      "status": "passed",
+      "layer": "L1",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (F11 fixed; not frozen)",
+      "reviewer": "/root/permission_audit",
+      "scope": "F11 public action original-caller whole-target preflight only",
+      "finding": "Original ACL/rules and company/maintainable checks run before loop, privileged system/sudo scope retained, private helpers untouched; default-job probe passed before fix",
+      "limitations": "Read-only development review, not frozen final delivery review; no database execution by reviewer",
+      "record": "docs/ops/iterations/system_permission_roles_20261019.md"
+    },
+    "F11": "local_candidate_verified; public-action rule/protected-target bypasses reproduced and fixed; 7 exact ORM + 1 real HTTP passed; independent scoped review passed; default-job probe was already passing",
+    "continuous_development_review": {
+      "status": "passed",
+      "layer": "L1",
+      "reviewer": "/root/permission_audit",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (integration preparation; not frozen)",
+      "scope": "P0 authority/epoch and P1 runtime/formal public-write paths, including actor provenance and transaction failure rollback",
+      "finding": "No new confirmed blocker. Direct assignment reassignment versus delegated UI restriction is a product-boundary question, not assumed vulnerability. No unproven partial-commit claim.",
+      "limitations": "Not frozen final review; no environment mutations or test execution by reviewer"
+    },
+    "current_demo_observation": {
+      "status": "passed",
+      "layer": "L1",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + run.scope dirty (integration preparation; not frozen)",
+      "command": "make audit.system.permission_role.demo_observation",
+      "log": ".runtime/system-permission-roles/demo-observation-current.log",
+      "readback": ".runtime/system-permission-roles/demo-observation-current.json",
+      "environment": "governed remote demo/sc_demo read-only",
+      "source_revision": "654a77bda9ddad1c98c29e055df2d19c1cac2497",
+      "meaning": "20 roles,13 existing selected witnesses,7 still uncovered; observed identity unchanged, no navigation matrix rerun; not authorization/acceptance proof"
+    },
+    "freeze_prepare_first": {
+      "status": "failed",
+      "layer": "L5 preparation",
+      "command": "make ci.delivery.freeze.prepare",
+      "log": ".runtime/system-permission-roles/freeze-prepare.log",
+      "failure_owner": "P4 ledger shape/status/index drift; 1 owned goal + 6 baseline findings",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + dirty before ledger repair"
+    },
+    "ledger_repair_basis": {
+      "status": "recorded",
+      "layer": "P4 metadata",
+      "removed_completed_index_entries": {
+        "codex/demo-integration-record-20261019": ".agent/runs/DEMO-ORG-MASTER-MERGE-RECORD-20261019/run.json",
+        "feature/demo-r1-realistic-data-20261019": ".agent/runs/DEMO-ORG-MASTER-20261019/run.json"
+      },
+      "authority": [
+        ".agent/runs/DEMO-ORG-MASTER-20261019/run.json",
+        ".agent/runs/DEMO-ORG-MASTER-MERGE-RECORD-20261019/run.json",
+        ".agent/runs/DEMO-R1-F02-F03-CONTRACT-LABEL-20261019/run.json",
+        "docs/demo/r1-03-f02-f03-contract-label.md"
+      ],
+      "meaning": "Normalize shape and reflect already completed runs, not new product/deployment acceptance; affected baseline goal files byte-equal to HEAD before repair"
+    },
+    "ledger_repair_unit": {
+      "status": "passed",
+      "layer": "L1",
+      "tests": 18,
+      "command": "make verify.agent.ledger.unit",
+      "log": ".runtime/system-permission-roles/ledger-repair-unit.log",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + dirty ledger normalization"
+    },
+    "freeze_prepare_after_ledger": {
+      "status": "passed",
+      "layer": "L5 preparation",
+      "command": "make ci.delivery.freeze.prepare",
+      "log": ".runtime/system-permission-roles/freeze-prepare-after-ledger.log",
+      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + dirty before final commits",
+      "meaning": "Generated reports reviewed: 5 new verification assets shift deterministic inventory IDs; module versions and source count updated; does not confer remote integration eligibility"
+    }
+  },
+  "product_acceptance_gaps": [
+    "Real historical accounts require evidence-backed source confirmation; owner asked for existing records location, no response yet; no automatic migration",
+    "Seven roles have local synthetic representative operation evidence but no existing active internal witness in governed remote demo; full role journeys remain unaccepted",
+    "Executive primary menu is an unreleased historical entry; usable business surface not accepted",
+    "Native lifecycle and private-RPC samples are verified; full dynamic/runtime-config/private write-path coverage and unified product acceptance remain incomplete",
+    "Independent final review and unified product acceptance remain not_run; three scoped real concurrency scenarios now passed"
+  ],
+  "integration_scope": {
+    "objective": "F01-F11 native authority provenance, revocation and delegated-write safety fixes",
+    "exclusions": [
+      "No automatic historical-account source inference/migration",
+      "No new complete role/revision/assignment publication product",
+      "No remote witness provisioning or executive product release",
+      "No production deployment or whole-product acceptance"
+    ],
+    "rationale": "AGENTS separates PR integration from selected-version/full-product acceptance. Historical unresolved state is an intentional fail-closed behavior verified by tests; missing remote witnesses and unreleased menu are unchanged product-delivery gaps, not failures introduced by the safety patch. Original goal remains incomplete."
+  },
+  "post_commit_receipt": ".runtime/system-permission-roles/integration-finalization.json"
+}

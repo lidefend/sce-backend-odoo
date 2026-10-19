@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 169,
+    "odoo_tags": 175,
     "gated": 3,
-    "on_demand": 23,
+    "on_demand": 29,
     "unwired": 143,
-    "odoo_tag_declarations": 386,
+    "odoo_tag_declarations": 392,
     "gated_declarations": 94,
-    "uncovered_declarations": 292,
+    "uncovered_declarations": 298,
     "ci_unit_scripts": 16,
     "ci_unit_scripts_wired": 16,
     "ci_unit_scripts_unwired": 0
@@ -592,6 +592,19 @@
       "disposition": "wire-pending"
     },
     {
+      "group": "approval_scope_authority",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_approval_scope_authority.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.local.dev.system_permission.approval_scope.orm :: approval_scope_authority local.dev.test"
+      ]
+    },
+    {
       "group": "auth_signup",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -961,6 +974,19 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "group_authority_reconciliation",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_group_authority_reconciliation.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.local.dev.system_permission.reconciliation.orm :: group_authority_reconciliation local.dev.test"
+      ]
     },
     {
       "group": "intent_dispatcher_permission_contract",
@@ -2028,6 +2054,58 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "system_permission_accounting",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_system_permission_accounting.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.local.dev.system_permission.accounting.orm :: system_permission_accounting local.dev.test"
+      ]
+    },
+    {
+      "group": "system_permission_business",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_system_permission_business.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.local.dev.system_permission.business.orm :: system_permission_business local.dev.test"
+      ]
+    },
+    {
+      "group": "system_permission_http",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_system_permission_http.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.local.dev.system_permission.http :: system_permission_http local.dev.test"
+      ]
+    },
+    {
+      "group": "system_permission_separation",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_system_permission_separation.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.local.dev.system_permission.separation.orm :: system_permission_separation local.dev.test"
+      ]
     },
     {
       "group": "tax_filing",
