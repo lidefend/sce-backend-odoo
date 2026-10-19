@@ -21,7 +21,8 @@
     "scripts/verify/frontend_delivery_hardening_guard.py",
     "scripts/verify/local_dev_candidate_visual_smoke.mjs",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
-    "docs/engineering_convergence/complexity_budget_report.md"
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md"
   ],
   "environment": {
     "kind": "offline"
