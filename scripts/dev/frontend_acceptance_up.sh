@@ -11,6 +11,13 @@ if [[ ! "$DATABASE" =~ ^[a-zA-Z0-9_]+$ ]]; then
   exit 2
 fi
 
+# The acceptance preview is the entry for isolated browser acceptance.  It
+# stamps the same namespace/secret the acceptance database registers, so
+# Batch C's path-namespace contract stays active instead of letting the
+# frontend call Odoo through a database hint.
+source "$ROOT_DIR/config/acceptance/isolated_entry_identity.v1.env"
+export SC_ENTRY_NAMESPACE SC_ENTRY_AUDIENCE SC_ENTRY_SHARED_SECRET SC_ENTRY_ROUTE_VERSION
+
 port_open() {
   (exec 3<>"/dev/tcp/127.0.0.1/${PORT}") >/dev/null 2>&1
 }
@@ -38,7 +45,10 @@ fi
 if [[ "$MODE" == "production" ]]; then
   DIST="${FRONTEND_ACCEPTANCE_STATIC_DIST:-$ROOT_DIR/frontend/apps/web/dist-release}"
   [[ -f "$DIST/index.html" ]] || { echo "[frontend.acceptance.up] missing production build: $DIST/index.html" >&2; exit 2; }
-  setsid env STATIC_ROOT="$DIST" STATIC_PORT="$PORT" API_PROXY_TARGET="${VITE_API_PROXY_TARGET:-http://127.0.0.1:18082}" node "$ROOT_DIR/scripts/release/release_static_server.mjs" >"$LOGFILE" 2>&1 &
+  setsid env STATIC_ROOT="$DIST" STATIC_PORT="$PORT" API_PROXY_TARGET="${VITE_API_PROXY_TARGET:-http://127.0.0.1:18082}" \
+    SC_ENTRY_NAMESPACE="$SC_ENTRY_NAMESPACE" SC_ENTRY_AUDIENCE="$SC_ENTRY_AUDIENCE" \
+    SC_ENTRY_SHARED_SECRET="$SC_ENTRY_SHARED_SECRET" SC_ENTRY_ROUTE_VERSION="$SC_ENTRY_ROUTE_VERSION" \
+    node "$ROOT_DIR/scripts/release/release_static_server.mjs" >"$LOGFILE" 2>&1 &
 else
   setsid bash -c 'cd "$1"; export VITE_API_PROXY_TARGET="${VITE_API_PROXY_TARGET:-http://127.0.0.1:18082}" VITE_ODOO_DB="$3" VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance; exec scripts/dev/pnpm_exec.sh -C frontend/apps/web dev --host 127.0.0.1 --port "$2" --strictPort' _ "$ROOT_DIR" "$PORT" "$DATABASE" >"$LOGFILE" 2>&1 &
 fi

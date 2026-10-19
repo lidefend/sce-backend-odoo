@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import os
 import re
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
@@ -774,6 +776,45 @@ class MakeTargetTests(unittest.TestCase):
             "scripts/release/initialize_colocated_platform_snapshot.py",
         ):
             self.assertIn(path, recipe, path)
+
+
+class RefreshLineTests(unittest.TestCase):
+    def test_publish_emits_the_raw_snapshot_refresh_line(self):
+        evidence = {
+            "action": "publish",
+            "product_key": PREVIEW,
+            "publish_reports": {
+                "snapshot": {
+                    "status": "PASS",
+                    "product_key": PREVIEW,
+                    "snapshot_id": 2,
+                    "policy_menu_count": 90,
+                    "snapshot_menu_count": 90,
+                    "changed": True,
+                }
+            },
+        }
+        output = io.StringIO()
+        with mock.patch.object(ENTRY, "execute", return_value=evidence), redirect_stdout(output):
+            self.assertEqual(
+                ENTRY.main(["publish", "--duty", DEMO_DUTY, "--emit-refresh-json"]), 0
+            )
+        line = json.loads(output.getvalue().strip().splitlines()[-1])
+        self.assertEqual(line["status"], "PASS")
+        self.assertEqual(line["product_key"], PREVIEW)
+        self.assertEqual(line["snapshot_id"], 2)
+        self.assertEqual(line["snapshot_menu_count"], 90)
+
+    def test_readback_never_emits_a_refresh_line(self):
+        evidence = {"action": "readback", "product_key": "", "publish_reports": {}}
+        output = io.StringIO()
+        with mock.patch.object(ENTRY, "execute", return_value=evidence), redirect_stdout(output):
+            self.assertEqual(
+                ENTRY.main(["readback", "--duty", DEMO_DUTY, "--emit-refresh-json"]), 0
+            )
+        lines = output.getvalue().strip().splitlines()
+        self.assertEqual(len(lines), 1)
+        self.assertTrue(lines[0].startswith(ENTRY.MARKER))
 
 
 if __name__ == "__main__":

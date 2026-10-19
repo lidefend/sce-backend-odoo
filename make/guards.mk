@@ -176,14 +176,23 @@ verify.daily_dev.acceptance.env.guard:
 # published scope, so a lane can never silently narrow its way past drift.
 DAILY_PRODUCT_MENU_PRODUCT_KEYS ?= construction.standard,construction.preview
 DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN ?= $(or $(PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN),$(ACCEPTANCE_LOGIN))
+DAILY_DEV_PRODUCT_MENU_DUTY ?= demo
 
 verify.product_menu_release_gate.contract.unit:
 	@python3 -m py_compile scripts/verify/production_menu_release_gate_guard.py scripts/verify/test_product_menu_release_gate_contract.py
 	@python3 scripts/verify/test_product_menu_release_gate_contract.py
 
-verify.daily_dev.product_menu_release_gate.guard: guard.prod.forbid check-compose-project check-compose-env verify.product_menu_release_gate.contract.unit
+verify.daily_dev.product_menu_release_gate.guard: guard.prod.forbid verify.product_menu_release_gate.contract.unit
 	@test -n "$(DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN)" || { echo "[DENY] DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN must name the daily full-product principal (set PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN or ACCEPTANCE_LOGIN)" >&2; exit 2; }
-	@$(RUN_ENV) DB_NAME=$(DB_NAME) SC_ENVIRONMENT=dev PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN="$(DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN)" PRODUCT_MENU_CATALOG_PRODUCT_KEYS="$(DAILY_PRODUCT_MENU_PRODUCT_KEYS)" bash scripts/ops/odoo_shell_exec.sh < scripts/verify/production_menu_release_gate_guard.py
+	@python3 -m py_compile scripts/ops/daily_runtime_duty_odoo_shell.py scripts/ops/test_daily_runtime_duty_odoo_shell.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_duty_odoo_shell
+	@python3 scripts/ops/daily_runtime_duty_odoo_shell.py \
+		--duty "$(DAILY_DEV_PRODUCT_MENU_DUTY)" \
+		--database "$(DB_NAME)" \
+		--env SC_ENVIRONMENT=dev \
+		--env PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN="$(DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN)" \
+		--env PRODUCT_MENU_CATALOG_PRODUCT_KEYS="$(DAILY_PRODUCT_MENU_PRODUCT_KEYS)" \
+		< scripts/verify/production_menu_release_gate_guard.py
 
 gate.compose.config: check-compose-env
 	@echo "[gate.compose.config] checking container_name..."
@@ -269,6 +278,39 @@ test.coverage.registry.seed: guard.prod.forbid
 verify.g1.acceptance.baseline: guard.prod.forbid
 	@python3 scripts/verify/g1_acceptance_baseline_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_g1_acceptance_baseline_guard.py
+
+# ------- Acceptance evolution binding (code change -> acceptance impact) -------
+# Every changed path must be classified by config/acceptance/evolution_binding.v1.json.
+# Runtime-facing changes also require exact-head acceptance evidence before a
+# governed merge; that half is enforced by acceptance.evolution.verify.
+ACCEPTANCE_EVOLUTION_PLAN ?= .runtime/acceptance-evolution/plan.json
+ACCEPTANCE_EVOLUTION_EVIDENCE ?= .runtime/acceptance-evolution/evidence.v1.json
+ACCEPTANCE_EVOLUTION_SUITES ?=
+ACCEPTANCE_EVOLUTION_CARRY_FORWARD ?=
+
+.PHONY: verify.acceptance.evolution.binding acceptance.evolution.plan acceptance.evolution.record acceptance.evolution.verify
+verify.acceptance.evolution.binding: guard.prod.forbid acceptance.evolution.plan
+	@python3 -m py_compile scripts/verify/acceptance_evolution_binding_guard.py scripts/verify/test_acceptance_evolution_binding_guard.py scripts/ops/acceptance_evolution_record.py
+	@python3 scripts/verify/test_acceptance_evolution_binding_guard.py
+
+acceptance.evolution.plan: guard.prod.forbid
+	@python3 scripts/verify/acceptance_evolution_binding_guard.py --output "$(ACCEPTANCE_EVOLUTION_PLAN)"
+
+acceptance.evolution.record: guard.prod.forbid
+	@python3 scripts/ops/acceptance_evolution_record.py \
+		$(if $(filter 1,$(ACCEPTANCE_EVOLUTION_CARRY_FORWARD)),--carry-forward) \
+		--output "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" \
+		$(foreach suite,$(ACCEPTANCE_EVOLUTION_SUITES),--suite '$(suite)')
+
+acceptance.evolution.verify: guard.prod.forbid acceptance.evolution.record
+	@if [ -f "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" ]; then \
+		python3 scripts/verify/acceptance_evolution_binding_guard.py \
+			--require-evidence --manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" \
+			--output "$(ACCEPTANCE_EVOLUTION_PLAN)"; \
+	else \
+		python3 scripts/verify/acceptance_evolution_binding_guard.py \
+			--require-evidence --output "$(ACCEPTANCE_EVOLUTION_PLAN)"; \
+	fi
 
 # ------- G3.3-B dual-role five-viewport BOQ acceptance evidence -------
 # Verifies that the v1-schema evidence package emitted by

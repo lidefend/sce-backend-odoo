@@ -436,11 +436,10 @@ pr.merge.local_quick_gate:
 	  BB_REF="$${PR_MERGE_BOOKKEEPING_BASE_REF:-origin/main}"; \
 	  BB_BASE="$$(git merge-base "$$EXPECTED" "$$BB_REF" 2>/dev/null || true)"; \
 	  BB_CHANGED=""; \
-	  if [ -n "$$BB_BASE" ]; then BB_CHANGED="$$(git diff --name-only "$$BB_BASE" "$$EXPECTED" 2>/dev/null || true)"; fi; \
-	  if [ -n "$$BB_CHANGED" ] && [ -z "$$(printf "%s\n" "$$BB_CHANGED" | grep -vE "^(\.agent/|docs/)" || true)" ]; then \
-	    echo "[pr.merge.local_quick_gate] DENY: bookkeeping-only candidate (diff vs $$BB_BASE is confined to .agent/ and docs/)"; \
+	  if [ -n "$$BB_BASE" ] && BB_CHANGED="$$(python3 scripts/ops/local_quick_evidence.py bookkeeping-delta --base "$$BB_BASE" --expected-head "$$EXPECTED" 2>/dev/null)"; then \
+	    echo "[pr.merge.local_quick_gate] DENY: bookkeeping-only candidate without a reusable ancestor receipt (diff vs $$BB_BASE is confined to declared bookkeeping paths)"; \
 	    printf "%s\n" "$$BB_CHANGED" | sed "s|^|  bookkeeping-path: |"; \
-	    echo "[pr.merge.local_quick_gate] run/goal/docs bookkeeping must ride along with the adjacent product candidate: ci.local.quick produces one receipt per frozen commit, so a standalone bookkeeping candidate buys a full suite run and no new coverage."; \
+	    echo "[pr.merge.local_quick_gate] an unchanged runtime tree can carry an ancestor ci.local.quick receipt forward; no such receipt was usable here. Run/goal/docs bookkeeping should ride along with the adjacent product candidate, or establish one receipt with make ci.local.quick."; \
 	    echo "[pr.merge.local_quick_gate] for an actual terminal goal retirement, rerun with PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE=<reason>."; \
 	    exit 13; \
 	  fi; \
@@ -452,7 +451,7 @@ pr.merge.local_quick_gate:
 	echo "[pr.merge.local_quick_gate] PASS"; \
 	'
 
-pr.merge: guard.prod.forbid pr.merge.local_quick_gate
+pr.merge: guard.prod.forbid pr.merge.local_quick_gate acceptance.evolution.verify
 	@bash -c '\
 	set -euo pipefail; \
 	BR="$$(git rev-parse --abbrev-ref HEAD)"; \
@@ -730,6 +729,7 @@ daily.runtime.candidate.bundle_sync: guard.prod.forbid verify.daily.runtime.cand
 DAILY_RUNTIME_SOURCE_REVISION_SHA ?= $(DAILY_CANDIDATE_EXPECTED_SHA)
 DAILY_RUNTIME_ENV_NAME ?= dev
 DAILY_RUNTIME_ENV_FILE ?= .env.dev
+DAILY_RUNTIME_SOURCE_REVISION_BASE_URL ?= http://127.0.0.1:18081$(DAILY_RUNTIME_FRONTEND_BUILD_ENTRY_PREFIX)
 DAILY_RUNTIME_SOURCE_REVISION_REPORT ?= .runtime/final-acceptance/daily-deployed/source-revision-align.json
 
 verify.daily.runtime.source_revision.align: guard.prod.forbid
@@ -738,11 +738,12 @@ verify.daily.runtime.source_revision.align: guard.prod.forbid
 
 daily.runtime.source_revision.align: guard.prod.forbid verify.daily.runtime.source_revision.align
 	@test "$${CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN:-}" = "ALIGN_DAILY_RUNTIME_SOURCE_REVISION_WITH_DEPLOYED_HEAD" || { echo "exact daily runtime source-revision alignment confirmation is required" >&2; exit 2; }
+	@$(DAILY_RUNTIME_DUTY_BINDING_REQUIRED)
 	@python3 scripts/ops/daily_runtime_source_revision_align.py \
 		--expected-sha "$(DAILY_RUNTIME_SOURCE_REVISION_SHA)" \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
-		--env-name "$(DAILY_RUNTIME_ENV_NAME)" \
-		--env-file "$(DAILY_RUNTIME_ENV_FILE)" \
+		--duty "$(DAILY_RUNTIME_DUTY)" \
+		--base-url "$(DAILY_RUNTIME_SOURCE_REVISION_BASE_URL)" \
 		--report "$(DAILY_RUNTIME_SOURCE_REVISION_REPORT)"
 
 # The daily runtime serves a prebuilt static frontend from the nginx bind mount

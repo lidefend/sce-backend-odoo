@@ -61,7 +61,7 @@ REMOTE_CONVERGE = r'''
 import fcntl, json, os, re, shutil, subprocess, sys
 from pathlib import Path
 
-expected_sha, env_name, env_file, database, login, product_keys_arg, modules_arg, reuse_ids_arg, remote_root = sys.argv[1:10]
+expected_sha, env_name, env_file, database, login, product_keys_arg, modules_arg, reuse_ids_arg, remote_root, duty_name = sys.argv[1:11]
 fixed_root = Path("/opt/projects/repos/sce-product-odoo")
 root = Path(remote_root)
 full_sha = re.compile(r"^[0-9a-f]{40}$")
@@ -146,6 +146,7 @@ env.update(
         "PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN": login,
         "PRODUCT_MENU_CATALOG_PRODUCT_KEYS": product_keys_arg,
         "CONFIRM_DAILY_PRODUCT_NAVIGATION_SNAPSHOT": "RELEASE_EXACT_DAILY_PRODUCT_NAVIGATION",
+        "DAILY_PRODUCT_NAVIGATION_DUTY": duty_name,
         # ``guard.codex.fast.upgrade`` refuses a module upgrade under CODEX_MODE=fast
         # unless the intent is declared.  This entry upgrades exactly the projection
         # modules whose code must be live before the face is frozen, so it declares
@@ -405,6 +406,7 @@ def remote_command(
     product_keys: list[str],
     modules: list[str],
     reuse_tree_ids: dict[str, str],
+    duty: str,
 ) -> str:
     return " ".join(
         shlex.quote(item)
@@ -421,6 +423,7 @@ def remote_command(
             ",".join(modules),
             ",".join(f"{module}={reuse_tree_ids[module]}" for module in sorted(reuse_tree_ids)),
             REMOTE_ROOT,
+            duty,
         )
     )
 
@@ -438,6 +441,7 @@ def converge(
     login: str,
     product_keys: list[str],
     modules: list[str],
+    duty: str,
     reuse_tree_ids: dict[str, str] | None = None,
 ) -> dict[str, object]:
     preflight(expected_sha, ssh_host, login, product_keys, modules)
@@ -453,7 +457,7 @@ def converge(
         "ServerAliveCountMax=4",
         ssh_host,
         remote_command(expected_sha, env_name, env_file, database, login, product_keys, modules,
-                       reuse_tree_ids or {}),
+                       reuse_tree_ids or {}, duty),
     ]
     result = run(command)
     stdout = result.stdout.decode(errors="replace")
@@ -565,6 +569,7 @@ def main() -> int:
         args.login,
         product_keys,
         modules,
+        str(binding.get("id") or binding.get("duty") or ""),
         reuse_tree_ids,
     )
     report = {

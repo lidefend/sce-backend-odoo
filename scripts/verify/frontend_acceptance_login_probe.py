@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 from urllib import error as urlerror
 from urllib import request as urlrequest
 from python_http_smoke_utils import extract_login_token
@@ -12,7 +13,40 @@ from python_http_smoke_utils import extract_login_token
 
 DATABASE = "sc_frontend_acceptance"
 LOGIN = "fixture_role_finance"
-INTENT_URL = f"http://127.0.0.1:18082/api/v1/intent?db={DATABASE}"
+INTENT_URL = str(
+    os.environ.get("SC_ACCEPTANCE_INTENT_URL") or "http://127.0.0.1:18082/api/v1/intent"
+).strip()
+ENTRY_IDENTITY_FILE = (
+    Path(__file__).resolve().parents[2]
+    / "config"
+    / "acceptance"
+    / "isolated_entry_identity.v1.env"
+)
+
+
+def _entry_identity() -> dict[str, str]:
+    """Load the isolated acceptance entry stamp, with the environment winning."""
+
+    values: dict[str, str] = {}
+    try:
+        for raw_line in ENTRY_IDENTITY_FILE.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            values[key.strip()] = value.strip()
+    except OSError:
+        pass
+    for key in (
+        "SC_ENTRY_NAMESPACE",
+        "SC_ENTRY_AUDIENCE",
+        "SC_ENTRY_SHARED_SECRET",
+        "SC_ENTRY_ROUTE_VERSION",
+    ):
+        override = str(os.environ.get(key) or "").strip()
+        if override:
+            values[key] = override
+    return values
 
 
 def _envelope(payload: object) -> dict:
@@ -50,13 +84,23 @@ def probe() -> int:
         print("[acceptance.login.probe] DENY fixture credential is required")
         return 2
 
+    entry = _entry_identity()
+    required_entry = (
+        "SC_ENTRY_NAMESPACE",
+        "SC_ENTRY_AUDIENCE",
+        "SC_ENTRY_SHARED_SECRET",
+        "SC_ENTRY_ROUTE_VERSION",
+    )
+    if any(not entry.get(key) for key in required_entry):
+        print("[acceptance.login.probe] DENY entry identity is incomplete")
+        return 2
+
     body = json.dumps(
         {
             "intent": "login",
             "params": {
                 "login": LOGIN,
                 "password": password,
-                "db": DATABASE,
                 "contract_mode": "default",
             },
         }
@@ -64,7 +108,14 @@ def probe() -> int:
     request = urlrequest.Request(
         INTENT_URL,
         data=body,
-        headers={"Content-Type": "application/json", "X-Anonymous-Intent": "true"},
+        headers={
+            "Content-Type": "application/json",
+            "X-Anonymous-Intent": "true",
+            "X-SC-Namespace": entry["SC_ENTRY_NAMESPACE"],
+            "X-SC-Audience": entry["SC_ENTRY_AUDIENCE"],
+            "X-SC-Entry-Secret": entry["SC_ENTRY_SHARED_SECRET"],
+            "X-SC-Route-Version": entry["SC_ENTRY_ROUTE_VERSION"],
+        },
         method="POST",
     )
     try:

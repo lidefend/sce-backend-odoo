@@ -25,10 +25,13 @@ def evidence(**overrides: object) -> bytes:
         "status": "PASS",
         "expected_sha": SHA,
         "head": SHA,
+        "duty": "demo",
+        "compose_project": "sc-demo-dev",
+        "container": "sc-demo-dev-odoo-1",
         "previous_revision": OLD_SHA,
-        "env_file": "/opt/projects/repos/sce-product-odoo/.env.dev",
+        "env_file": "/opt/projects/secure/daily-runtime-duties/sc-demo-dev.env",
         "env_written": True,
-        "backup_path": "/opt/projects/repos/sce-product-odoo/.env.dev.bak",
+        "backup_path": "/opt/projects/secure/daily-runtime-duties/sc-demo-dev.env.bak",
         "restarted": True,
         "rolled_back": False,
         "served": {
@@ -48,7 +51,7 @@ class DailyRuntimeSourceRevisionAlignTests(unittest.TestCase):
     def test_preflight_requires_confirmation(self) -> None:
         with mock.patch.dict(os.environ, {}, clear=True):
             with self.assertRaisesRegex(align_module.AlignError, "confirmation"):
-                align_module.preflight(SHA, "sc-root")
+                align_module.preflight(SHA, "sc-root", "demo")
 
     def test_preflight_rejects_non_commit_revision(self) -> None:
         with mock.patch.dict(
@@ -56,19 +59,21 @@ class DailyRuntimeSourceRevisionAlignTests(unittest.TestCase):
             {"CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN": align_module.CONFIRMATION},
         ):
             with self.assertRaisesRegex(align_module.AlignError, "commit SHA"):
-                align_module.preflight("HEAD", "sc-root")
+                align_module.preflight("HEAD", "sc-root", "demo")
             with self.assertRaisesRegex(align_module.AlignError, "host alias"):
-                align_module.preflight(SHA, "sc-root; rm -rf /")
+                align_module.preflight(SHA, "sc-root; rm -rf /", "demo")
+            with self.assertRaisesRegex(align_module.AlignError, "duty"):
+                align_module.preflight(SHA, "sc-root", "../demo")
 
     def test_preflight_accepts_governed_inputs(self) -> None:
         with mock.patch.dict(
             os.environ,
             {"CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN": align_module.CONFIRMATION},
         ):
-            align_module.preflight(SHA, "sc-root")
+            align_module.preflight(SHA, "sc-root", "demo")
 
-    def test_remote_command_binds_exact_revision(self) -> None:
-        command = align_module.remote_command(SHA, "dev", ".env.dev", "odoo", "http://127.0.0.1:18081")
+    def test_remote_command_binds_exact_revision_and_duty(self) -> None:
+        command = align_module.remote_command(SHA, "demo", "http://127.0.0.1:18081")
         self.assertEqual(
             shlex.split(command),
             [
@@ -76,9 +81,7 @@ class DailyRuntimeSourceRevisionAlignTests(unittest.TestCase):
                 "-c",
                 align_module.REMOTE_ALIGN,
                 SHA,
-                "dev",
-                ".env.dev",
-                "odoo",
+                "demo",
                 "http://127.0.0.1:18081",
                 align_module.REMOTE_ROOT,
             ],
@@ -90,7 +93,7 @@ class DailyRuntimeSourceRevisionAlignTests(unittest.TestCase):
             os.environ,
             {"CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN": align_module.CONFIRMATION},
         ), mock.patch.object(align_module, "run", return_value=completed):
-            result = align_module.align(SHA, "sc-root", "dev", ".env.dev", "odoo", "http://127.0.0.1:18081")
+            result = align_module.align(SHA, "sc-root", "demo", "http://127.0.0.1:18081")
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(result["expected_sha"], SHA)
 
@@ -102,7 +105,7 @@ class DailyRuntimeSourceRevisionAlignTests(unittest.TestCase):
             {"CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN": align_module.CONFIRMATION},
         ), mock.patch.object(align_module, "run", return_value=completed):
             with self.assertRaisesRegex(align_module.AlignError, "evidence differs"):
-                align_module.align(SHA, "sc-root", "dev", ".env.dev", "odoo", "http://127.0.0.1:18081")
+                align_module.align(SHA, "sc-root", "demo", "http://127.0.0.1:18081")
 
     def test_align_rejects_rolled_back_result(self) -> None:
         rolled = evidence(status="BLOCKED", rolled_back=True)
@@ -112,7 +115,7 @@ class DailyRuntimeSourceRevisionAlignTests(unittest.TestCase):
             {"CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN": align_module.CONFIRMATION},
         ), mock.patch.object(align_module, "run", return_value=completed):
             with self.assertRaisesRegex(align_module.AlignError, "evidence differs"):
-                align_module.align(SHA, "sc-root", "dev", ".env.dev", "odoo", "http://127.0.0.1:18081")
+                align_module.align(SHA, "sc-root", "demo", "http://127.0.0.1:18081")
 
     def test_align_reports_remote_failure(self) -> None:
         completed = mock.Mock(returncode=1, stdout=b"", stderr=b"BLOCKED remote HEAD differs")
@@ -121,7 +124,7 @@ class DailyRuntimeSourceRevisionAlignTests(unittest.TestCase):
             {"CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN": align_module.CONFIRMATION},
         ), mock.patch.object(align_module, "run", return_value=completed):
             with self.assertRaisesRegex(align_module.AlignError, "remote HEAD differs"):
-                align_module.align(SHA, "sc-root", "dev", ".env.dev", "odoo", "http://127.0.0.1:18081")
+                align_module.align(SHA, "sc-root", "demo", "http://127.0.0.1:18081")
 
 
 if __name__ == "__main__":

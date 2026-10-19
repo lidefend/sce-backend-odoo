@@ -15,7 +15,7 @@
     "assets": [
       {
         "path": "config/frontend/acceptance_environments_v1.json",
-        "sha256": "618179c62f5c872a14fe83b20b77622aeccd3865e0f4dd5f1ef354af5c937ba2"
+        "sha256": "9a34a3cef026d45fa5f99e69e548556b865bd6aeb25dceba90f396c92d538b68"
       },
       {
         "path": "config/frontend/acceptance_tool_matrix_v1.json",
@@ -31,7 +31,7 @@
     "python": "3.12.3",
     "git": "2.43.0"
   },
-  "collected_at": "2026-10-09T18:48:17Z",
+  "collected_at": "2026-10-18T22:51:19Z",
   "browser_evidence_contract": {
     "required_fields": [
       "browser_full_version",

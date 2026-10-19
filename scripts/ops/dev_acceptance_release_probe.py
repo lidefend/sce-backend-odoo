@@ -18,6 +18,7 @@ import urllib.request
 from http.cookiejar import CookieJar
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -44,6 +45,25 @@ CONTRACT_NEGOTIATION_ENUMS = {
     "contract_surface": {"user", "native", "hud"},
     "source_mode": {"governance_pipeline", "native_parser"},
 }
+
+
+NAMESPACE_TENANT_PATH = re.compile(r"^/t/(?P<alias>[a-z0-9][a-z0-9-]{0,62})$")
+NAMESPACE_PLATFORM_PATH = "/platform-admin"
+
+
+def entry_namespace(base_url: str) -> str:
+    """Return the namespace alias when the probe base URL is a namespace entry.
+
+    Batch C makes the path prefix the only database selector.  A probe that
+    still sends ``?db=`` or ``X-Odoo-DB`` is refused with 409, so the entry
+    shape has to be detected rather than assumed.
+    """
+
+    path = urlsplit(str(base_url or "")).path.rstrip("/") or "/"
+    if path == NAMESPACE_PLATFORM_PATH:
+        return "platform"
+    match = NAMESPACE_TENANT_PATH.match(path)
+    return match.group("alias") if match else ""
 
 
 def _contract_credential(contract_password: str, login_password: str) -> str:
@@ -189,6 +209,8 @@ def probe_backup(directory: Path | None, db_name: str) -> dict[str, Any]:
 def probe_frontend(base_url: str, db_name: str, app_env: str, forbidden_db: str) -> dict[str, Any]:
     result: dict[str, Any] = {"status": "PASS", "base_url": base_url, "checks": {}}
     errors: list[str] = []
+    namespace = entry_namespace(base_url)
+    result["checks"]["entry_namespace"] = namespace or None
     status, body, headers = http_request(base_url.rstrip("/") + "/")
     result["checks"]["root_status"] = status
     result["checks"]["root_content_type"] = headers.get("Content-Type")
@@ -214,21 +236,31 @@ def probe_frontend(base_url: str, db_name: str, app_env: str, forbidden_db: str)
         result["checks"]["asset_forbidden_db_is_default"] = forbidden_default_db
         if asset_status != 200:
             errors.append("frontend_asset_not_200")
-        if db_name not in asset_body:
+        if namespace:
+            # A namespace entry selects the database on the server.  A database
+            # name baked into the static bundle would re-introduce a client hint
+            # and is refused by the entry, so it must be absent.
+            if db_name in asset_body:
+                errors.append("frontend_db_token_present_in_namespace_entry")
+            if forbidden_db and forbidden_db in asset_body:
+                errors.append("frontend_forbidden_db_token_present_in_namespace_entry")
+        elif db_name not in asset_body:
             errors.append("frontend_db_token_missing")
         if default_env_match and default_env_match.group(1) != app_env:
             errors.append("frontend_default_app_env_mismatch")
         if forbidden_default_db:
             errors.append("frontend_forbidden_db_is_default")
 
+    intent_url = base_url.rstrip("/") + "/api/v1/intent"
+    intent_headers = {} if namespace else {"X-Odoo-DB": db_name, "X-DB": db_name}
     options_status, _options_body, _options_headers = http_request(
-        base_url.rstrip("/") + f"/api/v1/intent?db={db_name}",
+        intent_url,
         method="OPTIONS",
-        headers={"X-Odoo-DB": db_name, "X-DB": db_name},
+        headers=intent_headers,
     )
     get_status, _get_body, _get_headers = http_request(
-        base_url.rstrip("/") + f"/api/v1/intent?db={db_name}",
-        headers={"X-Odoo-DB": db_name, "X-DB": db_name},
+        intent_url,
+        headers=intent_headers,
     )
     result["checks"]["intent_options_status"] = options_status
     result["checks"]["intent_get_status"] = get_status
@@ -236,6 +268,40 @@ def probe_frontend(base_url: str, db_name: str, app_env: str, forbidden_db: str)
         errors.append("intent_options_not_204")
     if get_status != 405:
         errors.append("intent_get_not_405")
+
+    if namespace:
+        # Refusal evidence is part of the entry contract: a client hint and an
+        # unresolvable path must fail with a stable status and code, never fall
+        # back to the default tenant.
+        parsed = urlsplit(base_url)
+        origin = f"{parsed.scheme}://{parsed.netloc}"
+        conflict_status, conflict_body, _conflict_headers = http_request(
+            intent_url + f"?db={db_name}"
+        )
+        header_conflict_status, header_conflict_body, _header_conflict_headers = http_request(
+            intent_url,
+            headers={"X-Odoo-DB": db_name},
+        )
+        missing_status, missing_body, _missing_headers = http_request(origin + "/api/v1/intent")
+        unknown_status, unknown_body, _unknown_headers = http_request(
+            origin + "/t/namespace-probe-unknown/api/v1/intent"
+        )
+        result["checks"].update(
+            {
+                "db_query_conflict_status": conflict_status,
+                "db_header_conflict_status": header_conflict_status,
+                "missing_namespace_status": missing_status,
+                "unknown_namespace_status": unknown_status,
+            }
+        )
+        for code, status_value, body_value, expected_status, expected_code in (
+            ("intent_db_query_conflict", conflict_status, conflict_body, 409, "NS_DATABASE_HINT_CONFLICT"),
+            ("intent_db_header_conflict", header_conflict_status, header_conflict_body, 409, "NS_DATABASE_HINT_CONFLICT"),
+            ("intent_missing_namespace", missing_status, missing_body, 400, "NS_NAMESPACE_REQUIRED"),
+            ("intent_unknown_namespace", unknown_status, unknown_body, 404, "NS_UNKNOWN_NAMESPACE"),
+        ):
+            if status_value != expected_status or expected_code not in str(body_value):
+                errors.append(code)
 
     if errors:
         result["status"] = "FAIL"
@@ -378,6 +444,50 @@ def published_face_checks(
     return errors, checks
 
 
+def _intent_login(
+    base_url: str,
+    login: str,
+    password: str,
+    opener: urllib.request.OpenerDirector,
+) -> tuple[int, str, str, dict[str, Any], dict[str, Any]]:
+    """Authenticate through the released ``login`` intent, not Odoo's web route.
+
+    Batch C removes the database hint from the login request: the entry path is
+    the only selector, and the response session binds the selected database.
+    """
+
+    payload = json.dumps(
+        {
+            "intent": "login",
+            "params": {"login": login, "password": password, "contract_mode": "default"},
+        }
+    ).encode("utf-8")
+    auth_req = urllib.request.Request(
+        base_url.rstrip("/") + "/api/v1/intent",
+        data=payload,
+        headers={"Content-Type": "application/json", "X-Anonymous-Intent": "1"},
+        method="POST",
+    )
+    try:
+        with opener.open(auth_req, timeout=20) as resp:
+            status = resp.status
+            body = resp.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as exc:
+        status = exc.code
+        body = exc.read().decode("utf-8", errors="replace")
+    try:
+        envelope = json.loads(body)
+    except json.JSONDecodeError:
+        envelope = {}
+    data = envelope.get("data") if isinstance(envelope, dict) else None
+    data = data if isinstance(data, dict) else {}
+    session_block = data.get("session") if isinstance(data.get("session"), dict) else {}
+    user = data.get("user") if isinstance(data.get("user"), dict) else {}
+    token = str(session_block.get("token") or "").strip()
+    auth_result = {"uid": user.get("id"), "name": user.get("name")}
+    return status, body, token, auth_result, session_block
+
+
 def probe_login(
     base_url: str,
     db_name: str,
@@ -394,40 +504,55 @@ def probe_login(
 ) -> dict[str, Any]:
     if not login or not password:
         return {"enabled": False}
+    namespace = entry_namespace(base_url)
     cookie_jar = CookieJar()
     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookie_jar))
-    headers = {"Content-Type": "application/json", "X-Odoo-DB": db_name, "X-DB": db_name}
-    payload = json.dumps(
-        {"jsonrpc": "2.0", "params": {"db": db_name, "login": login, "password": password}}
-    ).encode("utf-8")
-    auth_req = urllib.request.Request(
-        base_url.rstrip("/") + "/web/session/authenticate",
-        data=payload,
-        headers=headers,
-        method="POST",
-    )
-    try:
-        with opener.open(auth_req, timeout=20) as resp:
-            status = resp.status
-            body = resp.read().decode("utf-8", errors="replace")
-    except urllib.error.HTTPError as exc:
-        status = exc.code
-        body = exc.read().decode("utf-8", errors="replace")
+    session_block: dict[str, Any] = {}
+    token = ""
+    if namespace:
+        status, body, token, auth_result, session_block = _intent_login(base_url, login, password, opener)
+        headers = {"Content-Type": "application/json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+    else:
+        headers = {"Content-Type": "application/json", "X-Odoo-DB": db_name, "X-DB": db_name}
+        payload = json.dumps(
+            {"jsonrpc": "2.0", "params": {"db": db_name, "login": login, "password": password}}
+        ).encode("utf-8")
+        auth_req = urllib.request.Request(
+            base_url.rstrip("/") + "/web/session/authenticate",
+            data=payload,
+            headers=headers,
+            method="POST",
+        )
+        try:
+            with opener.open(auth_req, timeout=20) as resp:
+                status = resp.status
+                body = resp.read().decode("utf-8", errors="replace")
+        except urllib.error.HTTPError as exc:
+            status = exc.code
+            body = exc.read().decode("utf-8", errors="replace")
+        try:
+            auth = json.loads(body)
+        except json.JSONDecodeError:
+            auth = {"error": "invalid_json", "raw": body[:300]}
+        auth_result = auth.get("result") if isinstance(auth, dict) else None
     result: dict[str, Any] = {"enabled": True, "status": "PASS", "login": login, "checks": {"auth_status": status}}
     errors: list[str] = []
-    try:
-        auth = json.loads(body)
-    except json.JSONDecodeError:
-        auth = {"error": "invalid_json", "raw": body[:300]}
-    auth_result = auth.get("result") if isinstance(auth, dict) else None
     result["checks"]["auth_uid"] = auth_result.get("uid") if isinstance(auth_result, dict) else None
     result["checks"]["auth_name"] = auth_result.get("name") if isinstance(auth_result, dict) else None
+    if namespace:
+        result["checks"]["entry_namespace"] = namespace
+        result["checks"]["session_database"] = session_block.get("db")
+        result["checks"]["session_entry_kind"] = session_block.get("entry_kind")
+        if session_block.get("db") != db_name:
+            errors.append("login_session_database_mismatch")
     if status != 200 or not result["checks"]["auth_uid"]:
         errors.append("auth_failed")
 
     init_payload = json.dumps({"intent": "system.init", "params": {}}).encode("utf-8")
     init_req = urllib.request.Request(
-        base_url.rstrip("/") + f"/api/v1/intent?db={db_name}",
+        base_url.rstrip("/") + "/api/v1/intent",
         data=init_payload,
         headers=headers,
         method="POST",
@@ -759,14 +884,28 @@ class _HttpSession:
         self.base_url = base_url.rstrip("/")
         self.db_name = db_name
         self.timeout = timeout
+        self.namespace = entry_namespace(base_url)
+        self.token = ""
         self._jar = CookieJar()
         self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self._jar))
 
+    def _headers(self, anonymous: bool = False) -> dict[str, str]:
+        headers = {"Content-Type": "application/json"}
+        if self.namespace:
+            if anonymous:
+                headers["X-Anonymous-Intent"] = "1"
+            elif self.token:
+                headers["Authorization"] = f"Bearer {self.token}"
+        else:
+            headers.update({"X-Odoo-DB": self.db_name, "X-DB": self.db_name})
+        return headers
+
     def post(self, path: str, payload: dict[str, Any]) -> tuple[int, str]:
+        anonymous = str(payload.get("intent") or "") == "login"
         request = urllib.request.Request(
             self.base_url + path,
             data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-            headers={"Content-Type": "application/json", "X-Odoo-DB": self.db_name, "X-DB": self.db_name},
+            headers=self._headers(anonymous=anonymous),
             method="POST",
         )
         try:
@@ -776,6 +915,40 @@ class _HttpSession:
             return exc.code, exc.read().decode("utf-8", errors="replace")
         except urllib.error.URLError as exc:
             return 0, json.dumps({"transport_error": str(exc)})
+
+    def login(self, login: str, password: str) -> tuple[int, str]:
+        """Authenticate on the session's own entry shape and retain the token."""
+
+        if not self.namespace:
+            return self.post(
+                "/web/session/authenticate",
+                {"jsonrpc": "2.0", "params": {"db": self.db_name, "login": login, "password": password}},
+            )
+        status, body = self.post(
+            "/api/v1/intent",
+            {
+                "intent": "login",
+                "params": {"login": login, "password": password, "contract_mode": "default"},
+            },
+        )
+        try:
+            envelope = json.loads(body)
+        except json.JSONDecodeError:
+            envelope = {}
+        data = envelope.get("data") if isinstance(envelope, dict) else None
+        data = data if isinstance(data, dict) else {}
+        session_block = data.get("session") if isinstance(data.get("session"), dict) else {}
+        self.token = str(session_block.get("token") or "").strip()
+        user = data.get("user") if isinstance(data.get("user"), dict) else {}
+        normalized = {
+            "result": {
+                "uid": user.get("id"),
+                "name": user.get("name"),
+                "db": session_block.get("db"),
+                "entry_kind": session_block.get("entry_kind"),
+            }
+        }
+        return status, json.dumps(normalized)
 
 
 def _hash_bytes(value: bytes) -> str:
@@ -968,16 +1141,22 @@ def probe_contract_acceptance(
 
     # --- live instance ----------------------------------------------------------
     session = session or _HttpSession(base_url, db_name)
-    status, body = session.post(
-        "/web/session/authenticate",
-        {"jsonrpc": "2.0", "params": {"db": db_name, "login": account.get("login"), "password": password}},
-    )
+    if hasattr(session, "login"):
+        status, body = session.login(str(account.get("login") or ""), password)
+    else:
+        status, body = session.post(
+            "/web/session/authenticate",
+            {"jsonrpc": "2.0", "params": {"db": db_name, "login": account.get("login"), "password": password}},
+        )
     try:
         auth = json.loads(body)
     except json.JSONDecodeError:
         auth = {}
     auth_result = auth.get("result") if isinstance(auth, dict) else None
     uid = auth_result.get("uid") if isinstance(auth_result, dict) else None
+    served_session_db = auth_result.get("db") if isinstance(auth_result, dict) else None
+    if entry_namespace(base_url) and served_session_db != db_name:
+        errors.append("contract_probe_session_database_mismatch")
     if status != 200 or not isinstance(uid, int):
         errors.append("contract_probe_auth_failed")
         receipt.update(
@@ -993,7 +1172,7 @@ def probe_contract_acceptance(
         )
         return receipt
 
-    init_status, init_body = session.post("/api/v1/intent?db=" + db_name, {"intent": "system.init", "params": {}})
+    init_status, init_body = session.post("/api/v1/intent", {"intent": "system.init", "params": {}})
     try:
         init = json.loads(init_body)
     except json.JSONDecodeError:
@@ -1062,7 +1241,7 @@ def probe_contract_acceptance(
     if request_context:
         request_payload["context"] = request_context
     contract_status, contract_body = session.post(
-        "/api/v1/intent?db=" + db_name,
+        "/api/v1/intent",
         request_payload,
     )
     try:

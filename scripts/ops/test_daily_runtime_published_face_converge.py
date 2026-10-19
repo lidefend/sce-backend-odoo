@@ -118,7 +118,7 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
 
     def test_remote_command_binds_exact_revision_and_declared_scope(self) -> None:
         command = module.remote_command(
-            SHA, "dev", ".env.dev", "sc_demo", "wutao", PRODUCTS, MODULES, dict(TREE_IDS)
+            SHA, "dev", ".env.dev", "sc_demo", "wutao", PRODUCTS, MODULES, dict(TREE_IDS), "demo"
         )
         self.assertEqual(
             shlex.split(command),
@@ -135,14 +135,15 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
                 ",".join(MODULES),
                 "smart_core=" + TREE_IDS["smart_core"],
                 module.REMOTE_ROOT,
+                "demo",
             ],
         )
 
     def test_remote_command_declares_no_reuse_without_a_hint(self) -> None:
         command = module.remote_command(
-            SHA, "dev", ".env.dev", "sc_demo", "wutao", PRODUCTS, MODULES, {}
+            SHA, "dev", ".env.dev", "sc_demo", "wutao", PRODUCTS, MODULES, {}, "demo"
         )
-        self.assertEqual(shlex.split(command)[-2], "")
+        self.assertEqual(shlex.split(command)[-3], "")
 
     def test_converge_requires_the_upgrade_mode_when_modules_are_declared(self) -> None:
         incomplete = dict(evidence_payload())
@@ -198,7 +199,7 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
             captured = {}
 
             def fake_converge(*args, **kwargs):
-                captured["reuse"] = args[8]
+                captured["reuse"] = args[9]
                 return {"status": "PASS"}
 
             argv = [
@@ -207,7 +208,7 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
                 "--report", str(report), "--repository", str(ROOT),
             ]
             binding = {
-                "bound_by": "duty", "duty": "demo", "database": "sc_demo",
+                "bound_by": "duty", "id": "demo", "duty": "demo", "database": "sc_demo",
                 "database_role": "sc_demo_app", "dbfilter": "^sc_demo$",
                 "data_purpose": "demo", "compose_project": "sc-demo-dev",
                 "database_container": "sc-demo-dev-db-1", "database_volume": "sc_demo_db_data",
@@ -297,7 +298,7 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
         ), mock.patch.object(module, "run", return_value=completed):
             return module.converge(
                 SHA, "sc-root", "dev", ".env.dev", "sc_demo", "wutao", PRODUCTS, MODULES,
-                reuse_tree_ids,
+                "demo", reuse_tree_ids,
             )
 
     def test_converge_accepts_matching_evidence(self) -> None:

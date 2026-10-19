@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "id": "ACCEPTANCE-EVIDENCE-LAYER-REUSE-20261019",
+  "branch": "fix/daily-acceptance-demo-profile-20261019",
+  "status": "active",
+  "baseline_sha": "ecd4ab90bf7e9363fcb85570b9a87bde15433a4c",
+  "goal": ".agent/goals/ACCEPTANCE-EVIDENCE-LAYER-REUSE-20261019.yaml",
+  "record": "docs/ops/iterations/acceptance_evidence_layer_reuse_20261019.md",
+  "scope": [
+    ".agent/decisions/codex-local-lane-mechanics.yaml",
+    ".agent/active-runs.json",
+    ".agent/goals/ACCEPTANCE-EVIDENCE-LAYER-REUSE-20261019.yaml",
+    ".agent/runs/ACCEPTANCE-EVIDENCE-LAYER-REUSE-20261019/run.json",
+    "config/acceptance/evolution_binding.v1.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/ops/iterations/acceptance_evidence_layer_reuse_20261019.md",
+    "make/codex.mk",
+    "make/guards.mk",
+    "scripts/ops/acceptance_evolution_record.py",
+    "scripts/ops/local_quick_evidence.py",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_branch_governance_consistency_guard.py",
+    "scripts/verify/test_local_quick_evidence.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "governed local Make entrypoints only; no database, service, browser or deployment access"
+  },
+  "checks": {
+    "acceptance_evolution_binding": {
+      "target": "verify.acceptance.evolution.binding",
+      "inputs": [
+        "config/acceptance/evolution_binding.v1.json",
+        "make/guards.mk",
+        "scripts/ops/acceptance_evolution_record.py",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "branch_governance_consistency": {
+      "target": "verify.branch.governance.consistency",
+      "inputs": [
+        "make/codex.mk",
+        ".agent/decisions/codex-local-lane-mechanics.yaml",
+        "scripts/ops/local_quick_evidence.py",
+        "scripts/verify/branch_governance_consistency_guard.py",
+        "scripts/verify/test_branch_governance_consistency_guard.py",
+        "scripts/verify/test_local_quick_evidence.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the eleven owned files on fix/daily-acceptance-demo-profile-20261019, run make ci.local.quick at that exact head, then push with make pr.push and merge PR #687 through the protected flow after the new head's required checks pass."
+}

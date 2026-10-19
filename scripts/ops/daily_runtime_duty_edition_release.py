@@ -537,6 +537,11 @@ def main(argv=None) -> int:
     parser.add_argument("--product-key", default="")
     parser.add_argument("--declaration", default="")
     parser.add_argument("--evidence", default="")
+    parser.add_argument(
+        "--emit-refresh-json",
+        action="store_true",
+        help="also print the released snapshot as a raw refresh JSON line consumed by the published-face convergence",
+    )
     args = parser.parse_args(argv)
     try:
         evidence = execute(
@@ -562,6 +567,22 @@ def main(argv=None) -> int:
             encoding="utf-8",
         )
     print(MARKER + json.dumps(evidence, ensure_ascii=False, sort_keys=True))
+    if args.emit_refresh_json and args.action == "publish":
+        snapshot = (evidence.get("publish_reports") or {}).get("snapshot") or {}
+        print(
+            json.dumps(
+                {
+                    "status": "PASS" if snapshot.get("status") == "PASS" else "FAIL",
+                    "product_key": snapshot.get("product_key") or evidence.get("product_key") or "",
+                    "snapshot_id": int(snapshot.get("snapshot_id") or 0),
+                    "policy_menu_count": int(snapshot.get("policy_menu_count") or 0),
+                    "snapshot_menu_count": int(snapshot.get("snapshot_menu_count") or 0),
+                    "changed": bool(snapshot.get("changed")),
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
     return 0
 
 

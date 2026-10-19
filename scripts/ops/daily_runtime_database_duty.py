@@ -933,6 +933,7 @@ def _validate_scope(name, duty, compliance):
     if purpose not in ("platform_control", "demo", "test", "customer"):
         failures.append("duty %s: data_purpose %s is not declared" % (name, purpose))
     failures.extend(validate_demo_seed(name, duty))
+    failures.extend(validate_acceptance_fixture(name, duty))
     table = duty.get("section_11") or {}
     if purpose == "platform_control" and not table.get("IS_PLATFORM_CONTROL_DATABASE"):
         failures.append("duty %s: a platform control duty must say so in section 11" % (name,))
@@ -997,6 +998,56 @@ def validate_demo_seed(name, duty):
     for key in ("authority", "reason"):
         if not str(seed.get(key) or "").strip():
             failures.append("duty %s: demo_seed.%s is required" % (name, key))
+    return failures
+
+
+def validate_acceptance_fixture(name, duty):
+    """Failures of a duty's declared acceptance carrier, as one list.
+
+    The acceptance carrier is deliberately *not* the demo seed carrier.  Demo
+    data is produced by the product's demo chain; the acceptance fixture only
+    materialises the deterministic identities the readonly contract probe
+    measures.  Declaring it here keeps a rebuild from silently losing the
+    module, while keeping the two data purposes separate.
+    """
+
+    failures = []
+    fixture = duty.get("acceptance_fixture")
+    if fixture is None:
+        return failures
+    if not isinstance(fixture, dict) or not fixture:
+        failures.append("duty %s: acceptance_fixture must be a non-empty object" % (name,))
+        return failures
+    carrier = str(fixture.get("carrier") or "")
+    modules = [str(item) for item in ((duty.get("stack") or {}).get("modules") or [])]
+    if not MODULE_NAME.fullmatch(carrier):
+        failures.append(
+            "duty %s: acceptance_fixture.carrier %s is not a module name" % (name, carrier or "<unset>")
+        )
+    elif carrier not in modules:
+        failures.append(
+            "duty %s: acceptance_fixture.carrier %s must be declared in stack.modules so a "
+            "rebuild installs it" % (name, carrier)
+        )
+    for key in ("scope", "purpose", "password_env", "ensure_entrypoint"):
+        if not str(fixture.get(key) or "").strip():
+            failures.append("duty %s: acceptance_fixture.%s is required" % (name, key))
+    required = fixture.get("required_xmlids")
+    if not isinstance(required, list) or not required:
+        failures.append("duty %s: acceptance_fixture.required_xmlids must be a non-empty list" % (name,))
+    else:
+        malformed = [
+            item
+            for item in required
+            if not isinstance(item, str) or not item.startswith(carrier + ".")
+        ]
+        if malformed:
+            failures.append(
+                "duty %s: acceptance_fixture.required_xmlids must belong to %s: %s"
+                % (name, carrier, ",".join(map(str, malformed)))
+            )
+        if len(set(required)) != len(required):
+            failures.append("duty %s: acceptance_fixture.required_xmlids repeats an identity" % (name,))
     return failures
 
 

@@ -1,0 +1,62 @@
+schema_version: 1
+goal:
+  id: ACCEPTANCE-EVIDENCE-LAYER-REUSE-20261019
+  title: acceptance_evidence_layer_reuse_and_quick_bookkeeping_carry_forward
+  status: active
+  formal_product_layer: P4
+  supporting_layer: P0
+  layer_target: acceptance_evidence_binding_and_local_quick_receipt_mechanics
+  module:
+    - scripts/ops
+    - scripts/verify
+    - make
+    - config/acceptance
+    - .agent
+  baseline:
+    branch: fix/daily-acceptance-demo-profile-20261019
+    full_sha: ecd4ab90bf7e9363fcb85570b9a87bde15433a4c
+    source: continuation_of_daily_acceptance_demo_profile_closeout
+  objective: >-
+    收口验收证据与本地 Quick 回执的失效粒度：HEAD 变化不再自动使整包证据失效，
+    只有某套件声明的输入指纹变化才要求重跑该套件；仅涉及簿记路径的后续提交可以
+    复用祖先版本的 runtime-tree 回执，代码或运行输入变化仍然 fail-closed 重跑。
+    本批次只调整 P4 验收/证据机制，不改变任何 P0-P3 产品语义、契约、数据或部署。
+  product_boundary:
+    standard_vs_user_specific: platform_delivery_mechanism
+    why_here: >-
+      验收证据分层复用与本地 Quick 回执属于交付工具（P4）机制：它决定何时可以复用
+      已验证结果，不承载产品可见行为，也不替代真实测试。
+    why_not_elsewhere:
+      - no_product_contract_or_schema_change
+      - no_frontend_behaviour_change
+      - no_runtime_data_or_deployment_change
+      - no_weakening_of_required_tests_or_remote_checks
+    blast_radius:
+      - acceptance evolution binding guard and recorder
+      - local quick evidence receipt composition
+      - make guard wiring and CI lane bookkeeping gate
+      - agent run metadata for this batch
+  constraints:
+    - unchanged_suite_inputs_may_reuse_evidence_bytes_and_bound_head
+    - changed_suite_inputs_always_rerun
+    - evidence_bytes_missing_or_tampered_fail_closed
+    - source_head_must_be_ancestor_of_evaluated_head
+    - bookkeeping_carry_forward_requires_identical_runtime_tree_digest
+    - remote_required_checks_remain_authoritative_for_the_new_head
+    - no_direct_main_push_no_force_push_no_ci_bypass
+  next_exact_step: >-
+    Commit this batch on the working branch, run one exact-head make ci.local.quick,
+    push through make pr.push, wait for the new HEAD's required GitHub checks, then
+    merge PR #687 through the protected PR flow with the exact expected head.
+  completion:
+    scope: acceptance_evidence_reuse_mechanics_only
+    overall_goal: in_progress
+    result_index: .agent/runs/ACCEPTANCE-EVIDENCE-LAYER-REUSE-20261019/run.json
+    local_batch_acceptance: in_progress
+    mainline_integration: not_run
+    deployment: not_run
+    target_user_delivery: not_run
+    limits: >-
+      Reusing an evidence record does not create new coverage and does not authorize
+      deployment or product acceptance; it only states that the declared suite inputs
+      are identical to the source head.

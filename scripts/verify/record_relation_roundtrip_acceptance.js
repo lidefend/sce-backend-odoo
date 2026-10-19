@@ -22,8 +22,32 @@ const requireBase = fs.existsSync(path.join(process.cwd(), 'frontend/apps/web/pa
   : path.join(process.cwd(), 'package.json');
 const { chromium } = createRequire(requireBase)('playwright');
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:5180';
+const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://127.0.0.1:5180').replace(/\/+$/, '');
 const DB_NAME = process.env.DB_NAME || 'sc_demo';
+// A namespace-routed entry (for example /t/demo) binds the database from the
+// path and refuses every client database hint with 409. Only legacy
+// single-instance lanes still select the database through the query string.
+const NAMESPACE_ROUTED = (() => {
+  try {
+    return new URL(FRONTEND_URL).pathname.replace(/\/+$/, '') !== '';
+  } catch {
+    return false;
+  }
+})();
+const ENTRY_BASE_PATH = (() => {
+  try {
+    const p = new URL(FRONTEND_URL).pathname.replace(/\/+$/, '');
+    return p === '/' ? '' : p;
+  } catch {
+    return '';
+  }
+})();
+function relativePathname(pathname) {
+  if (!ENTRY_BASE_PATH) return pathname;
+  if (pathname === ENTRY_BASE_PATH) return '/';
+  return pathname.startsWith(`${ENTRY_BASE_PATH}/`) ? pathname.slice(ENTRY_BASE_PATH.length) : pathname;
+}
+const DB_QUERY = NAMESPACE_ROUTED ? '' : `db=${encodeURIComponent(DB_NAME)}`;
 const LOGIN = process.env.E2E_LOGIN || '';
 const PASSWORD = process.env.E2E_PASSWORD || '';
 const EXPECTED_SHA = process.env.SC_ACCEPTANCE_TARGET_SHA || '';
@@ -129,7 +153,8 @@ function writeJson(name, data) {
 
 function sourceUrl() {
   const menu = MENU_ID ? `&menu_id=${MENU_ID}` : '';
-  return `${FRONTEND_URL}/r/${MODEL}/${RECORD_ID}?db=${encodeURIComponent(DB_NAME)}&action_id=${ACTION_ID}${menu}`;
+  const db = DB_QUERY ? `${DB_QUERY}&` : '';
+  return `${FRONTEND_URL}/r/${MODEL}/${RECORD_ID}?${db}action_id=${ACTION_ID}${menu}`;
 }
 
 function declaredEntriesFrom(contract) {
@@ -160,11 +185,14 @@ function declaredEntriesFrom(contract) {
 }
 
 async function login(page) {
-  await page.goto(`${FRONTEND_URL}/login?db=${encodeURIComponent(DB_NAME)}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  const query = DB_QUERY ? `?${DB_QUERY}` : '';
+  await page.goto(`${FRONTEND_URL}/login${query}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('input').nth(0).fill(LOGIN);
   await page.locator('input[type="password"]').fill(PASSWORD);
-  const dbInput = page.locator('input').nth(2);
-  if (await dbInput.count() && await dbInput.isEnabled().catch(() => false)) await dbInput.fill(DB_NAME).catch(() => {});
+  if (!NAMESPACE_ROUTED) {
+    const dbInput = page.locator('input').nth(2);
+    if (await dbInput.count() && await dbInput.isEnabled().catch(() => false)) await dbInput.fill(DB_NAME).catch(() => {});
+  }
   await page.locator('button[type="submit"]').click();
   await page.waitForFunction(() => Object.keys(window.sessionStorage).some((key) => key.startsWith('sc_auth_token')), null, { timeout: 60000 });
 }
@@ -242,11 +270,13 @@ async function clickAndClassify(page, field, sourcePath) {
   if (!await locator.count()) return { field, outcome: 'control_missing' };
   await locator.click({ timeout: 10000 });
   const deadline = Date.now() + 25000;
+  const sourceRelativePath = relativePathname(sourcePath);
   for (;;) {
     const current = new URL(page.url());
     const currentPath = `${current.pathname}${current.search}`;
-    if (current.pathname !== sourcePath) {
-      if (current.pathname === '/access-denied') {
+    const currentRelativePath = relativePathname(current.pathname);
+    if (currentRelativePath !== sourceRelativePath) {
+      if (currentRelativePath === '/access-denied') {
         return {
           field,
           outcome: 'denied',
@@ -254,7 +284,7 @@ async function clickAndClassify(page, field, sourcePath) {
           target: current.searchParams.get('from') || '',
         };
       }
-      if (RECORD_ROUTE.test(current.pathname)) {
+      if (RECORD_ROUTE.test(currentRelativePath)) {
         return {
           field,
           outcome: 'opened',

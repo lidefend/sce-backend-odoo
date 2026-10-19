@@ -30,6 +30,23 @@ const dailyRuntime = DAILY ? await (async () => {
   return import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`);
 })() : null;
 const BASE_URL = acceptance.baseUrl;
+// Entry namespaces are published as a path prefix (for example /t/demo). Every
+// request and route the browser sees carries that prefix, while the product's
+// own contracts and comparisons are namespace-relative. Strip exactly the
+// declared prefix instead of assuming the application is served from "/".
+const BASE_PATH = (() => {
+  const pathname = new URL(BASE_URL).pathname.replace(/\/+$/, '');
+  return pathname === '/' ? '' : pathname;
+})();
+function relativeRoutePath(pathname) {
+  if (!BASE_PATH) return pathname;
+  if (pathname === BASE_PATH) return '/';
+  return pathname.startsWith(`${BASE_PATH}/`) ? pathname.slice(BASE_PATH.length) : pathname;
+}
+function pageComparableRoute(value) {
+  const url = new URL(value, BASE_URL);
+  return `${relativeRoutePath(url.pathname)}${url.search}`;
+}
 const DATABASE = acceptance.database;
 const LOGIN = DAILY ? acceptance.login : process.env.E2E_LOGIN || acceptance.login || acceptance.roleBindings.project_manager || '';
 const PASSWORD = DAILY ? acceptance.password : process.env.E2E_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
@@ -754,7 +771,7 @@ function dailyLandingMatches(currentUrl, defaultRoute, baseUrl) {
   if (!defaultRoute || typeof defaultRoute.route !== 'string' || !defaultRoute.route.startsWith('/') || defaultRoute.route.startsWith('//')) return false;
   const expected = new URL(defaultRoute.route, baseUrl);
   const current = new URL(currentUrl, baseUrl);
-  return current.origin === expected.origin && current.pathname === expected.pathname
+  return current.origin === expected.origin && relativeRoutePath(current.pathname) === relativeRoutePath(expected.pathname)
     && [...expected.searchParams].every(([key, value]) => current.searchParams.get(key) === value);
 }
 
@@ -941,7 +958,7 @@ async function captureRecordPresentation(page, declaration) {
 function safeFailedResponse(status, url, request, response, secrets = []) {
   const safeUrl = new URL(url);
   const result = { status, url: safeUrl.origin + safeUrl.pathname };
-  if (safeUrl.pathname !== '/api/v1/intent') return result;
+  if (relativeRoutePath(safeUrl.pathname) !== '/api/v1/intent') return result;
   const clean = value => typeof value === 'string' ? secrets.filter(Boolean).reduce((text, secret) => text.split(secret).join('[redacted]'), value)
     .replace(/(?:password|token|secret|authorization)\s*[=:]\s*[^\s,;]+/gi, '[redacted]').slice(0, 320) : undefined;
   const intent = clean(request?.intent);
@@ -992,7 +1009,7 @@ try {
     const url = new URL(request.url());
     let body; try { body = request.postDataJSON(); } catch {}
     const sameOrigin = url.origin === new URL(BASE_URL).origin;
-    if (!sameOrigin || !dailyReadonlyRequest(request.method(), url.pathname, body)) {
+    if (!sameOrigin || !dailyReadonlyRequest(request.method(), relativeRoutePath(url.pathname), body)) {
       runtime.denied_requests.push({ method: request.method(), path: url.pathname, intent: body?.intent || '' });
       return route.abort('blockedbyclient');
     }
@@ -1006,7 +1023,7 @@ try {
   page.on('response', response => {
     const task = (async () => {
       let request, envelope;
-      const isIntent = new URL(response.url()).pathname === '/api/v1/intent';
+      const isIntent = relativeRoutePath(new URL(response.url()).pathname) === '/api/v1/intent';
       if (isIntent) {
         try { request = response.request().postDataJSON(); } catch {}
         try { envelope = await response.json(); } catch {}
@@ -1122,7 +1139,7 @@ try {
       await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
       await waitForList(page);
       const targetUrl = new URL(target.route, BASE_URL);
-      const source = { actionId: Number(targetUrl.pathname.split('/')[2]), menuId: Number(targetUrl.searchParams.get('menu_id')) };
+      const source = { actionId: Number(relativeRoutePath(targetUrl.pathname).split('/')[2]), menuId: Number(targetUrl.searchParams.get('menu_id')) };
       const listContract = [...runtime.contracts].reverse().find(row => row.intent === 'ui.contract.v2' && row.response?.ok === true && Number(row.params?.action_id) === source.actionId && Number(row.params?.menu_id) === source.menuId && ['list', 'tree'].includes(row.response?.data?.pageInfo?.viewType));
       if (!listContract) throw new Error('current list authority contract missing');
       const listData = listContract.response.data;
@@ -1146,7 +1163,7 @@ try {
           route: `/f/${model}/new`, contract_evidence_ref: listRef });
         const createStart = runtime.contracts.length;
         await createControl.click();
-        await page.waitForURL(url => url.pathname === `/f/${model}/new`, { timeout: 30_000 });
+        await page.waitForURL(url => relativeRoutePath(url.pathname) === `/f/${model}/new`, { timeout: 30_000 });
         const expectedCreate = { model, recordId: 'new', actionId: source.actionId, menuId: source.menuId, path: `/f/${model}/new` };
         let createRows = [];
         for (let attempt = 0; attempt < 600; attempt += 1) {
@@ -1178,7 +1195,7 @@ try {
       const expectedEdit = dailyRecordEntry(listData, { id: Number(rowId), model }, source);
       const editStart = runtime.contracts.length;
       await declaredRow.locator(DECLARED_RECORD_OPENER).first().click();
-      await page.waitForURL(url => url.pathname === expectedEdit.path, { timeout: 30_000 });
+      await page.waitForURL(url => relativeRoutePath(url.pathname) === expectedEdit.path, { timeout: 30_000 });
       recordChecks.push({ viewport: viewport.key, check: 'declared_edit_entry', passed: true, entry: expectedEdit, contract_evidence_ref: listRef });
       let editRows = [];
       for (let attempt = 0; attempt < 600; attempt += 1) {
@@ -1206,7 +1223,7 @@ try {
       }
       await page.goBack({ waitUntil: 'domcontentloaded' });
       await waitForList(page);
-      if (new URL(page.url()).pathname + new URL(page.url()).search !== target.route) throw new Error('form-profiles return did not restore source list');
+      if (pageComparableRoute(page.url()) !== target.route) throw new Error('form-profiles return did not restore source list');
     }
     await page.setViewportSize(VIEWPORTS[0]);
   }
@@ -1227,7 +1244,7 @@ try {
       await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
       await waitForList(page);
       const targetUrl = new URL(target.route, BASE_URL);
-      const source = { actionId: Number(targetUrl.pathname.split('/')[2]), menuId: Number(targetUrl.searchParams.get('menu_id')) };
+      const source = { actionId: Number(relativeRoutePath(targetUrl.pathname).split('/')[2]), menuId: Number(targetUrl.searchParams.get('menu_id')) };
       const listContract = [...runtime.contracts].reverse().find(row => row.intent === 'ui.contract.v2' && row.response?.ok === true && Number(row.params?.action_id) === source.actionId && Number(row.params?.menu_id) === source.menuId && ['list', 'tree'].includes(row.response?.data?.pageInfo?.viewType));
       if (!listContract) throw new Error('current list authority contract missing');
       // Open the contract-approved record through the row authority the list
@@ -1249,7 +1266,7 @@ try {
       const expectedDetail = dailyRecordEntry(listContract.response.data, { id: Number(rowId), model: listContract.response.data.pageInfo.model }, source);
       const contractStart = runtime.contracts.length;
       await firstRecord.click();
-      await page.waitForURL(url => url.pathname === expectedDetail.path, { timeout: 30_000 });
+      await page.waitForURL(url => relativeRoutePath(url.pathname) === expectedDetail.path, { timeout: 30_000 });
       recordChecks.push({ viewport: viewport.key, check: 'declared_entry_route', passed: true, entry: expectedDetail, contract_evidence_ref: dailyContractEvidenceRef(runtime.contracts, listContract) });
       let newContracts = [];
       for (let attempt = 0; attempt < 600; attempt += 1) {
@@ -1300,7 +1317,7 @@ try {
       dailyObservations.push({ surface: profile === 'readonly' ? 'readonly-detail' : 'edit-form-observation-without-save', declaredEntry: expectedDetail, renderProfile: profile, presentation, contractResponses: newContracts.length, url: page.url(), viewport: viewport.key, cards, screenshot });
       await page.goBack({ waitUntil: 'domcontentloaded' });
       await waitForList(page);
-      if (new URL(page.url()).pathname + new URL(page.url()).search !== target.route) throw new Error('daily detail return did not restore source list');
+      if (pageComparableRoute(page.url()) !== target.route) throw new Error('daily detail return did not restore source list');
       recordChecks.push({ viewport: viewport.key, check: 'return_to_source', passed: true, contract_evidence_ref: dailyContractEvidenceRef(runtime.contracts, listContract) });
     }
     await page.setViewportSize(VIEWPORTS[0]);

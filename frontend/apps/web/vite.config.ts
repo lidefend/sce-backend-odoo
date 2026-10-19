@@ -19,6 +19,15 @@ const port = readNumberEnv('VITE_DEV_PORT', 5174);
 const host = process.env.VITE_DEV_HOST ?? '127.0.0.1';
 const backendPort = readNumberEnv('ODOO_PORT', 8070);
 const apiProxyTarget = process.env.VITE_API_PROXY_TARGET ?? `http://127.0.0.1:${backendPort}`;
+const entryNamespace = (process.env.SC_ENTRY_NAMESPACE ?? '').trim();
+const entryHeaders = entryNamespace
+  ? {
+      'X-SC-Namespace': entryNamespace,
+      'X-SC-Audience': (process.env.SC_ENTRY_AUDIENCE ?? 'tenant').trim(),
+      'X-SC-Entry-Secret': (process.env.SC_ENTRY_SHARED_SECRET ?? '').trim(),
+      'X-SC-Route-Version': (process.env.SC_ENTRY_ROUTE_VERSION ?? '').trim(),
+    }
+  : {};
 const buildOutDir = process.env.VITE_BUILD_OUT_DIR || 'dist';
 const hmrHost = process.env.VITE_HMR_HOST || (host === '0.0.0.0' ? '127.0.0.1' : host);
 const hmrClientPort = readNumberEnv('VITE_HMR_CLIENT_PORT', port);
@@ -71,6 +80,7 @@ export default defineConfig({
         target: apiProxyTarget,
         changeOrigin: true,
         ws: true,
+        headers: entryHeaders,
       },
     },
   },

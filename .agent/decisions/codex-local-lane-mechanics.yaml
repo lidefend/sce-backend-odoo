@@ -45,9 +45,12 @@ decision:
 
     github_merge_lane:
       gate: make pr.merge depends on pr.merge.local_quick_gate
-      requirement: exact-head ci.local.quick receipt; head and tree must both match
+      requirement: exact-head ci.local.quick receipt for the evaluated candidate
       reuse_signal: "[pr.merge.local_quick_gate] REUSE: exact-head ci.local.quick evidence verified for <head>"
-      no_carry_forward: any later tracked-file commit invalidates the receipt
+      no_carry_forward: >-
+        any later change to a runtime input invalidates the receipt. A bookkeeping-only later
+        commit may reuse it only when the committed runtime-tree digest and scan authority are
+        identical; HEAD alone is not a runtime input.
       owner_rule_scope: >-
         the 2026-09-23 relaxation of the local Quick requirement covers ordinary Gitee
         candidates only; the GitHub entry is unchanged
@@ -136,7 +139,9 @@ decision:
     local_quick_sharding_and_receipts:
       id: OPS-DECISION-006
       shards: QUICK_SHARDS (default 4) over the ci.local.quick.run declared recipe
-      reuse_signal: a passed part is reused only while head+tree+coverage all match
+      reuse_signal: >-
+        a passed shard part is reused only while exact head+tree+coverage all match; the composed
+        receipt may cross a bookkeeping-only head only through the declared runtime-tree digest
       dirty_worktree: >-
         ci.local.quick fails closed before running the suite; run make ci.local.quick.diagnostic
         for a receipt-free observation
@@ -163,6 +168,24 @@ decision:
         - make lane.telemetry.check
       auto_report: make ci.local.quick records local.quick itself
       unit_target: make verify.lane.telemetry.unit
+
+    evidence_layer_reuse:
+      id: OPS-DECISION-008
+      statement: >-
+        HEAD is provenance, not an invalidation key. Acceptance evidence is reused per suite only
+        when that suite's declared input fingerprint and evidence bytes are identical between the
+        source and evaluated heads. A changed layer is always executed again.
+      suite_inputs: >-
+        the union of registry rule paths that require the suite, plus the registry, guard,
+        recorder and make/CI mechanism that can change every suite's meaning
+      carried_record: >-
+        bound_head, input_sha256, verified_at, evidence path and sha256 are revalidated by the guard;
+        an input change, missing evidence file, tampered byte, expired record or non-ancestor source
+        fails closed
+      no_hop_limit: >-
+        reuse is bounded by input identity and evidence age, not by the number of intervening
+        commits; repeated documentation or bookkeeping commits do not buy new coverage
+      unit_target: make verify.acceptance.evolution.binding
 
   recorded_instances:
     - candidate: e589676c23e4ef54d0dc1cfc9bce1749e5c7eb3a

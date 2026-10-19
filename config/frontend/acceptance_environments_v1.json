@@ -74,6 +74,9 @@
     },
     "daily": {
       "environment": "dev",
+      "served_environment_aliases": [
+        "demo"
+      ],
       "target_mode": "external",
       "base_url_required": true,
       "database": "sc_demo",

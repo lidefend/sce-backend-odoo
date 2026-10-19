@@ -6,6 +6,12 @@ ROOT_DIR="${ROOT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 export ROOT_DIR
 operation="${1:?acceptance operation required}"
 
+# The isolated acceptance preview is an entry: its proxy stamps this exact
+# namespace/secret pair.  Export it before any lifecycle operation so the
+# process identity validator can prove the served frontend carries it.
+source "$ROOT_DIR/config/acceptance/isolated_entry_identity.v1.env"
+export SC_ENTRY_NAMESPACE SC_ENTRY_AUDIENCE SC_ENTRY_SHARED_SECRET SC_ENTRY_ROUTE_VERSION
+
 if [[ "${GITHUB_ACTIONS:-}" != "true" ]]; then
   export SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY=operation_entry_v1
   # The managed carrier lifecycle entries are P4 environment entries: they
@@ -124,7 +130,11 @@ validate_ci_frontend_live_process() {
     "SC_FRONTEND_RELEASE_IDENTITY_FILE=$SC_FRONTEND_RELEASE_IDENTITY_FILE" \
     "STATIC_ROOT=$FRONTEND_ACCEPTANCE_STATIC_DIST" \
     "STATIC_PORT=$FRONTEND_ACCEPTANCE_PORT" \
-    "API_PROXY_TARGET=$VITE_API_PROXY_TARGET"; do
+    "API_PROXY_TARGET=$VITE_API_PROXY_TARGET" \
+    "SC_ENTRY_NAMESPACE=$SC_ENTRY_NAMESPACE" \
+    "SC_ENTRY_AUDIENCE=$SC_ENTRY_AUDIENCE" \
+    "SC_ENTRY_SHARED_SECRET=$SC_ENTRY_SHARED_SECRET" \
+    "SC_ENTRY_ROUTE_VERSION=$SC_ENTRY_ROUTE_VERSION"; do
     grep -Fxq "$expected_env" <<<"$proc_env" || {
       echo "DENY: isolated CI frontend environment mismatch" >&2
       return 2

@@ -135,6 +135,6 @@ function open(duty: PlatformDutyEntry) {
 }
 .platform-duty__pending {
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--sc-app-text-muted);
 }
 </style>

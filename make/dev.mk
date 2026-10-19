@@ -1073,32 +1073,35 @@ release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_REQUIRED_PATHS := $(DAILY_A
 release.daily_dev.acceptance.publish: guard.prod.forbid verify.daily_dev.acceptance.env.guard env.matrix.check verify.daily_dev.runtime_repo.clean verify.daily_dev.product_menu_release_gate.guard release.dev.acceptance.publish
 	@echo "[release.daily_dev.acceptance.publish] PASS base_url=$(ACCEPTANCE_BASE_URL) db=$(DB_NAME) head=$$(git rev-parse --short HEAD)"
 
-release.daily_product_navigation.snapshot: guard.prod.forbid check-compose-project check-compose-env
+DAILY_PRODUCT_NAVIGATION_DUTY ?= demo
+DAILY_PRODUCT_NAVIGATION_PRODUCT_KEYS ?= $(if $(strip $(PRODUCT_MENU_CATALOG_PRODUCT_KEYS)),$(PRODUCT_MENU_CATALOG_PRODUCT_KEYS),construction.standard construction.preview)
+
+release.daily_product_navigation.snapshot: guard.prod.forbid
 	@test "$(ENV)" = "dev" || { echo "daily product navigation snapshot requires ENV=dev" >&2; exit 2; }
 	@test "$(DB_NAME)" = "sc_demo" || { echo "daily product navigation snapshot requires DB_NAME=sc_demo" >&2; exit 2; }
 	@case "$(DAILY_PRODUCT_NAVIGATION_PRODUCT_KEY)" in construction.standard|construction.preview) ;; *) echo "daily product navigation snapshot product key is not allowed" >&2; exit 2;; esac
 	@test "$${CONFIRM_DAILY_PRODUCT_NAVIGATION_SNAPSHOT:-}" = "RELEASE_EXACT_DAILY_PRODUCT_NAVIGATION" || { echo "daily product navigation snapshot confirmation is required" >&2; exit 2; }
-	@$(RUN_ENV) DB_NAME=sc_demo \
-	  PLATFORM_RELEASE_DB=sc_demo \
-	  PLATFORM_RELEASE_PRODUCT_KEY="$(DAILY_PRODUCT_NAVIGATION_PRODUCT_KEY)" \
-	  PLATFORM_RELEASE_VERSION="daily-navigation-$$(echo "$(DAILY_PRODUCT_NAVIGATION_PRODUCT_KEY)" | cut -d. -f2)-$$(git rev-parse --short=12 HEAD)" \
-	  SC_COLOCATED_PLATFORM_SNAPSHOT_APPLY=I_ACKNOWLEDGE_COLOCATED_PLATFORM_SNAPSHOT_INITIALIZATION \
-	  bash scripts/ops/odoo_shell_exec.sh < scripts/release/initialize_colocated_platform_snapshot.py
+	@CONFIRM_DAILY_DUTY_EDITION_RELEASE=RELEASE_DECLARED_EDITION_INTO_DAILY_DUTY \
+	  python3 scripts/ops/daily_runtime_duty_edition_release.py publish \
+	    --duty "$(DAILY_PRODUCT_NAVIGATION_DUTY)" \
+	    --product-key "$(DAILY_PRODUCT_NAVIGATION_PRODUCT_KEY)" \
+	    --emit-refresh-json
 
 # Refresh every published product snapshot from the locked contract. One command
 # owns the whole published face so a baseline change and its runtime snapshot can
 # never be separated into two manual steps again.
-release.daily_product_navigation.refresh: guard.prod.forbid check-compose-project check-compose-env
+release.daily_product_navigation.refresh: guard.prod.forbid
 	@test "$${CONFIRM_DAILY_PRODUCT_NAVIGATION_SNAPSHOT:-}" = "RELEASE_EXACT_DAILY_PRODUCT_NAVIGATION" || { echo "daily product navigation refresh requires CONFIRM_DAILY_PRODUCT_NAVIGATION_SNAPSHOT=RELEASE_EXACT_DAILY_PRODUCT_NAVIGATION" >&2; exit 2; }
-	@$(MAKE) --no-print-directory release.daily_product_navigation.snapshot DAILY_PRODUCT_NAVIGATION_PRODUCT_KEY=construction.standard
-	@$(MAKE) --no-print-directory release.daily_product_navigation.snapshot DAILY_PRODUCT_NAVIGATION_PRODUCT_KEY=construction.preview
+	@set -e; for key in $$(printf '%s' "$(DAILY_PRODUCT_NAVIGATION_PRODUCT_KEYS)" | tr ',' ' '); do \
+	  $(MAKE) --no-print-directory release.daily_product_navigation.snapshot DAILY_PRODUCT_NAVIGATION_PRODUCT_KEY="$$key"; \
+	done
 
 # Converge then prove in one governed run: refresh the snapshots from the locked
 # contract, reload the served runtime (the worker caches the published route
 # authority), then run the daily release-gate guard over the full product scope.
-release.daily_product_navigation.converge: guard.prod.forbid check-compose-project check-compose-env
+release.daily_product_navigation.converge: guard.prod.forbid
 	@$(MAKE) --no-print-directory release.daily_product_navigation.refresh
-	@$(MAKE) --no-print-directory restart
+	@python3 scripts/ops/daily_runtime_duty_odoo_shell.py --duty "$(DAILY_PRODUCT_NAVIGATION_DUTY)" --database "$(DB_NAME)" --restart
 	@$(MAKE) --no-print-directory verify.daily_dev.product_menu_release_gate.guard
 
 prod.restart.safe: guard.prod.danger check-compose-project check-compose-env

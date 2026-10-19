@@ -220,6 +220,50 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
             self.assertEqual(dirty, staged)
             self.assertNotEqual(staged, untracked)
 
+    def test_isolated_acceptance_entry_stamps_identity_and_strips_database_hints(self):
+        identity = (ROOT / "config/acceptance/isolated_entry_identity.v1.env").read_text(
+            encoding="utf-8"
+        )
+        for key in (
+            "SC_ENTRY_NAMESPACE",
+            "SC_ENTRY_AUDIENCE",
+            "SC_ENTRY_SHARED_SECRET",
+            "SC_ENTRY_ROUTE_VERSION",
+        ):
+            self.assertRegex(identity, rf"(?m)^{key}=\S+$")
+
+        server = (ROOT / "scripts/release/release_static_server.mjs").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("process.env.SC_ENTRY_NAMESPACE", server)
+        self.assertIn("'x-sc-namespace': entryNamespace", server)
+        self.assertIn("'x-sc-entry-secret'", server)
+        for database_hint in ("x-odoo-db", "x-odoo-database", "x-db", "x-odoo-db-locked"):
+            self.assertIn(f"'{database_hint}'", server)
+
+        operation = (ROOT / "scripts/dev/frontend_acceptance_operation_entry.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("config/acceptance/isolated_entry_identity.v1.env", operation)
+        for key in (
+            "SC_ENTRY_NAMESPACE",
+            "SC_ENTRY_AUDIENCE",
+            "SC_ENTRY_SHARED_SECRET",
+            "SC_ENTRY_ROUTE_VERSION",
+        ):
+            self.assertIn(f'{key}=${key}', operation)
+
+        frontend_up = (ROOT / "scripts/dev/frontend_acceptance_up.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("config/acceptance/isolated_entry_identity.v1.env", frontend_up)
+        self.assertIn('SC_ENTRY_SHARED_SECRET="$SC_ENTRY_SHARED_SECRET"', frontend_up)
+
+        vite = (ROOT / "frontend/apps/web/vite.config.ts").read_text(encoding="utf-8")
+        self.assertIn("process.env.SC_ENTRY_NAMESPACE", vite)
+        self.assertIn("'X-SC-Namespace': entryNamespace", vite)
+        self.assertIn("'X-SC-Entry-Secret'", vite)
+
 
 if __name__ == "__main__":
     unittest.main()

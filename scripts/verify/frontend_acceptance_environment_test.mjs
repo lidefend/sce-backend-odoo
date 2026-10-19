@@ -77,6 +77,17 @@ const identity = await verifyServedIdentity(production, SHA, async () => {
 assert.equal(identity.servedSha, SHA);
 await assert.rejects(() => verifyServedIdentity(production, SHA, async () => ({ ok: true, json: async () => ({ git_sha: 'b'.repeat(40) }) })), /does not match/);
 
+assert.deepEqual(confirmed.profilePolicy.served_environment_aliases, ['demo']);
+const demoIdentity = await verifyServedIdentity(confirmed, SHA, async () => ({
+  ok: true,
+  json: async () => ({ git_sha: SHA, database: 'sc_demo', environment: 'demo', frontend_build_sha256: 'f'.repeat(64) }),
+}));
+assert.equal(demoIdentity.servedProfile, 'demo');
+await assert.rejects(() => verifyServedIdentity(confirmed, SHA, async () => ({
+  ok: true,
+  json: async () => ({ git_sha: SHA, database: 'sc_demo', environment: 'tenant_prod' }),
+})), /does not match/);
+
 const formalSources = [
   'scripts/verify/frontend_full_product_audit.mjs',
   'scripts/verify/frontend_form_system_audit.mjs',

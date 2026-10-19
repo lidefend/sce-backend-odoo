@@ -124,6 +124,18 @@ export function resolveAcceptanceEnvironment({ tool, operation, env = process.en
   const profileName = text(cli.profile || env.SC_ACCEPTANCE_PROFILE || environments.default_profile);
   const profile = environments.profiles?.[profileName];
   if (!profile) throw new Error(`unknown acceptance profile: ${profileName || '(empty)'}`);
+  const servedEnvironmentAliases = profile.served_environment_aliases === undefined
+    ? []
+    : profile.served_environment_aliases;
+  if (!Array.isArray(servedEnvironmentAliases)) {
+    throw new Error(`${profileName}.served_environment_aliases must be an array`);
+  }
+  for (const alias of servedEnvironmentAliases) {
+    if (!text(alias)) throw new Error(`${profileName}.served_environment_aliases contains an empty value`);
+    if (['prod', 'production'].includes(text(alias))) {
+      throw new Error(`${profileName}.served_environment_aliases must not name a production runtime`);
+    }
+  }
   const toolPolicy = matrix.tools?.[tool];
   if (!toolPolicy) throw new Error(`unknown acceptance tool: ${tool || '(empty)'}`);
   if (!toolPolicy.profiles.includes(profileName)) throw new Error(`${tool} is forbidden for profile ${profileName}`);
@@ -248,6 +260,10 @@ export async function verifyServedIdentity(environment, expectedSha = environmen
   const servedProfile = text(payload.profile || payload.environment || payload.env);
   if (expectedSha && servedSha !== expectedSha) throw new Error(`served SHA ${servedSha} does not match ${expectedSha}`);
   if (servedDatabase && servedDatabase !== environment.database) throw new Error(`served database ${servedDatabase} does not match ${environment.database}`);
-  if (servedProfile && ![environment.profile, environment.environment].includes(servedProfile)) throw new Error(`served profile ${servedProfile} does not match ${environment.profile}`);
+  const acceptedProfiles = [environment.profile, environment.environment,
+    ...(environment.profilePolicy?.served_environment_aliases || [])].filter(Boolean);
+  if (servedProfile && !acceptedProfiles.includes(servedProfile)) {
+    throw new Error(`served profile ${servedProfile} does not match ${environment.profile} (accepted: ${acceptedProfiles.join(', ')})`);
+  }
   return { skipped: false, servedSha, servedDatabase, servedProfile, frontendBuildSha256: text(payload.frontend_build_sha256) };
 }

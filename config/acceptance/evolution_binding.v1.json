@@ -1,0 +1,337 @@
+{
+  "schema": "acceptance_evolution_binding.v1",
+  "version": 1,
+  "owner": "platform-team",
+  "policy": {
+    "unmapped_changes": "fail",
+    "evidence_max_age_hours": 72,
+    "evidence_carry_forward": {
+      "enabled": true,
+      "mode": "suite_input_fingerprint"
+    }
+  },
+  "suites": {
+    "backend_contract": {
+      "description": "后端契约、单测与影响面套件",
+      "entrypoints": [
+        "make ci.professional.backend.shard-verify",
+        "backend_impact_suite"
+      ],
+      "evidence": null
+    },
+    "frontend_contract": {
+      "description": "前端组件、契约消费与发布单测",
+      "entrypoints": [
+        "make verify.frontend.pr.unit",
+        "make verify.frontend.release.unit"
+      ],
+      "evidence": null
+    },
+    "governance_static": {
+      "description": "静态守卫、结构锁与治理清单",
+      "entrypoints": [
+        "make verify.contract.architecture.suite"
+      ],
+      "evidence": null
+    },
+    "daily_runtime_entry": {
+      "description": "日常入口、双实例分流、发布身份与 Odoo 运行态验收",
+      "entrypoints": [
+        "python3 scripts/ops/daily_runtime_entry_verify.py"
+      ],
+      "evidence": {
+        "adapter": "entry_verify",
+        "min_checks": 40,
+        "required_checks": [
+          "entry_declares_one_serving_duty",
+          "exactly_one_container_publishes_the_public_port",
+          "bare_root_requires_a_namespace",
+          "root_api_requires_a_namespace",
+          "root_login_contract_requires_a_namespace",
+          "client_database_hint_x_odoo_database_is_refused",
+          "client_database_query_is_refused",
+          "client_namespace_header_cannot_override_the_path",
+          "unknown_namespace_is_refused",
+          "unknown_namespace_page_shell_is_refused",
+          "invalid_namespace_prefix_is_refused",
+          "tenant_namespace_lands_on_the_serving_database",
+          "platform_namespace_lands_on_the_platform_database",
+          "tenant_runtime_publishes_the_deployed_revision",
+          "platform_runtime_publishes_the_deployed_revision",
+          "serving_application_reads_the_deployed_revision",
+          "platform_application_reads_the_deployed_revision"
+        ]
+      }
+    },
+    "path_namespace_identity": {
+      "description": "路径命名空间身份、跨域重放、退出与公司边界",
+      "entrypoints": [
+        "python3 scripts/ops/path_ns_c_acceptance.py"
+      ],
+      "evidence": {
+        "adapter": "path_ns_c",
+        "required_checks": [
+          "server_head_matches_expected",
+          "server_worktree_clean",
+          "server_applied_commit_in_history",
+          "root_redirects_to_tenant_namespace",
+          "bare_api_requires_namespace",
+          "database_header_hint_refused",
+          "database_query_hint_refused",
+          "unknown_namespace_refused",
+          "tenant_entry_binds_tenant_database",
+          "platform_entry_binds_platform_database",
+          "tenant_runtime_reports_deployed_revision",
+          "platform_runtime_reports_deployed_revision",
+          "demo_entry_admin_login_succeeds",
+          "platform_entry_admin_login_succeeds",
+          "tokens_are_independent",
+          "demo_token_accepted_on_demo_entry",
+          "platform_token_accepted_on_platform_entry",
+          "demo_token_rejected_on_platform_entry",
+          "platform_token_rejected_on_demo_entry",
+          "demo_logout_succeeds",
+          "demo_token_invalid_after_demo_logout",
+          "platform_token_survives_demo_logout",
+          "unauthorized_company_is_refused"
+        ]
+      }
+    },
+    "list_surface_structure": {
+      "description": "列表页结构、几何与运行时错误浏览器验收",
+      "entrypoints": [
+        "node scripts/verify/frontend_list_surface_structure_browser.mjs"
+      ],
+      "evidence": {
+        "adapter": "list_surface",
+        "min_counts": {
+          "records_total": 8,
+          "gated_total": 108,
+          "negative_fixtures_total": 5
+        }
+      }
+    },
+    "relation_roundtrip": {
+      "description": "关系字段回环、入口与操作恢复浏览器验收",
+      "entrypoints": [
+        "node scripts/verify/record_relation_roundtrip_acceptance.js"
+      ],
+      "evidence": {
+        "adapter": "relation_roundtrip",
+        "min_counts": {
+          "declared_entry_count": 13,
+          "declared_openable": 4
+        }
+      }
+    }
+  },
+  "rules": [
+    {
+      "id": "acceptance-runner-list-surface",
+      "paths": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs"
+      ],
+      "suites": [
+        "governance_static",
+        "list_surface_structure"
+      ]
+    },
+    {
+      "id": "acceptance-runner-relation-roundtrip",
+      "paths": [
+        "scripts/verify/record_relation_roundtrip_acceptance.js"
+      ],
+      "suites": [
+        "governance_static",
+        "relation_roundtrip"
+      ]
+    },
+    {
+      "id": "acceptance-runner-shared-environment",
+      "paths": [
+        "scripts/verify/lib/frontend_acceptance_environment.mjs"
+      ],
+      "suites": [
+        "governance_static",
+        "list_surface_structure",
+        "relation_roundtrip"
+      ]
+    },
+    {
+      "id": "isolated-acceptance-entry-identity",
+      "paths": [
+        "config/acceptance/**",
+        "scripts/dev/frontend_acceptance*",
+        "scripts/test/frontend_acceptance*",
+        "scripts/verify/frontend_acceptance*"
+      ],
+      "suites": [
+        "governance_static",
+        "path_namespace_identity"
+      ]
+    },
+    {
+      "id": "governance-static",
+      "paths": [
+        "make/**",
+        "scripts/verify/**",
+        "scripts/ci/**",
+        "scripts/audit/**",
+        ".github/**",
+        "tools/**",
+        "agent_ops/**",
+        "Makefile",
+        "AGENTS.md",
+        "ARCHITECTURE_GUARD.md"
+      ],
+      "suites": [
+        "governance_static"
+      ]
+    },
+    {
+      "id": "docs-bookkeeping",
+      "paths": [
+        "docs/**",
+        "**/*.md",
+        ".agent/**",
+        ".codex/**",
+        ".devcontainer/**"
+      ],
+      "suites": []
+    },
+    {
+      "id": "contracts-schemas",
+      "paths": [
+        "contracts/**",
+        "schemas/**",
+        "config/contracts/**"
+      ],
+      "suites": [
+        "governance_static",
+        "backend_contract"
+      ]
+    },
+    {
+      "id": "frontend-acceptance-config",
+      "paths": [
+        "config/frontend/**"
+      ],
+      "suites": [
+        "frontend_contract",
+        "list_surface_structure"
+      ]
+    },
+    {
+      "id": "frontend-runtime",
+      "paths": [
+        "frontend/**"
+      ],
+      "suites": [
+        "frontend_contract",
+        "list_surface_structure"
+      ]
+    },
+    {
+      "id": "smart-core-runtime",
+      "paths": [
+        "addons/smart_core/**"
+      ],
+      "suites": [
+        "backend_contract",
+        "daily_runtime_entry"
+      ]
+    },
+    {
+      "id": "construction-product-runtime",
+      "paths": [
+        "addons/smart_construction_core/**",
+        "addons/smart_construction_*/**"
+      ],
+      "suites": [
+        "backend_contract",
+        "list_surface_structure",
+        "relation_roundtrip"
+      ]
+    },
+    {
+      "id": "demo-data",
+      "paths": [
+        "demo_addons/**",
+        "addons/smart_construction_seed/**"
+      ],
+      "suites": [
+        "backend_contract",
+        "daily_runtime_entry"
+      ]
+    },
+    {
+      "id": "backend-other",
+      "paths": [
+        "addons/**",
+        "addons_external/**",
+        "customer_addons/**",
+        "backend/**"
+      ],
+      "suites": [
+        "backend_contract"
+      ]
+    },
+    {
+      "id": "ops-runtime",
+      "paths": [
+        "scripts/ops/**",
+        "scripts/release/**",
+        "config/ops/**",
+        "deploy/**",
+        "docker-compose*.yml",
+        "Dockerfile*",
+        "requirements-odoo.txt"
+      ],
+      "suites": [
+        "daily_runtime_entry",
+        "path_namespace_identity"
+      ]
+    },
+    {
+      "id": "config-other",
+      "paths": [
+        "config/**"
+      ],
+      "suites": [
+        "governance_static"
+      ]
+    },
+    {
+      "id": "release-artifacts",
+      "paths": [
+        "release/**",
+        "artifacts/**"
+      ],
+      "suites": [
+        "governance_static"
+      ]
+    },
+    {
+      "id": "scripts-other",
+      "paths": [
+        "scripts/**"
+      ],
+      "suites": [
+        "governance_static"
+      ]
+    },
+    {
+      "id": "root-metadata",
+      "paths": [
+        "README.md",
+        "LICENSE",
+        "VERSION",
+        ".gitignore",
+        ".gitattributes",
+        ".dockerignore",
+        ".env*.example"
+      ],
+      "suites": []
+    }
+  ]
+}
