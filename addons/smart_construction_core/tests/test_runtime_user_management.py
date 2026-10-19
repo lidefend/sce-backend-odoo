@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
 from odoo.exceptions import AccessError, ValidationError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 
 @tagged("post_install", "-at_install", "runtime_user_management")
-class TestRuntimeUserManagement(TransactionCase):
+class TestRuntimeUserManagement(BusinessTransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # The suite owns a registered synthetic company inside the rollback transaction.
+        cls.env.user.write({"company_ids": [(4, cls.env.company.id)]})
+
     def _create_runtime_user(self, login, name, managed=False):
         return self.env["res.users"].with_context(no_reset_password=True).create(
             {
@@ -56,6 +63,15 @@ class TestRuntimeUserManagement(TransactionCase):
         users = self.env["res.users"].search([("sc_runtime_company_maintainable", "=", True)])
 
         self.assertNotIn(user, users)
+
+    def test_template_user_is_not_available_to_company_maintainer(self):
+        template_user = self.env.ref("base.default_user", raise_if_not_found=False)
+        if not template_user:
+            self.skipTest("base.default_user is not installed")
+
+        users = self.env["res.users"].search([("sc_runtime_company_maintainable", "=", True)])
+
+        self.assertNotIn(template_user, users)
 
     def test_runtime_management_rejects_privileged_target_write(self):
         user = self._create_runtime_user("runtime_privileged_write", "特权用户")
@@ -119,6 +135,17 @@ class TestRuntimeUserManagement(TransactionCase):
                 {"company_ids": [(3, self.env.company.id), (4, other_company.id)]},
                 existing_user=user,
             )
+
+    def test_personnel_main_company_change_cannot_expand_allowed_companies(self):
+        admin = self._create_business_config_admin("personnel_company_scope_admin")
+        other_company = self.env["res.company"].create({"name": "Synthetic Other Company"})
+        admin.write({"company_ids": [(4, other_company.id)]})
+        user = self._create_runtime_user("personnel_company_scope_target", "人员公司范围测试")
+        before = (user.company_id.id, set(user.company_ids.ids), set(user.groups_id.ids))
+        with self.assertRaises(ValidationError):
+            user.with_user(admin).with_context(sc_runtime_user_management=True).write(
+                {"company_id": other_company.id})
+        self.assertEqual((user.company_id.id, set(user.company_ids.ids), set(user.groups_id.ids)), before)
 
     def test_runtime_user_creation_rejects_inline_project_authorization(self):
         admin = self._create_business_config_admin("runtime_inline_assignment_admin")

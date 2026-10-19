@@ -113,12 +113,15 @@ class ResUsers(models.Model):
         internal_group = self.env.ref("base.group_user", raise_if_not_found=False)
         if not internal_group:
             return []
+        template_user = self.env.ref("base.default_user", raise_if_not_found=False)
         domain = [
             ("share", "=", False),
             ("login", "!=", False),
             ("company_id", "in", self.env.user.company_ids.ids),
             ("groups_id", "in", [internal_group.id]),
         ]
+        if template_user:
+            domain.append(("id", "!=", template_user.id))
         privileged = self._sc_runtime_privileged_groups()
         if privileged:
             domain.append(("groups_id", "not in", privileged.ids))
@@ -253,7 +256,7 @@ class ResUsers(models.Model):
         company_id = int(vals.get("company_id") or (existing_user.company_id.id if existing_user else self.env.company.id))
         if company_id not in allowed_company_ids:
             raise ValidationError(_("所属公司必须位于当前管理员的公司范围内。"))
-        if "company_ids" in vals and company_id not in target_company_ids:
+        if ("company_ids" in vals or (existing_user and "company_id" in vals)) and company_id not in target_company_ids:
             raise ValidationError(_("所属公司必须包含在用户的多公司访问范围内。"))
         if not existing_user and "company_ids" not in vals:
             safe_vals["company_ids"] = [(6, 0, [company_id])]

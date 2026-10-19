@@ -184,6 +184,8 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
                 "pr.merge",
                 "PR=30",
                 f"PR_MERGE_METHOD={method}",
+                f"ACCEPTANCE_EVOLUTION_EVIDENCE={root / 'evidence.json'}",
+                f"ACCEPTANCE_EVOLUTION_PLAN={root / 'plan.json'}",
             ]
             if expected_head is not None:
                 command.append(f"EXPECTED_HEAD={expected_head}")

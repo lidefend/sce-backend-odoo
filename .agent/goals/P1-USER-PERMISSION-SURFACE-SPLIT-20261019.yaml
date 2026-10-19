@@ -1,0 +1,24 @@
+schema_version: 1
+goal:
+  id: P1-USER-PERMISSION-SURFACE-SPLIT-20261019
+  title: 人员档案与数据权限产品面职责拆分
+  status: verification_pending
+  formal_product_layer: P1
+  layer_target: smart_construction_core 人员档案/数据权限入口职责边界
+  module: [smart_construction_core, smart_core]
+  objective: >-
+    消除“人员档案”与“数据权限”两个正式入口对同一 res.users 权限字段的重复承载：
+    人员档案只保留身份、联系方式、组织与岗位、在职、登录账号/密码、档案附件；
+    数据权限维护允许公司、业务权限角色、项目成员授权；人员档案可在已有允许公司范围内修改主公司。删除人员档案内的
+    “授权维护（兼容入口）”页面前，必须以现有菜单/动作分组证明业务配置管理员
+    仍可通过数据权限入口完成同等授权，不得造成能力回退。
+  baseline:
+    branch: feature/user-permission-surface-split-20261019
+    full_sha: 7cada7699c5340bc85c40d735fba60cee1b22965
+  constraints:
+    - 只改 smart_construction_core 人员模型/视图/测试、smart_core 契约治理投影、scripts/verify 守卫、scripts/ops 精确三视图部署工具、既有 Make 包装入口与 docs/ops、本任务 .agent 元数据
+    - 不修改 demo_addons 种子数据；不持久修改既有业务/授权事实；允许既有受管事务测试及三视图回滚演练；用户已授权受管日常部署、提交、推送及受保护 PR 集成；禁止直接推送 main
+    - 不以删除字段实现拆分：权限事实仍由同一 res.groups / sc.project.member.assignment 承载
+    - 能力不得回退：数据权限入口必须对现有授权维护者可达，并有离线断言
+    - 不改 .agent/active-runs.json（由调度者维护）
+  next_exact_step: 候选事务验证完成；目标环境受管更新后补持久视图与两入口浏览器验收，不运行授权写入旅程。

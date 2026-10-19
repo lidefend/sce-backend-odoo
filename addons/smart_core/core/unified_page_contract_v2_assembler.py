@@ -1562,6 +1562,10 @@ def _field_rows(source: dict[str, Any], ui: dict[str, Any], *, view_type: str = 
                 out = []
                 for name in view_fields:
                     row = row_by_name.get(name)
+                    if row is None and view_type == "kanban":
+                        row = _dict(ui.get("fields") or source.get("fields")).get(name)
+                    if view_type == "kanban" and not isinstance(row, dict):
+                        raise ValueError("kanban declared field missing authorized descriptor: %s" % name)
                     item = dict(row) if isinstance(row, dict) else {}
                     item.setdefault("name", name)
                     assert_field_body_usage(item, name)
@@ -1604,6 +1608,8 @@ def _field_rows(source: dict[str, Any], ui: dict[str, Any], *, view_type: str = 
             out = []
             for name in view_fields:
                 value = fields.get(name)
+                if view_type == "kanban" and not isinstance(value, dict):
+                    raise ValueError("kanban declared field missing authorized descriptor: %s" % name)
                 row = dict(value) if isinstance(value, dict) else {}
                 schema = schema_by_name.get(name)
                 if schema:
@@ -1660,7 +1666,7 @@ def _view_field_names(ui: dict[str, Any], view_type: str) -> list[str]:
     for key in candidates:
         view = _dict(views.get(key))
         for raw_name in _list(view.get("columns") or view.get("fields")):
-            name = _text(raw_name)
+            name = _text(raw_name.get("name") or raw_name.get("field") or raw_name.get("fieldCode")) if isinstance(raw_name, dict) else _text(raw_name)
             if name and name not in out:
                 out.append(name)
         for row in _list(view.get("columnsSchema") or view.get("columns_schema")):
@@ -1670,6 +1676,13 @@ def _view_field_names(ui: dict[str, Any], view_type: str) -> list[str]:
             if name and name not in out:
                 out.append(name)
         if key == "kanban":
+            # The renderer consumes these published collection columns as well
+            # as native template fields. Project their descriptors from the
+            # same authorized source; never stringify a field declaration.
+            for raw_name in _list(_dict(ui.get("list_profile")).get("columns")):
+                name = _text(raw_name.get("name") or raw_name.get("field") or raw_name.get("fieldCode")) if isinstance(raw_name, dict) else _text(raw_name)
+                if name and name not in out:
+                    out.append(name)
             kanban = _dict(view.get("kanban"))
             template = _text(kanban.get("template_qweb") or view.get("template_qweb") or view.get("arch"))
             for name in re.findall(r"\brecord\.([A-Za-z_][A-Za-z0-9_]*)\b", template):

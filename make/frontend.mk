@@ -650,7 +650,8 @@ verify.frontend.industry_agnostic.guard: guard.prod.forbid verify.frontend.indus
 	@FRONTEND_INDUSTRY_AGNOSTIC_ENFORCE=1 python3 scripts/verify/frontend_industry_agnostic_audit.py
 
 verify.frontend.localized_display.unit: guard.prod.forbid
-	@node --experimental-strip-types scripts/verify/frontend_localized_display_contract_test.ts
+	@frontend/apps/web/node_modules/.bin/esbuild scripts/verify/frontend_localized_display_contract_test.ts --bundle --platform=node --format=esm --define:import.meta.url='"file://$(CURDIR)/scripts/verify/frontend_localized_display_contract_test.ts"' --outfile=/tmp/frontend-localized-display-contract-test.mjs >/dev/null
+	@node /tmp/frontend-localized-display-contract-test.mjs
 
 verify.frontend.list_optional_columns.unit: guard.prod.forbid
 	@node --experimental-strip-types scripts/verify/frontend_list_optional_columns_contract_test.ts

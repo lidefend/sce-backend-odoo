@@ -2,17 +2,23 @@
 <odoo>
   <data noupdate="1">
 
+    <!-- 结算单适用字段尽量完整：结算期间（起止）、录入人（结算办理角色）、单据日期、
+         结算日期、结算说明。申报/审定/付款等尚未发生的结果不填值；附件不伪造。 -->
     <record id="sc_demo_settlement_020_001" model="sc.settlement.order">
-      <field name="name">S20-结算单-001</field>
+      <field name="name">德阳智能制造项目2025年3月进度款结算单</field>
+      <field name="title">主体结构工程首期进度款结算</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_010"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="amount_total">5000000.00</field>
       <field name="settlement_type">in</field>
-      <field name="payment_request_ids" eval="[
-        (6, 0, [ref('smart_construction_demo.sc_demo_payment_020_001')])
-      ]"/>
+      <field name="settlement_amount">5000000.00</field>
+      <field name="settlement_period_start">2025-03-01</field>
+      <field name="settlement_period_end">2025-03-31</field>
+      <field name="date_settlement">2025-03-31</field>
+      <field name="document_date">2025-03-31</field>
+      <field name="entry_user_id" ref="smart_construction_demo.user_sc_settlement_user_cap"/>
+      <field name="settlement_description">按施工总承包合同约定，对主体结构工程2025年3月形成的形象进度办理首期收入结算。</field>
     </record>
 
   </data>

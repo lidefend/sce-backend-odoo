@@ -2,14 +2,23 @@
 <odoo>
   <data noupdate="1">
 
-    <!-- S20 收款记录（业务付款，不走会计过账） -->
+    <!-- S20 收款申请（业务收款，不走会计过账；通过 settlement_id 回链结算单）。
+         关键前置：sc_demo_settlement_020_001 在本场景仅以 draft 准备数据存在，
+         settlement_id 回链只是数据关联准备，不等于可以提交/审批。payment.request
+         的 _check_settlement_state 要求关联结算单处于 approve/done 才能提交或审批，
+         settlement_id 域也限定 state=approve。真实办理顺序：结算办理角色提交结算单并
+         完成审批至 approve/done -> 财务经办 fin1（user_sc_fin_01）发起收款申请草稿 ->
+         走付款申请四段审批。本批不落库、不伪造终态。 -->
     <record id="sc_demo_payment_020_001" model="payment.request">
       <field name="type">receive</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_010"/>
+      <field name="settlement_id" ref="smart_construction_demo.sc_demo_settlement_020_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
+      <field name="currency_id" ref="base.CNY"/>
       <field name="amount">5000000.00</field>
-      <field name="date_request">2025-03-01</field>
+      <field name="date_request">2025-04-01</field>
+      <field name="note">依据首期收入结算单发起收款申请。</field>
     </record>
 
   </data>

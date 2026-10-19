@@ -2,11 +2,13 @@
 import base64
 
 from odoo.exceptions import AccessError, UserError, ValidationError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+
+from .business_case import BusinessTransactionCase
 
 
 @tagged("post_install", "-at_install", "user_module_product_closure")
-class TestUserModuleProductClosure(TransactionCase):
+class TestUserModuleProductClosure(BusinessTransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -65,6 +67,38 @@ class TestUserModuleProductClosure(TransactionCase):
     def test_ordinary_user_cannot_create_employee_profile(self):
         with self.assertRaises(AccessError):
             self.other_user.with_user(self.member).action_sc_ensure_employee_profile()
+
+    def test_personnel_main_company_switch_does_not_change_scope_or_authorization(self):
+        other_company = self.env["res.company"].create({"name": "Closure Second Company"})
+        self.register_business_company(
+            other_company, tenant_key="synthetic-user-closure-second-company"
+        )
+        self.config_admin.write({"company_ids": [(4, other_company.id)]})
+        target = self.env["res.users"].with_context(no_reset_password=True).create(
+            {
+                "name": "Closure Main Company Switch Target",
+                "login": "closure_main_company_switch_target",
+                "company_id": self.env.company.id,
+                "company_ids": [(6, 0, [self.env.company.id, other_company.id])],
+                "groups_id": [(6, 0, self.env.ref("base.group_user").ids)],
+            }
+        )
+        before_company_ids = set(target.company_ids.ids)
+        before_group_ids = set(target.groups_id.ids)
+
+        target.with_user(self.config_admin).with_context(
+            sc_runtime_user_management=True
+        ).write({"company_id": other_company.id})
+
+        target.invalidate_recordset()
+        self.assertEqual(target.company_id, other_company)
+        self.assertEqual(set(target.company_ids.ids), before_company_ids)
+        self.assertEqual(set(target.groups_id.ids), before_group_ids)
+        self.assertFalse(
+            self.env["sc.project.member.assignment"].search(
+                [("user_id", "=", target.id)]
+            )
+        )
 
     def test_project_assignment_uses_follower_authority_and_archives(self):
         Assignment = self.env["sc.project.member.assignment"].with_user(self.config_admin)

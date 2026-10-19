@@ -778,6 +778,7 @@
   </ScPage>
 </template>
 <script setup lang="ts">
+import { collectColumnSelections } from '../app/presentation/collectionStatusPresentation';
 import { listColumnVisibilityBlockReason } from '../pages/listPage/listColumnVisibility';
 import { FIELD_VALUE_FALSE_TEXT, FIELD_VALUE_TRUE_TEXT } from '../utils/fieldSemantics.ts';
 import { computed, inject, onActivated, onBeforeUnmount, onDeactivated, onErrorCaptured, onMounted, ref, watch, type Ref } from 'vue';
@@ -1802,12 +1803,7 @@ const kanbanFieldLabels = computed<Record<string, string>>(() => ({
   ...extractViewFieldLabels(actionContract.value, 'kanban'),
   ...(listProfile.value?.column_labels || {}),
 }));
-const kanbanFieldSelections = computed<Record<string, Array<{ value: string; label: string }>>>(() =>
-  listColumnOptions.value.reduce<Record<string, Array<{ value: string; label: string }>>>((acc, column) => {
-    if (Array.isArray(column.selection) && column.selection.length) acc[column.name] = column.selection;
-    return acc;
-  }, {}),
-);
+const kanbanFieldSelections = computed(() => collectColumnSelections(listColumnOptions.value));
 const sortLabel = computed(() => sortValue.value || 'id asc');
 const {
   subtitle,

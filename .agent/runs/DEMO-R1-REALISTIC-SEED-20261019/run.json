@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-R1-REALISTIC-SEED-20261019",
+  "branch": "feature/demo-r1-realistic-data-20261019",
+  "status": "active",
+  "goal": ".agent/goals/DEMO-R1-REALISTIC-SEED-20261019.yaml",
+  "record": "docs/demo/r1-02-realistic-core-chain.md",
+  "coverage_correction_doc": "docs/demo/r1-02-coverage-correction.md",
+  "baseline_sha": "76aa6705685d60ca00b12184f0e1c8aa64a571a7",
+  "scope": [
+    "demo_addons/smart_construction_demo/data/base/10_partners.xml",
+    "demo_addons/smart_construction_demo/data/base/15_seed_partners.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s10_contract_payment/10_contracts.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s10_contract_payment/20_payment_requests.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s20_settlement_clearing/10_payments.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s20_settlement_clearing/20_clearing.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s20_settlement_clearing/30_settlement.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s30_settlement_workflow/10_settlement_seed.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s30_settlement_workflow/20_settlement_actions.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s30_settlement_workflow/30_assert_state.xml",
+    "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+    "docs/demo/r1-02-realistic-core-chain.md",
+    "docs/demo/r1-02-coverage-correction.md",
+    ".agent/goals/DEMO-R1-REALISTIC-SEED-20261019.yaml",
+    ".agent/runs/DEMO-R1-REALISTIC-SEED-20261019/run.json",
+    ".agent/active-runs.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local python3 only; no database, container or deployment access",
+    "limitation": "odoo python package is not importable in this executor; seed XML is validated with stdlib xml.etree instead of Odoo convert"
+  },
+  "checks": {
+    "demo_supplemental_offline": {
+      "target": "verify.demo.supplemental.unit",
+      "inputs": [
+        "Makefile",
+        "make/dev_test.mk",
+        "make/guards.mk",
+        "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+        "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+        "demo_addons/smart_construction_demo/hooks.py",
+        "demo_addons/smart_construction_demo/seed/",
+        "demo_addons/smart_construction_demo/data/",
+        "demo_addons/smart_construction_demo/migrations/"
+      ],
+      "kind": "offline"
+    },
+    "demo_lifecycle_offline": {
+      "target": "verify.demo.lifecycle.unit",
+      "inputs": [
+        "Makefile",
+        "make/dev_test.mk",
+        "make/guards.mk",
+        "demo_addons/smart_construction_demo/tests/test_demo_funding_baseline_lifecycle.py",
+        "demo_addons/smart_construction_demo/tests/test_demo_boq_import_batch.py",
+        "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+        "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+        "demo_addons/smart_construction_demo/hooks.py",
+        "demo_addons/smart_construction_demo/seed/",
+        "demo_addons/smart_construction_demo/data/",
+        "demo_addons/smart_construction_demo/migrations/"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "本批 L0/L1/L2 已完成并复核修正：修正主合同链 S10/S20/S30 日期与进度描述，使开工 2025-03-01、3月进度形成、结算期间与申请日期自洽，并新增跨记录日期关系断言（test_core_chain_dates_are_cross_record_consistent）。L1 make ci.local.iteration PASS(dirty, L1_only)；L2 verify.demo.supplemental.unit(80) 与 verify.demo.lifecycle.unit(30+5+80=115) 通过并记录；字段完整性（F05）、S20/S30 结算审批前置、43 项逐入口分类与 F01-F05 缺口记录已落实，测试依赖（Make 配方+实际测试输入）已补全。运行态 L3 与 UI 保持 not_run（本批不落库/不部署/不提交/不改 Git refs）。留 dirty 供调度复核；下一步由调度确认后进入受管运行态回读与真实角色办理验收。"
+}

@@ -322,6 +322,11 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/daily_candidate_data_sentinel_runbook_v1.md。登记待接线或退役，B3 按族处理。"
     },
+    "daily.personnel_views": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "P1人员权限拆分的精确三视图plan/apply/verify/reconcile/restore受管入口；调用需显式SHA与声明/plan摘要及写确认，不能由自动CI触发。依据 docs/ops/iterations/user_permission_surface_split_20261019.md；保留故障恢复能力。"
+    },
     "daily.runtime.database.duty.apply": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
@@ -1507,6 +1512,11 @@
       "owner": "platform-team",
       "reason": "R14 启动事实复用探针：核对 system.init 的导航与路由权威构建是否重复，需要活栈。",
       "review_by": "2027-03-31"
+    },
+    "local.dev.user_permission.rehearsal": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "同批人员视图的既有local.dev专属回滚演练；暂写三个视图后回滚，核验10表事实不变；依赖运行环境，不能由无该环境的静态CI自动触发。依据 docs/ops/iterations/user_permission_surface_split_20261019.md。"
     },
     "local.dev.verify_realistic": {
       "disposition": "history_probe_runbook",

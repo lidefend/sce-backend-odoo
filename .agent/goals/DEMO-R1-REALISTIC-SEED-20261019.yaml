@@ -1,0 +1,22 @@
+schema_version: 1
+goal:
+  id: DEMO-R1-REALISTIC-SEED-20261019
+  title: 项目—合同—结算/付款真实中文种子增量
+  status: active
+  formal_product_layer: P4
+  layer_target: demo delivery carrier smart_construction_demo seed scenario
+  module: [smart_construction_demo]
+  objective: >-
+    在既有 demo_full 种子链上形成一个可审查的数据实施增量：自然中文、完整虚构的
+    项目—施工总承包合同—收款申请—收入结算单—收款申请关联结算单 的真实关联链；
+    修正结算单写入计算/只读字段的潜在装载缺陷；将占位式企业名替换为完整虚构名称。
+    仅本地代码与离线定向验证，不落库、不部署、不伪造终态审批。
+  baseline:
+    branch: feature/demo-r1-realistic-data-20261019
+    full_sha: 76aa6705685d60ca00b12184f0e1c8aa64a571a7
+  constraints:
+    - 只改 demo_addons/smart_construction_demo 种子与测试、docs/demo 文档、.agent goal/run 元数据
+    - 不写 .git、不 commit、不 push、不部署、不落库、不重置本地数据
+    - 禁止强写状态冒充业务办理；既有完成态只作展示
+    - 公司/人员/项目为完整虚构名称，登记合成来源，不借用客户数据
+  next_exact_step: 完成种子代码增量并通过离线定向测试后，写回 run 与 receipt.json，留 dirty 供调度复核。

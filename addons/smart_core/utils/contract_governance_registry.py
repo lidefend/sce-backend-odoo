@@ -604,7 +604,6 @@ _ENTERPRISE_USER_FORM_FIELDS = [
     "sc_role_profile",
     "sc_role_effective",
     "sc_role_landing_label",
-    "sc_user_role_group_ids",
 ]
 _ENTERPRISE_USER_FIELD_LABELS = {
     "name": "姓名",
@@ -619,7 +618,6 @@ _ENTERPRISE_USER_FIELD_LABELS = {
     "sc_role_profile": "产品角色",
     "sc_role_effective": "当前生效角色",
     "sc_role_landing_label": "默认首页",
-    "sc_user_role_group_ids": "业务角色组",
 }
 _PROJECT_FORM_ACTION_GROUP_LIMIT = 5
 _PROJECT_FORM_DEFAULT_ACTION_GROUP_LABELS = {

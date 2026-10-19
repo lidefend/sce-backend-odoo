@@ -12,7 +12,6 @@
                 <field name="sc_personnel_active" string="在职" />
                 <field name="login" string="登录账号" optional="show" />
                 <field name="company_id" string="主公司" optional="show" />
-                <field name="sc_user_role_group_ids" string="业务角色组" widget="many2many_tags" optional="hide" />
                 <field name="active" string="账号启用" optional="show" />
             </tree>
         </field>
@@ -62,27 +61,9 @@
                                     <field name="active" string="账号启用" />
                                     <field name="password" string="重置密码" password="True" placeholder="新建时必须填写；编辑时为空则不调整" />
                                 </group>
-                                <group name="sc_company_scope" string="主公司与允许公司">
+                                <group name="sc_account_company" string="账号归属公司">
                                     <field name="company_id" string="主公司" />
-                                    <field name="company_ids" string="允许公司" widget="many2many_tags" options="{'no_create': True}" />
                                 </group>
-                            </group>
-                        </page>
-                        <page string="授权维护（兼容入口）" name="sc_compatible_authorization_maintenance">
-                            <group name="sc_business_role_assignment" string="业务角色">
-                                <field name="sc_user_role_group_ids" string="业务角色组" widget="many2many_tags" domain="[('sc_assignable_user_permission', '=', True)]" options="{'no_create': True, 'no_open': True}" />
-                            </group>
-                            <group name="sc_project_memberships" string="项目成员授权">
-                                <field name="sc_project_member_assignment_ids" string="项目成员授权" context="{'default_user_id': id}" readonly="not id" nolabel="1">
-                                    <tree editable="bottom" delete="0">
-                                        <field name="id" column_invisible="True" />
-                                        <field name="project_id" readonly="id" />
-                                        <field name="company_id" />
-                                        <field name="source" />
-                                        <field name="active" />
-                                        <field name="note" />
-                                    </tree>
-                                </field>
                             </group>
                         </page>
                     </notebook>
@@ -102,7 +83,6 @@
                 <field name="sc_personnel_job_id" string="岗位" />
                 <field name="login" string="登录账号" />
                 <field name="company_id" string="主公司" />
-                <field name="sc_user_role_group_ids" string="业务角色组" />
                 <filter string="账号启用" name="active_user" domain="[('active', '=', True)]" />
                 <filter string="账号停用" name="inactive_user" domain="[('active', '=', False)]" />
             </search>
