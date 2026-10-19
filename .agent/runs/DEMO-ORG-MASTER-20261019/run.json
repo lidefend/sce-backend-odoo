@@ -94,6 +94,7 @@
     "docs/demo/r1-03-f02-f03-contract-label.md",
     "docs/demo/r1-04-organization-master-data.md",
     "docs/demo/scenarios.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
     "make/dev_test.mk",
     "scripts/audit/smoke_role_matrix.sh",
     "scripts/demo/verify.sh",
@@ -162,13 +163,15 @@
       "command": "make verify.demo.lifecycle.unit",
       "status": "passed",
       "tests": 136,
-      "log": ".runtime/agent-runs/DEMO-ORG-MASTER-20261019/demo_lifecycle-rebase.log"
+      "log": ".runtime/agent-runs/DEMO-ORG-MASTER-20261019/demo_lifecycle-rebase.log",
+      "evidence": "post-rebase rerun at the current branch head; local receipt from the pre-rebase head was retired"
     },
     "demo_supplemental": {
       "command": "make verify.demo.supplemental.unit",
       "status": "passed",
       "tests": 80,
-      "log": ".runtime/agent-runs/DEMO-ORG-MASTER-20261019/demo_supplemental-rebase.log"
+      "log": ".runtime/agent-runs/DEMO-ORG-MASTER-20261019/demo_supplemental-rebase.log",
+      "evidence": "post-rebase rerun at the current branch head; local receipt from the pre-rebase head was retired"
     },
     "ci_local_iteration": {
       "command": "make ci.local.iteration",
