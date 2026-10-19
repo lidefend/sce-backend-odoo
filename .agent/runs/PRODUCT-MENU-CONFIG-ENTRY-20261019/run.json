@@ -41,7 +41,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "L1及P4探针校验，提交干净候选，受管同步Demo发布面并只读验证",
+  "next_exact_step": "菜单入口已在日常Demo生效；提交增强探针与验收记录，后续按精确候选集成门禁发布",
   "iteration_results": {
     "identity": "86c03b7a3a502028e5ad656f7c8cb34fd3bedff4 + owned dirty scope",
     "L1": "ci.local.iteration PASS",
@@ -59,5 +59,64 @@
     ],
     "browser": "not_run",
     "deployment": "not_run"
+  },
+  "stage_identity": {
+    "head": "0f896044afe9364ad86266d829dbe4282905071b",
+    "dirty_scope": [
+      "scripts/verify/daily_menu_config_entry_browser.mjs",
+      "docs/ops/iterations/product_menu_config_entry_20261019.md",
+      ".agent/runs/PRODUCT-MENU-CONFIG-ENTRY-20261019/run.json"
+    ],
+    "frozen": false
+  },
+  "result_index": {
+    "L1": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "evidence": ".runtime/menu-entry/iteration.log"
+    },
+    "L2": {
+      "status": "passed",
+      "tests": {
+        "publication": 9,
+        "monotonic": 6,
+        "native_inventory": 2,
+        "daily_credential": 5,
+        "acceptance_environment": 53
+      },
+      "evidence": [
+        ".runtime/menu-entry/checks.log",
+        ".runtime/menu-entry/green.log"
+      ]
+    },
+    "deployment": {
+      "status": "passed",
+      "identity": "0f896044afe9364ad86266d829dbe4282905071b",
+      "evidence": [
+        ".runtime/menu-entry/bundle-sync.json",
+        ".runtime/menu-entry/duty-refresh.json",
+        ".runtime/menu-entry/published-face.json"
+      ]
+    },
+    "principals": {
+      "status": "passed",
+      "evidence": ".runtime/menu-entry/principal-readback.json",
+      "source": ".runtime/menu-entry/principal-readback.py",
+      "read_only": true
+    },
+    "browser": {
+      "status": "passed",
+      "checks": 5,
+      "evidence": ".runtime/acceptance/daily/0f896044afe9364ad86266d829dbe4282905071b/menu-config-entry-audit/daily-0f896044afe9-1792411987/report.json",
+      "scope": "sidebar entry + panel response + refresh; fixture_role_config_admin"
+    },
+    "review": {
+      "status": "passed",
+      "scope": "product declaration/permission unchanged, projection consistency; probe S2 corrected"
+    },
+    "mainline": {
+      "status": "not_run",
+      "reason": "not published or merged"
+    }
   }
 }

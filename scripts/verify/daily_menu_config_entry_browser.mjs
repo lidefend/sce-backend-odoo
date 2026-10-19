@@ -43,13 +43,30 @@ try {
   const entry = nav.getByText('菜单配置', { exact: true });
   await entry.waitFor();
   report.checks.push('published_sidebar_entry_visible');
+  const panelResponse = () => page.waitForResponse(response => {
+    try {
+      const raw = response.request().postDataJSON();
+      return (raw?.params?.intent ? raw.params : raw)?.intent === 'ui.menu_config.panel.get';
+    } catch { return false; }
+  });
+  const assertPanel = async response => {
+    assert.equal(response.status(), 200, 'menu panel HTTP status');
+    const payload = await response.json();
+    assert.equal(payload.ok, true, 'menu panel business result');
+    assert.ok(Array.isArray(payload.data?.menus) && payload.data.menus.length > 0, 'menu panel contains readable menus');
+    report.checks.push('panel_response_success_with_nonempty_menus');
+  };
+  const opened = panelResponse();
   await entry.click();
+  await assertPanel(await opened);
   await page.waitForURL(url => relative(url.pathname) === '/admin/menu-config');
-  await page.getByRole('heading', { name: '菜单配置', exact: true }).waitFor();
+  await page.getByRole('heading', { name: '菜单配置', exact: true, level: 1 }).waitFor();
   await page.getByRole('region', { name: '当前菜单配置' }).waitFor();
   assert.ok(report.calls.includes('ui.menu_config.panel.get'));
   report.checks.push('sidebar_click_opens_menu_configuration');
+  const refreshed = panelResponse();
   await page.reload();
+  await assertPanel(await refreshed);
   await page.getByRole('region', { name: '当前菜单配置' }).waitFor();
   report.checks.push('refresh_retains_configuration_panel');
   assert.equal(await page.getByText(/CONTRACT_GAP/).count(), 0);
