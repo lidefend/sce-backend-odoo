@@ -274,9 +274,12 @@
     }
   },
   "blockers": [
-    "Current-head Quick and GitHub required CI pending; whole-product gaps remain separate."
+    "Whole-product role journeys remain unaccepted: seven roles have local synthetic evidence but no governed remote witness",
+    "Executive primary menu remains an unreleased historical entry",
+    "Historical account sources still require owner-backed confirmation; no automatic migration",
+    "Full dynamic/runtime-config/private write-path coverage and unified product acceptance remain incomplete"
   ],
-  "next_exact_step": "冻结当前提交，补审仅P4 include/记录变动，运行精确HEAD Quick，随后受管GitHub PR发布与必需CI。",
+  "next_exact_step": "本轮部署与运行时证据已收口；等待所有者权限体系研究结论后进入下一专题，不重复部署。",
   "results": {
     "inventory_unit": {
       "status": "passed",
@@ -299,9 +302,60 @@
       "restricted": 0,
       "full_authorization_verdict": "not_evaluated"
     },
-    "batch": "verification_pending",
-    "mainline": "not_run",
-    "deployment": "not_run",
+    "batch": "deployment_completed; four runtime evidence suites recorded; whole-product role acceptance gaps remain",
+    "mainline": {
+      "status": "merged",
+      "pr": "https://github.com/lidefend/sce-backend-odoo/pull/694",
+      "head": "80aae6f5537c2babc12c333e6041d6e20236e865",
+      "merge_sha": "363eead1abeb9ca2d3d466b1b437c81299fe19d9",
+      "base": "86c03b7a3a502028e5ad656f7c8cb34fd3bedff4",
+      "method": "squash",
+      "required_checks": "all SUCCESS on exact head",
+      "merged_at": "2026-10-19T20:42:19Z"
+    },
+    "deployment": {
+      "status": "completed",
+      "deployed_head": "80aae6f5537c2babc12c333e6041d6e20236e865",
+      "mainline_merge_sha": "363eead1abeb9ca2d3d466b1b437c81299fe19d9",
+      "tree": "6a081092342cabf36d1a64efbfdfa0d4f254ab9a",
+      "mode": "detached_candidate_with_tree_equal_to_main",
+      "frontend_build_sha256": "2d2a898ebf745de60ef9c1dbe4967d1fbc5e2538ddbea3889ac03057b624a456",
+      "frontend_reuse_basis": {
+        "built_head": "1e409029423e073a96e7ae14007117ae12e9e11a",
+        "deployed_head": "80aae6f5537c2babc12c333e6041d6e20236e865",
+        "frontend_diff_files": 0,
+        "basis": "git diff --name-only 1e4090294..80aae6f55 -- frontend/ is empty; only three backend files changed",
+        "verdict": "reuse_valid"
+      },
+      "loaded_code": {
+        "addons_path": "/mnt/source-addons",
+        "smart_core_version": "17.0.1.1.19",
+        "source_mtime": "2026-10-19T20:46:32Z",
+        "demo_odoo_started_at": "2026-10-19T20:49:40Z",
+        "platform_odoo_started_at": "2026-10-19T20:49:51Z",
+        "hash_match": "container and host hashes equal for the three changed backend files",
+        "verdict": "containers restarted after source write and load the mounted source"
+      },
+      "duties": [
+        "demo",
+        "platform_control"
+      ],
+      "health": "demo and platform_control odoo/nginx/db/redis healthy; customer duty application remains stopped",
+      "recovery_points": {
+        "platform_control": "/data/backups/daily-platform-control/sc_platform_control-20261019T204710Z-4fb829fe/database.dump",
+        "demo": "/data/backups/daily-demo-dev/sc_demo-20261019T204724Z-c97a1227/database.dump"
+      },
+      "closeout": ".runtime/final-acceptance/daily-deployed/deployment-closeout-80aae6f55.json",
+      "recheck": {
+        "entry_verify": ".runtime/final-acceptance/daily-deployed/entry-verify-recheck-80aae6f55.json",
+        "sha256": "598a0f97fd6e5b1c3b3af575e5a1c44516e76b3125c3ce00399df97a67c0cef3",
+        "status": "PASS",
+        "checks": 66,
+        "all_passed": true,
+        "verified_at": "2026-10-19T21:02:52Z",
+        "note": "Independent read-only rerun after takeover; report byte-identical to the closeout entry_verify evidence."
+      }
+    },
     "write_candidates": {
       "status": "passed",
       "layer": "L2",
@@ -372,16 +426,18 @@
     },
     "role_separation_orm": {
       "status": "passed",
-      "command": "make verify.local.dev.system_permission.separation.orm",
-      "log": ".runtime/system-permission-roles/separation-orm-authority-v1.log",
-      "layer": "L2",
-      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (F02 implementation; not frozen)",
-      "environment": "sc-local-dev/sc_dev_demo",
+      "command": "make test MODULE=smart_construction_core TEST_TAGS=system_permission_separation (combined six-suite run)",
+      "log": ".runtime/system-permission-roles/runtime-suites-80aae6f55.log",
+      "layer": "L2 runtime",
+      "stage_identity": "80aae6f5537c2babc12c333e6041d6e20236e865 + clean",
+      "environment": "sc-p1-userperm/sc_repro_698 (isolated)",
       "failed": 0,
       "errors": 0,
       "impact_note": "Final helper only rejects non-list/tuple inputs earlier; all 16 ORM cases submit list/tuple commands, unchanged execution path. Runtime receipt not reusable.",
-      "tests": 16,
-      "superseded_by": "epoch_user_orm (19 actual cases including 3 new)"
+      "tests": 47,
+      "superseded_by": "epoch_user_orm (19 actual cases including 3 new)",
+      "database": "sc_repro_698 (isolated compose project sc-p1-userperm)",
+      "boundary": "isolated candidate runtime execution; not daily demo acceptance and not a reusable runtime receipt"
     },
     "revocation_diagnosis_orm": {
       "status": "passed",
@@ -482,15 +538,17 @@
     },
     "approval_scope_orm": {
       "status": "passed",
-      "layer": "L2",
-      "tests": 5,
+      "layer": "L2 runtime",
+      "tests": 6,
       "failed": 0,
       "errors": 0,
-      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=approval_scope_authority",
-      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (F01 candidate, not frozen)",
-      "log": ".runtime/system-permission-roles/approval-scope-after.log",
-      "environment": "sc-local-dev/sc_dev_demo",
-      "impact_note": "Five model cases passed before view-only cleanup and adding runtime view assertion. Product model unchanged after execution; these outcomes are historical local candidate evidence, not runtime receipts."
+      "command": "make test MODULE=smart_construction_core TEST_TAGS=approval_scope_authority (combined six-suite run)",
+      "stage_identity": "80aae6f5537c2babc12c333e6041d6e20236e865 + clean",
+      "log": ".runtime/system-permission-roles/runtime-suites-80aae6f55.log",
+      "environment": "sc-p1-userperm/sc_repro_698 (isolated)",
+      "impact_note": "Five model cases passed before view-only cleanup and adding runtime view assertion. Product model unchanged after execution; these outcomes are historical local candidate evidence, not runtime receipts.",
+      "database": "sc_repro_698 (isolated compose project sc-p1-userperm)",
+      "boundary": "isolated candidate runtime execution; not daily demo acceptance and not a reusable runtime receipt"
     },
     "approval_scope_runtime_view": {
       "status": "passed",
@@ -528,16 +586,17 @@
     "F01": "local_candidate_verified; no grant side effects and native declaration checked; browser acceptance not_run",
     "reconciliation_orm": {
       "status": "passed",
-      "layer": "L2",
-      "command": "make verify.local.dev.system_permission.reconciliation.orm",
-      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit dirty scope (source reconciliation; not frozen)",
-      "log": ".runtime/system-permission-roles/reconcile-orm.log",
-      "tests": 14,
+      "layer": "L2 runtime",
+      "command": "make test MODULE=smart_construction_core TEST_TAGS=group_authority_reconciliation (combined six-suite run)",
+      "stage_identity": "80aae6f5537c2babc12c333e6041d6e20236e865 + clean",
+      "log": ".runtime/system-permission-roles/runtime-suites-80aae6f55.log",
+      "tests": 16,
       "failed": 0,
       "errors": 0,
-      "duration_seconds": 3.23,
-      "environment": "sc-local-dev/sc_dev_demo",
-      "impact_note": "Before appending one separate native-entry test; same product code and unchanged original cases. Not reusable runtime receipt."
+      "environment": "sc-p1-userperm/sc_repro_698 (isolated)",
+      "impact_note": "Before appending one separate native-entry test; same product code and unchanged original cases. Not reusable runtime receipt.",
+      "database": "sc_repro_698 (isolated compose project sc-p1-userperm)",
+      "boundary": "isolated candidate runtime execution; not daily demo acceptance and not a reusable runtime receipt"
     },
     "reconciliation_entry_view": {
       "status": "passed",
@@ -639,17 +698,18 @@
     },
     "accounting_operations": {
       "status": "passed",
-      "layer": "L2",
-      "command": "make verify.local.dev.system_permission.accounting.orm",
-      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit run.scope dirty (accounting journal tests; not frozen)",
-      "environment": "sc-local-dev/sc_dev_demo",
-      "tests": 3,
+      "layer": "L2 runtime",
+      "command": "make test MODULE=smart_construction_core TEST_TAGS=system_permission_accounting (combined six-suite run)",
+      "stage_identity": "80aae6f5537c2babc12c333e6041d6e20236e865 + clean",
+      "environment": "sc-p1-userperm/sc_repro_698 (isolated)",
+      "tests": 4,
       "failed": 0,
       "errors": 0,
-      "duration_seconds": 1.99,
-      "log": ".runtime/system-permission-roles/accounting-orm.log",
+      "log": ".runtime/system-permission-roles/runtime-suites-80aae6f55.log",
       "meaning": "Actual journal read/create/write denial and manager write/revocation; not full bookkeeping or remote role journey acceptance.",
-      "impact_note": "Only appended separate entry method; original three methods and shared setup unchanged. Original results retained; no reusable runtime receipt claimed."
+      "impact_note": "Only appended separate entry method; original three methods and shared setup unchanged. Original results retained; no reusable runtime receipt claimed.",
+      "database": "sc_repro_698 (isolated compose project sc-p1-userperm)",
+      "boundary": "isolated candidate runtime execution; not daily demo acceptance and not a reusable runtime receipt"
     },
     "accounting_iteration": {
       "status": "passed",
@@ -660,16 +720,17 @@
     },
     "business_operations": {
       "status": "passed",
-      "layer": "L2",
-      "command": "make verify.local.dev.system_permission.business.orm",
-      "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + explicit run.scope dirty (business role operations; not frozen)",
-      "environment": "sc-local-dev/sc_dev_demo",
+      "layer": "L2 runtime",
+      "command": "make test MODULE=smart_construction_core TEST_TAGS=system_permission_business (combined six-suite run)",
+      "stage_identity": "80aae6f5537c2babc12c333e6041d6e20236e865 + clean",
+      "environment": "sc-p1-userperm/sc_repro_698 (isolated)",
       "tests": 3,
       "failed": 0,
       "errors": 0,
-      "duration_seconds": 3.8,
-      "log": ".runtime/system-permission-roles/business-orm.log",
-      "meaning": "Dictionary read/write denial, business admin write/revoke; settlement draft and lines create/write, contract write denial and revoked line write denial. Not approval/payment journey."
+      "log": ".runtime/system-permission-roles/runtime-suites-80aae6f55.log",
+      "meaning": "Dictionary read/write denial, business admin write/revoke; settlement draft and lines create/write, contract write denial and revoked line write denial. Not approval/payment journey.",
+      "database": "sc_repro_698 (isolated compose project sc-p1-userperm)",
+      "boundary": "isolated candidate runtime execution; not daily demo acceptance and not a reusable runtime receipt"
     },
     "business_iteration": {
       "status": "passed",
@@ -1453,6 +1514,64 @@
       "log": ".runtime/system-permission-roles/freeze-prepare-after-ledger.log",
       "stage_identity": "2eb4cae26b5a013cb2cebc5706df34047ea7847e + dirty before final commits",
       "meaning": "Generated reports reviewed: 5 new verification assets shift deterministic inventory IDs; module versions and source count updated; does not confer remote integration eligibility"
+    },
+    "http_revocation": {
+      "status": "passed",
+      "layer": "L2 runtime",
+      "command": "make test MODULE=smart_construction_core TEST_TAGS=system_permission_http (combined six-suite run)",
+      "stage_identity": "80aae6f5537c2babc12c333e6041d6e20236e865 + clean",
+      "log": ".runtime/system-permission-roles/runtime-suites-80aae6f55.log",
+      "tests": 15,
+      "database": "sc_repro_698 (isolated compose project sc-p1-userperm)",
+      "boundary": "isolated candidate runtime execution; not daily demo acceptance and not a reusable runtime receipt",
+      "environment": "sc-p1-userperm/sc_repro_698 (isolated)"
+    },
+    "runtime_entry_verify": {
+      "status": "passed",
+      "checks": 66,
+      "all_passed": true,
+      "path": ".runtime/final-acceptance/daily-deployed/entry-verify.json"
+    },
+    "runtime_path_namespace_identity": {
+      "status": "passed",
+      "total": 23,
+      "passed": 23,
+      "failed": 0,
+      "path": ".runtime/final-acceptance/path-ns-c-acceptance.json",
+      "covers": [
+        "same_name_admin_isolation",
+        "bidirectional_token_replay",
+        "unknown_namespace_refused",
+        "database_hint_requested_hint_refused",
+        "database_query_hint_refused",
+        "independent_logout",
+        "unauthorized_company_refused"
+      ]
+    },
+    "runtime_list_surface_structure": {
+      "status": "passed",
+      "rows": 6,
+      "failures": 0,
+      "path": ".runtime/final-acceptance/list-surface-structure.json"
+    },
+    "runtime_relation_roundtrip": {
+      "status": "passed",
+      "declared_entry_count": 13,
+      "openable": 4,
+      "denied_requests": 0,
+      "console_errors": 0,
+      "path": ".runtime/final-acceptance/relation-roundtrip/20261019T205736/summary.json"
+    },
+    "acceptance_evolution": {
+      "status": "passed",
+      "head": "80aae6f5537c2babc12c333e6041d6e20236e865",
+      "suites": [
+        "daily_runtime_entry",
+        "path_namespace_identity",
+        "list_surface_structure",
+        "relation_roundtrip"
+      ],
+      "path": ".runtime/acceptance-evolution/evidence.v1.json"
     }
   },
   "product_acceptance_gaps": [
