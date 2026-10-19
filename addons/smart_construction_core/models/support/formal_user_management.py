@@ -70,6 +70,13 @@ class ResUsers(models.Model):
         return employee.with_env(self.env)
 
     def action_sc_ensure_employee_profile(self):
+        # Public RPC actions must validate the complete original-user target set
+        # before the helper delegates employee creation to sudo.
+        self.check_access_rights("write")
+        self.check_access_rule("write")
+        self._sc_check_personnel_maintainer()
+        if not self.env.su and not self.env.user.has_group("base.group_system"):
+            self._sc_check_runtime_user_management_targets()
         for user in self:
             user._sc_ensure_employee_profile()
         return True

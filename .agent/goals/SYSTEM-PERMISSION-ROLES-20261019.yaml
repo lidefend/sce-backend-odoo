@@ -1,0 +1,5 @@
+schema_version: 1
+goal:
+  id: SYSTEM-PERMISSION-ROLES-20261019
+  status: verification_pending
+  objective: 统一系统权限角色体系，岗位与授权独立；承接AUTH-01基线推进F01–F11来源确认、授权入口及撤权失效收敛，保留未完成的完整角色产品化范围

@@ -360,5 +360,5 @@
       "evidence": "scripts/verify/baselines/formal_business_product_menu_policy_v1.json#policy_strategy.menu_count_by_product.construction.standard=90；docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md（daily ba7577c2 只读探针 nav_leaf_count=90 / nav_action_count=89 / nav_gate_kept_leaf_count=90 / nav_required_path_misses=[]）"
     }
   },
-  "non_action_delivery_reason": "（2026-10-15）发布面叶子并非全部可由 action 寻址：无 action 的 scene 交付入口必须在此登记，且登记数（1）加验收宇宙（89）必须等于产品契约声明的发布面（90），否则 role_surface_exposure_declaration_guard 失败。"
+  "non_action_delivery_reason": "发布面叶子必须由 action 验收宇宙或已登记的无 action scene 覆盖。菜单配置于2026-10-19发布并有原生action，已加入验收CSV；当前90项action入口加1项scene等于91项发布入口。新增项保持pending，不将旧89项证据扩充为新增项通过。"
 }

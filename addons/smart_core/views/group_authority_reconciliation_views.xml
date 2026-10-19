@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_group_authority_reconcile_form" model="ir.ui.view">
+        <field name="name">sc.group.authority.reconcile.form</field>
+        <field name="model">sc.group.authority.reconcile</field>
+        <field name="arch" type="xml">
+            <form string="确认授权来源" create="0" delete="0">
+                <div class="alert alert-warning">历史授权来源无法从有效权限还原。请核对依据，明确选择从现在起作为直接授权来源的根组，包括需要独立保留的能力。本操作不增删当前权限，但会影响今后撤销角色时保留哪些权限。</div>
+                <group>
+                    <field name="user_id"/>
+                    <field name="confirmed" invisible="1"/>
+                    <field name="observed_group_ids" widget="many2many_tags" options="{'no_open': True, 'no_create': True}"/>
+                    <field name="root_group_ids" widget="many2many_tags" domain="[('id', 'in', observed_group_ids)]" options="{'no_create': True}" readonly="confirmed"/>
+                    <field name="note" readonly="confirmed"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="确认来源，保持当前权限" class="btn-primary" invisible="confirmed" confirm="确认所选根组及依据准确，并作为今后权限维护的来源？"/>
+                    <button string="取消" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="view_group_authority_confirmation_tree" model="ir.ui.view">
+        <field name="name">sc.group.authority.confirmation.tree</field>
+        <field name="model">sc.group.authority.confirmation</field>
+        <field name="arch" type="xml">
+            <tree create="0" edit="0" delete="0">
+                <field name="create_date"/>
+                <field name="user_id"/>
+                <field name="actor_id"/>
+                <field name="note"/>
+            </tree>
+        </field>
+    </record>
+    <record id="view_group_authority_confirmation_form" model="ir.ui.view">
+        <field name="name">sc.group.authority.confirmation.form</field>
+        <field name="model">sc.group.authority.confirmation</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <group>
+                    <field name="create_date"/><field name="user_id"/><field name="actor_id"/>
+                    <field name="note"/><field name="root_group_ids_json"/>
+                    <field name="before_snapshot"/><field name="after_state"/>
+                </group>
+            </form>
+        </field>
+    </record>
+    <record id="view_users_group_authority_review" model="ir.ui.view">
+        <field name="name">res.users.group.authority.review</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="授权来源" groups="base.group_system">
+                    <button name="action_sc_review_group_authority" type="object" string="核对并确认授权来源"/>
+                    <button name="action_sc_group_authority_confirmations" type="object" string="查看来源确认记录"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

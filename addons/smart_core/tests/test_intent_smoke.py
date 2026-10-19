@@ -5,6 +5,39 @@ import json
 from odoo.tests.common import HttpCase, tagged
 
 
+def setup_test_entry_namespace(env, entry_namespace="suite-entry"):
+    # Batch C: /api traffic is only served through an entry namespace.
+    # The suite binds its own database to a dedicated namespace so the
+    # test exercises the real guard instead of bypassing it.
+    database = env.cr.dbname
+    namespace = env["sc.platform.namespace"].sudo().search(
+        [("database_name", "=", database)], limit=1
+    )
+    if not namespace:
+        namespace = env["sc.platform.namespace"].sudo().create({
+            "namespace_id": "ns_" + hashlib.sha256(
+                database.encode("utf-8")
+            ).hexdigest()[:12],
+            "display_name": "Smart core CI suite",
+            "lifecycle_state": "active",
+            "database_name": database,
+            "duty_key": "ci_suite",
+            "audience": "tenant",
+        })
+    alias = env["sc.platform.namespace.alias"].sudo().search([
+        ("alias", "=", entry_namespace),
+        ("alias_kind", "=", "path"),
+    ], limit=1)
+    if not alias:
+        env["sc.platform.namespace.alias"].sudo().create({
+            "alias": entry_namespace,
+            "alias_kind": "path",
+            "namespace_id": namespace.id,
+            "is_primary": True,
+        })
+    return entry_namespace
+
+
 @tagged("post_install", "-at_install", "smoke", "sc_smoke", "smart_core")
 class TestIntentSmoke(HttpCase):
 
@@ -22,35 +55,7 @@ class TestIntentSmoke(HttpCase):
             "password": cls.test_password,
             "groups_id": [(6, 0, [cls.env.ref("base.group_user").id])],
         })
-        # Batch C: /api traffic is only served through an entry namespace.
-        # The suite binds its own database to a dedicated namespace so the
-        # test exercises the real guard instead of bypassing it.
-        database = cls.env.cr.dbname
-        namespace = cls.env["sc.platform.namespace"].sudo().search(
-            [("database_name", "=", database)], limit=1
-        )
-        if not namespace:
-            namespace = cls.env["sc.platform.namespace"].sudo().create({
-                "namespace_id": "ns_" + hashlib.sha256(
-                    database.encode("utf-8")
-                ).hexdigest()[:12],
-                "display_name": "Smart core CI suite",
-                "lifecycle_state": "active",
-                "database_name": database,
-                "duty_key": "ci_suite",
-                "audience": "tenant",
-            })
-        alias = cls.env["sc.platform.namespace.alias"].sudo().search([
-            ("alias", "=", cls.entry_namespace),
-            ("alias_kind", "=", "path"),
-        ], limit=1)
-        if not alias:
-            cls.env["sc.platform.namespace.alias"].sudo().create({
-                "alias": cls.entry_namespace,
-                "alias_kind": "path",
-                "namespace_id": namespace.id,
-                "is_primary": True,
-            })
+        setup_test_entry_namespace(cls.env, cls.entry_namespace)
         cls.env["ir.config_parameter"].sudo().set_param(
             "sc.entry.shared_secret", cls.entry_secret
         )

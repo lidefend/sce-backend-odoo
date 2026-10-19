@@ -92,18 +92,30 @@ class ResUsers(models.Model):
             return True
         return super()._has_group(group_ext_id)
 
-    def write(self, vals):
-        if self.env.context.get("sc_skip_token_epoch_bump"):
-            return super().write(vals)
+    def _sc_bump_token_epoch(self):
+        """Server-only revocation; serialize increments without client context flags."""
+        if not self.ids:
+            return
+        self.env.cr.execute(
+            'SELECT id FROM res_users WHERE id = ANY(%s) ORDER BY id FOR NO KEY UPDATE',
+            (self.ids,),
+        )
+        self.invalidate_recordset(['token_version'])
+        for user in self.exists():
+            super(ResUsers, user.sudo()).write({
+                'token_version': int(user.token_version or 0) + 1,
+            })
 
+    def write(self, vals):
+        if 'token_version' in vals:
+            raise AccessError('TOKEN_EPOCH_SERVER_OWNED')
         security_fields = {"active", "company_id", "company_ids", "groups_id", "login", "password"}
-        must_invalidate = bool(security_fields.intersection(vals)) and "token_version" not in vals
+        must_invalidate = bool(security_fields.intersection(vals)) or any(
+            key.startswith(("sel_groups_", "in_group_")) for key in vals
+        )
         result = super().write(vals)
         if must_invalidate:
-            for user in self.exists():
-                user.with_context(sc_skip_token_epoch_bump=True).write(
-                    {"token_version": int(user.token_version or 0) + 1}
-                )
+            self._sc_bump_token_epoch()
         return result
 
     def source_authority_contract(self):

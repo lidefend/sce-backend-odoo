@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+from odoo.addons.smart_core.security.group_assignment import GroupAuthorityGap, apply_commands
 
 
 class ResGroups(models.Model):
@@ -144,11 +145,16 @@ class ResUsers(models.Model):
         if any(user.id not in maintainable_ids for user in self):
             raise ValidationError(_("只能维护当前公司范围内的非特权内部用户。"))
 
-    @api.depends("groups_id")
+    @api.depends("groups_id", "sc_group_authority_state")
     def _compute_sc_user_role_group_ids(self):
         assignable = self._sc_assignable_groups()
         for user in self:
-            roles = user.groups_id & assignable
+            try:
+                roots = user._sc_explicit_group_roots(lock=False)
+                roles = assignable.browse(sorted(roots)) & assignable
+            except GroupAuthorityGap:
+                # Legacy effective-role display only; never accepted as assignment provenance.
+                roles = user.groups_id & assignable
             user.sc_user_role_group_ids = roles
             user.sc_user_permission_group_ids = roles
 
@@ -156,11 +162,11 @@ class ResUsers(models.Model):
         assignable = self._sc_assignable_groups()
         internal_group = self._sc_internal_group()
         for user in self:
-            keep_groups = user.groups_id - assignable
-            target_groups = keep_groups | user[field_name]
-            if internal_group and not user.share:
-                target_groups |= internal_group
-            user.groups_id = [(6, 0, target_groups.ids)]
+            target_ids = user._sc_role_group_projection(
+                assignable.ids, [(6, 0, user[field_name].ids)],
+                internal_group.ids if internal_group and not user.share else [],
+            )
+            user.groups_id = [(6, 0, sorted(target_ids))]
 
     def _inverse_sc_user_role_group_ids(self):
         self._inverse_assignable_user_groups("sc_user_role_group_ids")
@@ -171,7 +177,8 @@ class ResUsers(models.Model):
     @api.model
     def _sc_runtime_user_management_allowed(self):
         return bool(
-            self.env.context.get("sc_runtime_user_management")
+            (self.env.context.get("sc_runtime_user_management")
+             or (not self.env.su and not self.env.user.has_group("base.group_system")))
             and self.env.user.has_group("smart_construction_core.group_sc_cap_business_config_admin")
         )
 
@@ -204,27 +211,13 @@ class ResUsers(models.Model):
 
     @api.model
     def _sc_relational_ids_after_commands(self, commands, initial_ids=None):
-        ids = set(initial_ids or [])
         if commands is None:
-            return ids
-        if isinstance(commands, (int, str)):
-            return {int(commands)}
-        for command in commands:
-            if isinstance(command, int):
-                ids.add(command)
-                continue
-            if not isinstance(command, (list, tuple)) or not command:
-                continue
-            op = int(command[0] or 0)
-            if op == 6 and len(command) > 2:
-                ids = {int(record_id) for record_id in command[2] if int(record_id or 0) > 0}
-            elif op == 4 and len(command) > 1 and int(command[1] or 0) > 0:
-                ids.add(int(command[1]))
-            elif op in (2, 3) and len(command) > 1:
-                ids.discard(int(command[1] or 0))
-            elif op == 5:
-                ids.clear()
-        return ids
+            return set(initial_ids or [])
+        try:
+            # Only membership edits: never pass related-record CRUD into sudo.
+            return apply_commands(set(initial_ids or []), commands)
+        except GroupAuthorityGap as error:
+            raise ValidationError(_("公司访问范围只能关联或移除已有公司，关系命令不合法。")) from error
 
     @api.model
     def _sc_runtime_user_safe_vals(self, vals, existing_user=False):
@@ -261,19 +254,42 @@ class ResUsers(models.Model):
         if not existing_user and "company_ids" not in vals:
             safe_vals["company_ids"] = [(6, 0, [company_id])]
 
+        for field_name, model_name in (
+            ("sc_personnel_department_id", "hr.department"),
+            ("sc_personnel_job_id", "hr.job"),
+        ):
+            related_id = vals.get(field_name)
+            if related_id is None or related_id is False or related_id == 0:
+                continue
+            if type(related_id) is not int or related_id <= 0:
+                raise ValidationError(_("部门或岗位引用不合法。"))
+            related = self.env[model_name].browse(related_id).exists()
+            if not related:
+                raise ValidationError(_("部门或岗位不存在。"))
+            related.check_access_rights("read")
+            related.check_access_rule("read")
+            if related.company_id and related.company_id.id != company_id:
+                raise ValidationError(_("部门或岗位必须属于人员所属公司。"))
+
         role_commands = vals.get("sc_user_role_group_ids")
         if role_commands is None:
             role_commands = vals.get("sc_user_permission_group_ids")
         if role_commands is not None:
             assignable = self._sc_assignable_groups()
-            requested = self.env["res.groups"].sudo().browse(list(self._sc_group_ids_from_commands(role_commands)))
-            target_groups = requested & assignable
-            if existing_user:
-                target_groups |= existing_user.sudo().groups_id - assignable
             internal_group = self._sc_internal_group()
-            if internal_group:
-                target_groups |= internal_group
-            safe_vals["groups_id"] = [(6, 0, target_groups.ids)]
+            if existing_user:
+                target_ids = existing_user._sc_role_group_projection(
+                    assignable.ids, role_commands, internal_group.ids,
+                )
+            else:
+                try:
+                    requested_ids = apply_commands(set(), role_commands)
+                except GroupAuthorityGap as error:
+                    raise ValidationError(_("角色分配命令不合法：%s") % str(error)) from error
+                if requested_ids - set(assignable.ids):
+                    raise ValidationError(_("角色请求包含不可分配的权限组。"))
+                target_ids = requested_ids | set(internal_group.ids)
+            safe_vals["groups_id"] = [(6, 0, sorted(target_ids))]
         elif not existing_user:
             internal_group = self._sc_internal_group()
             if internal_group:
@@ -372,15 +388,30 @@ class ResUsers(models.Model):
             elif assignment_vals:
                 recordset.write(assignment_vals)
 
+    @api.model
+    def _sc_runtime_user_sudo_context(self):
+        # Defaults are client input too: never let ORM defaults reintroduce
+        # fields excluded from the validated payload at a sudo boundary.
+        context = {key: value for key, value in self.env.context.items()
+                   if not key.startswith("default_")}
+        context.update(sc_runtime_user_management_sudo=True, no_reset_password=True)
+        return context
+
     @api.model_create_multi
     def create(self, vals_list):
-        if self._sc_runtime_user_management_allowed() and not self.env.context.get("sc_runtime_user_management_sudo"):
+        if self._sc_runtime_user_management_allowed() and not (self.env.su and self.env.context.get("sc_runtime_user_management_sudo")):
             if any(vals.get("sc_project_member_assignment_ids") for vals in vals_list):
                 raise ValidationError(_("请先保存人员，再维护项目成员授权。"))
+            self.check_access_rights("create")
             safe_vals_list = [self._sc_runtime_user_safe_vals(dict(vals or {})) for vals in vals_list]
-            return self.sudo().with_context(
-                dict(self.env.context, sc_runtime_user_management_sudo=True, no_reset_password=True)
-            ).create(safe_vals_list).with_env(self.env)
+            # A create rule can depend on the resulting record. Roll back the
+            # delegated creation and its relations if the original caller is denied.
+            with self.env.cr.savepoint():
+                users = self.sudo().with_context(
+                    self._sc_runtime_user_sudo_context()
+                ).create(safe_vals_list).with_env(self.env)
+                users.check_access_rule("create")
+            return users
 
         internal_group = self._sc_internal_group()
         for vals in vals_list:
@@ -401,7 +432,13 @@ class ResUsers(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
-        if self._sc_runtime_user_management_allowed() and not self.env.context.get("sc_runtime_user_management_sudo"):
+        # Preserve native self-service, whose field set and checks are server-owned.
+        if (not self.env.su and self.ids == [self.env.uid]
+                and set(vals).issubset(self.SELF_WRITEABLE_FIELDS)):
+            return super().write(vals)
+        if self._sc_runtime_user_management_allowed() and not (self.env.su and self.env.context.get("sc_runtime_user_management_sudo")):
+            self.check_access_rights("write")
+            self.check_access_rule("write")
             self._sc_check_runtime_user_management_targets()
             assignment_commands = vals.get("sc_project_member_assignment_ids")
             if assignment_commands is not None and len(self) != 1:
@@ -413,7 +450,7 @@ class ResUsers(models.Model):
                     assignment_commands,
                 )
                 user.sudo().with_context(
-                    dict(self.env.context, sc_runtime_user_management_sudo=True, no_reset_password=True)
+                    self._sc_runtime_user_sudo_context()
                 ).write(safe_vals)
                 self._sc_apply_prepared_runtime_project_assignment_commands(prepared_assignments)
             return True

@@ -1367,11 +1367,6 @@
       "owner": "platform-team",
       "reason": "本地契约生命周期诊断入口，仅人工调用。"
     },
-    "local.contract-lifecycle.odoo-shell": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/backend_contract_slo_telemetry_20261002.md。登记待接线或退役，B3 按族处理。"
-    },
     "local.contract-lifecycle.odoo-shell.run": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",

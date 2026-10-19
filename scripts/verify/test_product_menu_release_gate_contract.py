@@ -41,6 +41,21 @@ def _baseline(menus):
     return {"products": {PRODUCT: {"product_key": PRODUCT, "menu_groups": _groups(menus)}}}
 
 
+class StandardMenuConfigurationPublicationTests(unittest.TestCase):
+    def test_menu_configuration_is_released_in_standard_and_preview(self):
+        baseline = contract.load_locked_menu_policy_contract()
+        key = "smart_construction_core.menu_ui_menu_config_policy_business_config"
+        for product in baseline["products"].values():
+            with self.subTest(product=product["product_key"]):
+                entries = [menu for group in product["menu_groups"]
+                           for menu in group.get("menus", [])
+                           if menu.get("menu_xmlid") == key]
+                self.assertEqual(len(entries), 1)
+                self.assertEqual(entries[0]["release_state"], "released")
+                self.assertTrue(entries[0]["enabled"])
+                self.assertEqual(entries[0]["action_xmlid"], "smart_core.action_ui_menu_config_policy")
+
+
 class DeclaredProductScopeTests(unittest.TestCase):
     def test_empty_declaration_uses_full_published_scope(self):
         self.assertEqual(contract.resolve_declared_product_keys(None), contract.REQUIRED_PRODUCT_KEYS)

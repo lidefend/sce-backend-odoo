@@ -1369,3 +1369,17 @@ verify.frontend.business_entry.evidence_scope.unit: guard.prod.forbid
 verify.frontend.scoped_preference.runtime.unit:
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/scoped_preference_runtime_test.ts --bundle --platform=node --format=esm --outfile=/tmp/scoped-preference-runtime-test.mjs >/dev/null
 	@node /tmp/scoped-preference-runtime-test.mjs
+
+.PHONY: verify.daily_dev.menu_config_entry.readonly.browser
+verify.daily_dev.menu_config_entry.readonly.browser: guard.prod.forbid verify.daily.demo_credential.confirmation
+	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
+	@set -e; \
+	  RUN_ID="$${SC_ACCEPTANCE_RUN_ID:-daily-$$(git rev-parse --short=12 HEAD)-$$(date +%s)}"; \
+	  CONFIRM="$${SC_ACCEPTANCE_DAILY_CREDENTIAL_CONFIRMATION:-$$(python3 scripts/verify/daily_demo_credential_confirmation.py \
+	    --declaration "$(DAILY_DEMO_CREDENTIAL_DECLARATION)" \
+	    --base-url "$(ACCEPTANCE_BASE_URL)" \
+	    --login "$(ACCEPTANCE_LOGIN)" \
+	    --expected-sha "$(ACCEPTANCE_TARGET_SHA)" \
+	    --tool menu-config-entry-audit \
+	    --run-id "$$RUN_ID")}"; \
+	  SC_ACCEPTANCE_RUN_ID="$$RUN_ID" SC_ACCEPTANCE_DAILY_CREDENTIAL_CONFIRMATION="$$CONFIRM" SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_API_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" SC_ACCEPTANCE_REQUIRE_CONTRACT="$(SC_ACCEPTANCE_REQUIRE_CONTRACT)" SC_ACCEPTANCE_CONTRACT_RECEIPT="$(if $(filter command line environment override,$(origin SC_ACCEPTANCE_REQUIRE_CONTRACT)),$(SC_ACCEPTANCE_CONTRACT_RECEIPT),)" SC_ACCEPTANCE_CONTRACT_DECLARATION="$(SC_ACCEPTANCE_CONTRACT_DECLARATION)" LIST_SURFACE_VIEWPORTS=1440,390 node scripts/verify/daily_menu_config_entry_browser.mjs

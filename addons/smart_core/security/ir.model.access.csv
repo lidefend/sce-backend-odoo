@@ -71,3 +71,5 @@ access_app_view_fragment_admin,access.app.view.fragment.admin,model_app_view_fra
 access_app_view_variant_admin,access.app.view.variant.admin,model_app_view_variant,smart_core.group_smart_core_admin,1,1,1,1
 access_app_workflow_config_admin,access.app.workflow.config.admin,model_app_workflow_config,smart_core.group_smart_core_admin,1,1,1,1
 access_sc_data_space_serialization_admin,access.sc.data.space.serialization.admin,model_sc_data_space_serialization,smart_core.group_smart_core_admin,1,1,1,1
+access_sc_group_authority_reconcile_admin,sc.group.authority.reconcile.admin,model_sc_group_authority_reconcile,base.group_system,1,1,1,1
+access_sc_group_authority_confirmation_admin,sc.group.authority.confirmation.admin,model_sc_group_authority_confirmation,base.group_system,1,0,0,0

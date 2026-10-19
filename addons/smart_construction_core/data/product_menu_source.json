@@ -652,9 +652,9 @@
     },
     {
       "menu_xmlid": "smart_construction_core.menu_ui_menu_config_policy_business_config",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_product_data_permission_v1",

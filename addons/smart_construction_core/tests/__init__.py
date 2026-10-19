@@ -126,3 +126,12 @@ from . import test_daily_contract_settlement_native_lowcode
 from . import test_ledger_summary_guarantee_native_lowcode
 from . import test_source_bounded_data_space_rules
 from . import test_business_data_ownership_gate
+from . import test_system_permission_separation
+
+from . import test_approval_scope_authority
+from . import test_group_authority_reconciliation
+from . import test_system_permission_http
+
+from . import test_system_permission_accounting
+
+from . import test_system_permission_business

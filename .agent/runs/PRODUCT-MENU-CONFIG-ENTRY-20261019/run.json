@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "id": "PRODUCT-MENU-CONFIG-ENTRY-20261019",
+  "branch": "fix/product-menu-config-entry-20261019",
+  "status": "active",
+  "baseline_sha": "86c03b7a3a502028e5ad656f7c8cb34fd3bedff4",
+  "goal": ".agent/goals/PRODUCT-MENU-CONFIG-ENTRY-20261019.yaml",
+  "record": "docs/ops/iterations/product_menu_config_entry_20261019.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/PRODUCT-MENU-CONFIG-ENTRY-20261019.yaml",
+    ".agent/runs/PRODUCT-MENU-CONFIG-ENTRY-20261019/run.json",
+    "docs/ops/iterations/product_menu_config_entry_20261019.md",
+    "addons/smart_construction_core/data/product_menu_source.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    "config/product_menu_contract_v1.json",
+    "scripts/verify/test_product_menu_release_gate_contract.py",
+    "scripts/verify/production_menu_release_gate_guard.py",
+    "config/frontend/acceptance_tool_matrix_v1.json",
+    "config/acceptance/daily_demo_credential.v1.json",
+    "scripts/verify/daily_menu_config_entry_browser.mjs",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Registered daily duty demo/sc_demo via sc-root; initial diagnostics only; existing credentials and governed tools"
+  },
+  "checks": {
+    "publication": {
+      "target": "verify.product_menu_release_gate.contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/data/product_menu_source.json",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "addons/smart_construction_core/services/locked_menu_policy_contract.py",
+        "scripts/verify/test_product_menu_release_gate_contract.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "菜单入口已在日常Demo生效；提交增强探针与验收记录，后续按精确候选集成门禁发布",
+  "iteration_results": {
+    "identity": "86c03b7a3a502028e5ad656f7c8cb34fd3bedff4 + owned dirty scope",
+    "L1": "ci.local.iteration PASS",
+    "L2": {
+      "publication": 9,
+      "monotonic": 6,
+      "native_inventory": 2,
+      "daily_credentials": 5,
+      "acceptance_environment": 53
+    },
+    "logs": [
+      "/tmp/menu-entry-iteration.log",
+      "/tmp/menu-entry-checks.log",
+      "/tmp/menu-entry-green.log"
+    ],
+    "browser": "not_run",
+    "deployment": "not_run"
+  },
+  "stage_identity": {
+    "head": "0f896044afe9364ad86266d829dbe4282905071b",
+    "dirty_scope": [
+      "scripts/verify/daily_menu_config_entry_browser.mjs",
+      "docs/ops/iterations/product_menu_config_entry_20261019.md",
+      ".agent/runs/PRODUCT-MENU-CONFIG-ENTRY-20261019/run.json"
+    ],
+    "frozen": false
+  },
+  "result_index": {
+    "L1": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "evidence": ".runtime/menu-entry/iteration.log"
+    },
+    "L2": {
+      "status": "passed",
+      "tests": {
+        "publication": 9,
+        "monotonic": 6,
+        "native_inventory": 2,
+        "daily_credential": 5,
+        "acceptance_environment": 53
+      },
+      "evidence": [
+        ".runtime/menu-entry/checks.log",
+        ".runtime/menu-entry/green.log"
+      ]
+    },
+    "deployment": {
+      "status": "passed",
+      "identity": "0f896044afe9364ad86266d829dbe4282905071b",
+      "evidence": [
+        ".runtime/menu-entry/bundle-sync.json",
+        ".runtime/menu-entry/duty-refresh.json",
+        ".runtime/menu-entry/published-face.json"
+      ]
+    },
+    "principals": {
+      "status": "passed",
+      "evidence": ".runtime/menu-entry/principal-readback.json",
+      "source": ".runtime/menu-entry/principal-readback.py",
+      "read_only": true
+    },
+    "browser": {
+      "status": "passed",
+      "checks": 5,
+      "evidence": ".runtime/acceptance/daily/0f896044afe9364ad86266d829dbe4282905071b/menu-config-entry-audit/daily-0f896044afe9-1792411987/report.json",
+      "scope": "sidebar entry + panel response + refresh; fixture_role_config_admin"
+    },
+    "review": {
+      "status": "passed",
+      "scope": "product declaration/permission unchanged, projection consistency; probe S2 corrected"
+    },
+    "mainline": {
+      "status": "not_run",
+      "reason": "not published or merged"
+    }
+  }
+}
