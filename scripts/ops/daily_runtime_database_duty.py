@@ -120,6 +120,16 @@ SECRET_KEYS = (
 #: it is minted once per demo duty and never rendered into a non-demo stack.
 DEMO_PURPOSE = "demo"
 DEMO_SECRET_KEYS = ("SC_DEMO_USER_PASSWORD",)
+#: The platform control duty is the only duty whose administrator credential is
+#: declared rather than minted: an administrator that cannot sign in after a
+#: rebuild is a platform mechanism gap, not a forgotten password.  The login and
+#: the credential key are declared beside that duty; the value itself lives only
+#: in the duty's 0600 environment file and is never committed or printed.
+PLATFORM_CONTROL_PURPOSE = "platform_control"
+ADMIN_CREDENTIAL_KEY = "admin_credential"
+ADMIN_CREDENTIAL_FIELDS = ("login", "password_env", "purpose")
+ADMIN_LOGIN_PATTERN = re.compile(r"^[A-Za-z0-9_.@+-]{1,128}$")
+ADMIN_ENV_KEY_PATTERN = re.compile(r"^SC_[A-Z0-9_]{1,64}$")
 #: The product module that owns demo data. A duty's ``demo_seed`` section names
 #: it, and the seed phase refuses any other carrier: a second demo-data lane
 #: would be the "substitute fixture" the owner ruling of 2026-10-16 forbids.
@@ -692,6 +702,7 @@ def validate_declaration(declaration):
         failures.extend(_validate_service_face(name, duty))
         failures.extend(_validate_scope(name, duty, compliance))
         failures.extend(_validate_credential_source(name, duty, ops_root))
+        failures.extend(_validate_admin_credential(name, duty))
 
         for key, value in (
             ("duty", name), ("database", database), ("database_role", role),
@@ -1122,6 +1133,50 @@ def _validate_credential_source(name, duty, ops_root):
     return failures
 
 
+def _validate_admin_credential(name, duty):
+    """A declared platform administrator credential is a platform mechanism.
+
+    Only the platform control duty may carry one: a business duty's users are
+    tenant data, so a credential declared on it would be a second, competing
+    authentication authority.  The login and the credential key are validated
+    here with the same shape the reconcile entry enforces, so a declaration that
+    validates at plan time cannot fail only at the first write.
+    """
+    failures = []
+    declaration = duty.get(ADMIN_CREDENTIAL_KEY)
+    if declaration is None:
+        return failures
+    if not isinstance(declaration, dict) or not declaration:
+        return ["duty %s: %s must be a non-empty object" % (name, ADMIN_CREDENTIAL_KEY)]
+    missing = [field for field in ADMIN_CREDENTIAL_FIELDS
+               if not str(declaration.get(field) or "").strip()]
+    if missing:
+        failures.append("duty %s: %s.%s is required"
+                        % (name, ADMIN_CREDENTIAL_KEY, ",".join(missing)))
+    login = str(declaration.get("login") or "")
+    if login and not ADMIN_LOGIN_PATTERN.fullmatch(login):
+        failures.append("duty %s: %s.login is not a plain login"
+                        % (name, ADMIN_CREDENTIAL_KEY))
+    key = str(declaration.get("password_env") or "")
+    if key and not ADMIN_ENV_KEY_PATTERN.fullmatch(key):
+        failures.append("duty %s: %s.password_env is not a governed environment key"
+                        % (name, ADMIN_CREDENTIAL_KEY))
+    elif key and key in SECRET_KEYS + DEMO_SECRET_KEYS:
+        failures.append(
+            "duty %s: %s.password_env %s is generated duty secret material and cannot also "
+            "carry the declared administrator credential"
+            % (name, ADMIN_CREDENTIAL_KEY, key)
+        )
+    if duty.get("data_purpose") != PLATFORM_CONTROL_PURPOSE:
+        failures.append(
+            "duty %s: %s belongs to the %s duty only; a %s duty cannot declare a platform "
+            "administrator credential"
+            % (name, ADMIN_CREDENTIAL_KEY, PLATFORM_CONTROL_PURPOSE,
+               duty.get("data_purpose") or "<unset>")
+        )
+    return failures
+
+
 # ----------------------------------------------------------------------
 # remote carrier
 # ----------------------------------------------------------------------
@@ -1231,6 +1286,11 @@ SECRET_KEYS = (
     "DB_PASSWORD", "DB_MAINTENANCE_PASSWORD", "ADMIN_PASSWD", "JWT_SECRET",
     "SC_BOOTSTRAP_SECRET",
 )
+PLATFORM_CONTROL_PURPOSE = "platform_control"
+ADMIN_CREDENTIAL_KEY = "admin_credential"
+ADMIN_CREDENTIAL_FIELDS = ("login", "password_env", "purpose")
+ADMIN_LOGIN_PATTERN = re.compile(r"^[A-Za-z0-9_.@+-]{1,128}$")
+ADMIN_ENV_KEY_PATTERN = re.compile(r"^SC_[A-Z0-9_]{1,64}$")
 ENV_READBACK_KEYS = (
     "DUTY_NAME", "COMPOSE_PROJECT_NAME", "DB_NAME", "DB_USER", "DB_MAINTENANCE_USER",
     "DB_DATA", "REDIS_DATA", "ODOO_DATA", "ODOO_DBFILTER", "ODOO_PORT", "NGINX_PORT",
@@ -1646,15 +1706,55 @@ def duty_credentials(duty):
         if values.get(key) and values[key] != value:
             raise RuntimeError("DAILY_DUTY_CREDENTIAL_IDENTITY_DRIFT:%s:%s" % (key, duty["duty"]))
         values[key] = value
+    # A declared administrator credential is operator-owned material: it is
+    # neither minted nor rotated here, but it *is* part of this duty's file.
+    # Re-writing the file for any other reason must not drop it, or the next
+    # render would report the declaration as unsatisfied and the platform
+    # administrator would become unusable after an unrelated refresh.
+    declared = []
+    declaration = duty.get(ADMIN_CREDENTIAL_KEY)
+    if isinstance(declaration, dict):
+        key = str(declaration.get("password_env") or "")
+        if key and values.get(key):
+            declared.append(key)
     if created or not os.path.exists(path):
         descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
         with os.fdopen(descriptor, "w") as stream:
             stream.write("# governed credential and identity material for the %s duty\n"
                          % (duty["duty"],))
             stream.write("# written by scripts/ops/daily_runtime_database_duty.py; never committed\n")
-            for key in ("DB_NAME", "DB_USER", "DB_MAINTENANCE_USER") + SECRET_KEYS + demo_keys:
+            keys = ("DB_NAME", "DB_USER", "DB_MAINTENANCE_USER") + SECRET_KEYS + demo_keys + tuple(declared)
+            for key in dict.fromkeys(keys):
                 stream.write("%s=%s\n" % (key, values[key]))
     return values, path, created
+
+
+def admin_credential_env_text(duty, credentials):
+    """The rendered credential line of a duty that declares an administrator.
+
+    The template deliberately carries no placeholder for this value: every
+    placeholder is published in the reviewed stack files, while this key is the
+    one piece of operator-owned secret material.  It is therefore appended to
+    the rendered file (mode 0600) and read back from there, never from argv,
+    never from a report.  An absent value is a fail-closed stop: rendering a
+    platform duty whose declared administrator cannot authenticate would only
+    move the failure to the login page.
+    """
+    declaration = duty.get(ADMIN_CREDENTIAL_KEY)
+    if declaration is None:
+        return ""
+    if not isinstance(declaration, dict) or not declaration:
+        raise RuntimeError("DAILY_DUTY_PLATFORM_ADMIN_CREDENTIAL_INVALID:%s" % (duty["duty"],))
+    key = str(declaration.get("password_env") or "")
+    if not key:
+        raise RuntimeError("DAILY_DUTY_PLATFORM_ADMIN_CREDENTIAL_INVALID:%s" % (duty["duty"],))
+    value = str(credentials.get(key) or "")
+    if not value:
+        raise RuntimeError(
+            "DAILY_DUTY_PLATFORM_ADMIN_CREDENTIAL_MISSING:%s:%s" % (duty["duty"], key)
+        )
+    return ("# The declared platform administrator credential. Owner-managed, never committed.\n"
+            "%s=%s\n" % (key, value))
 
 
 def entry_shared_secret():
@@ -1761,6 +1861,8 @@ def render_env(duty, credentials):
     rendered = ENV_TEMPLATE
     for key, value in values.items():
         rendered = rendered.replace("@" + key + "@", str(value))
+    rendered = rendered.rstrip("\n") + "\n"
+    rendered += admin_credential_env_text(duty, credentials)
     return rendered
 
 

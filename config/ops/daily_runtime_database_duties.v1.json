@@ -19,6 +19,13 @@
       "environment_id": "daily-dev-platform-control",
       "tenant_key": "",
       "data_purpose": "platform_control",
+      "admin_credential": {
+        "login": "admin",
+        "password_env": "SC_PLATFORM_ADMIN_PASSWORD",
+        "purpose": "Keep the platform administrator able to sign in at /platform-admin after the platform control duty is rebuilt, without a hand-run ORM or SQL step.",
+        "authority": "docs/ops/iterations/platform_admin_credential_mechanism_20261020.md",
+        "owner_ruling": "2026-10-20: the platform administrator uses a simple, owner-maintained default credential; the value lives only in the duty credential file on the governed host and is never committed, printed or passed as an argument."
+      },
       "cluster": {
         "container": "sc-platform-control-dev-db-1",
         "compose_project": "sc-platform-control-dev",
