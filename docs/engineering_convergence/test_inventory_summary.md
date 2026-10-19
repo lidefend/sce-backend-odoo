@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1563`
+- Total assets: `1564`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `208`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1130`
+- PR dedupe candidates: `1131`
 
 ## By Layer
 
@@ -18,7 +18,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | governance | 601 |
 | contract | 397 |
-| unit | 300 |
+| unit | 301 |
 | odoo_integration | 134 |
 | e2e | 46 |
 | security | 44 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1349 |
+| pr_candidate | 1350 |
 | integration_candidate | 161 |
 | release_candidate | 44 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1130 |
+| deduplicate_before_required | 1131 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 160 |
 | keep_release_only | 44 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1351 |
+| <5m | 1352 |
 | 10-30m | 162 |
 | 30-60m | 46 |
 | unknown | 3 |
@@ -154,7 +154,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | architecture owner | 601 |
 | platform owner | 397 |
-| test owner | 301 |
+| test owner | 302 |
 | backend owner | 134 |
 | qa owner | 46 |
 | security owner | 44 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1365 |
+| scripts/verify | 1366 |
 | scripts/ops | 99 |
 | frontend/apps/web/scripts | 43 |
 | scripts/ci | 30 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-195 | contract | `scripts/verify/acceptance_contract_receipt_test.mjs` | platform owner |
 | T-ASSET-196 | governance | `scripts/verify/acceptance_evolution_binding_guard.py` | architecture owner |
 | T-ASSET-197 | contract | `scripts/verify/action_default_group_contract_audit.py` | platform owner |
-| ... | ... | 1050 more | ... |
+| ... | ... | 1051 more | ... |
 
 ## Dedupe Hotspots
 
