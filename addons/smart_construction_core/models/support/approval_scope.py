@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError
 
 
 class ScApprovalScope(models.Model):
@@ -21,7 +21,9 @@ class ScApprovalScope(models.Model):
         "res.users",
         compute="_compute_user_ids",
         inverse="_inverse_user_ids",
-        string="人员",
+        string="已授权人员",
+        readonly=True,
+        help="由系统角色授权结果生成；请在用户管理中维护系统角色，审批岗位不授予权限。",
     )
     user_count = fields.Integer(compute="_compute_user_count", string="人数")
     note = fields.Text(string="说明")
@@ -51,25 +53,12 @@ class ScApprovalScope(models.Model):
             rec.user_count = len(rec.user_ids.filtered(lambda user: user.active and not user.share))
 
     def _inverse_user_ids(self):
-        for rec in self:
-            if not rec.group_id:
-                raise ValidationError(_("审批岗位缺少底层执行组，不能维护人员。"))
-            users = rec.user_ids.filtered(lambda user: user.active and not user.share)
-            rec.group_id.sudo().write({"users": [(6, 0, users.ids)]})
+        # Keep the legacy inverse as an explicit rejection for direct ORM/RPC writes.
+        raise UserError(_("审批岗位不授予或撤销权限。请在用户管理中维护系统角色。"))
 
     def action_open_add_user_wizard(self):
         self.ensure_one()
-        return {
-            "type": "ir.actions.act_window",
-            "name": _("新增审批人员"),
-            "res_model": "sc.approval.scope.user.wizard",
-            "view_mode": "form",
-            "target": "new",
-            "context": {
-                "default_scope_id": self.id,
-                "default_scope_key": self.scope_key,
-            },
-        }
+        raise UserError(_("审批岗位不创建授权用户。请在用户管理中创建用户并维护系统角色。"))
 
 
 class ScApprovalScopeUserWizard(models.TransientModel):
@@ -84,33 +73,6 @@ class ScApprovalScopeUserWizard(models.TransientModel):
     password = fields.Char(required=True, string="初始密码")
 
     def action_create_user(self):
+        # Retained for stale clients and saved wizard records; never write users/groups.
         self.ensure_one()
-        if not self.scope_id.group_id:
-            raise UserError(_("审批岗位缺少底层执行组，不能新增人员。"))
-        login = (self.login or "").strip()
-        if not login:
-            raise ValidationError(_("请填写登录名。"))
-        existing = self.env["res.users"].sudo().search([("login", "=", login)], limit=1)
-        if existing:
-            if existing.share:
-                raise ValidationError(_("登录名 %s 已被外部用户占用。") % login)
-            user = existing
-        else:
-            groups = [
-                self.env.ref("base.group_user").id,
-                self.env.ref("smart_construction_core.group_sc_internal_user").id,
-                self.env.ref("smart_construction_core.group_sc_cap_business_initiator").id,
-                self.scope_id.group_id.id,
-            ]
-            user = self.env["res.users"].with_context(no_reset_password=True).sudo().create(
-                {
-                    "name": self.name.strip(),
-                    "login": login,
-                    "email": (self.email or "").strip() or False,
-                    "password": self.password,
-                    "groups_id": [(6, 0, groups)],
-                }
-            )
-        if self.scope_id.group_id not in user.groups_id:
-            user.sudo().write({"groups_id": [(4, self.scope_id.group_id.id)]})
-        return {"type": "ir.actions.act_window_close"}
+        raise UserError(_("审批岗位不创建用户或授予权限。请在用户管理中创建用户并维护系统角色。"))
