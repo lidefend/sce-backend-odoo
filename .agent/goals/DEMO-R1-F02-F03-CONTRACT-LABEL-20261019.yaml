@@ -1,0 +1,23 @@
+schema_version: 1
+goal:
+  id: DEMO-R1-F02-F03-CONTRACT-LABEL-20261019
+  title: 项目看板/台账 F02-F03 真实中文契约标签最小修复
+  status: active
+  formal_product_layer: P1
+  layer_target: smart_construction_core 生命周期标签生产与前端通用渲染消费
+  module: [smart_construction_core, frontend]
+  objective: >-
+    F02/F03：项目看板状态与项目台账卡片「经营方式/状态」按真实中文契约显示。
+    修复两处可判定缺陷：(1) lifecycle_state_label 用私有英文key→中文映射且与
+    ScStateMachine.PROJECT_STATES 声明不一致；(2) KanbanPage 对非状态 selection 字段
+    不消费已声明的 fieldSelections，导致经营方式显示英文 key。状态代码保持不变，
+    标签一律从声明/翻译机制取得。仅离线代码与定向验证，不落库、不部署、不伪造浏览器证据。
+  baseline:
+    branch: feature/demo-r1-realistic-data-20261019
+    full_sha: 76aa6705685d60ca00b12184f0e1c8aa64a571a7
+  constraints:
+    - 只改归属明确的声明消费/服务/通用渲染与相关测试、docs/demo 记录、.agent goal/run 元数据
+    - 不写 .git、不 commit、不 push、不部署、不落库、不重置本地数据、不改 Git refs、不装依赖
+    - 状态代码保持不变，仅界面显示标签；禁止硬编码英文key到中文映射、模型特判、静默兜底
+    - 保留已有 17 项 dirty 种子成果
+  next_exact_step: 完成最小修复并通过离线定向测试 + ci.local.iteration + diffcheck 后写回 run 与批次记录。

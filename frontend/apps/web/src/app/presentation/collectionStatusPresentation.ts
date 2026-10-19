@@ -1,3 +1,4 @@
+import { contractGapError } from '../contract/contractGap';
 import { FIELD_VALUE_EMPTY_TEXT } from '../../utils/fieldSemantics.ts';
 
 export type CollectionStatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
@@ -85,15 +86,62 @@ export function resolveStatusTone(value: unknown): CollectionStatusTone {
   return tone && TONES.has(tone) ? tone : 'neutral';
 }
 
+export function resolveSelectionLabel(
+  value: unknown,
+  selection?: Array<{ value: string; label: string }>,
+): string | null {
+  const key = authorityKey(value);
+  if (!selection || !selection.length) return null;
+  return selection.find((item) => item.value === key)?.label ?? null;
+}
+
 export function resolveCollectionStatusPresentation(input: {
   value: unknown;
   selection?: Array<{ value: string; label: string }>;
 }): CollectionStatusDescriptor {
   const value = authorityKey(input.value);
-  const label = input.selection?.find((item) => item.value === value)?.label || text(input.value) || FIELD_VALUE_EMPTY_TEXT;
+  const label = resolveSelectionLabel(input.value, input.selection) || text(input.value) || FIELD_VALUE_EMPTY_TEXT;
   return {
     value,
     label,
     tone: resolveStatusTone(input.value),
   };
+}
+
+/** Shared by the card's real rendering path and its regression tests. */
+export function resolveCollectionCell(input: {
+  field: string;
+  value: unknown;
+  selection?: Array<{ value: string; label: string }>;
+  status: boolean;
+}, formatOrdinary: (field: string, value: unknown) => { text: string; tone: CollectionStatusTone }): { text: string; tone: CollectionStatusTone } {
+  if (input.selection !== undefined) {
+    const key = authorityKey(input.value);
+    if (input.value === false || !key) return { text: FIELD_VALUE_EMPTY_TEXT, tone: 'neutral' };
+    const label = resolveSelectionLabel(input.value, input.selection);
+    if (typeof label !== 'string' || !label.trim()) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: `list_column.${input.field}.selection`,
+        requiredDeclarationLayer: 'P0:smart_core:field_selection_projection',
+      }, `字段 ${input.field} 的记录值缺少有效选择项标签`);
+    }
+    return { text: label, tone: input.status ? resolveStatusTone(input.value) : 'neutral' };
+  }
+  if (input.status) {
+    const status = resolveCollectionStatusPresentation({ value: input.value });
+    return { text: status.label, tone: status.tone };
+  }
+  return formatOrdinary(input.field, input.value);
+}
+
+export function collectColumnSelections(columns: Array<{
+  name: string;
+  selection?: Array<{ value: string; label: string }>;
+}>): Record<string, Array<{ value: string; label: string }>> {
+  const selections: Record<string, Array<{ value: string; label: string }>> = {};
+  for (const column of columns) {
+    if (Array.isArray(column.selection)) selections[column.name] = column.selection;
+  }
+  return selections;
 }

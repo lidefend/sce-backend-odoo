@@ -33,7 +33,7 @@ def build_project_context(project):
     execution_stage = str(getattr(project, "lifecycle_state", "") or "").strip()
     operation_strategy = str(getattr(project, "operation_strategy", "") or "").strip()
     company = getattr(project, "company_id", None)
-    execution_stage_label = lifecycle_state_label(execution_stage, default="")
+    execution_stage_label = lifecycle_state_label(project, default="")
     milestone = str(getattr(project, "sc_execution_state", "") or "").strip()
     milestone_label = str(getattr(project, "sc_execution_state_label", "") or "").strip()
     project_condition = str(getattr(project, "health_state", "") or getattr(project, "state", "") or "").strip()

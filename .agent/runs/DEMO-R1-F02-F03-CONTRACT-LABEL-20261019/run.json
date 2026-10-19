@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-R1-F02-F03-CONTRACT-LABEL-20261019",
+  "branch": "feature/demo-r1-realistic-data-20261019",
+  "status": "verification_pending",
+  "goal": ".agent/goals/DEMO-R1-F02-F03-CONTRACT-LABEL-20261019.yaml",
+  "record": "docs/demo/r1-03-f02-f03-contract-label.md",
+  "baseline_sha": "76aa6705685d60ca00b12184f0e1c8aa64a571a7",
+  "scope": [
+    "addons/smart_construction_core/services/project_state_explain_service.py",
+    "addons/smart_construction_core/services/project_context_contract.py",
+    "addons/smart_construction_core/tests/test_project_semantic_carriers.py",
+    "frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts",
+    "frontend/apps/web/src/pages/KanbanPage.vue",
+    "frontend/apps/web/scripts/collection_kanban_selection_label_test.ts",
+    "docs/demo/r1-03-f02-f03-contract-label.md",
+    ".agent/goals/DEMO-R1-F02-F03-CONTRACT-LABEL-20261019.yaml",
+    ".agent/runs/DEMO-R1-F02-F03-CONTRACT-LABEL-20261019/run.json",
+    ".agent/active-runs.json",
+    "demo_addons/smart_construction_demo/data/base/10_partners.xml",
+    "demo_addons/smart_construction_demo/data/base/15_seed_partners.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s10_contract_payment/10_contracts.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s10_contract_payment/20_payment_requests.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s20_settlement_clearing/10_payments.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s20_settlement_clearing/20_clearing.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s20_settlement_clearing/30_settlement.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s30_settlement_workflow/10_settlement_seed.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s30_settlement_workflow/20_settlement_actions.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s30_settlement_workflow/30_assert_state.xml",
+    "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+    "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+    ".agent/goals/DEMO-R1-REALISTIC-SEED-20261019.yaml",
+    ".agent/runs/DEMO-R1-REALISTIC-SEED-20261019/run.json",
+    "docs/demo/r1-02-coverage-correction.md",
+    "docs/demo/r1-02-realistic-core-chain.md",
+    "frontend/apps/web/src/views/ActionView.vue"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local python3 + node + esbuild only; no database, container, SSH or deployment access",
+    "limitation": "odoo python package is not importable in this executor; lifecycle label producer is verified through pure-module importlib loading with an injected declared selection, not a live Odoo fields_get"
+  },
+  "checks": {
+    "frontend_kanban_card_structure": {
+      "target": "verify.frontend.collection_kanban_record_card.unit",
+      "inputs": [
+        "Makefile",
+        "make/frontend.mk",
+        "scripts/verify/frontend_collection_kanban_record_card_guard.py",
+        "scripts/verify/test_frontend_collection_kanban_record_card_guard.py",
+        "frontend/apps/web/src/pages/KanbanPage.vue",
+        "frontend/apps/web/src/components/product-list/CollectionKanbanRecordCard.vue",
+        "frontend/apps/web/src/components/product-list/CollectionKanbanRecordCard.css",
+        "frontend/apps/web/src/components/product-list/CollectionKanbanLane.vue",
+        "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+        "scripts/verify/collection_view_semantics_browser.mjs"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Final typecheck/iteration and independent review; then prepare exact clean candidate for governed daily deployment, verify both shared-static duties and affected Chinese label pages. Do not claim deployment from local tests.",
+  "verification_results": {
+    "backend": {
+      "command": "python3 addons/smart_construction_core/tests/test_project_semantic_carriers.py",
+      "status": "passed",
+      "tests": 6
+    },
+    "frontend": {
+      "command": "esbuild collection_kanban_selection_label_test.ts + node",
+      "status": "passed",
+      "assertions": 25
+    },
+    "card": {
+      "command": "make verify.frontend.collection_kanban_record_card.unit",
+      "status": "passed",
+      "tests": 11
+    },
+    "typecheck": {
+      "command": "make verify.frontend.typecheck.strict",
+      "status": "passed"
+    },
+    "iteration": {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "coverage": "L1_only"
+    },
+    "browser": {
+      "status": "not_run"
+    },
+    "deployment": {
+      "status": "not_run"
+    },
+    "diff_check": "passed",
+    "independent_review": {
+      "status": "passed_local_code_scope",
+      "reviewer": "supervisor_review",
+      "independent_frontend_assertions": 25
+    }
+  },
+  "completion_boundary": "F02/F03 local code repair and independent code review complete; no page/deployment/user acceptance"
+}

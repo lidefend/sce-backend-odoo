@@ -107,7 +107,7 @@ import CollectionKanbanLane from '../components/product-list/CollectionKanbanLan
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { semanticValueByField } from '../utils/semantic';
 import { groupCollectionRecords } from '../app/runtime/collectionViewRuntime';
-import { resolveCollectionStatusPresentation } from '../app/presentation/collectionStatusPresentation';
+import { resolveCollectionCell } from '../app/presentation/collectionStatusPresentation';
 
 const props = defineProps<{
   title: string;
@@ -232,14 +232,11 @@ const canPageNext = computed(() => {
 });
 const paginationTotalText = computed(() => `共 ${listTotal.value ?? props.records.length} 条`);
 function semanticCell(field: string, value: unknown) {
-  if (statusMetaFields.value.includes(field)) {
-    const status = resolveCollectionStatusPresentation({
-      value,
-      selection: props.fieldSelections?.[field],
-    });
-    return { text: status.label, tone: status.tone };
-  }
-  return semanticValueByField(field, value);
+  return resolveCollectionCell({
+    field, value,
+    selection: props.fieldSelections?.[field],
+    status: statusMetaFields.value.includes(field),
+  }, semanticValueByField);
 }
 
 function rowTone(row: Record<string, unknown>) {

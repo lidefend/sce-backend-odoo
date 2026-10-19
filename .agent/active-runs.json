@@ -1,5 +1,6 @@
 {
   "branches": {
+    "feature/demo-r1-realistic-data-20261019": ".agent/runs/DEMO-R1-F02-F03-CONTRACT-LABEL-20261019/run.json",
     "audit/daily-dev-mainline-product-acceptance-closeout-20261009": ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
     "audit/fe-contract-runtime-00-20261012": ".agent/runs/FE-CONTRACT-RUNTIME-00/run.json",
     "fix/agent-dispatch-inbox-20261017": ".agent/runs/AGENT-DISPATCH-INBOX-20261017/run.json",
