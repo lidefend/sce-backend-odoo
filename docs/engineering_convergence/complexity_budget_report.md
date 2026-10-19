@@ -17,7 +17,7 @@ Generated from repository source files. This report is informational during the 
 | 5378 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5171 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 4963 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
+| 4991 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4629 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4498 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
 | 4086 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
@@ -105,11 +105,11 @@ Generated from repository source files. This report is informational during the 
 | 1389 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1378 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
+| 1338 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1332 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1320 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1316 | Python source | `addons/smart_core/core/view_orchestrator.py` |
-| 1312 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1306 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1284 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
@@ -236,7 +236,7 @@ Generated from repository source files. This report is informational during the 
 | 5378 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5171 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 4963 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
+| 4991 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4629 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4498 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
 | 4086 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
