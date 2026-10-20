@@ -3004,6 +3004,10 @@ verify.demo.supplemental.unit: guard.prod.forbid
 verify.demo.baseline_readiness.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_baseline_readiness_verifier.py
 
+.PHONY: verify.demo.scenario_step.unit
+verify.demo.scenario_step.unit: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_demo_scenario_step.py
+
 .PHONY: verify.platform.database.rehearsal.unit
 verify.platform.database.rehearsal.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_platform_database_rehearsal.py

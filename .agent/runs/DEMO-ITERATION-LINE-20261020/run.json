@@ -5,7 +5,7 @@
   "status": "active",
   "baseline_sha": "13b0395db4da63147b3f9c311a4bb5d060dc6a4e",
   "goal": ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
-  "record": "docs/ops/iterations/demo_iteration_line_batch4_20261020.md",
+  "record": "docs/ops/iterations/demo_iteration_line_batch5_20261020.md",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
@@ -62,7 +62,10 @@
     "docs/ops/iterations/demo_iteration_line_batch3_20261020.md",
     "demo_addons/smart_construction_demo/tests/test_demo_api_scenario.py",
     "docs/ops/iterations/demo_iteration_line_batch4_20261020.md",
-    "docs/ops/iterations/demo_iteration_line_batch5_gate_20261020.md"
+    "docs/ops/iterations/demo_iteration_line_batch5_gate_20261020.md",
+    "scripts/verify/demo_scenario_step.py",
+    "scripts/verify/test_demo_scenario_step.py",
+    "docs/ops/iterations/demo_iteration_line_batch5_20261020.md"
   ],
   "environment": {
     "kind": "offline",
@@ -106,6 +109,14 @@
         "scripts/verify/test_baseline_readiness_verifier.py"
       ],
       "kind": "offline"
+    },
+    "demo_scenario_step": {
+      "target": "verify.demo.scenario_step.unit",
+      "inputs": [
+        "scripts/verify/demo_scenario_step.py",
+        "scripts/verify/test_demo_scenario_step.py"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
@@ -130,5 +141,5 @@
       "resolved_commit": "a44238ad8"
     }
   ],
-  "next_exact_step": "Batch 4 closed: demo-scenario role-driven approval driver passes (submit -> configured review chain -> negative -> idempotency -> approved|done), consuming the configurable review_ids without hardcoding tier count. Next: Batch 5 — demo scenario tick (daily business-calendar advancement, idempotent, no auto-approval) + scoped experience reset keyed by the demo-declared experience set until the product role lands."
+  "next_exact_step": "Batch 5 offline core done: scenario step contract + idempotent tick scheduler + no-auto-approval invariant (verify.demo.scenario_step.unit, 7 tests). Next: wire the tick engine into the demo scenario manifest and governed runtime — 3-day compressed clock, heartbeat, baseline fingerprint unchanged, experience delta cleared (demo-declared experience set)."
 }
