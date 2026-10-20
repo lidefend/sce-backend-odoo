@@ -435,6 +435,53 @@ daily.runtime.platform.security_admin.credential.remote_clear: daily.runtime.sec
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'SC_CONFIRM_PLATFORM_SECURITY_ADMIN_CREDENTIAL=CLEAR_PLATFORM_SECURITY_ADMIN_CREDENTIAL python3 "$(DAILY_SECURITY_ADMIN_CREDENTIAL_TOOL)" clear --login "$(DAILY_SECURITY_ADMIN_LOGIN)" --name "$(DAILY_SECURITY_ADMIN_NAME)" --evidence "$(DAILY_SECURITY_ADMIN_EVIDENCE)"'
 
+# The platform administrator is a platform mechanism, not a remembered password.
+# The login and the credential key are declared on the platform control duty, the
+# value lives only in that duty's 0600 credential file on the governed host, and
+# this entry reconciles it: it first proves whether the declared credential
+# already authenticates, and only writes when it does not.  That is what lets a
+# rebuilt platform duty come back with a usable administrator without re-hashing
+# the password (and dropping live sessions) on every routine refresh.
+PLATFORM_ADMIN_CREDENTIAL_TOOL ?= scripts/ops/daily_runtime_platform_admin_credential.py
+PLATFORM_ADMIN_CREDENTIAL_DECLARATION ?= config/ops/daily_runtime_database_duties.v1.json
+PLATFORM_ADMIN_CREDENTIAL_PRODUCT_ROOT ?= /opt/projects/repos/sce-product-odoo
+
+.PHONY: verify.platform.admin.credential.unit daily.runtime.platform.admin.credential.seed daily.runtime.platform.admin.credential.verify daily.runtime.platform.admin.credential.ensure daily.runtime.platform.admin.credential.converge
+
+verify.platform.admin.credential.unit: guard.prod.forbid
+	@python3 -m py_compile $(PLATFORM_ADMIN_CREDENTIAL_TOOL) scripts/ops/test_daily_runtime_platform_admin_credential.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_platform_admin_credential
+
+# Records the operator-supplied value once, from stdin: the password is never an
+# argv element, never echoed, and a different existing value is only replaced
+# with SC_CONFIRM_PLATFORM_ADMIN_CREDENTIAL_SEED=REPLACE_DECLARED_PLATFORM_ADMIN_CREDENTIAL.
+daily.runtime.platform.admin.credential.seed: guard.prod.forbid
+	@test -n "$${SC_PLATFORM_ADMIN_PASSWORD:-}" || { echo "SC_PLATFORM_ADMIN_PASSWORD must carry the value to record" >&2; exit 2; }
+	@case "$${SC_CONFIRM_PLATFORM_ADMIN_CREDENTIAL_SEED:-}" in ""|REPLACE_DECLARED_PLATFORM_ADMIN_CREDENTIAL) ;; *) echo "unsupported SC_CONFIRM_PLATFORM_ADMIN_CREDENTIAL_SEED" >&2; exit 2 ;; esac
+	@printf '%s\n' "$$SC_PLATFORM_ADMIN_PASSWORD" | ssh "$(DAILY_RUNTIME_SSH_HOST)" \
+		'cd "$(PLATFORM_ADMIN_CREDENTIAL_PRODUCT_ROOT)" && SC_CONFIRM_PLATFORM_ADMIN_CREDENTIAL_SEED="'"$${SC_CONFIRM_PLATFORM_ADMIN_CREDENTIAL_SEED:-}"'" python3 $(PLATFORM_ADMIN_CREDENTIAL_TOOL) seed --declaration $(PLATFORM_ADMIN_CREDENTIAL_DECLARATION)'
+
+# Read-only: proves the declared credential authenticates and refuses if the
+# login is absent, inactive, ambiguous or rejects the declared value.
+daily.runtime.platform.admin.credential.verify: guard.prod.forbid
+	@ssh "$(DAILY_RUNTIME_SSH_HOST)" \
+		'cd "$(PLATFORM_ADMIN_CREDENTIAL_PRODUCT_ROOT)" && python3 $(PLATFORM_ADMIN_CREDENTIAL_TOOL) verify --declaration $(PLATFORM_ADMIN_CREDENTIAL_DECLARATION)'
+
+# Converges the running duty to the declaration. The entry itself confirms the
+# declared key is present before it writes, so a missing credential is reported
+# rather than replaced by a generated one.
+daily.runtime.platform.admin.credential.ensure: guard.prod.forbid
+	@test "$${SC_CONFIRM_PLATFORM_ADMIN_CREDENTIAL:-}" = "ENSURE_DECLARED_PLATFORM_ADMIN_CREDENTIAL" || { echo "SC_CONFIRM_PLATFORM_ADMIN_CREDENTIAL=ENSURE_DECLARED_PLATFORM_ADMIN_CREDENTIAL is required" >&2; exit 2; }
+	@ssh "$(DAILY_RUNTIME_SSH_HOST)" \
+		'cd "$(PLATFORM_ADMIN_CREDENTIAL_PRODUCT_ROOT)" && SC_CONFIRM_PLATFORM_ADMIN_CREDENTIAL=ENSURE_DECLARED_PLATFORM_ADMIN_CREDENTIAL python3 $(PLATFORM_ADMIN_CREDENTIAL_TOOL) ensure --declaration $(PLATFORM_ADMIN_CREDENTIAL_DECLARATION)'
+
+# The convergence entry used after a governed refresh: the refresh itself is
+# already the explicit mutation decision, and the credential entry only writes
+# when the declared value no longer authenticates.
+daily.runtime.platform.admin.credential.converge: guard.prod.forbid
+	@ssh "$(DAILY_RUNTIME_SSH_HOST)" \
+		'cd "$(PLATFORM_ADMIN_CREDENTIAL_PRODUCT_ROOT)" && SC_CONFIRM_PLATFORM_ADMIN_CREDENTIAL=ENSURE_DECLARED_PLATFORM_ADMIN_CREDENTIAL python3 $(PLATFORM_ADMIN_CREDENTIAL_TOOL) ensure --declaration $(PLATFORM_ADMIN_CREDENTIAL_DECLARATION)'
+
 daily.candidate.sentinel.remote_capture: daily.candidate.continuity.remote_install
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'python3 "$(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_candidate_data_sentinel.py" capture --output "/tmp/daily-candidate-data-sentinel-$$(date -u +%Y%m%dT%H%M%SZ).json"'

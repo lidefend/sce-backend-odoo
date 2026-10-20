@@ -190,6 +190,22 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(declaration["schema"], duty_entry.SCHEMA)
         self.assertEqual(duty_entry.validate_declaration(declaration), [])
 
+    def test_the_platform_administrator_credential_is_fully_declared(self):
+        declaration = shipped()
+        row = picked(declaration, "platform_control")
+        self.assertEqual(row["admin_credential"]["login"], "admin")
+        row["admin_credential"].pop("password_env")
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("admin_credential.password_env" in f for f in failures), failures)
+
+    def test_only_the_platform_control_duty_may_declare_an_administrator(self):
+        declaration = shipped()
+        picked(declaration, "demo")["admin_credential"] = {
+            "login": "admin", "password_env": "SC_PLATFORM_ADMIN_PASSWORD", "purpose": "x"}
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("belongs to the platform_control duty only" in f for f in failures),
+                        failures)
+
     def test_duty_selection_rejects_an_undeclared_duty(self):
         declaration = shipped()
         self.assertEqual(len(duty_entry.declared_duties(declaration, ["demo"])), 1)
@@ -3001,6 +3017,85 @@ class ApplicationCredentialTests(unittest.TestCase):
         self.assertEqual(len(values["DB_PASSWORD"]), 64)
         self.assertNotEqual(values["DB_PASSWORD"], values["DB_MAINTENANCE_PASSWORD"])
         self.assertEqual(mode, 0o600)
+
+    def platform_duty(self, root):
+        duty = self.duty(os.path.join(root, "environment.env"))
+        provision_frontend_artifact(root, [duty])
+        duty.pop("credential_source")
+        duty.update({
+            "duty": "platform_control",
+            "database": "sc_platform_control",
+            "database_role": "sc_platform_control_app",
+            "dbfilter": "^sc_platform_control$",
+            "data_purpose": "platform_control",
+            "admin_credential": {
+                "login": "admin",
+                "password_env": "SC_PLATFORM_ADMIN_PASSWORD",
+                "purpose": "keep the platform administrator able to sign in",
+            },
+        })
+        duty["cluster"] = dict(duty["cluster"], compose_project="sc-platform-control-dev",
+                               container="sc-platform-control-dev-db-1",
+                               maintenance_role="sc_platform_control_maintenance")
+        duty["routing"] = dict(duty["routing"], nginx_bind_host="127.0.0.1")
+        return duty
+
+    def render_credentials(self, **overrides):
+        values = {
+            "DB_PASSWORD": "d" * 64,
+            "DB_MAINTENANCE_PASSWORD": "m" * 64,
+            "ADMIN_PASSWD": "a" * 64,
+            "JWT_SECRET": "j" * 64,
+            "SC_BOOTSTRAP_SECRET": "b" * 64,
+            "SC_PLATFORM_ADMIN_PASSWORD": "admin",
+        }
+        values.update(overrides)
+        return values
+
+    def test_a_declared_platform_admin_credential_survives_a_file_rewrite(self):
+        """A rewrite for another reason must not drop operator-owned material."""
+        with tempfile.TemporaryDirectory() as root:
+            duty = self.platform_duty(root)
+
+            def run(namespace, ops_root):
+                path = os.path.join(ops_root, "sc-platform-control-dev.env")
+                with open(path, "w") as stream:
+                    stream.write("SC_PLATFORM_ADMIN_PASSWORD=admin\n")
+                os.chmod(path, 0o600)
+                values, resolved, created = namespace["duty_credentials"](duty)
+                with open(resolved) as stream:
+                    text = stream.read()
+                return values, text, created
+
+            values, text, created = self.carrier(run)
+        self.assertTrue(created, "the missing generated secrets force the rewrite under test")
+        self.assertEqual(values["SC_PLATFORM_ADMIN_PASSWORD"], "admin")
+        self.assertIn("SC_PLATFORM_ADMIN_PASSWORD=admin", text)
+        self.assertIn("DB_PASSWORD=", text)
+
+    def test_the_platform_duty_renders_its_declared_credential(self):
+        with tempfile.TemporaryDirectory() as root:
+            duty = self.platform_duty(root)
+
+            def run(namespace, ops_root):
+                return namespace["render_env"](duty, self.render_credentials())
+
+            rendered = self.carrier(run)
+        self.assertIn("SC_PLATFORM_ADMIN_PASSWORD=admin", rendered)
+
+    def test_the_platform_duty_refuses_to_render_without_its_credential(self):
+        with tempfile.TemporaryDirectory() as root:
+            duty = self.platform_duty(root)
+
+            def run(namespace, ops_root):
+                credentials = self.render_credentials()
+                credentials.pop("SC_PLATFORM_ADMIN_PASSWORD")
+                with self.assertRaises(RuntimeError) as raised:
+                    namespace["render_env"](duty, credentials)
+                return str(raised.exception)
+
+            error = self.carrier(run)
+        self.assertIn("DAILY_DUTY_PLATFORM_ADMIN_CREDENTIAL_MISSING", error)
 
     def test_one_role_has_one_password(self):
         """The declared gap is one login, so two duty keys cannot disagree."""

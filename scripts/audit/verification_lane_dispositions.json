@@ -3987,6 +3987,21 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/config_center_entry_defect_20260916.md。登记待接线或退役，B3 按族处理。"
+    },
+    "daily.runtime.platform.admin.credential.seed": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "记录所有者提供的平台管理员凭据到受管 0600 环境文件；人工 runbook 入口，不由车道自动执行。"
+    },
+    "daily.runtime.platform.admin.credential.verify": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "只读校验平台管理员声明凭据；人工 runbook 入口，部署后与登录复核一起执行。"
+    },
+    "daily.runtime.platform.admin.credential.ensure": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "受控收敛平台管理员凭据；refresh 通过 converge 自动调用，人工入口保留确认门。"
     }
   },
   "scripts": {

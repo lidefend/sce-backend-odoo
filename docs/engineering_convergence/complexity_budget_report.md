@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4920`
+- Scanned files: `4922`
 - Files requiring split plan: `71`
 - Files above warning threshold: `138`
 
@@ -25,13 +25,13 @@ Generated from repository source files. This report is informational during the 
 | 3705 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3688 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3641 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
-| 3490 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
+| 3592 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3472 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3416 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3312 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3131 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
+| 3118 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3089 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
-| 3023 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3011 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2934 | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2875 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
@@ -244,13 +244,13 @@ Generated from repository source files. This report is informational during the 
 | 3705 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3688 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3641 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
-| 3490 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
+| 3592 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3472 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3416 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3312 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3131 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
+| 3118 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3089 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
-| 3023 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3011 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2934 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2875 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |

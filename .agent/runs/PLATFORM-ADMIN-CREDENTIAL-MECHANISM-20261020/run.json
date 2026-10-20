@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "id": "PLATFORM-ADMIN-CREDENTIAL-MECHANISM-20261020",
+  "branch": "feature/platform-admin-credential-mechanism-20261020",
+  "status": "active",
+  "baseline_sha": "fcf841c0920bc212f490f6fa0ca6c82a651e0d51",
+  "goal": ".agent/goals/PLATFORM-ADMIN-CREDENTIAL-MECHANISM-20261020.yaml",
+  "record": "docs/ops/iterations/platform_admin_credential_mechanism_20261020.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/PLATFORM-ADMIN-CREDENTIAL-MECHANISM-20261020.yaml",
+    ".agent/runs/PLATFORM-ADMIN-CREDENTIAL-MECHANISM-20261020/run.json",
+    "config/ops/daily_runtime_database_duties.v1.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/platform_admin_credential_mechanism_20261020.md",
+    "make/ci.mk",
+    "make/codex.mk",
+    "make/daily_candidate.mk",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/ops/daily_runtime_database_duty.py",
+    "scripts/ops/daily_runtime_platform_admin_credential.py",
+    "scripts/ops/test_daily_runtime_database_duty.py",
+    "scripts/ops/test_daily_runtime_platform_admin_credential.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "governed daily runtime entries executed in sc-root:/opt/projects/repos/sce-product-odoo",
+    "runtime_authority": {
+      "host_alias": "sc-root",
+      "path": "/opt/projects/repos/sce-product-odoo",
+      "duty": "platform_control",
+      "database": "sc_platform_control",
+      "container": "sc-platform-control-dev-odoo-1",
+      "entrypoints": [
+        "make daily.runtime.platform.admin.credential.seed",
+        "make daily.runtime.platform.admin.credential.verify",
+        "make daily.runtime.platform.admin.credential.ensure",
+        "make daily.runtime.database.duty.refresh"
+      ]
+    }
+  },
+  "checks": {
+    "credential_entry": {
+      "target": "verify.platform.admin.credential.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/daily_runtime_platform_admin_credential.py",
+        "scripts/ops/test_daily_runtime_platform_admin_credential.py",
+        "make/daily_candidate.mk"
+      ]
+    },
+    "duty_declaration": {
+      "target": "verify.daily.runtime.database.duty",
+      "kind": "offline",
+      "inputs": [
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "scripts/ops/daily_runtime_database_duty.py",
+        "scripts/ops/test_daily_runtime_database_duty.py",
+        "make/codex.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "在服务器记录声明口令，执行 verify → ensure → verify，并完成 /platform-admin 浏览器复核",
+  "status_dimensions": {
+    "batch": "verification_pending",
+    "mainline": "not_integrated",
+    "deployment": "not_deployed",
+    "user_acceptance": "not_run"
+  }
+}

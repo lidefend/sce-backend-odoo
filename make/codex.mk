@@ -1153,6 +1153,7 @@ daily.runtime.database.duty.refresh: guard.prod.forbid verify.daily.runtime.data
 		--phase refresh \
 		--expect-declaration-digest "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" \
 		--report "$(DAILY_RUNTIME_DATABASE_DUTY_REFRESH_REPORT)"
+	@$(if $(filter platform_control,$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION)),$(MAKE) --no-print-directory daily.runtime.platform.admin.credential.converge,echo "[refresh] platform_control not selected; the declared platform administrator credential was not reconciled")
 
 
 # An upgrade rewrites the declared module set of a duty that already serves from
