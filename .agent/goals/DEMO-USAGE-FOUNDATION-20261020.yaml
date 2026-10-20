@@ -19,7 +19,7 @@ goal:
     - docs/demo
   baseline:
     branch: feature/demo-iteration-line-20261020
-    full_sha: bd614470aae7730eacf8a3c8f5b0cde81d322e99
+    full_sha: 74063688e928d25c8e65037ac3306956c954244d
     source: dedicated_demo_worktree
   objective: >-
     Build a user-first demo foundation from identity and scope through master

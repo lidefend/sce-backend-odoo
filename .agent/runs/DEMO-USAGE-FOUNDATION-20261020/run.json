@@ -3,7 +3,7 @@
   "id": "DEMO-USAGE-FOUNDATION-20261020",
   "branch": "feature/demo-iteration-line-20261020",
   "status": "active",
-  "baseline_sha": "bd614470aae7730eacf8a3c8f5b0cde81d322e99",
+  "baseline_sha": "74063688e928d25c8e65037ac3306956c954244d",
   "goal": ".agent/goals/DEMO-USAGE-FOUNDATION-20261020.yaml",
   "record": "docs/ops/iterations/demo_usage_foundation_handoff_20261020.md",
   "scope": [
@@ -249,6 +249,33 @@
         }
       ],
       "notes": "F3 master-data fix authored (16_bank_accounts.xml + manifest + ORM acceptance test). Runtime load is blocked by a pre-existing product/customer view binding defect (registry item 15), not by the demo data. Bank-account acceptance stays fail-closed until the owning layer fixes the view and the module can upgrade."
+    },
+    "duf06_branch_sync": {
+      "identity": {
+        "old_head": "c2a4b57ee59da88cfbe533dc7ab318efc01ed51c",
+        "new_head": "aed606e3f3db340465840771a67149c57e0b5c5e",
+        "covered_prefix": "bd614470aae7730eacf8a3c8f5b0cde81d322e99",
+        "covered_merge": "a5dac75fedea381b716b25c85d5f56820d39e315",
+        "main": "74063688e928d25c8e65037ac3306956c954244d"
+      },
+      "commands": [
+        {
+          "command": "make workspace.branch.sync-main.extended ... COVERED_PREFIX=bd614470a COVERED_MERGE=a5dac75f",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "replayed 14 unintegrated commits onto main; active-runs index merged; generated evidence marked invalidated; recovery bundle verified"
+        },
+        {
+          "command": "make refresh.generated_reports && make test.coverage.registry.export && g1_acceptance_baseline_guard --write",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "python3 scripts/audit/verification_lane_coverage.py --write-baseline && make audit.verification.lane_coverage.check",
+          "status": "passed",
+          "layer": "L1"
+        }
+      ]
     }
   },
   "blockers": [
@@ -257,10 +284,10 @@
       "classification": "baseline_evidence_defect",
       "owner_layer": "P4",
       "registry_item": 15,
-      "summary": "The demo branch is based on an older main baseline while sc_dev_demo has already been upgraded from current main. During module upgrade, the old demo source omits current smart_core group-authority models while the database view still references them, so view validation reports action_sc_review_group_authority as invalid."
+      "summary": "The stale demo baseline has been synchronized to current main. The blocker remains open only until the post-sync module upgrade and bank-account readback prove the repaired runtime."
     }
   ],
-  "next_exact_step": "DUF-06 reclassified from product defect to demo baseline drift: commit the refreshed generated test inventory, obtain exact-head Quick for eb0c4200d lineage, run governed extended branch sync to main 74063688e, then rerun local.dev.upgrade MODULE=smart_construction_demo and the master-data ORM readback.",
+  "next_exact_step": "Run local.dev.upgrade MODULE=smart_construction_demo on synced HEAD aed606e3f, then rerun verify.local.dev.demo_usage_foundation_master_data.orm and require bank=9 before closing DUF-06.",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",

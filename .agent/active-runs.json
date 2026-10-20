@@ -5,8 +5,6 @@
     "audit/fe-contract-runtime-00-20261012": ".agent/runs/FE-CONTRACT-RUNTIME-00/run.json",
     "audit/system-permission-roles-20261019": ".agent/runs/SYSTEM-PERMISSION-ROLES-20261019/run.json",
     "codex/platform-browser-probe-entry-credentials-20261020": ".agent/runs/PLATFORM-BROWSER-PROBE-ENTRY-CREDENTIALS-20261020/run.json",
-    "feature/daily-batch-demo-multicompany-20261019": ".agent/runs/DAILY-RUNTIME-BATCH-20261019/run.json",
-    "feature/demo-company-structure-20261019": ".agent/runs/DEMO-COMPANY-STRUCTURE-20261019/run.json",
     "feature/demo-iteration-line-20261020": ".agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json",
     "feature/product-iteration-v2-20261020": ".agent/runs/PRODUCT-ITERATION-V2-20261020/run.json",
     "feature/user-permission-surface-split-20261019": ".agent/runs/P1-USER-PERMISSION-SURFACE-SPLIT-20261019/run.json",

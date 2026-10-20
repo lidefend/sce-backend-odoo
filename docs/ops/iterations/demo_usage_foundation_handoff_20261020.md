@@ -4,7 +4,7 @@
 
 - Repository：`/home/lidefend/workspace/sce-backend-odoo-local-env`
 - Branch：`feature/demo-iteration-line-20261020`
-- Planning baseline：`bd614470aae7730eacf8a3c8f5b0cde81d322e99`
+- Current main baseline：`74063688e928d25c8e65037ac3306956c954244d`
 - Plan：`docs/demo/demo_usage_foundation_plan_v1.md`
 - Goal：`.agent/goals/DEMO-USAGE-FOUNDATION-20261020.yaml`
 - Run：`.agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json`
@@ -12,12 +12,13 @@
 ## 2. 当前状态
 
 - 计划：已完成
-- 数据/功能实现：`not_started`
-- F1–F8：`not_started`
+- F1–F3：实现与证据已提交
+- F3 银行账户运行时加载：`verification_pending`
+- F4–F8：`not_started`
 - 主线集成：`not_run`
 - 部署：`not_run`
 - 用户验收：`not_run`
-- Run 状态：`planned`；执行器完成身份回读后、进入 F1 写入前切为 `active`
+- Run 状态：`active`
 
 ## 3. 执行器启动
 
