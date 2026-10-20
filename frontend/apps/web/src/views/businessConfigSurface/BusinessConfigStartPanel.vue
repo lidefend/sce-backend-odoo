@@ -14,6 +14,31 @@
           <ScButton type="button" class="ghost" :disabled="!runtimeRoutePath" @click="$emit('openCurrentEffectivePage')">打开当前生效页面</ScButton>
         </div>
       </div>
+      <div v-if="capabilityCardsLoading || capabilityCardsError || capabilityCards.length" class="workbench-capability-overview" data-product-capability-cards="v1">
+        <div class="workbench-capability-head">
+          <span>配置能力</span>
+          <em v-if="capabilityCards.length">{{ capabilityCards.length }} 张配置卡</em>
+        </div>
+        <ScInlineState v-if="capabilityCardsLoading" state="loading" label="正在加载能力目录。" />
+        <ScInlineState v-else-if="capabilityCardsError" state="error" :label="capabilityCardsError" />
+        <div v-else-if="capabilityCards.length" class="capability-card-grid">
+          <article
+            v-for="card in capabilityCards"
+            :key="card.key"
+            class="capability-card"
+            :data-capability-card="card.key"
+            :data-capability-status="card.status"
+            :data-capability-available="card.available ? 'true' : 'false'"
+          >
+            <div class="capability-card-head">
+              <strong>{{ card.label }}</strong>
+              <span class="capability-status-badge" :data-capability-status="card.status">{{ capabilityStatusLabel(card.status) }}</span>
+            </div>
+            <p v-if="card.authority" class="capability-card-authority">{{ card.authority }}</p>
+            <p v-if="!card.available" class="capability-card-reason">{{ card.reason === 'planned' ? '该能力尚未发布，暂不可用。' : card.reason }}</p>
+          </article>
+        </div>
+      </div>
       <div v-if="currentModel && sections.length" class="workbench-start-config">
         <div class="selected-page-overview">
           <div>
@@ -140,6 +165,8 @@
 
 <script setup lang="ts">
 import type { BusinessConfigSurfacePayload } from '../../api/businessConfig';
+import type { ProductCapabilityConfigurationCard } from '../../api/productCapabilityCatalog';
+import { capabilityStatusLabel } from '../../app/productCapabilityCatalogProjection';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
@@ -163,6 +190,9 @@ defineProps<{
   deliveryReadinessStatusText: string;
   visibleDeliveryReadinessProgressText: string;
   visibleDeliveryReadinessItems: DeliveryItem[];
+  capabilityCards: ProductCapabilityConfigurationCard[];
+  capabilityCardsLoading: boolean;
+  capabilityCardsError: string;
   sectionTaskKindLabel: (sectionKey: string) => string;
   sectionStatusLabel: (sectionKey: string, contractCount: number) => string;
   sectionPrimaryCopy: (sectionKey: string) => string;

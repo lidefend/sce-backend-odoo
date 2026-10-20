@@ -1,7 +1,7 @@
 <template src="./businessConfigSurface/template.html"></template>
 <script setup lang="ts">
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import BusinessConfigAdvancedAuditPanels from './businessConfigSurface/BusinessConfigAdvancedAuditPanels.vue';
 import BusinessConfigApprovalPanel from './businessConfigSurface/BusinessConfigApprovalPanel.vue';
@@ -33,6 +33,11 @@ import {
   type BusinessConfigSurfacePayload,
 } from '../api/businessConfig';
 import { BUSINESS_CONFIG_INTENTS } from '../app/businessConfigBoundaries';
+import {
+  isProductCapabilityCatalogGap,
+  projectConfigurationCards,
+} from '../app/productCapabilityCatalogProjection';
+import type { ProductCapabilityConfigurationCard } from '../api/productCapabilityCatalog';
 import { useSessionStore } from '../stores/session';
 import {
   analysisItemLabel,
@@ -105,6 +110,9 @@ const surfaceError = ref('');
 const message = ref({ text: '', detail: '' });
 const { impactDialog, openImpactDialog, resolveImpactDialog, rollbackConfirm } = useBusinessConfigImpactDialog();
 const surface = ref<BusinessConfigSurfacePayload | null>(null);
+const capabilityCards = ref<ProductCapabilityConfigurationCard[]>([]);
+const capabilityCardsLoading = ref(false);
+const capabilityCardsError = ref('');
 const boundaryLabels = () => surface.value?.boundary_labels || {};
 const boundaryLabel = createBoundaryLabel(boundaryLabels);
 const coverageScan = ref<BusinessConfigCoverageScanPayload | null>(null);
@@ -197,6 +205,27 @@ const {
 } = useBusinessConfigDraftSession(() => scopeRole.value || '', () => ({ model: currentModel.value, actionId: scopeAction.value, companyId: Number(session.recordContext?.company_id || 0) }));
 async function loadChangeSetSafely() {
   try { await resumeScope(); } catch { /* rendered by the change-set panel */ }
+}
+async function loadCapabilityCatalog() {
+  if (!session.token) {
+    capabilityCards.value = [];
+    return;
+  }
+  capabilityCardsLoading.value = true;
+  capabilityCardsError.value = '';
+  try {
+    await session.loadProductCapabilityCatalog();
+    capabilityCards.value = projectConfigurationCards(session.productCapabilityCatalog);
+  } catch (err) {
+    capabilityCards.value = [];
+    if (isProductCapabilityCatalogGap(err)) {
+      capabilityCardsError.value = String(err.message || '');
+    } else {
+      capabilityCardsError.value = '当前工作台暂时无法加载能力目录，请稍后重试。';
+    }
+  } finally {
+    capabilityCardsLoading.value = false;
+  }
 }
 function resetEditorPanels() {
   listSearchPanelOpen.value = false; listSearchAudit.value = null;
@@ -553,6 +582,10 @@ useBusinessConfigWorkbenchBootstrap({
   loadSurface, surface, route, loadChangeSetSafely, coverageScan, scanSystemRootCoverage,
   currentModel, scopeAction, clearConsumedOpenIntent, coverageRowMatchesScope, focusScanRow,
   loadListSearchConfig, loadAnalysisConfig,
+});
+
+onMounted(() => {
+  void loadCapabilityCatalog();
 });
 </script>
 

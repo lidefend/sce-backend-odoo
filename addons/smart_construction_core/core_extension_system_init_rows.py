@@ -327,6 +327,162 @@ def build_project_action_rows(env, user) -> List[Dict[str, Any]]:
             )
     return result
 
+def selection_label(env, model_name: str, field_name: str, value: Any) -> str:
+    key = as_text(value)
+    if not key or model_name not in env or not model_has_field(env, model_name, field_name):
+        return key
+    field = env[model_name]._fields.get(field_name)
+    selection = getattr(field, "selection", None)
+    if not isinstance(selection, (list, tuple)):
+        return key
+    for item in selection:
+        if isinstance(item, (list, tuple)) and len(item) >= 2 and as_text(item[0]) == key:
+            return as_text(item[1]) or key
+    return key
+
+def amount_display(env, amount: Any, currency_ref: Any) -> str:
+    try:
+        value = float(amount or 0)
+    except (TypeError, ValueError):
+        value = 0.0
+    if not value:
+        return ""
+    symbol = ""
+    if isinstance(currency_ref, (list, tuple)) and currency_ref and "res.currency" in env:
+        try:
+            currency = env["res.currency"].browse(int(currency_ref[0] or 0))
+            symbol = as_text(getattr(currency, "symbol", ""))
+        except (TypeError, ValueError):
+            symbol = ""
+    return f"{symbol}{value:,.2f}"
+
+def build_home_object_rows(env) -> List[Dict[str, Any]]:
+    """Return record-backed project, contract and payment rows for the home surface."""
+    project_fields = ["id", "name", "write_date"]
+    for field_name in ("health_state", "lifecycle_state"):
+        if model_has_field(env, "project.project", field_name):
+            project_fields.append(field_name)
+    project_rows = safe_search_read(
+        env,
+        "project.project",
+        domain=[("active", "=", True)],
+        fields=project_fields,
+        limit=4,
+    )
+    projects: List[Dict[str, Any]] = []
+    for row in project_rows:
+        record_id = int(row.get("id") or 0)
+        name = as_text(row.get("name")) or "未命名项目"
+        health = as_text(row.get("health_state"))
+        lifecycle = as_text(row.get("lifecycle_state"))
+        state = health or lifecycle
+        state_label = selection_label(
+            env,
+            "project.project",
+            "health_state" if health else "lifecycle_state",
+            state,
+        )
+        projects.append(
+            {
+                "id": f"object-project-{record_id}",
+                "key": f"project:{record_id}",
+                "kind": "project",
+                "kind_label": "项目",
+                "title": name,
+                "subtitle": selection_label(env, "project.project", "lifecycle_state", lifecycle),
+                "state": state,
+                "state_label": state_label,
+                "amount": 0,
+                "amount_display": "",
+                "model": "project.project",
+                "record_id": record_id,
+                "route": f"/r/project.project/{record_id}",
+                "reason": "",
+                "authority": "smart_construction_core.home_objects.v1",
+            }
+        )
+
+    contract_fields = ["id", "name", "subject", "type", "state", "amount_total", "project_id", "currency_id", "write_date"]
+    contract_rows = safe_search_read(
+        env,
+        "construction.contract",
+        domain=[("state", "!=", "cancel")],
+        fields=[name for name in contract_fields if model_has_field(env, "construction.contract", name)],
+        limit=4,
+    )
+    contracts: List[Dict[str, Any]] = []
+    for row in contract_rows:
+        record_id = int(row.get("id") or 0)
+        project_name = ""
+        project_raw = row.get("project_id")
+        if isinstance(project_raw, (list, tuple)) and len(project_raw) > 1:
+            project_name = as_text(project_raw[1])
+        state = as_text(row.get("state"))
+        contract_type = as_text(row.get("type"))
+        contracts.append(
+            {
+                "id": f"object-contract-{record_id}",
+                "key": f"contract:{record_id}",
+                "kind": "contract",
+                "kind_label": selection_label(env, "construction.contract", "type", contract_type) or "合同",
+                "title": as_text(row.get("subject")) or as_text(row.get("name")) or "未命名合同",
+                "subtitle": project_name,
+                "state": state,
+                "state_label": selection_label(env, "construction.contract", "state", state),
+                "amount": float(row.get("amount_total") or 0),
+                "amount_display": amount_display(env, row.get("amount_total"), row.get("currency_id")),
+                "model": "construction.contract",
+                "record_id": record_id,
+                "route": f"/r/construction.contract/{record_id}",
+                "reason": "",
+                "authority": "smart_construction_core.home_objects.v1",
+            }
+        )
+
+    payment_fields = ["id", "name", "project_id", "state", "amount", "currency_id", "date_request", "write_date"]
+    payment_rows = safe_search_read(
+        env,
+        "payment.request",
+        domain=[("state", "in", ["draft", "submit", "approve", "approved"])],
+        fields=[name for name in payment_fields if model_has_field(env, "payment.request", name)],
+        limit=4,
+    )
+    payments: List[Dict[str, Any]] = []
+    for row in payment_rows:
+        record_id = int(row.get("id") or 0)
+        project_name = ""
+        project_raw = row.get("project_id")
+        if isinstance(project_raw, (list, tuple)) and len(project_raw) > 1:
+            project_name = as_text(project_raw[1])
+        state = as_text(row.get("state"))
+        payments.append(
+            {
+                "id": f"object-payment-{record_id}",
+                "key": f"payment:{record_id}",
+                "kind": "payment",
+                "kind_label": "资金",
+                "title": as_text(row.get("name")) or "付款申请",
+                "subtitle": project_name,
+                "state": state,
+                "state_label": selection_label(env, "payment.request", "state", state),
+                "amount": float(row.get("amount") or 0),
+                "amount_display": amount_display(env, row.get("amount"), row.get("currency_id")),
+                "model": "payment.request",
+                "record_id": record_id,
+                "route": f"/r/payment.request/{record_id}",
+                "reason": "",
+                "authority": "smart_construction_core.home_objects.v1",
+            }
+        )
+
+    rows = projects[:2] + contracts[:2] + payments[:2]
+    if len(rows) < 6:
+        for row in projects[2:] + contracts[2:] + payments[2:]:
+            rows.append(row)
+            if len(rows) >= 6:
+                break
+    return rows[:6]
+
 def dictionary_fields(env) -> List[str]:
     fields_to_read = ["code", "name", "sequence"]
     for field_name in ("scope_type", "scope_ref", "value_json"):

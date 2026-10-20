@@ -3,6 +3,8 @@ import { defineStore } from 'pinia';
 import type { AppInitResponse, CanonicalNavigationModel, LoginResponse, NavMeta, NavNode, RecordContextContract, RecordContextOption } from '@sc/schema';
 import { optionalDeclaredNumber, requireDeclaredNumber } from '../app/contract/contractGap';
 import { intentRequest } from '../api/intents';
+import type { ProductCapabilityCatalog } from '../api/productCapabilityCatalog';
+import { PRODUCT_CAPABILITY_INTENTS } from '../app/businessConfigBoundaries';
 import { ApiError } from '../api/client';
 import { config } from '../config';
 import { getSceneByKey, setSceneRegistry, setSceneRegistryFromSceneReadyContract } from '../app/resolvers/sceneRegistry';
@@ -24,6 +26,7 @@ import {
 import type {
   WorkspaceAdviceRow,
   WorkspaceCapabilityGroupRow,
+  WorkspaceHomeObjectRow,
   WorkspaceHeroRow,
   WorkspaceMetricRow,
   WorkspaceOpsSummary,
@@ -35,6 +38,7 @@ import type {
 export type {
   WorkspaceAdviceRow,
   WorkspaceCapabilityGroupRow,
+  WorkspaceHomeObjectRow,
   WorkspaceHeroRow,
   WorkspaceMetricRow,
   WorkspaceOpsSummary,
@@ -162,6 +166,7 @@ export interface WorkspaceHomeContract {
   hero?: Record<string, unknown>;
   metrics?: unknown[];
   today_actions?: unknown[];
+  my_objects?: unknown[];
   risk?: Record<string, unknown>;
   ops?: Record<string, unknown>;
   scene_groups?: unknown[];
@@ -268,6 +273,7 @@ export interface SessionState {
     scene_key?: string;
     loaded?: boolean;
   } | null;
+  productCapabilityCatalog: ProductCapabilityCatalog | null;
   pageContracts: Record<string, PageContract>;
   publicPageContractStatus: 'idle' | 'loading' | 'ready' | 'error';
   sceneReadyContract: SceneReadyContract | null;
@@ -588,6 +594,7 @@ export const useSessionStore = defineStore('session', {
     },
     workspaceHome: null,
     workspaceHomeRef: null,
+    productCapabilityCatalog: null,
     pageContracts: {},
     publicPageContractStatus: 'idle',
     sceneReadyContract: null,
@@ -690,6 +697,29 @@ export const useSessionStore = defineStore('session', {
         entryKey: asText(item.entry_key),
         entryId: asText(item.entry_id),
       }));
+    },
+    workspaceHomeObjectRows(state): WorkspaceHomeObjectRow[] {
+      const source = Array.isArray(state.workspaceHome?.my_objects) ? state.workspaceHome?.my_objects : [];
+      return source.map((item, index) => {
+        const row = asRecord(item);
+        return {
+          id: asText(row.id) || `home-object-${index + 1}`,
+          key: asText(row.key) || asText(row.id) || `home-object-${index + 1}`,
+          kind: asText(row.kind),
+          kindLabel: asText(row.kind_label),
+          title: asText(row.title),
+          subtitle: asText(row.subtitle),
+          state: asText(row.state),
+          stateLabel: asText(row.state_label),
+          amount: Number(row.amount || 0),
+          amountDisplay: asText(row.amount_display),
+          model: asText(row.model),
+          recordId: Number(row.record_id || 0),
+          route: asText(row.route),
+          reason: asText(row.reason),
+          authority: asText(row.authority),
+        };
+      }).filter((row) => Boolean(row.title));
     },
     workspaceOpsSummary(state): WorkspaceOpsSummary {
       const ops = asRecord(state.workspaceHome?.ops);
@@ -884,6 +914,7 @@ export const useSessionStore = defineStore('session', {
           this.productFacts = parsed.productFacts ?? { license: null, bundle: null };
           this.workspaceHome = null;
           this.workspaceHomeRef = null;
+          this.productCapabilityCatalog = null;
           this.pageContracts = {};
           this.sceneReadyContract = null;
           this.sceneGovernance = null;
@@ -934,6 +965,7 @@ export const useSessionStore = defineStore('session', {
       this.productFacts = { license: null, bundle: null };
       this.workspaceHome = null;
       this.workspaceHomeRef = null;
+      this.productCapabilityCatalog = null;
       this.pageContracts = {};
       this.sceneReadyContract = null;
       this.sceneGovernance = null;
@@ -1314,6 +1346,7 @@ export const useSessionStore = defineStore('session', {
       this.roleSurfaceMap = {};
       this.workspaceHome = null;
       this.workspaceHomeRef = null;
+      this.productCapabilityCatalog = null;
       this.pageContracts = {};
       this.sceneReadyContract = null;
       this.sceneGovernance = null;
@@ -1799,6 +1832,18 @@ export const useSessionStore = defineStore('session', {
       }
       this.persist();
       return this.workspaceHome;
+    },
+    async loadProductCapabilityCatalog(force = false) {
+      const requestEpoch = currentContextEpoch();
+      if (!force && this.productCapabilityCatalog) return this.productCapabilityCatalog;
+      if (!this.token) return null;
+      const result = await intentRequest<ProductCapabilityCatalog>({
+        intent: PRODUCT_CAPABILITY_INTENTS.catalog,
+      });
+      if (!isCurrentContextEpoch(requestEpoch)) return this.productCapabilityCatalog;
+      this.productCapabilityCatalog = result;
+      this.persist();
+      return this.productCapabilityCatalog;
     },
     async searchRecordContext(search = '', requestEpoch = currentContextEpoch()) {
       const requestSequence = ++recordSearchRequestSequence;

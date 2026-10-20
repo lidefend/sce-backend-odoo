@@ -1,0 +1,339 @@
+{
+  "schema_version": "product_system_parameter_catalog.v1",
+  "status": "locked",
+  "objective": "以产品批准的参数目录约束受控系统参数：每个参数必须有业务名称、说明、类型、默认值、允许值、作用范围、影响说明与维护角色；变更必须走变更集与影响预览，具备审计与回滚。原始 ir.config_parameter、部署密钥、数据库地址与认证信息永不进入产品页面。",
+  "categories": [
+    {
+      "key": "business_rules",
+      "label": "业务规则"
+    },
+    {
+      "key": "finance_accounting",
+      "label": "财务与会计"
+    },
+    {
+      "key": "notification_collaboration",
+      "label": "通知与协作"
+    },
+    {
+      "key": "data_attachment",
+      "label": "数据与附件"
+    },
+    {
+      "key": "integration",
+      "label": "集成"
+    },
+    {
+      "key": "feature_switches",
+      "label": "功能开关"
+    }
+  ],
+  "parameters": [
+    {
+      "key": "cost_ledger_source",
+      "category": "business_rules",
+      "label": "成本台账自动归集来源",
+      "description": "成本台账只能选择一个自动归集来源，避免同一成本重复计入。",
+      "type": "selection",
+      "default": "account_move",
+      "allowed_values": [
+        "account_move",
+        "purchase_order",
+        "stock_move",
+        "disabled"
+      ],
+      "scope": "company",
+      "maintainer_role": "business_config_admin",
+      "status": "available",
+      "authority": "res.company.sc_cost_from_account_move",
+      "impact": {
+        "surfaces": [
+          "成本台账",
+          "采购入库",
+          "库存入库"
+        ],
+        "summary": "变更后，新的成本业务将按所选来源自动归集；历史单据不受影响。",
+        "risk_level": "medium"
+      }
+    },
+    {
+      "key": "approval_mode",
+      "category": "business_rules",
+      "label": "审批模式",
+      "description": "控制业务单据的审批流转方式。",
+      "type": "selection",
+      "default": "single",
+      "allowed_values": [
+        "single",
+        "multi",
+        "disabled"
+      ],
+      "scope": "company",
+      "maintainer_role": "business_config_admin",
+      "status": "planned",
+      "authority": "sc.product.system.settings",
+      "impact": {
+        "surfaces": [
+          "审批流程"
+        ],
+        "summary": "切换审批模式会影响后续单据的提交与审核判断。",
+        "risk_level": "high"
+      }
+    },
+    {
+      "key": "default_payment_terms",
+      "category": "business_rules",
+      "label": "默认付款条件",
+      "description": "新建业务单据时默认采用的付款条件。",
+      "type": "selection",
+      "default": "net30",
+      "allowed_values": [
+        "net30",
+        "net60",
+        "advance",
+        "custom"
+      ],
+      "scope": "company",
+      "maintainer_role": "business_config_admin",
+      "status": "planned",
+      "authority": "sc.product.system.settings",
+      "impact": {
+        "surfaces": [
+          "采购",
+          "销售"
+        ],
+        "summary": "影响新建单据的默认付款条件。",
+        "risk_level": "low"
+      }
+    },
+    {
+      "key": "company_currency",
+      "category": "finance_accounting",
+      "label": "本位币",
+      "description": "公司记账使用的本位币。",
+      "type": "selection",
+      "default": "CNY",
+      "allowed_values": [
+        "CNY",
+        "USD",
+        "HKD"
+      ],
+      "scope": "company",
+      "maintainer_role": "business_config_admin",
+      "status": "planned",
+      "authority": "sc.product.system.settings",
+      "impact": {
+        "surfaces": [
+          "财务",
+          "资金"
+        ],
+        "summary": "本位币变更会影响财务核算与资金报表的币种口径。",
+        "risk_level": "high"
+      }
+    },
+    {
+      "key": "tax_rate",
+      "category": "finance_accounting",
+      "label": "默认税率",
+      "description": "新建业务单据时默认采用的税率。",
+      "type": "number",
+      "default": 0.09,
+      "min": 0,
+      "max": 1,
+      "scope": "company",
+      "maintainer_role": "business_config_admin",
+      "status": "planned",
+      "authority": "sc.product.system.settings",
+      "impact": {
+        "surfaces": [
+          "财务",
+          "税务"
+        ],
+        "summary": "影响新建单据的默认税率。",
+        "risk_level": "medium"
+      }
+    },
+    {
+      "key": "notification_channels",
+      "category": "notification_collaboration",
+      "label": "通知渠道",
+      "description": "系统提醒与协作消息的发送渠道。",
+      "type": "selection",
+      "default": "in_app",
+      "allowed_values": [
+        "in_app",
+        "email",
+        "both"
+      ],
+      "scope": "company",
+      "maintainer_role": "business_config_admin",
+      "status": "planned",
+      "authority": "sc.product.system.settings",
+      "impact": {
+        "surfaces": [
+          "通知中心"
+        ],
+        "summary": "影响审批提醒与协作消息的送达方式。",
+        "risk_level": "low"
+      }
+    },
+    {
+      "key": "overdue_escalation",
+      "category": "notification_collaboration",
+      "label": "逾期升级",
+      "description": "逾期事项是否自动升级提醒。",
+      "type": "boolean",
+      "default": true,
+      "scope": "company",
+      "maintainer_role": "business_config_admin",
+      "status": "planned",
+      "authority": "sc.product.system.settings",
+      "impact": {
+        "surfaces": [
+          "风险与提醒"
+        ],
+        "summary": "控制逾期事项的自动升级提醒行为。",
+        "risk_level": "low"
+      }
+    },
+    {
+      "key": "attachment_size_limit",
+      "category": "data_attachment",
+      "label": "附件大小上限（MB）",
+      "description": "单个附件的最大允许大小。",
+      "type": "number",
+      "default": 20,
+      "min": 1,
+      "max": 1024,
+      "scope": "company",
+      "maintainer_role": "business_config_admin",
+      "status": "planned",
+      "authority": "sc.product.system.settings",
+      "impact": {
+        "surfaces": [
+          "附件上传"
+        ],
+        "summary": "影响单个附件上传的大小上限。",
+        "risk_level": "low"
+      }
+    },
+    {
+      "key": "retention_days",
+      "category": "data_attachment",
+      "label": "数据保留天数",
+      "description": "业务附件与数据的保留时长。",
+      "type": "number",
+      "default": 1095,
+      "min": 30,
+      "max": 3650,
+      "scope": "company",
+      "maintainer_role": "business_config_admin",
+      "status": "planned",
+      "authority": "sc.product.system.settings",
+      "impact": {
+        "surfaces": [
+          "数据归档"
+        ],
+        "summary": "影响业务附件与数据的保留周期。",
+        "risk_level": "medium"
+      }
+    },
+    {
+      "key": "bank_connector",
+      "category": "integration",
+      "label": "银行连接器",
+      "description": "银行账户同步连接器的开关。",
+      "type": "selection",
+      "default": "disabled",
+      "allowed_values": [
+        "disabled",
+        "enabled"
+      ],
+      "scope": "company",
+      "maintainer_role": "business_config_admin",
+      "status": "planned",
+      "authority": "sc.product.system.settings",
+      "impact": {
+        "surfaces": [
+          "资金账户"
+        ],
+        "summary": "控制银行账户同步连接器的启用状态。",
+        "risk_level": "medium"
+      }
+    },
+    {
+      "key": "invoice_connector",
+      "category": "integration",
+      "label": "发票连接器",
+      "description": "发票接口连接器的开关。",
+      "type": "selection",
+      "default": "disabled",
+      "allowed_values": [
+        "disabled",
+        "enabled"
+      ],
+      "scope": "company",
+      "maintainer_role": "business_config_admin",
+      "status": "planned",
+      "authority": "sc.product.system.settings",
+      "impact": {
+        "surfaces": [
+          "发票"
+        ],
+        "summary": "控制发票接口连接器的启用状态。",
+        "risk_level": "medium"
+      }
+    },
+    {
+      "key": "module_gray_release",
+      "category": "feature_switches",
+      "label": "模块灰度",
+      "description": "试点模块的灰度发布范围。",
+      "type": "selection",
+      "default": "disabled",
+      "allowed_values": [
+        "disabled",
+        "pilot",
+        "full"
+      ],
+      "scope": "company",
+      "maintainer_role": "business_config_admin",
+      "status": "planned",
+      "authority": "sc.product.system.settings",
+      "impact": {
+        "surfaces": [
+          "功能开关"
+        ],
+        "summary": "控制试点模块的灰度发布范围。",
+        "risk_level": "medium"
+      }
+    },
+    {
+      "key": "pilot_switch",
+      "category": "feature_switches",
+      "label": "试点开关",
+      "description": "是否开启试点功能。",
+      "type": "boolean",
+      "default": false,
+      "scope": "company",
+      "maintainer_role": "business_config_admin",
+      "status": "planned",
+      "authority": "sc.product.system.settings",
+      "impact": {
+        "surfaces": [
+          "功能开关"
+        ],
+        "summary": "控制试点功能的启用状态。",
+        "risk_level": "low"
+      }
+    }
+  ],
+  "guardrails": [
+    "no_raw_ir_config_parameter_in_user_entry",
+    "no_credential_material_or_deployment_identity",
+    "company_scope_required",
+    "change_set_required_for_mutation",
+    "impact_preview_required",
+    "audit_and_rollback_required"
+  ]
+}
