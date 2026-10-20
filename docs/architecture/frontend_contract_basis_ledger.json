@@ -159,6 +159,18 @@
       "onMissing": "stop",
       "behaviourTest": "frontend/apps/web/scripts/product_capability_catalog_test.ts",
       "regressionGuard": "verify.frontend.product_capability_catalog.unit"
+    },
+    {
+      "surface": "sc.product.system_parameter（受控系统参数目录 / 影响预览 / 变更记录）",
+      "declared": "sc.product.system_parameter.catalog/.preview/.publish/.rollback（P1:smart_construction_core）",
+      "declaredBy": "addons/smart_construction_core/handlers/product_system_parameter_catalog.py",
+      "declaredSymbol": "sc.product.system_parameter.catalog",
+      "consumedBy": "frontend/apps/web/src/app/productSystemParameterProjection.ts",
+      "consumedSymbol": "projectSystemParameterCatalog",
+      "stopSymbol": "ContractGapError",
+      "onMissing": "stop",
+      "behaviourTest": "frontend/apps/web/scripts/product_system_parameter_test.ts",
+      "regressionGuard": "verify.frontend.product_system_parameter.unit"
     }
   ],
   "registeredMechanismExemptions": [

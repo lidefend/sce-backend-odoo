@@ -44,6 +44,18 @@
    - `sc.product.system_parameter.rollback`：仅可回滚已发布变更，恢复旧值并标记 rolled_back。
 4. `core_extension_intent_handlers.py` 登记两个写 intent（REQUIRED_GROUPS 为配置管理员组）。
 
+### 2.2 前端消费（P0 契约消费层）
+
+1. `businessConfigBoundaries.ts`：`PRODUCT_SYSTEM_PARAMETER_INTENTS`（catalog/preview/publish/rollback）。
+2. `api/productSystemParameter.ts`（新）：目录/预览/变更记录类型 + 四个 fetch。
+3. `app/productSystemParameterProjection.ts`（新）：fail-closed 投影（目录/预览/变更记录），
+   声明非法即 `ContractGapError` 停机，planned 参数不可编辑。
+4. `composables/systemParameter/useSystemParameterCatalog.ts`（新）+ `views/systemParameter/SystemParameterCatalogView.vue`
+   （新）：按 6 类渲染参数目录，available 参数支持影响预览/发布，已发布变更可回滚。
+5. 路由 `/admin/system-parameters` 注册。
+6. 行为测试 `scripts/product_system_parameter_test.ts` + make 目标
+   `verify.frontend.product_system_parameter.unit` + 契约台账绑定（bindings=13）。
+
 ## 3. 验证结果
 
 | 层 | 命令 | 状态 | 测试数 |
@@ -53,13 +65,16 @@
 | L2 | `python3 scripts/verify/test_construction_intent_contribution_registry.py` | passed | 2 |
 | L3 | `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1` | passed | schema + ACL 应用，demo authority PASS |
 | L3 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS=sc_gate,product_system_parameter_change` | passed | 460（含新增 5 例；368 post-tests 0 failed/0 error） |
+| L2 | `make verify.frontend.product_system_parameter.unit` | passed | 20 |
+| L1 | `pnpm run typecheck`（frontend/apps/web） | passed | - |
+| L1 | `make verify.frontend.contract_basis.enforce` | passed | bindings=13, open_defects=0 |
 
 guard 结论：categories=6 parameters=13，无密钥/无原始 ir.config_parameter；cost_ledger_source 为
 唯一 available 参数，其余 planned 不伪装可用。
 
-## 4. 未完成（本批剩余层）
+## 4. 未完成
 
-- 前端消费：参数目录页、影响预览、发布/回滚 UI（下一步）。
+- 无（Batch 4 前后端全部完成）。`ci.local.iteration` 的 reconcile 属 run 收据机制（P4 台账），非产品失败。
 
 ## 5. 风险与回滚
 
@@ -68,4 +83,4 @@ guard 结论：categories=6 parameters=13，无密钥/无原始 ir.config_parame
 
 ## 6. 下一步
 
-- 提交本层；随后前端消费 `sc.product.system_parameter.catalog/.preview/.publish/.rollback`。
+- 提交本层；随后进入 Batch 5：登录首屏 6 区块与「我的能力」页面。

@@ -50,7 +50,13 @@
     "addons/smart_construction_core/security/ir.model.access.csv",
     "addons/smart_construction_core/handlers/product_system_parameter_change.py",
     "addons/smart_construction_core/tests/test_product_system_parameter_change.py",
-    "addons/smart_construction_core/tests/__init__.py"
+    "addons/smart_construction_core/tests/__init__.py",
+    "frontend/apps/web/src/api/productSystemParameter.ts",
+    "frontend/apps/web/src/app/productSystemParameterProjection.ts",
+    "frontend/apps/web/src/composables/systemParameter/useSystemParameterCatalog.ts",
+    "frontend/apps/web/src/views/systemParameter/SystemParameterCatalogView.vue",
+    "frontend/apps/web/src/router/index.ts",
+    "frontend/apps/web/scripts/product_system_parameter_test.ts"
   ],
   "environment": {
     "kind": "runtime",
@@ -149,12 +155,25 @@
       "readback": {
         "artifact": ".runtime/agent-runs/PRODUCT-CONFIGURATION-CAPABILITY-20261020/readback.json"
       }
+    },
+    "product_system_parameter_frontend": {
+      "target": "verify.frontend.product_system_parameter.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/product_system_parameter_test.ts",
+        "frontend/apps/web/src/app/productSystemParameterProjection.ts",
+        "frontend/apps/web/src/api/productSystemParameter.ts",
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline",
+      "test_count": 20
     }
   },
   "verification_results": {
     "frontend_contract_basis_enforce": {
       "command": "make verify.frontend.contract_basis.enforce",
       "status": "passed",
+      "bindings": 13,
       "open_defects": 0
     },
     "ci_local_iteration": {
@@ -183,6 +202,15 @@
       "command": "make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core",
       "status": "passed",
       "note": "schema + security (ir.model.access) applied; local.dev.demo.authority PASS"
+    },
+    "product_system_parameter_frontend": {
+      "command": "make verify.frontend.product_system_parameter.unit",
+      "status": "passed",
+      "test_count": 20
+    },
+    "frontend_typecheck": {
+      "command": "cd frontend/apps/web && pnpm run typecheck",
+      "status": "passed"
     }
   },
   "blockers": [],
@@ -197,5 +225,5 @@
     "next_exact_step": "Consume product.configuration.capability.catalog in the configuration workbench and login workspace.",
     "mainline_integration": "not_run"
   },
-  "next_exact_step": "Batch 4 change-set publish/rollback backend implemented and ORM-verified. Next: frontend consumption of sc.product.system_parameter.catalog/.preview/.publish/.rollback."
+  "next_exact_step": "Batch 4 complete (catalog + impact preview + change-set backend + frontend consumption). Next: Batch 5 login first-screen 6 blocks and my-capabilities page."
 }

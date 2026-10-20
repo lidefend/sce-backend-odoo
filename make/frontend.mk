@@ -479,6 +479,14 @@ verify.frontend.product_capability_catalog.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_capability_catalog_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-capability-catalog-test.mjs >/dev/null
 	@node /tmp/product-capability-catalog-test.mjs
 
+# 受控系统参数的契约消费面：目录/影响预览/变更记录均原样消费后端声明，
+# 声明面存在但非法即 ContractGapError 停机；planned 参数不可编辑，前端不推导
+# 取值合法性、影响范围或回滚语义。
+.PHONY: verify.frontend.product_system_parameter.unit
+verify.frontend.product_system_parameter.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_system_parameter_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-system-parameter-test.mjs >/dev/null
+	@node /tmp/product-system-parameter-test.mjs
+
 # 权限枚举与状态栏去重的消费判定：admin 蕴含 edit，缺失/非法 auth 停机，正文里
 # 「同名字段的不同出现」不因状态栏占位而被隐藏。用生产 helper，回归到
 # `auth !== 'edit'` 或字段名级去重即失败。
@@ -629,8 +637,8 @@ verify.frontend.pr.unit: verify.frontend.official_icon.unit verify.frontend.glob
 verify.frontend.release.unit: verify.frontend.official_icon.unit verify.frontend.global_component_capability.unit verify.frontend.component_driver_takeover.unit verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.low_code_field_create_dialog.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.state_dashboard.unit verify.frontend.professional.extensions.unit verify.frontend.boq_import_preview.unit verify.frontend.chart_dataset.unit verify.frontend.mobile_viewport.unit verify.frontend.intent_request_identity.unit verify.frontend.intent_request_coalescing.unit verify.frontend.collection_row_action_identity.unit verify.frontend.action_view_page_size_runtime.unit verify.frontend.action_view_surface_gate_runtime.unit verify.menu_config_tree_editor.behavior verify.contract_form_runtime_state.behavior verify.action_view_runtime_smoke.behavior verify.platform.duty.contract.unit
 
 verify.frontend.quick.gate: verify.frontend.contract_consumption_verdicts.unit
-verify.frontend.pr.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.frontend.contract_gap_primitive.unit verify.frontend.product_capability_catalog.unit verify.semantic_runtime_resolution verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit
-verify.frontend.release.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.frontend.contract_gap_primitive.unit verify.frontend.product_capability_catalog.unit verify.semantic_runtime_resolution verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit
+verify.frontend.pr.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.frontend.contract_gap_primitive.unit verify.frontend.product_capability_catalog.unit verify.frontend.product_system_parameter.unit verify.semantic_runtime_resolution verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit
+verify.frontend.release.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.frontend.contract_gap_primitive.unit verify.frontend.product_capability_catalog.unit verify.frontend.product_system_parameter.unit verify.semantic_runtime_resolution verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit
 
 verify.frontend.lint.src: guard.prod.forbid
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src

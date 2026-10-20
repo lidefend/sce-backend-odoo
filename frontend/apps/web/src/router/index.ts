@@ -325,6 +325,7 @@ const router = createRouter({
     { path: '/admin/release-operator', name: 'release-operator', component: () => import('../views/ReleaseOperatorView.vue'), meta: { layout: 'shell', adminOnly: true, platformAdminOnly: true } },
     { path: '/platform', name: 'platform-duty', component: () => import('../views/PlatformDutyView.vue'), meta: { layout: 'shell', adminOnly: true, platformAdminOnly: true } },
     { path: '/admin/business-config', name: 'business-config', component: () => import('../views/BusinessConfigSurfaceView.vue'), meta: { layout: 'shell' } },
+    { path: '/admin/system-parameters', name: 'system-parameters', component: () => import('../views/systemParameter/SystemParameterCatalogView.vue'), meta: { layout: 'shell' } },
     { path: '/admin/menu-config', name: 'menu-config', component: () => import('../views/MenuConfigView.vue'), meta: { layout: 'shell' } },
     { path: '/admin/form-field-config', name: 'form-field-config', component: () => import('../views/ActionViewShell.vue'), meta: { layout: 'shell' } },
     { path: '/account/api-keys', name: 'api-key-management', component: () => import('../views/ApiKeyManagementView.vue'), meta: { layout: 'shell', pageHeadingOwner: 'content' } },
