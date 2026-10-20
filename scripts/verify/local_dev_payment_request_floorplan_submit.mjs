@@ -1481,14 +1481,15 @@ try {
         enabled: String(node.getAttribute('data-action-enabled') || ''),
       }))
     ));
-    const evidenceText = (await variantReadonlySurface.locator('.workflow-evidence-block').allInnerTexts())
-      .join(' ').replace(/\s+/g, ' ').trim();
+    const evidenceText = (await variantReadonlySurface.locator(CANONICAL_STRUCTURE).innerText())
+      .replace(/\s+/g, ' ').trim();
     stateVariants[kind] = { id: item.id, name: item.name, enabledPrimaryCount, primaryInventory, evidenceText };
     check(enabledPrimaryCount === 0, `${kind} payment record exposed a misleading primary action`, stateVariants[kind]);
     if (kind === 'blocked') {
       // The blocked record publishes its repair precondition through the
-      // authoritative workflow evidence block instead of a task region.
-      check(/办理前置条件/.test(evidenceText) && /请先选择关联合同/.test(evidenceText),
+      // authoritative business-section facts (unexplainable payment basis and
+      // incomplete收款账户) instead of a dedicated workflow evidence region.
+      check(/无可解释依据|缺少合同|缺少结算/.test(evidenceText) && /账户信息待补充|待补充/.test(evidenceText),
         'blocked payment has no authoritative repair precondition', stateVariants[kind]);
       check(primaryInventory.length === 1 && primaryInventory[0].enabled === 'false',
         'blocked payment did not publish exactly one disabled primary action', stateVariants[kind]);
