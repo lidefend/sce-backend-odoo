@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "PLATFORM-BROWSER-PROBE-ENTRY-CREDENTIALS-20261020",
+  "branch": "codex/platform-browser-probe-entry-credentials-20261020",
+  "baseline_sha": "58f39bec868aa3649862bc698d9e42393eaffcfc",
+  "status": "active",
+  "goal": ".agent/goals/PLATFORM-BROWSER-PROBE-ENTRY-CREDENTIALS-20261020.yaml",
+  "record": "docs/ops/iterations/platform_browser_probe_entry_credentials_20261020.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/PLATFORM-BROWSER-PROBE-ENTRY-CREDENTIALS-20261020.yaml",
+    ".agent/runs/PLATFORM-BROWSER-PROBE-ENTRY-CREDENTIALS-20261020/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/e2e_journey_matrix.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/platform_browser_probe_entry_credentials_20261020.md",
+    "make/runtime_ops.mk",
+    "scripts/ops/path_ns_c_s4_browser_probe.mjs",
+    "scripts/ops/test_path_ns_c_s4_browser_probe_credentials.py"
+  ],
+  "environment": {
+    "kind": "offline"
+  },
+  "product_boundary": {
+    "formal_product_layer": "P4 ops delivery tool",
+    "layer_target": "path-namespace browser evidence probe credentials",
+    "standard_vs_user_specific": "ops delivery mechanism",
+    "why_here": "The probe is governed evidence tooling; the credential contract belongs with the probe, not in product contracts.",
+    "why_not_elsewhere": "No product or tenant semantic changes; frontend and backend contracts are untouched.",
+    "blast_radius": "evidence probe startup and test coverage only; no runtime deployment state, database or business data"
+  },
+  "checks": {
+    "path_namespace_probe_credentials": {
+      "target": "verify.path_namespace.acceptance.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/runtime_ops.mk",
+        "scripts/ops/path_ns_c_s4_browser_probe.mjs",
+        "scripts/ops/test_path_ns_c_acceptance.py",
+        "scripts/ops/test_path_ns_c_s4_browser_probe_credentials.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Record the targeted unit receipt, run the frozen exact-head quick gate, publish the PR and merge after required checks pass. No deployment."
+}

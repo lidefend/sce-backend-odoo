@@ -10,6 +10,12 @@
  * Read-only with respect to business data. Logout bumps the demo admin
  * token_version, so run it only inside an agreed evidence window.
  *
+ * Credentials are per entry and never checked in.  Each governed entry owns its
+ * own variable; a missing variable fails closed before Playwright is loaded.
+ *
+ *   SC_DEMO_USER_PASSWORD       demo tenant administrator password
+ *   SC_PLATFORM_ADMIN_PASSWORD  platform administrator password
+ *
  * Usage:
  *   node scripts/ops/path_ns_c_s4_browser_probe.mjs \
  *     --base-url http://127.0.0.1:18099 \
@@ -30,6 +36,28 @@ const BASE = args['base-url'] || 'http://127.0.0.1:18081';
 const OUT = path.resolve(args['out-dir'] || path.join(repoRoot, '.runtime/path-ns-c-20261018/evidence-r2/browser'));
 const pwPath = args.playwright || path.join(repoRoot, 'frontend/apps/web/node_modules/playwright');
 const executable = args.executable || path.join(process.env.HOME || '', '.cache/ms-playwright/chromium-1217/chrome-linux64/chrome');
+
+const ENTRY_CREDENTIALS = {
+  demo: { entry: '/t/demo/', login: 'admin', passwordEnv: 'SC_DEMO_USER_PASSWORD' },
+  platform: { entry: '/platform-admin/', login: 'admin', passwordEnv: 'SC_PLATFORM_ADMIN_PASSWORD' },
+};
+
+function resolveEntryCredential(role) {
+  const spec = ENTRY_CREDENTIALS[role];
+  const password = (process.env[spec.passwordEnv] || '').trim();
+  if (!password) {
+    console.error(
+      `[path-ns-c-s4-browser-probe] ${spec.passwordEnv} is required for the ${role} entry; refusing to use a literal credential`,
+    );
+    process.exit(2);
+  }
+  return { login: spec.login, password };
+}
+
+const credentials = {
+  demo: resolveEntryCredential('demo'),
+  platform: resolveEntryCredential('platform'),
+};
 const { chromium } = createRequire(pwPath)(pwPath);
 
 fs.mkdirSync(OUT, { recursive: true });
@@ -62,13 +90,13 @@ const snapshot = (page) => page.evaluate(() => {
   };
 });
 
-async function login(page, entry) {
+async function login(page, entry, credential) {
   const errors = [];
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text().slice(0, 160)); });
   await page.goto(BASE + entry, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForSelector('input[aria-label="账号"]', { timeout: 20000 });
-  await page.fill('input[aria-label="账号"]', 'admin');
-  await page.fill('input[aria-label="密码"]', '123456');
+  await page.fill('input[aria-label="账号"]', credential.login);
+  await page.fill('input[aria-label="密码"]', credential.password);
   await page.click('button[type="submit"]');
   await page.waitForTimeout(4500);
   return errors;
@@ -93,9 +121,9 @@ try {
   const demo = await ctx.newPage();
   const platform = await ctx.newPage();
 
-  const demoErrors = await login(demo, '/t/demo/');
+  const demoErrors = await login(demo, ENTRY_CREDENTIALS.demo.entry, credentials.demo);
   const demoSnap = await snapshot(demo);
-  const platformErrors = await login(platform, '/platform-admin/');
+  const platformErrors = await login(platform, ENTRY_CREDENTIALS.platform.entry, credentials.platform);
   const platformSnap = await snapshot(platform);
 
   const clean = ({ token, ...rest }) => rest;
