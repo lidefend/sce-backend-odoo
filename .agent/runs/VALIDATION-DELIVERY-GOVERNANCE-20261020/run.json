@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "VALIDATION-DELIVERY-GOVERNANCE-20261020",
   "branch": "fix/validation-delivery-governance-20261020",
-  "baseline_sha": "6dd15103ae8f0f892f7e89d915039cff3dd5b997",
+  "baseline_sha": "b9a060c622c3943dafcb0f7d332fd9e87b22b781",
   "status": "verification_pending",
   "goal": ".agent/goals/VALIDATION-DELIVERY-GOVERNANCE-20261020.yaml",
   "record": "docs/ops/iterations/validation_delivery_governance_20261020.md",
