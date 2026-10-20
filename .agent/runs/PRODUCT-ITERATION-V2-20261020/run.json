@@ -11,6 +11,7 @@
     ".agent/goals/PRODUCT-ITERATION-V2-20261020.yaml",
     ".agent/runs/PRODUCT-ITERATION-V2-20261020/run.json",
     "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/core_extension.py",
     "addons/smart_construction_core/data/product_system_parameter_catalog_v1.json",
     "addons/smart_construction_core/data/default_payment_terms.xml",
     "addons/smart_construction_core/handlers/payment_request_available_actions.py",
@@ -25,6 +26,7 @@
     "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
     "addons/smart_construction_core/tests/test_product_system_parameter_catalog_service.py",
     "addons/smart_construction_core/tests/test_product_system_parameter_change.py",
+    "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
     "addons/smart_construction_core/tests/test_group_authority_reconciliation.py",
     "addons/smart_core/models/res_users_group_authority.py",
     "addons/smart_core/views/group_authority_reconciliation_views.xml",
@@ -38,6 +40,9 @@
     "make/codex.mk",
     "scripts/ops/safe_branch_sync_main.py",
     "scripts/ops/test_safe_branch_sync_main.py",
+    "scripts/dev/local_dev_demo_credentials_prepare.sh",
+    "scripts/verify/local_dev_payment_request_floorplan_submit.mjs",
+    "scripts/verify/local_dev_payment_request_full_chain.mjs",
     "scripts/verify/local_dev_payment_request_full_chain.sh"
   ],
   "environment": {
