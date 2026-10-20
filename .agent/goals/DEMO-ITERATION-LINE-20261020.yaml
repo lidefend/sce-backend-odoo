@@ -67,8 +67,9 @@ goal:
         sub-items are not executed. Do not repair unrelated links in this batch.
       owner: separate_p4_docs_baseline_cleanup
   next_exact_step: >-
-    Batch 3 done: golden business chain readback passes. Next: Batch 4 — API
-    scenario driver (real-role four-tier approval, idempotency, negative cases).
+    Batch 4 surface readback done (multi-tier approval wired, fixture drivable).
+    Remaining: demo-scenario four-tier role-driven approve with idempotency +
+    negative, then Batch 5 (daily tick + scoped experience reset, timer identity first).
   completion:
     scope: overall_plan_and_baseline_readiness_audit
     overall_goal: in_progress
