@@ -69,7 +69,10 @@
     "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json",
     "demo_addons/smart_construction_demo/tests/test_demo_scenario_tick.py",
     "demo_addons/smart_construction_demo/models/scenario_tick.py",
-    "demo_addons/smart_construction_demo/models/__init__.py"
+    "demo_addons/smart_construction_demo/models/__init__.py",
+    "scripts/verify/experience_reset_scope.py",
+    "scripts/verify/test_experience_reset_scope.py",
+    "demo_addons/smart_construction_demo/data/experience_users.json"
   ],
   "environment": {
     "kind": "offline",
@@ -121,6 +124,14 @@
         "scripts/verify/test_demo_scenario_step.py"
       ],
       "kind": "offline"
+    },
+    "experience_reset_scope": {
+      "target": "verify.demo.experience_reset_scope.unit",
+      "inputs": [
+        "scripts/verify/experience_reset_scope.py",
+        "scripts/verify/test_experience_reset_scope.py"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
@@ -145,5 +156,5 @@
       "resolved_commit": "a44238ad8"
     }
   ],
-  "next_exact_step": "Batch 5 runtime tick executor done: demo.scenario.tick.run_tick advances one business day per call, creates role todos (mail.activity on the anchor project), records unbound system_fact steps, persists the idempotency ledger + heartbeat (verify.local.dev.scenario_tick.orm). Next: a governed tick entrypoint + scoped experience reset (demo-declared experience set, baseline fingerprint unchanged), then Batch 6 browser acceptance."
+  "next_exact_step": "Batch 5 experience-reset scope planner done: read-only plan_cleanup computes record+artifact cleanup scope and fails closed if an experience user touched a baseline record (verify.demo.experience_reset_scope.unit, 4 tests). Next: governed tick entrypoint + runtime reset-scope readback (resolve demo-declared experience set against the DB, no deletion), then Batch 6 browser acceptance."
 }

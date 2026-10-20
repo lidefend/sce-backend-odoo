@@ -3008,6 +3008,10 @@ verify.demo.baseline_readiness.unit: guard.prod.forbid
 verify.demo.scenario_step.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_demo_scenario_step.py
 
+.PHONY: verify.demo.experience_reset_scope.unit
+verify.demo.experience_reset_scope.unit: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_experience_reset_scope.py
+
 .PHONY: verify.platform.database.rehearsal.unit
 verify.platform.database.rehearsal.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_platform_database_rehearsal.py

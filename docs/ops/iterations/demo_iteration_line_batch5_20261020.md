@@ -36,8 +36,14 @@
 
 ## 4. 下一批
 
-Batch 5 剩余：受管 tick 入口 + scoped experience reset（体验角色落地前用 demo 声明的
-体验集合做清理键、基线指纹不变）；随后 Batch 6 角色 UI 验收。
+- 新增 `scripts/verify/experience_reset_scope.py`：只读清理范围规划器——按体验用户
+  `create_uid`/`write_uid` 计算业务记录与派生附件/消息的清理范围，体验用户碰过基线记录
+  即 fail-closed；`demo_addons/.../data/experience_users.json` 为演示声明的体验登录载体
+  （角色落地前为空）。
+- 离线：`verify.demo.experience_reset_scope.unit` → 4 tests OK。
+
+Batch 5 剩余：受管 tick 入口 + 运行时清理范围回读（对 DB 解析体验集合、只算不删）；
+随后 Batch 6 角色 UI 验收。
 
 ## 4. 下一批
 
