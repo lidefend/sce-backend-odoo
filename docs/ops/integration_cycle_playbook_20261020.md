@@ -22,11 +22,8 @@ The rule below changes the loop, not the gates.
 Take one ownership snapshot from the exact worktree:
 
 ```bash
-git worktree list --porcelain
-git branch --show-current
-git rev-parse HEAD
-git status --porcelain=v2 --untracked-files=all
-git log -1 --stat -- <path>
+make integration.cycle SUBCOMMAND=snapshot \
+  ARGS='--path <path> --path <path>'
 ```
 
 If the path is already in `HEAD`, it is not an in-flight file. Do not submit a
@@ -35,20 +32,12 @@ defect, not a reason to touch the file.
 
 ## 2. Converge locally before the first push
 
-Run the high-yield integration guards as one bundle. They are the checks that
-repeatedly failed late in this integration:
+Run the high-yield integration guards as one bundle. The helper continues after
+a failure and prints every independent failing gate in one pass:
 
 ```bash
-make architecture.complexity_baseline_lock \
-     verify.frontend.decision_authority.unit \
-     verify.contract.architecture.suite \
-     verify.sc_data_scope.rule_coverage \
-     verify.frontend.component_driver_takeover.unit \
-     verify.test.coverage.registry \
-     verify.frontend.lint.src
-
-scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck
-python3 scripts/audit/verification_lane_coverage.py --check
+make integration.cycle SUBCOMMAND=fast-gates \
+  ARGS='--json .runtime/integration-cycle/fast.json'
 ```
 
 If a guard fails, fix it before adding more changes. Do not push a candidate
@@ -75,14 +64,16 @@ affected Quick shard. Passed shards remain reusable.
 
 ### Long-running Quick
 
-When the runner session has a short wall-clock cap, run Quick detached and poll
-the receipt instead of treating SIGTERM as a failure:
+When the runner session has a short wall-clock cap, start Quick detached and
+poll the receipt instead of treating SIGTERM as a failure:
 
 ```bash
-setsid nohup make ci.local.quick > /tmp/quick.log 2>&1 < /dev/null &
-python3 scripts/ops/local_quick_evidence.py verify \
-  --expected-head "$(git rev-parse HEAD)"
+make integration.cycle SUBCOMMAND=quick-start
+make integration.cycle SUBCOMMAND=quick-status
 ```
+
+`quick-status` exits `0` with a verified receipt, `1` while the process is
+still running, and `2` when the process stopped without a receipt.
 
 ## 4. One push per converged candidate
 
@@ -109,11 +100,13 @@ Merge only when all required GitHub checks are green on the live PR head and
 the exact-head Quick receipt verifies:
 
 ```bash
-gh pr checks <pr>
-python3 scripts/ops/local_quick_evidence.py verify --expected-head <sha>
+make integration.cycle SUBCOMMAND=merge-readiness ARGS='--pr <pr>'
 gh pr merge <pr> --squash --match-head-commit <sha> \
   --subject "<subject>" --body "<body>"
 ```
+
+Use `ARGS='--pr <pr> --allow-no-quick'` only for an explicitly docs-only fast
+lane where the exact-head Quick is not required.
 
 `make pr.merge` remains the stricter local lane. If its preflight blocks only
 on runtime suites outside the selected product/demo scope (for example

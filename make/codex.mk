@@ -1663,6 +1663,18 @@ verify.agent.ledger.unit: guard.prod.forbid
 agent.run.begin: guard.prod.forbid
 	@python3 scripts/ops/agent_run_context.py --begin "$(AGENT_CHECK)"
 
+.PHONY: integration.cycle verify.integration.cycle.unit
+# Operator-facing integration helper. It never edits product code, freezes
+# evidence, or merges a PR; it only snapshots ownership, aggregates the
+# high-yield local gates, starts/polls an exact-head Quick, and reports merge
+# readiness.
+integration.cycle: guard.prod.forbid
+	@python3 scripts/ops/integration_cycle.py $(SUBCOMMAND) $(ARGS)
+
+verify.integration.cycle.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/integration_cycle.py scripts/ops/test_integration_cycle.py
+	@python3 -m unittest scripts.ops.test_integration_cycle
+
 .PHONY: verify.trusted_scan.unit
 verify.trusted_scan.unit: security.online_capture.unit
 
