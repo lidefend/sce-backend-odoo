@@ -27,8 +27,17 @@
 
 ## 3. 完成边界
 
-- 本批落地 tick 的调度与幂等纯逻辑；运行时接库（ir.cron / 压缩 3 日时钟、心跳）与
-  scoped experience reset（以 demo 声明的体验集合为清理键）为 Batch 5 后续。
+- 新增 `demo_addons/smart_construction_demo/models/scenario_tick.py`：
+  `demo.scenario.tick.run_tick` 每次推进一个业务日——`role_decision`/`role_draft` 给角色
+  活跃用户建 `mail.activity` 待办（锚定项目），`system_fact` 记为 `unbound`（绝不静默执行），
+  幂等台账与心跳存 `ir.config_parameter`。
+- 运行时演练：`verify.local.dev.scenario_tick.orm` → 3 日推进、6 todo / 6 unbound、
+  心跳写入、第 4 次 up_to_date，0 failed / 0 error。
+
+## 4. 下一批
+
+Batch 5 剩余：受管 tick 入口 + scoped experience reset（体验角色落地前用 demo 声明的
+体验集合做清理键、基线指纹不变）；随后 Batch 6 角色 UI 验收。
 
 ## 4. 下一批
 
