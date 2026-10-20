@@ -6,9 +6,7 @@
 - Gitee `leegege/sce-product-odoo` 只接收 GitHub `main` 的普通快进镜像。
 - GitHub `main` 必须由 active ruleset 保护：必须 PR，并直接要求
   `frontend_release_gate`、`merge_policy_gate`、`professional_quality_gate`、
-  `public_guard` 四项检查，同时要求线程解决、禁止删除和非快进。唯一 bypass
-  actor 是仓库所有者 `lidefend`（`User` / `always`），用于所有者明确授权的
-  工具维护和治理操作；其他主体仍必须通过 PR 与四项检查。
+  `public_guard` 四项检查，同时要求线程解决、禁止删除和非快进，且没有 bypass actor。
 - Gitee→GitHub 的 write Deploy Key、反向镜像和独立 Gitee `main` 合并均被禁止。
 - 日常镜像禁止 force push、force-with-lease、删除 `main` 或从 Gitee 反向覆盖
   GitHub。唯一例外是仓库所有者逐次明确授权的历史治理切换，且只能通过

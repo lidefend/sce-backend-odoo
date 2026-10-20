@@ -2,8 +2,7 @@
 set -euo pipefail
 
 # Retained at the historical path for callers, but now configures the GitHub
-# authority ruleset. The repository owner is the single always-bypass actor;
-# deploy keys are never provisioned.
+# authority ruleset. It never provisions a deploy key or a bypass actor.
 [ "${GITHUB_AUTHORITY_RULESET_CONFIRM:-}" = "1" ] || {
   echo "[github_authority_ruleset] GITHUB_AUTHORITY_RULESET_CONFIRM=1 is required" >&2
   exit 2
@@ -17,13 +16,6 @@ readonly expected_sha="${GITHUB_AUTHORITY_RULESET_EXPECTED_SHA:-}"
 readonly repository="lidefend/sce-backend-odoo"
 readonly ruleset_name="main-github-authoritative-pr"
 readonly required_checks="frontend_release_gate merge_policy_gate professional_quality_gate public_guard"
-readonly owner_login="lidefend"
-
-owner_actor_id="$(gh api "users/${owner_login}" --jq .id)"
-[[ "${owner_actor_id}" =~ ^[0-9]+$ ]] || {
-  echo "[github_authority_ruleset] BLOCKED owner_actor_id_invalid" >&2
-  exit 2
-}
 
 remote_main="$(gh api "repos/${repository}/git/ref/heads/main" --jq .object.sha)"
 [ "${remote_main}" = "${expected_sha}" ] || {
@@ -49,15 +41,11 @@ write_key_count="$(gh api "repos/${repository}/keys" --jq '[.[] | select(.read_o
 
 payload="$(mktemp)"
 trap 'rm -f -- "${payload}"' EXIT
-jq -n --arg name "${ruleset_name}" --argjson owner_actor_id "${owner_actor_id}" '{
+jq -n --arg name "${ruleset_name}" '{
   name: $name,
   target: "branch",
   enforcement: "active",
-  bypass_actors: [{
-    actor_id: $owner_actor_id,
-    actor_type: "User",
-    bypass_mode: "always"
-  }],
+  bypass_actors: [],
   conditions: {ref_name: {include: ["refs/heads/main"], exclude: []}},
   rules: [
     {type: "deletion"},
@@ -94,10 +82,7 @@ gh api "repos/${repository}/rulesets/${ruleset_id}" --jq '
   select(.enforcement == "active")
   | select(.target == "branch")
   | select(.conditions.ref_name.include == ["refs/heads/main"])
-  | select((.bypass_actors | length) == 1)
-  | select(.bypass_actors[0].actor_id == '"${owner_actor_id}"')
-  | select(.bypass_actors[0].actor_type == "User")
-  | select(.bypass_actors[0].bypass_mode == "always")
+  | select((.bypass_actors | length) == 0)
   | select(any(.rules[]; .type == "pull_request"))
   | select(any(.rules[]; .type == "required_status_checks"))
   | select(any(.rules[]; .type == "deletion"))
@@ -108,4 +93,4 @@ gh api "repos/${repository}/rulesets/${ruleset_id}" --jq '
       == ["frontend_release_gate", "merge_policy_gate", "professional_quality_gate", "public_guard"])
   | .id' | grep -qx "${ruleset_id}"
 
-echo "[github_authority_ruleset] PASS ruleset_id=${ruleset_id} sha=${expected_sha} required_checks=4 bypass_actors=owner write_deploy_keys=0"
+echo "[github_authority_ruleset] PASS ruleset_id=${ruleset_id} sha=${expected_sha} required_checks=4 bypass_actors=none write_deploy_keys=0"

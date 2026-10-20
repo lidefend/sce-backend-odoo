@@ -33,7 +33,6 @@ GITHUB_URLS = {
 }
 GITEE_URL = "git@gitee.com:leegege/sce-product-odoo.git"
 RULESET_NAME = "main-github-authoritative-pr"
-OWNER_ACTOR_ID = 307461631
 REQUIRED_CHECKS = (
     "merge_policy_gate",
 )
@@ -266,14 +265,8 @@ def preflight(args: argparse.Namespace, token: str) -> Preflight:
     ruleset = gh_json(f"repos/{GITHUB_REPOSITORY}/rulesets/{ruleset_id}")
     if ruleset.get("enforcement") != "active":
         raise CutoverError("GitHub authority ruleset is not active")
-    bypass_actors = ruleset.get("bypass_actors") or []
-    if not (
-        len(bypass_actors) == 1
-        and int(bypass_actors[0].get("actor_id") or 0) == OWNER_ACTOR_ID
-        and bypass_actors[0].get("actor_type") == "User"
-        and bypass_actors[0].get("bypass_mode") == "always"
-    ):
-        raise CutoverError("GitHub authority ruleset must carry exactly the owner bypass actor")
+    if ruleset.get("bypass_actors"):
+        raise CutoverError("GitHub authority ruleset unexpectedly has bypass actors")
 
     gitee_user = gitee_api(token, "GET", "/user")
     if str(gitee_user.get("login", "")).lower() != "leegege":
