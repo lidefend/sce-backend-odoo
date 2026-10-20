@@ -131,3 +131,15 @@
   `chooseUniqueRelationOption` 仍用 `getByRole('option', { name, exact: true })` 精确匹配
   纯名称，定位失效。
 - 待办：将 `chooseUniqueRelationOption` 与当前前端 Select 渲染对齐后再重跑浏览器验收。
+
+## 验证结果（子步 4：车道连续修复，持续到登录/创建/状态变体）
+
+- 继续修复并重跑，车道已能走通：登录 → 创建付款申请（id=469）→ 状态变体只读校验。
+- 已修复（分别提交）：inline 下拉按名称搜索（项目查询由编码 `S69` 改为名称
+  `支付台账项目`）；URL 路由断言容忍 `/t/demo` 命名空间前缀（floorplan 与 full_chain）。
+- 当前阻塞：blocked 单据断言仍期望 `.workflow-evidence-block` 渲染
+  「办理前置条件 / 请先选择关联合同」，但当前只读表单已不渲染该块（实测为空，
+  阻断信息分散在「依据口径 无可解释依据」「收款账户完整度 账户信息待补充」等字段）。
+- 结论：验收车道整体已偏离当前前端渲染，继续点修会沿整条旅程逐个失效；建议对
+  `local_dev_payment_request_full_chain` 做一次系统性的前端渲染对齐（独立 P4 车道收口），
+  而不是继续通过多次分钟级浏览器重跑逐个发现漂移。

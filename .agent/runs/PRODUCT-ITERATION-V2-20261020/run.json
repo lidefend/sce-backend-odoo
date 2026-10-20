@@ -328,7 +328,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "DUF-06 is closed. Batch 7 sub-step 4 in progress: local.dev payment browser acceptance lane repaired (namespace /t/demo, demo credential 123456, floorplan fixture project/partner labels). Remaining lane defect: the Select option accessible name is now a concatenated string (code+name+manager+status), so the lane's getByRole('option', {name, exact:true}) locator no longer matches; reconcile the shared chooseUniqueRelationOption helper with the current frontend Select rendering before re-running.",
+  "next_exact_step": "DUF-06 is closed. Batch 7 sub-step 4 in progress: local.dev payment browser lane repaired through login/create/state-variant checks (namespace /t/demo; demo credential 123456; fixture project/partner names; inline relation search by name; namespaced URL assertions). Remaining systemic drift: the blocked-payment assertion expects a .workflow-evidence-block with 办理前置条件/请先选择关联合同, but the current readonly form no longer renders that block (blocking info is spread across form fields). Reconcile the lane's evidence assertions with the current frontend rendering before continuing.",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",
