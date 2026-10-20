@@ -88,6 +88,21 @@ class DailyCustomerAddonsRuntimeGuardTest(unittest.TestCase):
         self.assertEqual(payload["status"], "PASS")
         self.assertEqual(payload["installed_version"], "17.0.1.1")
 
+    def test_empty_customer_module_list_validates_readonly_mount_only(self) -> None:
+        config = GUARD.Config(
+            compose_bin=self.config.compose_bin,
+            compose_files=self.config.compose_files,
+            compose_project=self.config.compose_project,
+            db_name=self.config.db_name,
+            db_user=self.config.db_user,
+            odoo_conf=self.config.odoo_conf,
+            customer_root=self.config.customer_root,
+            modules=(),
+        )
+        payload = GUARD.audit(config, FakeRunner(self.root))
+        self.assertEqual(payload["status"], "PASS")
+        self.assertEqual(payload["modules"], [])
+
     def test_missing_customer_mount_blocks(self) -> None:
         with self.assertRaisesRegex(GUARD.GuardError, "exactly one"):
             GUARD.audit(self.config, FakeRunner(self.root, mounted=False))

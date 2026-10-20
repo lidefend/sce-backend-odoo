@@ -32,6 +32,7 @@ class Config:
     db_user: str
     odoo_conf: str
     customer_root: Path
+    modules: tuple[str, ...] = (CUSTOM_MODULE,)
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -52,6 +53,15 @@ class Config:
             db_user=required["DB_USER"],
             odoo_conf=os.getenv("ODOO_CONF", "/var/lib/odoo/odoo.conf"),
             customer_root=Path(required["SC_CUSTOMER_ADDONS_ROOT"]),
+            modules=(
+                ()
+                if os.getenv("DAILY_CUSTOMER_MODULES", CUSTOM_MODULE).strip().lower() == "none"
+                else tuple(
+                    item.strip()
+                    for item in os.getenv("DAILY_CUSTOMER_MODULES", CUSTOM_MODULE).split(",")
+                    if item.strip()
+                )
+            ),
         )
 
 
@@ -110,7 +120,6 @@ def parse_single_json(output: str, label: str) -> dict[str, object]:
 
 def audit(config: Config, runner: Runner = run_command) -> dict[str, object]:
     customer_root = config.customer_root.resolve()
-    source_version = manifest_version(customer_root / CUSTOM_MODULE)
 
     container_id = runner(compose_args(config, "ps", "-q", "odoo"), None).strip()
     if not container_id or "\n" in container_id:
@@ -130,78 +139,111 @@ def audit(config: Config, runner: Runner = run_command) -> dict[str, object]:
     if customer_mount.get("RW") is not False:
         raise GuardError("daily Odoo customer mount must be read-only")
 
-    db_sql = (
-        "SELECT json_build_object('state', state, 'latest_version', latest_version)::text "
-        "FROM ir_module_module WHERE name = 'smart_construction_custom'"
-    )
-    db_output = runner(
-        compose_args(
-            config,
-            "exec",
-            "-T",
-            "db",
-            "psql",
-            "-U",
-            config.db_user,
-            "-d",
-            config.db_name,
-            "-At",
-            "-c",
-            db_sql,
-        ),
-        None,
-    )
-    db_module = parse_single_json(db_output, "customer module database query")
-    if db_module.get("state") != "installed":
-        raise GuardError(f"customer module state is {db_module.get('state')!r}, expected 'installed'")
-    if db_module.get("latest_version") != source_version:
-        raise GuardError("customer module database version differs from customer package manifest")
+    # A demo duty can mount a customer package while intentionally installing
+    # none of its modules. An explicit empty module list is therefore a valid
+    # declaration: the boundary is the read-only mount, not a hardcoded module
+    # name. Customer duties name their installed modules through
+    # DAILY_CUSTOMER_MODULES.
+    if not config.modules:
+        return {
+            "status": "PASS",
+            "container_id": container_id,
+            "customer_mount": str(customer_root),
+            "customer_mount_read_only": True,
+            "modules": [],
+        }
 
-    shell_program = f"""
+    results: list[dict[str, object]] = []
+    for module_name in config.modules:
+        source_version = manifest_version(customer_root / module_name)
+        db_sql = (
+            "SELECT json_build_object('state', state, 'latest_version', latest_version)::text "
+            "FROM ir_module_module WHERE name = '%s'" % module_name.replace("'", "''")
+        )
+        db_output = runner(
+            compose_args(
+                config,
+                "exec",
+                "-T",
+                "db",
+                "psql",
+                "-U",
+                config.db_user,
+                "-d",
+                config.db_name,
+                "-At",
+                "-c",
+                db_sql,
+            ),
+            None,
+        )
+        db_module = parse_single_json(db_output, "customer module database query")
+        if db_module.get("state") != "installed":
+            raise GuardError(f"customer module {module_name} state is {db_module.get('state')!r}, expected 'installed'")
+        if db_module.get("latest_version") != source_version:
+            raise GuardError(f"customer module {module_name} database version differs from customer package manifest")
+
+        shell_program = f"""
 import json
 from odoo.modules.module import get_module_path, load_information_from_description_file
 print({RESOLUTION_MARKER!r} + json.dumps({{
-    'path': get_module_path({CUSTOM_MODULE!r}),
-    'version': load_information_from_description_file({CUSTOM_MODULE!r}).get('version'),
+    'path': get_module_path({module_name!r}),
+    'version': load_information_from_description_file({module_name!r}).get('version'),
 }}, sort_keys=True))
 env.cr.rollback()
 """
-    shell_output = runner(
-        compose_args(
-            config,
-            "exec",
-            "-T",
-            "odoo",
-            "odoo",
-            "shell",
-            "-d",
-            config.db_name,
-            "-c",
-            config.odoo_conf,
-        ),
-        shell_program,
-    )
-    marker_lines = [line for line in shell_output.splitlines() if line.startswith(RESOLUTION_MARKER)]
-    if len(marker_lines) != 1:
-        raise GuardError("daily Odoo registry did not report one customer-module resolution")
-    resolution = parse_single_json(marker_lines[0][len(RESOLUTION_MARKER) :], "customer resolution")
-    expected_path = str(CUSTOM_CONTAINER_ROOT / CUSTOM_MODULE)
-    if resolution.get("path") != expected_path:
-        raise GuardError(f"customer module resolved from {resolution.get('path')!r}, expected {expected_path!r}")
-    if resolution.get("version") != source_version:
-        raise GuardError("daily Odoo resolved customer version differs from package manifest")
+        shell_output = runner(
+            compose_args(
+                config,
+                "exec",
+                "-T",
+                "odoo",
+                "odoo",
+                "shell",
+                "-d",
+                config.db_name,
+                "-c",
+                config.odoo_conf,
+            ),
+            shell_program,
+        )
+        marker_lines = [line for line in shell_output.splitlines() if line.startswith(RESOLUTION_MARKER)]
+        if len(marker_lines) != 1:
+            raise GuardError(f"daily Odoo registry did not report one resolution for {module_name}")
+        resolution = parse_single_json(marker_lines[0][len(RESOLUTION_MARKER) :], "customer resolution")
+        expected_path = str(CUSTOM_CONTAINER_ROOT / module_name)
+        if resolution.get("path") != expected_path:
+            raise GuardError(f"customer module {module_name} resolved from {resolution.get('path')!r}, expected {expected_path!r}")
+        if resolution.get("version") != source_version:
+            raise GuardError(f"daily Odoo resolved customer version differs for {module_name}")
+        results.append(
+            {
+                "module": module_name,
+                "state": db_module["state"],
+                "installed_version": source_version,
+                "latest_version": db_module["latest_version"],
+                "resolved_path": resolution["path"],
+            }
+        )
 
-    return {
+    payload = {
         "status": "PASS",
         "container_id": container_id,
         "customer_mount": str(customer_root),
         "customer_mount_read_only": True,
-        "module": CUSTOM_MODULE,
-        "state": db_module["state"],
-        "installed_version": source_version,
-        "latest_version": db_module["latest_version"],
-        "resolved_path": resolution["path"],
+        "modules": results,
     }
+    if len(results) == 1:
+        payload.update(
+            {
+                "module": results[0]["module"],
+                "state": results[0]["state"],
+                "installed_version": results[0]["installed_version"],
+                "latest_version": results[0]["latest_version"],
+                "resolved_path": results[0]["resolved_path"],
+            }
+        )
+    return payload
 
 
 def main() -> int:
