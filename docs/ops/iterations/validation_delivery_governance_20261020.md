@@ -58,3 +58,17 @@ L0沿用原HEAD与明确dirty；L1现有入口；L2四组定向；L3/L4无产品
 新增源码输入 business_entry_matrix_model.mjs 后只重验受影响scope组；新增治理接线测试后只重验治理组，binding/planner回执原样复用。L1 ci.local.iteration通过。
 
 最终只读回读：四组回执全部reusable，增量推荐已移除四个已完成目标；仍有前端选择器未映射P4路径，保留人工选择提示，不将其冒称为全仓自动覆盖。冻结准备及生成报告门禁通过。批次开发验收完成；即将冻结本地候选，主线/部署/用户验收未完成，后续Quick/CI回执只存.runtime或PR文本。
+
+## 冻结Quick诊断与责任修复
+
+候选 e7cd95d7f2bbde965a0845e05ef3fbfd58e1818f 的第一次Quick失败，无receipt；原始quick.log保留。失败不是业务验收，而是guard registry分类和可达性两套解析：前者只识别.py字面，后者支持unittest点号模块。修复共用模块调用识别，支持多模块及Class.method；24项测试通过。既有seed按真实引用删除1条过时孤立登记及56条过时file-consumed，未添加豁免。
+同层独立检查：test coverage通过；lane coverage报告原acceptance.evolution.verify失去使用登记，正式规范补充独立验收诊断用途，保留功能且不作为PR基线权威。无修改冻结baseline。
+此前已通过组中仅governance/binding因Make依赖变化重验；scope/planner继续复用。新候选重新生成报告后重跑最终Quick属于已记录输入恢复，不盲重试旧失败。
+
+覆盖检查仅接受白名单/工作区规范的入口声明，已在白名单登记独立诊断用途；普通说明文档不作为接线证据。lane-measure.json 实测以下七项已有引用，移除过时零引用登记：verify.acceptance.runtime.baseline_rebuild.unit, verify.construction.create_defaults.unit, verify.contract.schema.declaration.sync, verify.frontend.standard_preview.unit, verify.frontend.system_state_recovery.unit, verify.frontend.workspace_composition.unit, verify.local.development_lifecycle.unit。保留原冻结baseline，不增加豁免。治理73、binding31因Make变化重验通过；registry24通过；scope142/planner32输入未变复用。
+
+独立复核否决上条七项删除：registry reason被通用文本索引误判为消费者。七条原登记全部恢复；将registry.yaml归为叙述数据，保留read_anchors结构化入口解析。新增真实Git小仓回归证明reason不能复活dead target且真实anchor保留。不修改baseline。先前lane通过不再作有效结论，按工具输入变化仅重验lane组。
+
+排除registry叙述后额外暴露两项原本仅有reason引用的入口：product_view_structure定向单测与native guidance精确退役重放。按既有配方在执行白名单明确使用场景、前后验证及禁止自动写入边界；本批不执行退役写入、不新增豁免、不改变baseline。
+
+修复收口结果（HEAD=e7cd95d7f2bbde965a0845e05ef3fbfd58e1818f+上述dirty范围）：lane整组73项中71项通过，2项依赖实际登记状态的仓库断言失败；权威声明修正后只重验这2项，通过（lane-invariants-recovered.log），其余71项输入未变沿用lane-narration-unit.log。实际覆盖检查lane-narration-final.log通过。L1 iteration-lane-fixed.log通过。B线复核通过，新增入口仅按需声明，不称已执行/自动接线。此次修复不重跑scope/planner；五组本地回执均reusable。原Quick失败保留，新候选Quick/远端CI/主线仍待完成。

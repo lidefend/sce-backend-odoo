@@ -28,7 +28,14 @@
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
     "docs/engineering_convergence/",
-    "docs/audit/test_coverage_registry/test_coverage_registry.json"
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "scripts/verify/guard_registry_audit.py",
+    "scripts/verify/test_guard_registry_audit.py",
+    "scripts/verify/registry.yaml",
+    "docs/ops/codex_execution_allowlist.md",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/audit/verification_lane_coverage.py",
+    "scripts/audit/test_verification_lane_coverage.py"
   ],
   "environment": {
     "kind": "offline"
@@ -90,8 +97,18 @@
         "scripts/ops/agent_run_context.py",
         "scripts/verify/test_agent_run_context.py"
       ]
+    },
+    "registry": {
+      "target": "verify.guard.registry.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/guard_registry_audit.py",
+        "scripts/verify/test_guard_registry_audit.py",
+        "scripts/verify/registry.yaml",
+        "make/"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Freeze reviewed candidate; run one exact-head Quick, obtain frozen independent review and publish through governed PR flow. Four targeted receipts remain reusable."
+  "next_exact_step": "Review generated report delta, commit recovery, bind new clean fingerprint and independent review, then one justified exact-head Quick; publish only on pass."
 }

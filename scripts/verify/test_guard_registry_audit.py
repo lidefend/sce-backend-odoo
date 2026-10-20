@@ -80,6 +80,34 @@ class GuardRegistryAuditIndexTest(unittest.TestCase):
         self.assertEqual(hits, ["make/dev.mk"])
 
 
+class UnittestMakeWiringTest(unittest.TestCase):
+    def test_all_modules_and_class_selectors_are_wired(self):
+        from unittest.mock import patch
+        from scripts.verify import guard_registry_audit as audit
+        recipes = {'verify.group': '@PYTHONPATH=scripts/verify python3 -m unittest -v '
+                   'scripts.verify.test_first scripts.verify.test_second.Case.test_case',
+                   'verify.other': '@echo scripts.verify.not_a_command'}
+        with patch.object(audit, 'parse_make_targets', return_value=recipes):
+            self.assertEqual(audit.make_module_invocations(),
+                             {'test_first': {'verify.group'}, 'test_second': {'verify.group'}})
+
+    def test_classification_and_reachability_share_module_wiring(self):
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        from scripts.verify import guard_registry_audit as audit
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); script = root / 'scripts/verify/test_second.py'
+            script.parent.mkdir(parents=True); script.write_text('pass')
+            command = '@python3 -m unittest scripts.verify.test_first scripts.verify.test_second.Case'
+            with patch.object(audit, 'ROOT', root), \
+                 patch.object(audit, 'parse_make_targets', return_value={'verify.group': command}), \
+                 patch.object(audit, 'build_corpus', return_value={'make/g.mk': command}):
+                inventory = audit.classify([script])
+            self.assertEqual(inventory[0]['referenced_by_make_targets'], ['verify.group'])
+            self.assertEqual(audit.disposition_failures('test_second.py', None, inventory[0]), [])
+
+
 class GuardRegistryDispositionTest(unittest.TestCase):
     """Wire-or-retire disposition rules for unwired active scripts."""
 

@@ -217,8 +217,12 @@ check-odoo-conf:
 
 # ===== R7: guard registry lifecycle (registry / retirement) =====
 .PHONY: verify.guard.registry guard.registry.export guard.registry.seed guard.retire
-verify.guard.registry: guard.prod.forbid
+verify.guard.registry: guard.prod.forbid verify.guard.registry.unit
 	@python3 scripts/verify/guard_registry_audit.py
+
+.PHONY: verify.guard.registry.unit
+verify.guard.registry.unit: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_guard_registry_audit.py
 
 guard.registry.export: guard.prod.forbid
 	@python3 scripts/verify/guard_registry_audit.py --export
