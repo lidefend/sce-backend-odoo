@@ -147,6 +147,43 @@ Compose 或底层脚本。`down`/`logs` 不隐式创建凭据或资源；`up`/`h
 注入 HMR host/client port、严格端口和缓存目录；`local.dev.frontend` 仍然只负责
 静态构建，不替代热更新迭代。
 
+## 本地写租约（sc_dev_demo）
+
+多个 worktree 或执行器共享 `sc-local-dev / sc_dev_demo` 时，所有数据库写入必须经过同一个
+本地写租约，禁止并发升级、同步或重建。
+
+- 租约文件：`/tmp/sc-local-dev-sc_dev_demo.write.lock`
+- 持有者信息：同目录 `.owner.json`（operation / pid / worktree / branch / head / started_at）
+- 查看状态：`make local.dev.write_lease.status`
+- 默认等待：1800 秒，可用 `SC_LOCAL_DEV_WRITE_LOCK_TIMEOUT` 调整
+- 测试专用 lock override：仅 `SC_LOCAL_DEV_WRITE_LOCK_TEST=1` 时允许
+
+以下目标已自动串行化，不需要手工加锁：
+
+```bash
+make local.dev.upgrade MODULE=smart_construction_core
+make local.dev.sync_demo
+make local.dev.rebuild_demo
+```
+
+对应的内部 `.run` 目标必须携带租约 token；直接调用会以
+`LOCAL_DEV_WRITE_LEASE_REQUIRED` 失败关闭。租约繁忙时输出
+`LOCAL_DEV_WRITE_LEASE_BUSY` 和当前持有者 JSON，第二个执行器应等待或停止，不能绕过。
+
+尚未自动串行化的写目标（fixture reset、demo load/seed、付款 full-chain、投标旅程等）
+在迁移前必须使用通用包装：
+
+```bash
+ROOT_DIR="$PWD" bash scripts/dev/local_dev_write_lease.sh "payment_fixture" -- \
+  make local.dev.reset_payment_request_fixture
+```
+
+租约验证入口：
+
+```bash
+make verify.local.dev.write_lease.unit
+```
+
 ## 研发节奏
 
 1. 在 `sc_dev_demo` 上增量升级目标模块、同步 demo 并做浏览器迭代。

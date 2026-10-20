@@ -3000,6 +3000,11 @@ verify.demo.lifecycle.unit: guard.prod.forbid
 verify.demo.supplemental.unit: guard.prod.forbid
 	@python3 demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py
 
+.PHONY: verify.local.dev.write_lease.unit
+verify.local.dev.write_lease.unit: guard.prod.forbid
+	@bash -n scripts/dev/local_dev_write_lease.sh
+	@python3 -m unittest scripts.verify.test_local_dev_write_lease
+
 .PHONY: verify.platform.database.rehearsal.unit
 verify.platform.database.rehearsal.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_platform_database_rehearsal.py
