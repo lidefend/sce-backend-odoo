@@ -57,14 +57,14 @@ goal:
     - keep_demo_baseline_fingerprint_stable_across_experience_reset
     - no_new_database_tenant_compose_or_credentials
   next_exact_step: >-
-    F7 complete: 10-day narrative advances continuously with all 20 facts bound.
-    Proceed to F8: business full-function account browser acceptance (non-empty
-    first screen, cross-role closure, no privilege leak; DUF-04 date/amount rule).
+    F8 browser acceptance is blocked by DUF-07 (frontend dist 409 Conflict). Fix
+    the owning frontend dist/backend contract serving, then re-run the browser
+    acceptance; DUF-04 date/amount calendar rule remains.
   completion:
     scope: demo_user_usage_foundation_v1
     overall_goal: in_progress
     result_index: .agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json
-    local_batch_acceptance: F7_complete
+    local_batch_acceptance: F8_blocked_by_DUF-07
     mainline_integration: not_run
     deployment: not_run
     target_user_delivery: not_run

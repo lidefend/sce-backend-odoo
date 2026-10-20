@@ -16,7 +16,7 @@ const ROOT_DIR = fs.existsSync(path.join(process.cwd(), 'frontend/apps/web/packa
 
 const FRONTEND_URL = process.env.FRONTEND_URL || process.env.E2E_BASE_URL || 'http://localhost:18081';
 const DB_NAME = process.env.DB_NAME || process.env.E2E_DB || 'sc_demo';
-const DEFAULT_PASSWORD = process.env.E2E_ROLE_MATRIX_DEFAULT_PASSWORD || process.env.E2E_PASSWORD || 'demo';
+const DEFAULT_PASSWORD = process.env.E2E_ROLE_MATRIX_DEFAULT_PASSWORD || process.env.E2E_PASSWORD || '123456';
 const ARTIFACTS_DIR = process.env.ARTIFACTS_DIR || path.join(ROOT_DIR, 'artifacts');
 const HEADLESS = String(process.env.HEADLESS || '1').trim() !== '0';
 
@@ -67,6 +67,14 @@ const ROLES = [
     mode: 'direct_business',
     initialText: [/付款申请|付款申请审批|PRQ|新建|记录/],
     targetPath: /^\/s\/finance\.payment_requests/,
+  },
+  {
+    role: 'business_full',
+    login: process.env.ROLE_BUSINESS_FULL_LOGIN || 'demo_full',
+    password: process.env.ROLE_BUSINESS_FULL_PASSWORD || DEFAULT_PASSWORD,
+    mode: 'direct_business',
+    initialText: [/项目列表/],
+    targetPath: /^\/s\/projects\.list/,
   },
 ];
 

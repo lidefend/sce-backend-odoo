@@ -27,6 +27,7 @@
 | 13 | 演示数据时间与金额失真 | 多处固定 2025 日期，场景存在 50/100 样例金额 | P4 | 待立项 | F3/F8 以业务日历和金额规则回读，不按文本字符串验收 |
 | 14 | 10 日叙事未完整声明 | `business_days=10`，manifest 仅有 D1–D3 步骤 | P4 | 已解决 | F7 已扩写 D4–D10（40 步），每 fact 绑定公开动作/回读；10 日连续推进、幂等 |
 | 15 | 模块升级视图校验失败 | demo 分支仍基于旧 main；数据库已由当前 main 升级，旧源码缺少 `action_sc_review_group_authority`，触发 `_update_user_groups_view` 校验失败 | P4 | 已解除 | covered-prefix 受管同步到 main 后升级 PASS；`res.partner.bank=9` 回读 PASS |
+| 16 | 浏览器验收登录页 409 | 18081 服务的前端 dist 与后端契约不匹配，登录页资源 `409 Conflict`，`input[autocomplete=username]` 超时 | P0/P1 frontend | 待立项 | F8 浏览器验收受阻；修 owning layer 前端 dist 服务后重跑 |
 
 ## 回收判据
 
