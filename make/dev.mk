@@ -185,6 +185,7 @@ local.dev.sync_demo: guard.prod.forbid
 local.dev.sync_demo.run: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare local.dev.write_lease.require
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" demo.load.full
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" up
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.entry_identity.ensure.run
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.verify_demo
 
 .PHONY: local.dev.demo.load local.dev.demo.seed
@@ -386,6 +387,7 @@ local.dev.rebuild_demo.run: guard.prod.forbid local.dev.demo_credentials.prepare
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  CONFIRM_LOCAL_DEV_DEMO_REBUILD="$${CONFIRM_LOCAL_DEV_DEMO_REBUILD:-}" \
 	  bash scripts/dev/local_dev_demo_rebuild.sh
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.entry_identity.ensure.run
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.verify_demo
 
 local.dev.rebuild_realistic: guard.prod.forbid
