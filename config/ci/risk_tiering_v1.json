@@ -11,6 +11,8 @@
     "VERSION",
     "*.md",
     "docs/**",
+    "scripts/ops/tooling_maintenance.py",
+    "scripts/ops/test_tooling_maintenance.py",
     ".agent/workflows/**",
     ".github/ISSUE_TEMPLATE/**"
   ],
@@ -26,7 +28,9 @@
     "scripts/verify/test_frontend_professional_*"
   ],
   "high_risk_override_paths": [
-    "make/frontend_professional_extensions.mk"
+    "make/frontend_professional_extensions.mk",
+    "scripts/ops/tooling_maintenance.py",
+    "scripts/ops/test_tooling_maintenance.py"
   ],
   "frontend_full_paths": [
     ".github/workflows/frontend_release_gate.yml",
