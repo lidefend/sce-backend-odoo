@@ -2466,3 +2466,4 @@ daily.personnel_views: guard.prod.forbid verify.daily.personnel_views.unit
 .PHONY: verify.path_namespace.acceptance.unit
 verify.path_namespace.acceptance.unit: guard.prod.forbid
 	@python3 -m unittest scripts/ops/test_path_ns_c_acceptance.py -v
+	@python3 -m unittest scripts/verify/test_path_ns_c_s4_browser_probe_credentials.py -v
