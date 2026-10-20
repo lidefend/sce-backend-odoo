@@ -482,6 +482,12 @@ def converge(
             "daily runtime published face did not converge: "
             f"{evidence.get('reason') or 'unknown'} (snapshot={evidence.get('products')})"
             + (f" module_upgrade_tail={tail[-800:]}" if tail else "")
+            # The inner make tail is the only place a failed refresh says *why*
+            # (bad credential, unreachable database, a refused stack guard). A
+            # reason code alone sent the 2026-10-20 deployment diagnosis back to
+            # the host to replay the step by hand.
+            + (f" converge_tail={str(evidence.get('converge_tail') or '').strip()[-1500:]}"
+               if str(evidence.get('converge_tail') or '').strip() else "")
         )
     if (
         evidence.get("expected_sha") != expected_sha

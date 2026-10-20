@@ -22,6 +22,7 @@ import copy
 import io
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import types
@@ -706,6 +707,30 @@ class DeclarationTests(unittest.TestCase):
                 compose,
                 "the duty stack must forward %s into the application container" % key,
             )
+
+    def test_the_rendered_environment_is_shell_sourceable(self):
+        """The duty env file is read by two parsers, not one.
+
+        Docker Compose consumes it as ``--env-file``, and the governed
+        ``check_env.sh`` *sources* it. The declared namespace aliases are a
+        regular expression, so an unquoted ``demo|platform`` is a shell pipeline
+        to the second reader and every governed upgrade dies with
+        ``platform: command not found``. Quoting the template value keeps the
+        Compose value identical while making the file sourceable.
+        """
+        template = ENV_TEMPLATE.read_text(encoding="utf-8").replace(
+            "@SC_DECLARED_NAMESPACE_ALIASES@", "demo|platform"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "duty.env"
+            path.write_text(template, encoding="utf-8")
+            result = subprocess.run(
+                ["bash", "-c", 'set -a; . "$1" >/dev/null; printf %s "$SC_DECLARED_NAMESPACE_ALIASES"',
+                 "bash", str(path)],
+                capture_output=True, text=True, check=False,
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "demo|platform")
 
     def test_a_declared_env_key_nothing_reads_is_refused(self):
         """A declared value with no consumer is a silent no-op, so it fails.

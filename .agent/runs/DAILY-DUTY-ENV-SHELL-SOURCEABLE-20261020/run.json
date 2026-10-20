@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-DUTY-ENV-SHELL-SOURCEABLE-20261020",
+  "branch": "fix/daily-duty-env-shell-sourceable-20261020",
+  "baseline_sha": "6dd15103ae8f0f892f7e89d915039cff3dd5b997",
+  "status": "active",
+  "goal": ".agent/goals/DAILY-DUTY-ENV-SHELL-SOURCEABLE-20261020.yaml",
+  "record": "docs/ops/iterations/daily_duty_env_shell_sourceable_20261020.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-DUTY-ENV-SHELL-SOURCEABLE-20261020.yaml",
+    ".agent/runs/DAILY-DUTY-ENV-SHELL-SOURCEABLE-20261020/run.json",
+    "config/ops/daily_runtime_duty_stack.env",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/e2e_journey_matrix.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/daily_duty_env_shell_sourceable_20261020.md",
+    "make/runtime_ops.mk",
+    "scripts/ops/daily_runtime_published_face_converge.py",
+    "scripts/ops/test_daily_runtime_database_duty.py",
+    "scripts/verify/daily_runtime_entry_guard.py",
+    "scripts/verify/nginx_proxy_db_authority_guard.py"
+  ],
+  "environment": {
+    "kind": "offline"
+  },
+  "product_boundary": {
+    "formal_product_layer": "P4 ops delivery tool",
+    "layer_target": "daily runtime duty environment rendering",
+    "standard_vs_user_specific": "ops delivery mechanism",
+    "why_here": "The rendered duty environment is produced by the P4 duty entry and consumed by both Compose and the governed env check.",
+    "why_not_elsewhere": "No product or tenant semantic changes; frontend and backend contracts are untouched.",
+    "blast_radius": "duty env rendering and published-face failure diagnostics only; no business data"
+  },
+  "checks": {
+    "duty_env_shell_sourceable": {
+      "target": "verify.daily.runtime.database.duty",
+      "kind": "offline",
+      "inputs": [
+        "config/ops/daily_runtime_duty_stack.env",
+        "scripts/ops/daily_runtime_database_duty.py",
+        "scripts/ops/daily_runtime_published_face_converge.py",
+        "scripts/ops/test_daily_runtime_database_duty.py",
+        "scripts/verify/daily_runtime_entry_guard.py",
+        "scripts/verify/nginx_proxy_db_authority_guard.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Record the targeted unit receipt, run the local iteration gate, deploy the candidate to the daily runtime, record runtime acceptance evidence, then publish and merge."
+}
