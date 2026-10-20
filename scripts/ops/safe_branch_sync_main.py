@@ -25,8 +25,22 @@ EXTENDED_CONFIRMATION = "REBASE_APPROVED_FROZEN_BRANCH_ON_EXACT_MAIN"
 MAX_RESPONSIBILITY_COMMITS = 12
 MAX_EXTENDED_RESPONSIBILITY_COMMITS = 64
 APPEND_ONLY_CONFLICT_PATH = "docs/ops/iterations/delivery_context_switch_log_v1.md"
+ACTIVE_RUNS_INDEX_PATH = ".agent/active-runs.json"
 GENERATED_EVIDENCE_CONFLICT_PATHS = (
+    "contracts/generated/contract_structure_fingerprint.json",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/e2e_journey_matrix.md",
+    "docs/engineering_convergence/github_remote_execute.sh",
+    "docs/engineering_convergence/github_remote_execution_plan.md",
+    "docs/engineering_convergence/module_dependency_map.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/planning/custom-frontend-integration/G1_BASELINE_EVIDENCE.json",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/verify/test_coverage_registry.yaml",
 )
 CANONICAL_ORIGIN_URLS = {
     "https://github.com/lidefend/sce-backend-odoo.git",
@@ -62,6 +76,8 @@ class SyncPlan:
 class SyncResult:
     head: str
     generated_evidence_conflicts: tuple[str, ...] = ()
+    metadata_conflicts: tuple[str, ...] = ()
+    main_equivalent_paths: tuple[str, ...] = ()
 
 
 def sanitized_environment() -> dict[str, str]:
@@ -198,6 +214,10 @@ def commit_exists(root: Path, sha: str) -> bool:
 
 def commit_paths(root: Path, left: str, right: str) -> tuple[str, ...]:
     return tuple(sorted(filter(None, git_output(root, "diff", "--name-only", left, right).splitlines())))
+
+
+def path_equals_revision(root: Path, left: str, right: str, path: str) -> bool:
+    return run(root, "diff", "--quiet", left, right, "--", path, check=False).returncode == 0
 
 
 def generated_only_commit_count(plan: SyncPlan, paths: tuple[str, ...]) -> int:
@@ -452,9 +472,64 @@ def resolve_generated_evidence_conflicts(
     return resolved
 
 
-def run_rebase(plan: SyncPlan) -> tuple[bool, tuple[str, ...]] | None:
+def merge_active_runs_index(plan: SyncPlan) -> None:
+    """Three-way merge the branch-to-run index without inventing entries."""
+    try:
+        base = json.loads(text_at_revision(plan.root, plan.replay_base, ACTIVE_RUNS_INDEX_PATH))
+        main = json.loads(text_at_revision(plan.root, plan.new_main, ACTIVE_RUNS_INDEX_PATH))
+        topic = json.loads(text_at_revision(plan.root, plan.head, ACTIVE_RUNS_INDEX_PATH))
+    except (ValueError, TypeError) as exc:
+        raise SyncError("active-runs index is not valid JSON") from exc
+    rows = []
+    for label, payload in (("base", base), ("main", main), ("topic", topic)):
+        branches = payload.get("branches") if isinstance(payload, dict) else None
+        if not isinstance(payload, dict) or payload.get("schema_version") != 1:
+            raise SyncError(f"active-runs {label} schema_version must be 1")
+        if not isinstance(branches, dict) or not all(
+            isinstance(key, str) and isinstance(value, str) for key, value in branches.items()
+        ):
+            raise SyncError(f"active-runs {label} branches must map strings to strings")
+        rows.append(branches)
+    base_rows, main_rows, topic_rows = rows
+    merged = dict(base_rows)
+    for key, value in main_rows.items():
+        if key not in topic_rows or topic_rows[key] == value or base_rows.get(key) == topic_rows[key]:
+            merged[key] = value
+    for key, value in topic_rows.items():
+        if key not in main_rows or main_rows[key] == value or base_rows.get(key) == main_rows[key]:
+            merged[key] = value
+        elif main_rows.get(key) != value and base_rows.get(key) not in {None, value}:
+            raise SyncError(f"active-runs index conflicts for branch {key}")
+    target = plan.root / ACTIVE_RUNS_INDEX_PATH
+    target.write_text(
+        json.dumps({"schema_version": 1, "branches": dict(sorted(merged.items()))}, indent=2)
+        + "\n",
+        encoding="utf-8",
+    )
+    run(plan.root, "add", "--", ACTIVE_RUNS_INDEX_PATH)
+
+
+def verify_active_runs_resolution(plan: SyncPlan) -> None:
+    base = json.loads(text_at_revision(plan.root, plan.replay_base, ACTIVE_RUNS_INDEX_PATH))
+    main = json.loads(text_at_revision(plan.root, plan.new_main, ACTIVE_RUNS_INDEX_PATH))
+    topic = json.loads(text_at_revision(plan.root, plan.head, ACTIVE_RUNS_INDEX_PATH))
+    current = json.loads((plan.root / ACTIVE_RUNS_INDEX_PATH).read_text(encoding="utf-8"))
+    base_rows, main_rows, topic_rows = base["branches"], main["branches"], topic["branches"]
+    expected = dict(base_rows)
+    for key, value in main_rows.items():
+        if key not in topic_rows or topic_rows[key] == value or base_rows.get(key) == topic_rows[key]:
+            expected[key] = value
+    for key, value in topic_rows.items():
+        if key not in main_rows or main_rows[key] == value or base_rows.get(key) == main_rows[key]:
+            expected[key] = value
+    if current != {"schema_version": 1, "branches": dict(sorted(expected.items()))}:
+        raise SyncError("active-runs index merge changed during sync")
+
+
+def run_rebase(plan: SyncPlan) -> tuple[bool, tuple[str, ...], tuple[str, ...]] | None:
     append_only_log_resolved = False
     generated_evidence_conflicts: set[str] = set()
+    metadata_conflicts: set[str] = set()
     result = run(plan.root, "rebase", "--onto", plan.new_main, plan.replay_base, check=False)
     while result.returncode:
         conflicts = tuple(
@@ -465,7 +540,7 @@ def run_rebase(plan: SyncPlan) -> tuple[bool, tuple[str, ...]] | None:
                 )
             )
         )
-        allowed = {APPEND_ONLY_CONFLICT_PATH}
+        allowed = {APPEND_ONLY_CONFLICT_PATH, ACTIVE_RUNS_INDEX_PATH}
         if plan.extended_history:
             allowed.update(GENERATED_EVIDENCE_CONFLICT_PATHS)
         if not conflicts or any(path not in allowed for path in conflicts):
@@ -477,8 +552,11 @@ def run_rebase(plan: SyncPlan) -> tuple[bool, tuple[str, ...]] | None:
         generated_evidence_conflicts.update(
             resolve_generated_evidence_conflicts(plan, conflicts)
         )
+        if ACTIVE_RUNS_INDEX_PATH in conflicts:
+            merge_active_runs_index(plan)
+            metadata_conflicts.add(ACTIVE_RUNS_INDEX_PATH)
         result = run(plan.root, "-c", "core.editor=true", "rebase", "--continue", check=False)
-    return append_only_log_resolved, tuple(sorted(generated_evidence_conflicts))
+    return append_only_log_resolved, tuple(sorted(generated_evidence_conflicts)), tuple(sorted(metadata_conflicts))
 
 
 def verify_append_only_log_resolution(plan: SyncPlan) -> None:
@@ -528,34 +606,63 @@ def sync(plan: SyncPlan) -> SyncResult:
     if rebase_result is None:
         abort_rebase_and_restore(plan)
         raise SyncError("rebase conflict; aborted and restored original HEAD")
-    append_only_log_resolved, generated_evidence_conflicts = rebase_result
+    append_only_log_resolved, generated_evidence_conflicts, metadata_conflicts = rebase_result
     try:
         new_head = git_output(plan.root, "rev-parse", "HEAD")
         require_clean(plan.root)
         new_commits = tuple(filter(None, git_output(plan.root, "rev-list", "--reverse", f"{plan.new_main}..{new_head}").splitlines()))
-        maximum_generated_drop = generated_only_commit_count(
-            plan, generated_evidence_conflicts
-        )
-        if not plan.commit_count - maximum_generated_drop <= len(new_commits) <= plan.commit_count:
-            raise SyncError("responsibility commit count changed after sync")
-        excluded_paths = tuple(sorted(generated_evidence_conflicts))
+        excluded_paths = tuple(sorted({*generated_evidence_conflicts, *metadata_conflicts}))
         old_stable_paths = tuple(path for path in plan.paths if path not in excluded_paths)
         new_paths = commit_paths(plan.root, plan.new_main, new_head)
         new_stable_paths = tuple(path for path in new_paths if path not in excluded_paths)
-        if new_stable_paths != old_stable_paths:
+        extra_paths = sorted(set(new_stable_paths) - set(old_stable_paths))
+        if extra_paths:
             raise SyncError("responsibility path set changed after sync")
+        main_equivalent_paths = tuple(
+            path
+            for path in old_stable_paths
+            if path not in set(new_stable_paths)
+            and path_equals_revision(plan.root, plan.head, plan.new_main, path)
+        )
+        missing_paths = sorted(
+            set(old_stable_paths) - set(new_stable_paths) - set(main_equivalent_paths)
+        )
+        if missing_paths:
+            raise SyncError(
+                "responsibility path set changed after sync: "
+                + ", ".join(missing_paths[:8])
+            )
+        maximum_drop = generated_only_commit_count(
+            plan,
+            tuple(
+                sorted(
+                    {
+                        *generated_evidence_conflicts,
+                        *metadata_conflicts,
+                        *main_equivalent_paths,
+                    }
+                )
+            ),
+        )
+        if not plan.commit_count - maximum_drop <= len(new_commits) <= plan.commit_count:
+            raise SyncError("responsibility commit count changed after sync")
         if append_only_log_resolved:
             verify_append_only_log_resolution(plan)
+        if metadata_conflicts:
+            verify_active_runs_resolution(plan)
         patch_excludes = tuple(
             sorted(
                 {
                     *excluded_paths,
+                    *main_equivalent_paths,
                     *([APPEND_ONLY_CONFLICT_PATH] if append_only_log_resolved else []),
                 }
             )
         )
         stable_identity_paths = tuple(
-            path for path in old_stable_paths if path not in patch_excludes
+            path
+            for path in old_stable_paths
+            if path not in patch_excludes and path not in set(main_equivalent_paths)
         )
         if stable_identity_paths and patch_id(
             plan.root, plan.replay_base, plan.head, exclude=patch_excludes
@@ -566,7 +673,7 @@ def sync(plan: SyncPlan) -> SyncResult:
         if isinstance(exc, SyncError):
             raise SyncError(f"{exc}; original HEAD restored") from exc
         raise SyncError(f"post-sync verification failed; original HEAD restored: {exc}") from exc
-    return SyncResult(new_head, generated_evidence_conflicts)
+    return SyncResult(new_head, generated_evidence_conflicts, metadata_conflicts, main_equivalent_paths)
 
 
 def main() -> int:

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -34,12 +35,19 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.generated_evidence = self.root / syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0]
         self.generated_evidence.parent.mkdir(parents=True, exist_ok=True)
         self.generated_evidence.write_text("base-generated\n", encoding="utf-8")
+        self.active_runs = self.root / syncer.ACTIVE_RUNS_INDEX_PATH
+        self.active_runs.parent.mkdir(parents=True, exist_ok=True)
+        self.active_runs.write_text(
+            json.dumps({"schema_version": 1, "branches": {}}, indent=2) + "\n",
+            encoding="utf-8",
+        )
         git(
             self.root,
             "add",
             "base.txt",
             syncer.APPEND_ONLY_CONFLICT_PATH,
             syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0],
+            syncer.ACTIVE_RUNS_INDEX_PATH,
         )
         git(self.root, "commit", "-m", "base")
         git(self.root, "push", "--force", "origin", "HEAD:main")
@@ -78,6 +86,54 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.assertEqual(git(self.root, "diff", "--name-only", f"{self.new_main}..{result.head}").stdout.splitlines(), ["feature.txt"])
         self.assertEqual(len(git(self.root, "rev-list", f"{self.new_main}..{result.head}").stdout.splitlines()), 1)
         self.assertEqual(result.generated_evidence_conflicts, ())
+
+    def test_active_runs_index_is_three_way_merged(self) -> None:
+        index = {"schema_version": 1, "branches": {"feature/local-sync": "run.json"}}
+        self.active_runs.write_text(json.dumps(index, indent=2) + "\n", encoding="utf-8")
+        git(self.root, "add", syncer.ACTIVE_RUNS_INDEX_PATH)
+        git(self.root, "commit", "-m", "feature run index")
+        self.head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "main")
+        main_index = {"schema_version": 1, "branches": {"maintenance/example": "other.json"}}
+        self.active_runs.write_text(json.dumps(main_index, indent=2) + "\n", encoding="utf-8")
+        git(self.root, "add", syncer.ACTIVE_RUNS_INDEX_PATH)
+        git(self.root, "commit", "-m", "main run index")
+        self.new_main = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        git(self.root, "switch", "feature/local-sync")
+        result = syncer.sync(self.plan())
+        merged = json.loads(self.active_runs.read_text(encoding="utf-8"))
+        self.assertEqual(
+            merged["branches"],
+            {
+                "feature/local-sync": "run.json",
+                "maintenance/example": "other.json",
+            },
+        )
+        self.assertEqual(result.metadata_conflicts, (syncer.ACTIVE_RUNS_INDEX_PATH,))
+        self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
+
+    def test_main_equivalent_path_becomes_empty_without_losing_responsibility(self) -> None:
+        (self.root / "equivalent.txt").write_text("same\n", encoding="utf-8")
+        git(self.root, "add", "equivalent.txt")
+        git(self.root, "commit", "-m", "feature equivalent change")
+        self.head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "main")
+        (self.root / "equivalent.txt").write_text("same\n", encoding="utf-8")
+        git(self.root, "add", "equivalent.txt")
+        git(self.root, "commit", "-m", "main equivalent change")
+        self.new_main = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        git(self.root, "switch", "feature/local-sync")
+        result = syncer.sync(self.plan())
+        self.assertEqual(result.main_equivalent_paths, ("equivalent.txt",))
+        self.assertNotIn(
+            "equivalent.txt",
+            git(self.root, "diff", "--name-only", f"{self.new_main}..{result.head}").stdout.splitlines(),
+        )
+        self.assertTrue((self.root / "feature.txt").is_file())
 
     def squash_dependency(self) -> dict:
         dependency = self.head
@@ -427,7 +483,10 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             expected_commit_count=commit_count,
         )
         result = syncer.sync(plan)
-        self.assertEqual(result.generated_evidence_conflicts, syncer.GENERATED_EVIDENCE_CONFLICT_PATHS)
+        self.assertEqual(
+            result.generated_evidence_conflicts,
+            (syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0],),
+        )
         self.assertEqual(self.generated_evidence.read_text(encoding="utf-8"), "main-generated\n")
         self.assertEqual((self.root / "generated-side.txt").read_text(encoding="utf-8"), "feature-side\n")
 
@@ -462,7 +521,10 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             git(self.root, "rev-list", f"{extended_main}..{result.head}").stdout.splitlines()
         )
         self.assertEqual(replayed_count, commit_count - 1)
-        self.assertEqual(result.generated_evidence_conflicts, syncer.GENERATED_EVIDENCE_CONFLICT_PATHS)
+        self.assertEqual(
+            result.generated_evidence_conflicts,
+            (syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0],),
+        )
         self.assertEqual(
             self.generated_evidence.read_text(encoding="utf-8"),
             "main-generated-authority\n",
@@ -560,7 +622,7 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
 
     def test_rebase_outcome_distinguishes_success_from_unresolved_conflict(self) -> None:
-        self.assertEqual(syncer.run_rebase(self.plan()), (False, ()))
+        self.assertEqual(syncer.run_rebase(self.plan()), (False, (), ()))
         git(self.root, "reset", "--hard", self.head)
         (self.root / "base.txt").write_text("feature-change\n", encoding="utf-8")
         git(self.root, "add", "base.txt")
