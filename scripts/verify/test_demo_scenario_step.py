@@ -12,7 +12,7 @@ from scripts.verify.demo_scenario_step import (
 ALLOWED_REAL_ACTIONS = {
     "construction.contract.action_confirm",
     "construction.contract.action_on_tier_approved",
-    "sc.material.acceptance.action_confirm",
+    "sc.material.acceptance.action_accept",
 }
 ALLOWED_CREATE_MODELS = {
     "construction.contract",

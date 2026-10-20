@@ -7,5 +7,6 @@ from . import test_demo_action_roles
 from . import test_demo_baseline_readiness
 from . import test_demo_golden_chain
 from . import test_demo_api_scenario
+from . import test_demo_scenario_tick
 
 from . import test_startup_metadata_performance

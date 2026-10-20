@@ -66,7 +66,8 @@
     "scripts/verify/demo_scenario_step.py",
     "scripts/verify/test_demo_scenario_step.py",
     "docs/ops/iterations/demo_iteration_line_batch5_20261020.md",
-    "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json"
+    "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json",
+    "demo_addons/smart_construction_demo/tests/test_demo_scenario_tick.py"
   ],
   "environment": {
     "kind": "offline",
@@ -142,5 +143,5 @@
       "resolved_commit": "a44238ad8"
     }
   ],
-  "next_exact_step": "Batch 5 offline core done: step contract + idempotent tick scheduler + 3-day compressed-clock rehearsal over the golden scenario manifest (8 tests). Next: runtime tick runner — map each manifest intent_or_action to a public product action via a demo action registry (declared-but-unmapped fails closed), produce role_draft/role_decision todos, persist executed keys + heartbeat; then scoped experience reset with baseline fingerprint unchanged."
+  "next_exact_step": "Batch 5 runtime preflight done: scenario manifest roles resolve to active demo users, bound actions are callable (verify.local.dev.scenario_tick.orm). Next: runtime tick executor — dispatch bound actions, create role_draft/role_decision todos, persist executed keys + heartbeat with a demo state carrier; then scoped experience reset with baseline fingerprint unchanged."
 }

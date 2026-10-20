@@ -1322,6 +1322,11 @@ verify.local.dev.api_scenario.orm: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_construction_demo TEST_TAGS="demo_api_scenario" local.dev.test
 
+.PHONY: verify.local.dev.scenario_tick.orm
+verify.local.dev.scenario_tick.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_demo TEST_TAGS="demo_scenario_tick" local.dev.test
+
 # Unit guard for the bounded runtime-performance observation carrier. It runs the
 # probe against a fake environment: no database, no runtime write, no browser.
 .PHONY: verify.local.dev.runtime.performance.unit
