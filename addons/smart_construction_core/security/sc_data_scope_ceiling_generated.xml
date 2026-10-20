@@ -883,6 +883,15 @@
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="True"/>
         </record>
+        <record id="rule_sc_data_scope_sc_product_system_parameter_change" model="ir.rule">
+            <field name="name">SC Data Scope - sc.product.system.parameter.change by allowed companies</field>
+            <field name="model_id" ref="model_sc_product_system_parameter_change"/>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
         <record id="rule_sc_data_scope_sc_project_document" model="ir.rule">
             <field name="name">SC Data Scope - sc.project.document by allowed companies</field>
             <field name="model_id" ref="model_sc_project_document"/>

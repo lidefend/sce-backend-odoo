@@ -121,6 +121,7 @@
     "sc.plan.report",
     "sc.plan.version",
     "sc.plan.warning.log",
+    "sc.product.system.parameter.change",
     "sc.project.document",
     "sc.project.member.assignment",
     "sc.quality.acceptance",
