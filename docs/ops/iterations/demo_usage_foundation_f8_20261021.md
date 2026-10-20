@@ -26,22 +26,30 @@
 - 新增 `business_full`（demo_full）角色条目，`direct_business` 模式，目标
   `/s/projects.list`，预期文本 `/项目列表/`。
 
-## 5. 运行结果与阻断
+## 5. 运行结果与发现
 
-`make verify.user.entry.delivery.browser_acceptance` 对 6 个角色条目全部失败：
-登录页 `input[autocomplete="username"]` 30s 超时，console 报
-`Failed to load resource: the server responded with a status of 409 (Conflict)`。
+定位并解决两个浏览器侧问题（DUF-07 / 缺口 #16）：
 
-- 分类：environment_defect（前端 dist 与后端契约不匹配 / 前端资源 409）
-- 影响：浏览器验收无法登录进入首屏；HTTP 层登录/system.init 已由 F2 验收通过，
-  说明后端契约正常，问题在前端 dist 服务
-- 处置：登记阻断 DUF-07；不在 demo 层重建/重排前端 dist
+- 登录页带客户端 `?db=` 提示被前端拒绝为 409 `NS_DATABASE_HINT_CONFLICT`：去掉 `?db=`；
+- 浏览器未走 `/t/demo/` 命名空间导致 `NS_NAMESPACE_REQUIRED`：`FRONTEND_URL` 默认改走
+  `/t/demo`，并对 `targetPath` 断言做命名空间前缀归一化；
+- 同时校正默认口令 `'demo'` → `'123456'`，并新增 `business_full`（demo_full）角色条目。
+
+重跑结果：6 个角色条目中 4 个通过——`pm`、`pm_my_work_menu`、`finance`、
+`business_full`（demo_full 首页非空：待我处理 34 + 付款申请卡片 + 常用入口）。
+
+剩余两个发现：
+
+- `executive`（管理层）首页报「菜单树为空，请尝试刷新初始化」：产品层导航面问题
+  （管理层仅 1 个交付入口），登记缺口 #17；
+- `pm_my_work_back_home` 的「返回角色首页」按钮已不存在（my-work 页按钮变为「刷新」），
+  该点击链断言过时，属 F8 遗留的脚本口径修正项。
 
 ## 6. 验证结果
 
 | 命令 | 状态 | 层 | 说明 |
 |---|---|---|---|
-| `make verify.user.entry.delivery.browser_acceptance` | blocked | L4 | 6/6 角色登录页 409 Conflict；工具修正（口令/business_full）已就位 |
+| `make verify.user.entry.delivery.browser_acceptance` | partial | L4 | 6 条目 4 通过；business_full 首页非空；executive 菜单树为空（#17） |
 
 ## 7. 回滚
 
@@ -49,5 +57,5 @@
 
 ## 8. 下一步精确动作
 
-修 owning layer 的前端 dist 服务（重建/刷新 18081 所服务的 dist 与后端契约一致），
-再跑 `verify.user.entry.delivery.browser_acceptance`；随后以业务日历规则收口 DUF-04。
+修 owning layer 的管理层导航面（#17），修正 my-work 返回首页脚本断言，再跑完整
+浏览器验收；随后以业务日历规则收口 DUF-04（2025 日期 / 50-100 样例金额）。

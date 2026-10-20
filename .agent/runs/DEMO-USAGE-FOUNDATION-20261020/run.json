@@ -408,25 +408,25 @@
     "commands": [
       {
         "command": "make verify.user.entry.delivery.browser_acceptance",
-        "status": "blocked",
+        "status": "partial",
         "layer": "L4",
-        "detail": "6/6 roles fail at login page: input[autocomplete=username] timeout; console 'Failed to load resource: 409 Conflict'; frontend dist/backend contract mismatch (environment_defect)"
+        "detail": "6 entries 4 pass (pm, pm_my_work_menu, finance, business_full); business_full home non-empty (待我处理 34 + payment cards); executive empty menu tree (registry #17); my-work back-home assertion stale"
       }
     ],
-    "notes": "Browser acceptance tooling corrected (password 123456 + business_full demo_full role added). The browser run is blocked by a frontend dist 409 Conflict, not by demo data; HTTP login/system.init already verified in F2. Blocker DUF-07."
+    "notes": "DUF-07 resolved: browser-side db-hint (409) and namespace (NS_NAMESPACE_REQUIRED) fixed; password 123456; business_full role added. 4/6 roles pass; executive menu-tree empty is a product-layer finding (#17), not demo data."
   }
     }
   },
   "blockers": [
     {
-      "id": "DUF-07",
-      "classification": "environment_defect",
-      "owner_layer": "P0/P1 frontend",
-      "registry_item": 16,
-      "summary": "browser acceptance login page fails with 409 Conflict from the served frontend dist; frontend dist/backend contract mismatch"
+      "id": "DUF-08",
+      "classification": "product_defect",
+      "owner_layer": "P1/P3",
+      "registry_item": 17,
+      "summary": "executive (management) workspace.home initializes with an empty menu tree (菜单树为空), a product-layer navigation-surface issue"
     }
   ],
-  "next_exact_step": "F8 browser acceptance is blocked by DUF-07 (frontend dist 409 Conflict). Fix the owning frontend dist/backend contract serving, then re-run verify.user.entry.delivery.browser_acceptance; DUF-04 date/amount calendar rule remains.",
+  "next_exact_step": "F8 browser acceptance: 4/6 roles pass (business_full home non-empty). Fix executive empty menu tree (#17, P1/P3) and my-work back-home assertion, then re-run; DUF-04 date/amount calendar rule remains.",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",
