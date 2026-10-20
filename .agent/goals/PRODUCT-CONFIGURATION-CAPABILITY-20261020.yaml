@@ -34,9 +34,9 @@ goal:
     - company_and_project_scope_must_be_explicit
     - no_demo_only_semantics_in_product_configuration
   next_exact_step: >-
-    Batch 4 layer 1 committed: controlled system parameter catalog and impact
-    preview. Next: P1 parameter change-set publish/rollback, then frontend
-    consumption of sc.product.system_parameter.catalog / .preview.
+    Batch 4 backend committed: controlled system parameter catalog, impact
+    preview and P1 change-set publish/rollback. Next: frontend consumption of
+    sc.product.system_parameter.catalog/.preview/.publish/.rollback.
   completion:
     scope: product_configuration_capability_long_task
     overall_goal: in_progress

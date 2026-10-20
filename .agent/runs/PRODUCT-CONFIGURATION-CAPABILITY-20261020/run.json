@@ -43,11 +43,20 @@
     "addons/smart_construction_core/handlers/product_system_parameter_catalog.py",
     "addons/smart_construction_core/tests/test_product_system_parameter_catalog_service.py",
     "scripts/verify/product_system_parameter_catalog_guard.py",
-    "scripts/verify/test_product_system_parameter_catalog_guard.py"
+    "scripts/verify/test_product_system_parameter_catalog_guard.py",
+    "addons/smart_construction_core/services/product_system_parameter_change.py",
+    "addons/smart_construction_core/models/support/product_system_parameter_change.py",
+    "addons/smart_construction_core/models/support/__init__.py",
+    "addons/smart_construction_core/security/ir.model.access.csv",
+    "addons/smart_construction_core/handlers/product_system_parameter_change.py",
+    "addons/smart_construction_core/tests/test_product_system_parameter_change.py",
+    "addons/smart_construction_core/tests/__init__.py"
   ],
   "environment": {
-    "kind": "offline",
-    "authority": "existing offline capability guard and unit tests; no database, service, browser or deployment access"
+    "kind": "runtime",
+    "authority": "existing local.dev governed lane (project sc-local-dev, database sc_dev_demo, nginx 18081) for module upgrade and targeted ORM tests, plus offline guards and unit tests",
+    "project": "sc-local-dev",
+    "database": "sc_dev_demo"
   },
   "checks": {
     "product_configuration_capability": {
@@ -124,6 +133,22 @@
       ],
       "kind": "offline",
       "test_count": 17
+    },
+    "product_system_parameter_change": {
+      "target": "verify.product_system_parameter_change",
+      "inputs": [
+        "addons/smart_construction_core/services/product_system_parameter_change.py",
+        "addons/smart_construction_core/models/support/product_system_parameter_change.py",
+        "addons/smart_construction_core/models/support/__init__.py",
+        "addons/smart_construction_core/handlers/product_system_parameter_change.py",
+        "addons/smart_construction_core/tests/test_product_system_parameter_change.py",
+        "addons/smart_construction_core/core_extension_intent_handlers.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/PRODUCT-CONFIGURATION-CAPABILITY-20261020/readback.json"
+      }
     }
   },
   "verification_results": {
@@ -147,6 +172,17 @@
       "command": "python3 scripts/verify/test_construction_intent_contribution_registry.py",
       "status": "passed",
       "test_count": 2
+    },
+    "product_system_parameter_change_orm": {
+      "command": "make verify.product_system_parameter_change",
+      "status": "passed",
+      "test_count": 5,
+      "note": "5 TestProductSystemParameterChange cases passed; the full sc_gate suite (460 tests, 0 failed/0 errors) also passed in an earlier broader run"
+    },
+    "local_dev_upgrade": {
+      "command": "make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core",
+      "status": "passed",
+      "note": "schema + security (ir.model.access) applied; local.dev.demo.authority PASS"
     }
   },
   "blockers": [],
@@ -161,5 +197,5 @@
     "next_exact_step": "Consume product.configuration.capability.catalog in the configuration workbench and login workspace.",
     "mainline_integration": "not_run"
   },
-  "next_exact_step": "Batch 4 catalog + impact preview layer implemented. Next: P1 parameter change-set publish/rollback, then frontend consumption."
+  "next_exact_step": "Batch 4 change-set publish/rollback backend implemented and ORM-verified. Next: frontend consumption of sc.product.system_parameter.catalog/.preview/.publish/.rollback."
 }

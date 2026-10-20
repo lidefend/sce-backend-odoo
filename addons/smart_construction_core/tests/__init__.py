@@ -39,6 +39,7 @@ from . import test_record_rule_contract_p1
 from . import test_record_rule_ledger_p1
 from . import test_p0_ledger_gate
 from . import test_contract_payment_allocation_fact
+from . import test_product_system_parameter_change
 from . import test_contract_execution_position
 from . import test_p0_finance_rr_gate
 from . import test_p0_finance_ui_gate

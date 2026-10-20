@@ -52,6 +52,7 @@ from . import runtime_user_management
 from . import formal_user_management
 from . import product_policy_sync
 from . import product_system_settings
+from . import product_system_parameter_change
 from . import product_numbering_rule
 from . import product_job
 from . import office_asset

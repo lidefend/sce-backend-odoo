@@ -32,22 +32,34 @@
 4. `core_extension_intent_handlers.py` 登记两个 intent。
 5. `scripts/verify/product_system_parameter_catalog_guard.py` + 单测 + 服务测试 + make 目标。
 
-## 3. 验证结果（本层）
+### 2.1 参数变更集发布/回滚（P1 自有机制，不扩 P0 变更集）
+
+1. `services/product_system_parameter_change.py`：公司字段读/写权威
+   （`cost_ledger_source` ↔ `res.company.sc_cost_from_*`），发布返回旧值，回滚恢复旧值。
+2. `models/support/product_system_parameter_change.py`：变更记录（draft → published →
+   rolled_back），带 `previous_value` 快照与审计；`create/write/unlink` 仅允许 `su`
+   （受管入口），防止绕过变更集直接写库；`security/ir.model.access.csv` 只授予配置管理员只读。
+3. `handlers/product_system_parameter_change.py`：
+   - `sc.product.system_parameter.publish`：影响预览通过后写入公司字段、记录变更与审计；
+   - `sc.product.system_parameter.rollback`：仅可回滚已发布变更，恢复旧值并标记 rolled_back。
+4. `core_extension_intent_handlers.py` 登记两个写 intent（REQUIRED_GROUPS 为配置管理员组）。
+
+## 3. 验证结果
 
 | 层 | 命令 | 状态 | 测试数 |
 |---|---|---|---|
 | L1 | `python3 -m py_compile`（服务/处理器/贡献注册表） | passed | - |
 | L2 | `make verify.product_system_parameter_catalog` | passed | 17（guard 8 + service 9） |
 | L2 | `python3 scripts/verify/test_construction_intent_contribution_registry.py` | passed | 2 |
+| L3 | `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1` | passed | schema + ACL 应用，demo authority PASS |
+| L3 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS=sc_gate,product_system_parameter_change` | passed | 460（含新增 5 例；368 post-tests 0 failed/0 error） |
 
 guard 结论：categories=6 parameters=13，无密钥/无原始 ir.config_parameter；cost_ledger_source 为
 唯一 available 参数，其余 planned 不伪装可用。
 
 ## 4. 未完成（本批剩余层）
 
-- 变更集发布/回滚：P1 层参数变更集（draft → preview → publish → rollback + 审计），对
-  `cost_ledger_source` 写/恢复公司字段；需要数据库，离线环境为 `verification_pending`。
-- 前端消费：参数目录页 + 影响预览 UI（下一步）。
+- 前端消费：参数目录页、影响预览、发布/回滚 UI（下一步）。
 
 ## 5. 风险与回滚
 
@@ -56,4 +68,4 @@ guard 结论：categories=6 parameters=13，无密钥/无原始 ir.config_parame
 
 ## 6. 下一步
 
-- 提交本层；随后实现 P1 参数变更集发布/回滚，再接前端消费。
+- 提交本层；随后前端消费 `sc.product.system_parameter.catalog/.preview/.publish/.rollback`。

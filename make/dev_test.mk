@@ -3022,3 +3022,7 @@ verify.product_system_parameter_catalog: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_product_system_parameter_catalog_guard
 	@python3 addons/smart_construction_core/tests/test_product_system_parameter_catalog_service.py
 	@python3 scripts/verify/product_system_parameter_catalog_guard.py
+
+.PHONY: verify.product_system_parameter_change
+verify.product_system_parameter_change: guard.prod.forbid
+	@MODULE=smart_construction_core TEST_TAGS=product_system_parameter_change $(MAKE) --no-print-directory local.dev.test
