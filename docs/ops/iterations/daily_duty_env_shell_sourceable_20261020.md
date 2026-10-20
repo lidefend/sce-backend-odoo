@@ -1,6 +1,6 @@
 # 日常职责环境文件可被 shell source
 
-状态：候选离线验证通过；尚未部署，运行态验收未执行。
+状态：已合并并在日常开发服务器部署验证通过。
 
 任务：`DAILY-DUTY-ENV-SHELL-SOURCEABLE-20261020`
 
@@ -54,16 +54,31 @@ Compose 得到正确字符串，但 shell 把 `|` 当成管道，在 source 阶�
 | `python3 scripts/verify/daily_runtime_entry_guard.py` | PASS |
 | `python3 scripts/verify/nginx_proxy_db_authority_guard.py` | PASS |
 
+## 运行态验证（合并后 main）
+
+部署身份 `b9a060c622c3943dafcb0f7d332fd9e87b22b781`，两职责均回读该 SHA：
+
+- demo：`sc_demo` / `ns_000000000002`，受众 `tenant`。
+- platform_control：`sc_platform_control` / `ns_000000000001`，受众 `platform-admin`。
+
+| 入口 | 结果 |
+|---|---|
+| `make daily.runtime.database.duty.refresh`（demo、platform_control） | PASS；平台管理员凭据 `authenticated=true`、`writes=0` |
+| 渲染后环境文件 `bash source` 回读 | `SC_DECLARED_NAMESPACE_ALIASES="demo|platform"` → `demo|platform` |
+| `make daily.runtime.published_face.converge`（修复前失败的那个包装入口） | PASS；standard 91 页、preview 129 页，`guard_status=PASS` |
+| `make daily.runtime.entry.verify` | PASS，66 项 0 失败 |
+| `scripts/ops/path_ns_c_acceptance.py` | PASS，23 项 0 失败 |
+
+关键判据：包装入口 PASS 覆盖了 `check_env.sh` 的 `source` 环节，因此“环境文件可被 shell
+读取”不再是推断，而是被真实升级路径消费后仍成立。
+
 ## 未覆盖/阻断
 
-- 尚未在候选 SHA 上部署日常开发服务器；`daily.runtime.entry.verify`、
-  `path_ns_c_acceptance`、平台凭据 verify 与发布面包装入口的实跑证据必须在
-  两个职责均绑定该候选后重采。
-- `6dd15103` 的既有运行证据不得迁移到本候选。
-- 本批不验证浏览器端登录后会话隔离；该项沿用路径命名空间专题的独立门禁。
+- 浏览器端登录后会话隔离沿用路径命名空间专题的独立门禁，本批未重跑。
+- 本批不改变平台或租户身份语义，也不覆盖角色与权限体系。
 
 ## 回滚
 
 仅两处文本与诊断改动，回滚即恢复未加引号的模板行和原失败信息。回滚后
-`check_env.sh` 会重新在 `source` 阶段失败，因此不得在未回滚代码的情况下
-重跑治理升级入口。
+`check_env.sh` 会重新在 `source` 阶段失败，因此不得在未回滚代码的情况下重跑治理升级
+入口；若需紧急恢复，可先手工为渲染产物加引号，再回滚代码。

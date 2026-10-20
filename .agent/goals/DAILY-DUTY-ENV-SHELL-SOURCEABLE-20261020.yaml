@@ -3,7 +3,7 @@
   "goal": {
     "id": "DAILY-DUTY-ENV-SHELL-SOURCEABLE-20261020",
     "title": "Make the rendered daily duty environment shell-sourceable",
-    "status": "active",
+    "status": "completed",
     "formal_product_layer": "P4 ops delivery tool",
     "objective": "Quote the declared namespace-alias regex in the rendered duty environment so the governed env check can source the same file Docker Compose consumes, and surface the inner converge tail when the published-face entry fails.",
     "exclusions": [
