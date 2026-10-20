@@ -48,7 +48,7 @@
           <ScInlineState v-else state="empty" label="当前没有高风险提醒。" />
         </section>
         <section data-login-home-block="my_objects" :data-state="objectItems.length ? 'ready' : 'empty'">
-          <h2 class="role-home-surface__block-title">我的项目与业务对象</h2>
+          <h2 class="role-home-surface__block-title">{{ myObjectsTitle }}</h2>
           <div v-if="objectItems.length" class="role-home-surface__block-list">
             <article
               v-for="item in objectItems"
@@ -66,7 +66,7 @@
               <ScButton v-if="item.route" type="button" variant="ghost" appearance="dashboard-action" @click="navigate(item.route)">打开</ScButton>
             </article>
           </div>
-          <ScInlineState v-else state="empty" label="当前范围没有可展示的项目或业务对象。" />
+          <ScInlineState v-else state="empty" :label="myObjectsEmpty" />
         </section>
       </template>
     <template #summary>
@@ -183,6 +183,8 @@ const {
   recentItems,
   riskItems,
   objectItems,
+  myObjectsTitle,
+  myObjectsEmpty,
   loading,
   error,
   unsupported,

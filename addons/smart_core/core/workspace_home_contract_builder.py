@@ -2755,6 +2755,7 @@ def build_workspace_home_contract(data: Dict[str, Any]) -> Dict[str, Any]:
                 "my_objects.aria_label": "我的项目与业务对象",
                 "my_objects.title": "我的项目与业务对象",
                 "my_objects.subtitle": "当前公司/项目下的项目、合同与资金。",
+                "my_objects.empty": "当前范围没有可展示的项目或业务对象。",
                 "risk.aria_label": "关键事项区",
                 "risk.title": "关键事项",
                 "risk.subtitle": "快速识别当前重点事项。",

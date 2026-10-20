@@ -129,6 +129,8 @@ export function useWorkspaceHome() {
     }))
     .filter((item) => Boolean(item.label))
     .slice(0, 6));
+  const myObjectsTitle = computed(() => text(session.workspaceHome?.layout?.texts?.['my_objects.title']));
+  const myObjectsEmpty = computed(() => text(session.workspaceHome?.layout?.texts?.['my_objects.empty']));
 
   async function loadCatalog() {
     if (!session.token) {
@@ -213,6 +215,8 @@ export function useWorkspaceHome() {
     recentItems,
     riskItems,
     objectItems,
+    myObjectsTitle,
+    myObjectsEmpty,
     loading,
     error,
     unsupported,
