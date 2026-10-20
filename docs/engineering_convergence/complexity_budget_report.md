@@ -79,7 +79,7 @@ Generated from repository source files. This report is informational during the 
 | 1521 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1516 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1513 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
-| 1395 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
+| 1445 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 690 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
@@ -307,12 +307,12 @@ Generated from repository source files. This report is informational during the 
 | 1479 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1475 | warning | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1453 | warning | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
+| 1445 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1440 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1438 | warning | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1401 | warning | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1398 | warning | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
-| 1396 | warning | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 
 ## Interpretation
 
