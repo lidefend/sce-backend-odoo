@@ -529,6 +529,18 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
     ).lower()
     render_profile = _sc_text(source.get("render_profile") or head.get("render_profile") or (((context or {}).get("meta") or {}).get("params") or {}).get("render_profile")).lower()
     out = deepcopy(contract)
+    # Rendering is a frontend concern: the industry finalize hook must never
+    # pass a framework component, per-client adapter or rendering fallback
+    # through the component registry into the projected contract.
+    layout_contract = out.get("layoutContract") if isinstance(out.get("layoutContract"), dict) else {}
+    component_registry = layout_contract.get("componentRegistry") if isinstance(layout_contract.get("componentRegistry"), dict) else {}
+    if component_registry:
+        for entry in component_registry.values():
+            if isinstance(entry, dict):
+                for forbidden in ("adapter", "selectedAdapter", "selected_adapter", "fallback"):
+                    entry.pop(forbidden, None)
+        layout_contract["componentRegistry"] = component_registry
+        out["layoutContract"] = layout_contract
     if model == "construction.work.breakdown" and view_type in {"tree", "list"}:
         source_context = source.get("context") if isinstance(source.get("context"), dict) else {}
         if not source_context:

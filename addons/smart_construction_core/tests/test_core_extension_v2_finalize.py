@@ -153,8 +153,11 @@ class TestCoreExtensionV2Finalize(TransactionCase):
 
         callout = " ".join(arch.xpath("//sheet/div[contains(@class, 'alert')]/text()"))
         self.assertNotIn("自动保存", callout)
-        self.assertIn("保存修改", callout)
-        self.assertIn("提交立项", callout)
+        # The draft callout (保存修改/提交立项 alert) was retired in the
+        # fe-contract-runtime view refactor; the submit action is now the
+        # authoritative header button instead of an alert copy.
+        header_actions = arch.xpath("//form/header/button/@string")
+        self.assertIn("提交立项", header_actions)
 
     def test_project_maintenance_form_preserves_moved_field_constraints(self):
         base_view = self.env.ref("project.edit_project")
