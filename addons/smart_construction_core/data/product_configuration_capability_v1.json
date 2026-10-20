@@ -239,7 +239,7 @@
       "key": "workspace.capability_map",
       "label": "我的能力",
       "audience": "business_full",
-      "status": "planned",
+      "status": "available",
       "entry": "workspace.capability_map",
       "authority": "system.init capabilities",
       "description": "按业务中心说明当前账号能办理什么，以及不可见是无权限、无数据还是未发布。"

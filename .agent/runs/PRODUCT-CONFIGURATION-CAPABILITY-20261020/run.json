@@ -56,7 +56,10 @@
     "frontend/apps/web/src/composables/systemParameter/useSystemParameterCatalog.ts",
     "frontend/apps/web/src/views/systemParameter/SystemParameterCatalogView.vue",
     "frontend/apps/web/src/router/index.ts",
-    "frontend/apps/web/scripts/product_system_parameter_test.ts"
+    "frontend/apps/web/scripts/product_system_parameter_test.ts",
+    "frontend/apps/web/src/views/MyCapabilitiesView.vue",
+    "frontend/apps/web/src/composables/myCapabilities/useMyCapabilities.ts",
+    "docs/ops/iterations/product_configuration_capability_batch5_20261020.md"
   ],
   "environment": {
     "kind": "runtime",
@@ -211,6 +214,17 @@
     "frontend_typecheck": {
       "command": "cd frontend/apps/web && pnpm run typecheck",
       "status": "passed"
+    },
+    "product_configuration_capability_manifest_flip": {
+      "command": "make verify.product_configuration.capability",
+      "status": "passed",
+      "test_count": 16,
+      "note": "workspace.capability_map planned -> available; guard PASS capabilities=25"
+    },
+    "frontend_product_capability_catalog": {
+      "command": "make verify.frontend.product_capability_catalog.unit",
+      "status": "passed",
+      "test_count": 18
     }
   },
   "blockers": [],
@@ -225,5 +239,5 @@
     "next_exact_step": "Consume product.configuration.capability.catalog in the configuration workbench and login workspace.",
     "mainline_integration": "not_run"
   },
-  "next_exact_step": "Batch 4 complete (catalog + impact preview + change-set backend + frontend consumption). Next: Batch 5 login first-screen 6 blocks and my-capabilities page."
+  "next_exact_step": "Batch 5 complete: my-capabilities page and capability_map available. Next: Batch 6 business-full browser acceptance."
 }

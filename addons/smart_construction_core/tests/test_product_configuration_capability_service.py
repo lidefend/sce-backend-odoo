@@ -82,13 +82,32 @@ class ProductConfigurationCapabilityServiceTest(unittest.TestCase):
         keys = {row["key"] for row in catalog["capabilities"]}
         self.assertEqual(keys, {"support.diagnostics"})
 
-    def test_planned_capability_is_not_available(self):
+    def test_capability_map_is_available(self):
         catalog = service.build_catalog(self.manifest, ["business_full"])
         row = next(
             item
             for item in catalog["capabilities"]
             if item["key"] == "workspace.capability_map"
         )
+        self.assertTrue(row["available"])
+        self.assertEqual(row["status"], "available")
+
+    def test_planned_capability_projection_marks_not_available(self):
+        manifest = {
+            "capabilities": [
+                {
+                    "key": "workspace.example",
+                    "label": "示例能力",
+                    "audience": "business_full",
+                    "status": "planned",
+                    "entry": "workspace.example",
+                    "authority": "system.init capabilities",
+                    "description": "示例",
+                }
+            ]
+        }
+        catalog = service.build_catalog(manifest, ["business_full"])
+        row = catalog["capabilities"][0]
         self.assertFalse(row["available"])
         self.assertEqual(row["reason"], "planned")
 

@@ -34,9 +34,8 @@ goal:
     - company_and_project_scope_must_be_explicit
     - no_demo_only_semantics_in_product_configuration
   next_exact_step: >-
-    Batch 4 complete: controlled system parameter catalog, impact preview,
-    P1 change-set publish/rollback and frontend consumption. Next: Batch 5
-    login first-screen 6 blocks and my-capabilities page.
+    Batch 5 complete: my-capabilities page and capability_map available. Next:
+    Batch 6 business-full browser acceptance.
   completion:
     scope: product_configuration_capability_long_task
     overall_goal: in_progress

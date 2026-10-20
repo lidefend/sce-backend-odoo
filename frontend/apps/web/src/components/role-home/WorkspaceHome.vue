@@ -85,6 +85,15 @@
             <small v-if="!block.available" class="role-home-surface__capability-reason">
               {{ block.reason === 'planned' ? '该能力尚未发布，暂不可用。' : block.reason }}
             </small>
+            <ScButton
+              v-if="block.key === 'capability_map' && block.available"
+              type="button"
+              variant="ghost"
+              appearance="dashboard-action"
+              @click="navigate('/my-capabilities')"
+            >
+              查看我的能力
+            </ScButton>
           </article>
         </div>
         <p v-else class="role-home-surface__state">当前账号没有声明登录首屏能力区块。</p>
