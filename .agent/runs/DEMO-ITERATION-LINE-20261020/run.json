@@ -130,5 +130,5 @@
       "resolved_commit": "a44238ad8"
     }
   ],
-  "next_exact_step": "Batch 4 surface readback done (multi-tier approval wired, fixture drivable). Batch 5 gate evidence recorded: scems-demo-tenant.timer targets the isolated public demo tenant (/opt/sce/demo-product + /etc/scems/demo-tenant.env) and demo.tenant.reset is full rebuild + release seed; no scoped experience reset exists. Owner must confirm where experience users operate before any timer change. Remaining: Batch 4 full four-tier role-driven driver, then Batch 5 scoped experience reset."
+  "next_exact_step": "Owner ruling recorded: experience users use full-featured accounts now; durable target is a dedicated experience-user role (P1 role + P3 visibility + P0 registration, product-layer gap). Public demo tenant timer stays as-is (showcase full rebuild). Remaining: Batch 4 closeout — demo-scenario four-tier role-driven approve with idempotency + negative; then Batch 5 demo scenario tick (experience reset keys off the role when it lands)."
 }
