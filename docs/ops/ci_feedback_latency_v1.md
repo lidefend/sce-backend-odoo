@@ -141,3 +141,19 @@ This removes the 10–16 minute release acceptance and unrelated ORM work from t
 ordinary component-development critical path. Full release acceptance is still
 required when a release-critical surface changes and when formal release
 evidence is produced through the explicit candidate path.
+
+## Integration-cycle efficiency (2026-10-20)
+
+The product/demo integration showed that the dominant cost was not a single
+gate, but repeated push/fix/regenerate cycles. Each remote round costs roughly
+8–10 minutes, while the guards that failed were mostly cheap local checks.
+
+Use [the integration cycle playbook](integration_cycle_playbook_20261020.md):
+
+1. take an ownership snapshot before calling a file in flight;
+2. run the integration fast bundle before the first push;
+3. refresh generated evidence once and run exact-head Quick once;
+4. push one converged candidate, not one push per assertion;
+5. collect all remote failures before the next local fix batch;
+6. merge only with required checks and the exact-head Quick receipt, and keep
+   `pr.merge` runtime-evidence exclusions explicit.
