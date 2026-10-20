@@ -5,6 +5,11 @@ import { fetchMyWorkSummary, type ProductMyWorkItem, type ProductMyWorkWorkspace
 import { currentContextEpoch, isCurrentContextEpoch } from '../../app/contextEpoch';
 import { usePageContract } from '../../app/pageContract';
 import { mergeWorkspaceNavigationLinks, resolveWorkspaceNavigationLink } from '../../app/workspaceHomeNavigation';
+import {
+  isProductCapabilityCatalogGap,
+  projectLoginHomeBlocks,
+} from '../../app/productCapabilityCatalogProjection';
+import type { ProductCapabilityLoginHomeBlock } from '../../api/productCapabilityCatalog';
 import { useSessionStore, type ActivityPage } from '../../stores/session';
 
 type SurfaceLink = { key: string; label: string; detail: string; route: string };
@@ -50,6 +55,10 @@ export function useWorkspaceHome() {
   const error = ref('');
   const unsupported = ref(false);
   const workWorkspace = ref<ProductMyWorkWorkspace | null>(null);
+  const catalogLoading = ref(false);
+  const catalogError = ref('');
+  const catalogGap = ref('');
+  const loginBlocks = ref<ProductCapabilityLoginHomeBlock[]>([]);
   let loadRequestSequence = 0;
 
   const pageProfile = computed(() => pageContract.contract.value?.page_orchestration?.page || {});
@@ -82,10 +91,34 @@ export function useWorkspaceHome() {
       .map((page) => ({ key: page.key, label: page.title, detail: '', route: page.route }));
   });
 
+  async function loadCatalog() {
+    if (!session.token) {
+      loginBlocks.value = [];
+      return;
+    }
+    catalogLoading.value = true;
+    catalogError.value = '';
+    catalogGap.value = '';
+    try {
+      await session.loadProductCapabilityCatalog();
+      loginBlocks.value = projectLoginHomeBlocks(session.productCapabilityCatalog);
+    } catch (err) {
+      loginBlocks.value = [];
+      if (isProductCapabilityCatalogGap(err)) {
+        catalogGap.value = String(err.message || '');
+      } else {
+        catalogError.value = pageContract.text('load_error', '当前页面暂时无法加载，请稍后重试。');
+      }
+    } finally {
+      catalogLoading.value = false;
+    }
+  }
+
   async function load() {
     const requestSequence = ++loadRequestSequence;
     if (!session.token) {
       workWorkspace.value = null;
+      loginBlocks.value = [];
       return;
     }
     const navMeta = ((session.initMeta as Record<string, unknown> | null)?.nav_meta ?? {}) as Record<string, unknown>;
@@ -93,6 +126,7 @@ export function useWorkspaceHome() {
       workWorkspace.value = null;
       error.value = '';
       unsupported.value = true;
+      loginBlocks.value = [];
       return;
     }
     const requestEpoch = currentContextEpoch();
@@ -100,6 +134,7 @@ export function useWorkspaceHome() {
     error.value = '';
     unsupported.value = false;
     workWorkspace.value = null;
+    void loadCatalog();
     try {
       const result = await fetchMyWorkSummary(undefined, undefined, { page: 1, sortBy: 'priority', sortDir: 'desc' });
       if (isCurrentContextEpoch(requestEpoch) && requestSequence === loadRequestSequence) workWorkspace.value = result.product_workspace || null;
@@ -130,5 +165,22 @@ export function useWorkspaceHome() {
     { immediate: true },
   );
 
-  return { title, subtitle, tasks, summaries, quickLinks, recentItems, loading, error, unsupported, load, navigate };
+  return {
+    title,
+    subtitle,
+    tasks,
+    summaries,
+    quickLinks,
+    recentItems,
+    loading,
+    error,
+    unsupported,
+    loginBlocks,
+    catalogLoading,
+    catalogError,
+    catalogGap,
+    load,
+    loadCatalog,
+    navigate,
+  };
 }

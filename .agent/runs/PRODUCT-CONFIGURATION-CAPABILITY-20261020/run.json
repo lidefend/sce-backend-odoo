@@ -5,7 +5,7 @@
   "status": "active",
   "baseline_sha": "82dbd9134288576ede315370179858c5ba70ce87",
   "goal": ".agent/goals/PRODUCT-CONFIGURATION-CAPABILITY-20261020.yaml",
-  "record": "docs/ops/iterations/product_configuration_capability_bootstrap_20261020.md",
+  "record": "docs/ops/iterations/product_configuration_capability_batch3_20261020.md",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/PRODUCT-CONFIGURATION-CAPABILITY-20261020.yaml",
@@ -21,7 +21,21 @@
     "addons/smart_construction_core/core_extension_intent_handlers.py",
     "scripts/verify/product_configuration_capability_guard.py",
     "scripts/verify/test_product_configuration_capability_guard.py",
-    "make/dev_test.mk"
+    "make/dev_test.mk",
+    "docs/architecture/frontend_contract_basis_ledger.json",
+    "docs/ops/iterations/product_configuration_capability_batch3_20261020.md",
+    "frontend/apps/web/scripts/product_capability_catalog_test.ts",
+    "frontend/apps/web/src/api/productCapabilityCatalog.ts",
+    "frontend/apps/web/src/app/businessConfigBoundaries.ts",
+    "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
+    "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
+    "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
+    "frontend/apps/web/src/stores/session.ts",
+    "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
+    "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigStartPanel.vue",
+    "frontend/apps/web/src/views/businessConfigSurface/style.css",
+    "frontend/apps/web/src/views/businessConfigSurface/template.html",
+    "make/frontend.mk"
   ],
   "environment": {
     "kind": "offline",
@@ -57,5 +71,5 @@
     "next_exact_step": "Consume product.configuration.capability.catalog in the configuration workbench and login workspace.",
     "mainline_integration": "not_run"
   },
-  "next_exact_step": "Paused for handoff. Independent executor starts Batch 3 from docs/ops/iterations/product_configuration_capability_handoff_20261020.md."
+  "next_exact_step": "Batch 3 implemented. Re-run ci.local.iteration to close L1, then commit Batch 3 and proceed to Batch 4."
 }

@@ -62,6 +62,33 @@
           <p v-else class="role-home-surface__state">打开业务页面后，最近访问会显示在这里。</p>
         </div>
       </div>
+      <div class="role-home-surface__capability-map" data-semantic-component="WorkspaceHomeCapabilityMap">
+        <h3>首屏能力</h3>
+        <ScInlineState v-if="catalogLoading" state="loading" label="正在加载能力目录。" />
+        <ScInlineState v-else-if="catalogError" state="error" :label="catalogError">
+          <template #actions><ScButton type="button" variant="secondary" @click="loadCatalog">重试</ScButton></template>
+        </ScInlineState>
+        <ScInlineState v-else-if="catalogGap" state="error" :label="catalogGap" />
+        <div v-else-if="loginBlocks.length" class="role-home-surface__capability-list">
+          <article
+            v-for="block in loginBlocks"
+            :key="block.key"
+            class="role-home-surface__capability-item"
+            :data-capability-key="block.key"
+            :data-capability-available="block.available ? 'true' : 'false'"
+            :data-capability-required="block.required ? 'true' : 'false'"
+          >
+            <strong>{{ block.label }}</strong>
+            <span class="role-home-surface__capability-status" :data-capability-status="block.available ? 'available' : block.reason">
+              {{ capabilityStatusLabel(block.available ? 'available' : block.reason) }}
+            </span>
+            <small v-if="!block.available" class="role-home-surface__capability-reason">
+              {{ block.reason === 'planned' ? '该能力尚未发布，暂不可用。' : block.reason }}
+            </small>
+          </article>
+        </div>
+        <p v-else class="role-home-surface__state">当前账号没有声明登录首屏能力区块。</p>
+      </div>
     </template>
   </ProductWorkspaceSurface>
 </template>
@@ -76,6 +103,7 @@ import ScStatusBadge from '../design-system/ScStatusBadge.vue';
 import ScMoney from '../design-system/ScMoney.vue';
 import type { ProductMyWorkFact } from '../../api/myWork';
 import { formatProductMyWorkFact } from '../../app/presentation/productMyWorkPresentation';
+import { capabilityStatusLabel } from '../../app/productCapabilityCatalogProjection';
 
 const formatFact = (fact: ProductMyWorkFact) => formatProductMyWorkFact(fact);
 
@@ -97,7 +125,12 @@ const {
   loading,
   error,
   unsupported,
+  loginBlocks,
+  catalogLoading,
+  catalogError,
+  catalogGap,
   load,
+  loadCatalog,
   navigate,
 } = useWorkspaceHome();
 </script>
@@ -256,6 +289,50 @@ const {
   padding: var(--sc-space-3, 12px);
   border-radius: 4px;
   background: var(--sc-app-subtle-bg);
+}
+
+.role-home-surface__capability-map {
+  margin-top: var(--sc-space-4, 16px);
+}
+
+.role-home-surface__capability-map h3 {
+  margin: 0;
+}
+
+.role-home-surface__capability-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--sc-space-2, 8px);
+  margin-top: var(--sc-space-2, 8px);
+}
+
+.role-home-surface__capability-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 10px 12px;
+  border-radius: var(--sc-product-radius-control);
+  background: var(--sc-app-subtle-bg);
+}
+
+.role-home-surface__capability-item strong {
+  color: var(--sc-app-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.role-home-surface__capability-status {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--sc-app-text-secondary);
+  background: var(--sc-app-border);
+}
+
+.role-home-surface__capability-reason {
+  grid-column: 1 / -1;
+  color: var(--sc-app-text-muted);
+  font-size: 12px;
 }
 
 @media (max-width: 960px) {

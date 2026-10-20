@@ -34,13 +34,14 @@ goal:
     - company_and_project_scope_must_be_explicit
     - no_demo_only_semantics_in_product_configuration
   next_exact_step: >-
-    Paused for handoff. Independent executor starts Batch 3 from
-    docs/ops/iterations/product_configuration_capability_handoff_20261020.md.
+    Batch 3 committed: login home and configuration workbench consume
+    product.configuration.capability.catalog. Next: Batch 4 system parameter
+    catalog, impact preview, change-set publish/rollback.
   completion:
     scope: product_configuration_capability_long_task
     overall_goal: in_progress
     result_index: .agent/runs/PRODUCT-CONFIGURATION-CAPABILITY-20261020/run.json
-    local_batch_acceptance: batch_2_passed
+    local_batch_acceptance: batch_3_passed
     mainline_integration: not_run
     deployment: not_run
     target_user_delivery: not_run

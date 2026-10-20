@@ -3,6 +3,8 @@ import { defineStore } from 'pinia';
 import type { AppInitResponse, CanonicalNavigationModel, LoginResponse, NavMeta, NavNode, RecordContextContract, RecordContextOption } from '@sc/schema';
 import { optionalDeclaredNumber, requireDeclaredNumber } from '../app/contract/contractGap';
 import { intentRequest } from '../api/intents';
+import type { ProductCapabilityCatalog } from '../api/productCapabilityCatalog';
+import { PRODUCT_CAPABILITY_INTENTS } from '../app/businessConfigBoundaries';
 import { ApiError } from '../api/client';
 import { config } from '../config';
 import { getSceneByKey, setSceneRegistry, setSceneRegistryFromSceneReadyContract } from '../app/resolvers/sceneRegistry';
@@ -268,6 +270,7 @@ export interface SessionState {
     scene_key?: string;
     loaded?: boolean;
   } | null;
+  productCapabilityCatalog: ProductCapabilityCatalog | null;
   pageContracts: Record<string, PageContract>;
   publicPageContractStatus: 'idle' | 'loading' | 'ready' | 'error';
   sceneReadyContract: SceneReadyContract | null;
@@ -588,6 +591,7 @@ export const useSessionStore = defineStore('session', {
     },
     workspaceHome: null,
     workspaceHomeRef: null,
+    productCapabilityCatalog: null,
     pageContracts: {},
     publicPageContractStatus: 'idle',
     sceneReadyContract: null,
@@ -884,6 +888,7 @@ export const useSessionStore = defineStore('session', {
           this.productFacts = parsed.productFacts ?? { license: null, bundle: null };
           this.workspaceHome = null;
           this.workspaceHomeRef = null;
+          this.productCapabilityCatalog = null;
           this.pageContracts = {};
           this.sceneReadyContract = null;
           this.sceneGovernance = null;
@@ -934,6 +939,7 @@ export const useSessionStore = defineStore('session', {
       this.productFacts = { license: null, bundle: null };
       this.workspaceHome = null;
       this.workspaceHomeRef = null;
+      this.productCapabilityCatalog = null;
       this.pageContracts = {};
       this.sceneReadyContract = null;
       this.sceneGovernance = null;
@@ -1314,6 +1320,7 @@ export const useSessionStore = defineStore('session', {
       this.roleSurfaceMap = {};
       this.workspaceHome = null;
       this.workspaceHomeRef = null;
+      this.productCapabilityCatalog = null;
       this.pageContracts = {};
       this.sceneReadyContract = null;
       this.sceneGovernance = null;
@@ -1799,6 +1806,18 @@ export const useSessionStore = defineStore('session', {
       }
       this.persist();
       return this.workspaceHome;
+    },
+    async loadProductCapabilityCatalog(force = false) {
+      const requestEpoch = currentContextEpoch();
+      if (!force && this.productCapabilityCatalog) return this.productCapabilityCatalog;
+      if (!this.token) return null;
+      const result = await intentRequest<ProductCapabilityCatalog>({
+        intent: PRODUCT_CAPABILITY_INTENTS.catalog,
+      });
+      if (!isCurrentContextEpoch(requestEpoch)) return this.productCapabilityCatalog;
+      this.productCapabilityCatalog = result;
+      this.persist();
+      return this.productCapabilityCatalog;
     },
     async searchRecordContext(search = '', requestEpoch = currentContextEpoch()) {
       const requestSequence = ++recordSearchRequestSequence;
