@@ -1,0 +1,45 @@
+schema_version: 1
+goal:
+  id: BASELINE-DOCS-LINKS-20261020
+  title: baseline_docs_links_cleanup
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: docs_link_integrity
+  module:
+    - docs
+    - .agent
+  baseline:
+    branch: fix/baseline-docs-links-20261020
+    full_sha: 13b0395db4da63147b3f9c311a4bb5d060dc6a4e
+    source: dedicated_demo_worktree
+  objective: >-
+    Independently close the pre-existing 93 missing-document-link baseline defect.
+    Replace historical absolute paths with repository-relative links when the target
+    exists; convert genuinely missing historical targets to plain text; escape
+    code-like false positives. Do not change product code, contracts, runtime data,
+    or unrelated documentation meaning.
+  constraints:
+    - only_changed_link_targets_and_false_positive_code_examples
+    - no_product_code_or_contract_change
+    - no_fake_links_for_missing_historical_targets
+    - no_weakening_of_docs_links_max_missing
+    - preserve_historical_audit_meaning
+  exclusions:
+    - id: BASELINE-AGENT-LEDGER-7
+      classification: baseline_evidence_defect
+      detail: >-
+        verify.agent.ledger.unit reports 7 pre-existing .agent ledger issues involving
+        other executors' completed runs/goals. This batch does not modify those records.
+      owner: separate_p4_agent_ledger_baseline_cleanup
+  next_exact_step: >-
+    Docs links are clean and verify.docs.all passes. Commit on
+    fix/baseline-docs-links-20261020, then cherry-pick the baseline commit onto the
+    demo iteration branch.
+  completion:
+    scope: baseline_docs_links_only
+    overall_goal: in_progress
+    result_index: .agent/runs/BASELINE-DOCS-LINKS-20261020/run.json
+    local_batch_acceptance: in_progress
+    mainline_integration: not_run
+    deployment: not_run
+    target_user_delivery: not_run

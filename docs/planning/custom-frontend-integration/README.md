@@ -213,7 +213,7 @@ scripts/verify/                 # P4 门禁、迁移和证据生成
 - 正式菜单最大三级：一级业务域、二级流程/子域、三级业务对象/台账/单据/报表。
 - 对标 Oracle Primavera Unifier、Autodesk Construction Cloud、Procore 与 BOSS/PUMA 的信息架构原则，不复制名称和权限模型。
 - 既有导航组件继续使用；专题只治理契约、命名、归集、角色可见性、图标完整性和迁移兼容。
-- 详细计划见 [`menu-governance/docs/TECH_DESIGN.md`](menu-governance/docs/TECH_DESIGN.md)。
+- 详细计划见 `menu-governance/docs/TECH_DESIGN.md`。
 
 ## 7. 依赖与实施顺序
 

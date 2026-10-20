@@ -1,6 +1,6 @@
 # P0-1: BOQ 前端组件技术方案
 
-> 架构校正：通用树表 renderer 可属于 P0，BOQ 事实、汇总、权限与动作属于 P1 `smart_construction_core`。本文为候选设计，实施以根目录 [`README.md`](../../README.md) 为准。
+> 架构校正：通用树表 renderer 可属于 P0，BOQ 事实、汇总、权限与动作属于 P1 `smart_construction_core`。本文为候选设计，实施以根目录 [`README.md`](../README.md) 为准。
 
 ## 1. 目标
 
