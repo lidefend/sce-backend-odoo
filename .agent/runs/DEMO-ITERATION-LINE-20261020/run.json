@@ -40,7 +40,15 @@
     "docs/planning/custom-frontend-integration/topics/pdf.md",
     "docs/planning/custom-frontend-integration/topics/theme.md",
     "docs/verify/be_postlogin_startup_nav_prune_scan_cf_v1.md",
-    "docs/verify/be_project_management_postlogin_runtime_screen_ce_v1.md"
+    "docs/verify/be_project_management_postlogin_runtime_screen_ce_v1.md",
+    ".agent/goals/BASELINE-AGENT-LEDGER-20261020.yaml",
+    ".agent/runs/BASELINE-AGENT-LEDGER-20261020/run.json",
+    ".agent/goals/DAILY-RUNTIME-BATCH-20261019.yaml",
+    ".agent/runs/DAILY-RUNTIME-BATCH-20261019/run.json",
+    ".agent/goals/PRODUCT-MENU-CONFIG-ENTRY-20261019.yaml",
+    ".agent/goals/DEMO-ORG-MASTER-20261019.yaml",
+    ".agent/goals/DEMO-R1-F02-F03-CONTRACT-LABEL-20261019.yaml",
+    "docs/ops/iterations/baseline_agent_ledger_20261020.md"
   ],
   "environment": {
     "kind": "offline",
@@ -64,6 +72,13 @@
         ".agent/active-runs.json",
         ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
         ".agent/runs/DEMO-ITERATION-LINE-20261020/run.json",
+        ".agent/goals/BASELINE-AGENT-LEDGER-20261020.yaml",
+        ".agent/runs/BASELINE-AGENT-LEDGER-20261020/run.json",
+        ".agent/goals/DAILY-RUNTIME-BATCH-20261019.yaml",
+        ".agent/runs/DAILY-RUNTIME-BATCH-20261019/run.json",
+        ".agent/goals/PRODUCT-MENU-CONFIG-ENTRY-20261019.yaml",
+        ".agent/goals/DEMO-ORG-MASTER-20261019.yaml",
+        ".agent/goals/DEMO-R1-F02-F03-CONTRACT-LABEL-20261019.yaml",
         "scripts/verify/agent_ledger_consistency_guard.py",
         "scripts/verify/test_agent_ledger_consistency_guard.py"
       ],
@@ -81,7 +96,16 @@
       "forbidden_action": "do_not_modify_93_unrelated_links_in_this_batch",
       "resolved_by": "BASELINE-DOCS-LINKS-20261020",
       "resolved_commit": "6367191098006910d876330747b9e1e6faff1481"
+    },
+    {
+      "id": "BASELINE-AGENT-LEDGER-7",
+      "classification": "baseline_evidence_defect",
+      "status": "closed_by_carried_prerequisite",
+      "detail": "Seven pre-existing .agent ledger inconsistencies were reproduced unchanged and closed by metadata-only status/index/goal-shape fixes.",
+      "owner": "separate P4 agent-ledger baseline cleanup",
+      "resolved_by": "BASELINE-AGENT-LEDGER-20261020",
+      "resolved_commit": "a44238ad8"
     }
   ],
-  "next_exact_step": "Baseline docs links are closed by carried prerequisite 636719109 and verify.docs.all passes on this branch. Resume Batch 1 only after explicit continuation."
+  "next_exact_step": "Baseline docs links and agent ledger are closed by carried prerequisites. verify.docs.all and verify.agent.ledger.unit pass on this branch. Demo Batch 1 may start."
 }
