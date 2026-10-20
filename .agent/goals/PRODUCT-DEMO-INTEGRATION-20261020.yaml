@@ -1,0 +1,62 @@
+schema_version: 1
+goal:
+  id: PRODUCT-DEMO-INTEGRATION-20261020
+  title: product_demo_mainline_integration
+  status: active
+  formal_product_layer: P4
+  supporting_layers:
+    - P0
+    - P1
+    - P3
+  layer_target: >-
+    Integrate the product configuration capability line and the demo mechanism line into
+    one release candidate without changing product semantics during merge resolution.
+  module:
+    - release
+    - docs
+    - verification
+  baseline:
+    branch: release/product-demo-integration-20261020
+    full_sha: 82dbd9134288576ede315370179858c5ba70ce87
+    source: local_release_integration_branch
+  objective: >-
+    Produce a clean integration candidate that contains both accepted feature lines, keeps
+    main unchanged, resolves only ownership/overlap conflicts, and revalidates product,
+    demo and ledger gates before publication.
+  product_boundary:
+    standard_vs_user_specific: delivery_integration
+    why_here: >-
+      Release integration is P4 delivery work. It combines already-owned P0/P1/P3 behavior
+      and must not introduce new business semantics while resolving merge conflicts.
+    why_not_elsewhere:
+      - no_new_product_semantics_in_merge_resolution
+      - no_demo_specific_business_patch_in_product_layers
+      - no_direct_main_write_or_deployment
+    blast_radius:
+      - release candidate tree
+      - product and demo gate results
+      - agent run ledger and handoff records
+  constraints:
+    - preserve_both_accepted_feature_lines
+    - never_overwrite_unowned_in_flight_files
+    - resolve_overlap_from_main_and_both_line_evidence
+    - keep_main_unmodified_until_publication
+    - deployment_and_user_acceptance_are_separate_statuses
+  exclusions:
+    - id: DEMO-DATA-TEST-RESIDUE-20261020
+      classification: out_of_scope
+      detail: >-
+        Demo records such as 成本并发隔离测试项目 remain demo data cleanup, not a product
+        contract or integration defect.
+      owner: demo_data_iteration
+  next_exact_step: >-
+    Register the integration run, commit metadata, rerun clean L1, then publish the release
+    candidate through the governed PR lane.
+  completion:
+    scope: product_demo_integration_candidate
+    overall_goal: in_progress
+    result_index: .agent/runs/PRODUCT-DEMO-INTEGRATION-20261020/run.json
+    local_batch_acceptance: passed
+    mainline_integration: in_progress
+    deployment: not_run
+    target_user_delivery: not_run
