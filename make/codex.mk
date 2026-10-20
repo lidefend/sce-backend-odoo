@@ -451,14 +451,16 @@ pr.merge.local_quick_gate:
 	echo "[pr.merge.local_quick_gate] PASS"; \
 	'
 
+DELIVERY_MERGE_PREFLIGHT_REPORT ?= .runtime/validation-delivery/merge-preflight.json
+
 .PHONY: pr.merge.preflight
 pr.merge.preflight: guard.prod.forbid
-	@python3 scripts/ops/validation_delivery_plan.py --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" --output .runtime/validation-delivery/merge-preflight.json --require-ready
+	@python3 scripts/ops/validation_delivery_plan.py --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" --output "$(DELIVERY_MERGE_PREFLIGHT_REPORT)" --require-ready
 
 # Recipe order is intentional: make -j must not start Quick before readiness.
 pr.merge: guard.prod.forbid pr.merge.preflight
 	@$(MAKE) --no-print-directory pr.merge.local_quick_gate
-	@python3 scripts/ops/validation_delivery_plan.py --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" --output .runtime/validation-delivery/merge-preflight.json --verify-pr-identity
+	@python3 scripts/ops/validation_delivery_plan.py --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" --output "$(DELIVERY_MERGE_PREFLIGHT_REPORT)" --verify-pr-identity
 	@bash -c '\
 	set -euo pipefail; \
 	BR="$$(git rev-parse --abbrev-ref HEAD)"; \

@@ -190,9 +190,12 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
                 f"PR_MERGE_METHOD={method}",
                 f"ACCEPTANCE_EVOLUTION_EVIDENCE={root / 'evidence.json'}",
                 f"ACCEPTANCE_EVOLUTION_PLAN={root / 'plan.json'}",
+                f"DELIVERY_MERGE_PREFLIGHT_REPORT={root / 'merge-preflight.json'}",
             ]
             if expected_head is not None:
                 command.append(f"EXPECTED_HEAD={expected_head}")
+            delivery_report = ROOT / '.runtime/validation-delivery/merge-preflight.json'
+            original_report = delivery_report.read_bytes() if delivery_report.exists() else None
             completed = subprocess.run(
                 command,
                 cwd=ROOT,
@@ -201,6 +204,11 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 check=False,
+            )
+            self.assertEqual(
+                delivery_report.read_bytes() if delivery_report.exists() else None,
+                original_report,
+                'mocked merge must not overwrite real delivery evidence',
             )
             arguments = (
                 merge_log.read_text(encoding="utf-8").splitlines()
