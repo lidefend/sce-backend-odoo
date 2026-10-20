@@ -56,6 +56,9 @@ class ProductConfigurationCapabilityGuardTest(unittest.TestCase):
         row["entry"] = "ir.config_parameter"
         self.assertTrue(any("must not expose raw ir.config_parameter" in error for error in guard.validate(manifest)))
 
+    def test_runtime_copy_matches_product_manifest(self):
+        self.assertEqual(guard.validate_runtime_copy(), [])
+
 
 if __name__ == "__main__":
     unittest.main()

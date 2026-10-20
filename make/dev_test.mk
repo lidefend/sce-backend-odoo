@@ -3006,6 +3006,7 @@ verify.platform.database.rehearsal.unit: guard.prod.forbid
 
 .PHONY: verify.product_configuration.capability
 verify.product_configuration.capability: guard.prod.forbid
-	@python3 -m py_compile scripts/verify/product_configuration_capability_guard.py scripts/verify/test_product_configuration_capability_guard.py
+	@python3 -m py_compile scripts/verify/product_configuration_capability_guard.py scripts/verify/test_product_configuration_capability_guard.py addons/smart_construction_core/services/product_configuration_capability.py addons/smart_construction_core/handlers/product_configuration_capability.py
 	@python3 -m unittest scripts.verify.test_product_configuration_capability_guard
+	@python3 addons/smart_construction_core/tests/test_product_configuration_capability_service.py
 	@python3 scripts/verify/product_configuration_capability_guard.py

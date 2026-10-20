@@ -13,6 +13,11 @@
     "config/product_configuration_capability_v1.json",
     "docs/product/product_configuration_capability_v1.md",
     "docs/ops/iterations/product_configuration_capability_bootstrap_20261020.md",
+    "addons/smart_construction_core/data/product_configuration_capability_v1.json",
+    "addons/smart_construction_core/services/product_configuration_capability.py",
+    "addons/smart_construction_core/handlers/product_configuration_capability.py",
+    "addons/smart_construction_core/tests/test_product_configuration_capability_service.py",
+    "addons/smart_construction_core/core_extension_intent_handlers.py",
     "scripts/verify/product_configuration_capability_guard.py",
     "scripts/verify/test_product_configuration_capability_guard.py",
     "make/dev_test.mk"
@@ -27,6 +32,11 @@
       "inputs": [
         "config/product_configuration_capability_v1.json",
         "docs/product/product_configuration_capability_v1.md",
+        "addons/smart_construction_core/data/product_configuration_capability_v1.json",
+        "addons/smart_construction_core/services/product_configuration_capability.py",
+        "addons/smart_construction_core/handlers/product_configuration_capability.py",
+        "addons/smart_construction_core/tests/test_product_configuration_capability_service.py",
+        "addons/smart_construction_core/core_extension_intent_handlers.py",
         "scripts/verify/product_configuration_capability_guard.py",
         "scripts/verify/test_product_configuration_capability_guard.py",
         "make/dev_test.mk"
@@ -35,5 +45,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Batch 2: backend product capability catalog contract and tests."
+  "next_exact_step": "Batch 3: consume the backend capability catalog from the configuration workbench and login workspace."
 }

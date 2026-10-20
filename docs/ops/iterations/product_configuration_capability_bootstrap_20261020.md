@@ -50,6 +50,19 @@ make verify.product_configuration.capability
 - Batch 4：系统参数目录、影响预览、变更集发布/回滚。
 - Batch 5：业务全功能角色浏览器验收。
 
+## 5.1 Batch 2：后端能力目录契约
+
+- 新增纯投影服务 `services/product_configuration_capability.py`：
+  - `resolve_audiences(user)` 解析业务全功能、业务配置管理员、平台管理员、支持；
+  - `build_catalog(manifest, audiences)` 按账号返回首页区块、配置卡、参数分类和能力清单；
+  - `planned` 能力返回 `available=false`，不伪装可用。
+- 新增 intent `product.configuration.capability.catalog`，并注册到 construction handler。
+- runtime manifest 复制到行业模块 `data/`，guard 校验与产品 manifest 字节一致。
+- 验证：`make verify.product_configuration.capability`，15 tests PASS。
+
+关键边界：平台/支持能力不会进入业务全功能视图；业务配置管理员会同时获得业务全功能能力，
+但不会获得平台管理能力。
+
 ## 6. 回滚
 
 回退本批 commit；不涉及数据库、服务或产品运行时。

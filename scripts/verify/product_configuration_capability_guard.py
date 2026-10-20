@@ -17,6 +17,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MANIFEST = ROOT / "config/product_configuration_capability_v1.json"
+MODULE_MANIFEST = ROOT / "addons/smart_construction_core/data/product_configuration_capability_v1.json"
 SCHEMA_VERSION = "product_configuration_capability.v1"
 
 REQUIRED_AUDIENCES = {
@@ -214,6 +215,19 @@ def validate(manifest: dict[str, Any]) -> list[str]:
     return errors
 
 
+def validate_runtime_copy(
+    config_path: Path = DEFAULT_MANIFEST,
+    module_path: Path = MODULE_MANIFEST,
+) -> list[str]:
+    errors: list[str] = []
+    if not module_path.is_file():
+        errors.append("runtime module manifest is missing: %s" % module_path)
+        return errors
+    if module_path.read_bytes() != config_path.read_bytes():
+        errors.append("runtime module manifest differs from product manifest")
+    return errors
+
+
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     path = Path(args[0]) if args else DEFAULT_MANIFEST
@@ -223,6 +237,7 @@ def main(argv: list[str] | None = None) -> int:
         print("[product_configuration_capability_guard] FAIL cannot read %s: %s" % (path, exc))
         return 1
     errors = validate(manifest)
+    errors.extend(validate_runtime_copy(path))
     if errors:
         print("[product_configuration_capability_guard] FAIL")
         for error in errors:

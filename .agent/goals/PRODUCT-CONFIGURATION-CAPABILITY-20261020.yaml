@@ -34,13 +34,13 @@ goal:
     - company_and_project_scope_must_be_explicit
     - no_demo_only_semantics_in_product_configuration
   next_exact_step: >-
-    Batch 2: add the backend product capability catalog contract and tests, then
-    consume it from the configuration workbench and login workspace in Batch 3.
+    Batch 3: consume the backend capability catalog from the configuration workbench
+    and login workspace.
   completion:
     scope: product_configuration_capability_long_task
     overall_goal: in_progress
     result_index: .agent/runs/PRODUCT-CONFIGURATION-CAPABILITY-20261020/run.json
-    local_batch_acceptance: batch_1_passed
+    local_batch_acceptance: batch_2_passed
     mainline_integration: not_run
     deployment: not_run
     target_user_delivery: not_run
