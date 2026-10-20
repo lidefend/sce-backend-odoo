@@ -26,6 +26,7 @@
 | 12 | 角色启动验收覆盖不足 | smoke 只跑 `demo_pm`/`demo_finance`/`demo_audit`，且只断言契约键存在 | P4 | 待立项 | F2/F8 增加业务全功能账号、首屏非空和实际下一步 |
 | 13 | 演示数据时间与金额失真 | 多处固定 2025 日期，场景存在 50/100 样例金额 | P4 | 待立项 | F3/F8 以业务日历和金额规则回读，不按文本字符串验收 |
 | 14 | 10 日叙事未完整声明 | `business_days=10`，manifest 仅有 D1–D3 步骤 | P4 | 待立项 | F7 补齐可执行 10 日步骤与幂等键 |
+| 15 | 模块升级视图校验失败 | `_update_user_groups_view` 报 `action_sc_review_group_authority 对 res.users 无效`，阻断 demo 数据载体（16_bank_accounts.xml）受管加载 | P1/P2/P3 | 待立项 | F3 银行账户数据加载被阻断；先修 owning layer 的 res.users 视图/动作绑定，再 `local.dev.upgrade` 加载并回读 |
 
 ## 回收判据
 

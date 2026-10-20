@@ -17,6 +17,12 @@
     "docs/ops/iterations/demo_usage_foundation_handoff_20261020.md",
     "docs/ops/iterations/demo_usage_foundation_f1_20261020.md",
     "docs/ops/iterations/demo_usage_foundation_f2_20261020.md",
+    "docs/ops/iterations/demo_usage_foundation_f3_20261020.md",
+    "demo_addons/smart_construction_demo/__manifest__.py",
+    "demo_addons/smart_construction_demo/data/base/16_bank_accounts.xml",
+    "demo_addons/smart_construction_demo/tests/__init__.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_usage_foundation_master_data.py",
+    "make/dev.mk",
     "make/dev_test.mk",
     "scripts/verify/demo_usage_foundation_audit.py",
     "scripts/verify/test_demo_usage_foundation_audit.py",
@@ -98,6 +104,18 @@
       "kind": "runtime",
       "readback": {
         "artifact": ".runtime/agent-runs/DEMO-USAGE-FOUNDATION-20261020/role_scope_readback.json"
+      }
+    },
+    "master_data_orm": {
+      "target": "verify.local.dev.demo_usage_foundation_master_data.orm",
+      "inputs": [
+        "demo_addons/smart_construction_demo/tests/test_demo_usage_foundation_master_data.py",
+        "demo_addons/smart_construction_demo/data/base/16_bank_accounts.xml",
+        "demo_addons/smart_construction_demo/__manifest__.py"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/DEMO-USAGE-FOUNDATION-20261020/master_data_readback.json"
       }
     }
   },
@@ -198,10 +216,40 @@
         }
       ],
       "notes": "Role codes and company scope correct across business_full/pm/finance/owner/executive/cost/project_member and contract/purchase/material capability seats. wutao/pm/finance empty first screen is a fact-derived state blocked by F4-F7, not an F2 data defect."
+    },
+    "f3_master_data": {
+      "identity": {
+        "head": "8e43ca7744b7420d6dff5b7de376222cba6c2077",
+        "stage": "head_plus_f3_dirty_scope",
+        "runtime": "sc-local-dev db=sc_dev_demo"
+      },
+      "commands": [
+        {
+          "command": "make verify.local.dev.demo_usage_foundation_master_data.orm (diagnostic)",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "res.partner=67 bank=0 tax=9 uom=29 dictionary=66 cost_code=9 material_catalog=3 material_price=1 project=33 task=163; date_2025 project=1 task=7"
+        },
+        {
+          "command": "make local.dev.upgrade MODULE=smart_construction_demo CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_demo",
+          "status": "blocked",
+          "layer": "L3",
+          "detail": "product_defect: _update_user_groups_view raises ValidationError 'action_sc_review_group_authority 对 res.users 无效'; blocks loading 16_bank_accounts.xml into sc_dev_demo"
+        }
+      ],
+      "notes": "F3 master-data fix authored (16_bank_accounts.xml + manifest + ORM acceptance test). Runtime load is blocked by a pre-existing product/customer view binding defect (registry item 15), not by the demo data. Bank-account acceptance stays fail-closed until the owning layer fixes the view and the module can upgrade."
     }
   },
-  "blockers": [],
-  "next_exact_step": "F2 complete: role/company/project scope acceptance committed. Next batch F3 (business master data and form usability) reads public form candidate sets for U1/U2 requirements and fixes 2025 dates and 50/100 sample amounts (DUF-04).",
+  "blockers": [
+    {
+      "id": "DUF-06",
+      "classification": "product_defect",
+      "owner_layer": "P1/P2/P3",
+      "registry_item": 15,
+      "summary": "module upgrade view validation fails: action_sc_review_group_authority invalid for res.users; blocks governed loading of 16_bank_accounts.xml into sc_dev_demo"
+    }
+  ],
+  "next_exact_step": "F3 data load is blocked by DUF-06 (product view binding defect). Fix the owning P1/P2/P3 res.users view/action binding, then run local.dev.upgrade MODULE=smart_construction_demo and re-run verify.local.dev.demo_usage_foundation_master_data.orm; DUF-04 date/amount rewrite remains F8.",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="1">
+    <!-- 合成虚构演示数据：以下银行账号不对应任何真实账户。 -->
+    <record id="sc_demo_bank_owner_001" model="res.partner.bank">
+      <field name="acc_number">5100 0000 0000 0001 001</field>
+      <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
+    </record>
+    <record id="sc_demo_bank_vendor_concrete" model="res.partner.bank">
+      <field name="acc_number">6222 0200 0000 0012 345</field>
+      <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
+    </record>
+    <record id="sc_demo_bank_vendor_steel" model="res.partner.bank">
+      <field name="acc_number">6222 0200 0000 0012 346</field>
+      <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
+    </record>
+    <record id="sc_demo_bank_owner_cost" model="res.partner.bank">
+      <field name="acc_number">5100 0000 0000 0002 002</field>
+      <field name="partner_id" ref="smart_construction_demo.sc_demo_owner_partner"/>
+    </record>
+    <record id="sc_demo_bank_supplier_cost" model="res.partner.bank">
+      <field name="acc_number">6222 0200 0000 0023 456</field>
+      <field name="partner_id" ref="smart_construction_demo.sc_demo_supplier_partner"/>
+    </record>
+    <record id="sc_demo_bank_subcontract_cost" model="res.partner.bank">
+      <field name="acc_number">6222 0200 0000 0034 567</field>
+      <field name="partner_id" ref="smart_construction_demo.sc_demo_subcontract_partner"/>
+    </record>
+    <record id="sc_demo_bank_seed_contract" model="res.partner.bank">
+      <field name="acc_number">6222 0200 0000 0045 678</field>
+      <field name="partner_id" ref="smart_construction_demo.seed_partner_contract"/>
+    </record>
+    <record id="sc_demo_bank_seed_owner" model="res.partner.bank">
+      <field name="acc_number">5100 0000 0000 0005 678</field>
+      <field name="partner_id" ref="smart_construction_demo.seed_partner_owner"/>
+    </record>
+    <record id="sc_demo_bank_seed_supplier" model="res.partner.bank">
+      <field name="acc_number">6222 0200 0000 0056 789</field>
+      <field name="partner_id" ref="smart_construction_demo.seed_partner_supplier"/>
+    </record>
+  </data>
+</odoo>
