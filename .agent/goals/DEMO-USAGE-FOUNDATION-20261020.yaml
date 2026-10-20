@@ -57,14 +57,14 @@ goal:
     - keep_demo_baseline_fingerprint_stable_across_experience_reset
     - no_new_database_tenant_compose_or_credentials
   next_exact_step: >-
-    F1-F3 are complete and DUF-06 is closed after the demo branch sync, successful
-    module upgrade and bank-account readback. Continue with F4 approval, numbering
-    and permission configuration readiness.
+    F4 approval/numbering/permission readiness verified. Proceed to F5: project
+    startup baseline and pre-submit readiness (owner/members, funding baseline,
+    budget, BOQ/WBS, contract basis, ready/partial/blocked states).
   completion:
     scope: demo_user_usage_foundation_v1
     overall_goal: in_progress
     result_index: .agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json
-    local_batch_acceptance: F3_blocked_by_DUF-06
+    local_batch_acceptance: F4_complete
     mainline_integration: not_run
     deployment: not_run
     target_user_delivery: not_run

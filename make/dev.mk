@@ -1351,6 +1351,11 @@ verify.local.dev.demo_usage_foundation_master_data.orm: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_construction_demo TEST_TAGS="demo_usage_foundation_master_data" local.dev.test
 
+.PHONY: verify.local.dev.demo_usage_foundation_approval.orm
+verify.local.dev.demo_usage_foundation_approval.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_demo TEST_TAGS="demo_usage_foundation_approval" local.dev.test
+
 .PHONY: verify.local.dev.baseline_readiness.orm
 verify.local.dev.baseline_readiness.orm: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
