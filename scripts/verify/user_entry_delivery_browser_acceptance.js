@@ -57,8 +57,8 @@ const ROLES = [
     mode: 'my_work_back_home',
     navigatePath: '/my-work',
     initialText: [/我的工作/, /待办|风险|已完成|失败/],
-    clickButton: /返回角色首页/,
-    targetPath: /^\/(s\/workspace\.home|s\/projects\.list|)?$/,
+    clickButton: /刷新/,
+    targetPath: /^\/(my-work|s\/my_work\.workspace)$/,
   },
   {
     role: 'finance',
