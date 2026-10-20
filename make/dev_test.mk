@@ -3000,6 +3000,10 @@ verify.demo.lifecycle.unit: guard.prod.forbid
 verify.demo.supplemental.unit: guard.prod.forbid
 	@python3 demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py
 
+.PHONY: verify.demo.baseline_readiness.unit
+verify.demo.baseline_readiness.unit: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_baseline_readiness_verifier.py
+
 .PHONY: verify.platform.database.rehearsal.unit
 verify.platform.database.rehearsal.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_platform_database_rehearsal.py

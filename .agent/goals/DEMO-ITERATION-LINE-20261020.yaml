@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: DEMO-ITERATION-LINE-20261020
   title: demo_iteration_line_baseline_api_daily_runtime
-  status: verification_pending
+  status: active
   formal_product_layer: P4
   supporting_layers:
     - P0
@@ -67,8 +67,9 @@ goal:
         sub-items are not executed. Do not repair unrelated links in this batch.
       owner: separate_p4_docs_baseline_cleanup
   next_exact_step: >-
-    Batch 0 plan is complete and paused. BASELINE-DOCS-LINKS-93 is registered as an
-    out-of-scope baseline exclusion. Resume Batch 1 only after explicit continuation.
+    Batch 0 closed (docs_product_boundary and agent_ledger receipts passed). Batch 1
+    baseline readiness manifest/verifier implemented; verify gates and record receipts,
+    then commit and start Batch 2 (G0-G4 data completion).
   completion:
     scope: overall_plan_and_baseline_readiness_audit
     overall_goal: in_progress

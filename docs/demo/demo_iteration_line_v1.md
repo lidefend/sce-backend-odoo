@@ -207,5 +207,9 @@ precondition, expected_state, idempotency_key, status, result, evidence
 
 ## 11. 下一步
 
-Batch 1：实现只读 `baseline.readiness` manifest/verifier（P4），先在离线夹具上证明
-G0–G6 的 ready/partial/blocked 判定，再接入 demo 种子与体验重置门禁。
+Batch 1 已完成：只读 readiness manifest/verifier（P4）落在
+`scripts/verify/baseline_readiness_manifest.json` +
+`scripts/verify/baseline_readiness_verifier.py`，单测入口
+`make verify.demo.baseline_readiness.unit`。
+
+下一批 Batch 2：基础数据补齐，使 G0–G4 对目标公司/项目 `missing=[]`。

@@ -236,6 +236,12 @@ demo 数据与验收身份没有对齐。
 前端只消费该契约，展示“开始使用前检查”和修复入口；demo 种子、工作台和后台管理页共用同一
 就绪结论，禁止前端自行推导。
 
+Batch 1 已先落地 P4 侧只读就绪清单与评估器：
+`scripts/verify/baseline_readiness_manifest.json` +
+`scripts/verify/baseline_readiness_verifier.py`（入口
+`make verify.demo.baseline_readiness.unit`）。它只按声明的 hard/conditional 与 presence 事实
+分类 `ready/partial/blocked/not_applicable`；上述 P1/P3 后端就绪投影仍是产品层缺口，不并入 demo 层。
+
 ## 8. 基线验收判据
 
 - G0–G4 对目标公司/目标项目全部 `ready`，且 `missing=[]`；
@@ -247,5 +253,12 @@ demo 数据与验收身份没有对齐。
 
 ## 9. 下一步
 
-进入 Batch 1：把上述 G0–G6 落成可执行的只读 readiness manifest 与 verifier，先在离线夹具上
-证明能识别“缺失、部分、阻断、就绪”，再接入 demo 种子和体验重置门禁。
+Batch 1 已完成：只读 readiness manifest 与 verifier 落在
+`scripts/verify/baseline_readiness_manifest.json`、
+`scripts/verify/baseline_readiness_verifier.py` 与
+`scripts/verify/test_baseline_readiness_verifier.py`，入口
+`make verify.demo.baseline_readiness.unit`；离线夹具证明 ready/partial/blocked/not_applicable
+判定（10 个测试，非零）。
+
+下一批 Batch 2 把 manifest 接入 demo 种子回读，产出目标公司/项目的 ready/partial/blocked
+观测；体验重置门禁接入仍按计划在 Batch 5。
