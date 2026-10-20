@@ -5,7 +5,7 @@
   "status": "active",
   "baseline_sha": "13b0395db4da63147b3f9c311a4bb5d060dc6a4e",
   "goal": ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
-  "record": "docs/ops/iterations/demo_iteration_line_batch5_20261020.md",
+  "record": "docs/ops/iterations/demo_iteration_line_batch6_20261020.md",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
@@ -74,7 +74,9 @@
     "scripts/verify/test_experience_reset_scope.py",
     "demo_addons/smart_construction_demo/data/experience_users.json",
     "scripts/verify/local_dev_scenario_tick_run.py",
-    "scripts/verify/local_dev_experience_reset_plan.py"
+    "scripts/verify/local_dev_experience_reset_plan.py",
+    "docs/demo/product_gap_registry_v1.md",
+    "docs/ops/iterations/demo_iteration_line_batch6_20261020.md"
   ],
   "environment": {
     "kind": "offline",
@@ -158,5 +160,5 @@
       "resolved_commit": "a44238ad8"
     }
   ],
-  "next_exact_step": "Batch 5 closed: governed tick entrypoint local.dev.scenario_tick.run (advanced D1: 2 todos + 2 unbound) and read-only reset-scope readback local.dev.experience_reset.plan (empty scope, no baseline violation) both verified on sc_dev_demo. Next: Batch 6 — role UI acceptance (browser) + product-gap routing."
+  "next_exact_step": "Batch 6 started: product gap registry v1 records 9 gaps with P0/P1/P3/P4 routing (docs/demo/product_gap_registry_v1.md). Remaining: browser role UI acceptance — login -> system.init -> ui.contract, per-role real task, no tech leakage via Playwright against the local.dev frontend."
 }

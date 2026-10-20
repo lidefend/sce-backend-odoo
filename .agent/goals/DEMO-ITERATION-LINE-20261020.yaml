@@ -67,8 +67,8 @@ goal:
         sub-items are not executed. Do not repair unrelated links in this batch.
       owner: separate_p4_docs_baseline_cleanup
   next_exact_step: >-
-    Batch 5 offline core done (scenario step contract + idempotent tick scheduler).
-    Next: wire tick engine into scenario manifest and governed runtime.
+    Batch 6 started: product gap registry recorded; remaining browser role UI
+    acceptance (login -> system.init -> ui.contract, per-role tasks, no leakage).
   completion:
     scope: overall_plan_and_baseline_readiness_audit
     overall_goal: in_progress
