@@ -321,6 +321,22 @@ entries:
   dispose: class-selected
   gate: 'make:verify.local.dev.demo_action_roles.orm :: demo_action_roles local.dev.test'
   reason: Fixed local.dev module and tag selection; manually invoked ORM coverage, not recurring CI.
+- group: demo_api_scenario
+  kind: odoo_tag
+  status: on-demand
+  owner: demo-team
+  dispose: class-selected
+  gate: 'make:verify.local.dev.api_scenario.orm :: demo_api_scenario'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: demo_baseline_readiness
+  kind: odoo_tag
+  status: on-demand
+  owner: demo-team
+  dispose: class-selected
+  gate: 'make:verify.local.dev.baseline_readiness.orm :: demo_baseline_readiness'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: demo_gate
   kind: odoo_tag
   status: unwired
@@ -329,6 +345,14 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: demo_golden_chain
+  kind: odoo_tag
+  status: on-demand
+  owner: demo-team
+  dispose: class-selected
+  gate: 'make:verify.local.dev.golden_chain.orm :: demo_golden_chain'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: demo_loaded_chains
   kind: odoo_tag
   status: on-demand
@@ -336,6 +360,14 @@ entries:
   dispose: class-selected
   gate: 'make:verify.local.dev.demo_loaded_chains.orm :: demo_loaded_chains local.dev.test'
   reason: Fixed local.dev module and tag selection; manually invoked ORM coverage, not recurring CI.
+- group: demo_scenario_tick
+  kind: odoo_tag
+  status: on-demand
+  owner: demo-team
+  dispose: class-selected
+  gate: 'make:verify.local.dev.scenario_tick.orm :: demo_scenario_tick'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: dictionary_scope_delivery
   kind: odoo_tag
   status: on-demand
@@ -400,6 +432,15 @@ entries:
   owner: construction-product
   dispose: class-selected
   gate: 'make:verify.local.dev.system_permission.reconciliation.orm :: group_authority_reconciliation
+    local.dev.test'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: home_objects_contract
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.product.home_objects.contract :: home_objects_contract $(MAKE) --no-print-directory
     local.dev.test'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.
@@ -725,6 +766,15 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: product_system_parameter_change
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.product_system_parameter_change :: product_system_parameter_change $(MAKE) --no-print-directory
+    local.dev.test'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: product_system_settings
   kind: odoo_tag
   status: unwired

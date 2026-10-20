@@ -442,7 +442,8 @@
       "owner": "demo-team",
       "evidence": [
         "make:verify.local.dev.scenario_tick.orm :: demo_scenario_tick"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "p0_state",
@@ -896,7 +897,8 @@
       "owner": "demo-team",
       "evidence": [
         "make:verify.local.dev.api_scenario.orm :: demo_api_scenario"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "demo_baseline_readiness",
@@ -909,7 +911,8 @@
       "owner": "demo-team",
       "evidence": [
         "make:verify.local.dev.baseline_readiness.orm :: demo_baseline_readiness"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "demo_golden_chain",
@@ -922,7 +925,8 @@
       "owner": "demo-team",
       "evidence": [
         "make:verify.local.dev.golden_chain.orm :: demo_golden_chain"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "demo_loaded_chains",
@@ -1054,7 +1058,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.product.home_objects.contract :: home_objects_contract $(MAKE) --no-print-directory local.dev.test"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "intent_dispatcher_permission_contract",
@@ -1528,7 +1533,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.product_system_parameter_change :: product_system_parameter_change $(MAKE) --no-print-directory local.dev.test"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "product_system_settings",
