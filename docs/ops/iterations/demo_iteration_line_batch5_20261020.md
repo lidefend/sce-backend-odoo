@@ -16,10 +16,14 @@
 - 新增 `scripts/verify/test_demo_scenario_step.py`：7 个离线单测覆盖契约校验、幂等、
   重复键拒绝、actor_mode 分类与“决策不自动推进”不变量。
 - 新增 `verify.demo.scenario_step.unit`（`make/dev_test.mk`）。
+- 新增 `demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json`：
+  黄金业务链 3 日压缩时钟（D1–D3）步骤声明，`system_fact`/`role_draft`/`role_decision`
+  各归其类，幂等键为 `scenario_id::business_date::step_key`。
 
 ## 2. 验证
 
-- `python3 -m unittest scripts.verify.test_demo_scenario_step` → 7 tests OK（非零）。
+- `python3 -m unittest scripts.verify.test_demo_scenario_step` → 8 tests OK（非零），
+  含 3 日压缩时钟演练：3 个不同业务日、无重复键、`role_decision` 绝不自动推进。
 
 ## 3. 完成边界
 

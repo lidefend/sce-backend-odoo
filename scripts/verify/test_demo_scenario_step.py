@@ -71,6 +71,40 @@ class DemoScenarioStepTest(unittest.TestCase):
         )
         self.assertEqual([step.step_key for step in auto_advance(manifest)], ["fact_arrival"])
 
+    def test_three_day_compressed_clock_from_manifest(self):
+        import json
+        from pathlib import Path
+
+        repo_root = Path(__file__).resolve().parents[2]
+        manifest_path = (
+            repo_root
+            / "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json"
+        )
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        steps = validate_manifest(data["steps"])
+        self.assertEqual(data["id"], "demo.scenario.golden")
+
+        executed: set[str] = set()
+        days: list[str] = []
+        for _ in range(3):
+            planned = plan_tick(steps, executed)
+            self.assertTrue(planned, "compressed clock stopped before 3 days")
+            days.append(planned[0].business_date)
+            auto = auto_advance(planned)
+            self.assertFalse(
+                any(step.actor_mode == "role_decision" for step in auto),
+                "role_decision must never auto-advance",
+            )
+            self.assertTrue(
+                all(step.actor_mode == "system_fact" for step in auto),
+                "only system_fact may auto-advance",
+            )
+            executed.update(step.idempotency_key for step in planned)
+
+        self.assertEqual(len(set(days)), 3)
+        self.assertEqual(len(executed), len(steps))
+        self.assertEqual(plan_tick(steps, executed), [])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -65,7 +65,8 @@
     "docs/ops/iterations/demo_iteration_line_batch5_gate_20261020.md",
     "scripts/verify/demo_scenario_step.py",
     "scripts/verify/test_demo_scenario_step.py",
-    "docs/ops/iterations/demo_iteration_line_batch5_20261020.md"
+    "docs/ops/iterations/demo_iteration_line_batch5_20261020.md",
+    "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json"
   ],
   "environment": {
     "kind": "offline",
@@ -141,5 +142,5 @@
       "resolved_commit": "a44238ad8"
     }
   ],
-  "next_exact_step": "Batch 5 offline core done: scenario step contract + idempotent tick scheduler + no-auto-approval invariant (verify.demo.scenario_step.unit, 7 tests). Next: wire the tick engine into the demo scenario manifest and governed runtime — 3-day compressed clock, heartbeat, baseline fingerprint unchanged, experience delta cleared (demo-declared experience set)."
+  "next_exact_step": "Batch 5 offline core done: step contract + idempotent tick scheduler + 3-day compressed-clock rehearsal over the golden scenario manifest (8 tests). Next: runtime tick runner — map each manifest intent_or_action to a public product action via a demo action registry (declared-but-unmapped fails closed), produce role_draft/role_decision todos, persist executed keys + heartbeat; then scoped experience reset with baseline fingerprint unchanged."
 }
