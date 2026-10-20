@@ -15,6 +15,19 @@ import { useSessionStore, type ActivityPage } from '../../stores/session';
 type SurfaceLink = { key: string; label: string; detail: string; route: string };
 type SurfaceTask = SurfaceLink & { kind: string; recordId: number; state: ProductMyWorkItem['state']; facts: ProductMyWorkItem['facts']; amount?: ProductMyWorkItem['facts'][number] };
 type SurfaceCount = { key: string; label: string; value: number };
+type HomeRiskItem = { key: string; label: string; detail: string; route: string; tone: string; actionLabel: string };
+type HomeObjectItem = {
+  key: string;
+  label: string;
+  detail: string;
+  route: string;
+  state: string;
+  reason: string;
+  kind: string;
+  model: string;
+  recordId: number;
+  amountDisplay: string;
+};
 
 function text(value: unknown): string {
   return String(value ?? '').trim();
@@ -90,6 +103,32 @@ export function useWorkspaceHome() {
       .slice(0, 4)
       .map((page) => ({ key: page.key, label: page.title, detail: '', route: page.route }));
   });
+  const riskItems = computed<HomeRiskItem[]>(() => session.workspaceRiskAlertRows
+    .map((row) => ({
+      key: row.id,
+      label: row.title,
+      detail: row.description,
+      route: row.path || (row.sceneKey ? `/s/${row.sceneKey}` : ''),
+      tone: row.tone,
+      actionLabel: row.actionLabel,
+    }))
+    .filter((item) => Boolean(item.label))
+    .slice(0, 4));
+  const objectItems = computed<HomeObjectItem[]>(() => session.workspaceHomeObjectRows
+    .map((row) => ({
+      key: row.key || row.id,
+      label: row.title,
+      detail: [row.kindLabel, row.subtitle, row.stateLabel, row.amountDisplay].filter(Boolean).join(' · '),
+      route: row.route,
+      state: row.state,
+      reason: row.reason,
+      kind: row.kind,
+      model: row.model,
+      recordId: row.recordId,
+      amountDisplay: row.amountDisplay,
+    }))
+    .filter((item) => Boolean(item.label))
+    .slice(0, 6));
 
   async function loadCatalog() {
     if (!session.token) {
@@ -172,6 +211,8 @@ export function useWorkspaceHome() {
     summaries,
     quickLinks,
     recentItems,
+    riskItems,
+    objectItems,
     loading,
     error,
     unsupported,

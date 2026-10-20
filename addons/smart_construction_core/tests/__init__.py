@@ -61,6 +61,7 @@ from . import test_contract_handling_page_policy
 from . import test_project_authorization_foundation
 from . import test_patch_b_read_aggregate_security
 from . import test_my_work_backend
+from . import test_home_objects_contract
 from . import test_reason_codes_backend
 from . import test_payment_request_permission
 from . import test_payment_request_available_actions_backend

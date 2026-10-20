@@ -123,8 +123,45 @@ class TestWorkspaceHomeProviderShapes(unittest.TestCase):
         self.assertEqual(group_overview[0].get("key"), "risk")
         self.assertEqual(group_overview[0].get("allow_count"), 1)
 
+        self.assertIn("my_objects", payload)
+
         source = payload.get("source_authority") or {}
         self.assertEqual(source.get("kind"), "workspace_home_startup_surface_projection")
         self.assertTrue(source.get("projection_only"))
         self.assertTrue(source.get("no_business_fact_authority"))
         self.assertIn("workspace_home_data_provider", source.get("authorities") or [])
+
+    def test_build_my_object_rows_keeps_record_identity(self):
+        rows = target._build_my_object_rows(
+            {
+                "ext_facts": {
+                    "smart_construction_core": {
+                        "workspace_collections": {
+                            "home_objects": [
+                                {
+                                    "id": "object-project-42",
+                                    "key": "project:42",
+                                    "kind": "project",
+                                    "kind_label": "项目",
+                                    "title": "东环路城市快速路提升工程",
+                                    "subtitle": "在建阶段",
+                                    "state": "in_progress",
+                                    "state_label": "进行中",
+                                    "amount": 0,
+                                    "amount_display": "",
+                                    "model": "project.project",
+                                    "record_id": 42,
+                                    "route": "/r/project.project/42",
+                                    "reason": "",
+                                    "authority": "smart_construction_core.home_objects.v1",
+                                }
+                            ],
+                        },
+                    },
+                },
+            }
+        )
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["model"], "project.project")
+        self.assertEqual(rows[0]["record_id"], 42)
+        self.assertEqual(rows[0]["route"], "/r/project.project/42")

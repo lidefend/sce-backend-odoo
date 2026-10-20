@@ -479,6 +479,15 @@ verify.frontend.product_capability_catalog.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_capability_catalog_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-capability-catalog-test.mjs >/dev/null
 	@node /tmp/product-capability-catalog-test.mjs
 
+.PHONY: verify.frontend.product_configuration_capability.browser
+verify.frontend.product_configuration_capability.browser: guard.prod.forbid
+	@FRONTEND_URL="$${FRONTEND_URL:-$(WORKFLOW_CONTRACT_FRONTEND_URL)}" \
+	  DB_NAME="$(or $(DB_NAME),sc_dev_demo)" \
+	  E2E_LOGIN="$${E2E_LOGIN:-wutao}" \
+	  E2E_PASSWORD="$${E2E_PASSWORD:-scdevpass}" \
+	  ARTIFACTS_DIR=artifacts/playwright/product-configuration-capability \
+	  node frontend/apps/web/scripts/product_configuration_capability_browser.mjs
+
 # 受控系统参数的契约消费面：目录/影响预览/变更记录均原样消费后端声明，
 # 声明面存在但非法即 ContractGapError 停机；planned 参数不可编辑，前端不推导
 # 取值合法性、影响范围或回滚语义。

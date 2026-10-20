@@ -125,6 +125,7 @@ def build_data_sources() -> Dict[str, Dict[str, Any]]:
         "ds_hero": {"source_type": "computed", "provider": "workspace.hero", "section_keys": ["hero"]},
         "ds_metrics": {"source_type": "computed", "provider": "workspace.metrics.summary", "section_keys": ["metrics"]},
         "ds_today_todos": {"source_type": "computed", "provider": "workspace.todo.today", "section_keys": ["today_actions"]},
+        "ds_my_objects": {"source_type": "computed", "provider": "workspace.my_objects", "section_keys": ["my_objects"]},
         "ds_risk_alerts": {"source_type": "computed", "provider": "workspace.risk.alerts", "section_keys": ["risk"]},
         "ds_ops_progress": {"source_type": "computed", "provider": "workspace.progress.summary", "section_keys": ["ops"]},
         "ds_scene_groups": {"source_type": "scene_context", "provider": "workspace.scene.groups", "section_keys": ["scene_groups"]},

@@ -3031,3 +3031,7 @@ verify.product_system_parameter_catalog: guard.prod.forbid
 .PHONY: verify.product_system_parameter_change
 verify.product_system_parameter_change: guard.prod.forbid
 	@MODULE=smart_construction_core TEST_TAGS=product_system_parameter_change $(MAKE) --no-print-directory local.dev.test
+
+.PHONY: verify.product.home_objects.contract
+verify.product.home_objects.contract: guard.prod.forbid
+	@MODULE=smart_construction_core TEST_TAGS=home_objects_contract $(MAKE) --no-print-directory local.dev.test

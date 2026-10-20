@@ -26,6 +26,7 @@ import {
 import type {
   WorkspaceAdviceRow,
   WorkspaceCapabilityGroupRow,
+  WorkspaceHomeObjectRow,
   WorkspaceHeroRow,
   WorkspaceMetricRow,
   WorkspaceOpsSummary,
@@ -37,6 +38,7 @@ import type {
 export type {
   WorkspaceAdviceRow,
   WorkspaceCapabilityGroupRow,
+  WorkspaceHomeObjectRow,
   WorkspaceHeroRow,
   WorkspaceMetricRow,
   WorkspaceOpsSummary,
@@ -164,6 +166,7 @@ export interface WorkspaceHomeContract {
   hero?: Record<string, unknown>;
   metrics?: unknown[];
   today_actions?: unknown[];
+  my_objects?: unknown[];
   risk?: Record<string, unknown>;
   ops?: Record<string, unknown>;
   scene_groups?: unknown[];
@@ -694,6 +697,29 @@ export const useSessionStore = defineStore('session', {
         entryKey: asText(item.entry_key),
         entryId: asText(item.entry_id),
       }));
+    },
+    workspaceHomeObjectRows(state): WorkspaceHomeObjectRow[] {
+      const source = Array.isArray(state.workspaceHome?.my_objects) ? state.workspaceHome?.my_objects : [];
+      return source.map((item, index) => {
+        const row = asRecord(item);
+        return {
+          id: asText(row.id) || `home-object-${index + 1}`,
+          key: asText(row.key) || asText(row.id) || `home-object-${index + 1}`,
+          kind: asText(row.kind),
+          kindLabel: asText(row.kind_label),
+          title: asText(row.title),
+          subtitle: asText(row.subtitle),
+          state: asText(row.state),
+          stateLabel: asText(row.state_label),
+          amount: Number(row.amount || 0),
+          amountDisplay: asText(row.amount_display),
+          model: asText(row.model),
+          recordId: Number(row.record_id || 0),
+          route: asText(row.route),
+          reason: asText(row.reason),
+          authority: asText(row.authority),
+        };
+      }).filter((row) => Boolean(row.title));
     },
     workspaceOpsSummary(state): WorkspaceOpsSummary {
       const ops = asRecord(state.workspaceHome?.ops);

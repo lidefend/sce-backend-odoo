@@ -5,7 +5,7 @@
   "status": "active",
   "baseline_sha": "82dbd9134288576ede315370179858c5ba70ce87",
   "goal": ".agent/goals/PRODUCT-CONFIGURATION-CAPABILITY-20261020.yaml",
-  "record": "docs/ops/iterations/product_configuration_capability_batch4_20261020.md",
+  "record": "docs/ops/iterations/product_configuration_capability_batch6_20261020.md",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/PRODUCT-CONFIGURATION-CAPABILITY-20261020.yaml",
@@ -59,7 +59,26 @@
     "frontend/apps/web/scripts/product_system_parameter_test.ts",
     "frontend/apps/web/src/views/MyCapabilitiesView.vue",
     "frontend/apps/web/src/composables/myCapabilities/useMyCapabilities.ts",
-    "docs/ops/iterations/product_configuration_capability_batch5_20261020.md"
+    "frontend/apps/web/scripts/product_configuration_capability_browser.mjs",
+    "frontend/apps/web/src/stores/sessionWorkspaceTypes.ts",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/core_extension_system_init_rows.py",
+    "addons/smart_construction_core/tests/test_home_objects_contract.py",
+    "addons/smart_construction_scene/profiles/workspace_home_scene_content.py",
+    "addons/smart_core/core/workspace_home_contract_builder.py",
+    "addons/smart_core/core/workspace_home_data_provider.py",
+    "addons/smart_core/tests/test_workspace_home_provider_shapes.py",
+    "docs/ops/iterations/product_configuration_capability_batch6_20261020.md",
+    "docs/ops/iterations/product_configuration_capability_batch5_20261020.md",
+    "docs/ops/iterations/local_dev_entry_identity_20261020.md",
+    "docs/ops/iterations/local_dev_write_lease_20261020.md",
+    "docs/ops/local_development_environment_v1.md",
+    "make/dev.mk",
+    "scripts/dev/local_dev_entry_identity.sh",
+    "scripts/dev/local_dev_entry_identity_core.py",
+    "scripts/dev/local_dev_write_lease.sh",
+    "scripts/verify/test_local_dev_entry_identity_core.py",
+    "scripts/verify/test_local_dev_write_lease.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -170,6 +189,39 @@
       ],
       "kind": "offline",
       "test_count": 20
+    },
+    "home_objects_contract": {
+      "target": "verify.product.home_objects.contract",
+      "inputs": [
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/core_extension_system_init_rows.py",
+        "addons/smart_construction_core/tests/test_home_objects_contract.py",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_core/core/workspace_home_contract_builder.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/PRODUCT-CONFIGURATION-CAPABILITY-20261020/home_objects_readback.json"
+      },
+      "test_count": 2
+    },
+    "frontend_product_configuration_capability_browser": {
+      "target": "verify.frontend.product_configuration_capability.browser",
+      "inputs": [
+        "frontend/apps/web/scripts/product_configuration_capability_browser.mjs",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
+        "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/src/stores/sessionWorkspaceTypes.ts",
+        "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
+        "addons/smart_core/core/workspace_home_contract_builder.py",
+        "make/frontend.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": "artifacts/playwright/product-configuration-capability/report.json"
+      }
     }
   },
   "verification_results": {
@@ -225,9 +277,43 @@
       "command": "make verify.frontend.product_capability_catalog.unit",
       "status": "passed",
       "test_count": 18
+    },
+    "home_objects_contract": {
+      "command": "make verify.product.home_objects.contract",
+      "status": "passed",
+      "test_count": 2,
+      "database": "sc_dev_demo",
+      "note": "Rows are record-backed and only reference project.project, construction.contract or payment.request; demo database produced a non-empty set."
+    },
+    "frontend_product_configuration_capability_browser": {
+      "command": "DB_NAME=sc_dev_demo E2E_LOGIN=wutao E2E_PASSWORD=<existing-demo-credential> make verify.frontend.product_configuration_capability.browser",
+      "status": "passed",
+      "assertions": 31,
+      "home_blocks": 6,
+      "configuration_cards": 8,
+      "parameter_categories": 6,
+      "parameters": 13,
+      "capabilities": 19,
+      "console_errors": 0,
+      "failed_requests": 0,
+      "record_route_opened": true
     }
   },
   "blockers": [],
+  "exclusions": [
+    {
+      "id": "P4-LOCAL-DEV-ENTRY-IDENTITY-20261020",
+      "classification": "carried_prerequisite",
+      "detail": "P4 local.dev entry-identity fix (namespace alias demo -> sc_dev_demo) carried into this candidate to unblock browser acceptance. Verified by make local.dev.entry_identity.verify: PASS alias=demo namespace=ns_000000000002 database=sc_dev_demo.",
+      "owner": "P4 local.dev entry/routing config"
+    },
+    {
+      "id": "DEMO-DATA-TEST-RESIDUE-20261020",
+      "classification": "out_of_scope",
+      "detail": "The record-backed my_objects projection exposes real demo records, including two projects named 成本并发隔离测试项目. Cleaning or reseeding those records belongs to the demo iteration line, not to the product contract layer.",
+      "owner": "demo data iteration"
+    }
+  ],
   "handoff": {
     "at": "2026-10-20",
     "owner": "independent_executor",
@@ -235,9 +321,9 @@
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",
     "batch_1_commit": "f7a53c73ad87f0c7ca505a842f581cbe97b62854",
     "batch_2_commit": "f3ab67348",
-    "next_batch": "Batch 3",
-    "next_exact_step": "Consume product.configuration.capability.catalog in the configuration workbench and login workspace.",
+    "next_batch": "Batch 6 complete",
+    "next_exact_step": "Commit Batch 6 with the record-backed my_objects contract and browser evidence; keep mainline integration, deployment and user acceptance not_run.",
     "mainline_integration": "not_run"
   },
-  "next_exact_step": "Batch 5 complete: my-capabilities page and capability_map available. Next: Batch 6 business-full browser acceptance."
+  "next_exact_step": "Batch 6 complete: six home blocks, record-backed my_objects, eight configuration cards, parameter catalog and my-capabilities browser acceptance passed. Commit the batch; do not merge main or deploy."
 }
