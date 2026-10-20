@@ -22,6 +22,7 @@
     "docs/ops/iterations/demo_usage_foundation_f1_20261020.md",
     "docs/ops/iterations/demo_usage_foundation_f2_20261020.md",
     "docs/ops/iterations/demo_usage_foundation_f3_20261020.md",
+    "docs/planning/custom-frontend-integration/G1_BASELINE_EVIDENCE.json",
     "demo_addons/smart_construction_demo/__manifest__.py",
     "demo_addons/smart_construction_demo/data/base/16_bank_accounts.xml",
     "demo_addons/smart_construction_demo/tests/__init__.py",
