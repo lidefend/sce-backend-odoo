@@ -22,6 +22,7 @@ POLICY_PATH = ROOT / "config/releases/frontend_release_evidence_bundle_v1.json"
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 QUALIFIED = "QUALIFIED_FOR_FREEZE_REVIEW"
+OWNER_ACTOR_ID = 307461631
 SENSITIVE_PATTERNS = (
     re.compile(rb"github_pat_[A-Za-z0-9_]{20,}"),
     re.compile(rb"ghp_[A-Za-z0-9_]{30,}"),
@@ -407,7 +408,14 @@ def create_build_manifest(
 
 
 def verify_branch_protection(payload: dict[str, Any], policy: dict[str, Any]) -> None:
-    if payload.get("enforcement") != "active" or payload.get("bypass_actors"):
+    bypass_actors = payload.get("bypass_actors") or []
+    owner_bypass = (
+        len(bypass_actors) == 1
+        and int(bypass_actors[0].get("actor_id") or 0) == OWNER_ACTOR_ID
+        and bypass_actors[0].get("actor_type") == "User"
+        and bypass_actors[0].get("bypass_mode") == "always"
+    )
+    if payload.get("enforcement") != "active" or not owner_bypass:
         fail("BRANCH_PROTECTION_UNTRUSTED")
     contexts: list[str] = []
     for rule in payload.get("rules") or []:

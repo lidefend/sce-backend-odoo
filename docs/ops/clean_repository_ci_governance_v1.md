@@ -34,7 +34,9 @@ CI is split into trust and delivery lanes:
    `merge_policy_gate`, `professional_quality_gate`, and `public_guard` for
    ordinary merges into `main`. `merge_policy_gate` reports the selected risk
    lane; GitHub binds the four independent outcomes to the exact head without
-   cross-workflow polling.
+   cross-workflow polling. The repository owner `lidefend` is the single
+   `User` / `always` bypass actor for explicitly authorized maintenance and
+   governance operations.
 4. `release_candidate_gate` is a separate exact-head publication lane. It runs
    only for explicit candidate requests such as the governed `ci:candidate`
    label event, the nightly `18:30 UTC` (`02:30 Asia/Shanghai`) schedule, or an

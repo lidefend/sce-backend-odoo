@@ -50,10 +50,11 @@ It then performs a normal non-force `git push origin HEAD:main`.
 
 ## Protected-main fallback
 
-If the platform rejects the direct push, the tool stops and prints
-`direct_main_push_rejected`; it never force-pushes or disables branch
-protection. In that case create a governed `fix/*` branch and PR. The direct
-lane is an efficiency path, not a permission bypass.
+The active main ruleset grants the repository owner `lidefend` a `User` /
+`always` bypass actor. `publish` still uses a normal non-force push and verifies
+the remote head; if the platform rejects it, the tool prints
+`direct_main_push_rejected` and instructs the operator to use a governed
+`fix/*` PR. It never force-pushes or disables branch protection.
 
 ## Boundary
 

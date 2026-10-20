@@ -89,6 +89,8 @@ exact head, but does not retroactively invalidate an already merged PR.
 - The ruleset directly requires `frontend_release_gate`, `merge_policy_gate`,
   `professional_quality_gate`, and `public_guard`; no workflow polls sibling
   runs to reproduce their result.
+- The only bypass actor is repository owner `lidefend` with `User` / `always`;
+  ordinary contributors and automation remain bound to PR and the four checks.
 - `release_candidate_gate` remains publication-only, exact-head bound, and is
   absent from the ordinary `main` push path.
 

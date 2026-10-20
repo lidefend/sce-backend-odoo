@@ -105,7 +105,13 @@ class FrontendReleaseEvidenceBundleTests(unittest.TestCase):
             {
                 "name": "main-github-authoritative-pr",
                 "enforcement": "active",
-                "bypass_actors": [],
+                "bypass_actors": [
+                    {
+                        "actor_id": 307461631,
+                        "actor_type": "User",
+                        "bypass_mode": "always",
+                    }
+                ],
                 "rules": [
                     {
                         "type": "required_status_checks",

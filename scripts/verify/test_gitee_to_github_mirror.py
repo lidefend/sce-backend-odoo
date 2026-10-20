@@ -37,20 +37,23 @@ class MirrorGateTests(unittest.TestCase):
             self.assertIn("BLOCKED reverse_sync_disabled", result.stderr)
             self.assertFalse(invocation_log.exists())
 
-    def test_ruleset_has_no_deploy_key_or_bypass(self) -> None:
+    def test_ruleset_has_owner_bypass_and_no_deploy_key(self) -> None:
         text = RULESET_SCRIPT.read_text(encoding="utf-8")
         self.assertIn('repository="lidefend/sce-backend-odoo"', text)
         self.assertIn('ruleset_name="main-github-authoritative-pr"', text)
-        self.assertIn("bypass_actors: []", text)
+        self.assertIn('owner_login="lidefend"', text)
+        self.assertIn('bypass_mode: "always"', text)
+        self.assertIn('actor_type: "User"', text)
         self.assertIn("write_deploy_key_present", text)
         self.assertNotIn('actor_type: "DeployKey"', text)
         self.assertNotIn("read_only=false", text)
 
-    def test_ruleset_guard_requires_no_bypass_or_write_key(self) -> None:
+    def test_ruleset_guard_requires_owner_bypass_or_write_key(self) -> None:
         text = RULESET_GUARD.read_text(encoding="utf-8")
         self.assertIn('repository="lidefend/sce-backend-odoo"', text)
         self.assertIn('ruleset_name="main-github-authoritative-pr"', text)
-        self.assertIn("(.bypass_actors | length) == 0", text)
+        self.assertIn("(.bypass_actors | length) == 1", text)
+        self.assertIn('bypass_mode == "always"', text)
         self.assertIn('select(.read_only == false)', text)
 
     def test_worker_sandbox_keeps_legacy_reverse_credential_out(self) -> None:

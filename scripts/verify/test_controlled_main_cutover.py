@@ -34,7 +34,13 @@ class ControlledMainCutoverTests(unittest.TestCase):
             "name": cutover.RULESET_NAME,
             "target": "branch",
             "enforcement": "active",
-            "bypass_actors": [],
+            "bypass_actors": [
+                {
+                    "actor_id": cutover.OWNER_ACTOR_ID,
+                    "actor_type": "User",
+                    "bypass_mode": "always",
+                }
+            ],
             "conditions": {"ref_name": {"include": ["refs/heads/main"], "exclude": []}},
             "rules": [{"type": "non_fast_forward"}],
             "id": 123,

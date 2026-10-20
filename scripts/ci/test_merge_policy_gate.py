@@ -39,7 +39,7 @@ class MergePolicyGateContractTests(unittest.TestCase):
         self.assertIn("Ordinary PR governance changes were downgraded", self.workflow)
         self.assertIn("Explicit candidate validation was requested for this exact head.", self.workflow)
 
-    def test_ruleset_requires_each_authoritative_check_without_bypass(self) -> None:
+    def test_ruleset_requires_each_authoritative_check_with_owner_bypass(self) -> None:
         self.assertIn(
             'readonly required_checks="frontend_release_gate merge_policy_gate professional_quality_gate public_guard"',
             self.ruleset,
@@ -51,7 +51,9 @@ class MergePolicyGateContractTests(unittest.TestCase):
             "public_guard",
         ):
             self.assertIn(f'{{context: "{check}"}}', self.ruleset)
-        self.assertIn("bypass_actors: []", self.ruleset)
+        self.assertIn('owner_login="lidefend"', self.ruleset)
+        self.assertIn('bypass_mode: "always"', self.ruleset)
+        self.assertIn('actor_type: "User"', self.ruleset)
 
 
 if __name__ == "__main__":
