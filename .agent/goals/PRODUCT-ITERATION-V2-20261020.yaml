@@ -53,10 +53,9 @@ goal:
     - do_not_modify_demo_worktree_or_demo_data_cleanup
     - keep_main_stable_until_owner_authorized_final_integration
   next_exact_step: >-
-    Batch 7 is paused before frontend consumption while the P4 sync tool gains a
-    covered-prefix mode for branches whose old prefix was squash-integrated into
-    main. Use it to align demo c2a4b57ee with main 74063688e, prove demo
-    bank-account loading/readback, then resume Batch 7 sub-step 4.
+    DUF-06 is closed by the governed covered-prefix sync and demo bank-account
+    readback. Resume Batch 7 sub-step 4: frontend consumption and browser
+    acceptance without reopening the demo environment defect as a product defect.
   completion:
     scope: product_iteration_v2
     overall_goal: in_progress

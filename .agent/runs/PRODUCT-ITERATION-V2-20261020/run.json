@@ -291,23 +291,44 @@
           "reason": "next Batch 7 sub-step"
         }
       ]
+    },
+    "duf06_unblock": {
+      "identity": {
+        "demo_old_head": "c2a4b57ee59da88cfbe533dc7ab318efc01ed51c",
+        "demo_new_head": "aed606e3f3db340465840771a67149c57e0b5c5e",
+        "main": "74063688e928d25c8e65037ac3306956c954244d"
+      },
+      "commands": [
+        {
+          "command": "make verify.workspace.branch.sync-main",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 30
+        },
+        {
+          "command": "make workspace.branch.sync-main.extended ... COVERED_PREFIX=bd614470a COVERED_MERGE=a5dac75f",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "demo branch synchronized to main with recovery bundle; generated evidence invalidated and refreshed"
+        },
+        {
+          "command": "make local.dev.upgrade MODULE=smart_construction_demo",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "post-sync module upgrade succeeded"
+        },
+        {
+          "command": "make verify.local.dev.demo_usage_foundation_master_data.orm",
+          "status": "passed",
+          "layer": "L3",
+          "test_count": 1,
+          "detail": "res.partner.bank=9; no errors"
+        }
+      ]
     }
   },
-  "blockers": [
-    {
-      "id": "DUF-06",
-      "classification": "environment_tooling_defect",
-      "owner_layer": "P4",
-      "summary": "The demo worktree lagged the current main baseline, so its old source removed current models during registry reload. The governed sync entry also lacked a covered-prefix mode for a branch whose old prefix had already been squash-integrated.",
-      "source_facts": [
-        "the product worktree upgrade with current source passes",
-        "the pre-sync demo worktree omits current main models and fails during registry reload",
-        "demo c2a4b57ee has a passing exact-head Quick receipt"
-      ],
-      "resume_after": "DUF-06 fix passes its owning-layer tests, local.dev upgrade no longer raises, and demo F3 bank-account readback observes loaded accounts"
-    }
-  ],
-  "next_exact_step": "Run the new governed covered-prefix sync against demo c2a4b57ee -> main 74063688e, then rerun smart_construction_demo upgrade and F3 bank-account readback before resuming Batch 7.",
+  "blockers": [],
+  "next_exact_step": "DUF-06 is closed: demo synced, upgrade passed, bank accounts=9. Resume Batch 7 sub-step 4 frontend consumption and browser acceptance.",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",
