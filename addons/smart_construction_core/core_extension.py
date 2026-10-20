@@ -1634,6 +1634,7 @@ def smart_core_finalize_projected_contract_data(env, data, context):
             "preference_policy": {
                 "allow_visibility": False,
                 "allow_order": False,
+                "allow_width": False,
                 "locked_columns": columns,
                 "must_request_columns": columns,
             },

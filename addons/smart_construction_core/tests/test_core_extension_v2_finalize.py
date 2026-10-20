@@ -1206,6 +1206,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertIsInstance(projected, dict)
         self.assertEqual(projected["views"]["tree"]["columns"], data["list_profile"]["columns"])
         self.assertFalse(projected["list_profile"]["preference_policy"]["allow_order"])
+        self.assertFalse(projected["list_profile"]["preference_policy"]["allow_width"])
         self.assertEqual(projected["list_profile"]["preference_policy"]["locked_columns"], data["list_profile"]["columns"])
 
     def test_payment_request_formal_list_projects_page_and_total_amount_semantics(self):
