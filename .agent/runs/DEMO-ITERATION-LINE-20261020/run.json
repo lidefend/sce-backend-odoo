@@ -61,7 +61,8 @@
     "demo_addons/smart_construction_demo/tests/test_demo_golden_chain.py",
     "docs/ops/iterations/demo_iteration_line_batch3_20261020.md",
     "demo_addons/smart_construction_demo/tests/test_demo_api_scenario.py",
-    "docs/ops/iterations/demo_iteration_line_batch4_20261020.md"
+    "docs/ops/iterations/demo_iteration_line_batch4_20261020.md",
+    "docs/ops/iterations/demo_iteration_line_batch5_gate_20261020.md"
   ],
   "environment": {
     "kind": "offline",
@@ -129,5 +130,5 @@
       "resolved_commit": "a44238ad8"
     }
   ],
-  "next_exact_step": "Batch 4 surface readback done: payment.request multi-tier approval is wired and the floorplan fixture is drivable (verify.local.dev.api_scenario.orm). Remaining Batch 4 closeout: demo-scenario four-tier role-driven approve with idempotency + negative (map finance-approve reviewer roles first). Then Batch 5: daily tick + scoped experience reset (confirm scems-demo-tenant.timer target tenant identity first)."
+  "next_exact_step": "Batch 4 surface readback done (multi-tier approval wired, fixture drivable). Batch 5 gate evidence recorded: scems-demo-tenant.timer targets the isolated public demo tenant (/opt/sce/demo-product + /etc/scems/demo-tenant.env) and demo.tenant.reset is full rebuild + release seed; no scoped experience reset exists. Owner must confirm where experience users operate before any timer change. Remaining: Batch 4 full four-tier role-driven driver, then Batch 5 scoped experience reset."
 }
