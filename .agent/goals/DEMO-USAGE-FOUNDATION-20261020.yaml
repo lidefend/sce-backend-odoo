@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: DEMO-USAGE-FOUNDATION-20261020
   title: demo_user_usage_foundation_v1
-  status: planned
+  status: active
   formal_product_layer: P4
   supporting_layers:
     - P0
@@ -57,14 +57,14 @@ goal:
     - keep_demo_baseline_fingerprint_stable_across_experience_reset
     - no_new_database_tenant_compose_or_credentials
   next_exact_step: >-
-    Executor takeover: run make agent.run.resume, verify the planning commit and
-    clean worktree, mark the run active, then execute F1 by creating the
-    machine-readable user-journey-to-foundation-data manifest and read-only audit.
+    F1 complete: the user-journey-to-foundation-data manifest and read-only audit
+    are committed and validated. Stop for owner acknowledgement, then start F2
+    (identity/company/project scope) after a fresh identity preflight.
   completion:
     scope: demo_user_usage_foundation_v1
     overall_goal: in_progress
     result_index: .agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json
-    local_batch_acceptance: not_run
+    local_batch_acceptance: F1_complete
     mainline_integration: not_run
     deployment: not_run
     target_user_delivery: not_run

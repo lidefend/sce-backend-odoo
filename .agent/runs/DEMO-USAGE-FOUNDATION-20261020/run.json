@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "DEMO-USAGE-FOUNDATION-20261020",
   "branch": "feature/demo-iteration-line-20261020",
-  "status": "planned",
+  "status": "active",
   "baseline_sha": "bd614470aae7730eacf8a3c8f5b0cde81d322e99",
   "goal": ".agent/goals/DEMO-USAGE-FOUNDATION-20261020.yaml",
   "record": "docs/ops/iterations/demo_usage_foundation_handoff_20261020.md",
@@ -12,8 +12,13 @@
     ".agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json",
     "docs/demo/demo_iteration_line_v1.md",
     "docs/demo/demo_usage_foundation_plan_v1.md",
+    "docs/demo/demo_usage_foundation_manifest_v1.json",
     "docs/demo/product_gap_registry_v1.md",
-    "docs/ops/iterations/demo_usage_foundation_handoff_20261020.md"
+    "docs/ops/iterations/demo_usage_foundation_handoff_20261020.md",
+    "docs/ops/iterations/demo_usage_foundation_f1_20261020.md",
+    "make/dev_test.mk",
+    "scripts/verify/demo_usage_foundation_audit.py",
+    "scripts/verify/test_demo_usage_foundation_audit.py"
   ],
   "environment": {
     "kind": "offline",
@@ -57,6 +62,16 @@
         "scripts/verify/demo_scenario_step.py",
         "scripts/verify/test_demo_scenario_step.py",
         "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json"
+      ],
+      "kind": "offline"
+    },
+    "usage_foundation": {
+      "target": "verify.demo.usage_foundation.unit",
+      "inputs": [
+        "docs/demo/demo_usage_foundation_manifest_v1.json",
+        "scripts/verify/demo_usage_foundation_audit.py",
+        "scripts/verify/test_demo_usage_foundation_audit.py",
+        "make/dev_test.mk"
       ],
       "kind": "offline"
     }
@@ -110,10 +125,36 @@
         }
       ],
       "environment_note": "The first ledger/docs attempt was blocked by the execution sandbox because the sibling demo worktree is read-only by default. The exact same commands passed after explicit sandbox escalation; this was an environment permission condition, not a product or document failure."
+    },
+    "f1_usage_foundation_manifest": {
+      "identity": {
+        "head": "71b9fb90c856de1a2b4fcf40cbef4ede36e3646c",
+        "stage": "head_plus_f1_dirty_scope"
+      },
+      "commands": [
+        {
+          "command": "python3 -m json.tool docs/demo/demo_usage_foundation_manifest_v1.json",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "make verify.demo.usage_foundation.unit",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 17
+        },
+        {
+          "command": "python3 scripts/verify/demo_usage_foundation_audit.py --manifest docs/demo/demo_usage_foundation_manifest_v1.json",
+          "status": "passed",
+          "layer": "L2",
+          "detail": "coverage_complete=true; overall_status=blocked; summary observed=10 missing=0 blocked=2; data_readback=not_run"
+        }
+      ],
+      "notes": "F1 is a declaration-coverage audit only. It does not read the database and does not write foundation data; blocked reflects the open DUF gaps, which is the expected pre-implementation state."
     }
   },
   "blockers": [],
-  "next_exact_step": "Executor takeover: run make agent.run.resume, verify the planning commit and clean worktree, mark the run active, then execute F1 by creating the machine-readable user-journey-to-foundation-data manifest and read-only audit.",
+  "next_exact_step": "F1 complete: usage-foundation manifest and read-only audit committed. Stop and report to the owner; next batch F2 (identity/company/project scope) only after owner acknowledgement and a fresh identity preflight.",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",
