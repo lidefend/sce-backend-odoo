@@ -328,7 +328,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "DUF-06 is closed: demo synced, upgrade passed, bank accounts=9. Resume Batch 7 sub-step 4 frontend consumption and browser acceptance.",
+  "next_exact_step": "DUF-06 is closed. Batch 7 sub-step 4 in progress: local.dev payment browser acceptance lane repaired (namespace /t/demo, demo credential 123456, floorplan fixture project/partner labels). Remaining lane defect: the Select option accessible name is now a concatenated string (code+name+manager+status), so the lane's getByRole('option', {name, exact:true}) locator no longer matches; reconcile the shared chooseUniqueRelationOption helper with the current frontend Select rendering before re-running.",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",

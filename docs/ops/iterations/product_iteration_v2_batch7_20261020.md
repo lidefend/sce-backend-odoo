@@ -119,3 +119,15 @@
 - 子步 4：前端配置工作台/参数目录只消费声明、付款申请动作面消费 `tier.review` 岗位事实，
   浏览器验收「配置→影响预览→变更集发布→付款申请链实际生效→回滚恢复→无权限拒绝」；
   Batch 12 与用户验收完成前不合并 main。
+
+## 验证结果（子步 4：浏览器验收车道修复）
+
+- 已修复（P4 车道工具，分别提交）：`local_dev_payment_request_full_chain.sh`
+  缺 `/t/demo` 命名空间前缀；`local_dev_demo_credentials_prepare.sh` 的固定凭据
+  与 demo 种子发布的 `123456` 不一致；`local_dev_payment_request_floorplan_submit.mjs`
+  的 S69 项目与合作伙伴 fixture 标签过期（PR #689 重组后改名）。
+- 当前阻塞（`validation_tool_defect`，非本批产品问题）：前端 Select 选项的可访问名称
+  已变为拼接串（`S69-PAY-2025-001支付台账项目OdooBotin_progress是`），车道共享的
+  `chooseUniqueRelationOption` 仍用 `getByRole('option', { name, exact: true })` 精确匹配
+  纯名称，定位失效。
+- 待办：将 `chooseUniqueRelationOption` 与当前前端 Select 渲染对齐后再重跑浏览器验收。
