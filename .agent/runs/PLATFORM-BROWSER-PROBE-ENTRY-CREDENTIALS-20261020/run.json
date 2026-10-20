@@ -17,7 +17,9 @@
     "docs/ops/iterations/platform_browser_probe_entry_credentials_20261020.md",
     "make/runtime_ops.mk",
     "scripts/ops/path_ns_c_s4_browser_probe.mjs",
-    "scripts/ops/test_path_ns_c_s4_browser_probe_credentials.py"
+    "scripts/ops/test_path_ns_c_s4_browser_probe_credentials.py",
+    "scripts/verify/path_ns_c_s4_browser_probe.mjs",
+    "scripts/verify/test_path_ns_c_s4_browser_probe_credentials.py"
   ],
   "environment": {
     "kind": "offline"
@@ -26,7 +28,7 @@
     "formal_product_layer": "P4 ops delivery tool",
     "layer_target": "path-namespace browser evidence probe credentials",
     "standard_vs_user_specific": "ops delivery mechanism",
-    "why_here": "The probe is governed evidence tooling; the credential contract belongs with the probe, not in product contracts.",
+    "why_here": "The probe is governed verification tooling; it is classified with scripts/verify so it does not enter the ops-runtime acceptance lane, and its credential contract belongs with the probe.",
     "why_not_elsewhere": "No product or tenant semantic changes; frontend and backend contracts are untouched.",
     "blast_radius": "evidence probe startup and test coverage only; no runtime deployment state, database or business data"
   },
@@ -36,9 +38,9 @@
       "kind": "offline",
       "inputs": [
         "make/runtime_ops.mk",
-        "scripts/ops/path_ns_c_s4_browser_probe.mjs",
+        "scripts/verify/path_ns_c_s4_browser_probe.mjs",
         "scripts/ops/test_path_ns_c_acceptance.py",
-        "scripts/ops/test_path_ns_c_s4_browser_probe_credentials.py"
+        "scripts/verify/test_path_ns_c_s4_browser_probe_credentials.py"
       ]
     }
   },

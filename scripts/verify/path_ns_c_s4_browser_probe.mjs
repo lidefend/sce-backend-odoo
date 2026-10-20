@@ -17,7 +17,7 @@
  *   SC_PLATFORM_ADMIN_PASSWORD  platform administrator password
  *
  * Usage:
- *   node scripts/ops/path_ns_c_s4_browser_probe.mjs \
+ *   node scripts/verify/path_ns_c_s4_browser_probe.mjs \
  *     --base-url http://127.0.0.1:18099 \
  *     --out-dir .runtime/path-ns-c-20261018/evidence-r2/browser \
  *     [--playwright <repo>/frontend/apps/web/node_modules/playwright] \

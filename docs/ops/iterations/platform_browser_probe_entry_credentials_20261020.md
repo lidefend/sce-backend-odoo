@@ -8,15 +8,24 @@ hard-coded the demo password for both entries.
 
 ## Change
 
-- `scripts/ops/path_ns_c_s4_browser_probe.mjs` no longer carries a literal
+- `scripts/verify/path_ns_c_s4_browser_probe.mjs` no longer carries a literal
   password. The demo entry reads `SC_DEMO_USER_PASSWORD`; the platform entry
   reads `SC_PLATFORM_ADMIN_PASSWORD`.
 - A missing variable fails closed with exit code 2 before Playwright is loaded.
 - The same-name `admin` identity is retained so the probe still proves
   cross-namespace isolation; only the secrets become entry-scoped.
-- `scripts/ops/test_path_ns_c_s4_browser_probe_credentials.py` guards the
+- `scripts/verify/test_path_ns_c_s4_browser_probe_credentials.py` guards the
   contract: no literal password, both governed variables present, credentials
   resolved before Playwright, and the login form fills the resolved values.
+
+## Classification
+
+The probe is verification tooling, not runtime product code. It therefore lives
+under `scripts/verify/` instead of `scripts/ops/`: `scripts/ops/**` is bound to
+the `ops-runtime` acceptance lane, while `scripts/verify/**` is classified as
+governance static. Moving it keeps the acceptance binding truthful instead of
+demanding deployed-runtime evidence for a tool the deployment never loads. The
+two retired `scripts/ops/...` paths are recorded in the run scope as removals.
 
 ## Verification
 

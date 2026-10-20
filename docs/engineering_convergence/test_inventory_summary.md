@@ -165,8 +165,8 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1372 |
-| scripts/ops | 103 |
+| scripts/verify | 1373 |
+| scripts/ops | 102 |
 | frontend/apps/web/scripts | 43 |
 | scripts/ci | 30 |
 | scripts/audit | 10 |
@@ -270,12 +270,12 @@ Generated from `test_inventory.csv`.
 | T-ASSET-107 | contract | `scripts/ops/operation_strategy_contract_surface_backfill.py` | platform owner |
 | T-ASSET-117 | contract | `scripts/ops/repair_unbound_structural_form_contract.py` | platform owner |
 | T-ASSET-118 | contract | `scripts/ops/settlement_contract_surface_backfill.py` | platform owner |
-| T-ASSET-180 | contract | `scripts/ops/test_repair_unbound_structural_form_contract.py` | platform owner |
-| T-ASSET-187 | contract | `scripts/ops/validate_contract_business_categories.sh` | platform owner |
-| T-ASSET-198 | unit | `scripts/verify/acceptance_action_count.py` | test owner |
-| T-ASSET-199 | contract | `scripts/verify/acceptance_contract_receipt_test.mjs` | platform owner |
-| T-ASSET-200 | governance | `scripts/verify/acceptance_evolution_binding_guard.py` | architecture owner |
-| T-ASSET-201 | contract | `scripts/verify/action_default_group_contract_audit.py` | platform owner |
+| T-ASSET-179 | contract | `scripts/ops/test_repair_unbound_structural_form_contract.py` | platform owner |
+| T-ASSET-186 | contract | `scripts/ops/validate_contract_business_categories.sh` | platform owner |
+| T-ASSET-197 | unit | `scripts/verify/acceptance_action_count.py` | test owner |
+| T-ASSET-198 | contract | `scripts/verify/acceptance_contract_receipt_test.mjs` | platform owner |
+| T-ASSET-199 | governance | `scripts/verify/acceptance_evolution_binding_guard.py` | architecture owner |
+| T-ASSET-200 | contract | `scripts/verify/action_default_group_contract_audit.py` | platform owner |
 | ... | ... | 1057 more | ... |
 
 ## Dedupe Hotspots
