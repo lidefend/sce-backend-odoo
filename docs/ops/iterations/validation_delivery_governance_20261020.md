@@ -101,3 +101,25 @@ main-ref交叉核验修复最终治理组75项通过（live-main-fixed-unit.log�
 层级仍为P4工具，新增输入是已审核main、run基线和生成报告；六个定向组声明输入未变，复用原357项结果（由agent.run.resume核验）。L1与生成报告准备需刷新；无新增数据库/页面输入，L3/L4产品运行时不执行。最终新HEAD仍要求Quick、独立复核、当前基线远端CI及受保护合并。现有Quick内部具有一次仅引用变化的扫描刷新，但刷新期间再次漂移会拒签；不宣称跨进程扫描单独恢复或原子锁定已实现。
 
 57b6eef候选遇到另一工作树新增c6d8fdda收尾提交，历史扫描拒签；history-recovery.log通过且前后覆盖快照相等后才恢复Quick，quick-stable-final.log完整通过并签发57b6eef回执。推送时PR #704已将纯收尾元数据合入main a34bd252，冲突门禁拒绝发布。受管第三次同步生成b10f82947e28bcb036772c5259ce8c916c24f1e2，仅active-runs冲突；恢复包哈希与精确父提交见github-sync-third.log。此次变化没有产品/测试工具输入，六组357项复用，旧Quick仅保留原候选有效性，新冻结SHA仍按GitHub车道执行Quick。当前基线更新a34bd252；部署和主线集成未完成。并行合并引起的重复冻结成本为已观察到的限制，不宣称彻底消除。
+
+## 主线集成
+
+候选头 `b75e43ae6a19f05933ce2eb5b80a4e4299755d4b`（PR #702，base `a34bd252ff05a5c42a6a6e181a04a00a480c1326`）于 `2026-10-20T03:13:21Z` 合入 main，合并提交 `214c517433f5d221ed2660a440fe09cc12390140`（单父 squash 形态）。候选树与合并树均为 `ca8220f086ccb185eb3c003dca92c2f8cca04429`，合并不引入内容差异。
+
+exact-head Quick 回执 `b75e43ae….json` 在合并前签发，合并时按依赖复用，未重复全量验证。head 上必需远端检查全部通过：backend_suite 四个分片、frontend_release_gate、professional_quality_checks、professional_quality_gate、public_guard、public_guard_classify、merge_policy_gate、release_candidate_gate、python310_runtime_compatibility、professional_authorization。
+
+六组离线定向回执合计 357 项（31+142+75+32+53+24），L1 `ci.local.iteration`、独立复核与治理静态验收均通过；原始日志保留在原执行工作树，不随收口搬迁或改写。
+
+## 部署与运行验收
+
+对合并身份 `214c5174` 执行日常开发部署：`bundle_sync` 从 `a34bd252` 推进到 `214c5174`（bundle sha256 `3a79ab5e4bbb…`），demo 与 platform_control 两职责的 `source_revision.align` 均为 PASS。服务器回读 HEAD 为 `214c5174`、工作树干净，两职责 Odoo 容器 healthy。
+
+入口验收 PASS（`.runtime/final-acceptance/daily-deployed/entry-verify-214c.json`）：`expected_sha` 与运行 HEAD 一致，前端摘要 `7e123292…`，公网仅 18081，平台与 Demo 各自使用精确 dbfilter。路径命名空间 C 验收 23/23 PASS（`.runtime/final-acceptance/path-ns-c-acceptance-214c.json`）。
+
+本批 `smart_core` 树相对 `a34bd252` 未变（`27797d8e…`），发布面 `published_face.converge` 未在本次重跑，沿用既有收敛结果；该复用条件已由树身份核验，不是推定。
+
+## 收口与剩余限制
+
+run 与 goal 置 `completed`，本分支从 `.agent/active-runs.json` 移除；历史证据、恢复包与原始日志保持原样。
+
+已观察限制继续成立：并行引用持续漂移仍可能使扫描拒签，当前没有跨进程恢复，不宣称无人值守并发交付已经具备。产品用户验收未由执行器代做：所有者登录验收是独立的产品交付状态，不因本记录自动通过；生产范围与用户模块仍按既有暂停边界处理。

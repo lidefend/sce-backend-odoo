@@ -2,6 +2,7 @@ schema_version: 1
 goal:
   id: VALIDATION-DELIVERY-GOVERNANCE-20261020
   title: validation_delivery_governance
-  status: active
+  status: completed
   formal_product_layer: P4
   objective: Make validation prerequisites, evidence reuse and failure handling deterministic and reviewable before expensive finalization.
+  run: .agent/runs/VALIDATION-DELIVERY-GOVERNANCE-20261020/run.json
