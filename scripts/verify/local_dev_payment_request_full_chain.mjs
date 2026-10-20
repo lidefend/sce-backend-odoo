@@ -68,9 +68,8 @@ function attachDiagnostics(page, role) {
 }
 async function login(page, loginName) {
   await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  const inputs = page.locator('input');
-  await inputs.nth(0).fill(loginName);
-  await inputs.nth(1).fill(password);
+  await page.locator('#login-username').fill(loginName);
+  await page.locator('#login-password').fill(password);
   const databaseInputs = page.getByLabel(/数据库/);
   const databaseInputCount = await databaseInputs.count();
   check(databaseInputCount <= 1, 'login database identity is unique', { databaseInputCount });
