@@ -103,3 +103,42 @@ Batch 3 验收：
 ## 6. 回滚
 
 回退 `f7a53c73a` 与 `f3ab67348` 两个 commit；不涉及数据库、服务或部署恢复。
+
+## 7. 2026-10-20 Batch 3–6 收口更新
+
+本节覆盖上文“Batch 3 未开始”的旧交接状态，后续执行器以本节为准。
+
+### 7.1 已完成提交
+
+- Batch 3：`880c02685` / `49eb65b29`（能力目录前端消费、fail-closed 投影）
+- Batch 4：`449b12257` / `35e12d4fe` / `9769d7c2e`（参数目录、影响预览、变更集发布/回滚）
+- Batch 5：`1d36703b8`（`/my-capabilities`，`workspace.capability_map` available）
+- Batch 6 产品提交：`c8133c735`（真实项目/合同/付款对象 + 浏览器验收）
+- Batch 6 交接文档：`299e0bbbd`
+
+### 7.2 当前四层状态
+
+- 批次验收：Batch 1–6 完成。
+- 主线集成：`not_run`。
+- 部署：`not_run`。
+- 用户交付验收：`not_run`。
+
+### 7.3 Batch 6 关键结论
+
+- 业务全功能账号 `wutao` 在 `/t/demo`（`sc_dev_demo`）完成真实浏览器验收：
+  6 个首屏区块、8 张配置卡、6 类参数/13 个参数、我的能力 19 项；console/pageerror 与
+  失败请求均为 0。
+- “我的项目与业务对象”不再使用 `scene_groups` 冒充业务对象；后端新增
+  `home_objects` 事实贡献和 `workspace_home.my_objects` 契约投影，行内带
+  `project.project` / `construction.contract` / `payment.request` 的 `/r/...` 记录路由。
+- 首条真实项目记录已通过浏览器打开验证；证据在
+  `artifacts/playwright/product-configuration-capability/`。
+- 入口身份：`alias=demo namespace=ns_000000000002 database=sc_dev_demo`。
+
+### 7.4 后续注意
+
+- 演示数据仍含“成本并发隔离测试项目”等测试残留；属于 demo 数据迭代线的清理项，
+  不在 P0/P1 产品代码中按名称过滤。
+- `ci.local.iteration` 在 clean HEAD 通过，但只是 L1；Quick、独立复核、远端 CI、
+  PR 集成和部署仍未执行。
+- 未经所有者明确授权，不合并 main、不推送 PR、不部署。
