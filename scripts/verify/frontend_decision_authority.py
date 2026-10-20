@@ -235,6 +235,9 @@ AUTHORITY: dict[str, dict] = {
     "R4_business_state_literal|active": _derived(
         "addons/smart_core/models/auth_credential_policy.py:24"
     ),
+    "R4_business_state_literal|available": _derived(
+        "config/product_configuration_capability_v1.json"
+    ),
     "R4_business_state_literal|allow": _derived(
         "addons/smart_core/utils/contract_governance_capabilities.py:120"
     ),
@@ -276,6 +279,12 @@ AUTHORITY: dict[str, dict] = {
     ),
     "R4_business_state_literal|overdue": _derived(
         "addons/smart_core/handlers/chatter_activity_update.py:39"
+    ),
+    "R4_business_state_literal|partial": _derived(
+        "config/product_configuration_capability_v1.json"
+    ),
+    "R4_business_state_literal|planned": _derived(
+        "config/product_configuration_capability_v1.json"
     ),
     "R4_business_state_literal|published": _derived(
         "addons/smart_core/core/view_contract_presence.py:60"
