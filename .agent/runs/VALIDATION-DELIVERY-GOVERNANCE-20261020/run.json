@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "id": "VALIDATION-DELIVERY-GOVERNANCE-20261020",
-  "branch": "fix/validation-delivery-governance-20261020",
+  "branch": "codex/close-validation-delivery-governance-20261020",
   "baseline_sha": "a34bd252ff05a5c42a6a6e181a04a00a480c1326",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/VALIDATION-DELIVERY-GOVERNANCE-20261020.yaml",
   "record": "docs/ops/iterations/validation_delivery_governance_20261020.md",
   "scope": [
@@ -125,5 +125,16 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Review regenerated reports, freeze clean candidate, run one Quick for the new source/current-main coverage, archive independent review and update PR #702 without force; require current-base remote gates before protected merge."
+  "next_exact_step": "Completed: PR #702 merged as 214c517433f5d221ed2660a440fe09cc12390140, the daily development runtime serves that revision, and this closeout branch retires the run from .agent/active-runs.json.",
+  "integrated_sha": "214c517433f5d221ed2660a440fe09cc12390140",
+  "merge_target": "main",
+  "closeout_branch": "codex/close-validation-delivery-governance-20261020",
+  "pull_request": "https://github.com/lidefend/sce-backend-odoo/pull/702",
+  "completion": {
+    "batch": "passed: six offline receipt groups 31+142+75+32+53+24 = 357 tests, L1 ci.local.iteration, independent review and the governance_static acceptance plan; original logs stay in the originating execution worktree",
+    "mainline": "merged_to_main: PR #702 head b75e43ae6a19f05933ce2eb5b80a4e4299755d4b squash-merged as 214c517433f5d221ed2660a440fe09cc12390140; candidate tree ca8220f086ccb185eb3c003dca92c2f8cca04429 equals the merged tree; the exact-head ci.local.quick receipt was reused at merge",
+    "deployment": "deployed_daily_dev_runtime_214c5174: bundle_sync a34bd252 -> 214c5174 (bundle sha256 3a79ab5e4bbb...), source revision aligned for demo and platform_control, entry verify PASS, path namespace C acceptance 23/23 PASS",
+    "product_delivery": "pending_owner_login_acceptance: not performed by the executor; runtime acceptance covers entry routing, namespace identity and duty isolation only",
+    "review": "required remote checks green at head b75e43ae: backend_suite shards 0-3, frontend_release_gate, professional_quality_checks, professional_quality_gate, public_guard, public_guard_classify, merge_policy_gate, release_candidate_gate, python310_runtime_compatibility, professional_authorization"
+  }
 }
