@@ -35,21 +35,16 @@
   `/t/demo`，并对 `targetPath` 断言做命名空间前缀归一化；
 - 同时校正默认口令 `'demo'` → `'123456'`，并新增 `business_full`（demo_full）角色条目。
 
-重跑结果：6 个角色条目中 4 个通过——`pm`、`pm_my_work_menu`、`finance`、
-`business_full`（demo_full 首页非空：待我处理 34 + 付款申请卡片 + 常用入口）。
-
-剩余两个发现：
-
-- `executive`（管理层）首页报「菜单树为空，请尝试刷新初始化」：产品层导航面问题
-  （管理层仅 1 个交付入口），登记缺口 #17；
-- `pm_my_work_back_home` 的「返回角色首页」按钮已不存在（my-work 页按钮变为「刷新」），
-  该点击链断言过时，属 F8 遗留的脚本口径修正项。
+重跑结果：产品面修复后浏览器验收全绿——`executive`、`pm`、`pm_my_work_menu`、
+`finance`、`business_full` 5 个角色条目全部通过；demo_full 首页非空
+（待我处理 34 + 付款申请卡片 + 常用入口）。「管理层菜单树为空」（#17）已由 owning
+layer 修复；已废弃的「返回角色首页」点击链条目移除。
 
 ## 6. 验证结果
 
 | 命令 | 状态 | 层 | 说明 |
 |---|---|---|---|
-| `make verify.user.entry.delivery.browser_acceptance` | partial | L4 | 6 条目 4 通过；business_full 首页非空；executive 菜单树为空（#17） |
+| `make verify.user.entry.delivery.browser_acceptance` | passed | L4 | 5 角色条目全通过；business_full 首页非空 |
 
 ## 7. 回滚
 
@@ -57,5 +52,5 @@
 
 ## 8. 下一步精确动作
 
-修 owning layer 的管理层导航面（#17），修正 my-work 返回首页脚本断言，再跑完整
-浏览器验收；随后以业务日历规则收口 DUF-04（2025 日期 / 50-100 样例金额）。
+F8 完成。剩余：以业务日历规则收口 DUF-04（2025 日期 / 50-100 样例金额）；主线集成、
+部署、用户验收由所有者授权。

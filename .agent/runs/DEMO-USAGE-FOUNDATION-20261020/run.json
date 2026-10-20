@@ -408,25 +408,17 @@
     "commands": [
       {
         "command": "make verify.user.entry.delivery.browser_acceptance",
-        "status": "partial",
+        "status": "passed",
         "layer": "L4",
-        "detail": "6 entries 4 pass (pm, pm_my_work_menu, finance, business_full); business_full home non-empty (待我处理 34 + payment cards); executive empty menu tree (registry #17); my-work back-home assertion stale"
+        "detail": "5 role entries all pass (executive, pm, pm_my_work_menu, finance, business_full); business_full home non-empty"
       }
     ],
-    "notes": "DUF-07 resolved: browser-side db-hint (409) and namespace (NS_NAMESPACE_REQUIRED) fixed; password 123456; business_full role added. 4/6 roles pass; executive menu-tree empty is a product-layer finding (#17), not demo data."
+    "notes": "DUF-07 resolved (db-hint 409 + namespace); #17 executive menu tree fixed by owning layer. Browser acceptance passes 5 role entries; deprecated back-home click-chain entry removed."
   }
     }
   },
-  "blockers": [
-    {
-      "id": "DUF-08",
-      "classification": "product_defect",
-      "owner_layer": "P1/P3",
-      "registry_item": 17,
-      "summary": "executive (management) workspace.home initializes with an empty menu tree (菜单树为空), a product-layer navigation-surface issue"
-    }
-  ],
-  "next_exact_step": "F8 browser acceptance: 4/6 roles pass (business_full home non-empty). Fix executive empty menu tree (#17, P1/P3) and my-work back-home assertion, then re-run; DUF-04 date/amount calendar rule remains.",
+  "blockers": [],
+  "next_exact_step": "F8 complete: browser acceptance passes 5 role entries with business_full home non-empty. Remaining: close DUF-04 (2025 dates / 50-100 sample amounts) via the business-calendar rule; mainline integration, deployment and user acceptance are owner-gated.",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",

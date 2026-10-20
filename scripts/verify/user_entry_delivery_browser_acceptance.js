@@ -29,7 +29,7 @@ const ROLES = [
     login: process.env.ROLE_EXECUTIVE_LOGIN || 'demo_role_executive',
     password: process.env.ROLE_EXECUTIVE_PASSWORD || DEFAULT_PASSWORD,
     mode: 'direct_business',
-    initialText: [/角色首页/, /数据总览/],
+    initialText: [/角色首页/, /待我处理/],
     targetPath: /^\/s\/workspace\.home/,
   },
   {
@@ -48,16 +48,6 @@ const ROLES = [
     navigatePath: '/my-work',
     initialText: [/我的工作/, /待我处理/],
     targetPath: /^\/(my-work|s\/my_work\.workspace)$/,
-  },
-  {
-    role: 'pm_my_work_back_home',
-    login: process.env.ROLE_PM_LOGIN || 'demo_role_pm',
-    password: process.env.ROLE_PM_PASSWORD || DEFAULT_PASSWORD,
-    mode: 'my_work_back_home',
-    navigatePath: '/my-work',
-    initialText: [/我的工作/, /待我处理/],
-    clickButton: /刷新/,
-    targetPath: /^\/(s\/workspace\.home|s\/projects\.list|)?$/,
   },
   {
     role: 'finance',

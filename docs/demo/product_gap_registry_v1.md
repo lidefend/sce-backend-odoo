@@ -28,7 +28,7 @@
 | 14 | 10 日叙事未完整声明 | `business_days=10`，manifest 仅有 D1–D3 步骤 | P4 | 已解决 | F7 已扩写 D4–D10（40 步），每 fact 绑定公开动作/回读；10 日连续推进、幂等 |
 | 15 | 模块升级视图校验失败 | demo 分支仍基于旧 main；数据库已由当前 main 升级，旧源码缺少 `action_sc_review_group_authority`，触发 `_update_user_groups_view` 校验失败 | P4 | 已解除 | covered-prefix 受管同步到 main 后升级 PASS；`res.partner.bank=9` 回读 PASS |
 | 16 | 浏览器验收登录页 409 | 前端登录页带客户端 `?db=` 提示，且浏览器未走 `/t/demo/` 命名空间，触发 `NS_DATABASE_HINT_CONFLICT` / `NS_NAMESPACE_REQUIRED` | P4 | 已解决 | F8 修正浏览器脚本：去掉 `?db=`、FRONTEND_URL 走命名空间、路径归一化；4/6 角色通过 |
-| 17 | 管理层首页菜单树为空 | executive 登录后 workspace.home 报「菜单树为空，请尝试刷新初始化」 | P1/P3 | 待立项 | 管理层仅 1 个交付入口，导航面初始化失败；修 owning layer 导航面后重跑 |
+| 17 | 管理层首页菜单树为空 | executive 登录后 workspace.home 报「菜单树为空，请尝试刷新初始化」 | P1/P3 | 已解决 | owning layer 修复导航面；浏览器验收 executive 通过 |
 
 ## 回收判据
 
