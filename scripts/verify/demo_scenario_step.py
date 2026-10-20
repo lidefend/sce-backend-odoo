@@ -18,6 +18,7 @@ STEP_FIELDS = (
     "step_key",
     "sequence",
     "actor_mode",
+    "actor_role",
     "intent_or_action",
     "params",
     "precondition",
@@ -38,6 +39,7 @@ class Step:
     step_key: str
     sequence: int
     actor_mode: str
+    actor_role: str
     intent_or_action: str
     params: dict
     precondition: str
@@ -57,6 +59,8 @@ def coerce_step(raw: dict) -> Step:
         raise StepError(f"step missing fields: {missing}")
     if raw["actor_mode"] not in ACTOR_MODES:
         raise StepError(f"invalid actor_mode: {raw['actor_mode']!r}")
+    if not isinstance(raw["actor_role"], str) or not raw["actor_role"]:
+        raise StepError("actor_role must be a non-empty string")
     if not isinstance(raw["day_index"], int) or raw["day_index"] < 0:
         raise StepError("day_index must be a non-negative int")
     if not isinstance(raw["sequence"], int) or raw["sequence"] < 0:
@@ -77,6 +81,7 @@ def coerce_step(raw: dict) -> Step:
         step_key=raw["step_key"],
         sequence=raw["sequence"],
         actor_mode=raw["actor_mode"],
+        actor_role=raw["actor_role"],
         intent_or_action=raw["intent_or_action"],
         params=raw["params"],
         precondition=raw["precondition"],
