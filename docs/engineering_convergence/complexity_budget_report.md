@@ -204,10 +204,10 @@ Generated from repository source files. This report is informational during the 
 | 821 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
 | 819 | Python source | `scripts/verify/workflow_action_semantics_completeness_guard.py` |
 | 815 | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
+| 815 | Python source | `scripts/verify/frontend_decision_authority.py` |
 | 811 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
-| 806 | Python source | `scripts/verify/frontend_decision_authority.py` |
 | 802 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
 | 802 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |

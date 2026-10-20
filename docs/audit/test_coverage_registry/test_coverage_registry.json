@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 175,
+    "odoo_tags": 181,
     "gated": 3,
-    "on_demand": 29,
+    "on_demand": 35,
     "unwired": 143,
-    "odoo_tag_declarations": 392,
-    "gated_declarations": 94,
-    "uncovered_declarations": 298,
+    "odoo_tag_declarations": 400,
+    "gated_declarations": 95,
+    "uncovered_declarations": 305,
     "ci_unit_scripts": 16,
     "ci_unit_scripts_wired": 16,
     "ci_unit_scripts_unwired": 0
@@ -18,7 +18,7 @@
       "group": "sc_gate",
       "status": "gated",
       "kind": "odoo_tag",
-      "declarations": 67,
+      "declarations": 68,
       "files": [
         "addons/sc_norm_engine/tests/test_boq_norm_link.py",
         "addons/smart_construction_acceptance_fixture/tests/test_acceptance_fixture_guard.py",
@@ -60,6 +60,7 @@
         "addons/smart_construction_core/tests/test_product_message_notification.py",
         "addons/smart_construction_core/tests/test_product_numbering_rule.py",
         "addons/smart_construction_core/tests/test_product_reports.py",
+        "addons/smart_construction_core/tests/test_product_system_parameter_change.py",
         "addons/smart_construction_core/tests/test_product_system_settings.py",
         "addons/smart_construction_core/tests/test_project_context_resolver.py",
         "addons/smart_construction_core/tests/test_project_salary_product.py",
@@ -429,6 +430,19 @@
       "owner": "demo-team",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "demo_scenario_tick",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 2,
+      "files": [
+        "demo_addons/smart_construction_demo/tests/test_demo_scenario_tick.py"
+      ],
+      "owner": "demo-team",
+      "evidence": [
+        "make:verify.local.dev.scenario_tick.orm :: demo_scenario_tick"
+      ]
     },
     {
       "group": "p0_state",
@@ -872,6 +886,45 @@
       "disposition": "class-selected"
     },
     {
+      "group": "demo_api_scenario",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "demo_addons/smart_construction_demo/tests/test_demo_api_scenario.py"
+      ],
+      "owner": "demo-team",
+      "evidence": [
+        "make:verify.local.dev.api_scenario.orm :: demo_api_scenario"
+      ]
+    },
+    {
+      "group": "demo_baseline_readiness",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "demo_addons/smart_construction_demo/tests/test_demo_baseline_readiness.py"
+      ],
+      "owner": "demo-team",
+      "evidence": [
+        "make:verify.local.dev.baseline_readiness.orm :: demo_baseline_readiness"
+      ]
+    },
+    {
+      "group": "demo_golden_chain",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "demo_addons/smart_construction_demo/tests/test_demo_golden_chain.py"
+      ],
+      "owner": "demo-team",
+      "evidence": [
+        "make:verify.local.dev.golden_chain.orm :: demo_golden_chain"
+      ]
+    },
+    {
       "group": "demo_loaded_chains",
       "status": "on-demand",
       "kind": "odoo_tag",
@@ -989,6 +1042,19 @@
         "make:verify.local.dev.system_permission.reconciliation.orm :: group_authority_reconciliation local.dev.test"
       ],
       "disposition": "class-selected"
+    },
+    {
+      "group": "home_objects_contract",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_home_objects_contract.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.product.home_objects.contract :: home_objects_contract $(MAKE) --no-print-directory local.dev.test"
+      ]
     },
     {
       "group": "intent_dispatcher_permission_contract",
@@ -1450,6 +1516,19 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "product_system_parameter_change",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_product_system_parameter_change.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.product_system_parameter_change :: product_system_parameter_change $(MAKE) --no-print-directory local.dev.test"
+      ]
     },
     {
       "group": "product_system_settings",
