@@ -325,10 +325,34 @@
           "detail": "res.partner.bank=9; no errors"
         }
       ]
+    },
+    "batch7_slice4_browser_acceptance": {
+      "identity": {
+        "head": "d686cfa333a25dd13cc42014391a30004e2a1f2e",
+        "stage": "frozen_candidate"
+      },
+      "commands": [
+        {
+          "command": "make verify.local.dev.payment_request.full_chain SOURCE_SHA=d686cfa33... CANDIDATE_FINGERPRINT=8deda781...",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "floorplan submit draft->submit; approval chain; payment execution create/submit/approve/paid; ledger posted; duplicate replay guard; 390px no-overflow"
+        }
+      ],
+      "p4_lane_fixes": [
+        "namespace /t/demo on both frontend URLs, route assertions and direct API fetches",
+        "demo credential aligned to published showcase password 123456",
+        "floorplan fixture project/partner labels and inline name search",
+        "reviewer login field ids and namespaced session token key",
+        "blocked-payment precondition asserted via business-section facts"
+      ],
+      "p1_contract_fix": [
+        "declare allow_width in formal list preference_policy (core_extension.py)"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "DUF-06 is closed. Batch 7 sub-step 4 in progress: local.dev payment browser lane repaired through login/create/state-variant checks (namespace /t/demo; demo credential 123456; fixture project/partner names; inline relation search by name; namespaced URL assertions). Remaining systemic drift: the blocked-payment assertion expects a .workflow-evidence-block with 办理前置条件/请先选择关联合同, but the current readonly form no longer renders that block (blocking info is spread across form fields). Reconcile the lane's evidence assertions with the current frontend rendering before continuing.",
+  "next_exact_step": "Batch 7 sub-step 4 browser acceptance PASSED (payment chain reconciled end-to-end; P1 allow_width contract gap closed). Next: consolidated Batch 7 product review, then freeze (ci.delivery.freeze.prepare + commit) and record batch acceptance.",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",

@@ -120,6 +120,18 @@
   浏览器验收「配置→影响预览→变更集发布→付款申请链实际生效→回滚恢复→无权限拒绝」；
   Batch 12 与用户验收完成前不合并 main。
 
+## 验证结果（子步 4：付款链浏览器验收通过）
+
+`make verify.local.dev.payment_request.full_chain` PASS：登录 → 创建 → 提交 →
+审批链逐级通过 → 付款执行（创建/提交/审批/登记付款）→ 台账 posted 对账 →
+重复回放守卫 → 390px 无横向溢出。
+
+车道收口期间发现并修复一个真实 P1 契约缺口：`smart_construction_core` 正式列表锁的
+`preference_policy` 缺少 `allow_width`，前端 fail-closed 报 `ContractGapError`；
+已在声明层补齐（`core_extension.py`）。
+
+批次状态：Batch 7 子步 1–4 全部通过；批次产品复核与冻结待办。
+
 ## 验证结果（子步 4：浏览器验收车道修复）
 
 - 已修复（P4 车道工具，分别提交）：`local_dev_payment_request_full_chain.sh`
