@@ -3005,6 +3005,11 @@ verify.local.dev.write_lease.unit: guard.prod.forbid
 	@bash -n scripts/dev/local_dev_write_lease.sh
 	@python3 -m unittest scripts.verify.test_local_dev_write_lease
 
+.PHONY: verify.local.dev.entry_identity.unit
+verify.local.dev.entry_identity.unit: guard.prod.forbid
+	@bash -n scripts/dev/local_dev_entry_identity.sh
+	@python3 -m unittest scripts.verify.test_local_dev_entry_identity_core
+
 .PHONY: verify.platform.database.rehearsal.unit
 verify.platform.database.rehearsal.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_platform_database_rehearsal.py

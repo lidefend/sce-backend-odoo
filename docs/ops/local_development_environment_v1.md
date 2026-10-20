@@ -184,6 +184,30 @@ ROOT_DIR="$PWD" bash scripts/dev/local_dev_write_lease.sh "payment_fixture" -- \
 make verify.local.dev.write_lease.unit
 ```
 
+## local.dev 入口命名空间一致性
+
+local.dev 的公开入口使用 `/t/demo`，但 `sc_platform_namespace_seed.xml` 是全局种子，
+默认把 `ns_000000000002` 绑定到 `sc_demo`。local.dev 实际服务 `sc_dev_demo` 时会出现：
+
+```text
+421 NS_NAMESPACE_TARGET_MISMATCH
+namespace ns_000000000002 binds sc_demo but this instance serves sc_dev_demo
+```
+
+这是 P4 本地入口身份问题，不是产品契约或 demo 数据问题。使用以下入口修正和验证：
+
+```bash
+make local.dev.entry_identity.ensure
+make local.dev.entry_identity.verify
+```
+
+- `ensure` 只在 `sc-local-dev / sc_dev_demo` 上运行，自动串行化并更新本地 `demo` 别名绑定；
+- `verify` 同时核对 namespace 的 `database_name` 和 `/t/demo/api/runtime-version` 的实际 served DB；
+- 不一致时以 `LOCAL_DEV_ENTRY_*_MISMATCH` 失败关闭；
+- 不修改日常 `sc_demo` 的公开入口，不修改全局 namespace 种子。
+
+浏览器/HTTP 验收前必须先跑 `local.dev.entry_identity.verify`。
+
 ## 研发节奏
 
 1. 在 `sc_dev_demo` 上增量升级目标模块、同步 demo 并做浏览器迭代。

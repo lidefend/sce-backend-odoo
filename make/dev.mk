@@ -142,12 +142,24 @@ local.dev.form_lowcode.browser: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/local_dev_form_lowcode_browser.sh
 
-.PHONY: local.dev.write_lease.status local.dev.write_lease.require local.dev.upgrade local.dev.upgrade.run local.dev.sync_demo local.dev.sync_demo.run local.dev.rebuild_demo local.dev.rebuild_demo.run
+.PHONY: local.dev.write_lease.status local.dev.write_lease.require local.dev.upgrade local.dev.upgrade.run local.dev.sync_demo local.dev.sync_demo.run local.dev.rebuild_demo local.dev.rebuild_demo.run local.dev.entry_identity.ensure local.dev.entry_identity.ensure.run local.dev.entry_identity.verify
 local.dev.write_lease.status: guard.prod.forbid
 	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh --status
 
 local.dev.write_lease.require: guard.prod.forbid
 	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh --require
+
+local.dev.entry_identity.ensure: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "entry_identity" -- \
+	  $(MAKE) --no-print-directory local.dev.entry_identity.ensure.run
+
+local.dev.entry_identity.ensure.run: guard.prod.forbid local.dev.ready local.dev.write_lease.require
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" DB_NAME=sc_dev_demo \
+	  ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_entry_identity.sh ensure
+
+local.dev.entry_identity.verify: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" DB_NAME=sc_dev_demo \
+	  ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_entry_identity.sh verify
 
 local.dev.upgrade: guard.prod.forbid
 	@test -n "$(MODULE)" || (echo "MODULE is required" >&2; exit 2)
@@ -158,6 +170,7 @@ local.dev.upgrade.run: guard.prod.forbid local.dev.ready local.dev.demo_credenti
 	@test -n "$(MODULE)" || (echo "MODULE is required" >&2; exit 2)
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 MODULE="$(MODULE)" mod.upgrade
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.entry_identity.ensure.run
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.verify_authority
 
 local.dev.verify_authority: guard.prod.forbid local.dev.ready
