@@ -63,6 +63,12 @@ make verify.product_configuration.capability
 关键边界：平台/支持能力不会进入业务全功能视图；业务配置管理员会同时获得业务全功能能力，
 但不会获得平台管理能力。
 
+## 5.2 暂停与交接
+
+Batch 2 完成后按所有者要求暂停，未进入 Batch 3。独立交接记录见
+[`product_configuration_capability_handoff_20261020.md`](product_configuration_capability_handoff_20261020.md)。
+总体目标达成前不合并 main。
+
 ## 6. 回滚
 
 回退本批 commit；不涉及数据库、服务或产品运行时。

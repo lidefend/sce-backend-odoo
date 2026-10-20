@@ -34,8 +34,8 @@ goal:
     - company_and_project_scope_must_be_explicit
     - no_demo_only_semantics_in_product_configuration
   next_exact_step: >-
-    Batch 3: consume the backend capability catalog from the configuration workbench
-    and login workspace.
+    Paused for handoff. Independent executor starts Batch 3 from
+    docs/ops/iterations/product_configuration_capability_handoff_20261020.md.
   completion:
     scope: product_configuration_capability_long_task
     overall_goal: in_progress
