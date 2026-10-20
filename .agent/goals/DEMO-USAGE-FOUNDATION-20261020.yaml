@@ -57,14 +57,13 @@ goal:
     - keep_demo_baseline_fingerprint_stable_across_experience_reset
     - no_new_database_tenant_compose_or_credentials
   next_exact_step: >-
-    F8 complete: browser acceptance passes with business_full home non-empty.
-    Remaining: close DUF-04 (2025 dates / 50-100 sample amounts) via the
-    business-calendar rule; mainline/deployment/user acceptance are owner-gated.
+    F1-F8 and DUF-01/04/05/06/07 all closed. Remaining: mainline integration,
+    deployment and target user acceptance are owner-gated.
   completion:
     scope: demo_user_usage_foundation_v1
     overall_goal: in_progress
     result_index: .agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json
-    local_batch_acceptance: F8_complete
+    local_batch_acceptance: F1_F8_complete
     mainline_integration: not_run
     deployment: not_run
     target_user_delivery: not_run

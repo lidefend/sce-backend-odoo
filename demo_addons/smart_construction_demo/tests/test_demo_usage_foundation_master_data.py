@@ -61,3 +61,21 @@ class TestDemoUsageFoundationMasterData(TransactionCase):
 
         print("DEMO_MASTER_DATA_REPORT " + json.dumps(report, ensure_ascii=False))
         self.assertEqual(report["errors"], [])
+
+    def test_work_item_dates_follow_current_business_calendar(self):
+        """Actionable work items must live in the current window, not 2025."""
+        stale_tasks = self.env["project.task"].search(
+            [("date_deadline", "!=", False), ("date_deadline", "<", "2026-01-01")]
+        )
+        self.assertFalse(
+            stale_tasks,
+            f"stale task deadlines: {[(t.id, str(t.date_deadline)) for t in stale_tasks[:5]]}",
+        )
+        stale_requests = self.env["payment.request"].search(
+            [("state", "=", "draft"), ("date_request", "<", "2026-01-01")]
+        )
+        self.assertFalse(
+            stale_requests,
+            f"stale draft payment dates: "
+            f"{[(r.id, str(r.date_request)) for r in stale_requests[:5]]}",
+        )

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo noupdate="1">
+<odoo noupdate="0">
 
     <!-- P1：全量项目 -->
     <record id="sc_demo_project_001" model="project.project">
@@ -16,7 +16,7 @@
              的项目经理指派由 scenario_loader 的 _ensure_s00_boq_visibility
              钩子在 seed 阶段完成（此时 demo 用户已存在）。 -->
         <field name="active">True</field>
-        <field name="description">项目位于德阳经开区，建设内容包括智能制造实训中心、产教融合综合楼及配套道路管网，总建筑面积约 8.6 万平方米，合同额约 3.2 亿元，计划工期 2025 年 1 月至 2026 年 12 月，目前处于主体施工阶段。</field>
+        <field name="description">项目位于德阳经开区，建设内容包括智能制造实训中心、产教融合综合楼及配套道路管网，总建筑面积约 8.6 万平方米，合同额约 3.2 亿元，计划工期 2025 年 1 月至 2026 年 12 月，目前处于装饰装修与收尾阶段。</field>
     </record>
 
     <!-- P2：基础资料项目 -->
@@ -25,7 +25,7 @@
         <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
         <field name="company_id" ref="base.main_company"/>
         <field name="active">True</field>
-        <field name="description">项目位于城东新区，建设内容包括 6 栋安置住宅、社区服务中心及地下车库，总建筑面积约 9.4 万平方米，合同额约 2.8 亿元，计划工期 2025 年 3 月至 2027 年 2 月，目前处于基础施工阶段。</field>
+        <field name="description">项目位于城东新区，建设内容包括 6 栋安置住宅、社区服务中心及地下车库，总建筑面积约 9.4 万平方米，合同额约 2.8 亿元，计划工期 2025 年 3 月至 2027 年 2 月，目前处于主体施工阶段。</field>
     </record>
 
 </odoo>

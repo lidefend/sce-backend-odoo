@@ -24,7 +24,7 @@
       <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_066_income"/>
       <field name="amount">360000.0</field>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="date_request">2025-08-18</field>
+      <field name="date_request">2026-10-20</field>
       <field name="note">收款发票台账来源收款申请。</field>
     </record>
 

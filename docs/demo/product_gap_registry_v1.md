@@ -24,7 +24,7 @@
 | 10 | 就绪检查主要证明记录存在 | 运行时探针以 `search_count > 0` 为主 | P4 | 待立项 | F1/F3/F5 增加字段完整性、公开候选集、角色可见与动作可用断言 |
 | 11 | 每日系统事实没有执行器 | `scenario_tick.py` 将 `system_fact` 记为 `unbound` | P4 | 已解决 | F7 已加 fail-closed 绑定注册表：项目立项走公开动作、业务事实走生命周期链/只读回读；未绑定仍 fail-closed |
 | 12 | 角色启动验收覆盖不足 | smoke 只跑 `demo_pm`/`demo_finance`/`demo_audit`，且只断言契约键存在 | P4 | 待立项 | F2/F8 增加业务全功能账号、首屏非空和实际下一步 |
-| 13 | 演示数据时间与金额失真 | 多处固定 2025 日期，场景存在 50/100 样例金额 | P4 | 待立项 | F3/F8 以业务日历和金额规则回读，不按文本字符串验收 |
+| 13 | 演示数据时间与金额失真 | 多处固定 2025 日期，场景存在 50/100 样例金额 | P4 | 已解决 | 工作项（任务/草稿付款/发票）平移 2026-10；项目工期起点 2025-01 保留为两年期项目历史；未发现 50/100 金额样例（仅 BOQ-100 编码） |
 | 14 | 10 日叙事未完整声明 | `business_days=10`，manifest 仅有 D1–D3 步骤 | P4 | 已解决 | F7 已扩写 D4–D10（40 步），每 fact 绑定公开动作/回读；10 日连续推进、幂等 |
 | 15 | 模块升级视图校验失败 | demo 分支仍基于旧 main；数据库已由当前 main 升级，旧源码缺少 `action_sc_review_group_authority`，触发 `_update_user_groups_view` 校验失败 | P4 | 已解除 | covered-prefix 受管同步到 main 后升级 PASS；`res.partner.bank=9` 回读 PASS |
 | 16 | 浏览器验收登录页 409 | 前端登录页带客户端 `?db=` 提示，且浏览器未走 `/t/demo/` 命名空间，触发 `NS_DATABASE_HINT_CONFLICT` / `NS_NAMESPACE_REQUIRED` | P4 | 已解决 | F8 修正浏览器脚本：去掉 `?db=`、FRONTEND_URL 走命名空间、路径归一化；4/6 角色通过 |

@@ -29,6 +29,7 @@
     "docs/ops/iterations/demo_usage_foundation_f6_20261021.md",
     "docs/ops/iterations/demo_usage_foundation_f7_20261021.md",
     "docs/ops/iterations/demo_usage_foundation_f8_20261021.md",
+    "docs/ops/iterations/demo_usage_foundation_duf04_20261021.md",
     "docs/planning/custom-frontend-integration/G1_BASELINE_EVIDENCE.json",
     "docs/product/frontend_business_entry_acceptance_v1.csv",
     "demo_addons/smart_construction_demo/__manifest__.py",
@@ -41,6 +42,15 @@
     "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json",
     "scripts/verify/test_demo_scenario_step.py",
     "scripts/verify/user_entry_delivery_browser_acceptance.js",
+    "scripts/verify/local_dev_demo_date_caliber_repair.py",
+    "demo_addons/smart_construction_demo/data/base/20_projects.xml",
+    "demo_addons/smart_construction_demo/data/base/25_project_tasks.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s10_contract_payment/20_payment_requests.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s10_contract_payment/25_workbench_actions.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s10_contract_payment/30_invoices.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s20_settlement_clearing/10_payments.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s30_settlement_workflow/30_assert_state.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s66_ledger_entity_surface/10_ledger_entity_records.xml",
     "make/dev.mk",
     "make/dev_test.mk",
     "scripts/verify/demo_usage_foundation_audit.py",
@@ -414,11 +424,34 @@
       }
     ],
     "notes": "DUF-07 resolved (db-hint 409 + namespace); #17 executive menu tree fixed by owning layer. Browser acceptance passes 5 role entries; deprecated back-home click-chain entry removed."
+  },
+  "duf04_date_caliber": {
+    "identity": {
+      "head": "ff5499009307be10fa1aa3400ec2c5a552402e05",
+      "stage": "head_plus_duf04_dirty_scope",
+      "runtime": "sc-local-dev db=sc_dev_demo"
+    },
+    "commands": [
+      {
+        "command": "DB_NAME=sc_dev_demo bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_demo_date_caliber_repair.py",
+        "status": "passed",
+        "layer": "L3",
+        "detail": "tasks=7 payments=8 invoices=2 projects=2"
+      },
+      {
+        "command": "make verify.local.dev.demo_usage_foundation_master_data.orm",
+        "status": "passed",
+        "layer": "L3",
+        "test_count": 2,
+        "detail": "task deadline 2025 count=0; draft payment/invoice 2025 dates=0; project start 2025 count=1 (legitimate 2-year timeline)"
+      }
+    ],
+    "notes": "DUF-04 resolved: actionable work items moved to the 2026-10 current window; project timeline start (2025-01) retained as legitimate project history; no 50/100 placeholder amounts found."
   }
     }
   },
   "blockers": [],
-  "next_exact_step": "F8 complete: browser acceptance passes 5 role entries with business_full home non-empty. Remaining: close DUF-04 (2025 dates / 50-100 sample amounts) via the business-calendar rule; mainline integration, deployment and user acceptance are owner-gated.",
+  "next_exact_step": "F1-F8 and DUF-01/04/05/06/07 are all closed. Remaining: mainline integration, deployment and target user acceptance are owner-gated and out of the demo iteration scope.",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",
