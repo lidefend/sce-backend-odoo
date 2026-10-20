@@ -3,7 +3,7 @@
   "id": "DAILY-DUTY-ENV-SHELL-SOURCEABLE-20261020",
   "branch": "fix/daily-duty-env-shell-sourceable-20261020",
   "baseline_sha": "6dd15103ae8f0f892f7e89d915039cff3dd5b997",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/DAILY-DUTY-ENV-SHELL-SOURCEABLE-20261020.yaml",
   "record": "docs/ops/iterations/daily_duty_env_shell_sourceable_20261020.md",
   "scope": [
@@ -24,7 +24,23 @@
     "scripts/verify/nginx_proxy_db_authority_guard.py"
   ],
   "environment": {
-    "kind": "offline"
+    "kind": "runtime",
+    "authority": "governed daily runtime entries executed in sc-root:/opt/projects/repos/sce-product-odoo",
+    "runtime_authority": {
+      "host_alias": "sc-root",
+      "path": "/opt/projects/repos/sce-product-odoo",
+      "duties": [
+        "demo",
+        "platform_control"
+      ],
+      "entrypoints": [
+        "make daily.runtime.candidate.bundle_sync",
+        "make daily.runtime.source_revision.align",
+        "make daily.runtime.database.duty.refresh",
+        "make daily.runtime.published_face.converge",
+        "make daily.runtime.entry.verify"
+      ]
+    }
   },
   "product_boundary": {
     "formal_product_layer": "P4 ops delivery tool",
@@ -46,8 +62,93 @@
         "scripts/verify/daily_runtime_entry_guard.py",
         "scripts/verify/nginx_proxy_db_authority_guard.py"
       ]
+    },
+    "rendered_env_sourceable": {
+      "target": "bash source /opt/projects/secure/daily-runtime-duties/sc-demo-dev.env",
+      "kind": "runtime",
+      "result": "PASS",
+      "facts": {
+        "rendered_line": "SC_DECLARED_NAMESPACE_ALIASES=\"demo|platform\"",
+        "source_readback": "demo|platform",
+        "rendered_by": "make daily.runtime.database.duty.refresh duty=demo",
+        "deployed_sha": "d0056d46ed2bae38c06b9f921111fd00712de423"
+      }
+    },
+    "published_face": {
+      "target": "daily.runtime.published_face.converge",
+      "kind": "runtime",
+      "result": "PASS",
+      "facts": {
+        "expected_sha": "b9a060c622c3943dafcb0f7d332fd9e87b22b781",
+        "duty": "demo",
+        "database": "sc_demo",
+        "guard_status": "PASS",
+        "module_upgrade_returncode": 0,
+        "products": {
+          "construction.standard": 91,
+          "construction.preview": 129
+        },
+        "report": ".runtime/final-acceptance/daily-deployed/published-face-converge.json"
+      }
+    },
+    "runtime_entry": {
+      "target": "daily.runtime.entry.verify",
+      "kind": "runtime",
+      "result": "PASS",
+      "expected_sha": "b9a060c622c3943dafcb0f7d332fd9e87b22b781",
+      "checks_total": 66,
+      "checks_failed": 0,
+      "report": ".runtime/final-acceptance/daily-deployed/entry-verify-main.json"
+    },
+    "path_namespace_identity": {
+      "target": "scripts/ops/path_ns_c_acceptance.py",
+      "kind": "runtime",
+      "result": "PASS",
+      "expected_sha": "b9a060c622c3943dafcb0f7d332fd9e87b22b781",
+      "checks_total": 23,
+      "checks_failed": 0,
+      "report": ".runtime/final-acceptance/path-ns-c-acceptance-main.json"
     }
   },
   "blockers": [],
-  "next_exact_step": "Record the targeted unit receipt, run the local iteration gate, deploy the candidate to the daily runtime, record runtime acceptance evidence, then publish and merge."
+  "next_exact_step": "Closed. Any future duty-env template change must re-render both duty env files and re-run the published-face entry; a hand-run inner converge is not evidence for the wrapper.",
+  "integration": {
+    "pr": 703,
+    "pr_url": "https://github.com/lidefend/sce-backend-odoo/pull/703",
+    "source_head": "d0056d46ed2bae38c06b9f921111fd00712de423",
+    "base_sha": "6dd15103ae8f0f892f7e89d915039cff3dd5b997",
+    "required_ci": "ALL_PASS",
+    "merged": true,
+    "merge_sha": "b9a060c622c3943dafcb0f7d332fd9e87b22b781",
+    "merged_at": "2026-10-20T02:35:40Z"
+  },
+  "deployment": {
+    "host_alias": "sc-root",
+    "path": "/opt/projects/repos/sce-product-odoo",
+    "deployed_sha": "b9a060c622c3943dafcb0f7d332fd9e87b22b781",
+    "worktree_clean": true,
+    "duties_served": {
+      "demo": {
+        "database": "sc_demo",
+        "git_sha": "b9a060c622c3943dafcb0f7d332fd9e87b22b781",
+        "namespace_id": "ns_000000000002"
+      },
+      "platform_control": {
+        "database": "sc_platform_control",
+        "git_sha": "b9a060c622c3943dafcb0f7d332fd9e87b22b781",
+        "namespace_id": "ns_000000000001"
+      }
+    },
+    "frontend_build_sha256": "7e1232929056743641c46eeed185099517da2541deeba73776cbfd1d0e68e0ed",
+    "env_files": {
+      "demo": "/opt/projects/secure/daily-runtime-duties/sc-demo-dev.env",
+      "platform_control": "/opt/projects/secure/daily-runtime-duties/platform_control.env"
+    }
+  },
+  "status_dimensions": {
+    "batch": "completed",
+    "mainline": "integrated",
+    "deployment": "deployed",
+    "user_acceptance": "entry_and_namespace_verified"
+  }
 }

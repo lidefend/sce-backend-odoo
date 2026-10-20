@@ -9,7 +9,6 @@
     "fix/agent-dispatch-inbox-20261017": ".agent/runs/AGENT-DISPATCH-INBOX-20261017/run.json",
     "fix/ci-backend-sharding-cache-20261017": ".agent/runs/CI-REMOTE-EFFICIENCY-20261017/run.json",
     "fix/daily-acceptance-demo-profile-20261019": ".agent/runs/ACCEPTANCE-EVIDENCE-LAYER-REUSE-20261019/run.json",
-    "fix/daily-duty-env-shell-sourceable-20261020": ".agent/runs/DAILY-DUTY-ENV-SHELL-SOURCEABLE-20261020/run.json",
     "fix/daily-entry-cookie-session-scope-20261019": ".agent/runs/DAILY-ENTRY-COOKIE-SESSION-SCOPE-20261019/run.json",
     "fix/daily-entry-registry-closure-20261018": ".agent/runs/DAILY-ENTRY-REGISTRY-CLOSURE-20261018/run.json",
     "fix/daily-platform-job-status-20261018": ".agent/runs/PLATFORM-DUTY-JOB-LIST-20261018/run.json",
