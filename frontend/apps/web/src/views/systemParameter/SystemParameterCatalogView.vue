@@ -35,13 +35,13 @@
             <p class="parameter-impact">影响：{{ parameter.impact?.summary || '—' }}</p>
 
             <div v-if="parameter.available" class="parameter-edit">
-              <select
-                :value="currentValueFor(parameter)"
+              <ScSelect
+                :model-value="String(currentValueFor(parameter) ?? '')"
+                :options="optionsFor(parameter)"
                 :aria-label="parameter.label"
-                @change="onSelect(parameter, ($event.target as HTMLSelectElement).value)"
-              >
-                <option v-for="option in parameter.allowed_values" :key="String(option)" :value="String(option)">{{ valueLabel(option) }}</option>
-              </select>
+                appearance="form-field"
+                @change="onSelect(parameter, $event)"
+              />
               <ScButton type="button" variant="secondary" :disabled="previewLoading" @click="previewFor(parameter.key, currentValueFor(parameter))">预览影响</ScButton>
               <ScButton
                 type="button"
@@ -86,6 +86,7 @@ import { onMounted } from 'vue';
 import ScPage from '../../components/design-system/ScPage.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
+import ScSelect from '../../components/design-system/ScSelect.vue';
 import { parameterStatusLabel } from '../../app/productSystemParameterProjection';
 import type { ProductSystemParameter } from '../../api/productSystemParameter';
 import { useSystemParameterCatalog } from '../../composables/systemParameter/useSystemParameterCatalog';
@@ -123,6 +124,13 @@ function valueLabel(value: unknown): string {
   return String(value ?? '');
 }
 
+function optionsFor(parameter: ProductSystemParameter) {
+  return parameter.allowed_values.map((option) => ({
+    value: String(option),
+    label: valueLabel(option),
+  }));
+}
+
 onMounted(() => {
   void load();
 });
@@ -143,7 +151,7 @@ onMounted(() => {
 .parameter-meta, .parameter-impact { margin: 0; color: var(--sc-app-text-secondary); font-size: 12px; overflow-wrap: anywhere; }
 .parameter-reason { margin: 0; color: var(--sc-app-text-muted); font-size: 12px; }
 .parameter-edit { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.parameter-edit select { min-width: 140px; }
+.parameter-edit :deep(.sc-select) { min-width: 140px; }
 .impact-preview { margin-top: 24px; padding: 16px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-radius-md); background: var(--sc-app-panel); }
 .impact-preview h2 { margin: 0 0 8px; }
 .impact-preview p { margin: 4px 0; }
