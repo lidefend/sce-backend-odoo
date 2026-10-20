@@ -34,7 +34,7 @@ Generated from repository source files. This report is informational during the 
 | 3089 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3011 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2934 | Python source | `addons/smart_core/delivery/menu_service.py` |
-| 2924 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
+| 2925 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2584 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2423 | Python source | `addons/smart_core/handlers/system_init.py` |
@@ -255,7 +255,7 @@ Generated from repository source files. This report is informational during the 
 | 3089 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3011 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2934 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
-| 2924 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
+| 2925 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2584 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2423 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
