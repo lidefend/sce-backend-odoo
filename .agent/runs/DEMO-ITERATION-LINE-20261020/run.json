@@ -5,7 +5,7 @@
   "status": "active",
   "baseline_sha": "13b0395db4da63147b3f9c311a4bb5d060dc6a4e",
   "goal": ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
-  "record": "docs/ops/iterations/demo_iteration_line_batch1_20261020.md",
+  "record": "docs/ops/iterations/demo_iteration_line_batch2_20261020.md",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
@@ -53,7 +53,11 @@
     "make/dev_test.mk",
     "scripts/verify/baseline_readiness_manifest.json",
     "scripts/verify/baseline_readiness_verifier.py",
-    "scripts/verify/test_baseline_readiness_verifier.py"
+    "scripts/verify/test_baseline_readiness_verifier.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_baseline_readiness.py",
+    "demo_addons/smart_construction_demo/tests/__init__.py",
+    "make/dev.mk",
+    "docs/ops/iterations/demo_iteration_line_batch2_20261020.md"
   ],
   "environment": {
     "kind": "offline",
@@ -121,5 +125,5 @@
       "resolved_commit": "a44238ad8"
     }
   ],
-  "next_exact_step": "Batch 1 committed at ad1aeb755: baseline readiness manifest + verifier + 10 offline tests + make verify.demo.baseline_readiness.unit; docs_product_boundary/agent_ledger/baseline_readiness receipts passed. Next: Batch 2 — G0-G4 data completion for target company/project."
+  "next_exact_step": "Batch 2 done: G0-G4 hard baseline readback (verify.local.dev.baseline_readiness.orm) passes with missing=[] on sc_dev_demo. Next: Batch 3 — golden business chain + role snapshots (cross-record amount/date/state coherence, role visibility)."
 }

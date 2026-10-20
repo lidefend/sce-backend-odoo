@@ -132,6 +132,30 @@ class BaselineReadinessVerifierTest(unittest.TestCase):
         with self.assertRaises(ManifestError):
             validate_manifest(manifest)
 
+    def test_orm_probe_hard_keys_match_manifest(self):
+        import ast
+        import re
+
+        manifest = load_manifest(MANIFEST_PATH)
+        g0_g4_hard = sorted(
+            req["key"]
+            for gate in manifest["gates"]
+            if gate["gate"] in ("G0", "G1", "G2", "G3", "G4")
+            for req in gate["requirements"]
+            if req["kind"] == "hard"
+        )
+        orm_test = (
+            REPO_ROOT
+            / "demo_addons/smart_construction_demo/tests/test_demo_baseline_readiness.py"
+        )
+        source = orm_test.read_text(encoding="utf-8")
+        match = re.search(r"HARD_KEYS = frozenset\(\[(.*?)\]\)", source, re.S)
+        self.assertIsNotNone(match, "HARD_KEYS block not found in ORM readiness test")
+        body = match.group(1)
+        lines = [line for line in body.splitlines() if not line.strip().startswith("#")]
+        probe_keys = ast.literal_eval("[" + "\n".join(lines) + "]")
+        self.assertEqual(sorted(probe_keys), g0_g4_hard)
+
 
 if __name__ == "__main__":
     unittest.main()
