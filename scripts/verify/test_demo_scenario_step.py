@@ -9,6 +9,17 @@ from scripts.verify.demo_scenario_step import (
     validate_manifest,
 )
 
+ALLOWED_REAL_ACTIONS = {
+    "construction.contract.action_confirm",
+    "construction.contract.action_on_tier_approved",
+    "sc.material.acceptance.action_confirm",
+}
+ALLOWED_CREATE_MODELS = {
+    "construction.contract",
+    "project.progress.entry",
+    "sc.material.acceptance",
+}
+
 
 def _step(scenario_id="s-golden", date="2026-10-20", day=1, key="fact_arrival", seq=1, mode="system_fact"):
     return {
@@ -104,6 +115,34 @@ class DemoScenarioStepTest(unittest.TestCase):
         self.assertEqual(len(set(days)), 3)
         self.assertEqual(len(executed), len(steps))
         self.assertEqual(plan_tick(steps, executed), [])
+
+    def test_manifest_actions_are_bound_or_demo_internal(self):
+        import json
+        from pathlib import Path
+
+        repo_root = Path(__file__).resolve().parents[2]
+        manifest_path = (
+            repo_root
+            / "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json"
+        )
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        for raw in data["steps"]:
+            mode = raw["actor_mode"]
+            action = raw["intent_or_action"]
+            if mode == "role_decision":
+                self.assertIn(action, ALLOWED_REAL_ACTIONS, f"unbound action {action!r}")
+            elif mode == "role_draft":
+                self.assertTrue(action.endswith(".create"), f"{action!r} must be model.create")
+                self.assertIn(
+                    action.rsplit(".", 1)[0],
+                    ALLOWED_CREATE_MODELS,
+                    f"unbound create model in {action!r}",
+                )
+            elif mode == "system_fact":
+                self.assertTrue(
+                    action.startswith("demo.scenario.fact."),
+                    f"{action!r} must stay demo-internal until a product action is bound",
+                )
 
 
 if __name__ == "__main__":
