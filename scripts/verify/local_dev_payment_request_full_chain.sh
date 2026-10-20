@@ -64,7 +64,7 @@ fi
 if (( browser_status == 0 )); then
   LOCAL_DEV_PAYMENT_FLOORPLAN_JSON="$before" \
   LOCAL_DEV_PAYMENT_APPROVAL_CHAIN_JSON="$approval_chain" \
-  FRONTEND_URL="http://127.0.0.1:${NGINX_PORT}" DB_NAME="$DB_NAME" \
+  FRONTEND_URL="http://127.0.0.1:${NGINX_PORT}/t/demo" DB_NAME="$DB_NAME" \
   E2E_PASSWORD="$SC_DEMO_USER_PASSWORD" SOURCE_SHA="$SOURCE_SHA" \
   CANDIDATE_FINGERPRINT="$CANDIDATE_FINGERPRINT" \
   node "$ROOT_DIR/scripts/verify/local_dev_payment_request_full_chain.mjs" || browser_status=$?
