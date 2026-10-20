@@ -23,6 +23,17 @@ HANDLER_MODULES = {
     "odoo.addons.smart_construction_core.handlers.my_work_complete": ["MyWorkCompleteHandler", "MyWorkCompleteBatchHandler"],
     "odoo.addons.smart_construction_core.handlers.telemetry_track": ["TelemetryTrackHandler"],
     "odoo.addons.smart_construction_core.handlers.capability_visibility_report": ["CapabilityVisibilityReportHandler"],
+    "odoo.addons.smart_construction_core.handlers.product_configuration_capability": [
+        "ProductConfigurationCapabilityCatalogHandler",
+    ],
+    "odoo.addons.smart_construction_core.handlers.product_system_parameter_catalog": [
+        "ProductSystemParameterCatalogHandler",
+        "ProductSystemParameterPreviewHandler",
+    ],
+    "odoo.addons.smart_construction_core.handlers.product_system_parameter_change": [
+        "ProductSystemParameterPublishHandler",
+        "ProductSystemParameterRollbackHandler",
+    ],
     "odoo.addons.smart_construction_core.handlers.approval_policy_configuration": [
         "ApprovalPolicyConfigGetHandler",
         "ApprovalPolicyConfigSetHandler",
