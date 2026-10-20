@@ -222,6 +222,13 @@ def quick_paths(root: Path, head: str) -> tuple[Path, Path]:
     return base.with_suffix(".json"), base.with_suffix(".log")
 
 
+def quick_env(source: dict[str, str] | None = None) -> dict[str, str]:
+    env = dict(source if source is not None else os.environ)
+    for key in ("MAKEFLAGS", "MFLAGS", "MAKELEVEL", "MAKEOVERRIDES"):
+        env.pop(key, None)
+    return env
+
+
 def quick_start(root: Path) -> tuple[int, dict]:
     status = clean_status(root)
     head = git(root, "rev-parse", "HEAD")
@@ -241,7 +248,7 @@ def quick_start(root: Path) -> tuple[int, dict]:
         stdout=log_handle,
         stderr=subprocess.STDOUT,
         start_new_session=True,
-        env=os.environ.copy(),
+        env=quick_env(),
     )
     log_handle.close()
     payload = {

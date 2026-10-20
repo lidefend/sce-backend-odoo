@@ -76,6 +76,18 @@ class GateTests(unittest.TestCase):
         self.assertIn("quick-0123456789ab", str(meta))
         self.assertEqual(meta.with_suffix(".log"), log)
 
+    def test_quick_env_removes_parent_make_overrides(self):
+        env = cycle.quick_env(
+            {
+                "PATH": "/usr/bin",
+                "MAKEFLAGS": "SUBCOMMAND=fast-gates",
+                "MFLAGS": "-j2",
+                "MAKELEVEL": "1",
+                "MAKEOVERRIDES": "SUBCOMMAND=fast-gates",
+            }
+        )
+        self.assertEqual(env, {"PATH": "/usr/bin"})
+
 
 if __name__ == "__main__":
     unittest.main()
