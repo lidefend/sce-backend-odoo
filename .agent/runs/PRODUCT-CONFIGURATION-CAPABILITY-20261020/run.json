@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "id": "PRODUCT-CONFIGURATION-CAPABILITY-20261020",
+  "branch": "feature/product-configuration-capability-20261020",
+  "status": "active",
+  "baseline_sha": "82dbd9134288576ede315370179858c5ba70ce87",
+  "goal": ".agent/goals/PRODUCT-CONFIGURATION-CAPABILITY-20261020.yaml",
+  "record": "docs/ops/iterations/product_configuration_capability_bootstrap_20261020.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/PRODUCT-CONFIGURATION-CAPABILITY-20261020.yaml",
+    ".agent/runs/PRODUCT-CONFIGURATION-CAPABILITY-20261020/run.json",
+    "config/product_configuration_capability_v1.json",
+    "docs/product/product_configuration_capability_v1.md",
+    "docs/ops/iterations/product_configuration_capability_bootstrap_20261020.md",
+    "scripts/verify/product_configuration_capability_guard.py",
+    "scripts/verify/test_product_configuration_capability_guard.py",
+    "make/dev_test.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline capability guard and unit tests; no database, service, browser or deployment access"
+  },
+  "checks": {
+    "product_configuration_capability": {
+      "target": "verify.product_configuration.capability",
+      "inputs": [
+        "config/product_configuration_capability_v1.json",
+        "docs/product/product_configuration_capability_v1.md",
+        "scripts/verify/product_configuration_capability_guard.py",
+        "scripts/verify/test_product_configuration_capability_guard.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Batch 2: backend product capability catalog contract and tests."
+}

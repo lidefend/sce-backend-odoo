@@ -1,0 +1,429 @@
+{
+  "schema_version": "product_configuration_capability.v1",
+  "status": "locked",
+  "objective": "Define the user-visible capability model for the login workspace, business centers, product configuration, controlled system parameters, platform administration and support diagnostics.",
+  "audiences": [
+    {
+      "key": "business_full",
+      "label": "业务全功能用户",
+      "description": "可办理项目、合同、成本、财务、税务、报表和行政业务；不等同于平台管理员。"
+    },
+    {
+      "key": "business_config_admin",
+      "label": "业务配置管理员",
+      "description": "维护菜单、表单、列表搜索、审批、字段、数据权限、编码规则、字典和受控系统参数。"
+    },
+    {
+      "key": "platform_admin",
+      "label": "平台管理员",
+      "description": "维护租户、公司、用户角色、版本发布、健康、任务和集成，不承担日常业务办理。"
+    },
+    {
+      "key": "support",
+      "label": "支持与运维",
+      "description": "只读诊断、日志、任务状态、契约和数据质量；不执行业务写入或配置发布。"
+    }
+  ],
+  "login_home": {
+    "audience": "business_full",
+    "blocks": [
+      {
+        "key": "today_actions",
+        "label": "今日工作",
+        "required": true,
+        "authority": "my.work.summary"
+      },
+      {
+        "key": "risks",
+        "label": "风险与提醒",
+        "required": true,
+        "authority": "project.risk + sc.workbench.item"
+      },
+      {
+        "key": "my_objects",
+        "label": "我的项目与业务对象",
+        "required": true,
+        "authority": "project.project + construction.contract + payment.request"
+      },
+      {
+        "key": "quick_actions",
+        "label": "快捷办理",
+        "required": true,
+        "authority": "role_surface + capabilities"
+      },
+      {
+        "key": "recent",
+        "label": "最近访问",
+        "required": true,
+        "authority": "sc.workbench.item"
+      },
+      {
+        "key": "capability_map",
+        "label": "我的能力",
+        "required": true,
+        "authority": "system.init capabilities"
+      }
+    ],
+    "empty_state_policy": {
+      "must_explain_scope": true,
+      "must_offer_next_action": true,
+      "must_distinguish_no_permission_no_data_and_not_published": true,
+      "must_not_render_blank_screen": true
+    }
+  },
+  "configuration_cards": [
+    {
+      "key": "navigation",
+      "label": "导航与菜单",
+      "status": "available",
+      "entry": "menu_config",
+      "authority": "ui.business.config.contract.menu_orchestration"
+    },
+    {
+      "key": "form",
+      "label": "表单与字段",
+      "status": "available",
+      "entry": "business_config",
+      "authority": "ui.business.config.contract"
+    },
+    {
+      "key": "list_search",
+      "label": "列表与搜索",
+      "status": "available",
+      "entry": "business_config",
+      "authority": "ui.business.config.contract"
+    },
+    {
+      "key": "approval_permissions",
+      "label": "审批与权限",
+      "status": "partial",
+      "entry": "business_config",
+      "authority": "sc.approval.policy + res.users"
+    },
+    {
+      "key": "numbering",
+      "label": "编码规则",
+      "status": "partial",
+      "entry": "product_numbering_rule",
+      "authority": "ir.sequence"
+    },
+    {
+      "key": "dictionary",
+      "label": "字典与业务分类",
+      "status": "partial",
+      "entry": "dictionary",
+      "authority": "sc.dictionary + project.dictionary"
+    },
+    {
+      "key": "system_parameters",
+      "label": "系统参数",
+      "status": "partial",
+      "entry": "product_system_settings",
+      "authority": "sc.product.system.settings"
+    },
+    {
+      "key": "change_release",
+      "label": "变更与发布",
+      "status": "available",
+      "entry": "business_config_change_set",
+      "authority": "ui.business_config.change_set"
+    }
+  ],
+  "system_parameter_categories": [
+    {
+      "key": "business_rules",
+      "label": "业务规则",
+      "examples": [
+        "cost_ledger_source",
+        "approval_mode",
+        "default_business_category",
+        "default_payment_terms"
+      ]
+    },
+    {
+      "key": "finance_accounting",
+      "label": "财务与会计",
+      "examples": [
+        "company_currency",
+        "tax_rate",
+        "fiscal_period",
+        "account_mapping",
+        "fund_account"
+      ]
+    },
+    {
+      "key": "notification_collaboration",
+      "label": "通知与协作",
+      "examples": [
+        "notification_channels",
+        "approval_reminder",
+        "overdue_escalation"
+      ]
+    },
+    {
+      "key": "data_attachment",
+      "label": "数据与附件",
+      "examples": [
+        "attachment_size_limit",
+        "attachment_types",
+        "import_limit",
+        "retention_days"
+      ]
+    },
+    {
+      "key": "integration",
+      "label": "集成",
+      "examples": [
+        "bank_connector",
+        "tax_connector",
+        "invoice_connector",
+        "kingdee_connector"
+      ]
+    },
+    {
+      "key": "feature_switches",
+      "label": "功能开关",
+      "examples": [
+        "module_gray_release",
+        "pilot_switch"
+      ]
+    }
+  ],
+  "capabilities": [
+    {
+      "key": "workspace.today_actions",
+      "label": "今日工作",
+      "audience": "business_full",
+      "status": "available",
+      "entry": "workspace.home",
+      "authority": "my.work.summary",
+      "description": "按风险、时效和影响范围展示待审批、待确认、待跟进事项。"
+    },
+    {
+      "key": "workspace.risks",
+      "label": "风险与提醒",
+      "audience": "business_full",
+      "status": "available",
+      "entry": "workspace.home",
+      "authority": "project.risk + sc.workbench.item",
+      "description": "展示逾期、超预算、资金不足、合同/结算异常等高风险信号。"
+    },
+    {
+      "key": "workspace.my_objects",
+      "label": "我的项目与业务对象",
+      "audience": "business_full",
+      "status": "partial",
+      "entry": "workspace.home",
+      "authority": "project.project + construction.contract + payment.request",
+      "description": "展示当前公司/项目下的项目、合同、资金等关键对象和状态。"
+    },
+    {
+      "key": "workspace.quick_actions",
+      "label": "快捷办理",
+      "audience": "business_full",
+      "status": "partial",
+      "entry": "workspace.home",
+      "authority": "role_surface + capabilities",
+      "description": "按当前角色展示高频新建、提交、审批和查询动作。"
+    },
+    {
+      "key": "workspace.recent",
+      "label": "最近访问",
+      "audience": "business_full",
+      "status": "partial",
+      "entry": "workspace.home",
+      "authority": "sc.workbench.item",
+      "description": "展示最近打开的项目、合同、单据和配置页面。"
+    },
+    {
+      "key": "workspace.capability_map",
+      "label": "我的能力",
+      "audience": "business_full",
+      "status": "planned",
+      "entry": "workspace.capability_map",
+      "authority": "system.init capabilities",
+      "description": "按业务中心说明当前账号能办理什么，以及不可见是无权限、无数据还是未发布。"
+    },
+    {
+      "key": "business.centers",
+      "label": "业务中心",
+      "audience": "business_full",
+      "status": "available",
+      "entry": "product_navigation",
+      "authority": "product menu + capability",
+      "description": "项目、合同、成本、财务、税务、会计、报表和行政中心。"
+    },
+    {
+      "key": "business.global_search",
+      "label": "全局搜索",
+      "audience": "business_full",
+      "status": "partial",
+      "entry": "global_search",
+      "authority": "search contracts",
+      "description": "跨项目、合同、客商和单据定位业务对象。"
+    },
+    {
+      "key": "personal.settings",
+      "label": "我的设置",
+      "audience": "business_full",
+      "status": "partial",
+      "entry": "user_preferences",
+      "authority": "res.users + sc.user.view.preference",
+      "description": "语言、时区、主题、列表列、默认场景、通知偏好和密码。"
+    },
+    {
+      "key": "config.menu",
+      "label": "导航与菜单",
+      "audience": "business_config_admin",
+      "status": "available",
+      "entry": "menu_config",
+      "authority": "ui.business.config.contract.menu_orchestration",
+      "description": "配置菜单可见性、名称、排序、角色范围和运行态解释。"
+    },
+    {
+      "key": "config.form",
+      "label": "表单与字段",
+      "audience": "business_config_admin",
+      "status": "available",
+      "entry": "business_config",
+      "authority": "ui.business.config.contract",
+      "description": "配置字段分组、排序、必填/只读、默认值和布局预览。"
+    },
+    {
+      "key": "config.list_search",
+      "label": "列表与搜索",
+      "audience": "business_config_admin",
+      "status": "available",
+      "entry": "business_config",
+      "authority": "ui.business.config.contract",
+      "description": "配置列表列、筛选、排序、搜索字段和分页。"
+    },
+    {
+      "key": "config.approval",
+      "label": "审批规则",
+      "audience": "business_config_admin",
+      "status": "partial",
+      "entry": "business_config",
+      "authority": "sc.approval.policy",
+      "description": "配置审批策略、步骤、范围、金额阈值和升级规则。"
+    },
+    {
+      "key": "config.fields",
+      "label": "字段管理",
+      "audience": "business_config_admin",
+      "status": "available",
+      "entry": "form_field_policy",
+      "authority": "ui.form.field.policy",
+      "description": "维护字段语义、可见性、权限和数据来源。"
+    },
+    {
+      "key": "config.data_permissions",
+      "label": "数据权限",
+      "audience": "business_config_admin",
+      "status": "partial",
+      "entry": "product_data_permission",
+      "authority": "res.users + project member assignment",
+      "description": "维护用户、能力组、公司和项目数据范围。"
+    },
+    {
+      "key": "config.numbering",
+      "label": "编码规则",
+      "audience": "business_config_admin",
+      "status": "partial",
+      "entry": "product_numbering_rule",
+      "authority": "ir.sequence",
+      "description": "维护单据前缀、流水、位数、重置规则和预览。"
+    },
+    {
+      "key": "config.dictionary",
+      "label": "字典与业务分类",
+      "audience": "business_config_admin",
+      "status": "partial",
+      "entry": "dictionary",
+      "authority": "sc.dictionary + project.dictionary",
+      "description": "维护项目类型、成本项、资料类型和业务类别。"
+    },
+    {
+      "key": "config.system_parameters",
+      "label": "系统参数",
+      "audience": "business_config_admin",
+      "status": "partial",
+      "entry": "product_system_settings",
+      "authority": "sc.product.system.settings",
+      "description": "维护产品批准的参数目录，提供影响预览、发布、审计和回滚。"
+    },
+    {
+      "key": "config.change_set",
+      "label": "变更与发布",
+      "audience": "business_config_admin",
+      "status": "available",
+      "entry": "business_config_change_set",
+      "authority": "ui.business_config.change_set",
+      "description": "变更集、影响预览、发布、回滚和审计。"
+    },
+    {
+      "key": "platform.tenant_company",
+      "label": "租户与公司",
+      "audience": "platform_admin",
+      "status": "available",
+      "entry": "platform_control",
+      "authority": "res.company + data space",
+      "description": "维护租户、公司、数据空间和环境身份。"
+    },
+    {
+      "key": "platform.users_roles",
+      "label": "用户与角色",
+      "audience": "platform_admin",
+      "status": "available",
+      "entry": "platform_control",
+      "authority": "res.users + res.groups",
+      "description": "维护用户、角色、能力组和平台管理员职责分离。"
+    },
+    {
+      "key": "platform.release_health",
+      "label": "版本发布与健康",
+      "audience": "platform_admin",
+      "status": "available",
+      "entry": "platform_control",
+      "authority": "release management + health",
+      "description": "查看发布版本、健康状态、服务身份和回滚信息。"
+    },
+    {
+      "key": "platform.jobs",
+      "label": "定时任务",
+      "audience": "platform_admin",
+      "status": "available",
+      "entry": "platform_control",
+      "authority": "platform duty jobs",
+      "description": "查看定时任务状态、最近运行、失败和心跳。"
+    },
+    {
+      "key": "platform.integrations",
+      "label": "集成",
+      "audience": "platform_admin",
+      "status": "partial",
+      "entry": "platform_control",
+      "authority": "integration registry",
+      "description": "查看银行、税务、发票、金蝶等连接器状态；密钥不进入产品页面。"
+    },
+    {
+      "key": "support.diagnostics",
+      "label": "支持诊断",
+      "audience": "support",
+      "status": "available",
+      "entry": "support_console",
+      "authority": "diagnostics + audit",
+      "description": "只读诊断日志、任务状态、契约和数据质量。"
+    }
+  ],
+  "guardrails": [
+    "no_raw_ir_config_parameter_in_user_entry",
+    "no_credential_material_or_deployment_identity",
+    "company_scope_required",
+    "change_set_required_for_mutation",
+    "impact_preview_required",
+    "audit_and_rollback_required",
+    "frontend_consumes_backend_capability_catalog",
+    "business_full_does_not_imply_platform_admin"
+  ]
+}

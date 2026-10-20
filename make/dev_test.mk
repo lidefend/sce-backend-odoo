@@ -3003,3 +3003,9 @@ verify.demo.supplemental.unit: guard.prod.forbid
 .PHONY: verify.platform.database.rehearsal.unit
 verify.platform.database.rehearsal.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_platform_database_rehearsal.py
+
+.PHONY: verify.product_configuration.capability
+verify.product_configuration.capability: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_configuration_capability_guard.py scripts/verify/test_product_configuration_capability_guard.py
+	@python3 -m unittest scripts.verify.test_product_configuration_capability_guard
+	@python3 scripts/verify/product_configuration_capability_guard.py
