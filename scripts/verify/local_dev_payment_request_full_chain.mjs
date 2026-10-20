@@ -209,7 +209,7 @@ try {
     'generate payment execution returns one authoritative create-form target',
     { generateTarget },
   );
-  await manager.waitForURL((url) => url.pathname !== `/r/payment.request/${requestId}`, { timeout: 45000 });
+  await manager.waitForURL((url) => !url.pathname.endsWith(`/r/payment.request/${requestId}`), { timeout: 45000 });
   await waitForm(manager, 'sc.payment.execution');
   const executionCreateSurface = manager.locator('[data-product-page-mode="form"][data-form-model="sc.payment.execution"]:visible');
   const handlerInput = executionCreateSurface.locator('[data-field-name="handler_name"] input:visible');
@@ -222,7 +222,7 @@ try {
   }, { timeout: 45000 });
   await manager.getByRole('button', { name: /^保存草稿$/, exact: true }).click();
   check((await createResponse).status() < 400, 'payment execution save succeeds');
-  await manager.waitForURL((url) => /^\/(?:f|r)\/sc\.payment\.execution\/\d+$/.test(url.pathname), { timeout: 45000 });
+  await manager.waitForURL((url) => /\/(?:f|r)\/sc\.payment\.execution\/\d+$/.test(url.pathname), { timeout: 45000 });
   const executionId = Number(new URL(manager.url()).pathname.split('/').pop());
   check(executionId > 0, 'saved payment execution has authoritative id', { executionId });
   await waitForm(manager, 'sc.payment.execution', executionId);

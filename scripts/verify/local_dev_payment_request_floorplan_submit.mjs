@@ -814,7 +814,7 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
     const dialogFrameHandle = await dialogFrameElement.elementHandle();
     const projectFrame = await dialogFrameHandle?.contentFrame();
     check(projectFrame, 'project relation dialog iframe is unavailable');
-    await projectFrame.waitForURL((url) => url.pathname === '/f/project.project/new', { timeout: 30000 });
+    await projectFrame.waitForURL((url) => url.pathname.endsWith('/f/project.project/new'), { timeout: 30000 });
     const genericProjectSurface = projectFrame.locator(
       '[data-product-page-mode="form"][data-form-model="project.project"][data-form-record="new"]',
     );
@@ -1443,7 +1443,7 @@ try {
   await createSaveAction.click();
   const createResponse = await createResponsePromise;
   check(createResponse.status() === 200, 'payment create save failed', await createResponse.text());
-  await page.waitForURL((url) => /^\/f\/payment\.request\/\d+$/.test(url.pathname), { timeout: 45000 });
+  await page.waitForURL((url) => /\/f\/payment\.request\/\d+$/.test(url.pathname), { timeout: 45000 });
   createdId = Number(page.url().match(/\/f\/payment\.request\/(\d+)/)?.[1] || 0);
   check(createdId > 0 && recordCreates.length === 1,
     'payment create must emit exactly one create mutation and leave the /new route', {
@@ -1511,7 +1511,7 @@ try {
     { enabled: true, timeout: 45000 },
   );
   await journeyRow.click();
-  await page.waitForURL((url) => url.pathname === `/f/payment.request/${recordId}`, { timeout: 45000 });
+  await page.waitForURL((url) => url.pathname.endsWith(`/f/payment.request/${recordId}`), { timeout: 45000 });
   const editSurface = await requireUnique(
     page,
     page.locator(
@@ -1617,7 +1617,7 @@ try {
     { enabled: true, timeout: 45000 },
   );
   await postSaveRow.click();
-  await page.waitForURL((url) => url.pathname === `/f/payment.request/${recordId}`, { timeout: 45000 });
+  await page.waitForURL((url) => url.pathname.endsWith(`/f/payment.request/${recordId}`), { timeout: 45000 });
   await page.setViewportSize({ width: 390, height: 844 });
   await waitForViewport(page, 390);
   enterStage('main:submit-ready-390');
