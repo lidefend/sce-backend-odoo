@@ -55,6 +55,23 @@ class ClassificationTests(unittest.TestCase):
             paths = lane.changed_paths(root, base="origin/main")
             self.assertIn("scripts/ops/new.py", paths)
 
+    def test_temporary_bypass_payload_preserves_rules_and_removes_actor(self):
+        ruleset = {
+            "name": "main-github-authoritative-pr",
+            "target": "branch",
+            "enforcement": "active",
+            "conditions": {"ref_name": {"include": ["refs/heads/main"], "exclude": []}},
+            "rules": [{"type": "non_fast_forward"}],
+        }
+        enabled = lane.ruleset_payload_with_bypass(ruleset, 307461631)
+        disabled = lane.ruleset_payload_with_bypass(ruleset, 0)
+        self.assertEqual(enabled["rules"], ruleset["rules"])
+        self.assertEqual(
+            enabled["bypass_actors"],
+            [{"actor_id": 307461631, "actor_type": "User", "bypass_mode": "always"}],
+        )
+        self.assertEqual(disabled["bypass_actors"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

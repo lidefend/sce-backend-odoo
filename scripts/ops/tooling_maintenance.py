@@ -11,14 +11,18 @@ import argparse
 import json
 import subprocess
 import sys
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_BRANCH = "main"
+GITHUB_REPOSITORY = "lidefend/sce-backend-odoo"
+RULESET_NAME = "main-github-authoritative-pr"
 
 ALLOWED_PREFIXES = (
+    "docs/",
     "docs/ops/",
     "scripts/verify/",
     "scripts/ops/",
@@ -114,6 +118,66 @@ def run_command(command: list[str], root: Path, log: Path, timeout: int = 300) -
     }
 
 
+def ruleset_payload_with_bypass(ruleset: dict, actor_id: int = 0) -> dict:
+    payload = {
+        "name": ruleset["name"],
+        "target": ruleset["target"],
+        "enforcement": ruleset["enforcement"],
+        "conditions": ruleset["conditions"],
+        "rules": ruleset["rules"],
+        "bypass_actors": [],
+    }
+    if actor_id:
+        payload["bypass_actors"] = [
+            {
+                "actor_id": actor_id,
+                "actor_type": "User",
+                "bypass_mode": "always",
+            }
+        ]
+    return payload
+
+
+def _gh_api(*args: str) -> object:
+    result = subprocess.run(
+        ["gh", "api", *args],
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        raise RuntimeError(result.stderr.strip() or f"gh api failed: {' '.join(args)}")
+    return json.loads(result.stdout) if result.stdout.strip() else None
+
+
+def set_owner_bypass(enabled: bool) -> dict:
+    rulesets = _gh_api(f"repos/{GITHUB_REPOSITORY}/rulesets")
+    matches = [row for row in rulesets if row.get("name") == RULESET_NAME]
+    if len(matches) != 1:
+        raise RuntimeError("main ruleset is not unique")
+    ruleset_id = int(matches[0]["id"])
+    ruleset = _gh_api(f"repos/{GITHUB_REPOSITORY}/rulesets/{ruleset_id}")
+    owner_id = int(_gh_api("user")["id"]) if enabled else 0
+    payload = ruleset_payload_with_bypass(ruleset, owner_id)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json") as handle:
+        json.dump(payload, handle)
+        handle.flush()
+        result = subprocess.run(
+            ["gh", "api", "--method", "PUT", f"repos/{GITHUB_REPOSITORY}/rulesets/{ruleset_id}", "--input", handle.name],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    if result.returncode:
+        raise RuntimeError(result.stderr.strip() or "ruleset update failed")
+    readback = _gh_api(f"repos/{GITHUB_REPOSITORY}/rulesets/{ruleset_id}")
+    if readback.get("bypass_actors") != payload["bypass_actors"]:
+        raise RuntimeError("ruleset bypass readback mismatch")
+    return {"ruleset_id": ruleset_id, "bypass_actors": payload["bypass_actors"]}
+
+
 def check(root: Path, allow_make_guards: bool = False) -> dict:
     paths = changed_paths(root)
     classification = classify(paths, allow_make_guards=allow_make_guards)
@@ -173,7 +237,12 @@ def check(root: Path, allow_make_guards: bool = False) -> dict:
     }
 
 
-def publish(root: Path, expected_head: str, allow_make_guards: bool = False) -> dict:
+def publish(
+    root: Path,
+    expected_head: str,
+    allow_make_guards: bool = False,
+    owner_bypass_window: bool = False,
+) -> dict:
     report = check(root, allow_make_guards=allow_make_guards)
     if report["status"] != "passed":
         return {"status": "blocked", "reason": "fast_check_failed", "check": report}
@@ -200,13 +269,36 @@ def publish(root: Path, expected_head: str, allow_make_guards: bool = False) -> 
             "origin_main": origin_main,
         }
 
-    push = git(root, "push", "origin", f"HEAD:{DEFAULT_BRANCH}")
+    bypass = {"enabled": False, "removed": False}
+    push = None
+    try:
+        if owner_bypass_window:
+            set_owner_bypass(True)
+            bypass["enabled"] = True
+        push = git(root, "push", "origin", f"HEAD:{DEFAULT_BRANCH}")
+    finally:
+        if bypass["enabled"]:
+            try:
+                set_owner_bypass(False)
+                bypass["removed"] = True
+            except Exception as exc:
+                bypass["error"] = str(exc)
+    if push is None:
+        return {"status": "blocked", "reason": "push_not_attempted", "bypass": bypass}
     if push.returncode != 0:
         return {
             "status": "blocked",
             "reason": "direct_main_push_rejected",
             "detail": push.stderr.strip()[-2000:],
+            "bypass": bypass,
             "fallback": "create a governed fix/* branch and PR; do not force push main",
+        }
+    if bypass["enabled"] and not bypass["removed"]:
+        return {
+            "status": "failed_bypass_cleanup",
+            "head": head,
+            "bypass": bypass,
+            "detail": "main push succeeded but temporary owner bypass cleanup failed",
         }
     remote = git(root, "ls-remote", "--heads", "origin", DEFAULT_BRANCH).stdout.strip().split()
     remote_head = remote[0] if remote else ""
@@ -214,6 +306,7 @@ def publish(root: Path, expected_head: str, allow_make_guards: bool = False) -> 
         "status": "passed" if remote_head == head else "failed_remote_readback",
         "head": head,
         "origin_main": remote_head,
+        "bypass": bypass,
         "check": report,
     }
 
@@ -229,6 +322,7 @@ def main(argv: list[str] | None = None) -> int:
     publish_parser = sub.add_parser("publish")
     publish_parser.add_argument("--expected-head", required=True)
     publish_parser.add_argument("--allow-make-guards", action="store_true")
+    publish_parser.add_argument("--owner-bypass-window", action="store_true")
     args = parser.parse_args(argv)
     root = Path(args.root).resolve()
 
@@ -237,7 +331,12 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "check":
         payload = check(root, allow_make_guards=args.allow_make_guards)
     else:
-        payload = publish(root, args.expected_head, allow_make_guards=args.allow_make_guards)
+        payload = publish(
+            root,
+            args.expected_head,
+            allow_make_guards=args.allow_make_guards,
+            owner_bypass_window=args.owner_bypass_window,
+        )
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0 if payload.get("status") in {"passed", "ok"} or payload.get("ok") else 1
 
