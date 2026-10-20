@@ -121,5 +121,5 @@
       "resolved_commit": "a44238ad8"
     }
   ],
-  "next_exact_step": "Batch 1 implemented: baseline readiness manifest + verifier + 10 offline tests + make verify.demo.baseline_readiness.unit. Run verify.demo.baseline_readiness.unit, verify.docs.all, verify.agent.ledger.unit, ci.local.iteration; record receipts; then commit and proceed to Batch 2 (G0-G4 data completion)."
+  "next_exact_step": "Batch 1 committed at ad1aeb755: baseline readiness manifest + verifier + 10 offline tests + make verify.demo.baseline_readiness.unit; docs_product_boundary/agent_ledger/baseline_readiness receipts passed. Next: Batch 2 — G0-G4 data completion for target company/project."
 }
