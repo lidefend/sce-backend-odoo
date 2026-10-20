@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "PRODUCT-ITERATION-V2-20261020",
   "branch": "feature/product-iteration-v2-20261020",
-  "status": "blocked",
+  "status": "active",
   "baseline_sha": "74063688e928d25c8e65037ac3306956c954244d",
   "goal": ".agent/goals/PRODUCT-ITERATION-V2-20261020.yaml",
   "record": "docs/ops/iterations/product_iteration_v2_handoff_20261020.md",
@@ -25,11 +25,19 @@
     "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
     "addons/smart_construction_core/tests/test_product_system_parameter_catalog_service.py",
     "addons/smart_construction_core/tests/test_product_system_parameter_change.py",
+    "addons/smart_construction_core/tests/test_group_authority_reconciliation.py",
+    "addons/smart_core/models/res_users_group_authority.py",
+    "addons/smart_core/views/group_authority_reconciliation_views.xml",
     "config/product_system_parameter_catalog_v1.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/ops/iterations/product_iteration_v2_batch7_20261020.md",
     "docs/product/product_iteration_v2_20261020.md",
     "docs/ops/iterations/product_iteration_v2_handoff_20261020.md",
+    "docs/ops/codex_execution_allowlist.md",
+    "docs/ops/codex_workspace_execution_rules.md",
+    "make/codex.mk",
+    "scripts/ops/safe_branch_sync_main.py",
+    "scripts/ops/test_safe_branch_sync_main.py",
     "scripts/verify/local_dev_payment_request_full_chain.sh"
   ],
   "environment": {
@@ -288,18 +296,18 @@
   "blockers": [
     {
       "id": "DUF-06",
-      "classification": "product_defect",
-      "owner_layer": "P0",
-      "summary": "Odoo module upgrade view validation rejects the existing smart_core res.users authorization-review action; this blocks demo F3 bank-account loading.",
+      "classification": "environment_tooling_defect",
+      "owner_layer": "P4",
+      "summary": "The demo worktree lagged the current main baseline, so its old source removed current models during registry reload. The governed sync entry also lacked a covered-prefix mode for a branch whose old prefix had already been squash-integrated.",
       "source_facts": [
-        "addons/smart_core/models/res_users_group_authority.py defines action_sc_review_group_authority",
-        "addons/smart_core/views/group_authority_reconciliation_views.xml binds it to base.view_users_form",
-        "the action is present; the failing condition is the runtime view/action validation path, not a missing public intent"
+        "the product worktree upgrade with current source passes",
+        "the pre-sync demo worktree omits current main models and fails during registry reload",
+        "demo c2a4b57ee has a passing exact-head Quick receipt"
       ],
       "resume_after": "DUF-06 fix passes its owning-layer tests, local.dev upgrade no longer raises, and demo F3 bank-account readback observes loaded accounts"
     }
   ],
-  "next_exact_step": "Batch 7 paused before sub-step 4. Resolve DUF-06 as an isolated P0 product view/action-binding defect, then remap/restore this run and resume frontend consumption plus browser acceptance.",
+  "next_exact_step": "Run the new governed covered-prefix sync against demo c2a4b57ee -> main 74063688e, then rerun smart_construction_demo upgrade and F3 bank-account readback before resuming Batch 7.",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",

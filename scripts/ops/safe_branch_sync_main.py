@@ -50,10 +50,12 @@ class SyncPlan:
     recovery_bundle: Path
     extended_history: bool = False
     dependency_head: str | None = None
+    covered_prefix: str | None = None
+    covered_merge: str | None = None
 
     @property
     def replay_base(self) -> str:
-        return self.dependency_head or self.old_base
+        return self.covered_prefix or self.dependency_head or self.old_base
 
 
 @dataclass(frozen=True)
@@ -267,6 +269,8 @@ def validate(
     dependency_pr: int | None = None, dependency_head: str | None = None,
     dependency_merge: str | None = None,
     dependency_reader: Callable[[int], dict] = merged_dependency,
+    covered_prefix: str | None = None,
+    covered_merge: str | None = None,
 ) -> SyncPlan:
     root = root.resolve()
     expected_root = expected_root.resolve()
@@ -314,6 +318,39 @@ def validate(
         raise SyncError("remote branch already exists; published history cannot be rewritten")
     if pr_checker(actual_branch):
         raise SyncError("open PR exists; published history cannot be rewritten")
+    if dependency_head and covered_prefix:
+        raise SyncError("merged dependency and covered prefix are mutually exclusive")
+    covered_values = (covered_prefix, covered_merge)
+    if any(value is not None for value in covered_values):
+        if not all(value is not None for value in covered_values):
+            raise SyncError("covered prefix and covered merge must be supplied together")
+        if not allow_extended_history:
+            raise SyncError("covered prefix requires the extended frozen sync path")
+        prefix, prefix_merge = covered_values
+        ensure_sha("COVERED_PREFIX", prefix)
+        ensure_sha("COVERED_MERGE", prefix_merge)
+        for sha in (prefix, prefix_merge):
+            if not commit_exists(root, sha):
+                raise SyncError("covered prefix commit is unavailable")
+        for left, right in (
+            (expected_old_base, prefix),
+            (prefix, expected_head),
+            (expected_old_base, prefix_merge),
+            (prefix_merge, expected_main),
+        ):
+            if run(root, "merge-base", "--is-ancestor", left, right, check=False).returncode:
+                raise SyncError("covered prefix ancestry mismatch")
+        if prefix in {expected_old_base, expected_head}:
+            raise SyncError("covered prefix must leave a distinct responsibility range")
+        if len(git_output(root, "rev-list", "--parents", "-n", "1", prefix_merge).split()) != 2:
+            raise SyncError("covered merge must be a single-parent squash commit")
+        prefix_paths = set(commit_paths(root, expected_old_base, prefix))
+        merge_paths = set(commit_paths(root, expected_old_base, prefix_merge))
+        uncovered = sorted(prefix_paths - merge_paths)
+        if uncovered:
+            raise SyncError(
+                "covered merge does not touch every prefix path: " + ", ".join(uncovered[:8])
+            )
     dependency_values = (dependency_pr, dependency_head, dependency_merge)
     if any(value is not None for value in dependency_values):
         if not all(value is not None for value in dependency_values):
@@ -321,7 +358,7 @@ def validate(
         validate_dependency(root, pr=dependency_pr, head=dependency_head, merge=dependency_merge,
                             candidate=expected_head, old_base=expected_old_base, main=expected_main,
                             reader=dependency_reader)
-    replay_base = dependency_head or expected_old_base
+    replay_base = dependency_head or covered_prefix or expected_old_base
     merges = git_output(root, "rev-list", "--merges", f"{replay_base}..{expected_head}")
     if merges:
         raise SyncError("responsibility branch contains merge commits")
@@ -331,10 +368,11 @@ def validate(
             raise SyncError("extended sync requires valid worktree-local exact-head Quick evidence")
         if expected_commit_count is None or expected_commit_count != len(commits):
             raise SyncError("extended sync requires an exact matching EXPECTED_COMMIT_COUNT")
-        if not MAX_RESPONSIBILITY_COMMITS < len(commits) <= MAX_EXTENDED_RESPONSIBILITY_COMMITS:
+        minimum = 1 if covered_prefix else MAX_RESPONSIBILITY_COMMITS + 1
+        if not minimum <= len(commits) <= MAX_EXTENDED_RESPONSIBILITY_COMMITS:
             raise SyncError(
                 "extended responsibility commit count must be within "
-                f"{MAX_RESPONSIBILITY_COMMITS + 1}..{MAX_EXTENDED_RESPONSIBILITY_COMMITS}"
+                f"{minimum}..{MAX_EXTENDED_RESPONSIBILITY_COMMITS}"
             )
     elif not 1 <= len(commits) <= MAX_RESPONSIBILITY_COMMITS:
         raise SyncError(f"responsibility commit count must be within 1..{MAX_RESPONSIBILITY_COMMITS}")
@@ -354,6 +392,8 @@ def validate(
         len(commits), paths, recovery_path(root, actual_branch, actual_head),
         extended_history=allow_extended_history,
         dependency_head=dependency_head,
+        covered_prefix=covered_prefix,
+        covered_merge=covered_merge,
     )
 
 
@@ -541,6 +581,8 @@ def main() -> int:
     parser.add_argument("--dependency-pr", type=int)
     parser.add_argument("--dependency-head")
     parser.add_argument("--dependency-merge")
+    parser.add_argument("--covered-prefix")
+    parser.add_argument("--covered-merge")
     parser.add_argument("--allow-extended-history", action="store_true")
     parser.add_argument("--confirm", required=True)
     args = parser.parse_args()
@@ -562,6 +604,8 @@ def main() -> int:
             expected_commit_count=args.expected_commit_count,
             dependency_pr=args.dependency_pr, dependency_head=args.dependency_head,
             dependency_merge=args.dependency_merge,
+            covered_prefix=args.covered_prefix,
+            covered_merge=args.covered_merge,
         )
         result = sync(plan)
     except SyncError as exc:

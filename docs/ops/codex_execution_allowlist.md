@@ -466,6 +466,13 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   的纯生成证据提交数，且稳定路径集合与 patch identity 必须保持一致。其他冲突仍
   自动 abort，禁止借该入口放宽产品冲突处理。
 
+  对于旧分支前缀已被 squash 集成、候选仍保留旧祖先的情况，可在同一 extended
+  入口提供 `COVERED_PREFIX` 和 `COVERED_MERGE`。`COVERED_PREFIX` 必须是候选
+  祖先，`COVERED_MERGE` 必须是目标 main 祖先的单父 squash 提交，且 prefix 的
+  每个变更路径都必须出现在 merge 的变更路径集中；入口只重放 prefix 后的未集成
+  提交。exact-head Quick、`EXPECTED_COMMIT_COUNT`、恢复 bundle、路径集与 patch
+  identity 校验不得省略。该能力不得用于掩盖未集成的产品或业务变更。
+
 ---
 
 ### 1.4.2 明确禁止的 Git 命令（Hard Ban）

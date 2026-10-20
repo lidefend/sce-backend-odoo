@@ -53,11 +53,10 @@ goal:
     - do_not_modify_demo_worktree_or_demo_data_cleanup
     - keep_main_stable_until_owner_authorized_final_integration
   next_exact_step: >-
-    Batch 7 is paused before frontend consumption because demo F3 exposed
-    DUF-06: the P0 res.users group-authority review action is present in source
-    but rejected by the runtime view/action validation path during module
-    upgrade. Resolve DUF-06 in an isolated product batch, prove demo bank-account
-    loading/readback, then resume Batch 7 sub-step 4.
+    Batch 7 is paused before frontend consumption while the P4 sync tool gains a
+    covered-prefix mode for branches whose old prefix was squash-integrated into
+    main. Use it to align demo c2a4b57ee with main 74063688e, prove demo
+    bank-account loading/readback, then resume Batch 7 sub-step 4.
   completion:
     scope: product_iteration_v2
     overall_goal: in_progress

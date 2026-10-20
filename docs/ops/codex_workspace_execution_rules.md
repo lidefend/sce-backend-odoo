@@ -368,6 +368,12 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
   依赖 head 是候选祖先、merge 是目标 main 祖先。`EXPECTED_OLD_BASE` 仍表示
   实际共同祖先；仅重放 dependency head 之后的责任提交。原有未发布限制、
   recovery bundle、提交数、路径及 patch identity 校验与失败恢复全部保留。
+  当旧分支前缀已通过 squash 进入 main、但候选仍保留旧祖先时，可在 extended
+  入口同时指定 `COVERED_PREFIX` 与 `COVERED_MERGE`。入口要求 prefix 是候选祖先、
+  merge 是 main 祖先且为单父 squash 提交，并证明 prefix 的每个变更路径都由该
+  merge 覆盖；只重放 prefix 之后的未集成提交。该模式仍要求 exact-head Quick、
+  精确提交数、恢复 bundle、稳定路径集与 patch identity，不能用于跳过未集成的
+  产品或业务冲突。
 - 仓库所有者明确批准的 13—64 提交冻结候选可使用
   `make workspace.branch.sync-main.extended`。除普通同步全部门禁外，入口要求精确
   提交数、当前工作树的有效 exact-head Quick receipt 和独立确认短语；只允许正式交付日志的纯追加冲突，以及登记为可重新生成

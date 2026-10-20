@@ -42,7 +42,7 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0],
         )
         git(self.root, "commit", "-m", "base")
-        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "push", "--force", "origin", "HEAD:main")
         git(self.root, "branch", "-M", "main")
         git(self.root, "fetch", "origin", "main")
         self.old_base = git(self.root, "rev-parse", "HEAD").stdout.strip()
@@ -108,6 +108,74 @@ class SafeBranchSyncMainTest(unittest.TestCase):
                          git(self.root, "rev-parse", f"{self.head}^{{tree}}").stdout)
         self.assertEqual(len(git(self.root, "rev-list", f"{self.new_main}..HEAD").stdout.splitlines()), 1)
         self.assertEqual(git(self.root, "bundle", "verify", str(plan.recovery_bundle)).returncode, 0)
+
+    def covered_prefix(self) -> dict:
+        covered_prefix = self.head
+        (self.root / "prefix.txt").write_text("prefix\n", encoding="utf-8")
+        git(self.root, "add", "prefix.txt")
+        git(self.root, "commit", "-m", "prefix second commit")
+        covered_prefix = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        (self.root / "tail.txt").write_text("tail\n", encoding="utf-8")
+        git(self.root, "add", "tail.txt")
+        git(self.root, "commit", "-m", "unintegrated tail")
+        self.head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "main")
+        git(self.root, "merge", "--squash", covered_prefix)
+        git(self.root, "commit", "-m", "squash integrated prefix")
+        integrated = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        self.new_main = integrated
+        git(self.root, "switch", "feature/local-sync")
+        return {
+            "covered_prefix": covered_prefix,
+            "covered_merge": integrated,
+            "allow_extended_history": True,
+            "expected_commit_count": 1,
+        }
+
+    def test_covered_squash_prefix_replays_only_unintegrated_tail(self) -> None:
+        args = self.covered_prefix()
+        plan = self.plan(**args)
+        self.assertEqual(plan.replay_base, args["covered_prefix"])
+        self.assertEqual(plan.commit_count, 1)
+        self.assertEqual(plan.paths, ("tail.txt",))
+        result = syncer.sync(plan)
+        self.assertEqual(
+            git(self.root, "diff", "--name-only", f"{self.new_main}..{result.head}").stdout.splitlines(),
+            ["tail.txt"],
+        )
+        self.assertEqual(git(self.root, "merge-base", "HEAD", "origin/main").stdout.strip(), self.new_main)
+        self.assertEqual(git(self.root, "bundle", "verify", str(plan.recovery_bundle)).returncode, 0)
+
+    def test_covered_squash_prefix_requires_pair_extended_and_file_coverage(self) -> None:
+        args = self.covered_prefix()
+        with self.assertRaisesRegex(syncer.SyncError, "supplied together"):
+            self.plan(covered_prefix=args["covered_prefix"])
+        with self.assertRaisesRegex(syncer.SyncError, "extended frozen sync"):
+            self.plan(
+                covered_prefix=args["covered_prefix"],
+                covered_merge=args["covered_merge"],
+            )
+        with self.assertRaisesRegex(syncer.SyncError, "single-parent"):
+            self.plan(**{**args, "covered_merge": self.old_base})
+        git(self.root, "switch", "main")
+        git(self.root, "reset", "--hard", self.old_base)
+        (self.root / "unrelated.txt").write_text("unrelated\n", encoding="utf-8")
+        git(self.root, "add", "unrelated.txt")
+        git(self.root, "commit", "-m", "unrelated merge")
+        unrelated = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "--force", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        git(self.root, "switch", "feature/local-sync")
+        with self.assertRaisesRegex(syncer.SyncError, "every prefix path"):
+            self.plan(
+                **{
+                    **args,
+                    "expected_main": unrelated,
+                    "covered_merge": unrelated,
+                }
+            )
 
     def test_squash_dependency_rejects_incomplete_and_incorrect_pr_identity(self) -> None:
         args = self.squash_dependency()
