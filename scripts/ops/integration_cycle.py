@@ -40,6 +40,7 @@ FAST_GATES: tuple[Gate, ...] = (
     Gate("data_scope", ("make", "verify.sc_data_scope.rule_coverage"), 300),
     Gate("component_takeover", ("make", "verify.frontend.component_driver_takeover.unit"), 300),
     Gate("test_coverage_registry", ("make", "verify.test.coverage.registry"), 300),
+    Gate("test_inventory", ("python3", "scripts/ci/generate_test_inventory.py"), 300),
     Gate("frontend_lint", ("make", "verify.frontend.lint.src"), 300),
     Gate("typecheck", ("bash", "scripts/dev/pnpm_exec.sh", "-C", "frontend/apps/web", "typecheck"), 600),
     Gate("lane_coverage", ("python3", "scripts/audit/verification_lane_coverage.py", "--check"), 300),
