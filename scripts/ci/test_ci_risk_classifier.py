@@ -26,6 +26,20 @@ class CIRiskClassifierTests(unittest.TestCase):
     def test_documentation_is_fast(self) -> None:
         self.assertEqual(self.lane("docs/ops/runbook.md"), "FAST")
 
+    def test_tooling_maintenance_lane_is_fast(self) -> None:
+        result = classify(
+            [
+                "scripts/ops/tooling_maintenance.py",
+                "scripts/ops/test_tooling_maintenance.py",
+                "docs/ops/tooling_maintenance_fast_lane_20261020.md",
+            ],
+            event_name="pull_request",
+        )
+        self.assertEqual(result.lane, "FAST")
+        self.assertEqual(result.professional_mode, "fast")
+        self.assertEqual(result.frontend_mode, "skip")
+        self.assertFalse(result.backend_changed)
+
     def test_agent_workflow_metadata_is_fast(self) -> None:
         result = classify(
             [
