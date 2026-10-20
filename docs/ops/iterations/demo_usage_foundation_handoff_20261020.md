@@ -12,8 +12,9 @@
 ## 2. 当前状态
 
 - 计划：已完成
-- F1–F3：实现与证据已提交
-- F3 银行账户运行时加载：`verification_pending`
+- F1–F3：实现、证据和运行时回读已完成
+- F3 银行账户：`res.partner.bank=9`，已加载
+- 下一批次：F4 审批、编号和权限配置
 - F4–F8：`not_started`
 - 主线集成：`not_run`
 - 部署：`not_run`

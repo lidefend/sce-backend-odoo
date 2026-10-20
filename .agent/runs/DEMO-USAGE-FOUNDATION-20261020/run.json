@@ -274,20 +274,25 @@
           "command": "python3 scripts/audit/verification_lane_coverage.py --write-baseline && make audit.verification.lane_coverage.check",
           "status": "passed",
           "layer": "L1"
+        },
+        {
+          "command": "make local.dev.upgrade MODULE=smart_construction_demo CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_demo",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "post-sync upgrade completed; log=.runtime/duf06-20261020/upgrade-post-sync.log"
+        },
+        {
+          "command": "make verify.local.dev.demo_usage_foundation_master_data.orm",
+          "status": "passed",
+          "layer": "L3",
+          "test_count": 1,
+          "detail": "0 failed; bank=9 tax=9 uom=29 dictionary=66 cost_code=9 material_catalog=3 project=33 task=163; log=.runtime/duf06-20261020/master-data-post-sync.log"
         }
       ]
     }
   },
-  "blockers": [
-    {
-      "id": "DUF-06",
-      "classification": "baseline_evidence_defect",
-      "owner_layer": "P4",
-      "registry_item": 15,
-      "summary": "The stale demo baseline has been synchronized to current main. The blocker remains open only until the post-sync module upgrade and bank-account readback prove the repaired runtime."
-    }
-  ],
-  "next_exact_step": "Run local.dev.upgrade MODULE=smart_construction_demo on synced HEAD aed606e3f, then rerun verify.local.dev.demo_usage_foundation_master_data.orm and require bank=9 before closing DUF-06.",
+  "blockers": [],
+  "next_exact_step": "F3 runtime is unblocked and bank accounts are present. Proceed to F4 approval, numbering and permission configuration readiness; do not reopen DUF-06 as a product defect.",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",

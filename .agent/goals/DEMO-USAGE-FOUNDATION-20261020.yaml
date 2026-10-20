@@ -57,10 +57,9 @@ goal:
     - keep_demo_baseline_fingerprint_stable_across_experience_reset
     - no_new_database_tenant_compose_or_credentials
   next_exact_step: >-
-    F3 audit and bank-account fix authored; the governed data load is blocked by
-    DUF-06 (product view binding defect, registry item 15). Fix the owning-layer
-    res.users view/action binding, then upgrade and re-run the ORM acceptance.
-    DUF-04 date/amount rewrite remains F8.
+    F1-F3 are complete and DUF-06 is closed after the demo branch sync, successful
+    module upgrade and bank-account readback. Continue with F4 approval, numbering
+    and permission configuration readiness.
   completion:
     scope: demo_user_usage_foundation_v1
     overall_goal: in_progress

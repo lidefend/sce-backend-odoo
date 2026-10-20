@@ -73,6 +73,9 @@
 |---|---|---|---|
 | `make verify.local.dev.demo_usage_foundation_master_data.orm`（诊断） | passed | L3 | 上述计数与日期分类 |
 | `make local.dev.upgrade MODULE=smart_construction_demo CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_demo` | blocked | L3 | 旧 demo 源码加载新数据库，视图校验失败 |
+| `make workspace.branch.sync-main.extended ... COVERED_PREFIX ... COVERED_MERGE ...` | passed | L4 | 14 个未集成提交重放到 main 74063688e |
+| `make local.dev.upgrade MODULE=smart_construction_demo ...`（同步后） | passed | L3 | 模块升级与 registry reload 成功 |
+| `make verify.local.dev.demo_usage_foundation_master_data.orm`（同步后） | passed | L3 | 1 test；`res.partner.bank=9` |
 
 ## 8. 回滚
 
