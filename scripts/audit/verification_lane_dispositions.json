@@ -1330,6 +1330,12 @@
       "owner": "platform-team",
       "reason": "收入合同结算面写入一次性运行手册。"
     },
+    "integration.cycle": {
+      "disposition": "ops_tooling",
+      "owner": "platform-team",
+      "reason": "operator-facing integration helper for ownership snapshots, fast gate aggregation, detached Quick and merge readiness",
+      "review_by": "2026-12-31"
+    },
     "joint_acceptance.contract.income_execution.write": {
       "disposition": "one_shot_projection_write",
       "owner": "platform-team",
@@ -3241,6 +3247,12 @@
       "disposition": "candidate",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
+    },
+    "verify.integration.cycle.unit": {
+      "disposition": "ops_tooling",
+      "owner": "platform-team",
+      "reason": "unit coverage for the integration cycle helper",
+      "review_by": "2026-12-31"
     },
     "verify.legacy_55_user_visible_surface.custom_gap.audit": {
       "disposition": "diagnostic_cli",

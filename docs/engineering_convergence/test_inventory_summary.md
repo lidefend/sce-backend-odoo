@@ -4,10 +4,10 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1586`
+- Total assets: `1587`
 - Review queue: `4`
 - Unknown runtime: `3`
-- Long-running assets: `213`
+- Long-running assets: `214`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
 - PR dedupe candidates: `1148`
@@ -19,7 +19,7 @@ Generated from `test_inventory.csv`.
 | governance | 605 |
 | contract | 398 |
 | unit | 308 |
-| odoo_integration | 138 |
+| odoo_integration | 139 |
 | security | 49 |
 | e2e | 47 |
 | frontend_acceptance | 37 |
@@ -31,7 +31,7 @@ Generated from `test_inventory.csv`.
 | Decision Gate | Count |
 | --- | ---: |
 | pr_candidate | 1367 |
-| integration_candidate | 165 |
+| integration_candidate | 166 |
 | release_candidate | 45 |
 | manual_review | 4 |
 | release_required | 2 |
@@ -45,7 +45,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | deduplicate_before_required | 1148 |
 | covered_by_aggregate | 220 |
-| keep_integration_or_release_only | 164 |
+| keep_integration_or_release_only | 165 |
 | keep_release_only | 45 |
 | canonical_entry | 5 |
 | review_or_archive | 4 |
@@ -143,7 +143,7 @@ Generated from `test_inventory.csv`.
 | Runtime | Count |
 | --- | ---: |
 | <5m | 1369 |
-| 10-30m | 166 |
+| 10-30m | 167 |
 | 30-60m | 47 |
 | unknown | 3 |
 | 10-15m | 1 |
@@ -155,7 +155,7 @@ Generated from `test_inventory.csv`.
 | architecture owner | 605 |
 | platform owner | 398 |
 | test owner | 309 |
-| backend owner | 138 |
+| backend owner | 139 |
 | security owner | 49 |
 | qa owner | 47 |
 | frontend owner | 38 |
@@ -166,7 +166,7 @@ Generated from `test_inventory.csv`.
 | Directory | Count |
 | --- | ---: |
 | scripts/verify | 1384 |
-| scripts/ops | 103 |
+| scripts/ops | 104 |
 | frontend/apps/web/scripts | 43 |
 | scripts/ci | 30 |
 | scripts/audit | 10 |
@@ -270,12 +270,12 @@ Generated from `test_inventory.csv`.
 | T-ASSET-107 | contract | `scripts/ops/operation_strategy_contract_surface_backfill.py` | platform owner |
 | T-ASSET-117 | contract | `scripts/ops/repair_unbound_structural_form_contract.py` | platform owner |
 | T-ASSET-118 | contract | `scripts/ops/settlement_contract_surface_backfill.py` | platform owner |
-| T-ASSET-180 | contract | `scripts/ops/test_repair_unbound_structural_form_contract.py` | platform owner |
-| T-ASSET-187 | contract | `scripts/ops/validate_contract_business_categories.sh` | platform owner |
-| T-ASSET-198 | unit | `scripts/verify/acceptance_action_count.py` | test owner |
-| T-ASSET-199 | contract | `scripts/verify/acceptance_contract_receipt_test.mjs` | platform owner |
-| T-ASSET-200 | governance | `scripts/verify/acceptance_evolution_binding_guard.py` | architecture owner |
-| T-ASSET-201 | contract | `scripts/verify/action_default_group_contract_audit.py` | platform owner |
+| T-ASSET-181 | contract | `scripts/ops/test_repair_unbound_structural_form_contract.py` | platform owner |
+| T-ASSET-188 | contract | `scripts/ops/validate_contract_business_categories.sh` | platform owner |
+| T-ASSET-199 | unit | `scripts/verify/acceptance_action_count.py` | test owner |
+| T-ASSET-200 | contract | `scripts/verify/acceptance_contract_receipt_test.mjs` | platform owner |
+| T-ASSET-201 | governance | `scripts/verify/acceptance_evolution_binding_guard.py` | architecture owner |
+| T-ASSET-202 | contract | `scripts/verify/action_default_group_contract_audit.py` | platform owner |
 | ... | ... | 1068 more | ... |
 
 ## Dedupe Hotspots
