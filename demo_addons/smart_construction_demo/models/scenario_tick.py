@@ -47,27 +47,93 @@ _FACT_BINDINGS = {
     },
     "demo.scenario.fact.material_plan": {
         "kind": "lifecycle",
-        "scenario": "s80_execution_management_surface",
         "record": "sc_demo_plan_080_master",
         "state": "in_progress",
     },
     "demo.scenario.fact.construction_log": {
         "kind": "lifecycle",
-        "scenario": "s70_daily_business_surface",
         "record": "sc_demo_construction_diary_070_daily",
         "state": "confirmed",
     },
     "demo.scenario.fact.purchase_order": {
         "kind": "lifecycle",
-        "scenario": "s80_execution_management_surface",
         "record": "sc_demo_material_purchase_request_080_steel",
         "state": "approved",
     },
     "demo.scenario.fact.material_arrival": {
         "kind": "lifecycle",
-        "scenario": "s80_execution_management_surface",
         "record": "sc_demo_material_inbound_080_steel",
         "state": "received",
+    },
+    "demo.scenario.fact.contract_signed": {
+        "kind": "lifecycle",
+        "record": "sc_demo_general_contract_066_income",
+        "state": "signed",
+    },
+    "demo.scenario.fact.output_invoice": {
+        "kind": "lifecycle",
+        "record": "sc_demo_invoice_registration_088_output",
+        "state": "registered",
+    },
+    "demo.scenario.fact.material_outbound": {
+        "kind": "lifecycle",
+        "record": "sc_demo_material_outbound_065_rebar",
+        "state": "issued",
+    },
+    "demo.scenario.fact.daily_receipt": {
+        "kind": "lifecycle",
+        "record": "sc_demo_receipt_income_070_progress",
+        "state": "received",
+    },
+    "demo.scenario.fact.risk_settlement": {
+        "kind": "lifecycle",
+        "record": "sc_demo_project_settlement_073_risk",
+        "state": "confirmed",
+    },
+    "demo.scenario.fact.risk_action_claimed": {
+        "kind": "lifecycle",
+        "record": "sc_demo_project_risk_action_073_cost",
+        "state": "claimed",
+    },
+    "demo.scenario.fact.cockpit_fund": {
+        "kind": "lifecycle",
+        "record": "sc_demo_dashboard_fact_068_fund",
+        "state": "in_progress",
+    },
+    "demo.scenario.fact.workbench_todo": {
+        "kind": "lifecycle",
+        "record": "sc_demo_workbench_item_068_todo",
+        "state": "in_progress",
+    },
+    "demo.scenario.fact.hazard_controlled": {
+        "kind": "lifecycle",
+        "record": "sc_demo_hazard_source_089_high_support",
+        "state": "controlled",
+    },
+    "demo.scenario.fact.safety_plan_approved": {
+        "kind": "lifecycle",
+        "record": "sc_demo_safety_plan_089_dangerous",
+        "state": "approved",
+    },
+    "demo.scenario.fact.payroll_done": {
+        "kind": "lifecycle",
+        "record": "sc_demo_hr_payroll_085_salary",
+        "state": "done",
+    },
+    "demo.scenario.fact.loan_confirmed": {
+        "kind": "lifecycle",
+        "record": "sc_demo_financing_loan_085_bank",
+        "state": "confirmed",
+    },
+    "demo.scenario.fact.tender_won": {
+        "kind": "lifecycle",
+        "record": "sc_demo_tender_bid_086_complex",
+        "state": "won",
+    },
+    "demo.scenario.fact.fund_transfer": {
+        "kind": "lifecycle",
+        "record": "sc_demo_fund_operation_086_transfer",
+        "state": "done",
     },
 }
 
@@ -191,15 +257,15 @@ class DemoScenarioTick(models.AbstractModel):
 
     @api.model
     def _lifecycle_fact(self, binding: dict) -> tuple[str, str]:
-        from ..tools.scenario_loader import _advance_scenario_lifecycle
+        from ..tools.scenario_loader import drive_seeded_record
 
-        _advance_scenario_lifecycle(self.env, binding["scenario"])
         record = self.env.ref(
             f"smart_construction_demo.{binding['record']}",
             raise_if_not_found=False,
         )
         if not record:
             return "unbound", "record_missing"
+        drive_seeded_record(self.env, record, binding["state"])
         field = getattr(record, "_state_field", "state")
         if record[field] != binding["state"]:
             return "unbound", f"state_{record[field]}_expected_{binding['state']}"

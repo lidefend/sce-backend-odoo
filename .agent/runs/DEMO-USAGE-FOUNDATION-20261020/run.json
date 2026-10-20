@@ -37,6 +37,8 @@
     "demo_addons/smart_construction_demo/tests/test_demo_usage_foundation_approval.py",
     "demo_addons/smart_construction_demo/models/scenario_tick.py",
     "demo_addons/smart_construction_demo/tests/test_demo_scenario_tick.py",
+    "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json",
+    "scripts/verify/test_demo_scenario_step.py",
     "make/dev.mk",
     "make/dev_test.mk",
     "scripts/verify/demo_usage_foundation_audit.py",
@@ -384,15 +386,21 @@
         "status": "passed",
         "layer": "L3",
         "test_count": 3,
-        "detail": "12 steps = 6 todo + 6 advanced, 0 unbound; project_approved drives project lifecycle via public action, business facts drive lifecycle chains/readbacks"
+        "detail": "40 steps = 20 todo + 20 advanced, 0 unbound, 10 business days; all 20 facts bound to public actions/readbacks"
+      },
+      {
+        "command": "make verify.demo.scenario_step.unit",
+        "status": "passed",
+        "layer": "L2",
+        "test_count": 9
       }
     ],
-    "notes": "DUF-01 resolved: system_fact steps now bind to verifiable facts (project_lifecycle/lifecycle/readback kinds) with fail-closed unbound+reason fallback. DUF-05 (10-day narrative D4-D10) remains."
+    "notes": "DUF-01 and DUF-05 resolved: 10-day narrative (40 steps) authored; system_fact binds to verifiable facts via project_lifecycle/lifecycle/readback with fail-closed fallback; drive_seeded_record used for precise per-record binding."
   }
     }
   },
   "blockers": [],
-  "next_exact_step": "F7 DUF-01 resolved: system_fact steps bind to verifiable facts (6 advanced, 0 unbound). Remaining F7: author D4-D10 scenario steps and bindings (DUF-05), then verify 10-day continuous advancement.",
+  "next_exact_step": "F7 complete: 10-day narrative (40 steps) advances continuously with all 20 facts bound (DUF-01 + DUF-05 resolved). Proceed to F8: business full-function account browser acceptance (non-empty first screen, cross-role closure, no privilege leak; DUF-04 date/amount calendar rule).",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",

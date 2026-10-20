@@ -25,7 +25,7 @@
 | 11 | 每日系统事实没有执行器 | `scenario_tick.py` 将 `system_fact` 记为 `unbound` | P4 | 已解决 | F7 已加 fail-closed 绑定注册表：项目立项走公开动作、业务事实走生命周期链/只读回读；未绑定仍 fail-closed |
 | 12 | 角色启动验收覆盖不足 | smoke 只跑 `demo_pm`/`demo_finance`/`demo_audit`，且只断言契约键存在 | P4 | 待立项 | F2/F8 增加业务全功能账号、首屏非空和实际下一步 |
 | 13 | 演示数据时间与金额失真 | 多处固定 2025 日期，场景存在 50/100 样例金额 | P4 | 待立项 | F3/F8 以业务日历和金额规则回读，不按文本字符串验收 |
-| 14 | 10 日叙事未完整声明 | `business_days=10`，manifest 仅有 D1–D3 步骤 | P4 | 待立项 | F7 补齐可执行 10 日步骤与幂等键 |
+| 14 | 10 日叙事未完整声明 | `business_days=10`，manifest 仅有 D1–D3 步骤 | P4 | 已解决 | F7 已扩写 D4–D10（40 步），每 fact 绑定公开动作/回读；10 日连续推进、幂等 |
 | 15 | 模块升级视图校验失败 | demo 分支仍基于旧 main；数据库已由当前 main 升级，旧源码缺少 `action_sc_review_group_authority`，触发 `_update_user_groups_view` 校验失败 | P4 | 已解除 | covered-prefix 受管同步到 main 后升级 PASS；`res.partner.bank=9` 回读 PASS |
 
 ## 回收判据

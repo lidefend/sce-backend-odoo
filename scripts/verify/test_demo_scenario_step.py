@@ -13,11 +13,24 @@ ALLOWED_REAL_ACTIONS = {
     "construction.contract.action_confirm",
     "construction.contract.action_on_tier_approved",
     "sc.material.acceptance.action_accept",
+    "project.settlement.action_confirm",
+    "sc.material.outbound.action_issue",
+    "sc.safety.plan.action_submit",
+    "sc.plan.action_confirm",
+    "sc.safety.disclosure.action_submit",
+    "sc.payment.execution.action_confirm",
+    "tender.bid.action_to_submitted",
 }
 ALLOWED_CREATE_MODELS = {
     "construction.contract",
     "project.progress.entry",
     "sc.material.acceptance",
+    "project.settlement",
+    "sc.material.outbound",
+    "sc.safety.plan",
+    "sc.safety.disclosure",
+    "sc.payment.execution",
+    "tender.bid",
 }
 
 
@@ -83,7 +96,7 @@ class DemoScenarioStepTest(unittest.TestCase):
         )
         self.assertEqual([step.step_key for step in auto_advance(manifest)], ["fact_arrival"])
 
-    def test_three_day_compressed_clock_from_manifest(self):
+    def test_ten_day_compressed_clock_from_manifest(self):
         import json
         from pathlib import Path
 
@@ -98,9 +111,9 @@ class DemoScenarioStepTest(unittest.TestCase):
 
         executed: set[str] = set()
         days: list[str] = []
-        for _ in range(3):
+        for _ in range(10):
             planned = plan_tick(steps, executed)
-            self.assertTrue(planned, "compressed clock stopped before 3 days")
+            self.assertTrue(planned, "compressed clock stopped before 10 days")
             days.append(planned[0].business_date)
             auto = auto_advance(planned)
             self.assertFalse(
@@ -113,7 +126,7 @@ class DemoScenarioStepTest(unittest.TestCase):
             )
             executed.update(step.idempotency_key for step in planned)
 
-        self.assertEqual(len(set(days)), 3)
+        self.assertEqual(len(set(days)), 10)
         self.assertEqual(len(executed), len(steps))
         self.assertEqual(plan_tick(steps, executed), [])
 

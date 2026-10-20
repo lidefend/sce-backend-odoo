@@ -57,14 +57,14 @@ goal:
     - keep_demo_baseline_fingerprint_stable_across_experience_reset
     - no_new_database_tenant_compose_or_credentials
   next_exact_step: >-
-    F7 DUF-01 resolved: system_fact steps bind to verifiable facts. Remaining F7:
-    author D4-D10 scenario steps and bindings (DUF-05), then verify 10-day
-    continuous advancement and stable baseline fingerprint.
+    F7 complete: 10-day narrative advances continuously with all 20 facts bound.
+    Proceed to F8: business full-function account browser acceptance (non-empty
+    first screen, cross-role closure, no privilege leak; DUF-04 date/amount rule).
   completion:
     scope: demo_user_usage_foundation_v1
     overall_goal: in_progress
     result_index: .agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json
-    local_batch_acceptance: F7_duf01_complete
+    local_batch_acceptance: F7_complete
     mainline_integration: not_run
     deployment: not_run
     target_user_delivery: not_run

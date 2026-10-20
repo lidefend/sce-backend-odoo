@@ -1,4 +1,4 @@
-# Demo 用户使用基础数据迭代 · F7 批次记录（2026-10-21，DUF-01）
+# Demo 用户使用基础数据迭代 · F7 批次记录（2026-10-21，DUF-01 + DUF-05）
 
 ## 1. 身份
 
@@ -44,11 +44,13 @@
 测试 `test_run_tick_advances_three_days_and_records_heartbeat` 现在断言 12 步 = 6 todo +
 6 advanced，且无 unbound；3 日推进、心跳、幂等、体验重置范围规划全部通过。
 
-## 6. F7 剩余：DUF-05
+## 6. DUF-05 完成
 
-manifest `business_days=10`，当前仅 D1–D3（12 步）。剩余工作：按同一节奏扩写 D4–D10
-（每个业务日 2 个 system_fact + 2 个 role 步骤），并把新增 fact 绑定到既有生命周期场景
-（s60/s65/s66/s68/s70/s73/s78/s85/s86/s88/s89）。此为本批下一精确动作。
+manifest 从 D1–D3 扩写为 D1–D10（40 步），D4–D10 每业务日 2 个 system_fact + 2 个
+role 步骤；新增 14 个 fact 绑定到既有生命周期种子记录（s65/s66/s68/s70/s73/s85/s86/
+s88/s89），并改为对单个记录用 `drive_seeded_record` 精准驱动。离线 `scenario_step`
+9 例、实机 `scenario_tick` 3 例（40 步 = 20 todo + 20 advanced、0 unbound、10 日
+连续推进 + 幂等 up_to_date）全部通过。
 
 ## 7. 回滚
 
@@ -57,4 +59,5 @@ manifest `business_days=10`，当前仅 D1–D3（12 步）。剩余工作：按
 
 ## 8. 下一步精确动作
 
-扩写 D4–D10 场景步骤并补齐 `_FACT_BINDINGS`，再跑 `scenario_tick.orm` 验证 10 日连续推进。
+F8（业务全功能账号浏览器验收）：demo_full 首屏非空、关键角色跨页闭环、无越权/技术泄漏；
+DUF-04 的日期/金额业务日历规则在此收口。
