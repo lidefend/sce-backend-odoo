@@ -4,10 +4,10 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1573`
+- Total assets: `1574`
 - Review queue: `4`
 - Unknown runtime: `3`
-- Long-running assets: `211`
+- Long-running assets: `212`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
 - PR dedupe candidates: `1137`
@@ -21,7 +21,7 @@ Generated from `test_inventory.csv`.
 | unit | 302 |
 | odoo_integration | 137 |
 | security | 48 |
-| e2e | 46 |
+| e2e | 47 |
 | frontend_acceptance | 37 |
 | gate | 2 |
 | data_migration | 2 |
@@ -32,7 +32,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | pr_candidate | 1356 |
 | integration_candidate | 164 |
-| release_candidate | 44 |
+| release_candidate | 45 |
 | manual_review | 4 |
 | release_required | 2 |
 | local_iteration | 1 |
@@ -46,7 +46,7 @@ Generated from `test_inventory.csv`.
 | deduplicate_before_required | 1137 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 163 |
-| keep_release_only | 44 |
+| keep_release_only | 45 |
 | canonical_entry | 5 |
 | review_or_archive | 4 |
 
@@ -144,7 +144,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | <5m | 1358 |
 | 10-30m | 165 |
-| 30-60m | 46 |
+| 30-60m | 47 |
 | unknown | 3 |
 | 10-15m | 1 |
 
@@ -157,7 +157,7 @@ Generated from `test_inventory.csv`.
 | test owner | 303 |
 | backend owner | 137 |
 | security owner | 48 |
-| qa owner | 46 |
+| qa owner | 47 |
 | frontend owner | 38 |
 | data owner | 2 |
 
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1372 |
+| scripts/verify | 1373 |
 | scripts/ops | 102 |
 | frontend/apps/web/scripts | 43 |
 | scripts/ci | 30 |
