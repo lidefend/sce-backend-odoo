@@ -57,14 +57,14 @@ goal:
     - keep_demo_baseline_fingerprint_stable_across_experience_reset
     - no_new_database_tenant_compose_or_credentials
   next_exact_step: >-
-    F1 complete: the user-journey-to-foundation-data manifest and read-only audit
-    are committed and validated. Stop for owner acknowledgement, then start F2
-    (identity/company/project scope) after a fresh identity preflight.
+    F2 complete: role/company/project scope acceptance is committed and validated.
+    Next batch F3 reads public form candidate sets for U1/U2 requirements and fixes
+    2025 dates and 50/100 sample amounts (DUF-04).
   completion:
     scope: demo_user_usage_foundation_v1
     overall_goal: in_progress
     result_index: .agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json
-    local_batch_acceptance: F1_complete
+    local_batch_acceptance: F2_complete
     mainline_integration: not_run
     deployment: not_run
     target_user_delivery: not_run

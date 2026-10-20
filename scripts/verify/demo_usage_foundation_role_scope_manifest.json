@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "id": "demo.usage.foundation.role_scope",
+  "owner_layer": "P4",
+  "authority": "config/frontend/role_surface_exposure_declarations_v1.json",
+  "runtime": {
+    "base_url_env": "E2E_BASE_URL",
+    "base_url_default": "http://127.0.0.1:18081",
+    "entry_namespace": "demo",
+    "database_env": "E2E_DB",
+    "database_default": "sc_dev_demo"
+  },
+  "company_scope": {
+    "expected_company_id": 1,
+    "expected_company_name": "四川智汇建设集团有限公司",
+    "expected_allowed_company_ids": [1]
+  },
+  "accounts": [
+    {
+      "key": "business_full_wutao",
+      "login": "wutao",
+      "expectation": "role_code",
+      "expected_role_code": "business_full",
+      "label": "业务全功能账号（纯能力，无项目成员）",
+      "first_screen_expectation": "record"
+    },
+    {
+      "key": "business_full_demo_full",
+      "login": "demo_full",
+      "expectation": "role_code",
+      "expected_role_code": "business_full",
+      "label": "业务全功能账号（项目范围，验收主账号）",
+      "first_screen_expectation": "non_empty"
+    },
+    {
+      "key": "project_manager",
+      "login": "demo_role_pm",
+      "expectation": "role_code",
+      "expected_role_code": "pm",
+      "label": "项目经理",
+      "first_screen_expectation": "record"
+    },
+    {
+      "key": "finance_manager",
+      "login": "demo_role_finance",
+      "expectation": "role_code",
+      "expected_role_code": "finance",
+      "label": "财务主管",
+      "first_screen_expectation": "record"
+    },
+    {
+      "key": "owner",
+      "login": "demo_role_owner",
+      "expectation": "role_code",
+      "expected_role_code": "owner",
+      "label": "企业负责人",
+      "first_screen_expectation": "record"
+    },
+    {
+      "key": "executive",
+      "login": "demo_role_executive",
+      "expectation": "role_code",
+      "expected_role_code": "executive",
+      "label": "管理层",
+      "first_screen_expectation": "record"
+    },
+    {
+      "key": "cost_user",
+      "login": "cost1",
+      "expectation": "role_code",
+      "expected_role_code": "cost",
+      "label": "成本管理",
+      "first_screen_expectation": "record"
+    },
+    {
+      "key": "project_member_read",
+      "login": "demo_role_project_read",
+      "expectation": "role_code",
+      "expected_role_code": "project_member",
+      "label": "项目只读成员（作用域负例）",
+      "first_screen_expectation": "record"
+    },
+    {
+      "key": "contract_admin",
+      "login": "ct1",
+      "expectation": "valid_surface",
+      "label": "合同管理员（能力席位）",
+      "first_screen_expectation": "record"
+    },
+    {
+      "key": "purchase_user",
+      "login": "pur1",
+      "expectation": "valid_surface",
+      "label": "采购经办（能力席位）",
+      "first_screen_expectation": "record"
+    },
+    {
+      "key": "material_manager",
+      "login": "mat_mgr",
+      "expectation": "valid_surface",
+      "label": "物资主管（能力席位）",
+      "first_screen_expectation": "record"
+    }
+  ],
+  "negatives": [
+    {
+      "key": "wrong_password_rejected",
+      "login": "wutao",
+      "password": "definitely-wrong",
+      "expectation": "login_denied"
+    }
+  ]
+}
