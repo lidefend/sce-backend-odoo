@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "id": "VALIDATION-DELIVERY-GOVERNANCE-20261020",
+  "branch": "fix/validation-delivery-governance-20261020",
+  "baseline_sha": "a34bd252ff05a5c42a6a6e181a04a00a480c1326",
+  "status": "verification_pending",
+  "goal": ".agent/goals/VALIDATION-DELIVERY-GOVERNANCE-20261020.yaml",
+  "record": "docs/ops/iterations/validation_delivery_governance_20261020.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/VALIDATION-DELIVERY-GOVERNANCE-20261020.yaml",
+    ".agent/runs/VALIDATION-DELIVERY-GOVERNANCE-20261020/run.json",
+    "docs/ops/iterations/validation_delivery_governance_20261020.md",
+    "scripts/ops/validation_delivery_plan.py",
+    "scripts/ops/agent_run_context.py",
+    "scripts/verify/test_validation_delivery_plan.py",
+    "scripts/verify/test_agent_run_context.py",
+    "make/guards.mk",
+    "make/ci.mk",
+    "docs/ops/validation_delivery_protocol.md",
+    "scripts/ops/evidence_scope.py",
+    "scripts/ops/test_evidence_scope.py",
+    "make/codex.mk",
+    "scripts/verify/test_branch_governance_consistency_guard.py",
+    "config/acceptance/evolution_binding.v1.json",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "docs/engineering_convergence/",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "scripts/verify/guard_registry_audit.py",
+    "scripts/verify/test_guard_registry_audit.py",
+    "scripts/verify/registry.yaml",
+    "docs/ops/codex_execution_allowlist.md",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/audit/verification_lane_coverage.py",
+    "scripts/audit/test_verification_lane_coverage.py",
+    "scripts/ops/gitee_published_branch_sync.py",
+    "scripts/ops/github_published_branch_sync.py",
+    "scripts/ops/test_github_published_branch_sync.py",
+    "scripts/ops/test_gitee_published_branch_sync.py"
+  ],
+  "environment": {
+    "kind": "offline"
+  },
+  "checks": {
+    "governance": {
+      "target": "verify.validation.delivery.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/validation_delivery_plan.py",
+        "scripts/ops/agent_run_context.py",
+        "scripts/ops/evidence_scope.py",
+        "scripts/verify/test_validation_delivery_plan.py",
+        "scripts/verify/test_agent_run_context.py",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "config/acceptance/evolution_binding.v1.json",
+        "make/codex.mk",
+        "make/guards.mk",
+        "make/ci.mk",
+        "scripts/verify/test_local_development_lifecycle.py",
+        "scripts/verify/test_branch_governance_consistency_guard.py",
+        "scripts/verify/local_dev_payment_request_floorplan_readonly.sh",
+        "scripts/verify/branch_governance_consistency_guard.py"
+      ]
+    },
+    "evidence_scope": {
+      "target": "verify.frontend.business_entry.evidence_scope.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/ops/evidence_scope.py",
+        "scripts/ops/test_evidence_scope.py",
+        "scripts/verify/business_entry_matrix_incremental.py",
+        "scripts/verify/test_business_entry_matrix_incremental.py",
+        "scripts/verify/business_entry_matrix_scope_seed.py",
+        "scripts/verify/business_entry_matrix_scope.mjs",
+        "scripts/verify/business_entry_matrix_reuse_identity.test.mjs",
+        "scripts/verify/business_entry_matrix_model.mjs"
+      ]
+    },
+    "binding": {
+      "target": "verify.acceptance.evolution.binding",
+      "kind": "offline",
+      "inputs": [
+        "make/guards.mk",
+        "config/acceptance/evolution_binding.v1.json",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        "scripts/ops/acceptance_evolution_record.py"
+      ]
+    },
+    "planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    },
+    "registry": {
+      "target": "verify.guard.registry.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/guard_registry_audit.py",
+        "scripts/verify/test_guard_registry_audit.py",
+        "scripts/verify/registry.yaml",
+        "make/"
+      ]
+    },
+    "published_sync": {
+      "target": "verify.workspace.branch.sync-github.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/gitee_published_branch_sync.py",
+        "scripts/ops/github_published_branch_sync.py",
+        "scripts/ops/test_github_published_branch_sync.py",
+        "scripts/ops/test_gitee_published_branch_sync.py",
+        "make/codex.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Review regenerated reports, freeze clean candidate, run one Quick for the new source/current-main coverage, archive independent review and update PR #702 without force; require current-base remote gates before protected merge."
+}

@@ -451,7 +451,16 @@ pr.merge.local_quick_gate:
 	echo "[pr.merge.local_quick_gate] PASS"; \
 	'
 
-pr.merge: guard.prod.forbid pr.merge.local_quick_gate acceptance.evolution.verify
+DELIVERY_MERGE_PREFLIGHT_REPORT ?= .runtime/validation-delivery/merge-preflight.json
+
+.PHONY: pr.merge.preflight
+pr.merge.preflight: guard.prod.forbid
+	@python3 scripts/ops/validation_delivery_plan.py --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" --output "$(DELIVERY_MERGE_PREFLIGHT_REPORT)" --require-ready
+
+# Recipe order is intentional: make -j must not start Quick before readiness.
+pr.merge: guard.prod.forbid pr.merge.preflight
+	@$(MAKE) --no-print-directory pr.merge.local_quick_gate
+	@python3 scripts/ops/validation_delivery_plan.py --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" --output "$(DELIVERY_MERGE_PREFLIGHT_REPORT)" --verify-pr-identity
 	@bash -c '\
 	set -euo pipefail; \
 	BR="$$(git rev-parse --abbrev-ref HEAD)"; \
@@ -1647,3 +1656,10 @@ agent.dispatch.review: guard.prod.forbid
 	@python3 scripts/ops/agent_dispatch_inbox.py --root "$(AGENT_DISPATCH_ROOT)" review-once
 verify.agent.dispatch.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_agent_dispatch_inbox
+
+.PHONY: workspace.branch.sync-github-published verify.workspace.branch.sync-github.unit
+workspace.branch.sync-github-published: guard.prod.forbid
+	@python3 scripts/ops/github_published_branch_sync.py --root "$(CURDIR)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(GITHUB_EXPECTED_MAIN)" --remote-head "$(GITHUB_EXPECTED_SOURCE)" --pr "$(PR)" $(if $(filter 1,$(APPLY)),--apply --confirm "$(GITHUB_SYNC_CONFIRM)",)
+
+verify.workspace.branch.sync-github.unit: guard.prod.forbid
+	@PYTHONPATH=scripts/ops python3 -m unittest scripts.ops.test_github_published_branch_sync scripts.ops.test_gitee_published_branch_sync

@@ -132,9 +132,55 @@ def resolve_run(root: Path) -> tuple[str, dict] | None:
             dependency_path(root, value)
         if 'readback' in check:
             readback_path(root, check['readback'])
+    check_order(run['checks'])
     if run.get('status') not in ('planned', 'active', 'blocked', 'verification_pending', 'completed', 'superseded'):
         raise RunError('invalid run status')
     return relative, run
+
+
+def check_order(checks: dict) -> list[str]:
+    """Validate the declared DAG before any check can start."""
+    ordered, visiting = [], set()
+    def visit(key):
+        if key in visiting:
+            raise RunError('check dependency cycle')
+        if key in ordered:
+            return
+        visiting.add(key)
+        dependencies = checks[key].get('depends_on', [])
+        if (not isinstance(dependencies, list)
+                or any(not isinstance(dep, str) or dep not in checks for dep in dependencies)):
+            raise RunError(f'check {key} has unknown or invalid dependencies')
+        for dep in dependencies:
+            visit(dep)
+        visiting.remove(key)
+        ordered.append(key)
+    for key in checks:
+        visit(key)
+    return ordered
+
+
+def check_states(root: Path, run: dict) -> dict:
+    states = {}
+    for key in check_order(run['checks']):
+        blocked = [dep for dep in run['checks'][key].get('depends_on', [])
+                   if states[dep]['status'] != 'reusable']
+        states[key] = (dict(target=run['checks'][key]['target'], status='blocked',
+                            reason='prerequisite checks are not reusable', dependencies=blocked)
+                       if blocked else evaluate(root, run, key))
+    return states
+
+
+def upstream_inputs(root: Path, run: dict, key: str) -> dict:
+    state = {}
+    def collect(current):
+        for dep in run['checks'][current].get('depends_on', []):
+            if dep not in state:
+                state[dep] = {'check': run['checks'][dep],
+                              'inputs': dependency_state(root, run['checks'][dep])}
+                collect(dep)
+    collect(key)
+    return state
 
 
 def delta_paths(root: Path, baseline: str) -> list[str]:
@@ -259,8 +305,12 @@ def evaluate(root: Path, run: dict, check_id: str) -> dict:
         git(root, 'merge-base', '--is-ancestor', receipt['head'], 'HEAD')
         if receipt.get('check') != check or comparable_inputs(receipt.get('inputs')) != comparable_inputs(dependency_state(root, check)):
             raise RunError('code, tool or dependency inputs changed')
+        if receipt.get('upstream_inputs', {}) != upstream_inputs(root, run, check_id):
+            raise RunError('upstream check inputs changed')
         if receipt.get('environment') != run['environment']:
             raise RunError('declared environment changed')
+        if receipt.get('status') == 'failed':
+            return dict(result, status='failed', reason='previous failure unchanged; diagnose before retry')
         log = local_path(root, receipt['log'])
         if hashlib.sha256(log.read_bytes()).hexdigest() != receipt.get('log_sha256'):
             raise RunError('evidence log changed')
@@ -284,7 +334,7 @@ def summary(root: Path) -> dict:
     relative, run = selected
     paths = delta_paths(root, run['baseline_sha'])
     outside = [p for p in paths if not any(p == s or (s.endswith('/') and p.startswith(s)) for s in run['scope'])]
-    checks = {key: evaluate(root, run, key) for key in run['checks']}
+    checks = check_states(root, run)
     reuse: dict[str, int] = {}
     for value in checks.values():
         reuse[value['status']] = reuse.get(value['status'], 0) + 1
@@ -309,7 +359,7 @@ def resume_prompt(root: Path) -> str:
             'A next step or reusable receipt never authorizes replaying a write or passing a delivery gate.')
 
 
-def begin(root: Path, check_id: str) -> None:
+def begin(root: Path, check_id: str, reverify_reason: str = '') -> None:
     selected = resolve_run(root)
     if selected is None:
         raise RunError('no registered run')
@@ -317,13 +367,20 @@ def begin(root: Path, check_id: str) -> None:
     if summary(root)['status'] != 'resolved':
         raise RunError('run is closed or out of scope; reconcile before testing')
     path = receipt_path(root, run, check_id).with_suffix('.pending.json')
+    state = check_states(root, run)[check_id]
+    if state['status'] in ('failed', 'blocked'):
+        raise RunError(state['reason'])
+    if state['status'] == 'reusable' and not reverify_reason.strip():
+        raise RunError('check is reusable; an explicit reverify reason is required')
     check = run['checks'][check_id]
     inputs = dependency_state(root, check)
     if any(value is None for value in inputs.values()):
         raise RunError('declared dependency is missing; reconcile inputs before testing')
     payload = {'head': git(root, 'rev-parse', 'HEAD'), 'branch': run['branch'],
                'check': check, 'inputs': inputs,
-               'environment': run['environment'], 'started_at': time.time()}
+               'environment': run['environment'], 'started_at': time.time(),
+               'reverify_reason': reverify_reason.strip(),
+               'upstream_inputs': upstream_inputs(root, run, check_id)}
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + '\n')
 
@@ -336,6 +393,8 @@ def record(root: Path, check_id: str, status: str, count: int, log_path: str) ->
     if summary(root)['status'] != 'resolved':
         raise RunError('run is closed or out of scope; reconcile before recording')
     path = receipt_path(root, run, check_id)
+    if check_states(root, run)[check_id]['status'] == 'blocked':
+        raise RunError('prerequisite evidence changed during execution')
     if status not in ('passed', 'failed') or (status == 'passed' and count <= 0):
         raise RunError('passed checks require non-zero tests')
     log = local_path(root, log_path)
@@ -346,13 +405,16 @@ def record(root: Path, check_id: str, status: str, count: int, log_path: str) ->
     if any(pending.get(key) != value for key, value in {
         'head': git(root, 'rev-parse', 'HEAD'), 'branch': run['branch'],
         'check': run['checks'][check_id], 'inputs': dependency_state(root, run['checks'][check_id]),
-        'environment': run['environment']}.items()):
+        'environment': run['environment'],
+        'upstream_inputs': upstream_inputs(root, run, check_id)}.items()):
         raise RunError('test inputs or identity changed since begin; result cannot be recorded')
     receipt = {'schema_version': 1, 'duration_seconds': time.time() - pending['started_at'], 'run_id': run['id'], 'branch': run['branch'],
                'head': git(root, 'rev-parse', 'HEAD'), 'dirty': git(root, 'status', '--porcelain=v1'),
                'check': run['checks'][check_id], 'inputs': dependency_state(root, run['checks'][check_id]),
                'environment': run['environment'], 'status': status, 'test_count': count,
                'log': log_path, 'log_sha256': hashlib.sha256(log.read_bytes()).hexdigest(),
+               'reverify_reason': pending.get('reverify_reason', ''),
+               'upstream_inputs': pending['upstream_inputs'],
                'attestation': 'executor-recorded; not a CI receipt', 'candidate_evidence': False}
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix('.tmp')
@@ -370,10 +432,11 @@ def main() -> int:
     parser.add_argument('--status', choices=['passed', 'failed'], default='failed')
     parser.add_argument('--test-count', type=int, default=0)
     parser.add_argument('--log', default='')
+    parser.add_argument('--reverify-reason', default=os.environ.get('AGENT_REVERIFY_REASON', ''))
     args = parser.parse_args()
     try:
         if args.begin:
-            begin(args.root.resolve(), args.begin)
+            begin(args.root.resolve(), args.begin, args.reverify_reason)
         if args.record:
             record(args.root.resolve(), args.record, args.status, args.test_count, args.log)
         payload = summary(args.root.resolve())

@@ -141,7 +141,7 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
                 "  exit 0\n"
                 "elif [[ \"$1 $2\" == \"merge-base origin/main\" ]] || [[ \"$1 $2\" == \"merge-base main\" ]]; then\n"
                 "  printf '%s\\n' 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'\n"
-                "elif [[ \"$1 $2\" == \"diff --name-only\" ]]; then\n"
+                "elif [[ \"$1\" == \"diff\" ]] || [[ \"$1\" == \"ls-files\" ]]; then\n"
                 "  exit 0\n"
                 "else\n"
                 "  echo \"unexpected git invocation: $*\" >&2\n"
@@ -157,7 +157,11 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
                 "  echo '      --match-head-commit SHA'\n"
                 "  for index in $(seq 1 10000); do echo \"merge help padding $index\"; done\n"
                 "elif [[ \"$1 $2\" == \"pr view\" ]]; then\n"
-                "  printf '%s\\n' \"${FAKE_ACTUAL_HEAD:?}\"\n"
+                "  if [[ \"$*\" == *baseRefOid* ]]; then\n"
+                "    printf '{\"number\":30,\"state\":\"OPEN\",\"isCrossRepository\":false,\"baseRefName\":\"main\",\"baseRefOid\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"headRefOid\":\"%s\"}\\n' \"${FAKE_ACTUAL_HEAD:?}\"\n"
+                "  else printf '%s\\n' \"${FAKE_ACTUAL_HEAD:?}\"; fi\n"
+                "elif [[ \"$1 $2\" == \"api repos/{owner}/{repo}/git/ref/heads/main\" ]]; then\n"
+                "  printf '%s\\n' 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'\n"
                 "elif [[ \"$1 $2\" == \"pr merge\" ]]; then\n"
                 "  shift 2\n"
                 "  printf '%s\\n' \"$@\" >\"${FAKE_MERGE_LOG:?}\"\n"
@@ -186,9 +190,12 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
                 f"PR_MERGE_METHOD={method}",
                 f"ACCEPTANCE_EVOLUTION_EVIDENCE={root / 'evidence.json'}",
                 f"ACCEPTANCE_EVOLUTION_PLAN={root / 'plan.json'}",
+                f"DELIVERY_MERGE_PREFLIGHT_REPORT={root / 'merge-preflight.json'}",
             ]
             if expected_head is not None:
                 command.append(f"EXPECTED_HEAD={expected_head}")
+            delivery_report = ROOT / '.runtime/validation-delivery/merge-preflight.json'
+            original_report = delivery_report.read_bytes() if delivery_report.exists() else None
             completed = subprocess.run(
                 command,
                 cwd=ROOT,
@@ -197,6 +204,11 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 check=False,
+            )
+            self.assertEqual(
+                delivery_report.read_bytes() if delivery_report.exists() else None,
+                original_report,
+                'mocked merge must not overwrite real delivery evidence',
             )
             arguments = (
                 merge_log.read_text(encoding="utf-8").splitlines()

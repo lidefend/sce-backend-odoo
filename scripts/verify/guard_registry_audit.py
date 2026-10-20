@@ -215,7 +215,7 @@ def gate_anchor_failures(doc: dict, graph: dict[str, set[str]]) -> list[str]:
 
 
 MAKE_MODULE_INVOCATION_RE = re.compile(
-    r"-m\s+unittest\s+((?:scripts\.verify\.)?[A-Za-z_][A-Za-z0-9_]*)"
+    r"\bpython(?:3(?:\.\d+)?)?\s+-m\s+unittest\b([^\n;&|@]*)"
 )
 
 
@@ -228,8 +228,11 @@ def make_module_invocations() -> dict[str, set[str]]:
     """
     invocations: dict[str, set[str]] = collections.defaultdict(set)
     for target, text in parse_make_targets().items():
-        for stem in MAKE_MODULE_INVOCATION_RE.findall(text):
-            invocations[stem.rsplit(".", 1)[-1]].add(target)
+        for arguments in MAKE_MODULE_INVOCATION_RE.findall(text):
+            for token in arguments.replace('\\\n', ' ').split():
+                match = re.fullmatch(r'(?:scripts\.verify\.)?([A-Za-z_]\w*)(?:\.\w+)*', token)
+                if match and token != 'discover':
+                    invocations[match.group(1)].add(target)
     return invocations
 
 
@@ -406,6 +409,7 @@ def classify(scripts: list[Path]) -> list[dict]:
     parts = build_corpus()
     filename_hits, import_hits, module_hits = build_reference_index(parts)
     targets = parse_make_targets()
+    module_targets = make_module_invocations()
     inventory = []
     for script in scripts:
         script_key = script.relative_to(ROOT).as_posix()
@@ -416,7 +420,7 @@ def classify(scripts: list[Path]) -> list[dict]:
         referenced_by_targets = [
             target
             for target, text in targets.items()
-            if name in text
+            if name in text or target in module_targets.get(script.stem, set())
         ]
         referenced_by_workflows = [
             key for key in external_hits if key.startswith(".github/workflows/")

@@ -1114,8 +1114,7 @@ entries:
   status: active
   owner: platform-team
   date: '2026-10-17'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.agent.dispatch.unit'
 - script: test_backend_contract_closure_guard.py
   status: orphan
   owner: platform-team
@@ -1126,9 +1125,7 @@ entries:
   status: active
   owner: platform-team
   date: '2026-10-08'
-  wire_or_retire: file-consumed
-  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/frontend.mk;
-    module-form invocation is recorded as a file reference, not a make-target reference
+  reason: 'Governed unittest module invocation in: verify.frontend.business_entry.evidence_scope.unit'
 - script: test_codex_preflight.py
   status: orphan
   owner: platform-team
@@ -1139,8 +1136,8 @@ entries:
   status: active
   owner: platform-team
   date: '2026-09-30'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.construction.create_defaults.unit,
+    verify.contract.architecture.suite'
 - script: test_contract_export_resume.py
   status: orphan
   owner: platform-team
@@ -1151,20 +1148,18 @@ entries:
   status: active
   owner: platform-team
   date: '2026-08-23'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.scene_component_bridge.guard'
 - script: test_contract_probe_routing.py
   status: active
   owner: platform-team
   date: '2026-08-23'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.contract.probe_routing.unit'
 - script: test_contract_schema_declaration_sync.py
   status: active
   owner: platform-team
   date: '2026-10-02'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.backend.contract_lifecycle.authority,
+    verify.contract.schema.declaration.sync'
 - script: test_contract_snapshot_case_actors.py
   status: orphan
   owner: platform-team
@@ -1193,16 +1188,12 @@ entries:
   status: active
   owner: platform-team
   date: '2026-08-06'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.environment.topology.guard'
 - script: test_data_space_policy.py
   status: active
   owner: platform-team
   date: '2026-10-13'
-  wire_or_retire: file-consumed
-  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/dev_test.mk
-    (target verify.data_space.policy.unit, prerequisite of verify.contract.architecture.suite);
-    module-form invocation is a file reference the coarse filename match cannot see
+  reason: 'Governed unittest module invocation in: verify.data_space.policy.unit'
 - script: test_design_token_system.py
   status: orphan
   owner: platform-team
@@ -1213,8 +1204,7 @@ entries:
   status: active
   owner: platform-team
   date: '2026-10-02'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.acceptance.environment.guard'
 - script: test_env_external_topology_precedence.sh
   status: orphan
   owner: platform-team
@@ -1225,16 +1215,12 @@ entries:
   status: active
   owner: platform-team
   date: '2026-10-13'
-  wire_or_retire: file-consumed
-  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/runtime_ops.mk
-    (target verify.finance_position.audit_partition_guard); module-form invocation
-    is a file reference the coarse filename match cannot see
+  reason: 'Governed unittest module invocation in: verify.finance_position.audit_partition_guard'
 - script: test_form_structure_authority_unification.py
   status: active
   owner: platform-team
   date: '2026-09-16'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.form_structure_authority_unification.unit'
 - script: test_form_structure_guidance_retirement.py
   status: active
   owner: platform-team
@@ -1257,45 +1243,32 @@ entries:
   status: active
   owner: platform-team
   date: '2026-10-02'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.acceptance.runtime.baseline_rebuild.unit'
 - script: test_frontend_acceptance_carrier_discard.py
   status: active
   owner: platform-team
   date: '2026-10-11'
-  wire_or_retire: file-consumed
-  reason: invoked by a make/dev.mk acceptance-runtime baseline-rebuild unit target
-    as 'python3 -m unittest scripts.verify.<module>'; that target is not reachable
-    from a declared gate anchor, so this self-test is dispositioned file-consumed
-    rather than gate-wired. The target name is deliberately not spelled out here,
-    because naming it inside a non-prose registry file is counted as a live reference
-    by the verification-lane-coverage audit and would spuriously revive a dead target.
+  reason: 'Governed unittest module invocation in: verify.acceptance.runtime.baseline_rebuild.unit'
 - script: test_frontend_acceptance_runtime_profile.py
   status: active
   owner: platform-team
   date: '2026-09-01'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.acceptance.runtime.baseline_rebuild.unit'
 - script: test_frontend_chart_engine_guard.py
   status: active
   owner: platform-team
   date: '2026-09-10'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.chart_engine.guard'
 - script: test_frontend_contract_basis_guard.py
   status: active
   owner: platform-team
   date: '2026-10-08'
-  wire_or_retire: file-consumed
-  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/frontend.mk
-    (target verify.frontend.contract_basis.unit); module-form invocation is a file
-    reference
+  reason: 'Governed unittest module invocation in: verify.frontend.contract_basis.unit'
 - script: test_frontend_form_canvas_wide_grid_guard.py
   status: active
   owner: platform-team
   date: '2026-10-01'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.form_canvas_layout.guard'
 - script: test_frontend_industry_agnostic_audit.py
   status: active
   owner: platform-team
@@ -1306,32 +1279,27 @@ entries:
   status: active
   owner: platform-team
   date: '2026-09-19'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.rendering_detail_state.unit'
 - script: test_frontend_list_surface_search_contract.py
   status: active
   owner: platform-team
   date: '2026-10-02'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.list_surface_search_contract.unit'
 - script: test_frontend_official_icon_resource_guard.py
   status: active
   owner: platform-team
   date: '2026-09-11'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.official_icon.unit'
 - script: test_frontend_page_pattern_reference_parity_guard.py
   status: active
   owner: platform-team
   date: '2026-10-01'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.page_pattern_reference_parity.unit'
 - script: test_frontend_primitive_adapter_guard.py
   status: active
   owner: platform-team
   date: '2026-10-01'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.primitive_adapter.unit'
 - script: test_frontend_productization_fixture_upsert.py
   status: orphan
   owner: platform-team
@@ -1342,104 +1310,82 @@ entries:
   status: active
   owner: platform-team
   date: '2026-09-10'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.rendering_detail_state.unit'
 - script: test_frontend_standard_preview.py
   status: active
   owner: platform-team
   date: '2026-10-01'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.standard_preview.unit'
 - script: test_frontend_system_state_recovery_guard.py
   status: active
   owner: platform-team
   date: '2026-09-11'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.system_state_recovery.unit'
 - script: test_frontend_v2_policy_projection_guard.py
   status: active
   owner: platform-team
   date: '2026-10-01'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.unified_page_contract.v2.stable_projection'
 - script: test_gitee_ci_acceptance.py
   status: active
   owner: platform-team
   date: '2026-09-23'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.gitee.ci_only.unit'
 - script: test_gitee_ci_checks.py
   status: active
   owner: platform-team
   date: '2026-09-23'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.gitee.checks.unit'
 - script: test_gitee_ci_incremental_update.py
   status: active
   owner: platform-team
   date: '2026-09-23'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.gitee.ci_update.unit'
 - script: test_gitee_formal_executor.py
   status: active
   owner: platform-team
   date: '2026-09-28'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.gitee.formal_executor.unit'
 - script: test_gitee_formal_pr.py
   status: active
   owner: platform-team
   date: '2026-09-27'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.gitee.formal_pr.unit'
 - script: test_gitee_formal_queue.py
   status: active
   owner: platform-team
   date: '2026-09-27'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.gitee.formal_queue.unit'
 - script: test_gitee_formal_worker.py
   status: active
   owner: platform-team
   date: '2026-09-27'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.gitee.formal_worker.unit'
 - script: test_gitee_frontend_cache.py
   status: active
   owner: platform-team
   date: '2026-09-28'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.gitee.frontend_cache.unit'
 - script: test_gitee_frontend_cache_install.py
   status: active
   owner: platform-team
   date: '2026-09-23'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.gitee.frontend_cache_install.unit'
 - script: test_gitee_gate_plan.py
   status: active
   owner: platform-team
   date: '2026-09-25'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.gitee.gates.unit'
 - script: test_gitee_pr_identity.py
   status: active
   owner: platform-team
   date: '2026-09-23'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.gitee.gates.unit'
 - script: test_gitee_publication_scope.py
   status: active
   owner: platform-team
   date: '2026-09-23'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
-- script: test_guard_registry_audit.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-01'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
+  reason: 'Governed unittest module invocation in: verify.gitee.publication_scope.unit'
 - script: test_legacy_custom_column_retirement.py
   status: orphan
   owner: platform-team
@@ -1450,18 +1396,12 @@ entries:
   status: active
   owner: platform-team
   date: '2026-10-13'
-  wire_or_retire: file-consumed
-  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/frontend.mk
-    (target verify.frontend.list_surface_evidence_binding.unit); module-form invocation
-    is a file reference
+  reason: 'Governed unittest module invocation in: verify.frontend.list_surface_evidence_binding.unit'
 - script: test_local_clean_frontend_output.py
   status: active
   owner: platform-team
   date: '2026-10-13'
-  wire_or_retire: file-consumed
-  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/dev_test.mk
-    (target verify.local.clean.frontend_output.unit, prerequisite of verify.contract.architecture.suite);
-    module-form invocation is a file reference the coarse filename match cannot see
+  reason: 'Governed unittest module invocation in: verify.local.clean.frontend_output.unit'
 - script: test_local_dev_candidate_frontend.py
   status: active
   owner: platform-team
@@ -1474,8 +1414,7 @@ entries:
   status: active
   owner: platform-team
   date: '2026-09-13'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.local.dev.frontend.quick.unit'
 - script: test_local_dev_personnel_authorization_fixture.py
   status: orphan
   owner: platform-team
@@ -1493,29 +1432,23 @@ entries:
   status: active
   owner: platform-team
   date: '2026-09-15'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.local.dev.tender_award.unit'
 - script: test_local_development_lifecycle.py
   status: active
   owner: platform-team
   date: '2026-09-15'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.local.dev.layout_authority.unit,
+    verify.local.development_lifecycle.unit, verify.validation.delivery.unit'
 - script: test_login_envelope_consumption_guard.py
   status: active
   owner: platform-team
   date: '2026-10-08'
-  wire_or_retire: file-consumed
-  reason: invoked as 'PYTHONPATH=scripts/verify python3 -m unittest scripts.verify.<module>'
-    inside make/dev_test.mk; module-form invocation is a file reference
+  reason: 'Governed unittest module invocation in: verify.login_envelope.consumption.guard'
 - script: test_menu_fact_monotonic.py
   status: active
   owner: platform-team
   date: '2026-10-13'
-  wire_or_retire: file-consumed
-  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/dev_test.mk
-    (target verify.product.menu.monotonic.unit, prerequisite of verify.contract.architecture.suite);
-    module-form invocation is a file reference the coarse filename match cannot see
+  reason: 'Governed unittest module invocation in: verify.product.menu.monotonic.unit'
 - script: test_menu_governance_inventory.py
   status: orphan
   owner: platform-team
@@ -1560,16 +1493,12 @@ entries:
   status: active
   owner: platform-team
   date: '2026-10-13'
-  wire_or_retire: file-consumed
-  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/dev_test.mk
-    (target verify.payment_slice.data_authority.unit, prerequisite of verify.contract.architecture.suite);
-    module-form invocation is a file reference the coarse filename match cannot see
+  reason: 'Governed unittest module invocation in: verify.payment_slice.data_authority.unit'
 - script: test_playwright_vendor_coupling_guard.py
   status: active
   owner: platform-team
   date: '2026-10-01'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.playwright_vendor_coupling.guard'
 - script: test_product_customer_runtime_decoupling_guard.py
   status: active
   owner: platform-team
@@ -1580,16 +1509,12 @@ entries:
   status: active
   owner: platform-team
   date: '2026-10-13'
-  wire_or_retire: file-consumed
-  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/dev_test.mk
-    (target verify.product.menu.native_inventory.unit, prerequisite of verify.contract.architecture.suite);
-    module-form invocation is a file reference the coarse filename match cannot see
+  reason: 'Governed unittest module invocation in: verify.product.menu.native_inventory.unit'
 - script: test_product_view_capability_ledger.py
   status: active
   owner: platform-team
   date: '2026-09-03'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: contract.view_capability_ledger.export'
 - script: test_product_view_capability_ledger_schema.py
   status: orphan
   owner: platform-team
@@ -1606,10 +1531,7 @@ entries:
   status: active
   owner: platform-team
   date: '2026-10-09'
-  wire_or_retire: file-consumed
-  reason: invoked as 'PYTHONPATH="$(ROOT_DIR)" python3 -m unittest scripts.verify.test_product_view_structure_contract'
-    inside make/guards.mk (target verify.product_view_structure.contract.unit); module-form
-    invocation is recorded as a file reference, not a make-target reference
+  reason: 'Governed unittest module invocation in: verify.product_view_structure.contract.unit'
 - script: test_retired_p1_alias_view_cleanup_migration.py
   status: orphan
   owner: platform-team
@@ -1626,20 +1548,17 @@ entries:
   status: active
   owner: platform-team
   date: '2026-08-27'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.scene_component_bridge.guard'
 - script: test_scene_company_access_preflight_guard.py
   status: active
   owner: platform-team
   date: '2026-08-23'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.scene.company_access.preflight.guard'
 - script: test_scene_company_snapshot_collect.py
   status: active
   owner: platform-team
   date: '2026-09-08'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.scene.company_snapshot.collect'
 - script: test_tax_certificate_formal_contract.py
   status: orphan
   owner: platform-team
@@ -1650,11 +1569,7 @@ entries:
   status: active
   owner: platform-team
   date: '2026-10-10'
-  wire_or_retire: file-consumed
-  reason: invoked as 'python3 -m unittest scripts.verify.test_test_coverage_registry_audit'
-    inside make/guards.mk (target verify.test.coverage.registry); module-form invocation
-    is recorded as a file reference, not a make-target reference, while the sibling
-    test_coverage_registry_audit.py is wired through its explicit filename
+  reason: 'Governed unittest module invocation in: verify.test.coverage.registry'
 - script: test_um_p1_ownership_visibility_contract_guard.py
   status: orphan
   owner: platform-team
@@ -1683,14 +1598,12 @@ entries:
   status: active
   owner: platform-team
   date: '2026-09-03'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.view_type_render_coverage.guard'
 - script: test_workspace_composition_wiring.py
   status: active
   owner: platform-team
   date: '2026-10-01'
-  wire_or_retire: file-consumed
-  reason: consumed only by scripts/tests; no governed make/workflow entry
+  reason: 'Governed unittest module invocation in: verify.frontend.workspace_composition.unit'
 - script: um_p1_ownership_visibility_contract_guard.py
   status: active
   owner: platform-team

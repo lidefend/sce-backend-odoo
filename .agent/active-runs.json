@@ -1,7 +1,11 @@
 {
+  "schema_version": 1,
   "branches": {
     "audit/daily-dev-mainline-product-acceptance-closeout-20261009": ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
     "audit/fe-contract-runtime-00-20261012": ".agent/runs/FE-CONTRACT-RUNTIME-00/run.json",
+    "audit/system-permission-roles-20261019": ".agent/runs/SYSTEM-PERMISSION-ROLES-20261019/run.json",
+    "codex/platform-browser-probe-entry-credentials-20261020": ".agent/runs/PLATFORM-BROWSER-PROBE-ENTRY-CREDENTIALS-20261020/run.json",
+    "feature/user-permission-surface-split-20261019": ".agent/runs/P1-USER-PERMISSION-SURFACE-SPLIT-20261019/run.json",
     "fix/agent-dispatch-inbox-20261017": ".agent/runs/AGENT-DISPATCH-INBOX-20261017/run.json",
     "fix/ci-backend-sharding-cache-20261017": ".agent/runs/CI-REMOTE-EFFICIENCY-20261017/run.json",
     "fix/daily-acceptance-demo-profile-20261019": ".agent/runs/ACCEPTANCE-EVIDENCE-LAYER-REUSE-20261019/run.json",
@@ -18,10 +22,7 @@
     "fix/nav-node-level-menu-acl-closeout": ".agent/runs/TARGET-ENV-ROLE-ACCEPTANCE/run.json",
     "fix/payment-request-chain-alignment-20261013": ".agent/runs/PAYMENT-REQUEST-CHAIN-ALIGNMENT/run.json",
     "fix/platform-admin-surface-closure-20261018": ".agent/runs/PLATFORM-ADMIN-SURFACE-CLOSURE-20261018/run.json",
-    "feature/user-permission-surface-split-20261019": ".agent/runs/P1-USER-PERMISSION-SURFACE-SPLIT-20261019/run.json",
     "fix/product-menu-config-entry-20261019": ".agent/runs/PRODUCT-MENU-CONFIG-ENTRY-20261019/run.json",
-    "audit/system-permission-roles-20261019": ".agent/runs/SYSTEM-PERMISSION-ROLES-20261019/run.json",
-    "codex/platform-browser-probe-entry-credentials-20261020": ".agent/runs/PLATFORM-BROWSER-PROBE-ENTRY-CREDENTIALS-20261020/run.json"
-  },
-  "schema_version": 1
+    "fix/validation-delivery-governance-20261020": ".agent/runs/VALIDATION-DELIVERY-GOVERNANCE-20261020/run.json"
+  }
 }

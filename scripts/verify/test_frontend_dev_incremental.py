@@ -422,6 +422,15 @@ class RunScopedPlannerTest(unittest.TestCase):
         self.assertIn('verify.test', payload['blockedTargets'])
         self.assertNotIn('verify.test', payload['targets'])
 
+    def test_unmet_dependency_is_blocked_in_recommendations(self):
+        self.fixture.second_check()
+        output = io.StringIO()
+        with redirect_stdout(output): iteration_plan(self.fixture.root)
+        payload = json.loads(output.getvalue().split('] ', 1)[1])
+        self.assertEqual(payload['recordedChecks']['second']['status'], 'blocked')
+        self.assertIn('verify.test', payload['blockedTargets'])
+        self.assertNotIn('verify.test', payload['targets'])
+
     def test_missing_registration_cannot_trigger_full_branch_inventory(self):
         from scripts.ops.agent_run_context import RunError
         (self.fixture.root / ".agent/active-runs.json").unlink()

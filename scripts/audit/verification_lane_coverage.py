@@ -397,6 +397,8 @@ SELF_DATA_FILES = (
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/audit/verification_lane_exemptions.json",
     "scripts/retired/retirements.json",
+    # Reasons enumerate targets; actual anchors are parsed by read_anchors.
+    "scripts/verify/registry.yaml",
 )
 
 

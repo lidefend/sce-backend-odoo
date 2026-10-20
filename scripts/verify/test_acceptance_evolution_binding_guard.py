@@ -212,6 +212,31 @@ class TestGlobAndPlan(unittest.TestCase):
             self.assertIn("path_namespace_identity", plan["required_suites"], path)
             self.assertIn("path_namespace_identity", plan["required_evidence_suites"], path)
 
+    def test_exact_governance_tools_do_not_require_runtime(self):
+        paths = ['scripts/ops/agent_run_context.py', 'scripts/ops/evidence_scope.py',
+                 'scripts/ops/test_evidence_scope.py', 'scripts/ops/validation_delivery_plan.py',
+                 'config/acceptance/evolution_binding.v1.json']
+        for path in paths:
+            plan = guard.build_plan(self.registry, [path], 'base', HEAD)
+            self.assertEqual(plan['required_suites'], ['governance_static'], path)
+            self.assertEqual(plan['required_evidence_suites'], [], path)
+
+    def test_runtime_tools_and_mixed_changes_keep_runtime_requirements(self):
+        for path in ('scripts/ops/daily_runtime_database_duty.py', 'scripts/ops/path_ns_c_acceptance.py',
+                     'scripts/ops/new_unclassified_runtime.py'):
+            plan = guard.build_plan(self.registry, ['scripts/ops/evidence_scope.py', path], 'base', HEAD)
+            self.assertEqual(set(plan['required_suites']),
+                             {'governance_static', 'daily_runtime_entry', 'path_namespace_identity'})
+
+    def test_global_and_explicit_dependencies_override_first_match(self):
+        self.assertTrue(guard.suite_owns_path(self.registry, 'daily_runtime_entry',
+                                            'config/acceptance/evolution_binding.v1.json'))
+        self.assertFalse(guard.suite_owns_path(self.registry, 'daily_runtime_entry',
+                                             'scripts/ops/evidence_scope.py'))
+        registry = json.loads(json.dumps(self.registry))
+        registry['suites']['daily_runtime_entry']['inputs'] = ['scripts/ops/evidence_scope.py']
+        self.assertTrue(guard.suite_owns_path(registry, 'daily_runtime_entry', 'scripts/ops/evidence_scope.py'))
+
     def test_plan_fails_closed_for_unclassified_paths(self):
         plan = guard.build_plan(self.registry, ["new_surface/unknown.txt"], "base", HEAD)
         self.assertEqual(plan["status"], "FAIL")
@@ -530,6 +555,18 @@ class TestCarryForwardPolicy(unittest.TestCase):
             guard.suite_input_sha256(self.registry, "frontend_contract", base),
             guard.suite_input_sha256(self.registry, "frontend_contract", head),
         )
+
+    def test_governance_tool_change_preserves_runtime_fingerprint(self):
+        base = self._git('rev-parse', 'HEAD')
+        self._write('scripts/ops/evidence_scope.py', 'offline ledger change')
+        head = self._commit('governance only')
+        for suite in ('daily_runtime_entry', 'path_namespace_identity'):
+            self.assertEqual(guard.suite_input_sha256(self.registry, suite, base),
+                             guard.suite_input_sha256(self.registry, suite, head))
+        self._write('scripts/ops/daily_runtime_database_duty.py', 'runtime change')
+        runtime = self._commit('runtime')
+        self.assertNotEqual(guard.suite_input_sha256(self.registry, 'daily_runtime_entry', head),
+                            guard.suite_input_sha256(self.registry, 'daily_runtime_entry', runtime))
 
     def test_unchanged_suite_inputs_can_be_carried_across_head(self):
         base = self._git("rev-parse", "HEAD")

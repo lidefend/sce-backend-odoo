@@ -33,13 +33,13 @@ def out(root, *args):
     return git(root, *args).stdout.strip()
 
 
-def remote_refs(root, branch):
+def remote_refs(root, branch, remote="gitee-mirror"):
     """Return the observed head refs, or raise. A failed check is never absence."""
-    rows = out(root, "ls-remote", "gitee-mirror", "refs/heads/main", "refs/heads/" + branch)
+    rows = out(root, "ls-remote", remote, "refs/heads/main", "refs/heads/" + branch)
     return dict(line.split()[::-1] for line in rows.splitlines())
 
 
-def inspect(root, branch, head, main, allowed_urls=URLS, remote_head=None, allow_absent=False):
+def inspect(root, branch, head, main, allowed_urls=URLS, remote_head=None, allow_absent=False, remote="gitee-mirror"):
     if allow_absent and remote_head:
         raise RuntimeError("unpublished mode cannot pin a remote head")
     remote_head = None if allow_absent else (remote_head or head)
@@ -56,9 +56,9 @@ def inspect(root, branch, head, main, allowed_urls=URLS, remote_head=None, allow
         raise RuntimeError("clean candidate required")
     if out(root, "branch", "--show-current") != branch or out(root, "rev-parse", "HEAD") != head:
         raise RuntimeError("candidate identity changed")
-    if out(root, "remote", "get-url", "gitee-mirror") not in allowed_urls:
+    if out(root, "remote", "get-url", remote) not in allowed_urls:
         raise RuntimeError("unexpected Gitee remote")
-    refs = remote_refs(root, branch)
+    refs = remote_refs(root, branch, remote)
     if refs.get("refs/heads/main") != main:
         raise RuntimeError("remote identity drift")
     if allow_absent:
@@ -73,17 +73,17 @@ def inspect(root, branch, head, main, allowed_urls=URLS, remote_head=None, allow
 
 
 def sync(root, branch, head, main, apply=False, confirm="", allowed_urls=URLS, remote_head=None,
-         allow_absent=False):
+         allow_absent=False, remote="gitee-mirror", resolve_conflicts=None):
     mode = "unpublished" if allow_absent else "published"
-    root = inspect(root, branch, head, main, allowed_urls, remote_head, allow_absent)
-    git(root, "fetch", "gitee-mirror", "main")
+    root = inspect(root, branch, head, main, allowed_urls, remote_head, allow_absent, remote)
+    git(root, "fetch", remote, "main")
     if out(root, "rev-parse", "FETCH_HEAD") != main:
         raise RuntimeError("main changed during fetch")
     if not apply:
         return {"writes": 0, "head": head, "main": main, "mode": mode}
     if confirm != (CONFIRM_UNPUBLISHED if allow_absent else CONFIRM):
         raise RuntimeError("exact confirmation required")
-    inspect(root, branch, head, main, allowed_urls, remote_head, allow_absent)
+    inspect(root, branch, head, main, allowed_urls, remote_head, allow_absent, remote)
     if git(root, "merge-base", "--is-ancestor", main, head, check=False).returncode == 0:
         return {"changed": False, "head": head, "main": main}
     recovery = Path(out(root, "rev-parse", "--path-format=absolute", "--git-common-dir")) / "codex/recovery"
@@ -94,12 +94,18 @@ def sync(root, branch, head, main, apply=False, confirm="", allowed_urls=URLS, r
     git(root, "bundle", "verify", str(bundle))
     if head not in out(root, "bundle", "list-heads", str(bundle)).split():
         raise RuntimeError("recovery identity mismatch")
-    result = git(root, "merge", "--no-ff", "--no-commit", main, check=False)
-    if result.returncode:
-        if git(root, "rev-parse", "--verify", "MERGE_HEAD", check=False).returncode == 0:
-            git(root, "merge", "--abort")
-        raise RuntimeError("merge conflict; original candidate restored: " + result.stdout)
+    resolved = []
     try:
+        result = git(root, "merge", "--no-ff", "--no-commit", main, check=False)
+        if result.returncode:
+            if resolve_conflicts is None:
+                raise RuntimeError("merge conflict; original candidate restored: " + result.stdout)
+            resolved = resolve_conflicts(root)
+        # Re-read live refs after resolution; never commit over remote drift.
+        refs = remote_refs(root, branch, remote)
+        expected_remote = None if allow_absent else (remote_head or head)
+        if refs.get("refs/heads/main") != main or refs.get("refs/heads/" + branch) != expected_remote:
+            raise RuntimeError("remote identity drift during merge")
         git(root, "diff", "--check", "--cached")
         git(root, "commit", "-m", "merge: synchronize candidate with reviewed main " + main[:8])
     except Exception:
@@ -112,7 +118,8 @@ def sync(root, branch, head, main, apply=False, confirm="", allowed_urls=URLS, r
         raise RuntimeError("post-sync identity mismatch; preserve recovery bundle")
     return {"changed": True, "old_head": head, "head": new_head, "main": main,
             "recovery_bundle": str(bundle), "bundle_sha256": hashlib.sha256(bundle.read_bytes()).hexdigest(),
-            "published": False, "mode": mode, "ci_required": True}
+            "published": False, "mode": mode, "ci_required": True,
+            "resolved_conflicts": resolved, "generated_reports_refresh_required": bool(resolved)}
 
 
 def sync_local_main(root, branch, head, main, old_main, apply=False, confirm="", allowed_urls=URLS):

@@ -1033,3 +1033,28 @@ Do not remove tracked files or traverse .git. Single-writer governance remains r
 - `make verify.daily_dev.menu_config_entry.readonly.browser ACCEPTANCE_TARGET_SHA=<served_sha> ACCEPTANCE_BASE_URL=<declared_daily_url> ACCEPTANCE_LOGIN=<declared_config_admin> DB_NAME=sc_demo`：仅使用既有 daily 凭据声明与身份确认读取菜单入口、面板及刷新；结果按运行ID存入现有验收目录。检查实际服务SHA，禁止把候选源码SHA冒充部署SHA，不部署、不保存菜单配置。
 
 原两例撤权诊断薄包装已退役；需要复查时使用既有 `make local.dev.test MODULE=smart_construction_core TEST_TAGS=<exact_test_selectors>`，完整角色隔离继续用已登记 separation 入口。纯离线权限来源、观察解析和并发前提单测接入共用契约架构套件，不将 SSH 或数据库写入加入自动静态车道。
+
+## 验收演进证据的独立诊断入口
+
+`make acceptance.evolution.verify` 用于已通过 `make acceptance.evolution.record` 登记的正式证据，独立检查格式、哈希、时效与必需套件缺项。调用者须明确诊断基线；此入口不授予 PR 合并资格。合并使用 `make pr.merge.preflight` 读取平台当前源/目标身份并校验证据，不以诊断调用者传入的基线替代平台身份。
+
+## 表单结构工具的定向入口
+
+修改产品视图结构校验器或共享声明解析时，使用 `make verify.product_view_structure.contract.unit` 做离线非零定向测试；它不替代运行时导出与验收。
+
+仅在已批准的原生表单指引退役声明需要重放到生成种子文件时，使用 `make contract.form_structure.guidance.retire`。该入口按 `addons/smart_construction_core/data/native_guidance_form_retirement.xml` 的精确 XML 标识更新既有种子，不允许扩展退役集合、替代模块升级或自动触发数据库写入。执行前后审查种子差异，并运行 `make verify.contract.form_structure.guidance_retirement.unit`；普通迭代不得自动执行此写入口。
+
+## Authorized published GitHub synchronization (2026-10-20)
+
+Owner authorized `make workspace.branch.sync-github-published` for PR #702 closeout.
+The entry binds PR, branch, local HEAD, published source and live main; canonical
+origin only, clean worktree, verified recovery bundle, append-only merge, no push.
+Apply requires `GITHUB_SYNC_CONFIRM=APPEND_EXACT_MAIN_TO_PUBLISHED_CANDIDATE`.
+Only `.agent/active-runs.json` supports three-way key merge (competing assignments
+abort); only `complexity_budget_report.md` and `test_inventory.csv` under
+`docs/engineering_convergence/` may retain candidate content temporarily during
+conflict resolution. Run `make ci.delivery.freeze.prepare` to regenerate reports
+before freezing or publishing. Every other conflict aborts to the original HEAD.
+`make verify.workspace.branch.sync-github.unit` tests identity, conflicts and recovery.
+Use environment variables for PR/EXPECTED_HEAD when invoking `make pr.merge`;
+Make command overrides are intentionally rejected by the Quick evidence authority.

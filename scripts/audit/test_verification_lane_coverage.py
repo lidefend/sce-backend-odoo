@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -670,6 +671,20 @@ def _temp_repo_with_one_dead_target(rule: str = "dead.target:\n\t@echo hi\n") ->
     ):
         subprocess.run(cmd, cwd=tmp, check=True)
     return tmp
+
+
+class GuardRegistryNarrationTest(unittest.TestCase):
+    def test_registry_reason_does_not_revive_target_and_anchor_is_preserved(self):
+        from scripts.audit.verification_lane_coverage import read_anchors
+        root = _temp_repo_with_one_dead_target()
+        self.addCleanup(shutil.rmtree, root)
+        (root / "scripts/verify/registry.yaml").write_text(
+            "- target: actual.gate\n  reason: Governed unittest invocation in dead.target\n",
+            encoding="utf-8",
+        )
+        result = measure(root)
+        self.assertIn("dead.target", result["targets_zero_reference"])
+        self.assertEqual(read_anchors(root), ["actual.gate"])
 
 
 class BatchManifestRoutingTest(unittest.TestCase):

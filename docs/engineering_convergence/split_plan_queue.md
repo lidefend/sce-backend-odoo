@@ -63,10 +63,10 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P2 | 1885 | Construction backend owner | `addons/smart_construction_core/models/core/project_core.py` | Extract service methods for cross-model workflow, amount, and policy logic. |
 | P2 | 1864 | DevOps owner | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1849 | Construction backend owner | `addons/smart_construction_core/core_extension.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 1819 | DevOps owner | `scripts/verify/registry.yaml` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 1810 | DevOps owner | `scripts/audit/verification_lane_coverage.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
+| P2 | 1812 | DevOps owner | `scripts/audit/verification_lane_coverage.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1751 | Construction backend owner | `addons/smart_construction_core/models/support/workflow_contract_service.py` | Extract service methods for cross-model workflow, amount, and policy logic. |
 | P2 | 1747 | Architecture owner | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
+| P2 | 1732 | DevOps owner | `scripts/verify/registry.yaml` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1730 | DevOps owner | `scripts/verify/system_performance_baseline.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1728 | Frontend owner | `frontend/apps/web/src/components/template/FormSection.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
 | P2 | 1718 | Construction backend owner | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
