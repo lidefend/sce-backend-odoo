@@ -10,9 +10,11 @@
 
 ## 当前状态
 
-- 产品实现：`not_started`
-- Run 状态：`planned`；接管执行器完成身份回读后、开始 Batch 7 写入前切为 `active`
-- 批次 7–12：`not_started`
+- 产品实现：Batch 7 子步骤 1–3 已提交；子步骤 4 未开始
+- 当前 HEAD：`85cd5b5cb6a65578673bec1ee8b239fc69891cc2`
+- Run 状态：`blocked`
+- 阻塞：DUF-06（P0 用户授权来源视图/动作运行时校验）
+- 批次 7：`blocked`；批次 8–12：`not_started`
 - main 集成/部署/用户验收：保持当前稳定状态；V2 不直接推送 main
 
 ## 执行器启动
@@ -23,7 +25,7 @@ git status --short
 make agent.run.resume
 ```
 
-确认 planning commit、当前分支和 clean HEAD 后，把 run 从 `planned` 切为 `active`，再开始 Batch 7：
+DUF-06 解除并通过 demo 银行账户回读后，执行器将 run 恢复为 `active`，再从 Batch 7 子步骤 4 继续：
 
 1. 读取 `config/product_system_parameter_catalog_v1.json`；
 2. 读取审批/付款相关的 `smart_construction_core` 服务与 `payment_request_available_actions.py`；
@@ -58,4 +60,9 @@ Batch 7 → 8 → 9 → 10 → 11 → 12。每个批次完成后：
 
 ## 第一个精确动作
 
-Batch 7 先完成 `approval_mode` 和 `default_payment_terms` 的产品声明、服务端校验、影响预览和变更集链路；随后把审批岗位提示与组织负责人路由改为 `tier.review` 驱动，再进入前端和浏览器验收。
+DUF-06 单独定位并修复：`action_sc_review_group_authority` 已由
+`smart_core/models/res_users_group_authority.py` 提供，并由
+`smart_core/views/group_authority_reconciliation_views.xml` 绑定到
+`base.view_users_form`。因此先查清 `_update_user_groups_view` 的运行时校验为何拒绝该按钮，
+不得按“源码缺失”处理，也不得在 demo 层绕过。修复通过后执行受管
+`local.dev.upgrade MODULE=smart_construction_demo`，确认银行账户真实落库，再恢复 Batch 7。

@@ -53,11 +53,11 @@ goal:
     - do_not_modify_demo_worktree_or_demo_data_cleanup
     - keep_main_stable_until_owner_authorized_final_integration
   next_exact_step: >-
-    Executor takeover: run make agent.run.resume, verify the planning commit and
-    clean worktree, mark the run active, then start Batch 7 by declaring
-    approval_mode and default_payment_terms with server-side validation, impact
-    preview and change-set support before replacing static approval role hints
-    with tier.review/org scope facts.
+    Batch 7 is paused before frontend consumption because demo F3 exposed
+    DUF-06: the P0 res.users group-authority review action is present in source
+    but rejected by the runtime view/action validation path during module
+    upgrade. Resolve DUF-06 in an isolated product batch, prove demo bank-account
+    loading/readback, then resume Batch 7 sub-step 4.
   completion:
     scope: product_iteration_v2
     overall_goal: in_progress
