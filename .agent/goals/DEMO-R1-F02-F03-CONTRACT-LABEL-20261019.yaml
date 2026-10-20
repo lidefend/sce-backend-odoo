@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: DEMO-R1-F02-F03-CONTRACT-LABEL-20261019
   title: 项目看板/台账 F02-F03 真实中文契约标签最小修复
-  status: active
+  status: completed
   formal_product_layer: P1
   layer_target: smart_construction_core 生命周期标签生产与前端通用渲染消费
   module: [smart_construction_core, frontend]
@@ -20,4 +20,6 @@ goal:
     - 不写 .git、不 commit、不 push、不部署、不落库、不重置本地数据、不改 Git refs、不装依赖
     - 状态代码保持不变，仅界面显示标签；禁止硬编码英文key到中文映射、模型特判、静默兜底
     - 保留已有 17 项 dirty 种子成果
-  next_exact_step: 完成最小修复并通过离线定向测试 + ci.local.iteration + diffcheck 后写回 run 与批次记录。
+  next_exact_step: >-
+    Completed: scoped F02/F03 batch acceptance and daily candidate deployment.
+    Mainline integration, seed replay, and full product acceptance remain separate.

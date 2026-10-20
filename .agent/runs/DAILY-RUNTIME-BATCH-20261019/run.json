@@ -3,7 +3,7 @@
   "id": "DAILY-RUNTIME-BATCH-20261019",
   "branch": "feature/daily-batch-demo-multicompany-20261019",
   "status": "active",
-  "goal": "在 daily demo duty 上完成受管重建、真实业务口径数据回读与统一入口验收，积累可集成批次后再合并主线",
+  "goal": ".agent/goals/DAILY-RUNTIME-BATCH-20261019.yaml",
   "record": "docs/ops/iterations/daily_runtime_batch_20261019.md",
   "baseline_sha": "654a77bda9ddad1c98c29e055df2d19c1cac2497",
   "scope": [

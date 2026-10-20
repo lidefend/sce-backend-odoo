@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "id": "BASELINE-AGENT-LEDGER-20261020",
+  "branch": "fix/baseline-agent-ledger-20261020",
+  "status": "completed",
+  "baseline_sha": "3e1ceb34ac54b364c701d54666e8e7bf8665fdd3",
+  "goal": ".agent/goals/BASELINE-AGENT-LEDGER-20261020.yaml",
+  "record": "docs/ops/iterations/baseline_agent_ledger_20261020.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BASELINE-AGENT-LEDGER-20261020.yaml",
+    ".agent/runs/BASELINE-AGENT-LEDGER-20261020/run.json",
+    ".agent/goals/PRODUCT-MENU-CONFIG-ENTRY-20261019.yaml",
+    ".agent/goals/DAILY-RUNTIME-BATCH-20261019.yaml",
+    ".agent/runs/DAILY-RUNTIME-BATCH-20261019/run.json",
+    ".agent/goals/DEMO-ORG-MASTER-20261019.yaml",
+    ".agent/goals/DEMO-R1-F02-F03-CONTRACT-LABEL-20261019.yaml",
+    "docs/ops/iterations/baseline_agent_ledger_20261020.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline agent-ledger gate; no database, service or deployment access"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/BASELINE-AGENT-LEDGER-20261020.yaml",
+        ".agent/runs/BASELINE-AGENT-LEDGER-20261020/run.json",
+        ".agent/goals/PRODUCT-MENU-CONFIG-ENTRY-20261019.yaml",
+        ".agent/goals/DAILY-RUNTIME-BATCH-20261019.yaml",
+        ".agent/runs/DAILY-RUNTIME-BATCH-20261019/run.json",
+        ".agent/goals/DEMO-ORG-MASTER-20261019.yaml",
+        ".agent/goals/DEMO-R1-F02-F03-CONTRACT-LABEL-20261019.yaml",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Completed: seven ledger inconsistencies closed; verify.agent.ledger.unit PASS (18 tests); integrate into the demo branch.",
+  "verification_results": {
+    "agent_ledger": {
+      "command": "make verify.agent.ledger.unit",
+      "status": "passed",
+      "tests": 18,
+      "log": ".runtime/agent-runs/BASELINE-AGENT-LEDGER-20261020/agent_ledger.log",
+      "guard": "PASS goals=130 runs=117 pinned_residuals=2 open_run_allowlist=2"
+    },
+    "docs": {
+      "command": "make verify.docs.all",
+      "status": "passed",
+      "missing_links": 0
+    },
+    "iteration": {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "coverage": "L1_only"
+    },
+    "diff_check": "passed"
+  },
+  "completion": {
+    "batch": "passed",
+    "mainline": "not_run",
+    "deployment": "not_run",
+    "product_delivery": "not_run"
+  }
+}

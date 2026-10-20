@@ -1,4 +1,16 @@
-id: PRODUCT-MENU-CONFIG-ENTRY-20261019
-status: active
-objective: 恢复业务全能角色产品配置下菜单配置入口，按声明到发布到实际页面验证
-formal_product_layer: P1/P0; P4 governed diagnostics
+schema_version: 1
+goal:
+  id: PRODUCT-MENU-CONFIG-ENTRY-20261019
+  title: 恢复业务全能角色产品配置菜单入口
+  status: active
+  formal_product_layer: P1/P0
+  supporting_layers:
+    - P4
+  layer_target: product_configuration_menu_entry
+  module:
+    - smart_construction_core
+    - frontend
+  objective: >-
+    恢复业务全能角色产品配置下菜单配置入口，按声明到发布到实际页面验证。
+  next_exact_step: >-
+    L1及P4探针校验，提交干净候选，受管同步 Demo 发布面并只读验证。

@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: DEMO-ORG-MASTER-20261019
   title: Demo 组织主数据（部门/岗位/人员档案）按完整使用路径重建
-  status: active
+  status: completed
   formal_product_layer: P4
   layer_target: demo_addons/smart_construction_demo 基础设施种子
   module: [smart_construction_demo]
@@ -22,5 +22,6 @@ goal:
     - 保留 sc_demo_department_001 及其现有业务引用；新增部门一律带 XMLID 与 parent_id
     - 不用 SQL 直接改库；走模块 XML + 受管 seed/升级路径
     - 不改 .agent/active-runs.json（由调度者维护）；不 commit、不 push、不部署
-  next_exact_step: 调度者执行受管 release_seed + profile replay 后只读回读部门树/岗位/员工数量与
-    主业务账号的 user_id/name/work_email/department/job 映射；能力与 fixture 账号不得进入组织树。
+  next_exact_step: >-
+    Completed: demo data integration merged as f67126ce. Daily development server
+    deployment and upgrade to 17.0.0.4.0 remain a separate authorized batch.
