@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "VALIDATION-DELIVERY-GOVERNANCE-20261020",
   "branch": "fix/validation-delivery-governance-20261020",
-  "baseline_sha": "58f39bec868aa3649862bc698d9e42393eaffcfc",
+  "baseline_sha": "6dd15103ae8f0f892f7e89d915039cff3dd5b997",
   "status": "verification_pending",
   "goal": ".agent/goals/VALIDATION-DELIVERY-GOVERNANCE-20261020.yaml",
   "record": "docs/ops/iterations/validation_delivery_governance_20261020.md",
@@ -125,5 +125,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Implement authorized GitHub published synchronization; test recovery and exact metadata conflict handling before apply."
+  "next_exact_step": "Review regenerated reports, freeze clean candidate, run one Quick for the new source/current-main coverage, archive independent review and update PR #702 without force; require current-base remote gates before protected merge."
 }

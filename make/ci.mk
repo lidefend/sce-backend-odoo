@@ -1131,6 +1131,7 @@ verify.contract.list_preference.single_application: guard.prod.forbid
 
 .PHONY: verify.contract.architecture.suite
 verify.contract.architecture.suite: \
+	verify.workspace.branch.sync-github.unit \
 	guard.prod.forbid \
 	verify.system.permission_role.assignment.unit \
 	verify.system.permission_role.runtime_probe.unit \

@@ -77,3 +77,9 @@ L0沿用原HEAD与明确dirty；L1现有入口；L2四组定向；L3/L4无产品
 
 所有者本轮明确授权补齐受管同步并处理三处已预览冲突。P4 / scripts.ops同步工具：复用现有Gitee同步机制，仅参数化远端并加入冲突处理回调，原Gitee默认行为不变。GitHub包装绑定PR/分支/源SHA/main及canonical origin；无产品语义或环境写入。active-runs按三方键合并，同键竞争拒绝；两份生成报告仅暂存候选版，同步后由freeze.prepare重生成。其他冲突或同步中远端漂移abort，恢复bundle与原HEAD保留，不推送。
 L0=e6bf710+本次dirty；L1 syntax/iteration；L2真实Git同步回归与受影响治理组；L3/L4无数据库或页面输入不执行；L5新候选Quick、独立复核、远端当前基线CI。原Quick对象覆盖因并行main推进失效，已停止回退执行，不冒称取消为通过。
+
+受管同步完成：d24b621e57e6294c3e9a8d4d0492b2ffc1248348 + main 6dd15103ae8f0f892f7e89d915039cff3dd5b997 → b5ade7efac57f7b82ad1d96d206eb0e0f8ca28db，parents精确匹配。三处冲突均在授权集合内。恢复bundle及SHA见.runtime/validation-delivery-governance/github-sync-applied.log；未远端推送。run基线推进到本次已合入main，原基线保留上文和原回执。同步组53、binding31、governance73通过；输入不变scope/planner沿用。main仅改变runtime_ops Make依赖，registry组按声明make/失效并定向重验。生成报告仍待刷新，不称冻结。
+
+同层接线诊断发现registry静态解析器对重复target声明采用覆盖，不能正确累计Make依赖；将新增同步单测直接挂到make/ci.mk原architecture suite声明，消除第二声明，不改注册表/基线。该输入恢复后重验受影响接线检查，未启动Quick。
+
+接线纠正后registry实际审计通过（1502 scripts，全部孤立/未接线状态已登记）；lane coverage在原冻结baseline内通过。六组回执全部reusable：73+142+31+32+24+53=355项，日志沿同一run保留；新增同步组与Make受影响组已重验，未变组不重跑。清理末尾空行后diff check通过。生成清单编号变化来自新增资产和main已合入的probe移动，不手工编辑报告。后续只冻结最终候选一次；本地同步不等于主线集成，部署未执行。

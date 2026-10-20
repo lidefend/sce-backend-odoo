@@ -1661,5 +1661,3 @@ workspace.branch.sync-github-published: guard.prod.forbid
 
 verify.workspace.branch.sync-github.unit: guard.prod.forbid
 	@PYTHONPATH=scripts/ops python3 -m unittest scripts.ops.test_github_published_branch_sync scripts.ops.test_gitee_published_branch_sync
-
-verify.contract.architecture.suite: verify.workspace.branch.sync-github.unit
