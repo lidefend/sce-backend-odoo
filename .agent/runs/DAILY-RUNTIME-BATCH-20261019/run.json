@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "DAILY-RUNTIME-BATCH-20261019",
   "branch": "feature/daily-batch-demo-multicompany-20261019",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/DAILY-RUNTIME-BATCH-20261019.yaml",
   "record": "docs/ops/iterations/daily_runtime_batch_20261019.md",
   "baseline_sha": "654a77bda9ddad1c98c29e055df2d19c1cac2497",
@@ -124,5 +124,5 @@
       "evidence": ".runtime/final-acceptance/daily-deployed/entry-verify-654a77bd.json"
     }
   ],
-  "next_exact_step": "提交并推送 feature/daily-batch-demo-multicompany-20261019，按普通 PR 流程执行远端必需 CI；CI 通过并完成独立复核后再合并主线。合并前不重复执行会写入 demo duty 的重建或升级。"
+  "next_exact_step": "Superseded by the unified demo iteration line; PR #693 closed as a stale duplicate and the content is in main."
 }

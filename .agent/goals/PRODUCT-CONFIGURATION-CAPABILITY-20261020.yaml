@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: PRODUCT-CONFIGURATION-CAPABILITY-20261020
   title: product_configuration_capability_long_task
-  status: active
+  status: completed
   formal_product_layer: P1
   supporting_layers:
     - P0
@@ -34,13 +34,13 @@ goal:
     - company_and_project_scope_must_be_explicit
     - no_demo_only_semantics_in_product_configuration
   next_exact_step: >-
-    Batch 5 complete: my-capabilities page and capability_map available. Next:
-    Batch 6 business-full browser acceptance.
+    Batch 6 and product/demo integration are complete. The daily development
+    runtime serves 57916d790; target user delivery remains not_run.
   completion:
     scope: product_configuration_capability_long_task
-    overall_goal: in_progress
+    overall_goal: completed
     result_index: .agent/runs/PRODUCT-CONFIGURATION-CAPABILITY-20261020/run.json
-    local_batch_acceptance: batch_3_passed
-    mainline_integration: not_run
-    deployment: not_run
+    local_batch_acceptance: passed
+    mainline_integration: completed
+    deployment: completed
     target_user_delivery: not_run

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "PRODUCT-DEMO-INTEGRATION-20261020",
   "branch": "release/product-demo-integration-20261020",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "82dbd9134288576ede315370179858c5ba70ce87",
   "goal": ".agent/goals/PRODUCT-DEMO-INTEGRATION-20261020.yaml",
   "record": "docs/ops/iterations/product_demo_mainline_integration_20261020.md",
@@ -364,8 +364,17 @@
       "assertions": 31,
       "console_errors": 0,
       "failed_requests": 0
+    },
+    "daily_deployment": {
+      "status": "passed",
+      "environment": "sc-root daily",
+      "sha": "57916d79054994458a6f0ec6d0f81e16a7017b65",
+      "demo_sha": "57916d79054994458a6f0ec6d0f81e16a7017b65",
+      "platform_control_sha": "57916d79054994458a6f0ec6d0f81e16a7017b65",
+      "entry_verify": ".runtime/final-acceptance/daily-deployed/entry-verify.json",
+      "target_user_delivery": "not_run"
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the integration run metadata, rerun clean L1, then publish the release candidate through the governed PR lane. Do not write main directly."
+  "next_exact_step": "Product/demo integration is merged and the daily development runtime serves 57916d790. Target user delivery remains not_run."
 }

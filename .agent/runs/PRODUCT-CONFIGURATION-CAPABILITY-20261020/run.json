@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "PRODUCT-CONFIGURATION-CAPABILITY-20261020",
   "branch": "feature/product-configuration-capability-20261020",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "82dbd9134288576ede315370179858c5ba70ce87",
   "goal": ".agent/goals/PRODUCT-CONFIGURATION-CAPABILITY-20261020.yaml",
   "record": "docs/ops/iterations/product_configuration_capability_batch6_20261020.md",
@@ -299,6 +299,13 @@
       "console_errors": 0,
       "failed_requests": 0,
       "record_route_opened": true
+    },
+    "daily_deployment": {
+      "status": "passed",
+      "environment": "sc-root daily",
+      "sha": "57916d79054994458a6f0ec6d0f81e16a7017b65",
+      "entry_verify": ".runtime/final-acceptance/daily-deployed/entry-verify.json",
+      "target_user_delivery": "not_run"
     }
   },
   "blockers": [],
@@ -327,5 +334,5 @@
     "next_exact_step": "Batch 6 is committed at c8133c735; keep mainline integration, deployment and user acceptance not_run until the owner authorizes the integration lane.",
     "mainline_integration": "not_run"
   },
-  "next_exact_step": "Batch 6 committed at c8133c735 with clean L1. Six home blocks, record-backed my_objects, eight configuration cards, parameter catalog and my-capabilities browser acceptance passed. Do not merge main or deploy without owner direction."
+  "next_exact_step": "Product line is merged to main and the daily development runtime serves 57916d790. Target user delivery remains not_run."
 }

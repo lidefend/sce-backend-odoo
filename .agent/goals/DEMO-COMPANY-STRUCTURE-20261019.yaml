@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: DEMO-COMPANY-STRUCTURE-20261019
   title: Demo 集团多公司结构与正式公司身份收敛
-  status: active
+  status: completed
   formal_product_layer: P4
   layer_target: demo_addons/smart_construction_demo 数据种子
   module: [smart_construction_demo]
@@ -23,5 +23,11 @@ goal:
     - 第二公司先登记为 Demo 数据空间，再加入用户允许公司范围
     - 不删除或复用 FE Company A/B 验收夹具公司
   next_exact_step: >-
-    在 daily demo duty 上执行受管 seed（release_seed + profile），随后只读回读主公司名称、
-    第二公司 XMLID/父公司/币种/登记、集团级岗位 company_ids 与 /t/demo 公司切换。
+    Superseded by the unified demo iteration line: content is carried by
+    feature/demo-iteration-line-20261020 and merged into main. PR #692 was closed
+    as a stale duplicate.
+  completion:
+    overall_goal: completed
+    mainline_integration: completed
+    deployment: completed
+    target_user_delivery: not_run

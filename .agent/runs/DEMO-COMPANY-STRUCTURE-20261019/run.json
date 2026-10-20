@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "DEMO-COMPANY-STRUCTURE-20261019",
   "branch": "feature/demo-company-structure-20261019",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/DEMO-COMPANY-STRUCTURE-20261019.yaml",
   "record": "docs/ops/iterations/demo_company_structure_20261019.md",
   "baseline_sha": "86c03b7a3a502028e5ad656f7c8cb34fd3bedff4",
@@ -55,5 +55,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "在 daily demo duty 上执行受管 seed，然后只读回读公司身份、第二公司 XMLID/登记、成员 company_ids 与 /t/demo 公司切换。"
+  "next_exact_step": "Superseded by the unified demo iteration line; PR #692 closed as a stale duplicate and the content is in main."
 }

@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: DAILY-RUNTIME-BATCH-20261019
   title: daily_runtime_batch_demo_multicompany
-  status: active
+  status: completed
   formal_product_layer: P4
   layer_target: daily_demo_duty_rebuild_and_published_entry_acceptance
   module:
@@ -20,5 +20,11 @@ goal:
     - no_production
     - no_repeat_rebuild_without_recovery_readback
   next_exact_step: >-
-    Complete remote required CI and independent review before merging; do not repeat
-    demo duty rebuild or upgrade writes.
+    Superseded by the unified demo iteration line: its runtime and data fixes
+    are carried by feature/demo-iteration-line-20261020 and merged into main.
+    PR #693 was closed as a stale duplicate.
+  completion:
+    overall_goal: completed
+    mainline_integration: completed
+    deployment: completed
+    target_user_delivery: not_run
