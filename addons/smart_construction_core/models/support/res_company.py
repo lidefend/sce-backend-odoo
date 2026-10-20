@@ -23,6 +23,18 @@ class ResCompany(models.Model):
         string="成本台账来源：入库",
         default=False,
     )
+    sc_default_payment_terms = fields.Selection(
+        [
+            ("net30", "账期 30 天"),
+            ("net60", "账期 60 天"),
+            ("advance", "预付款"),
+            ("custom", "自定义"),
+        ],
+        string="默认付款条件",
+        required=True,
+        default="net30",
+        help="新建采购、销售等业务单据时默认采用的付款条件。",
+    )
 
     @api.constrains(
         "sc_cost_from_account_move",

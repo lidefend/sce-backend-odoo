@@ -60,7 +60,7 @@
       "key": "approval_mode",
       "category": "business_rules",
       "label": "审批模式",
-      "description": "控制业务单据的审批流转方式。",
+      "description": "控制业务单据的审批流转方式。审批岗位、组织负责人与金额/范围条件由审批规则（tier.review）声明。",
       "type": "selection",
       "default": "single",
       "allowed_values": [
@@ -70,13 +70,14 @@
       ],
       "scope": "company",
       "maintainer_role": "business_config_admin",
-      "status": "planned",
-      "authority": "sc.product.system.settings",
+      "status": "available",
+      "authority": "sc.approval.policy",
       "impact": {
         "surfaces": [
-          "审批流程"
+          "审批流程",
+          "付款申请审批链"
         ],
-        "summary": "切换审批模式会影响后续单据的提交与审核判断。",
+        "summary": "切换审批模式会改变后续单据的提交与审核判断；审批岗位、组织负责人与金额/范围条件仍由审批规则（tier.review）决定。",
         "risk_level": "high"
       }
     },
@@ -84,7 +85,7 @@
       "key": "default_payment_terms",
       "category": "business_rules",
       "label": "默认付款条件",
-      "description": "新建业务单据时默认采用的付款条件。",
+      "description": "新建采购、销售等业务单据时默认采用的付款条件。",
       "type": "selection",
       "default": "net30",
       "allowed_values": [
@@ -95,14 +96,14 @@
       ],
       "scope": "company",
       "maintainer_role": "business_config_admin",
-      "status": "planned",
-      "authority": "sc.product.system.settings",
+      "status": "available",
+      "authority": "res.company.sc_default_payment_terms",
       "impact": {
         "surfaces": [
           "采购",
           "销售"
         ],
-        "summary": "影响新建单据的默认付款条件。",
+        "summary": "影响新建采购、销售等单据的默认付款条件；历史单据不受影响。",
         "risk_level": "low"
       }
     },

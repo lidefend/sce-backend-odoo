@@ -53,6 +53,7 @@ from . import formal_user_management
 from . import product_policy_sync
 from . import product_system_settings
 from . import product_system_parameter_change
+from . import purchase_order_payment_default
 from . import product_numbering_rule
 from . import product_job
 from . import office_asset

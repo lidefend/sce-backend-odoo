@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "PRODUCT-ITERATION-V2-20261020",
   "branch": "feature/product-iteration-v2-20261020",
-  "status": "planned",
+  "status": "active",
   "baseline_sha": "74063688e928d25c8e65037ac3306956c954244d",
   "goal": ".agent/goals/PRODUCT-ITERATION-V2-20261020.yaml",
   "record": "docs/ops/iterations/product_iteration_v2_handoff_20261020.md",
@@ -10,12 +10,30 @@
     ".agent/active-runs.json",
     ".agent/goals/PRODUCT-ITERATION-V2-20261020.yaml",
     ".agent/runs/PRODUCT-ITERATION-V2-20261020/run.json",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/data/product_system_parameter_catalog_v1.json",
+    "addons/smart_construction_core/data/default_payment_terms.xml",
+    "addons/smart_construction_core/handlers/payment_request_available_actions.py",
+    "addons/smart_construction_core/handlers/product_system_parameter_change.py",
+    "addons/smart_construction_core/handlers/product_system_parameter_catalog.py",
+    "addons/smart_construction_core/models/support/__init__.py",
+    "addons/smart_construction_core/models/support/res_company.py",
+    "addons/smart_construction_core/models/support/purchase_order_payment_default.py",
+    "addons/smart_construction_core/services/default_payment_terms.py",
+    "addons/smart_construction_core/services/product_system_parameter_change.py",
+    "addons/smart_construction_core/tests/test_payment_request_action_surface_backend.py",
+    "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
+    "addons/smart_construction_core/tests/test_product_system_parameter_catalog_service.py",
+    "addons/smart_construction_core/tests/test_product_system_parameter_change.py",
+    "config/product_system_parameter_catalog_v1.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/ops/iterations/product_iteration_v2_batch7_20261020.md",
     "docs/product/product_iteration_v2_20261020.md",
     "docs/ops/iterations/product_iteration_v2_handoff_20261020.md"
   ],
   "environment": {
-    "kind": "offline",
-    "authority": "planning validation uses existing local documentation and Agent ledger targets only; Batch 7 must update this run to the governed runtime identity before product/runtime checks"
+    "kind": "runtime",
+    "authority": "governed local.dev identity: compose_project=sc-local-dev, database=sc_dev_demo, backend_port=18081, module=smart_construction_core; offline declaration guards use existing local tools; runtime L3 uses make local.dev.upgrade and make local.dev.test only"
   },
   "checks": {
     "agent_ledger": {
@@ -107,10 +125,167 @@
           "test_count": 47
         }
       ]
+    },
+    "batch7_slice1_parameters": {
+      "identity": {
+        "head": "da3d84ed17dad608691730dccefc25fac0df7978",
+        "stage": "head_plus_batch7_dirty_scope"
+      },
+      "commands": [
+        {
+          "command": "python3 -m py_compile addons/smart_construction_core/models/support/res_company.py addons/smart_construction_core/services/product_system_parameter_change.py addons/smart_construction_core/handlers/product_system_parameter_catalog.py addons/smart_construction_core/tests/test_product_system_parameter_catalog_service.py addons/smart_construction_core/tests/test_product_system_parameter_change.py",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 47
+        },
+        {
+          "command": "make verify.agent.ledger.unit",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 18
+        },
+        {
+          "command": "make verify.docs.product_boundary",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 7
+        },
+        {
+          "command": "make verify.product_system_parameter_catalog",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 23
+        },
+        {
+          "command": "make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core",
+          "status": "passed",
+          "layer": "L3"
+        },
+        {
+          "command": "make verify.product_system_parameter_change",
+          "status": "passed",
+          "layer": "L3",
+          "test_count": 9
+        }
+      ],
+      "not_run": [
+        {
+          "gate": "tier.review approval hint replacement",
+          "reason": "next Batch 7 sub-step"
+        },
+        {
+          "gate": "frontend consumption and browser acceptance",
+          "reason": "after tier.review approval facts"
+        }
+      ]
+    },
+    "batch7_slice2_approval_facts": {
+      "identity": {
+        "head": "da3d84ed17dad608691730dccefc25fac0df7978",
+        "stage": "head_plus_batch7_dirty_scope"
+      },
+      "commands": [
+        {
+          "command": "python3 -m py_compile addons/smart_construction_core/handlers/payment_request_available_actions.py addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py addons/smart_construction_core/tests/test_payment_request_action_surface_backend.py",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 47
+        },
+        {
+          "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=payment_request_available_actions_backend",
+          "status": "passed",
+          "layer": "L3",
+          "test_count": 8
+        },
+        {
+          "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=payment_request_action_surface_backend",
+          "status": "passed",
+          "layer": "L3",
+          "test_count": 6
+        },
+        {
+          "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestP1PaymentRequestCapability.test_available_actions_use_model_capabilities_not_role_names",
+          "status": "passed",
+          "layer": "L3",
+          "test_count": 1
+        }
+      ],
+      "not_run": [
+        {
+          "gate": "approval_mode business-chain consumption mapping",
+          "reason": "next Batch 7 sub-step"
+        },
+        {
+          "gate": "default_payment_terms new-document default mapping",
+          "reason": "next Batch 7 sub-step"
+        },
+        {
+          "gate": "frontend consumption and browser acceptance",
+          "reason": "after business-chain wiring"
+        }
+      ]
+    },
+    "batch7_slice3_consumption": {
+      "identity": {
+        "head": "da3d84ed17dad608691730dccefc25fac0df7978",
+        "stage": "head_plus_batch7_dirty_scope"
+      },
+      "commands": [
+        {
+          "command": "python3 -m py_compile addons/smart_construction_core/services/product_system_parameter_change.py addons/smart_construction_core/services/default_payment_terms.py addons/smart_construction_core/handlers/product_system_parameter_catalog.py addons/smart_construction_core/handlers/product_system_parameter_change.py addons/smart_construction_core/models/support/res_company.py addons/smart_construction_core/models/support/purchase_order_payment_default.py",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 47
+        },
+        {
+          "command": "make verify.product_system_parameter_catalog",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 23
+        },
+        {
+          "command": "make verify.agent.ledger.unit",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 18
+        },
+        {
+          "command": "make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core",
+          "status": "passed",
+          "layer": "L3"
+        },
+        {
+          "command": "make verify.product_system_parameter_change",
+          "status": "passed",
+          "layer": "L3",
+          "test_count": 11
+        }
+      ],
+      "not_run": [
+        {
+          "gate": "frontend consumption and browser acceptance",
+          "reason": "next Batch 7 sub-step"
+        }
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Executor takeover: run make agent.run.resume, verify the planning commit and clean worktree, mark the run active, then start Batch 7 with approval_mode/default_payment_terms declarations and tier.review/org-scope approval facts.",
+  "next_exact_step": "Batch 7 sub-step 3 done: approval_mode backs payment.request approval policy (policy-backed publish/rollback), default_payment_terms resolves to account.payment.term and defaults new purchase orders. Next sub-step 4: frontend consumption (config workbench/parameter catalog consume declarations only; payment action surface consumes tier.review facts) + browser acceptance.",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",

@@ -267,6 +267,7 @@
         'data/policy_document_contract.xml',
         'data/social_fund_contract.xml',
         'data/product_system_settings_contract.xml',
+        'data/default_payment_terms.xml',
         'data/data_permission_contract.xml',
         'data/product_numbering_rule_contract.xml',
         'data/product_job_contract.xml',

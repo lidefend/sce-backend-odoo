@@ -54,6 +54,23 @@ class ProductSystemParameterCatalogServiceTest(unittest.TestCase):
         self.assertTrue(row["available"])
         self.assertEqual(row["status"], "available")
 
+    def test_approval_mode_parameter_is_available(self):
+        catalog = service.build_catalog(self.manifest)
+        row = next(item for item in catalog["parameters"] if item["key"] == "approval_mode")
+        self.assertTrue(row["available"])
+        self.assertEqual(row["status"], "available")
+        self.assertEqual(row["authority"], "sc.approval.policy")
+
+    def test_default_payment_terms_parameter_is_available(self):
+        catalog = service.build_catalog(self.manifest)
+        row = next(
+            item for item in catalog["parameters"]
+            if item["key"] == "default_payment_terms"
+        )
+        self.assertTrue(row["available"])
+        self.assertEqual(row["status"], "available")
+        self.assertEqual(row["authority"], "res.company.sc_default_payment_terms")
+
     def test_preview_accepts_allowed_selection_value(self):
         result = service.impact_preview(self.manifest, "cost_ledger_source", "stock_move")
         self.assertTrue(result["ok"])
@@ -71,6 +88,30 @@ class ProductSystemParameterCatalogServiceTest(unittest.TestCase):
         result = service.impact_preview(self.manifest, "tax_rate", 0.13)
         self.assertFalse(result["ok"])
         self.assertEqual(result["reason"], "not_implemented")
+
+    def test_preview_accepts_approval_mode_allowed_value(self):
+        result = service.impact_preview(self.manifest, "approval_mode", "multi")
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["change_set_required"])
+        self.assertTrue(result["audit_required"])
+        self.assertTrue(result["rollback_required"])
+        self.assertEqual(result["impact"]["risk_level"], "high")
+
+    def test_preview_rejects_approval_mode_outside_domain(self):
+        result = service.impact_preview(self.manifest, "approval_mode", "parallel")
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["reason"], "value_not_allowed")
+
+    def test_preview_accepts_default_payment_terms_allowed_value(self):
+        result = service.impact_preview(self.manifest, "default_payment_terms", "net60")
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["change_set_required"])
+        self.assertEqual(result["impact"]["risk_level"], "low")
+
+    def test_preview_rejects_default_payment_terms_outside_domain(self):
+        result = service.impact_preview(self.manifest, "default_payment_terms", "net120")
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["reason"], "value_not_allowed")
 
     def test_preview_rejects_unknown_parameter(self):
         result = service.impact_preview(self.manifest, "does_not_exist", "x")

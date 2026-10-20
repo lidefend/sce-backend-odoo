@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: PRODUCT-ITERATION-V2-20261020
   title: product_capability_iteration_v2
-  status: planned
+  status: active
   formal_product_layer: P1
   supporting_layers:
     - P0

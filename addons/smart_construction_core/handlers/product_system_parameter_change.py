@@ -99,8 +99,8 @@ class ProductSystemParameterPublishHandler(BaseIntentHandler):
         if not preview.get("ok"):
             reason = str(preview.get("reason") or "REJECTED").upper()
             return _error(self, trace_id, 422, reason, "参数变更未通过影响预览，不能发布。")
-        previous = read_parameter_value(self.env.company, parameter_key)
-        apply_parameter_value(self.env.company, parameter_key, proposed_value)
+        previous = read_parameter_value(self.env, parameter_key)
+        apply_parameter_value(self.env, parameter_key, proposed_value)
         change = self.env["sc.product.system.parameter.change"].sudo().create(
             {
                 "parameter_key": parameter_key,
@@ -171,7 +171,7 @@ class ProductSystemParameterRollbackHandler(BaseIntentHandler):
             return _error(self, trace_id, 404, "CHANGE_NOT_FOUND", "未找到当前公司的参数变更记录。")
         if record.state != "published":
             return _error(self, trace_id, 409, "CHANGE_NOT_ROLLBACKABLE", "只有已发布的变更可以回滚。")
-        apply_parameter_value(self.env.company, record.parameter_key, record.previous_value)
+        apply_parameter_value(self.env, record.parameter_key, record.previous_value)
         record.sudo().write(
             {
                 "state": "rolled_back",

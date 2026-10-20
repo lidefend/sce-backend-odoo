@@ -98,29 +98,86 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         "projection_only": True,
         "runtime_carrier": "payment_request_available_actions_contract",
     }
-    _ACTION_ROLE_HINTS = {
-        "submit": {
-            "required_role_label": "财务",
-            "required_group_xmlid": "smart_construction_core.group_sc_cap_finance_user",
-            "handoff_hint": "请由财务提交申请后进入审批链路。",
-        },
-        "approve": {
-            "required_role_label": "管理层",
-            "required_group_xmlid": "smart_construction_core.group_sc_role_executive",
-            "handoff_hint": "请由管理层执行审批决策。",
-        },
-        "reject": {
-            "required_role_label": "管理层",
-            "required_group_xmlid": "smart_construction_core.group_sc_role_executive",
-            "handoff_hint": "请由管理层执行驳回并填写原因。",
-        },
-        "done": {
-            "required_role_label": "财务",
-            "required_group_xmlid": "smart_construction_core.group_sc_cap_finance_manager",
-            "handoff_hint": "审批完成后由财务确认办结。",
-        },
-    }
+    _SUBMIT_GROUP_XMLID = "smart_construction_core.group_sc_cap_finance_user"
+    _DONE_GROUP_XMLID = "smart_construction_core.group_sc_cap_finance_manager"
 
+    def _pending_reviewer_group(self, record):
+        """First waiting/pending tier.review reviewer group, or an empty group."""
+        reviews = record.review_ids.filtered(
+            lambda review: review.status in ("waiting", "pending")
+        )
+        if reviews and hasattr(reviews, "sorted"):
+            reviews = reviews.sorted(lambda review: (review.sequence, review.id))
+        for review in reviews:
+            group = review.reviewer_group_id
+            if group:
+                return group
+        return self.env["res.groups"].browse()
+
+    def _fallback_approver_group(self, record):
+        """Declared first active approval step group, then the manager group."""
+        Policy = self.env["sc.approval.policy"]
+        policy = Policy.sudo().get_active_policy(
+            "payment.request", company=getattr(record, "company_id", False) or self.env.company
+        )
+        if not policy:
+            return self.env["res.groups"].browse()
+        steps = policy.step_ids.filtered("active")
+        if steps and hasattr(steps, "sorted"):
+            steps = steps.sorted(lambda step: (step.sequence, step.id))
+        for step in steps:
+            if step.approve_group_id:
+                return step.approve_group_id
+        if policy.manager_group_id:
+            return policy.manager_group_id
+        return self.env["res.groups"].browse()
+
+    def _role_fact_for_action(self, record, action_key):
+        """Role handoff facts from tier.review + the declared org-scope table.
+
+        No static role copy. Approve/reject scope is the pending tier.review
+        reviewer group mapped through ``sc.approval.policy`` org-scope labels;
+        submit/done use their declared authorization groups with the matching
+        org-scope label. The group remains the authorization gate; these fields
+        are handoff hints only.
+        """
+        key = str(action_key or "").strip()
+        Policy = self.env["sc.approval.policy"]
+        if key in {"approve", "reject"}:
+            group = self._pending_reviewer_group(record)
+            if not group:
+                group = self._fallback_approver_group(record)
+            scope_key = Policy._approval_scope_for_group(group) if group else ""
+            xmlid = group.get_external_id().get(group.id) if group else ""
+            label = Policy.APPROVAL_SCOPE_LABELS.get(scope_key, "") if scope_key else ""
+            if key == "approve":
+                hint = ("请由%s执行审批决策。" % label) if label else ""
+            else:
+                hint = ("请由%s执行驳回并填写原因。" % label) if label else ""
+            return {
+                "required_group_xmlid": str(xmlid or ""),
+                "required_role_label": str(label or ""),
+                "handoff_hint": hint,
+            }
+        if key == "submit":
+            label = Policy.APPROVAL_SCOPE_LABELS.get("finance_user", "")
+            return {
+                "required_group_xmlid": self._SUBMIT_GROUP_XMLID,
+                "required_role_label": str(label or ""),
+                "handoff_hint": ("请由%s提交申请后进入审批链路。" % label) if label else "",
+            }
+        if key == "done":
+            label = Policy.APPROVAL_SCOPE_LABELS.get("finance_manager", "")
+            return {
+                "required_group_xmlid": self._DONE_GROUP_XMLID,
+                "required_role_label": str(label or ""),
+                "handoff_hint": ("审批完成后由%s确认办结。" % label) if label else "",
+            }
+        return {
+            "required_group_xmlid": "",
+            "required_role_label": "",
+            "handoff_hint": "",
+        }
     def _actor_has_capability(self, group_xmlid: str) -> bool:
         xmlid = str(group_xmlid or "").strip()
         if not xmlid:
@@ -332,8 +389,8 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "action": action_key,
         }
         required_params = list(spec.get("required_params") or [])
-        role_hint = self._ACTION_ROLE_HINTS.get(action_key) or {}
-        required_group_xmlid = str(role_hint.get("required_group_xmlid") or "")
+        role_fact = self._role_fact_for_action(record, action_key)
+        required_group_xmlid = str(role_fact.get("required_group_xmlid") or "")
         actor_matches_required_role = authorization_allowed
         handoff_required = bool(business_available and not authorization_allowed)
         label = str(spec.get("label") or "")
@@ -368,9 +425,9 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "force_block_available": bool(advisories),
             "suggested_action": suggested_action,
             "required_role_key": role_code_for_group(required_group_xmlid),
-            "required_role_label": str(role_hint.get("required_role_label") or ""),
+            "required_role_label": str(role_fact.get("required_role_label") or ""),
             "required_group_xmlid": required_group_xmlid,
-            "handoff_hint": str(role_hint.get("handoff_hint") or ""),
+            "handoff_hint": str(role_fact.get("handoff_hint") or ""),
             "actor_matches_required_role": actor_matches_required_role,
             "handoff_required": handoff_required,
             "delivery_priority": int(spec.get("delivery_priority") or 100),

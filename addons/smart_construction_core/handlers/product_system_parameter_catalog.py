@@ -11,6 +11,7 @@ from ..services.product_system_parameter_catalog import (
     impact_preview,
     load_manifest,
 )
+from ..services.product_system_parameter_change import read_parameter_value
 
 
 MODULE_MANIFEST = (
@@ -33,17 +34,6 @@ def _has_group(user, xmlid: str) -> bool:
         return bool(checker(xmlid))
     except Exception:
         return False
-
-
-def _cost_ledger_source_current(env) -> str:
-    company = env.company
-    enabled = {
-        "account_move": company.sc_cost_from_account_move,
-        "purchase_order": company.sc_cost_from_purchase,
-        "stock_move": company.sc_cost_from_stock,
-    }
-    selected = [key for key, value in enabled.items() if value]
-    return selected[0] if len(selected) == 1 else "disabled"
 
 
 class ProductSystemParameterCatalogHandler(BaseIntentHandler):
@@ -93,8 +83,14 @@ class ProductSystemParameterCatalogHandler(BaseIntentHandler):
             }
         data = build_catalog(manifest)
         for row in data["parameters"]:
-            if row["key"] == "cost_ledger_source" and row["available"]:
-                row["current_value"] = _cost_ledger_source_current(self.env)
+            if not row["available"]:
+                continue
+            try:
+                current_value = read_parameter_value(self.env, row["key"])
+            except Exception:
+                current_value = None
+            if current_value is not None:
+                row["current_value"] = current_value
         data["success"] = True
         data["reason_code"] = "OK"
         return {

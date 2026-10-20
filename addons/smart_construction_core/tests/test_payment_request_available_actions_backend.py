@@ -126,6 +126,7 @@ class TestPaymentRequestAvailableActionsBackend(BusinessTransactionCase):
             "name": "Synthetic payment approval", "code": "synthetic_actions_approval",
             "target_model": "payment.request", "company_id": self.env.company.id,
             "approval_required": True, "mode": "single",
+            "manager_scope_key": "finance_manager",
         })
         payment = self._create_payment_request_minimal()
         finance_user = self._create_user(
@@ -160,7 +161,7 @@ class TestPaymentRequestAvailableActionsBackend(BusinessTransactionCase):
         self.assertTrue(bool(submit.get("allowed_by_precheck")))
         self.assertFalse(str(submit.get("blocked_message") or "").strip())
         self.assertEqual(submit.get("required_role_key"), "finance")
-        self.assertEqual(submit.get("required_role_label"), "财务")
+        self.assertEqual(submit.get("required_role_label"), "财务经办人")
         self.assertEqual(submit.get("required_group_xmlid"), "smart_construction_core.group_sc_cap_finance_user")
         self.assertTrue(str(submit.get("handoff_hint") or "").strip())
         self.assertEqual((submit.get("presentation") or {}).get("tier"), "primary")
@@ -176,9 +177,9 @@ class TestPaymentRequestAvailableActionsBackend(BusinessTransactionCase):
         reject = by_key.get("reject") or {}
         self.assertEqual(reject.get("reason_code"), REASON_BUSINESS_RULE_FAILED)
         self.assertTrue(bool(reject.get("requires_reason")))
-        self.assertEqual(reject.get("required_role_key"), "executive")
-        self.assertEqual(reject.get("required_role_label"), "管理层")
-        self.assertEqual(reject.get("required_group_xmlid"), "smart_construction_core.group_sc_role_executive")
+        self.assertEqual(reject.get("required_role_key"), "finance")
+        self.assertEqual(reject.get("required_role_label"), "财务审核人")
+        self.assertEqual(reject.get("required_group_xmlid"), "smart_construction_core.group_sc_cap_finance_manager")
         self.assertIsInstance(reject.get("actor_matches_required_role"), bool)
         self.assertIsInstance(reject.get("handoff_required"), bool)
         self.assertEqual(int(reject.get("delivery_priority") or 0), 30)
@@ -186,6 +187,57 @@ class TestPaymentRequestAvailableActionsBackend(BusinessTransactionCase):
         self.assertTrue(bool(submit.get("allowed")))
         reject = next(item for item in actions if item.get("key") == "reject")
         self.assertIn("reason", list(reject.get("required_params") or []))
+
+    def test_approve_reject_role_facts_derive_from_pending_tier_review(self):
+        self.env["sc.approval.policy"].create({
+            "name": "Synthetic payment tier approval",
+            "code": "synthetic_payment_tier_facts_%s" % self.env.company.id,
+            "target_model": "payment.request",
+            "company_id": self.env.company.id,
+            "approval_required": True,
+            "mode": "linear",
+            "manager_scope_key": "finance_manager",
+            "step_ids": [
+                (0, 0, {"name": "财务经办确认", "approval_scope_key": "finance_user"}),
+                (0, 0, {"name": "财务审核", "approval_scope_key": "finance_manager"}),
+            ],
+        })
+        payment = self._create_payment_request_minimal()
+        finance_user = self._create_user(
+            "payment_tier_finance_user",
+            ["base.group_user", "smart_construction_core.group_sc_cap_finance_user"],
+        )
+        payment.project_id.user_id = finance_user
+        self.env.cr.execute(
+            "UPDATE payment_request SET state='submit' WHERE id=%s", (payment.id,)
+        )
+        payment.invalidate_recordset(["state"])
+        self.env["sc.approval.policy"]._start_submission_review(payment)
+        payment.invalidate_recordset(["review_ids", "validation_status"])
+        self.assertTrue(payment.review_ids)
+        result = PaymentRequestAvailableActionsHandler(
+            self.env(user=finance_user.id), payload={}
+        ).handle({"id": payment.id})
+        self.assertTrue(result.get("ok"))
+        actions = {
+            str(row.get("key") or ""): row
+            for row in (result.get("data") or {}).get("actions", [])
+        }
+        approve = actions.get("approve") or {}
+        reject = actions.get("reject") or {}
+        # The pending first tier step is the declared finance_user org scope,
+        # never the hardcoded executive copy.
+        self.assertEqual(approve.get("required_role_label"), "财务经办人")
+        self.assertEqual(
+            approve.get("required_group_xmlid"),
+            "smart_construction_core.group_sc_role_finance_user",
+        )
+        self.assertEqual(approve.get("required_role_key"), "finance")
+        self.assertEqual(reject.get("required_role_label"), "财务经办人")
+        self.assertEqual(
+            reject.get("required_group_xmlid"),
+            "smart_construction_core.group_sc_role_finance_user",
+        )
 
     def test_finance_manager_inherits_submit_capability(self):
         payment = self._create_payment_request_minimal()
