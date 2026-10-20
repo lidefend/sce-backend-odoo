@@ -67,9 +67,8 @@
         "make/frontend.mk"
       ],
       "kind": "offline",
-      "status": "passed",
       "test_count": 18,
-      "note": "esbuild binary unavailable locally (broken node_modules symlinks); executed via Node v24 native type stripping on the same test body"
+    "note": "Local node_modules relinked to the repository pnpm store; original esbuild test path verified."
     },
     "frontend_contract_basis": {
       "target": "verify.frontend.contract_basis.unit",
@@ -80,26 +79,39 @@
         "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
         "make/frontend.mk"
       ],
-      "kind": "offline",
-      "status": "passed",
+    "kind": "offline",
       "test_count": 15
     },
     "frontend_contract_basis_enforce": {
       "target": "verify.frontend.contract_basis.enforce",
-      "status": "passed",
+    "inputs": [
+      "docs/architecture/frontend_contract_basis_ledger.json",
+      "scripts/verify/frontend_contract_basis_guard.py",
+      "make/frontend.mk"
+    ],
       "kind": "offline"
     },
     "frontend_dev_incremental": {
       "target": "verify.frontend.dev.incremental.unit",
-      "status": "passed",
+    "inputs": [
+      "scripts/verify/frontend_dev_incremental.py",
+      "make/ci.mk",
+      "make/dev_test.mk"
+    ],
       "test_count": 32,
       "kind": "offline"
+    }
+  },
+  "verification_results": {
+    "frontend_contract_basis_enforce": {
+      "command": "make verify.frontend.contract_basis.enforce",
+      "status": "passed",
+      "open_defects": 0
     },
     "ci_local_iteration": {
-      "target": "ci.local.iteration",
+      "command": "make ci.local.iteration",
       "status": "passed",
-      "kind": "offline",
-      "note": "L1 only; receipt=none; risk-selected non-zero L2 targets required (run and recorded above)"
+      "coverage": "L1_only"
     }
   },
   "blockers": [],

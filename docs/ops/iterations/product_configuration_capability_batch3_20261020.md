@@ -45,9 +45,20 @@
 | L2 | `make verify.product_configuration.capability` | reusable | 15 | Batch 2 已通过，声明输入未变，复用 |
 | L1 | `make ci.local.iteration` | reconcile→已登记 scope | - | 首次因新文件不在 run scope 触发 reconcile，登记后重跑 |
 
-环境限制：本机 `frontend/apps/web/node_modules` 是指向已消失 `/tmp/sce-fix-daily-demo-env-20261019/...`
-的悬空符号链接（esbuild/vue-tsc 原生二进制缺失），无法本地执行 esbuild 打包与 `vue-tsc` 类型检查。
-行为测试改用 Node v24 原生 TS 类型剥离直跑得到真实结果；类型检查与打包由远端 PR 车道补验。
+环境修复（2026-10-20）：本机 `frontend/apps/web/node_modules` 与 `frontend/packages/ui/node_modules`
+原先指向已消失的 `/tmp/sce-fix-daily-demo-env-20261019/...`。已将 21 条悬空链接重连到主仓
+`frontend/node_modules/.pnpm`（同一 `pnpm-lock.yaml`），包括 `esbuild`、`typescript`、`vue-tsc`、
+`vite`、`vue` 和 `@sc/ui`。
+
+复验：
+
+- `esbuild 0.21.5`、`tsc/vue-tsc 5.9.3`、`vite 5.4.21` 可执行；
+- `scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck:strict` PASS；
+- `scripts/dev/pnpm_exec.sh -C frontend/apps/web build` PASS；
+- `make verify.frontend.product_capability_catalog.unit` PASS（18 cases，走原 esbuild 路径）；
+- `make verify.frontend.contract_basis.unit` PASS（15 tests，bindings=12）。
+
+node_modules 为本地环境目录，不进入 Git；远端 PR 仍需按原车道复验类型检查与构建。
 
 ## 4. 行为验收（Batch 3）
 
