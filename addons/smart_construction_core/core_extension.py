@@ -936,6 +936,10 @@ def _build_project_action_rows(env, user) -> List[Dict[str, Any]]:
     return _system_init_rows.build_project_action_rows(env, user)
 
 
+def _build_home_object_rows(env) -> List[Dict[str, Any]]:
+    return _system_init_rows.build_home_object_rows(env)
+
+
 def _contract_role_catalog_maps() -> tuple[dict, dict]:
     """Project the versioned role catalog over the code-declared role maps.
 
@@ -1265,18 +1269,21 @@ def get_system_init_fact_contributions(env, user, context=None):
         payment_rows = _build_payment_action_rows(env)
         risk_rows = _build_risk_action_rows(env)
         project_rows = _build_project_action_rows(env, user)
+        home_object_rows = _build_home_object_rows(env)
 
         module_facts["workspace_collections"] = {
             "task_items": task_rows,
             "payment_requests": payment_rows,
             "risk_actions": risk_rows,
             "project_actions": project_rows,
+            "home_objects": home_object_rows,
         }
         module_facts["workspace_collection_export_keys"] = [
             "task_items",
             "payment_requests",
             "risk_actions",
             "project_actions",
+            "home_objects",
         ]
 
         module_facts["workspace_business_source"] = {
@@ -1284,6 +1291,7 @@ def get_system_init_fact_contributions(env, user, context=None):
             "payment_requests": len(payment_rows),
             "risk_actions": len(risk_rows),
             "project_actions": len(project_rows),
+            "home_objects": len(home_object_rows),
         }
 
         role_entries = _build_role_entry_contract_rows(env)

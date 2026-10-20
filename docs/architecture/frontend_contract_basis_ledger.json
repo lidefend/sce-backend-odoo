@@ -147,6 +147,30 @@
       "onMissing": "stop",
       "behaviourTest": "frontend/apps/web/scripts/route_authority_guard_test.ts",
       "regressionGuard": "verify.nav.pro01r.route_authority.unit"
+    },
+    {
+      "surface": "product.configuration.capability.catalog（登录首屏 6 区块 / 配置工作台 8 卡 / 能力清单）",
+      "declared": "product.configuration.capability.catalog（capabilities/login_home/configuration_cards 投影）",
+      "declaredBy": "addons/smart_construction_core/handlers/product_configuration_capability.py",
+      "declaredSymbol": "product.configuration.capability.catalog",
+      "consumedBy": "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
+      "consumedSymbol": "projectLoginHomeBlocks",
+      "stopSymbol": "ContractGapError",
+      "onMissing": "stop",
+      "behaviourTest": "frontend/apps/web/scripts/product_capability_catalog_test.ts",
+      "regressionGuard": "verify.frontend.product_capability_catalog.unit"
+    },
+    {
+      "surface": "sc.product.system_parameter（受控系统参数目录 / 影响预览 / 变更记录）",
+      "declared": "sc.product.system_parameter.catalog/.preview/.publish/.rollback（P1:smart_construction_core）",
+      "declaredBy": "addons/smart_construction_core/handlers/product_system_parameter_catalog.py",
+      "declaredSymbol": "sc.product.system_parameter.catalog",
+      "consumedBy": "frontend/apps/web/src/app/productSystemParameterProjection.ts",
+      "consumedSymbol": "projectSystemParameterCatalog",
+      "stopSymbol": "ContractGapError",
+      "onMissing": "stop",
+      "behaviourTest": "frontend/apps/web/scripts/product_system_parameter_test.ts",
+      "regressionGuard": "verify.frontend.product_system_parameter.unit"
     }
   ],
   "registeredMechanismExemptions": [

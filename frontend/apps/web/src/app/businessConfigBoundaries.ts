@@ -85,6 +85,29 @@ export const MENU_CONFIG_INTENTS = {
   versions: 'ui.menu_config.versions',
 } as const;
 
+/**
+ * 产品配置与系统参数能力目录（P1:smart_construction_core）。
+ *
+ * 能力目录是登录首屏「6 个区块」与配置工作台「8 张卡」的唯一契约载体：
+ * 前端只消费该 intent 的投影，不用菜单数量、角色名或模型前缀推导能力。
+ */
+export const PRODUCT_CAPABILITY_INTENTS = {
+  catalog: 'product.configuration.capability.catalog',
+} as const;
+
+/**
+ * 受控系统参数（P1:smart_construction_core）。
+ *
+ * 目录/影响预览/发布/回滚均走这些 intent；前端只原样消费声明，不推导取值
+ * 合法性、影响范围或回滚语义。
+ */
+export const PRODUCT_SYSTEM_PARAMETER_INTENTS = {
+  catalog: 'sc.product.system_parameter.catalog',
+  preview: 'sc.product.system_parameter.preview',
+  publish: 'sc.product.system_parameter.publish',
+  rollback: 'sc.product.system_parameter.rollback',
+} as const;
+
 export const MENU_CONFIG_POLICY_MODEL = 'ui.menu.config.policy';
 
 export const MENU_CONFIG_RUNTIME_SOURCES = {

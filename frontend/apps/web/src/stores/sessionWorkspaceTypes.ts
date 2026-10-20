@@ -55,6 +55,24 @@ export interface WorkspaceRiskAlertRow {
   entryId: string;
 }
 
+export interface WorkspaceHomeObjectRow {
+  id: string;
+  key: string;
+  kind: string;
+  kindLabel: string;
+  title: string;
+  subtitle: string;
+  state: string;
+  stateLabel: string;
+  amount: number;
+  amountDisplay: string;
+  model: string;
+  recordId: number;
+  route: string;
+  reason: string;
+  authority: string;
+}
+
 export interface WorkspaceOpsSummary {
   bars: Record<string, unknown>;
   kpi: Record<string, unknown>;

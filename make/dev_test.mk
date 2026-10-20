@@ -3000,6 +3000,58 @@ verify.demo.lifecycle.unit: guard.prod.forbid
 verify.demo.supplemental.unit: guard.prod.forbid
 	@python3 demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py
 
+.PHONY: verify.local.dev.write_lease.unit
+verify.local.dev.write_lease.unit: guard.prod.forbid
+	@bash -n scripts/dev/local_dev_write_lease.sh
+	@python3 -m unittest scripts.verify.test_local_dev_write_lease
+
+.PHONY: verify.local.dev.entry_identity.unit
+verify.local.dev.entry_identity.unit: guard.prod.forbid
+	@bash -n scripts/dev/local_dev_entry_identity.sh
+	@python3 -m unittest scripts.verify.test_local_dev_entry_identity_core
+
+.PHONY: verify.demo.baseline_readiness.unit
+verify.demo.baseline_readiness.unit: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_baseline_readiness_verifier.py
+
+.PHONY: verify.demo.scenario_step.unit
+verify.demo.scenario_step.unit: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_demo_scenario_step.py
+
+.PHONY: verify.demo.experience_reset_scope.unit
+verify.demo.experience_reset_scope.unit: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_experience_reset_scope.py
+
+.PHONY: verify.demo.role_startup.smoke
+verify.demo.role_startup.smoke: guard.prod.forbid
+	@E2E_LOGIN="$(if $(E2E_LOGIN),$(E2E_LOGIN),demo_pm)" \
+	  E2E_PASSWORD="$(if $(E2E_PASSWORD),$(E2E_PASSWORD),123456)" \
+	  BASE_URL="$(if $(BASE_URL),$(BASE_URL),http://127.0.0.1:18081)" \
+	  ENTRY_NS="$(if $(ENTRY_NS),$(ENTRY_NS),demo)" \
+	  node scripts/verify/demo_role_startup_smoke.js
+
 .PHONY: verify.platform.database.rehearsal.unit
 verify.platform.database.rehearsal.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_platform_database_rehearsal.py
+
+.PHONY: verify.product_configuration.capability
+verify.product_configuration.capability: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_configuration_capability_guard.py scripts/verify/test_product_configuration_capability_guard.py addons/smart_construction_core/services/product_configuration_capability.py addons/smart_construction_core/handlers/product_configuration_capability.py
+	@python3 -m unittest scripts.verify.test_product_configuration_capability_guard
+	@python3 addons/smart_construction_core/tests/test_product_configuration_capability_service.py
+	@python3 scripts/verify/product_configuration_capability_guard.py
+
+.PHONY: verify.product_system_parameter_catalog
+verify.product_system_parameter_catalog: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_system_parameter_catalog_guard.py scripts/verify/test_product_system_parameter_catalog_guard.py addons/smart_construction_core/services/product_system_parameter_catalog.py addons/smart_construction_core/handlers/product_system_parameter_catalog.py
+	@python3 -m unittest scripts.verify.test_product_system_parameter_catalog_guard
+	@python3 addons/smart_construction_core/tests/test_product_system_parameter_catalog_service.py
+	@python3 scripts/verify/product_system_parameter_catalog_guard.py
+
+.PHONY: verify.product_system_parameter_change
+verify.product_system_parameter_change: guard.prod.forbid
+	@MODULE=smart_construction_core TEST_TAGS=product_system_parameter_change $(MAKE) --no-print-directory local.dev.test
+
+.PHONY: verify.product.home_objects.contract
+verify.product.home_objects.contract: guard.prod.forbid
+	@MODULE=smart_construction_core TEST_TAGS=home_objects_contract $(MAKE) --no-print-directory local.dev.test

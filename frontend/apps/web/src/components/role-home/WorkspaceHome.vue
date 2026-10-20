@@ -3,30 +3,72 @@
     <template v-if="!unsupported" #main-actions>
       <ScButton type="button" variant="ghost" appearance="dashboard-action" @click="navigate('/my-work')">查看全部</ScButton>
     </template>
-      <ScInlineState v-if="loading" state="loading" label="正在加载当前事项。" />
-      <ScInlineState v-else-if="error" state="error" :label="error">
-        <template #actions><ScButton type="button" variant="secondary" @click="load">重试</ScButton></template>
-      </ScInlineState>
-      <div v-else-if="tasks.length" class="role-home-surface__task-list">
-        <article v-for="task in tasks" :key="task.key" :data-record-id="task.recordId" :data-work-item-state="task.state?.key">
-          <div class="role-home-surface__task-copy">
-            <div class="role-home-surface__task-heading">
-              <h3>{{ task.kind || task.label }}</h3>
-              <ScStatusBadge v-if="task.state?.label" :value="task.state.key" :label="task.state.label" />
-              <ScMoney v-if="task.amount" class="role-home-surface__task-amount" :label="task.amount.label" :display="formatFact(task.amount)" />
-            </div>
-            <p v-if="task.kind" class="role-home-surface__task-record" :title="task.label">{{ task.label }}</p>
-            <dl v-if="task.facts.length" class="role-home-surface__task-facts">
-              <div v-for="fact in task.facts" :key="fact.key">
-                <dt>{{ fact.label }}</dt>
-                <dd><ScMoney v-if="fact.display_role === 'money'" :display="formatFact(fact)" /><template v-else>{{ formatFact(fact) }}</template></dd>
+      <section
+        data-login-home-block="today_actions"
+        :data-state="loading ? 'loading' : error ? 'error' : tasks.length ? 'ready' : 'empty'"
+      >
+        <h2 class="role-home-surface__block-title">今日工作</h2>
+        <ScInlineState v-if="loading" state="loading" label="正在加载当前事项。" />
+        <ScInlineState v-else-if="error" state="error" :label="error">
+          <template #actions><ScButton type="button" variant="secondary" @click="load">重试</ScButton></template>
+        </ScInlineState>
+        <div v-else-if="tasks.length" class="role-home-surface__task-list">
+          <article v-for="task in tasks" :key="task.key" :data-record-id="task.recordId" :data-work-item-state="task.state?.key">
+            <div class="role-home-surface__task-copy">
+              <div class="role-home-surface__task-heading">
+                <h3>{{ task.kind || task.label }}</h3>
+                <ScStatusBadge v-if="task.state?.label" :value="task.state.key" :label="task.state.label" />
+                <ScMoney v-if="task.amount" class="role-home-surface__task-amount" :label="task.amount.label" :display="formatFact(task.amount)" />
               </div>
-            </dl>
+              <p v-if="task.kind" class="role-home-surface__task-record" :title="task.label">{{ task.label }}</p>
+              <dl v-if="task.facts.length" class="role-home-surface__task-facts">
+                <div v-for="fact in task.facts" :key="fact.key">
+                  <dt>{{ fact.label }}</dt>
+                  <dd><ScMoney v-if="fact.display_role === 'money'" :display="formatFact(fact)" /><template v-else>{{ formatFact(fact) }}</template></dd>
+                </div>
+              </dl>
+            </div>
+            <ScButton type="button" variant="ghost" appearance="dashboard-action" :aria-label="`打开：${task.label}`" @click="navigate(task.route)">打开</ScButton>
+          </article>
+        </div>
+        <ScInlineState v-else state="empty" label="当前没有待处理事项。" />
+      </section>
+      <template v-if="!loading && !error">
+        <section data-login-home-block="risks" :data-state="riskItems.length ? 'ready' : 'empty'">
+          <h2 class="role-home-surface__block-title">风险与提醒</h2>
+          <div v-if="riskItems.length" class="role-home-surface__block-list">
+            <article v-for="item in riskItems" :key="item.key" class="role-home-surface__block-item" :data-risk-tone="item.tone">
+              <div>
+                <strong>{{ item.label }}</strong>
+                <p v-if="item.detail">{{ item.detail }}</p>
+              </div>
+              <ScButton v-if="item.route" type="button" variant="ghost" appearance="dashboard-action" @click="navigate(item.route)">{{ item.actionLabel || '查看' }}</ScButton>
+            </article>
           </div>
-          <ScButton type="button" variant="ghost" appearance="dashboard-action" :aria-label="`打开：${task.label}`" @click="navigate(task.route)">打开</ScButton>
-        </article>
-      </div>
-      <ScInlineState v-else state="empty" label="当前没有待处理事项。" />
+          <ScInlineState v-else state="empty" label="当前没有高风险提醒。" />
+        </section>
+        <section data-login-home-block="my_objects" :data-state="objectItems.length ? 'ready' : 'empty'">
+          <h2 class="role-home-surface__block-title">{{ myObjectsTitle }}</h2>
+          <div v-if="objectItems.length" class="role-home-surface__block-list">
+            <article
+              v-for="item in objectItems"
+              :key="item.key"
+              class="role-home-surface__block-item"
+              :data-object-kind="item.kind"
+              :data-object-model="item.model"
+              :data-object-record-id="item.recordId || undefined"
+              :data-object-route="item.route || undefined"
+            >
+              <div>
+                <strong>{{ item.label }}</strong>
+                <p v-if="item.detail">{{ item.detail }}</p>
+              </div>
+              <ScButton v-if="item.route" type="button" variant="ghost" appearance="dashboard-action" @click="navigate(item.route)">打开</ScButton>
+            </article>
+          </div>
+          <ScInlineState v-else state="empty" :label="myObjectsEmpty" />
+        </section>
+      </template>
     <template #summary>
       <div v-if="summaries.length" class="role-home-surface__summary-list">
         <article v-for="summary in summaries" :key="summary.key">
@@ -38,7 +80,10 @@
     </template>
     <template #secondary>
       <div class="role-home-surface__access-grid">
-        <div>
+        <div
+          data-login-home-block="quick_actions"
+          :data-state="loading ? 'loading' : error ? 'error' : quickLinks.length ? 'ready' : 'empty'"
+        >
           <h3>常用入口</h3>
           <div v-if="quickLinks.length" class="role-home-surface__link-list role-home-surface__link-list--quick">
             <ScButton v-for="link in quickLinks" :key="link.key" type="button" variant="ghost" appearance="dashboard-quick-link" @click="navigate(link.route)">
@@ -52,7 +97,7 @@
           </div>
           <p v-else class="role-home-surface__state">当前没有可用入口。</p>
         </div>
-        <div>
+        <div data-login-home-block="recent" :data-state="recentItems.length ? 'ready' : 'empty'">
           <h3>最近访问</h3>
           <div v-if="recentItems.length" class="role-home-surface__link-list role-home-surface__link-list--recent">
             <ScButton v-for="item in recentItems" :key="item.key" type="button" variant="ghost" appearance="dashboard-recent-link" @click="navigate(item.route)">
@@ -61,6 +106,47 @@
           </div>
           <p v-else class="role-home-surface__state">打开业务页面后，最近访问会显示在这里。</p>
         </div>
+      </div>
+      <div
+        class="role-home-surface__capability-map"
+        data-login-home-block="capability_map"
+        data-semantic-component="WorkspaceHomeCapabilityMap"
+        :data-state="catalogLoading ? 'loading' : catalogError || catalogGap ? 'error' : loginBlocks.length ? 'ready' : 'empty'"
+      >
+        <h3>首屏能力</h3>
+        <ScInlineState v-if="catalogLoading" state="loading" label="正在加载能力目录。" />
+        <ScInlineState v-else-if="catalogError" state="error" :label="catalogError">
+          <template #actions><ScButton type="button" variant="secondary" @click="loadCatalog">重试</ScButton></template>
+        </ScInlineState>
+        <ScInlineState v-else-if="catalogGap" state="error" :label="catalogGap" />
+        <div v-else-if="loginBlocks.length" class="role-home-surface__capability-list">
+          <article
+            v-for="block in loginBlocks"
+            :key="block.key"
+            class="role-home-surface__capability-item"
+            :data-capability-key="block.key"
+            :data-capability-available="block.available ? 'true' : 'false'"
+            :data-capability-required="block.required ? 'true' : 'false'"
+          >
+            <strong>{{ block.label }}</strong>
+            <span class="role-home-surface__capability-status" :data-capability-status="block.available ? 'available' : block.reason">
+              {{ capabilityStatusLabel(block.available ? 'available' : block.reason) }}
+            </span>
+            <small v-if="!block.available" class="role-home-surface__capability-reason">
+              {{ block.reason === 'planned' ? '该能力尚未发布，暂不可用。' : block.reason }}
+            </small>
+            <ScButton
+              v-if="block.key === 'capability_map' && block.available"
+              type="button"
+              variant="ghost"
+              appearance="dashboard-action"
+              @click="navigate('/my-capabilities')"
+            >
+              查看我的能力
+            </ScButton>
+          </article>
+        </div>
+        <p v-else class="role-home-surface__state">当前账号没有声明登录首屏能力区块。</p>
       </div>
     </template>
   </ProductWorkspaceSurface>
@@ -76,6 +162,7 @@ import ScStatusBadge from '../design-system/ScStatusBadge.vue';
 import ScMoney from '../design-system/ScMoney.vue';
 import type { ProductMyWorkFact } from '../../api/myWork';
 import { formatProductMyWorkFact } from '../../app/presentation/productMyWorkPresentation';
+import { capabilityStatusLabel } from '../../app/productCapabilityCatalogProjection';
 
 const formatFact = (fact: ProductMyWorkFact) => formatProductMyWorkFact(fact);
 
@@ -94,10 +181,19 @@ const {
   summaries,
   quickLinks,
   recentItems,
+  riskItems,
+  objectItems,
+  myObjectsTitle,
+  myObjectsEmpty,
   loading,
   error,
   unsupported,
+  loginBlocks,
+  catalogLoading,
+  catalogError,
+  catalogGap,
   load,
+  loadCatalog,
   navigate,
 } = useWorkspaceHome();
 </script>
@@ -129,6 +225,49 @@ const {
 .role-home-surface__task-list {
   display: grid;
   gap: var(--sc-space-2, 8px);
+}
+
+.role-home-surface__block-title {
+  margin: 0 0 var(--sc-space-2, 8px);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.role-home-surface__block-list {
+  display: grid;
+  gap: var(--sc-space-2, 8px);
+}
+
+.role-home-surface__block-item {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sc-space-3, 12px);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--sc-app-border);
+}
+
+.role-home-surface__block-item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.role-home-surface__block-item > div {
+  min-width: 0;
+}
+
+.role-home-surface__block-item p {
+  margin: 4px 0 0;
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.role-home-surface__block-item :deep(.sc-btn) {
+  flex: none;
+  min-height: 44px;
 }
 
 .role-home-surface__task-list article {
@@ -256,6 +395,50 @@ const {
   padding: var(--sc-space-3, 12px);
   border-radius: 4px;
   background: var(--sc-app-subtle-bg);
+}
+
+.role-home-surface__capability-map {
+  margin-top: var(--sc-space-4, 16px);
+}
+
+.role-home-surface__capability-map h3 {
+  margin: 0;
+}
+
+.role-home-surface__capability-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--sc-space-2, 8px);
+  margin-top: var(--sc-space-2, 8px);
+}
+
+.role-home-surface__capability-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 10px 12px;
+  border-radius: var(--sc-product-radius-control);
+  background: var(--sc-app-subtle-bg);
+}
+
+.role-home-surface__capability-item strong {
+  color: var(--sc-app-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.role-home-surface__capability-status {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--sc-app-text-secondary);
+  background: var(--sc-app-border);
+}
+
+.role-home-surface__capability-reason {
+  grid-column: 1 / -1;
+  color: var(--sc-app-text-muted);
+  font-size: 12px;
 }
 
 @media (max-width: 960px) {

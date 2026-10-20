@@ -342,6 +342,12 @@
       "owner": "platform-team",
       "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
     },
+    "daily.runtime.database.duty.recreate": {
+      "disposition": "ops_tooling",
+      "owner": "platform-team",
+      "reason": "on-demand governed database recreation entry; not selected by a recurring CI lane",
+      "review_by": "2026-12-31"
+    },
     "daily.runtime.database.duty.refresh": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
@@ -351,11 +357,6 @@
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "日常 duty 运维入口：seed 只把已声明的 demo profile（demo_full）装进已服务的 demo duty，必须先在 duty 主机上以真实凭据和显式确认执行，确认值也会校验目标环境是否真的是 demo；它没有任何自动化 lane 可以消费，按 make 的公开入口由运行手册驱动。"
-    },
-    "daily.runtime.database.duty.upgrade": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "日常 duty 运维入口：upgrade 只把已声明模块集从部署树重写到已服务的 duty（先捕获并经 pg_restore --list 验证恢复点，再以 -u 重写、重启并回读模块版本），不安装声明之外的任何模块；它必须在 duty 主机上以真实凭据串行执行，没有任何自动化 lane 能消费它，按 make 的公开入口由运行手册驱动。"
     },
     "daily.runtime.duty.database_registration.remote_readback": {
       "disposition": "ops_runbook",
@@ -412,6 +413,21 @@
       "owner": "platform-team",
       "reason": "遗留 db/redis 栈的受管退役入口（plan/apply），只在日常服务器上经确认后执行，无自动化通道消费。"
     },
+    "daily.runtime.platform.admin.credential.ensure": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "受控收敛平台管理员凭据；refresh 通过 converge 自动调用，人工入口保留确认门。"
+    },
+    "daily.runtime.platform.admin.credential.seed": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "记录所有者提供的平台管理员凭据到受管 0600 环境文件；人工 runbook 入口，不由车道自动执行。"
+    },
+    "daily.runtime.platform.admin.credential.verify": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "只读校验平台管理员声明凭据；人工 runbook 入口，部署后与登录复核一起执行。"
+    },
     "daily.runtime.tenant.addons.deliver": {
       "disposition": "tenant_runbook",
       "owner": "platform-team",
@@ -426,6 +442,12 @@
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "数据库分支工具目标。"
+    },
+    "demo.experience_reset.plan": {
+      "disposition": "demo_runbook",
+      "owner": "demo-team",
+      "reason": "read-only experience reset planning entry used by the demo iteration runbook",
+      "review_by": "2026-12-31"
     },
     "demo.frontend.build": {
       "disposition": "ops_runbook",
@@ -451,6 +473,12 @@
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/prod_command_policy.md。登记待接线或退役，B3 按族处理。"
+    },
+    "demo.scenario_tick.run": {
+      "disposition": "demo_runbook",
+      "owner": "demo-team",
+      "reason": "governed scenario tick runtime entry used by the demo iteration runbook",
+      "review_by": "2026-12-31"
     },
     "demo.tenant.verify": {
       "disposition": "ops_runbook",
@@ -1443,6 +1471,24 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/business_entry_surface_normalization_batch_1_20260913.md。登记待接线或退役，B3 按族处理。"
     },
+    "local.dev.entry_identity.ensure": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "local.dev entry identity repair entry invoked only after governed demo sync/upgrade",
+      "review_by": "2026-12-31"
+    },
+    "local.dev.entry_identity.verify": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "local.dev entry identity verification entry used before browser acceptance",
+      "review_by": "2026-12-31"
+    },
+    "local.dev.experience_reset.plan": {
+      "disposition": "local_diagnostic",
+      "owner": "demo-team",
+      "reason": "local.dev wrapper for the read-only experience reset planner",
+      "review_by": "2026-12-31"
+    },
     "local.dev.gate_contract.bounded": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",
@@ -1508,6 +1554,18 @@
       "reason": "R14 启动事实复用探针：核对 system.init 的导航与路由权威构建是否重复，需要活栈。",
       "review_by": "2027-03-31"
     },
+    "local.dev.scenario_tick.run": {
+      "disposition": "local_diagnostic",
+      "owner": "demo-team",
+      "reason": "local.dev wrapper for the governed scenario tick executor",
+      "review_by": "2026-12-31"
+    },
+    "local.dev.upgrade.run": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "internal run target protected by the local.dev write lease; invoked by local.dev.upgrade",
+      "review_by": "2026-12-31"
+    },
     "local.dev.user_permission.rehearsal": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",
@@ -1517,6 +1575,12 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/context.yaml。登记待接线或退役，B3 按族处理。"
+    },
+    "local.dev.write_lease.status": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "read-only status probe for the shared local.dev write lease",
+      "review_by": "2026-12-31"
     },
     "local.sample.health": {
       "disposition": "ops_runbook",
@@ -2513,6 +2577,30 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
+    "verify.demo.baseline_readiness.unit": {
+      "disposition": "demo_runbook",
+      "owner": "demo-team",
+      "reason": "demo baseline readiness ORM suite; selected on demand by the demo runbook",
+      "review_by": "2026-12-31"
+    },
+    "verify.demo.experience_reset_scope.unit": {
+      "disposition": "demo_runbook",
+      "owner": "demo-team",
+      "reason": "experience reset scope unit suite; selected on demand by the demo runbook",
+      "review_by": "2026-12-31"
+    },
+    "verify.demo.role_startup.smoke": {
+      "disposition": "browser_acceptance_probe",
+      "owner": "demo-team",
+      "reason": "real /t/demo contract smoke for demo roles; run manually after local.dev identity verification",
+      "review_by": "2026-12-31"
+    },
+    "verify.demo.scenario_step.unit": {
+      "disposition": "demo_runbook",
+      "owner": "demo-team",
+      "reason": "scenario step unit suite; selected on demand by the demo runbook",
+      "review_by": "2026-12-31"
+    },
     "verify.dev.acceptance.contract": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
@@ -2863,6 +2951,12 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/frontend_productization/frontend_workspace_layout_contract_compatibility_v1.md。登记待接线或退役，B3 按族处理。"
     },
+    "verify.frontend.product_configuration_capability.browser": {
+      "disposition": "browser_acceptance_probe",
+      "owner": "construction-product",
+      "reason": "business-full browser acceptance probe for the product configuration capability surface",
+      "review_by": "2026-12-31"
+    },
     "verify.frontend.product_design_system.audit": {
       "disposition": "candidate",
       "owner": "platform-team",
@@ -3188,6 +3282,12 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
+    "verify.local.dev.entry_identity.unit": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "unit coverage for the local.dev entry identity repair/verify tooling",
+      "review_by": "2026-12-31"
+    },
     "verify.local.dev.payment_request.floorplan.readonly": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
@@ -3207,6 +3307,12 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE/run.json。登记待接线或退役，B3 按族处理。"
+    },
+    "verify.local.dev.write_lease.unit": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "unit coverage for the shared local.dev write lease",
+      "review_by": "2026-12-31"
     },
     "verify.local.development_lifecycle.unit": {
       "disposition": "history_probe_runbook",
@@ -3633,6 +3739,18 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
+    "verify.product_configuration.capability": {
+      "disposition": "product_tooling",
+      "owner": "construction-product",
+      "reason": "product configuration capability manifest guard and service tests; product runbook entry",
+      "review_by": "2026-12-31"
+    },
+    "verify.product_system_parameter_catalog": {
+      "disposition": "product_tooling",
+      "owner": "construction-product",
+      "reason": "controlled system parameter catalog guard and service tests; product runbook entry",
+      "review_by": "2026-12-31"
+    },
     "verify.production.promotion.config.preflight": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
@@ -3987,21 +4105,6 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/config_center_entry_defect_20260916.md。登记待接线或退役，B3 按族处理。"
-    },
-    "daily.runtime.platform.admin.credential.seed": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "记录所有者提供的平台管理员凭据到受管 0600 环境文件；人工 runbook 入口，不由车道自动执行。"
-    },
-    "daily.runtime.platform.admin.credential.verify": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "只读校验平台管理员声明凭据；人工 runbook 入口，部署后与登录复核一起执行。"
-    },
-    "daily.runtime.platform.admin.credential.ensure": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "受控收敛平台管理员凭据；refresh 通过 converge 自动调用，人工入口保留确认门。"
     }
   },
   "scripts": {

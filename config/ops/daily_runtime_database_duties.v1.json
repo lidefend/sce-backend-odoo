@@ -114,26 +114,7 @@
         "authority": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
         "reason": "The owner ruling of 2026-10-16 declares smart_construction_demo the demo duty's data carrier: demo data is produced by the product's own formal demo seed chain, never by a substitute fixture lane and never by writing a terminal state directly. The chain has the two stages the product's own full-demo loader has -- the release scenario set, then the declared profile -- because the profile's payment step resolves an S69 contract xmlid that only the scenario set creates; a declared stage list without the release set would seed a partial carrier. The product tree names the carrier, the stages and the profile; the governed demo-seed entry reads this section instead of defaulting a step list of its own, and the seed's own guard still has to accept the database, the environment and the explicit demo-data switch before anything runs."
       },
-      "acceptance_fixture": {
-        "carrier": "smart_construction_acceptance_fixture",
-        "scope": "daily_dev",
-        "purpose": "Deterministic readonly acceptance carrier for the daily contract receipt. It is declared apart from demo_seed: the demo data chain remains smart_construction_demo, while this carrier only materialises the governed acceptance identities the readonly probe measures.",
-        "password_env": "SC_ACCEPTANCE_FIXTURE_PASSWORD",
-        "ensure_entrypoint": "scripts/dev/daily_dev_acceptance_fixture.sh",
-        "required_xmlids": [
-          "smart_construction_acceptance_fixture.fe_project_a",
-          "smart_construction_acceptance_fixture.fe_general_contract_a",
-          "smart_construction_acceptance_fixture.fe_settlement_a",
-          "smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a",
-          "smart_construction_acceptance_fixture.fe_request_c_001",
-          "smart_construction_acceptance_fixture.fe_execution_a",
-          "smart_construction_acceptance_fixture.fe_b05_work_settlement_a",
-          "smart_construction_acceptance_fixture.fe_labor_usage_ticket_a",
-          "smart_construction_acceptance_fixture.fe_company_a",
-          "smart_construction_acceptance_fixture.fe_company_b",
-          "smart_construction_acceptance_fixture.fe_user_finance"
-        ]
-      },
+      "acceptance_fixture_policy": "The demo duty is the standard platform tenant users evaluate, so it carries only the product demo data chain. The deterministic acceptance fixture (FE Company A/B and the fixture identities) belongs to a dedicated acceptance carrier, not to this tenant; declaring no acceptance_fixture here keeps a future rebuild from reinstalling test identities into the demo database. The fixture module and its isolated acceptance lane remain intact.",
       "cluster": {
         "container": "sc-demo-dev-db-1",
         "compose_project": "sc-demo-dev",
@@ -171,7 +152,7 @@
         "IS_CUSTOMER_TENANT_DATABASE": false,
         "IS_ISOLATED_REHEARSAL_DATABASE": false,
         "CUSTOMER_BUSINESS_DATA_ALLOWED": false,
-        "FIXTURE_ALLOWED": true,
+        "FIXTURE_ALLOWED": false,
         "EXACT_DATABASE_FILTER_CONFIRMED": true,
         "FILESTORE_IDENTITY_CONFIRMED": true
       },
@@ -194,8 +175,7 @@
         "modules": [
           "smart_core",
           "smart_construction_core",
-          "smart_construction_demo",
-          "smart_construction_acceptance_fixture"
+          "smart_construction_demo"
         ]
       }
     }

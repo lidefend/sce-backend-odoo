@@ -1,0 +1,331 @@
+{
+  "schema_version": 1,
+  "id": "PRODUCT-CONFIGURATION-CAPABILITY-20261020",
+  "branch": "feature/product-configuration-capability-20261020",
+  "status": "active",
+  "baseline_sha": "82dbd9134288576ede315370179858c5ba70ce87",
+  "goal": ".agent/goals/PRODUCT-CONFIGURATION-CAPABILITY-20261020.yaml",
+  "record": "docs/ops/iterations/product_configuration_capability_batch6_20261020.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/PRODUCT-CONFIGURATION-CAPABILITY-20261020.yaml",
+    ".agent/runs/PRODUCT-CONFIGURATION-CAPABILITY-20261020/run.json",
+    "config/product_configuration_capability_v1.json",
+    "docs/product/product_configuration_capability_v1.md",
+    "docs/ops/iterations/product_configuration_capability_bootstrap_20261020.md",
+    "docs/ops/iterations/product_configuration_capability_handoff_20261020.md",
+    "addons/smart_construction_core/data/product_configuration_capability_v1.json",
+    "addons/smart_construction_core/services/product_configuration_capability.py",
+    "addons/smart_construction_core/handlers/product_configuration_capability.py",
+    "addons/smart_construction_core/tests/test_product_configuration_capability_service.py",
+    "addons/smart_construction_core/core_extension_intent_handlers.py",
+    "scripts/verify/product_configuration_capability_guard.py",
+    "scripts/verify/test_product_configuration_capability_guard.py",
+    "make/dev_test.mk",
+    "docs/architecture/frontend_contract_basis_ledger.json",
+    "docs/ops/iterations/product_configuration_capability_batch3_20261020.md",
+    "frontend/apps/web/scripts/product_capability_catalog_test.ts",
+    "frontend/apps/web/src/api/productCapabilityCatalog.ts",
+    "frontend/apps/web/src/app/businessConfigBoundaries.ts",
+    "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
+    "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
+    "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
+    "frontend/apps/web/src/stores/session.ts",
+    "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
+    "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigStartPanel.vue",
+    "frontend/apps/web/src/views/businessConfigSurface/style.css",
+    "frontend/apps/web/src/views/businessConfigSurface/template.html",
+    "make/frontend.mk",
+    "config/product_system_parameter_catalog_v1.json",
+    "docs/ops/iterations/product_configuration_capability_batch4_20261020.md",
+    "addons/smart_construction_core/data/product_system_parameter_catalog_v1.json",
+    "addons/smart_construction_core/services/product_system_parameter_catalog.py",
+    "addons/smart_construction_core/handlers/product_system_parameter_catalog.py",
+    "addons/smart_construction_core/tests/test_product_system_parameter_catalog_service.py",
+    "scripts/verify/product_system_parameter_catalog_guard.py",
+    "scripts/verify/test_product_system_parameter_catalog_guard.py",
+    "addons/smart_construction_core/services/product_system_parameter_change.py",
+    "addons/smart_construction_core/models/support/product_system_parameter_change.py",
+    "addons/smart_construction_core/models/support/__init__.py",
+    "addons/smart_construction_core/security/ir.model.access.csv",
+    "addons/smart_construction_core/handlers/product_system_parameter_change.py",
+    "addons/smart_construction_core/tests/test_product_system_parameter_change.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "frontend/apps/web/src/api/productSystemParameter.ts",
+    "frontend/apps/web/src/app/productSystemParameterProjection.ts",
+    "frontend/apps/web/src/composables/systemParameter/useSystemParameterCatalog.ts",
+    "frontend/apps/web/src/views/systemParameter/SystemParameterCatalogView.vue",
+    "frontend/apps/web/src/router/index.ts",
+    "frontend/apps/web/scripts/product_system_parameter_test.ts",
+    "frontend/apps/web/src/views/MyCapabilitiesView.vue",
+    "frontend/apps/web/src/composables/myCapabilities/useMyCapabilities.ts",
+    "frontend/apps/web/scripts/product_configuration_capability_browser.mjs",
+    "frontend/apps/web/src/stores/sessionWorkspaceTypes.ts",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/core_extension_system_init_rows.py",
+    "addons/smart_construction_core/tests/test_home_objects_contract.py",
+    "addons/smart_construction_scene/profiles/workspace_home_scene_content.py",
+    "addons/smart_core/core/workspace_home_contract_builder.py",
+    "addons/smart_core/core/workspace_home_data_provider.py",
+    "addons/smart_core/tests/test_workspace_home_provider_shapes.py",
+    "docs/ops/iterations/product_configuration_capability_batch6_20261020.md",
+    "docs/ops/iterations/product_configuration_capability_batch5_20261020.md",
+    "docs/ops/iterations/local_dev_entry_identity_20261020.md",
+    "docs/ops/iterations/local_dev_write_lease_20261020.md",
+    "docs/ops/local_development_environment_v1.md",
+    "make/dev.mk",
+    "scripts/dev/local_dev_entry_identity.sh",
+    "scripts/dev/local_dev_entry_identity_core.py",
+    "scripts/dev/local_dev_write_lease.sh",
+    "scripts/verify/test_local_dev_entry_identity_core.py",
+    "scripts/verify/test_local_dev_write_lease.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing local.dev governed lane (project sc-local-dev, database sc_dev_demo, nginx 18081) for module upgrade and targeted ORM tests, plus offline guards and unit tests",
+    "project": "sc-local-dev",
+    "database": "sc_dev_demo"
+  },
+  "checks": {
+    "product_configuration_capability": {
+      "target": "verify.product_configuration.capability",
+      "inputs": [
+        "config/product_configuration_capability_v1.json",
+        "docs/product/product_configuration_capability_v1.md",
+        "addons/smart_construction_core/data/product_configuration_capability_v1.json",
+        "addons/smart_construction_core/services/product_configuration_capability.py",
+        "addons/smart_construction_core/handlers/product_configuration_capability.py",
+        "addons/smart_construction_core/tests/test_product_configuration_capability_service.py",
+        "addons/smart_construction_core/core_extension_intent_handlers.py",
+        "scripts/verify/product_configuration_capability_guard.py",
+        "scripts/verify/test_product_configuration_capability_guard.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_capability_catalog": {
+      "target": "verify.frontend.product_capability_catalog.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/product_capability_catalog_test.ts",
+        "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline",
+      "test_count": 18,
+    "note": "Local node_modules relinked to the repository pnpm store; original esbuild test path verified."
+    },
+    "frontend_contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "inputs": [
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+        "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
+        "make/frontend.mk"
+      ],
+    "kind": "offline",
+      "test_count": 15
+    },
+    "frontend_contract_basis_enforce": {
+      "target": "verify.frontend.contract_basis.enforce",
+    "inputs": [
+      "docs/architecture/frontend_contract_basis_ledger.json",
+      "scripts/verify/frontend_contract_basis_guard.py",
+      "make/frontend.mk"
+    ],
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+    "inputs": [
+      "scripts/verify/frontend_dev_incremental.py",
+      "make/ci.mk",
+      "make/dev_test.mk"
+    ],
+      "test_count": 32,
+      "kind": "offline"
+    },
+    "product_system_parameter_catalog": {
+      "target": "verify.product_system_parameter_catalog",
+      "inputs": [
+        "config/product_system_parameter_catalog_v1.json",
+        "addons/smart_construction_core/data/product_system_parameter_catalog_v1.json",
+        "addons/smart_construction_core/services/product_system_parameter_catalog.py",
+        "addons/smart_construction_core/handlers/product_system_parameter_catalog.py",
+        "addons/smart_construction_core/tests/test_product_system_parameter_catalog_service.py",
+        "addons/smart_construction_core/core_extension_intent_handlers.py",
+        "scripts/verify/product_system_parameter_catalog_guard.py",
+        "scripts/verify/test_product_system_parameter_catalog_guard.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline",
+      "test_count": 17
+    },
+    "product_system_parameter_change": {
+      "target": "verify.product_system_parameter_change",
+      "inputs": [
+        "addons/smart_construction_core/services/product_system_parameter_change.py",
+        "addons/smart_construction_core/models/support/product_system_parameter_change.py",
+        "addons/smart_construction_core/models/support/__init__.py",
+        "addons/smart_construction_core/handlers/product_system_parameter_change.py",
+        "addons/smart_construction_core/tests/test_product_system_parameter_change.py",
+        "addons/smart_construction_core/core_extension_intent_handlers.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/PRODUCT-CONFIGURATION-CAPABILITY-20261020/readback.json"
+      }
+    },
+    "product_system_parameter_frontend": {
+      "target": "verify.frontend.product_system_parameter.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/product_system_parameter_test.ts",
+        "frontend/apps/web/src/app/productSystemParameterProjection.ts",
+        "frontend/apps/web/src/api/productSystemParameter.ts",
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline",
+      "test_count": 20
+    },
+    "home_objects_contract": {
+      "target": "verify.product.home_objects.contract",
+      "inputs": [
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/core_extension_system_init_rows.py",
+        "addons/smart_construction_core/tests/test_home_objects_contract.py",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_core/core/workspace_home_contract_builder.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/PRODUCT-CONFIGURATION-CAPABILITY-20261020/home_objects_readback.json"
+      },
+      "test_count": 2
+    },
+    "frontend_product_configuration_capability_browser": {
+      "target": "verify.frontend.product_configuration_capability.browser",
+      "inputs": [
+        "frontend/apps/web/scripts/product_configuration_capability_browser.mjs",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
+        "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/src/stores/sessionWorkspaceTypes.ts",
+        "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
+        "addons/smart_core/core/workspace_home_contract_builder.py",
+        "make/frontend.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": "artifacts/playwright/product-configuration-capability/report.json"
+      }
+    }
+  },
+  "verification_results": {
+    "frontend_contract_basis_enforce": {
+      "command": "make verify.frontend.contract_basis.enforce",
+      "status": "passed",
+      "bindings": 13,
+      "open_defects": 0
+    },
+    "ci_local_iteration": {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "coverage": "L1_only",
+      "change_state": "clean",
+      "head": "c8133c73545e476e877c8a4219eb5d10df49d6ac"
+    },
+    "product_system_parameter_catalog": {
+      "command": "make verify.product_system_parameter_catalog",
+      "status": "passed",
+      "test_count": 17,
+      "guard": "categories=6 parameters=13"
+    },
+    "construction_intent_contribution_registry": {
+      "command": "python3 scripts/verify/test_construction_intent_contribution_registry.py",
+      "status": "passed",
+      "test_count": 2
+    },
+    "product_system_parameter_change_orm": {
+      "command": "make verify.product_system_parameter_change",
+      "status": "passed",
+      "test_count": 5,
+      "note": "5 TestProductSystemParameterChange cases passed; the full sc_gate suite (460 tests, 0 failed/0 errors) also passed in an earlier broader run"
+    },
+    "local_dev_upgrade": {
+      "command": "make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core",
+      "status": "passed",
+      "note": "schema + security (ir.model.access) applied; local.dev.demo.authority PASS"
+    },
+    "product_system_parameter_frontend": {
+      "command": "make verify.frontend.product_system_parameter.unit",
+      "status": "passed",
+      "test_count": 20
+    },
+    "frontend_typecheck": {
+      "command": "cd frontend/apps/web && pnpm run typecheck",
+      "status": "passed"
+    },
+    "product_configuration_capability_manifest_flip": {
+      "command": "make verify.product_configuration.capability",
+      "status": "passed",
+      "test_count": 16,
+      "note": "workspace.capability_map planned -> available; guard PASS capabilities=25"
+    },
+    "frontend_product_capability_catalog": {
+      "command": "make verify.frontend.product_capability_catalog.unit",
+      "status": "passed",
+      "test_count": 18
+    },
+    "home_objects_contract": {
+      "command": "make verify.product.home_objects.contract",
+      "status": "passed",
+      "test_count": 2,
+      "database": "sc_dev_demo",
+      "note": "Rows are record-backed and only reference project.project, construction.contract or payment.request; demo database produced a non-empty set."
+    },
+    "frontend_product_configuration_capability_browser": {
+      "command": "DB_NAME=sc_dev_demo E2E_LOGIN=wutao E2E_PASSWORD=<existing-demo-credential> make verify.frontend.product_configuration_capability.browser",
+      "status": "passed",
+      "assertions": 31,
+      "home_blocks": 6,
+      "configuration_cards": 8,
+      "parameter_categories": 6,
+      "parameters": 13,
+      "capabilities": 19,
+      "console_errors": 0,
+      "failed_requests": 0,
+      "record_route_opened": true
+    }
+  },
+  "blockers": [],
+  "exclusions": [
+    {
+      "id": "P4-LOCAL-DEV-ENTRY-IDENTITY-20261020",
+      "classification": "carried_prerequisite",
+      "detail": "P4 local.dev entry-identity fix (namespace alias demo -> sc_dev_demo) carried into this candidate to unblock browser acceptance. Verified by make local.dev.entry_identity.verify: PASS alias=demo namespace=ns_000000000002 database=sc_dev_demo.",
+      "owner": "P4 local.dev entry/routing config"
+    },
+    {
+      "id": "DEMO-DATA-TEST-RESIDUE-20261020",
+      "classification": "out_of_scope",
+      "detail": "The record-backed my_objects projection exposes real demo records, including two projects named 成本并发隔离测试项目. Cleaning or reseeding those records belongs to the demo iteration line, not to the product contract layer.",
+      "owner": "demo data iteration"
+    }
+  ],
+  "handoff": {
+    "at": "2026-10-20",
+    "owner": "independent_executor",
+    "instruction": "Paused after Batch 2. Do not redo Batch 1/2. Start Batch 3 from the backend capability catalog intent; do not merge main until all batches are complete.",
+    "worktree": "/home/lidefend/workspace/sce-backend-odoo",
+    "batch_1_commit": "f7a53c73ad87f0c7ca505a842f581cbe97b62854",
+    "batch_2_commit": "f3ab67348",
+    "next_batch": "Batch 6 committed",
+    "next_exact_step": "Batch 6 is committed at c8133c735; keep mainline integration, deployment and user acceptance not_run until the owner authorizes the integration lane.",
+    "mainline_integration": "not_run"
+  },
+  "next_exact_step": "Batch 6 committed at c8133c735 with clean L1. Six home blocks, record-backed my_objects, eight configuration cards, parameter catalog and my-capabilities browser acceptance passed. Do not merge main or deploy without owner direction."
+}

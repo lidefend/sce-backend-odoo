@@ -50,6 +50,7 @@ def main() -> int:
         "LoginView.vue",
         "MenuConfigView.vue",
         "MenuView.vue",
+        "MyCapabilitiesView.vue",
         "MyWorkView.vue",
         "NotFoundView.vue",
         "PlaceholderView.vue",

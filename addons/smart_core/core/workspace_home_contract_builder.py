@@ -1542,6 +1542,48 @@ def _build_capability_group_rows(
     return rows
 
 
+def _build_my_object_rows(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    collections = _extract_business_collections(data)
+    rows = collections.get("home_objects") or []
+    result: List[Dict[str, Any]] = []
+    seen: set = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        model = _to_text(row.get("model"))
+        record_id = _to_int(row.get("record_id"))
+        title = _to_text(row.get("title"))
+        route = _to_text(row.get("route"))
+        if not model or record_id <= 0 or not title or not route.startswith("/r/"):
+            continue
+        marker = (model, record_id)
+        if marker in seen:
+            continue
+        seen.add(marker)
+        result.append(
+            {
+                "id": _to_text(row.get("id")) or f"object-{model}-{record_id}",
+                "key": _to_text(row.get("key")) or f"{model}:{record_id}",
+                "kind": _to_text(row.get("kind")),
+                "kind_label": _to_text(row.get("kind_label")),
+                "title": title,
+                "subtitle": _to_text(row.get("subtitle")),
+                "state": _to_text(row.get("state")),
+                "state_label": _to_text(row.get("state_label")),
+                "amount": float(row.get("amount") or 0),
+                "amount_display": _to_text(row.get("amount_display")),
+                "model": model,
+                "record_id": record_id,
+                "route": route,
+                "reason": _to_text(row.get("reason")),
+                "authority": _to_text(row.get("authority")),
+            }
+        )
+        if len(result) >= 6:
+            break
+    return result
+
+
 def _build_business_today_actions(
     data: Dict[str, Any],
     role_code: str = "",
@@ -2075,6 +2117,7 @@ def _data_sources() -> Dict[str, Dict[str, Any]]:
         "ds_hero": {"source_type": "computed", "provider": "workspace.hero", "section_keys": ["hero"]},
         "ds_metrics": {"source_type": "computed", "provider": "workspace.metrics.summary", "section_keys": ["metrics"]},
         "ds_today_todos": {"source_type": "computed", "provider": "workspace.todo.today", "section_keys": ["today_actions"]},
+        "ds_my_objects": {"source_type": "computed", "provider": "workspace.my_objects", "section_keys": ["my_objects"]},
         "ds_risk_alerts": {"source_type": "computed", "provider": "workspace.risk.alerts", "section_keys": ["risk"]},
         "ds_ops_progress": {"source_type": "computed", "provider": "workspace.progress.summary", "section_keys": ["ops"]},
         "ds_scene_groups": {"source_type": "scene_context", "provider": "workspace.scene.groups", "section_keys": ["scene_groups"]},
@@ -2662,6 +2705,7 @@ def build_workspace_home_contract(data: Dict[str, Any]) -> Dict[str, Any]:
             keyword_overrides=keyword_overrides,
         )
     capability_group_rows = _build_capability_group_rows(capability_groups, normalized_caps)
+    my_object_rows = _build_my_object_rows(data)
     return {
         "scene": scene_contract_core.get("scene") or {},
         "page": scene_contract_core.get("page") or {},
@@ -2682,6 +2726,7 @@ def build_workspace_home_contract(data: Dict[str, Any]) -> Dict[str, Any]:
             "sections": [
                 {"key": "hero", "enabled": True, "tag": "header"},
                 {"key": "today_actions", "enabled": True, "tag": "section"},
+                {"key": "my_objects", "enabled": True, "tag": "section"},
                 {"key": "risk", "enabled": True, "tag": "section"},
                 {"key": "metrics", "enabled": True, "tag": "section"},
                 {"key": "ops", "enabled": True, "tag": "details", "open": False},
@@ -2707,6 +2752,10 @@ def build_workspace_home_contract(data: Dict[str, Any]) -> Dict[str, Any]:
                 "today_actions.subtitle": "先处理高优先事项，再进入对应场景。",
                 "today_actions.count_prefix": "待处理",
                 "today_actions.coming_soon_action": "即将开放",
+                "my_objects.aria_label": "我的项目与业务对象",
+                "my_objects.title": "我的项目与业务对象",
+                "my_objects.subtitle": "当前公司/项目下的项目、合同与资金。",
+                "my_objects.empty": "当前范围没有可展示的项目或业务对象。",
                 "risk.aria_label": "关键事项区",
                 "risk.title": "关键事项",
                 "risk.subtitle": "快速识别当前重点事项。",
@@ -2751,6 +2800,7 @@ def build_workspace_home_contract(data: Dict[str, Any]) -> Dict[str, Any]:
         "metrics": business_metrics,
         "platform_metrics": platform_metrics,
         "today_actions": today_actions,
+        "my_objects": list(my_object_rows),
         "risk": {
             "summary": _to_text(risk_payload.get("summary")),
             "buckets": dict(risk_payload.get("buckets") or {}),

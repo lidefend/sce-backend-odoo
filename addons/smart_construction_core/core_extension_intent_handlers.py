@@ -30,6 +30,17 @@ def get_intent_handler_contributions():
         from odoo.addons.smart_construction_core.handlers.capability_visibility_report import (
             CapabilityVisibilityReportHandler,
         )
+        from odoo.addons.smart_construction_core.handlers.product_configuration_capability import (
+            ProductConfigurationCapabilityCatalogHandler,
+        )
+        from odoo.addons.smart_construction_core.handlers.product_system_parameter_catalog import (
+            ProductSystemParameterCatalogHandler,
+            ProductSystemParameterPreviewHandler,
+        )
+        from odoo.addons.smart_construction_core.handlers.product_system_parameter_change import (
+            ProductSystemParameterPublishHandler,
+            ProductSystemParameterRollbackHandler,
+        )
         from odoo.addons.smart_construction_core.handlers.approval_policy_configuration import (
             ApprovalPolicyConfigGetHandler,
             ApprovalPolicyConfigSetHandler,
@@ -188,6 +199,11 @@ def get_intent_handler_contributions():
         ("my.work.complete_batch", MyWorkCompleteBatchHandler),
         ("telemetry.track", TelemetryTrackHandler),
         ("capability.visibility.report", CapabilityVisibilityReportHandler),
+        ("product.configuration.capability.catalog", ProductConfigurationCapabilityCatalogHandler),
+        ("sc.product.system_parameter.catalog", ProductSystemParameterCatalogHandler),
+        ("sc.product.system_parameter.preview", ProductSystemParameterPreviewHandler),
+        ("sc.product.system_parameter.publish", ProductSystemParameterPublishHandler),
+        ("sc.product.system_parameter.rollback", ProductSystemParameterRollbackHandler),
         (APPROVAL_POLICY_INTENTS["config_get"], ApprovalPolicyConfigGetHandler),
         (APPROVAL_POLICY_INTENTS["config_set"], ApprovalPolicyConfigSetHandler),
         (APPROVAL_POLICY_INTENTS["steps_set"], ApprovalPolicyStepsSetHandler),

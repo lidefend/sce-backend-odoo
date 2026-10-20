@@ -1,6 +1,6 @@
 # Editor 前端专题技术设计
 
-> 本文受根目录 [`README.md`](../../README.md) 总体集成计划约束，仅描述候选能力，不代表已进入产品主线。
+> 本文受根目录 [`README.md`](../README.md) 总体集成计划约束，仅描述候选能力，不代表已进入产品主线。
 
 > 执行状态：`ADR-PENDING`。编辑器正文是运行时记录内容，不得嵌入 capability 定义；具体编辑器技术、canonical format 和净化库均未决定。
 

@@ -156,7 +156,7 @@ fragment of them spells the declaration. That reading is structural rather than
 a list of the operator spellings seen so far: it is asked of the value with its
 comments blanked and its literal contents blanked on top of them, and a call is
 any `(` left there — so
-`:style="'display'['concat'](':none')"` and
+`:style="'display'['concat']&#40;':none'&#41;"` and
 `:style="'display'/*c*/.concat/*b*/(':none')"` are calls, while neither a call
 nor an operator written inside a string or a comment is one — and a `style=…`
 that is markup rather than a binding keeps the text it wrote —

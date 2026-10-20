@@ -1,0 +1,46 @@
+schema_version: 1
+goal:
+  id: PRODUCT-CONFIGURATION-CAPABILITY-20261020
+  title: product_configuration_capability_long_task
+  status: active
+  formal_product_layer: P1
+  supporting_layers:
+    - P0
+    - P3
+  layer_target: product_configuration_and_system_parameter_capability
+  module:
+    - smart_core
+    - smart_construction_core
+    - frontend
+    - config
+    - docs/product
+  baseline:
+    branch: feature/product-configuration-capability-20261020
+    full_sha: 82dbd9134288576ede315370179858c5ba70ce87
+    source: main
+  objective: >-
+    Deliver a coherent product-side configuration capability: a fact-driven login
+    workspace, a business capability map, an eight-card configuration workbench,
+    a controlled system parameter catalog with change-set preview/publish/rollback,
+    and role-based acceptance for the business-full account. Do not integrate main
+    until the whole objective is achieved.
+  constraints:
+    - no_main_integration_until_overall_objective_complete
+    - frontend_consumes_backend_capability_catalog
+    - no_raw_ir_config_parameter_in_user_entry
+    - no_credential_material_or_deployment_identity
+    - business_full_does_not_imply_platform_admin
+    - configuration_mutation_requires_change_set_preview_audit_and_rollback
+    - company_and_project_scope_must_be_explicit
+    - no_demo_only_semantics_in_product_configuration
+  next_exact_step: >-
+    Batch 5 complete: my-capabilities page and capability_map available. Next:
+    Batch 6 business-full browser acceptance.
+  completion:
+    scope: product_configuration_capability_long_task
+    overall_goal: in_progress
+    result_index: .agent/runs/PRODUCT-CONFIGURATION-CAPABILITY-20261020/run.json
+    local_batch_acceptance: batch_3_passed
+    mainline_integration: not_run
+    deployment: not_run
+    target_user_delivery: not_run

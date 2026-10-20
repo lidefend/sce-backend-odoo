@@ -164,8 +164,8 @@
     - 并移除 stale `action_id/menu_id`
     - 同时补齐缺失的 `route/model/view_mode/view_type/record_id`
 - Files:
-  - [addons/smart_construction_scene/scene_registry.py](/home/lidefend/sce-product-odoo/addons/smart_construction_scene/scene_registry.py)
-  - [addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py](/home/lidefend/sce-product-odoo/addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py)
+  - [addons/smart_construction_scene/scene_registry.py](../../../addons/smart_construction_scene/scene_registry.py)
+  - [addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py](../../../addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py)
 - Verification:
   - `python3 -m unittest addons.smart_construction_scene.tests.test_scene_registry_yaml_asset_merge`：PASS
   - `pnpm -C frontend/apps/web typecheck:strict`：PASS
@@ -192,8 +192,8 @@
     - action-backed scene 如果当前 scene 的 resolved action identity 与 asset `source_ref=action:*` 不一致，也判为 stale。
     - 这样 `projects.list` 的旧 `action:519` asset 会被淘汰并刷新为 `action:452`。
   - Tests:
-    - [addons/smart_core/tests/test_scene_provider_target_identity_merge.py](/home/lidefend/sce-product-odoo/addons/smart_core/tests/test_scene_provider_target_identity_merge.py)
-    - [addons/smart_core/tests/test_ui_base_contract_asset_repository.py](/home/lidefend/sce-product-odoo/addons/smart_core/tests/test_ui_base_contract_asset_repository.py)
+    - [addons/smart_core/tests/test_scene_provider_target_identity_merge.py](../../../addons/smart_core/tests/test_scene_provider_target_identity_merge.py)
+    - [addons/smart_core/tests/test_ui_base_contract_asset_repository.py](../../../addons/smart_core/tests/test_ui_base_contract_asset_repository.py)
 - Live verification:
   - `system.init` 现在返回：
     - `projects.list.meta.target.action_id = 452`
@@ -234,7 +234,7 @@
 
 ### 规范文档
 
-- [navigation_dual_track_contract_v1.md](/home/lidefend/sce-product-odoo/docs/architecture/navigation_dual_track_contract_v1.md)
+- [navigation_dual_track_contract_v1.md](../../architecture/navigation_dual_track_contract_v1.md)
 
 ### 后续要求
 

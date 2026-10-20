@@ -38,7 +38,7 @@
 - `make verify.frontend.typecheck.strict` -> `PASS`
 - `make verify.product.project_flow.initiation_dashboard ENV=test ENV_FILE=.env.prod.sim COMPOSE_PROJECT_NAME=sc-backend-odoo-prod-sim PROJECT=sc-backend-odoo-prod-sim DB_NAME=sc_prod_sim E2E_LOGIN=svc_e2e_smoke E2E_PASSWORD=demo` -> `PASS`
 - `make verify.portal.login_browser_smoke.prod_sim ENV=test ENV_FILE=.env.prod.sim COMPOSE_PROJECT_NAME=sc-backend-odoo-prod-sim PROJECT=sc-backend-odoo-prod-sim DB_NAME=sc_prod_sim E2E_LOGIN=svc_e2e_smoke E2E_PASSWORD=demo` -> `PASS`
-  - 证据：[summary.json](/mnt/wsl/docker-desktop-bind-mounts/Ubuntu/0bf88c91312832ece483d20f9dd0da58b3449c7beac0658c5397b284fcec1f13/artifacts/codex/login-browser-smoke/20260323T033851Z/summary.json)
+  - 证据：summary.json
   - `fresh_login` -> `/a/504?menu_id=278&scene_key=project.initiation...`
   - `auth_401_redirect` -> `/login?redirect=%2Fa%2F504...`
   - `relogin_after_401` -> `/f/project.project/new?menu_id=278&scene_key=project.initiation`

@@ -583,6 +583,67 @@ class TestDemoOrganizationBaseline(unittest.TestCase):
         self.assertIn("column == \"payload_json\"", migration)
         self.assertNotIn("SET name = %s, description = %s", migration)
 
+    def test_company_identity_and_second_company_are_real_business_names(self):
+        import runpy
+        hooks = runpy.run_path(
+            str(DEMO_ROOT / "hooks.py"), run_name="demo_company_names_test"
+        )
+        main = hooks["DEMO_COMPANY_NAME"]
+        second = hooks["DEMO_COMPANY_SECOND_NAME"]
+        for value in (main, second):
+            for token in ("Demo", "demo", "演示", "测试", "My Company"):
+                with self.subTest(value=value, token=token):
+                    self.assertNotIn(token, value)
+        self.assertNotEqual(main, second)
+        self.assertTrue(second.startswith(main[:-len("有限公司")]))
+        self.assertTrue(second.endswith("有限公司"))
+
+    def test_company_second_step_is_declared_between_identity_and_projects(self):
+        tree = ast.parse((DEMO_ROOT / "seed/registry.py").read_text())
+        profiles = next(ast.literal_eval(n.value) for n in tree.body
+                        if isinstance(n, ast.AnnAssign) and n.target.id == "_PROFILES")
+        steps = profiles["demo_full"]
+        self.assertEqual(steps[0], "demo_company_identity")
+        self.assertLess(steps.index("demo_company_identity"),
+                        steps.index("demo_company_secondary"))
+        self.assertLess(steps.index("demo_company_secondary"),
+                        steps.index("demo_20_projects"))
+        self.assertLess(steps.index("demo_10_users"),
+                        steps.index("demo_company_membership"))
+        self.assertLess(steps.index("demo_company_membership"),
+                        steps.index("demo_user_prefs"))
+
+    def test_company_second_step_uses_stable_xmlid_and_data_space_registration(self):
+        step = _path("seed/steps/step_company_secondary.py").read_text(encoding="utf-8")
+        self.assertIn("apply_demo_company_secondary", step)
+        self.assertIn("register_demo_company_secondary", step)
+        self.assertIn("guard_demo_data_space", step)
+        hooks = _path("hooks.py").read_text(encoding="utf-8")
+        self.assertIn('"name": "demo_company_second"', hooks)
+        self.assertIn("DEMO_COMPANY_SECOND_NAME", hooks)
+        self.assertNotIn('"company_id": 2', hooks)
+        self.assertNotIn("company_id=2", hooks)
+
+    def test_company_second_members_are_business_seats_not_fixtures(self):
+        import runpy
+        hooks = runpy.run_path(
+            str(DEMO_ROOT / "hooks.py"), run_name="demo_company_members_test"
+        )
+        logins = hooks["DEMO_COMPANY_SECOND_MEMBER_LOGINS"]
+        self.assertIn("admin", logins)
+        self.assertIn("wutao", logins)
+        self.assertIn("demo_finance", logins)
+        for login in logins:
+            with self.subTest(login=login):
+                self.assertFalse(login.startswith(("fixture_", "svc_", "acceptance_")))
+
+    def test_verify_step_checks_second_company_registration_and_membership(self):
+        verify = _path("seed/steps/step_90_verify_demo.py").read_text(encoding="utf-8")
+        for token in ("_verify_company_secondary(env)", "DEMO_COMPANY_SECOND_NAME",
+                      "DEMO_COMPANY_SECOND_MEMBER_LOGINS", "data_purpose"):
+            with self.subTest(token=token):
+                self.assertIn(token, verify)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -23,13 +23,13 @@
 ## evidence
 
 - backend unified outlet:
-  - [platform_menu_api.py](/mnt/e/sc-backend-odoo/addons/smart_core/controllers/platform_menu_api.py:136)
+  - [platform_menu_api.py](../../addons/smart_core/controllers/platform_menu_api.py#L136)
 - backend convergence still delivers `nav_explained.tree/flat` as filtered backend output:
-  - [menu_delivery_convergence_service.py](/mnt/e/sc-backend-odoo/addons/smart_core/delivery/menu_delivery_convergence_service.py:88)
+  - [menu_delivery_convergence_service.py](../../addons/smart_core/delivery/menu_delivery_convergence_service.py#L88)
 - formal audit already freezes backend ownership of `route`, `active_match`, `reason_code`:
-  - [menu_target_interpreter_audit_v1.md](/mnt/e/sc-backend-odoo/docs/menu/menu_target_interpreter_audit_v1.md:7)
+  - menu_target_interpreter_audit_v1.md
 - frontend still performs route reinterpretation on menu nodes:
-  - [useNavigationMenu.ts](/mnt/e/sc-backend-odoo/frontend/apps/web/src/composables/useNavigationMenu.ts:28)
+  - useNavigationMenu.ts
 
 ## decision
 

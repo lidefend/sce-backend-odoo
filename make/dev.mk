@@ -142,10 +142,35 @@ local.dev.form_lowcode.browser: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/local_dev_form_lowcode_browser.sh
 
-local.dev.upgrade: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare
+.PHONY: local.dev.write_lease.status local.dev.write_lease.require local.dev.upgrade local.dev.upgrade.run local.dev.sync_demo local.dev.sync_demo.run local.dev.rebuild_demo local.dev.rebuild_demo.run local.dev.entry_identity.ensure local.dev.entry_identity.ensure.run local.dev.entry_identity.verify
+local.dev.write_lease.status: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh --status
+
+local.dev.write_lease.require: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh --require
+
+local.dev.entry_identity.ensure: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "entry_identity" -- \
+	  $(MAKE) --no-print-directory local.dev.entry_identity.ensure.run
+
+local.dev.entry_identity.ensure.run: guard.prod.forbid local.dev.ready local.dev.write_lease.require
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" DB_NAME=sc_dev_demo \
+	  ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_entry_identity.sh ensure
+
+local.dev.entry_identity.verify: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" DB_NAME=sc_dev_demo \
+	  ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_entry_identity.sh verify
+
+local.dev.upgrade: guard.prod.forbid
+	@test -n "$(MODULE)" || (echo "MODULE is required" >&2; exit 2)
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "upgrade:$(MODULE)" -- \
+	  $(MAKE) --no-print-directory local.dev.upgrade.run MODULE="$(MODULE)"
+
+local.dev.upgrade.run: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare local.dev.write_lease.require
 	@test -n "$(MODULE)" || (echo "MODULE is required" >&2; exit 2)
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 MODULE="$(MODULE)" mod.upgrade
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.entry_identity.ensure.run
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.verify_authority
 
 local.dev.verify_authority: guard.prod.forbid local.dev.ready
@@ -153,9 +178,14 @@ local.dev.verify_authority: guard.prod.forbid local.dev.ready
 	  SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 \
 	  bash scripts/dev/local_dev_demo_authority_verify.sh
 
-local.dev.sync_demo: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare
+local.dev.sync_demo: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "sync_demo" -- \
+	  $(MAKE) --no-print-directory local.dev.sync_demo.run
+
+local.dev.sync_demo.run: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare local.dev.write_lease.require
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" demo.load.full
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" up
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.entry_identity.ensure.run
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.verify_demo
 
 .PHONY: local.dev.demo.load local.dev.demo.seed
@@ -349,10 +379,15 @@ verify.local.dev.tender_award.journey: guard.prod.forbid local.dev.ready
 	  FRONTEND_URL="$(FRONTEND_URL)" ARTIFACT_DIR="$(ARTIFACT_DIR)" \
 	  bash scripts/verify/local_dev_tender_award_journey.sh
 
-local.dev.rebuild_demo: guard.prod.forbid local.dev.demo_credentials.prepare
+local.dev.rebuild_demo: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "rebuild_demo" -- \
+	  $(MAKE) --no-print-directory local.dev.rebuild_demo.run
+
+local.dev.rebuild_demo.run: guard.prod.forbid local.dev.demo_credentials.prepare local.dev.write_lease.require
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  CONFIRM_LOCAL_DEV_DEMO_REBUILD="$${CONFIRM_LOCAL_DEV_DEMO_REBUILD:-}" \
 	  bash scripts/dev/local_dev_demo_rebuild.sh
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.entry_identity.ensure.run
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.verify_demo
 
 local.dev.rebuild_realistic: guard.prod.forbid
@@ -1173,6 +1208,22 @@ local.dev.menu_facts.snapshot: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_menu_fact_snapshot.py
 
+.PHONY: local.dev.scenario_tick.run demo.scenario_tick.run
+local.dev.scenario_tick.run: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  demo.scenario_tick.run
+
+demo.scenario_tick.run: guard.prod.forbid check-compose-env
+	@$(RUN_ENV) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_scenario_tick_run.py
+
+.PHONY: local.dev.experience_reset.plan demo.experience_reset.plan
+local.dev.experience_reset.plan: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  demo.experience_reset.plan
+
+demo.experience_reset.plan: guard.prod.forbid check-compose-env
+	@$(RUN_ENV) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_experience_reset_plan.py
+
 .PHONY: local.dev.native_projection.audit
 local.dev.native_projection.audit: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
@@ -1306,6 +1357,26 @@ verify.local.dev.demo_action_roles.orm: guard.prod.forbid
 verify.local.dev.demo_loaded_chains.orm: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_construction_demo TEST_TAGS="demo_loaded_chains" local.dev.test
+
+.PHONY: verify.local.dev.baseline_readiness.orm
+verify.local.dev.baseline_readiness.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_demo TEST_TAGS="demo_baseline_readiness" local.dev.test
+
+.PHONY: verify.local.dev.golden_chain.orm
+verify.local.dev.golden_chain.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_demo TEST_TAGS="demo_golden_chain" local.dev.test
+
+.PHONY: verify.local.dev.api_scenario.orm
+verify.local.dev.api_scenario.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_demo TEST_TAGS="demo_api_scenario" local.dev.test
+
+.PHONY: verify.local.dev.scenario_tick.orm
+verify.local.dev.scenario_tick.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_demo TEST_TAGS="demo_scenario_tick" local.dev.test
 
 # Unit guard for the bounded runtime-performance observation carrier. It runs the
 # probe against a fake environment: no database, no runtime write, no browser.

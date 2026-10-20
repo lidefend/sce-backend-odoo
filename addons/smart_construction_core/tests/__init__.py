@@ -39,6 +39,7 @@ from . import test_record_rule_contract_p1
 from . import test_record_rule_ledger_p1
 from . import test_p0_ledger_gate
 from . import test_contract_payment_allocation_fact
+from . import test_product_system_parameter_change
 from . import test_contract_execution_position
 from . import test_p0_finance_rr_gate
 from . import test_p0_finance_ui_gate
@@ -60,6 +61,7 @@ from . import test_contract_handling_page_policy
 from . import test_project_authorization_foundation
 from . import test_patch_b_read_aggregate_security
 from . import test_my_work_backend
+from . import test_home_objects_contract
 from . import test_reason_codes_backend
 from . import test_payment_request_permission
 from . import test_payment_request_available_actions_backend

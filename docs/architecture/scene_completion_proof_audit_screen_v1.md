@@ -32,37 +32,37 @@ This screen uses only the bounded candidate set from
 
 ### Acceptable Scene-Oriented Internal Mechanics
 
-- `[frontend/apps/web/src/api/contract.ts](/mnt/e/sc-backend-odoo/frontend/apps/web/src/api/contract.ts:52)` `op: 'action_open'`
-- `[frontend/apps/web/src/api/contract.ts](/mnt/e/sc-backend-odoo/frontend/apps/web/src/api/contract.ts:91)` `op: 'model'`
+- `[frontend/apps/web/src/api/contract.ts](../../frontend/apps/web/src/api/contract.ts#L52)` `op: 'action_open'`
+- `[frontend/apps/web/src/api/contract.ts](../../frontend/apps/web/src/api/contract.ts#L91)` `op: 'model'`
   These are transport-level contract loader mechanics. By themselves they do not
   prove a boundary violation, because the current architecture still allows
   scene-oriented consumers to request contract slices by action/model while
   staying inside the governed contract pipeline.
 
-- `[frontend/apps/web/src/app/init.ts](/mnt/e/sc-backend-odoo/frontend/apps/web/src/app/init.ts:68)` `session.loadAppInit()`
-- `[frontend/apps/web/src/app/resolvers/sceneRegistry.ts](/mnt/e/sc-backend-odoo/frontend/apps/web/src/app/resolvers/sceneRegistry.ts:521)` `getSceneByKey(...)`
-- `[frontend/apps/web/src/app/resolvers/sceneRegistry.ts](/mnt/e/sc-backend-odoo/frontend/apps/web/src/app/resolvers/sceneRegistry.ts:531)` `findSceneByEntryAuthority(...)`
+- `[frontend/apps/web/src/app/init.ts](../../frontend/apps/web/src/app/init.ts#L68)` `session.loadAppInit()`
+- `[frontend/apps/web/src/app/resolvers/sceneRegistry.ts](../../frontend/apps/web/src/app/resolvers/sceneRegistry.ts#L521)` `getSceneByKey(...)`
+- `[frontend/apps/web/src/app/resolvers/sceneRegistry.ts](../../frontend/apps/web/src/app/resolvers/sceneRegistry.ts#L531)` `findSceneByEntryAuthority(...)`
   These are core scene boot/normalization mechanics and are part of the proof
   chain, not evidence against it.
 
 ### Remaining Blocking Proof Gaps
 
-- `[frontend/apps/web/src/pages/ContractFormPage.vue](/mnt/e/sc-backend-odoo/frontend/apps/web/src/pages/ContractFormPage.vue:3963)` and `[frontend/apps/web/src/pages/ContractFormPage.vue](/mnt/e/sc-backend-odoo/frontend/apps/web/src/pages/ContractFormPage.vue:3981)`:
+- `[frontend/apps/web/src/pages/ContractFormPage.vue](../../frontend/apps/web/src/pages/ContractFormPage.vue#L3963)` and `[frontend/apps/web/src/pages/ContractFormPage.vue](../../frontend/apps/web/src/pages/ContractFormPage.vue#L3981)`:
   ContractFormPage still loads by direct `actionId/model` contract requests.
   Even though it now carries `scene_key` and `record_id`, this bounded audit
   still cannot prove that every form-page entry is conceptually scene-first
   rather than "scene-compatible but still action/model-driven".
 
-- `[frontend/apps/web/src/views/ActionView.vue](/mnt/e/sc-backend-odoo/frontend/apps/web/src/views/ActionView.vue:1068)` and `[frontend/apps/web/src/views/ActionView.vue](/mnt/e/sc-backend-odoo/frontend/apps/web/src/views/ActionView.vue:1087)`:
+- `[frontend/apps/web/src/views/ActionView.vue](../../frontend/apps/web/src/views/ActionView.vue#L1068)` and `[frontend/apps/web/src/views/ActionView.vue](../../frontend/apps/web/src/views/ActionView.vue#L1087)`:
   ActionView still accepts native action identity as a primary runtime input and
   only then reconstructs scene context. That means the repository still contains
   a major consumer chain that is not yet proven to be scene-first by design.
 
-- `[frontend/apps/web/src/stores/session.ts](/mnt/e/sc-backend-odoo/frontend/apps/web/src/stores/session.ts:1309)` compatibility landing fallback to `/a/${actionId}`:
+- `[frontend/apps/web/src/stores/session.ts](../../frontend/apps/web/src/stores/session.ts#L1309)` compatibility landing fallback to `/a/${actionId}`:
   Even if bounded as fallback, this still prevents a strict statement that
   startup landing is fully proven scene-only for all cases.
 
-- `[frontend/apps/web/src/router/index.ts](/mnt/e/sc-backend-odoo/frontend/apps/web/src/router/index.ts:56)` `[frontend/apps/web/src/views/WorkbenchView.vue](/mnt/e/sc-backend-odoo/frontend/apps/web/src/views/WorkbenchView.vue:375)` `[frontend/apps/web/src/views/MenuView.vue](/mnt/e/sc-backend-odoo/frontend/apps/web/src/views/MenuView.vue:73)`:
+- `[frontend/apps/web/src/router/index.ts](../../frontend/apps/web/src/router/index.ts#L56)` `[frontend/apps/web/src/views/WorkbenchView.vue](../../frontend/apps/web/src/views/WorkbenchView.vue#L375)` `[frontend/apps/web/src/views/MenuView.vue](../../frontend/apps/web/src/views/MenuView.vue#L73)`:
   These menu-entry reconstruction paths still rely on `resolveMenuAction(...)`.
   They may be compatible with scene-first behavior after normalization, but they
   still show that a repository-wide proof of "no remaining native menu/action

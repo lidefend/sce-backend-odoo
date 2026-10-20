@@ -5,8 +5,12 @@
     "audit/fe-contract-runtime-00-20261012": ".agent/runs/FE-CONTRACT-RUNTIME-00/run.json",
     "audit/system-permission-roles-20261019": ".agent/runs/SYSTEM-PERMISSION-ROLES-20261019/run.json",
     "codex/platform-browser-probe-entry-credentials-20261020": ".agent/runs/PLATFORM-BROWSER-PROBE-ENTRY-CREDENTIALS-20261020/run.json",
+    "feature/daily-batch-demo-multicompany-20261019": ".agent/runs/DAILY-RUNTIME-BATCH-20261019/run.json",
+    "feature/demo-company-structure-20261019": ".agent/runs/DEMO-COMPANY-STRUCTURE-20261019/run.json",
+    "feature/product-configuration-capability-20261020": ".agent/runs/PRODUCT-CONFIGURATION-CAPABILITY-20261020/run.json",
     "feature/user-permission-surface-split-20261019": ".agent/runs/P1-USER-PERMISSION-SURFACE-SPLIT-20261019/run.json",
     "fix/agent-dispatch-inbox-20261017": ".agent/runs/AGENT-DISPATCH-INBOX-20261017/run.json",
+    "fix/baseline-docs-links-20261020": ".agent/runs/BASELINE-DOCS-LINKS-20261020/run.json",
     "fix/ci-backend-sharding-cache-20261017": ".agent/runs/CI-REMOTE-EFFICIENCY-20261017/run.json",
     "fix/daily-acceptance-demo-profile-20261019": ".agent/runs/ACCEPTANCE-EVIDENCE-LAYER-REUSE-20261019/run.json",
     "fix/daily-entry-cookie-session-scope-20261019": ".agent/runs/DAILY-ENTRY-COOKIE-SESSION-SCOPE-20261019/run.json",
@@ -22,6 +26,7 @@
     "fix/nav-node-level-menu-acl-closeout": ".agent/runs/TARGET-ENV-ROLE-ACCEPTANCE/run.json",
     "fix/payment-request-chain-alignment-20261013": ".agent/runs/PAYMENT-REQUEST-CHAIN-ALIGNMENT/run.json",
     "fix/platform-admin-surface-closure-20261018": ".agent/runs/PLATFORM-ADMIN-SURFACE-CLOSURE-20261018/run.json",
-    "fix/product-menu-config-entry-20261019": ".agent/runs/PRODUCT-MENU-CONFIG-ENTRY-20261019/run.json"
+    "fix/product-menu-config-entry-20261019": ".agent/runs/PRODUCT-MENU-CONFIG-ENTRY-20261019/run.json",
+    "release/product-demo-integration-20261020": ".agent/runs/PRODUCT-DEMO-INTEGRATION-20261020/run.json"
   }
 }

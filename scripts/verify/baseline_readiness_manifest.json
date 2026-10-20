@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "id": "demo.baseline.readiness",
+  "owner_layer": "P4",
+  "authority": "docs/demo/demo_baseline_readiness_v1.md",
+  "gates": [
+    {
+      "gate": "G0",
+      "title": "tenant_and_company",
+      "applicable": true,
+      "requirements": [
+        {"key": "company_identity", "kind": "hard", "authority": "res.company required identity fields; seed step_company_identity", "owner_layer": "P2", "repair_hint": "补全公司法定名称、统一社会信用代码、地址、联系方式"},
+        {"key": "company_currency", "kind": "hard", "authority": "res.currency / res.company currency_id; seed step_company_currency", "owner_layer": "P2", "repair_hint": "配置公司本位币"},
+        {"key": "accounting_year_chart", "kind": "hard", "authority": "account fiscal year / chart of accounts / journals / taxes", "owner_layer": "P2", "repair_hint": "补全会计年度、科目表、日记账、税种与税率"},
+        {"key": "data_space_scope", "kind": "hard", "authority": "config/ops/daily_runtime_database_duties.v1.json; scripts/demo/tenant_lifecycle.sh", "owner_layer": "P4", "repair_hint": "固定 demo 数据库、租户、dbfilter 与公司作用域"},
+        {"key": "admin_separation", "kind": "hard", "authority": "acceptance_identity platform_admin_separate=true", "owner_layer": "P0", "repair_hint": "分离平台管理员与业务管理员职责"}
+      ]
+    },
+    {
+      "gate": "G1",
+      "title": "organization_and_identity",
+      "applicable": true,
+      "requirements": [
+        {"key": "department_tree", "kind": "hard", "authority": "data/base/12_departments.xml / 13_departments_tree.xml", "owner_layer": "P2", "repair_hint": "补齐部门树"},
+        {"key": "job_positions", "kind": "hard", "authority": "data/base/14_jobs.xml", "owner_layer": "P2", "repair_hint": "补齐岗位"},
+        {"key": "employee_records", "kind": "hard", "authority": "data/demo/sc_demo_employees.xml", "owner_layer": "P2", "repair_hint": "补齐员工档案"},
+        {"key": "business_users_roles", "kind": "hard", "authority": "seed step_10_users_demo / step_demo_users", "owner_layer": "P2", "repair_hint": "补齐业务用户、角色/能力组、项目成员"},
+        {"key": "approval_positions", "kind": "hard", "authority": "sc.approval.policy + approval scope", "owner_layer": "P1", "repair_hint": "声明审批岗位与审批范围，不得用组织负责人冒充审批人"},
+        {"key": "project_role_owners", "kind": "hard", "authority": "project.project required role owners", "owner_layer": "P2", "repair_hint": "补齐项目负责人、成本负责人、资料负责人"}
+      ]
+    },
+    {
+      "gate": "G2",
+      "title": "business_master_data",
+      "applicable": true,
+      "requirements": [
+        {"key": "partners", "kind": "hard", "authority": "data/base/10_partners.xml / 15_seed_partners.xml", "owner_layer": "P2", "repair_hint": "补齐客户/供应商：名称、类型、税号、联系人、银行账户、付款条件"},
+        {"key": "partner_categories", "kind": "conditional", "authority": "data/base/05_partner_categories.xml", "owner_layer": "P2", "repair_hint": "补齐客商分类、供应商类型、业务类别"},
+        {"key": "taxes_units_payment_terms", "kind": "hard", "authority": "税种/税率/计量单位/付款条件声明", "owner_layer": "P1", "repair_hint": "补齐税种、税率、计量单位、付款条件"},
+        {"key": "material_catalog", "kind": "conditional", "authority": "sc.material.catalog / sc.material.price", "owner_layer": "P1", "repair_hint": "补齐材料目录与材料价格"},
+        {"key": "project_dictionaries", "kind": "hard", "authority": "data/base/00_dictionary.xml / dictionary_demo.xml / cost_demo.xml", "owner_layer": "P1", "repair_hint": "补齐项目类型/类别、成本项、定额字典"},
+        {"key": "cost_structure_templates", "kind": "hard", "authority": "成本科目树、WBS/BOQ 模板、合同模板、资料类型", "owner_layer": "P1", "repair_hint": "补齐成本科目树、WBS/BOQ 模板、合同模板、资料类型"}
+      ]
+    },
+    {
+      "gate": "G3",
+      "title": "governance_and_runtime_config",
+      "applicable": true,
+      "requirements": [
+        {"key": "approval_policy", "kind": "hard", "authority": "sc.approval.policy / sc.approval.policy.runtime_state", "owner_layer": "P1", "repair_hint": "补齐审批策略、审批步骤、审批范围"},
+        {"key": "numbering_rules", "kind": "hard", "authority": "sc.product.numbering.rule / ir.sequence", "owner_layer": "P0", "repair_hint": "补齐单据编号规则"},
+        {"key": "menus_actions_capabilities", "kind": "conditional", "authority": "菜单、动作、场景、能力发布", "owner_layer": "P0", "repair_hint": "发布菜单、动作、场景与能力"},
+        {"key": "view_policies", "kind": "conditional", "authority": "列表/表单/搜索/字段策略", "owner_layer": "P3", "repair_hint": "补齐列表/表单/搜索/字段策略"},
+        {"key": "data_permissions", "kind": "hard", "authority": "数据权限与记录规则", "owner_layer": "P0", "repair_hint": "补齐数据权限与记录规则"}
+      ]
+    },
+    {
+      "gate": "G4",
+      "title": "project_baseline",
+      "applicable": true,
+      "requirements": [
+        {"key": "project_basic", "kind": "hard", "authority": "project.project required stage / operating mode / unique code", "owner_layer": "P1", "repair_hint": "补齐项目名称、编号、公司、经营方式、项目类型/类别"},
+        {"key": "project_parties", "kind": "hard", "authority": "project.project owner / parties / dates", "owner_layer": "P2", "repair_hint": "补齐业主、项目经理、成本负责人、资料负责人、地点、日期"},
+        {"key": "project_membership_scope", "kind": "hard", "authority": "项目成员与项目数据范围", "owner_layer": "P3", "repair_hint": "补齐项目成员与数据范围"},
+        {"key": "funding_baseline", "kind": "hard", "authority": "project.funding.baseline required version / control period / amount", "owner_layer": "P1", "repair_hint": "开启资金承载并建立生效资金基线"},
+        {"key": "budget_boq_wbs", "kind": "hard", "authority": "预算/目标成本、BOQ 版本与清单、WBS/LBS/标段/执行范围", "owner_layer": "P1", "repair_hint": "补齐预算/目标成本、BOQ 清单与 WBS/LBS"},
+        {"key": "settlement_anchor", "kind": "hard", "authority": "合同或采购订单等结算依据", "owner_layer": "P1", "repair_hint": "补齐合同或采购订单等结算依据"}
+      ]
+    },
+    {
+      "gate": "G5",
+      "title": "transactional_facts",
+      "applicable": true,
+      "requirements": [
+        {"key": "contract", "kind": "conditional", "authority": "contract state machine / approval instance", "owner_layer": "P1", "repair_hint": "由正式动作产生合同事实"},
+        {"key": "procurement_acceptance", "kind": "conditional", "authority": "采购订单/材料验收/入库", "owner_layer": "P1", "repair_hint": "由正式动作产生采购与验收事实"},
+        {"key": "progress_cost", "kind": "conditional", "authority": "进度计量/成本归集", "owner_layer": "P1", "repair_hint": "由正式动作产生进度与成本事实"},
+        {"key": "settlement", "kind": "conditional", "authority": "sc.settlement.order business anchor guard", "owner_layer": "P1", "repair_hint": "由正式动作产生结算事实"},
+        {"key": "payment_request", "kind": "conditional", "authority": "payment.request funding/settlement guards", "owner_layer": "P1", "repair_hint": "由正式动作产生付款申请事实"},
+        {"key": "payment_execution", "kind": "conditional", "authority": "payment.execution create guard", "owner_layer": "P1", "repair_hint": "由正式动作产生付款登记事实"},
+        {"key": "payment_ledger", "kind": "conditional", "authority": "付款台账有效/冲销", "owner_layer": "P1", "repair_hint": "由付款事实派生付款台账"}
+      ]
+    },
+    {
+      "gate": "G6",
+      "title": "evidence_projection",
+      "applicable": true,
+      "requirements": [
+        {"key": "role_workbench", "kind": "conditional", "authority": "sc.workbench.item / my.work.summary aggregation", "owner_layer": "P3", "repair_hint": "角色工作台由事实派生，禁止直接 seed"},
+        {"key": "approval_history_audit", "kind": "conditional", "authority": "审计日志/审批历史", "owner_layer": "P0", "repair_hint": "审批历史由真实审批动作产生"},
+        {"key": "cockpit_metrics", "kind": "conditional", "authority": "sc.dashboard.cockpit.fact / sc.operating.metrics.project", "owner_layer": "P1", "repair_hint": "驾驶舱与经营指标由事实派生，禁止直接 seed"},
+        {"key": "role_visibility_negative", "kind": "conditional", "authority": "角色可见性与负例", "owner_layer": "P1", "repair_hint": "验证无权限角色不可见的负例"}
+      ]
+    }
+  ]
+}

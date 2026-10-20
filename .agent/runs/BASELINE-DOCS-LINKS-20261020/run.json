@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "id": "BASELINE-DOCS-LINKS-20261020",
+  "branch": "fix/baseline-docs-links-20261020",
+  "status": "verification_pending",
+  "baseline_sha": "13b0395db4da63147b3f9c311a4bb5d060dc6a4e",
+  "goal": ".agent/goals/BASELINE-DOCS-LINKS-20261020.yaml",
+  "record": "docs/ops/iterations/baseline_docs_links_20261020.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BASELINE-DOCS-LINKS-20261020.yaml",
+    ".agent/runs/BASELINE-DOCS-LINKS-20261020/run.json",
+    "docs/architecture/scene_completion_proof_audit_scan_v1.md",
+    "docs/architecture/scene_completion_proof_audit_screen_v1.md",
+    "docs/audit/be_menu_scene_entry_screen_bl_v1.md",
+    "docs/audit/be_menu_scene_output_screen_bk_v1.md",
+    "docs/audit/frontend_first_release_violation_closure.md",
+    "docs/audit/p0_alignment_verification.md",
+    "docs/audit/platform_baseline_alignment_report.md",
+    "docs/frontend_productization/professional-component-registry-v1.md",
+    "docs/ops/iterations/delivery_context_switch_log_v1.md",
+    "docs/ops/iterations/frontend_nav_contract_decouple_batch_fe_20260424.md",
+    "docs/planning/custom-frontend-integration/G6_CHART_EXECUTION.md",
+    "docs/planning/custom-frontend-integration/README.md",
+    "docs/planning/custom-frontend-integration/topics/boq.md",
+    "docs/planning/custom-frontend-integration/topics/design-system.md",
+    "docs/planning/custom-frontend-integration/topics/echarts.md",
+    "docs/planning/custom-frontend-integration/topics/editor.md",
+    "docs/planning/custom-frontend-integration/topics/excel.md",
+    "docs/planning/custom-frontend-integration/topics/gantt.md",
+    "docs/planning/custom-frontend-integration/topics/menu-governance.md",
+    "docs/planning/custom-frontend-integration/topics/mobile.md",
+    "docs/planning/custom-frontend-integration/topics/pdf.md",
+    "docs/planning/custom-frontend-integration/topics/theme.md",
+    "docs/verify/be_postlogin_startup_nav_prune_scan_cf_v1.md",
+    "docs/verify/be_project_management_postlogin_runtime_screen_ce_v1.md",
+    "docs/ops/iterations/baseline_docs_links_20261020.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline docs and ledger gates; no database, service, browser or deployment access"
+  },
+  "checks": {
+    "docs_product_boundary": {
+      "target": "verify.docs.product_boundary",
+      "inputs": [
+        "docs/product/formal_product_boundary_v1.md",
+        "scripts/verify/product_boundary_catalog_guard.py",
+        "scripts/verify/test_product_boundary_catalog_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/BASELINE-DOCS-LINKS-20261020.yaml",
+        ".agent/runs/BASELINE-DOCS-LINKS-20261020/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "exclusions": [
+    {
+      "id": "BASELINE-AGENT-LEDGER-7",
+      "classification": "baseline_evidence_defect",
+      "status": "excluded_from_docs_links_batch",
+      "detail": "verify.agent.ledger.unit reports 7 pre-existing .agent ledger issues involving other executors' completed runs/goals. This batch does not modify those records.",
+      "owner": "separate P4 agent-ledger baseline cleanup"
+    }
+  ],
+  "next_exact_step": "Docs links are clean (0 missing) and verify.docs.all passes. Commit on fix/baseline-docs-links-20261020, then cherry-pick the baseline commit onto the demo iteration branch."
+}
