@@ -489,7 +489,8 @@ async function unlinkRecords(page, model, ids, authHeaders) {
   if (!ids.length || !authHeaders.authorization) return { status: 0, body: { ok: false, skipped: true } };
   return page.evaluate(async ({ recordModel, recordIds, headers }) => {
     const db = String(headers['x-odoo-db'] || '');
-    const response = await fetch(`/api/v1/intent${db ? `?db=${encodeURIComponent(db)}` : ''}`, {
+    const entryBase = (window.location.pathname.match(/^\/(?:t\/[a-z0-9][a-z0-9-]*|platform-admin)/) || [''])[0];
+    const response = await fetch(`${entryBase}/api/v1/intent${db ? `?db=${encodeURIComponent(db)}` : ''}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

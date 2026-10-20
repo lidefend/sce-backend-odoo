@@ -98,7 +98,8 @@ async function apiIntent(page, intent, params) {
 async function apiEnvelope(page, envelope) {
   const token = await page.evaluate((db) => sessionStorage.getItem(`sc_auth_token:${db}`) || '', database);
   return page.evaluate(async ({ db, tokenValue, envelopeValue }) => {
-    const response = await fetch(`/api/v1/intent?db=${encodeURIComponent(db)}`, {
+    const entryBase = (window.location.pathname.match(/^\/(?:t\/[a-z0-9][a-z0-9-]*|platform-admin)/) || [''])[0];
+    const response = await fetch(`${entryBase}/api/v1/intent?db=${encodeURIComponent(db)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: tokenValue ? `Bearer ${tokenValue}` : '', 'X-Trace-Id': `local-dev-payment-full-chain-${Date.now()}` },
       body: JSON.stringify(envelopeValue),
