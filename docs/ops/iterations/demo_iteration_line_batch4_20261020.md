@@ -21,14 +21,16 @@
 - 运行时回读：`make verify.local.dev.api_scenario.orm` → 0 failed / 0 error / 1 tests，
   `DB=sc_dev_demo`。
 
-## 3. 完成边界
+## 3. 完成边界（含收尾）
 
-- 本批完成“驱动前置与审批链表面”回读。
-- 完整四级角色驱动（submit → 四级 approve，幂等 + 负例）由产品层
-  `test_payment_request_action_surface_backend` / `test_smoke_3waymatch_flow` 覆盖机制，
-  demo 层完整驱动用例留作 Batch 4 收尾，需先映射各 tier 的 finance-approve 评审角色。
+- 表面回读：`payment.request` 多级审批已接线、fixture 可驱动、submit/approve 动作存在。
+- 角色驱动用例 `test_four_tier_approval_role_driven`：以发起人提交 → 审批链初始化 →
+  非财务角色拒绝（负例）→ 重复提交拒绝（幂等）→ 按 `review_ids` 泛化逐级审批到
+  `approved|done`，且审批过程不产生重复 review。
+- 审批链级数与评审角色是运行时可配置的（P3/P1 配置，非产品写死）；用例按配置的
+  `review.reviewer_ids` 泛化驱动，不把“四级”写成产品不变量。
 
 ## 4. 下一批
 
-Batch 4 收尾：demo 场景四级审批角色驱动（幂等 + 负例）；随后 Batch 5：日推进 +
-体验重置分离（先确认 `scems-demo-tenant.timer` 目标租户身份）。
+Batch 5：demo scenario tick（日推进）与 scoped experience reset（体验用户角色落地前
+以 demo 声明的体验集合为清理键）；公开 demo 租户 timer 保持不变。

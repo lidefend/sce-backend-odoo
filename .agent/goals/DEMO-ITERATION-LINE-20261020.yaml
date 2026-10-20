@@ -67,9 +67,8 @@ goal:
         sub-items are not executed. Do not repair unrelated links in this batch.
       owner: separate_p4_docs_baseline_cleanup
   next_exact_step: >-
-    Owner ruling recorded: dedicated experience-user role is the durable reset key
-    (P1/P3/P0 product gap); public demo tenant timer unchanged. Remaining: Batch 4
-    four-tier role-driven approve closeout, then Batch 5 demo scenario tick.
+    Batch 4 closed (role-driven approval driver passes). Next: Batch 5 — demo
+    scenario tick + scoped experience reset.
   completion:
     scope: overall_plan_and_baseline_readiness_audit
     overall_goal: in_progress

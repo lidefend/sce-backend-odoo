@@ -130,5 +130,5 @@
       "resolved_commit": "a44238ad8"
     }
   ],
-  "next_exact_step": "Owner ruling recorded: experience users use full-featured accounts now; durable target is a dedicated experience-user role (P1 role + P3 visibility + P0 registration, product-layer gap). Public demo tenant timer stays as-is (showcase full rebuild). Remaining: Batch 4 closeout — demo-scenario four-tier role-driven approve with idempotency + negative; then Batch 5 demo scenario tick (experience reset keys off the role when it lands)."
+  "next_exact_step": "Batch 4 closed: demo-scenario role-driven approval driver passes (submit -> configured review chain -> negative -> idempotency -> approved|done), consuming the configurable review_ids without hardcoding tier count. Next: Batch 5 — demo scenario tick (daily business-calendar advancement, idempotent, no auto-approval) + scoped experience reset keyed by the demo-declared experience set until the product role lands."
 }
