@@ -694,10 +694,16 @@ ROLE_SURFACE_OVERRIDES = {
         "menu_xmlids": [
             "smart_construction_core.menu_sc_root",
             "smart_construction_core.menu_sc_projection_root",
+            "smart_construction_core.menu_sc_workspace_center",
             "smart_construction_core.menu_sc_project_center",
+            "smart_construction_core.menu_sc_finance_center",
+            "smart_construction_core.menu_sc_data_center",
         ],
         "primary_menu_xmlids": [
             "smart_construction_core.menu_sc_historical_payment_fact",
+        ],
+        "role_home_menu_xmlids": [
+            "smart_construction_core.menu_sc_workspace_home",
         ],
     },
     # 成本组角色（group_sc_cap_cost_user / group_sc_cap_cost_manager /
