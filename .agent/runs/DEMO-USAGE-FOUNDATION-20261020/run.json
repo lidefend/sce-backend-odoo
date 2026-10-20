@@ -16,6 +16,7 @@
     "docs/demo/product_gap_registry_v1.md",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
     "docs/ops/iterations/demo_usage_foundation_handoff_20261020.md",
