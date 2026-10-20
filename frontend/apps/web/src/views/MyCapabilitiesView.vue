@@ -2,8 +2,8 @@
   <ScPage class="my-capabilities sc-product-main-surface" content-layout="data-grid" data-semantic-component="MyCapabilitiesView">
     <div class="my-capabilities-head">
       <div>
-        <h1>我的能力</h1>
-        <p>按当前账号展示可办理事项，以及不可用是无权限、无数据还是未发布。</p>
+        <h1>{{ title }}</h1>
+        <p>{{ subtitle }}</p>
       </div>
       <ScButton type="button" variant="ghost" :disabled="loading" @click="load">重新读取</ScButton>
     </div>
@@ -42,13 +42,17 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import ScPage from '../components/design-system/ScPage.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScInlineState from '../components/design-system/ScInlineState.vue';
 import { capabilityStatusLabel } from '../app/productCapabilityCatalogProjection';
+import { usePageContract } from '../app/pageContract';
 import { useMyCapabilities } from '../composables/myCapabilities/useMyCapabilities';
 
+const pageContract = usePageContract('my_capabilities');
+const title = computed(() => pageContract.text('title', '我的能力'));
+const subtitle = computed(() => pageContract.text('subtitle', '按当前账号展示可办理事项，以及不可用是无权限、无数据还是未发布。'));
 const { loading, error, gap, capabilities, byEntry, load } = useMyCapabilities();
 
 onMounted(() => {
