@@ -57,6 +57,49 @@
         "make/dev_test.mk"
       ],
       "kind": "offline"
+    },
+    "product_capability_catalog": {
+      "target": "verify.frontend.product_capability_catalog.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/product_capability_catalog_test.ts",
+        "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline",
+      "status": "passed",
+      "test_count": 18,
+      "note": "esbuild binary unavailable locally (broken node_modules symlinks); executed via Node v24 native type stripping on the same test body"
+    },
+    "frontend_contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "inputs": [
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+        "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline",
+      "status": "passed",
+      "test_count": 15
+    },
+    "frontend_contract_basis_enforce": {
+      "target": "verify.frontend.contract_basis.enforce",
+      "status": "passed",
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "status": "passed",
+      "test_count": 32,
+      "kind": "offline"
+    },
+    "ci_local_iteration": {
+      "target": "ci.local.iteration",
+      "status": "passed",
+      "kind": "offline",
+      "note": "L1 only; receipt=none; risk-selected non-zero L2 targets required (run and recorded above)"
     }
   },
   "blockers": [],
@@ -71,5 +114,5 @@
     "next_exact_step": "Consume product.configuration.capability.catalog in the configuration workbench and login workspace.",
     "mainline_integration": "not_run"
   },
-  "next_exact_step": "Batch 3 implemented. Re-run ci.local.iteration to close L1, then commit Batch 3 and proceed to Batch 4."
+  "next_exact_step": "Batch 3 committed at 880c02685. Next: Batch 4 system parameter catalog, impact preview, change-set publish/rollback."
 }
