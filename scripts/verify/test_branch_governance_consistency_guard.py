@@ -160,6 +160,8 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
                 "  if [[ \"$*\" == *baseRefOid* ]]; then\n"
                 "    printf '{\"number\":30,\"state\":\"OPEN\",\"isCrossRepository\":false,\"baseRefName\":\"main\",\"baseRefOid\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"headRefOid\":\"%s\"}\\n' \"${FAKE_ACTUAL_HEAD:?}\"\n"
                 "  else printf '%s\\n' \"${FAKE_ACTUAL_HEAD:?}\"; fi\n"
+                "elif [[ \"$1 $2\" == \"api repos/{owner}/{repo}/git/ref/heads/main\" ]]; then\n"
+                "  printf '%s\\n' 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'\n"
                 "elif [[ \"$1 $2\" == \"pr merge\" ]]; then\n"
                 "  shift 2\n"
                 "  printf '%s\\n' \"$@\" >\"${FAKE_MERGE_LOG:?}\"\n"

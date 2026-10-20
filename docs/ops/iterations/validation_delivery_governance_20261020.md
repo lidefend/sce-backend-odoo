@@ -83,3 +83,9 @@ L0=e6bf710+本次dirty；L1 syntax/iteration；L2真实Git同步回归与受影�
 同层接线诊断发现registry静态解析器对重复target声明采用覆盖，不能正确累计Make依赖；将新增同步单测直接挂到make/ci.mk原architecture suite声明，消除第二声明，不改注册表/基线。该输入恢复后重验受影响接线检查，未启动Quick。
 
 接线纠正后registry实际审计通过（1502 scripts，全部孤立/未接线状态已登记）；lane coverage在原冻结baseline内通过。六组回执全部reusable：73+142+31+32+24+53=355项，日志沿同一run保留；新增同步组与Make受影响组已重验，未变组不重跑。清理末尾空行后diff check通过。生成清单编号变化来自新增资产和main已合入的probe移动，不手工编辑报告。后续只冻结最终候选一次；本地同步不等于主线集成，部署未执行。
+
+基线漂移反例补验：GitHub实际出现PR.baseRefOid仍为58f39而live main已是6dd151的状态。预检增加独立读取当前main ref并严格比对，防止过期PR基线被误用；新增失配/非法/匹配回归。282b14候选Quick已停止，不签发或复用取消结果。只重验治理组；推荐器及其余组输入未变，继续复用。
+
+新增main-ref调用使既有受控merge测试桩缺少对应API分支，75项中1项失败。已撤销误登记的passed开发回执，保留live-main-unit.log原始失败；停止该次后续冻结链。补齐测试桩后重新执行治理组，不将失败结果冒充通过。
+
+main-ref交叉核验修复最终治理组75项通过（live-main-fixed-unit.log，已按成功命令链登记）；其余五组输入不变，最终六组357项有效。独立增量审查通过，保留平台非原子读取限制。后续发布仍要求当前main身份与必需检查一致。

@@ -61,6 +61,22 @@ class PrIdentityTests(unittest.TestCase):
             with self.subTest(key=key), patch.object(delivery.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, json.dumps(data))):
                 with self.assertRaises(delivery.binding.BindingError): delivery.pr_identity('7', 'a' * 40)
 
+    def test_stale_pr_base_rejected_against_live_main(self):
+        for live in ('c' * 40, '', 'short'):
+            with self.subTest(live=live), patch.object(delivery.subprocess, 'run', side_effect=[
+                    subprocess.CompletedProcess([], 0, json.dumps(self.identity())),
+                    subprocess.CompletedProcess([], 0, live)]):
+                with self.assertRaisesRegex(delivery.binding.BindingError, 'live main'):
+                    delivery.pr_identity('7', 'a' * 40)
+
+    def test_current_pr_base_and_live_main_are_accepted(self):
+        with patch.object(delivery.subprocess, 'run', side_effect=[
+                subprocess.CompletedProcess([], 0, json.dumps(self.identity())),
+                subprocess.CompletedProcess([], 0, 'b' * 40 + '\n')]) as run, \
+             patch.object(delivery.runs, 'git', return_value='a' * 40):
+            self.assertEqual(delivery.pr_identity('7', 'a' * 40), self.identity())
+            self.assertIn('repos/{owner}/{repo}/git/ref/heads/main', run.call_args.args[0])
+
     def test_injected_environment_cannot_override_pr_baseline(self):
         with tempfile.TemporaryDirectory() as tmp, \
              patch.object(delivery, 'pr_identity', return_value=self.identity()), \

@@ -31,6 +31,14 @@ def pr_identity(pr: str, expected: str) -> dict:
             or not binding.SHA_RE.fullmatch(str(data.get('baseRefOid', '')))):
         raise binding.BindingError('PR identity is not the expected open same-repository main candidate: '
                                    f'expected_head={expected} actual_head={data.get("headRefOid")}')
+    # GitHub can still report the PR's previous base while main has advanced.
+    # Resolve the target ref independently before accepting its evidence scope.
+    live = subprocess.run(['gh', 'api', 'repos/{owner}/{repo}/git/ref/heads/main',
+                           '--jq', '.object.sha'], cwd=ROOT, text=True,
+                          capture_output=True, check=True).stdout.strip()
+    if not binding.SHA_RE.fullmatch(live) or live != data['baseRefOid']:
+        raise binding.BindingError('live main differs from PR base; synchronize and revalidate: '
+                                   f'pr_base={data["baseRefOid"]} live_main={live}')
     if runs.git(ROOT, 'rev-parse', 'HEAD') != expected:
         raise binding.BindingError('local head does not match PR head')
     return data
