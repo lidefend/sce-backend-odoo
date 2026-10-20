@@ -26,6 +26,7 @@
     "docs/ops/iterations/demo_usage_foundation_f3_20261020.md",
     "docs/ops/iterations/demo_usage_foundation_f4_20261021.md",
     "docs/ops/iterations/demo_usage_foundation_f5_20261021.md",
+    "docs/ops/iterations/demo_usage_foundation_f6_20261021.md",
     "docs/planning/custom-frontend-integration/G1_BASELINE_EVIDENCE.json",
     "docs/product/frontend_business_entry_acceptance_v1.csv",
     "demo_addons/smart_construction_demo/__manifest__.py",
@@ -343,11 +344,35 @@
       }
     ],
     "notes": "Project startup baseline is ready in the runtime; no P4 data fix required. Credential guard realigned from scdevpass to 123456 per owner 2026-10-21 decision, which unblocked the ORM readback. verify.local.development_lifecycle.unit has one pre-existing unrelated failure (local.dev.upgrade target form assertion, introduced by main-baseline sync), recorded but not fixed."
+  },
+  "f6_api_chain": {
+    "identity": {
+      "head": "73644152d89d367b315a2170dddee2459aebd88c",
+      "stage": "head_plus_f6_dirty_scope",
+      "runtime": "sc-local-dev db=sc_dev_demo"
+    },
+    "commands": [
+      {
+        "command": "make verify.local.dev.api_scenario.orm",
+        "status": "passed",
+        "layer": "L3",
+        "test_count": 2,
+        "detail": "four-tier approval chain draft->submit->real reviewers->approved; non-reviewer rejected; duplicate submit raises UserError (idempotent)"
+      },
+      {
+        "command": "make verify.local.dev.golden_chain.orm",
+        "status": "passed",
+        "layer": "L3",
+        "test_count": 1,
+        "detail": "frozen chain settlement->payment->ledger->receipt->treasury->reconciliation amount/state/role relay consistent"
+      }
+    ],
+    "notes": "API/ORM-level full business chain is ready; no P4 fix required. HTTP transport trace_id/request_id and full ui.contract create/submit browser chain are F8 browser-acceptance scope."
   }
     }
   },
   "blockers": [],
-  "next_exact_step": "F5 project startup baseline ready (G0-G4 hard baseline passed). Proceed to F6: API-driven real business chain (login -> system.init -> ui.contract -> create/submit -> tier approval -> settlement/payment -> ledger/workbench readback; idempotency and negative rejection).",
+  "next_exact_step": "F6 API-level business chain verified (api_scenario 2 + golden_chain 1). Proceed to F7: daily run and experience reset (10-day scenario narrative, system_fact handler, tick, timer, experience reset scope; continuous advancement and stable baseline fingerprint).",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",

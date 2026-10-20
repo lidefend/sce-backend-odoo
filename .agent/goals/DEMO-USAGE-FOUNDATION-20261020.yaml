@@ -57,15 +57,14 @@ goal:
     - keep_demo_baseline_fingerprint_stable_across_experience_reset
     - no_new_database_tenant_compose_or_credentials
   next_exact_step: >-
-    F5 project startup baseline ready. Proceed to F6: API-driven real business
-    chain (login -> system.init -> ui.contract -> create/submit -> tier approval
-    -> settlement/payment -> ledger/workbench readback; idempotency and negative
-    rejection).
+    F6 API-level business chain verified. Proceed to F7: daily run and experience
+    reset (10-day scenario narrative, system_fact handler, tick, timer, experience
+    reset scope; continuous advancement and stable baseline fingerprint).
   completion:
     scope: demo_user_usage_foundation_v1
     overall_goal: in_progress
     result_index: .agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json
-    local_batch_acceptance: F5_complete
+    local_batch_acceptance: F6_complete
     mainline_integration: not_run
     deployment: not_run
     target_user_delivery: not_run
