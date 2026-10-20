@@ -1654,3 +1654,12 @@ agent.dispatch.review: guard.prod.forbid
 	@python3 scripts/ops/agent_dispatch_inbox.py --root "$(AGENT_DISPATCH_ROOT)" review-once
 verify.agent.dispatch.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_agent_dispatch_inbox
+
+.PHONY: workspace.branch.sync-github-published verify.workspace.branch.sync-github.unit
+workspace.branch.sync-github-published: guard.prod.forbid
+	@python3 scripts/ops/github_published_branch_sync.py --root "$(CURDIR)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(GITHUB_EXPECTED_MAIN)" --remote-head "$(GITHUB_EXPECTED_SOURCE)" --pr "$(PR)" $(if $(filter 1,$(APPLY)),--apply --confirm "$(GITHUB_SYNC_CONFIRM)",)
+
+verify.workspace.branch.sync-github.unit: guard.prod.forbid
+	@PYTHONPATH=scripts/ops python3 -m unittest scripts.ops.test_github_published_branch_sync scripts.ops.test_gitee_published_branch_sync
+
+verify.contract.architecture.suite: verify.workspace.branch.sync-github.unit

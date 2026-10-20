@@ -1043,3 +1043,18 @@ Do not remove tracked files or traverse .git. Single-writer governance remains r
 修改产品视图结构校验器或共享声明解析时，使用 `make verify.product_view_structure.contract.unit` 做离线非零定向测试；它不替代运行时导出与验收。
 
 仅在已批准的原生表单指引退役声明需要重放到生成种子文件时，使用 `make contract.form_structure.guidance.retire`。该入口按 `addons/smart_construction_core/data/native_guidance_form_retirement.xml` 的精确 XML 标识更新既有种子，不允许扩展退役集合、替代模块升级或自动触发数据库写入。执行前后审查种子差异，并运行 `make verify.contract.form_structure.guidance_retirement.unit`；普通迭代不得自动执行此写入口。
+
+## Authorized published GitHub synchronization (2026-10-20)
+
+Owner authorized `make workspace.branch.sync-github-published` for PR #702 closeout.
+The entry binds PR, branch, local HEAD, published source and live main; canonical
+origin only, clean worktree, verified recovery bundle, append-only merge, no push.
+Apply requires `GITHUB_SYNC_CONFIRM=APPEND_EXACT_MAIN_TO_PUBLISHED_CANDIDATE`.
+Only `.agent/active-runs.json` supports three-way key merge (competing assignments
+abort); only `complexity_budget_report.md` and `test_inventory.csv` under
+`docs/engineering_convergence/` may retain candidate content temporarily during
+conflict resolution. Run `make ci.delivery.freeze.prepare` to regenerate reports
+before freezing or publishing. Every other conflict aborts to the original HEAD.
+`make verify.workspace.branch.sync-github.unit` tests identity, conflicts and recovery.
+Use environment variables for PR/EXPECTED_HEAD when invoking `make pr.merge`;
+Make command overrides are intentionally rejected by the Quick evidence authority.

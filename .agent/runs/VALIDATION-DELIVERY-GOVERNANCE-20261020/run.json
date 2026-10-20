@@ -35,7 +35,11 @@
     "docs/ops/codex_execution_allowlist.md",
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/audit/verification_lane_coverage.py",
-    "scripts/audit/test_verification_lane_coverage.py"
+    "scripts/audit/test_verification_lane_coverage.py",
+    "scripts/ops/gitee_published_branch_sync.py",
+    "scripts/ops/github_published_branch_sync.py",
+    "scripts/ops/test_github_published_branch_sync.py",
+    "scripts/ops/test_gitee_published_branch_sync.py"
   ],
   "environment": {
     "kind": "offline"
@@ -107,8 +111,19 @@
         "scripts/verify/registry.yaml",
         "make/"
       ]
+    },
+    "published_sync": {
+      "target": "verify.workspace.branch.sync-github.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/gitee_published_branch_sync.py",
+        "scripts/ops/github_published_branch_sync.py",
+        "scripts/ops/test_github_published_branch_sync.py",
+        "scripts/ops/test_gitee_published_branch_sync.py",
+        "make/codex.mk"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Review generated report delta, commit recovery, bind new clean fingerprint and independent review, then one justified exact-head Quick; publish only on pass."
+  "next_exact_step": "Implement authorized GitHub published synchronization; test recovery and exact metadata conflict handling before apply."
 }

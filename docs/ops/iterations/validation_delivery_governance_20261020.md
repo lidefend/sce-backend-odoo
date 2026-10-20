@@ -72,3 +72,8 @@ L0沿用原HEAD与明确dirty；L1现有入口；L2四组定向；L3/L4无产品
 排除registry叙述后额外暴露两项原本仅有reason引用的入口：product_view_structure定向单测与native guidance精确退役重放。按既有配方在执行白名单明确使用场景、前后验证及禁止自动写入边界；本批不执行退役写入、不新增豁免、不改变baseline。
 
 修复收口结果（HEAD=e7cd95d7f2bbde965a0845e05ef3fbfd58e1818f+上述dirty范围）：lane整组73项中71项通过，2项依赖实际登记状态的仓库断言失败；权威声明修正后只重验这2项，通过（lane-invariants-recovered.log），其余71项输入未变沿用lane-narration-unit.log。实际覆盖检查lane-narration-final.log通过。L1 iteration-lane-fixed.log通过。B线复核通过，新增入口仅按需声明，不称已执行/自动接线。此次修复不重跑scope/planner；五组本地回执均reusable。原Quick失败保留，新候选Quick/远端CI/主线仍待完成。
+
+## 已授权GitHub已发布候选同步
+
+所有者本轮明确授权补齐受管同步并处理三处已预览冲突。P4 / scripts.ops同步工具：复用现有Gitee同步机制，仅参数化远端并加入冲突处理回调，原Gitee默认行为不变。GitHub包装绑定PR/分支/源SHA/main及canonical origin；无产品语义或环境写入。active-runs按三方键合并，同键竞争拒绝；两份生成报告仅暂存候选版，同步后由freeze.prepare重生成。其他冲突或同步中远端漂移abort，恢复bundle与原HEAD保留，不推送。
+L0=e6bf710+本次dirty；L1 syntax/iteration；L2真实Git同步回归与受影响治理组；L3/L4无数据库或页面输入不执行；L5新候选Quick、独立复核、远端当前基线CI。原Quick对象覆盖因并行main推进失效，已停止回退执行，不冒称取消为通过。
