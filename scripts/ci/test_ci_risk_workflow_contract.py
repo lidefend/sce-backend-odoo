@@ -470,7 +470,14 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             },
         )
         overrides = set(policy["high_risk_override_paths"])
-        self.assertEqual(overrides, {"make/frontend_professional_extensions.mk"})
+        self.assertEqual(
+            overrides,
+            {
+                "make/frontend_professional_extensions.mk",
+                "scripts/ops/tooling_maintenance.py",
+                "scripts/ops/test_tooling_maintenance.py",
+            },
+        )
         self.assertNotIn("make/frontend.mk", owned)
         self.assertNotIn("make/**", overrides)
 
