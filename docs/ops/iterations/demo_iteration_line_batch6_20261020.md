@@ -15,8 +15,13 @@
 ## 2. 完成边界
 
 - 产品缺口回收登记已完成；浏览器角色验收（login → system.init → ui.contract、
-  每角色真实任务、无技术泄漏）为 Batch 6 剩余，需 Playwright + 前端服务确认后执行。
+  每角色真实任务、无技术泄漏）在契约消费层已完成：
+  `scripts/verify/demo_role_startup_smoke.js`（`make verify.demo.role_startup.smoke`），
+  `demo_pm`/`demo_finance`/`demo_audit` 三角色均通过 login → system.init（含
+  role_surface / default_route / capabilities / navigation）→ my.work.summary。
+- 环境阻断（`/t/demo` 命名空间绑定 sc_demo 而实例服务 sc_dev_demo）已由 P4 本地入口
+  修复解除；契约层验收按 Batch C 路由（命名空间定库、不带 db 参数）。
 
 ## 3. 下一批
 
-浏览器角色验收后，P1/P3 缺口按 owning layer 另立批次。
+浏览器级 Playwright 渲染验收为可选收尾；P1/P3 缺口按 owning layer 另立批次。

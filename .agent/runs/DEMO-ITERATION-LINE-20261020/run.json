@@ -76,7 +76,8 @@
     "scripts/verify/local_dev_scenario_tick_run.py",
     "scripts/verify/local_dev_experience_reset_plan.py",
     "docs/demo/product_gap_registry_v1.md",
-    "docs/ops/iterations/demo_iteration_line_batch6_20261020.md"
+    "docs/ops/iterations/demo_iteration_line_batch6_20261020.md",
+    "scripts/verify/demo_role_startup_smoke.js"
   ],
   "environment": {
     "kind": "offline",
@@ -168,5 +169,5 @@
       "resolved_commit": "a44238ad8"
     }
   ],
-  "next_exact_step": "Batch 6 product-gap registry done; browser role UI acceptance BLOCKED by environment defect: local.dev /t/demo namespace binds sc_demo while the instance serves sc_dev_demo (NS_NAMESPACE_TARGET_MISMATCH). Owner is P4 local.dev entry/routing config, not the demo line. Fix the namespace binding (or run acceptance against the correct bound DB) before browser acceptance."
+  "next_exact_step": "Batch 6 contract-layer role acceptance done: demo_pm/demo_finance/demo_audit all pass login -> system.init (role_surface/default_route/capabilities/navigation) -> my.work.summary via /t/demo/api/v1/intent (verify.demo.role_startup.smoke). Remaining optional: full browser-level Playwright rendering acceptance; then P1/P3 gaps open their own batches."
 }
