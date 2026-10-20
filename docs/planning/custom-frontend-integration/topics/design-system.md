@@ -1,6 +1,6 @@
 # SC Design System — 完整设计系统规范
 
-> 本文为候选规范，不建立第二套设计系统。实施必须合并到现有 `@sc/design-tokens` 与 `@sc/ui`，并以根目录 [`README.md`](../../README.md) 为准。
+> 本文为候选规范，不建立第二套设计系统。实施必须合并到现有 `@sc/design-tokens` 与 `@sc/ui`，并以根目录 [`README.md`](../README.md) 为准。
 
 > 供应链管理平台统一设计系统 v1.0
 > 

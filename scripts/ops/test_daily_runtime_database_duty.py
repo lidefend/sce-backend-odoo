@@ -655,6 +655,59 @@ class DeclarationTests(unittest.TestCase):
                 for f in failures), failures
         )
 
+    def test_a_rebuild_refuses_a_duty_that_is_not_a_demo(self):
+        """Rows a customer duty holds are not reproducible from a demo chain."""
+        declaration = shipped()
+        row = picked(declaration, "customer_tenant_dev")
+        reason = duty_entry.recreate_refusal(
+            row, declaration.get("protected_historic_sources") or []
+        )
+        self.assertIn("only a demo duty may be rebuilt", reason)
+
+    def test_a_rebuild_refuses_a_protected_historic_carrier_by_carrier_not_by_name(self):
+        """The pre-governance source and the demo duty both answer to ``sc_demo``.
+
+        A rebuild must identify its target by the carrier it owns, not by the
+        database name: the protected source is *never* rebuilt, while the
+        rebuilt demo duty on its own stack is a legitimate target. Matching on
+        the name alone would refuse the demo duty or, worse, admit the source.
+        """
+        declaration = shipped()
+        demo = picked(declaration, "demo")
+        protected = declaration["protected_historic_sources"]
+        self.assertEqual(demo["database"], protected[0]["database"])
+        self.assertEqual(
+            "", duty_entry.recreate_refusal(demo, protected)
+        )
+        borrowed = copy.deepcopy(demo)
+        borrowed["cluster"] = dict(demo["cluster"])
+        borrowed["cluster"]["compose_project"] = protected[0]["cluster"]["compose_project"]
+        reason = duty_entry.recreate_refusal(borrowed, protected)
+        self.assertIn("preserved historic source", reason)
+
+    def test_a_rebuild_refuses_a_demo_duty_without_the_products_seed_carrier(self):
+        declaration = shipped()
+        row = picked(declaration, "demo")
+        row["demo_seed"] = {}
+        reason = duty_entry.recreate_refusal(
+            row, declaration.get("protected_historic_sources") or []
+        )
+        self.assertIn("demo-seed carrier", reason)
+
+    def test_recreate_is_its_own_confirmation_not_a_seed_or_upgrade(self):
+        """Dropping a database is not a re-seed, so it cannot borrow their tokens."""
+        self.assertIn("recreate", duty_entry.PHASES)
+        self.assertEqual(
+            duty_entry.PHASE_CONFIRMATIONS["recreate"],
+            (duty_entry.RECREATE_CONFIRM_ENV, duty_entry.RECREATE_CONFIRMATION),
+        )
+        self.assertNotEqual(
+            duty_entry.RECREATE_CONFIRMATION, duty_entry.SEED_CONFIRMATION
+        )
+        self.assertNotEqual(
+            duty_entry.RECREATE_CONFIRMATION, duty_entry.UPGRADE_CONFIRMATION
+        )
+
     def test_a_duty_with_a_recorded_cluster_identity_is_never_still_to_be_created(self):
         # Once a duty exists its observed custody is written back into the
         # declaration. A declaration that still says ``to_be_created`` while the

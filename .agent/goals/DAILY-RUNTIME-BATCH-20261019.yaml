@@ -1,0 +1,24 @@
+schema_version: 1
+goal:
+  id: DAILY-RUNTIME-BATCH-20261019
+  title: daily_runtime_batch_demo_multicompany
+  status: active
+  formal_product_layer: P4
+  layer_target: daily_demo_duty_rebuild_and_published_entry_acceptance
+  module:
+    - smart_construction_demo
+    - scripts/ops
+    - deploy/demo-tenant
+  baseline:
+    branch: feature/daily-batch-demo-multicompany-20261019
+    full_sha: 654a77bda9ddad1c98c29e055df2d19c1cac2497
+  objective: >-
+    在 daily demo duty 上完成受管重建、真实业务口径数据回读与统一入口验收，
+    积累可集成批次后再合并主线。
+  constraints:
+    - existing_demo_duty_only
+    - no_production
+    - no_repeat_rebuild_without_recovery_readback
+  next_exact_step: >-
+    Complete remote required CI and independent review before merging; do not repeat
+    demo duty rebuild or upgrade writes.

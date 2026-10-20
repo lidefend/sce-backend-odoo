@@ -1,0 +1,79 @@
+schema_version: 1
+goal:
+  id: DEMO-ITERATION-LINE-20261020
+  title: demo_iteration_line_baseline_api_daily_runtime
+  status: completed
+  formal_product_layer: P4
+  supporting_layers:
+    - P0
+    - P1
+    - P3
+  layer_target: >-
+    smart_construction_demo baseline readiness, golden business chain, API scenario driver,
+    and daily demo runtime scheduler. Product gaps are routed to P0/P1/P3 instead of being
+    absorbed by the demo layer.
+  module:
+    - smart_construction_demo
+    - scripts/verify
+    - deploy/demo-tenant
+    - docs/demo
+  baseline:
+    branch: feature/demo-iteration-line-20261020
+    full_sha: 13b0395db4da63147b3f9c311a4bb5d060dc6a4e
+    source: dedicated_demo_worktree
+  objective: >-
+    Turn the demo tenant from a static record set into a baseline-ready, role-guided,
+    continuously running business case system. The line is implemented in bounded batches:
+    baseline readiness audit, baseline data completion, golden business chain, API-driven
+    scenario verification, daily scheduler, and role-based UI acceptance. No direct state
+    writes, no auto-approval in the live track, and no derived-data seeding.
+  product_boundary:
+    standard_vs_user_specific: demo_delivery_tool
+    why_here: >-
+      Demo data, scenario manifests, API scenario drivers and the daily demo scheduler are P4
+      delivery tooling. They consume product contracts and public business actions but do not
+      own product semantics.
+    why_not_elsewhere:
+      - no_business_semantics_or_contracts_in_smart_construction_demo
+      - no_frontend_semantic_derivation
+      - no_direct_state_writes_or_superuser_business_actions
+      - no_new_database_tenant_compose_project_or_credentials
+      - no_production_or_customer_data
+    blast_radius:
+      - demo seed and scenario data in smart_construction_demo
+      - P4 verification scripts and evidence
+      - demo tenant timer and runbook
+      - demo documentation and run metadata
+  constraints:
+    - baseline_data_must_be_ready_before_transactional_demo_data
+    - one_main_story_with_role_relay_and_state_snapshots
+    - system_facts_may_advance_but_human_decisions_stay_pending
+    - no_auto_approval_in_live_track
+    - no_workbench_or_projection_seeding
+    - real_roles_and_public_business_actions_only
+    - idempotent_steps_bound_to_scenario_day_and_step_key
+    - exact_demo_duty_database_tenant_and_dbfilter_only
+    - experience_reset_cleans_only_user_generated_delta
+    - experience_reset_must_not_delete_or_reseed_demo_baseline
+    - demo_baseline_fingerprint_must_be_unchanged_after_experience_reset
+    - reset_target_identity_must_be_confirmed_before_timer_change
+    - product_gaps_are_fixed_in_the_owning_p0_p1_p3_layer
+  exclusions:
+    - id: BASELINE-DOCS-LINKS-93
+      classification: baseline_evidence_defect
+      detail: >-
+        verify.docs.all fails at verify.docs.links with 93 pre-existing missing links.
+        Batch 0 docs contribute 0; their internal links resolve 7/7. Later aggregate
+        sub-items are not executed. Do not repair unrelated links in this batch.
+      owner: separate_p4_docs_baseline_cleanup
+  next_exact_step: >-
+    Batch 6 started: product gap registry recorded; remaining browser role UI
+    acceptance (login -> system.init -> ui.contract, per-role tasks, no leakage).
+  completion:
+    scope: overall_plan_and_baseline_readiness_audit
+    overall_goal: in_progress
+    result_index: .agent/runs/DEMO-ITERATION-LINE-20261020/run.json
+    local_batch_acceptance: in_progress
+    mainline_integration: not_run
+    deployment: not_run
+    target_user_delivery: not_run

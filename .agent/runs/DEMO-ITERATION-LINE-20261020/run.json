@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-ITERATION-LINE-20261020",
+  "branch": "feature/demo-iteration-line-20261020",
+  "status": "completed",
+  "baseline_sha": "13b0395db4da63147b3f9c311a4bb5d060dc6a4e",
+  "goal": ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
+  "record": "docs/ops/iterations/demo_iteration_line_batch6_20261020.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
+    ".agent/runs/DEMO-ITERATION-LINE-20261020/run.json",
+    "docs/demo/demo_iteration_line_v1.md",
+    "docs/demo/demo_baseline_readiness_v1.md",
+    "docs/demo/system_demo_v1.md",
+    "docs/ops/iterations/demo_iteration_line_bootstrap_20261020.md",
+    ".agent/goals/BASELINE-DOCS-LINKS-20261020.yaml",
+    ".agent/runs/BASELINE-DOCS-LINKS-20261020/run.json",
+    "docs/architecture/scene_completion_proof_audit_scan_v1.md",
+    "docs/architecture/scene_completion_proof_audit_screen_v1.md",
+    "docs/audit/be_menu_scene_entry_screen_bl_v1.md",
+    "docs/audit/be_menu_scene_output_screen_bk_v1.md",
+    "docs/audit/frontend_first_release_violation_closure.md",
+    "docs/audit/p0_alignment_verification.md",
+    "docs/audit/platform_baseline_alignment_report.md",
+    "docs/frontend_productization/professional-component-registry-v1.md",
+    "docs/ops/iterations/baseline_docs_links_20261020.md",
+    "docs/ops/iterations/delivery_context_switch_log_v1.md",
+    "docs/ops/iterations/frontend_nav_contract_decouple_batch_fe_20260424.md",
+    "docs/planning/custom-frontend-integration/G6_CHART_EXECUTION.md",
+    "docs/planning/custom-frontend-integration/README.md",
+    "docs/planning/custom-frontend-integration/topics/boq.md",
+    "docs/planning/custom-frontend-integration/topics/design-system.md",
+    "docs/planning/custom-frontend-integration/topics/echarts.md",
+    "docs/planning/custom-frontend-integration/topics/editor.md",
+    "docs/planning/custom-frontend-integration/topics/excel.md",
+    "docs/planning/custom-frontend-integration/topics/gantt.md",
+    "docs/planning/custom-frontend-integration/topics/menu-governance.md",
+    "docs/planning/custom-frontend-integration/topics/mobile.md",
+    "docs/planning/custom-frontend-integration/topics/pdf.md",
+    "docs/planning/custom-frontend-integration/topics/theme.md",
+    "docs/verify/be_postlogin_startup_nav_prune_scan_cf_v1.md",
+    "docs/verify/be_project_management_postlogin_runtime_screen_ce_v1.md",
+    ".agent/goals/BASELINE-AGENT-LEDGER-20261020.yaml",
+    ".agent/runs/BASELINE-AGENT-LEDGER-20261020/run.json",
+    ".agent/goals/DAILY-RUNTIME-BATCH-20261019.yaml",
+    ".agent/runs/DAILY-RUNTIME-BATCH-20261019/run.json",
+    ".agent/goals/PRODUCT-MENU-CONFIG-ENTRY-20261019.yaml",
+    ".agent/goals/DEMO-ORG-MASTER-20261019.yaml",
+    ".agent/goals/DEMO-R1-F02-F03-CONTRACT-LABEL-20261019.yaml",
+    "docs/ops/iterations/baseline_agent_ledger_20261020.md",
+    "docs/ops/iterations/demo_iteration_line_batch1_20261020.md",
+    "make/dev_test.mk",
+    "scripts/verify/baseline_readiness_manifest.json",
+    "scripts/verify/baseline_readiness_verifier.py",
+    "scripts/verify/test_baseline_readiness_verifier.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_baseline_readiness.py",
+    "demo_addons/smart_construction_demo/tests/__init__.py",
+    "make/dev.mk",
+    "docs/ops/iterations/demo_iteration_line_batch2_20261020.md",
+    "demo_addons/smart_construction_demo/tests/test_demo_golden_chain.py",
+    "docs/ops/iterations/demo_iteration_line_batch3_20261020.md",
+    "demo_addons/smart_construction_demo/tests/test_demo_api_scenario.py",
+    "docs/ops/iterations/demo_iteration_line_batch4_20261020.md",
+    "docs/ops/iterations/demo_iteration_line_batch5_gate_20261020.md",
+    "scripts/verify/demo_scenario_step.py",
+    "scripts/verify/test_demo_scenario_step.py",
+    "docs/ops/iterations/demo_iteration_line_batch5_20261020.md",
+    "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json",
+    "demo_addons/smart_construction_demo/tests/test_demo_scenario_tick.py",
+    "demo_addons/smart_construction_demo/models/scenario_tick.py",
+    "demo_addons/smart_construction_demo/models/__init__.py",
+    "scripts/verify/experience_reset_scope.py",
+    "scripts/verify/test_experience_reset_scope.py",
+    "demo_addons/smart_construction_demo/data/experience_users.json",
+    "scripts/verify/local_dev_scenario_tick_run.py",
+    "scripts/verify/local_dev_experience_reset_plan.py",
+    "docs/demo/product_gap_registry_v1.md",
+    "docs/ops/iterations/demo_iteration_line_batch6_20261020.md",
+    "scripts/verify/demo_role_startup_smoke.js"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing local.dev entry (127.0.0.1:18081, /t/demo, sc_dev_demo) for read-only role startup contract smoke; offline Make gates for demo mechanism checks; no deployment"
+  },
+  "checks": {
+    "docs_product_boundary": {
+      "target": "verify.docs.product_boundary",
+      "inputs": [
+        "docs/product/formal_product_boundary_v1.md",
+        "docs/demo/demo_iteration_line_v1.md",
+        "docs/demo/demo_baseline_readiness_v1.md",
+        "scripts/verify/product_boundary_catalog_guard.py",
+        "scripts/verify/test_product_boundary_catalog_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
+        ".agent/runs/DEMO-ITERATION-LINE-20261020/run.json",
+        ".agent/goals/BASELINE-AGENT-LEDGER-20261020.yaml",
+        ".agent/runs/BASELINE-AGENT-LEDGER-20261020/run.json",
+        ".agent/goals/DAILY-RUNTIME-BATCH-20261019.yaml",
+        ".agent/runs/DAILY-RUNTIME-BATCH-20261019/run.json",
+        ".agent/goals/PRODUCT-MENU-CONFIG-ENTRY-20261019.yaml",
+        ".agent/goals/DEMO-ORG-MASTER-20261019.yaml",
+        ".agent/goals/DEMO-R1-F02-F03-CONTRACT-LABEL-20261019.yaml",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "baseline_readiness": {
+      "target": "verify.demo.baseline_readiness.unit",
+      "inputs": [
+        "scripts/verify/baseline_readiness_manifest.json",
+        "scripts/verify/baseline_readiness_verifier.py",
+        "scripts/verify/test_baseline_readiness_verifier.py"
+      ],
+      "kind": "offline"
+    },
+    "demo_scenario_step": {
+      "target": "verify.demo.scenario_step.unit",
+      "inputs": [
+        "scripts/verify/demo_scenario_step.py",
+        "scripts/verify/test_demo_scenario_step.py"
+      ],
+      "kind": "offline"
+    },
+    "experience_reset_scope": {
+      "target": "verify.demo.experience_reset_scope.unit",
+      "inputs": [
+        "scripts/verify/experience_reset_scope.py",
+        "scripts/verify/test_experience_reset_scope.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "exclusions": [
+    {
+      "id": "BASELINE-DOCS-LINKS-93",
+      "classification": "baseline_evidence_defect",
+      "status": "closed_by_carried_prerequisite",
+      "detail": "verify.docs.all fails at verify.docs.links with 93 pre-existing missing links. Batch 0 docs contribute 0/93; their internal links resolve 7/7. The aggregate does not execute temp_guard, contract_sync or product_boundary after links fails.",
+      "owner": "separate P4 docs baseline cleanup",
+      "forbidden_action": "do_not_modify_93_unrelated_links_in_this_batch",
+      "resolved_by": "BASELINE-DOCS-LINKS-20261020",
+      "resolved_commit": "6367191098006910d876330747b9e1e6faff1481"
+    },
+    {
+      "id": "BASELINE-AGENT-LEDGER-7",
+      "classification": "baseline_evidence_defect",
+      "status": "closed_by_carried_prerequisite",
+      "detail": "Seven pre-existing .agent ledger inconsistencies were reproduced unchanged and closed by metadata-only status/index/goal-shape fixes.",
+      "owner": "separate P4 agent-ledger baseline cleanup",
+      "resolved_by": "BASELINE-AGENT-LEDGER-20261020",
+      "resolved_commit": "a44238ad8"
+    }
+  ],
+  "verification_results": {
+    "demo_role_startup_smoke": {
+      "command": "make verify.demo.role_startup.smoke (E2E_LOGIN=demo_pm/demo_finance/demo_audit)",
+      "status": "passed",
+      "roles": [
+        "demo_pm",
+        "demo_finance",
+        "demo_audit"
+      ],
+      "entry": "http://127.0.0.1:18081/t/demo",
+      "database": "sc_dev_demo",
+      "chain": "login -> system.init(role_surface/default_route/capabilities/navigation) -> my.work.summary"
+    },
+    "demo_offline_gates": {
+      "command": "make verify.docs.product_boundary verify.agent.ledger.unit verify.demo.scenario_step.unit verify.demo.experience_reset_scope.unit verify.demo.baseline_readiness.unit",
+      "status": "passed",
+      "test_counts": {
+        "product_boundary": 7,
+        "agent_ledger": 18,
+        "scenario_step": 9,
+        "experience_reset_scope": 4,
+        "baseline_readiness": 11
+      }
+    }
+  },
+  "next_exact_step": "Demo mechanism closed: three demo roles pass the real /t/demo contract chain and all registered offline gates pass. Optional full browser Playwright rendering remains; P1/P3 gaps stay in their owning batches. Proceed to the unified mainline integration lane."
+}

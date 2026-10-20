@@ -5,6 +5,8 @@ from odoo.exceptions import AccessDenied, UserError
 from ..registry import SeedStep, register
 from ...hooks import (
     DEMO_ADMIN_LOGIN,
+    DEMO_COMPANY_SECOND_MEMBER_LOGINS,
+    DEMO_COMPANY_SECOND_NAME,
     DEMO_PRINCIPAL_LOGINS,
     DEMO_USER_PASSWORD,
     demo_admin_record,
@@ -97,6 +99,36 @@ def _verify_company_identity(env):
     company = env.ref("base.main_company")
     if company.name != DEMO_COMPANY_NAME or company.partner_id.name != DEMO_COMPANY_NAME:
         raise UserError("Demo company identity must be %s." % DEMO_COMPANY_NAME)
+
+
+def _verify_company_secondary(env):
+    """The demo group must publish exactly one, registered second company."""
+    Company = env["res.company"].sudo()
+    matches = Company.search([("name", "=", DEMO_COMPANY_SECOND_NAME)])
+    if len(matches) != 1:
+        raise UserError(
+            "Demo second company must resolve exactly once: %s" % DEMO_COMPANY_SECOND_NAME
+        )
+    company = matches
+    xmlid = env.ref("smart_construction_demo.demo_company_second", raise_if_not_found=False)
+    if not xmlid or xmlid._name != "res.company" or xmlid.id != company.id:
+        raise UserError("Demo second company must carry its stable XMLID.")
+    if company.parent_id != env.ref("base.main_company"):
+        raise UserError("Demo second company must be a subsidiary of the main company.")
+    if company.currency_id.name != "CNY":
+        raise UserError("Demo second company must use CNY.")
+    registration = env["sc.tenant.company.registration"].sudo().search([
+        ("company_id", "=", company.id),
+        ("data_purpose", "=", "demo"),
+        ("active", "=", True),
+    ])
+    if len(registration) != 1:
+        raise UserError("Demo second company must own one active demo data-space registration.")
+    Users = env["res.users"].sudo().with_context(active_test=False)
+    for login in DEMO_COMPANY_SECOND_MEMBER_LOGINS:
+        user = Users.search([("login", "=", login)], limit=1)
+        if not user or not user.active or user.share or company not in user.company_ids:
+            raise UserError("Demo second-company member missing: %s" % login)
 
 
 def _check_user_credential(env, user):
@@ -218,6 +250,7 @@ def _collect_missing(env, project):
 
 def run(env):
     _verify_company_identity(env)
+    _verify_company_secondary(env)
     _verify_demo_credentials(env)
     _verify_demo_admin_credential(env)
     init_project = _get_project(env, PROJECT_INIT_CODE)

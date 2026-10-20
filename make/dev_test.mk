@@ -3010,6 +3010,26 @@ verify.local.dev.entry_identity.unit: guard.prod.forbid
 	@bash -n scripts/dev/local_dev_entry_identity.sh
 	@python3 -m unittest scripts.verify.test_local_dev_entry_identity_core
 
+.PHONY: verify.demo.baseline_readiness.unit
+verify.demo.baseline_readiness.unit: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_baseline_readiness_verifier.py
+
+.PHONY: verify.demo.scenario_step.unit
+verify.demo.scenario_step.unit: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_demo_scenario_step.py
+
+.PHONY: verify.demo.experience_reset_scope.unit
+verify.demo.experience_reset_scope.unit: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_experience_reset_scope.py
+
+.PHONY: verify.demo.role_startup.smoke
+verify.demo.role_startup.smoke: guard.prod.forbid
+	@E2E_LOGIN="$(if $(E2E_LOGIN),$(E2E_LOGIN),demo_pm)" \
+	  E2E_PASSWORD="$(if $(E2E_PASSWORD),$(E2E_PASSWORD),123456)" \
+	  BASE_URL="$(if $(BASE_URL),$(BASE_URL),http://127.0.0.1:18081)" \
+	  ENTRY_NS="$(if $(ENTRY_NS),$(ENTRY_NS),demo)" \
+	  node scripts/verify/demo_role_startup_smoke.js
+
 .PHONY: verify.platform.database.rehearsal.unit
 verify.platform.database.rehearsal.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_platform_database_rehearsal.py

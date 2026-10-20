@@ -1,0 +1,27 @@
+schema_version: 1
+goal:
+  id: DEMO-COMPANY-STRUCTURE-20261019
+  title: Demo 集团多公司结构与正式公司身份收敛
+  status: active
+  formal_product_layer: P4
+  layer_target: demo_addons/smart_construction_demo 数据种子
+  module: [smart_construction_demo]
+  objective: >-
+    把 Demo 主公司从旧的“Demo演示公司”收敛为正式集团名称，并在同一租户内增加
+    第二工程子公司。第二公司必须使用稳定 XMLID、CNY、中国国家记录、主公司子公司关系，
+    并以 data_purpose=demo 登记为数据空间；集团级岗位获得允许公司范围，项目岗位保持
+    主公司范围。全新重建与重复 seed 必须幂等，不得产生重复公司，也不得把验收夹具公司
+    当作 Demo 公司。
+  baseline:
+    branch: main
+    full_sha: 86c03b7a3a502028e5ad656f7c8cb34fd3bedff4
+  constraints:
+    - 只改 demo_addons/smart_construction_demo 的种子/测试与 docs/demo、docs/ops 本任务记录
+    - 不改平台控制库、租户边界和用户模块暂停范围
+    - 不硬编码公司 id；第二公司按稳定 XMLID 查找或创建
+    - 直接使用 Odoo ORM 与既有受管 seed 入口，不用 SQL 直接改业务数据
+    - 第二公司先登记为 Demo 数据空间，再加入用户允许公司范围
+    - 不删除或复用 FE Company A/B 验收夹具公司
+  next_exact_step: >-
+    在 daily demo duty 上执行受管 seed（release_seed + profile），随后只读回读主公司名称、
+    第二公司 XMLID/父公司/币种/登记、集团级岗位 company_ids 与 /t/demo 公司切换。

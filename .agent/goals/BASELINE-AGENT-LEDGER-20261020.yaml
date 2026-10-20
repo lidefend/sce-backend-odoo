@@ -1,0 +1,33 @@
+schema_version: 1
+goal:
+  id: BASELINE-AGENT-LEDGER-20261020
+  title: baseline_agent_ledger_cleanup
+  status: completed
+  formal_product_layer: P4
+  layer_target: agent_run_ledger_consistency
+  module:
+    - .agent
+    - docs/ops/iterations
+  baseline:
+    branch: fix/baseline-agent-ledger-20261020
+    full_sha: 3e1ceb34ac54b364c701d54666e8e7bf8665fdd3
+    source: demo_iteration_branch
+  objective: >-
+    Close the seven pre-existing .agent ledger inconsistencies without changing
+    product code, run evidence, or historical completion facts.
+  constraints:
+    - metadata_only
+    - preserve_historical_completion_evidence
+    - do_not_revive_completed_runs
+    - do_not_change_product_or_runtime
+  next_exact_step: >-
+    Completed: seven ledger inconsistencies closed; verify.agent.ledger.unit PASS
+    (18 tests); integrate the commit into the demo branch.
+  completion:
+    scope: agent_ledger_metadata_only
+    overall_goal: completed
+    result_index: .agent/runs/BASELINE-AGENT-LEDGER-20261020/run.json
+    local_batch_acceptance: passed
+    mainline_integration: not_run
+    deployment: not_run
+    target_user_delivery: not_run

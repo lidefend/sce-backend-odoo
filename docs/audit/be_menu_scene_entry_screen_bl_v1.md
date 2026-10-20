@@ -37,19 +37,19 @@
 ## evidence
 
 - `/api/menu/navigation` returns `nav_explained` from `MenuTargetInterpreterService` and filtered convergence output:
-  - [platform_menu_api.py](/mnt/e/sc-backend-odoo/addons/smart_core/controllers/platform_menu_api.py:136)
+  - [platform_menu_api.py](../../addons/smart_core/controllers/platform_menu_api.py#L136)
 - current interpreter still centers output on:
   - `target_type`
   - `delivery_mode`
   - `route`
   - `target`
-  - [menu_target_interpreter_service.py](/mnt/e/sc-backend-odoo/addons/smart_core/delivery/menu_target_interpreter_service.py:332)
+  - [menu_target_interpreter_service.py](../../addons/smart_core/delivery/menu_target_interpreter_service.py#L332)
 - current route building still emits `/s/...`, `/a/...`, `/native/action/...` as navigation forms:
-  - [menu_target_interpreter_service.py](/mnt/e/sc-backend-odoo/addons/smart_core/delivery/menu_target_interpreter_service.py:282)
+  - [menu_target_interpreter_service.py](../../addons/smart_core/delivery/menu_target_interpreter_service.py#L282)
 - frontend menu contract still only types `route` and generic `target`:
-  - [navigation.ts](/mnt/e/sc-backend-odoo/frontend/apps/web/src/types/navigation.ts:13)
+  - navigation.ts
 - frontend menu consumer still reinterprets `/native/action/:id` locally:
-  - [useNavigationMenu.ts](/mnt/e/sc-backend-odoo/frontend/apps/web/src/composables/useNavigationMenu.ts:28)
+  - useNavigationMenu.ts
 
 ## decision
 

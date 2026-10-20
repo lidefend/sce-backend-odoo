@@ -1,5 +1,11 @@
 # SCEMS v1.0 系统演示脚本
 
+## 0. 总体迭代线
+
+Demo 数据的基线门槛、角色接力、API 推进、日运行和体验重置边界，见
+[Demo 迭代线总体计划](demo_iteration_line_v1.md)；基础数据就绪矩阵见
+[Demo 基线就绪排查](demo_baseline_readiness_v1.md)。
+
 ## 1. 演示目标
 在 10~15 分钟内展示 v1 核心业务闭环：
 

@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-RUNTIME-BATCH-20261019",
+  "branch": "feature/daily-batch-demo-multicompany-20261019",
+  "status": "active",
+  "goal": ".agent/goals/DAILY-RUNTIME-BATCH-20261019.yaml",
+  "record": "docs/ops/iterations/daily_runtime_batch_20261019.md",
+  "baseline_sha": "654a77bda9ddad1c98c29e055df2d19c1cac2497",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/runs/DAILY-RUNTIME-BATCH-20261019/run.json",
+    ".agent/runs/DAILY-RUNTIME-BATCH-20261019/incident-historic-source-upgrade-20261019.md",
+    "config/ops/daily_runtime_database_duties.v1.json",
+    "docs/ops/iterations/daily_runtime_batch_20261019.md",
+    "make/codex.mk",
+    "scripts/ops/daily_runtime_database_duty.py",
+    "scripts/ops/daily_runtime_published_face_converge.py",
+    "scripts/ops/test_daily_runtime_database_duty.py",
+    "scripts/ops/test_daily_runtime_published_face_converge.py"
+  ],
+  "environment": {
+    "kind": "governed_daily_runtime",
+    "host": "sc-root",
+    "remote_root": "/opt/projects/repos/sce-product-odoo",
+    "remote_head": "654a77bda9ddad1c98c29e055df2d19c1cac2497",
+    "duty": "demo",
+    "database": "sc_demo",
+    "carrier": "sc-demo-dev",
+    "protected_historic_source": "sc-backend-odoo-dev"
+  },
+  "checks": {
+    "published_face_entry": {
+      "target": "verify.daily.runtime.published_face.converge",
+      "kind": "offline",
+      "status": "PASS",
+      "tests": 32,
+      "evidence": ".runtime/final-acceptance/daily-deployed/published-face-converge.json"
+    },
+    "database_duty": {
+      "target": "verify.daily.runtime.database.duty",
+      "kind": "offline",
+      "status": "PASS",
+      "tests": 161
+    },
+    "entry_declaration": {
+      "target": "verify.daily.runtime.entry",
+      "kind": "offline",
+      "status": "PASS",
+      "tests": 30,
+      "guard": "PASS"
+    },
+    "daily_duty_plan": {
+      "target": "daily.runtime.database.duty.plan",
+      "kind": "live_readonly",
+      "status": "PASS",
+      "duties": [
+        "demo",
+        "platform_control"
+      ],
+      "declaration_digest": "218d1f373c1a211be356c3ae44a751076b44cdaaf58d5527facb4443e335d720",
+      "evidence": ".runtime/final-acceptance/daily-deployed/database-duty-plan.json"
+    },
+    "demo_recreate": {
+      "target": "daily.runtime.database.duty.recreate",
+      "kind": "live_write",
+      "status": "PASS",
+      "recovery_point": "/data/backups/daily-demo-dev/sc_demo-20261019T132446Z-4d915622/database.dump",
+      "recovery_sha256": "c1808af2c2856d539cabaa0a3727961fccf61cb346919c9bc2498db81ff881f7",
+      "restore_entries": 22603,
+      "profile": "demo_full",
+      "evidence": ".runtime/final-acceptance/daily-deployed/database-duty-recreate.json"
+    },
+    "platform_identity_refresh": {
+      "target": "daily.runtime.database.duty.refresh",
+      "kind": "live_write",
+      "status": "PASS",
+      "duties": [
+        "platform_control"
+      ],
+      "compose_sha256": "2918dfa8f6f97ff6ef7b4db20539c7cffb8724f0f2eac86c2c3486c07b417b16",
+      "evidence": ".runtime/final-acceptance/daily-deployed/database-duty-refresh.json"
+    },
+    "entry_live_verify": {
+      "target": "daily.runtime.entry.verify",
+      "kind": "live_readonly",
+      "status": "PASS",
+      "assertions": 66,
+      "failed": 0,
+      "expected_sha": "654a77bda9ddad1c98c29e055df2d19c1cac2497",
+      "frontend_fingerprint": "2d2a898ebf745de60ef9c1dbe4967d1fbc5e2538ddbea3889ac03057b624a456",
+      "evidence": ".runtime/final-acceptance/daily-deployed/entry-verify-654a77bd.json"
+    },
+    "demo_data_readback": {
+      "kind": "live_readonly",
+      "status": "PASS",
+      "companies": 2,
+      "projects": 15,
+      "construction_contracts": 30,
+      "settlement_orders": 13,
+      "purchase_orders": 11,
+      "departments": 12,
+      "jobs": 13,
+      "employees": 14,
+      "fixture_records": 0
+    }
+  },
+  "blockers": [
+    {
+      "id": "HISTORIC-SOURCE-UPGRADED-20261019",
+      "status": "registered",
+      "detail": "本轮收敛的 mod.upgrade 误命中受保护历史源 sc-backend-odoo-dev-db-1/sc_demo；已停止一切写操作并登记，恢复需所有者裁决",
+      "evidence": ".agent/runs/DAILY-RUNTIME-BATCH-20261019/incident-historic-source-upgrade-20261019.md"
+    },
+    {
+      "id": "ACCEPTANCE-FIXTURE-CARRIER-20261019",
+      "status": "registered",
+      "detail": "demo 已改为标准平台租户，不再承载 FE Company A/B 夹具；夹具模块仍 installed 但记录为 0，下一次受管重建按新声明不再安装。daily readonly probe 需要专用验收载体，当前不得判 PASS",
+      "evidence": "docs/ops/iterations/daily_runtime_batch_20261019.md"
+    },
+    {
+      "id": "ENTRY-LOGIN-ISOLATION-20261019",
+      "status": "registered",
+      "detail": "入口 66 项只读断言已通过，但同一浏览器分别登录平台与 demo 后的会话、退出和权限隔离尚未执行完整场景",
+      "evidence": ".runtime/final-acceptance/daily-deployed/entry-verify-654a77bd.json"
+    }
+  ],
+  "next_exact_step": "提交并推送 feature/daily-batch-demo-multicompany-20261019，按普通 PR 流程执行远端必需 CI；CI 通过并完成独立复核后再合并主线。合并前不重复执行会写入 demo duty 的重建或升级。"
+}

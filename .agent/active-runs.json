@@ -1,6 +1,8 @@
 {
   "schema_version": 1,
   "branches": {
+    "fix/baseline-docs-links-20261020": ".agent/runs/BASELINE-DOCS-LINKS-20261020/run.json",
+    "feature/demo-company-structure-20261019": ".agent/runs/DEMO-COMPANY-STRUCTURE-20261019/run.json",
     "audit/daily-dev-mainline-product-acceptance-closeout-20261009": ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
     "audit/fe-contract-runtime-00-20261012": ".agent/runs/FE-CONTRACT-RUNTIME-00/run.json",
     "audit/system-permission-roles-20261019": ".agent/runs/SYSTEM-PERMISSION-ROLES-20261019/run.json",
@@ -23,6 +25,7 @@
     "fix/nav-node-level-menu-acl-closeout": ".agent/runs/TARGET-ENV-ROLE-ACCEPTANCE/run.json",
     "fix/payment-request-chain-alignment-20261013": ".agent/runs/PAYMENT-REQUEST-CHAIN-ALIGNMENT/run.json",
     "fix/platform-admin-surface-closure-20261018": ".agent/runs/PLATFORM-ADMIN-SURFACE-CLOSURE-20261018/run.json",
-    "fix/product-menu-config-entry-20261019": ".agent/runs/PRODUCT-MENU-CONFIG-ENTRY-20261019/run.json"
+    "fix/product-menu-config-entry-20261019": ".agent/runs/PRODUCT-MENU-CONFIG-ENTRY-20261019/run.json",
+    "feature/daily-batch-demo-multicompany-20261019": ".agent/runs/DAILY-RUNTIME-BATCH-20261019/run.json"
   }
 }

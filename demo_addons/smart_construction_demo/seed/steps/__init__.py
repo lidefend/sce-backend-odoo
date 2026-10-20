@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from . import step_dictionary  # noqa: F401
 from . import step_company_identity  # noqa: F401
+from . import step_company_secondary  # noqa: F401
+from . import step_company_membership  # noqa: F401
 from . import step_project_skeleton  # noqa: F401
 from . import step_project_owner_demo_pm  # noqa: F401
 from . import step_demo_pm_landing  # noqa: F401

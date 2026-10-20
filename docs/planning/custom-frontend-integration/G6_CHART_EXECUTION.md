@@ -1,7 +1,7 @@
 # G6 图表引擎执行记录（G6.1 只读实现 + G6.2 图表扩展）
 
 > 状态：G6.1 已合流（PR #436，main=7701070f）；G6.2 进行中（分支 `feature/custom-frontend-integration-g6-chart-v2`）
-> 决策依据：[ADR-002](../../../adr/ADR-002-frontend-chart-engine-echarts.md)（Accepted，2026-09-05）
+> 决策依据：[ADR-002](../../adr/ADR-002-frontend-chart-engine-echarts.md)（Accepted，2026-09-05）
 > 本文件是图表专题的**依赖/体积/安全评审记录**（ADR-002「后果」节要求的持续更新载体）。
 
 ## 1. 依赖评审记录

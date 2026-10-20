@@ -118,6 +118,39 @@
 本轮同时收口的三处验收漂移：
 
 - `s80` 风险库改名后与 `s89` 同名（都叫“项目安全风险库”），导致“唯一库”断言失败；
+
+## 多公司结构（2026-10-19）
+
+Demo 是同一租户内的一个集团，不是第二个租户，也不是第二套平台身份域：
+
+- 主公司：`四川智汇某某建设集团有限公司`（`base.main_company`），继续作为集团总部；
+- 第二公司：`四川智汇某某建设集团第二工程有限公司`，稳定 XMLID
+  `smart_construction_demo.demo_company_second`，作为主公司的子公司；
+- 两家公司均使用 CNY、中国国家记录，第二公司继承主公司的 `generic_coa` 科目表；
+- 第二公司在平台登记为 `data_purpose=demo` 的数据空间，租户键与主公司同为
+  `sc-demo-main`。没有登记的公司不会进入 `_sc_data_company_ids`，切换过去只会看到空面，
+  因此登记是平台所有权锚点，不是 Demo 绕行。
+
+集团级岗位获得第二公司的允许公司范围，项目岗位留在主公司，保留真实的多公司边界：
+
+`admin`、`wutao`、`demo_full`、`demo_role_owner`、`demo_role_executive`、
+`fin_mgr`、`fin1`、`demo_finance`、`demo_audit`、
+`sc_demo_accounting_manager`、`sc_demo_business_config`、`sc_demo_operation`。
+
+重建路径由两个幂等步骤承担：
+
+- `demo_company_secondary`：按 XMLID 查找或创建第二公司，收敛名称、父公司、币种、
+  国家和联系方式，并登记数据空间；
+- `demo_company_membership`：在用户步骤之后补齐允许公司范围，并重新登记数据空间操作者。
+
+`demo_full` profile 的顺序是身份 → 第二公司 → 用户 → 成员范围 → 其余业务数据，
+因此全新重建不会漏建第二公司，重复加载不会重复创建。`FE Company A/B` 是验收夹具公司，
+不属于 Demo 公司结构。
+
+验证：`test_demo_organization_baseline.py` 26 项、`test_demo_supplemental_flows.py` 80 项
+PASS；`make verify.demo.lifecycle.unit` 141 项 PASS。既有 `sc_demo` 库仍需执行一次受管
+seed 才能把旧名 `Demo演示公司` 收敛为正式公司名并创建第二公司；执行后须只读回读公司、
+XMLID、登记、用户允许公司和 `/t/demo` 公司切换。
   按业务口径把 `s80` 改为“大型机械作业安全风险库”。
 - showroom 项目已按“去 demo 标记”改为真实项目名，而 `scripts/demo/verify.sh` 仍按
   `展厅-` 前缀断言。验收改为直接消费 `seed/showroom_catalog.py`，保持单一真源；

@@ -1208,6 +1208,22 @@ local.dev.menu_facts.snapshot: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_menu_fact_snapshot.py
 
+.PHONY: local.dev.scenario_tick.run demo.scenario_tick.run
+local.dev.scenario_tick.run: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  demo.scenario_tick.run
+
+demo.scenario_tick.run: guard.prod.forbid check-compose-env
+	@$(RUN_ENV) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_scenario_tick_run.py
+
+.PHONY: local.dev.experience_reset.plan demo.experience_reset.plan
+local.dev.experience_reset.plan: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  demo.experience_reset.plan
+
+demo.experience_reset.plan: guard.prod.forbid check-compose-env
+	@$(RUN_ENV) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_experience_reset_plan.py
+
 .PHONY: local.dev.native_projection.audit
 local.dev.native_projection.audit: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
@@ -1341,6 +1357,26 @@ verify.local.dev.demo_action_roles.orm: guard.prod.forbid
 verify.local.dev.demo_loaded_chains.orm: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_construction_demo TEST_TAGS="demo_loaded_chains" local.dev.test
+
+.PHONY: verify.local.dev.baseline_readiness.orm
+verify.local.dev.baseline_readiness.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_demo TEST_TAGS="demo_baseline_readiness" local.dev.test
+
+.PHONY: verify.local.dev.golden_chain.orm
+verify.local.dev.golden_chain.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_demo TEST_TAGS="demo_golden_chain" local.dev.test
+
+.PHONY: verify.local.dev.api_scenario.orm
+verify.local.dev.api_scenario.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_demo TEST_TAGS="demo_api_scenario" local.dev.test
+
+.PHONY: verify.local.dev.scenario_tick.orm
+verify.local.dev.scenario_tick.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_demo TEST_TAGS="demo_scenario_tick" local.dev.test
 
 # Unit guard for the bounded runtime-performance observation carrier. It runs the
 # probe against a fake environment: no database, no runtime write, no browser.

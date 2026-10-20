@@ -13,9 +13,9 @@ post-login failure: role-surface landing selection versus scene-nav collapse.
      - `role_surface.landing_scene_key=portal.dashboard`
      - `default_route.scene_key=portal.dashboard`
    - Relevant bounded code surface:
-     - [identity_resolver.py](/mnt/e/sc-backend-odoo/addons/smart_core/identity/identity_resolver.py:9)
-     - [core_extension.py](/mnt/e/sc-backend-odoo/addons/smart_construction_scene/core_extension.py:8)
-     - [system_init_surface_builder.py](/mnt/e/sc-backend-odoo/addons/smart_core/core/system_init_surface_builder.py:121)
+     - [identity_resolver.py](../../addons/smart_core/identity/identity_resolver.py#L9)
+     - [core_extension.py](../../addons/smart_construction_scene/core_extension.py#L8)
+     - [system_init_surface_builder.py](../../addons/smart_core/core/system_init_surface_builder.py#L121)
    - Freeze:
      - startup landing currently resolves from role-surface identity, not from
        `project.management`
@@ -23,9 +23,9 @@ post-login failure: role-surface landing selection versus scene-nav collapse.
 2. Scene-nav collapse emitter:
    - Live inspect returns `nav_menu_count=0` and `nav_release_count=0`
    - Relevant bounded code surface:
-     - [scene_nav_contract_builder.py](/mnt/e/sc-backend-odoo/addons/smart_core/core/scene_nav_contract_builder.py:155)
-     - [system_init_scene_runtime_surface_builder.py](/mnt/e/sc-backend-odoo/addons/smart_core/core/system_init_scene_runtime_surface_builder.py:72)
-     - [scene_nav_node_defaults.py](/mnt/e/sc-backend-odoo/addons/smart_core/core/scene_nav_node_defaults.py:11)
+     - [scene_nav_contract_builder.py](../../addons/smart_core/core/scene_nav_contract_builder.py#L155)
+     - [system_init_scene_runtime_surface_builder.py](../../addons/smart_core/core/system_init_scene_runtime_surface_builder.py#L72)
+     - scene_nav_node_defaults.py
    - Freeze:
      - the startup scene-nav contract is being built from a candidate set that
        collapses to no delivery-ready leaf for this session

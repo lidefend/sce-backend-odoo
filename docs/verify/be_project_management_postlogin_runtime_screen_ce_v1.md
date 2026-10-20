@@ -34,9 +34,9 @@ consumer misuse.
      row, but that row has no top-level `scene_key`, no `entry`, and no `target`
 
 3. Frontend generic consumer behavior is consistent with the empty-nav contract:
-   - [AppShell.vue](/mnt/e/sc-backend-odoo/frontend/apps/web/src/layouts/AppShell.vue:152)
+   - [AppShell.vue](../../frontend/apps/web/src/layouts/AppShell.vue#L152)
      renders `暂无导航数据` when `initStatus === 'ready' && !menuCount`
-   - [session.ts](/mnt/e/sc-backend-odoo/frontend/apps/web/src/stores/session.ts:1108)
+   - [session.ts](../../frontend/apps/web/src/stores/session.ts#L1108)
      only errors when nav is missing entirely; a present-but-empty nav contract
      still lands in ready state with empty `menuTree` / `releaseNavigationTree`
 

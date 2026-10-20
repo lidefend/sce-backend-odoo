@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "owner_layer": "P4",
+  "logins": [],
+  "note": "体验用户角色（P1/P3/P0）落地前为空；落地后以 role_surface.role_code 消费，demo 层不在此声明产品角色。"
+}

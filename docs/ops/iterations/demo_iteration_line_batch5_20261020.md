@@ -1,0 +1,54 @@
+# Demo 迭代线 Batch 5（scenario tick 离线核心，2026-10-20）
+
+## 0. 身份与边界
+
+- 分支：`feature/demo-iteration-line-20261020`
+- 基线：`13b0395db4da63147b3f9c311a4bb5d060dc6a4e`
+- Formal Product Layer：P4（demo delivery tooling）
+- Layer Target：`scripts/verify`、`make/dev_test.mk`
+- 本批性质：纯逻辑离线核心，不写库、不改 timer。
+
+## 1. 变更
+
+- 新增 `scripts/verify/demo_scenario_step.py`：步骤契约 + 幂等 tick 调度——
+  `system_fact` 自动推进、`role_draft` 只备草稿、`role_decision` 只生成待办绝不自动审批、
+  `showcase_history` 独立展示轨道；幂等键 `scenario_id::business_date::step_key`。
+- 新增 `scripts/verify/test_demo_scenario_step.py`：7 个离线单测覆盖契约校验、幂等、
+  重复键拒绝、actor_mode 分类与“决策不自动推进”不变量。
+- 新增 `verify.demo.scenario_step.unit`（`make/dev_test.mk`）。
+- 新增 `demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json`：
+  黄金业务链 3 日压缩时钟（D1–D3）步骤声明，`system_fact`/`role_draft`/`role_decision`
+  各归其类，幂等键为 `scenario_id::business_date::step_key`。
+
+## 2. 验证
+
+- `python3 -m unittest scripts.verify.test_demo_scenario_step` → 8 tests OK（非零），
+  含 3 日压缩时钟演练：3 个不同业务日、无重复键、`role_decision` 绝不自动推进。
+
+## 3. 完成边界
+
+- 新增 `demo_addons/smart_construction_demo/models/scenario_tick.py`：
+  `demo.scenario.tick.run_tick` 每次推进一个业务日——`role_decision`/`role_draft` 给角色
+  活跃用户建 `mail.activity` 待办（锚定项目），`system_fact` 记为 `unbound`（绝不静默执行），
+  幂等台账与心跳存 `ir.config_parameter`。
+- 运行时演练：`verify.local.dev.scenario_tick.orm` → 3 日推进、6 todo / 6 unbound、
+  心跳写入、第 4 次 up_to_date，0 failed / 0 error。
+
+## 4. 下一批
+
+- 新增 `scripts/verify/experience_reset_scope.py`：只读清理范围规划器——按体验用户
+  `create_uid`/`write_uid` 计算业务记录与派生附件/消息的清理范围，体验用户碰过基线记录
+  即 fail-closed；`demo_addons/.../data/experience_users.json` 为演示声明的体验登录载体
+  （角色落地前为空）。
+- 离线：`verify.demo.experience_reset_scope.unit` → 4 tests OK。
+
+- 新增受管入口 `local.dev.scenario_tick.run`（推进一日，已验证 D1：2 todo + 2 unbound）
+  与 `local.dev.experience_reset.plan`（只算不删，已验证空范围、无基线违例）。
+- 新增 `demo.scenario.tick.plan_experience_reset`（运行时解析体验集合并扫描受限业务模型）。
+
+Batch 5 完成；随后 Batch 6 角色 UI 验收（浏览器）。
+
+## 4. 下一批
+
+Batch 5 后续：把 tick 引擎接入 demo 场景 manifest 与受管运行时，补 3 日压缩时钟 +
+心跳 + 基线指纹不变 + 体验增量清零；随后 Batch 6 角色 UI 验收。
