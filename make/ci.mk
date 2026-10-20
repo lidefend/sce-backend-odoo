@@ -863,6 +863,7 @@ ci.generated_evidence.preflight: guard.prod.forbid ci.generated_reports.guard ve
 	@echo "[ci.generated_evidence.preflight] PASS all content-bound generated evidence is current"
 
 ci.delivery.freeze.prepare: guard.prod.forbid contract.semantic.registry.generate verify.frontend.contract_basis.enforce verify.agent.ledger.unit verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit
+	@$(MAKE) --no-print-directory ci.delivery.plan
 	@$(MAKE) --no-print-directory refresh.generated_reports
 	@$(MAKE) --no-print-directory refresh.frontend.component_driver_takeover.inventory
 	@$(MAKE) --no-print-directory refresh.contract_form_split_evidence
@@ -1007,6 +1008,7 @@ verify.platform.duty.contract.unit: guard.prod.forbid
 
 ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy verify.platform.admin.credential.unit
 	@python3 scripts/ops/agent_run_context.py
+	@$(MAKE) --no-print-directory ci.delivery.plan
 	@git diff --check
 	@python3 scripts/verify/frontend_dev_incremental.py --plan-worktree
 	@python3 scripts/ci/trusted_scan_scope.py
@@ -1140,6 +1142,7 @@ verify.contract.architecture.suite: \
 	verify.backend.contract_lifecycle.authority \
 	verify.g1.acceptance.baseline \
 	verify.acceptance.evolution.binding \
+	verify.validation.delivery.unit \
 	verify.login_envelope.consumption.guard \
 	verify.contract_form_split_evidence \
 	verify.guard.registry \

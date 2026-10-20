@@ -280,6 +280,13 @@ verify.g1.acceptance.baseline: guard.prod.forbid
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_g1_acceptance_baseline_guard.py
 
 # ------- Acceptance evolution binding (code change -> acceptance impact) -------
+.PHONY: ci.delivery.plan verify.validation.delivery.unit
+ci.delivery.plan: guard.prod.forbid
+	@python3 scripts/ops/validation_delivery_plan.py
+
+verify.validation.delivery.unit: guard.prod.forbid
+	@PYTHONPATH=scripts/verify python3 -m unittest scripts.verify.test_validation_delivery_plan scripts.verify.test_agent_run_context scripts.verify.test_local_development_lifecycle.FloorplanEvidenceRecordingTest scripts.verify.test_branch_governance_consistency_guard.ControlledMergeExpectedHeadTests
+
 # Every changed path must be classified by config/acceptance/evolution_binding.v1.json.
 # Runtime-facing changes also require exact-head acceptance evidence before a
 # governed merge; that half is enforced by acceptance.evolution.verify.

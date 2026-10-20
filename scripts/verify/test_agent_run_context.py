@@ -275,6 +275,47 @@ class RunContextTest(unittest.TestCase):
         self.assertIn('run focused check', prompt)
         self.assertIn('never authorizes replaying a write', prompt)
 
+    def second_check(self):
+        self.run['checks']['second'] = {'target': 'verify.test', 'kind': 'offline',
+                                       'inputs': ['tools/test.py'], 'depends_on': ['unit']}
+        self.save()
+
+    def test_unchanged_failure_cannot_restart(self):
+        self.receipt('failed')
+        with self.assertRaises(RunError): begin(self.root, 'unit', 'try again')
+        self.write('source/a.py', 'fixed')
+        begin(self.root, 'unit')
+
+    def test_unchanged_pass_requires_reverify_reason(self):
+        self.receipt()
+        with self.assertRaises(RunError): begin(self.root, 'unit')
+        begin(self.root, 'unit', 'owner requested fresh verification')
+        record(self.root, 'unit', 'passed', 2, '.runtime/check.log')
+        receipt = json.loads((self.root / '.runtime/agent-runs/TEST/unit.json').read_text())
+        self.assertIn('owner', receipt['reverify_reason'])
+
+    def test_dependency_blocks_until_passed(self):
+        self.second_check()
+        with self.assertRaises(RunError): begin(self.root, 'second')
+        self.receipt()
+        begin(self.root, 'second')
+        record(self.root, 'second', 'passed', 2, '.runtime/check.log')
+        self.write('source/a.py', 'changed upstream only')
+        self.assertEqual(summary(self.root)['checks']['second']['status'], 'blocked')
+        self.receipt()
+        self.assertEqual(summary(self.root)['checks']['second']['status'], 'stale')
+
+    def test_upstream_changed_while_running_cannot_record(self):
+        self.second_check(); self.receipt(); begin(self.root, 'second')
+        self.write('source/a.py', 'changed')
+        with self.assertRaises(RunError): record(self.root, 'second', 'passed', 2, '.runtime/check.log')
+
+    def test_cycle_and_unknown_dependency_rejected(self):
+        self.second_check()
+        for dependencies in (['second'], ['unknown']):
+            self.run['checks']['unit']['depends_on'] = dependencies; self.save()
+            with self.assertRaises(RunError): resolve_run(self.root)
+
 
 if __name__ == '__main__':
     unittest.main()

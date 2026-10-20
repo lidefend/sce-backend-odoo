@@ -125,7 +125,7 @@ class RecordTests(unittest.TestCase):
 
     def test_recording_binds_the_fingerprint_that_was_executed(self) -> None:
         document = units_document()
-        ledger = record_units(document, empty_ledger(), results_document(document, {"a": "passed"}))
+        ledger = record_units(units_document(fingerprints={"a": "f1"}), empty_ledger(), results_document(document, {"a": "passed"}))
         self.assertEqual(ledger["units"]["a"]["fingerprint"], "f1")
         plan = plan_units(units_document(fingerprints={"a": "other"}), ledger)
         self.assertEqual(plan["affected"][0], "a")
@@ -134,7 +134,7 @@ class RecordTests(unittest.TestCase):
 class CoverageTests(unittest.TestCase):
     def test_coverage_report_distinguishes_states(self) -> None:
         before = units_document()
-        ledger = record_units(before, empty_ledger(), results_document(before, {"a": "passed", "b": "passed"}))
+        ledger = record_units(units_document(fingerprints={"a": "f1", "b": "f2"}), empty_ledger(), results_document(before, {"a": "passed", "b": "passed"}))
         after = units_document(fingerprints={"a": "f1", "b": "f2-changed", "c": "f3"})
         report = covered_units(ledger, after)
         self.assertEqual(report["a"], "passed")
@@ -256,12 +256,13 @@ class ValidationTests(unittest.TestCase):
     def test_plan_and_record_round_trip_through_cli(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
-            document = units_document()
+            document = units_document(fingerprints={"a": "f1"})
             units_path = self._write(directory, "units.json", document)
             results_path = self._write(directory, "results.json", results_document(document, {"a": "passed"}))
             ledger_path = directory / "ledger.json"
             self.assertEqual(scope_main(["record", "--units", str(units_path), "--results", str(results_path),
                                          "--ledger", str(ledger_path), "--json-out", str(directory / "r.json")]), 0)
+            units_path.write_text(json.dumps(units_document()))
             code = scope_main(["plan", "--units", str(units_path), "--ledger", str(ledger_path),
                                "--json-out", str(directory / "p.json"), "--require-complete"])
             self.assertEqual(code, 3)
@@ -272,7 +273,7 @@ class ValidationTests(unittest.TestCase):
 
 class RecordedSourceTests(unittest.TestCase):
     def test_an_explicit_source_overrides_the_results_provenance(self) -> None:
-        document = units_document()
+        document = units_document(fingerprints={"a": "f1"})
         results = results_document(document, {"a": "checked"})
         results["source"] = "artifacts/summary.json"
         ledger = record_units(document, empty_ledger(), results, source="artifacts/summary.json#record_only")
@@ -282,7 +283,7 @@ class RecordedSourceTests(unittest.TestCase):
     def test_the_cli_accepts_an_explicit_source(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
-            document = units_document()
+            document = units_document(fingerprints={"a": "f1"})
             units_path = directory / "units.json"
             units_path.write_text(json.dumps(document), encoding="utf-8")
             results_path = directory / "results.json"
@@ -302,6 +303,32 @@ class EngineNeutralityTests(unittest.TestCase):
             ledger = record_units(document, empty_ledger(check), results_document(document, {"a": "passed", "b": "passed", "c": "passed"}))
             self.assertEqual(plan_units(document, ledger)["affected"], [])
             self.assertEqual(sorted(unit_ids(document)), sorted(ledger["units"]))
+
+
+class IdentityIsolationTests(unittest.TestCase):
+    def test_partial_progress_keeps_remaining_units_affected(self):
+        document = units_document()
+        ledger = record_units(document, empty_ledger(), results_document(document, {'a': 'passed'}, planned=[]))
+        self.assertEqual(plan_units(document, ledger)['affected'], ['b', 'c'])
+        self.assertEqual(ledger['runs'][-1]['authoritative_affected'], ['a', 'b', 'c'])
+        self.assertEqual(ledger['runs'][-1]['not_executed'], ['b', 'c'])
+
+    def test_narrowed_surface_never_rebinds_unexecuted_siblings(self):
+        before = units_document()
+        ledger = record_units(before, empty_ledger(), results_document(before, {k: 'passed' for k in 'abc'}))
+        # Exercise migration of a legacy ledger with only a global identity.
+        for item in ledger['units'].values(): item.pop('identity')
+        after = units_document(fingerprints={'a': 'f1'}, identity={'database': 'another'})
+        ledger = record_units(after, ledger, results_document(after, {'a': 'passed'}))
+        expanded = units_document(identity={'database': 'another'})
+        self.assertEqual(plan_units(expanded, ledger)['affected'], ['b', 'c'])
+        self.assertEqual(covered_units(ledger, expanded)['b'], 'stale')
+        self.assertEqual(plan_units(before, ledger)['reusable'], ['b', 'c'])
+
+    def test_empty_identity_does_not_match_named_runtime(self):
+        before = units_document(); before['identity'] = {}
+        ledger = record_units(before, empty_ledger(), results_document(before, {k: 'passed' for k in 'abc'}))
+        self.assertEqual(plan_units(units_document(), ledger)['reusable'], [])
 
 
 if __name__ == "__main__":

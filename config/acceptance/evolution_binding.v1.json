@@ -127,6 +127,19 @@
   },
   "rules": [
     {
+      "id": "offline-delivery-governance",
+      "paths": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/ops/evidence_scope.py",
+        "scripts/ops/test_evidence_scope.py",
+        "scripts/ops/validation_delivery_plan.py",
+        "config/acceptance/evolution_binding.v1.json"
+      ],
+      "suites": [
+        "governance_static"
+      ]
+    },
+    {
       "id": "acceptance-runner-list-surface",
       "paths": [
         "scripts/verify/frontend_list_surface_structure_browser.mjs"

@@ -258,33 +258,13 @@ def carry_forward_policy(registry: dict) -> dict:
     return policy
 
 
-def suite_input_patterns(registry: dict, suite_id: str) -> list[str]:
-    """The declared files that can change one suite's verdict.
-
-    The rules already describe which change paths make a suite necessary.  They
-    are also the least surprising input scope for reuse: a suite may reuse an
-    earlier pass only while every file it is declared to protect is unchanged.
-    GLOBAL_SUITE_INPUTS covers the registry, guard, recorder and make/CI
-    mechanism that can change the meaning of every suite.
-    """
-
-    patterns = set(GLOBAL_SUITE_INPUTS)
-    suite = registry["suites"][suite_id]
-    patterns.update(suite.get("inputs") or [])
-    for rule in registry["rules"]:
-        if suite_id in (rule.get("suites") or []):
-            patterns.update(rule["paths"])
-    return sorted(patterns)
-
-
 def suite_input_sha256(registry: dict, suite_id: str, revision: str) -> str:
     """Hash only the committed inputs that can change this suite's verdict."""
 
-    patterns = suite_input_patterns(registry, suite_id)
     material: list[str] = []
     for line in _git("ls-tree", "-r", "--full-tree", revision).splitlines():
         _, _, path = line.partition("\t")
-        if path and any(path_matches(pattern, path) for pattern in patterns):
+        if path and suite_owns_path(registry, suite_id, path):
             material.append(line)
     descriptor = json.dumps(
         {
@@ -299,6 +279,20 @@ def suite_input_sha256(registry: dict, suite_id: str, revision: str) -> str:
     for line in material:
         digest.update(line.encode("utf-8") + b"\n")
     return digest.hexdigest()
+
+
+def suite_owns_path(registry: dict, suite_id: str, path: str) -> bool:
+    """Use the same first-match ownership for planning and invalidation.
+
+    Global mechanism inputs and explicit suite dependencies remain unconditional;
+    a later broad rule must not recapture an earlier exact governance rule.
+    """
+    explicit = (*GLOBAL_SUITE_INPUTS, *(registry['suites'][suite_id].get('inputs') or []))
+    if any(path_matches(pattern, path) for pattern in explicit):
+        return True
+    rule = next((item for item in registry['rules']
+                 if any(path_matches(pattern, path) for pattern in item['paths'])), None)
+    return rule is not None and suite_id in rule['suites']
 
 
 def build_plan(registry: dict, changed: list[str], base: str, head: str) -> dict:

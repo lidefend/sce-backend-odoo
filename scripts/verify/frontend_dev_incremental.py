@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from scripts.ops.agent_run_context import RunError, resolve_run, delta_paths, evaluate
+from scripts.ops.agent_run_context import RunError, resolve_run, delta_paths, check_states
 
 WATCH_ROOTS = (
     "frontend/apps/web/src",
@@ -436,7 +436,7 @@ def iteration_plan(root: Path = ROOT) -> int:
     relative, run = selected
     if run["status"] in ("completed", "superseded"):
         raise RunError("selected run is closed; register/select the next task")
-    checks = {key: evaluate(root, run, key) for key in run["checks"]}
+    checks = check_states(root, run)
     return print_plan(delta_paths(root, run["baseline_sha"]), source=relative, checks=checks)
 
 
@@ -446,7 +446,7 @@ def print_plan(paths: list[str], *, source: str = "explicit_paths", checks: dict
     for check in (checks or {}).values():
         grouped.setdefault(check["target"], []).append(check["status"])
     reusable = {target for target, states in grouped.items() if all(state == "reusable" for state in states)}
-    blocked = {target for target, states in grouped.items() if "failed" in states}
+    blocked = {target for target, states in grouped.items() if any(state in ("failed", "blocked") for state in states)}
     targets.update(grouped)
     targets.difference_update(reusable | blocked)
     unmapped_paths = [

@@ -21,7 +21,7 @@
     "feature/user-permission-surface-split-20261019": ".agent/runs/P1-USER-PERMISSION-SURFACE-SPLIT-20261019/run.json",
     "fix/product-menu-config-entry-20261019": ".agent/runs/PRODUCT-MENU-CONFIG-ENTRY-20261019/run.json",
     "audit/system-permission-roles-20261019": ".agent/runs/SYSTEM-PERMISSION-ROLES-20261019/run.json",
-    "feature/platform-admin-credential-mechanism-20261020": ".agent/runs/PLATFORM-ADMIN-CREDENTIAL-MECHANISM-20261020/run.json"
+    "fix/validation-delivery-governance-20261020": ".agent/runs/VALIDATION-DELIVERY-GOVERNANCE-20261020/run.json"
   },
   "schema_version": 1
 }

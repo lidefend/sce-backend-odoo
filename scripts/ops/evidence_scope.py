@@ -29,6 +29,7 @@ Ledger (``evidence_scope.ledger.v1``) lives under ``.runtime/evidence-scope``.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import sys
@@ -127,6 +128,7 @@ def save_ledger(path: Path, document: dict) -> None:
 
 
 def plan_units(document: dict, ledger: dict) -> dict:
+    _require(not ledger or ledger.get('check') == document.get('check'), 'ledger/check identity mismatch')
     recorded = ledger.get("units") or {}
     affected: list[str] = []
     reusable: list[str] = []
@@ -140,7 +142,8 @@ def plan_units(document: dict, ledger: dict) -> dict:
             fresh.append(unit["id"])
             affected.append(unit["id"])
             continue
-        if str(entry.get("fingerprint")) != unit["fingerprint"] or identity_changed:
+        if (str(entry.get("fingerprint")) != unit["fingerprint"]
+                or entry.get("identity", ledger.get("identity") or {}) != (document.get("identity") or {})):
             stale.append(unit["id"])
             affected.append(unit["id"])
             continue
@@ -170,9 +173,9 @@ def record_units(document: dict, ledger: dict, results: dict, *, source: str = "
     Recording is the only place a unit may become reusable, so it enforces the
     reuse-first contract: the run must state exactly which units it executed,
     those units must belong to the declared set with matching fingerprints, and
-    every unit the plan marked as affected must actually have been executed.
-    A run can therefore never claim coverage it did not produce, and it can
-    never skip the work its own plan required.
+    every unit the executor claimed it would execute must be accounted for.
+    Interrupted runs may record a subset; the authoritative remaining set stays
+    affected, so completed work survives without claiming whole-plan success.
     """
     _require(results.get("schema") == "evidence_scope.results.v1", "results document schema mismatch")
     executed = results.get("executed_units")
@@ -195,15 +198,27 @@ def record_units(document: dict, ledger: dict, results: dict, *, source: str = "
         sorted(statuses) == sorted(executed_ids),
         "results must carry exactly one status per executed unit (no unexecuted unit may be recorded)",
     )
-    planned_affected = [str(identifier) for identifier in (results.get("planned_affected") or [])]
+    # Recompute the full set for the audit record, even for interrupted runs.
+    authoritative_affected = plan_units(document, ledger)["affected"]
+    claimed = results.get("planned_affected") or []
+    _require(isinstance(claimed, list), "planned_affected must be a list")
+    planned_affected = [str(value) for value in claimed]
     missing = [identifier for identifier in planned_affected if identifier not in set(executed_ids)]
     _require(not missing, f"the plan required these units to be executed but the run skipped them: {missing[:5]}")
+    # Preserve legacy units' original identity before updating the ledger header.
+    # A narrowed document must never rebind unexecuted siblings to a new runtime.
+    ledger = copy.deepcopy(ledger)
+    ledger.setdefault('schema', LEDGER_SCHEMA)
+    ledger.setdefault('check', document['check'])
     recorded = ledger.setdefault("units", {})
+    for entry in recorded.values():
+        entry.setdefault("identity", copy.deepcopy(ledger.get("identity") or {}))
     fingerprints = {unit["id"]: unit["fingerprint"] for unit in document["units"]}
     stamp = datetime.now(timezone.utc).isoformat()
     for identifier, status in statuses.items():
         recorded[identifier] = {
             "fingerprint": fingerprints[identifier],
+            "identity": copy.deepcopy(document.get("identity") or {}),
             "status": str(status),
             "recorded_at": stamp,
             "source": source or str(results.get("source") or ""),
@@ -214,6 +229,8 @@ def record_units(document: dict, ledger: dict, results: dict, *, source: str = "
             "recorded_at": stamp,
             "units": sorted(statuses),
             "planned_affected": sorted(planned_affected),
+            "authoritative_affected": sorted(authoritative_affected),
+            "not_executed": sorted(set(authoritative_affected) - set(executed_ids)),
             "source": source or str(results.get("source") or ""),
         }
     )
@@ -223,13 +240,13 @@ def record_units(document: dict, ledger: dict, results: dict, *, source: str = "
 def covered_units(ledger: dict, document: dict) -> dict:
     """Per-unit coverage state for a declared surface, without executing anything."""
     recorded = ledger.get("units") or {}
-    identity_changed = bool(ledger.get("identity")) and (ledger.get("identity") != (document.get("identity") or {}))
     report: dict[str, str] = {}
     for unit in document["units"]:
         entry = recorded.get(unit["id"])
         if entry is None:
             report[unit["id"]] = "never_recorded"
-        elif identity_changed or str(entry.get("fingerprint")) != unit["fingerprint"]:
+        elif (entry.get("identity", ledger.get("identity") or {}) != (document.get("identity") or {})
+              or str(entry.get("fingerprint")) != unit["fingerprint"]):
             report[unit["id"]] = "stale"
         else:
             report[unit["id"]] = str(entry.get("status") or "recorded")
