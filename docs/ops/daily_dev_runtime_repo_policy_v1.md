@@ -38,10 +38,34 @@ DAILY_DEV_CANDIDATE_EXPECTED_SHA=<full-40-character-sha> \
 make verify.daily_dev.runtime_repo.clean
 ```
 
-This preflight also fails closed unless `smart_construction_custom` is
-`installed`, its database version equals the external package manifest, the
-running Odoo container has the configured customer directory mounted read-only
-at `/mnt/customer-addons`, and Odoo resolves the module from that exact path.
+In the legacy env-based mode, this preflight also fails closed unless
+`smart_construction_custom` is `installed`, its database version equals the
+external package manifest, the running Odoo container has the configured
+customer directory mounted read-only at `/mnt/customer-addons`, and Odoo
+resolves the module from that exact path.
+
+For duty-based runtimes the customer module set is declared explicitly rather
+than named in the guard. Set `DAILY_CUSTOMER_MODULES` to a comma-separated list
+when the duty installs customer modules. Set it to `none` for a duty such as the
+daily demo that mounts a read-only customer directory but intentionally
+installs no module from it. When the duty stack is already running, derive
+`COMPOSE_FILES` from the Odoo container label instead of copying the generated
+duty-stack filename:
+
+```bash
+cfg="$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project.config_files"}}' sc-demo-dev-odoo-1)"
+DAILY_CUSTOMER_MODULES=none \
+COMPOSE_FILES="-f $cfg" \
+COMPOSE_PROJECT_NAME=sc-demo-dev \
+DB_NAME=sc_demo \
+DB_USER=sc_demo_app \
+SC_CUSTOMER_ADDONS_ROOT=/opt/sce/tenant-addons/daily/<tenant-sha> \
+python3 scripts/verify/daily_dev_customer_addons_runtime_guard.py
+```
+
+The guard still verifies the read-only mount, database module state/version for
+every explicitly named module, and Odoo's resolved module path/version. An
+empty module list validates only the read-only mount boundary.
 
 Start or recreate the daily Odoo service through the repository entrypoint.
 When `SC_CUSTOMER_ADDONS_ROOT` is configured, Make automatically includes the

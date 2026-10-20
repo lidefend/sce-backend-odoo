@@ -127,9 +127,11 @@ verify.frontend.acceptance.environment.guard:
 	@python3 -m unittest scripts.verify.test_dev_acceptance_release_identity
 	@python3 scripts/verify/frontend_acceptance_environment_source_guard.py
 
+DAILY_CUSTOMER_MODULES ?=
+
 verify.daily_dev.customer_addons.runtime:
 	@python3 -m py_compile scripts/verify/daily_dev_customer_addons_runtime_guard.py
-	@$(RUN_ENV) python3 scripts/verify/daily_dev_customer_addons_runtime_guard.py
+	@$(if $(DAILY_CUSTOMER_MODULES),DAILY_CUSTOMER_MODULES="$(DAILY_CUSTOMER_MODULES)" ,) $(RUN_ENV) python3 scripts/verify/daily_dev_customer_addons_runtime_guard.py
 
 verify.daily_dev.runtime_repo.clean:
 	@DAILY_DEV_DEPLOYMENT_MODE="$(or $(DAILY_DEV_DEPLOYMENT_MODE),main)" \
