@@ -27,6 +27,7 @@
     "docs/ops/iterations/demo_usage_foundation_f4_20261021.md",
     "docs/ops/iterations/demo_usage_foundation_f5_20261021.md",
     "docs/ops/iterations/demo_usage_foundation_f6_20261021.md",
+    "docs/ops/iterations/demo_usage_foundation_f7_20261021.md",
     "docs/planning/custom-frontend-integration/G1_BASELINE_EVIDENCE.json",
     "docs/product/frontend_business_entry_acceptance_v1.csv",
     "demo_addons/smart_construction_demo/__manifest__.py",
@@ -34,6 +35,8 @@
     "demo_addons/smart_construction_demo/tests/__init__.py",
     "demo_addons/smart_construction_demo/tests/test_demo_usage_foundation_master_data.py",
     "demo_addons/smart_construction_demo/tests/test_demo_usage_foundation_approval.py",
+    "demo_addons/smart_construction_demo/models/scenario_tick.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_scenario_tick.py",
     "make/dev.mk",
     "make/dev_test.mk",
     "scripts/verify/demo_usage_foundation_audit.py",
@@ -368,11 +371,28 @@
       }
     ],
     "notes": "API/ORM-level full business chain is ready; no P4 fix required. HTTP transport trace_id/request_id and full ui.contract create/submit browser chain are F8 browser-acceptance scope."
+  },
+  "f7_duf01_system_fact_binding": {
+    "identity": {
+      "head": "b9d84ce6d5182d1d410231f060291eec36914aeb",
+      "stage": "head_plus_f7_duf01_dirty_scope",
+      "runtime": "sc-local-dev db=sc_dev_demo"
+    },
+    "commands": [
+      {
+        "command": "make verify.local.dev.scenario_tick.orm",
+        "status": "passed",
+        "layer": "L3",
+        "test_count": 3,
+        "detail": "12 steps = 6 todo + 6 advanced, 0 unbound; project_approved drives project lifecycle via public action, business facts drive lifecycle chains/readbacks"
+      }
+    ],
+    "notes": "DUF-01 resolved: system_fact steps now bind to verifiable facts (project_lifecycle/lifecycle/readback kinds) with fail-closed unbound+reason fallback. DUF-05 (10-day narrative D4-D10) remains."
   }
     }
   },
   "blockers": [],
-  "next_exact_step": "F6 API-level business chain verified (api_scenario 2 + golden_chain 1). Proceed to F7: daily run and experience reset (10-day scenario narrative, system_fact handler, tick, timer, experience reset scope; continuous advancement and stable baseline fingerprint).",
+  "next_exact_step": "F7 DUF-01 resolved: system_fact steps bind to verifiable facts (6 advanced, 0 unbound). Remaining F7: author D4-D10 scenario steps and bindings (DUF-05), then verify 10-day continuous advancement.",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",

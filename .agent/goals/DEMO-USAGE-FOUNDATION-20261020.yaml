@@ -57,14 +57,14 @@ goal:
     - keep_demo_baseline_fingerprint_stable_across_experience_reset
     - no_new_database_tenant_compose_or_credentials
   next_exact_step: >-
-    F6 API-level business chain verified. Proceed to F7: daily run and experience
-    reset (10-day scenario narrative, system_fact handler, tick, timer, experience
-    reset scope; continuous advancement and stable baseline fingerprint).
+    F7 DUF-01 resolved: system_fact steps bind to verifiable facts. Remaining F7:
+    author D4-D10 scenario steps and bindings (DUF-05), then verify 10-day
+    continuous advancement and stable baseline fingerprint.
   completion:
     scope: demo_user_usage_foundation_v1
     overall_goal: in_progress
     result_index: .agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json
-    local_batch_acceptance: F6_complete
+    local_batch_acceptance: F7_duf01_complete
     mainline_integration: not_run
     deployment: not_run
     target_user_delivery: not_run

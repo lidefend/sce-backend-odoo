@@ -79,8 +79,9 @@ class TestDemoScenarioTickRun(TransactionCase):
             sorted(key for key, value in ledger.items() if value == "todo").__len__(), 6
         )
         self.assertEqual(
-            sorted(key for key, value in ledger.items() if value == "unbound").__len__(), 6
+            sorted(key for key, value in ledger.items() if value == "advanced").__len__(), 6
         )
+        self.assertNotIn("unbound", set(ledger.values()))
         self.assertTrue(
             self.env["ir.config_parameter"]
             .sudo()
