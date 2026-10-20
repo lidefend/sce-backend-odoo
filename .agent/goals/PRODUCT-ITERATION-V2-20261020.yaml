@@ -1,0 +1,68 @@
+schema_version: 1
+goal:
+  id: PRODUCT-ITERATION-V2-20261020
+  title: product_capability_iteration_v2
+  status: planned
+  formal_product_layer: P1
+  supporting_layers:
+    - P0
+    - P3
+    - P4
+  layer_target: >-
+    Construction-standard approval, readiness, experience-role and configuration
+    capabilities, with platform contract mechanisms in P0 and runtime/product
+    configuration in P3.
+  module:
+    - smart_core
+    - smart_construction_core
+    - smart_construction_custom
+    - frontend
+  baseline:
+    branch: feature/product-iteration-v2-20261020
+    full_sha: 74063688e928d25c8e65037ac3306956c954244d
+    source: product_iteration_workspace
+  objective: >-
+    Move the product from a visible capability catalog to safe, publishable
+    standard business rules: activate approval/payment parameters, expose
+    approval and readiness facts, add a formal experience-user role, and close
+    remaining partial configuration cards without frontend semantic inference.
+  product_boundary:
+    standard_vs_user_specific: construction_industry_standard_and_runtime_configuration
+    why_here: >-
+      Approval, readiness and standard business rules are construction product
+      semantics in smart_construction_core; generic contract consumption stays
+      in smart_core; editable runtime values stay in P3 configuration.
+    why_not_elsewhere:
+      - no_product_semantics_in_frontend_hardcoding
+      - no_demo_specific_business_patch_in_product_layers
+      - no_unregistered_database_tenant_compose_or_credentials
+      - no_direct_ir_config_parameter_writes
+    blast_radius:
+      - approval and payment request behavior
+      - baseline/project readiness projection
+      - experience role surface and capability map
+      - product configuration workbench and system parameter catalog
+      - daily runtime acceptance evidence
+  constraints:
+    - contract_before_frontend
+    - parameters_require_impact_preview_change_set_audit_rollback
+    - approval_facts_come_from_tier_review_and_declared_scope
+    - readiness_facts_come_from_backend
+    - experience_role_replaces_hardcoded_login_collection
+    - planned_and_partial_never_masquerade_as_available
+    - do_not_modify_demo_worktree_or_demo_data_cleanup
+    - keep_main_stable_until_owner_authorized_final_integration
+  next_exact_step: >-
+    Executor takeover: run make agent.run.resume, verify the planning commit and
+    clean worktree, mark the run active, then start Batch 7 by declaring
+    approval_mode and default_payment_terms with server-side validation, impact
+    preview and change-set support before replacing static approval role hints
+    with tier.review/org scope facts.
+  completion:
+    scope: product_iteration_v2
+    overall_goal: in_progress
+    result_index: .agent/runs/PRODUCT-ITERATION-V2-20261020/run.json
+    local_batch_acceptance: not_run
+    mainline_integration: not_run
+    deployment: not_run
+    target_user_delivery: not_run
