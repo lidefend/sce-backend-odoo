@@ -5,7 +5,7 @@
   "status": "active",
   "baseline_sha": "13b0395db4da63147b3f9c311a4bb5d060dc6a4e",
   "goal": ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
-  "record": "docs/ops/iterations/demo_iteration_line_batch2_20261020.md",
+  "record": "docs/ops/iterations/demo_iteration_line_batch3_20261020.md",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
@@ -57,7 +57,9 @@
     "demo_addons/smart_construction_demo/tests/test_demo_baseline_readiness.py",
     "demo_addons/smart_construction_demo/tests/__init__.py",
     "make/dev.mk",
-    "docs/ops/iterations/demo_iteration_line_batch2_20261020.md"
+    "docs/ops/iterations/demo_iteration_line_batch2_20261020.md",
+    "demo_addons/smart_construction_demo/tests/test_demo_golden_chain.py",
+    "docs/ops/iterations/demo_iteration_line_batch3_20261020.md"
   ],
   "environment": {
     "kind": "offline",
@@ -125,5 +127,5 @@
       "resolved_commit": "a44238ad8"
     }
   ],
-  "next_exact_step": "Batch 2 done: G0-G4 hard baseline readback (verify.local.dev.baseline_readiness.orm) passes with missing=[] on sc_dev_demo. Next: Batch 3 — golden business chain + role snapshots (cross-record amount/date/state coherence, role visibility)."
+  "next_exact_step": "Batch 3 done: golden business chain readback (verify.local.dev.golden_chain.orm) passes — settlement/payment/ledger/receipt/treasury/reconciliation amount-state-date-role coherent. Next: Batch 4 — API scenario driver (real-role four-tier approval, idempotency, negative cases)."
 }

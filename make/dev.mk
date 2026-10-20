@@ -1312,6 +1312,11 @@ verify.local.dev.baseline_readiness.orm: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_construction_demo TEST_TAGS="demo_baseline_readiness" local.dev.test
 
+.PHONY: verify.local.dev.golden_chain.orm
+verify.local.dev.golden_chain.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_demo TEST_TAGS="demo_golden_chain" local.dev.test
+
 # Unit guard for the bounded runtime-performance observation carrier. It runs the
 # probe against a fake environment: no database, no runtime write, no browser.
 .PHONY: verify.local.dev.runtime.performance.unit

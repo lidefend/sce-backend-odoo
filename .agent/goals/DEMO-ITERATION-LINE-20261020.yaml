@@ -67,8 +67,8 @@ goal:
         sub-items are not executed. Do not repair unrelated links in this batch.
       owner: separate_p4_docs_baseline_cleanup
   next_exact_step: >-
-    Batch 2 done: G0-G4 hard baseline readback passes with missing=[] on sc_dev_demo.
-    Next: Batch 3 — golden business chain + role snapshots.
+    Batch 3 done: golden business chain readback passes. Next: Batch 4 — API
+    scenario driver (real-role four-tier approval, idempotency, negative cases).
   completion:
     scope: overall_plan_and_baseline_readiness_audit
     overall_goal: in_progress
