@@ -6,7 +6,6 @@ import {
   rollbackProductSystemParameter,
   type ProductSystemParameter,
   type ProductSystemParameterChange,
-  type ProductSystemParameterImpact,
   type ProductSystemParameterMutationResult,
 } from '../../api/productSystemParameter';
 import {
