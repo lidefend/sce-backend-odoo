@@ -3010,3 +3010,10 @@ verify.product_configuration.capability: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_product_configuration_capability_guard
 	@python3 addons/smart_construction_core/tests/test_product_configuration_capability_service.py
 	@python3 scripts/verify/product_configuration_capability_guard.py
+
+.PHONY: verify.product_system_parameter_catalog
+verify.product_system_parameter_catalog: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/product_system_parameter_catalog_guard.py scripts/verify/test_product_system_parameter_catalog_guard.py addons/smart_construction_core/services/product_system_parameter_catalog.py addons/smart_construction_core/handlers/product_system_parameter_catalog.py
+	@python3 -m unittest scripts.verify.test_product_system_parameter_catalog_guard
+	@python3 addons/smart_construction_core/tests/test_product_system_parameter_catalog_service.py
+	@python3 scripts/verify/product_system_parameter_catalog_guard.py
