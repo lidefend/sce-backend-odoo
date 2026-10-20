@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-ITERATION-LINE-20261020",
+  "branch": "feature/demo-iteration-line-20261020",
+  "status": "verification_pending",
+  "baseline_sha": "13b0395db4da63147b3f9c311a4bb5d060dc6a4e",
+  "goal": ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
+  "record": "docs/ops/iterations/demo_iteration_line_bootstrap_20261020.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
+    ".agent/runs/DEMO-ITERATION-LINE-20261020/run.json",
+    "docs/demo/demo_iteration_line_v1.md",
+    "docs/demo/demo_baseline_readiness_v1.md",
+    "docs/demo/system_demo_v1.md",
+    "docs/ops/iterations/demo_iteration_line_bootstrap_20261020.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates only; no database, service, browser or deployment access"
+  },
+  "checks": {
+    "docs_product_boundary": {
+      "target": "verify.docs.product_boundary",
+      "inputs": [
+        "docs/product/formal_product_boundary_v1.md",
+        "docs/demo/demo_iteration_line_v1.md",
+        "docs/demo/demo_baseline_readiness_v1.md",
+        "scripts/verify/product_boundary_catalog_guard.py",
+        "scripts/verify/test_product_boundary_catalog_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
+        ".agent/runs/DEMO-ITERATION-LINE-20261020/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "exclusions": [
+    {
+      "id": "BASELINE-DOCS-LINKS-93",
+      "classification": "baseline_evidence_defect",
+      "status": "excluded_from_batch_0",
+      "detail": "verify.docs.all fails at verify.docs.links with 93 pre-existing missing links. Batch 0 docs contribute 0/93; their internal links resolve 7/7. The aggregate does not execute temp_guard, contract_sync or product_boundary after links fails.",
+      "owner": "separate P4 docs baseline cleanup",
+      "forbidden_action": "do_not_modify_93_unrelated_links_in_this_batch"
+    }
+  ],
+  "next_exact_step": "Batch 0 plan is complete and paused. BASELINE-DOCS-LINKS-93 is registered as an out-of-scope baseline exclusion; do not fix the 93 unrelated links here. Resume Batch 1 only after explicit continuation."
+}
