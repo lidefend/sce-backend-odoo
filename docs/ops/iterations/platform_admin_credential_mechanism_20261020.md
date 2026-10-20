@@ -50,11 +50,16 @@ SC_CONFIRM_PLATFORM_ADMIN_CREDENTIAL=ENSURE_DECLARED_PLATFORM_ADMIN_CREDENTIAL \
 
 - `make verify.platform.admin.credential.unit`：声明语法、回执断言、argv 安全、seed 幂等与模式检查。
 - `make verify.daily.runtime.database.duty`：声明整体校验与 stack surface 守卫。
-- 服务器：`verify` → `ensure` → 再 `verify`，第二次必须 `unchanged`/`writes=0`。
-- 浏览器：`/platform-admin` 登录、会话过期重登、平台与 Demo 同名账号双标签页隔离不回归。
+- 服务器：`verify` → `ensure` → 再 `verify`，两次都是 `unchanged`/`writes=0`；平台职责刷新后再次 `verify` 仍为 `unchanged`，证明整环境重渲染保留了声明凭据。
+- 主线身份：PR #699 源 `4d2d852e…`，必需 CI 全绿，合并 `49e4f0fa…`；日常开发服务器两职责均服务 `49e4f0fa…`。
+- `daily.runtime.entry.verify`：66/66 PASS；`path_ns_c_acceptance.py`：23/23 PASS（均绑定 main 精确 SHA）。
+- 浏览器：15/15 PASS，覆盖 `/platform-admin` 登录与平台面板可见、平台与 Demo 同名 `admin` 双标签页的库/命名空间/受众隔离、双向 token 重放拒绝、Demo 退出不影响平台会话、会话过期回到 `/platform-admin/login?reason=session_expired` 且重登返回原平台页。
+
+部署顺序按 fail-closed 设计执行：同步代码 → `seed` 声明值 → `verify` → `ensure` → 平台职责 `refresh` → `source_revision.align`。批次内修正了凭据键名没有传入容器导致的 `KeyError`：容器现在通过 `SC_PLATFORM_ADMIN_CREDENTIAL_PASSWORD_KEY` 获知声明键名，值仍只按该键传递，不进入 argv。
 
 ## 5. 未覆盖与风险
 
 - 浏览器登录复核需在部署后单独执行，不以单测代替。
 - 平台管理员在 UI 内改密后，必须同步更新受管文件，否则刷新会按声明恢复。
 - 该机制不改变平台/租户身份边界，也不把平台库变成租户认证代理。
+- 仓库内 `scripts/ops/path_ns_c_s4_browser_probe.mjs` 仍把 Demo 口令硬编码给两个入口；本轮浏览器证据使用按入口分别取口令的一次性探针。该脚本应随下一次 ops 批次改为消费 `SC_PATH_NS_TENANT_PASSWORD` / `SC_PATH_NS_PLATFORM_PASSWORD`，并在改动后重跑运行期证据。
