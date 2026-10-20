@@ -72,7 +72,9 @@
     "demo_addons/smart_construction_demo/models/__init__.py",
     "scripts/verify/experience_reset_scope.py",
     "scripts/verify/test_experience_reset_scope.py",
-    "demo_addons/smart_construction_demo/data/experience_users.json"
+    "demo_addons/smart_construction_demo/data/experience_users.json",
+    "scripts/verify/local_dev_scenario_tick_run.py",
+    "scripts/verify/local_dev_experience_reset_plan.py"
   ],
   "environment": {
     "kind": "offline",
@@ -156,5 +158,5 @@
       "resolved_commit": "a44238ad8"
     }
   ],
-  "next_exact_step": "Batch 5 experience-reset scope planner done: read-only plan_cleanup computes record+artifact cleanup scope and fails closed if an experience user touched a baseline record (verify.demo.experience_reset_scope.unit, 4 tests). Next: governed tick entrypoint + runtime reset-scope readback (resolve demo-declared experience set against the DB, no deletion), then Batch 6 browser acceptance."
+  "next_exact_step": "Batch 5 closed: governed tick entrypoint local.dev.scenario_tick.run (advanced D1: 2 todos + 2 unbound) and read-only reset-scope readback local.dev.experience_reset.plan (empty scope, no baseline violation) both verified on sc_dev_demo. Next: Batch 6 — role UI acceptance (browser) + product-gap routing."
 }

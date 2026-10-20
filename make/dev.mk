@@ -1173,6 +1173,22 @@ local.dev.menu_facts.snapshot: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_menu_fact_snapshot.py
 
+.PHONY: local.dev.scenario_tick.run demo.scenario_tick.run
+local.dev.scenario_tick.run: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  demo.scenario_tick.run
+
+demo.scenario_tick.run: guard.prod.forbid check-compose-env
+	@$(RUN_ENV) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_scenario_tick_run.py
+
+.PHONY: local.dev.experience_reset.plan demo.experience_reset.plan
+local.dev.experience_reset.plan: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  demo.experience_reset.plan
+
+demo.experience_reset.plan: guard.prod.forbid check-compose-env
+	@$(RUN_ENV) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_experience_reset_plan.py
+
 .PHONY: local.dev.native_projection.audit
 local.dev.native_projection.audit: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \

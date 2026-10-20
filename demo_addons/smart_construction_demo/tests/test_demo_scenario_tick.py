@@ -91,3 +91,41 @@ class TestDemoScenarioTickRun(TransactionCase):
         )
         self.assertGreaterEqual(activities, 6)
         self.assertEqual(tick.run_tick()["status"], "up_to_date")
+
+    def test_plan_experience_reset_scopes_synthetic_user(self):
+        user = self.env["res.users"].sudo().create(
+            {
+                "name": "Experience Test User",
+                "login": "experience_test_user",
+                "company_id": self.env.ref("base.main_company").id,
+                "groups_id": [
+                    (
+                        6,
+                        0,
+                        [
+                            self.env.ref("base.group_user").id,
+                            self.env.ref(
+                                "smart_construction_core.group_sc_role_project_user"
+                            ).id,
+                        ],
+                    )
+                ],
+            }
+        )
+        project = (
+            self.env["project.project"]
+            .sudo()
+            .search([("project_code", "=", "DEMO-PJ-EXEC")], limit=1)
+        )
+        task = self.env["project.task"].with_user(user).create(
+            {"name": "Experience task", "project_id": project.id}
+        )
+        self.assertEqual(task.create_uid.id, user.id)
+
+        result = self.env["demo.scenario.tick"].plan_experience_reset(
+            logins=["experience_test_user"]
+        )
+        self.assertIn(user.id, result["experience_user_ids"])
+        self.assertIn("project.task", result["scope"])
+        self.assertIn(task.id, result["scope"]["project.task"])
+        self.assertEqual(result["baseline_violations"], [])

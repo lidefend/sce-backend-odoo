@@ -42,8 +42,11 @@
   （角色落地前为空）。
 - 离线：`verify.demo.experience_reset_scope.unit` → 4 tests OK。
 
-Batch 5 剩余：受管 tick 入口 + 运行时清理范围回读（对 DB 解析体验集合、只算不删）；
-随后 Batch 6 角色 UI 验收。
+- 新增受管入口 `local.dev.scenario_tick.run`（推进一日，已验证 D1：2 todo + 2 unbound）
+  与 `local.dev.experience_reset.plan`（只算不删，已验证空范围、无基线违例）。
+- 新增 `demo.scenario.tick.plan_experience_reset`（运行时解析体验集合并扫描受限业务模型）。
+
+Batch 5 完成；随后 Batch 6 角色 UI 验收（浏览器）。
 
 ## 4. 下一批
 

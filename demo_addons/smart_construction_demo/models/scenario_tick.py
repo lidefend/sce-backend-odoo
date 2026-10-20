@@ -18,6 +18,16 @@ from odoo.tools.misc import file_path
 
 LEDGER_PARAM = "sc.demo.scenario.ledger"
 HEARTBEAT_PARAM = "sc.demo.scenario.heartbeat"
+SCAN_MODELS = (
+    "payment.request",
+    "sc.settlement.order",
+    "construction.contract",
+    "project.task",
+    "project.progress.entry",
+    "sc.material.acceptance",
+    "sc.material.outbound",
+    "sc.material.inbound",
+)
 
 
 class DemoScenarioTick(models.AbstractModel):
@@ -154,4 +164,69 @@ class DemoScenarioTick(models.AbstractModel):
             "business_date": next_date,
             "todos": todos,
             "unbound": unbound,
+        }
+
+    @api.model
+    def _experience_logins(self) -> list[str]:
+        path = file_path("smart_construction_demo/data/experience_users.json")
+        with open(path, encoding="utf-8") as handle:
+            config = json.load(handle)
+        return config.get("logins", []) if isinstance(config, dict) else []
+
+    @api.model
+    def plan_experience_reset(self, logins=None) -> dict:
+        """Compute, never execute, the scoped experience-reset scope.
+
+        Resolves the demo-declared experience logins (or the caller-supplied
+        override) to users and scans the bounded business models for records
+        they authored or edited. Demo seed records (``smart_construction_demo``
+        XMLIDs) must never be in that scope.
+        """
+        if logins is None:
+            logins = self._experience_logins()
+        users = (
+            self.env["res.users"].sudo().search([("login", "in", logins)])
+            if logins
+            else self.env["res.users"].browse()
+        )
+        user_ids = sorted(users.ids)
+        scope: dict[str, list[int]] = {}
+        baseline_violations: list[dict] = []
+        for model_name in SCAN_MODELS:
+            if model_name not in self.env:
+                continue
+            model = self.env[model_name].sudo()
+            authored = (
+                model.search(
+                    [
+                        "|",
+                        ("create_uid", "in", user_ids),
+                        ("write_uid", "in", user_ids),
+                    ]
+                )
+                if user_ids
+                else model.browse()
+            )
+            if authored:
+                scope[model_name] = sorted(authored.ids)
+            baseline_ids = set(
+                self.env["ir.model.data"]
+                .sudo()
+                .search(
+                    [
+                        ("module", "=", "smart_construction_demo"),
+                        ("model", "=", model_name),
+                    ]
+                )
+                .mapped("res_id")
+            )
+            violating = authored.filtered(lambda record: record.id in baseline_ids)
+            if violating:
+                baseline_violations.append(
+                    {"model": model_name, "ids": sorted(violating.ids)}
+                )
+        return {
+            "experience_user_ids": user_ids,
+            "scope": scope,
+            "baseline_violations": baseline_violations,
         }
