@@ -67,7 +67,6 @@ def validate_manifest(data: dict) -> None:
         raise ManifestError("manifest company_scope must be an object")
     if not isinstance(scope.get("expected_company_id"), int):
         raise ManifestError("company_scope expected_company_id must be an integer")
-    _require_str(scope.get("expected_company_name"), "expected_company_name", "company_scope")
     allowed = scope.get("expected_allowed_company_ids")
     if not isinstance(allowed, list) or not allowed or not all(isinstance(x, int) for x in allowed):
         raise ManifestError(
@@ -211,7 +210,6 @@ def _probe_account(
     scope = manifest["company_scope"]
     result["company_ok"] = (
         user.get("company_id") == scope["expected_company_id"]
-        and user.get("company_name") == scope["expected_company_name"]
         and user.get("allowed_company_ids") == scope["expected_allowed_company_ids"]
     )
     result["route_ok"] = bool(route.get("route")) and bool(route.get("scene_key"))

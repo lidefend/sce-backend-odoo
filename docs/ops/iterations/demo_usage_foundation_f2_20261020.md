@@ -31,7 +31,8 @@ role_surface 正确、公司作用域正确、默认路由存在、首屏可读�
     project_member、contract/purchase/material 能力席位
   - 每账号声明 expectation（role_code / valid_surface）、expected_role_code、
     first_screen_expectation（non_empty / record）、label
-  - company_scope 权威声明（company_id=1、allowed=[1]）；1 个负例（错误密码拒绝）
+  - company_scope 权威声明（company_id=1、allowed=[1]）；公司名称属于环境展示值，
+    不作为仓库内的固定客户标识；1 个负例（错误密码拒绝）
 - `scripts/verify/demo_usage_foundation_role_scope_probe.py`
   - 只读运行时探针：login → system.init → my.work.summary
   - 断言 role_code / 公司作用域 / 默认路由 / 首屏非空（按声明）/ 负例拒绝

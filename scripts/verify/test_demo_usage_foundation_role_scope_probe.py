@@ -31,7 +31,6 @@ def _small_manifest() -> dict:
         },
         "company_scope": {
             "expected_company_id": 1,
-            "expected_company_name": "四川智汇建设集团有限公司",
             "expected_allowed_company_ids": [1],
         },
         "accounts": [
@@ -75,7 +74,6 @@ def _fake_post(url, payload, token=None):
                 "role_surface": {"role_code": "pm"},
                 "user": {
                     "company_id": 1,
-                    "company_name": "四川智汇建设集团有限公司",
                     "allowed_company_ids": [1],
                 },
                 "default_route": {"route": "/", "scene_key": "workspace.home"},
