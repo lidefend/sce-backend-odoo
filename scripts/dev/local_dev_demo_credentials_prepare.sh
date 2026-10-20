@@ -7,8 +7,10 @@ set -euo pipefail
 # reading a per-install secret. The per-install random path stays available
 # with SC_DEV_DEMO_PASSWORD_MODE=random. This script never reads the database
 # password, the JWT secret or any tenant credential; the fixed value below is
-# valid only inside sc-local-dev.
-FIXED_DEV_DEMO_PASSWORD="scdevpass"
+# valid only inside sc-local-dev. It must equal the published demo showcase
+# password authored by the demo seed carrier, otherwise the browser acceptance
+# lanes that use SC_DEMO_USER_PASSWORD as the login password fail.
+FIXED_DEV_DEMO_PASSWORD="123456"
 MODE="${SC_DEV_DEMO_PASSWORD_MODE:-fixed}"
 case "${MODE}" in
   fixed|random) ;;
