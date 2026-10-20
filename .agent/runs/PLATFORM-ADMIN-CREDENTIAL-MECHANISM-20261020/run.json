@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "PLATFORM-ADMIN-CREDENTIAL-MECHANISM-20261020",
   "branch": "feature/platform-admin-credential-mechanism-20261020",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "fcf841c0920bc212f490f6fa0ca6c82a651e0d51",
   "goal": ".agent/goals/PLATFORM-ADMIN-CREDENTIAL-MECHANISM-20261020.yaml",
   "record": "docs/ops/iterations/platform_admin_credential_mechanism_20261020.md",
@@ -62,14 +62,93 @@
         "scripts/ops/test_daily_runtime_database_duty.py",
         "make/codex.mk"
       ]
+    },
+    "runtime_credential": {
+      "target": "daily.runtime.platform.admin.credential.verify",
+      "kind": "runtime",
+      "result": "PASS",
+      "facts": {
+        "login": "admin",
+        "authenticated": true,
+        "result": "unchanged",
+        "writes": 0,
+        "env_file": "/opt/projects/secure/daily-runtime-duties/platform_control.env",
+        "env_mode": "600 root:root",
+        "survived_duty_refresh": true
+      }
+    },
+    "runtime_entry": {
+      "target": "daily.runtime.entry.verify",
+      "kind": "runtime",
+      "result": "PASS",
+      "expected_sha": "49e4f0fa6ce162ae5f8d9535abdab1e36fd9d1f2",
+      "checks_total": 66,
+      "checks_failed": 0,
+      "report": ".runtime/final-acceptance/daily-deployed/entry-verify-main.json"
+    },
+    "path_namespace_identity": {
+      "target": "scripts/ops/path_ns_c_acceptance.py",
+      "kind": "runtime",
+      "result": "PASS",
+      "expected_sha": "49e4f0fa6ce162ae5f8d9535abdab1e36fd9d1f2",
+      "checks_total": 23,
+      "checks_failed": 0,
+      "report": ".runtime/final-acceptance/path-ns-c-acceptance-main.json"
+    },
+    "platform_admin_browser": {
+      "target": "one-off Playwright probe against the public entry",
+      "kind": "browser",
+      "result": "PASS",
+      "checks_total": 15,
+      "checks_failed": 0,
+      "report": ".runtime/final-acceptance/platform-admin-browser.json",
+      "covered": [
+        "platform admin login succeeds and lands on /platform-admin",
+        "platform duty panel is visible",
+        "platform and demo tabs keep distinct database, namespace and audience",
+        "demo token is rejected on the platform entry and vice versa",
+        "demo logout invalidates only the demo token",
+        "expired platform session returns to /platform-admin/login?reason=session_expired",
+        "re-login returns to the platform page and the panel is usable"
+      ]
     }
   },
+  "integration": {
+    "pr": 699,
+    "pr_url": "https://github.com/lidefend/sce-backend-odoo/pull/699",
+    "source_head": "4d2d852ec6bdf623daeb9a822e932d6064695ace",
+    "base_sha": "fcf841c0920bc212f490f6fa0ca6c82a651e0d51",
+    "required_ci": "ALL_PASS",
+    "merged": true,
+    "merge_sha": "49e4f0fa6ce162ae5f8d9535abdab1e36fd9d1f2",
+    "merged_at": "2026-10-20T00:17:12Z"
+  },
+  "deployment": {
+    "host_alias": "sc-root",
+    "path": "/opt/projects/repos/sce-product-odoo",
+    "deployed_sha": "49e4f0fa6ce162ae5f8d9535abdab1e36fd9d1f2",
+    "duties_served": {
+      "demo": {
+        "database": "sc_demo",
+        "git_sha": "49e4f0fa6ce162ae5f8d9535abdab1e36fd9d1f2",
+        "namespace_id": "ns_000000000002"
+      },
+      "platform_control": {
+        "database": "sc_platform_control",
+        "git_sha": "49e4f0fa6ce162ae5f8d9535abdab1e36fd9d1f2",
+        "namespace_id": "ns_000000000001"
+      }
+    },
+    "frontend_build_sha256": "7e1232929056743641c46eeed185099517da2541deeba73776cbfd1d0e68e0ed",
+    "database_duty_plan": "PASS",
+    "report": ".runtime/final-acceptance/daily-deployed/database-duty-plan-main.json"
+  },
   "blockers": [],
-  "next_exact_step": "在服务器记录声明口令，执行 verify → ensure → verify，并完成 /platform-admin 浏览器复核",
+  "next_exact_step": "Closed. A later platform-entry change must re-run the browser probe with per-entry credentials; the checked-in scripts/ops/path_ns_c_s4_browser_probe.mjs still hard-codes the demo password for both entries and is not part of this batch's evidence.",
   "status_dimensions": {
-    "batch": "verification_pending",
-    "mainline": "not_integrated",
-    "deployment": "not_deployed",
-    "user_acceptance": "not_run"
+    "batch": "completed",
+    "mainline": "integrated",
+    "deployment": "deployed",
+    "user_acceptance": "platform_entry_verified"
   }
 }
