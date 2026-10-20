@@ -14,6 +14,7 @@
     "docs/demo/demo_usage_foundation_plan_v1.md",
     "docs/demo/demo_usage_foundation_manifest_v1.json",
     "docs/demo/product_gap_registry_v1.md",
+    "docs/engineering_convergence/test_inventory.csv",
     "docs/ops/iterations/demo_usage_foundation_handoff_20261020.md",
     "docs/ops/iterations/demo_usage_foundation_f1_20261020.md",
     "docs/ops/iterations/demo_usage_foundation_f2_20261020.md",
@@ -243,13 +244,13 @@
   "blockers": [
     {
       "id": "DUF-06",
-      "classification": "product_defect",
-      "owner_layer": "P1/P2/P3",
+      "classification": "baseline_evidence_defect",
+      "owner_layer": "P4",
       "registry_item": 15,
-      "summary": "module upgrade view validation fails: action_sc_review_group_authority invalid for res.users; blocks governed loading of 16_bank_accounts.xml into sc_dev_demo"
+      "summary": "The demo branch is based on an older main baseline while sc_dev_demo has already been upgraded from current main. During module upgrade, the old demo source omits current smart_core group-authority models while the database view still references them, so view validation reports action_sc_review_group_authority as invalid."
     }
   ],
-  "next_exact_step": "F3 data load is blocked by DUF-06 (product view binding defect). Fix the owning P1/P2/P3 res.users view/action binding, then run local.dev.upgrade MODULE=smart_construction_demo and re-run verify.local.dev.demo_usage_foundation_master_data.orm; DUF-04 date/amount rewrite remains F8.",
+  "next_exact_step": "DUF-06 reclassified from product defect to demo baseline drift: commit the refreshed generated test inventory, obtain exact-head Quick for eb0c4200d lineage, run governed extended branch sync to main 74063688e, then rerun local.dev.upgrade MODULE=smart_construction_demo and the master-data ORM readback.",
   "handoff": {
     "at": "2026-10-20",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",

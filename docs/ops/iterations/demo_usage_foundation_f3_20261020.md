@@ -55,20 +55,24 @@
 
 ## 6. 阻断
 
-`make local.dev.upgrade MODULE=smart_construction_demo` 因既有产品/客户视图绑定缺陷失败：
+`make local.dev.upgrade MODULE=smart_construction_demo` 失败：
 `_update_user_groups_view` 抛 `action_sc_review_group_authority 对 res.users 无效`。
 
-- 分类：product_defect（P1/P2/P3 视图/动作绑定）
+- 分类纠正：`baseline_evidence_defect`（P4 demo 分支基线漂移，不是产品源码缺陷）
+- 根因：demo 分支共同基线为 `86c03b7a3`，而数据库已由当前 main 升级；demo 工作树
+  源码缺少当前 main 中已存在的 `smart_core.res_users_group_authority` 等模型。
+  产品主线源码升级旧 demo manifest 通过；旧 demo 源码加载新数据库失败，并同时报告
+  `sc.product.system.parameter.change` 等模型“declared but cannot be loaded”。
 - 影响：16_bank_accounts.xml 无法受管加载进 sc_dev_demo，银行账户缺口在运行时仍未闭合
-- 与 F3 demo 数据无关：该缺陷在模块升级视图再生时暴露，并非本批改动引入
-- 处置：登记缺口 #15 / DUF-06；不改 owning layer（超出 F3 P4 范围）；ORM 验收保持 fail-closed
+- 与银行账户数据本身无关：该缺陷在模块升级视图再生时暴露，并非 F3 XML 引入
+- 处置：受管同步 demo 分支到当前 main 后重跑升级；不修改产品源码绕过
 
 ## 7. 验证结果
 
 | 命令 | 状态 | 层 | 说明 |
 |---|---|---|---|
 | `make verify.local.dev.demo_usage_foundation_master_data.orm`（诊断） | passed | L3 | 上述计数与日期分类 |
-| `make local.dev.upgrade MODULE=smart_construction_demo CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_demo` | blocked | L3 | product_defect 视图校验失败 |
+| `make local.dev.upgrade MODULE=smart_construction_demo CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_demo` | blocked | L3 | 旧 demo 源码加载新数据库，视图校验失败 |
 
 ## 8. 回滚
 
@@ -78,6 +82,6 @@
 
 ## 9. 下一步精确动作
 
-修 owning layer 的 res.users 视图/动作绑定（DUF-06），再 `local.dev.upgrade
+受管同步 demo 分支到当前 main，解除 DUF-06 基线漂移，再 `local.dev.upgrade
 MODULE=smart_construction_demo` 加载银行账户，重跑
 `verify.local.dev.demo_usage_foundation_master_data.orm` 后继续 F4。
