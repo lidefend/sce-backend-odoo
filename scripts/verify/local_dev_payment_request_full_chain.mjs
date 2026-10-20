@@ -95,7 +95,11 @@ async function apiIntent(page, intent, params) {
   return apiEnvelope(page, { intent, params });
 }
 async function apiEnvelope(page, envelope) {
-  const token = await page.evaluate((db) => sessionStorage.getItem(`sc_auth_token:${db}`) || '', database);
+  const token = await page.evaluate(() => {
+    const entryBase = (window.location.pathname.match(/^\/(?:t\/[a-z0-9][a-z0-9-]*|platform-admin)/) || [''])[0];
+    const audience = entryBase === '/platform-admin' ? 'platform-admin' : (entryBase ? 'tenant' : 'unscoped');
+    return sessionStorage.getItem(`sc_auth_token:${audience}:${entryBase || 'root'}`) || '';
+  });
   return page.evaluate(async ({ db, tokenValue, envelopeValue }) => {
     const entryBase = (window.location.pathname.match(/^\/(?:t\/[a-z0-9][a-z0-9-]*|platform-admin)/) || [''])[0];
     const response = await fetch(`${entryBase}/api/v1/intent`, {
