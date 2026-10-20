@@ -52,7 +52,7 @@ restore_needed=1
 
 browser_status=0
 LOCAL_DEV_PAYMENT_FLOORPLAN_JSON="$before" \
-FRONTEND_URL="http://127.0.0.1:${NGINX_PORT}" DB_NAME="$DB_NAME" \
+FRONTEND_URL="http://127.0.0.1:${NGINX_PORT}/t/demo" DB_NAME="$DB_NAME" \
 E2E_PASSWORD="$SC_DEMO_USER_PASSWORD" PAYMENT_REQUEST_JOURNEY_SCOPE=payment \
 node "$ROOT_DIR/scripts/verify/local_dev_payment_request_floorplan_submit.mjs" || browser_status=$?
 
