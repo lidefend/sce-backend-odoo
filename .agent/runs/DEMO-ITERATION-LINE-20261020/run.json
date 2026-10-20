@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "DEMO-ITERATION-LINE-20261020",
   "branch": "feature/demo-iteration-line-20261020",
-  "status": "active",
+  "status": "complete",
   "baseline_sha": "13b0395db4da63147b3f9c311a4bb5d060dc6a4e",
   "goal": ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
   "record": "docs/ops/iterations/demo_iteration_line_batch6_20261020.md",
@@ -80,8 +80,8 @@
     "scripts/verify/demo_role_startup_smoke.js"
   ],
   "environment": {
-    "kind": "offline",
-    "authority": "existing offline Make gates only; no database, service, browser or deployment access"
+    "kind": "runtime",
+    "authority": "existing local.dev entry (127.0.0.1:18081, /t/demo, sc_dev_demo) for read-only role startup contract smoke; offline Make gates for demo mechanism checks; no deployment"
   },
   "checks": {
     "docs_product_boundary": {
@@ -139,15 +139,7 @@
       "kind": "offline"
     }
   },
-  "blockers": [
-    {
-      "gate": "verify.portal.* / browser role UI acceptance",
-      "classification": "environment_defect",
-      "detail": "local.dev public entry (nginx 18081, /t/demo) routes the intent API to namespace ns_000000000002 which binds sc_demo, but the Odoo instance behind it serves sc_dev_demo. Demo-line runtime work (Batches 2-5, scenario tick) lives in sc_dev_demo. Browser/HTTP acceptance is blocked until the local.dev entry namespace binding matches sc_dev_demo.",
-      "owner": "P4 local.dev entry/routing config",
-      "observed": "POST /t/demo/api/v1/intent -> 421 NS_NAMESPACE_TARGET_MISMATCH (namespace binds sc_demo, instance serves sc_dev_demo)"
-    }
-  ],
+  "blockers": [],
   "exclusions": [
     {
       "id": "BASELINE-DOCS-LINKS-93",
@@ -169,5 +161,30 @@
       "resolved_commit": "a44238ad8"
     }
   ],
-  "next_exact_step": "Batch 6 contract-layer role acceptance done: demo_pm/demo_finance/demo_audit all pass login -> system.init (role_surface/default_route/capabilities/navigation) -> my.work.summary via /t/demo/api/v1/intent (verify.demo.role_startup.smoke). Remaining optional: full browser-level Playwright rendering acceptance; then P1/P3 gaps open their own batches."
+  "verification_results": {
+    "demo_role_startup_smoke": {
+      "command": "make verify.demo.role_startup.smoke (E2E_LOGIN=demo_pm/demo_finance/demo_audit)",
+      "status": "passed",
+      "roles": [
+        "demo_pm",
+        "demo_finance",
+        "demo_audit"
+      ],
+      "entry": "http://127.0.0.1:18081/t/demo",
+      "database": "sc_dev_demo",
+      "chain": "login -> system.init(role_surface/default_route/capabilities/navigation) -> my.work.summary"
+    },
+    "demo_offline_gates": {
+      "command": "make verify.docs.product_boundary verify.agent.ledger.unit verify.demo.scenario_step.unit verify.demo.experience_reset_scope.unit verify.demo.baseline_readiness.unit",
+      "status": "passed",
+      "test_counts": {
+        "product_boundary": 7,
+        "agent_ledger": 18,
+        "scenario_step": 9,
+        "experience_reset_scope": 4,
+        "baseline_readiness": 11
+      }
+    }
+  },
+  "next_exact_step": "Demo mechanism closed: three demo roles pass the real /t/demo contract chain and all registered offline gates pass. Optional full browser Playwright rendering remains; P1/P3 gaps stay in their owning batches. Proceed to the unified mainline integration lane."
 }
