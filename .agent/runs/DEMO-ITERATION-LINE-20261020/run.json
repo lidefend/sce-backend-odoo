@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "DEMO-ITERATION-LINE-20261020",
   "branch": "feature/demo-iteration-line-20261020",
-  "status": "complete",
+  "status": "completed",
   "baseline_sha": "13b0395db4da63147b3f9c311a4bb5d060dc6a4e",
   "goal": ".agent/goals/DEMO-ITERATION-LINE-20261020.yaml",
   "record": "docs/ops/iterations/demo_iteration_line_batch6_20261020.md",
