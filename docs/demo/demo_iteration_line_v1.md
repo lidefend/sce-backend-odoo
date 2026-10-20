@@ -1,6 +1,8 @@
 # Demo 迭代线总体计划 v1
 
 > 状态：Batch 0 计划冻结，后续按批次实施。
+> 后续用户基础数据迭代见
+> [Demo 用户使用基础数据迭代计划 v1](demo_usage_foundation_plan_v1.md)。
 > 分支/基线：`feature/demo-iteration-line-20261020` @ `13b0395db4da63147b3f9c311a4bb5d060dc6a4e`
 > 关联：[基线就绪排查](demo_baseline_readiness_v1.md)、[系统演示脚本](system_demo_v1.md)、
 > [场景目录](scenarios.md)、[真实核心链](r1-02-realistic-core-chain.md)、

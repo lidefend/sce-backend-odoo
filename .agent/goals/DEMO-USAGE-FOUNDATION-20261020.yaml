@@ -1,0 +1,70 @@
+schema_version: 1
+goal:
+  id: DEMO-USAGE-FOUNDATION-20261020
+  title: demo_user_usage_foundation_v1
+  status: planned
+  formal_product_layer: P4
+  supporting_layers:
+    - P0
+    - P1
+    - P2
+    - P3
+  layer_target: >-
+    Demo baseline data, scenario data, API/browser acceptance and daily runtime
+    tooling that make the product consumable through real user workflows.
+  module:
+    - smart_construction_demo
+    - scripts/verify
+    - deploy/demo-tenant
+    - docs/demo
+  baseline:
+    branch: feature/demo-iteration-line-20261020
+    full_sha: bd614470aae7730eacf8a3c8f5b0cde81d322e99
+    source: dedicated_demo_worktree
+  objective: >-
+    Build a user-first demo foundation from identity and scope through master
+    data, workflow configuration, project baseline, API-driven business
+    journeys and daily runtime evolution, while routing product gaps to their
+    owning P0/P1/P2/P3 layers.
+  product_boundary:
+    standard_vs_user_specific: demo_delivery_tool
+    why_here: >-
+      Demo seed data, user journey probes, scenario facts and scheduled demo
+      evolution are P4 delivery tooling. They consume public product contracts
+      and actions without owning product semantics.
+    why_not_elsewhere:
+      - no_product_semantics_or_permission_rules_in_demo_layer
+      - no_frontend_or_demo_side_inference_for_missing_contracts
+      - no_direct_business_terminal_state_or_approval_history_writes
+      - no_unregistered_database_tenant_compose_or_credentials
+      - experience_reset_does_not_reset_demo_baseline
+    blast_radius:
+      - demo users, companies, project membership and visible workload
+      - demo partners, bank accounts, taxes, units, materials and dictionaries
+      - approval/numbering/permission consumption
+      - project funding, budget, BOQ and settlement anchors
+      - scenario tick, daily timer and experience reset scope
+      - API and browser user-journey evidence
+  constraints:
+    - user_journey_before_table_inventory
+    - foundation_data_must_precede_transactional_facts
+    - presence_is_not_actionability
+    - report_product_gaps_to_owning_layers_immediately
+    - transactional_facts_only_through_public_actions
+    - no_auto_approval_or_forged_terminal_states
+    - no_derived_projection_seeding
+    - experience_reset_cleans_only_user_generated_delta
+    - keep_demo_baseline_fingerprint_stable_across_experience_reset
+    - no_new_database_tenant_compose_or_credentials
+  next_exact_step: >-
+    Executor takeover: run make agent.run.resume, verify the planning commit and
+    clean worktree, mark the run active, then execute F1 by creating the
+    machine-readable user-journey-to-foundation-data manifest and read-only audit.
+  completion:
+    scope: demo_user_usage_foundation_v1
+    overall_goal: in_progress
+    result_index: .agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json
+    local_batch_acceptance: not_run
+    mainline_integration: not_run
+    deployment: not_run
+    target_user_delivery: not_run

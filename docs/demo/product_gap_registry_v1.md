@@ -17,6 +17,16 @@
 | 8 | seed step 名称不等于数据 | `dictionary`/`project_skeleton` 仅标记 | P4 | 已按回读 | 以真实回读为准（Batch 2/3 运行时回读） |
 | 9 | 体验用户角色缺失 | 无 `group_sc_role_experience_user` | P1/P3/P0 | 待立项 | demo 暂用 `experience_users.json` 声明集合，角色落地后消费 `role_surface.role_code` |
 
+### 用户使用基础数据 V1 追加排查（2026-10-20）
+
+| # | 缺口 | 证据 | 归属 | 状态 | demo 侧处理 |
+|---|---|---|---|---|---|
+| 10 | 就绪检查主要证明记录存在 | 运行时探针以 `search_count > 0` 为主 | P4 | 待立项 | F1/F3/F5 增加字段完整性、公开候选集、角色可见与动作可用断言 |
+| 11 | 每日系统事实没有执行器 | `scenario_tick.py` 将 `system_fact` 记为 `unbound` | P4 | 待立项 | F7 绑定公开 intent/action；未绑定则保持未推进 |
+| 12 | 角色启动验收覆盖不足 | smoke 只跑 `demo_pm`/`demo_finance`/`demo_audit`，且只断言契约键存在 | P4 | 待立项 | F2/F8 增加业务全功能账号、首屏非空和实际下一步 |
+| 13 | 演示数据时间与金额失真 | 多处固定 2025 日期，场景存在 50/100 样例金额 | P4 | 待立项 | F3/F8 以业务日历和金额规则回读，不按文本字符串验收 |
+| 14 | 10 日叙事未完整声明 | `business_days=10`，manifest 仅有 D1–D3 步骤 | P4 | 待立项 | F7 补齐可执行 10 日步骤与幂等键 |
+
 ## 回收判据
 
 - P1/P3 立项后，demo 层改用对应契约消费，删除任何前端/demo 层特判；

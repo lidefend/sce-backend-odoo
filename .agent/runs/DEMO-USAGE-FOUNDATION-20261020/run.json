@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-USAGE-FOUNDATION-20261020",
+  "branch": "feature/demo-iteration-line-20261020",
+  "status": "planned",
+  "baseline_sha": "bd614470aae7730eacf8a3c8f5b0cde81d322e99",
+  "goal": ".agent/goals/DEMO-USAGE-FOUNDATION-20261020.yaml",
+  "record": "docs/ops/iterations/demo_usage_foundation_handoff_20261020.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DEMO-USAGE-FOUNDATION-20261020.yaml",
+    ".agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json",
+    "docs/demo/demo_iteration_line_v1.md",
+    "docs/demo/demo_usage_foundation_plan_v1.md",
+    "docs/demo/product_gap_registry_v1.md",
+    "docs/ops/iterations/demo_usage_foundation_handoff_20261020.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "planning validation uses existing local docs and offline demo guards; F1-F8 must declare governed runtime readbacks before runtime writes or acceptance"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/DEMO-USAGE-FOUNDATION-20261020.yaml",
+        ".agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "docs_product_boundary": {
+      "target": "verify.docs.product_boundary",
+      "inputs": [
+        "docs/product/formal_product_boundary_v1.md",
+        "docs/demo/demo_iteration_line_v1.md",
+        "docs/demo/demo_usage_foundation_plan_v1.md",
+        "scripts/verify/product_boundary_catalog_guard.py",
+        "scripts/verify/test_product_boundary_catalog_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "baseline_readiness": {
+      "target": "verify.demo.baseline_readiness.unit",
+      "inputs": [
+        "scripts/verify/baseline_readiness_manifest.json",
+        "scripts/verify/baseline_readiness_verifier.py",
+        "scripts/verify/test_baseline_readiness_verifier.py"
+      ],
+      "kind": "offline"
+    },
+    "scenario_step": {
+      "target": "verify.demo.scenario_step.unit",
+      "inputs": [
+        "scripts/verify/demo_scenario_step.py",
+        "scripts/verify/test_demo_scenario_step.py",
+        "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "verification_results": {
+    "planning_validation": {
+      "identity": {
+        "head": "bd614470aae7730eacf8a3c8f5b0cde81d322e99",
+        "stage": "head_plus_planning_dirty_scope"
+      },
+      "commands": [
+        {
+          "command": "python3 -m json.tool .agent/active-runs.json && python3 -m json.tool .agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "make agent.run.resume",
+          "status": "passed",
+          "layer": "L1",
+          "detail": "resolved DEMO-USAGE-FOUNDATION-20261020; outside_scope=[]"
+        },
+        {
+          "command": "make verify.agent.ledger.unit",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 18
+        },
+        {
+          "command": "make verify.docs.all",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "make verify.demo.baseline_readiness.unit",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 11
+        },
+        {
+          "command": "make verify.demo.scenario_step.unit",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 9
+        },
+        {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 16
+        }
+      ],
+      "environment_note": "The first ledger/docs attempt was blocked by the execution sandbox because the sibling demo worktree is read-only by default. The exact same commands passed after explicit sandbox escalation; this was an environment permission condition, not a product or document failure."
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Executor takeover: run make agent.run.resume, verify the planning commit and clean worktree, mark the run active, then execute F1 by creating the machine-readable user-journey-to-foundation-data manifest and read-only audit.",
+  "handoff": {
+    "at": "2026-10-20",
+    "worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",
+    "baseline_main": "74063688e928d25c8e65037ac3306956c954244d",
+    "first_batch": "F1",
+    "do_not_redo": "Demo mechanism line V1 Batch 1-6",
+    "mainline_integration": "not_run",
+    "deployment": "not_run",
+    "target_user_delivery": "not_run"
+  }
+}
