@@ -33,6 +33,8 @@
     "make/dev.mk",
     "make/dev_test.mk",
     "scripts/verify/demo_usage_foundation_audit.py",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
     "scripts/verify/test_demo_usage_foundation_audit.py",
     "scripts/verify/demo_usage_foundation_role_scope_manifest.json",
     "scripts/verify/demo_usage_foundation_role_scope_probe.py",
