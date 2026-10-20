@@ -99,3 +99,5 @@ main-ref交叉核验修复最终治理组75项通过（live-main-fixed-unit.log�
 14228ad候选的Quick功能车道通过，但最终引用刷新期间PR #703合入main，扫描握手再次检测到覆盖身份漂移，完整Quick失败、未签发回执（quick-isolation-final.log），不复用为成功。受管同步将main b9a060c622c3943dafcb0f7d332fd9e87b22b781追加到14228ad，生成a8b5cc1b6fa3ef0501892e654a7272862e41eaac；仅active-runs三方独立键冲突，恢复包及哈希见github-sync-second.log。此为恢复事实，不是对未变化失败的重试。
 
 层级仍为P4工具，新增输入是已审核main、run基线和生成报告；六个定向组声明输入未变，复用原357项结果（由agent.run.resume核验）。L1与生成报告准备需刷新；无新增数据库/页面输入，L3/L4产品运行时不执行。最终新HEAD仍要求Quick、独立复核、当前基线远端CI及受保护合并。现有Quick内部具有一次仅引用变化的扫描刷新，但刷新期间再次漂移会拒签；不宣称跨进程扫描单独恢复或原子锁定已实现。
+
+57b6eef候选遇到另一工作树新增c6d8fdda收尾提交，历史扫描拒签；history-recovery.log通过且前后覆盖快照相等后才恢复Quick，quick-stable-final.log完整通过并签发57b6eef回执。推送时PR #704已将纯收尾元数据合入main a34bd252，冲突门禁拒绝发布。受管第三次同步生成b10f82947e28bcb036772c5259ce8c916c24f1e2，仅active-runs冲突；恢复包哈希与精确父提交见github-sync-third.log。此次变化没有产品/测试工具输入，六组357项复用，旧Quick仅保留原候选有效性，新冻结SHA仍按GitHub车道执行Quick。当前基线更新a34bd252；部署和主线集成未完成。并行合并引起的重复冻结成本为已观察到的限制，不宣称彻底消除。
