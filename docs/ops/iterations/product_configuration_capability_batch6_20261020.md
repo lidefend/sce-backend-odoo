@@ -47,6 +47,7 @@
 | L3 | `make verify.product.home_objects.contract` | passed | 2 例；demo 库产出非空记录行 |
 | L3 | `make local.dev.entry_identity.verify` | passed | `alias=demo namespace=ns_000000000002 database=sc_dev_demo` |
 | L4 | `DB_NAME=sc_dev_demo E2E_LOGIN=wutao E2E_PASSWORD=<existing-demo-credential> make verify.frontend.product_configuration_capability.browser` | passed | 31 断言 |
+| L1 | `make ci.local.iteration` | passed | clean HEAD `c8133c735`，coverage=L1_only |
 
 浏览器断言结果：6 个首屏区块；8 张配置卡；6 类参数目录、13 个参数；我的能力 19 项；
 历史访问空态明确；`my_objects` 真实对象行为项目/合同/资金，首条记录成功打开

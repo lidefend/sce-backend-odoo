@@ -234,7 +234,9 @@
     "ci_local_iteration": {
       "command": "make ci.local.iteration",
       "status": "passed",
-      "coverage": "L1_only"
+      "coverage": "L1_only",
+      "change_state": "clean",
+      "head": "c8133c73545e476e877c8a4219eb5d10df49d6ac"
     },
     "product_system_parameter_catalog": {
       "command": "make verify.product_system_parameter_catalog",
@@ -321,9 +323,9 @@
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",
     "batch_1_commit": "f7a53c73ad87f0c7ca505a842f581cbe97b62854",
     "batch_2_commit": "f3ab67348",
-    "next_batch": "Batch 6 complete",
-    "next_exact_step": "Commit Batch 6 with the record-backed my_objects contract and browser evidence; keep mainline integration, deployment and user acceptance not_run.",
+    "next_batch": "Batch 6 committed",
+    "next_exact_step": "Batch 6 is committed at c8133c735; keep mainline integration, deployment and user acceptance not_run until the owner authorizes the integration lane.",
     "mainline_integration": "not_run"
   },
-  "next_exact_step": "Batch 6 complete: six home blocks, record-backed my_objects, eight configuration cards, parameter catalog and my-capabilities browser acceptance passed. Commit the batch; do not merge main or deploy."
+  "next_exact_step": "Batch 6 committed at c8133c735 with clean L1. Six home blocks, record-backed my_objects, eight configuration cards, parameter catalog and my-capabilities browser acceptance passed. Do not merge main or deploy without owner direction."
 }
