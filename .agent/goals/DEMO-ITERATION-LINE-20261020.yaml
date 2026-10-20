@@ -67,13 +67,14 @@ goal:
         sub-items are not executed. Do not repair unrelated links in this batch.
       owner: separate_p4_docs_baseline_cleanup
   next_exact_step: >-
-    Batch 6 started: product gap registry recorded; remaining browser role UI
-    acceptance (login -> system.init -> ui.contract, per-role tasks, no leakage).
+    Demo mechanism is integrated and the daily development runtime serves
+    57916d790. Target user delivery remains not_run; P1/P3 product gaps stay
+    in their owning batches.
   completion:
     scope: overall_plan_and_baseline_readiness_audit
-    overall_goal: in_progress
+    overall_goal: completed
     result_index: .agent/runs/DEMO-ITERATION-LINE-20261020/run.json
-    local_batch_acceptance: in_progress
-    mainline_integration: not_run
-    deployment: not_run
+    local_batch_acceptance: passed
+    mainline_integration: completed
+    deployment: completed
     target_user_delivery: not_run

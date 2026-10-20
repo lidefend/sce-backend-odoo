@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: PRODUCT-DEMO-INTEGRATION-20261020
   title: product_demo_mainline_integration
-  status: active
+  status: completed
   formal_product_layer: P4
   supporting_layers:
     - P0
@@ -50,13 +50,13 @@ goal:
         contract or integration defect.
       owner: demo_data_iteration
   next_exact_step: >-
-    Register the integration run, commit metadata, rerun clean L1, then publish the release
-    candidate through the governed PR lane.
+    Product/demo integration is merged and the daily development runtime serves
+    57916d790. Target user delivery remains not_run.
   completion:
     scope: product_demo_integration_candidate
-    overall_goal: in_progress
+    overall_goal: completed
     result_index: .agent/runs/PRODUCT-DEMO-INTEGRATION-20261020/run.json
     local_batch_acceptance: passed
-    mainline_integration: in_progress
-    deployment: not_run
+    mainline_integration: completed
+    deployment: completed
     target_user_delivery: not_run
