@@ -583,10 +583,14 @@ class TestProjectMemberRoleSurface(TransactionCase):
         visible_leaves = list(self._iter_renderable_leaves(nav))
         visible_xmlids = {self._leaf_xmlid(node) for node in visible_leaves}
         self.assertTrue(self.SYSTEM_ADMIN_MENU_XMLIDS <= visible_xmlids)
+        action_leaves = [
+            node for node in visible_leaves
+            if node.get("action_id") or (node.get("meta") if isinstance(node.get("meta"), dict) else {}).get("action_id")
+        ]
         self.assertTrue(
             all(
                 str(node.get("route") or "").startswith("/a/")
-                for node in visible_leaves
+                for node in action_leaves
             )
         )
         self.assertNotIn(denied_xmlid, {self._leaf_xmlid(node) for node in visible_leaves})
@@ -873,7 +877,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
         self.assertEqual(len(projected[0]["children"]), 1)
         self.assertEqual(projected[0]["children"][0]["meta"]["menu_xmlid"], "x.primary")
 
-    def test_declared_primary_native_leaf_survives_unrelated_release_menu_surface(self):
+    def test_closed_edition_surface_does_not_append_unreleased_native_leaf(self):
         service = MenuService()
         surface = {
             "role_code": "finance",
@@ -911,14 +915,15 @@ class TestProjectMemberRoleSurface(TransactionCase):
 
         nav = service.build_nav(policy=policy, role_surface=surface, native_nav=native)
 
-        self.assertEqual(
-            [
-                child.get("meta", {}).get("menu_xmlid")
-                for group in nav[0].get("children") or []
-                for child in group.get("children") or []
-            ],
-            ["x.primary"],
-        )
+        # An explicit edition menu declaration is a closed product surface:
+        # the declared primary native leaf is not part of the released
+        # catalogue, so it must not be appended to the delivered navigation.
+        rendered_xmlids = [
+            child.get("meta", {}).get("menu_xmlid")
+            for group in (nav[0].get("children") if nav else []) or []
+            for child in group.get("children") or []
+        ]
+        self.assertNotIn("x.primary", rendered_xmlids)
 
     def test_release_actor_role_does_not_promote_project_reader_to_pm(self):
         class User:

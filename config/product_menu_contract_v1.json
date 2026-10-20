@@ -378,11 +378,6 @@
               "release_state": "preview"
             },
             {
-              "name": "退库办理",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
-            },
-            {
               "name": "材料调拨",
               "delivery": "PREVIEW_FOUNDATION",
               "release_state": "preview"

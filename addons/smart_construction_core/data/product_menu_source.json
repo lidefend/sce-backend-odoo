@@ -801,12 +801,6 @@
       "release_state": "preview"
     },
     {
-      "menu_xmlid": "smart_construction_core.menu_sc_material_return",
-      "delivery": "PREVIEW_FOUNDATION",
-      "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
-    },
-    {
       "menu_xmlid": "smart_construction_core.menu_sc_material_transfer",
       "delivery": "PREVIEW_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
