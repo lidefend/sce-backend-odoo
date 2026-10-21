@@ -424,7 +424,8 @@
     "scripts/verify/test_data_space_provisioning.py",
     "addons/smart_construction_core/services/business_data_ownership.py",
     "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
-    "scripts/verify/construction_core_extension_intent_handlers_split_guard.py"
+    "scripts/verify/construction_core_extension_intent_handlers_split_guard.py",
+    "docs/frontend_productization/decision-authority-inventory-v1.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -4264,13 +4265,41 @@
         },
         "freeze_prepare": "PASS continue52-freeze-prepare.log"
       }
+    },
+    "scheduled_ci_failure_repair": {
+      "status": "targeted_checks_passed_freeze_pending",
+      "layer": "Generic frontend rendering consumption + P4 generated decision-authority evidence",
+      "paths": [
+        "frontend/apps/web/src/views/systemParameter/SystemParameterCatalogView.vue",
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+      ],
+      "scheduled_runs": [
+        39503231266,
+        39503325339
+      ],
+      "root_cause": "SystemParameterCatalogView literal Unicode arrow violates formal SVG icon guard; release candidate workflow correctly fails on failed frontend prerequisite. No cron defect.",
+      "additional_pr_failure": "PR712 frontend decision-authority ledger out of sync with current source scan. Review exact export diff before accepting.",
+      "plan": "Use existing ScIcon arrow-right; review/export actual decision rows; run style guard and frontend decision tests plus affected frontend checks. No permissions, business semantics, workflow gate weakening or schedule disabling.",
+      "identity": "3ead53ef68c143fab9807b10dff61998f3a12037 plus registered dirty scope; old PR checks apply only to old head",
+      "reuse": "Same candidate because parameter view is already affected by product iteration; separate worktree would overlap current result, and2 registered worktrees already exist.",
+      "generated_dependency": "Icon consumer source hash invalidated component-driver inventory; regenerate and review digest diff, preserve verdicts.",
+      "results": {
+        "targeted": "PASS style_system guard, decision_authority15 tests, official icon6 tests + adapter49 semantics, strict typecheck; continue53-targeted.log",
+        "frontend_pr_unit": "PASS full governed verify.frontend.pr.unit; continue53-frontend-unit-current.log",
+        "ledger_review": "Only3 existing decision line numbers changed; no classifications/verdict/exception changes",
+        "component_inventory_review": "New ScIcon consumer increments5 transitive component counts by1 and changes input digest; no status/decision changes",
+        "limitation": "Scheduled jobs on main remain failed until corrected main is integrated and a new full run succeeds.",
+        "freeze_prepare": "PASS continue53-freeze-prepare.log",
+        "independent_increment_review": "No new S0-S2; dirty increment review verifies formal ScIcon, no policy/guard exemptions. Final binding pending."
+      }
     }
   },
   "blockers": [
     "GitHub clean reviewed candidate and current required integration checks pending.",
     "Preview target identity/snapshot activation and affected target smoke/rollback readiness pending."
   ],
-  "next_exact_step": "Prepare generated evidence, commit company-policy fix, run new exact-head Quick, receive independent final binding, archive and publish GitHub PR.",
+  "next_exact_step": "Freeze/review corrected frontend candidate, exact-head Quick, archive then update PR712; exercise full candidate lane equivalent to scheduled frontend gate after push.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",

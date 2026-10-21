@@ -842,7 +842,7 @@
       "literal": "available",
       "path": "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
       "lines": [
-        132
+        133
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -855,7 +855,7 @@
       "literal": "partial",
       "path": "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
       "lines": [
-        133
+        134
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -868,7 +868,7 @@
       "literal": "planned",
       "path": "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
       "lines": [
-        134
+        135
       ],
       "occurrences": 1,
       "classification": "contract-derived",

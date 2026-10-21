@@ -71,7 +71,7 @@
       <section v-if="changes.length" class="change-history" data-semantic-component="SystemParameterChangeHistory">
         <h2>最近变更</h2>
         <div v-for="change in changes" :key="change.id" class="change-row" :data-change-state="change.state">
-          <span><strong>{{ change.parameter_key }}</strong> → {{ String(change.proposed_value) }}</span>
+          <span class="change-value"><strong>{{ change.parameter_key }}</strong><ScIcon name="arrow-right" :size="16" />{{ String(change.proposed_value) }}</span>
           <span class="change-state">{{ change.state }}</span>
           <ScButton v-if="change.state === 'published'" type="button" variant="ghost" :disabled="publishing" @click="rollback(change.id)">回滚</ScButton>
         </div>
@@ -85,6 +85,7 @@
 import { onMounted } from 'vue';
 import ScPage from '../../components/design-system/ScPage.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
+import ScIcon from '../../components/design-system/ScIcon.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
 import ScSelect from '../../components/design-system/ScSelect.vue';
 import { parameterStatusLabel } from '../../app/productSystemParameterProjection';
@@ -147,6 +148,7 @@ onMounted(() => {
 .impact-preview h2 { margin: 0 0 8px; }
 .impact-preview p { margin: 4px 0; }
 .impact-note { color: var(--sc-app-text-secondary); font-size: 12px; }
+.change-value { display: inline-flex; align-items: center; gap: 4px; }
 .change-history { margin-top: 24px; }
 .change-history h2 { margin: 0 0 8px; font-size: 16px; }
 .change-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--sc-app-border); }
