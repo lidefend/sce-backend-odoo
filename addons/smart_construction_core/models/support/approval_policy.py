@@ -318,14 +318,15 @@ class ScApprovalPolicy(models.Model):
     @api.model
     def get_active_policy(self, model_name, company=None):
         company = company or self.env.company
-        domain = [
-            ("active", "=", True),
-            ("target_model", "=", model_name),
-            "|",
-            ("company_id", "=", company.id),
-            ("company_id", "=", False),
-        ]
-        return self.search(domain, order="company_id desc, sequence, id", limit=1)
+        domain = [("active", "=", True), ("target_model", "=", model_name)]
+        # A nullable company sort can rank shared rows first. Resolve scope
+        # explicitly so a company override always wins over shared defaults.
+        local = self.search(
+            domain + [("company_id", "=", company.id)], order="sequence, id", limit=1
+        )
+        return local or self.search(
+            domain + [("company_id", "=", False)], order="sequence, id", limit=1
+        )
 
     @api.model
     def is_approval_required(self, model_name, company=None):

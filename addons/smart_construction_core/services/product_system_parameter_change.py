@@ -98,13 +98,35 @@ def apply_parameter_value(env: Any, parameter_key: str, value: Any):
             raise ValueError("approval_mode value %r is not declared" % value)
         Policy = env["sc.approval.policy"].sudo()
         policy = _payment_approval_policy(env)
-        if policy:
-            policy.sudo().write(dict(policy_vals))
+        local_policy = Policy.with_context(active_test=False).search(
+            [("target_model", "=", "payment.request"), ("company_id", "=", company.id)],
+            limit=1,
+        )
+        if local_policy:
+            # The unique model/company policy may be archived. Reuse its identity
+            # rather than creating a duplicate or writing a shared fallback.
+            local_policy.write({"active": True, **policy_vals})
+        elif policy:
+            # A company parameter must never mutate a policy inherited by other
+            # companies. One2many steps are explicitly copied, not reparented.
+            steps = []
+            for step in policy.with_context(active_test=False).step_ids:
+                step_vals = step.copy_data()[0]
+                step_vals.pop("policy_id", None)
+                # Required computed/inverse fields are excluded by copy_data().
+                step_vals["approval_scope_key"] = step.approval_scope_key
+                steps.append((0, 0, step_vals))
+            policy.copy({
+                "company_id": company.id,
+                "code": "product_parameter_payment_request_approval_%s" % company.id,
+                "step_ids": steps,
+                **policy_vals,
+            })
         elif policy_vals["approval_required"]:
             Policy.create(
                 {
                     "name": "付款/收款申请审批规则",
-                    "code": "product_parameter_payment_request_approval",
+                    "code": "product_parameter_payment_request_approval_%s" % company.id,
                     "target_model": "payment.request",
                     "company_id": company.id,
                     "trigger": "submit",

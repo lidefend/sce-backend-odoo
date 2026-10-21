@@ -4232,13 +4232,45 @@
           ".runtime/agent-runs/PRODUCT-ITERATION-V2-20261020/continue50-ownership-readback.log"
         ]
       }
+    },
+    "independent_review_company_policy_fix": {
+      "status": "targeted_orm_passed_final_review_pending",
+      "reviewed_head": "798818839c313754363678f849fe509e84f4f432",
+      "layer": "P1 industry approval policy parameter authority",
+      "paths": [
+        "addons/smart_construction_core/services/product_system_parameter_change.py",
+        "addons/smart_construction_core/tests/test_product_system_parameter_change.py",
+        "addons/smart_construction_core/models/support/approval_policy.py"
+      ],
+      "findings": [
+        "S1 shared approval policy modified by company parameter publish",
+        "S1 fixed policy code violates global unique code on second company creation"
+      ],
+      "decision": "Company parameter writes target company policy only; derive company policy from shared authority preserving configuration and steps; company-specific code; targeted ORM publish/rollback isolation tests. No migration, frontend, or P0 changes.",
+      "validation_plan": "Static checks then governed local.dev.test exact tag. Existing Quick valid for old SHA only; new candidate requires re-freeze and independent follow-up.",
+      "runtime_discovery": "ORM reproduced shared policy precedence after company copy: nullable DESC ordering picks global. P1 resolver must explicitly prefer exact company before global. Test fixture and copy_data require explicit required computed approval_scope_key.",
+      "results": {
+        "parameter_orm": "PASS 21 tests; continue52-company-policy-orm-scoped.log",
+        "static": "ci.local.iteration PASS; py_compile and diff check PASS",
+        "first_attempts": "Two fixture scope errors, then real shared-precedence failure; corrected required scope copy and explicit company-first resolver. See continue52-company-policy-orm*.log",
+        "review": "Original REQUEST_CHANGES; dirty implementation reviewed, final binding pending",
+        "approval_regression": "PASS16 targeted tests; continue52-approval-affected.log",
+        "excluded_create_state_test": {
+          "original_run": "17 tests: 2 subtest errors in test_native_create_context_state_guard; continue52-approval-regression.log",
+          "scope": "sc.labor.plan and sc.material.rental.order ordinary PM create rejected by record rules",
+          "reason": "Trace does not enter changed policy resolver. Independent reviewer confirmed unaffected path exclusion for this correction. No permission bypass or test assertion weakening.",
+          "status": "known_unresolved_test_prerequisite_gap",
+          "root_cause": "not confirmed; do not assume one missing group is sole cause"
+        },
+        "freeze_prepare": "PASS continue52-freeze-prepare.log"
+      }
     }
   },
   "blockers": [
     "GitHub clean reviewed candidate and current required integration checks pending.",
     "Preview target identity/snapshot activation and affected target smoke/rollback readiness pending."
   ],
-  "next_exact_step": "Commit reviewed P4 integration corrections and generated evidence, then make ci.local.quick on clean new HEAD. No edits while Quick runs. Independent review/archive and GitHub integration remain pending; preview not deployed.",
+  "next_exact_step": "Prepare generated evidence, commit company-policy fix, run new exact-head Quick, receive independent final binding, archive and publish GitHub PR.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",

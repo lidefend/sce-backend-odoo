@@ -111,6 +111,69 @@ class TestProductSystemParameterChange(TransactionCase):
         self.assertTrue(rolled_back["ok"])
         self.assertEqual(policy.mode, "single")
 
+    def _company_parameter_env(self, name):
+        company = self.env["res.company"].sudo().create({"name": name})
+        return self.env["res.company"].sudo().with_company(company).env
+
+    def _publish_in_company(self, env, value):
+        result = ProductSystemParameterPublishHandler(env).run({
+            "parameter_key": "approval_mode", "proposed_value": value,
+            "change_reason": "company isolation regression",
+        })
+        self.assertTrue(result["ok"], result)
+        return result["data"]["change"]["id"]
+
+    def test_shared_approval_policy_publish_and_rollback_are_company_isolated(self):
+        first = self._company_parameter_env("Parameter isolation A")
+        second = self._company_parameter_env("Parameter isolation B")
+        Policy = self.env["sc.approval.policy"].sudo()
+        Policy.search([("target_model", "=", "payment.request"), ("company_id", "=", False)]).write({"active": False})
+        group = Policy._group_for_approval_scope("finance_manager")
+        self.assertTrue(group)
+        shared = Policy.create({
+            "name": "Shared payment policy", "code": "test_shared_parameter_policy",
+            "company_id": False, "target_model": "payment.request", "mode": "single",
+            "manager_group_id": group.id,
+            "step_ids": [(0, 0, {"name": "Shared approval", "sequence": 10, "approval_scope_key": "finance_manager", "approve_group_id": group.id})],
+        })
+        original_steps = shared.step_ids.ids
+        change_id = self._publish_in_company(first, "disabled")
+        local = Policy.get_active_policy("payment.request", company=first.company)
+        self.assertEqual(local.company_id, first.company)
+        self.assertNotEqual(local, shared)
+        self.assertEqual(local.manager_group_id, group)
+        self.assertEqual(local.step_ids.mapped("approve_group_id"), group)
+        self.assertFalse(set(local.step_ids.ids) & set(original_steps))
+        self.assertFalse(Policy.is_approval_required("payment.request", company=first.company))
+        self.assertTrue(Policy.is_approval_required("payment.request", company=second.company))
+        result = ProductSystemParameterRollbackHandler(first).run({"change_id": change_id})
+        self.assertTrue(result["ok"], result)
+        self.assertTrue(Policy.is_approval_required("payment.request", company=first.company))
+        self.assertEqual(Policy.get_active_policy("payment.request", company=second.company), shared)
+        self.assertEqual(shared.mode, "single")
+        self.assertTrue(shared.approval_required)
+        self.assertEqual(shared.step_ids.ids, original_steps)
+        self.assertEqual(local.company_id, first.company)
+
+    def test_two_companies_can_first_publish_and_rollback_approval(self):
+        first = self._company_parameter_env("New parameter company A")
+        second = self._company_parameter_env("New parameter company B")
+        Policy = self.env["sc.approval.policy"].sudo()
+        Policy.search([("target_model", "=", "payment.request"), ("company_id", "=", False)]).write({"active": False})
+        first_change = self._publish_in_company(first, "single")
+        second_change = self._publish_in_company(second, "multi")
+        first_policy = Policy.get_active_policy("payment.request", company=first.company)
+        second_policy = Policy.get_active_policy("payment.request", company=second.company)
+        self.assertNotEqual(first_policy.code, second_policy.code)
+        for env, change in ((first, first_change), (second, second_change)):
+            result = ProductSystemParameterRollbackHandler(env).run({"change_id": change})
+            self.assertTrue(result["ok"], result)
+            self.assertFalse(Policy.is_approval_required("payment.request", company=env.company))
+        first_policy.write({"active": False})
+        self._publish_in_company(first, "single")
+        self.assertEqual(Policy.get_active_policy("payment.request", company=first.company), first_policy)
+        self.assertFalse(Policy.is_approval_required("payment.request", company=second.company))
+
     def test_publish_and_rollback_default_payment_terms(self):
         self.env.company.write({"sc_default_payment_terms": "net30"})
         published = self._publish("default_payment_terms", "advance")
