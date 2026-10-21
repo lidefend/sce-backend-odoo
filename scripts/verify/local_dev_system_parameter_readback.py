@@ -28,6 +28,9 @@ facts["approval_configuration"] = {
 }
 facts["approval_required"] = Policy.is_approval_required("payment.request", company=actor_env.company)
 from odoo.addons.smart_construction_core.handlers.product_system_parameter_catalog import CONFIG_ADMIN_GROUPS
+security_user = env["res.users"].browse(payload["security_user"]["id"]).exists()
+if len(security_user) != 1:
+    raise RuntimeError("resolved security principal is unavailable")
 payload["security_user"]["parameter_admin"] = any(security_user.has_group(group) for group in CONFIG_ADMIN_GROUPS)
 payload["parameter_facts"] = facts
 payload["business_fingerprint"] = hashlib.sha256(json.dumps(facts, sort_keys=True).encode()).hexdigest()

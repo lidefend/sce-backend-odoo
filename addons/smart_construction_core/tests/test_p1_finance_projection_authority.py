@@ -871,18 +871,16 @@ class TestP1FinanceProjectionAuthority(BusinessTransactionCase):
                 }
             )
 
-        self.env.cr.execute(
-            "SELECT indexname FROM pg_indexes WHERE indexname IN %s",
-            [
-                (
-                    "sc_receipt_income_one_canonical_terminal_per_request_idx",
-                    "sc_expense_claim_one_canonical_terminal_per_request_idx",
+        expected_indexes = {
             "sc_receipt_income_one_canonical_terminal_per_request_idx",
+            "sc_expense_claim_one_canonical_terminal_per_request_idx",
             "sc_payment_execution_one_active_per_request_idx",
-                )
-            ],
+        }
+        self.env.cr.execute(
+            "SELECT indexname FROM pg_indexes WHERE schemaname = current_schema() AND indexname IN %s",
+            [tuple(sorted(expected_indexes))],
         )
-        self.assertEqual(len(self.env.cr.fetchall()), 2)
+        self.assertEqual({row[0] for row in self.env.cr.fetchall()}, expected_indexes)
 
     def test_legacy_cash_owner_requires_full_semantic_identity(self):
         other_partner = self.env["res.partner"].create({"name": "P1 错误往来单位"})

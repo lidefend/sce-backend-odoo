@@ -303,15 +303,22 @@ class TestProductSystemParameterChange(TransactionCase):
         self.assertEqual(self.env["sc.product.system.parameter.change"].browse(change["id"]).state, "published")
 
     def _config_actor_env(self):
+        registration = self.env["sc.tenant.company.registration"].sudo()._create_non_customer_space(
+            tenant_key="parameter-config-boundary-test", purpose="test",
+            company_name="Parameter Configuration Test Space",
+        )
+        company = registration.company_id
         user = self.env["res.users"].with_context(no_reset_password=True).create({
             "name": "Parameter configuration boundary", "login": "parameter_config_boundary",
             "groups_id": [(6, 0, [
                 self.env.ref("smart_construction_core.group_sc_cap_business_config_admin").id,
                 self.env.ref("smart_core.group_smart_core_non_customer_data_user").id,
             ])],
-            "company_id": self.env.company.id, "company_ids": [(6, 0, [self.env.company.id])],
+            "company_id": company.id, "company_ids": [(6, 0, [company.id])],
         })
-        return self.env(user=user, su=False)
+        return self.env(user=user, su=False)["res.company"].with_context(
+            allowed_company_ids=[company.id],
+        ).with_company(company).env
 
     def test_config_admin_cannot_write_parameter_authority_directly(self):
         env = self._config_actor_env()
@@ -323,6 +330,13 @@ class TestProductSystemParameterChange(TransactionCase):
 
     def test_payment_policy_raw_identity_and_mode_mutations_are_rejected(self):
         env = self._config_actor_env()
+        # Establish this actor's policy through the managed authority path;
+        # installed customer/demo policies need not be visible to a non-customer actor.
+        published = ProductSystemParameterPublishHandler(env).run({
+            "parameter_key": "approval_mode", "proposed_value": "multi",
+            "change_reason": "prepare configuration boundary policy",
+        })
+        self.assertTrue(published["ok"], published)
         policy = env["sc.approval.policy"].get_active_policy("payment.request", company=env.company)
         self.assertTrue(policy)
         for vals in ({"approval_required": False}, {"mode": "none"}, {"active": False},

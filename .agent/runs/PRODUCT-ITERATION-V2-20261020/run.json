@@ -427,7 +427,8 @@
     "scripts/verify/construction_core_extension_intent_handlers_split_guard.py",
     "docs/frontend_productization/decision-authority-inventory-v1.json",
     "config/frontend/authoritative_navigation.json",
-    "scripts/verify/test_frontend_release_navigation_policy_guard.py"
+    "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+    "addons/smart_construction_core/tests/test_payment_request_work_item_service.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -4324,13 +4325,46 @@
         "source_run": 39570476817,
         "reason": "Only offline navigation expectations and guard regression test changed. Style/shared-boundary/hardening/lint/typecheck/build inputs unchanged; remote run continued independent static checks and navigation was sole static failure. Runtime release lane not reached, remains not_run."
       }
+    },
+    "ci_quality_batch_repair": {
+      "status": "targeted_passed",
+      "head": "cea10890072dff278ac305e4d892edcaa5394735",
+      "layer": "P4 validation tools and P1 test fixture",
+      "files": [
+        "scripts/verify/local_dev_system_parameter_readback.py",
+        "addons/smart_construction_core/tests/test_product_system_parameter_change.py",
+        "addons/smart_construction_core/tests/test_payment_request_work_item_service.py",
+        "addons/smart_construction_core/tests/test_p1_finance_projection_authority.py"
+      ],
+      "failures": [
+        "name-binding: concatenated security_user implicit dependency",
+        "ORM: non-customer config test actor sees no ambient active policy before boundary assertions",
+        "Three work-item test doubles lack native readiness protocol (_name/prerequisite/funding gate)",
+        "Finance index expectation requests three unique indexes but asserts count two"
+      ],
+      "plan": "Use registered non-customer test space for config actor; preserve real permission denials. Complete readiness protocol on advisory-cache doubles. Assert exact current index set. Collect whole professional test shard before publication.",
+      "previous_candidate": "Quick and full frontend static passed but not pushed; subsequent quality failures invalidate readiness",
+      "targeted_results": {
+        "frontend_full_static": "passed all 9 commands at cea108900; unchanged frontend/static inputs thereafter",
+        "professional_shard_tests": "passed (test.unit/test.contract/test.e2e.preflight)",
+        "parameter_initial_orm": "21 passed but ambient environment not sufficient; replaced by independent registered company fixture",
+        "combined_orm": "67 tests: 0 failures, 1 error in workitem tuple review_ids; parameter and finance groups passed",
+        "workitem_recovery": "12 tests passed after real empty tier.review binding; parameter 21 and finance 34 results reused from combined run with unchanged inputs",
+        "name_binding": "19 guard tests plus full repository scan passed"
+      },
+      "evidence": [
+        "continue54-full-static.log",
+        "continue54-professional-tests.log",
+        "continue54-batch-orm.log",
+        "continue54-workitem-orm.log"
+      ]
     }
   },
   "blockers": [
     "GitHub clean reviewed candidate and current required integration checks pending.",
     "Preview target identity/snapshot activation and affected target smoke/rollback readiness pending."
   ],
-  "next_exact_step": "Freeze/review corrected frontend candidate, exact-head Quick, archive then update PR712; exercise full candidate lane equivalent to scheduled frontend gate after push.",
+  "next_exact_step": "Finish affected workitem rerun and name-binding check, freeze only after all known CI failures close; independent review/archive then one PR update. Never publish the partial navigation-only candidate.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",
