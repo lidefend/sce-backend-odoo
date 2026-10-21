@@ -22,6 +22,12 @@ gate_required:
 - frontend_decision_authority_guard.py
 - test_frontend_decision_authority_guard.py
 entries:
+- script: probe_toolchain_support.py
+  status: active
+  owner: platform-team
+  date: '2026-10-21'
+  wire_or_retire: file-consumed
+  reason: Shared startup lifecycle library imported by blocked legacy CLI probes; enforces nonzero refusal before runtime imports.
 - script: __init__.py
   status: active
   owner: platform-team

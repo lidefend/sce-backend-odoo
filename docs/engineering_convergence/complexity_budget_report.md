@@ -56,9 +56,9 @@ Generated from repository source files. This report is informational during the 
 | 1870 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1844 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
-| 1812 | Python source | `scripts/audit/verification_lane_coverage.py` |
+| 1816 | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1804 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1757 | YAML workflow | `scripts/verify/registry.yaml` |
+| 1763 | YAML workflow | `scripts/verify/registry.yaml` |
 | 1751 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1747 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1730 | Python source | `scripts/verify/system_performance_baseline.py` |
@@ -170,7 +170,7 @@ Generated from repository source files. This report is informational during the 
 | 908 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
-| 898 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
+| 900 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |
 | 888 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 887 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
@@ -274,9 +274,9 @@ Generated from repository source files. This report is informational during the 
 | 1870 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1844 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
-| 1812 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
+| 1816 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1804 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1757 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
+| 1763 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 1751 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1747 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1730 | split_plan_required | Python source | `scripts/verify/system_performance_baseline.py` |

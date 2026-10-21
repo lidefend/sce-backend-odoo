@@ -19,7 +19,7 @@
       },
       {
         "path": "config/frontend/acceptance_tool_matrix_v1.json",
-        "sha256": "dbca110d65b6d4919693d02617b0ef63a65a5016baf23f370e9e45580687c89b"
+        "sha256": "f75361ba7c04399fc5b24b7a75b715dc0b684d12499d4bd63bc29a6c2955d89b"
       },
       {
         "path": "config/frontend/acceptance_evidence_contract_v1.schema.json",
@@ -31,7 +31,7 @@
     "python": "3.12.3",
     "git": "2.43.0"
   },
-  "collected_at": "2026-10-19T18:25:15Z",
+  "collected_at": "2026-10-21T10:12:25Z",
   "browser_evidence_contract": {
     "required_fields": [
       "browser_full_version",
