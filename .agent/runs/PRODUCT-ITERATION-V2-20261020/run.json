@@ -633,7 +633,8 @@
     "scripts/verify/frontend_product_page_header_guard.py",
     "scripts/verify/test_frontend_product_page_header_guard.py",
     "scripts/dev/frontend_acceptance_runtime.sh",
-    "scripts/common/frontend_acceptance_make_identity.sh"
+    "scripts/common/frontend_acceptance_make_identity.sh",
+    "frontend/apps/web/scripts/public_auth_bootstrap_test.mjs"
   ],
   "environment": {
     "kind": "runtime",
@@ -4569,7 +4570,7 @@
     "GitHub clean reviewed candidate and current required integration checks pending.",
     "Preview target identity/snapshot activation and affected target smoke/rollback readiness pending."
   ],
-  "next_exact_step": "Freeze full entry identity propagation, run complete local release audit, no push until local runtime verification complete.",
+  "next_exact_step": "Freeze session readiness fix then complete local release audit, especially real J09 console. No remote push until local pass.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",
@@ -4753,7 +4754,8 @@
       "header_and_inventory": "passed 72 header tests +15 decision tests",
       "entry_identity": "passed 16 tests including actual shell load with conflicting base values",
       "http_login": "passed HTTP200 through governed login_probe after exact backend identity",
-      "nested_make_http": "passed: real Shell to managed nested Make to HTTP200;16 regression tests passed including real recursive Make with conflicting base identity"
+      "nested_make_http": "passed: real Shell to managed nested Make to HTTP200;16 regression tests passed including real recursive Make with conflicting base identity",
+      "session_lifecycle": "passed 9 public bootstrap tests including real clearSession ordering, strict typecheck, decision inventory; independent review no blockers"
     },
     "local_runtime": {
       "entry": "make verify.frontend.release.local CONFIRM_FRONTEND_RELEASE_AUDIT=RUN_FROZEN_FRONTEND_RELEASE_AUDIT SC_ACCEPTANCE_RUNTIME_PROFILE=local",
@@ -4778,6 +4780,12 @@
     "runtime_failure": "Local release: static passed; schema recovered via governed upgrade; HTTP login401 after fixture auth passed. Base env contains entry secret/version differing from declared acceptance values and overwrites operation-entry exports in load_profile.",
     "runtime_fix": "P4 restore declared entry identity after base env load; add bounded local login-probe operation reusing credential authority and preflight, no fixture reset. No product authorization changes.",
     "reuse": "Only P4 environment loader/login entry and tests changed since f7ce51b; product, frontend and earlier complete release-unit/static build inputs unchanged. Full governed local release will rerun owning entry; no remote dispatch.",
-    "nested_make_fix": "Whole release still401 though direct governed login200: root Make includes base env and overwrites entry stamp. Preserve all four declared entry identity keys through existing managed nested Make adapter, test actual nested Make conflicting base values."
+    "nested_make_fix": "Whole release still401 though direct governed login200: root Make includes base env and overwrites entry stamp. Preserve all four declared entry identity keys through existing managed nested Make adapter, test actual nested Make conflicting base values.",
+    "runtime_results": {
+      "page_identity": "passed all four role reports;32 navigation identities matched; no failures",
+      "performance": "passed current b29963c",
+      "error_recovery": "failed J09 console ContractGap during session expiry transition; public declaration fetch succeeds but stale ready flag survives pageContracts reset"
+    },
+    "session_fix": "P0 generic session lifecycle: invalidate public readiness before emptying/replacing declaration; no fallback product text and no console suppression. Add actual clearSession execution regression."
   }
 }
