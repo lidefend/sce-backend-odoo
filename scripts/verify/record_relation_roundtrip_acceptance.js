@@ -61,9 +61,11 @@ function readResolution() {
     throw new Error('ACCEPTANCE_RECORD_RESOLUTION must point at the managed resolution body');
   }
   const body = JSON.parse(fs.readFileSync(RESOLUTION_PATH, 'utf8'));
-  if (body && body.schema && body.schema !== 'acceptance.record_identity_resolution.v1') {
+  if (!body || body.schema !== 'acceptance.record_identity_resolution.v1') {
     throw new Error(`unexpected resolution schema ${body.schema}`);
   }
+  if (body.expected_sha !== EXPECTED_SHA) throw new Error('managed resolution candidate mismatch');
+  if (body.producer !== 'scripts/verify/frontend_delivery_hardening_runtime_ids.py') throw new Error('managed resolution producer mismatch');
   const targets = body && body.targets;
   if (!targets || typeof targets !== 'object') {
     throw new Error('managed resolution is not the governed envelope (targets missing)');
@@ -73,7 +75,7 @@ function readResolution() {
   const model = String(entry.model || '').trim();
   if (!model) throw new Error(`resolution ${RESOLUTION_KEY}.model is missing`);
   for (const key of ['record_id', 'action_id', 'menu_id']) {
-    if (!(Number(entry[key]) > 0)) throw new Error(`resolution ${RESOLUTION_KEY}.${key} is missing`);
+    if (!Number.isSafeInteger(entry[key]) || entry[key] <= 0) throw new Error(`resolution ${RESOLUTION_KEY}.${key} is missing`);
   }
   // One declared identity, one match: a key that resolves to a model/id pair the
   // envelope contradicts would make the run ambiguous, so it is refused.
@@ -328,9 +330,10 @@ async function runProbe(acceptance, environment) {
     failures: [],
   };
   const browser = await chromium.launch({ headless: true });
+  let page;
   try {
     const context = await browser.newContext({ locale: 'zh-CN', viewport: { width: 1440, height: 1000 } });
-    const page = await context.newPage();
+    page = await context.newPage();
     page.on('console', (msg) => { if (msg.type() === 'error') result.console_errors.push(msg.text()); });
     page.on('pageerror', (err) => result.console_errors.push(err.message));
     page.on('response', (response) => {
@@ -419,6 +422,11 @@ async function runProbe(acceptance, environment) {
     if (!result.roundtrip) result.failures.push({ field: '-', reason: 'no declared relation entry completed a verified open-and-return round trip' });
     result.status = result.failures.length ? 'fail' : 'pass';
   } catch (err) {
+    if (page) {
+      result.failure_path = new URL(page.url()).pathname;
+      fs.mkdirSync(outDir, { recursive: true });
+      await page.screenshot({ path: path.join(outDir, 'failure.png'), fullPage: true }).catch(() => {});
+    }
     result.error = err instanceof Error ? err.message : String(err);
     result.failures.push({ field: '-', reason: result.error });
     if (err instanceof Error && err.stack) result.stack = err.stack.split('\n').slice(0, 6).join('\n');
@@ -434,9 +442,18 @@ async function runProbe(acceptance, environment) {
     denied_requests: result.denied_requests.length,
     console_errors: result.console_errors.length,
     error: result.error,
+    failure_path: result.failure_path,
     artifacts: outDir,
   }, null, 2));
   process.exitCode = result.status === 'pass' ? 0 : 1;
 }
 
-main().catch(() => { console.error('relation roundtrip: governed environment or login prerequisite failed; no passing evidence issued'); process.exitCode = 1; });
+main().catch((error) => {
+  // Keep exception text and arguments private; source locations identify the
+  // failed prerequisite without leaking credentials or request bodies.
+  const locations = String(error?.stack || '').split('\n').slice(1)
+    .map(line => line.match(/record_relation_roundtrip_acceptance\.js:\d+:\d+/)?.[0])
+    .filter(Boolean);
+  console.error(JSON.stringify({ status: 'fail', phase: 'prerequisite', locations }));
+  process.exitCode = 1;
+});

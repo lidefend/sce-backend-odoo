@@ -305,6 +305,7 @@
     "artifacts/backend/product_module_graph_v2.json",
     "config/acceptance/backend_contract_instance_v1.json",
     "config/acceptance/evolution_binding.v1.json",
+    "config/frontend/acceptance_environments_v1.json",
     "config/frontend/acceptance_tool_matrix_v1.json",
     "config/frontend/authoritative_navigation.json",
     "config/frontend/probe_toolchain_registry.json",
@@ -393,6 +394,7 @@
     "scripts/dev/local_dev_demo_credentials_prepare.sh",
     "scripts/dev/local_environment_doctor.sh",
     "scripts/diag/fe_smoke.sh",
+    "scripts/ops/acceptance_evolution_record.py",
     "scripts/ops/dev_acceptance_release_probe.py",
     "scripts/ops/ensure_core_tax_baseline.py",
     "scripts/ops/production_acceptance_harness.py",
@@ -525,6 +527,7 @@
     "scripts/verify/form_structure_contract_seed_generate.py",
     "scripts/verify/formal_entry_metadata_contract_guard.py",
     "scripts/verify/frontend_acceptance_environment_source_guard.py",
+    "scripts/verify/frontend_acceptance_environment_test.mjs",
     "scripts/verify/frontend_all_list_visual_audit.mjs",
     "scripts/verify/frontend_authenticated_intent.mjs",
     "scripts/verify/frontend_delivery_hardening_browser.mjs",
@@ -591,6 +594,7 @@
     "scripts/verify/seed_delivery_minimum.py",
     "scripts/verify/smart_core_owner_startup_smoke.py",
     "scripts/verify/target_cost_tree_browser_acceptance.mjs",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
     "scripts/verify/test_capability_maturity_evidence.py",
     "scripts/verify/test_construction_diary_p2_extraction_migration.py",
     "scripts/verify/test_contract_probe_routing.py",
@@ -4582,7 +4586,7 @@
     "Merge stage still requires valid list_surface_structure and relation_roundtrip evidence.",
     "Deployment stage retains daily_runtime_entry and path_namespace_identity evidence, explicitly not_run."
   ],
-  "next_exact_step": "Bind local receipt request to system.init.record_context.request_context, verify both shipped declarations, refreeze and rerun contract then exact list/record scope; relation pending.",
+  "next_exact_step": "Finish L1 and independent review of final P4 delta; freeze clean candidate, rerun relation with current identity and record evidence reuse for unchanged list assertions/product; exact Quick then governed GitHub publication.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",
@@ -4932,6 +4936,54 @@
       "owner": "P4 local acceptance declaration",
       "finding": "Local receipt declaration lacks params_context_from; observed record request carries runtime company context while approved request does not. Existing daily declaration and producer already support authoritative binding. No product or hash-check relaxation needed.",
       "affected": "Approved receipt and all six record binding keys; list layout inputs unchanged. Frozen delivery lane rerun after declaration fix; no other release matrix rerun."
+    },
+    "final_runtime": {
+      "head": "13a701f98f15537d66cc9abae82febab243e3607",
+      "list": {
+        "status": "passed",
+        "gated": 316,
+        "records": 30,
+        "negative": 5,
+        "runtime_errors": 0,
+        "log": "continue63-context-list.log"
+      },
+      "relation": {
+        "status": "failed",
+        "phase": "prerequisite before summary",
+        "log": "continue63-relation.log"
+      },
+      "owner": "P4 existing relation probe diagnostic redaction hides failure location; add stack frame locations only, no raw error or credentials"
+    },
+    "relation_identity_gap": "P4 local profile omits runtime_identity_path while relation tool requires identity. Register existing /api/runtime-version endpoint; same dev runtime, database, credential and ports. Does not disable required identity.",
+    "relation_role_gap": {
+      "observed": "source /access-denied, 0 HTTP denies and 0 console errors",
+      "owner": "P4 scenario declaration",
+      "resolution": "Reuse hardening project source actor fixture_role_pm, not finance; project record resolver and project action/menu stay authoritative. No product permissions or return_* fabricated.",
+      "review": "Independent review confirmed role/source mismatch and no missing generic entry_intent query"
+    },
+    "relation_final_diagnostic": {
+      "status": "passed",
+      "identity": "13a701f98 + explicit six-file P4 dirty scope; not frozen evidence",
+      "declared_entry_count": 13,
+      "openable": 4,
+      "attempts": 4,
+      "roundtrip_restored": true,
+      "denied_requests": 0,
+      "console_errors": 0,
+      "report": ".runtime/acceptance/local/13a701f98f15537d66cc9abae82febab243e3607/relation-roundtrip/20261021T125206481Z-283520-0fdd6020/summary.json",
+      "tests": "11 probe tests + Node acceptance environment suite passed"
+    },
+    "recorder_stage_gap": {
+      "owner": "P4 evidence registration",
+      "finding": "Merge preflight already selects merge stage, but recorder still requires deployment suites, preventing registration of merge-only runtime evidence. Centralize stage selection; default all preserved; explicit merge recorder stage; no assertions/thresholds changed.",
+      "validation": "existing binding31 and delivery80 targeted suites plus stage tests"
+    },
+    "finalization": {
+      "review": "Independent read-only review: final P4 and stage-registration deltas no blockers",
+      "targeted": "11 probe +32 binding +80 delivery +Node environment passed",
+      "freeze_prepare": "passed continue63-final-freeze.log",
+      "final_runtime_trigger": "Frozen delivery lane: local shared profile now declares runtime endpoint, affecting identity prerequisite of list and relation. Run both once at final frozen candidate, retain original diagnostic reports. No full release or unrelated matrix.",
+      "next": "clean commit, backend identity, contract receipt, frozen list and relation, merge-stage evidence registration, one Quick"
     }
   }
 }

@@ -309,8 +309,9 @@ verify.acceptance.evolution.binding: guard.prod.forbid acceptance.evolution.plan
 acceptance.evolution.plan: guard.prod.forbid
 	@python3 scripts/verify/acceptance_evolution_binding_guard.py --output "$(ACCEPTANCE_EVOLUTION_PLAN)"
 
+ACCEPTANCE_EVOLUTION_STAGE ?= all
 acceptance.evolution.record: guard.prod.forbid
-	@python3 scripts/ops/acceptance_evolution_record.py \
+	@python3 scripts/ops/acceptance_evolution_record.py --stage "$(ACCEPTANCE_EVOLUTION_STAGE)" \
 		$(if $(filter 1,$(ACCEPTANCE_EVOLUTION_CARRY_FORWARD)),--carry-forward) \
 		--output "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" \
 		$(foreach suite,$(ACCEPTANCE_EVOLUTION_SUITES),--suite '$(suite)')

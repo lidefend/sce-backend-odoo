@@ -62,6 +62,31 @@ const vm = require('node:vm');
         result = subprocess.run(['node', '-e', program, main], cwd=ROOT, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_relation_resolution_rejects_stale_or_unmanaged_identity(self):
+        source = (ROOT / 'scripts/verify/record_relation_roundtrip_acceptance.js').read_text()
+        body = source[source.index('function readResolution()'):source.index('function readExplicitIdentity()')]
+        program = """
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const base = {schema:'acceptance.record_identity_resolution.v1', expected_sha:'a'.repeat(40),
+ producer:'scripts/verify/frontend_delivery_hardening_runtime_ids.py', targets:{project:{model:'project.project',record_id:5,action_id:588,menu_id:382}}};
+for (const mutation of [null, b=>delete b.schema, b=>b.expected_sha='b'.repeat(40), b=>b.producer='other',
+ b=>b.targets.project.record_id=0, b=>b.targets.project.action_id=1.5, b=>b.targets.project.menu_id='382']) {
+ const data=structuredClone(base);if(mutation)mutation(data);
+ const context=vm.createContext({fs:{readFileSync:()=>JSON.stringify(data)},RESOLUTION_PATH:'resolution.json',
+ RESOLUTION_KEY:'project',EXPECTED_SHA:'a'.repeat(40),process:{env:{}}});
+ vm.runInContext(process.argv[1],context);
+ if(mutation)assert.throws(()=>context.readResolution());else {context.readResolution();assert.equal(context.RECORD_ID,5);}
+}
+"""
+        result = subprocess.run(['node', '-e', program, body], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        wrapper = (ROOT / 'scripts/dev/frontend_acceptance_runtime.sh').read_text()
+        self.assertIn('RELATION_RESOLUTION_KEY=project RELATION_IDENTITY_SOURCE=resolution', wrapper)
+        relation = wrapper.split('      standard-relation-roundtrip-browser)')[1].split('      standard-list-surface-browser)')[0]
+        self.assertIn('SC_ACCEPTANCE_LOGIN=fixture_role_pm', relation)
+        self.assertIn('E2E_LOGIN=fixture_role_pm', relation)
+
     def test_execution_detection_excludes_static_and_package_operations(self):
         name = 'scripts/ops/production_acceptance_harness.py'
         for command in [f'python3 -m py_compile {name}', f'scp {name} host:/tmp/',

@@ -335,6 +335,15 @@ def build_plan(registry: dict, changed: list[str], base: str, head: str) -> dict
     }
 
 
+def plan_for_stage(registry: dict, plan: dict, stage: str = "all") -> dict:
+    if stage not in {"all", "merge", "deployment"}:
+        raise BindingError("unknown delivery stage")
+    selected = [key for key in plan["required_evidence_suites"]
+                if stage == "all" or stage in registry["suites"][key].get("stages", ["merge", "deployment"])]
+    return {**plan, "stage": stage, "required_evidence_suites": selected,
+            "deferred_evidence_suites": [key for key in plan["required_evidence_suites"] if key not in selected]}
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:

@@ -81,12 +81,9 @@ def build_report(base: str, head: str, manifest_path: Path, *, frozen: bool = Fa
     except (OSError, ValueError, AttributeError) as exc:
         manifest = {}
         blockers.append('evidence manifest: ' + str(exc))
-    if stage not in {"all", "merge", "deployment"}:
-        raise binding.BindingError("unknown delivery stage")
-    selected = [key for key in plan['required_evidence_suites']
-                if stage == "all" or stage in registry['suites'][key].get('stages', ['merge', 'deployment'])]
-    deferred = [key for key in plan['required_evidence_suites'] if key not in selected]
-    states = evidence_states(registry, {**plan, 'required_evidence_suites': selected}, manifest, dirty)
+    stage_plan = binding.plan_for_stage(registry, plan, stage)
+    deferred = stage_plan['deferred_evidence_suites']
+    states = evidence_states(registry, stage_plan, manifest, dirty)
     if plan['unclassified']:
         blockers.append('unclassified paths: ' + ', '.join(plan['unclassified']))
     if frozen and dirty:
