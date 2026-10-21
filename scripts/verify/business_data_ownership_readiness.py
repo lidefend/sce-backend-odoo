@@ -1,16 +1,8 @@
-"""Read-only readback of the upgrade-time business-data ownership gate.
+"""Read-only business-data ownership readiness for the governed local.dev lane.
 
-One question: would ``smart_construction_core``'s upgrade gate pass in this
-database right now? Onboarding was previously only proven before new writes, so
-a database whose business rows predate the data-space declaration could serve an
-empty product with nothing failing loudly.
-
-The report carries both halves of the same decision: the ownership readback, and
-the result of calling the real gate function the pre-migration calls. This entry
-is read-only and commits nothing.
-
-Executed only by local.dev.business_data.ownership.readiness in the registered
-demo DB.
+Calls the industry probe service and platform ownership decision, rolls back,
+and fails the command when ownership is unresolved. Historical development
+migrations are retired; this explicit check does not imply an upgrade hook.
 """
 import json
 import os
@@ -34,14 +26,16 @@ report['companies'] = [
     for company in env['res.company'].sudo().search([], order='id')
 ]
 try:
-    report['upgrade_gate'] = {
+    report['ownership_gate'] = {
         'passed': True,
         'business_data_company_ids': (
             business_data_ownership.assert_existing_business_data_ownership(env)
         ),
     }
 except ValueError as error:
-    report['upgrade_gate'] = {'passed': False, 'error': str(error)}
-report['passed'] = bool(report['passed'] and report['upgrade_gate']['passed'])
+    report['ownership_gate'] = {'passed': False, 'error': str(error)}
+report['passed'] = bool(report['passed'] and report['ownership_gate']['passed'])
 print('BUSINESS_DATA_OWNERSHIP_READINESS=' + json.dumps(report, ensure_ascii=False, sort_keys=True))
 env.cr.rollback()
+if not report['passed']:
+    raise SystemExit(1)

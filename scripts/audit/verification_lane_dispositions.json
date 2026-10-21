@@ -182,11 +182,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/finance_handling_chain_matrix_2026-06-11.md。登记待接线或退役，B3 按族处理。"
     },
-    "backfill.fund_account.balance": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/fund_daily_handling_closure_2026-06-12.md。登记待接线或退役，B3 按族处理。"
-    },
     "ci.local.quick.compose": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
@@ -236,11 +231,6 @@
       "disposition": "ops_tooling",
       "owner": "platform-team",
       "reason": "Codex 执行器工具目标。"
-    },
-    "company_finance_expense.payment_execution.backfill.write": {
-      "disposition": "ops_tooling",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/product/formal_field_stabilization_plan_v1.md。登记待接线或退役，B3 按族处理。"
     },
     "contract.schema.declaration.sync": {
       "disposition": "history_probe_runbook",
@@ -485,16 +475,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/demo_isolated_tenant_stack_runbook_v1.md。登记待接线或退役，B3 按族处理。"
     },
-    "direct_acceptance.construction_contract.income_execution.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "直接验收投影写入一次性运行手册。"
-    },
-    "direct_acceptance.engineering_settlement.income_projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "直接验收投影写入一次性运行手册。"
-    },
     "export.product.delivery.package": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
@@ -539,431 +519,6 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/FORMAL-SURFACE-RUNTIME-AUDIT-CONTRACT-BINDING/run.json。登记待接线或退役，B3 按族处理。"
-    },
-    "fresh_db.actual_outflow.replay.adapter": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.actual_outflow_line.replay.adapter": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.actual_outflow_residual.replay.adapter": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.construction_contract.attachment.probe": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.construction_contract.attachment.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.construction_contract.income_count.probe": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.construction_contract.income_count_alignment.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.construction_contract.income_fact_stub.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.construction_contract.new_xlsx_income.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.construction_contract.replay_manifest.refresh": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.construction_contract.visible_trace.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.construction_diary.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.contractor_project_repay.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.dashboard_cockpit.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.deduction_bill.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.deduction_paid_refund.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.deposit_claim.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.deposit_claim_taxonomy.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.expense_claim.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.financing_loan.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.fuel_card_operation.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.fuel_card_operation.projection.write.prod": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.fund_account.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.fund_daily_report.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.general_contract.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.history_todo.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.legacy_account_master.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_account_master.replay.write": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_account_transaction.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_account_transaction.replay.write": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_attachment_backfill.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_attendance_checkin.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_construction_diary_line.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_deduction_adjustment_line.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_expense_deposit.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_expense_reimbursement_line.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_file_index.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_financing_loan.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_fund_confirmation_line.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_fund_daily_line.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_fund_daily_snapshot.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_invoice_registration_line.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_invoice_surcharge.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_invoice_surcharge.replay.write": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_invoice_tax.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_invoice_tax.replay.write": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_material_catalog.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_payment_residual.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_personnel_movement.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_project_fund_balance.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_project_fund_balance.replay.write": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_purchase_contract.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_receipt_income.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_receipt_residual.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_salary_line.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_self_funding.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_supplier_contract_pricing.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_supplier_contract_pricing.replay.write": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_task_evidence.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_tax_deduction.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_user_context.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_user_context.replay.write": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_user_project_scope.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_user_project_scope.replay.write": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.legacy_workflow_audit.replay.adapter": {
-      "disposition": "one_shot_replay_adapter",
-      "owner": "platform-team",
-      "reason": "历史库遗留数据回放到 fresh-DB 的一次性适配器运行手册；保留用于数据库重建/恢复取证，无门禁调用。"
-    },
-    "fresh_db.material_catalog.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.material_category.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.material_product.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.outflow_request.fact_coverage.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.outflow_request.replay.adapter": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.outflow_request_line.replay.adapter": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.payment_execution_taxonomy.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.prepaid_tax.visible.refresh": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.project_repay_company.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.receipt_income.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.receipt_invoice_attachment.replay.adapter": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.receipt_invoice_line.output_visible_enrich.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.receipt_invoice_line.replay.adapter": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.repayment_registration.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.settlement_adjustment.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.supplier_contract_pricing.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.tax_deduction_registration.projection.write": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/history_capability_promotion_c_tax_deduction_batch_20260513.md。登记待接线或退役，B3 按族处理。"
-    },
-    "fresh_db.treasury_ledger.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.treasury_reconciliation.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
-    },
-    "fresh_db.workbench_item.projection.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "fresh-DB 业务投影写入/探测运行手册（历史验收轮次）；保留用于重建恢复，无门禁调用。"
     },
     "frontend.dev": {
       "disposition": "frontend_develop",
@@ -1085,266 +640,21 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "history.actual_outflow.partner.targeted.replay.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.attachment.custody.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/legacy_attachment_custody_marker_runbook.md。登记待接线或退役，B3 按族处理。"
-    },
-    "history.construction_diary.runtime.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.contract.core.gap.audit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.contract.direction_defer.audit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.contract.direction_defer.recovery.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.contract.partner.gap.audit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.contract.partner.recovery.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.contract.strong_evidence.backtrace.audit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.daily_business_visible_surface.p0": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.expense_claim.runtime.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.expense_deposit.partner.targeted.replay.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.expense_deposit.runtime.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.financing_loan.runtime.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.general_contract.runtime.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.invoice_registration.runtime.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.invoice_tax.runtime.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.legacy_business_menu_exposure.close.write": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.legacy_user_access.projection.write": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.legacy_user_recovery.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.material_catalog.runtime.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
     "history.material_product.projection.probe": {
       "disposition": "candidate",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
-    },
-    "history.organization.carrying.audit.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.organization.department.materialize.write": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.outflow.partner.targeted.replay.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.partner.master.direction_defer.replay.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.partner.master.targeted.replay.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.payment_execution.runtime.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.payment_request.outflow.approved_recovery.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.payment_request.outflow.done_recovery.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.payment_request.outflow.state_activation.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.production.fresh_init": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/codex_production_assist_policy.md。登记待接线或退役，B3 按族处理。"
-    },
-    "history.project.lifecycle.continuity.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.project_member.attachment.targeted.replay.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.purchase_contract.runtime.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.real_users.normalize.write": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.receipt.parent.recovery.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.receipt.partner.targeted.replay.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.receipt_income.partner.targeted.replay.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.receipt_income.runtime.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.settlement_adjustment.runtime.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.supplier.partner.targeted.replay.adapter": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.treasury.reconciliation.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.treasury_reconciliation.runtime.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
     },
     "history.user_data_migration.closure": {
       "disposition": "candidate",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "history.user_profile_runtime_projection.write": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "历史数据连续性探测/回放运行手册；保留用于恢复与审计取证，无门禁调用。"
-    },
-    "history.users.rebuild": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/history_user_rebuild_runbook_v1.md。登记待接线或退役，B3 按族处理。"
-    },
-    "history.users.verify": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/history_user_rebuild_runbook_v1.md。登记待接线或退役，B3 按族处理。"
-    },
-    "income_contract.settlement_surface.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "收入合同结算面写入一次性运行手册。"
-    },
     "integration.cycle": {
       "disposition": "ops_tooling",
       "owner": "platform-team",
       "reason": "operator-facing integration helper for ownership snapshots, fast gate aggregation, detached Quick and merge readiness",
       "review_by": "2026-12-31"
-    },
-    "joint_acceptance.contract.income_execution.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "联合验收正式动作应用一次性运行手册。"
-    },
-    "legacy_attachment.custody_marker.backfill": {
-      "disposition": "ops_tooling",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/daily_dev_data_acceptance_20260707.md。登记待接线或退役，B3 按族处理。"
     },
     "local.clean.contract_projection_cache.probe": {
       "disposition": "candidate",
@@ -1566,12 +876,6 @@
       "reason": "local.dev wrapper for the governed scenario tick executor",
       "review_by": "2026-12-31"
     },
-    "local.dev.upgrade.run": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "internal run target protected by the local.dev write lease; invoked by local.dev.upgrade",
-      "review_by": "2026-12-31"
-    },
     "local.dev.user_permission.rehearsal": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",
@@ -1592,121 +896,6 @@
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/local_development_environment_v1.md。登记待接线或退役，B3 按族处理。"
-    },
-    "menu.role_visibility.governance.probe": {
-      "disposition": "audit_runbook",
-      "owner": "platform-team",
-      "reason": "菜单角色可见性治理探测目标。"
-    },
-    "migration.assets.full_scope_refresh": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.legacy_55_browser_full_visible_data_coverage": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.legacy_direct_direct_project_browser_menu_acceptance": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.legacy_direct_direct_project_direct_acceptance_replay.write": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.legacy_direct_direct_project_engineering_progress_replay.write": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.legacy_direct_direct_project_fuel_replay.write": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.legacy_direct_direct_project_gap_matrix": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.legacy_direct_direct_project_new_system_alignment_probe": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.legacy_direct_direct_project_old_identity_lock": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.legacy_direct_direct_project_old_row_dump": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.legacy_direct_direct_project_rental_return_replay.write": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.legacy_direct_direct_project_replay_carrier_plan": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.release_package": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.release_package.verify": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.user_acceptance_browser_field_guard": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.user_acceptance_manifest_guard": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.assets.user_acceptance_replay.write": {
-      "disposition": "migration_runbook",
-      "owner": "platform-team",
-      "reason": "迁移资产抓取/校验/交付审计运行手册。"
-    },
-    "migration.legacy_55_user_visible_surface.custom_gap.status.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "legacy 55 用户可见面投影写入运行手册。"
-    },
-    "migration.legacy_55_user_visible_surface.dashboard_contract.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "legacy 55 用户可见面投影写入运行手册。"
-    },
-    "migration.legacy_55_user_visible_surface.live_alignment.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "legacy 55 用户可见面投影写入运行手册。"
-    },
-    "migration.legacy_55_user_visible_surface.target_carrier.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "legacy 55 用户可见面投影写入运行手册。"
-    },
-    "migration.legacy_55_user_visible_surface.target_view.write": {
-      "disposition": "one_shot_projection_write",
-      "owner": "platform-team",
-      "reason": "legacy 55 用户可见面投影写入运行手册。"
     },
     "obs.coverage.report": {
       "disposition": "audit_runbook",
@@ -1767,21 +956,6 @@
       "disposition": "ops_tooling",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/codex_production_assist_policy.md。登记待接线或退役，B3 按族处理。"
-    },
-    "prod.sim.formal.projections.refresh": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "生产模拟语义归一/投影刷新运行手册。"
-    },
-    "prod.sim.partner.semantic.normalize.write": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "生产模拟语义归一/投影刷新运行手册。"
-    },
-    "prod.sim.replay.then.project": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "生产模拟语义归一/投影刷新运行手册。"
     },
     "prod.upgrade.core": {
       "disposition": "ops_tooling",
@@ -1873,45 +1047,10 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/prod_command_policy.md。登记待接线或退役，B3 按族处理。"
     },
-    "project.cost_ledger.projection.write": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "项目成本台账运行手册。"
-    },
     "project.legacy_entry.backfill": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "项目遗留入口回填运行手册。"
-    },
-    "project.master.user_review.decision_apply": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "项目主数据评审/物化运行手册。"
-    },
-    "project.master.user_review.decision_apply.dry_run": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "项目主数据评审/物化运行手册。"
-    },
-    "project.master.user_review.decision_template": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "项目主数据评审/物化运行手册。"
-    },
-    "project.master.user_review.decision_validate": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "项目主数据评审/物化运行手册。"
-    },
-    "project.positive_migration.reconcile.probe": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/project_positive_migration_visibility_refresh_runbook_v1.md。登记待接线或退役，B3 按族处理。"
-    },
-    "project.positive_migration.visibility.refresh.write": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/project_positive_migration_visibility_refresh_runbook_v1.md。登记待接线或退役，B3 按族处理。"
     },
     "refresh.frontend.rendering_detail.inventory": {
       "disposition": "history_probe_runbook",
@@ -1932,56 +1071,6 @@
       "disposition": "release_runbook",
       "owner": "platform-team",
       "reason": "日常开发提升预检运行手册。"
-    },
-    "release.history.backup": {
-      "disposition": "release_runbook",
-      "owner": "platform-team",
-      "reason": "发布历史指纹/备份/恢复运行手册。"
-    },
-    "release.history.fingerprint.candidate_post": {
-      "disposition": "release_runbook",
-      "owner": "platform-team",
-      "reason": "发布历史指纹/备份/恢复运行手册。"
-    },
-    "release.history.fingerprint.candidate_pre": {
-      "disposition": "release_runbook",
-      "owner": "platform-team",
-      "reason": "发布历史指纹/备份/恢复运行手册。"
-    },
-    "release.history.fingerprint.source_pre": {
-      "disposition": "release_runbook",
-      "owner": "platform-team",
-      "reason": "发布历史指纹/备份/恢复运行手册。"
-    },
-    "release.history.restore": {
-      "disposition": "release_runbook",
-      "owner": "platform-team",
-      "reason": "发布历史指纹/备份/恢复运行手册。"
-    },
-    "release.history.runtime_down": {
-      "disposition": "release_runbook",
-      "owner": "platform-team",
-      "reason": "发布历史指纹/备份/恢复运行手册。"
-    },
-    "release.history.runtime_up": {
-      "disposition": "release_runbook",
-      "owner": "platform-team",
-      "reason": "发布历史指纹/备份/恢复运行手册。"
-    },
-    "release.history.source_probe": {
-      "disposition": "release_runbook",
-      "owner": "platform-team",
-      "reason": "发布历史指纹/备份/恢复运行手册。"
-    },
-    "release.history.source_restore": {
-      "disposition": "release_runbook",
-      "owner": "platform-team",
-      "reason": "发布历史指纹/备份/恢复运行手册。"
-    },
-    "release.history.upgrade": {
-      "disposition": "release_runbook",
-      "owner": "platform-team",
-      "reason": "发布历史指纹/备份/恢复运行手册。"
     },
     "release.pilot.all": {
       "disposition": "release_runbook",
@@ -2248,16 +1337,6 @@
       "owner": "platform-team",
       "reason": "测试清单汇总目标。"
     },
-    "user.acceptance.project_master.materialize": {
-      "disposition": "diagnostic_cli",
-      "owner": "platform-team",
-      "reason": "用户验收运行手册。"
-    },
-    "user.acceptance.project_master.materialize.dry_run": {
-      "disposition": "diagnostic_cli",
-      "owner": "platform-team",
-      "reason": "用户验收运行手册。"
-    },
     "user_data.demo_impact_report": {
       "disposition": "ops_tooling",
       "owner": "platform-team",
@@ -2438,6 +1517,16 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
+    "verify.capability.maturity": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.capability.maturity. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
+    },
+    "verify.capability.maturity.unit": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.capability.maturity.unit. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
+    },
     "verify.ci.scheduled_gates": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
@@ -2497,6 +1586,11 @@
       "disposition": "candidate",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
+    },
+    "verify.contract_retirement.declaration.unit": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.contract_retirement.declaration.unit. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
     },
     "verify.core_history_field.physical_boundary_audit": {
       "disposition": "diagnostic_cli",
@@ -3254,10 +2348,10 @@
       "reason": "unit coverage for the integration cycle helper",
       "review_by": "2026-12-31"
     },
-    "verify.legacy_55_user_visible_surface.custom_gap.audit": {
-      "disposition": "diagnostic_cli",
+    "verify.intent_group.authorization.unit": {
+      "disposition": "local_diagnostic",
       "owner": "platform-team",
-      "reason": "legacy 55 用户可见面验收 CLI，一次性。"
+      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.intent_group.authorization.unit. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
     },
     "verify.legacy_attachment.frontend_browser.acceptance.host": {
       "disposition": "history_probe_runbook",
@@ -3279,11 +2373,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.legacy_ledger_preallocation.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.legacy_online_attachment.custody.evidence": {
       "disposition": "candidate",
       "owner": "platform-team",
@@ -3293,6 +2382,16 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
+    },
+    "verify.local.dev.capability.browser": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.local.dev.capability.browser. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
+    },
+    "verify.local.dev.capability.readback": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.local.dev.capability.readback. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
     },
     "verify.local.dev.entry_identity.unit": {
       "disposition": "local_diagnostic",
@@ -3320,6 +2419,31 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE/run.json。登记待接线或退役，B3 按族处理。"
     },
+    "verify.local.dev.readiness.browser": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.local.dev.readiness.browser. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
+    },
+    "verify.local.dev.readiness.readback": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.local.dev.readiness.readback. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
+    },
+    "verify.local.dev.system_parameter.browser": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.local.dev.system_parameter.browser. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
+    },
+    "verify.local.dev.system_parameter.denial": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.local.dev.system_parameter.denial. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
+    },
+    "verify.local.dev.system_parameter.mutation": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.local.dev.system_parameter.mutation. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
+    },
     "verify.local.dev.write_lease.unit": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",
@@ -3345,11 +2469,6 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.native.business_fact.static": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/native/native_business_fact_gate_dashboard_v1.md。登记待接线或退役，B3 按族处理。"
     },
     "verify.native_view.coverage.report": {
       "disposition": "diagnostic_cli",
@@ -3385,11 +2504,6 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.online_visible_surface.strict": {
-      "disposition": "diagnostic_cli",
-      "owner": "platform-team",
-      "reason": "线上可见面严格验收 CLI，一次性。"
     },
     "verify.orm.guard.self_test": {
       "disposition": "history_probe_runbook",
@@ -3746,6 +2860,11 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
+    "verify.product.retired_views.source_contract": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.product.retired_views.source_contract. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
+    },
     "verify.product.tier.ready": {
       "disposition": "candidate",
       "owner": "platform-team",
@@ -3768,27 +2887,12 @@
       "owner": "platform-team",
       "reason": "诊断/一次性验收 CLI，未被任何门禁消费；后续批次逐条定性为接线或退役。"
     },
-    "verify.production_blocker.capture_daily_dev_history": {
-      "disposition": "candidate",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.production_blocker.fresh_and_rollback": {
       "disposition": "candidate",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.production_blocker.history_upgrade": {
-      "disposition": "candidate",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.production_blocker.image": {
-      "disposition": "candidate",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.production_blocker.migration_matrix": {
       "disposition": "candidate",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
@@ -4032,6 +3136,11 @@
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
       "reason": "诊断/一次性验收 CLI，未被任何门禁消费；后续批次逐条定性为接线或退役。"
+    },
+    "verify.tenant_rc.clean_profile.unit": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.tenant_rc.clean_profile.unit. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
     },
     "verify.tender_optional_scope_metadata.probe": {
       "disposition": "diagnostic_cli",
@@ -4642,20 +3751,6 @@
     }
   },
   "absent_assets": {
-    "backfill.fund_account.balance": {
-      "missing_asset": [
-        "scripts/migration/fund_account_balance_backfill_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "company_finance_expense.payment_execution.backfill.write": {
-      "missing_asset": [
-        "scripts/migration/company_finance_expense_payment_execution_backfill_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
     "daily.candidate.continuity.remote_install": {
       "missing_asset": [
         "scripts/ops/daily_candidate_clone_upgrade_contract_v1.js",
@@ -4668,1403 +3763,9 @@
       "owner": "platform-team",
       "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
     },
-    "direct_acceptance.construction_contract.income_execution.write": {
-      "missing_asset": [
-        "scripts/migration/direct_acceptance_construction_contract_income_execution_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "direct_acceptance.engineering_settlement.income_projection.write": {
-      "missing_asset": [
-        "scripts/migration/direct_acceptance_engineering_settlement_income_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.actual_outflow.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_actual_outflow_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.actual_outflow_line.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_actual_outflow_line_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.actual_outflow_residual.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_actual_outflow_residual_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.arrival_confirmation.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_arrival_confirmation_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.construction_contract.attachment.probe": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_construction_contract_attachment_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.construction_contract.attachment.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_construction_contract_attachment_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.construction_contract.income_count.probe": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_construction_contract_income_count_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.construction_contract.income_count_alignment.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_construction_contract_income_count_alignment_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.construction_contract.income_fact_stub.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_income_fact_project_stub_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.construction_contract.new_xlsx_income.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_new_construction_contract_xlsx_income_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.construction_contract.replay_manifest.refresh": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_construction_contract_replay_manifest_refresh.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.construction_contract.visible_trace.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_construction_contract_visible_trace_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.construction_diary.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_construction_diary_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.contractor_project_repay.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_contractor_project_repay_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.dashboard_cockpit.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_dashboard_cockpit_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.deduction_bill.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_deduction_bill_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.deduction_paid.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_deduction_paid_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.deduction_paid_refund.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_deduction_paid_refund_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.deposit_claim.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_deposit_claim_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.deposit_claim_taxonomy.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_deposit_claim_taxonomy_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.expense_claim.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_expense_claim_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.financing_loan.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_financing_loan_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.fuel_card_operation.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_fuel_card_operation_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.fuel_card_operation.projection.write.prod": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_fuel_card_operation_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.fund_account.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_fund_account_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.fund_account_between.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_fund_account_between_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.fund_daily_report.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_fund_daily_report_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.general_contract.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_general_contract_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.history_todo.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_history_todo_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.invoice_registration.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_invoice_registration_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_account_master.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_account_master_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_account_master.replay.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_account_master_replay_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_account_transaction.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_account_transaction_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_account_transaction.replay.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_account_transaction_replay_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_attachment_backfill.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_attachment_backfill_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_attendance_checkin.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_attendance_checkin_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_construction_diary_line.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_construction_diary_line_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_deduction_adjustment_line.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_deduction_adjustment_line_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_expense_deposit.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_expense_deposit_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_expense_reimbursement_line.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_expense_reimbursement_line_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_file_index.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_file_index_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_financing_loan.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_financing_loan_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_fund_confirmation_line.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_fund_confirmation_line_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_fund_daily_line.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_fund_daily_line_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_fund_daily_snapshot.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_fund_daily_snapshot_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_income_invoice.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_income_invoice_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_income_invoice.replay.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_income_invoice_replay_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_invoice_registration_line.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_invoice_registration_line_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_invoice_surcharge.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_invoice_surcharge_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_invoice_surcharge.replay.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_invoice_surcharge_replay_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_invoice_tax.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_invoice_tax_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_invoice_tax.replay.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_invoice_tax_replay_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_material_catalog.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_material_catalog_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_payment_residual.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_payment_residual_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_personnel_movement.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_personnel_movement_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_project_fund_balance.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_project_fund_balance_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_project_fund_balance.replay.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_project_fund_balance_replay_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_purchase_contract.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_purchase_contract_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_receipt_income.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_receipt_income_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_receipt_residual.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_receipt_residual_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_salary_line.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_salary_line_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_self_funding.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_self_funding_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_self_funding.replay.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_self_funding_replay_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_supplier_contract_pricing.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_supplier_contract_pricing_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_supplier_contract_pricing.replay.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_supplier_contract_pricing_replay_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_task_evidence.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_task_evidence_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_tax_deduction.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_tax_deduction_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_tax_deduction.replay.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_tax_deduction_replay_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_user_context.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_user_context_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_user_context.replay.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_user_context_replay_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_user_project_scope.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_user_project_scope_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_user_project_scope.replay.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_user_project_scope_replay_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.legacy_workflow_audit.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_legacy_workflow_audit_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.material_catalog.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_material_catalog_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.material_category.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_material_category_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.material_product.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_material_product_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.outflow_request.fact_coverage.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_outflow_request_fact_coverage_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.outflow_request.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_outflow_request_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.outflow_request_line.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_outflow_request_line_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.payment_execution.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_payment_execution_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.payment_execution_taxonomy.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_payment_execution_taxonomy_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.project_repay_company.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_project_repay_company_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.receipt_income.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_receipt_income_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.receipt_invoice_attachment.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_receipt_invoice_attachment_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.receipt_invoice_line.output_visible_enrich.write": {
-      "missing_asset": [
-        "scripts/migration/receipt_invoice_line_output_visible_enrich_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.receipt_invoice_line.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_receipt_invoice_line_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.repayment_registration.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_repayment_registration_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.settlement_adjustment.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_settlement_adjustment_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.supplier_contract_pricing.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_supplier_contract_pricing_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.tax_deduction_registration.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_tax_deduction_registration_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.treasury_ledger.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_treasury_ledger_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.treasury_reconciliation.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_treasury_reconciliation_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "fresh_db.workbench_item.projection.write": {
-      "missing_asset": [
-        "scripts/migration/fresh_db_workbench_item_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.actual_outflow.partner.targeted.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_actual_outflow_partner_targeted_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.attachment.custody.probe": {
-      "missing_asset": [
-        "scripts/migration/history_attachment_custody_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.attachment.custody.probe.prod": {
-      "missing_asset": [
-        "scripts/migration/history_attachment_custody_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.business.usable.init": {
-      "missing_asset": [
-        "scripts/migration/history_business_usable_init.sh"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.business.usable.probe": {
-      "missing_asset": [
-        "scripts/migration/history_business_usable_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.construction_diary.runtime.probe": {
-      "missing_asset": [
-        "scripts/migration/history_construction_diary_runtime_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.continuity.rehearse": {
-      "missing_asset": [
-        "scripts/migration/history_continuity_oneclick.sh"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.continuity.replay": {
-      "missing_asset": [
-        "scripts/migration/history_continuity_oneclick.sh"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.contract.core.gap.audit": {
-      "missing_asset": [
-        "scripts/migration/history_contract_core_gap_audit.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.contract.direction_defer.audit": {
-      "missing_asset": [
-        "scripts/migration/history_contract_direction_defer_audit.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.contract.direction_defer.recovery.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_contract_direction_defer_recovery_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.contract.partner.gap.audit": {
-      "missing_asset": [
-        "scripts/migration/history_contract_partner_gap_audit.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.contract.partner.recovery.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_contract_partner_recovery_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.contract.strong_evidence.backtrace.audit": {
-      "missing_asset": [
-        "scripts/migration/history_contract_strong_evidence_backtrace_audit.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.daily_business_visible_surface.p0.probe": {
-      "missing_asset": [
-        "scripts/migration/daily_business_visible_surface_p0_plan_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.daily_business_visible_surface.p0.runtime_gap.probe": {
-      "missing_asset": [
-        "scripts/migration/daily_business_visible_surface_p0_runtime_gap_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.daily_business_visible_surface.p0.runtime_gap.write": {
-      "missing_asset": [
-        "scripts/migration/daily_business_visible_surface_p0_runtime_gap_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.daily_business_visible_surface.p0.write": {
-      "missing_asset": [
-        "scripts/migration/daily_business_visible_surface_p0_plan_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.expense_claim.runtime.probe": {
-      "missing_asset": [
-        "scripts/migration/history_expense_claim_runtime_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.expense_deposit.partner.targeted.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_expense_deposit_partner_targeted_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.expense_deposit.runtime.probe": {
-      "missing_asset": [
-        "scripts/migration/history_expense_deposit_runtime_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.financing_loan.runtime.probe": {
-      "missing_asset": [
-        "scripts/migration/history_financing_loan_runtime_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.general_contract.runtime.probe": {
-      "missing_asset": [
-        "scripts/migration/history_general_contract_runtime_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.invoice_registration.runtime.probe": {
-      "missing_asset": [
-        "scripts/migration/history_invoice_registration_runtime_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.invoice_tax.runtime.probe": {
-      "missing_asset": [
-        "scripts/migration/history_invoice_tax_runtime_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.legacy_business_menu_exposure.close.write": {
-      "missing_asset": [
-        "scripts/migration/history_legacy_business_menu_exposure_close_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.legacy_user_access.projection.write": {
-      "missing_asset": [
-        "scripts/migration/history_legacy_user_access_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.legacy_user_recovery.probe": {
-      "missing_asset": [
-        "scripts/migration/history_legacy_user_recovery_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.legacy_user_visible_surface.overlay.write": {
-      "missing_asset": [
-        "scripts/migration/legacy_user_visible_surface_overlay_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.material_catalog.runtime.probe": {
-      "missing_asset": [
-        "scripts/migration/history_material_catalog_runtime_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.organization.carrying.audit.probe": {
-      "missing_asset": [
-        "scripts/migration/history_organization_carrying_audit_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.organization.department.materialize.write": {
-      "missing_asset": [
-        "scripts/migration/history_organization_department_materialize_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.outflow.partner.targeted.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_outflow_partner_targeted_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.partner.master.direction_defer.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_partner_master_direction_defer_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.partner.master.targeted.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_partner_master_targeted_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.payment_execution.runtime.probe": {
-      "missing_asset": [
-        "scripts/migration/history_payment_execution_runtime_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.payment_request.outflow.approved_recovery.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_payment_request_outflow_approved_recovery_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.payment_request.outflow.done_recovery.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_payment_request_outflow_done_recovery_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.payment_request.outflow.state_activation.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_payment_request_outflow_state_activation_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.project.lifecycle.continuity.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_project_lifecycle_continuity_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.project_member.attachment.targeted.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_project_member_attachment_targeted_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.purchase_contract.runtime.probe": {
-      "missing_asset": [
-        "scripts/migration/history_purchase_contract_runtime_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.real_users.normalize.write": {
-      "missing_asset": [
-        "scripts/migration/history_real_user_normalize_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.receipt.parent.recovery.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_receipt_parent_recovery_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.receipt.partner.targeted.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_receipt_partner_targeted_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.receipt_income.partner.targeted.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_receipt_income_partner_targeted_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.receipt_income.runtime.probe": {
-      "missing_asset": [
-        "scripts/migration/history_receipt_income_runtime_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.settlement_adjustment.runtime.probe": {
-      "missing_asset": [
-        "scripts/migration/history_settlement_adjustment_runtime_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.supplier.partner.targeted.replay.adapter": {
-      "missing_asset": [
-        "scripts/migration/history_supplier_partner_targeted_replay_adapter.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.treasury.reconciliation.probe": {
-      "missing_asset": [
-        "scripts/migration/history_treasury_reconciliation_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.treasury_reconciliation.runtime.probe": {
-      "missing_asset": [
-        "scripts/migration/history_treasury_reconciliation_runtime_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.user_profile_runtime_projection.write": {
-      "missing_asset": [
-        "scripts/migration/history_user_profile_runtime_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.users.rebuild": {
-      "missing_asset": [
-        "scripts/migration/user_history_rebuild.sh"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "history.users.verify": {
-      "missing_asset": [
-        "scripts/migration/user_asset_verify.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "income_contract.settlement_surface.write": {
-      "missing_asset": [
-        "scripts/migration/income_contract_settlement_surface_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "joint_acceptance.contract.income_execution.write": {
-      "missing_asset": [
-        "scripts/migration/joint_acceptance_contract_income_execution_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "legacy_attachment.custody_marker.backfill": {
-      "missing_asset": [
-        "scripts/migration/legacy_attachment_custody_marker_backfill.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "legacy_attachment.custody_marker.backfill.prod": {
-      "missing_asset": [
-        "scripts/migration/legacy_attachment_custody_marker_backfill.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "menu.role_visibility.governance.probe": {
-      "missing_asset": [
-        "scripts/migration/menu_role_visibility_governance_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.delivery_audit": {
-      "missing_asset": [
-        "scripts/migration/migration_asset_delivery_audit.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.delivery_replay_requirement_lock": {
-      "missing_asset": [
-        "scripts/migration/legacy_55_delivery_replay_requirement_lock.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.fetch": {
-      "missing_asset": [
-        "scripts/migration/migration_asset_fetch.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.full_inventory": {
-      "missing_asset": [
-        "scripts/migration/legacy_55_full_migration_asset_inventory.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.full_scope_guard": {
-      "missing_asset": [
-        "scripts/verify/legacy_55_full_migration_asset_guard.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.legacy_55_browser_full_visible_data_coverage": {
-      "missing_asset": [
-        "scripts/verify/legacy_55_browser_full_visible_data_coverage.js"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.legacy_direct_direct_project_browser_menu_acceptance": {
-      "missing_asset": [
-        "scripts/verify/legacy_direct_direct_project_browser_menu_acceptance.js"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.legacy_direct_direct_project_direct_acceptance_replay.write": {
-      "missing_asset": [
-        "scripts/migration/legacy_direct_direct_project_direct_acceptance_replay.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.legacy_direct_direct_project_engineering_progress_replay.write": {
-      "missing_asset": [
-        "scripts/migration/legacy_direct_direct_project_engineering_progress_receipt_replay.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.legacy_direct_direct_project_fuel_replay.write": {
-      "missing_asset": [
-        "scripts/migration/legacy_direct_direct_project_fuel_card_replay.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.legacy_direct_direct_project_gap_matrix": {
-      "missing_asset": [
-        "scripts/verify/legacy_direct_direct_project_alignment_gap_matrix.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.legacy_direct_direct_project_menu_probe": {
-      "missing_asset": [
-        "scripts/verify/legacy_direct_direct_project_acceptance_menu_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.legacy_direct_direct_project_new_system_alignment_probe": {
-      "missing_asset": [
-        "scripts/verify/legacy_direct_direct_project_new_system_alignment_probe.js"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.legacy_direct_direct_project_old_identity_lock": {
-      "missing_asset": [
-        "scripts/verify/legacy_direct_direct_project_old_identity_lock.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.legacy_direct_direct_project_old_row_dump": {
-      "missing_asset": [
-        "scripts/verify/legacy_direct_direct_project_old_row_dump.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.legacy_direct_direct_project_rental_return_replay.write": {
-      "missing_asset": [
-        "scripts/migration/legacy_direct_direct_project_rental_return_replay.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.legacy_direct_direct_project_replay_carrier_plan": {
-      "missing_asset": [
-        "scripts/verify/legacy_direct_direct_project_replay_carrier_plan.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.payload_promotion_queue": {
-      "missing_asset": [
-        "scripts/migration/legacy_55_payload_promotion_queue.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.release_package": {
-      "missing_asset": [
-        "scripts/migration/migration_asset_release_package.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.release_package.verify": {
-      "missing_asset": [
-        "scripts/migration/migration_asset_bus.py",
-        "scripts/migration/migration_asset_delivery_audit.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.replay_payload_gap_report": {
-      "missing_asset": [
-        "scripts/migration/legacy_55_replay_payload_gap_report.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.user_acceptance_browser_field_guard": {
-      "missing_asset": [
-        "scripts/verify/legacy_55_user_acceptance_browser_field_guard.js"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.user_acceptance_manifest_guard": {
-      "missing_asset": [
-        "scripts/verify/legacy_55_user_acceptance_asset_manifest_guard.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.user_acceptance_manifest_guard.evidence": {
-      "missing_asset": [
-        "scripts/verify/legacy_55_user_acceptance_asset_manifest_guard.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.user_acceptance_online_probe": {
-      "missing_asset": [
-        "scripts/verify/legacy_55_user_acceptance_online_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.user_acceptance_replay.write": {
-      "missing_asset": [
-        "scripts/migration/legacy_55_user_acceptance_replay.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.assets.verify_all": {
-      "missing_asset": [
-        "scripts/migration/migration_asset_bus.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.legacy_55_user_visible_surface.custom_gap.status.write": {
-      "missing_asset": [
-        "scripts/migration/legacy_55_user_visible_surface_custom_gap_status_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.legacy_55_user_visible_surface.dashboard_contract.write": {
-      "missing_asset": [
-        "scripts/migration/legacy_55_user_visible_surface_dashboard_contract_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.legacy_55_user_visible_surface.live_alignment.write": {
-      "missing_asset": [
-        "scripts/migration/legacy_55_user_visible_surface_live_alignment_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.legacy_55_user_visible_surface.target_carrier.write": {
-      "missing_asset": [
-        "scripts/migration/legacy_55_user_visible_surface_target_carrier_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "migration.legacy_55_user_visible_surface.target_view.write": {
-      "missing_asset": [
-        "scripts/migration/legacy_55_user_visible_surface_target_view_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
     "online.capture.preflight": {
       "missing_asset": [
         "scripts/verify/online_capture_security.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "prod.sim.business.usable.init": {
-      "missing_asset": [
-        "scripts/migration/history_business_usable_init.sh"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "prod.sim.data.replay": {
-      "missing_asset": [
-        "scripts/migration/history_continuity_oneclick.sh"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "prod.sim.partner.semantic.normalize.write": {
-      "missing_asset": [
-        "scripts/migration/prod_sim_partner_semantic_normalize_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "project.cost.ledger.projection.write": {
-      "missing_asset": [
-        "scripts/migration/project_cost_ledger_projection_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "project.master.user_review.decision_apply": {
-      "missing_asset": [
-        "scripts/migration/user_project_master_decision_apply.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "project.master.user_review.decision_apply.dry_run": {
-      "missing_asset": [
-        "scripts/migration/user_project_master_decision_apply.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "project.master.user_review.decision_template": {
-      "missing_asset": [
-        "scripts/migration/user_project_master_review_decision_template.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "project.master.user_review.decision_validate": {
-      "missing_asset": [
-        "scripts/migration/user_project_master_review_decision_template.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "project.positive_migration.reconcile.probe": {
-      "missing_asset": [
-        "scripts/migration/project_contract_fact_alias_reconciliation.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "project.positive_migration.visibility.refresh.write": {
-      "missing_asset": [
-        "scripts/migration/project_positive_migration_visibility_refresh_write.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "user.acceptance.project_master.materialize": {
-      "missing_asset": [
-        "scripts/migration/user_acceptance_project_master_materialize.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "user.acceptance.project_master.materialize.dry_run": {
-      "missing_asset": [
-        "scripts/migration/user_acceptance_project_master_materialize.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "user_module.history_business_baseline.restore": {
-      "missing_asset": [
-        "scripts/migration/user_module_history_business_baseline_restore.sh"
       ],
       "owner": "platform-team",
       "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
@@ -6146,57 +3847,9 @@
       "owner": "platform-team",
       "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
     },
-    "verify.business_user_priority_menu_plan.alignment": {
-      "missing_asset": [
-        "scripts/migration/business_user_priority_menu_plan_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
     "verify.frontend.list_selection_contract_smoke": {
       "missing_asset": [
         "scripts/list_selection_contract_smoke.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.legacy_55_user_visible_surface.custom_gap.audit": {
-      "missing_asset": [
-        "scripts/migration/legacy_55_user_visible_surface_custom_gap_probe.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.native.business_fact.static": {
-      "missing_asset": [
-        "scripts/migration/business_expense_contract_payment_fact_acceptance.py",
-        "scripts/migration/business_expense_contract_subtype_evidence.py",
-        "scripts/migration/business_expense_fact_taxonomy_acceptance.py",
-        "scripts/migration/business_fact_acceptance_bundle_summary.py",
-        "scripts/migration/business_fact_additional_fact_inventory.py",
-        "scripts/migration/business_fact_upgrade_replay_flow.sh",
-        "scripts/migration/business_fact_visible_balance_cleanup.py",
-        "scripts/migration/business_fact_visible_balance_legacy_source_probe.py",
-        "scripts/migration/fresh_db_actual_outflow_line_payment_execution_projection_write.py",
-        "scripts/migration/fresh_db_actual_outflow_line_replay_write.py",
-        "scripts/migration/fresh_db_actual_outflow_replay_write.py",
-        "scripts/migration/fresh_db_actual_outflow_residual_replay_write.py",
-        "scripts/migration/fresh_db_business_fact_replay_postcheck.py",
-        "scripts/migration/fresh_db_construction_contract_visible_business_fact_write.py",
-        "scripts/migration/fresh_db_contract_remaining_write.py",
-        "scripts/migration/fresh_db_legacy_deduction_adjustment_line_replay_write.py",
-        "scripts/migration/fresh_db_legacy_payment_residual_replay_write.py",
-        "scripts/migration/fresh_db_legacy_supplier_contract_pricing_replay_write.py",
-        "scripts/migration/fresh_db_outflow_request_line_replay_write.py",
-        "scripts/migration/fresh_db_outflow_request_replay_write.py",
-        "scripts/migration/fresh_db_payment_execution_projection_write.py",
-        "scripts/migration/fresh_db_settlement_adjustment_projection_write.py",
-        "scripts/migration/fresh_db_supplier_contract_pricing_projection_write.py",
-        "scripts/migration/history_actual_outflow_partner_targeted_replay_write.py",
-        "scripts/migration/history_outflow_partner_targeted_replay_write.py",
-        "scripts/migration/history_payment_request_outflow_approved_recovery_write.py",
-        "scripts/migration/history_payment_request_outflow_done_recovery_write.py",
-        "scripts/migration/history_payment_request_outflow_state_activation_write.py"
       ],
       "owner": "platform-team",
       "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
@@ -6248,13 +3901,6 @@
     "verify.system_user_experience.visible_surface_visual_coverage": {
       "missing_asset": [
         "scripts/user_visible_surface_visual_coverage_summary_guard.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.user_visible_business_fact_alignment": {
-      "missing_asset": [
-        "scripts/migration/user_visible_business_fact_alignment_probe.py"
       ],
       "owner": "platform-team",
       "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."

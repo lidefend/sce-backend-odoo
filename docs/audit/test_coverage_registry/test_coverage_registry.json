@@ -630,7 +630,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.baseline.readiness :: baseline_readiness $(MAKE) --no-print-directory local.dev.test"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "business_config_change_set",
@@ -691,7 +692,8 @@
         "addons/smart_construction_core/tests/test_capability_registry_service.py"
       ],
       "owner": "construction-product",
-      "evidence": []
+      "evidence": [],
+      "disposition": "known-gap"
     },
     {
       "group": "chatter_timeline_authorization_orm",
@@ -1003,7 +1005,8 @@
         "addons/smart_construction_core/tests/test_experience_role_surface.py"
       ],
       "owner": "construction-product",
-      "evidence": []
+      "evidence": [],
+      "disposition": "known-gap"
     },
     {
       "group": "experience_role_contract",
@@ -1014,7 +1017,8 @@
         "addons/smart_construction_core/tests/test_experience_role_surface.py"
       ],
       "owner": "construction-product",
-      "evidence": []
+      "evidence": [],
+      "disposition": "known-gap"
     },
     {
       "group": "experience_role_permissions",
@@ -1025,7 +1029,8 @@
         "addons/smart_construction_core/tests/test_experience_role_surface.py"
       ],
       "owner": "construction-product",
-      "evidence": []
+      "evidence": [],
+      "disposition": "known-gap"
     },
     {
       "group": "extension_contract",
@@ -1074,7 +1079,8 @@
         "addons/smart_construction_core/tests/test_capability_registry_service.py"
       ],
       "owner": "construction-product",
-      "evidence": []
+      "evidence": [],
+      "disposition": "known-gap"
     },
     {
       "group": "fund_legacy_archive",
@@ -1720,7 +1726,8 @@
         "addons/smart_construction_core/tests/test_capability_registry_service.py"
       ],
       "owner": "construction-product",
-      "evidence": []
+      "evidence": [],
+      "disposition": "known-gap"
     },
     {
       "group": "r11c_locked_menu",

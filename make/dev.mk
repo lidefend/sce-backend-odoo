@@ -1254,10 +1254,8 @@ local.dev.data_scope.ceiling.readiness: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_data_scope_ceiling_readiness.py
 
-# Read-only readback of the upgrade-time business-data ownership gate: which
-# companies already own industry rows, and which of them were never onboarded.
-# The gate itself runs in the module's pre-migration, so this entry exists to
-# answer "would the next upgrade be refused, and for whom" before it is run.
+# Read-only ownership readiness: fail when an existing business owner is not
+# onboarded. Explicit diagnostic, not a retired development migration hook.
 .PHONY: local.dev.business_data.ownership.readiness
 local.dev.business_data.ownership.readiness: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
@@ -1272,7 +1270,7 @@ verify.local.dev.source_bounded_data_space_rules.orm: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_construction_core TEST_TAGS="source_bounded_data_space_rules" local.dev.test
 
-# Registered verify alias for the run index: the upgrade-time business-data
+# Registered verify alias for the run index: business-data
 # ownership gate, on real companies and the real registration authority, pinned
 # to the fixed test tag so a run that collects zero tests cannot pass.
 .PHONY: verify.local.dev.business_data_ownership.orm

@@ -66,13 +66,11 @@ ENVIRONMENT_ONBOARDING_TOKENS = (
     "adopt_business_company",
 )
 INDUSTRY_HOOK_TOKEN = "_after_tenant_company_registration"
-PLATFORM_MODULE_PREFIXES = ("addons/smart_core/",)
 
-#: The upgrade-time gate. Onboarding was only proven before *new* writes, so a
-#: database whose business rows predate the data-space declaration upgraded
-#: silently and then served an empty product. The industry layer owns the probe
-#: list; the platform owns the meaning of an unregistered owner. Both halves
-#: must stay wired: a gate nobody calls is not a gate.
+#: Read-only ownership readiness remains supported after retirement of development
+#: migrations. Industry owns probes, platform owns the decision, P4 exposes the
+#: explicit check. This is not a claim of automatic upgrade-time enforcement.
+OWNERSHIP_READINESS_PATH = "scripts/verify/business_data_ownership_readiness.py"
 OWNERSHIP_GATE_ENTRYPOINTS = (
     "addons/smart_construction_core/services/business_data_ownership.py",
 )
@@ -120,17 +118,20 @@ def _industry_hook_owners():
 
 
 def _ownership_gate_owners():
-    """Industry migrations that refuse a data-carrying upgrade with no owner."""
-    owners = []
-    for path in sorted((REPO_ROOT / "addons").glob("*/migrations/*/*.py")):
-        text = path.read_text(encoding="utf-8", errors="ignore")
-        if OWNERSHIP_GATE_CALL_TOKEN not in text:
-            continue
-        relative = path.relative_to(REPO_ROOT).as_posix()
-        if relative.startswith(PLATFORM_MODULE_PREFIXES):
-            continue
-        owners.append(relative)
-    return owners
+    """Require the supported, governed ownership readiness consumer."""
+    path = REPO_ROOT / OWNERSHIP_READINESS_PATH
+    if not path.is_file():
+        return []
+    text = path.read_text(encoding="utf-8")
+    required = (OWNERSHIP_GATE_CALL_TOKEN, 'env.cr.rollback()', 'raise SystemExit(1)')
+    make_text = (REPO_ROOT / "make/dev.mk").read_text(encoding="utf-8")
+    if not all(token in text for token in required):
+        return []
+    if "local.dev.business_data.ownership.readiness:" not in make_text:
+        return []
+    if "< " + OWNERSHIP_READINESS_PATH not in make_text:
+        return []
+    return [OWNERSHIP_READINESS_PATH]
 
 
 def _ownership_gate_failures(provisioning):
@@ -174,9 +175,8 @@ def _ownership_gate_failures(provisioning):
     owners = _ownership_gate_owners()
     if not owners:
         failures.append(
-            "ownership gate: no non-platform migration calls %s, so a database whose "
-            "business rows predate the data-space declaration still upgrades silently "
-            "into an empty product" % OWNERSHIP_GATE_CALL_TOKEN
+            "ownership gate: governed read-only readiness must call %s, roll back, "
+            "and exit unsuccessfully when ownership is unresolved" % OWNERSHIP_GATE_CALL_TOKEN
         )
     return failures, owners
 

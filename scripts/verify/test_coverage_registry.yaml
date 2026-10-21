@@ -108,6 +108,14 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: baseline_readiness
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.baseline.readiness :: baseline_readiness $(MAKE) --no-print-directory local.dev.test'
+  reason: Governed on-demand readiness entry; manual execution evidence is in PRODUCT-ITERATION-V2-20261020,
+    not recurring CI coverage.
 - group: boq_version
   kind: odoo_tag
   status: unwired
@@ -148,6 +156,14 @@ entries:
   dispose: wire-pending
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: capability_verdict_projection
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: known-gap
+  reason: Executed through scoped local.dev.test selection in PRODUCT-ITERATION-V2-20261020. No recurring
+    tag selector exists; recurring coverage remains an explicit follow-up gap, not a passed CI claim.
   review_by: '2026-12-31'
 - group: chatter_timeline_authorization_orm
   kind: odoo_tag
@@ -393,6 +409,30 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: experience_capability_authority
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: known-gap
+  reason: Executed through scoped local.dev.test selection in PRODUCT-ITERATION-V2-20261020. No recurring
+    tag selector exists; recurring coverage remains an explicit follow-up gap, not a passed CI claim.
+  review_by: '2026-12-31'
+- group: experience_role_contract
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: known-gap
+  reason: Executed through scoped local.dev.test selection in PRODUCT-ITERATION-V2-20261020. No recurring
+    tag selector exists; recurring coverage remains an explicit follow-up gap, not a passed CI claim.
+  review_by: '2026-12-31'
+- group: experience_role_permissions
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: known-gap
+  reason: Executed through scoped local.dev.test selection in PRODUCT-ITERATION-V2-20261020. No recurring
+    tag selector exists; recurring coverage remains an explicit follow-up gap, not a passed CI claim.
+  review_by: '2026-12-31'
 - group: extension_contract
   kind: odoo_tag
   status: unwired
@@ -417,6 +457,14 @@ entries:
   dispose: wire-pending
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: formal_role_hint
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: known-gap
+  reason: Executed through scoped local.dev.test selection in PRODUCT-ITERATION-V2-20261020. No recurring
+    tag selector exists; recurring coverage remains an explicit follow-up gap, not a passed CI claim.
   review_by: '2026-12-31'
 - group: fund_legacy_archive
   kind: odoo_tag
@@ -854,6 +902,14 @@ entries:
   dispose: wire-pending
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: query_capability_native_acl
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: known-gap
+  reason: Executed through scoped local.dev.test selection in PRODUCT-ITERATION-V2-20261020. No recurring
+    tag selector exists; recurring coverage remains an explicit follow-up gap, not a passed CI claim.
   review_by: '2026-12-31'
 - group: r11c_locked_menu
   kind: odoo_tag

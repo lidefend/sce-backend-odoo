@@ -414,7 +414,17 @@
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
     "addons/smart_core/handlers/ui_contract_v2.py",
-    "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/ops/ensure_core_tax_baseline.py",
+    "scripts/verify/data_space_provisioning_guard.py",
+    "scripts/verify/business_data_ownership_readiness.py",
+    "scripts/verify/test_data_space_provisioning.py",
+    "addons/smart_construction_core/services/business_data_ownership.py",
+    "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
+    "scripts/verify/construction_core_extension_intent_handlers_split_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -4158,11 +4168,16 @@
       "pending": "Clean commit, exact-head Quick, independent review/external archive, governed GitHub push/current PR CI; no deployment claim"
     },
     "github_quick_candidate_corrections": {
-      "status": "targeted_corrections_passed",
+      "status": "corrections_and_freeze_preparation_passed_new_quick_pending",
       "paths": [
         "addons/smart_core/tests/test_backend_contract_boundary_guard.py",
         "addons/smart_core/handlers/ui_contract_v2.py",
-        "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+        "scripts/verify/registry.yaml",
+        "scripts/verify/test_coverage_registry.yaml",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/ops/ensure_core_tax_baseline.py"
       ],
       "layer": "P4 retired writer expectations; P0 assembled contract cache version and P4 exact input pin",
       "candidate": "4f690c65a99f89b8188c387f849e399910de48a6",
@@ -4174,6 +4189,48 @@
         "status": "passed",
         "log": "continue49-corrections.log",
         "reuse": "Cache namespace/version only changes invalidation, not contract shape or permissions; prior product behavior evidence retained. Old exact-head Quick aggregate failed, cannot be reused as success."
+      },
+      "second_candidate": {
+        "head": "608da09fd20be8c1320b58193c5762259285073f",
+        "result": "7 of8 shards passed; only script registry failed",
+        "fix": "Remove2 deleted script entries and register5 helper/fixture consumers with actual ownership. No guard threshold relaxation."
+      },
+      "remaining_audit_repairs": {
+        "scope": "7 test-group dispositions; remove191 stale target and205 stale absent-asset registrations; register14 exact local verification entrypoints; retire orphan historical tax replay bootstrap",
+        "baseline_policy": "Keep all numeric ceilings unchanged. Explicitly register14 known new manual tools in frozen target identity set and drop retired targets; do not permit arbitrary future identities. Known manual-only test coverage stays recorded as gap, not automated coverage.",
+        "policy_split_guard": "Architecture prerequisites passed; recipe exposed old ROLE_PRECEDENCE snapshot omitting experience role. Align exact tuple with already declared and verified exclusive experience role; no runtime policy edit.",
+        "intent_split_guard": "Stub harness omitted new BaselineReadinessHandler; imports returned empty handler list. Add exact stub and assert readiness contribution; no runtime change. Reuse passed suite prerequisites for recipe-only diagnosis, never as exact-head Quick."
+      },
+      "architecture_validation": {
+        "status": "prerequisites_and_corrected_recipe_passed_separately",
+        "prerequisites_log": ".runtime/agent-runs/PRODUCT-ITERATION-V2-20261020/continue50-architecture-corrected.log",
+        "recipe_log": ".runtime/agent-runs/PRODUCT-ITERATION-V2-20261020/continue50-architecture-recipe.log",
+        "limit": "Full invocation failed on missing readiness handler stub. Corrected recipe passes with unchanged successful prerequisite evidence reused via make -o. Not an aggregate exact-head Quick receipt."
+      },
+      "freeze_prepare": {
+        "status": "passed",
+        "log": ".runtime/agent-runs/PRODUCT-ITERATION-V2-20261020/continue50-freeze-prepare.log"
+      }
+    },
+    "ownership_readiness_retirement_alignment": {
+      "status": "targeted_and_runtime_passed",
+      "layer": "P4 readiness verification; P1 service documentation only",
+      "paths": [
+        "scripts/verify/data_space_provisioning_guard.py",
+        "scripts/verify/business_data_ownership_readiness.py",
+        "scripts/verify/test_data_space_provisioning.py",
+        "addons/smart_construction_core/services/business_data_ownership.py",
+        "make/dev.mk"
+      ],
+      "reason": "Historical development migration support intentionally retired by owner. Preserve platform ownership decision and industry probe authority; require governed read-only readiness caller with failure exit. Does not claim automatic upgrade enforcement or deployed acceptance.",
+      "results": {
+        "static_and_unit": "make verify.data_space.provisioning.guard: PASS, 50 tests including 3 command exit/rollback cases",
+        "lane_coverage": "make verify.verification.lane_coverage: PASS including tests",
+        "runtime": "make local.dev.business_data.ownership.readiness: PASS; sc_dev_demo, 176 probe models, business owner [1] registered, unregistered []",
+        "logs": [
+          ".runtime/agent-runs/PRODUCT-ITERATION-V2-20261020/continue50-focused.log",
+          ".runtime/agent-runs/PRODUCT-ITERATION-V2-20261020/continue50-ownership-readback.log"
+        ]
       }
     }
   },
@@ -4181,7 +4238,7 @@
     "GitHub clean reviewed candidate and current required integration checks pending.",
     "Preview target identity/snapshot activation and affected target smoke/rollback readiness pending."
   ],
-  "next_exact_step": "Refresh generated candidate evidence after2 Quick corrections, commit revised candidate, then run exact-head Quick for new candidate. Old4f690c65 aggregate failed; no push until corrected candidate gates/review. Product journeys remain reused.",
+  "next_exact_step": "Commit reviewed P4 integration corrections and generated evidence, then make ci.local.quick on clean new HEAD. No edits while Quick runs. Independent review/archive and GitHub integration remain pending; preview not deployed.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",

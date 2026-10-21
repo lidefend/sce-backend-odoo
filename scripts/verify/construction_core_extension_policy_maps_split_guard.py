@@ -85,6 +85,7 @@ def main() -> int:
         policy_maps = _load(POLICY_MAPS, "construction_core_extension_policy_maps_under_guard")
         if policy_maps.ROLE_PRECEDENCE != (
             "system_admin",
+            "experience",
             "business_full",
             "business_config_admin",
             "executive",
