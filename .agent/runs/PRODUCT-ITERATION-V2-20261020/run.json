@@ -412,7 +412,9 @@
     "docs/engineering_convergence/github_remote_execution_plan.md",
     "contracts/generated/contract_structure_fingerprint.json",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
-    "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md"
+    "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -4154,13 +4156,32 @@
         "diff_check": "passed"
       },
       "pending": "Clean commit, exact-head Quick, independent review/external archive, governed GitHub push/current PR CI; no deployment claim"
+    },
+    "github_quick_candidate_corrections": {
+      "status": "targeted_corrections_passed",
+      "paths": [
+        "addons/smart_core/tests/test_backend_contract_boundary_guard.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+      ],
+      "layer": "P4 retired writer expectations; P0 assembled contract cache version and P4 exact input pin",
+      "candidate": "4f690c65a99f89b8188c387f849e399910de48a6",
+      "quick": "failed2 of8 shards; remainder finished, no valid aggregate receipt",
+      "validation_plan": "Fix retired hooks count with exact writer set; deliberately invalidate cache via version bump+digest; run affected lifecycle and assembler checks before new candidate; no new business behavior or permissions",
+      "evidence": ".runtime/agent-runs/PRODUCT-ITERATION-V2-20261020/continue49-quick.log",
+      "results": {
+        "command": "make verify.backend.contract_lifecycle.authority verify.unified_page_contract.v2.assembler",
+        "status": "passed",
+        "log": "continue49-corrections.log",
+        "reuse": "Cache namespace/version only changes invalidation, not contract shape or permissions; prior product behavior evidence retained. Old exact-head Quick aggregate failed, cannot be reused as success."
+      }
     }
   },
   "blockers": [
     "GitHub clean reviewed candidate and current required integration checks pending.",
     "Preview target identity/snapshot activation and affected target smoke/rollback readiness pending."
   ],
-  "next_exact_step": "Commit prepared registered scope as GitHub candidate; run exact clean HEAD Quick once. Put post-freeze logs/receipt in .runtime or git evidence rather than dirtying this ledger. Independent review/archive and GitHub current CI remain pending. No product matrix rerun.",
+  "next_exact_step": "Refresh generated candidate evidence after2 Quick corrections, commit revised candidate, then run exact-head Quick for new candidate. Old4f690c65 aggregate failed; no push until corrected candidate gates/review. Product journeys remain reused.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",

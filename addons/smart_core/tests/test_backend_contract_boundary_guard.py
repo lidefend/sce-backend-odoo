@@ -22,11 +22,19 @@ class BackendContractBoundaryGuardTests(unittest.TestCase):
         self.assertEqual(report["schema_version"], "1.0")
         self.assertEqual(report["error_count"], 0)
         self.assertEqual(report["errors"], [])
-        self.assertEqual(report["contract_writer_count"], 5)
+        self.assertEqual(report["contract_writer_count"], 4)
         self.assertEqual(report["approval_policy_writer_count"], 2)
         self.assertEqual(report["lowcoding_policy_writer_count"], 3)
-        self.assertEqual(report["writer_boundary_count"], 10)
-        self.assertEqual(report["writer_file_count"], 7)
+        self.assertEqual(report["writer_boundary_count"], 9)
+        self.assertEqual(report["writer_file_count"], 6)
+        self.assertEqual(set(report["writer_paths"]), {
+            "addons/smart_construction_core/handlers/approval_policy_configuration.py",
+            "addons/smart_construction_core/models/support/formal_list_contract_sync.py",
+            "addons/smart_construction_core/services/product_system_parameter_change.py",
+            "addons/smart_core/handlers/business_config_change_set.py",
+            "addons/smart_core/handlers/form_field_configuration.py",
+            "addons/smart_core/handlers/menu_configuration.py",
+        })
         self.assertIn("addons/smart_core/handlers/form_field_configuration.py", report["writer_paths"])
         self.assertIn("addons/smart_core/handlers/menu_configuration.py", report["writer_paths"])
         self.assertEqual(

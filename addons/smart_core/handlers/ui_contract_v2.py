@@ -93,7 +93,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-19-kanban-field-descriptors"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-21-native-authority-preview"
 
 # The assembled entry carries the semantic digests its own seal produced, keyed
 # by the entry identity the hit path already validates (cache_version,
