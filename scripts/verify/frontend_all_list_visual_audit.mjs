@@ -1,17 +1,19 @@
 #!/usr/bin/env node
+import { authenticateBrowserProbe, successfulIntentData } from './frontend_authenticated_intent.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { createRequire } from 'node:module';
+import { launchAcceptanceChromium } from './playwright_runtime.mjs';
+import { resolveAcceptanceEnvironment, verifyServedIdentity } from './lib/frontend_acceptance_environment.mjs';
+import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
 
-const require = createRequire(path.join(process.cwd(), 'frontend/apps/web/package.json'));
-const { chromium } = require('playwright');
-
-const baseUrl = String(process.env.FRONTEND_URL || 'http://127.0.0.1:18081').replace(/\/$/, '');
-const dbName = process.env.DB_NAME || 'sc_demo';
-const login = process.env.E2E_LOGIN || 'wutao';
-const password = process.env.E2E_PASSWORD || '';
-const artifactDir = process.env.ARTIFACT_DIR || '/tmp/frontend-all-list-visual-audit';
+const acceptance = resolveAcceptanceEnvironment({ tool: 'all-list-visual-audit', operation: 'readonly' });
+const baseUrl = acceptance.baseUrl;
+const dbName = acceptance.database;
+const login = acceptance.login;
+const password = acceptance.password;
+const artifactDir = process.env.ARTIFACT_DIR || acceptance.runArtifactRoot;
+let acceptanceLease = null;
 const concurrency = Math.max(1, Math.min(8, Number(process.env.CONCURRENCY || 5)));
 const targetActionId = Math.max(0, Number(process.env.TARGET_ACTION_ID || 0));
 const targetMenuId = Math.max(0, Number(process.env.TARGET_MENU_ID || 0));
@@ -26,7 +28,7 @@ const composeProject = String(process.env.COMPOSE_PROJECT_NAME || '').trim();
 const requireActivitySurface = String(process.env.REQUIRE_ACTIVITY_SURFACE || '').trim() === '1';
 let activeBrowser = null;
 
-if (!password) throw new Error('E2E_PASSWORD is required');
+if (!login || !password) throw new Error('governed acceptance login/password are required');
 if (requireActivitySurface && (!targetActionId || !targetMenuId || !targetRecordId || !targetCompanyId || !candidateFingerprint || !candidateGitHead || !candidateScopeManifest || !candidatePathCount || !runtimeProfile || !composeProject)) {
   throw new Error('governed Activity evidence authority is incomplete');
 }
@@ -86,26 +88,17 @@ function safeName(value) {
 }
 
 async function loginAndDiscover(page) {
-  await page.goto(`${baseUrl}/login?db=${encodeURIComponent(dbName)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.locator('input[autocomplete="username"]').fill(login);
   await page.locator('input[autocomplete="current-password"]').fill(password);
   const dbInput = page.locator('input').nth(2);
   if (await dbInput.isEditable().catch(() => false)) await dbInput.fill(dbName);
-  await page.getByRole('button', { name: /^登录$/ }).click();
+  const request = await authenticateBrowserProbe(page, login,
+    () => page.getByRole('button', { name: /^登录$/ }).click());
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
   const sessionEntries = await page.evaluate(() => Object.fromEntries(Object.entries(sessionStorage)));
-  const init = await page.evaluate(async ({ dbName, rootXmlid }) => {
-    const tokenKey = Object.keys(sessionStorage).find((key) => key.startsWith('sc_auth_token')) || '';
-    const token = tokenKey ? sessionStorage.getItem(tokenKey) : '';
-    const response = await fetch(`/api/v1/intent?db=${encodeURIComponent(dbName)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Odoo-DB': dbName, Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ intent: 'system.init', params: { with_preload: false, with: ['workspace_home'], root_xmlid: rootXmlid }, meta: { startup_chain_bypass: true } }),
-    });
-    const body = await response.json();
-    if (!response.ok || body.ok === false) throw new Error(JSON.stringify(body.error || body));
-    return body.data || body;
-  }, { dbName, rootXmlid: 'smart_construction_core.menu_sc_root' });
+  const response = await request(page.context(), 'system.init', { with_preload: false, with: ['workspace_home'], root_xmlid: 'smart_construction_core.menu_sc_root' });
+  const init = successfulIntentData(response.status, response.body, 'system.init');
   const navigation = init.navigation && typeof init.navigation === 'object' ? init.navigation : {};
   return {
     entries: uniqueEntries(flattenNav(navigation.nav || init.nav || [])),
@@ -287,7 +280,9 @@ async function probeActivitySurface(page) {
 }
 
 async function main() {
-  const browser = await chromium.launch({ headless: true });
+  await verifyServedIdentity(acceptance, acceptance.provenance.expectedSha);
+  acceptanceLease = await acquireAcceptanceLease({ environment: acceptance, mode: 'shared-read', owner: { tool: 'all-list-visual-audit', profile: acceptance.profile } });
+  const browser = await launchAcceptanceChromium(acceptance, { headless: true });
   activeBrowser = browser;
   const discoveryContext = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
   const loginPage = await discoveryContext.newPage();
@@ -459,4 +454,6 @@ main().catch(async (error) => {
   activeBrowser = null;
   console.error(`[frontend-all-list-visual-audit] ${error.stack || error.message}`);
   process.exitCode = 1;
+}).finally(async () => {
+  await acceptanceLease?.release();
 });

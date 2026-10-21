@@ -26,8 +26,6 @@ def _intent(
     if isinstance(context, dict):
         payload["context"] = context
     headers = {"Authorization": f"Bearer {token}"}
-    if db_name:
-        headers["X-Odoo-DB"] = db_name
     return http_post_json(payload=payload, url=intent_url, headers=headers)
 
 
@@ -48,7 +46,7 @@ def main() -> int:
     base_url = get_base_url()
     intent_url = f"{base_url}/api/v1/intent"
     db_name = env_value("DB_NAME") or env_value("ODOO_DB") or "sc_dev"
-    ok, token, _auth_source = obtain_runtime_probe_token(intent_url, db_name)
+    ok, token, _auth_source = obtain_runtime_probe_token(intent_url)
     if not ok:
         errors.append("runtime probe authentication failed for ui surface stability")
         token = ""

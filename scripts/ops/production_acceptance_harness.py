@@ -11,6 +11,16 @@ credentials instead.
 
 from __future__ import annotations
 
+# Probe lifecycle gate: must precede runtime imports and effects.
+if __name__ == '__main__':
+    import sys as _probe_sys
+    from pathlib import Path as _ProbePath
+    _probe_sys.path.insert(0, str(_ProbePath(__file__).resolve().parents[1] / 'verify'))
+    from probe_toolchain_support import assert_probe_supported
+    if _probe_sys.argv[1:] != ["--print-package-digest"]:
+        assert_probe_supported(__file__)
+
+
 import argparse
 import hashlib
 import json

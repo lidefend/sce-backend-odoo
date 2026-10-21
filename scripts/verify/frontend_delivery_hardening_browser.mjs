@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { launchChromium } from './playwright_runtime.mjs';
 import { applyReleasedNavigationTarget, captureReleasedNavigation, findReleasedNavigationTargetByMenuXmlid } from './released_navigation_target.mjs';
-import { bindAuthenticatedIntent, successfulIntentData } from './frontend_authenticated_intent.mjs';
+import { authenticateBrowserProbe } from './frontend_authenticated_intent.mjs';
 import { measureRuntimeSample } from './frontend_runtime_performance_sample.mjs';
 import { evaluateRelativePerformanceBudget } from './frontend_performance_budget.mjs';
 import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
@@ -167,6 +167,23 @@ async function intentRequestFromPage(page, intent, params) {
   check(Boolean(request), 'authenticated browser startup request missing');
   return request(page.context(), intent, params);
 }
+async function declaredErrorSurface(page, status) {
+  const declaration = authenticatedIntents.get(page)?.startupData?.page_contracts?.error_states;
+  check(declaration?.schema_version === '1.0.0' && Array.isArray(declaration.states), 'CONTRACT_GAP: page_contracts.error_states');
+  const matches = declaration.states.filter(row => row.statuses?.includes(status));
+  check(matches.length === 1, `CONTRACT_GAP: error state for HTTP ${status}`);
+  const expected = matches[0];
+  check(expected.kind && expected.title && expected.message && expected.action?.label, 'CONTRACT_GAP: error presentation');
+  const surface = page.locator('main [data-semantic-state-surface="page"][role="alert"]')
+    .filter({ has: page.getByRole('heading', { name: expected.title, exact: true }) });
+  await surface.waitFor({ state: 'visible', timeout: 45000 });
+  check(await surface.getAttribute('data-error-kind') === expected.kind, 'error kind differs from declaration');
+  check(await surface.getByText(expected.message, { exact: true }).isVisible(), 'error message differs from declaration');
+  const action = surface.getByRole('button', { name: expected.action.label, exact: true });
+  check(await action.isVisible() && await action.getAttribute('data-recovery-action') === expected.action.kind, 'error recovery differs from declaration');
+  return { surface, action, expected };
+}
+
 // Every matrix surface must be reached through the released navigation entry the
 // role actually renders. Binding a target to a legacy menu produces a
 // NAVIGATION_AUTHORITY_DENIED redirect, so assert the declared entry is the
@@ -267,7 +284,10 @@ async function continueDeferredRecordForm(page) {
   }
 }
 async function canonicalSubmitAction(page, evidenceLabel, normalizedEvidence = null) {
-  if (normalizedEvidence) await normalizedEvidence;
+  check(Boolean(normalizedEvidence), `${evidenceLabel}: normalized action declaration missing`);
+  const declaration = await normalizedEvidence;
+  const expectedAction = declaration.rules[0];
+  check(typeof expectedAction.label === 'string' && expectedAction.label.trim(), `${evidenceLabel}: declared action label missing`);
   await continueDeferredRecordForm(page);
   // Product Page Header v1 owns canonical actions. Keep the legacy body action
   // bar selector only for surfaces that have not opted into header ownership.
@@ -301,12 +321,14 @@ async function canonicalSubmitAction(page, evidenceLabel, normalizedEvidence = n
   check(await button.isVisible(), `${evidenceLabel}: canonical action_submit is not visible; actions=${JSON.stringify(actions)}`);
   const metadata = await button.evaluate((node) => ({
     text: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
+    backendIdentity: node.getAttribute('data-backend-identity'),
     allowed: node.getAttribute('data-action-allowed'),
     enabled: node.getAttribute('data-action-enabled'),
     visibleProfiles: String(node.getAttribute('data-visible-profiles') || '').split(',').filter(Boolean),
     disabled: node instanceof HTMLButtonElement ? node.disabled : true,
   }));
-  check(metadata.text === '提交审批', `${evidenceLabel}: canonical action_submit label=${metadata.text || '<empty>'}, expected=提交审批`);
+  check(metadata.backendIdentity === expectedAction.backendIdentity, `${evidenceLabel}: action identity differs from declaration`);
+  check(metadata.text === expectedAction.label, `${evidenceLabel}: action label differs from declaration`);
   // Authorization/profile evidence stays fail-closed at the contract layer
   // (normalizedSubmitEvidence). The authoritative action bar exposes runtime
   // enablement attributes only; keep strict DOM assertions for every attribute
@@ -477,35 +499,8 @@ async function login(page, user, keyboard = false, preserveCurrentLoginRoute = f
   await password.fill(PASSWORD);
   const inputs = page.locator('input');
   if (await inputs.count() > 2 && await inputs.nth(2).isEnabled()) await inputs.nth(2).fill(DB_NAME);
-  const loginResponsePromise = page.waitForResponse((response) => {
-    if (!response.url().includes('/api/v1/intent')) return false;
-    try {
-      return JSON.parse(response.request().postData() || '{}').intent === 'login';
-    } catch {
-      return false;
-    }
-  }, { timeout: 45000 });
-  const startupResponsePromise = page.waitForResponse((response) => {
-    if (!response.url().includes('/api/v1/intent')) return false;
-    try { return JSON.parse(response.request().postData() || '{}').intent === 'system.init'; }
-    catch { return false; }
-  }, { timeout: 45000 }).then((response) => ({ response }), (error) => ({ error }));
-  if (keyboard) await password.press('Enter');
-  else await page.getByRole('button', { name: /^登录$/ }).click();
-  const loginResponse = await loginResponsePromise;
-  let loginEnvelope = {};
-  try { loginEnvelope = await loginResponse.json(); } catch {}
-  const envelopeCode = Number(loginEnvelope?.code || loginEnvelope?.error?.code || 0);
-  const rejected = !loginResponse.ok() || loginEnvelope?.ok === false || envelopeCode >= 400;
-  check(
-    !rejected,
-    `login intent rejected http=${loginResponse.status()} code=${envelopeCode || 'unknown'} error_code=${String(loginEnvelope?.error?.error_code || loginEnvelope?.error_code || 'unknown')}`,
-  );
-  const loginData = successfulIntentData(loginResponse.status(), loginEnvelope, 'login');
-  check(loginData.user?.login === user, 'login: authenticated login mismatch');
-  const startup = await startupResponsePromise;
-  if (startup.error) throw startup.error;
-  authenticatedIntents.set(page, await bindAuthenticatedIntent(startup.response, Number(loginData.user.id)));
+  authenticatedIntents.set(page, await authenticateBrowserProbe(page, user, () => keyboard
+    ? password.press('Enter') : page.getByRole('button', { name: /^登录$/ }).click()));
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
   await page.locator('.layout-shell').waitFor({ timeout: 45000 });
 }
@@ -740,7 +735,7 @@ async function main() {
       accessibility.scans.push(await axe(page, 'payment-form'));
       const removeProbe = await interceptNextBusiness(page, (route) => route.abort('failed'), TARGETS.payment_request);
       await page.goto(`${BASE_URL}${recordRoute(TARGETS.payment_request)}`, { waitUntil: 'domcontentloaded' });
-      await page.getByRole('heading', { name: '网络连接异常' }).waitFor({ timeout: 45000 });
+      await declaredErrorSurface(page, 0);
       accessibility.scans.push(await axe(page, 'network-error'));
       await removeProbe();
       accessibility.blocking = accessibility.scans.reduce((sum, row) => sum + row.blocking, 0);
@@ -757,17 +752,17 @@ async function main() {
     // J09: network, conflict and expired-session recovery use the real current request.
     let remove = await interceptNextBusiness(page, (route) => route.abort('failed'), TARGETS.payment_request);
     await open(page, recordRoute(TARGETS.payment_request));
-    await page.getByRole('heading', { name: '网络连接异常' }).waitFor({ timeout: 30000 });
+    await declaredErrorSurface(page, 0);
     await remove();
-    await page.getByRole('button', { name: '重试' }).click();
+    await (await declaredErrorSurface(page, 0)).action.click();
     await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
     errorRecovery.network_retry = 'PASS';
 
     remove = await interceptNextBusiness(page, (route) => fulfillError(route, 409, 'CONFLICT', 'stale write conflict'), TARGETS.payment_request);
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.getByRole('heading', { name: '数据已发生变化' }).waitFor({ timeout: 30000 });
+    await declaredErrorSurface(page, 409);
     await remove();
-    await page.getByRole('button', { name: '获取最新数据' }).click();
+    await (await declaredErrorSurface(page, 409)).action.click();
     await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
     errorRecovery.conflict_refresh = 'PASS';
 
@@ -782,7 +777,7 @@ async function main() {
     );
     await page.locator('[data-session-expired-notice]').waitFor({ state: 'visible', timeout: 30000 });
     check(
-      await page.locator('[data-session-expired-notice]').getByText('登录状态已过期', { exact: false }).count() === 1,
+      await page.locator('[data-session-expired-notice]').textContent() === authenticatedIntents.get(page)?.startupData?.page_contracts?.pages?.login?.texts?.session_expired_notice,
       'expired session explanation must be visible exactly once',
     );
     const retainedReturnPath = await page.evaluate(() => window.sessionStorage.getItem('sc.session_expired.return_path.v1'));
@@ -958,18 +953,20 @@ async function main() {
             removeFault = await interceptNextBusiness(page, (route) => route.abort('failed'), TARGETS.payment_request);
           }
           await assertReleasedSurfaceTarget(page, surface.name, surface.role);
+          const dialogContract = surface.mode === 'dialog'
+            ? waitForRecordContractResponse(page, TARGETS.journey_request).then(response => normalizedSubmitEvidence(response, surface.name)) : null;
           await page.goto(`${BASE_URL}${surface.route}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
           if (surface.mode === 'form') {
             await openPaymentCreateFromList(page, TARGETS.payment_request, `responsive_payment_create_${viewport.width}`);
           } else if (surface.mode === 'dialog') {
             await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
-            const submitAction = await canonicalSubmitAction(page, `${surface.name}-${viewport.width}`);
+            const submitAction = await canonicalSubmitAction(page, `${surface.name}-${viewport.width}`, dialogContract);
             await submitAction.click();
             await page.getByRole('dialog').waitFor({ timeout: 15000 });
           } else if (surface.mode === 'network') {
-            await page.getByRole('heading', { name: '网络连接异常' }).waitFor({ timeout: 45000 });
+            await declaredErrorSurface(page, 0);
           } else if (surface.name === 'denied') {
-            await page.locator('main').getByRole('heading', { name: '访问受限', exact: true }).waitFor({ timeout: 45000 });
+            await declaredErrorSurface(page, 403);
           } else {
             await waitForSurfaceReady(page, surface);
           }
@@ -998,7 +995,7 @@ async function main() {
           const expectedHttp = runtime.http.slice(faultSnapshot.http);
           check(expectedConsole.every((line) => /Failed to load resource/i.test(line)), `not-found surface unexpected console=${expectedConsole.join(' | ')}`);
           check(expectedHttp.length === 1 && isExpectedMissingRecordResponse(expectedHttp[0], { recordId: 999999, actionId: TARGETS.payment_request.action_id }), `not-found surface unexpected HTTP=${JSON.stringify(expectedHttp)}`);
-          check(await page.locator('main [data-semantic-state-surface="page"][role="alert"]').filter({ hasText: '该记录不存在' }).isVisible(), 'not-found surface must render the missing-record state');
+          await declaredErrorSurface(page, expectedHttp[0].status);
           check(runtime.pageerror.length === faultSnapshot.pageerror, 'not-found surface caused pageerror');
           runtime.expectedConsole.push(...expectedConsole);
           runtime.expectedHttp.push(...expectedHttp);
@@ -1016,9 +1013,17 @@ async function main() {
           runtime.console.length = faultSnapshot.console;
           runtime.http.length = faultSnapshot.http;
         }
+        if (surface.name === 'not-found' || surface.name === 'denied') {
+          const recovery = await declaredErrorSurface(page, surface.name === 'not-found' ? 404 : 403);
+          check(recovery.expected.action.kind === 'route', 'scenario requires a declared safe route');
+          await recovery.action.click();
+          const expectedPath = entryScopedPath(recovery.expected.action.path);
+          await page.waitForURL(url => url.pathname === expectedPath, { timeout: 45000 });
+          check(await page.locator('[data-contract-gap]').count() === 0, 'safe return exposed a contract gap');
+        }
         if (removeFault) {
           await removeFault();
-          await page.getByRole('button', { name: '重试' }).click();
+          await (await declaredErrorSurface(page, 0)).action.click();
           await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
           const injectedConsole = runtime.console.slice(faultSnapshot.console);
           check(injectedConsole.every((line) => /Failed to load resource/i.test(line)), `responsive network unexpected console=${injectedConsole.join(' | ')}`);

@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
+import { authenticateBrowserProbe } from './frontend_authenticated_intent.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { launchChromium, launchAcceptanceChromium } from './playwright_runtime.mjs';
+import { launchAcceptanceChromium } from './playwright_runtime.mjs';
 import { captureReleasedNavigation } from './released_navigation_target.mjs';
 import { resolveAcceptanceEnvironment, verifyServedIdentity, redactedEnvironmentEvidence } from './lib/frontend_acceptance_environment.mjs';
 
-const acceptance = resolveAcceptanceEnvironment({ tool: 'geometry-scroll-audit' });
+const acceptance = resolveAcceptanceEnvironment({ tool: 'list-surface-structure' });
 import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
 import { DEFAULT_RECEIPT_PATH, assertContractPrerequisite, observedContractBinding, readContractReceipt } from './lib/acceptance_contract_receipt.mjs';
 const DAILY = acceptance.profile === 'daily';
@@ -50,7 +51,7 @@ function pageComparableRoute(value) {
 const DATABASE = acceptance.database;
 const LOGIN = DAILY ? acceptance.login : process.env.E2E_LOGIN || acceptance.login || acceptance.roleBindings.project_manager || '';
 const PASSWORD = DAILY ? acceptance.password : process.env.E2E_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
-const BOOTSTRAP_SECRET = DAILY ? '' : process.env.SC_ACCEPTANCE_BOOTSTRAP_SECRET || '';
+if (process.env.SC_ACCEPTANCE_BOOTSTRAP_SECRET) throw new Error('list surface requires the governed account login; token injection is unsupported');
 const PHASE = String(process.env.LIST_SURFACE_PHASE || 'full');
 const COLOR_SCHEME = String(process.env.LIST_SURFACE_COLOR_SCHEME || '').trim().toLowerCase();
 if (COLOR_SCHEME && !['light', 'dark'].includes(COLOR_SCHEME)) throw new Error('unknown LIST_SURFACE_COLOR_SCHEME');
@@ -72,8 +73,8 @@ const VIEWPORTS = requestedWidths.length ? DEFAULT_VIEWPORTS.filter(viewport => 
 let REQUESTED_ROUTE = String(process.env.LIST_SURFACE_ROUTE || '').trim();
 if (REQUESTED_ROUTE && !/^\/a\/\d+\?menu_id=\d+$/.test(REQUESTED_ROUTE)) throw new Error('LIST_SURFACE_ROUTE must identify exact action/menu');
 
-if (!LOGIN || (!PASSWORD && !BOOTSTRAP_SECRET)) {
-  throw new Error('acceptance login and password or isolated bootstrap secret are required');
+if (!LOGIN || !PASSWORD) {
+  throw new Error('acceptance login and password are required');
 }
 
 // The list/detail probe must not assert anything about a contract the backend has
@@ -153,35 +154,16 @@ function actionable(nodes, parents = []) {
   return result;
 }
 
+const authenticatedProbes = new WeakMap();
 async function login(page, navigation) {
-  if (BOOTSTRAP_SECRET) {
-    const response = await page.request.post(`${BASE_URL}/api/v1/intent`, {
-      data: { intent: 'bootstrap', params: { db: DATABASE, login: LOGIN } },
-      headers: {
-        'X-Anonymous-Intent': '1',
-        'X-Bootstrap-Secret': BOOTSTRAP_SECRET,
-      },
-    });
-    const envelope = await response.json();
-    const token = String(envelope?.data?.token || envelope?.result?.token || '');
-    if (!response.ok() || !token) throw new Error(`isolated bootstrap failed: status=${response.status()}`);
-    await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await page.evaluate(({ db, authToken }) => {
-      sessionStorage.setItem(`sc_auth_token:${db}`, authToken);
-      sessionStorage.setItem('sc_active_db:acceptance', db);
-    }, { db: DATABASE, authToken: token });
-    await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await page.locator('.layout-shell').waitFor({ state: 'visible', timeout: 45_000 });
-    await page.waitForFunction(() => !/正在初始化|正在加载导航/.test(document.body.innerText || ''), null, { timeout: 45_000 });
-    if (!navigation.nav().length) throw new Error('bootstrap navigation was not captured');
-    return;
-  }
+  authenticatedProbes.delete(page);
   await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.locator('#login-username, input[autocomplete="username"]').first().fill(LOGIN);
   await page.locator('#login-password, input[autocomplete="current-password"]').first().fill(PASSWORD);
   const database = page.locator('input').nth(2);
   if (await database.isEnabled().catch(() => false)) await database.fill(DATABASE);
-  await page.getByRole('button', { name: /^登录$/ }).click();
+  authenticatedProbes.set(page, await authenticateBrowserProbe(page, LOGIN,
+    () => page.getByRole('button', { name: /^登录$/ }).click()));
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45_000 });
   await page.locator('.layout-shell').waitFor({ state: 'visible', timeout: 45_000 });
   await page.waitForFunction(() => !/正在初始化|正在加载导航/.test(document.body.innerText || ''), null, { timeout: 45_000 });
@@ -1000,9 +982,10 @@ try {
     if (acceptance.operation !== 'readonly' || acceptance.target.mode !== 'external' || acceptance.apiUrl !== BASE_URL || !LOGIN || !PASSWORD) throw new Error('daily scope requires exact external readonly target and credentials');
     servedIdentity = await verifyServedIdentity(acceptance);
     if (servedIdentity.servedDatabase !== DATABASE) throw new Error('daily served database identity is required and must match');
-    lease = await acquireAcceptanceLease({ environment: acceptance, mode: 'shared-read', owner: { tool: 'geometry-scroll-audit' } });
   }
-  browser = DAILY ? await launchAcceptanceChromium(acceptance, { headless: true }) : await launchChromium({ headless: true });
+  if (!DAILY) servedIdentity = await verifyServedIdentity(acceptance);
+  lease = await acquireAcceptanceLease({ environment: acceptance, mode: 'shared-read', owner: { tool: 'list-surface-structure' } });
+  browser = await launchAcceptanceChromium(acceptance, { headless: true });
   context = await browser.newContext({ viewport: VIEWPORTS[0], ...(COLOR_SCHEME ? { colorScheme: COLOR_SCHEME } : {}) });
   if (DAILY) await context.route('**/*', async route => {
     const request = route.request();
@@ -1043,19 +1026,8 @@ try {
     // contract must be reproducible at the served revision under the live actor;
     // anything else is not the contract the acceptance claim was made about.
     const approvedPayload = contractGate.approved_request;
-    // The released SPA authenticates intent calls with the session bearer token
-    // (`sc_auth_token:<db>`) and deliberately omits Odoo session cookies, so a
-    // cookie-only replay can never carry the live session authority. Replay under
-    // the same token authority the application actually uses.
-    const replay = await page.evaluate(async ({ url, payload, db }) => {
-      const bearer = sessionStorage.getItem(`sc_auth_token:${db}`) || '';
-      const response = await fetch(url, { method: 'POST', credentials: 'omit',
-        headers: { 'Content-Type': 'application/json', 'X-Odoo-DB': db, Authorization: bearer ? `Bearer ${bearer}` : '' },
-        body: JSON.stringify(payload) });
-      return { status: response.status, text: await response.text() };
-    }, { url: `${BASE_URL}/api/v1/intent?db=${DATABASE}`, payload: approvedPayload, db: DATABASE });
-    let replayEnvelope = {};
-    try { replayEnvelope = JSON.parse(replay.text); } catch {}
+    const replay = await authenticatedProbes.get(page)(page.context(), approvedPayload.intent, approvedPayload.params);
+    const replayEnvelope = replay.body;
     const binding = observedContractBinding({ envelope: replayEnvelope, receiptRequest: approvedPayload.params,
       approved: contractGate.verdict, requestParams: approvedPayload.params });
     contractGate.binding = { replay_http_status: replay.status, ...binding };
@@ -1288,15 +1260,8 @@ try {
         // The contract the browser actually rendered must be reproducible from the
         // request that produced it, under the same real session authority.
         const observedPayload = { intent: observedDetail.intent, params: observedDetail.params };
-        const observedReplay = await page.evaluate(async ({ url, payload, db }) => {
-          const bearer = sessionStorage.getItem(`sc_auth_token:${db}`) || '';
-          const response = await fetch(url, { method: 'POST', credentials: 'omit',
-            headers: { 'Content-Type': 'application/json', 'X-Odoo-DB': db, Authorization: bearer ? `Bearer ${bearer}` : '' },
-            body: JSON.stringify(payload) });
-          return { status: response.status, text: await response.text() };
-        }, { url: `${BASE_URL}/api/v1/intent?db=${DATABASE}`, payload: observedPayload, db: DATABASE });
-        let observedEnvelope = {};
-        try { observedEnvelope = JSON.parse(observedReplay.text); } catch {}
+        const observedReplay = await authenticatedProbes.get(page)(page.context(), observedPayload.intent, observedPayload.params);
+        const observedEnvelope = observedReplay.body;
         const observedDigest = observedEnvelope?.data?.meta?.lifecycle?.integrity?.contractSha256;
         if (observedReplay.status !== 200 || observedDigest !== appBinding.observedSemanticSha256) {
           throw new Error(`observed detail contract is not reproducible: status=${observedReplay.status} original=${appBinding.observedSemanticSha256} replay=${observedDigest}`);

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -16,6 +17,13 @@ SPEC.loader.exec_module(helper)
 
 
 class ProductionUserPasswordResetTests(unittest.TestCase):
+    def test_unsupported_http_protocol_stops_before_any_odoo_write(self):
+        with patch.dict(helper.os.environ, {"ENV": "prod", "PROD_DANGER": "1"}), \
+                patch.object(helper, "_odoo_environment") as bootstrap:
+            with self.assertRaisesRegex(helper.PasswordResetError, "PROBE_TOOL_UNSUPPORTED"):
+                helper.execute("sc_production", "wutao", "unused", "https://example.test", ROOT, "reset")
+            bootstrap.assert_not_called()
+
     def test_request_is_exactly_production_and_login_is_safe(self):
         helper.validate_request(
             "sc_production", "wutao", {"ENV": "prod", "PROD_DANGER": "1"}

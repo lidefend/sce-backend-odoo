@@ -54,7 +54,7 @@ def _load_json(path: Path) -> dict:
 def _fetch_scene_ready_payload() -> dict:
     base_url = get_base_url()
     db_name = os.getenv("E2E_DB") or os.getenv("DB_NAME") or ""
-    intent_url = build_intent_url(base_url, db_name)
+    intent_url = build_intent_url(base_url)
     login = os.getenv("E2E_LOGIN") or os.getenv("ROLE_PM_LOGIN") or "demo_role_pm"
     password = (
         os.getenv("E2E_PASSWORD")
@@ -65,8 +65,8 @@ def _fetch_scene_ready_payload() -> dict:
 
     status, login_resp = http_post_json(
         intent_url,
-        {"intent": "login", "params": {"db": db_name, "login": login, "password": password}},
-        headers={"X-Anonymous-Intent": "1", "X-Odoo-DB": db_name},
+        {"intent": "login", "params": {"login": login, "password": password}},
+        headers={"X-Anonymous-Intent": "1"},
     )
     require_ok(status, login_resp, "login")
     token = extract_login_token(login_resp)
@@ -79,7 +79,7 @@ def _fetch_scene_ready_payload() -> dict:
             "intent": "system.init",
             "params": {"contract_mode": "user", "scene_ready_mode": "full"},
         },
-        headers={"Authorization": f"Bearer {token}", "X-Odoo-DB": db_name},
+        headers={"Authorization": f"Bearer {token}"},
     )
     require_ok(status, init_resp, "system.init")
 

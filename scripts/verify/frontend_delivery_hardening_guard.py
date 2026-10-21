@@ -47,13 +47,11 @@ require(
 )
 require(
     "frontend/apps/web/src/app/productErrorState.ts",
-    "登录已失效",
-    "无权访问",
-    "记录不存在",
-    "数据已发生变化",
-    "网络连接异常",
-    "服务暂时不可用",
-    "TECHNICAL_TEXT",
+    "requireErrorStateContract",
+    "contractGapError",
+    "declaration: unknown",
+    "row.statuses.includes",
+
 )
 require(
     "frontend/apps/web/src/components/StatusPanel.vue",
@@ -154,7 +152,8 @@ require(
     "primaryResolution",
     "ACTION_DIAGNOSTIC",
     "NORMALIZED_ACTION_DIAGNOSTIC",
-    "expected=提交审批",
+    "action label differs from declaration",
+    "declaredErrorSurface",
 )
 require(
     "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
@@ -386,4 +385,4 @@ for path in SRC.rglob("*"):
 if writers != ["App.vue"]:
     raise SystemExit(f"[frontend_delivery_hardening_guard] FAIL document.title writers={writers}")
 
-print("[frontend_delivery_hardening_guard] PASS error_states=12 title_writers=1 async_epoch=enabled axe=4.10.2")
+print("[frontend_delivery_hardening_guard] PASS error_state_authority=P0 title_writers=1 async_epoch=enabled axe=4.10.2")

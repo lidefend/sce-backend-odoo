@@ -42,33 +42,30 @@ def load_env_value_from_file(env_path: str, key: str) -> str | None:
 
 def get_base_url() -> str:
     base = os.getenv("E2E_BASE_URL", "").strip()
-    if base:
-        return base.rstrip("/")
-    port = os.getenv("ODOO_PORT")
-    if not port:
-        env_file = os.getenv("ENV_FILE") or os.path.join(os.getcwd(), ".env")
-        port = load_env_value_from_file(env_file, "ODOO_PORT")
-    if not port:
-        port = "8070"
-    return f"http://localhost:{port}"
+    if not base:
+        raise ValueError("E2E_BASE_URL must identify the governed entry; implicit ports are unsupported")
+    return base.rstrip("/")
 
 
-def with_database_query(url: str, db_name: str) -> str:
-    """Bind a runtime request to the same database routing contract as web clients."""
-    raw_url = str(url or "").strip()
-    database = str(db_name or "").strip()
-    if not raw_url or not database:
-        return raw_url
-    parts = urlsplit(raw_url)
-    query = [(key, value) for key, value in parse_qsl(parts.query, keep_blank_values=True) if key != "db"]
-    query.append(("db", database))
-    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
+def assert_entry_request(url: str, payload: dict | None = None, headers: dict | None = None) -> None:
+    parts = urlsplit(url)
+    if parts.scheme not in {"http", "https"} or not parts.netloc or parts.username or parts.password:
+        raise ValueError("explicit HTTP entry URL without embedded credentials is required")
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    forbidden_headers = {"x-odoo-db", "x-odoo-database", "x-db", "x-odoo-db-locked"}
+    containers = [payload or {}, (payload or {}).get("params") or {}, (payload or {}).get("context") or {}]
+    if "db" in query or "database" in query or forbidden_headers.intersection(str(k).lower() for k in (headers or {})) or any(
+        isinstance(value, dict) and ("db" in value or "database" in value) for value in containers
+    ):
+        raise ValueError("PROBE_TOOL_UNSUPPORTED: client database routing is forbidden; use the entry namespace")
 
 
-def build_intent_url(base_url: str | None = None, db_name: str | None = None) -> str:
+def build_intent_url(base_url: str | None = None) -> str:
     base = str(base_url or get_base_url()).rstrip("/")
-    database = str(db_name or os.getenv("E2E_DB") or os.getenv("DB_NAME") or "").strip()
-    return with_database_query(f"{base}/api/v1/intent", database)
+    assert_entry_request(base)
+    if urlsplit(base).query or urlsplit(base).fragment:
+        raise ValueError("entry base URL cannot contain a query or fragment")
+    return f"{base}/api/v1/intent"
 
 
 def env_value(key: str, env_file: str | None = None) -> str:
@@ -85,52 +82,27 @@ def extract_login_token(payload: dict[str, Any]) -> str:
     return str(session.get("token") or data.get("token") or "").strip()
 
 
-def obtain_runtime_probe_token(intent_url: str, db_name: str) -> tuple[bool, str, str]:
-    intent_url = with_database_query(intent_url, db_name)
-    db_headers = {"X-Odoo-DB": db_name} if db_name else {}
+def obtain_runtime_probe_token(intent_url: str) -> tuple[bool, str, str]:
+    assert_entry_request(intent_url)
     login = env_value("E2E_LOGIN")
     password = env_value("E2E_PASSWORD")
-    if login and password:
-        login_params: dict[str, Any] = {
-            "db": db_name,
-            "login": login,
-            "password": password,
-        }
-        raw_company_id = env_value("E2E_COMPANY_ID")
-        if raw_company_id:
-            try:
-                company_id = int(raw_company_id)
-            except (TypeError, ValueError):
-                company_id = 0
-            if company_id > 0:
-                login_params["company_id"] = company_id
-        status, payload = http_post_json(
-            intent_url,
-            {"intent": "login", "params": login_params},
-            headers={"X-Anonymous-Intent": "1", **db_headers},
-        )
-        token = extract_login_token(payload) if status < 400 and payload.get("ok") is True else ""
-        return bool(token), token, "e2e_login"
-
-    bootstrap_login = env_value("SC_BOOTSTRAP_LOGIN")
-    bootstrap_secret = env_value("SC_BOOTSTRAP_SECRET")
-    if bootstrap_login and bootstrap_secret:
-        status, payload = http_post_json(
-            intent_url,
-            {
-                "intent": "session.bootstrap",
-                "params": {"db": db_name, "login": bootstrap_login},
-            },
-            headers={
-                "X-Anonymous-Intent": "1",
-                "X-Bootstrap-Secret": bootstrap_secret,
-                **db_headers,
-            },
-        )
-        token = extract_login_token(payload) if status < 400 and payload.get("ok") is True else ""
-        return bool(token), token, "dev_test_bootstrap"
-
-    return False, "", "unconfigured"
+    if not login or not password:
+        return False, "", "unconfigured"
+    params: dict[str, Any] = {"login": login, "password": password}
+    raw_company_id = env_value("E2E_COMPANY_ID")
+    if raw_company_id:
+        company_id = int(raw_company_id)
+        if company_id <= 0:
+            raise ValueError("E2E_COMPANY_ID must be positive")
+        params["company_id"] = company_id
+    status, payload = http_post_json(intent_url, {"intent": "login", "params": params},
+                                     headers={"X-Anonymous-Intent": "1"})
+    data = payload.get("data") or {}
+    user = data.get("user") or {}
+    token = extract_login_token(payload) if status == 200 and payload.get("ok") is True else ""
+    if token and (user.get("login") != login or not isinstance(user.get("id"), int) or user["id"] <= 0):
+        raise ValueError("login: authenticated principal mismatch")
+    return bool(token), token, "e2e_login"
 
 
 def live_login_failure_hint(
@@ -182,6 +154,7 @@ def _request_json(
 
 
 def http_post_json(url: str, payload: dict, headers: dict | None = None) -> tuple[int, dict]:
+    assert_entry_request(url, payload, headers)
     data = json.dumps(payload).encode("utf-8")
     req = urlrequest.Request(url, data=data, method="POST")
     req.add_header("Content-Type", "application/json")
@@ -197,6 +170,7 @@ def http_get_json(url: str, headers: dict | None = None) -> tuple[int, dict]:
 
 
 def http_get_json_with_headers(url: str, headers: dict | None = None) -> tuple[int, dict, dict]:
+    assert_entry_request(url, headers=headers)
     req = urlrequest.Request(url, method="GET")
     for k, v in (headers or {}).items():
         req.add_header(k, v)

@@ -1,3 +1,4 @@
+import '../../../../scripts/verify/lib/probe_toolchain_blocked.mjs';
 import { chromium } from "playwright";
 
 const BASE_URL = process.env.BASE_URL || "http://127.0.0.1:18081";

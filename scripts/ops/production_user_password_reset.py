@@ -325,6 +325,11 @@ def execute(
     validate_request(database, login, os.environ)
     if mode not in {"reset", "verify"}:
         raise PasswordResetError("mode must be reset or verify")
+    # The old post-write probe sends client database hints, which current entry
+    # namespaces reject. Never commit a credential change before that known failure.
+    raise PasswordResetError(
+        "PROBE_TOOL_UNSUPPORTED: password reset requires entry-namespace HTTP verification before any production write"
+    )
     source_sha = validate_tool_root(tool_root)
     if not sys.stdin.isatty() or not sys.stdout.isatty():
         raise PasswordResetError("a real interactive terminal is required")

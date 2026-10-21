@@ -1,0 +1,1350 @@
+{
+  "schema_version": 1,
+  "purpose": "Explicit probe lifecycle. Unsupported is a nonzero error before runtime I/O, never an accepted skip or coverage evidence.",
+  "owner_layer": "P4",
+  "source_audit_head": "a2ca78cd6140a35b32521eacaaeacfb80ce75e1e",
+  "tools": {
+    "scripts/audit/scene_config_audit.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "audit.scene.config"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/act_url_missing_scene_report.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.act_url_missing_scene_report.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/attachment_upload_frontend_browser_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.attachment_upload.frontend_browser.acceptance.host"
+      ],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/boq_dual_role_five_viewport_browser_acceptance.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "arbitrary_token_selection",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/direct_acceptance_formal_browser_probe.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_header",
+        "client_db_query"
+      ]
+    },
+    "scripts/verify/direct_acceptance_full_formal_browser_coverage.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "arbitrary_token_selection",
+        "client_db_header",
+        "client_db_query"
+      ]
+    },
+    "scripts/verify/direct_project_business_browser_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/fe_ar_ap_company_summary_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.ar_ap_company_summary_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_ar_ap_project_summary_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.ar_ap_project_summary_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_attachment_list_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.attachment_list_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_cross_stack_contract_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.cross_stack_contract_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_edit_tx_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.edit_tx_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_execute_button_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.execute_button_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_file_guard_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.file_guard_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_file_upload_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.file_upload_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_kanban_view_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.kanban_view_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_layout_stability_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.layout_stability_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_load_view_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.load_view_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_menu_scene_key_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.menu_scene_key_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_menu_scene_resolve_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.menu.scene_resolve",
+        "verify.menu.scene_resolve.container"
+      ],
+      "audit_rules": [
+        "client_db_header",
+        "client_db_query"
+      ]
+    },
+    "scripts/verify/fe_mvp_list_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.v0_5.container",
+        "verify.portal.v0_5.host"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_mvp_write_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.v0_6.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_my_work_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.my_work_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_one2many_edit_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.one2many_edit_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_one2many_read_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.one2many_read_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_portal_scene_governance_action_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_governance_action_smoke.container",
+        "verify.portal.scene_governance_action_strict.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_portal_scene_package_ui_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_package_ui_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_recordview_hud_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.recordview_hud_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_auto_degrade_notify_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_auto_degrade_notify_smoke.container",
+        "verify.portal.scene_auto_degrade_notify_strict.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_auto_degrade_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_auto_degrade_smoke.container",
+        "verify.portal.scene_auto_degrade_strict.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_channel_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_channel_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_contract_export.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "scene.contract.export"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_contract_export_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_contract_export_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_contract_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_contract_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_default_sort_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_default_sort_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_diagnostics_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_diagnostics_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_drift_guard.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_drift_guard.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_filters_semantic_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_filters_semantic_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_health_contract_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_health_contract_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_health_pagination_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_health_pagination_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_layout_contract_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_layout_contract_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_list_profile_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_list_profile_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_observability_preflight_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_observability_preflight.container",
+        "verify.portal.scene_observability_preflight_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_package_dry_run_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_package_dry_run_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_package_export.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "scene.package.export"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_package_import_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_package_import_smoke.container",
+        "verify.portal.scene_package_import_strict.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_package_installed_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_package_installed_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_resolve_errors_debt_guard.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_resolve_errors_debt_guard.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_rollback_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_rollback_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_schema_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_schema_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_semantic_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_semantic_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_snapshot_guard.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "scene.export",
+        "scene.snapshot.update",
+        "verify.portal.scene_snapshot_guard.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_target_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_target_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_targets_resolve_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_targets_resolve_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_tiles_semantic_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_tiles_semantic_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_scene_versioning_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_versioning_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_search_mvp_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.search_mvp_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_sort_mvp_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.sort_mvp_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_tree_view_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.tree_view_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_usage_track_concurrency_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.usage_track_concurrency_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_view_contract_coverage_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.view_contract_coverage_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_view_contract_shape_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.view_contract_shape.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_view_render_mode_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.view_render_mode_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_workbench_tiles_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.workbench_tiles_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_workspace_tile_navigate_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.workspace_tile_navigate_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_workspace_tiles_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.workspace_tiles_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/fe_write_conflict_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.write_conflict_smoke.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/finance_handling_browser_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/finance_interfund_product_menu_browser_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_header",
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_attachment_delete_policy_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_concurrency_conflict_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_edit_discard_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_localization_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_m2_payment_request_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_m2_payment_request_reject_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_m3_purchase_order_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_m3_purchase_order_line_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_m4_legacy_readonly_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_m5_dictionary_maintenance_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_many2many_multi_select_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_model_error_recovery_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_model_tier_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_primitive_fields_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_primitive_html_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_primitive_numeric_date_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_primitive_text_datetime_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_relation_deferred_create_save_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_relation_path_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_relation_quick_input_edge_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_role_state_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/form_status_transition_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/frontend_all_list_visual_audit.mjs": {
+      "status": "supported",
+      "reason": "Entry-bound browser authentication or real UI journey",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.frontend.all_list_visual.audit"
+      ],
+      "audit_rules": [
+        "arbitrary_token_selection",
+        "client_db_header",
+        "client_db_query"
+      ]
+    },
+    "scripts/verify/frontend_delivery_hardening_browser.mjs": {
+      "status": "supported",
+      "reason": "Entry-bound browser authentication or real UI journey",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion."
+    },
+    "scripts/verify/frontend_form_system_audit.mjs": {
+      "status": "supported",
+      "reason": "Entry-bound browser authentication or real UI journey",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_header",
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/frontend_list_surface_structure_browser.mjs": {
+      "status": "supported",
+      "reason": "Entry-bound browser authentication or real UI journey",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.daily_dev.list_surface.readonly.browser"
+      ],
+      "audit_rules": [
+        "client_db_header",
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/invoice_entry_fact_runtime_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.invoice_entry_fact.runtime_smoke"
+      ],
+      "audit_rules": [
+        "client_db_header",
+        "client_db_query"
+      ]
+    },
+    "scripts/verify/legacy_attachment_frontend_browser_acceptance.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.legacy_attachment.frontend_browser.acceptance.host"
+      ],
+      "audit_rules": [
+        "client_db_header",
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/local_dev_project_profile_write_browser.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/local_dev_tender_award_browser.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/menu_navigation_field_snapshot.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.menu.navigation_snapshot",
+        "verify.menu.navigation_snapshot.container"
+      ],
+      "audit_rules": [
+        "client_db_header",
+        "client_db_query"
+      ]
+    },
+    "scripts/verify/path_ns_c_s4_browser_probe.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "arbitrary_token_selection"
+      ]
+    },
+    "scripts/verify/pfl035_payment_request_runtime_acceptance.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_query",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/portal_bridge_e2e_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.bridge.e2e"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/scene_warnings_guard_summary.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.portal.scene_warnings_guard.container",
+        "verify.portal.scene_warnings_limit.container"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "scripts/verify/target_cost_tree_browser_acceptance.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [],
+      "audit_rules": [
+        "client_db_header",
+        "legacy_db_token"
+      ]
+    },
+    "scripts/verify/unified_page_contract_lite_all_tree_matrix_browser_smoke.js": {
+      "status": "blocked_legacy",
+      "reason": "Client database routing or storage-token guessing is incompatible with the entry namespace contract; adapt and validate before use.",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion.",
+      "prior_recipe_targets": [
+        "verify.unified_page_contract.lite.all_tree_matrix_browser.host"
+      ],
+      "audit_rules": [
+        "client_db_header"
+      ]
+    },
+    "frontend/apps/web/scripts/frontend_product_maturity_audit.mjs": {
+      "status": "supported",
+      "reason": "Entry-bound browser authentication or real UI journey",
+      "replacement": "verify.frontend.release.audit for release coverage; verify.frontend.list_surface_structure.browser for governed daily observation. These do not replace every historical business assertion."
+    },
+    "frontend/apps/web/scripts/handling_entry_catalog_smoke.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Legacy positive probe uses database hints or guessed storage identity. Must adapt before runtime or coverage use.",
+      "replacement": "Use supported release/daily entrypoints only for their declared scope; historical assertions are not claimed."
+    },
+    "frontend/apps/web/scripts/user_template_coverage_acceptance.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Legacy positive probe uses database hints or guessed storage identity. Must adapt before runtime or coverage use.",
+      "replacement": "Use supported release/daily entrypoints only for their declared scope; historical assertions are not claimed."
+    },
+    "frontend/apps/web/scripts/low_code_menu_navigation_alignment_acceptance.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Legacy positive probe uses database hints or guessed storage identity. Must adapt before runtime or coverage use.",
+      "replacement": "Use supported release/daily entrypoints only for their declared scope; historical assertions are not claimed."
+    },
+    "frontend/apps/web/scripts/low_code_change_set_acceptance.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Legacy positive probe uses database hints or guessed storage identity. Must adapt before runtime or coverage use.",
+      "replacement": "Use supported release/daily entrypoints only for their declared scope; historical assertions are not claimed."
+    },
+    "frontend/apps/web/scripts/business_form_frontend_full_walk_acceptance.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Legacy positive probe uses database hints or guessed storage identity. Must adapt before runtime or coverage use.",
+      "replacement": "Use supported release/daily entrypoints only for their declared scope; historical assertions are not claimed."
+    },
+    "frontend/apps/web/scripts/business_form_user_perspective_acceptance.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Legacy positive probe uses database hints or guessed storage identity. Must adapt before runtime or coverage use.",
+      "replacement": "Use supported release/daily entrypoints only for their declared scope; historical assertions are not claimed."
+    },
+    "frontend/apps/web/scripts/system_user_experience_shell_acceptance.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Legacy positive probe uses database hints or guessed storage identity. Must adapt before runtime or coverage use.",
+      "replacement": "Use supported release/daily entrypoints only for their declared scope; historical assertions are not claimed."
+    },
+    "frontend/apps/web/scripts/standard_list_lowcode_loop.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Legacy positive probe uses database hints or guessed storage identity. Must adapt before runtime or coverage use.",
+      "replacement": "Use supported release/daily entrypoints only for their declared scope; historical assertions are not claimed."
+    },
+    "frontend/apps/web/scripts/formal_form_lowcode_loop.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Legacy positive probe uses database hints or guessed storage identity. Must adapt before runtime or coverage use.",
+      "replacement": "Use supported release/daily entrypoints only for their declared scope; historical assertions are not claimed."
+    },
+    "frontend/apps/web/scripts/standard_page_type_browser.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Legacy positive probe uses database hints or guessed storage identity. Must adapt before runtime or coverage use.",
+      "replacement": "Use supported release/daily entrypoints only for their declared scope; historical assertions are not claimed."
+    },
+    "frontend/apps/web/scripts/low_code_global_stability_acceptance.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Legacy positive probe uses database hints or guessed storage identity. Must adapt before runtime or coverage use.",
+      "replacement": "Use supported release/daily entrypoints only for their declared scope; historical assertions are not claimed."
+    },
+    "frontend/apps/web/scripts/config_workbench_operation_acceptance.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Legacy positive probe uses database hints or guessed storage identity. Must adapt before runtime or coverage use.",
+      "replacement": "Use supported release/daily entrypoints only for their declared scope; historical assertions are not claimed."
+    },
+    "frontend/apps/web/scripts/low_code_business_config_acceptance.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Legacy positive probe uses database hints or guessed storage identity. Must adapt before runtime or coverage use.",
+      "replacement": "Use supported release/daily entrypoints only for their declared scope; historical assertions are not claimed."
+    },
+    "frontend/apps/web/scripts/low_code_form_layout_runtime_acceptance.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Legacy positive probe uses database hints or guessed storage identity. Must adapt before runtime or coverage use.",
+      "replacement": "Use supported release/daily entrypoints only for their declared scope; historical assertions are not claimed."
+    },
+    "frontend/apps/web/scripts/low_code_safe_open_acceptance.mjs": {
+      "status": "blocked_legacy",
+      "reason": "Legacy positive probe uses database hints or guessed storage identity. Must adapt before runtime or coverage use.",
+      "replacement": "Use supported release/daily entrypoints only for their declared scope; historical assertions are not claimed."
+    },
+    "frontend/apps/web/scripts/user_page_visual_coverage.cjs": {
+      "status": "blocked_legacy",
+      "reason": "Old client database routing and token guessing; requires contract adaptation before use."
+    },
+    "frontend/apps/web/scripts/user_list_field_data_coverage.cjs": {
+      "status": "blocked_legacy",
+      "reason": "Old client database routing and token guessing; requires contract adaptation before use."
+    },
+    "scripts/verify/unified_page_contract_v2_regression_audit.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/unified_page_contract_lite_load_contract_preview_intent_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/nav_pro_01_http_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/finance_handling_http_surface_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/material_action_replay_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/smart_core_owner_startup_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/executive_readonly_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/project_task_action_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/nav_pro_01r_route_authority_http.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/payment_request_approval_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/unified_page_contract_lite_load_contract_negative_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/unified_page_contract_lite_startup_chain_negative_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/ledger_snapshot_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/company_contractor_responsibility_http_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/unified_page_contract_lite_api_onchange_preview_intent_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/cost_search_pagination_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/unified_page_contract_lite_load_contract_preview_matrix_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/payment_request_approval_handoff_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/verify/multi_tenant_evolution_smoke.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/ops/production_acceptance_harness.py": {
+      "status": "blocked_legacy",
+      "language": "python",
+      "reason": "Positive authentication/intent transport still uses forbidden database hints. Not a namespace refusal test. Must adapt before execution or coverage use."
+    },
+    "scripts/diag/fe_smoke.sh": {
+      "status": "blocked_legacy",
+      "language": "shell",
+      "reason": "Legacy direct client database routing; unsupported runtime verification."
+    }
+  }
+}

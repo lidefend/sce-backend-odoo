@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+# Probe lifecycle gate: must precede runtime imports and effects.
+if __name__ == '__main__':
+    from probe_toolchain_support import assert_probe_supported
+    assert_probe_supported(__file__)
+
+
 import ast
 import os
 from pathlib import Path

@@ -159,11 +159,10 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         login = source.split("async function login(", 1)[1].split(
             "async function logout(", 1
         )[0]
-        self.assertIn("page.waitForResponse", login)
-        self.assertIn("login intent rejected http=", login)
-        self.assertIn("error_code=", login)
-        self.assertNotIn("postData()", login.split("login intent rejected", 1)[1])
-        self.assertNotIn("PASSWORD", login.split("login intent rejected", 1)[1])
+        self.assertIn("authenticateBrowserProbe(page, user", login)
+        self.assertIn("authenticatedIntents.delete(page)", login)
+        self.assertNotIn("sessionStorage", login)
+        self.assertNotIn("postData()", login)
 
     def test_delivery_hardening_payment_create_uses_product_list_path(self) -> None:
         source = (

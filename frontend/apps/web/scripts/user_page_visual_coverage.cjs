@@ -1,3 +1,4 @@
+require('../../../../scripts/verify/lib/probe_toolchain_support.cjs').assertProbeSupported(__filename);
 const { chromium } = require('playwright');
 const fs = require('node:fs');
 

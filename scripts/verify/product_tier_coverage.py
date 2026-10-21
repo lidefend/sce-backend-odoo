@@ -30,8 +30,6 @@ def _load_policy() -> dict:
 
 def _intent(intent_url: str, token: str, intent: str, params: dict | None = None, db_name: str = "") -> tuple[int, dict]:
     headers = {"Authorization": f"Bearer {token}"}
-    if db_name:
-        headers["X-Odoo-DB"] = db_name
     status, payload = http_post_json(
         intent_url,
         {"intent": intent, "params": params or {}},
@@ -158,7 +156,7 @@ def main() -> int:
     intent_url = f"{base_url}/api/v1/intent"
     db_name = env_value("DB_NAME") or env_value("ODOO_DB") or "sc_dev"
 
-    ok, token, _auth_source = obtain_runtime_probe_token(intent_url, db_name)
+    ok, token, _auth_source = obtain_runtime_probe_token(intent_url)
     if not ok:
         errors.append("runtime probe authentication failed")
         token = ""

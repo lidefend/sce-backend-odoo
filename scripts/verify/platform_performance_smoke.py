@@ -36,8 +36,6 @@ def _p95(values: list[float]) -> float:
 def _intent_call(intent_url: str, token: str, intent: str, params: dict, db_name: str = "") -> tuple[int, dict, float]:
     ts0 = time.perf_counter()
     headers = {"Authorization": f"Bearer {token}"}
-    if db_name:
-        headers["X-Odoo-DB"] = db_name
     status, payload = http_post_json(
         intent_url,
         {"intent": intent, "params": params},
@@ -86,7 +84,7 @@ def main() -> int:
     intent_url = f"{base_url}/api/v1/intent"
     db_name = env_value("DB_NAME") or env_value("ODOO_DB") or "sc_dev"
 
-    ok, token, _auth_source = obtain_runtime_probe_token(intent_url, db_name)
+    ok, token, _auth_source = obtain_runtime_probe_token(intent_url)
     if not ok:
         errors.append("runtime probe authentication failed for performance smoke")
         token = ""

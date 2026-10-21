@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import '../../../../scripts/verify/lib/probe_toolchain_blocked.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';

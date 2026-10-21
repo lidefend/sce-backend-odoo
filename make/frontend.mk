@@ -696,9 +696,11 @@ verify.frontend.action_surface_renderer_registry.unit: guard.prod.forbid
 	@python3 scripts/verify/action_surface_renderer_architecture_guard.py
 
 verify.frontend.all_list_visual.audit: guard.prod.forbid
-	@E2E_PASSWORD="$${E2E_PASSWORD:?E2E_PASSWORD is required}" \
+	@SC_ACCEPTANCE_PROFILE="$${SC_ACCEPTANCE_PROFILE:?registered acceptance profile is required}" \
+		SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$${E2E_PASSWORD:-}}" \
+		E2E_PASSWORD="$${E2E_PASSWORD:?E2E_PASSWORD is required}" \
 		DB_NAME="$(DB_NAME)" \
-		FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:18081}" \
+		FRONTEND_URL="$${FRONTEND_URL:?registered entry URL is required}" \
 		REQUIRE_ACTIVITY_SURFACE="$${REQUIRE_ACTIVITY_SURFACE:-0}" \
 		CONCURRENCY="$${CONCURRENCY:-1}" \
 		ARTIFACT_DIR="$${ARTIFACT_DIR:-/tmp/frontend-all-list-visual-audit}" \
@@ -763,6 +765,8 @@ verify.frontend.standard_list_scroll_contract.guard: guard.prod.forbid
 
 .PHONY: verify.frontend.delivery_hardening.guard verify.frontend.delivery_hardening.inventory verify.frontend.release_navigation_policy.guard verify.frontend.role_surface_exposure_declaration.guard
 verify.frontend.delivery_hardening.guard: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_frontend_probe_toolchain_guard scripts.verify.test_error_state_contract
+	@python3 scripts/verify/frontend_probe_toolchain_guard.py
 	@python3 scripts/verify/frontend_delivery_hardening_guard.py
 
 verify.frontend.delivery_hardening.inventory: guard.prod.forbid

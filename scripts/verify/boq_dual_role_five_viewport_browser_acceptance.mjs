@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import './lib/probe_toolchain_blocked.mjs';
 /**
  * BOQ 真实闭环 G3.3-B 双角色五视口浏览器验收（dual-role × five-viewport）。
  *

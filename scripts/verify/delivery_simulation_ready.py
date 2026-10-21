@@ -32,7 +32,7 @@ def main() -> int:
     db_name = env_value("DB_NAME") or env_value("ODOO_DB") or "sc_dev"
 
     timeline: list[dict] = []
-    auth_ok, token, auth_source = obtain_runtime_probe_token(intent_url, db_name)
+    auth_ok, token, auth_source = obtain_runtime_probe_token(intent_url)
     timeline.append({"step": "authenticate", "source": auth_source, "ok": auth_ok})
     if not auth_ok:
         errors.append("runtime probe authentication failed")

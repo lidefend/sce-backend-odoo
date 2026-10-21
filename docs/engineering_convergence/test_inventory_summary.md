@@ -4,21 +4,21 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1577`
+- Total assets: `1581`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `215`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1137`
+- PR dedupe candidates: `1141`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
-| governance | 606 |
-| contract | 398 |
-| unit | 296 |
+| governance | 608 |
+| contract | 399 |
+| unit | 297 |
 | odoo_integration | 140 |
 | security | 49 |
 | e2e | 47 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1356 |
+| pr_candidate | 1360 |
 | integration_candidate | 167 |
 | release_candidate | 45 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1137 |
+| deduplicate_before_required | 1141 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 166 |
 | keep_release_only | 45 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1358 |
+| <5m | 1362 |
 | 10-30m | 168 |
 | 30-60m | 47 |
 | unknown | 3 |
@@ -152,9 +152,9 @@ Generated from `test_inventory.csv`.
 
 | Owner | Count |
 | --- | ---: |
-| architecture owner | 606 |
-| platform owner | 398 |
-| test owner | 297 |
+| architecture owner | 608 |
+| platform owner | 399 |
+| test owner | 298 |
 | backend owner | 140 |
 | security owner | 49 |
 | qa owner | 47 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1373 |
+| scripts/verify | 1377 |
 | scripts/ops | 105 |
 | frontend/apps/web/scripts | 43 |
 | scripts/ci | 30 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-201 | contract | `scripts/verify/acceptance_contract_receipt_test.mjs` | platform owner |
 | T-ASSET-202 | governance | `scripts/verify/acceptance_evolution_binding_guard.py` | architecture owner |
 | T-ASSET-203 | contract | `scripts/verify/action_default_group_contract_audit.py` | platform owner |
-| ... | ... | 1057 more | ... |
+| ... | ... | 1061 more | ... |
 
 ## Dedupe Hotspots
 

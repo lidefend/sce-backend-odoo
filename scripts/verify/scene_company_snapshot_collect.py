@@ -91,14 +91,14 @@ def _select_non_primary_company_id(profile: dict, state: dict) -> int:
 
 def _discover_allowed_company_ids(login: str, password: str) -> list[int]:
     db_name = _text(os.getenv("E2E_DB") or os.getenv("DB_NAME"))
-    intent_url = build_intent_url(get_base_url(), db_name)
+    intent_url = build_intent_url(get_base_url())
     status, payload = http_post_json(
         intent_url,
         {
             "intent": "login",
-            "params": {"db": db_name, "login": login, "password": password},
+            "params": {"login": login, "password": password},
         },
-        headers={"X-Anonymous-Intent": "1", "X-Odoo-DB": db_name},
+        headers={"X-Anonymous-Intent": "1"},
     )
     if status >= 400 or payload.get("ok") is not True or not extract_login_token(payload):
         return []
