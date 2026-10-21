@@ -888,6 +888,10 @@ export SC_ACCEPTANCE_FIXTURE_PASSWORD
 acceptance.runtime.preflight: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh preflight
 
+.PHONY: acceptance.runtime.login_probe
+acceptance.runtime.login_probe: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh login-probe
+
 acceptance.runtime.infrastructure.restore: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh infrastructure-restore
 

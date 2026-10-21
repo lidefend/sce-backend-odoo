@@ -27,6 +27,10 @@ load_profile() {
   set -a
   # shellcheck disable=SC1090
   source "$base_env"
+  # The base env supplies infrastructure credentials, not the acceptance route.
+  # Restore the declared isolated entry after sourcing it so login probes and
+  # the static proxy use the same stamp registered by db-ensure.
+  source "$ROOT_DIR/config/acceptance/isolated_entry_identity.v1.env"
   set +a
   while IFS='=' read -r key value; do
     printf -v "$key" '%s' "$value"
@@ -652,6 +656,11 @@ PYPROBE
     # shellcheck source=../common/frontend_acceptance_make_identity.sh
     source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
     frontend_acceptance_make verify.frontend.activity_surface.browser.internal
+    ;;
+  login-probe)
+    preflight
+    validate_backend_runtime
+    python3 "$ROOT_DIR/scripts/verify/frontend_acceptance_login_probe.py"
     ;;
   release-preflight)
     preflight

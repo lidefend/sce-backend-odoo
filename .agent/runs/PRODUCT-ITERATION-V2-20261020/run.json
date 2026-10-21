@@ -631,7 +631,8 @@
     "scripts/verify/workflow_action_semantics_completeness_guard.py",
     "scripts/verify/frontend_scene_component_bridge_guard.py",
     "scripts/verify/frontend_product_page_header_guard.py",
-    "scripts/verify/test_frontend_product_page_header_guard.py"
+    "scripts/verify/test_frontend_product_page_header_guard.py",
+    "scripts/dev/frontend_acceptance_runtime.sh"
   ],
   "environment": {
     "kind": "runtime",
@@ -4567,7 +4568,7 @@
     "GitHub clean reviewed candidate and current required integration checks pending.",
     "Preview target identity/snapshot activation and affected target smoke/rollback readiness pending."
   ],
-  "next_exact_step": "Prepare generated reports and freeze local-only candidate, then run governed complete local frontend release audit before any new push.",
+  "next_exact_step": "Freeze corrected local runtime entry and run complete governed local frontend release audit; no push until local verification complete.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",
@@ -4748,7 +4749,9 @@
       "independent_review": "no blocker for dirty parser fix",
       "release_unit": "passed complete make verify.frontend.release.unit, log continue59-release-unit-confirm.log; no zero-test claim",
       "runtime_preflight": "passed governed local profile",
-      "header_and_inventory": "passed 72 header tests +15 decision tests"
+      "header_and_inventory": "passed 72 header tests +15 decision tests",
+      "entry_identity": "passed 16 tests including actual shell load with conflicting base values",
+      "http_login": "passed HTTP200 through governed login_probe after exact backend identity"
     },
     "local_runtime": {
       "entry": "make verify.frontend.release.local CONFIRM_FRONTEND_RELEASE_AUDIT=RUN_FROZEN_FRONTEND_RELEASE_AUDIT SC_ACCEPTANCE_RUNTIME_PROFILE=local",
@@ -4769,6 +4772,9 @@
       "restoration": "Existing release lane owns isolated fixture reset and service shutdown traps; never touch persistent demo or production",
       "prerequisites": "Full release unit passed then clean frozen local candidate; no new remote dispatch until local result known"
     },
-    "additional_fixes": "Same pure-error parsing in header guard, preserve dynamic target denial; refresh inventory only for removed AccessDenied hardcoded route and Login line offsets; no classification changes."
+    "additional_fixes": "Same pure-error parsing in header guard, preserve dynamic target denial; refresh inventory only for removed AccessDenied hardcoded route and Login line offsets; no classification changes.",
+    "runtime_failure": "Local release: static passed; schema recovered via governed upgrade; HTTP login401 after fixture auth passed. Base env contains entry secret/version differing from declared acceptance values and overwrites operation-entry exports in load_profile.",
+    "runtime_fix": "P4 restore declared entry identity after base env load; add bounded local login-probe operation reusing credential authority and preflight, no fixture reset. No product authorization changes.",
+    "reuse": "Only P4 environment loader/login entry and tests changed since f7ce51b; product, frontend and earlier complete release-unit/static build inputs unchanged. Full governed local release will rerun owning entry; no remote dispatch."
   }
 }

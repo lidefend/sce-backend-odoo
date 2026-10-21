@@ -12,6 +12,35 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FrontendReleaseLocalEntryTest(unittest.TestCase):
+    def test_profile_load_restores_acceptance_stamp_after_base_environment(self) -> None:
+        source = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text()
+        loader = source.split("load_profile() {", 1)[1].split("\n}\n", 1)[0]
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            identity = root / "config/acceptance/isolated_entry_identity.v1.env"
+            identity.parent.mkdir(parents=True)
+            identity.write_text("SC_ENTRY_SHARED_SECRET=acceptance-only\nSC_ENTRY_ROUTE_VERSION=acceptance-version\n")
+            base = root / "base.env"
+            base.write_text("SC_ENTRY_SHARED_SECRET=unrelated-base\nSC_ENTRY_ROUTE_VERSION=other-version\n")
+            script = """
+set -eu
+python3() {
+  if [[ "$*" == *--get* ]]; then echo "$BASE_ENV";
+  else echo SC_ACCEPTANCE_CREDENTIAL_CONTAINER=fixture; fi
+}
+docker() { return 0; }
+container_env_value() { echo test-value; }
+""" + "load_profile() {" + loader + "\n}\n" + """
+load_profile
+[[ "$SC_ENTRY_SHARED_SECRET" == acceptance-only ]]
+[[ "$SC_ENTRY_ROUTE_VERSION" == acceptance-version ]]
+[[ "$DB_USER" == test-value && "$DB_PASSWORD" == test-value ]]
+"""
+            env = dict(os.environ, ROOT_DIR=str(root), BASE_ENV=str(base),
+                       PROFILE="local", PROFILE_RESOLVER="stub")
+            result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_cached_restore_is_offline_frozen_and_script_free(self) -> None:
         source = (ROOT / "scripts/dev/frontend_cached_dependencies_restore.sh").read_text(
             encoding="utf-8"
