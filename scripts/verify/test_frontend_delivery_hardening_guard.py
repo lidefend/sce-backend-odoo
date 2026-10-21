@@ -13,6 +13,44 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 
+class AuthenticatedIntentProbeTest(unittest.TestCase):
+    def test_request_identity_and_failures(self):
+        program = r"""
+import assert from 'node:assert/strict';
+import { bindAuthenticatedIntent, successfulIntentData } from './scripts/verify/frontend_authenticated_intent.mjs';
+const response = (id=7, status=200, body={data:{user:{id}}}, headers={authorization:'Bearer test-only'}) => ({
+ status:()=>status, json:async()=>body,
+ request:()=>({url:()=> 'https://example.test/t/demo/api/v1/intent',
+ allHeaders:async()=>({...headers,'content-length':'99'}),
+ postData:()=>JSON.stringify({intent:'system.init',context:{company_id:3},params:{}})})
+});
+const request = await bindAuthenticatedIntent(response(),7);
+let sent;
+const context={request:{post:async(url,options)=>{sent={url,...options};return response();}}};
+await request(context,'system.init',{});
+assert.equal(sent.url,'https://example.test/t/demo/api/v1/intent');
+assert.equal(sent.headers.authorization,'Bearer test-only');
+assert.equal(sent.headers['content-length'],undefined);
+assert.equal(sent.headers['X-Odoo-DB'],undefined);
+assert.deepEqual(sent.data.context,{company_id:3});
+await request(context,'payment.request.available_actions',{id:19});
+assert.deepEqual(sent.data.params,{id:19});
+await assert.rejects(bindAuthenticatedIntent(response(8),7),/principal mismatch/);
+await assert.rejects(bindAuthenticatedIntent(response(7,200,undefined,{}),7),/request missing/);
+for (const [status,body] of [[401,{}],[409,{}],[200,{ok:false}],[200,{error:{code:403}}],[200,{code:500}]]) {
+ assert.throws(()=>successfulIntentData(status,body,'probe'),/request rejected/);
+ await assert.rejects(request({request:{post:async()=>response(7,status,body)}},'system.init',{}),/request rejected/);
+}
+await assert.rejects(request({request:{post:async()=>response(8)}},'system.init',{}),/principal mismatch/);
+await assert.rejects(request({request:{post:async()=>{throw new Error('Bearer secret');}}},'system.init',{}),
+ error=>error.message==='system.init: authenticated probe transport failed');
+const next = await bindAuthenticatedIntent(response(8),8);
+await next({request:{post:async()=>response(8)}},'system.init',{});
+console.log('authenticated probe boundaries PASS');
+"""
+        subprocess.run(['node', '--input-type=module', '-e', program], cwd=ROOT, check=True)
+
+
 class RuntimePerformanceSampleTest(unittest.TestCase):
     def test_measurement_preserves_real_boundary_and_redacts_payloads(self):
         program = r"""

@@ -7,6 +7,7 @@ import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { launchChromium } from './playwright_runtime.mjs';
 import { applyReleasedNavigationTarget, captureReleasedNavigation, findReleasedNavigationTargetByMenuXmlid } from './released_navigation_target.mjs';
+import { bindAuthenticatedIntent, successfulIntentData } from './frontend_authenticated_intent.mjs';
 import { measureRuntimeSample } from './frontend_runtime_performance_sample.mjs';
 import { evaluateRelativePerformanceBudget } from './frontend_performance_budget.mjs';
 import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
@@ -160,20 +161,11 @@ function waitForRecordContractResponse(page, target) {
     }
   }, { timeout: 45000 });
 }
+const authenticatedIntents = new WeakMap();
 async function intentRequestFromPage(page, intent, params) {
-  return page.evaluate(async ({ dbName, intentName, payload }) => {
-    const bearer = sessionStorage.getItem(`sc_auth_token:${dbName}`) || '';
-    const response = await fetch(`/api/v1/intent?db=${encodeURIComponent(dbName)}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: bearer ? `Bearer ${bearer}` : '',
-        'X-Odoo-DB': dbName,
-      },
-      body: JSON.stringify({ intent: intentName, params: payload }),
-    });
-    return { status: response.status, body: await response.json().catch(() => ({})) };
-  }, { dbName: DB_NAME, intentName: intent, payload: params });
+  const request = authenticatedIntents.get(page);
+  check(Boolean(request), 'authenticated browser startup request missing');
+  return request(page.context(), intent, params);
 }
 // Every matrix surface must be reached through the released navigation entry the
 // role actually renders. Binding a target to a legacy menu produces a
@@ -194,7 +186,8 @@ async function releasedNavigationTargetFor(page, menuXmlid) {
   const response = await intentRequestFromPage(page, 'system.init', {});
   const envelope = response?.body || {};
   const data = envelope?.result || envelope?.data || envelope || {};
-  const nav = Array.isArray(data?.navigation?.nav) ? data.navigation.nav : [];
+  check(Array.isArray(data?.navigation?.nav), 'system.init: navigation contract missing');
+  const nav = data.navigation.nav;
   return findReleasedNavigationTargetByMenuXmlid(nav, menuXmlid);
 }
 async function assertReleasedTargetForRole(page, label, target, role) {
@@ -476,6 +469,7 @@ async function gotoLogin(page) {
   await page.locator('#login-username, input[autocomplete="username"]').first().waitFor({ state: 'visible', timeout: 45000 });
 }
 async function login(page, user, keyboard = false, preserveCurrentLoginRoute = false) {
+  authenticatedIntents.delete(page);
   if (!preserveCurrentLoginRoute) await gotoLogin(page);
   const username = page.locator('#login-username, input[autocomplete="username"]').first();
   const password = page.locator('#login-password, input[autocomplete="current-password"]').first();
@@ -491,6 +485,11 @@ async function login(page, user, keyboard = false, preserveCurrentLoginRoute = f
       return false;
     }
   }, { timeout: 45000 });
+  const startupResponsePromise = page.waitForResponse((response) => {
+    if (!response.url().includes('/api/v1/intent')) return false;
+    try { return JSON.parse(response.request().postData() || '{}').intent === 'system.init'; }
+    catch { return false; }
+  }, { timeout: 45000 }).then((response) => ({ response }), (error) => ({ error }));
   if (keyboard) await password.press('Enter');
   else await page.getByRole('button', { name: /^登录$/ }).click();
   const loginResponse = await loginResponsePromise;
@@ -502,10 +501,16 @@ async function login(page, user, keyboard = false, preserveCurrentLoginRoute = f
     !rejected,
     `login intent rejected http=${loginResponse.status()} code=${envelopeCode || 'unknown'} error_code=${String(loginEnvelope?.error?.error_code || loginEnvelope?.error_code || 'unknown')}`,
   );
+  const loginData = successfulIntentData(loginResponse.status(), loginEnvelope, 'login');
+  check(loginData.user?.login === user, 'login: authenticated login mismatch');
+  const startup = await startupResponsePromise;
+  if (startup.error) throw startup.error;
+  authenticatedIntents.set(page, await bindAuthenticatedIntent(startup.response, Number(loginData.user.id)));
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
   await page.locator('.layout-shell').waitFor({ timeout: 45000 });
 }
 async function logout(page) {
+  authenticatedIntents.delete(page);
   const logoutButton = page.getByRole('button', { name: '退出登录' });
   if (!(await logoutButton.isVisible().catch(() => false))) {
     const menuButton = page.getByRole('button', { name: '菜单', exact: true });

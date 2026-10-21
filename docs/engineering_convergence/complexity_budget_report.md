@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4870`
+- Scanned files: `4871`
 - Files requiring split plan: `70`
 - Files above warning threshold: `138`
 
@@ -103,8 +103,8 @@ Generated from repository source files. This report is informational during the 
 | 1391 | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
+| 1343 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
-| 1338 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1329 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
 | 1328 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |

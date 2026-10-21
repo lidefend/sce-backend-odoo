@@ -428,7 +428,10 @@
     "docs/frontend_productization/decision-authority-inventory-v1.json",
     "config/frontend/authoritative_navigation.json",
     "scripts/verify/test_frontend_release_navigation_policy_guard.py",
-    "addons/smart_construction_core/tests/test_payment_request_work_item_service.py"
+    "addons/smart_construction_core/tests/test_payment_request_work_item_service.py",
+    "scripts/verify/frontend_authenticated_intent.mjs",
+    "scripts/verify/frontend_delivery_hardening_browser.mjs",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -4364,7 +4367,7 @@
     "GitHub clean reviewed candidate and current required integration checks pending.",
     "Preview target identity/snapshot activation and affected target smoke/rollback readiness pending."
   ],
-  "next_exact_step": "Finish affected workitem rerun and name-binding check, freeze only after all known CI failures close; independent review/archive then one PR update. Never publish the partial navigation-only candidate.",
+  "next_exact_step": "Freeze P4 probe repair; run exact-head Quick/public scan, independent review/archive; push PR712 and dispatch current-head gates.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",
@@ -4374,5 +4377,32 @@
     "mainline_integration": "not_run",
     "deployment": "not_run",
     "target_user_delivery": "not_run"
+  },
+  "continue55": {
+    "layer": "P4",
+    "target": "browser acceptance authentication transport",
+    "reason": "Replay observed authenticated startup request; no product/permission changes",
+    "head": "8baa36c1172c505ffb7b8288ef94e865f7c15c1b",
+    "status": "verification_pending",
+    "evidence": ".runtime/agent-runs/PRODUCT-ITERATION-V2-20261020/continue55-artifacts",
+    "excluded": [
+      "demo worktree",
+      "P0-P3 permissions and data"
+    ],
+    "checks": {
+      "targeted_tests": "44 passed",
+      "syntax": "passed",
+      "delivery_guard": "passed",
+      "iteration": "passed advisory only",
+      "freeze_prepare": "passed",
+      "independent_dirty_review": "no blockers; transport errors redacted",
+      "runtime": "pending remote current candidate"
+    },
+    "known_remote_8baa": {
+      "professional_quality_gate": "passed including all four backend shards",
+      "frontend_release_gate": "failed obsolete probe authentication",
+      "release_candidate_gate": "failed downstream of frontend"
+    },
+    "risk": "Observed startup company context is fixed; current probe calls precede any company switch. Full browser runtime still pending."
   }
 }
