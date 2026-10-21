@@ -127,7 +127,7 @@ class FakeSession:
             return 200, json.dumps({"result": {"uid": self.uid, "name": "Acceptance Fixture Finance"}})
         intent = (payload or {}).get("intent")
         if intent == "system.init":
-            return 200, json.dumps({"ok": True, "data": {"user": self.user, "role_surface": {"role_code": self.role_code}}})
+            return 200, json.dumps({"ok": True, "data": {"user": self.user, "role_surface": {"role_code": self.role_code}, "record_context": {"request_context": {"company_id": self.user["company_id"]}}}})
         if intent == "ui.contract.v2":
             return 200, json.dumps({"ok": True, "data": self.contract})
         return 200, json.dumps({"ok": False})
@@ -502,20 +502,22 @@ class ParamsContextBindingTest(unittest.TestCase):
         decl["request"]["params_context_from"] = "   "
         self.assertIn("contract_declaration_request_context_source_invalid", MODULE.validate_acceptance_declaration(decl))
 
-    def test_shipped_daily_declaration_binds_the_runtime_record_context_path(self):
-        shipped = json.loads((ROOT / "config/acceptance/backend_contract_instance_daily_v1.json").read_text(encoding="utf-8"))
-        declared = shipped["request"].get("params_context_from")
-        self.assertEqual(declared, "system.init.record_context.request_context")
-        self.assertEqual(MODULE.validate_acceptance_declaration(shipped), [])
-        runtime_context = {"company_id": 21}
-        # The declaration names the producing intent (system.init) plus the path
-        # inside its payload, exactly as the probe consumes it.
-        resolved = MODULE.resolve_declared_record_context(
-            declared, {"system.init": {"record_context": {"request_context": runtime_context}}}
-        )
-        self.assertEqual(resolved, runtime_context)
-        params = MODULE.build_contract_request_params(shipped["request"], {"model": "payment.request", "record_id": 1}, resolved)
-        self.assertEqual(params["context"], runtime_context)
+    def test_shipped_declarations_bind_the_runtime_record_context_path(self):
+        for name in ("backend_contract_instance_v1.json", "backend_contract_instance_daily_v1.json"):
+            with self.subTest(declaration=name):
+                shipped = json.loads((ROOT / "config/acceptance" / name).read_text(encoding="utf-8"))
+                declared = shipped["request"].get("params_context_from")
+                self.assertEqual(declared, "system.init.record_context.request_context")
+                self.assertEqual(MODULE.validate_acceptance_declaration(shipped), [])
+                runtime_context = {"company_id": 21}
+                # The declaration names the producing intent (system.init) plus the path
+                # inside its payload, exactly as the probe consumes it.
+                resolved = MODULE.resolve_declared_record_context(
+                    declared, {"system.init": {"record_context": {"request_context": runtime_context}}}
+                )
+                self.assertEqual(resolved, runtime_context)
+                params = MODULE.build_contract_request_params(shipped["request"], {"model": "payment.request", "record_id": 1}, resolved)
+                self.assertEqual(params["context"], runtime_context)
 
     def test_declaration_without_the_binding_keeps_the_declared_shape(self):
         # No binding declared: the runtime-declared record context is not injected,

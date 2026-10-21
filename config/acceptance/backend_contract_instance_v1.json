@@ -24,6 +24,7 @@
     "view_type": "form",
     "delivery_profile": "full",
     "client_type": "web_pc",
+    "params_context_from": "system.init.record_context.request_context",
     "context": {
       "lang": "zh_CN",
       "tz": "Asia/Shanghai"

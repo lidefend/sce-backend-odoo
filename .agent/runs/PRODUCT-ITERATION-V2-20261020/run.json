@@ -303,6 +303,7 @@
     "addons/smart_core/utils/contract_governance_registry.py",
     "addons/smart_core/views/group_authority_reconciliation_views.xml",
     "artifacts/backend/product_module_graph_v2.json",
+    "config/acceptance/backend_contract_instance_v1.json",
     "config/acceptance/evolution_binding.v1.json",
     "config/frontend/acceptance_tool_matrix_v1.json",
     "config/frontend/authoritative_navigation.json",
@@ -4581,7 +4582,7 @@
     "Merge stage still requires valid list_surface_structure and relation_roundtrip evidence.",
     "Deployment stage retains daily_runtime_entry and path_namespace_identity evidence, explicitly not_run."
   ],
-  "next_exact_step": "Prepare clean candidate and exact backend identity; refresh current contract receipt, then affected payment.request list/record six-viewport checks and relation roundtrip. No remote push until local closure.",
+  "next_exact_step": "Bind local receipt request to system.init.record_context.request_context, verify both shipped declarations, refreeze and rerun contract then exact list/record scope; relation pending.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",
@@ -4923,6 +4924,14 @@
         "return_to_source"
       ],
       "runtime_scope": "single approved payment.request list and record, all six affected viewport keys; relation probe pending independent suite"
+    },
+    "local_record_followup": {
+      "head": "68ab25c2736aa3e4bfe167ecb553a894b74def8b",
+      "status": "failed",
+      "log": "continue63-list-browser.log",
+      "owner": "P4 local acceptance declaration",
+      "finding": "Local receipt declaration lacks params_context_from; observed record request carries runtime company context while approved request does not. Existing daily declaration and producer already support authoritative binding. No product or hash-check relaxation needed.",
+      "affected": "Approved receipt and all six record binding keys; list layout inputs unchanged. Frozen delivery lane rerun after declaration fix; no other release matrix rerun."
     }
   }
 }
