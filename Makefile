@@ -6,10 +6,8 @@
 
 SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
-
 ROOT_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 include make/probe_toolchain.mk
-
 MIGRATION_ASSET_ROOT ?= migration_assets
 MIGRATION_ASSET_LOCK ?= docs/migration_alignment/migration_asset_package_lock_v1.json
 MIGRATION_FILE_INDEX_CSV ?= /mnt/artifacts/migration/fresh_db_legacy_file_index_replay_payload_v1.csv

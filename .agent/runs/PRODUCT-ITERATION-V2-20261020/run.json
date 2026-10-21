@@ -4689,7 +4689,7 @@
       "contract_basis_enforce": "passed:14 bindings, 0 open defects",
       "startup_projection": "passed:20; actual full builder→startup projection + public contract + empty selected pages"
     },
-    "review": "ff75c7 review withdrawn after projection omission; final incremental review required",
+    "review": "6641250 independent code review passed; final formatting-only candidate review required",
     "defect": "ERROR-STATE-PRESENTATION-001 declaration/consumer/behavior tests closed; runtime proof pending integration",
     "next": "Confirm affected typecheck/backend results, prepare generated evidence, freeze one consolidated candidate; exact-head Quick, independent review/archive, Make PR push and current-head runtime CI. No deployment.",
     "superseded_candidate": {
@@ -4697,6 +4697,12 @@
       "quick": "interrupted, not passed",
       "reason": "Found startup projection drops error_states and excludes login texts before publication",
       "remote_push": false
+    },
+    "quick_6641250": {
+      "status": "failed",
+      "reason": "Makefile274 lines exceeds existing272 budget; compressed two blank lines without changing commands or threshold",
+      "public_scans": "passed",
+      "receipt": "not_issued"
     }
   }
 }
