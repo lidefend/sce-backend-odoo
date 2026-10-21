@@ -256,6 +256,7 @@
     "addons/smart_construction_core/views/support/labor_product_views.xml",
     "addons/smart_construction_core/views/support/quality_acceptance_views.xml",
     "addons/smart_construction_core/views/support/team_loan_deduction_workspace_views.xml",
+    "addons/smart_construction_core/views/support/user_confirmed_formal_list_views.xml",
     "addons/smart_construction_core/views/support/variation_change_views.xml",
     "addons/smart_construction_core/wizard/project_boq_import_wizard.py",
     "addons/smart_construction_portal/migrations/17.0.1.1/post-migration.py",
@@ -4580,7 +4581,7 @@
     "Merge stage still requires valid list_surface_structure and relation_roundtrip evidence.",
     "Deployment stage retains daily_runtime_entry and path_namespace_identity evidence, explicitly not_run."
   ],
-  "next_exact_step": "Freeze reviewed P4 candidate; start existing isolated backend and5180 preview; generate contract receipt; run list and relation only; no full release rerun or remote push before these pass.",
+  "next_exact_step": "Prepare clean candidate and exact backend identity; refresh current contract receipt, then affected payment.request list/record six-viewport checks and relation roundtrip. No remote push until local closure.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",
@@ -4859,6 +4860,69 @@
       "contract_receipt": "PASS11checks no not_run",
       "list": "L2 prerequisite failure: extracted helper harness omitted relativeRoutePath; browser not started",
       "fix": "Include actual dependency in test harness, assert namespace route normalization; no runtime code or thresholds changed"
+    }
+  },
+  "continue63": {
+    "identity": {
+      "head": "5b914690cb73537bf5c3d7eb0bb832591de907e8",
+      "dirty_before": false
+    },
+    "layers": {
+      "P1": "Industry standard payment.request native list missing policy-declared legal_next_action_display; declaration belongs in smart_construction_core, not frontend or customer config.",
+      "P4": "Existing list probe must collect record evidence in local profile using the same contract consumers as daily."
+    },
+    "paths": [
+      "addons/smart_construction_core/views/support/user_confirmed_formal_list_views.xml",
+      "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "scripts/verify/frontend_list_surface_structure_browser.mjs",
+      "scripts/verify/test_frontend_list_surface_search_contract.py"
+    ],
+    "risk": "bounded native view declaration and validation coverage",
+    "validation": {
+      "earliest": "L1 syntax and existing focused helper tests; L2 native list policy alignment; L3 governed isolated module upgrade required before L4",
+      "not_run": [
+        "L4",
+        "L5"
+      ],
+      "skipped": "No frontend rendering or demo mutation; remote dispatch held until local blockers closed.",
+      "results": {
+        "L1": "ci.local.iteration passed; node syntax passed; diff check passed",
+        "L2_list": "23 tests passed plus acceptance_contract_receipt Node suite",
+        "L2_native_static": "10 formal action runtime drift tests passed",
+        "independent_review": "No blocking findings in dirty delta; runtime remains pending",
+        "L3": "passed: acceptance.module.upgrade local smart_construction_core, exact native-view policy ORM test 1 run /0 failures /0 errors",
+        "ledger": "18 tests passed"
+      },
+      "logs": [
+        "continue63-iteration.log",
+        "continue63-list-unit.log",
+        "continue63-native-unit.log",
+        "continue63-native-runtime.log"
+      ]
+    },
+    "prior_result": {
+      "list": "315/316 gated, negative fixtures5/5, runtime errors0, records not_run",
+      "failure": "critical legal_next_action_display absent in native columns"
+    },
+    "impact": "payment.request list and record walk across declared viewport keys; probe assertion changes invalidate list report, independent previous frontend release matrix remains unchanged.",
+    "impact_keys": {
+      "derivation": "P1 changed payment.request list columns invalidate layout across every declared default viewport; P4 newly enabled local record walk requires each viewport. Existing helper derives six declared viewport keys; no other model or release journey affected.",
+      "viewport_keys": [
+        "1440",
+        "1024",
+        "768",
+        "521",
+        "520",
+        "390"
+      ],
+      "record_checks": [
+        "declared_entry_route",
+        "exact_record_contract",
+        "approved_contract_binding",
+        "declared_renderer",
+        "return_to_source"
+      ],
+      "runtime_scope": "single approved payment.request list and record, all six affected viewport keys; relation probe pending independent suite"
     }
   }
 }

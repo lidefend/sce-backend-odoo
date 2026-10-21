@@ -113,6 +113,8 @@ class TestP1PaymentRequestCapability(BusinessTransactionCase):
 
         self.assertIn("state", field_names)
         self.assertIn("payment_basis_type", field_names)
+        for name in BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL["payment.request"]["critical"]:
+            self.assertIn(name, field_names)
         self.assertNotIn("document_status_display", field_names)
         self.assertNotIn("related_document_text", field_names)
 

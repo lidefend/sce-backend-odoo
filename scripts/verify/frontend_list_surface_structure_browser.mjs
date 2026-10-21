@@ -25,11 +25,11 @@ const FORM_PROFILES_ONLY = DAILY && DAILY_OBSERVATION_SCOPE === 'form-profiles';
 // Referencing a later `const` from the handler would throw a TDZ ReferenceError
 // and mask the real failure.
 const LIST_MATRIX_SKIPPED = WORKBENCH_ONLY || FORM_PROFILES_ONLY || (DAILY && DAILY_OBSERVATION_SCOPE === 'detail-only');
-const dailyRuntime = DAILY ? await (async () => {
+const dailyRuntime = await (async () => {
   const { build } = await import('../../frontend/apps/web/node_modules/esbuild/lib/main.js');
   const bundled = await build({ stdin: { contents: "export * from './app/runtime/recordEntryContract'; export * from './app/routeQuery'; export * from './app/resolvers/sceneRegistry';", resolveDir: path.join(acceptance.root, 'frontend/apps/web/src'), loader: 'ts' }, bundle: true, platform: 'node', format: 'esm', define: { 'import.meta.env.DEV': 'false' }, write: false });
   return import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`);
-})() : null;
+})();
 const BASE_URL = acceptance.baseUrl;
 // Entry namespaces are published as a path prefix (for example /t/demo). Every
 // request and route the browser sees carries that prefix, while the product's
@@ -1015,7 +1015,7 @@ try {
       // system.init is captured because the declared preload rail delivers the landing scene
       // inside it (workspace_home_ref + embedded workspace_home), not as a separate
       // wire ui.contract.v2; the landing check consumes that declared carrier.
-      if (DAILY && isIntent && ['ui.contract', 'ui.contract.v2', 'load_contract', 'action.view', 'my.work.summary', 'system.init'].includes(request?.intent)) runtime.contracts.push({ intent: request.intent, params: request.params, response: envelope });
+      if (isIntent && ['ui.contract', 'ui.contract.v2', 'load_contract', 'action.view', 'my.work.summary', 'system.init'].includes(request?.intent)) runtime.contracts.push({ intent: request.intent, params: request.params, response: envelope });
     })();
     responseTasks.add(task);
     task.finally(() => responseTasks.delete(task)).catch(() => {});
@@ -1035,7 +1035,7 @@ try {
       throw new Error(`approved contract replay did not bind: status=${replay.status} ${binding.ok ? '' : `${binding.code} ${JSON.stringify(binding.detail || {})}`}`);
     }
   }
-  if (DAILY) {
+  {
     actorContext = dailyActorContext(navigation.payload());
     if (!actorContext.user_id || !actorContext.company_id || !actorContext.role_codes.length) throw new Error('actual bootstrap actor context missing');
   }
@@ -1210,7 +1210,7 @@ try {
   await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await waitForList(page);
   }
-  if (DAILY && !WORKBENCH_ONLY && !FORM_PROFILES_ONLY) {
+  if (!WORKBENCH_ONLY && !FORM_PROFILES_ONLY) {
     for (const viewport of VIEWPORTS) {
       await page.setViewportSize(viewport);
       await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -1355,7 +1355,7 @@ try {
   const gatedFailed = failures.filter((failure) => failure.state !== 'negative-fixture').length;
   await Promise.allSettled([...responseTasks]);
   const recordSummary = dailyRecordCheckSummary(recordChecks, VIEWPORTS, contractGate.status, DAILY_OBSERVATION_SCOPE);
-  const passed = (!DAILY || recordSummary.complete) && failures.length === 0 && !runtime.console_errors.length && !runtime.page_errors.length && !runtime.failed_responses.length && !runtime.denied_requests.length;
+  const passed = recordSummary.complete && failures.length === 0 && !runtime.console_errors.length && !runtime.page_errors.length && !runtime.failed_responses.length && !runtime.denied_requests.length;
   const report = {
     schema: 'frontend_list_surface_structure_browser.v1',
     phase: PHASE,
@@ -1375,7 +1375,7 @@ try {
     aggregate_checks: aggregateChecks,
     observations,
     summary: {
-      records: DAILY ? recordSummary : { status: 'not_run' },
+      records: recordSummary,
       gated: { passed: gatedTotal - gatedFailed, total: gatedTotal, failed: gatedFailed },
       observations: observations.length,
       negative_fixtures: { detected: negativeFixtures.filter((fixture) => fixture.detected).length, total: negativeFixtures.length },

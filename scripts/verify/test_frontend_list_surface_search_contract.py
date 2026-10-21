@@ -288,7 +288,11 @@ assert(!dailyRecordCheckSummary(checks.map((row,i)=>i===2?{...row,passed:false}:
 assert(!dailyRecordCheckSummary(checks.map(row=>({...row,viewport:'1440'})),viewports).complete);
 assert(!dailyRecordCheckSummary([],[]).complete);
 """)
-        self.assertIn('(!DAILY || recordSummary.complete)', self.probe)
+        self.assertIn('const passed = recordSummary.complete &&', self.probe)
+        self.assertIn('if (!WORKBENCH_ONLY && !FORM_PROFILES_ONLY)', self.probe)
+        self.assertIn('records: recordSummary', self.probe)
+        self.assertNotIn('if (DAILY && isIntent', self.probe)
+        self.assertNotIn('const dailyRuntime = DAILY ?', self.probe)
 
     def test_daily_record_summary_follows_the_contract_gate_shape(self):
         self.run_record_probe_helpers("""
