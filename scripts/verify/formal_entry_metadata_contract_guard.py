@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Static fail-closed contract for formal entry metadata and orphan UI cleanup."""
+"""Static fail-closed contract for formal entry metadata and unresolved active menus."""
 
 from __future__ import annotations
 
 import argparse
-import ast
 import json
 from pathlib import Path
 
@@ -23,19 +22,6 @@ VIEW_CONTRACTS = {
     "addons/smart_construction_core/views/core/tax_certificate_registration_views.xml": ("source_created_by", "source_created_at"),
     "addons/smart_construction_core/views/support/tender_views.xml": ("legacy_source_created_by", "legacy_source_created_at"),
 }
-ORPHAN_MODELS = (
-    "sc.invoice.analysis.summary",
-    "sc.invoice.cost.progress.summary",
-    "sc.tender.guarantee.summary",
-)
-PRESERVED_RELATIONS = (
-    "sc_invoice_analysis_summary",
-    "sc_invoice_cost_progress_summary",
-    "sc_tender_guarantee_summary",
-    "sc_legacy_invoice_analysis_report_fact",
-    "sc_legacy_invoice_cost_progress_report_fact",
-    "sc_legacy_tender_guarantee_report_fact",
-)
 
 
 def scan(root: Path) -> list[dict[str, str]]:
@@ -60,29 +46,6 @@ def scan(root: Path) -> list[dict[str, str]]:
     for token in ("def active_unresolved_model_errors", '"active_unresolved_model"', "model_name not in env"):
         require(extension_path, token, "missing_active_orphan_fail_closed_guard")
 
-    migration_path = "addons/smart_construction_core/migrations/17.0.0.82/post-migration.py"
-    for token in ORPHAN_MODELS + PRESERVED_RELATIONS + ("SNAPSHOT_KEY", "menus.unlink()", "actions.unlink()", "views.unlink()"):
-        require(migration_path, token, "incomplete_orphan_ui_cleanup_migration")
-    migration = (root / migration_path).read_text(encoding="utf-8") if (root / migration_path).is_file() else ""
-    for forbidden in ("DROP TABLE", "DROP VIEW", "TRUNCATE", "DELETE FROM sc_legacy", "DELETE FROM sc_invoice"):
-        if forbidden.lower() in migration.lower():
-            failures.append({"path": migration_path, "reason": "business_data_destructive_cleanup", "token": forbidden})
-
-    manifest_path = "addons/smart_construction_core/__manifest__.py"
-    manifest_file = root / manifest_path
-    try:
-        manifest = ast.literal_eval(manifest_file.read_text(encoding="utf-8"))
-        version = tuple(int(part) for part in str(manifest.get("version", "")).split("."))
-    except (OSError, SyntaxError, ValueError, AttributeError):
-        version = ()
-    if version < (17, 0, 0, 82):
-        failures.append(
-            {
-                "path": manifest_path,
-                "reason": "module_version_not_bumped",
-                "token": ">=17.0.0.82",
-            }
-        )
     return failures
 
 

@@ -5,6 +5,10 @@ plain mapping. Real ORM enforcement stays with the registration model tests.
 """
 import importlib.util
 import os
+import contextlib
+import io
+import runpy
+import types
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -632,6 +636,47 @@ class ReadinessGateTest(unittest.TestCase):
             env, ("payment.request", "sc.workbench.item", "no.company.field")
         )
         self.assertEqual(violations, ["bootstrap_company_carries_business_data:1:payment.request:3"])
+
+
+class OwnershipReadinessCommandTests(unittest.TestCase):
+    def _run(self, *, passed=True, gate_error=False):
+        from unittest.mock import Mock
+
+        industry = types.ModuleType("odoo.addons.smart_construction_core.services")
+        industry.business_data_ownership = types.SimpleNamespace(
+            ownership_readiness=lambda env: {"passed": passed},
+            assert_existing_business_data_ownership=Mock(
+                return_value=[1],
+                side_effect=ValueError("UNREGISTERED_OWNER") if gate_error else None,
+            ),
+        )
+        security = types.ModuleType("odoo.addons.smart_core.security")
+        security.data_space_provisioning = types.SimpleNamespace(
+            onboarded_registrations=lambda env: types.SimpleNamespace(mapped=lambda key: []),
+            bootstrap_company_ids=lambda env: [],
+        )
+        env = Mock()
+        env.cr.dbname = "readiness_test"
+        env.__getitem__ = Mock(return_value=Mock())
+        env.__getitem__.return_value.sudo.return_value.search.return_value = []
+        modules = {industry.__name__: industry, security.__name__: security}
+        with patch.dict("sys.modules", modules), patch.dict(os.environ, {"SC_EXPECTED_DB": "readiness_test"}), contextlib.redirect_stdout(io.StringIO()):
+            if passed and not gate_error:
+                runpy.run_path(str(ROOT / "scripts/verify/business_data_ownership_readiness.py"), init_globals={"env": env})
+            else:
+                with self.assertRaises(SystemExit) as caught:
+                    runpy.run_path(str(ROOT / "scripts/verify/business_data_ownership_readiness.py"), init_globals={"env": env})
+                self.assertEqual(caught.exception.code, 1)
+        env.cr.rollback.assert_called_once_with()
+
+    def test_registered_ownership_succeeds_and_rolls_back(self):
+        self._run()
+
+    def test_unready_readback_fails_command_and_rolls_back(self):
+        self._run(passed=False)
+
+    def test_platform_refusal_fails_command_and_rolls_back(self):
+        self._run(gate_error=True)
 
 
 if __name__ == "__main__":

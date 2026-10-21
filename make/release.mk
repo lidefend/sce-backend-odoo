@@ -969,17 +969,10 @@ CANDIDATE_IMAGE_REPOSITORY ?= ghcr.io/lidefend/sce-product
 CANDIDATE_IMAGE ?= $(CANDIDATE_IMAGE_REPOSITORY):$(shell python3 scripts/release/product_release.py --version)
 CANDIDATE_PROJECT ?= sc-production-candidate
 CANDIDATE_DB ?= sc_user_data_rehearsal_candidate
-HISTORY_SOURCE_DB ?= sc_demo
-HISTORY_SOURCE_BACKUP ?= artifacts/production-blocker/source/daily-dev-history-source-backup
-DAILY_DEV_PROJECT ?= sc-backend-odoo-dev
 CANDIDATE_ARTIFACTS ?= artifacts/release/immutable-production-candidate-v1
 
 .PHONY: release.workspace.prepare release.rc6.workspace.prepare release.rc6.identity.publish verify.release.rc6.identity verify.release.rc6.supersession release.production.readonly_baseline release.candidate release.candidate.build release.boundary.candidate.build release.publish release.candidate.publish release.candidate.scan
 .PHONY: product.install product.upgrade product.verify tenant.rc.payload.export tenant.rc.profile.product tenant.rc.profile.sample tenant.rc.profile.customer tenant.rc.profile.digest.verify tenant.rc.runtime.acceptance
-.PHONY: release.history.source_probe release.history.backup release.history.restore release.history.upgrade
-.PHONY: release.history.source_restore
-.PHONY: release.history.runtime_up release.history.runtime_down release.history.fingerprint.source_pre
-.PHONY: release.history.fingerprint.candidate_pre release.history.fingerprint.candidate_post
 
 release.workspace.prepare: guard.prod.forbid
 	@test -n "$(RELEASE_WORKSPACE)" || (echo "RELEASE_WORKSPACE is required"; exit 2)
@@ -1110,9 +1103,7 @@ tenant.rc.profile.sample: guard.prod.forbid check-compose-env
 
 tenant.rc.profile.customer: guard.prod.forbid check-compose-env
 	@CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" CANDIDATE_IMAGE_DIGEST="$(CANDIDATE_IMAGE_DIGEST)" \
-		CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" RC_HISTORY_BACKUP="$(RC_HISTORY_BACKUP)" \
-		RC_CUSTOMER_IDENTITY_MIGRATION="$(RC_CUSTOMER_IDENTITY_MIGRATION)" \
-		RC_LEGACY_CUSTOMER_MODULE="$(RC_LEGACY_CUSTOMER_MODULE)" \
+		CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" RC_PROFILE_PATH="$(RC_PROFILE_PATH)" \
 		SC_CUSTOMER_ADDONS_ROOT="$(SC_CUSTOMER_ADDONS_ROOT)" \
 		SC_CUSTOMER_MODULE="$(SC_CUSTOMER_MODULE)" \
 		SC_CUSTOMER_ARCHIVE_SHA256="$(SC_CUSTOMER_ARCHIVE_SHA256)" \
@@ -1129,36 +1120,6 @@ tenant.rc.runtime.acceptance: guard.prod.forbid check-compose-env
 	@CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" CANDIDATE_IMAGE_DIGEST="$(CANDIDATE_IMAGE_DIGEST)" \
 		CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" bash scripts/release/tenant_rc_runtime_acceptance.sh
 
-release.history.source_probe: guard.prod.forbid check-compose-project check-compose-env
-	@HISTORY_SOURCE_DB="$(HISTORY_SOURCE_DB)" HISTORY_SOURCE_BACKUP="$(HISTORY_SOURCE_BACKUP)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" bash scripts/release/production_candidate_history.sh source-probe
-
-release.history.source_restore: guard.prod.forbid check-compose-project check-compose-env
-	@HISTORY_SOURCE_DB="$(HISTORY_SOURCE_DB)" DAILY_DEV_PROJECT="$(DAILY_DEV_PROJECT)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" bash scripts/release/restore_authorized_history_source.sh
-
-release.history.backup: guard.prod.forbid check-compose-project check-compose-env
-	@HISTORY_SOURCE_DB="$(HISTORY_SOURCE_DB)" HISTORY_SOURCE_BACKUP="$(HISTORY_SOURCE_BACKUP)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" bash scripts/release/production_candidate_history.sh backup
-
-release.history.restore: guard.prod.forbid check-compose-project check-compose-env
-	@HISTORY_SOURCE_DB="$(HISTORY_SOURCE_DB)" CANDIDATE_DB="$(CANDIDATE_DB)" CANDIDATE_PROJECT="$(CANDIDATE_PROJECT)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" bash scripts/release/production_candidate_history.sh restore
-
-release.history.upgrade: guard.prod.forbid check-compose-project check-compose-env
-	@CANDIDATE_DB="$(CANDIDATE_DB)" CANDIDATE_PROJECT="$(CANDIDATE_PROJECT)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" CANDIDATE_FORMAL_MODULES="$${CANDIDATE_FORMAL_MODULES:-smart_construction_bundle}" bash scripts/release/production_candidate_history.sh upgrade
-
-release.history.runtime_up: guard.prod.forbid check-compose-project check-compose-env
-	@CANDIDATE_DB="$(CANDIDATE_DB)" CANDIDATE_PROJECT="$(CANDIDATE_PROJECT)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" bash scripts/release/production_candidate_history.sh runtime-up
-
-release.history.runtime_down: guard.prod.forbid check-compose-project check-compose-env
-	@CANDIDATE_DB="$(CANDIDATE_DB)" CANDIDATE_PROJECT="$(CANDIDATE_PROJECT)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" bash scripts/release/production_candidate_history.sh runtime-down
-
-release.history.fingerprint.source_pre: guard.prod.forbid check-compose-project check-compose-env
-	@HISTORY_SOURCE_DB="$(HISTORY_SOURCE_DB)" DAILY_DEV_PROJECT="$(DAILY_DEV_PROJECT)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" bash scripts/release/production_candidate_fingerprint.sh source source-pre
-
-release.history.fingerprint.candidate_pre: guard.prod.forbid check-compose-project check-compose-env
-	@CANDIDATE_DB="$(CANDIDATE_DB)" CANDIDATE_PROJECT="$(CANDIDATE_PROJECT)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" bash scripts/release/production_candidate_fingerprint.sh candidate candidate-pre
-
-release.history.fingerprint.candidate_post: guard.prod.forbid check-compose-project check-compose-env
-	@CANDIDATE_DB="$(CANDIDATE_DB)" CANDIDATE_PROJECT="$(CANDIDATE_PROJECT)" CANDIDATE_ARTIFACTS="$(CANDIDATE_ARTIFACTS)" CANDIDATE_IMAGE="$(CANDIDATE_IMAGE)" bash scripts/release/production_candidate_fingerprint.sh candidate candidate-post
-
 .PHONY: verify.frontend.static.image.decoupling
 verify.frontend.static.image.decoupling: guard.prod.forbid
 	@python3 -m py_compile scripts/release/release_publication.py scripts/release/product_release_manifest.py scripts/release/release_source_identity.py scripts/release/candidate_scan_contract.py scripts/release/production_compose_contract.py scripts/release/production_release_set.py scripts/release/production_db_contract.py scripts/ops/production_release_config_promote.py scripts/ops/production_user_password_reset_runtime.py scripts/ops/production_tenant_delivery_artifact_sync.py
@@ -1167,3 +1128,9 @@ verify.frontend.static.image.decoupling: guard.prod.forbid
 	@python3 -m unittest scripts.ci.test_backend_test_suite_dispatch_contract
 	@bash -n scripts/release/immutable_candidate_build.sh scripts/release/immutable_candidate_scan.sh scripts/release/production_contract_image_acceptance.sh scripts/verify/production_blocker_image.sh scripts/verify/production_blocker_runtime_assets.sh
 	@git diff --check
+
+.PHONY: verify.tenant_rc.clean_profile.unit
+verify.tenant_rc.clean_profile.unit:
+	@bash -n scripts/release/tenant_rc_profile_rehearsal.sh
+	@python3 scripts/release/test_tenant_rc_profile_rehearsal.py
+	@python3 scripts/release/test_customer_package_preflight.py

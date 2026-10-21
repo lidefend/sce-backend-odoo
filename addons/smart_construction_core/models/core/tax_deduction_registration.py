@@ -360,24 +360,6 @@ class ScTaxDeductionRegistration(models.Model):
         )
         return category.id if category else False
 
-    def init(self):
-        self.env.cr.execute(
-            """
-            UPDATE sc_tax_deduction_registration
-               SET deduction_scope = 'general'
-             WHERE deduction_scope IS NULL
-            """
-        )
-        self.env.cr.execute(
-            """
-            UPDATE sc_tax_deduction_registration
-               SET business_category_id = (
-                   SELECT id FROM sc_business_category WHERE code = 'tax.deduction.registration' LIMIT 1
-               )
-             WHERE business_category_id IS NULL
-               AND COALESCE(is_transfer_out, false) = false
-            """
-        )
 
     @api.depends("invoice_amount_untaxed", "invoice_tax_amount")
     def _compute_tax_rate_text(self):

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
+require('./lib/probe_toolchain_support.cjs').assertProbeSupported(__filename);
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');

@@ -64,10 +64,10 @@ def _resolve_state_path(baseline: dict) -> Path:
 def _fetch_live_snapshot() -> dict:
     base_url = get_base_url()
     db_name = os.getenv("E2E_DB") or os.getenv("DB_NAME") or ""
-    intent_url = build_intent_url(base_url, db_name)
+    intent_url = build_intent_url(base_url)
     login_company_id = _safe_int(os.getenv("E2E_COMPANY_ID"), 0)
 
-    token_ok, token, auth_source = obtain_runtime_probe_token(intent_url, db_name)
+    token_ok, token, auth_source = obtain_runtime_probe_token(intent_url)
     if not token_ok or not token:
         raise RuntimeError(f"runtime probe authentication unavailable: source={auth_source}")
 
@@ -78,7 +78,7 @@ def _fetch_live_snapshot() -> dict:
     status, init_resp = http_post_json(
         intent_url,
         {"intent": "system.init", "params": init_params},
-        headers={"Authorization": f"Bearer {token}", "X-Odoo-DB": db_name},
+        headers={"Authorization": f"Bearer {token}"},
     )
     require_ok(status, init_resp, "system.init")
 

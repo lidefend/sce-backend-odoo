@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import zlib
 from odoo import SUPERUSER_ID, api
-from odoo.addons.smart_core.utils.backend_contract_boundaries import ensure_lowcode_contract_source_status
 
 
 REQUIRED_CORE_TAXES = (
@@ -131,36 +130,10 @@ def ensure_core_taxes(env_or_cr, registry=None):
         )
 
 
-def pre_init_hook(env):
-    """Protect legacy tax/tax group xmlids from upgrade-time cleanup.
-
-    Odoo passes env to pre_init_hook. Use env.cr to run SQL.
-    """
-    env.cr.execute(
-        """
-        UPDATE ir_model_data
-           SET noupdate = TRUE,
-               module   = 'smart_construction_legacy'
-         WHERE module = 'smart_construction_core'
-           AND name IN (
-                'tax_default_sale_9',
-                'tax_default_purchase_13',
-                'tax_purchase_vat_13',
-                'tax_purchase_vat_3',
-                'tax_purchase_vat_1',
-                'tax_sale_vat_9',
-                'tax_group_vat_cn'
-           );
-        """
-    )
-
-
 def post_init_hook(env):
     """Install-time hook to ensure core taxes are present."""
     ensure_core_taxes(env)
     _ensure_signup_defaults(env)
-    _task_sc_state_backfill(env)
-    _backfill_lowcode_contract_source_status(env)
     _ensure_chinese_translations(env)
 
 
@@ -214,19 +187,6 @@ def _ensure_chinese_translations(env):
     ICP.set_param("sc.i18n.zh_cn.loaded_for_base_version", base_version)
 
 
-def _backfill_lowcode_contract_source_status(env):
-    Contract = env["ui.business.config.contract"].sudo()
-    for rec in Contract.search([], order="id"):
-        payload = rec.contract_json if isinstance(rec.contract_json, dict) else {}
-        next_payload = ensure_lowcode_contract_source_status(payload)
-        if next_payload == payload:
-            continue
-        # Fresh-install normalization is a real published-contract mutation.
-        # Route it through the P0 append-only lifecycle authority so content
-        # hashes, definition hashes and immutable history remain consistent.
-        rec.write({"contract_json": next_payload})
-
-
 def _ensure_cny_company_currency(env):
     """The business product is RMB-only for users; keep company defaults aligned."""
     env["res.company"]._sc_ensure_cny_currency()
@@ -277,37 +237,3 @@ def _ensure_signup_defaults(env):
         ICP.set_param("sc.signup.ratelimit.gc_days", "7")
     if ICP.get_param("sc.password_recovery.self_service_enabled") in (None, False, ""):
         ICP.set_param("sc.password_recovery.self_service_enabled", "false")
-
-
-_TASK_SC_STATE_BACKFILL_KEY = "sc.task_sc_state.backfill.v0_1"
-_TASK_SC_STATE_BACKFILL_COUNT_KEY = "sc.task_sc_state.backfill.v0_1.count"
-
-
-def _task_sc_state_backfill(env):
-    """Backfill sc_state once for legacy tasks; never overwrite user data."""
-    ICP = env["ir.config_parameter"].sudo()
-    if ICP.get_param(_TASK_SC_STATE_BACKFILL_KEY) == "1":
-        return
-
-    Task = env["project.task"].sudo()
-    ids = Task.search([("sc_state", "=", False)]).ids
-    if not ids:
-        ICP.set_param(_TASK_SC_STATE_BACKFILL_KEY, "1")
-        ICP.set_param(_TASK_SC_STATE_BACKFILL_COUNT_KEY, "0")
-        return
-
-    updated = 0
-    batch_size = 2000
-    for i in range(0, len(ids), batch_size):
-        batch = Task.browse(ids[i : i + batch_size])
-        for task in batch:
-            if task.sc_state:
-                continue
-            inferred = "draft"
-            if getattr(task, "state", None) == "done":
-                inferred = "done"
-            task.with_context(allow_transition=True).write({"sc_state": inferred})
-            updated += 1
-
-    ICP.set_param(_TASK_SC_STATE_BACKFILL_KEY, "1")
-    ICP.set_param(_TASK_SC_STATE_BACKFILL_COUNT_KEY, str(updated))

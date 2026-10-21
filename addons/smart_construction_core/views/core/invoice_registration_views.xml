@@ -179,7 +179,7 @@
                                 <field name="company_id" readonly="1"/>
                                 <field name="operation_strategy" readonly="1"/>
                                 <field name="partner_id"/>
-                                <field name="legacy_partner_name" readonly="1" invisible="source_origin != 'legacy'"/>
+                                <field name="legacy_partner_name" readonly="1" invisible="source_origin != 'legacy'" groups="smart_construction_core.group_sc_cap_config_admin"/>
                                 <field name="contract_id"/>
                                 <field name="settlement_id"/>
                             </group>
@@ -248,7 +248,7 @@
                                     <field name="reject_reason" readonly="1"/>
                                 </group>
                             </page>
-                            <page string="迁移来源" invisible="source_origin != 'legacy'">
+                            <page string="迁移来源" invisible="source_origin != 'legacy'" groups="smart_construction_core.group_sc_cap_config_admin">
                                 <group name="invoice_source_trace" data-sc-anchor="invoice_source_trace" string="来源追溯">
                                     <!-- Migrated provenance facts stay (they have no other
                                          presenter); the derived copies of 录入人/录入时间

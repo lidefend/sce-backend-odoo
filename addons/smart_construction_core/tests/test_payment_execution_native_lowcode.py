@@ -47,11 +47,6 @@ class TestPaymentExecutionNativeLowcode(TransactionCase):
         "action_confirm", "validate_tier", "reject_tier", "action_paid", "action_cancel",
         "action_reverse_payment",
     )
-    RETIRED_CONTRACTS = (
-        "business_config_contract_sc_payment_execution_form_sections_v1",
-        "business_config_contract_sc_payment_execution_p1_form_business_facts_v1",
-        "business_config_contract_sc_payment_execution_form_structure_generated",
-    )
     NATIVE_AUTHORITY_CONTRACTS = (
         "business_config_contract_payment_execution_actual_outflow_productized_form_v1",
         "business_config_contract_payment_execution_company_finance_expense_productized_form_v1",
@@ -67,7 +62,6 @@ class TestPaymentExecutionNativeLowcode(TransactionCase):
             "data/payment_execution_actual_outflow_form_productization_contract.xml",
             "data/payment_request_form_productization_contract.xml",
             "data/view_orchestration_form_section_contract_data.xml",
-            "data/p1_daily_business_form_orchestration_contract_data.xml",
         ):
             convert_file(self.env, "smart_construction_core", source, {}, mode="update", noupdate=False)
 
@@ -120,43 +114,36 @@ class TestPaymentExecutionNativeLowcode(TransactionCase):
         return self.FORMAL_ACTIONS + self.BYPASS_ACTIONS
 
     def retired_projection_fields(self):
-        """Facts the retired P1 layer declared that the native arch never carried."""
-        retired = self.ref("business_config_contract_sc_payment_execution_p1_form_business_facts_v1")
-        form = retired.contract_json["view_orchestration"]["views"]["form"]
-        declared = {row["name"] for row in form["fields"]}
-        from lxml import etree
-        arch = etree.fromstring(self.ref("view_sc_payment_execution_form").arch_db.encode())
-        native = {node.get("name") for node in arch.xpath(".//field")}
-        return sorted(declared - native)
+        """Historical projection set, independent of deleted runtime carriers.
 
-    def test_entry_contracts_spend_one_native_structure(self):
-        """Four released configurations, one native authority, no second root."""
-        for contract_key in self.RETIRED_CONTRACTS:
-            self.assertFalse(self.ref(contract_key).active, contract_key)
-        for contract_key in self.NATIVE_AUTHORITY_CONTRACTS:
-            record = self.ref(contract_key)
-            self.assertTrue(record.active, contract_key)
-            form_spec = record.contract_json["view_orchestration"]["views"]["form"]
-            self.assertEqual(form_spec["composition_mode"], "native_semantic_surface", contract_key)
-            self.assertNotIn("sections", form_spec, contract_key)
-            self.assertNotIn("fields", form_spec, contract_key)
-            self.assertNotIn("columns", form_spec, contract_key)
-        # the model-wide released form keeps its semantic annotation only
-        model_wide = self.ref("business_config_contract_payment_execution_from_request_productized_form_v1")
-        self.assertTrue(model_wide.contract_json["view_orchestration"]["views"]["form"]["semantic_anchors"])
-        for action_key, required in self.entries():
-            data = self.contract(action_key)
-            g = data["formStructureContract"]["sourceAuthority"]["governance_source"]
-            self.assertEqual(g["resolvedActionId"], self.ref(action_key).id, action_key)
-            self.assertEqual(g["resolvedViewId"], self.ref("view_sc_payment_execution_form").id, action_key)
-            self.assertEqual(g["formStructureAuthority"], "native_authority", action_key)
-            self.assertEqual(g["formPresentationMode"], "task", action_key)
-            self.assertEqual(g["compatibilityDependencies"], [], action_key)
-            self.assertEqual(g["configuredSections"], [], action_key)
-            names = self.field_names(data)
-            for field in required:
-                self.assertIn(field, names, (action_key, field))
-                self.assertEqual(names.count(field), 1, (action_key, field))
+        Frozen from p1_daily_business_form_orchestration_contract_data.xml
+        minus payment_execution_views.xml at commit
+        55fdb711c7ffd42f6da4c4300bc37d5032a6bbe3.
+        """
+        return (
+            'company_finance_note_display',
+            'company_finance_push_result',
+            'partner_payment_actual_payee_unit',
+            'partner_payment_category_display',
+            'partner_payment_content_display',
+            'partner_payment_cost_type_display',
+            'partner_payment_date_display',
+            'partner_payment_method_display',
+            'partner_payment_project_name',
+            'partner_payment_source_text',
+            'partner_payment_voucher_no',
+            'partner_payment_writer',
+            'payment_execution_account_display',
+            'payment_execution_attachment_text_display',
+            'payment_execution_bank_name_display',
+            'payment_execution_document_no_display',
+            'payment_execution_document_status_display',
+            'payment_execution_payment_account_name_display',
+            'payment_execution_payment_amount_display',
+            'payment_execution_payment_request_no_display',
+            'payment_execution_source_created_by_display',
+            'payment_execution_supplier_name_display',
+        )
 
     def test_body_presents_each_fact_once_and_projection_duplicates_are_gone(self):
         """One fact, one node: no duplicated presentation inside the same context."""

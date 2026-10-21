@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-import runpy
 import threading
 import uuid
-from pathlib import Path
 from unittest.mock import patch
 
 from lxml import etree
@@ -873,16 +871,16 @@ class TestP1FinanceProjectionAuthority(BusinessTransactionCase):
                 }
             )
 
+        expected_indexes = {
+            "sc_receipt_income_one_canonical_terminal_per_request_idx",
+            "sc_expense_claim_one_canonical_terminal_per_request_idx",
+            "sc_payment_execution_one_active_per_request_idx",
+        }
         self.env.cr.execute(
-            "SELECT indexname FROM pg_indexes WHERE indexname IN %s",
-            [
-                (
-                    "sc_receipt_income_one_canonical_terminal_per_request_idx",
-                    "sc_expense_claim_one_canonical_terminal_per_request_idx",
-                )
-            ],
+            "SELECT indexname FROM pg_indexes WHERE schemaname = current_schema() AND indexname IN %s",
+            [tuple(sorted(expected_indexes))],
         )
-        self.assertEqual(len(self.env.cr.fetchall()), 2)
+        self.assertEqual({row[0] for row in self.env.cr.fetchall()}, expected_indexes)
 
     def test_legacy_cash_owner_requires_full_semantic_identity(self):
         other_partner = self.env["res.partner"].create({"name": "P1 错误往来单位"})
@@ -1087,80 +1085,7 @@ class TestP1FinanceProjectionAuthority(BusinessTransactionCase):
             {self.receipt_contract.id: {"amount": 23, "evidence_count": 1}},
         )
 
-    def test_payment_ledger_migration_replay_preserves_snapshots_and_tuple_identity(self):
-        contract = self.env["construction.contract"].create(
-            {
-                "subject": "P1 ledger migration contract",
-                "type": "in",
-                "project_id": self.project.id,
-                "partner_id": self.partner.id,
-                "company_id": self.env.company.id,
-                "currency_id": self.env.company.currency_id.id,
-            }
-        )
-        request = self.env["payment.request"].create(
-            {
-                "name": "P1 ledger migration request",
-                "type": "pay",
-                "project_id": self.project.id,
-                "partner_id": self.partner.id,
-                "contract_id": contract.id,
-                "amount": 19,
-                "currency_id": self.env.company.currency_id.id,
-                "state": "draft",
-            }
-        )
-        request.flush_recordset(["state"])
-        self.env.cr.execute(
-            "UPDATE payment_request SET state = 'approved' WHERE id = %s",
-            [request.id],
-        )
-        request.invalidate_recordset(["state"])
-        ledger = request._ensure_payment_ledger(amount=19)
-        allocation = ledger.contract_allocation_ids
-        migration_path = (
-            Path(__file__).resolve().parents[1]
-            / "migrations"
-            / "17.0.0.153"
-            / "pre-migration.py"
-        )
-        migrate = runpy.run_path(str(migration_path))["migrate"]
-
-        self.env.cr.execute(
-            "SELECT ctid::text FROM payment_ledger WHERE id = %s",
-            [ledger.id],
-        )
-        ledger_ctid = self.env.cr.fetchone()[0]
-        self.env.cr.execute(
-            "SELECT ctid::text FROM payment_ledger_allocation WHERE id = %s",
-            [allocation.id],
-        )
-        allocation_ctid = self.env.cr.fetchone()[0]
-        migrate(self.env.cr, "17.0.0.152")
-        migrate(self.env.cr, "17.0.0.153")
-        self.env.cr.execute(
-            "SELECT ctid::text FROM payment_ledger WHERE id = %s",
-            [ledger.id],
-        )
-        self.assertEqual(self.env.cr.fetchone()[0], ledger_ctid)
-        self.env.cr.execute(
-            "SELECT ctid::text FROM payment_ledger_allocation WHERE id = %s",
-            [allocation.id],
-        )
-        self.assertEqual(self.env.cr.fetchone()[0], allocation_ctid)
-
-        original_strategy = self.project.operation_strategy
-        self.project.write(
-            {"operation_strategy": "joint" if original_strategy == "direct" else "direct"}
-        )
-        with self.assertRaisesRegex(RuntimeError, "conflicts with current authority"):
-            with self.env.cr.savepoint():
-                migrate(self.env.cr, "17.0.0.153")
-        ledger.invalidate_recordset(["operation_strategy"])
-        self.assertEqual(ledger.operation_strategy, original_strategy)
-        self.project.write({"operation_strategy": original_strategy})
-
-    def test_partial_legacy_payment_identity_is_quarantined_without_relation_guessing(self):
+    def test_unresolved_payment_identity_is_excluded_from_totals_and_company_access(self):
         self.project.write({"funding_enabled": True})
         baseline = self.env["project.funding.baseline"].create(
             {
@@ -1247,114 +1172,24 @@ class TestP1FinanceProjectionAuthority(BusinessTransactionCase):
                 [("id", "=", ledger.id)]
             )
         )
-        original_strategy = ledger.operation_strategy
-        drifted_strategy = "joint" if original_strategy == "direct" else "direct"
-
+        # Prepare explicitly unresolved facts without replaying development migrations.
         self.env.cr.execute(
-            "ALTER TABLE payment_ledger ALTER COLUMN normalization_state DROP NOT NULL"
-        )
-        self.env.cr.execute(
-            "ALTER TABLE payment_ledger_allocation ALTER COLUMN normalization_state DROP NOT NULL"
+            "UPDATE payment_ledger SET company_id=NULL, currency_id=NULL, "
+            "normalization_state='legacy_unresolved_identity' WHERE id=%s", [ledger.id],
         )
         self.env.cr.execute(
-            """
-            UPDATE payment_ledger
-               SET company_id = NULL,
-                   currency_id = NULL,
-                   normalization_state = NULL
-             WHERE id = %s
-            """,
-            [ledger.id],
+            "UPDATE payment_ledger_allocation SET company_id=NULL, currency_id=NULL, "
+            "normalization_state='legacy_unresolved_identity', allocation_state='unresolved_global', "
+            "reason_code='historical_backfill_unresolved' WHERE id=%s", [allocation.id],
         )
         self.env.cr.execute(
-            """
-            UPDATE payment_ledger_allocation
-               SET company_id = NULL,
-                   currency_id = NULL,
-                   normalization_state = NULL,
-                   allocation_state = 'allocated',
-                   reason_code = 'direct_contract'
-             WHERE id = %s
-            """,
-            [allocation.id],
+            "UPDATE project_funding_actual_event_allocation "
+            "SET normalization_state='legacy_unresolved_relation' WHERE id=%s", [funding_allocation.id],
         )
-        self.env.cr.execute(
-            "UPDATE project_project SET operation_strategy = %s WHERE id = %s",
-            [drifted_strategy, self.project.id],
-        )
-        self.env.cr.execute(
-            "UPDATE payment_request SET currency_id = %s WHERE id = %s",
-            [self.other_currency.id, request.id],
-        )
-
-        migrations_root = Path(__file__).resolve().parents[1] / "migrations"
-        migrations = [
-            runpy.run_path(str(migrations_root / version / "pre-migration.py"))[
-                "migrate"
-            ]
-            for version in (
-                "17.0.0.152",
-                "17.0.0.153",
-                "17.0.0.154",
-                "17.0.0.155",
-                "17.0.0.156",
-            )
-        ]
-        for migrate in migrations:
-            migrate(self.env.cr, "17.0.0.151")
-
-        self.env.cr.execute(
-            """
-            SELECT project_id, company_id, partner_id, currency_id,
-                   operation_strategy, normalization_state, ctid::text
-              FROM payment_ledger
-             WHERE id = %s
-            """,
-            [ledger.id],
-        )
-        ledger_values = self.env.cr.fetchone()
-        self.assertEqual(
-            ledger_values[:6],
-            (
-                self.project.id,
-                None,
-                self.partner.id,
-                None,
-                original_strategy,
-                "legacy_unresolved_identity",
-            ),
-        )
-        self.env.cr.execute(
-            """
-            SELECT project_id, company_id, currency_id, allocation_state,
-                   reason_code, normalization_state, ctid::text
-              FROM payment_ledger_allocation
-             WHERE id = %s
-            """,
-            [allocation.id],
-        )
-        allocation_values = self.env.cr.fetchone()
-        self.assertEqual(
-            allocation_values[:6],
-            (
-                self.project.id,
-                None,
-                None,
-                "unresolved_global",
-                "historical_backfill_unresolved",
-                "legacy_unresolved_identity",
-            ),
-        )
-        self.env.cr.execute(
-            """
-            SELECT normalization_state, ctid::text
-              FROM project_funding_actual_event_allocation
-             WHERE id = %s
-            """,
-            [funding_allocation.id],
-        )
-        funding_values = self.env.cr.fetchone()
-        self.assertEqual(funding_values[0], "legacy_unresolved_relation")
+        self.env.invalidate_all()
+        ledger.modified(["normalization_state"])
+        funding_allocation.modified(["normalization_state"])
+        self.env.flush_all()
         self.assertEqual(opm.contract_actual_paid_amount_map(self.env, [contract.id]), {})
         request.invalidate_recordset(["paid_amount_total", "unpaid_amount", "is_fully_paid"])
         self.assertEqual(request.paid_amount_total, 0)
@@ -1411,24 +1246,6 @@ class TestP1FinanceProjectionAuthority(BusinessTransactionCase):
         )
         self.assertEqual(evidence_action.res_model, "payment.ledger.allocation")
         self.assertEqual(evidence_menu.action, evidence_action)
-
-        for migrate in migrations:
-            migrate(self.env.cr, "17.0.0.155")
-        self.env.cr.execute(
-            "SELECT ctid::text FROM payment_ledger WHERE id = %s",
-            [ledger.id],
-        )
-        self.assertEqual(self.env.cr.fetchone()[0], ledger_values[6])
-        self.env.cr.execute(
-            "SELECT ctid::text FROM payment_ledger_allocation WHERE id = %s",
-            [allocation.id],
-        )
-        self.assertEqual(self.env.cr.fetchone()[0], allocation_values[6])
-        self.env.cr.execute(
-            "SELECT ctid::text FROM project_funding_actual_event_allocation WHERE id = %s",
-            [funding_allocation.id],
-        )
-        self.assertEqual(self.env.cr.fetchone()[0], funding_values[1])
 
     def test_observed_payment_identity_mismatch_blocks_totals_and_new_execution(self):
         contract = self.env["construction.contract"].create(
@@ -1530,19 +1347,37 @@ class TestP1FinanceProjectionAuthority(BusinessTransactionCase):
         execution.invalidate_recordset(["state"])
         self.assertEqual(execution.state, "confirmed")
 
-    def test_replayed_index_migrations_do_not_rebuild_matching_indexes(self):
-        migrations_root = Path(__file__).resolve().parents[1] / "migrations"
-        migrations = [
-            runpy.run_path(str(migrations_root / version / "post-migration.py"))[
-                "migrate"
-            ]
-            for version in ("17.0.0.150", "17.0.0.151")
-        ]
-        for migrate in migrations:
-            migrate(self.env.cr, "17.0.0.149")
+    def test_model_init_preserves_current_indexes_and_allocation_rows(self):
+        request = self.env["payment.request"].create({
+            "name": "Index initialization must not backfill cash facts",
+            "type": "receive", "project_id": self.project.id,
+            "partner_id": self.partner.id, "contract_id": self.receipt_contract.id,
+            "amount": 19, "currency_id": self.env.company.currency_id.id,
+        })
+        request.flush_recordset(["state"])
+        self.env.cr.execute("UPDATE payment_request SET state='approved' WHERE id=%s", [request.id])
+        request.invalidate_recordset(["state"])
+        ledger = request._ensure_payment_ledger(amount=19)
+        self.assertTrue(ledger.contract_allocation_ids)
+        # An incomplete historical ledger must stay untouched by schema initialization.
+        self.env.cr.execute("DELETE FROM payment_ledger_allocation WHERE ledger_id=%s", [ledger.id])
+        self.env.invalidate_all()
+        models = ("sc.treasury.ledger", "sc.expense.claim", "sc.receipt.income",
+                  "sc.payment.execution", "payment.ledger.allocation",
+                  "payment.ledger", "project.funding.actual.event.allocation")
+        before_rows = self.env["payment.ledger.allocation"].search([]).ids
+        for model in models:
+            self.env[model].init()
         index_names = [
             "sc_treasury_ledger_posted_payment_identity_idx",
+            "payment_ledger_allocation_contract_identity_idx",
+            "payment_ledger_canonical_posted_identity_idx",
+            "project_funding_allocation_line_effect_idx",
+            "project_funding_allocation_baseline_effect_idx",
+            "project_funding_allocation_event_effect_idx",
             "sc_expense_claim_one_canonical_terminal_per_request_idx",
+            "sc_receipt_income_one_canonical_terminal_per_request_idx",
+            "sc_payment_execution_one_active_per_request_idx",
         ]
         self.env.cr.execute(
             "SELECT relname, pg_relation_filenode(oid) FROM pg_class WHERE relname = ANY(%s)",
@@ -1550,13 +1385,15 @@ class TestP1FinanceProjectionAuthority(BusinessTransactionCase):
         )
         before = dict(self.env.cr.fetchall())
         self.assertEqual(set(before), set(index_names))
-        for migrate in migrations:
-            migrate(self.env.cr, "17.0.0.151")
+        for model in models:
+            self.env[model].init()
         self.env.cr.execute(
             "SELECT relname, pg_relation_filenode(oid) FROM pg_class WHERE relname = ANY(%s)",
             [index_names],
         )
         self.assertEqual(dict(self.env.cr.fetchall()), before)
+
+        self.assertEqual(self.env["payment.ledger.allocation"].search([]).ids, before_rows)
 
     def test_contract_receipt_position_requires_exact_owned_ledger(self):
         request = self.env["payment.request"].create(

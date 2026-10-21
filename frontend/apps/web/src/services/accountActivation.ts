@@ -54,7 +54,7 @@ export function getPasswordRecoveryStatus() {
 }
 
 export function getPublicAuthPageContracts() {
-  return activationRequest<{ ok: boolean; data: { schema_version: string; pages: Record<string, import('../stores/session').PageContract> } }>(
+  return activationRequest<{ ok: boolean; data: { schema_version: string; error_states: unknown; pages: Record<string, import('../stores/session').PageContract> } }>(
     '/api/v1/auth/page-contracts', undefined, AbortSignal.timeout(10000),
   );
 }

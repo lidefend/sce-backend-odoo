@@ -40,7 +40,7 @@ def _system_init(intent_url: str, token: str, db_name: str) -> dict:
     status, payload = http_post_json(
         intent_url,
         {"intent": "system.init", "params": {"contract_mode": "user"}},
-        headers={"Authorization": f"Bearer {token}", "X-Odoo-DB": db_name},
+        headers={"Authorization": f"Bearer {token}"},
     )
     if status >= 400 or not isinstance(payload, dict) or payload.get("ok") is not True:
         return {}
@@ -98,7 +98,7 @@ def main() -> int:
     base_url = get_base_url()
     intent_url = f"{base_url}/api/v1/intent"
     db_name = env_value("DB_NAME") or env_value("ODOO_DB") or "sc_dev"
-    ok, token, _auth_source = obtain_runtime_probe_token(intent_url, db_name)
+    ok, token, _auth_source = obtain_runtime_probe_token(intent_url)
     if not ok:
         errors.append("no valid E2E login or dev/test bootstrap token for bundle installation check")
         token = ""

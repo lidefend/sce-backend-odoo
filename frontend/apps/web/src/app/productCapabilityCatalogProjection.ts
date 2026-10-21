@@ -12,6 +12,7 @@
 import type {
   ProductCapabilityConfigurationCard,
   ProductCapabilityItem,
+  UserCapabilityItem,
   ProductCapabilityLoginHomeBlock,
 } from '../api/productCapabilityCatalog';
 import { contractGapError, type ContractGapError } from './contract/contractGap';
@@ -133,4 +134,30 @@ export function capabilityStatusLabel(status: string): string {
   if (status === 'partial') return '部分可用';
   if (status === 'planned') return '未发布';
   return status;
+}
+
+
+export function projectUserCapabilities(catalog: unknown): { items: UserCapabilityItem[]; empty_message: string } {
+  const root = rowObject(catalog, 'user_capabilities.catalog');
+  const surface = rowObject(root.user_capabilities, 'user_capabilities');
+  if (!Array.isArray(surface.items)) raiseGap('user_capabilities.items');
+  const base = projectCapabilities({ capabilities: surface.items });
+  const items = base.map((row, index) => {
+    const source = rowObject((surface.items as unknown[])[index], 'user_capabilities.item');
+    return { ...row,
+      status_label: requiredText(source.status_label, 'user_capabilities.status_label'),
+      reason_code: optionalText(source.reason_code, 'user_capabilities.reason_code'),
+    };
+  });
+  return { items, empty_message: requiredText(surface.empty_message, 'user_capabilities.empty_message') };
+}
+
+export function requireStructuredStartupCapabilities(value: unknown): asserts value is (Record<string, unknown> & { key: string; state: string; capability_state: string })[] {
+  if (!Array.isArray(value)) raiseGap('system.init.capabilities');
+  for (const item of value) {
+    const row = rowObject(item, 'system.init.capabilities.item');
+    requiredText(row.key, 'system.init.capabilities.key');
+    requiredText(row.state, 'system.init.capabilities.state');
+    requiredText(row.capability_state, 'system.init.capabilities.capability_state');
+  }
 }

@@ -529,6 +529,18 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
     ).lower()
     render_profile = _sc_text(source.get("render_profile") or head.get("render_profile") or (((context or {}).get("meta") or {}).get("params") or {}).get("render_profile")).lower()
     out = deepcopy(contract)
+    # Rendering is a frontend concern: the industry finalize hook must never
+    # pass a framework component, per-client adapter or rendering fallback
+    # through the component registry into the projected contract.
+    layout_contract = out.get("layoutContract") if isinstance(out.get("layoutContract"), dict) else {}
+    component_registry = layout_contract.get("componentRegistry") if isinstance(layout_contract.get("componentRegistry"), dict) else {}
+    if component_registry:
+        for entry in component_registry.values():
+            if isinstance(entry, dict):
+                for forbidden in ("adapter", "selectedAdapter", "selected_adapter", "fallback"):
+                    entry.pop(forbidden, None)
+        layout_contract["componentRegistry"] = component_registry
+        out["layoutContract"] = layout_contract
     if model == "construction.work.breakdown" and view_type in {"tree", "list"}:
         source_context = source.get("context") if isinstance(source.get("context"), dict) else {}
         if not source_context:
@@ -816,7 +828,7 @@ register_legacy_standard_list_profile({
     "columns_order": [
         "state", "name", "date_request",
         "project_name_display", "payee_unit_display", "payment_basis_type",
-        "payee_account_completeness", "legal_next_action_display",
+        "payee_account_completeness",
         "request_amount_display", "actual_payee_unit_display",
         "payer_unit_display", "actual_paid_amount_display", "cost_type_display",
         "note_display", "payment_account_no_display", "amount_uppercase_display",
@@ -828,7 +840,6 @@ register_legacy_standard_list_profile({
         "date_request": "申请日期", "project_name_display": "项目名称",
         "payee_unit_display": "收款单位", "payment_basis_type": "付款依据",
         "payee_account_completeness": "账户完整度",
-        "legal_next_action_display": "下一步",
         "request_amount_display": "申请付款金额",
         "actual_payee_unit_display": "实际收款单位",
         "payer_unit_display": "付款单位",
@@ -1634,6 +1645,7 @@ def smart_core_finalize_projected_contract_data(env, data, context):
             "preference_policy": {
                 "allow_visibility": False,
                 "allow_order": False,
+                "allow_width": False,
                 "locked_columns": columns,
                 "must_request_columns": columns,
             },

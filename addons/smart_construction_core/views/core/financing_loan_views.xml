@@ -136,7 +136,7 @@
                                     <field name="attachment_ids" widget="many2many_binary"/>
                                 </group>
                             </page>
-                            <page string="迁移来源" invisible="source_origin != 'legacy'">
+                            <page string="迁移来源" invisible="source_origin != 'legacy'" groups="smart_construction_core.group_sc_cap_config_admin">
                                 <group>
                                     <field name="creator_name" readonly="1"/>
                                     <field name="created_time" readonly="1"/>

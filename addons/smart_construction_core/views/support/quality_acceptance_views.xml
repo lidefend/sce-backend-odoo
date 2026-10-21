@@ -42,6 +42,9 @@
             <field name="issue_ids" widget="many2many_tags"/>
             <field name="attachment_ids" widget="many2many_binary"/>
           </group>
+          <div class="alert alert-info" role="status" invisible="not processing_advisory">
+            <field name="processing_advisory" readonly="1" nolabel="1"/>
+          </div>
         </sheet>
         <chatter/>
       </form>

@@ -46,7 +46,8 @@ target = _load_module(
 class TestPageContractsBuilderBoundaries(unittest.TestCase):
     def test_public_auth_projection_is_bounded_and_canonical(self):
         public = target.build_public_auth_page_contracts()
-        self.assertEqual(set(public), {"schema_version", "pages"})
+        self.assertEqual(set(public), {"schema_version", "pages", "error_states"})
+        self.assertEqual(public["error_states"], target.build_page_contracts({})["error_states"])
         self.assertEqual(set(public["pages"]), {"login", "account_activation", "password_recovery"})
         for key, page in public["pages"].items():
             self.assertEqual(set(page), {"schema_version", "texts", "sections", "page_orchestration"})

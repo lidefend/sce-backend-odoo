@@ -181,16 +181,13 @@ class TestProjectMemberRoleSurface(TransactionCase):
 
     def test_historical_payment_is_explicit_for_authorized_uat_roles(self):
         history_xmlid = "smart_construction_core.menu_sc_historical_payment_fact"
-        for role in ("finance", "executive", "business_config_admin"):
-            with self.subTest(role=role):
-                self.assertIn(
-                    history_xmlid,
-                    ROLE_SURFACE_OVERRIDES[role]["primary_menu_xmlids"],
-                )
-        self.assertNotIn(
-            history_xmlid,
-            ROLE_SURFACE_OVERRIDES["project_member"]["primary_menu_xmlids"],
-        )
+        # 历史付款事实属审计专用信息：不再进入任何正常角色的发布导航面，
+        # 只在审计入口（历史付款事实 action/model）保留可追溯能力。
+        for role in ("finance", "executive", "business_config_admin", "project_member"):
+            self.assertNotIn(
+                history_xmlid,
+                ROLE_SURFACE_OVERRIDES[role]["primary_menu_xmlids"],
+            )
 
     def test_pm_cost_surface_exposes_full_boq_to_plan_chain(self):
         primary_menu_xmlids = set(ROLE_SURFACE_OVERRIDES["pm"]["primary_menu_xmlids"])
@@ -583,10 +580,14 @@ class TestProjectMemberRoleSurface(TransactionCase):
         visible_leaves = list(self._iter_renderable_leaves(nav))
         visible_xmlids = {self._leaf_xmlid(node) for node in visible_leaves}
         self.assertTrue(self.SYSTEM_ADMIN_MENU_XMLIDS <= visible_xmlids)
+        action_leaves = [
+            node for node in visible_leaves
+            if node.get("action_id") or (node.get("meta") if isinstance(node.get("meta"), dict) else {}).get("action_id")
+        ]
         self.assertTrue(
             all(
                 str(node.get("route") or "").startswith("/a/")
-                for node in visible_leaves
+                for node in action_leaves
             )
         )
         self.assertNotIn(denied_xmlid, {self._leaf_xmlid(node) for node in visible_leaves})
@@ -763,29 +764,17 @@ class TestProjectMemberRoleSurface(TransactionCase):
             user_management["menu_xmlid"],
             "smart_construction_core.menu_sc_runtime_user_management",
         )
-        # Same contract invariant as the executive and project-member cases:
-        # a declared authority is either delivered or carries an explicit
-        # denial with a reason_code, and never disappears silently.
-        # ``menu_sc_historical_payment_fact`` is a declared-but-unreleased
-        # locked-candidate menu (``product_policy_sync`` keeps a legacy/roadmap
-        # row inactive), so the admissible outcome is the recorded denial; it
-        # must not be forced into ``primary_actions`` by widening the delivery
-        # engine.
-        historical_delivered = [
-            row for row in config_contract["primary_actions"]
-            if row["action_xmlid"] == "smart_construction_core.action_sc_historical_payment_fact"
-        ]
-        historical_denied = [
-            row for row in config_contract["denied_actions"]
-            if row["action_xmlid"] == "smart_construction_core.action_sc_historical_payment_fact"
-        ]
-        self.assertEqual(
-            len(historical_delivered) + len(historical_denied),
-            1,
-            "declared historical-payment-fact authority must be delivered or denied exactly once",
+        # 历史付款事实已从正常角色发布面退出（审计专用）。它不再是任何
+        # 角色的 primary 声明，因此既不应被投递为 primary action，也不应
+        # 产生一条面向业务用户的拒绝记录；其能力仅保留在审计专用入口。
+        self.assertNotIn(
+            "smart_construction_core.action_sc_historical_payment_fact",
+            [row["action_xmlid"] for row in config_contract["primary_actions"]],
         )
-        if historical_denied:
-            self.assertEqual(historical_denied[0]["reason_code"], "PRODUCT_ENTRY_NOT_VISIBLE")
+        self.assertNotIn(
+            "smart_construction_core.action_sc_historical_payment_fact",
+            [row["action_xmlid"] for row in config_contract["denied_actions"]],
+        )
         self.assertFalse(config_contract["role_home_actions"])
 
         admin_result = RouteAuthorityValidateHandler(self.env(user=config_user)).handle({
@@ -824,7 +813,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
         self.assertTrue(surface["exposure_policy_declared"])
         self.assertEqual(
             surface["primary_menu_xmlids"],
-            ["smart_construction_core.menu_sc_historical_payment_fact"],
+            [],
         )
         contract = MenuService(self.env(user=executive_user)).build_route_authority(surface)
         self.assertEqual(contract["principal_scope"], {
@@ -873,7 +862,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
         self.assertEqual(len(projected[0]["children"]), 1)
         self.assertEqual(projected[0]["children"][0]["meta"]["menu_xmlid"], "x.primary")
 
-    def test_declared_primary_native_leaf_survives_unrelated_release_menu_surface(self):
+    def test_closed_edition_surface_does_not_append_unreleased_native_leaf(self):
         service = MenuService()
         surface = {
             "role_code": "finance",
@@ -911,14 +900,15 @@ class TestProjectMemberRoleSurface(TransactionCase):
 
         nav = service.build_nav(policy=policy, role_surface=surface, native_nav=native)
 
-        self.assertEqual(
-            [
-                child.get("meta", {}).get("menu_xmlid")
-                for group in nav[0].get("children") or []
-                for child in group.get("children") or []
-            ],
-            ["x.primary"],
-        )
+        # An explicit edition menu declaration is a closed product surface:
+        # the declared primary native leaf is not part of the released
+        # catalogue, so it must not be appended to the delivered navigation.
+        rendered_xmlids = [
+            child.get("meta", {}).get("menu_xmlid")
+            for group in (nav[0].get("children") if nav else []) or []
+            for child in group.get("children") or []
+        ]
+        self.assertNotIn("x.primary", rendered_xmlids)
 
     def test_release_actor_role_does_not_promote_project_reader_to_pm(self):
         class User:

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import '../../../../scripts/verify/lib/probe_toolchain_blocked.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright';

@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+
+# Probe lifecycle gate: must precede runtime imports and effects.
+if __name__ == '__main__':
+    from probe_toolchain_support import assert_probe_supported
+    assert_probe_supported(__file__)
+
 import base64
 import json
 import os

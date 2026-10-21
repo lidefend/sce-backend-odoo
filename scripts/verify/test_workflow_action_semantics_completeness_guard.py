@@ -13,6 +13,10 @@ from pathlib import Path
 
 from workflow_action_semantics_completeness_guard import (
     ROOT,
+    ROLE_CATALOG,
+    declared_group_roles,
+    role_vocabulary,
+    validate_authorization_binding,
     financial_workspace_action_declarations,
     load_action_semantics_authority,
     references_marker,
@@ -214,6 +218,44 @@ class FinancialWorkspaceActionClassificationTest(unittest.TestCase):
     def test_no_declaration_read_is_a_failure(self) -> None:
         failures = self._validate("def build(actions):\n    return actions\n")
         self.assertTrue(any("vacuous" in item for item in failures))
+
+
+class AuthorizationAuthorityTest(unittest.TestCase):
+    def _validate(self, *, verdict=None, declared_roles=None):
+        return validate_authorization_binding(
+            specs=[{"key": "submit", "method": "action_submit", "allowed_states": {"draft"}}],
+            role_hints={}, verdict={"submit"} if verdict is None else verdict,
+            role_vocabulary={"finance"}, group_role_map={},
+            declared_roles=declared_roles or set(), group_vocabulary={"module.finance"},
+            approval_actions_declared=False, approval_verdict_consumed=False,
+        )
+
+    def test_runtime_authorized_action_does_not_require_duplicate_static_role_hint(self):
+        self.assertEqual(self._validate(), [])
+
+    def test_missing_runtime_verdict_still_fails(self):
+        self.assertTrue(any("without a runtime authorization verdict" in e for e in self._validate(verdict=set())))
+
+    def test_undeclared_capability_role_still_fails(self):
+        self.assertTrue(any("outside the published role vocabulary" in e for e in self._validate(declared_roles={"invented"})))
+
+    def test_group_hint_map_does_not_infer_unknown_role_suffixes(self):
+        groups = declared_group_roles(ROLE_CATALOG)
+        self.assertEqual(groups['smart_construction_core.group_sc_cap_finance_user'], 'finance')
+        self.assertNotIn('smart_construction_core.group_sc_role_invented', groups)
+        self.assertNotIn('smart_construction_core.group_sc_cap_contract_user', groups)
+
+    def test_role_vocabulary_uses_catalog_not_group_suffix_or_resolver_literals(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            registry = Path(tmp) / "registry.py"
+            registry.write_text('ROLE_SUFFIX_MAP = {"invented": "invented"}\ndef _resolve_role_codes_for_user(user):\n    return {"synthetic"}\n_cap(required_roles=["owner"])\n')
+            vocabulary, declared, errors = role_vocabulary(registry, ROLE_CATALOG)
+            self.assertEqual(errors, [])
+            self.assertIn("owner", vocabulary)
+            self.assertIn("experience", vocabulary)
+            self.assertNotIn("invented", vocabulary)
+            self.assertNotIn("synthetic", vocabulary)
+            self.assertEqual(declared, {"owner"})
 
 
 if __name__ == "__main__":

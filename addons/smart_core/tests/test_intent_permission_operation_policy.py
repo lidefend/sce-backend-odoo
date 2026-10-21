@@ -3,6 +3,7 @@ import importlib.util
 import sys
 import types
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -276,6 +277,10 @@ def _load_module(fake_request, user_provider=None):
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
     spec.loader.exec_module(module)
+    authorization = sys.modules["odoo.addons.smart_core.security.intent_authorization"]
+    # Native ACL/scope cases use an empty installed-handler fixture; the service
+    # itself remains real. Dedicated cases below supply declared handlers.
+    authorization.registered_handlers = lambda env: {}
     return module
 
 
@@ -284,6 +289,19 @@ class TestIntentPermissionOperationPolicy(unittest.TestCase):
         self.model = _FakeModel()
         self.env = _FakeEnv(self.model)
         self.permission = _load_module(_FakeRequest(self.env))
+
+    def test_shared_group_service_precedes_native_acl_and_preserves_it(self):
+        authorization = sys.modules["odoo.addons.smart_core.security.intent_authorization"]
+        handler = types.SimpleNamespace(INTENT_TYPE="read.test", REQUIRED_GROUPS=["test.allowed"], __name__="ReadHandler")
+        self.env.user.has_group = lambda group: group == "test.allowed"
+        with patch.object(authorization, "registered_handlers", return_value={"read.test": handler}):
+            self.permission.check_intent_permission(_Ctx({"intent": "read.test", "model": "x.model", "id": 11}))
+            self.assertEqual(self.model.access_modes, ["read"])
+            self.assertEqual(self.model.rule_modes, ["read"])
+            self.env.user.has_group = lambda group: False
+            with self.assertRaisesRegex(AccessError, "PERMISSION_DENIED"):
+                self.permission.check_intent_permission(_Ctx({"intent": "read.test", "model": "x.model", "id": 11}))
+            self.assertEqual(self.model.access_modes, ["read"])
 
     def test_nested_api_data_write_uses_write_access_and_record_rule(self):
         ctx = _Ctx({"intent": "api.data.write", "params": {"model": "x.model", "id": 11}})

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import re
 import shutil
 import tempfile
 import unittest
@@ -10,9 +9,7 @@ from formal_entry_metadata_contract_guard import scan
 
 ROOT = Path(__file__).resolve().parents[2]
 FILES = (
-    "addons/smart_construction_core/__manifest__.py",
     "addons/smart_construction_core/models/support/formal_entry_metadata_extensions.py",
-    "addons/smart_construction_core/migrations/17.0.0.82/post-migration.py",
     "addons/smart_construction_core/views/core/project_list_views.xml",
     "addons/smart_construction_core/views/core/project_views.xml",
     "addons/smart_construction_core/views/core/funding_actual_event_allocation_views.xml",
@@ -37,20 +34,6 @@ class FormalEntryMetadataContractGuardTest(unittest.TestCase):
     def test_current_contract_passes(self):
         self.assertEqual(scan(self.fixture()), [])
 
-    def test_module_version_below_migration_version_fails(self):
-        root = self.fixture()
-        path = root / "addons/smart_construction_core/__manifest__.py"
-        path.write_text(
-            re.sub(
-                r"(['\"]version['\"]\s*:\s*['\"])[^'\"]+(['\"])",
-                r"\g<1>17.0.0.81\2",
-                path.read_text(encoding="utf-8"),
-                count=1,
-            ),
-            encoding="utf-8",
-        )
-        self.assertIn("module_version_not_bumped", {row["reason"] for row in scan(root)})
-
     def test_missing_model_extension_fails(self):
         root = self.fixture()
         path = root / "addons/smart_construction_core/models/support/formal_entry_metadata_extensions.py"
@@ -62,12 +45,6 @@ class FormalEntryMetadataContractGuardTest(unittest.TestCase):
         path = root / "addons/smart_construction_core/views/core/project_list_views.xml"
         path.write_text(path.read_text(encoding="utf-8").replace("source_created_at", "source_time_removed"), encoding="utf-8")
         self.assertIn("missing_visible_entry_metadata_field", {row["reason"] for row in scan(root)})
-
-    def test_destructive_fact_cleanup_fails(self):
-        root = self.fixture()
-        path = root / "addons/smart_construction_core/migrations/17.0.0.82/post-migration.py"
-        path.write_text(path.read_text(encoding="utf-8") + "\n# DROP TABLE sc_legacy_invoice_analysis_report_fact\n", encoding="utf-8")
-        self.assertIn("business_data_destructive_cleanup", {row["reason"] for row in scan(root)})
 
     def test_missing_active_orphan_guard_fails(self):
         root = self.fixture()

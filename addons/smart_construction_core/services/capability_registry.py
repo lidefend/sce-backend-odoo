@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-import logging
 import re
 import time
 from typing import Any
@@ -11,13 +10,10 @@ from odoo.addons.smart_construction_scene import scene_registry
 from odoo.addons.smart_construction_scene.services.capability_scene_targets import (
     build_capability_entry_target,
     resolve_capability_entry_scene_key,
-    resolve_capability_entry_target_payload,
     resolve_capability_entry_target_payload_with_timings,
 )
 
 CAPABILITY_KEY_REGEX = re.compile(r"^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$")
-
-_logger = logging.getLogger(__name__)
 
 RUNTIME_ORCHESTRATION_SCENE_KEYS = {
     "project.plan_bootstrap",
@@ -35,30 +31,6 @@ CAPABILITY_GROUPS: list[dict[str, Any]] = [
     {"key": "others", "label": "常用入口", "icon": "grid", "sequence": 80},
 ]
 
-ROLE_GROUP_PREFIX_CORE = "smart_construction_core.group_sc_role_"
-ROLE_SUFFIX_MAP = {
-    "project_manager": "pm",
-    "project_user": "pm",
-    "finance_manager": "finance",
-    "finance_user": "finance",
-    "contract_admin": "executive",
-    "super_admin": "executive",
-    "executive": "executive",
-}
-CAPABILITY_GROUP_ROLE_MAP = {
-    "smart_construction_core.group_sc_cap_project_user": "pm",
-    "smart_construction_core.group_sc_cap_project_manager": "pm",
-    "smart_construction_core.group_sc_cap_finance_user": "finance",
-    "smart_construction_core.group_sc_cap_finance_manager": "finance",
-    "smart_construction_core.group_sc_cap_contract_user": "finance",
-    "smart_construction_core.group_sc_cap_contract_manager": "finance",
-    "smart_construction_core.group_sc_cap_cost_user": "pm",
-    "smart_construction_core.group_sc_cap_cost_manager": "pm",
-    "smart_construction_core.group_sc_cap_business_config_admin": "executive",
-    "smart_construction_core.group_sc_cap_config_admin": "executive",
-}
-
-
 def _cap(
     key: str,
     label: str,
@@ -68,6 +40,7 @@ def _cap(
     required_roles: list[str] | None = None,
     required_groups: list[str] | None = None,
     status: str = "ga",
+    access_action: str = "",
 ) -> dict[str, Any]:
     return {
         "key": key,
@@ -78,12 +51,13 @@ def _cap(
         "required_groups": list(required_groups or []),
         "status": status,
         "intent": "ui.contract",
+        "access_action": access_action,
     }
 
 
 _CAPABILITIES: list[dict[str, Any]] = [
     _cap("project.initiation.enter", "项目立项", "创建并发起项目立项流程", "project_management", required_roles=["pm", "executive"]),
-    _cap("project.list.open", "项目列表", "查看项目列表与筛选", "project_management", required_roles=["owner", "pm", "finance", "executive"]),
+    _cap("project.list.open", "项目列表", "查看项目列表与筛选", "project_management", access_action="smart_construction_core.action_sc_project_list"),
     _cap("project.board.open", "项目看板", "查看项目看板与状态分布", "project_management", required_roles=["owner", "pm", "executive"]),
     _cap("project.dashboard.enter", "项目驾驶舱", "进入项目驾驶舱最小入口", "project_management", required_roles=["pm", "executive"]),
     _cap("project.dashboard.open", "项目驾驶舱入口", "进入项目驾驶舱标准入口", "project_management", required_roles=["pm", "executive"], status="deprecated"),
@@ -91,7 +65,7 @@ _CAPABILITIES: list[dict[str, Any]] = [
     _cap("project.execution.enter", "项目执行入口", "进入项目执行最小入口", "project_management", required_roles=["pm", "executive"]),
     _cap("project.execution.advance", "推进执行", "执行最小推进动作", "project_management", required_roles=["pm", "executive"]),
     _cap("project.lifecycle.open", "生命周期视图", "查看项目生命周期与阻塞项", "project_management", required_roles=["pm", "executive"]),
-    _cap("project.task.list", "任务列表", "查看项目任务与待办", "project_management", required_roles=["owner", "pm", "executive"]),
+    _cap("project.task.list", "任务列表", "查看项目任务与待办", "project_management", access_action="project.action_view_all_task"),
     _cap("project.task.board", "任务看板", "按状态查看任务推进", "project_management", required_roles=["pm", "executive"]),
     _cap("project.document.open", "项目文档", "进入项目文档视图", "project_management", required_roles=["pm", "executive"]),
     _cap("project.structure.manage", "执行结构", "进入执行结构与WBS能力", "project_management", required_roles=["pm", "executive"]),
@@ -99,26 +73,26 @@ _CAPABILITIES: list[dict[str, Any]] = [
     _cap("project.weekly_report.open", "周报入口", "进入项目周报与周度复盘", "project_management", required_roles=["pm", "executive"]),
     _cap("project.lifecycle.transition", "生命周期流转", "执行项目生命周期流转动作", "project_management", required_roles=["pm", "executive"]),
 
-    _cap("finance.payment_request.list", "付款申请列表", "查看付款申请列表", "finance_management", required_roles=["finance", "executive"], required_groups=["smart_construction_core.group_sc_cap_finance_read"]),
+    _cap("finance.payment_request.list", "付款申请列表", "查看付款申请列表", "finance_management", access_action="smart_construction_core.action_payment_request_my"),
     _cap("finance.payment_request.form", "付款申请表单", "进入付款申请详情与编辑", "finance_management", required_roles=["finance", "executive"], required_groups=["smart_construction_core.group_sc_cap_finance_read"]),
     _cap("finance.approval.center", "审批中心入口", "进入财务审批工作台", "finance_management", required_roles=["finance", "executive"]),
-    _cap("finance.ledger.payment", "收付款台账", "查看收付款台账", "finance_management", required_roles=["finance", "executive"]),
-    _cap("finance.ledger.treasury", "资金台账", "查看资金余额与流水", "finance_management", required_roles=["finance", "executive"]),
-    _cap("finance.settlement.order", "结算单", "查看结算单流程", "finance_management", required_roles=["finance", "executive"]),
+    _cap("finance.ledger.payment", "收付款台账", "查看收付款台账", "finance_management", access_action="smart_construction_core.action_payment_ledger"),
+    _cap("finance.ledger.treasury", "资金台账", "查看资金余额与流水", "finance_management", access_action="smart_construction_core.action_sc_treasury_ledger"),
+    _cap("finance.settlement.order", "结算单", "查看结算单流程", "finance_management", access_action="smart_construction_core.action_sc_settlement_order"),
     _cap("finance.invoice.list", "发票列表", "进入发票相关清单", "finance_management", required_roles=["finance", "executive"]),
     _cap("finance.plan.funding", "资金计划", "查看资金计划与安排", "finance_management", required_roles=["finance", "executive"]),
     _cap("finance.metrics.operating", "经营指标", "查看经营指标看板", "finance_management", required_roles=["finance", "executive"]),
     _cap("finance.exception.monitor", "财务异常", "查看财务异常清单", "finance_management", required_roles=["finance", "executive"]),
 
-    _cap("cost.ledger.open", "成本台账", "进入成本台账", "cost_management", required_roles=["pm", "finance", "executive"], required_groups=["smart_construction_core.group_sc_cap_cost_read"]),
+    _cap("cost.ledger.open", "成本台账", "进入成本台账", "cost_management", access_action="smart_construction_core.action_project_cost_ledger"),
     _cap("cost.budget.manage", "预算管理", "进入预算与控制能力", "cost_management", required_roles=["pm", "finance", "executive"]),
     _cap("cost.boq.manage", "工程量清单", "进入工程量清单能力", "cost_management", required_roles=["pm", "executive"]),
     _cap("cost.progress.report", "进度填报", "进入进度填报与对比", "cost_management", required_roles=["pm", "executive"]),
-    _cap("cost.profit.compare", "盈亏对比", "查看盈亏对比分析", "cost_management", required_roles=["finance", "executive"]),
+    _cap("cost.profit.compare", "盈亏对比", "查看盈亏对比分析", "cost_management", access_action="smart_construction_core.action_project_profit_compare"),
 
-    _cap("contract.center.open", "合同中心", "进入合同中心", "contract_management", required_roles=["pm", "finance", "executive"], required_groups=["smart_construction_core.group_sc_cap_contract_read"]),
-    _cap("contract.income.track", "收入合同", "查看收入合同进展", "contract_management", required_roles=["pm", "finance", "executive"], required_groups=["smart_construction_core.group_sc_cap_contract_read"]),
-    _cap("contract.expense.track", "支出合同", "查看支出合同与付款", "contract_management", required_roles=["pm", "finance", "executive"], required_groups=["smart_construction_core.group_sc_cap_contract_read"]),
+    _cap("contract.center.open", "合同中心", "进入合同中心", "contract_management", access_action="smart_construction_core.action_construction_contract"),
+    _cap("contract.income.track", "收入合同", "查看收入合同进展", "contract_management", access_action="smart_construction_core.action_construction_contract_income"),
+    _cap("contract.expense.track", "支出合同", "查看支出合同与付款", "contract_management", access_action="smart_construction_core.action_construction_contract_expense"),
     _cap("contract.settlement.audit", "结算审核", "查看结算审核视图", "contract_management", required_roles=["finance", "executive"], required_groups=["smart_construction_core.group_sc_cap_contract_read"]),
 
     _cap("analytics.dashboard.executive", "经营驾驶舱", "高层经营看板", "analytics", required_roles=["executive"]),
@@ -175,51 +149,20 @@ def _group_meta_map() -> dict[str, dict[str, Any]]:
 
 def _resolve_role_codes_for_user(user) -> set[str]:
     if not user:
-        return {"owner"}
-    roles: set[str] = set()
-    group_xmlids = set(user.groups_id.get_external_id().values())
-    for xmlid in group_xmlids:
-        text = str(xmlid or "").strip()
-        if text.startswith(ROLE_GROUP_PREFIX_CORE):
-            suffix = text[len(ROLE_GROUP_PREFIX_CORE):]
-            roles.add(ROLE_SUFFIX_MAP.get(suffix, suffix))
-    try:
-        for group_xmlid, role_code in CAPABILITY_GROUP_ROLE_MAP.items():
-            if user.has_group(group_xmlid):
-                roles.add(role_code)
-    except Exception:
-        _logger.debug("Unable to resolve capability roles from capability groups.", exc_info=True)
-    if "finance" in roles:
-        roles.add("owner")
-    if "pm" in roles:
-        roles.add("owner")
-    if "executive" in roles:
-        roles.update({"owner", "pm", "finance"})
-    if not roles:
-        roles.add("owner")
-    if "executive" in roles:
-        roles.update({"owner", "pm", "finance"})
-    return roles
+        return set()
+    from odoo.addons.smart_core.identity.identity_resolver import IdentityResolver
+    resolver = IdentityResolver(user.env)
+    return set(resolver.assigned_role_codes(resolver.user_group_xmlids(user)))
 
 
-def role_code_for_group(group_xmlid: str) -> str:
-    """Resolve the published role code one group grants, or ``""`` when unknown.
-
-    The group is the authorization gate; the role code only labels the handoff
-    hint.  Deriving it here keeps a single authority for the group -> role
-    relation, so a gate and the role a terminal is told about cannot drift into
-    two vocabularies (a role-group suffix and a capability-group role).
-    """
+def role_code_for_group(group_xmlid: str, *, env) -> str:
+    """Project the formal role binding for a handoff hint; never infer a role."""
+    from odoo.addons.smart_core.identity.identity_resolver import IdentityResolver
     text = str(group_xmlid or "").strip()
     if not text:
         return ""
-    mapped = CAPABILITY_GROUP_ROLE_MAP.get(text)
-    if mapped:
-        return str(mapped)
-    if text.startswith(ROLE_GROUP_PREFIX_CORE):
-        suffix = text[len(ROLE_GROUP_PREFIX_CORE):]
-        return str(ROLE_SUFFIX_MAP.get(suffix, suffix))
-    return ""
+    roles = IdentityResolver(env).assigned_role_codes({text})
+    return roles[0] if roles else ""
 
 
 def _normalize_bool(value: Any) -> bool:
@@ -242,9 +185,32 @@ def _is_group_member(user, group_xmlid: str) -> bool:
         return False
 
 
+def _published_query_pair(user, action_id):
+    from odoo.addons.smart_core.delivery.runtime_route_authority import published_route_authority, iter_published_pairs
+    principal_env = user.with_user(user).env
+    return next((pair for pair in iter_published_pairs(published_route_authority(principal_env))
+                 if pair[1] == action_id), None)
+
+
 def _capability_access(defn: dict[str, Any], role_codes: set[str], user) -> tuple[bool, bool, str, str]:
     required_roles = [str(x).strip() for x in (defn.get("required_roles") or []) if str(x).strip()]
     required_groups = [str(x).strip() for x in (defn.get("required_groups") or []) if str(x).strip()]
+
+    # Read-entry bindings use the native action, not a copied model/role table.
+    # Record rules and write authorization remain in the actual ORM operation.
+    access_action = defn.get("access_action")
+    if access_action:
+        if not user:
+            return True, False, "PERMISSION_DENIED", _("需要登录后查询")
+        action = user.env.ref(access_action).with_user(user)
+        if action._name != "ir.actions.act_window" or not action.res_model:
+            raise ValueError("Query capability requires a native window action")
+        group_allowed = user._is_admin() or not action.groups_id or bool(action.groups_id & user.groups_id)
+        model = user.env[action.res_model].with_user(user)
+        allowed = bool(group_allowed and model.check_access_rights("read", raise_exception=False))
+        if allowed and not _published_query_pair(user, action.id):
+            return True, False, "NAVIGATION_AUTHORITY_DENIED", _("该入口未在当前账号的导航权限中发布")
+        return True, allowed, "" if allowed else "PERMISSION_DENIED", "" if allowed else _("没有该查询入口的访问权限")
 
     if required_roles and not (set(required_roles) & role_codes):
         return False, False, "ROLE_SCOPE_MISMATCH", _("角色范围不匹配")
@@ -309,18 +275,27 @@ def list_capabilities_for_user_with_timings(env, user) -> tuple[list[dict[str, A
 
         capability_key = str(defn.get("key") or "").strip()
         iter_ts = time.perf_counter()
-        entry_target = build_capability_entry_target(
-            capability_key,
-            explicit_target=defn.get("entry_target") or {},
-            env=env,
-        )
-        entry_target_total_ms += int((time.perf_counter() - iter_ts) * 1000)
-        iter_ts = time.perf_counter()
-        payload, payload_timings_ms = resolve_capability_entry_target_payload_with_timings(
-            env,
-            capability_key,
-            explicit_target=defn.get("entry_target") or {},
-        )
+        if defn.get("access_action"):
+            action = env.ref(defn["access_action"]).with_user(user)
+            # The exact native action used by authorization owns navigation too.
+            # Keep its context/domain on the server; /a loads the native action.
+            pair = _published_query_pair(user, action.id)
+            entry_target = {"target_mode": "action", "action_id": action.id,
+                            "model": action.res_model}
+            if pair:
+                entry_target["menu_id"] = pair[0]
+                entry_target["route"] = f"/a/{action.id}" + (f"?menu_id={pair[0]}" if pair[0] else "")
+            payload = dict(entry_target)
+            payload_timings_ms = {}
+            entry_target_total_ms += int((time.perf_counter() - iter_ts) * 1000)
+            iter_ts = time.perf_counter()
+        else:
+            entry_target = build_capability_entry_target(
+                capability_key, explicit_target=defn.get("entry_target") or {}, env=env)
+            entry_target_total_ms += int((time.perf_counter() - iter_ts) * 1000)
+            iter_ts = time.perf_counter()
+            payload, payload_timings_ms = resolve_capability_entry_target_payload_with_timings(
+                env, capability_key, explicit_target=defn.get("entry_target") or {})
         resolve_payload_total_ms += int((time.perf_counter() - iter_ts) * 1000)
         if isinstance(payload_timings_ms, dict):
             for key, value in payload_timings_ms.items():
@@ -423,7 +398,14 @@ def lint_registry(env=None) -> list[dict[str, Any]]:
             issues.append({"code": "GROUP_KEY_UNKNOWN", "capability_key": key, "group_key": group_key})
 
         scene_key = resolve_capability_entry_scene_key(key)
-        if not scene_key:
+        if item.get("access_action"):
+            if scene_key:
+                issues.append({"code": "DUPLICATE_QUERY_SCENE_TARGET", "capability_key": key})
+            if env is not None:
+                action = env.ref(item["access_action"], raise_if_not_found=False)
+                if not action or action._name != "ir.actions.act_window" or not action.res_model:
+                    issues.append({"code": "QUERY_ACTION_INVALID", "capability_key": key})
+        elif not scene_key:
             issues.append({"code": "ENTRY_TARGET_SCENE_REQUIRED", "capability_key": key})
 
     if len(capability_definitions()) < 30:
@@ -448,8 +430,8 @@ def lint_registry(env=None) -> list[dict[str, Any]]:
 def capability_authorization_for_user(user, capability_key: str) -> dict[str, Any]:
     """Resolve one declared capability's authorization for *user*.
 
-    The registry definition is the single policy authority (required roles and
-    required groups); this returns the same decision the published capability
+    Action-bound queries consume native action groups and model read ACLs; other definitions retain their
+    declared role/group constraints. This returns the same decision the capability
     list publishes, so a role-gated page region and the capability matrix cannot
     drift into two rules.  An unknown key is denied rather than silently allowed.
     """

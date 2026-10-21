@@ -153,7 +153,7 @@ class ResUsers(models.Model):
                 roots = user._sc_explicit_group_roots(lock=False)
                 roles = assignable.browse(sorted(roots)) & assignable
             except GroupAuthorityGap:
-                # Legacy effective-role display only; never accepted as assignment provenance.
+                # Historical effective-role display only; never accepted as assignment provenance.
                 roles = user.groups_id & assignable
             user.sc_user_role_group_ids = roles
             user.sc_user_permission_group_ids = roles

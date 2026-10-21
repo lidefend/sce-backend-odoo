@@ -1793,7 +1793,7 @@ class ProjectBoqImportWizard(models.TransientModel):
         if not category:
             return self.env["uom.uom"]
 
-        Uom = self.env["uom.uom"]
+        Uom = self.env["uom.uom"].sudo()
         item_uom = Uom.search(
             [("category_id", "=", category.id), ("name", "=", "项")], limit=1
         )

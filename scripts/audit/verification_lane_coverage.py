@@ -393,6 +393,10 @@ NORMATIVE_DOCS = (
 # exactly like docs and .agent ledgers do.  Excluding them is what keeps a
 # committed registry from reviving every entry it registers.
 SELF_DATA_FILES = (
+    # Lifecycle inventories and generated deny-lists refuse execution; naming
+    # an unavailable probe is not evidence of executing its business checks.
+    "config/frontend/probe_toolchain_registry.json",
+    "make/probe_toolchain.mk",
     "scripts/audit/verification_lane_baseline.json",
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/audit/verification_lane_exemptions.json",

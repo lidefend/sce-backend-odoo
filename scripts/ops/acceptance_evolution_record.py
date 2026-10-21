@@ -236,6 +236,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--registry", default=str(DEFAULT_REGISTRY))
     parser.add_argument("--base", help="base commit; defaults to BASE_SHA or origin/main merge-base")
     parser.add_argument("--head", help="head commit; defaults to HEAD_SHA or HEAD")
+    parser.add_argument("--stage", choices=("all", "merge", "deployment"), default="all")
     parser.add_argument("--suite", action="append", default=[], metavar="ID=PATH")
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
     parser.add_argument(
@@ -253,6 +254,7 @@ def main(argv: list[str] | None = None) -> int:
             raise binding.BindingError(
                 "change set is not fully classified; fix the registry before recording evidence"
             )
+        plan = binding.plan_for_stage(registry, plan, args.stage)
         provided = parse_suite_args(args.suite)
         unknown = sorted(set(provided) - set(registry["suites"]))
         if unknown:

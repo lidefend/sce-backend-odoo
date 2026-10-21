@@ -12,6 +12,20 @@ from odoo.addons.smart_construction_core.services.payment_request_work_item_serv
 from odoo.addons.smart_construction_core.handlers.my_work_summary import MyWorkSummaryHandler
 
 
+class _ReadyPaymentRecord:
+    """Ready prerequisite fixture; advisory-cache tests instrument advisories separately."""
+    _name = "payment.request"
+
+    def _check_submission_prerequisites(self):
+        return None
+
+    def with_context(self, **context):
+        return self
+
+    def _enforce_batch_funding_submit_gate(self, evaluation_cache=None):
+        return None
+
+
 @tagged("sc_smoke", "payment_request_work_item_service")
 class TestPaymentRequestWorkItemService(BusinessTransactionCase):
     approval_models = ("payment.request",)
@@ -293,7 +307,7 @@ class TestPaymentRequestWorkItemService(BusinessTransactionCase):
         class Contract:
             state = "active"
 
-        class Record:
+        class Record(_ReadyPaymentRecord):
             id = 987
             state = "draft"
             contract_id = Contract()
@@ -324,11 +338,11 @@ class TestPaymentRequestWorkItemService(BusinessTransactionCase):
         class Contract:
             state = "active"
 
-        class Record:
+        class Record(_ReadyPaymentRecord):
             id = 988
             state = "draft"
             contract_id = Contract()
-            review_ids = ()
+            review_ids = self.env["tier.review"]
             validation_status = "draft"
 
             def action_submit(self):
@@ -364,7 +378,7 @@ class TestPaymentRequestWorkItemService(BusinessTransactionCase):
         class Contract:
             state = "active"
 
-        class Record:
+        class Record(_ReadyPaymentRecord):
             state = "draft"
             contract_id = Contract()
 

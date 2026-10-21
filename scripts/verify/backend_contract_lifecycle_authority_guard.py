@@ -22,7 +22,6 @@ ASSEMBLER_PATH = CORE_DIR / "unified_page_contract_v2_assembler.py"
 HANDLER_PATH = ROOT / "addons/smart_core/handlers/ui_contract_v2.py"
 HANDLER_AUTHORITY_PATH = ROOT / "addons/smart_core/handlers/ui_contract_v2_authority.py"
 MODEL_PATH = ROOT / "addons/smart_core/model/ui_business_config_contract.py"
-MIGRATION_PATH = ROOT / "addons/smart_core/migrations/17.0.1.1.9/post-migration.py"
 FRONTEND_TYPES_PATH = ROOT / "frontend/apps/web/src/app/contracts/v2/types.ts"
 FRONTEND_SCHEMA_PATH = ROOT / "frontend/apps/web/src/app/contracts/v2/schema.ts"
 MAKE_PATH = ROOT / "make/dev_test.mk"
@@ -152,7 +151,6 @@ def check_examples() -> dict[str, Any]:
 
 def check_persistence() -> dict[str, Any]:
     text = MODEL_PATH.read_text(encoding="utf-8")
-    migration_text = MIGRATION_PATH.read_text(encoding="utf-8")
     require_tokens(
         text,
         (
@@ -166,22 +164,11 @@ def check_persistence() -> dict[str, Any]:
         ),
         "persistence authority",
     )
-    if not MIGRATION_PATH.is_file():
-        raise AssertionError("contract lifecycle backfill migration is missing")
-    require_tokens(
-        text,
-        (
-            "def _append_published_version(self, *, validate_runtime=True)",
-            "contract_lifecycle_migration_reseal",
-        ),
-        "migration reseal boundary",
-    )
-    require_tokens(
-        migration_text,
-        ("_append_published_version(validate_runtime=False)",),
-        "migration reseal caller",
-    )
-    return {"migration": MIGRATION_PATH.relative_to(ROOT).as_posix()}
+    require_tokens(text, ("def _append_published_version(self):", "def _check_published_runtime_contract(self):"),
+                   "current publication validation")
+    if "contract_lifecycle_migration_reseal" in text or "validate_runtime=False" in text:
+        raise AssertionError("retired development migration bypass remains in publication authority")
+    return {"authority": MODEL_PATH.relative_to(ROOT).as_posix(), "migrationBypass": False}
 
 
 def check_publication() -> dict[str, Any]:

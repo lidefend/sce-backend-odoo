@@ -15,11 +15,11 @@
     "assets": [
       {
         "path": "config/frontend/acceptance_environments_v1.json",
-        "sha256": "9a34a3cef026d45fa5f99e69e548556b865bd6aeb25dceba90f396c92d538b68"
+        "sha256": "a2f0b2154212187ad0e737feb908433dc3eefc1955283caecc7dcbe9922d3104"
       },
       {
         "path": "config/frontend/acceptance_tool_matrix_v1.json",
-        "sha256": "dbca110d65b6d4919693d02617b0ef63a65a5016baf23f370e9e45580687c89b"
+        "sha256": "3a0a8269089d3034782ad87a8a62547536c1dc75aece934b56d0661bdcf8a4fe"
       },
       {
         "path": "config/frontend/acceptance_evidence_contract_v1.schema.json",
@@ -31,7 +31,7 @@
     "python": "3.12.3",
     "git": "2.43.0"
   },
-  "collected_at": "2026-10-19T18:25:15Z",
+  "collected_at": "2026-10-21T12:58:02Z",
   "browser_evidence_contract": {
     "required_fields": [
       "browser_full_version",

@@ -2209,21 +2209,6 @@ class PaymentRequest(models.Model):
             project_id=self.project_id,
         )
 
-    def init(self):
-        self.env.cr.execute(
-            """
-            UPDATE payment_request request
-               SET business_category_id = category.id
-              FROM sc_business_category category
-             WHERE request.business_category_id IS NULL
-               AND category.target_model = 'payment.request'
-               AND category.code = CASE
-                   WHEN request.type = 'receive'
-                       THEN 'finance.payment.apply.receive'
-                   ELSE 'finance.payment.apply.pay'
-               END
-            """
-        )
 
     def _has_submit_access(self):
         return (
@@ -2373,6 +2358,23 @@ class PaymentRequest(models.Model):
             "P0_PAYMENT_NOT_FULLY_PAID": "complete_payment_execution",
         }.get(code, "")
         return self._payment_advisory(code, text or code, suggested_action=suggested)
+
+    submission_readiness_display = fields.Text(
+        string="办理前检查", compute="_compute_submission_readiness_display", compute_sudo=False,
+        default=lambda self: self._default_submission_readiness_display(),
+    )
+
+    @api.model
+    def _default_submission_readiness_display(self):
+        from ...services.baseline_readiness import readiness_display
+        return readiness_display(self.browse())
+
+    @api.depends_context("uid", "company")
+    @api.depends("state", "amount", "contract_id", "settlement_id", "partner_id", "project_id", "payment_account_name", "payment_bank_name", "payment_account_no")
+    def _compute_submission_readiness_display(self):
+        from ...services.baseline_readiness import readiness_display
+        for record in self:
+            record.submission_readiness_display = readiness_display(record)
 
     submit_action_guidance = fields.Json(
         string="提交办理提示", compute="_compute_submit_action_guidance", readonly=True,
@@ -3226,13 +3228,8 @@ class PaymentRequest(models.Model):
             precision = metrics["precision"]
             rec.is_overpay_risk = float_compare(rec.amount or 0.0, payable, precision_rounding=precision) == 1
 
-    def action_submit(self):
-        if not self._has_submit_access():
-            raise ValidationError(_("你没有提交付款/收款申请的权限。"))
-        self._lock_funding_submission_scope()
-        self._lock_settlement_submission_scope()
-        advisory_result = {}
-        funding_evaluation_cache = {}
+    def _check_submission_prerequisites(self):
+        """Read-only prerequisites shared by preview and the locked submit action."""
         for rec in self:
             rec._check_detail_amount_consistency()
             if rec.state not in ("draft", "rejected"):
@@ -3260,6 +3257,16 @@ class PaymentRequest(models.Model):
             # not as a hard guard at submit. The advisory system allows override when
             # force_block_enabled is False (default).
             rec._check_material_settlement_remaining_amount()
+
+    def action_submit(self):
+        if not self._has_submit_access():
+            raise ValidationError(_("你没有提交付款/收款申请的权限。"))
+        self._lock_funding_submission_scope()
+        self._lock_settlement_submission_scope()
+        advisory_result = {}
+        funding_evaluation_cache = {}
+        for rec in self:
+            rec._check_submission_prerequisites()
             advisory_result[rec.id] = rec._handle_payment_advisories(
                 "提交付款申请",
                 rec._collect_payment_advisories(

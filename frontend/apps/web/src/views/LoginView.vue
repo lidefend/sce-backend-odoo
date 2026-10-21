@@ -77,10 +77,10 @@
           </p>
 
           <ScInlineState
-            v-if="sessionExpired"
+            v-if="sessionExpired && session.publicPageContractStatus === 'ready'"
             data-session-expired-notice
             state="info"
-            :label="pageText('session_expired_notice', '登录状态已过期，请重新登录。验证成功后将尝试返回原页面；无法访问时显示原因，并提供安全返回入口。')"
+            :label="sessionExpiredNotice"
           />
 
           <ScForm
@@ -174,6 +174,7 @@
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSessionStore } from '../stores/session';
+import { requireDeclaredText } from '../app/contract/contractGap';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { isPlatformAdminEntryRuntime } from '../services/dbContext';
@@ -198,6 +199,9 @@ const route = useRoute();
 const session = useSessionStore();
 const pageContract = usePageContract('login');
 const pageText = pageContract.text;
+const sessionExpiredNotice = computed(() => requireDeclaredText(pageContract.contract.value?.texts?.session_expired_notice, {
+  missing: 'pages.login.texts.session_expired_notice', requiredDeclarationLayer: 'P0:smart_core:page_contracts_builder',
+}));
 const pageSectionEnabled = pageContract.sectionEnabled;
 const pageSectionStyle = pageContract.sectionStyle;
 const pageSectionTagIs = pageContract.sectionTagIs;

@@ -569,6 +569,8 @@ WORKSPACE_BRANCH_SYNC_ROOT ?= $(ROOT_DIR)
 EXPECTED_BRANCH ?=
 EXPECTED_OLD_BASE ?=
 EXPECTED_MAIN ?=
+COVERED_PREFIX ?=
+COVERED_MERGE ?=
 CONFIRM_WORKSPACE_BRANCH_SYNC ?=
 HISTORICAL_RETIREMENT_MANIFEST ?=
 HISTORICAL_RETIREMENT_REPORT ?=
@@ -672,6 +674,8 @@ workspace.branch.sync-main.extended: guard.prod.forbid
 		$(if $(DEPENDENCY_PR),--dependency-pr "$(DEPENDENCY_PR)",) \
 		$(if $(DEPENDENCY_HEAD),--dependency-head "$(DEPENDENCY_HEAD)",) \
 		$(if $(DEPENDENCY_MERGE),--dependency-merge "$(DEPENDENCY_MERGE)",) \
+		$(if $(COVERED_PREFIX),--covered-prefix "$(COVERED_PREFIX)",) \
+		$(if $(COVERED_MERGE),--covered-merge "$(COVERED_MERGE)",) \
 		--expected-commit-count "$(EXPECTED_COMMIT_COUNT)" \
 		--allow-extended-history \
 		--confirm "$(CONFIRM_WORKSPACE_BRANCH_SYNC)"

@@ -43,6 +43,51 @@ class EvidencePlanTests(unittest.TestCase):
         self.assertEqual(states['two']['status'], 'missing')
 
 
+class DeliveryStageTests(unittest.TestCase):
+    def report(self, stage):
+        registry = {'suites': {
+            'server': {'stages': ['deployment'], 'entrypoints': ['server']},
+            'browser': {'stages': ['merge', 'deployment'], 'entrypoints': ['browser']}}}
+        plan = {'required_evidence_suites': ['server', 'browser'], 'head_sha': 'a'*40, 'unclassified': []}
+        with tempfile.TemporaryDirectory() as tmp, \
+             patch.object(delivery.binding, 'load_registry', return_value=registry), \
+             patch.object(delivery.binding, 'build_plan', return_value=plan), \
+             patch.object(delivery.runs, 'delta_paths', return_value=[]), \
+             patch.object(delivery.runs, 'summary', return_value={}):
+            return delivery.build_report('b'*40, 'a'*40, Path(tmp)/'absent.json', stage=stage)
+
+    def test_merge_preserves_browser_requirement_and_defers_server_without_pass(self):
+        report = self.report('merge')
+        self.assertEqual(list(report['runtime_evidence']), ['browser'])
+        self.assertEqual(report['status'], 'blocked')
+        self.assertEqual(report['deferred_evidence']['server']['status'], 'not_run')
+        self.assertEqual(len(report['blockers']), 1)
+
+    def test_deployment_and_default_still_require_both(self):
+        for stage in ('deployment', 'all'):
+            report = self.report(stage)
+            self.assertEqual(len(report['blockers']), 2)
+            self.assertEqual(report['deferred_evidence'], {})
+
+    def test_registry_rejects_invalid_stage_declarations(self):
+        original = json.loads(delivery.binding.DEFAULT_REGISTRY.read_text())
+        for stages in ([], ['skip'], ['merge', 'merge'], 'merge', [None]):
+            original['suites']['daily_runtime_entry']['stages'] = stages
+            with tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp)/'registry.json'
+                path.write_text(json.dumps(original))
+                with self.assertRaises(delivery.binding.BindingError): delivery.binding.load_registry(path)
+
+    def test_unknown_stage_fails_closed(self):
+        with self.assertRaises(delivery.binding.BindingError): self.report('skip')
+
+    def test_pr_cannot_select_deployment_to_skip_merge_suites(self):
+        with patch.object(delivery, 'pr_identity') as identity:
+            self.assertNotEqual(delivery.main(['--pr', '7', '--expected-head', 'a'*40,
+                                              '--stage', 'deployment']), 0)
+        identity.assert_not_called()
+
+
 class PrIdentityTests(unittest.TestCase):
     def test_governance_suite_executes_delivery_tests(self):
         text = (delivery.ROOT / 'make/ci.mk').read_text()

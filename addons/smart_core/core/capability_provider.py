@@ -110,7 +110,7 @@ def build_capability_groups(capabilities: List[dict]) -> List[dict]:
 
 def load_capabilities_for_user(env, user) -> List[dict]:
     extension_caps = call_extension_hook_first(env, "smart_core_list_capabilities_for_user", env, user)
-    if isinstance(extension_caps, list) and extension_caps:
+    if isinstance(extension_caps, list):
         source = source_authority_contract()
         out: List[dict] = []
         for item in extension_caps:

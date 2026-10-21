@@ -466,6 +466,13 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   的纯生成证据提交数，且稳定路径集合与 patch identity 必须保持一致。其他冲突仍
   自动 abort，禁止借该入口放宽产品冲突处理。
 
+  对于旧分支前缀已被 squash 集成、候选仍保留旧祖先的情况，可在同一 extended
+  入口提供 `COVERED_PREFIX` 和 `COVERED_MERGE`。`COVERED_PREFIX` 必须是候选
+  祖先，`COVERED_MERGE` 必须是目标 main 祖先的单父 squash 提交，且 prefix 的
+  每个变更路径都必须出现在 merge 的变更路径集中；入口只重放 prefix 后的未集成
+  提交。exact-head Quick、`EXPECTED_COMMIT_COUNT`、恢复 bundle、路径集与 patch
+  identity 校验不得省略。该能力不得用于掩盖未集成的产品或业务变更。
+
 ---
 
 ### 1.4.2 明确禁止的 Git 命令（Hard Ban）
@@ -1058,3 +1065,20 @@ before freezing or publishing. Every other conflict aborts to the original HEAD.
 `make verify.workspace.branch.sync-github.unit` tests identity, conflicts and recovery.
 Use environment variables for PR/EXPECTED_HEAD when invoking `make pr.merge`;
 Make command overrides are intentionally rejected by the Quick evidence authority.
+
+## 隔离验收登录诊断入口
+
+`make acceptance.runtime.login_probe SC_ACCEPTANCE_RUNTIME_PROFILE=local` 用于在已启动的
+受管验收后端与现有 fixture 账号上，单独验证登录链路。入口先核对运行时身份，再经
+operation entry、受管嵌套 Make 和真实 HTTP 登录复用隔离入口声明及凭据权威。
+仅允许已登记的隔离验收环境；不创建数据库、不升级模块、不重置 fixture、不启动完整
+浏览器矩阵。HTTP 登录会创建验收会话；成功仅证明登录链路，不替代发布验收或权限测试。
+内部 `acceptance.runtime.login_probe.internal` 只能由 operation entry 调用，禁止手工拼接
+数据库、入口签名或凭据来绕过身份校验。
+
+隔离浏览器验收前，`make acceptance.runtime.contract_receipt SC_ACCEPTANCE_RUNTIME_PROFILE=local`
+复用既有 5180 预览、sc_frontend_acceptance 和 fixture 凭据，解析受管记录身份并生成
+当前 clean 候选的契约回执；只执行运行身份及声明契约断言，不代表完整发布审计。
+随后 `make verify.frontend.relation_roundtrip.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local`
+在同一预览以财务 fixture 账号验证声明关系打开与返回恢复。两者不创建或重置数据库；
+只创建认证会话和本地证据，禁止生产环境。列表仍用现有受管入口及契约前置。

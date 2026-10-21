@@ -488,13 +488,12 @@ async function collectSaveButtonInventory(page) {
 async function unlinkRecords(page, model, ids, authHeaders) {
   if (!ids.length || !authHeaders.authorization) return { status: 0, body: { ok: false, skipped: true } };
   return page.evaluate(async ({ recordModel, recordIds, headers }) => {
-    const db = String(headers['x-odoo-db'] || '');
-    const response = await fetch(`/api/v1/intent${db ? `?db=${encodeURIComponent(db)}` : ''}`, {
+    const entryBase = (window.location.pathname.match(/^\/(?:t\/[a-z0-9][a-z0-9-]*|platform-admin)/) || [''])[0];
+    const response = await fetch(`${entryBase}/api/v1/intent`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: String(headers.authorization || ''),
-        'X-Odoo-DB': db,
         'x-tenant': String(headers['x-tenant'] || ''),
       },
       body: JSON.stringify({
@@ -633,8 +632,8 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
     await chooseUniqueRelationOption(projectPage, paymentSurface, {
       fieldName: 'partner_id',
       relationModel: 'res.partner',
-      query: '德阳某某钢材贸易',
-      expectedLabel: '德阳某某钢材贸易有限公司（示例）',
+      query: '德阳蓉钢供应链',
+      expectedLabel: '德阳蓉钢供应链有限公司',
     });
     const parentAmountInput = await requireUnique(
       projectPage,
@@ -814,7 +813,7 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
     const dialogFrameHandle = await dialogFrameElement.elementHandle();
     const projectFrame = await dialogFrameHandle?.contentFrame();
     check(projectFrame, 'project relation dialog iframe is unavailable');
-    await projectFrame.waitForURL((url) => url.pathname === '/f/project.project/new', { timeout: 30000 });
+    await projectFrame.waitForURL((url) => url.pathname.endsWith('/f/project.project/new'), { timeout: 30000 });
     const genericProjectSurface = projectFrame.locator(
       '[data-product-page-mode="form"][data-form-model="project.project"][data-form-record="new"]',
     );
@@ -1412,14 +1411,14 @@ try {
   await chooseUniqueRelationOption(page, createSurface, {
     fieldName: 'project_id',
     relationModel: 'project.project',
-    query: 'S69',
-    expectedLabel: 'S69 支付台账项目',
+    query: '支付台账项目',
+    expectedLabel: '支付台账项目',
   });
   await chooseUniqueRelationOption(page, createSurface, {
     fieldName: 'partner_id',
     relationModel: 'res.partner',
-    query: '德阳某某钢材贸易',
-    expectedLabel: '德阳某某钢材贸易有限公司（示例）',
+    query: '德阳蓉钢供应链',
+    expectedLabel: '德阳蓉钢供应链有限公司',
   });
   check(Boolean(await createSurface.locator('[data-field-name="date_request"] input').inputValue()),
     'payment create date default is missing');
@@ -1443,7 +1442,7 @@ try {
   await createSaveAction.click();
   const createResponse = await createResponsePromise;
   check(createResponse.status() === 200, 'payment create save failed', await createResponse.text());
-  await page.waitForURL((url) => /^\/f\/payment\.request\/\d+$/.test(url.pathname), { timeout: 45000 });
+  await page.waitForURL((url) => /\/f\/payment\.request\/\d+$/.test(url.pathname), { timeout: 45000 });
   createdId = Number(page.url().match(/\/f\/payment\.request\/(\d+)/)?.[1] || 0);
   check(createdId > 0 && recordCreates.length === 1,
     'payment create must emit exactly one create mutation and leave the /new route', {
@@ -1481,14 +1480,15 @@ try {
         enabled: String(node.getAttribute('data-action-enabled') || ''),
       }))
     ));
-    const evidenceText = (await variantReadonlySurface.locator('.workflow-evidence-block').allInnerTexts())
-      .join(' ').replace(/\s+/g, ' ').trim();
+    const evidenceText = (await variantReadonlySurface.locator(CANONICAL_STRUCTURE).innerText())
+      .replace(/\s+/g, ' ').trim();
     stateVariants[kind] = { id: item.id, name: item.name, enabledPrimaryCount, primaryInventory, evidenceText };
     check(enabledPrimaryCount === 0, `${kind} payment record exposed a misleading primary action`, stateVariants[kind]);
     if (kind === 'blocked') {
       // The blocked record publishes its repair precondition through the
-      // authoritative workflow evidence block instead of a task region.
-      check(/办理前置条件/.test(evidenceText) && /请先选择关联合同/.test(evidenceText),
+      // authoritative business-section facts (unexplainable payment basis and
+      // incomplete收款账户) instead of a dedicated workflow evidence region.
+      check(/无可解释依据|缺少合同|缺少结算/.test(evidenceText) && /账户信息待补充|待补充/.test(evidenceText),
         'blocked payment has no authoritative repair precondition', stateVariants[kind]);
       check(primaryInventory.length === 1 && primaryInventory[0].enabled === 'false',
         'blocked payment did not publish exactly one disabled primary action', stateVariants[kind]);
@@ -1511,7 +1511,7 @@ try {
     { enabled: true, timeout: 45000 },
   );
   await journeyRow.click();
-  await page.waitForURL((url) => url.pathname === `/f/payment.request/${recordId}`, { timeout: 45000 });
+  await page.waitForURL((url) => url.pathname.endsWith(`/f/payment.request/${recordId}`), { timeout: 45000 });
   const editSurface = await requireUnique(
     page,
     page.locator(
@@ -1617,7 +1617,7 @@ try {
     { enabled: true, timeout: 45000 },
   );
   await postSaveRow.click();
-  await page.waitForURL((url) => url.pathname === `/f/payment.request/${recordId}`, { timeout: 45000 });
+  await page.waitForURL((url) => url.pathname.endsWith(`/f/payment.request/${recordId}`), { timeout: 45000 });
   await page.setViewportSize({ width: 390, height: 844 });
   await waitForViewport(page, 390);
   enterStage('main:submit-ready-390');

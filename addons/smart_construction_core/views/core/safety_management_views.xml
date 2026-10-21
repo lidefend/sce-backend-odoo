@@ -110,11 +110,7 @@
                         <page string="方案附件">
                             <field name="attachment_ids" widget="many2many_binary"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
             </form>
@@ -175,11 +171,7 @@
                         <page string="交底附件">
                             <field name="attachment_ids" widget="many2many_binary"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
             </form>
@@ -337,11 +329,7 @@
                         <page string="现场附件">
                             <field name="attachment_ids" widget="many2many_binary"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
             </form>
@@ -497,11 +485,7 @@
                         <page string="照片批次">
                             <field name="photo_batch_ids"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
             </form>
@@ -571,11 +555,7 @@
                         <page string="照片批次">
                             <field name="photo_batch_ids"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
             </form>

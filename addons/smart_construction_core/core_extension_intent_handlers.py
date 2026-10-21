@@ -11,6 +11,7 @@ _logger = logging.getLogger(__name__)
 def get_intent_handler_contributions():
     """Return construction intent handler contributions for platform loader."""
     try:
+        from odoo.addons.smart_construction_core.handlers.baseline_readiness import BaselineReadinessHandler
         from odoo.addons.smart_construction_core.handlers.system_ping_construction import (
             SystemPingConstructionHandler,
         )
@@ -200,6 +201,7 @@ def get_intent_handler_contributions():
         ("telemetry.track", TelemetryTrackHandler),
         ("capability.visibility.report", CapabilityVisibilityReportHandler),
         ("product.configuration.capability.catalog", ProductConfigurationCapabilityCatalogHandler),
+        ("baseline.readiness", BaselineReadinessHandler),
         ("sc.product.system_parameter.catalog", ProductSystemParameterCatalogHandler),
         ("sc.product.system_parameter.preview", ProductSystemParameterPreviewHandler),
         ("sc.product.system_parameter.publish", ProductSystemParameterPublishHandler),

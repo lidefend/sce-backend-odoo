@@ -2,6 +2,18 @@
 from __future__ import annotations
 
 ROLE_SURFACE_OVERRIDES = {
+    "experience": {
+        "label": "体验用户",
+        "exclusive_surface": True,
+        "landing_scene_candidates": ["workspace.home"],
+        "discover_installed_capabilities": True,
+        "menu_xmlids": ["smart_construction_core.menu_sc_root"],
+        "primary_menu_xmlids": [],
+        "role_home_menu_xmlids": ["smart_construction_core.menu_sc_workspace_home"],
+        "contextual_menu_xmlids": [],
+        "admin_menu_xmlids": [],
+        "denied_menu_xmlids": [],
+    },
     "restricted": {
         "label": "受限用户",
         "landing_scene_candidates": ["workspace.home"],
@@ -252,7 +264,6 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_business_config_center",
         ],
         "primary_menu_xmlids": [
-            "smart_construction_core.menu_sc_historical_payment_fact",
         ],
         "role_home_menu_xmlids": [
             "smart_construction_core.menu_sc_workspace_home",
@@ -500,7 +511,6 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_payment_request",
         ],
         "primary_menu_xmlids": [
-            "smart_construction_core.menu_sc_historical_payment_fact",
             "smart_construction_core.menu_payment_request_receive",
             "smart_construction_core.menu_sc_receipt_income",
             "smart_construction_core.menu_sc_user_income",
@@ -694,10 +704,15 @@ ROLE_SURFACE_OVERRIDES = {
         "menu_xmlids": [
             "smart_construction_core.menu_sc_root",
             "smart_construction_core.menu_sc_projection_root",
+            "smart_construction_core.menu_sc_workspace_center",
             "smart_construction_core.menu_sc_project_center",
+            "smart_construction_core.menu_sc_finance_center",
+            "smart_construction_core.menu_sc_data_center",
         ],
         "primary_menu_xmlids": [
-            "smart_construction_core.menu_sc_historical_payment_fact",
+        ],
+        "role_home_menu_xmlids": [
+            "smart_construction_core.menu_sc_workspace_home",
         ],
     },
     # 成本组角色（group_sc_cap_cost_user / group_sc_cap_cost_manager /
@@ -776,6 +791,7 @@ ROLE_SURFACE_OVERRIDES = {
 }
 
 ROLE_GROUPS_EXPLICIT = {
+    "experience": {"smart_construction_core.group_sc_role_experience"},
     "system_admin": {
         "smart_core.group_smart_core_admin",
     },
@@ -824,7 +840,7 @@ ROLE_GROUPS_CAPABILITY_FALLBACK = {
     },
 }
 
-ROLE_PRECEDENCE = ("system_admin", "business_full", "business_config_admin", "executive", "owner", "pm", "finance", "cost")
+ROLE_PRECEDENCE = ("system_admin", "experience", "business_full", "business_config_admin", "executive", "owner", "pm", "finance", "cost")
 
 NAV_MENU_SCENE_MAP = {
     "smart_construction_core.menu_sc_project_initiation": "projects.intake",
@@ -954,9 +970,9 @@ LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL = {
 BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
     "payment.request": {
         # The payment handling list is a task surface, not a generic model
-        # dump.  These nine facts let the operator identify the request,
-        # understand the payment basis and decide the next legal step without
-        # opening every record.  Keep them ahead of audit and auxiliary
+        # dump. These eight facts identify the request and its payment basis.
+        # Next-action guidance is declared as interaction, not a fact column.
+        # Keep facts ahead of audit and auxiliary
         # columns when the responsive width budget is applied.
         "visible": [
             "state",
@@ -966,7 +982,6 @@ BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
             "payee_unit_display",
             "payment_basis_type",
             "payee_account_completeness",
-            "legal_next_action_display",
             "request_amount_display",
         ],
         "critical": [
@@ -977,7 +992,6 @@ BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
             "payee_unit_display",
             "payment_basis_type",
             "payee_account_completeness",
-            "legal_next_action_display",
             "request_amount_display",
         ],
         "hidden": [
@@ -1001,7 +1015,6 @@ BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
             "payee_unit_display": "relation",
             "payment_basis_type": "status",
             "payee_account_completeness": "status",
-            "legal_next_action_display": "status",
             "request_amount_display": "money",
             "actual_payee_unit_display": "relation",
             "payer_unit_display": "relation",

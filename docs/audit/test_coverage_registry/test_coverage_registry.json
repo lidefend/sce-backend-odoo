@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 181,
+    "odoo_tags": 188,
     "gated": 3,
-    "on_demand": 35,
-    "unwired": 143,
-    "odoo_tag_declarations": 400,
+    "on_demand": 36,
+    "unwired": 149,
+    "odoo_tag_declarations": 406,
     "gated_declarations": 95,
-    "uncovered_declarations": 305,
+    "uncovered_declarations": 311,
     "ci_unit_scripts": 16,
     "ci_unit_scripts_wired": 16,
     "ci_unit_scripts_unwired": 0
@@ -483,19 +483,6 @@
       "disposition": "wire-pending"
     },
     {
-      "group": "runtime_view_contract",
-      "status": "unwired",
-      "kind": "odoo_tag",
-      "declarations": 2,
-      "files": [
-        "addons/smart_construction_core/tests/test_runtime_view_contract_cleanup_migration.py",
-        "addons/smart_core/tests/test_runtime_view_contract_fail_closed.py"
-      ],
-      "owner": "construction-product",
-      "evidence": [],
-      "disposition": "wire-pending"
-    },
-    {
       "group": "security_gate",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -633,6 +620,20 @@
       "disposition": "wire-pending"
     },
     {
+      "group": "baseline_readiness",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_baseline_readiness.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.baseline.readiness :: baseline_readiness $(MAKE) --no-print-directory local.dev.test"
+      ],
+      "disposition": "class-selected"
+    },
+    {
       "group": "business_config_change_set",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -681,6 +682,18 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "capability_verdict_projection",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_capability_registry_service.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "known-gap"
     },
     {
       "group": "chatter_timeline_authorization_orm",
@@ -984,6 +997,42 @@
       "disposition": "wire-pending"
     },
     {
+      "group": "experience_capability_authority",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_experience_role_surface.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "known-gap"
+    },
+    {
+      "group": "experience_role_contract",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_experience_role_surface.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "known-gap"
+    },
+    {
+      "group": "experience_role_permissions",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_experience_role_surface.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "known-gap"
+    },
+    {
       "group": "extension_contract",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -1020,6 +1069,18 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "formal_role_hint",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_capability_registry_service.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "known-gap"
     },
     {
       "group": "fund_legacy_archive",
@@ -1657,6 +1718,18 @@
       "disposition": "wire-pending"
     },
     {
+      "group": "query_capability_native_acl",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_capability_registry_service.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "known-gap"
+    },
+    {
       "group": "r11c_locked_menu",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -1789,6 +1862,18 @@
         "addons/smart_construction_core/tests/test_runtime_user_management.py"
       ],
       "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "runtime_view_contract",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_runtime_view_contract_fail_closed.py"
+      ],
+      "owner": "platform-team",
       "evidence": [],
       "disposition": "wire-pending"
     },

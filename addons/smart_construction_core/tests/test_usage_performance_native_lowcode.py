@@ -111,22 +111,6 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
     }
 
     # Model-wide sparse sequence mirrors: retained on purpose (same rule as G05/G06/G07).
-    RETAINED_SPARSE_ANNOTATIONS = {
-        "business_config_contract_sc_labor_usage_form_structure_generated": "sc.labor.usage",
-        "business_config_contract_sc_equipment_usage_form_structure_generated": "sc.equipment.usage",
-        "business_config_contract_sc_subcontract_register_form_structure_generated": "sc.subcontract.register",
-    }
-
-    # Model-wide business-fact policy carriers retained on purpose: they are the only
-    # declaration of the business-fact readonly policy on these three models.
-    RETAINED_BUSINESS_FACT_POLICIES = {
-        "business_config_contract_sc_labor_usage_p1_form_business_facts_v1": "sc.labor.usage",
-        "business_config_contract_sc_equipment_usage_p1_form_business_facts_v1": "sc.equipment.usage",
-        "business_config_contract_sc_subcontract_register_p1_form_business_facts_v1": "sc.subcontract.register",
-    }
-
-    # Facts declared by the retired entry bodies.  Neither list may reference a
-    # name that is not a real model field.
     RETIRED_ENTRY_FACTS = {
         "sc.labor.usage": (
             "state", "name", "usage_type", "usage_date", "project_id", "contractor_id",
@@ -158,13 +142,13 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
     # pre-migration arch so the batch is provably presentation-neutral.
     RENDERED_FIELDS = {
         "view_sc_labor_usage_form": (
-            "state", "name", "project_id", "usage_date", "usage_type", "labor_team",
+            "validation_status", "can_review", "reject_reason", "state", "name", "project_id", "usage_date", "usage_type", "labor_team",
             "contractor_id", "foreman_name", "recorder_id", "worker_qty", "work_hours",
             "currency_id", "price_unit", "amount_total", "settlement_state", "work_type",
             "construction_part", "work_content", "note", "attachment_ids",
         ),
         "view_sc_equipment_usage_form": (
-            "state", "name", "project_id", "request_id", "usage_date", "equipment_name",
+            "validation_status", "can_review", "reject_reason", "state", "name", "project_id", "request_id", "usage_date", "equipment_name",
             "equipment_code", "specification", "uom_text", "usage_location", "operator_name",
             "usage_qty", "usage_hours", "currency_id", "price_unit", "amount", "supplier_id",
             "recorder_id", "note", "attachment_ids", "processing_advisory",
@@ -305,35 +289,6 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
                 # structural body; the native form owns the identity.
                 self.assertTrue(self.env.ref("smart_construction_core.%s" % view_xmlid))
 
-    def test_the_model_wide_sparse_annotation_keeps_serving_the_model(self):
-        """Retained on purpose: the sparse sequence mirror is still the model plane."""
-        for contract_xmlid, model in self.RETAINED_SPARSE_ANNOTATIONS.items():
-            with self.subTest(contract=contract_xmlid):
-                record = self._contract(contract_xmlid)
-                self.assertTrue(record.active)
-                self.assertFalse(record.action_id)
-                self.assertEqual(record.model, model)
-                spec = self._form_spec(record)
-                self.assertIn("fields", spec)
-                self.assertNotIn("sections", spec)
-                self.assertNotIn("composition_mode", spec)
-
-    def test_the_business_fact_policy_carriers_are_retained(self):
-        """Structure retired, policy retained: editability semantics stay unchanged."""
-        for contract_xmlid, model in self.RETAINED_BUSINESS_FACT_POLICIES.items():
-            with self.subTest(contract=contract_xmlid):
-                record = self._contract(contract_xmlid)
-                self.assertTrue(record.active)
-                self.assertEqual(record.model, model)
-                read_only = {
-                    row.get("name")
-                    for row in (self._form_spec(record).get("fields") or [])
-                    if isinstance(row, dict) and row.get("readonly")
-                }
-                self.assertTrue(read_only, "the retained carrier must still declare policies")
-
-    # -- resolution surface --------------------------------------------------
-
     def test_every_entry_resolves_the_native_semantic_surface(self):
         for contract_xmlid, (action_xmlid, model, _view, _title) in self.ENTRIES.items():
             with self.subTest(contract=contract_xmlid):
@@ -363,17 +318,12 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
                 self.assertEqual(resolved.get("form_structure_authority"), "native_authority")
                 self.assertEqual(resolved.get("form_presentation_mode"), "task")
 
-    def test_the_entry_release_outranks_every_model_wide_carrier(self):
-        """50 -> 800: no model-wide carrier may sort after the native declaration."""
+    def test_each_entry_has_no_model_mirror(self):
         for contract_xmlid, (action_xmlid, model, _view, _title) in self.ENTRIES.items():
             with self.subTest(contract=contract_xmlid):
                 entry = self._contract(contract_xmlid)
-                others = [
-                    config for config in self._entry_contracts(model, action_xmlid)
-                    if config.name != entry.name
-                ]
-                self.assertTrue(others, "each entry still resolves its model-wide plane")
-                self.assertGreater(entry.priority, max(config.priority for config in others))
+                configs = self._entry_contracts(model, action_xmlid)
+                self.assertEqual([config.name for config in configs], [entry.name])
 
     def test_the_retained_carriers_are_reported_as_suppressed_not_rejected(self):
         """An unscoped legacy declaration degrades; it never blocks the native owner."""
@@ -546,17 +496,7 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
                         self.ref("smart_construction_core.%s" % action_xmlid),
                         "the native release must be scoped to its own action",
                     )
-                    # A release that answered for every entry could not be the
-                    # entry's own surface, and the priority is what makes it the
-                    # last structure writer for this action alone.
-                    self.assertGreater(
-                        native[0].priority,
-                        max(
-                            config.priority for config in contracts
-                            if config.name != native[0].name
-                        ),
-                        "%s must outrank its model-wide plane" % action_xmlid,
-                    )
+                    self.assertEqual([config.name for config in contracts], [native[0].name])
 
     # -- create-state usability (U-C4 G09 可办理性修正, 2026-09-19) ------------
 
@@ -612,9 +552,8 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         },
     }
 
-    # The retained `p1_form_business_facts_v1` carrier is the only declaration of
-    # the business-fact read-only policy on these models.  This is the exact set
-    # it still declares read-only after the create-state correction.
+    # Historical business read-only expectations, now checked against the
+    # delivered native create contract for facts still presented there.
     EXPECTED_READONLY_POLICY = {
         "sc.labor.usage": (
             "amount_total", "create_date", "name", "recorder_id",
@@ -634,12 +573,6 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
             "source_created_at", "source_created_by", "state",
             "uninvoiced_amount", "unpaid_amount",
         ),
-    }
-
-    POLICY_CARRIERS = {
-        "sc.labor.usage": "business_config_contract_sc_labor_usage_p1_form_business_facts_v1",
-        "sc.equipment.usage": "business_config_contract_sc_equipment_usage_p1_form_business_facts_v1",
-        "sc.subcontract.register": "business_config_contract_sc_subcontract_register_p1_form_business_facts_v1",
     }
 
     MODEL_VIEWS = {
@@ -683,10 +616,38 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
     DRAFT_WINDOW_EXEMPT_FACTS = ("note", "attachment_ids")
 
     def _policy_fields(self, model):
-        return [
-            row for row in (self._form_spec(self._contract(self.POLICY_CARRIERS[model])).get("fields") or [])
-            if isinstance(row, dict) and row.get("name")
-        ]
+        """Read the delivered create policy, not a deleted model mirror."""
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+        cache = self.__dict__.setdefault("_create_policy_cache", {})
+        if model not in cache:
+            action = self.env.ref("smart_construction_core." + self.ENTRY_RELEASE_ACTIONS[model][0])
+            view = self.env.ref("smart_construction_core." + self.MODEL_VIEWS[model])
+            result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+                "op": "model", "model": model, "action_id": action.id,
+                "view_id": view.id, "view_type": "form", "render_profile": "create",
+            })
+            result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+            self.assertTrue(result.get("ok"), result)
+            data = result["data"]
+            statuses = {row["widgetId"]: row for row in data["statusContract"]["widgetStatus"]}
+            rows = []
+            def walk(value):
+                if isinstance(value, list):
+                    for child in value:
+                        walk(child)
+                elif isinstance(value, dict):
+                    name = value.get("fieldCode") or value.get("name")
+                    widget = value.get("widgetId")
+                    if value.get("type") == "field" and name in self.env[model]._fields and widget:
+                        self.assertIn(widget, statuses)
+                        rows.append({"name": name, "readonly": statuses[widget]["readonly"]})
+                    for child in value.values():
+                        if isinstance(child, (list, dict)):
+                            walk(child)
+            walk(data["layoutContract"]["containerTree"])
+            self.assertTrue(rows, model)
+            cache[model] = rows
+        return cache[model]
 
     def _policy_readonly(self, model):
         return {row["name"] for row in self._policy_fields(model) if row.get("readonly")}
@@ -725,14 +686,14 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         marked `project_id` required and unconditionally read-only, so the create
         page offered 提交 with no legal path to the project.
         """
-        for model, _xmlid in self.POLICY_CARRIERS.items():
+        for model in self.MODEL_VIEWS:
             declared = {row["name"] for row in self._policy_fields(model)}
             user_facts = set(self.USER_SUPPLIED_FACTS[model])
             carried = set(self.FACT_CARRIERS[model])
             fields = self.env[model]._fields
             with self.subTest(model=model):
                 self.assertEqual(user_facts & carried, set(), "a fact belongs to one class only")
-                self.assertEqual(user_facts | carried, declared, "every declared fact is classified")
+                self.assertLessEqual(user_facts, declared, "every user-entered fact must remain on the native surface")
                 for name in sorted(user_facts):
                     self.assertFalse(fields[name].readonly, "%s must be writable on the model" % name)
                     self.assertFalse(fields[name].compute, "%s must not be computed" % name)
@@ -750,9 +711,9 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
                         "%s is declared carried but nothing in the model supplies it" % name,
                     )
                 self.assertEqual(
-                    self._policy_readonly(model),
-                    set(self.EXPECTED_READONLY_POLICY[model]),
-                    "the retained carrier must keep exactly the justified read-only facts",
+                    self._policy_readonly(model) & (user_facts | carried),
+                    set(self.EXPECTED_READONLY_POLICY[model]) & declared,
+                    "presented business facts must preserve their justified read-only policy",
                 )
                 self.assertEqual(
                     set(self.EXPECTED_READONLY_POLICY[model]) & user_facts, set(),
@@ -834,8 +795,8 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
             )
             self.assertEqual(
                 {name for name, expr in register_window.items() if expr == "1"},
-                {"processing_advisory"},
-                "no user fact stays unconditionally read-only on the delivered arch",
+                {"processing_advisory", "state"},
+                "only auxiliary feedback and workflow state are unconditionally readonly",
             )
             self.assertEqual(
                 {name for name, expr in register_window.items() if expr == "state == 'closed'"},
@@ -975,7 +936,8 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         usage.write({"note": "草稿修正说明"})
         self.assertEqual(usage.worker_qty, 3.0)
         usage.action_submit()
-        self.assertEqual(usage.state, "submitted")
+        # 统一审批链：无生效规则时由审批链推进为通过状态。
+        self.assertEqual(usage.state, "approved")
         with self.assertRaises(UserError):
             usage.write({"worker_qty": 4.0})
         with self.assertRaises(UserError):
@@ -1032,14 +994,14 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         with self.assertRaises(UserError):
             usage.write({"state": "submitted"})
         usage.action_submit()
-        self.assertEqual(usage.state, "submitted")
+        self.assertEqual(usage.state, "approved")
         with self.assertRaises(UserError):
             usage.write({"state": "draft"})
-        self.assertEqual(usage.state, "submitted")
+        self.assertEqual(usage.state, "approved")
         with self.assertRaises(UserError):
             usage.write({"state": "draft", "worker_qty": 9.0})
         usage.invalidate_recordset()
-        self.assertEqual(usage.state, "submitted")
+        self.assertEqual(usage.state, "approved")
         self.assertEqual(usage.worker_qty, 1.0)
         # The business actions still move the state through the sanctioned path,
         # and they keep their own flow rules (`已确认` may not be cancelled late).
@@ -1087,11 +1049,11 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         self.assertEqual(model.search_count([("labor_team", "=", vals["labor_team"])]), 1)
         # `copy()` cannot land a non-draft state, and it does not touch the source.
         draft.action_submit()
-        self.assertEqual(draft.state, "submitted")
+        self.assertEqual(draft.state, "approved")
         copied = draft.copy()
         self.assertEqual(copied.state, "draft")
         self.assertEqual(copied.work_content, draft.work_content)
-        self.assertEqual(draft.state, "submitted")
+        self.assertEqual(draft.state, "approved")
         with self.assertRaises(UserError):
             copied.write({"state": "confirmed"})
 
@@ -1135,7 +1097,7 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         )
         usage.write({"usage_hours": 5.0})
         usage.action_submit()
-        self.assertEqual(usage.state, "submitted")
+        self.assertEqual(usage.state, "approved")
         with self.assertRaises(UserError):
             usage.write({"usage_hours": 9.0})
         # Basis facts are not measured facts: the user completes them while the

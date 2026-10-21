@@ -1,0 +1,121 @@
+{
+  "schema": "capability.acceptance.contracts.v1",
+  "product_layer": "P1",
+  "authority": "Industry acceptance expectations only; runtime authorization remains native groups, ACL, record rules and operation policy. Evidence is not granted by declaration.",
+  "capabilities": {
+    "project.list.open": {
+      "label": "项目列表查询",
+      "product_dependencies": [
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_core/handlers/api_data.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/delivery/runtime_route_authority.py",
+        "addons/smart_construction_core/tests/test_capability_registry_service.py",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/api/data.ts",
+        "frontend/apps/web/src/api/contractTypes.ts",
+        "frontend/apps/web/src/api/productCapabilityCatalog.ts",
+        "addons/smart_core/identity/identity_resolver.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ],
+      "product_criteria": {
+        "preview": {
+          "query_contract": [
+            "native_action_target",
+            "declared_columns",
+            "frontend_backend_request_response_alignment",
+            "frontend_consumes_declared_fields_and_actions",
+            "error_and_empty_contract_alignment"
+          ],
+          "role_surface_contract": [
+            "role_surface_entry_visibility_alignment",
+            "role_surface_action_availability_alignment",
+            "role_surface_denial_reason_alignment",
+            "frontend_consumes_authoritative_role_surface"
+          ]
+        },
+        "standard": {
+          "query_contract": [
+            "native_action_target",
+            "declared_columns",
+            "frontend_backend_request_response_alignment",
+            "frontend_consumes_declared_fields_and_actions",
+            "error_and_empty_contract_alignment"
+          ],
+          "query_regression": [
+            "pagination_no_duplicate_or_missing",
+            "record_rule_query_equivalence",
+            "entry_navigation_browser",
+            "search_filter_results",
+            "read_is_side_effect_free",
+            "display_states_browser",
+            "interaction_roundtrip_browser"
+          ],
+          "role_surface_contract": [
+            "role_surface_entry_visibility_alignment",
+            "role_surface_action_availability_alignment",
+            "role_surface_denial_reason_alignment",
+            "frontend_consumes_authoritative_role_surface"
+          ]
+        }
+      },
+      "authorization_dependencies": [
+        "addons/smart_construction_core/security/ir.model.access.csv",
+        "addons/smart_construction_core/security/sc_record_rules.xml",
+        "addons/smart_construction_core/security/sc_capability_groups.xml",
+        "addons/smart_construction_core/security/sc_role_groups.xml",
+        "addons/smart_core/identity/identity_resolver.py",
+        "addons/smart_core/handlers/api_data_write.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ],
+      "business_scenarios": {
+        "project_reader_reads_visible_projects": {
+          "role_code": "project_member",
+          "company_scope": "actor_current_company",
+          "data_scope": "native_visible_project_fixture",
+          "record_state": "existing_active_project",
+          "operation": "read",
+          "expected": {
+            "decision": "allow",
+            "reason_code": "",
+            "business_effect": {
+              "matches_native_record_rules": true,
+              "records_changed": 0
+            }
+          }
+        },
+        "project_reader_cannot_write": {
+          "role_code": "project_member",
+          "company_scope": "actor_current_company",
+          "data_scope": "native_visible_project_fixture",
+          "record_state": "existing_active_project",
+          "operation": "write",
+          "expected": {
+            "decision": "deny",
+            "reason_code": "ACCESS_DENIED",
+            "business_effect": {
+              "records_changed": 0,
+              "name_unchanged": true
+            }
+          }
+        },
+        "project_reader_cannot_read_outside_company": {
+          "role_code": "project_member",
+          "company_scope": "outside_actor_allowed_companies",
+          "data_scope": "other_company_project_fixture",
+          "record_state": "existing_active_project",
+          "operation": "read",
+          "expected": {
+            "decision": "deny",
+            "reason_code": "RECORD_RULE_DENIED",
+            "business_effect": {
+              "outside_scope_records_returned": 0,
+              "records_changed": 0
+            }
+          }
+        }
+      }
+    }
+  }
+}

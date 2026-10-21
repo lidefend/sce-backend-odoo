@@ -79,9 +79,7 @@
                         <field name="applies_road_coordinate"/>
                         <field name="active"/>
                     </group>
-                    <group string="来源追溯">
-                    </group>
-                    <field name="item_ids">
+<field name="item_ids">
                         <tree editable="bottom">
                             <field name="sequence" widget="handle"/>
                             <field name="name"/>
@@ -239,11 +237,7 @@
                                 <field name="coordinate"/>
                             </group>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
             </form>
@@ -297,11 +291,7 @@
                         <page string="照片批次">
                             <field name="photo_batch_ids"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
             </form>
@@ -371,11 +361,7 @@
                         <page string="照片批次">
                             <field name="photo_batch_ids"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
             </form>

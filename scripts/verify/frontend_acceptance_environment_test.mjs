@@ -19,6 +19,17 @@ assert.equal(local.operation, 'readonly');
 assert(Object.isFrozen(local.target));
 assert(!JSON.stringify(redactedEnvironmentEvidence(local)).includes('local-secret'));
 
+const localRelation = resolveAcceptanceEnvironment({ tool: 'relation-roundtrip', env: { ...localEnv, SC_ACCEPTANCE_EXPECTED_SHA: SHA } });
+assert.equal(localRelation.target.identityPath, '/api/runtime-version');
+assert.equal(localRelation.target.identityRequired, true);
+assert.equal((await verifyServedIdentity(localRelation, SHA, async url => {
+  assert.equal(url, `${localRelation.apiUrl}/api/runtime-version`);
+  return { ok: true, json: async () => ({ git_sha: SHA, database: localRelation.database, environment: 'dev' }) };
+})).skipped, false);
+await assert.rejects(() => verifyServedIdentity(localRelation, SHA, async () => ({
+  ok: true, json: async () => ({ git_sha: SHA, database: 'wrong_database', environment: 'dev' }),
+})), /served database/);
+
 let launchCalls = 0;
 let networkCalls = 0;
 const beforeLaunch = (fn, pattern) => {

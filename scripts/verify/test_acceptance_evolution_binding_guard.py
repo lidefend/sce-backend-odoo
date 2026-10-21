@@ -144,6 +144,17 @@ class TestGlobAndPlan(unittest.TestCase):
             ROOT / "config" / "acceptance" / "evolution_binding.v1.json"
         )
 
+    def test_stage_selection_is_shared_and_never_marks_deferred_suites_passed(self):
+        plan = {"required_evidence_suites": ["daily_runtime_entry", "path_namespace_identity", "list_surface_structure", "relation_roundtrip"], "status": "PASS"}
+        merge = guard.plan_for_stage(self.registry, plan, "merge")
+        self.assertEqual(merge["required_evidence_suites"], ["list_surface_structure", "relation_roundtrip"])
+        self.assertEqual(merge["deferred_evidence_suites"], ["daily_runtime_entry", "path_namespace_identity"])
+        self.assertEqual(guard.plan_for_stage(self.registry, plan)["required_evidence_suites"], plan["required_evidence_suites"])
+        self.assertEqual(guard.plan_for_stage(self.registry, plan, "deployment")["required_evidence_suites"], plan["required_evidence_suites"])
+        self.assertEqual(len(plan["required_evidence_suites"]), 4)
+        with self.assertRaises(guard.BindingError):
+            guard.plan_for_stage(self.registry, plan, "skip")
+
     def test_glob_semantics(self):
         self.assertTrue(guard.path_matches("addons/**", "addons/a.py"))
         self.assertTrue(guard.path_matches("addons/**", "addons/a/b.py"))

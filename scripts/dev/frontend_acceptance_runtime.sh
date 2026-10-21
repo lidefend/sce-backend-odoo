@@ -27,6 +27,10 @@ load_profile() {
   set -a
   # shellcheck disable=SC1090
   source "$base_env"
+  # The base env supplies infrastructure credentials, not the acceptance route.
+  # Restore the declared isolated entry after sourcing it so login probes and
+  # the static proxy use the same stamp registered by db-ensure.
+  source "$ROOT_DIR/config/acceptance/isolated_entry_identity.v1.env"
   set +a
   while IFS='=' read -r key value; do
     printf -v "$key" '%s' "$value"
@@ -319,7 +323,7 @@ case "$command" in
   preflight)
     preflight
     ;;
-  standard-approval-runtime|standard-favorite-recovery|standard-page-build|standard-page-up|standard-page-browser|standard-list-surface-browser|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic|standard-relation-nav-diagnostic)
+  standard-approval-runtime|standard-favorite-recovery|standard-page-build|standard-page-up|standard-page-browser|standard-list-surface-browser|standard-contract-prerequisite|standard-relation-roundtrip-browser|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic|standard-relation-nav-diagnostic)
     preflight
     validate_backend_resource_identity
     # Same unchanged-backend reuse rules as the preceding low-code batch.
@@ -399,6 +403,40 @@ PYPROBE
         [[ -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" observed-identity >/dev/null
         node "$ROOT_DIR/frontend/apps/web/scripts/standard_bootstrap_inventory.mjs"
+        ;;
+      standard-contract-prerequisite)
+        [[ "$PROFILE" == local && "$DB_NAME" == sc_frontend_acceptance && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: contract receipt requires frozen candidate" >&2; exit 2; }
+        python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
+        expected_sha="$(git -C "$ROOT_DIR" rev-parse HEAD)"
+        resolution_output="$(docker exec -i "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/frontend_delivery_hardening_runtime_ids.py" 2>&1)"
+        RESOLUTION_OUTPUT="$resolution_output" EXPECTED_SHA="$expected_sha" python3 - <<'PYRESOLUTION'
+import json, os
+from pathlib import Path
+prefix = 'FRONTEND_DELIVERY_HARDENING_TARGETS_JSON='
+rows = [line[len(prefix):] for line in os.environ['RESOLUTION_OUTPUT'].splitlines() if line.startswith(prefix)]
+assert len(rows) == 1, 'expected one authoritative fixture resolution'
+body = {'schema': 'acceptance.record_identity_resolution.v1', 'producer': 'scripts/verify/frontend_delivery_hardening_runtime_ids.py', 'expected_sha': os.environ['EXPECTED_SHA'], 'targets': json.loads(rows[0])}
+p = Path('artifacts/backend/acceptance_record_identity.json')
+p.parent.mkdir(parents=True, exist_ok=True)
+p.write_text(json.dumps(body, ensure_ascii=False, indent=2) + '\n')
+PYRESOLUTION
+        ACCEPTANCE_PASSWORD="$SC_ACCEPTANCE_FIXTURE_PASSWORD" python3 "$ROOT_DIR/scripts/ops/dev_acceptance_release_probe.py" \
+          --contract-only --base-url http://127.0.0.1:5180 --db-name sc_frontend_acceptance --expected-sha "$expected_sha" \
+          --contract-declaration config/acceptance/backend_contract_instance_v1.json \
+          --record-resolution artifacts/backend/acceptance_record_identity.json \
+          --output artifacts/backend/dev_acceptance_release_probe.json
+        ;;
+      standard-relation-roundtrip-browser)
+        [[ "$PROFILE" == local && "$DB_NAME" == sc_frontend_acceptance && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
+        SC_ACCEPTANCE_PROFILE=local SC_ACCEPTANCE_FRONTEND_URL=http://127.0.0.1:5180 SC_ACCEPTANCE_API_URL=http://127.0.0.1:5180 \
+          FRONTEND_URL=http://127.0.0.1:5180 ACCEPTANCE_BASE_URL=http://127.0.0.1:5180 BASE_URL=http://127.0.0.1:5180 \
+          SC_ACCEPTANCE_DATABASE=sc_frontend_acceptance DB_NAME=sc_frontend_acceptance E2E_DB=sc_frontend_acceptance DB=sc_frontend_acceptance \
+          SC_ACCEPTANCE_EXPECTED_SHA="$(git -C "$ROOT_DIR" rev-parse HEAD)" SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_MANAGE_SERVICE=false \
+          SC_ACCEPTANCE_TARGET_MODE=managed SC_ACCEPTANCE_LOGIN=fixture_role_pm SC_ACCEPTANCE_ROLE= E2E_LOGIN=fixture_role_pm \
+          ACCEPTANCE_RECORD_RESOLUTION=artifacts/backend/acceptance_record_identity.json RELATION_RESOLUTION_KEY=project RELATION_IDENTITY_SOURCE=resolution \
+          node "$ROOT_DIR/scripts/verify/record_relation_roundtrip_acceptance.js"
         ;;
       standard-list-surface-browser)
         [[ "$PROFILE" == local && "$DB_NAME" == sc_frontend_acceptance && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
@@ -652,6 +690,12 @@ PYPROBE
     # shellcheck source=../common/frontend_acceptance_make_identity.sh
     source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
     frontend_acceptance_make verify.frontend.activity_surface.browser.internal
+    ;;
+  login-probe)
+    preflight
+    validate_backend_runtime
+    source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
+    frontend_acceptance_make acceptance.runtime.login_probe.internal
     ;;
   release-preflight)
     preflight

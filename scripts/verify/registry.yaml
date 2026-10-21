@@ -22,6 +22,12 @@ gate_required:
 - frontend_decision_authority_guard.py
 - test_frontend_decision_authority_guard.py
 entries:
+- script: probe_toolchain_support.py
+  status: active
+  owner: platform-team
+  date: '2026-10-21'
+  wire_or_retire: file-consumed
+  reason: Shared startup lifecycle library imported by blocked legacy CLI probes; enforces nonzero refusal before runtime imports.
 - script: __init__.py
   status: active
   owner: platform-team
@@ -358,12 +364,6 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
-- script: form_structure_contract_seed_generate.py
-  status: active
-  owner: platform-team
-  date: '2026-10-13'
-  reason: governed contract.form_structure.guidance.retire consumes native P1 retirement
-    declarations
 - script: form_structure_standardization_audit.py
   status: active
   owner: platform-team
@@ -592,6 +592,12 @@ entries:
   date: '2026-09-10'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_capability_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-10-21'
+  wire_or_retire: file-consumed
+  reason: Read-only principal capability authority resolver consumed by local_dev_capability_browser.sh.
 - script: local_dev_collaboration_domain_ids.py
   status: active
   owner: platform-team
@@ -682,6 +688,12 @@ entries:
   date: '2026-08-25'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_readiness_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-10-21'
+  wire_or_retire: file-consumed
+  reason: Read-only readiness resolver consumed by local_dev_readiness_browser.sh.
 - script: local_dev_reporting_center_ids.py
   status: active
   owner: platform-team
@@ -694,6 +706,13 @@ entries:
   date: '2026-08-25'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_system_parameter_readback.py
+  status: active
+  owner: platform-team
+  date: '2026-10-21'
+  wire_or_retire: file-consumed
+  reason: Parameter readback helper consumed by governed local_dev_system_parameter
+    browser/mutation wrappers.
 - script: local_dev_tax_center_ids.py
   status: active
   owner: platform-team
@@ -857,6 +876,13 @@ entries:
   date: '2026-08-07'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: migration_safety_fingerprint.py
+  status: active
+  owner: platform-team
+  date: '2026-10-21'
+  wire_or_retire: file-consumed
+  reason: Fingerprint helper consumed by production_blocker_fresh_and_rollback.sh
+    to verify isolated failure rollback; not business migration replay.
 - script: native_parser_capability_audit.py
   status: active
   owner: platform-team
@@ -983,6 +1009,14 @@ entries:
   date: '2026-07-20'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: post-migration.py
+  status: active
+  owner: platform-team
+  date: '2026-10-21'
+  wire_or_retire: file-consumed
+  reason: Deliberate failure-injection fixture in sc_migration_failure_fixture, consumed
+    through the isolated fresh-and-rollback verification loader; not historical product
+    migration.
 - script: product_customer_runtime_decoupling_guard.py
   status: active
   owner: platform-team
@@ -1154,6 +1188,11 @@ entries:
   owner: platform-team
   date: '2026-08-23'
   reason: 'Governed unittest module invocation in: verify.contract.probe_routing.unit'
+- script: test_contract_retirement_declaration.py
+  status: active
+  owner: platform-team
+  date: '2026-10-21'
+  reason: 'Governed unittest invocation in: verify.contract_retirement.declaration.unit'
 - script: test_contract_schema_declaration_sync.py
   status: active
   owner: platform-team
@@ -1221,12 +1260,6 @@ entries:
   owner: platform-team
   date: '2026-09-16'
   reason: 'Governed unittest module invocation in: verify.form_structure_authority_unification.unit'
-- script: test_form_structure_guidance_retirement.py
-  status: active
-  owner: platform-team
-  date: '2026-10-13'
-  reason: verify.contract.form_structure.guidance_retirement.unit covers exact seed
-    retirement and rejection boundaries
 - script: test_formal_action_runtime_drift_audit.py
   status: orphan
   owner: platform-team
@@ -1532,18 +1565,11 @@ entries:
   owner: platform-team
   date: '2026-10-09'
   reason: 'Governed unittest module invocation in: verify.product_view_structure.contract.unit'
-- script: test_retired_p1_alias_view_cleanup_migration.py
-  status: orphan
+- script: test_retired_product_view_declarations.py
+  status: active
   owner: platform-team
-  date: '2026-08-13'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_retired_p2_form_view_cleanup_migration.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-12'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
+  date: '2026-10-21'
+  reason: 'Governed unittest invocation in: verify.product.retired_views.source_contract'
 - script: test_scene_audit_disclosure_guard.py
   status: active
   owner: platform-team
@@ -1594,6 +1620,11 @@ entries:
   date: '2026-08-04'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_view_orchestration_product_boundary_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-21'
+  reason: 'Governed unittest invocation in: verify.view.orchestration_product_boundary_guard'
 - script: test_view_type_render_coverage_guard.py
   status: active
   owner: platform-team

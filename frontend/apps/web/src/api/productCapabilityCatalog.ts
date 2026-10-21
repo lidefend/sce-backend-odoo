@@ -57,7 +57,10 @@ export type ProductCapabilityItem = {
   description: string;
 };
 
+export type UserCapabilityItem = ProductCapabilityItem & { status_label: string; reason_code: string };
+
 export type ProductCapabilityCatalog = {
+  user_capabilities: { items: UserCapabilityItem[]; empty_message: string };
   schema_version: string;
   manifest_status: string;
   objective: string;

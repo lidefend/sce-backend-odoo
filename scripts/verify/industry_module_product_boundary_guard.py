@@ -181,25 +181,6 @@ def verify_material_plan_customer_field_boundary() -> list[str]:
             errors.append(
                 f"smart_construction_core: material-plan product list missing canonical field {field_name}"
             )
-    migration = (
-        ADDONS
-        / "smart_construction_core"
-        / "migrations"
-        / "17.0.0.113"
-        / "pre-migration.py"
-    )
-    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
-    for token in (
-        "project_material_plan",
-        "information_schema.columns",
-        "legacy_visible_%02d",
-        "MATERIAL_PLAN_P2_HISTORY_NOT_EXTRACTED",
-        "raise RuntimeError",
-    ):
-        if token not in migration_text:
-            errors.append(
-                f"smart_construction_core: material-plan P2 extraction preflight missing {token}"
-            )
     return errors
 
 
@@ -246,25 +227,6 @@ def verify_material_rfq_customer_field_boundary() -> list[str]:
             errors.append(
                 f"smart_construction_core: RFQ product list missing canonical field {field_name}"
             )
-    migration = (
-        ADDONS
-        / "smart_construction_core"
-        / "migrations"
-        / "17.0.0.114"
-        / "pre-migration.py"
-    )
-    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
-    for token in (
-        "sc_material_rfq",
-        "information_schema.columns",
-        "legacy_visible_%02d",
-        "MATERIAL_RFQ_P2_HISTORY_NOT_EXTRACTED",
-        "raise RuntimeError",
-    ):
-        if token not in migration_text:
-            errors.append(
-                f"smart_construction_core: RFQ P2 extraction preflight missing {token}"
-            )
     return errors
 
 
@@ -281,11 +243,6 @@ def verify_material_inbound_customer_field_boundary() -> list[str]:
             errors.append(f"smart_construction_core: inbound product list missing canonical field {field_name}")
     if "('legacy_acceptance_label', '=', '入库')" in list_text:
         errors.append("smart_construction_core: inbound product action must not filter on removed P2 label")
-    migration = ADDONS / "smart_construction_core/migrations/17.0.0.115/pre-migration.py"
-    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
-    for token in ("sc_material_inbound", "information_schema.columns", "legacy_visible_%02d", "MATERIAL_INBOUND_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError"):
-        if token not in migration_text:
-            errors.append(f"smart_construction_core: inbound P2 extraction preflight missing {token}")
     return errors
 
 
@@ -301,18 +258,6 @@ def verify_pass_through_customer_field_boundary() -> list[str]:
     ):
         if f'_inherit = "{model_name}"' in text:
             errors.append(f"smart_construction_core: {model_name} must not register pass-through P2 fields")
-    migration = ADDONS / "smart_construction_core/migrations/17.0.0.116/pre-migration.py"
-    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
-    for token in (
-        "sc_fund_account_operation",
-        "sc_receipt_income",
-        "sc_invoice_registration",
-        "construction_contract_expense",
-        "PASS_THROUGH_P2_HISTORY_NOT_EXTRACTED",
-        "raise RuntimeError",
-    ):
-        if token not in migration_text:
-            errors.append(f"smart_construction_core: pass-through extraction preflight missing {token}")
     return errors
 
 
@@ -331,17 +276,6 @@ def verify_subcontract_request_customer_field_boundary() -> list[str]:
     for field_name in ("state", "name", "project_id", "subcontract_scope", "amount_total", "attachment_ids"):
         if f'<field name="{field_name}"' not in list_text:
             errors.append(f"smart_construction_core: subcontract request list missing canonical field {field_name}")
-    migration = ADDONS / "smart_construction_core/migrations/17.0.0.117/pre-migration.py"
-    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
-    for token in (
-        "sc_subcontract_request",
-        "information_schema.columns",
-        "legacy_visible_%02d",
-        "SUBCONTRACT_REQUEST_P2_HISTORY_NOT_EXTRACTED",
-        "raise RuntimeError",
-    ):
-        if token not in migration_text:
-            errors.append(f"smart_construction_core: subcontract request P2 extraction preflight missing {token}")
     return errors
 
 
@@ -355,11 +289,6 @@ def verify_construction_diary_customer_field_boundary() -> list[str]:
     formal_text = formal_fields.read_text(encoding="utf-8", errors="ignore") if formal_fields.is_file() else ""
     if "ConstructionDiaryFormalConfigContractFields" in formal_text:
         errors.append("smart_construction_core: construction diary must use canonical fields without display aliases")
-    migration = ADDONS / "smart_construction_core/migrations/17.0.0.118/pre-migration.py"
-    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
-    for token in ("sc_construction_diary", "legacy_visible_%02d", "CONSTRUCTION_DIARY_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError"):
-        if token not in migration_text:
-            errors.append(f"smart_construction_core: construction diary P2 extraction preflight missing {token}")
     return errors
 
 
@@ -374,11 +303,6 @@ def verify_settlement_order_customer_field_boundary() -> list[str]:
     for field_name in ("state", "name", "project_id", "settlement_amount", "paid_amount", "unpaid_amount", "attachment_ids"):
         if f'<field name="{field_name}"' not in list_text:
             errors.append(f"smart_construction_core: settlement list missing canonical field {field_name}")
-    migration = ADDONS / "smart_construction_core/migrations/17.0.0.119/pre-migration.py"
-    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
-    for token in ("sc_settlement_order", "legacy_visible_%02d", "SETTLEMENT_ORDER_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError"):
-        if token not in migration_text:
-            errors.append(f"smart_construction_core: settlement P2 extraction preflight missing {token}")
     return errors
 
 
@@ -393,11 +317,6 @@ def verify_equipment_usage_customer_field_boundary() -> list[str]:
     for field_name in ("specification", "uom_text", "currency_id", "price_unit", "amount"):
         if field_name not in core_text:
             errors.append(f"smart_construction_core: equipment usage missing canonical field {field_name}")
-    migration = ADDONS / "smart_construction_core/migrations/17.0.0.120/pre-migration.py"
-    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
-    for token in ("sc_equipment_usage", "legacy_visible_%02d", "EQUIPMENT_USAGE_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError"):
-        if token not in migration_text:
-            errors.append(f"smart_construction_core: equipment usage P2 extraction preflight missing {token}")
     return errors
 
 
@@ -412,11 +331,6 @@ def verify_labor_usage_customer_field_boundary() -> list[str]:
     for field_name in ("usage_type", "work_type", "construction_part", "price_unit", "amount_total", "settlement_state"):
         if field_name not in core_text:
             errors.append(f"smart_construction_core: labor usage missing canonical field {field_name}")
-    migration = ADDONS / "smart_construction_core/migrations/17.0.0.121/pre-migration.py"
-    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
-    for token in ("sc_labor_usage", "legacy_visible_%02d", "LABOR_USAGE_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError"):
-        if token not in migration_text:
-            errors.append(f"smart_construction_core: labor usage P2 extraction preflight missing {token}")
     return errors
 
 
@@ -435,14 +349,6 @@ def verify_material_rental_order_customer_field_boundary() -> list[str]:
     ):
         if field_name not in core_text:
             errors.append(f"smart_construction_core: material rental order missing canonical field {field_name}")
-    migration = ADDONS / "smart_construction_core/migrations/17.0.0.122/pre-migration.py"
-    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
-    for token in (
-        "sc_material_rental_order", "legacy_visible_%02d",
-        "MATERIAL_RENTAL_ORDER_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError",
-    ):
-        if token not in migration_text:
-            errors.append(f"smart_construction_core: material rental order P2 extraction preflight missing {token}")
     return errors
 
 
@@ -460,14 +366,6 @@ def verify_hr_payroll_document_customer_field_boundary() -> list[str]:
     for field_name in ("gross_amount", "net_salary", "payment_state", "paid_amount", "unpaid_amount", "attachment_ids"):
         if field_name not in core_text:
             errors.append(f"smart_construction_core: payroll document missing canonical field {field_name}")
-    migration = ADDONS / "smart_construction_core/migrations/17.0.0.123/pre-migration.py"
-    migration_text = migration.read_text(encoding="utf-8", errors="ignore") if migration.is_file() else ""
-    for token in (
-        "sc_hr_payroll_document", "legacy_visible_%02d",
-        "HR_PAYROLL_DOCUMENT_P2_HISTORY_NOT_EXTRACTED", "raise RuntimeError",
-    ):
-        if token not in migration_text:
-            errors.append(f"smart_construction_core: payroll document P2 extraction preflight missing {token}")
     return errors
 
 
@@ -1895,34 +1793,6 @@ def verify_custom_security_policy_role_login_boundary() -> list[str]:
     return errors
 
 
-def verify_industry_contract_migration_scope() -> list[str]:
-    path = (
-        ADDONS
-        / "smart_construction_core"
-        / "migrations"
-        / "17.0.0.108"
-        / "post-migration.py"
-    )
-    if not path.is_file():
-        return ["smart_construction_core: missing scoped P1 contract source-status migration"]
-    text = path.read_text(encoding="utf-8", errors="ignore")
-    required = (
-        '("module", "=", "smart_construction_core")',
-        '("model", "=", "ui.business.config.contract")',
-        '("id", "in", industry_contract_ids)',
-    )
-    errors = [
-        "smart_construction_core: P1 contract migration must scope writes through its own XML-ID namespace"
-        for token in required
-        if token not in text
-    ]
-    if 'env["res.users"]' in text or '"groups_id"' in text:
-        errors.append(
-            "smart_construction_core: P1 contract migration must not rewrite external user or role data"
-        )
-    return errors
-
-
 def main() -> int:
     errors: list[str] = []
     errors.extend(verify_manifest_shape())
@@ -1985,7 +1855,6 @@ def main() -> int:
     errors.extend(verify_seed_showcase_product_fields())
     errors.extend(verify_seed_product_language_boundary())
     errors.extend(verify_custom_security_policy_role_login_boundary())
-    errors.extend(verify_industry_contract_migration_scope())
 
     if errors:
         print("[industry_module_product_boundary_guard] FAIL", file=sys.stderr)

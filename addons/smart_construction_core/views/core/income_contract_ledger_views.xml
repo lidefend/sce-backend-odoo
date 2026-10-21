@@ -86,8 +86,8 @@
                             <field name="unreceived_amount"/>
                         </group>
                         <group string="来源追溯">
-                            <field name="source_model"/>
-                            <field name="source_record_id"/>
+                            <field name="source_model" groups="smart_construction_core.group_sc_cap_config_admin"/>
+                            <field name="source_record_id" groups="smart_construction_core.group_sc_cap_config_admin"/>
                             <field name="source_origin"/>
                             <field name="handler_id"/>
                             <field name="entry_user_id"/>

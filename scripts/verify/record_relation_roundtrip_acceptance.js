@@ -22,35 +22,18 @@ const requireBase = fs.existsSync(path.join(process.cwd(), 'frontend/apps/web/pa
   : path.join(process.cwd(), 'package.json');
 const { chromium } = createRequire(requireBase)('playwright');
 
-const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://127.0.0.1:5180').replace(/\/+$/, '');
-const DB_NAME = process.env.DB_NAME || 'sc_demo';
-// A namespace-routed entry (for example /t/demo) binds the database from the
-// path and refuses every client database hint with 409. Only legacy
-// single-instance lanes still select the database through the query string.
-const NAMESPACE_ROUTED = (() => {
-  try {
-    return new URL(FRONTEND_URL).pathname.replace(/\/+$/, '') !== '';
-  } catch {
-    return false;
-  }
-})();
-const ENTRY_BASE_PATH = (() => {
-  try {
-    const p = new URL(FRONTEND_URL).pathname.replace(/\/+$/, '');
-    return p === '/' ? '' : p;
-  } catch {
-    return '';
-  }
-})();
+let FRONTEND_URL;
+let DB_NAME;
+let ENTRY_BASE_PATH;
+let LOGIN;
+let PASSWORD;
+let EXPECTED_SHA;
+let authenticateBrowserProbe;
 function relativePathname(pathname) {
   if (!ENTRY_BASE_PATH) return pathname;
   if (pathname === ENTRY_BASE_PATH) return '/';
   return pathname.startsWith(`${ENTRY_BASE_PATH}/`) ? pathname.slice(ENTRY_BASE_PATH.length) : pathname;
 }
-const DB_QUERY = NAMESPACE_ROUTED ? '' : `db=${encodeURIComponent(DB_NAME)}`;
-const LOGIN = process.env.E2E_LOGIN || '';
-const PASSWORD = process.env.E2E_PASSWORD || '';
-const EXPECTED_SHA = process.env.SC_ACCEPTANCE_TARGET_SHA || '';
 // The source record is never a literal in this file. It is resolved from the
 // governed acceptance-record envelope (the same body every other declaration
 // driven lane reads), so a database rebuild that renumbers the fixture cannot
@@ -63,7 +46,7 @@ const RESOLUTION_KEY = String(process.env.RELATION_RESOLUTION_KEY || 'project').
 const IDENTITY_SOURCE = String(process.env.RELATION_IDENTITY_SOURCE || 'resolution').trim();
 const PINNED_FIELD = String(process.env.RELATION_FIELD || '').trim();
 const MAX_CONTROLS = Number(process.env.RELATION_MAX_CONTROLS || 6);
-const ARTIFACTS_DIR = process.env.ARTIFACTS_DIR || '.runtime/final-acceptance/relation-roundtrip';
+let outDir;
 
 let MODEL = '';
 let RECORD_ID = 0;
@@ -78,9 +61,11 @@ function readResolution() {
     throw new Error('ACCEPTANCE_RECORD_RESOLUTION must point at the managed resolution body');
   }
   const body = JSON.parse(fs.readFileSync(RESOLUTION_PATH, 'utf8'));
-  if (body && body.schema && body.schema !== 'acceptance.record_identity_resolution.v1') {
+  if (!body || body.schema !== 'acceptance.record_identity_resolution.v1') {
     throw new Error(`unexpected resolution schema ${body.schema}`);
   }
+  if (body.expected_sha !== EXPECTED_SHA) throw new Error('managed resolution candidate mismatch');
+  if (body.producer !== 'scripts/verify/frontend_delivery_hardening_runtime_ids.py') throw new Error('managed resolution producer mismatch');
   const targets = body && body.targets;
   if (!targets || typeof targets !== 'object') {
     throw new Error('managed resolution is not the governed envelope (targets missing)');
@@ -90,7 +75,7 @@ function readResolution() {
   const model = String(entry.model || '').trim();
   if (!model) throw new Error(`resolution ${RESOLUTION_KEY}.model is missing`);
   for (const key of ['record_id', 'action_id', 'menu_id']) {
-    if (!(Number(entry[key]) > 0)) throw new Error(`resolution ${RESOLUTION_KEY}.${key} is missing`);
+    if (!Number.isSafeInteger(entry[key]) || entry[key] <= 0) throw new Error(`resolution ${RESOLUTION_KEY}.${key} is missing`);
   }
   // One declared identity, one match: a key that resolves to a model/id pair the
   // envelope contradicts would make the run ambiguous, so it is refused.
@@ -142,8 +127,6 @@ async function servedRevision() {
   return await response.json();
 }
 
-const ts = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
-const outDir = path.join(ARTIFACTS_DIR, ts);
 const RECORD_ROUTE = /^\/(?:r|f)\/[-a-zA-Z_.]+\/\d+$/;
 
 function writeJson(name, data) {
@@ -153,8 +136,7 @@ function writeJson(name, data) {
 
 function sourceUrl() {
   const menu = MENU_ID ? `&menu_id=${MENU_ID}` : '';
-  const db = DB_QUERY ? `${DB_QUERY}&` : '';
-  return `${FRONTEND_URL}/r/${MODEL}/${RECORD_ID}?${db}action_id=${ACTION_ID}${menu}`;
+  return `${FRONTEND_URL}/r/${MODEL}/${RECORD_ID}?action_id=${ACTION_ID}${menu}`;
 }
 
 function declaredEntriesFrom(contract) {
@@ -185,16 +167,10 @@ function declaredEntriesFrom(contract) {
 }
 
 async function login(page) {
-  const query = DB_QUERY ? `?${DB_QUERY}` : '';
-  await page.goto(`${FRONTEND_URL}/login${query}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.goto(`${FRONTEND_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('input').nth(0).fill(LOGIN);
   await page.locator('input[type="password"]').fill(PASSWORD);
-  if (!NAMESPACE_ROUTED) {
-    const dbInput = page.locator('input').nth(2);
-    if (await dbInput.count() && await dbInput.isEnabled().catch(() => false)) await dbInput.fill(DB_NAME).catch(() => {});
-  }
-  await page.locator('button[type="submit"]').click();
-  await page.waitForFunction(() => Object.keys(window.sessionStorage).some((key) => key.startsWith('sc_auth_token')), null, { timeout: 60000 });
+  await authenticateBrowserProbe(page, LOGIN, () => page.locator('button[type="submit"]').click());
 }
 
 async function waitForRecordSurface(page) {
@@ -308,6 +284,25 @@ async function clickAndClassify(page, field, sourcePath) {
 }
 
 async function main() {
+  const environment = await import('./lib/frontend_acceptance_environment.mjs');
+  ({ authenticateBrowserProbe } = await import('./frontend_authenticated_intent.mjs'));
+  const acceptance = environment.resolveAcceptanceEnvironment({ tool: 'relation-roundtrip', operation: 'readonly' });
+  const { acquireAcceptanceLease } = await import('./lib/frontend_acceptance_lease.mjs');
+  const lease = await acquireAcceptanceLease({ environment: acceptance, mode: 'shared-read', owner: { tool: 'relation-roundtrip' } });
+  try { await runProbe(acceptance, environment); }
+  finally { await lease.release(); }
+}
+
+async function runProbe(acceptance, environment) {
+  outDir = acceptance.artifacts.runRoot;
+  FRONTEND_URL = acceptance.baseUrl.replace(/\/+$/, '');
+  DB_NAME = acceptance.database;
+  ENTRY_BASE_PATH = new URL(FRONTEND_URL).pathname.replace(/\/+$/, '');
+  LOGIN = acceptance.login;
+  PASSWORD = acceptance.password;
+  EXPECTED_SHA = acceptance.provenance.expectedSha;
+  await environment.verifyServedIdentity(acceptance);
+
   if (!LOGIN || !PASSWORD) throw new Error('E2E_LOGIN and E2E_PASSWORD are required');
   if (!EXPECTED_SHA) throw new Error('SC_ACCEPTANCE_TARGET_SHA is required');
   if (IDENTITY_SOURCE === 'explicit') readExplicitIdentity();
@@ -335,9 +330,10 @@ async function main() {
     failures: [],
   };
   const browser = await chromium.launch({ headless: true });
+  let page;
   try {
     const context = await browser.newContext({ locale: 'zh-CN', viewport: { width: 1440, height: 1000 } });
-    const page = await context.newPage();
+    page = await context.newPage();
     page.on('console', (msg) => { if (msg.type() === 'error') result.console_errors.push(msg.text()); });
     page.on('pageerror', (err) => result.console_errors.push(err.message));
     page.on('response', (response) => {
@@ -382,7 +378,7 @@ async function main() {
       const attempt = await clickAndClassify(page, field, before.pathname);
       const declaredEntry = declared[field] || null;
       attempt.declared = declaredEntry;
-      if (declaredEntry && declaredEntry.can_read !== true) {
+      if (!declaredEntry || declaredEntry.can_read !== true || declaredEntry.can_open !== true) {
         attempt.failure = 'control rendered for a field the contract does not declare readable';
       } else if (attempt.outcome === 'denied') {
         attempt.failure = `declared openable entry rejected by route authority (${attempt.reason || 'unknown'})`;
@@ -426,6 +422,11 @@ async function main() {
     if (!result.roundtrip) result.failures.push({ field: '-', reason: 'no declared relation entry completed a verified open-and-return round trip' });
     result.status = result.failures.length ? 'fail' : 'pass';
   } catch (err) {
+    if (page) {
+      result.failure_path = new URL(page.url()).pathname;
+      fs.mkdirSync(outDir, { recursive: true });
+      await page.screenshot({ path: path.join(outDir, 'failure.png'), fullPage: true }).catch(() => {});
+    }
     result.error = err instanceof Error ? err.message : String(err);
     result.failures.push({ field: '-', reason: result.error });
     if (err instanceof Error && err.stack) result.stack = err.stack.split('\n').slice(0, 6).join('\n');
@@ -441,9 +442,18 @@ async function main() {
     denied_requests: result.denied_requests.length,
     console_errors: result.console_errors.length,
     error: result.error,
+    failure_path: result.failure_path,
     artifacts: outDir,
   }, null, 2));
-  process.exit(result.status === 'pass' ? 0 : 1);
+  process.exitCode = result.status === 'pass' ? 0 : 1;
 }
 
-main();
+main().catch((error) => {
+  // Keep exception text and arguments private; source locations identify the
+  // failed prerequisite without leaking credentials or request bodies.
+  const locations = String(error?.stack || '').split('\n').slice(1)
+    .map(line => line.match(/record_relation_roundtrip_acceptance\.js:\d+:\d+/)?.[0])
+    .filter(Boolean);
+  console.error(JSON.stringify({ status: 'fail', phase: 'prerequisite', locations }));
+  process.exitCode = 1;
+});

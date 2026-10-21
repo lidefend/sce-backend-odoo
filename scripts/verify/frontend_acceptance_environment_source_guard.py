@@ -6,17 +6,21 @@ import json
 from pathlib import Path
 import re
 
+from frontend_probe_toolchain_guard import check as probe_toolchain_errors
+
 
 ROOT = Path(__file__).resolve().parents[2]
 MIGRATED = (
     "scripts/verify/frontend_full_product_audit.mjs",
     "scripts/verify/frontend_form_system_audit.mjs",
     "scripts/verify/frontend_geometry_scroll_audit.mjs",
+    "scripts/verify/frontend_all_list_visual_audit.mjs",
+    "scripts/verify/frontend_list_surface_structure_browser.mjs",
 )
 
 
 def main() -> int:
-    errors: list[str] = []
+    errors: list[str] = probe_toolchain_errors(ROOT)
     environments = json.loads((ROOT / "config/frontend/acceptance_environments_v1.json").read_text(encoding="utf-8"))
     tools = json.loads((ROOT / "config/frontend/acceptance_tool_matrix_v1.json").read_text(encoding="utf-8"))
     if "base_url" in environments["profiles"]["daily"]:

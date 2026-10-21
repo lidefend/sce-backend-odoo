@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import ast
+import xml.etree.ElementTree as ET
 import importlib.util
 import json
 from pathlib import Path
@@ -196,6 +198,36 @@ LOWCODE_BOUNDARY_DOC = ROOT / "docs" / "architecture" / "backend_contract_bounda
 LOWCODE_CAPABILITY_MATRIX = ROOT / "docs" / "architecture" / "low_code_business_config_capability_matrix_v1.json"
 VERIFY_INDEX_DOC = ROOT / "docs" / "ops" / "verify" / "README.md"
 PRODUCTION_UPGRADE_STANDARD_DOC = ROOT / "docs" / "ops" / "production_upgrade_standard_v1.md"
+
+
+def validate_source_declarations(module_root: Path) -> list[dict]:
+    """Validate literal provenance in installed XML, including inactive drafts."""
+    errors = []
+    manifest = ast.literal_eval((module_root / "__manifest__.py").read_text())
+    for relative in manifest.get("data", []):
+        if not relative.endswith(".xml"):
+            continue
+        path = module_root / relative
+        for record in ET.parse(path).findall(".//record[@model='ui.business.config.contract']"):
+            for field in record.findall("./field[@name='contract_json']"):
+                try:
+                    payload = (ast.literal_eval(field.get("eval")) if field.get("eval")
+                               else json.loads(field.text or ""))
+                    if not isinstance(payload, dict):
+                        raise ValueError("contract_json must be a mapping")
+                    for carrier in ("view_orchestration", "menu_orchestration"):
+                        if carrier not in payload:
+                            continue
+                        section = payload[carrier]
+                        if not isinstance(section, dict):
+                            raise ValueError("orchestration must be a mapping")
+                        context = section.get("context", {}) if carrier == "view_orchestration" else section
+                        if not isinstance(context, dict) or context.get("source_status") not in REQUIRED_SOURCE_STATUSES:
+                            raise ValueError("missing or invalid explicit source_status")
+                except (ValueError, SyntaxError, TypeError) as exc:
+                    errors.append({"category": "installed_contract_source_status",
+                                   "path": str(path), "record": record.get("id"), "message": str(exc)})
+    return errors
 
 
 def _load_boundaries():
@@ -971,11 +1003,13 @@ def build_report() -> dict:
         })
 
     hook_text = _read(ROOT / "addons" / "smart_construction_core" / "hooks.py")
-    if "_backfill_lowcode_contract_source_status" not in hook_text:
+    if "_backfill_lowcode_contract_source_status" in hook_text:
         errors.append({
-            "category": "fresh_install_source_status_backfill",
-            "message": "fresh installs must backfill explicit low-code source_status",
+            "category": "retired_install_source_status_backfill",
+            "message": "P1 installation must consume explicit declarations without source_status backfill",
         })
+    for module in ("smart_core", "smart_construction_core", "sc_norm_engine", "smart_construction_portal"):
+        errors.extend(validate_source_declarations(ROOT / "addons" / module))
 
     if legacy_customer_root.is_dir():
         custom_hook_text = _read(legacy_customer_root / "hooks.py")
@@ -991,13 +1025,6 @@ def build_report() -> dict:
                 "category": "custom_user_preference_source_status",
                 "message": "custom user preference contracts must stamp explicit source_status when generated",
             })
-
-    migration_text = _read(ROOT / "addons" / "smart_construction_core" / "migrations" / "17.0.0.59" / "post-migration.py")
-    if "ensure_lowcode_contract_source_status" not in migration_text:
-        errors.append({
-            "category": "upgrade_source_status_backfill",
-            "message": "module upgrades must backfill explicit low-code source_status",
-        })
 
     if legacy_customer_root.is_dir():
         custom_migration_text = _read(legacy_customer_root / "migrations" / "17.0.1.1" / "post-migration.py")

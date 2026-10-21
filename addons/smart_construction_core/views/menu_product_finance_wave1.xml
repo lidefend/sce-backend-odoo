@@ -61,6 +61,15 @@
         <record id="menu_sc_funding_plan_summary" model="ir.ui.menu">
             <field name="name">资金汇总</field><field name="parent_id" ref="smart_construction_core.menu_sc_finance_center"/><field name="sequence">110</field><field name="active">True</field>
         </record>
+        <!-- Publication tier is selected in product_menu_source; native groups/ACLs remain authoritative. -->
+        <record id="menu_sc_treasury_ledger" model="ir.ui.menu">
+            <field name="parent_id" ref="smart_construction_core.menu_sc_finance_center"/>
+            <field name="sequence">113</field><field name="active">True</field>
+        </record>
+        <record id="menu_sc_settlement_order" model="ir.ui.menu">
+            <field name="parent_id" ref="smart_construction_core.menu_sc_contract_center"/>
+            <field name="sequence">113</field><field name="active">True</field>
+        </record>
         <!-- Retained native business capability; preview until formally released. -->
         <record id="menu_sc_engineering_progress_income" model="ir.ui.menu">
             <field name="parent_id" ref="smart_construction_core.menu_sc_finance_center"/>

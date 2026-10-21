@@ -127,7 +127,7 @@ class FakeSession:
             return 200, json.dumps({"result": {"uid": self.uid, "name": "Acceptance Fixture Finance"}})
         intent = (payload or {}).get("intent")
         if intent == "system.init":
-            return 200, json.dumps({"ok": True, "data": {"user": self.user, "role_surface": {"role_code": self.role_code}}})
+            return 200, json.dumps({"ok": True, "data": {"user": self.user, "role_surface": {"role_code": self.role_code}, "record_context": {"request_context": {"company_id": self.user["company_id"]}}}})
         if intent == "ui.contract.v2":
             return 200, json.dumps({"ok": True, "data": self.contract})
         return 200, json.dumps({"ok": False})
@@ -502,20 +502,22 @@ class ParamsContextBindingTest(unittest.TestCase):
         decl["request"]["params_context_from"] = "   "
         self.assertIn("contract_declaration_request_context_source_invalid", MODULE.validate_acceptance_declaration(decl))
 
-    def test_shipped_daily_declaration_binds_the_runtime_record_context_path(self):
-        shipped = json.loads((ROOT / "config/acceptance/backend_contract_instance_daily_v1.json").read_text(encoding="utf-8"))
-        declared = shipped["request"].get("params_context_from")
-        self.assertEqual(declared, "system.init.record_context.request_context")
-        self.assertEqual(MODULE.validate_acceptance_declaration(shipped), [])
-        runtime_context = {"company_id": 21}
-        # The declaration names the producing intent (system.init) plus the path
-        # inside its payload, exactly as the probe consumes it.
-        resolved = MODULE.resolve_declared_record_context(
-            declared, {"system.init": {"record_context": {"request_context": runtime_context}}}
-        )
-        self.assertEqual(resolved, runtime_context)
-        params = MODULE.build_contract_request_params(shipped["request"], {"model": "payment.request", "record_id": 1}, resolved)
-        self.assertEqual(params["context"], runtime_context)
+    def test_shipped_declarations_bind_the_runtime_record_context_path(self):
+        for name in ("backend_contract_instance_v1.json", "backend_contract_instance_daily_v1.json"):
+            with self.subTest(declaration=name):
+                shipped = json.loads((ROOT / "config/acceptance" / name).read_text(encoding="utf-8"))
+                declared = shipped["request"].get("params_context_from")
+                self.assertEqual(declared, "system.init.record_context.request_context")
+                self.assertEqual(MODULE.validate_acceptance_declaration(shipped), [])
+                runtime_context = {"company_id": 21}
+                # The declaration names the producing intent (system.init) plus the path
+                # inside its payload, exactly as the probe consumes it.
+                resolved = MODULE.resolve_declared_record_context(
+                    declared, {"system.init": {"record_context": {"request_context": runtime_context}}}
+                )
+                self.assertEqual(resolved, runtime_context)
+                params = MODULE.build_contract_request_params(shipped["request"], {"model": "payment.request", "record_id": 1}, resolved)
+                self.assertEqual(params["context"], runtime_context)
 
     def test_declaration_without_the_binding_keeps_the_declared_shape(self):
         # No binding declared: the runtime-declared record context is not injected,
@@ -752,6 +754,45 @@ class CanonicalNavigationTest(unittest.TestCase):
 
     def test_missing_data_fails_closed(self):
         self.assertIn('canonical_navigation_nav_missing_or_invalid', self.probe(None)['errors'])
+
+
+class EntryBoundContractSessionTest(unittest.TestCase):
+    def test_root_and_prefixed_entries_use_intent_without_database_hints(self):
+        for base in ('https://example.test', 'https://example.test/t/demo'):
+            session = MODULE._HttpSession(base, 'synthetic_db')
+            body = json.dumps({'ok': True, 'data': {'session': {'token': 'synthetic-token'}, 'user': {'id': 7}}})
+            with mock.patch.object(session, 'post', return_value=(200, body)) as post:
+                status, result = session.login('reader', 'synthetic')
+            self.assertEqual(status, 200)
+            self.assertEqual(post.call_args.args[0], '/api/v1/intent')
+            self.assertNotIn('db', post.call_args.args[1]['params'])
+            self.assertEqual(session._headers(), {'Content-Type': 'application/json', 'Authorization': 'Bearer synthetic-token'})
+            self.assertEqual(json.loads(result)['result']['uid'], 7)
+
+    def test_contract_only_stops_before_auth_on_bad_runtime(self):
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(MODULE.sys, 'argv', ['probe', '--contract-only', '--base-url', 'https://example.test', '--db-name', 'synthetic', '--expected-sha', SHA, '--output', folder+'/receipt.json']), \
+             mock.patch.object(MODULE, 'probe_runtime_identity', return_value={'status': 'FAIL'}), \
+             mock.patch.object(MODULE, 'probe_contract_acceptance') as contract, \
+             mock.patch.object(MODULE, 'probe_frontend') as frontend, \
+             mock.patch.object(MODULE, 'probe_login') as login, mock.patch('builtins.print'):
+            self.assertEqual(MODULE.main(), 1)
+            contract.assert_not_called(); frontend.assert_not_called(); login.assert_not_called()
+            self.assertEqual(json.loads(Path(folder+'/receipt.json').read_text())['status'], 'FAIL')
+
+    def test_contract_only_never_implies_release_or_navigation_pass(self):
+        for status in ('PASS', 'FAIL'):
+            with tempfile.TemporaryDirectory() as folder, \
+                 mock.patch.object(MODULE.sys, 'argv', ['probe', '--contract-only', '--base-url', 'https://example.test', '--db-name', 'synthetic', '--expected-sha', SHA, '--output', folder+'/receipt.json', '--contract-output', folder+'/explicit-contract.json']), \
+                 mock.patch.object(MODULE, 'probe_runtime_identity', return_value={'status': 'PASS', 'served_sha': SHA}), \
+                 mock.patch.object(MODULE, 'probe_contract_acceptance', return_value={'status': status}) as contract, \
+                 mock.patch.object(MODULE, 'probe_frontend') as frontend, \
+                 mock.patch.object(MODULE, 'probe_login') as login, mock.patch('builtins.print'):
+                self.assertEqual(MODULE.main(), 0 if status == 'PASS' else 1)
+                self.assertEqual(json.loads(Path(folder+'/receipt.json').read_text()), {'status': status})
+                self.assertEqual(contract.call_args.kwargs['expected_sha'], SHA)
+                self.assertEqual(contract.call_args.kwargs['contract_output'], Path(folder)/'explicit-contract.json')
+                frontend.assert_not_called(); login.assert_not_called()
 
 
 class NamespaceEntryProbeTest(unittest.TestCase):

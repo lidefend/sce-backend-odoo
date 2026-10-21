@@ -11,6 +11,7 @@ from ..services.product_system_parameter_catalog import (
     impact_preview,
     load_manifest,
 )
+from ..services.product_system_parameter_change import read_parameter_value
 
 
 MODULE_MANIFEST = (
@@ -18,32 +19,11 @@ MODULE_MANIFEST = (
     / "data/product_system_parameter_catalog_v1.json"
 )
 
-CONFIG_ADMIN_GROUPS = (
+CONFIG_ADMIN_GROUPS = [
     "smart_construction_core.group_sc_cap_business_config_admin",
     "smart_construction_core.group_sc_cap_config_admin",
     "smart_construction_core.group_sc_super_admin",
-)
-
-
-def _has_group(user, xmlid: str) -> bool:
-    checker = getattr(user, "has_group", None)
-    if not callable(checker):
-        return False
-    try:
-        return bool(checker(xmlid))
-    except Exception:
-        return False
-
-
-def _cost_ledger_source_current(env) -> str:
-    company = env.company
-    enabled = {
-        "account_move": company.sc_cost_from_account_move,
-        "purchase_order": company.sc_cost_from_purchase,
-        "stock_move": company.sc_cost_from_stock,
-    }
-    selected = [key for key, value in enabled.items() if value]
-    return selected[0] if len(selected) == 1 else "disabled"
+]
 
 
 class ProductSystemParameterCatalogHandler(BaseIntentHandler):
@@ -51,7 +31,7 @@ class ProductSystemParameterCatalogHandler(BaseIntentHandler):
     DESCRIPTION = "Project the controlled product system parameter catalog"
     VERSION = "1.0.0"
     ETAG_ENABLED = False
-    REQUIRED_GROUPS = ["base.group_user"]
+    REQUIRED_GROUPS = CONFIG_ADMIN_GROUPS
 
     def _trace_id(self) -> str:
         if isinstance(self.context, dict):
@@ -93,8 +73,14 @@ class ProductSystemParameterCatalogHandler(BaseIntentHandler):
             }
         data = build_catalog(manifest)
         for row in data["parameters"]:
-            if row["key"] == "cost_ledger_source" and row["available"]:
-                row["current_value"] = _cost_ledger_source_current(self.env)
+            if not row["available"]:
+                continue
+            try:
+                current_value = read_parameter_value(self.env, row["key"])
+            except Exception:
+                current_value = None
+            if current_value is not None:
+                row["current_value"] = current_value
         data["success"] = True
         data["reason_code"] = "OK"
         return {
@@ -113,7 +99,7 @@ class ProductSystemParameterPreviewHandler(BaseIntentHandler):
     DESCRIPTION = "Preview the impact of a proposed system parameter change"
     VERSION = "1.0.0"
     ETAG_ENABLED = False
-    REQUIRED_GROUPS = list(CONFIG_ADMIN_GROUPS)
+    REQUIRED_GROUPS = CONFIG_ADMIN_GROUPS
 
     def _trace_id(self) -> str:
         if isinstance(self.context, dict):
@@ -134,22 +120,8 @@ class ProductSystemParameterPreviewHandler(BaseIntentHandler):
             "runtime_carrier": "smart_construction_core.handlers.product_system_parameter_catalog",
         }
 
-    def handle(self, payload=None, ctx=None):
+    def handle(self, params=None, ctx=None):
         trace_id = self._trace_id()
-        if not any(_has_group(self.env.user, group) for group in CONFIG_ADMIN_GROUPS):
-            reason = "PERMISSION_DENIED"
-            message = "只有行业配置管理员可以预览系统参数影响。"
-            return {
-                "ok": False,
-                "data": {"success": False, "reason_code": reason, "message": message},
-                "error": {"code": reason, "reason_code": reason, "message": message},
-                "code": 403,
-                "meta": {
-                    "intent": self.INTENT_TYPE,
-                    "trace_id": trace_id,
-                    "source_authority": self.source_authority_contract(),
-                },
-            }
         try:
             manifest = load_manifest(MODULE_MANIFEST)
         except Exception as exc:
@@ -166,7 +138,7 @@ class ProductSystemParameterPreviewHandler(BaseIntentHandler):
                     "source_authority": self.source_authority_contract(),
                 },
             }
-        params = payload if isinstance(payload, dict) else {}
+        params = params if isinstance(params, dict) else {}
         result = impact_preview(
             manifest,
             params.get("parameter_key"),

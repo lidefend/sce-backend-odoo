@@ -208,7 +208,7 @@
                         <page string="备注">
                             <field name="note" />
                         </page>
-                        <page string="历史付款承接" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager">
+                        <page string="历史付款承接" groups="smart_construction_core.group_sc_cap_config_admin">
                             <field name="historical_payment_fact_ids" readonly="1" help="历史承接，无新系统结算依据；以下记录只读且不可作为付款执行来源。">
                                 <tree create="0" edit="0" delete="0">
                                     <field name="source_external_id" string="来源记录"/>
@@ -328,7 +328,7 @@
                         <field name="visible_unreceived_amount" />
                         <field name="visible_unreceived_rate" />
                     </group>
-                    <group name="sc_income_contract_source_trace" string="来源与系统追溯" col="4" data-sc-anchor="income-contract-source-trace" data-sc-collapsible="1" data-sc-collapsed-by-default="1">
+                    <group name="sc_income_contract_source_trace" string="来源与系统追溯" col="4" data-sc-anchor="income-contract-source-trace" data-sc-collapsible="1" data-sc-collapsed-by-default="1" groups="smart_construction_core.group_sc_cap_config_admin">
                         <field name="name" readonly="1" />
                         <field name="document_status" readonly="1" />
                         <field name="company_id" readonly="1" />
@@ -443,14 +443,14 @@
                         <field name="new_system_flow_paid_amount" readonly="1" />
                         <field name="cumulative_paid_amount" readonly="1" />
                     </group>
-                    <group name="sc_expense_contract_source_trace" string="来源与系统追溯" col="4" data-sc-anchor="expense-contract-source-trace" data-sc-collapsible="1" data-sc-collapsed-by-default="1">
+                    <group name="sc_expense_contract_source_trace" string="来源与系统追溯" col="4" data-sc-anchor="expense-contract-source-trace" data-sc-collapsible="1" data-sc-collapsed-by-default="1" groups="smart_construction_core.group_sc_cap_config_admin">
                         <field name="name" readonly="1" />
                         <field name="document_status" />
                         <field name="company_id" readonly="1" />
                         <field name="approval_info" />
                         <field name="reject_reason" readonly="1" modifiers="{&quot;invisible&quot;: [[&quot;reject_reason&quot;,&quot;=&quot;,false]]}" />
                     </group>
-                    <group name="sc_expense_contract_historical_payment" string="历史付款承接" col="1" data-sc-anchor="expense-contract-historical-payment" data-sc-navigation-role="subordinate" data-sc-collapsible="1" data-sc-collapsed-by-default="1" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager">
+                    <group name="sc_expense_contract_historical_payment" string="历史付款承接" col="1" data-sc-anchor="expense-contract-historical-payment" data-sc-navigation-role="subordinate" data-sc-collapsible="1" data-sc-collapsed-by-default="1" groups="smart_construction_core.group_sc_cap_config_admin">
                         <field name="historical_payment_fact_ids" readonly="1" help="历史承接，无新系统结算依据；以下记录只读且不可作为付款执行来源。">
                             <tree create="0" edit="0" delete="0">
                                 <field name="source_external_id" string="来源记录"/>

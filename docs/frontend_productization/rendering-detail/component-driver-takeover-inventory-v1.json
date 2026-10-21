@@ -118,7 +118,7 @@
         "TDesignAlert"
       ],
       "officialComponent": "alert",
-      "productionConsumerCount": 78,
+      "productionConsumerCount": 77,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -238,7 +238,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 452,
+      "productionConsumerCount": 451,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -345,7 +345,7 @@
         "TDesignCollapsePanel"
       ],
       "officialComponent": "collapse",
-      "productionConsumerCount": 444,
+      "productionConsumerCount": 443,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -446,7 +446,7 @@
         "TDesignDialog"
       ],
       "officialComponent": "dialog",
-      "productionConsumerCount": 105,
+      "productionConsumerCount": 106,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -481,7 +481,7 @@
         "TDesignDrawer"
       ],
       "officialComponent": "drawer",
-      "productionConsumerCount": 93,
+      "productionConsumerCount": 94,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -800,7 +800,7 @@
         "TDesignMenuItem"
       ],
       "officialComponent": "menu",
-      "productionConsumerCount": 74,
+      "productionConsumerCount": 75,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1157,7 +1157,7 @@
         "TDesignTableRowData"
       ],
       "officialComponent": "table",
-      "productionConsumerCount": 113,
+      "productionConsumerCount": 114,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1383,7 +1383,7 @@
         "TDesignUpload"
       ],
       "officialComponent": "upload",
-      "productionConsumerCount": 437,
+      "productionConsumerCount": 436,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1400,7 +1400,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "0eb2aed5eaf8956a869b4c7b7cfb7881036db85dcbd832cbc0578f5faae92266",
+  "inputDigest": "2c54e5b0b8083129d70565a59a24ebe02e5e174deef342245705d045d60189f4",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0-P4 frontend production sources except the design-system adapter layer",

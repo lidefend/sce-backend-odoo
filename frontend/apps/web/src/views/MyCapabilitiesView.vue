@@ -28,15 +28,15 @@
           >
             <div class="capability-card-head">
               <strong>{{ item.label }}</strong>
-              <span class="capability-status-badge" :data-capability-status="item.status">{{ capabilityStatusLabel(item.status) }}</span>
+              <span class="capability-status-badge" :data-capability-status="item.status">{{ item.status_label }}</span>
             </div>
             <p class="capability-description">{{ item.description }}</p>
             <p class="capability-authority">依据：{{ item.authority || '—' }}</p>
-            <p v-if="!item.available" class="capability-reason">{{ item.reason === 'planned' ? '该能力尚未发布，暂不可用。' : item.reason }}</p>
+            <p v-if="!item.available" class="capability-reason">{{ item.reason }}</p>
           </article>
         </div>
       </section>
-      <ScInlineState v-if="!capabilities.length" state="empty" label="当前账号没有声明可用能力。" />
+      <ScInlineState v-if="!capabilities.length" state="empty" :label="emptyMessage" />
     </template>
   </ScPage>
 </template>
@@ -46,14 +46,13 @@ import { computed, onMounted } from 'vue';
 import ScPage from '../components/design-system/ScPage.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScInlineState from '../components/design-system/ScInlineState.vue';
-import { capabilityStatusLabel } from '../app/productCapabilityCatalogProjection';
 import { usePageContract } from '../app/pageContract';
 import { useMyCapabilities } from '../composables/myCapabilities/useMyCapabilities';
 
 const pageContract = usePageContract('my_capabilities');
 const title = computed(() => pageContract.text('title', '我的能力'));
 const subtitle = computed(() => pageContract.text('subtitle', '按当前账号展示可办理事项，以及不可用是无权限、无数据还是未发布。'));
-const { loading, error, gap, capabilities, byEntry, load } = useMyCapabilities();
+const { loading, error, gap, capabilities, emptyMessage, byEntry, load } = useMyCapabilities();
 
 onMounted(() => {
   void load();

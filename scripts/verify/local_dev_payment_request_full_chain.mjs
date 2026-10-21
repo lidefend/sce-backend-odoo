@@ -68,9 +68,8 @@ function attachDiagnostics(page, role) {
 }
 async function login(page, loginName) {
   await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  const inputs = page.locator('input');
-  await inputs.nth(0).fill(loginName);
-  await inputs.nth(1).fill(password);
+  await page.locator('#login-username').fill(loginName);
+  await page.locator('#login-password').fill(password);
   const databaseInputs = page.getByLabel(/数据库/);
   const databaseInputCount = await databaseInputs.count();
   check(databaseInputCount <= 1, 'login database identity is unique', { databaseInputCount });
@@ -96,9 +95,14 @@ async function apiIntent(page, intent, params) {
   return apiEnvelope(page, { intent, params });
 }
 async function apiEnvelope(page, envelope) {
-  const token = await page.evaluate((db) => sessionStorage.getItem(`sc_auth_token:${db}`) || '', database);
+  const token = await page.evaluate(() => {
+    const entryBase = (window.location.pathname.match(/^\/(?:t\/[a-z0-9][a-z0-9-]*|platform-admin)/) || [''])[0];
+    const audience = entryBase === '/platform-admin' ? 'platform-admin' : (entryBase ? 'tenant' : 'unscoped');
+    return sessionStorage.getItem(`sc_auth_token:${audience}:${entryBase || 'root'}`) || '';
+  });
   return page.evaluate(async ({ db, tokenValue, envelopeValue }) => {
-    const response = await fetch(`/api/v1/intent?db=${encodeURIComponent(db)}`, {
+    const entryBase = (window.location.pathname.match(/^\/(?:t\/[a-z0-9][a-z0-9-]*|platform-admin)/) || [''])[0];
+    const response = await fetch(`${entryBase}/api/v1/intent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: tokenValue ? `Bearer ${tokenValue}` : '', 'X-Trace-Id': `local-dev-payment-full-chain-${Date.now()}` },
       body: JSON.stringify(envelopeValue),
@@ -144,6 +148,18 @@ async function readOne(page, model, fields, id) {
   return rows[0];
 }
 
+async function readReviews(page) {
+  const ids = approvalChain.map(row => row.review_id);
+  const response = await apiIntent(page, 'api.data', { op: 'list', model: 'tier.review',
+    fields: ['id', 'status', 'done_by', 'reviewer_ids'],
+    domain: [['id', 'in', ids], ['model', '=', 'payment.request'], ['res_id', '=', requestId]],
+    limit: ids.length });
+  const rows = response.body?.data?.records || response.body?.result?.records || [];
+  check(response.status === 200 && rows.length === ids.length
+    && ids.every(id => rows.some(row => row.id === id)), 'exact payment review instances are readable', { rows });
+  return rows;
+}
+const observedApprovals = new Map();
 const browser = await launchChromium({ headless: true });
 try {
   for (const [index, review] of approvalChain.entries()) {
@@ -151,6 +167,16 @@ try {
     const approvalPage = await approvalContext.newPage();
     attachDiagnostics(approvalPage, `payment_reviewer_${review.group_xmlid || review.sequence}`);
     await login(approvalPage, review.actor_login);
+    const beforeReviews = await readReviews(approvalPage);
+    const currentReview = beforeReviews.find(row => row.id === review.review_id);
+    if (currentReview.status === 'approved') {
+      check(observedApprovals.has(review.review_id) && observedApprovals.get(review.review_id) === currentReview.done_by?.[0],
+        'already approved review has a witnessed earlier actor', { review: currentReview });
+      report.transitions.push({ review_id: review.review_id, skipped: 'already_approved', done_by: currentReview.done_by });
+      await approvalContext.close();
+      continue;
+    }
+    check(currentReview.status === 'pending', 'selected review is actually pending', { currentReview });
     await approvalPage.goto(`${baseUrl}/my-work`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await approvalPage.locator('.product-work').waitFor({ timeout: 45000 });
     await approvalPage.locator('.count-card[data-section-key="todo"]').click();
@@ -173,18 +199,32 @@ try {
     check((await approvalResponse).status() < 400, `review ${review.review_id} approval request succeeds`);
     await approvalDialog.waitFor({ state: 'hidden', timeout: 45000 });
     const afterApproval = await readOne(approvalPage, 'payment.request', ['id', 'state', 'validation_status', 'review_ids'], requestId);
-    const finalStep = index === approvalChain.length - 1;
-    check(
-      finalStep
-        ? afterApproval.state === 'approved' && afterApproval.validation_status === 'validated'
-        : afterApproval.state === 'submit' && ['waiting', 'pending'].includes(String(afterApproval.validation_status)),
-      `review ${review.review_id} advances exactly one configured payment approval step`,
-      { beforeApproval, afterApproval, review },
-    );
+    const afterReviews = await readReviews(approvalPage);
+    const completedReview = afterReviews.find(row => row.id === review.review_id);
+    check(completedReview.status === 'approved' && completedReview.done_by?.[0] === review.actor_id,
+      'selected review records the actual approving actor', { completedReview, review });
+    for (const row of afterReviews) {
+      const before = beforeReviews.find(item => item.id === row.id);
+      if (before.status === 'approved') {
+        check(row.status === 'approved' && row.done_by?.[0] === before.done_by?.[0],
+          'prior review approval is preserved', { before, row });
+      } else if (row.status === 'approved') {
+        check(row.done_by?.[0] === review.actor_id && before.reviewer_ids.includes(review.actor_id),
+          'new approval belongs to an authorized observed actor', { before, row, actor: review.actor_id });
+        observedApprovals.set(row.id, review.actor_id);
+      }
+    }
+    const allApproved = afterReviews.every(row => row.status === 'approved');
+    check(allApproved
+      ? afterApproval.state === 'approved' && afterApproval.validation_status === 'validated'
+      : afterApproval.state === 'submit' && ['waiting', 'pending'].includes(String(afterApproval.validation_status)),
+      'payment state agrees with actual review completion', { beforeApproval, afterApproval, beforeReviews, afterReviews });
     report.transitions.push({ actor: review.actor_login, reviewer_group: review.group_xmlid, review_id: review.review_id, step: index + 1, state: afterApproval.state, validation_status: afterApproval.validation_status, review_ids: afterApproval.review_ids });
     await shot(approvalPage, `approval-${index + 1}-after`);
     await approvalContext.close();
   }
+
+  check(observedApprovals.size === approvalChain.length, 'every configured review has a witnessed approval');
 
   const managerContext = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
   const manager = await managerContext.newPage();
@@ -209,7 +249,7 @@ try {
     'generate payment execution returns one authoritative create-form target',
     { generateTarget },
   );
-  await manager.waitForURL((url) => url.pathname !== `/r/payment.request/${requestId}`, { timeout: 45000 });
+  await manager.waitForURL((url) => !url.pathname.endsWith(`/r/payment.request/${requestId}`), { timeout: 45000 });
   await waitForm(manager, 'sc.payment.execution');
   const executionCreateSurface = manager.locator('[data-product-page-mode="form"][data-form-model="sc.payment.execution"]:visible');
   const handlerInput = executionCreateSurface.locator('[data-field-name="handler_name"] input:visible');
@@ -222,7 +262,7 @@ try {
   }, { timeout: 45000 });
   await manager.getByRole('button', { name: /^保存草稿$/, exact: true }).click();
   check((await createResponse).status() < 400, 'payment execution save succeeds');
-  await manager.waitForURL((url) => /^\/(?:f|r)\/sc\.payment\.execution\/\d+$/.test(url.pathname), { timeout: 45000 });
+  await manager.waitForURL((url) => /\/(?:f|r)\/sc\.payment\.execution\/\d+$/.test(url.pathname), { timeout: 45000 });
   const executionId = Number(new URL(manager.url()).pathname.split('/').pop());
   check(executionId > 0, 'saved payment execution has authoritative id', { executionId });
   await waitForm(manager, 'sc.payment.execution', executionId);

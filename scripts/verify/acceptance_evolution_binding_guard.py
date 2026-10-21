@@ -110,6 +110,11 @@ def load_registry(path: Path) -> dict:
     for suite_id, suite in suites.items():
         if not isinstance(suite, dict):
             raise BindingError(f"suite {suite_id!r} must be an object")
+        stages = suite.get("stages", ["merge", "deployment"])
+        if (not isinstance(stages, list) or not stages
+                or any(stage not in {"merge", "deployment"} for stage in stages)
+                or len(set(stages)) != len(stages)):
+            raise BindingError(f"suite {suite_id!r} has invalid stages")
         entrypoints = suite.get("entrypoints")
         if not isinstance(entrypoints, list) or not entrypoints:
             raise BindingError(f"suite {suite_id!r} needs at least one entrypoint")
@@ -328,6 +333,15 @@ def build_plan(registry: dict, changed: list[str], base: str, head: str) -> dict
         "unclassified": unclassified,
         "status": status,
     }
+
+
+def plan_for_stage(registry: dict, plan: dict, stage: str = "all") -> dict:
+    if stage not in {"all", "merge", "deployment"}:
+        raise BindingError("unknown delivery stage")
+    selected = [key for key in plan["required_evidence_suites"]
+                if stage == "all" or stage in registry["suites"][key].get("stages", ["merge", "deployment"])]
+    return {**plan, "stage": stage, "required_evidence_suites": selected,
+            "deferred_evidence_suites": [key for key in plan["required_evidence_suites"] if key not in selected]}
 
 
 def _sha256(path: Path) -> str:

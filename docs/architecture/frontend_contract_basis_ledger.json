@@ -171,6 +171,20 @@
       "onMissing": "stop",
       "behaviourTest": "frontend/apps/web/scripts/product_system_parameter_test.ts",
       "regressionGuard": "verify.frontend.product_system_parameter.unit"
+    },
+    {
+      "surface": "公共与启动错误状态、权限拒绝与恢复动作",
+      "declared": "page_contracts.error_states（公共接口同源 error_states）",
+      "declaredBy": "addons/smart_core/core/error_state_contract.py",
+      "declaredMethod": "build_error_state_contract",
+      "declaredSymbol": "\"states\": [",
+      "consumedBy": "frontend/apps/web/src/app/productErrorState.ts",
+      "consumedSymbol": "requireErrorStateContract(declaration)",
+      "onMissing": "stop",
+      "stopSymbol": "contractGapError",
+      "regressionGuard": "verify.frontend.delivery_hardening.guard",
+      "behaviourTest": "scripts/verify/test_error_state_contract.py",
+      "stopDetail": "StatusPanel 对缺失/非法声明或 retry executor 缺失显示精确 ContractGap；AccessDeniedView 复用同一消费者。真实 SFC 点击测试覆盖声明改名、route 导航、retry 执行和缺口无按钮；P4 浏览器从真实 startupData 取声明并验证恢复结果。"
     }
   ],
   "registeredMechanismExemptions": [

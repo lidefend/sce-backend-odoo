@@ -1071,31 +1071,6 @@ class ScSettlementOrder(models.Model):
             vals["settlement_stage_id"] = stage_id
         return vals
 
-    @api.model
-    def _backfill_settlement_stage_ids(self):
-        self.env.cr.execute(
-            """
-            UPDATE sc_settlement_order settlement
-               SET settlement_stage_id = stage.id
-              FROM sc_dictionary stage
-             WHERE settlement.settlement_stage_id IS NULL
-               AND stage.type = 'settlement_stage'
-               AND stage.code = COALESCE(settlement.settlement_stage, 'declared')
-            """
-        )
-        self.env.cr.execute(
-            """
-            UPDATE sc_settlement_order settlement
-               SET settlement_stage_id = stage.id,
-                   settlement_stage = 'declared'
-              FROM sc_dictionary stage
-             WHERE settlement.settlement_stage_id IS NULL
-               AND (settlement.settlement_stage IS NULL OR settlement.settlement_stage = '')
-               AND stage.type = 'settlement_stage'
-               AND stage.code = 'declared'
-            """
-        )
-        return True
 
     @api.model
     def default_get(self, fields_list):
@@ -1149,25 +1124,7 @@ class ScSettlementOrder(models.Model):
         records._apply_contract_defaults_if_needed()
         return records
 
-    def init(self):
-        self._backfill_history_surface_fields()
-        self.env.cr.execute(
-            """
-            UPDATE sc_settlement_order settlement
-               SET business_category_id = category.id
-              FROM sc_business_category category
-             WHERE settlement.business_category_id IS NULL
-               AND category.code = CASE
-                       WHEN settlement.settlement_type = 'in' THEN 'settlement.income'
-                       ELSE 'settlement.expense'
-                   END
-               AND category.target_model = 'sc.settlement.order'
-            """
-        )
-        self._backfill_settlement_stage_ids()
 
-    def _backfill_history_surface_fields(self):
-        return
 
     def write(self, vals):
         service_call = self._is_lifecycle_service_call()

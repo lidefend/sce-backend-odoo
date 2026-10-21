@@ -18,33 +18,6 @@ class ConstructionWorkBreakdown(models.Model):
     _parent_store = True
     _order = "project_id, parent_path, sequence, id"
 
-    def init(self):
-        """Idempotently attach pre-versioning nodes after plan_id exists."""
-        self.env.cr.execute("""
-            INSERT INTO construction_wbs_plan
-                (name, version_code, project_id, state, validation_state, active, create_uid, write_uid, create_date, write_date)
-            SELECT jsonb_build_object(
-                       'zh_CN', COALESCE(p.name->>'zh_CN', p.name->>'en_US', '项目') || ' WBS'
-                   ),
-                   'V1.0', p.id, 'draft', 'pending', TRUE, 1, 1, NOW(), NOW()
-              FROM project_project p
-             WHERE EXISTS (
-                       SELECT 1 FROM construction_work_breakdown w
-                        WHERE w.project_id = p.id AND w.plan_id IS NULL
-                   )
-               AND NOT EXISTS (
-                       SELECT 1 FROM construction_wbs_plan v
-                        WHERE v.project_id = p.id AND v.version_code = 'V1.0'
-                   )
-        """)
-        self.env.cr.execute("""
-            UPDATE construction_work_breakdown w
-               SET plan_id = v.id
-              FROM construction_wbs_plan v
-             WHERE w.plan_id IS NULL
-               AND v.project_id = w.project_id
-               AND v.version_code = 'V1.0'
-        """)
 
     name = fields.Char("WBS 名称", required=True, tracking=True)
     code = fields.Char("WBS 编码", tracking=True)

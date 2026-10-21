@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+echo 'PROBE_TOOL_UNSUPPORTED: legacy database-routing smoke; no runtime coverage was produced' >&2
+exit 2
 set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://localhost:8070}"

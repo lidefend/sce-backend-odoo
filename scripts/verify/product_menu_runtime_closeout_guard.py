@@ -120,10 +120,6 @@ def validate() -> list[str]:
     candidate = (ADDON / "views/menu_product_primary_center_candidate_v1.xml").read_text(encoding="utf-8")
     if "menu_sc_user_acceptance_root" in candidate:
         errors.append("product candidate must not declare or own the customer acceptance root")
-    migration = ADDON / "migrations/17.0.0.110/post-migration.py"
-    migration_source = migration.read_text(encoding="utf-8") if migration.exists() else ""
-    if "menu_sc_user_acceptance_root" not in migration_source or '"active": False' not in migration_source:
-        errors.append("upgrade migration must archive the legacy customer acceptance root when present")
     extension_source = CORE_EXTENSION.read_text(encoding="utf-8")
     init_source = CORE_INIT.read_text(encoding="utf-8")
     service_source = MENU_SERVICE.read_text(encoding="utf-8")

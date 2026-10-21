@@ -8,6 +8,7 @@ from odoo.addons.smart_core.core.base_handler import BaseIntentHandler
 
 from ..services.product_configuration_capability import (
     build_catalog,
+    build_user_capabilities,
     load_manifest,
     resolve_audiences,
 )
@@ -41,6 +42,7 @@ class ProductConfigurationCapabilityCatalogHandler(BaseIntentHandler):
                 "config/product_configuration_capability_v1.json",
                 "res.groups",
                 "ir.model.access",
+                "smart_core.core.capability_provider",
             ],
             "projection_only": True,
             "runtime_carrier": "smart_construction_core.handlers.product_configuration_capability",
@@ -74,6 +76,9 @@ class ProductConfigurationCapabilityCatalogHandler(BaseIntentHandler):
             }
         audiences = resolve_audiences(self.env.user)
         data = build_catalog(manifest, audiences)
+        from odoo.addons.smart_core.core.capability_provider import load_capabilities_for_user
+        data["user_capabilities"] = build_user_capabilities(
+            load_capabilities_for_user(self.env, self.env.user))
         data["success"] = True
         data["reason_code"] = "OK"
         return {

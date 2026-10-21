@@ -21,7 +21,9 @@ SPEC.loader.exec_module(sync)
 
 class CandidateImageSyncTests(unittest.TestCase):
     def test_archive_must_be_inside_candidate_root_and_match_digest(self):
-        with tempfile.TemporaryDirectory(dir=sync.CANDIDATE_ROOT) as temporary:
+        with tempfile.TemporaryDirectory() as temporary, mock.patch.object(
+            sync, "CANDIDATE_ROOT", Path(temporary)
+        ):
             archive = Path(temporary) / "candidate-image.tar"
             config = b'{"architecture":"amd64"}'
             config_digest = hashlib.sha256(config).hexdigest()

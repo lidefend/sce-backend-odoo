@@ -754,21 +754,3 @@ class ScFundAccountOperation(models.Model):
             company_id=self.company_id,
             project_id=self.project_id or self.source_account_id.project_id or self.target_account_id.project_id,
         )
-
-    def init(self):
-        self.env.cr.execute(
-            """
-            UPDATE sc_fund_account_operation operation
-               SET business_category_id = category.id
-              FROM sc_business_category category
-             WHERE operation.business_category_id IS NULL
-               AND category.target_model = 'sc.fund.account.operation'
-               AND category.code = CASE
-                   WHEN operation.operation_type = 'fund_daily_report'
-                       THEN 'finance.fund.daily_report'
-                   WHEN operation.operation_type = 'balance_adjustment'
-                       THEN 'finance.fund.balance_adjustment'
-                   ELSE 'finance.fund.transfer'
-               END
-            """
-        )

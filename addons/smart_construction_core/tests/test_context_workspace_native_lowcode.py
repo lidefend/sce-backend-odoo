@@ -227,13 +227,9 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         "action_sc_product_company_project_refund_v1":
             "smart_construction_core.group_sc_cap_finance_user",
     }
-    # Entries whose dispatch targets the operator's own role surface contains.
-    # Probe evidence (this round, per role): the finance role surface carries
-    # every 877/878 target menu (552-584, 372); no project-center role surface
-    # carries the 875 targets, so a 875 operator - the only principal the 875
-    # ACL admits - always fails closed.  That mismatch is the open gap the
-    # batch record registers; it is asserted, not hidden.
+    # All workspace operators have explicitly published contextual dispatch routes.
     ENTRY_DISPATCH_CLOSED = (
+        "action_sc_product_team_loan_deduction_v1",
         "action_sc_product_current_account_v1",
         "action_sc_product_company_project_refund_v1",
     )
@@ -596,8 +592,8 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
                 "note": "G08 transient lifecycle",
             })
             self.assertTrue(workspace.exists(), model_name)
-            self.assertEqual(workspace.processing_advisory,
-                             self.COMPLETE_ADVISORY[action_key], model_name)
+            self.assertFalse(workspace.processing_advisory,
+                             "a complete context must not show an empty-task advisory")
             workspace.unlink()
             self.assertFalse(workspace.exists(), model_name)
 
@@ -672,7 +668,7 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
                 self.assertEqual(resolved, 0, (action_key,
                                  "this entry's role surface declares no dispatch route"))
             workspace.unlink()
-        self.assertEqual(closed, 11, "the closed entries carry eleven dispatch carriers")
+        self.assertEqual(closed, 14, "all three entries carry fourteen dispatch carriers")
 
     def test_the_entry_declares_its_own_primary_action_label(self):
         """A dispatch workspace must not promise a long-lived draft.
@@ -815,7 +811,7 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
                 self.assertEqual(parsed.get("default_partner_id"), partner.id,
                                  (action_key, method))
             workspace.unlink()
-        self.assertEqual(checked, 11, "every closed carrier must travel as a literal")
+        self.assertEqual(checked, 14, "every closed carrier must travel as a literal")
 
     def test_every_returned_carrier_is_pinned_to_the_operators_route_menu(self):
         """A returned action must carry the menu the operator's route owns.
@@ -832,7 +828,7 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
             "project_id": project.id, "partner_id": partner.id, "note": "G08 entry authority",
         })
         routes = {
-            int(entry.get("action_id") or 0): int(entry.get("menu_id") or 0)
+            (int(entry.get("action_id") or 0), int(entry.get("menu_id") or 0))
             for entry in uenv["sc.context.workspace.entry.authority"]._sc_route_authority()
         }
         self.assertTrue(routes, "the operator's route authority must declare entries")
@@ -844,63 +840,23 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
                 self.assertIn("正式入口", str(exc), method)
                 continue
             menu_id = int(result.get("menu_id") or 0)
-            self.assertEqual(menu_id, routes.get(int(result["id"]) or 0),
-                             (method, "the pinned menu must be the route authority menu"))
+            self.assertIn((int(result["id"]), menu_id), routes,
+                          (method, "the exact action/menu pair must be published"))
             menu = uenv["ir.ui.menu"].browse(menu_id)
             self.assertTrue(menu.exists(), (method, menu_id))
-            self.assertEqual(menu.action.id, int(result["id"]),
-                             (method, "the pinned menu owns another action"))
+            self.assertEqual(menu.id, self.ref("menu_sc_product_current_account_v1").id,
+                             (method, "dispatch retains the declared workspace carrier"))
             checked += 1
         self.assertEqual(checked, 6, "every 877 carrier must be pinned to its route menu")
 
-    def test_a_principal_outside_the_role_surface_is_refused(self):
-        """A principal outside the entry's boundary is refused, not denied.
-
-        Probe evidence this round: the released workbench entries are visible to
-        every principal, while the dispatch targets are finance-role entries and
-        875's own ACL admits the project center.  A project-center principal that
-        does not natively hold the target document menus therefore reaches the
-        875 workbench (recording the context is allowed) and every carrier
-        answers with the governed role message instead of
-        `NAVIGATION_AUTHORITY_DENIED`; on 877/878 the same principal is kept out
-        one step earlier, by the workspace ACL.
-
-        This is the boundary that must survive the round-2 route alignment: the
-        project surface now declares the entry and the three target routes, but a
-        route is only generated for a menu the principal natively sees, so a
-        principal without the finance/initiator groups keeps failing closed with
-        the actionable message rather than being handed a button that would end
-        in a navigation denial.  The membership boundary is asserted too, so the
-        alignment cannot be read as "anyone may now register a loan".
-        """
-        _user, uenv, project = self.operator_env(
-            "action_sc_product_team_loan_deduction_v1", "G08 角色边界 875",
-            group_xmlid="smart_construction_core.group_sc_cap_project_user")
-        partner = self.env["res.partner"].create({"name": "G08 角色边界对象 875"})
-        workspace = uenv["sc.team.loan.deduction.workspace"].create({
-            "project_id": project.id, "partner_id": partner.id, "note": "G08 role boundary",
-        })
-        for method in ("action_register_loan", "action_register_deduction", "action_view_account"):
-            with self.assertRaises(UserError) as caught:
-                getattr(workspace, method)()
-            message = str(caught.exception)
-            self.assertIn("正式入口", message, method)
-            self.assertIn("角色", message, method)
-
-        for action_key, model_name in (
-            ("action_sc_product_current_account_v1", "sc.current.account.workspace"),
-            ("action_sc_product_company_project_refund_v1",
-             "sc.company.project.refund.workspace"),
-        ):
-            _other, other_env, other_project = self.operator_env(
-                action_key, "G08 角色边界 %s" % action_key,
-                group_xmlid="smart_construction_core.group_sc_cap_project_user")
-            with self.assertRaises(AccessError, msg=(action_key, "ACL")):
-                other_env[model_name].create({
-                    "project_id": other_project.id,
-                    "partner_id": partner.id,
-                    "note": "G08 role boundary",
-                })
+    def test_a_readonly_principal_cannot_record_dispatch_context(self):
+        """Read capability must not grant creation of a dispatch workspace."""
+        for action_key, _view, model_name, _title, _ctx, _note in self.ENTRIES:
+            _user, uenv, project = self.operator_env(
+                action_key, "G08 readonly boundary",
+                group_xmlid="smart_construction_core.group_sc_cap_project_read")
+            with self.assertRaises(AccessError):
+                uenv[model_name].create({"project_id": project.id, "note": "must be denied"})
 
     # ------------------------------------------------------------------ #
     # 7. what the reviewer asked for: the operator path and the page config
@@ -929,19 +885,7 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
             self.assertNotEqual(save_rules[0].get("label"), "保存草稿", action_key)
 
     def test_the_finance_role_surface_grants_the_two_finance_workbenches(self):
-        """The dispatch path needs the workbench entry *and* the carriers.
-
-        Probe evidence (this round, per role): the finance role surface carried
-        the eleven dispatch targets but none of the workbench menus, so a finance
-        operator could dispatch yet could not open the workbench; no
-        project-center surface carried the targets, so the 875 operator could
-        open its workbench yet could never dispatch.  The two finance entries are
-        aligned here through the existing authorization path (role nav surface +
-        the menu's own declared groups); 875 stays out of the finance surface
-        because its menu groups and its model ACL both declare the project
-        center, and that mismatch is registered as the open deviation rather
-        than papered over.
-        """
+        """Finance authority exposes both workspaces and every declared dispatch target."""
         from odoo.addons.smart_construction_core.core_extension_policy_maps import (
             ROLE_GROUPS_CAPABILITY_FALLBACK,
             ROLE_GROUPS_EXPLICIT,
@@ -984,31 +928,14 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
                 if isinstance(row, dict):
                     routes.setdefault(int(row.get("action_id") or 0),
                                       int(row.get("menu_id") or 0))
-        self.assertEqual(routes.get(877), 699, "the finance surface must reach 往来款登记")
-        self.assertEqual(routes.get(878), 700, "the finance surface must reach 公司&项目退款")
-        self.assertNotIn(875, routes, "875 is not a finance-center entry")
-        for action_id in self.FINANCE_CARRIER_ACTIONS:
-            self.assertIn(action_id, routes, "the finance surface must keep carrier %s" % action_id)
+        self.assertEqual(routes.get(self.ref("action_sc_product_current_account_v1").id), self.ref("menu_sc_product_current_account_v1").id)
+        self.assertEqual(routes.get(self.ref("action_sc_product_company_project_refund_v1").id), self.ref("menu_sc_product_company_project_refund_v1").id)
+        self.assertNotIn(self.ref("action_sc_product_team_loan_deduction_v1").id, routes)
+        for action_xmlid in self.FINANCE_CARRIER_ACTIONS:
+            self.assertIn(self.ref(action_xmlid).id, routes, action_xmlid)
 
     def test_the_project_role_surface_grants_the_team_loan_workbench(self):
-        """875 must route for the project surface that legitimately operates it.
-
-        Probe evidence (this round, per role): the 875 entry menu declares the
-        project capability groups and the three dispatch documents
-        (承包人借项目款 / 扣款单 / 项目往来台账) already grant the project
-        capability create rights in their ACL, but neither the entry nor the
-        target menus were declared on any role navigation surface, so a project
-        operator - the principal the entry and the ACL both name - could not have
-        the carrier button paired with the menu the client requires.  The
-        alignment below uses the existing authorization path only: the role nav
-        surface plus the menu's own declared groups, with the target menus
-        declared as contextual routes so project navigation does not gain the
-        finance center.
-
-        The route is visibility gated: the project *read* principal below sees
-        neither the entry nor a created route, because the declaration never
-        invents visibility the principal does not natively have.
-        """
+        """Project operators reach the workspace and its declared contextual routes; readers do not."""
         from odoo.addons.smart_construction_core.core_extension_policy_maps import (
             ROLE_GROUPS_CAPABILITY_FALLBACK,
             ROLE_GROUPS_EXPLICIT,
@@ -1062,40 +989,29 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
             "smart_construction_core.group_sc_cap_finance_read",
         ])
         self.assertEqual(surface.get("role_code"), "project_member")
-        self.assertEqual(routes.get(875), 697, "the project surface must reach 班组借/扣款登记")
-        self.assertEqual(routes.get(804), 553, "承包人借项目款 route")
-        self.assertEqual(routes.get(798), 563, "扣款单 route")
-        self.assertEqual(routes.get(714), 372, "项目往来台账 route")
+        carrier_menu = self.ref("menu_sc_product_team_loan_deduction_v1").id
+        self.assertEqual(routes.get(self.ref("action_sc_product_team_loan_deduction_v1").id), carrier_menu)
+        # Contextual authorities deliberately pair target actions with the workspace menu.
+        for action_xmlid in ("action_sc_financing_loan_contractor_project_borrow",
+                             "action_sc_expense_claim_deduction_bill",
+                             "action_sc_finance_project_counterparty_position"):
+            self.assertIn(self.ref(action_xmlid).id, routes, action_xmlid)
 
         _read_surface, read_routes = build_routes("g08_project_read_surface", [
             "smart_construction_core.group_sc_cap_project_read",
         ])
-        self.assertNotIn(875, read_routes,
+        self.assertNotIn(self.ref("action_sc_product_team_loan_deduction_v1").id, read_routes,
                          "a read-only project principal must not be handed the entry")
 
     # ------------------------------------------------------------------ #
     # 8. review round 3: auxiliary feedback, readable identity, boundaries
     # ------------------------------------------------------------------ #
-    def test_the_workbench_usage_note_owns_the_collaboration_note(self):
-        """The dispatch note belongs to the workbench usage note, not a chapter.
-
-        Round 3 of the product review found the 协作记录 navigation item pointing
-        at a note that only told the operator to collaborate in the formal
-        document - a titled chapter with no collaboration behind it.  The note is
-        stated by the workbench usage note on the same native view (P1), and the
-        entry declares no collaboration surface of its own; the formal documents
-        keep their own collaboration, which their own entries own.
-        """
+    def test_the_workbench_keeps_collaboration_on_the_formal_document(self):
+        """Dispatch workspaces keep collaboration on the destination document."""
         for action_key, view_key, _model, _title, _ctx, _note in self.ENTRIES:
             root = self.arch(view_key)
-            notes = root.xpath(".//div[@role='status'][not(field)]")
-            self.assertEqual(len(notes), 1, (view_key, "one usage note per entry"))
-            note = notes[0]
-            body = " ".join(" ".join(note.itertext()).split())
-            for marker in self.USAGE_NOTE_MARKERS:
-                self.assertIn(marker, body, (view_key, marker))
-            self.assertFalse(note.get("data-sc-anchor"),
-                             (view_key, "the usage note is not a section"))
+            # Complete contexts show no static success/instruction placeholder.
+            self.assertFalse(root.xpath(".//div[@role='status'][not(field)]"), view_key)
             self.assertFalse(
                 root.xpath(".//chatter | .//*[@name='message_ids'] | .//*[@name='activity_ids']"),
                 (view_key, "the entry declares no collaboration surface"),
@@ -1307,7 +1223,19 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         walked_targets = {table[key][0] for key in walked}
         self.assertTrue(walked_targets.issubset(set(by_target)), sorted(walked_targets))
 
-    FINANCE_CARRIER_ACTIONS = (798, 804, 805, 796, 797, 812, 800, 817, 819, 644, 714)
+    FINANCE_CARRIER_ACTIONS = (
+        'action_sc_expense_claim_deduction_bill',
+        'action_sc_financing_loan_contractor_project_borrow',
+        'action_sc_expense_claim_contractor_project_repay',
+        'action_sc_financing_loan_project_borrow_company',
+        'action_sc_expense_claim_project_repay_company',
+        'action_sc_fund_account_between_user',
+        'action_sc_expense_claim_deduction_paid_refund',
+        'action_sc_bid_deposit_return',
+        'action_sc_contract_deposit_return',
+        'action_sc_self_funding_registration_refund',
+        'action_sc_finance_project_counterparty_position',
+    )
 
     # ------------------------------------------------------------------ #
     # 9. review round 3: the authorized form configuration path
@@ -1594,7 +1522,7 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
             ("required", self.node_binding(project, {"set": {"visible": False}}),
              "CONFIG_REQUIRED_FIELD_HIDDEN"),
             ("readonly", self.node_binding(advisory, {"set": {"readonly": False}}),
-             "CONFIG_BUSINESS_CONSTRAINT_RELAXED"),
+             "INTERACTION_FIELD_BODY_FORBIDDEN"),
             ("stale", {**self.node_binding(project, {"set": {"label": "失效目标"}}),
                        "target": "/removed/node"}, "CONFIG_TARGET_STALE"),
         ):

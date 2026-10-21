@@ -1,3 +1,4 @@
+import { requireStructuredStartupCapabilities } from '../app/productCapabilityCatalogProjection';
 import { getPublicAuthPageContracts } from '../services/accountActivation';
 import { defineStore } from 'pinia';
 import type { AppInitResponse, CanonicalNavigationModel, LoginResponse, NavMeta, NavNode, RecordContextContract, RecordContextOption } from '@sc/schema';
@@ -273,6 +274,7 @@ export interface SessionState {
     loaded?: boolean;
   } | null;
   productCapabilityCatalog: ProductCapabilityCatalog | null;
+  errorStateContract: unknown;
   pageContracts: Record<string, PageContract>;
   publicPageContractStatus: 'idle' | 'loading' | 'ready' | 'error';
   sceneReadyContract: SceneReadyContract | null;
@@ -594,6 +596,7 @@ export const useSessionStore = defineStore('session', {
     workspaceHome: null,
     workspaceHomeRef: null,
     productCapabilityCatalog: null,
+    errorStateContract: null,
     pageContracts: {},
     publicPageContractStatus: 'idle',
     sceneReadyContract: null,
@@ -894,6 +897,7 @@ export const useSessionStore = defineStore('session', {
           this.workspaceHome = null;
           this.workspaceHomeRef = null;
           this.productCapabilityCatalog = null;
+          this.publicPageContractStatus = 'idle';
           this.pageContracts = {};
           this.sceneReadyContract = null;
           this.sceneGovernance = null;
@@ -945,6 +949,8 @@ export const useSessionStore = defineStore('session', {
       this.workspaceHome = null;
       this.workspaceHomeRef = null;
       this.productCapabilityCatalog = null;
+      this.errorStateContract = null;
+      this.publicPageContractStatus = 'idle';
       this.pageContracts = {};
       this.sceneReadyContract = null;
       this.sceneGovernance = null;
@@ -1326,6 +1332,8 @@ export const useSessionStore = defineStore('session', {
       this.workspaceHome = null;
       this.workspaceHomeRef = null;
       this.productCapabilityCatalog = null;
+      this.errorStateContract = null;
+      this.publicPageContractStatus = 'idle';
       this.pageContracts = {};
       this.sceneReadyContract = null;
       this.sceneGovernance = null;
@@ -1446,25 +1454,11 @@ export const useSessionStore = defineStore('session', {
         && typeof result.feature_flags === 'object'
         && !Array.isArray(result.feature_flags)
       ) ? result.feature_flags as Record<string, unknown> : {};
-      const rawCapabilities = (result as AppInitResponse & { capabilities?: Array<string | { key?: string }> }).capabilities ?? [];
-      this.capabilities = rawCapabilities
-        .map((cap) => (typeof cap === 'string' ? cap : cap?.key || ''))
-        .filter((cap) => typeof cap === 'string' && cap.length > 0);
+      const rawCapabilities = (result as AppInitResponse & { capabilities?: Array<string | { key?: string }> }).capabilities;
+      requireStructuredStartupCapabilities(rawCapabilities);
+      this.capabilities = rawCapabilities.map((cap) => cap.key);
       this.capabilityCatalog = rawCapabilities.reduce<Record<string, CapabilityRuntimeMeta>>((acc, item) => {
         if (!item || typeof item === 'string') {
-          if (typeof item === 'string' && item.trim()) {
-            const key = item.trim();
-            acc[key] = {
-              key,
-              label: key,
-              state: 'READY',
-              capability_state: 'allow',
-              reason: '',
-              reason_code: '',
-              group_key: '',
-              group_label: '',
-            };
-          }
           return acc;
         }
         const key = String(item.key || '').trim();
@@ -1619,6 +1613,8 @@ export const useSessionStore = defineStore('session', {
       this.workspaceHomeRef = ((result as AppInitResponse & {
         workspace_home_ref?: { intent?: string; scene_key?: string; loaded?: boolean }
       }).workspace_home_ref ?? null);
+      this.errorStateContract = (result as AppInitResponse & { page_contracts?: { error_states?: unknown } }).page_contracts?.error_states;
+      this.publicPageContractStatus = 'idle';
       this.pageContracts = ((result as AppInitResponse & { page_contracts?: { pages?: Record<string, PageContract> } }).page_contracts?.pages ?? {});
       this.sceneReadyContract = ((result as AppInitResponse & { scene_ready_contract?: SceneReadyContract }).scene_ready_contract ?? null);
       this.sceneGovernance = ((result as AppInitResponse & { scene_governance?: SceneGovernancePayload }).scene_governance ?? null);
@@ -1771,6 +1767,7 @@ export const useSessionStore = defineStore('session', {
           })) {
           throw new Error('Invalid public page contract');
         }
+        this.errorStateContract = result.data.error_states;
         this.pageContracts = pages;
         this.publicPageContractStatus = 'ready';
       } catch {
@@ -1807,6 +1804,7 @@ export const useSessionStore = defineStore('session', {
       this.workspaceHome = row.workspace_home ?? this.workspaceHome;
       this.workspaceHomeRef = row.workspace_home_ref ?? this.workspaceHomeRef;
       if (row.page_contracts?.pages) {
+        this.publicPageContractStatus = 'idle';
         this.pageContracts = row.page_contracts.pages;
       }
       this.persist();

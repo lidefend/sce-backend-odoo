@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict, Optional
 from odoo import api, SUPERUSER_ID
 from odoo.exceptions import AccessError
-from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config_admin
+from ..security.intent_authorization import authorize_handler
 import  inspect
 from .intent_operation_policy import is_write_intent, preview_write_error
 
@@ -103,28 +103,7 @@ class BaseIntentHandler:
         return is_write_intent(intent, params, non_idempotent=non_idempotent)
 
     def enforce_required_groups(self):
-        required = getattr(self, "REQUIRED_GROUPS", []) or []
-        required_xmlids = [str(x).strip() for x in required if str(x).strip()]
-        if not required_xmlids:
-            raise AccessError(f"PERMISSION_DENIED: write intent requires REQUIRED_GROUPS ({self.__class__.__name__})")
-        user = self.env.user
-        try:
-            if user and user_is_tenant_config_admin(user):
-                return True
-        except Exception:
-            pass
-        for xmlid in required_xmlids:
-            try:
-                if user.has_group(xmlid):
-                    return True
-            except Exception:
-                pass
-        raise AccessError(
-            "PERMISSION_DENIED: missing any required group for intent {} (required=[{}])".format(
-                str(getattr(self, "INTENT_TYPE", "") or self.__class__.__name__),
-                ", ".join(required_xmlids),
-            )
-        )
+        return authorize_handler(self.env, type(self), require_declaration=self.is_write())
 
     # ---- 统一执行入口 ----
     def run(self, payload: Optional[Dict[str, Any]] = None, ctx: Optional[Dict[str, Any]] = None):
@@ -153,7 +132,7 @@ class BaseIntentHandler:
                 return denied
         # 权限（可选）
         self._check_permissions()
-        if self.is_write():
+        if self.REQUIRED_GROUPS or self.is_write():
             self.enforce_required_groups()
 
         # ---- 智能适配调用 ----

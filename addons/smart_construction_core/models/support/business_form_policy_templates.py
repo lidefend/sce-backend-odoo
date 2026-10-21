@@ -232,7 +232,6 @@ def _settlement_policy(title: str, counterparty_title: str) -> dict:
             _section("handling", "办理说明", ["settlement_description", "note", "attachment_ids"], 40),
             _section("system_identity", "系统办理信息", ["settlement_flow_label", "settlement_type", "state", "name"], 80, collapsed=True, visible_profiles=EDIT_READONLY),
             _section("execution", "执行与匹配", list(ledger), 90, collapsed=True),
-            _section("source_trace", "历史与系统追溯", list(trace) + list(APPROVAL_FIELDS), 100, collapsed=True, visible_profiles=READONLY_ONLY),
         ],
         required=("business_category_id", "project_id", "contract_id", "partner_id", "line_ids"),
         readonly_all=("operation_strategy", "settlement_flow_label", "settlement_type") + SYSTEM_FIELDS,
@@ -351,7 +350,6 @@ def _payment_request_policy(title: str, counterparty_title: str) -> dict:
             _section("detail", "申请明细", ["outflow_line_ids", "receipt_invoice_line_ids"], 60, collapsed=True),
             _section("execution", "执行与额度", list(ledger) + ["ledger_line_ids"], 70, collapsed=True),
             _section("partner_account", "往来单位默认账户", ["partner_account_name", "partner_bank_name", "partner_bank_account"], 80, collapsed=True),
-            _section("source_trace", "迁移来源", list(trace) + list(approval), 90, collapsed=True, visible_profiles=("readonly",)),
         ],
         required=("business_category_id", "project_id", "partner_id", "amount"),
         readonly_all=(
@@ -441,7 +439,6 @@ def _expense_claim_policy(title: str) -> dict:
             _section("account", "收付款信息", ["payee", "receipt_account_name", "payee_account", "payment_account_name", "payer_account"], 40),
             _section("handling", "办理说明", ["note", "attachment_ids"], 50),
             _section("responsibility", "责任与余额", list(responsibility), 70, collapsed=True),
-            _section("source_trace", "来源与系统追溯", list(trace) + list(APPROVAL_FIELDS), 90, collapsed=True),
         ],
         required=("business_category_id", "project_id", "amount"),
         readonly_all=(
@@ -480,7 +477,7 @@ def _deduction_bill_policy() -> dict:
             section["fields"] = ["date_claim", "summary", "currency_id"]
             kept_sections.append(section)
             continue
-        if name in {"handling", "responsibility", "source_trace"}:
+        if name in {"handling", "responsibility"}:
             kept_sections.append(section)
     sections = kept_sections
     sections.append(_section("deduction_lines", "扣款单明细", ["deduction_line_ids"], 35))
@@ -548,7 +545,6 @@ def _loan_policy(title: str) -> dict:
             _section("amount", title, ["document_date", "due_date", "amount", "currency_id", "purpose"], 30),
             _section("account", "历史账户线索", list(account_trace), 40, collapsed=True),
             _section("handling", "办理说明", ["note", "attachment_ids"], 50),
-            _section("source_trace", "来源与系统追溯", list(trace) + list(APPROVAL_FIELDS), 90, collapsed=True),
         ],
         required=("business_category_id", "project_id", "partner_id", "document_date", "amount"),
         readonly_all=("operation_strategy", "loan_flow_label", "loan_type", "direction") + SYSTEM_FIELDS,
@@ -575,7 +571,6 @@ def _fund_operation_policy(title: str) -> dict:
             _section("amount", title, ["operation_date", "amount", "currency_id"], 30),
             _section("handling", "办理说明", ["operation_reason", "note", "attachment_ids"], 40),
             _section("balance", "账户余额", ["before_balance", "after_balance", "account_balance", "bank_balance", "daily_income", "daily_expense"], 70, collapsed=True),
-            _section("source_trace", "来源与系统追溯", list(trace), 90, collapsed=True),
         ],
         required=("business_category_id", "operation_date", "amount"),
         readonly_all=("operation_strategy", "fund_flow_label", "operation_type") + SYSTEM_FIELDS,
@@ -619,7 +614,6 @@ def _payment_execution_policy(title: str) -> dict:
                 70,
                 collapsed=True,
             ),
-            _section("source_trace", "来源与系统追溯", ["payment_family", "source_kind", "push_result", "kingdee_document_no"] + list(trace), 90, collapsed=True),
         ],
         required=(
             "business_category_id",
@@ -682,7 +676,6 @@ def _receipt_policy(title: str) -> dict:
             _section("receipt", title, ["date_receipt", "amount", "income_category", "receipt_type", "payment_method", "bill_no", "invoice_ref", "currency_id"], 30),
             _section("account", "收款账户", ["receiving_account_name", "receiving_account_no", "receiving_bank_name", "receiving_account"], 40),
             _section("handling", "办理说明", ["note", "attachment_ids"], 50),
-            _section("source_trace", "迁移来源", list(trace), 90, collapsed=True, visible_profiles=("readonly",)),
         ],
         required=("business_category_id", "project_id", "partner_id", "date_receipt", "amount"),
         readonly_all=("operation_strategy", "receipt_flow_label", "source_kind") + SYSTEM_FIELDS,
@@ -707,7 +700,6 @@ def _self_funding_policy(title: str) -> dict:
             _section("account", "账户信息", ["payment_account_name", "partner_account_name", "bank_name", "bank_account"], 40),
             _section("handling", "办理说明", ["summary", "note", "attachment_ids"], 50),
             _section("responsibility", "责任与余额", list(responsibility), 70, collapsed=True),
-            _section("source_trace", "来源与系统追溯", list(trace) + list(APPROVAL_FIELDS), 90, collapsed=True),
         ],
         required=("business_category_id", "project_id", "partner_id", "document_date", "amount"),
         readonly_all=("operation_strategy", "funding_type", "source_origin") + SYSTEM_FIELDS,
@@ -738,7 +730,6 @@ def _tax_deduction_policy() -> dict:
             _section("deduction", "抵扣信息", ["deduction_confirm_date", "deduction_amount", "deduction_tax_amount", "deduction_surcharge_amount", "is_transfer_out"], 40),
             _section("handling", "办理说明", ["deduction_unit_name", "withholding_amount", "deduction_reason", "note", "attachment_ids"], 50),
             _section("responsibility", "责任与余额", ["company_contractor_responsibility_state"], 70, collapsed=True),
-            _section("source_trace", "来源与系统追溯", list(trace), 90, collapsed=True),
         ],
         required=("business_category_id", "project_id", "invoice_no", "invoice_date", "deduction_tax_amount"),
         readonly_all=("operation_strategy", "deduction_flow_label", "source_origin") + SYSTEM_FIELDS,
@@ -779,7 +770,6 @@ def _responsibility_fact_policy(title: str) -> dict:
             _section("business_identity", "责任口径", ["responsibility_type", "responsibility_scope", "balance_policy"], 10),
             _section("business_object", "项目与承包人", ["project_id", "partner_id", "partner_name", "document_date"], 20),
             _section("amount", title, ["amount"] + list(ledger), 30),
-            _section("source_trace", "来源与系统追溯", list(trace), 90, collapsed=True),
         ],
         readonly_all=("responsibility_type", "responsibility_scope", "balance_policy"),
         ledger=ledger,
@@ -931,14 +921,6 @@ def _contract_handling_policy(title: str, *, supplement: bool = False, expense: 
                 collapsed=True,
                 visible_profiles=EDIT_READONLY,
             ),
-            _section(
-                "source_trace",
-                "来源与系统追溯",
-                list(trace) + list(APPROVAL_FIELDS),
-                90,
-                collapsed=True,
-                visible_profiles=READONLY_ONLY,
-            ),
         ]
     elif expense and not supplement:
         expense_execution_fields = list(ledger) + [
@@ -1016,22 +998,6 @@ def _contract_handling_policy(title: str, *, supplement: bool = False, expense: 
                 collapsed=True,
                 visible_profiles=EDIT_READONLY,
             ),
-            _section(
-                "source_trace",
-                "来源与系统追溯",
-                list(trace) + list(APPROVAL_FIELDS),
-                90,
-                collapsed=True,
-                visible_profiles=READONLY_ONLY,
-            ),
-            _section(
-                "historical_payment",
-                "历史付款承接",
-                ["historical_payment_fact_ids"],
-                95,
-                collapsed=True,
-                visible_profiles=READONLY_ONLY,
-            ),
         ]
     else:
         sections = [
@@ -1044,7 +1010,6 @@ def _contract_handling_policy(title: str, *, supplement: bool = False, expense: 
             _section("contract_detail", "合同明细", ["line_ids"], 70),
             _section("execution", "执行结果", list(ledger), 80, collapsed=True),
             _section("system_identity", "系统信息", ["type", "state", "name"], 85, collapsed=True, visible_profiles=EDIT_READONLY),
-            _section("source_trace", "来源与系统追溯", list(trace) + list(APPROVAL_FIELDS), 90, collapsed=True, visible_profiles=READONLY_ONLY),
         ]
     policy = _policy(
         sections,
@@ -1126,7 +1091,6 @@ def _material_policy(
     ]
     if ledger_fields:
         sections.append(_section("execution", "执行结果", list(ledger_fields), 70, collapsed=True))
-    sections.append(_section("source_trace", "来源与系统追溯", list(trace), 90, collapsed=True))
     return _policy(
         sections,
         required=("business_category_id", "project_id"),
@@ -1144,7 +1108,6 @@ def _site_issue_policy(title: str, *, kind: str) -> dict:
             _section("business_object", "项目与位置", ["project_id", "location", "coordinate", "issue_date"], 20),
             _section("issue", title, ["issue_level", "responsible_party_id", "owner_id", "rectification_deadline", "description", "voice_text"], 30),
             _section("handling", "附件与闭环", ["attachment_ids", "rectification_ids", "recheck_ids", "photo_batch_ids"], 50),
-            _section("source_trace", "来源与系统追溯", list(trace), 90, collapsed=True),
         ]
         required = ("project_id", "name", "location", "description")
     elif kind == "rectification":
@@ -1152,7 +1115,6 @@ def _site_issue_policy(title: str, *, kind: str) -> dict:
             _section("business_identity", "办理类型", ["issue_id", "name", "issue_state", "source_channel"], 10),
             _section("business_object", "项目与责任", ["project_id", "issue_level", "responsible_party_id", "rectification_deadline"], 20),
             _section("handling", title, ["rectification_date", "handler_id", "result", "attachment_ids", "photo_batch_ids"], 30),
-            _section("source_trace", "来源与系统追溯", list(trace), 90, collapsed=True),
         ]
         required = ("issue_id", "result")
     else:
@@ -1160,7 +1122,6 @@ def _site_issue_policy(title: str, *, kind: str) -> dict:
             _section("business_identity", "办理类型", ["issue_id", "name", "issue_state", "source_channel"], 10),
             _section("business_object", "项目与责任", ["project_id", "issue_level", "responsible_party_id"], 20),
             _section("handling", title, ["recheck_date", "recheck_user_id", "result", "comment", "attachment_ids", "photo_batch_ids"], 30),
-            _section("source_trace", "来源与系统追溯", list(trace), 90, collapsed=True),
         ]
         required = ("issue_id", "result")
     return _policy(
@@ -1187,7 +1148,6 @@ def _construction_diary_policy() -> dict:
             _section("site_status", "现场情况", ["construction_unit", "project_manager", "manpower_count", "attendance_equipment", "description"], 30),
             _section("quality_safety", "质量安全", ["material_inspection_note", "safety_note", "test_block_note", "design_change_note", "next_plan"], 40),
             _section("handling", "附件", ["attachment_ids", "note"], 50),
-            _section("source_trace", "来源与系统追溯", list(trace), 90, collapsed=True),
         ],
         required=("project_id", "date_diary", "title", "diary_type"),
         readonly_all=("source_origin",) + SYSTEM_FIELDS,
@@ -1275,7 +1235,6 @@ BUSINESS_CATEGORY_FORM_POLICY_TEMPLATES = {
             _section("document_lines", "入库明细", ["line_ids"], 30),
             _section("handling", "办理说明", ["line_note_summary", "note", "attachment_ids"], 50),
             _section("execution", "执行结果", ["stock_picking_id", "source_transfer_outbound_id"], 70, collapsed=True, visible_profiles=READONLY_ONLY),
-            _section("source_trace", "来源与系统追溯", list(FACT_TRACE_FIELDS), 90, collapsed=True, visible_profiles=READONLY_ONLY),
         ],
         required=("business_category_id", "project_id", "warehouse_id", "dest_location_id"),
         readonly_all=(
@@ -1320,7 +1279,6 @@ BUSINESS_CATEGORY_FORM_POLICY_TEMPLATES = {
                 collapsed=True,
                 visible_profiles=READONLY_ONLY,
             ),
-            _section("source_trace", "来源与系统追溯", list(FACT_TRACE_FIELDS), 90, collapsed=True, visible_profiles=READONLY_ONLY),
         ],
         required=("business_category_id", "project_id", "warehouse_id", "source_location_id"),
         readonly_all=("business_category_id", "state", "name", "amount_total", "stock_picking_id", "transfer_inbound_id"),

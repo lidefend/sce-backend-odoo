@@ -344,6 +344,18 @@
         "smart_construction_core.menu_sc_p1_daily_contract"
       ],
       "delivered_without_declared_capability_reason": "日常合同(menu_sc_p1_daily_contract)与证照登记(menu_sc_certificate_registration)的交付依赖业务发起能力(group_sc_cap_business_initiator)；成本员角色组本身不可达，交付由角色组合承担，登记为声明，不放宽断言、不改 ACL。"
+    },
+    "experience": {
+      "label": "体验用户",
+      "delivery_mode": "capability_discover",
+      "identity_groups": [
+        "smart_construction_core.group_sc_role_experience"
+      ],
+      "identity_evidence": "P1 正式体验身份标记，仅蕴含 base.group_user；业务权限来自另外分配的正式角色。",
+      "rationale": "复用既有能力发现服务，入口与真实权限组/ACL/记录规则取交集；体验身份不扩大授权，不按登录名推导。",
+      "capability_reachable_not_delivered": [],
+      "delivered_without_declared_capability": [],
+      "delivered_without_declared_capability_reason": ""
     }
   },
   "capability_reachable_by_no_role": [],

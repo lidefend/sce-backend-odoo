@@ -255,9 +255,6 @@ contract.structure.fingerprint: guard.prod.forbid
 
 # verify.contract.structure_lock is defined in make/ci.mk
 
-.PHONY: contract.form_structure.guidance.retire verify.contract.form_structure.guidance_retirement.unit
-contract.form_structure.guidance.retire: guard.prod.forbid
-	@python3 scripts/verify/form_structure_contract_seed_generate.py --retire-native-guidance
-
-verify.contract.form_structure.guidance_retirement.unit:
-	@python3 scripts/verify/test_form_structure_guidance_retirement.py
+.PHONY: verify.native_form.declarations.unit
+verify.native_form.declarations.unit:
+	@python3 scripts/verify/test_native_form_declarations.py

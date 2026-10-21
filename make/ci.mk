@@ -360,7 +360,7 @@ verify.payment.approval_state_machine.unit: guard.prod.forbid
 	@python3 scripts/verify/test_payment_approval_state_machine.py
 
 .PHONY: verify.native_view.workflow_action_coverage
-verify.native_view.workflow_action_coverage: guard.prod.forbid verify.contract.form_structure.guidance_retirement.unit
+verify.native_view.workflow_action_coverage: guard.prod.forbid verify.native_form.declarations.unit
 	@python3 -m py_compile scripts/verify/workflow_contract_profile_loader.py scripts/verify/native_view_workflow_action_coverage_guard.py
 	@python3 scripts/verify/native_view_workflow_action_coverage_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_workflow_contract_profile_loader.py
@@ -696,7 +696,7 @@ verify.unified_page_contract.lite.harmony_h5_runtime_acceptance_pilot.host: veri
 verify.unified_page_contract.lite.harmony_h5_device_acceptance_pilot.host: verify.unified_page_contract.lite.harmony_h5_runtime_acceptance_pilot.host
 	@python3 scripts/verify/unified_page_contract_lite_harmony_h5_device_acceptance_pilot_guard.py --report artifacts/backend/unified_page_contract_lite_harmony_h5_device_acceptance_pilot.json
 
-.PHONY: verify.native.business_fact.static verify.backend_business_fact.model_audit verify.backend_business_fact.model_standard verify.output_invoice.source_gap_audit
+.PHONY: verify.backend_business_fact.model_audit verify.backend_business_fact.model_standard verify.output_invoice.source_gap_audit
 verify.output_invoice.source_gap_audit: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/output_invoice_source_gap_audit.py
 	@python3 scripts/verify/output_invoice_source_gap_audit.py
@@ -708,37 +708,6 @@ verify.backend_business_fact.model_audit: guard.prod.forbid
 
 verify.backend_business_fact.model_standard: verify.backend_business_fact.model_audit
 	@python3 scripts/verify/backend_business_fact_model_audit.py --enforce --registry docs/architecture/backend_business_fact_model_standard_registry_v1.json --report artifacts/backend/backend_business_fact_model_audit.json --markdown artifacts/backend/backend_business_fact_model_audit.md
-
-verify.native.business_fact.static: guard.prod.forbid
-	@bash -n scripts/migration/business_fact_upgrade_replay_flow.sh
-	@python3 -m py_compile \
-	  scripts/migration/fresh_db_business_fact_replay_postcheck.py \
-	  scripts/migration/business_fact_visible_balance_cleanup.py \
-	  scripts/migration/business_fact_visible_balance_legacy_source_probe.py \
-	  scripts/migration/business_fact_additional_fact_inventory.py \
-	  scripts/migration/business_expense_contract_subtype_evidence.py \
-	  scripts/migration/business_fact_acceptance_bundle_summary.py \
-	  scripts/migration/business_expense_fact_taxonomy_acceptance.py \
-	  scripts/migration/business_expense_contract_payment_fact_acceptance.py \
-	  scripts/migration/fresh_db_contract_remaining_write.py \
-	  scripts/migration/fresh_db_construction_contract_visible_business_fact_write.py \
-	  scripts/migration/fresh_db_legacy_supplier_contract_pricing_replay_write.py \
-	  scripts/migration/fresh_db_supplier_contract_pricing_projection_write.py \
-	  scripts/migration/history_outflow_partner_targeted_replay_write.py \
-	  scripts/migration/history_actual_outflow_partner_targeted_replay_write.py \
-	  scripts/migration/fresh_db_outflow_request_replay_write.py \
-	  scripts/migration/fresh_db_actual_outflow_replay_write.py \
-	  scripts/migration/fresh_db_actual_outflow_residual_replay_write.py \
-	  scripts/migration/fresh_db_outflow_request_line_replay_write.py \
-	  scripts/migration/fresh_db_actual_outflow_line_replay_write.py \
-	  scripts/migration/history_payment_request_outflow_state_activation_write.py \
-	  scripts/migration/history_payment_request_outflow_approved_recovery_write.py \
-	  scripts/migration/history_payment_request_outflow_done_recovery_write.py \
-	  scripts/migration/fresh_db_legacy_payment_residual_replay_write.py \
-	  scripts/migration/fresh_db_payment_execution_projection_write.py \
-	  scripts/migration/fresh_db_actual_outflow_line_payment_execution_projection_write.py \
-	  scripts/migration/fresh_db_legacy_deduction_adjustment_line_replay_write.py \
-	  scripts/migration/fresh_db_settlement_adjustment_projection_write.py
 
 verify.unified_page_contract.lite: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/core/unified_page_contract_lite_adapter.py addons/smart_core/core/unified_page_contract_lite_source_normalizer.py addons/smart_core/core/unified_page_contract_lite_patch_normalizer.py addons/smart_core/core/unified_page_contract_lite_preview.py addons/smart_core/handlers/api_onchange.py addons/smart_core/handlers/load_contract.py scripts/verify/unified_page_contract_lite_guard.py scripts/verify/unified_page_contract_lite_mapping_guard.py scripts/verify/unified_page_contract_lite_adapter_guard.py scripts/verify/unified_page_contract_lite_runtime_boundary_guard.py scripts/verify/unified_page_contract_lite_source_guard.py scripts/verify/unified_page_contract_lite_source_normalizer_guard.py scripts/verify/unified_page_contract_lite_patch_normalizer_guard.py scripts/verify/unified_page_contract_lite_pipeline_guard.py scripts/verify/unified_page_contract_lite_phase1_readiness_guard.py scripts/verify/unified_page_contract_lite_integration_plan_guard.py scripts/verify/unified_page_contract_lite_opt_in_envelope_guard.py scripts/verify/unified_page_contract_lite_opt_in_response_guard.py scripts/verify/unified_page_contract_lite_opt_in_negative_guard.py scripts/verify/unified_page_contract_lite_acceptance_checklist_guard.py scripts/verify/unified_page_contract_lite_api_onchange_preview_guard.py scripts/verify/unified_page_contract_lite_api_onchange_preview_behavior_guard.py scripts/verify/unified_page_contract_lite_integration_validation_matrix_guard.py scripts/verify/unified_page_contract_lite_api_onchange_preview_interface_probe.py scripts/verify/unified_page_contract_lite_api_onchange_preview_intent_smoke.py scripts/verify/unified_page_contract_lite_startup_chain_negative_smoke.py scripts/verify/unified_page_contract_lite_load_contract_negative_smoke.py scripts/verify/unified_page_contract_lite_load_contract_preview_interface_probe.py scripts/verify/unified_page_contract_lite_load_contract_preview_intent_smoke.py scripts/verify/unified_page_contract_lite_load_contract_preview_matrix_smoke.py scripts/verify/unified_page_contract_lite_frontend_runtime_negative_guard.py scripts/verify/unified_page_contract_lite_runtime_scope_closure_guard.py scripts/verify/unified_page_contract_lite_phase1_closure_guard.py scripts/verify/unified_page_contract_lite_phase2_candidate_plan_guard.py scripts/verify/unified_page_contract_lite_phase2_load_contract_gate_guard.py scripts/verify/unified_page_contract_lite_phase3_ui_contract_risk_guard.py scripts/verify/unified_page_contract_lite_frontend_controlled_pilot_readiness_guard.py scripts/verify/unified_page_contract_lite_contract_freeze_v2_0_guard.py scripts/verify/unified_page_contract_lite_frontend_pilot_implementation_guard.py scripts/verify/unified_page_contract_lite_mainline_absorption_guard.py scripts/verify/unified_page_contract_lite_rollout_switch_guard.py scripts/verify/unified_page_contract_lite_mainline_readiness_guard.py scripts/verify/unified_page_contract_lite_terminal_client_parity_guard.py scripts/verify/unified_page_contract_lite_terminal_coverage_matrix_guard.py scripts/verify/unified_page_contract_lite_terminal_consumer_boundary_guard.py scripts/verify/unified_page_contract_lite_wx_mini_renderer_input_pilot_guard.py scripts/verify/unified_page_contract_lite_harmony_h5_renderer_input_pilot_guard.py scripts/verify/unified_page_contract_lite_wx_mini_ui_renderer_pilot_guard.py scripts/verify/unified_page_contract_lite_harmony_h5_ui_renderer_pilot_guard.py scripts/verify/unified_page_contract_lite_wx_mini_page_integration_pilot_guard.py scripts/verify/unified_page_contract_lite_harmony_h5_page_integration_pilot_guard.py scripts/verify/unified_page_contract_lite_wx_mini_runtime_mount_pilot_guard.py scripts/verify/unified_page_contract_lite_harmony_h5_runtime_mount_pilot_guard.py scripts/verify/unified_page_contract_lite_wx_mini_compile_pilot_guard.py scripts/verify/unified_page_contract_lite_wx_mini_real_compile_pilot_guard.py scripts/verify/unified_page_contract_lite_wx_mini_runtime_acceptance_pilot_guard.py scripts/verify/unified_page_contract_lite_wx_mini_device_acceptance_pilot_guard.py scripts/verify/unified_page_contract_lite_harmony_h5_compile_pilot_guard.py scripts/verify/unified_page_contract_lite_harmony_h5_device_acceptance_pilot_guard.py
@@ -862,7 +831,7 @@ refresh.contract_form_split_evidence: guard.prod.forbid
 ci.generated_evidence.preflight: guard.prod.forbid ci.generated_reports.guard verify.frontend.component_driver_takeover.unit verify.contract_form_split_evidence
 	@echo "[ci.generated_evidence.preflight] PASS all content-bound generated evidence is current"
 
-ci.delivery.freeze.prepare: guard.prod.forbid contract.semantic.registry.generate verify.frontend.contract_basis.enforce verify.agent.ledger.unit verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit
+ci.delivery.freeze.prepare: guard.prod.forbid verify.g1.acceptance.baseline contract.semantic.registry.generate verify.frontend.contract_basis.enforce verify.agent.ledger.unit verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit
 	@$(MAKE) --no-print-directory ci.delivery.plan
 	@$(MAKE) --no-print-directory refresh.generated_reports
 	@$(MAKE) --no-print-directory refresh.frontend.component_driver_takeover.inventory
@@ -916,7 +885,6 @@ verify.tenant.module_set_matrix: guard.prod.forbid
 verify.formal_product_field_purity: guard.prod.forbid
 	@python3 scripts/verify/formal_product_field_purity_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_formal_product_field_purity_guard.py
-	@python3 scripts/verify/test_formal_product_alias_cleanup_migration.py
 
 .PHONY: verify.tenant_extension_storage
 verify.tenant_extension_storage: guard.prod.forbid

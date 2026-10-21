@@ -205,11 +205,13 @@ def _reset_caches():
 
 
 class TestActionOnlySceneSemanticSupply(unittest.TestCase):
-    def test_all_registered_capabilities_have_scene_targets(self):
+    def test_all_registered_capabilities_have_one_declared_target(self):
         registered = {str(row.get("key") or "") for row in capability_registry.capability_definitions() if row.get("key")}
         mapped = set(target_capability.CAPABILITY_ENTRY_SCENE_MAP)
 
-        self.assertFalse(sorted(registered - mapped))
+        native = {row["key"] for row in capability_registry.capability_definitions() if row.get("access_action")}
+        self.assertFalse(native & mapped, "native action entries must not retain a second scene target")
+        self.assertFalse(sorted(registered - (mapped | native)))
 
     def test_delivery_scene_source_files_reference_registered_scenes(self):
         rows = scene_registry_content.list_scene_entries()
@@ -312,10 +314,7 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         self.assertEqual(((task_board.get("target") or {}).get("route")), "/s/task.board")
         self.assertFalse(bool(((task_board.get("target") or {}).get("menu_xmlid"))))
         self.assertFalse(bool(((task_board.get("target") or {}).get("action_xmlid"))))
-        self.assertEqual(
-            target_capability.CAPABILITY_ENTRY_SCENE_MAP["project.task.list"],
-            "task.center",
-        )
+        self.assertNotIn("project.task.list", target_capability.CAPABILITY_ENTRY_SCENE_MAP)
         self.assertEqual(
             target_capability.CAPABILITY_ENTRY_SCENE_MAP["project.task.board"],
             "task.board",
@@ -413,10 +412,7 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         )
 
     def test_contract_center_capability_converges_to_contract_family_root_authority(self):
-        self.assertEqual(
-            target_capability.CAPABILITY_ENTRY_SCENE_MAP["contract.center.open"],
-            "contract.center",
-        )
+        self.assertNotIn("contract.center.open", target_capability.CAPABILITY_ENTRY_SCENE_MAP)
 
     def test_contract_center_provider_supplies_delivery_handoff(self):
         payload = contract_center_provider.build(scene_key="contract.center", runtime={"company_id": 9})

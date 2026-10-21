@@ -156,26 +156,19 @@ class ConstructionContractIncome(models.Model):
         vals_list = [self._ensure_contract_type(dict(vals)) for vals in vals_list]
         return super(
             ConstructionContractIncome,
-            self.with_context(skip_professional_contract_wrapper_sync=True),
+            self.with_context(
+                skip_professional_contract_wrapper_sync=True,
+                default_type=self._contract_type,
+                default_business_category_code=(
+                    "contract.income" if self._contract_type == "out" else "contract.expense"
+                ),
+            ),
         ).create(vals_list)
 
     def write(self, vals):
         vals = self._ensure_contract_type(dict(vals))
         return super().write(vals)
 
-    def init(self):
-        self.env.cr.execute(
-            """
-            INSERT INTO construction_contract_income
-                (contract_id, create_uid, create_date, write_uid, write_date)
-            SELECT c.id, COALESCE(c.create_uid, 1), COALESCE(c.create_date, NOW()),
-                   COALESCE(c.write_uid, c.create_uid, 1), COALESCE(c.write_date, c.create_date, NOW())
-              FROM construction_contract c
-              LEFT JOIN construction_contract_income i ON i.contract_id = c.id
-             WHERE c.type = 'out'
-               AND i.id IS NULL
-            """
-        )
 
 
 class ConstructionContractExpense(models.Model):
@@ -203,32 +196,15 @@ class ConstructionContractExpense(models.Model):
         vals_list = [self._ensure_contract_type(dict(vals)) for vals in vals_list]
         return super(
             ConstructionContractExpense,
-            self.with_context(skip_professional_contract_wrapper_sync=True),
+            self.with_context(
+                skip_professional_contract_wrapper_sync=True,
+                default_type=self._contract_type,
+                default_business_category_code=(
+                    "contract.income" if self._contract_type == "out" else "contract.expense"
+                ),
+            ),
         ).create(vals_list)
 
     def write(self, vals):
         vals = self._ensure_contract_type(dict(vals))
         return super().write(vals)
-
-    def init(self):
-        self.env.cr.execute(
-            """
-            DELETE FROM construction_contract_expense e
-             USING construction_contract c
-             WHERE e.contract_id = c.id
-               AND COALESCE(c.subject, '') ILIKE '发票关联支出合同%%'
-            """
-        )
-        self.env.cr.execute(
-            """
-            INSERT INTO construction_contract_expense
-                (contract_id, create_uid, create_date, write_uid, write_date)
-            SELECT c.id, COALESCE(c.create_uid, 1), COALESCE(c.create_date, NOW()),
-                   COALESCE(c.write_uid, c.create_uid, 1), COALESCE(c.write_date, c.create_date, NOW())
-              FROM construction_contract c
-             LEFT JOIN construction_contract_expense e ON e.contract_id = c.id
-             WHERE c.type = 'in'
-               AND COALESCE(c.subject, '') NOT ILIKE '发票关联支出合同%%'
-               AND e.id IS NULL
-            """
-        )

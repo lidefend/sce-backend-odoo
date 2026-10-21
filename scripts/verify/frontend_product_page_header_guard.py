@@ -211,6 +211,10 @@ def _non_literal_targets(chain: dict[str, str]) -> list[str]:
         for line in _logical_lines(text):
             if not line or line.startswith("\t") or line.lstrip().startswith("#"):
                 continue
+            # Pure standalone error diagnostics cannot define a rule. Keep
+            # nested expansions and any trailing rule separator fail-closed.
+            if re.fullmatch(r"\$\(error\s+[^$()]*\)", line.strip()):
+                continue
             match = re.match(r"^([^:=\t#]+):(?!=)", line)
             if match and "$" in match.group(1):
                 failures.append(

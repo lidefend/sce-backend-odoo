@@ -13,7 +13,6 @@ SCAN_ROOTS = [
     ROOT / "scripts" / "ci",
     ROOT / "scripts" / "diag",
     ROOT / "scripts" / "e2e",
-    ROOT / "scripts" / "migration",
     ROOT / "scripts" / "ops",
     ROOT / "scripts" / "prod",
     ROOT / "scripts" / "verify",
@@ -420,12 +419,6 @@ def aggregate_target_for(path: Path, runtime: str) -> str:
         return "verify.scene.runtime_boundary.gate"
     if name.startswith("smart_core_minimum_"):
         return "verify.smart_core.minimum_surface"
-    if name == "legacy_55_user_acceptance_asset_manifest_guard.py":
-        return "migration.assets.user_acceptance_manifest_guard.evidence"
-    if name == "legacy_55_user_acceptance_online_probe.py":
-        return "migration.assets.user_acceptance_online_probe"
-    if name == "legacy_direct_direct_project_acceptance_menu_probe.py":
-        return "migration.assets.legacy_direct_direct_project_menu_probe"
     if name in {
         "scene_admin_smoke.py",
         "scene_admin_smoke.sh",

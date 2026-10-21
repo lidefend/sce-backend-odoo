@@ -49,3 +49,23 @@ test('missing public navigation action fails visibly', async () => {
   const h=setup(), task=h.action(); const payload=valid(); payload.data.pages.password_recovery.page_orchestration.action_schema.actions={};
   h.pending[0].resolve(payload); await task; assert.equal(h.state.publicPageContractStatus,'error');
 });
+
+test('clearing the real session invalidates public readiness before dropping declarations', () => {
+  const clearBody = source.split('    clearSession() {')[1].split('\n    setActionMeta(')[0].replace(/\n    },\s*$/, '');
+  const storage = { removeItem() {} };
+  for (const priorStatus of ['ready', 'loading']) {
+    const state = { publicPageContractStatus: priorStatus, pageContracts: { login: { texts: { session_expired_notice: 'declared' } } } };
+    const writes = [];
+    const observed = new Proxy(state, { set(target, key, value) {
+      if (key === 'pageContracts') assert.equal(target.publicPageContractStatus, 'idle', 'removed declaration must never remain ready');
+      writes.push(key); target[key] = value; return true;
+    } });
+    const clear = new Function('invalidateContextRequests', 'setSceneRegistry', 'localStorage', 'sessionStorage', 'sessionStorageKey', 'scopedTokenStorageKey', 'TOKEN_STORAGE_KEY_LEGACY',
+      `let appInitInFlight=null, appInitEpoch=-1; return function() {${clearBody}}`)(
+      () => {}, () => {}, storage, storage, () => 'session', () => 'token', 'legacy');
+    clear.call(observed);
+    assert.equal(state.publicPageContractStatus, 'idle');
+    assert.deepEqual(state.pageContracts, {});
+    assert.ok(writes.includes('pageContracts'));
+  }
+});

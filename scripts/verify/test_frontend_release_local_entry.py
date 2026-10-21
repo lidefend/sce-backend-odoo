@@ -12,6 +12,35 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FrontendReleaseLocalEntryTest(unittest.TestCase):
+    def test_profile_load_restores_acceptance_stamp_after_base_environment(self) -> None:
+        source = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text()
+        loader = source.split("load_profile() {", 1)[1].split("\n}\n", 1)[0]
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            identity = root / "config/acceptance/isolated_entry_identity.v1.env"
+            identity.parent.mkdir(parents=True)
+            identity.write_text("SC_ENTRY_SHARED_SECRET=acceptance-only\nSC_ENTRY_ROUTE_VERSION=acceptance-version\n")
+            base = root / "base.env"
+            base.write_text("SC_ENTRY_SHARED_SECRET=unrelated-base\nSC_ENTRY_ROUTE_VERSION=other-version\n")
+            script = """
+set -eu
+python3() {
+  if [[ "$*" == *--get* ]]; then echo "$BASE_ENV";
+  else echo SC_ACCEPTANCE_CREDENTIAL_CONTAINER=fixture; fi
+}
+docker() { return 0; }
+container_env_value() { echo test-value; }
+""" + "load_profile() {" + loader + "\n}\n" + """
+load_profile
+[[ "$SC_ENTRY_SHARED_SECRET" == acceptance-only ]]
+[[ "$SC_ENTRY_ROUTE_VERSION" == acceptance-version ]]
+[[ "$DB_USER" == test-value && "$DB_PASSWORD" == test-value ]]
+"""
+            env = dict(os.environ, ROOT_DIR=str(root), BASE_ENV=str(base),
+                       PROFILE="local", PROFILE_RESOLVER="stub")
+            result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_cached_restore_is_offline_frozen_and_script_free(self) -> None:
         source = (ROOT / "scripts/dev/frontend_cached_dependencies_restore.sh").read_text(
             encoding="utf-8"
@@ -159,11 +188,10 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         login = source.split("async function login(", 1)[1].split(
             "async function logout(", 1
         )[0]
-        self.assertIn("page.waitForResponse", login)
-        self.assertIn("login intent rejected http=", login)
-        self.assertIn("error_code=", login)
-        self.assertNotIn("postData()", login.split("login intent rejected", 1)[1])
-        self.assertNotIn("PASSWORD", login.split("login intent rejected", 1)[1])
+        self.assertIn("authenticateBrowserProbe(page, user", login)
+        self.assertIn("authenticatedIntents.delete(page)", login)
+        self.assertNotIn("sessionStorage", login)
+        self.assertNotIn("postData()", login)
 
     def test_delivery_hardening_payment_create_uses_product_list_path(self) -> None:
         source = (
@@ -342,6 +370,10 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
                 "ODOO_DATA": "sc-fe-release-123-1-odoo-data",
                 "SC_ENVIRONMENT": "acceptance",
                 "SC_ALLOW_DEMO_DATA": "1",
+                "SC_ENTRY_NAMESPACE": "acceptance",
+                "SC_ENTRY_AUDIENCE": "acceptance-audience",
+                "SC_ENTRY_SHARED_SECRET": "acceptance-only",
+                "SC_ENTRY_ROUTE_VERSION": "acceptance-version",
                 "CAPTURE": str(capture),
                 "PATH": f"{root}:{os.environ['PATH']}",
             }
@@ -368,6 +400,25 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
                 self.assertIn("DB_DATA=sc-fe-release-123-1-db-data", call)
                 self.assertIn("REDIS_DATA=sc-fe-release-123-1-redis-data", call)
                 self.assertIn("ODOO_DATA=sc-fe-release-123-1-odoo-data", call)
+
+            # Exercise real nested Make, whose included base assignments would
+            # otherwise override exported shell variables in its recipe.
+            makefile = root / "Makefile"
+            makefile.write_text(
+                "SC_ENTRY_SHARED_SECRET = unrelated-base\n"
+                "SC_ENTRY_ROUTE_VERSION = unrelated-version\n"
+                "outer:\n\t@$(MAKE) --no-print-directory inner\n"
+                "inner:\n\t@test \"$(SC_ENTRY_SHARED_SECRET)\" = acceptance-only\n"
+                "\t@test \"$(SC_ENTRY_ROUTE_VERSION)\" = acceptance-version\n"
+            )
+            real_env = {**clean_environment, **managed, "PATH": os.environ["PATH"]}
+            real_command = (
+                f'source "{ROOT / "scripts/common/frontend_acceptance_make_identity.sh"}"; '
+                "frontend_acceptance_make outer"
+            )
+            nested = subprocess.run(["bash", "-c", real_command], cwd=root,
+                                    env=real_env, capture_output=True, text=True)
+            self.assertEqual(nested.returncode, 0, nested.stderr)
 
             for drift in ({"ODOO_DB": "foreign"}, {"LIST_DB": "0"}):
                 capture.unlink(missing_ok=True)

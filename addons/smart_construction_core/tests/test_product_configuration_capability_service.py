@@ -123,5 +123,29 @@ class ProductConfigurationCapabilityServiceTest(unittest.TestCase):
         )
 
 
+class UserCapabilityProjectionTest(unittest.TestCase):
+    def test_preserves_all_permission_verdicts_without_audience_inference(self):
+        for state in ('allow', 'readonly', 'deny', 'pending', 'coming_soon'):
+            row = {'key': 'finance', 'ui_label': '财务', 'capability_state': state,
+                   'reason': 'authority reason', 'reason_code': 'AUTHORITY',
+                   'group_label': '财务管理', 'ui_hint': '说明'}
+            item = service.build_user_capabilities([row])['items'][0]
+            self.assertEqual(item['status'], state)
+            self.assertEqual(item['reason'], row['reason'])
+            self.assertEqual(item['reason_code'], row['reason_code'])
+            self.assertEqual(item['available'], state in {'allow', 'readonly'})
+            self.assertTrue(item['status_label'])
+
+    def test_empty_authority_stays_empty(self):
+        surface = service.build_user_capabilities([])
+        self.assertEqual(surface['items'], [])
+        self.assertTrue(surface['empty_message'])
+
+    def test_missing_or_unknown_verdict_fails(self):
+        for row in ({'key': 'broken'}, {'key': 'broken', 'capability_state': 'invented'}):
+            with self.assertRaises((KeyError, ValueError)):
+                service.build_user_capabilities([row])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -76,7 +76,6 @@ class TestReceiptIncomeNativeLowcode(TransactionCase):
             "views/core/receipt_income_views.xml",
             "data/receipt_income_form_productization_contract.xml",
             "data/view_orchestration_form_section_contract_data.xml",
-            "data/p1_daily_business_form_orchestration_contract_data.xml",
         ):
             convert_file(self.env, "smart_construction_core", source, {}, mode="update", noupdate=False)
 
@@ -124,39 +123,6 @@ class TestReceiptIncomeNativeLowcode(TransactionCase):
 
     def entries(self):
         return self.FORMAL_ACTIONS + self.BYPASS_ACTIONS
-
-    def test_entries_retire_legacy_structure_and_recover_facts(self):
-        """Three entry contracts spend one native structure, one final tree."""
-        self.assertFalse(self.ref("business_config_contract_sc_receipt_income_form_sections_v1").active)
-        self.assertFalse(self.ref("business_config_contract_sc_receipt_income_p1_form_business_facts_v1").active)
-        self.assertFalse(self.ref("business_config_contract_sc_receipt_income_form_structure_generated").active)
-        for contract_key in (
-            "business_config_contract_receipt_income_productized_form_v1",
-            "business_config_contract_receipt_income_project_productized_form_v1",
-            "business_config_contract_receipt_income_engineering_progress_productized_form_v1",
-        ):
-            record = self.ref(contract_key)
-            self.assertTrue(record.active, contract_key)
-            form_spec = record.contract_json["view_orchestration"]["views"]["form"]
-            self.assertEqual(form_spec["composition_mode"], "native_semantic_surface", contract_key)
-            self.assertNotIn("sections", form_spec, contract_key)
-            self.assertNotIn("fields", form_spec, contract_key)
-        for action_key, required in self.entries():
-            data = self.contract(action_key)
-            g = data["formStructureContract"]["sourceAuthority"]["governance_source"]
-            self.assertEqual(g["resolvedActionId"], self.ref(action_key).id, action_key)
-            self.assertEqual(g["resolvedViewId"], self.ref("view_sc_receipt_income_form").id, action_key)
-            self.assertEqual(g["formStructureAuthority"], "native_authority", action_key)
-            self.assertEqual(g["formPresentationMode"], "task", action_key)
-            self.assertEqual(g["compatibilityDependencies"], [], action_key)
-            # the duplicated shared-layer projection is gone: no configured
-            # section may survive next to the native structure
-            self.assertEqual(g["configuredSections"], [], action_key)
-            names = [n.get("name") for n in self.tree_nodes(data) if n.get("type") == "field"]
-            self.assertNotIn("company_contractor_responsibility_notice", names)
-            for field in (*required, *self.RECOVERED_FIELDS, *self.SHARED_PRESENT_FIELDS):
-                self.assertIn(field, names, (action_key, field))
-                self.assertEqual(names.count(field), 1, (action_key, field))
 
     def test_recovered_facts_have_one_presentation_and_real_rules(self):
         """Presence is not usability: every recovered fact carries the rule that

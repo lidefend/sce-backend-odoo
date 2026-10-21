@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { authenticateBrowserProbe } from './frontend_authenticated_intent.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -101,35 +102,26 @@ async function capture(page, name, options = {}) {
   screenshots.push(name);
 }
 
+const authenticatedProbes = new WeakMap();
 async function login(page) {
+  authenticatedProbes.delete(page);
   await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.locator('#login-username, input[autocomplete="username"]').first().fill(USERNAME);
   await page.locator('#login-password, input[autocomplete="current-password"]').first().fill(PASSWORD);
   const database = page.locator('input').nth(2);
   if (await database.isEnabled().catch(() => false)) await database.fill(DB_NAME);
-  await page.getByRole('button', { name: /^登录$/ }).click();
+  authenticatedProbes.set(page, await authenticateBrowserProbe(page, USERNAME,
+    () => page.getByRole('button', { name: /^登录$/ }).click()));
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45_000 });
   await page.locator('.layout-shell').waitFor({ state: 'visible', timeout: 45_000 });
   await page.waitForFunction(() => !/正在初始化|正在加载导航/.test(document.body.innerText || ''), null, { timeout: 45_000 });
 }
 
 async function intentRequestFromPage(page, intent, params) {
-  return page.evaluate(async ({ dbName, intentName, payload }) => {
-    const bearer = sessionStorage.getItem(`sc_auth_token:${dbName}`) || '';
-    const traceId = `form-system-discovery-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    const response = await fetch(`/api/v1/intent?db=${encodeURIComponent(dbName)}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: bearer ? `Bearer ${bearer}` : '',
-        'X-Odoo-DB': dbName,
-        'X-Trace-Id': traceId,
-      },
-      body: JSON.stringify({ intent: intentName, params: payload }),
-    });
-    const body = await response.json().catch(() => ({}));
-    return { ...body, status: response.status, traceId: body?.trace_id || response.headers.get('x-trace-id') || traceId };
-  }, { dbName: DB_NAME, intentName: intent, payload: params });
+  const request = authenticatedProbes.get(page);
+  if (!request) throw new Error('authenticated browser startup request missing');
+  const response = await request(page.context(), intent, params);
+  return { ...response.body, status: response.status, traceId: response.body?.trace_id || response.body?.meta?.trace_id || '' };
 }
 
 function nodeRoute(node) {

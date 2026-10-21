@@ -68,7 +68,7 @@ def evidence_states(registry: dict, plan: dict, manifest: dict, dirty: list[str]
     return states
 
 
-def build_report(base: str, head: str, manifest_path: Path, *, frozen: bool = False) -> dict:
+def build_report(base: str, head: str, manifest_path: Path, *, frozen: bool = False, stage: str = "all") -> dict:
     registry = binding.load_registry(binding.DEFAULT_REGISTRY)
     dirty = runs.delta_paths(ROOT, head)
     plan = binding.build_plan(registry, runs.delta_paths(ROOT, base), base, head)
@@ -81,7 +81,9 @@ def build_report(base: str, head: str, manifest_path: Path, *, frozen: bool = Fa
     except (OSError, ValueError, AttributeError) as exc:
         manifest = {}
         blockers.append('evidence manifest: ' + str(exc))
-    states = evidence_states(registry, plan, manifest, dirty)
+    stage_plan = binding.plan_for_stage(registry, plan, stage)
+    deferred = stage_plan['deferred_evidence_suites']
+    states = evidence_states(registry, stage_plan, manifest, dirty)
     if plan['unclassified']:
         blockers.append('unclassified paths: ' + ', '.join(plan['unclassified']))
     if frozen and dirty:
@@ -96,6 +98,7 @@ def build_report(base: str, head: str, manifest_path: Path, *, frozen: bool = Fa
     return {'schema': 'validation_delivery_plan.v1', 'head': head, 'base': base,
             'dirty_paths': dirty, 'impact': plan, 'local_checks': local,
             'runtime_evidence': states, 'blockers': blockers,
+            'stage': stage, 'deferred_evidence': {key: {'status': 'not_run', 'required_stages': registry['suites'][key]['stages']} for key in deferred},
             'status': 'blocked' if blockers else 'ready_for_existing_gates',
             'candidate_evidence': False, 'writes_authorized': False,
             'limits': ['No runtime readback or credential verification performed',
@@ -107,18 +110,21 @@ def main(argv=None) -> int:
     parser.add_argument('--pr')
     parser.add_argument('--expected-head')
     parser.add_argument('--base')
+    parser.add_argument('--stage', choices=['all', 'merge', 'deployment'], default='all')
     parser.add_argument('--manifest', type=Path, default=ROOT / '.runtime/acceptance-evolution/evidence.v1.json')
     parser.add_argument('--output', type=Path, default=ROOT / '.runtime/validation-delivery/plan.json')
     parser.add_argument('--require-ready', action='store_true')
     parser.add_argument('--verify-pr-identity', action='store_true')
     args = parser.parse_args(argv)
     try:
+        if args.pr and args.stage not in {'all', 'merge'}:
+            raise binding.BindingError('PR preflight always evaluates the merge stage')
         identity = pr_identity(args.pr, args.expected_head or '') if args.pr else None
         if args.verify_pr_identity:
             previous = json.loads(args.output.read_text())
             if not identity or previous.get('pr_identity') != identity:
                 raise binding.BindingError('PR source/target identity drifted since preflight')
-            report = build_report(identity['baseRefOid'], identity['headRefOid'], args.manifest, frozen=True)
+            report = build_report(identity['baseRefOid'], identity['headRefOid'], args.manifest, frozen=True, stage="merge")
             if report['blockers']:
                 raise binding.BindingError('evidence changed since preflight: ' + '; '.join(report['blockers']))
             return 0
@@ -126,7 +132,7 @@ def main(argv=None) -> int:
         # PR mode never consumes caller-selected BASE_SHA/HEAD_SHA or --base.
         base = identity['baseRefOid'] if identity else (args.base or binding.resolve_base(None, head))
         binding.resolve_head(base)  # require locally available exact target commit
-        report = build_report(base, head, args.manifest, frozen=bool(identity))
+        report = build_report(base, head, args.manifest, frozen=bool(identity), stage="merge" if identity else args.stage)
         report['pr_identity'] = identity
         binding.write_json(args.output, report)
         print(json.dumps({key: report[key] for key in ('status', 'head', 'base', 'blockers', 'candidate_evidence', 'limits')}, ensure_ascii=False, indent=2))

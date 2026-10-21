@@ -1,9 +1,11 @@
 <template>
-  <section
+  <section v-if="stateResolution.gap" role="alert" :data-contract-gap="stateResolution.gap">ContractGapError: {{ stateResolution.gap }}</section>
+  <section v-else
     class="panel sc-state-panel"
-    :class="[variant, `state-${productState.kind}`]"
+    :class="[variant, `state-${productState?.kind}`]"
     data-semantic-state-surface="page"
-    :data-state="busy ? 'loading' : variant === 'error' ? 'error' : productState.kind"
+    :data-error-kind="productState?.kind"
+    :data-state="busy ? 'loading' : variant === 'error' ? 'error' : productState?.kind"
     :role="variant === 'error' ? 'alert' : 'status'"
     :aria-live="variant === 'error' ? 'assertive' : 'polite'"
     :aria-busy="busy || undefined"
@@ -34,15 +36,17 @@
       {{ suggestedActionLabel }}
     </ScButton>
     <p v-if="actionRunFeedback" class="action-feedback" role="status" aria-live="polite">{{ actionRunFeedback }}</p>
-    <ScButton v-if="onRetry" variant="primary" :disabled="retrying || busy" :loading="retrying" loading-label="正在重试" @click="retry">
-      {{ retrying ? '正在重试…' : (retryLabel || productState.actionLabel) }}
+    <ScButton v-if="props.variant === 'error' ? Boolean(productState?.action && productState.action.kind !== 'none') : Boolean(onRetry)" :data-recovery-action="productState?.action.kind" variant="primary" :disabled="retrying || busy" :loading="retrying" loading-label="正在重试" @click="retry">
+      {{ retrying ? '正在重试…' : (props.variant === 'error' ? productState?.action.label : retryLabel) }}
     </ScButton>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { contractGapError } from '../app/contract/contractGap';
+import { useSessionStore } from '../stores/session';
 import { useSuggestedAction } from '../composables/useSuggestedAction';
 import { isHudEnabled } from '../config/debug';
 import { resolveProductErrorState } from '../app/productErrorState';
@@ -72,6 +76,8 @@ const emit = defineEmits<{
 const actionRunFeedback = ref('');
 const retrying = ref(false);
 const route = useRoute();
+const router = useRouter();
+const session = useSessionStore();
 
 watch(
   () => [props.suggestedAction, props.message, props.reasonCode, props.traceId],
@@ -96,9 +102,21 @@ const suggestedActionLabel = computed(() => suggestedActionRuntime.label.value);
 const showHudMeta = computed(() => isHudEnabled(route));
 const errorModel = computed(() => String(props.errorDetails?.model || '').trim());
 const errorOp = computed(() => String(props.errorDetails?.op || '').trim().toLowerCase());
-const productState = computed(() => resolveProductErrorState({ status: props.errorCode, message: props.message, reasonCode: props.reasonCode }));
-const displayTitle = computed(() => (props.variant === 'error' ? productState.value.title : props.title));
-const displayMessage = computed(() => (props.variant === 'error' ? productState.value.message : props.message));
+const stateResolution = computed(() => {
+  if (props.variant !== 'error') return { state: null, gap: false };
+  try {
+    const state = resolveProductErrorState({ status: props.errorCode, reasonCode: props.reasonCode }, session.errorStateContract);
+    if (state.action.kind === 'retry' && !props.onRetry) throw contractGapError({ kind: 'contract_defect', missing: 'error_states.action.retry.executor', requiredDeclarationLayer: 'P0:frontend:StatusPanel consumer' }, 'ContractGapError: error_states.action.retry.executor');
+    return { state, gap: false };
+  }
+  catch (error) {
+    if ((error as Error).name !== 'ContractGapError') throw error;
+    return { state: null, gap: (error as { defect?: { missing?: string } }).defect?.missing || 'page_contracts.error_states' };
+  }
+});
+const productState = computed(() => stateResolution.value.state);
+const displayTitle = computed(() => props.variant === 'error' ? productState.value?.title : props.title);
+const displayMessage = computed(() => props.variant === 'error' ? productState.value?.message : props.message);
 
 function runSuggestedAction() {
   const ran = suggestedActionRuntime.run({
@@ -118,9 +136,13 @@ function runSuggestedAction() {
 }
 
 async function retry() {
-  if (!props.onRetry || retrying.value || props.busy) return;
+  if (retrying.value || props.busy) return;
   retrying.value = true;
-  try { await props.onRetry(); } finally { retrying.value = false; }
+  try {
+    const action = productState.value?.action;
+    if (props.variant === 'error' && action?.kind === 'route') await router.push(action.path!);
+    else if (props.onRetry) await props.onRetry();
+  } finally { retrying.value = false; }
 }
 
 function copyTrace() {

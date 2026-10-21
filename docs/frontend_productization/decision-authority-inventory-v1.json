@@ -368,20 +368,6 @@
       "ownerLayer": "P0_frontend_renderer"
     },
     {
-      "decisionKey": "R3_router_literal_destination|/|frontend/apps/web/src/views/AccessDeniedView.vue",
-      "rule": "R3_router_literal_destination",
-      "literal": "/",
-      "path": "frontend/apps/web/src/views/AccessDeniedView.vue",
-      "lines": [
-        23
-      ],
-      "occurrences": 1,
-      "classification": "excluded-render-interaction",
-      "reason": "shell_navigation_destination",
-      "declaredClass": "navigation_shell",
-      "ownerLayer": "P0_frontend_renderer"
-    },
-    {
       "decisionKey": "R3_router_literal_destination|scene|frontend/apps/web/src/views/ActionView.vue",
       "rule": "R3_router_literal_destination",
       "literal": "scene",
@@ -401,7 +387,7 @@
       "literal": "/",
       "path": "frontend/apps/web/src/views/LoginView.vue",
       "lines": [
-        304
+        308
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -415,7 +401,7 @@
       "literal": "/activate-account",
       "path": "frontend/apps/web/src/views/LoginView.vue",
       "lines": [
-        296
+        300
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -429,7 +415,7 @@
       "literal": "/password-recovery",
       "path": "frontend/apps/web/src/views/LoginView.vue",
       "lines": [
-        300
+        304
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -842,7 +828,7 @@
       "literal": "available",
       "path": "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
       "lines": [
-        132
+        133
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -855,7 +841,7 @@
       "literal": "partial",
       "path": "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
       "lines": [
-        133
+        134
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -868,7 +854,7 @@
       "literal": "planned",
       "path": "frontend/apps/web/src/app/productCapabilityCatalogProjection.ts",
       "lines": [
-        134
+        135
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1658,21 +1644,21 @@
     }
   ],
   "summary": {
-    "totalFindings": 153,
-    "distinctDecisions": 111,
+    "totalFindings": 152,
+    "distinctDecisions": 110,
     "byRule": {
       "R2_intent_literal": 19,
-      "R3_router_literal_destination": 18,
+      "R3_router_literal_destination": 17,
       "R4_business_state_literal": 116
     },
     "byClassification": {
       "contract-derived": 62,
-      "excluded-render-interaction": 91
+      "excluded-render-interaction": 90
     },
     "unclassified": 0,
     "contractDerived": 62,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
-    "excludedRenderInteraction": 91
+    "excludedRenderInteraction": 90
   }
 }

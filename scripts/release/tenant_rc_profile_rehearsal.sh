@@ -58,9 +58,6 @@ case "$action" in
     profile_path="$(realpath "${RC_PROFILE_PATH:?RC_PROFILE_PATH is required}")"
     [[ -f "$profile_path" && ! -L "$profile_path" ]] || { echo "external RC profile must be a regular non-symlink file" >&2; exit 2; }
     export SC_CUSTOMER_PACKAGE_MANIFEST="$profile_path"
-    legacy_customer_module="${RC_LEGACY_CUSTOMER_MODULE:?RC_LEGACY_CUSTOMER_MODULE is required}"
-    history_backup="$(realpath "${RC_HISTORY_BACKUP:?RC_HISTORY_BACKUP is required}")"
-    identity_migration="$(realpath "${RC_CUSTOMER_IDENTITY_MIGRATION:?RC_CUSTOMER_IDENTITY_MIGRATION is required}")"
     payload_manifest="$(realpath "${SC_PAYLOAD_MANIFEST:?SC_PAYLOAD_MANIFEST is required}")"
     payload_root="$(dirname "$payload_manifest")"
     prepared="$artifacts/prepared-customer"
@@ -71,7 +68,7 @@ case "$action" in
     customer_root="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["prepared_addons_root"])' "$artifacts/profiles/RC-C03-package-admission.json")"
     customer_modules="$(python3 -c 'import json,sys; print(",".join(json.load(open(sys.argv[1]))["modules"]))' "$artifacts/profiles/RC-C03-package-admission.json")"
     tenant_id="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["tenant_id"])' "$profile_path")"
-    declared_customer_modules="$customer_modules,$legacy_customer_module"
+    declared_customer_modules="$customer_modules"
     modules="$product_modules,$declared_customer_modules"
     ;;
   *) echo "unknown profile action: $action" >&2; exit 2 ;;
@@ -91,45 +88,9 @@ trap cleanup EXIT
 cleanup
 "${compose[@]}" up -d --wait db redis
 
-if [[ "$profile" == RC-C03 ]]; then
-  python3 - "$history_backup" <<'PY'
-import hashlib, json, sys
-from pathlib import Path
-root = Path(sys.argv[1])
-manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
-if not manifest.get("paired"):
-    raise SystemExit("RC_HISTORY_BACKUP_NOT_PAIRED")
-for name, expected in manifest["checksums"].items():
-    if hashlib.sha256((root / name).read_bytes()).hexdigest() != expected:
-        raise SystemExit("RC_HISTORY_BACKUP_CHECKSUM_MISMATCH")
-PY
-  source_database="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["database"])' "$history_backup/manifest.json")"
-  "${compose[@]}" exec -T db dropdb -U "$DB_USER" --if-exists "$database"
-  "${compose[@]}" exec -T db createdb -U "$DB_USER" "$database"
-  "${compose[@]}" exec -T db pg_restore -U "$DB_USER" -d "$database" --no-owner --no-privileges \
-    < "$history_backup/database.dump"
-  "${compose[@]}" run --rm --no-deps --user root --entrypoint sh odoo -c \
-    "rm -rf '/var/lib/odoo/filestore/$database' /tmp/rc-filestore; mkdir -p /tmp/rc-filestore /var/lib/odoo/filestore; tar -C /tmp/rc-filestore -xzf -; cp -a '/tmp/rc-filestore/$source_database' '/var/lib/odoo/filestore/$database'; rm -rf /tmp/rc-filestore" \
-    < "$history_backup/filestore.tar.gz"
-fi
-
-# Render the production configuration without starting the registry.  This is
-# essential for a historical copy whose old customer module identity is
-# intentionally migrated by the next audited step.
+# Render the configuration before installing into the disposable empty database.
 "${compose[@]}" run --rm --no-deps --entrypoint python3 odoo \
   /usr/local/bin/render_odoo_conf.py /etc/odoo/odoo.conf.template /var/lib/odoo/odoo.conf
-
-if [[ "$profile" == RC-C03 ]]; then
-  "${compose[@]}" run --rm --no-deps -T --user odoo -e SC_CONFIRM_CUSTOMER_MODULE_RENAME=1 \
-    --entrypoint odoo odoo shell -d "$database" -c /var/lib/odoo/odoo.conf --log-level=error \
-    < "$identity_migration" > "$artifacts/profiles/RC-C03-module-identity.json"
-  export FINGERPRINT_PROJECT="$project" FINGERPRINT_DB="$database"
-  export FINGERPRINT_COMPOSE_FILES="docker-compose.production-candidate.yml:docker-compose.tenant-rc-profile.yml"
-  export FINGERPRINT_FILESTORE_MODE=run
-  export FINGERPRINT_CARRIER_INVENTORY="$customer_root/$legacy_customer_module/legacy_owned_models_v2.json"
-  export FINGERPRINT_OUTPUT="$artifacts/profiles/RC-C03-history-before.json"
-  python3 scripts/release/production_candidate_sql_fingerprint.py
-fi
 
 run_modules() {
   "${compose[@]}" run --rm --no-deps --entrypoint odoo odoo \
@@ -139,16 +100,6 @@ run_modules() {
 run_modules -i "$modules"
 run_modules -i "$modules" -u "$modules"
 run_modules -i "$modules" -u "$modules"
-
-if [[ "$profile" == RC-C03 ]]; then
-  export FINGERPRINT_OUTPUT="$artifacts/profiles/RC-C03-history-after.json"
-  python3 scripts/release/production_candidate_sql_fingerprint.py
-  python3 scripts/release/compare_tenant_rc_history_fingerprints.py \
-    --before "$artifacts/profiles/RC-C03-history-before.json" \
-    --after "$artifacts/profiles/RC-C03-history-after.json" \
-    --identity "$artifacts/profiles/RC-C03-module-identity.json" \
-    --output "$artifacts/profiles/RC-C03-history-compare.json"
-fi
 
 if [[ "$profile" == RC-C04 ]]; then
   operator="svc_rc_sample_payload"
@@ -172,10 +123,8 @@ import json
 import sys
 from pathlib import Path
 
-
 def load_jsonl(path):
     return [json.loads(line) for line in Path(path).read_text(encoding="utf-8").splitlines() if line.strip()]
-
 
 imports = load_jsonl(sys.argv[1])
 verifications = load_jsonl(sys.argv[2])
@@ -208,7 +157,7 @@ case "$profile" in
   RC-C04) [[ "$pending" == 0 && "$demo_fixture" == 0 && "$customer_count" == 1 && "$business_count" -gt 0 ]] ;;
   RC-C03)
     expected_customer_count="$(awk -F, '{print NF}' <<<"$declared_customer_modules")"
-    [[ "$pending" == 0 && "$demo_fixture" == 0 && "$customer_count" == "$expected_customer_count" && "$business_count" -gt 0 ]]
+    [[ "$pending" == 0 && "$demo_fixture" == 0 && "$customer_count" == "$expected_customer_count" ]]
     ;;
 esac
 
@@ -220,7 +169,7 @@ from pathlib import Path
 payload = {
     "schema_version": 1, "profile": os.environ["PROFILE"], "database": os.environ["DATABASE"],
     "product_image_digest": os.environ["DIGEST"], "installed_entry_modules": os.environ["MODULES"].split(","),
-    "upgrade_runs": 2, "pending_modules": int(os.environ["PENDING"]),
+    "initialization": "clean_install", "upgrade_runs": 2, "pending_modules": int(os.environ["PENDING"]),
     "demo_or_fixture_installed": int(os.environ["DEMO_FIXTURE"]),
     "customer_modules_installed": int(os.environ["CUSTOMER_COUNT"]),
     "business_record_count": int(os.environ["BUSINESS_COUNT"]), "pass": True,

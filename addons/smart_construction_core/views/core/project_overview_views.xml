@@ -156,6 +156,9 @@
                     <field name="message_needaction" invisible="1"/>
                     <field name="display_name" invisible="1"/>
                     <field name="active" invisible="1"/>
+                    <group name="sc_project_submission_readiness" string="办理前检查" col="1" data-sc-anchor="project-submission-readiness" invisible="lifecycle_state != 'draft' or sc_approval_state != 'draft'">
+                        <field name="submission_readiness_display" readonly="1" nolabel="1"/>
+                    </group>
                     <group name="sc_project_information_basic" string="基本信息" col="4" data-sc-anchor="project-basic">
                         <field name="name" string="项目名称"/>
                         <field name="project_code" readonly="1" invisible="id == False" groups="smart_construction_core.group_sc_cap_project_read" />

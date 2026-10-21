@@ -5,6 +5,7 @@
   "profiles": {
     "local": {
       "environment": "dev",
+      "runtime_identity_path": "/api/runtime-version",
       "target_mode": "managed",
       "base_url": "http://127.0.0.1:5175",
       "database": "sc_frontend_acceptance",

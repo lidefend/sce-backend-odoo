@@ -94,8 +94,8 @@ def main() -> None:
     base_url = get_base_url()
     db_name = os.getenv("E2E_DB") or os.getenv("DB_NAME") or ""
     probe_model = str(os.getenv("CONTRACT_SMOKE_MODEL") or "res.partner").strip()
-    intent_url = build_intent_url(base_url, db_name)
-    token_ok, token, auth_source = obtain_runtime_probe_token(intent_url, db_name)
+    intent_url = build_intent_url(base_url)
+    token_ok, token, auth_source = obtain_runtime_probe_token(intent_url)
     if not token_ok or not token:
         raise RuntimeError(f"runtime probe authentication unavailable: source={auth_source}")
 

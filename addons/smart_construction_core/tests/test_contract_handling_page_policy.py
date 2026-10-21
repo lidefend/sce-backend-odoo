@@ -139,7 +139,7 @@ class TestContractHandlingPagePolicy(TransactionCase):
             for child in value:
                 yield from TestContractHandlingPagePolicy._nodes(child)
 
-    def test_contract_entries_use_native_tree_and_preserve_profiles(self):
+    def test_contract_entries_use_native_tree_and_native_field_visibility(self):
         handler = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env)
         for action_xmlid, model_name, code, _category_xmlid in ENTRY_CASES:
             action = self.env.ref("smart_construction_core." + action_xmlid)
@@ -173,19 +173,15 @@ class TestContractHandlingPagePolicy(TransactionCase):
                         if n["fieldCode"] == "state":
                             self.assertEqual(statuses[n["widgetId"]]["visible"], profile != "create")
                             self.assertTrue(statuses[n["widgetId"]]["readonly"])
-                        if n["fieldCode"] in ("document_status", "company_id", "approval_info", "visible_invoice_amount", "visible_received_amount"):
-                            self.assertEqual(statuses[n["widgetId"]]["visible"], profile == "readonly")
+                        if n["fieldCode"] == "company_id":
+                            # The native source declares the company as a visible,
+                            # readonly relation; it is not a hidden display projection.
+                            self.assertTrue(statuses[n["widgetId"]]["visible"])
+                            self.assertTrue(statuses[n["widgetId"]]["readonly"])
+                        if n["fieldCode"] in ("document_status", "approval_info", "visible_invoice_amount", "visible_received_amount"):
+                            self.assertEqual(statuses[n["widgetId"]]["visible"], profile == "readonly", n["fieldCode"])
                         if n["fieldCode"] in ("amount_untaxed", "amount_tax", "amount_total"):
                             self.assertTrue(statuses[n["widgetId"]]["readonly"])
-
-    def test_upgrade_retires_only_the_expense_order_owner(self):
-        old = self.env.ref("smart_construction_core.business_config_contract_construction_contract_expense_form_structure_generated")
-        self.assertFalse(old.active)
-        for xmlid in ("business_config_contract_income_contract_form_structure", "business_config_contract_expense_contract_native_form"):
-            record = self.env.ref("smart_construction_core." + xmlid)
-            self.assertTrue(record.active)
-            spec = record.contract_json["view_orchestration"]["views"]["form"]
-            self.assertEqual(spec, {"composition_mode": "native_semantic_surface"})
 
 
 @tagged("settlement_native_structure", "post_install", "-at_install")
@@ -220,9 +216,11 @@ class TestSettlementNativeStructure(TransactionCase):
             self.assertEqual(fields["line_ids"]["required_profiles"], ["create", "edit"])
             for name in ("settlement_type", "settlement_flow_label", "state"):
                 self.assertEqual(fields[name]["readonly_profiles"], ["create", "edit", "readonly"])
-            for name in ("amount_paid", "amount_payable", "invoice_amount", "legacy_fact_id"):
+            for name in ("amount_paid", "amount_payable", "invoice_amount"):
                 self.assertEqual(fields[name]["visible_profiles"], ["readonly"])
             self.assertIn("attachment_ids", fields)
+            # 历史来源事实已从正式办理面退出，保留为审计专用信息。
+            self.assertNotIn("legacy_fact_id", fields)
 
     def test_native_contract_requires_explicit_empty_compatibility_and_keeps_controls(self):
         handler = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env)
@@ -256,31 +254,6 @@ class TestSettlementNativeStructure(TransactionCase):
                     self.assertEqual(contract["statusContract"]["globalStatus"]["pageAuth"], "read")
                 detail = next(n for n in nodes if n.get("containerId") == "sc_settlement_detail_amount")
                 self.assertEqual(detail["span"], 24)
-
-    def test_retirement_is_explicit_and_native_optins_are_action_scoped(self):
-        retired = self.env.ref("smart_construction_core.business_config_contract_sc_settlement_order_form_structure_generated")
-        self.assertFalse(retired.active)
-        for direction in ("income", "expense"):
-            action = self.env.ref("smart_construction_core.action_sc_settlement_order_" + direction)
-            native = self.env.ref("smart_construction_core.business_config_contract_settlement_" + direction + "_native_form")
-            self.assertEqual(native.action_id, action)
-            self.assertEqual(native.contract_json["view_orchestration"]["views"]["form"],
-                             {"composition_mode": "native_semantic_surface"})
-        # Other same-model entries retain their own compatibility ownership.
-        other = self.env.ref(
-            "smart_construction_core.business_config_contract_settlement_order_productized_form_v1")
-        self.assertTrue(other.active)
-        self.assertTrue(other.contract_json["view_orchestration"]["views"]["form"]["sections"])
-        # U-C4 G13 retired the entry-level sections of the daily-contract
-        # settlement entry: the native arch 1764 already renders the surface, so
-        # the entry now only annotates it and no longer owns sections.
-        retired_sections = self.env.ref(
-            "smart_construction_core.business_config_contract_daily_contract_settlement_form_v1")
-        self.assertTrue(retired_sections.active)
-        self.assertEqual(
-            retired_sections.contract_json["view_orchestration"]["views"]["form"]["composition_mode"],
-            "native_semantic_surface")
-        self.assertNotIn("sections", retired_sections.contract_json["view_orchestration"]["views"]["form"])
 
     def test_shared_native_form_keeps_conditional_contract_columns_and_attachment_ownership(self):
         from lxml import etree

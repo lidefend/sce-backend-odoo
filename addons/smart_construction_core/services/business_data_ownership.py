@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Industry-side probe list for the upgrade-time business-data ownership gate.
+"""Industry-side probe list for the business-data ownership readiness check.
 
 The construction industry owns the answer to "which of my models carry
 company-owned business rows", so the model list lives here and never in
@@ -41,10 +41,8 @@ def probe_models(path=None):
 def assert_existing_business_data_ownership(env):
     """Fail closed unless every company already owning industry rows is onboarded.
 
-    Called from the industry upgrade path. An environment whose business rows
-    predate the data-space declaration must not upgrade into a state where every
-    ownership decision resolves against an empty registration set and the
-    product silently serves an empty surface.
+    Called by the governed read-only readiness entry. Historical development
+    migrations are retired; this service does not install an upgrade hook.
     """
     return provisioning.assert_business_data_ownership_registered(env, probe_models())
 

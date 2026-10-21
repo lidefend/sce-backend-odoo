@@ -118,7 +118,7 @@
                         <page string="附件">
                             <field name="attachment_ids" readonly="state != 'draft' or validation_status in ('waiting', 'pending', 'validated')" widget="many2many_binary"/>
                         </page>
-                        <page string="来源追溯">
+                        <page string="来源追溯" groups="smart_construction_core.group_sc_cap_config_admin">
                             <group>
                                 <field name="legacy_fact_model" readonly="1"/>
                                 <field name="legacy_fact_id" readonly="1"/>
@@ -206,7 +206,7 @@
                         <field name="approved_date" readonly="1"/>
                         <field name="reject_reason" readonly="1"/>
                     </group>
-                    <group string="来源追溯">
+                    <group string="来源追溯" groups="smart_construction_core.group_sc_cap_config_admin">
                         <field name="legacy_fact_model" readonly="1"/>
                         <field name="legacy_fact_id" readonly="1"/>
                         <field name="legacy_fact_type" readonly="1"/>
@@ -255,7 +255,7 @@
                     <group string="成果附件">
                         <field name="attachment_ids" widget="many2many_binary" readonly="state not in ('draft', 'rejected') or validation_status in ('waiting', 'pending', 'validated')"/>
                     </group>
-                    <group string="来源追溯">
+                    <group string="来源追溯" groups="smart_construction_core.group_sc_cap_config_admin">
                         <field name="legacy_fact_model" readonly="1"/>
                         <field name="legacy_fact_id" readonly="1"/>
                         <field name="legacy_fact_type" readonly="1"/>

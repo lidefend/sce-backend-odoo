@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -34,15 +35,22 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.generated_evidence = self.root / syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0]
         self.generated_evidence.parent.mkdir(parents=True, exist_ok=True)
         self.generated_evidence.write_text("base-generated\n", encoding="utf-8")
+        self.active_runs = self.root / syncer.ACTIVE_RUNS_INDEX_PATH
+        self.active_runs.parent.mkdir(parents=True, exist_ok=True)
+        self.active_runs.write_text(
+            json.dumps({"schema_version": 1, "branches": {}}, indent=2) + "\n",
+            encoding="utf-8",
+        )
         git(
             self.root,
             "add",
             "base.txt",
             syncer.APPEND_ONLY_CONFLICT_PATH,
             syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0],
+            syncer.ACTIVE_RUNS_INDEX_PATH,
         )
         git(self.root, "commit", "-m", "base")
-        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "push", "--force", "origin", "HEAD:main")
         git(self.root, "branch", "-M", "main")
         git(self.root, "fetch", "origin", "main")
         self.old_base = git(self.root, "rev-parse", "HEAD").stdout.strip()
@@ -79,6 +87,54 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.assertEqual(len(git(self.root, "rev-list", f"{self.new_main}..{result.head}").stdout.splitlines()), 1)
         self.assertEqual(result.generated_evidence_conflicts, ())
 
+    def test_active_runs_index_is_three_way_merged(self) -> None:
+        index = {"schema_version": 1, "branches": {"feature/local-sync": "run.json"}}
+        self.active_runs.write_text(json.dumps(index, indent=2) + "\n", encoding="utf-8")
+        git(self.root, "add", syncer.ACTIVE_RUNS_INDEX_PATH)
+        git(self.root, "commit", "-m", "feature run index")
+        self.head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "main")
+        main_index = {"schema_version": 1, "branches": {"maintenance/example": "other.json"}}
+        self.active_runs.write_text(json.dumps(main_index, indent=2) + "\n", encoding="utf-8")
+        git(self.root, "add", syncer.ACTIVE_RUNS_INDEX_PATH)
+        git(self.root, "commit", "-m", "main run index")
+        self.new_main = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        git(self.root, "switch", "feature/local-sync")
+        result = syncer.sync(self.plan())
+        merged = json.loads(self.active_runs.read_text(encoding="utf-8"))
+        self.assertEqual(
+            merged["branches"],
+            {
+                "feature/local-sync": "run.json",
+                "maintenance/example": "other.json",
+            },
+        )
+        self.assertEqual(result.metadata_conflicts, (syncer.ACTIVE_RUNS_INDEX_PATH,))
+        self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
+
+    def test_main_equivalent_path_becomes_empty_without_losing_responsibility(self) -> None:
+        (self.root / "equivalent.txt").write_text("same\n", encoding="utf-8")
+        git(self.root, "add", "equivalent.txt")
+        git(self.root, "commit", "-m", "feature equivalent change")
+        self.head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "main")
+        (self.root / "equivalent.txt").write_text("same\n", encoding="utf-8")
+        git(self.root, "add", "equivalent.txt")
+        git(self.root, "commit", "-m", "main equivalent change")
+        self.new_main = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        git(self.root, "switch", "feature/local-sync")
+        result = syncer.sync(self.plan())
+        self.assertEqual(result.main_equivalent_paths, ("equivalent.txt",))
+        self.assertNotIn(
+            "equivalent.txt",
+            git(self.root, "diff", "--name-only", f"{self.new_main}..{result.head}").stdout.splitlines(),
+        )
+        self.assertTrue((self.root / "feature.txt").is_file())
+
     def squash_dependency(self) -> dict:
         dependency = self.head
         (self.root / "topic.txt").write_text("topic\n", encoding="utf-8")
@@ -108,6 +164,74 @@ class SafeBranchSyncMainTest(unittest.TestCase):
                          git(self.root, "rev-parse", f"{self.head}^{{tree}}").stdout)
         self.assertEqual(len(git(self.root, "rev-list", f"{self.new_main}..HEAD").stdout.splitlines()), 1)
         self.assertEqual(git(self.root, "bundle", "verify", str(plan.recovery_bundle)).returncode, 0)
+
+    def covered_prefix(self) -> dict:
+        covered_prefix = self.head
+        (self.root / "prefix.txt").write_text("prefix\n", encoding="utf-8")
+        git(self.root, "add", "prefix.txt")
+        git(self.root, "commit", "-m", "prefix second commit")
+        covered_prefix = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        (self.root / "tail.txt").write_text("tail\n", encoding="utf-8")
+        git(self.root, "add", "tail.txt")
+        git(self.root, "commit", "-m", "unintegrated tail")
+        self.head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "main")
+        git(self.root, "merge", "--squash", covered_prefix)
+        git(self.root, "commit", "-m", "squash integrated prefix")
+        integrated = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        self.new_main = integrated
+        git(self.root, "switch", "feature/local-sync")
+        return {
+            "covered_prefix": covered_prefix,
+            "covered_merge": integrated,
+            "allow_extended_history": True,
+            "expected_commit_count": 1,
+        }
+
+    def test_covered_squash_prefix_replays_only_unintegrated_tail(self) -> None:
+        args = self.covered_prefix()
+        plan = self.plan(**args)
+        self.assertEqual(plan.replay_base, args["covered_prefix"])
+        self.assertEqual(plan.commit_count, 1)
+        self.assertEqual(plan.paths, ("tail.txt",))
+        result = syncer.sync(plan)
+        self.assertEqual(
+            git(self.root, "diff", "--name-only", f"{self.new_main}..{result.head}").stdout.splitlines(),
+            ["tail.txt"],
+        )
+        self.assertEqual(git(self.root, "merge-base", "HEAD", "origin/main").stdout.strip(), self.new_main)
+        self.assertEqual(git(self.root, "bundle", "verify", str(plan.recovery_bundle)).returncode, 0)
+
+    def test_covered_squash_prefix_requires_pair_extended_and_file_coverage(self) -> None:
+        args = self.covered_prefix()
+        with self.assertRaisesRegex(syncer.SyncError, "supplied together"):
+            self.plan(covered_prefix=args["covered_prefix"])
+        with self.assertRaisesRegex(syncer.SyncError, "extended frozen sync"):
+            self.plan(
+                covered_prefix=args["covered_prefix"],
+                covered_merge=args["covered_merge"],
+            )
+        with self.assertRaisesRegex(syncer.SyncError, "single-parent"):
+            self.plan(**{**args, "covered_merge": self.old_base})
+        git(self.root, "switch", "main")
+        git(self.root, "reset", "--hard", self.old_base)
+        (self.root / "unrelated.txt").write_text("unrelated\n", encoding="utf-8")
+        git(self.root, "add", "unrelated.txt")
+        git(self.root, "commit", "-m", "unrelated merge")
+        unrelated = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "--force", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        git(self.root, "switch", "feature/local-sync")
+        with self.assertRaisesRegex(syncer.SyncError, "every prefix path"):
+            self.plan(
+                **{
+                    **args,
+                    "expected_main": unrelated,
+                    "covered_merge": unrelated,
+                }
+            )
 
     def test_squash_dependency_rejects_incomplete_and_incorrect_pr_identity(self) -> None:
         args = self.squash_dependency()
@@ -359,7 +483,10 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             expected_commit_count=commit_count,
         )
         result = syncer.sync(plan)
-        self.assertEqual(result.generated_evidence_conflicts, syncer.GENERATED_EVIDENCE_CONFLICT_PATHS)
+        self.assertEqual(
+            result.generated_evidence_conflicts,
+            (syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0],),
+        )
         self.assertEqual(self.generated_evidence.read_text(encoding="utf-8"), "main-generated\n")
         self.assertEqual((self.root / "generated-side.txt").read_text(encoding="utf-8"), "feature-side\n")
 
@@ -394,7 +521,10 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             git(self.root, "rev-list", f"{extended_main}..{result.head}").stdout.splitlines()
         )
         self.assertEqual(replayed_count, commit_count - 1)
-        self.assertEqual(result.generated_evidence_conflicts, syncer.GENERATED_EVIDENCE_CONFLICT_PATHS)
+        self.assertEqual(
+            result.generated_evidence_conflicts,
+            (syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0],),
+        )
         self.assertEqual(
             self.generated_evidence.read_text(encoding="utf-8"),
             "main-generated-authority\n",
@@ -492,7 +622,7 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
 
     def test_rebase_outcome_distinguishes_success_from_unresolved_conflict(self) -> None:
-        self.assertEqual(syncer.run_rebase(self.plan()), (False, ()))
+        self.assertEqual(syncer.run_rebase(self.plan()), (False, (), ()))
         git(self.root, "reset", "--hard", self.head)
         (self.root / "base.txt").write_text("feature-change\n", encoding="utf-8")
         git(self.root, "add", "base.txt")

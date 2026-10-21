@@ -439,6 +439,8 @@ class RepositoryInvariantTest(unittest.TestCase):
             self.assertTrue(is_prose(rel), rel)
         self.assertFalse(is_prose("scripts/audit/verification_lane_coverage.py"))
         self.assertFalse(is_prose("make/ci.mk"))
+        self.assertTrue(is_prose("config/frontend/probe_toolchain_registry.json"))
+        self.assertTrue(is_prose("make/probe_toolchain.mk"))
         self.assertTrue(is_prose("docs/ops/iterations/example.md"))
         self.assertTrue(is_prose(".agent/runs/example/run.json"))
 

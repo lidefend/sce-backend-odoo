@@ -6,6 +6,7 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 import re
 from typing import Any, Dict
+from odoo.addons.smart_core.core.error_state_contract import build_error_state_contract
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
 from odoo.addons.smart_core.core.page_contract_semantic_orchestration_bridge import (
     apply_page_contract_semantic_orchestration_bridge,
@@ -795,6 +796,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
     role_source_code = _resolve_role_source_code(safe_data)
     role_code = _normalize_role_code(safe_data)
     payload = {
+        "error_states": build_error_state_contract(),
         "contract_version": "2.0.0",
         "schema_version": "2.0.0",
         "source_authority": source_authority_contract(),
@@ -936,6 +938,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 ],
                 "texts": {
                     "title": "登录",
+                    "session_expired_notice": "登录状态已过期，请重新登录。验证成功后将尝试返回原页面；无法访问时显示原因，并提供安全返回入口。",
                     "brand_name": "业务管理平台",
                     "brand_subtitle": "企业业务协同管理系统",
                     "brand_slogan": "让业务透明 · 让流程可控 · 让协同高效 · 让风险可预警",
@@ -1838,4 +1841,4 @@ def build_public_auth_page_contracts() -> Dict[str, Any]:
                 "data_sources": data_sources,
             },
         }
-    return {"schema_version": "1.0.0", "pages": pages}
+    return {"schema_version": "1.0.0", "pages": pages, "error_states": build_error_state_contract()}

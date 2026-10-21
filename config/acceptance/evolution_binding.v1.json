@@ -17,7 +17,11 @@
         "make ci.professional.backend.shard-verify",
         "backend_impact_suite"
       ],
-      "evidence": null
+      "evidence": null,
+      "stages": [
+        "merge",
+        "deployment"
+      ]
     },
     "frontend_contract": {
       "description": "前端组件、契约消费与发布单测",
@@ -25,14 +29,22 @@
         "make verify.frontend.pr.unit",
         "make verify.frontend.release.unit"
       ],
-      "evidence": null
+      "evidence": null,
+      "stages": [
+        "merge",
+        "deployment"
+      ]
     },
     "governance_static": {
       "description": "静态守卫、结构锁与治理清单",
       "entrypoints": [
         "make verify.contract.architecture.suite"
       ],
-      "evidence": null
+      "evidence": null,
+      "stages": [
+        "merge",
+        "deployment"
+      ]
     },
     "daily_runtime_entry": {
       "description": "日常入口、双实例分流、发布身份与 Odoo 运行态验收",
@@ -61,7 +73,10 @@
           "serving_application_reads_the_deployed_revision",
           "platform_application_reads_the_deployed_revision"
         ]
-      }
+      },
+      "stages": [
+        "deployment"
+      ]
     },
     "path_namespace_identity": {
       "description": "路径命名空间身份、跨域重放、退出与公司边界",
@@ -95,7 +110,10 @@
           "platform_token_survives_demo_logout",
           "unauthorized_company_is_refused"
         ]
-      }
+      },
+      "stages": [
+        "deployment"
+      ]
     },
     "list_surface_structure": {
       "description": "列表页结构、几何与运行时错误浏览器验收",
@@ -109,7 +127,11 @@
           "gated_total": 108,
           "negative_fixtures_total": 5
         }
-      }
+      },
+      "stages": [
+        "merge",
+        "deployment"
+      ]
     },
     "relation_roundtrip": {
       "description": "关系字段回环、入口与操作恢复浏览器验收",
@@ -122,7 +144,11 @@
           "declared_entry_count": 13,
           "declared_openable": 4
         }
-      }
+      },
+      "stages": [
+        "merge",
+        "deployment"
+      ]
     }
   },
   "rules": [
@@ -184,7 +210,8 @@
       ],
       "suites": [
         "governance_static",
-        "path_namespace_identity"
+        "path_namespace_identity",
+        "list_surface_structure"
       ]
     },
     {

@@ -42,7 +42,7 @@ run 中的每项检查可以声明 `depends_on: ["another_check_id"]`。引用�
 `make pr.merge PR=<n> EXPECTED_HEAD=<full_sha>` 的顺序为：
 
 1. 读取真实开放、同仓、目标 main 的 PR source/base，核对本地精确 HEAD 与 clean 状态。
-2. 直接以实际 source/base 计算全部必需套件并验证证据。`BASE_SHA`、`HEAD_SHA` 或调用者选择的基线不能缩减合并范围。缺本地目标提交时拒绝，先通过现有允许的同步入口恢复。
+2. 直接以实际 source/base 计算全部影响套件，并验证其中 merge 阶段必需证据。`BASE_SHA`、`HEAD_SHA` 或调用者选择的基线不能缩减合并范围。缺本地目标提交时拒绝，先通过现有允许的同步入口恢复。
 3. 前提通过后，才复用有效 Quick 或执行原有 Quick 后备路径。Make recipe 保证 `-j` 也不能并发越过前提。
 4. Quick 后重新读取 source/base 并验证证据，漂移或证据改变即拒绝；随后沿用受保护 PR 合并及 head 绑定。
 
@@ -74,3 +74,14 @@ run 中的每项检查可以声明 `depends_on: ["another_check_id"]`。引用�
 已有正式证据完成 `make acceptance.evolution.record` 登记后，可用
 `make acceptance.evolution.verify` 单独检查当前验收清单，定位格式、哈希、时效与缺项问题。
 这是保留的验收诊断入口；调用者必须确认其评估基线，不能以它替代读取真实 PR 身份的合并预检。
+
+## 合并与部署的运行时证据边界
+
+套件在 `evolution_binding.v1.json` 声明 `stages`。PR 入口固定评估 merge，调用者不能
+通过 stage 或环境变量改成更宽松的阶段。默认诊断仍评估全部套件。
+`daily_runtime_entry` 与 `path_namespace_identity` 验证已部署服务器版本、双实例和会话
+隔离，属于 deployment；合并报告将其列为 `deferred_evidence/not_run`，不计作通过。
+部署前必须以 `validation_delivery_plan.py --stage deployment --require-ready` 核对
+该阶段全部证据；本工具不授权或执行部署。列表结构与关系往返仍约束 merge 和 deployment。
+隔离验收入口变更同时选择列表运行验证，通过受管环境与 served identity 校验本地入口；
+远端服务器证明不能替代本地验收身份，通用发布审计不能冒充关系往返或列表负向断言。

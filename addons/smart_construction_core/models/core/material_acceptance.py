@@ -513,17 +513,6 @@ class ScMaterialPurchaseRequest(models.Model):
             record.with_context(skip_validation_check=True)._write_purchase_request_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
             record._sc_audit_material_transition("material_purchase_request_rejected", before, record._sc_material_audit_payload(), action_name="action_on_tier_rejected")
 
-    def init(self):
-        self.env.cr.execute(
-            """
-            UPDATE sc_material_purchase_request request
-               SET business_category_id = category.id
-              FROM sc_business_category category
-             WHERE request.business_category_id IS NULL
-               AND category.code = 'material.purchase.request'
-               AND category.target_model = 'sc.material.purchase.request'
-            """
-        )
 
     @api.depends("line_ids.estimated_amount")
     def _compute_purchase_request_boundary_fields(self):
@@ -980,17 +969,6 @@ class ScMaterialAcceptance(models.Model):
             record.with_context(skip_validation_check=True)._write_acceptance_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
             record._sc_audit_material_transition("material_acceptance_approval_rejected", before, record._sc_material_audit_payload(), action_name="action_on_tier_rejected")
 
-    def init(self):
-        self.env.cr.execute(
-            """
-            UPDATE sc_material_acceptance acceptance
-               SET business_category_id = category.id
-              FROM sc_business_category category
-             WHERE acceptance.business_category_id IS NULL
-               AND category.code = 'material.acceptance'
-               AND category.target_model = 'sc.material.acceptance'
-            """
-        )
 
     @api.model
     def _apply_purchase_request_defaults(self, vals):
@@ -1576,26 +1554,6 @@ class ScMaterialInbound(models.Model):
             record.with_context(skip_validation_check=True)._write_inbound_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
             record._sc_audit_material_transition("material_inbound_rejected", before, record._sc_material_audit_payload(), action_name="action_on_tier_rejected")
 
-    def init(self):
-        self.env.cr.execute(
-            """
-            UPDATE sc_material_inbound inbound
-               SET business_category_id = category.id
-              FROM sc_business_category category
-             WHERE inbound.business_category_id IS NULL
-               AND category.code = 'material.inbound'
-               AND category.target_model = 'sc.material.inbound'
-            """
-        )
-        self.env.cr.execute(
-            """
-            UPDATE sc_material_inbound inbound
-               SET project_name_display = COALESCE(project.name->>'zh_CN', project.name->>'en_US')
-              FROM project_project project
-             WHERE inbound.project_id = project.id
-               AND inbound.project_name_display IS NULL
-            """
-        )
 
     @api.onchange("warehouse_id")
     def _onchange_warehouse_id(self):
@@ -1952,22 +1910,6 @@ class ScMaterialOutbound(models.Model):
             raise UserError(_("已提交或已出库的材料出库事实不可删除。"))
         return super().unlink()
 
-    def init(self):
-        self.env.cr.execute(
-            """
-            UPDATE sc_material_outbound outbound
-               SET business_category_id = category.id
-              FROM sc_business_category category
-             WHERE outbound.business_category_id IS NULL
-               AND category.code = CASE COALESCE(outbound.outbound_type, 'issue')
-                       WHEN 'return' THEN 'material.return'
-                       WHEN 'transfer' THEN 'material.transfer'
-                       WHEN 'loss' THEN 'material.loss'
-                       ELSE 'material.outbound'
-                   END
-               AND category.target_model = 'sc.material.outbound'
-            """
-        )
 
     def action_submit(self):
         self._sc_require_material_user(_("提交材料出库"))
@@ -2456,17 +2398,6 @@ class ScMaterialRfq(models.Model):
             record.with_context(skip_validation_check=True)._write_rfq_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
             record._sc_audit_material_transition("material_rfq_rejected", before, record._sc_material_audit_payload(), action_name="action_on_tier_rejected")
 
-    def init(self):
-        self.env.cr.execute(
-            """
-            UPDATE sc_material_rfq rfq
-               SET business_category_id = category.id
-              FROM sc_business_category category
-             WHERE rfq.business_category_id IS NULL
-               AND category.code = 'material.rfq'
-               AND category.target_model = 'sc.material.rfq'
-            """
-        )
 
     @api.depends("line_ids.supplier_id")
     def _compute_supplier_ids(self):
@@ -2992,17 +2923,6 @@ class ScMaterialSettlement(models.Model):
             record.with_context(skip_validation_check=True)._write_cost_source_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
             record._sc_audit_material_transition("material_settlement_rejected", before, record._sc_material_audit_payload(), action_name="action_on_tier_rejected")
 
-    def init(self):
-        self.env.cr.execute(
-            """
-            UPDATE sc_material_settlement settlement
-               SET business_category_id = category.id
-              FROM sc_business_category category
-             WHERE settlement.business_category_id IS NULL
-               AND category.code = 'material.settlement'
-               AND category.target_model = 'sc.material.settlement'
-            """
-        )
 
     def action_submit(self):
         self._sc_require_material_user(_("提交材料结算"))

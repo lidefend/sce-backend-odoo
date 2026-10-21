@@ -32,20 +32,41 @@ class TestBusinessConfigChangeSet(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        registration = cls.env["sc.tenant.company.registration"].sudo()._create_non_customer_space(
+            tenant_key="change-set-lifecycle-test", purpose="test", company_name="Change Set Test Space",
+        )
+        cls.env = cls.env["res.company"].with_company(registration.company_id).env
+        group_data = cls.env.ref("smart_core.group_smart_core_non_customer_data_user")
         group_user = cls.env.ref("base.group_user")
         group_config = cls.env.ref("smart_core.group_smart_core_business_config_admin")
         cls.admin = cls.env["res.users"].with_context(no_reset_password=True).create({
             "name": "Change Set Admin", "login": "change_set_admin", "email": "change-set-admin@example.test",
-            "groups_id": [(6, 0, [group_user.id, group_config.id])],
+            "groups_id": [(6, 0, [group_user.id, group_config.id, group_data.id])],
         })
         cls.other_admin = cls.env["res.users"].with_context(no_reset_password=True).create({
             "name": "Other Change Set Admin", "login": "other_change_set_admin", "email": "other-change-set-admin@example.test",
-            "groups_id": [(6, 0, [group_user.id, group_config.id])],
+            "groups_id": [(6, 0, [group_user.id, group_config.id, group_data.id])],
         })
         cls.ordinary = cls.env["res.users"].with_context(no_reset_password=True).create({
             "name": "Ordinary User", "login": "ordinary_change_set_user", "email": "ordinary-change-set@example.test",
-            "groups_id": [(6, 0, [group_user.id])],
+            "groups_id": [(6, 0, [group_user.id, group_data.id])],
         })
+
+    def test_retired_migration_context_cannot_bypass_publication_validation(self):
+        Contract = self.env["ui.business.config.contract"].with_context(
+            contract_lifecycle_migration_reseal=True,
+        )
+        with patch.object(type(Contract), "_runtime_contract_validation", return_value={
+            "valid": False, "reason_codes": ["TEST_INVALID_RUNTIME_CONTRACT"],
+        }):
+            with self.assertRaisesRegex(ValidationError, "TEST_INVALID_RUNTIME_CONTRACT"), self.env.cr.savepoint():
+                Contract.create({
+                    "name": "test.retired.migration.context", "model": "res.partner", "view_type": "form",
+                    "company_id": self.env.company.id, "status": "published",
+                    "contract_json": {"view_orchestration": {"context": {"source_status": "product_release"},
+                        "views": {"form": {"columns": 2}}}},
+                })
+        self.assertFalse(Contract.search([("name", "=", "test.retired.migration.context")]))
 
     def test_role_only_write_cannot_retarget_published_layout(self):
         contract = self.env["ui.business.config.contract"].create({
@@ -334,7 +355,7 @@ class TestBusinessConfigChangeSet(TransactionCase):
         original_payload = self._payload("name")
         contract = env["ui.business.config.contract"].sudo().create({
             "name": target, "model": "res.partner", "view_type": "form",
-            "role_key": "config_admin", "company_id": env.company.id, "action_id": action.id, "view_id": view.id,
+            "role_key": False, "company_id": env.company.id, "action_id": action.id, "view_id": view.id,
             "contract_json": original_payload, "status": "published",
         })
         opened_definition = contract.definition_sha256
@@ -479,7 +500,7 @@ class TestBusinessConfigChangeSet(TransactionCase):
         payload = self._payload()
         contract = env["ui.business.config.contract"].sudo().create({
             "name": "test.change.set.roundtrip", "model": "res.partner", "view_type": "form",
-            "role_key": "config_admin", "company_id": env.company.id,
+            "role_key": False, "company_id": env.company.id,
             "contract_json": payload, "status": "published",
         })
         staged = BusinessConfigChangeSetStageHandler(env).handle(payload={"params": {
@@ -512,7 +533,7 @@ class TestBusinessConfigChangeSet(TransactionCase):
         target = "test.change.set.designer.concurrency"
         contract = env["ui.business.config.contract"].sudo().create({
             "name": target, "model": "res.partner", "view_type": "form",
-            "company_id": env.company.id, "role_key": "config_admin", "contract_json": self._payload(),
+            "company_id": env.company.id, "role_key": False, "contract_json": self._payload(),
         })
         opened_hash = contract.definition_sha256
         contract.write({"priority": contract.priority + 1})
@@ -616,7 +637,7 @@ class TestBusinessConfigChangeSet(TransactionCase):
         view = self.env["ir.ui.view"].sudo().search([("model", "=", "res.partner"), ("type", "=", "form")], limit=1)
         contract = self.env["ui.business.config.contract"].sudo().create({
             "name": "test.change.set.preview.existing", "model": "res.partner", "view_type": "form",
-            "action_id": action.id, "view_id": view.id, "role_key": "config_admin",
+            "action_id": action.id, "view_id": view.id, "role_key": False,
             "company_id": self.env.company.id, "contract_json": self._payload("name"), "status": "published",
         })
         staged = BusinessConfigChangeSetStageHandler(env).handle(payload={"params": {

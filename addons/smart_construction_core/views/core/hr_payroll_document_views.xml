@@ -90,6 +90,9 @@
             <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done,cancel"/>
           </header>
           <sheet>
+            <div class="alert alert-info" role="status" invisible="not processing_advisory">
+              <field name="processing_advisory" readonly="1" nolabel="1"/>
+            </div>
             <group>
               <group name="payroll_application_info" data-sc-anchor="payroll_application_info" string="申请信息">
                 <field name="document_no"/>
@@ -167,7 +170,7 @@
                    record that was not migrated has none of them, so the section is
                    present only when there is something to read and never renders as
                    an empty titled group. -->
-              <group name="payroll_source_trace" data-sc-anchor="payroll_source_trace" string="历史来源" invisible="not legacy_document_no">
+              <group name="payroll_source_trace" data-sc-anchor="payroll_source_trace" string="历史来源" invisible="not legacy_document_no" groups="smart_construction_core.group_sc_cap_config_admin">
                 <field name="legacy_document_no" readonly="1"/>
                 <field name="legacy_document_state" readonly="1"/>
                 <field name="legacy_source_table" readonly="1"/>
@@ -313,6 +316,9 @@
             <field name="state" widget="statusbar" statusbar_visible="draft,submitted,confirmed"/>
           </header>
           <sheet>
+            <div class="alert alert-info" role="status" invisible="not processing_advisory">
+              <field name="processing_advisory" readonly="1" nolabel="1"/>
+            </div>
             <group>
               <group name="salary_payment_identity" data-sc-anchor="salary_payment_identity" string="发放标识">
                 <field name="name" readonly="1"/>

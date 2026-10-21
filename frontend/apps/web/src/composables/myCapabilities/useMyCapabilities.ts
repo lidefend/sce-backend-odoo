@@ -1,8 +1,8 @@
 import { computed, ref } from 'vue';
-import type { ProductCapabilityItem } from '../../api/productCapabilityCatalog';
+import type { UserCapabilityItem } from '../../api/productCapabilityCatalog';
 import {
   isProductCapabilityCatalogGap,
-  projectCapabilities,
+  projectUserCapabilities,
 } from '../../app/productCapabilityCatalogProjection';
 import { useSessionStore } from '../../stores/session';
 
@@ -11,12 +11,13 @@ export function useMyCapabilities() {
   const loading = ref(false);
   const error = ref('');
   const gap = ref('');
-  const capabilities = ref<ProductCapabilityItem[]>([]);
+  const emptyMessage = ref('');
+  const capabilities = ref<UserCapabilityItem[]>([]);
 
   const byEntry = computed(() => {
-    const map = new Map<string, ProductCapabilityItem[]>();
+    const map = new Map<string, UserCapabilityItem[]>();
     for (const row of capabilities.value) {
-      const key = row.entry || row.audience || 'other';
+      const key = row.entry;
       const rows = map.get(key) || [];
       rows.push(row);
       map.set(key, rows);
@@ -31,7 +32,9 @@ export function useMyCapabilities() {
     gap.value = '';
     try {
       await session.loadProductCapabilityCatalog();
-      capabilities.value = projectCapabilities(session.productCapabilityCatalog);
+      const surface = projectUserCapabilities(session.productCapabilityCatalog);
+      capabilities.value = surface.items;
+      emptyMessage.value = surface.empty_message;
     } catch (err) {
       capabilities.value = [];
       if (isProductCapabilityCatalogGap(err)) {
@@ -49,6 +52,7 @@ export function useMyCapabilities() {
     error,
     gap,
     capabilities,
+    emptyMessage,
     byEntry,
     load,
   };

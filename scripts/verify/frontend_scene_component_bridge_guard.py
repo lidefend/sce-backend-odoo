@@ -3115,6 +3115,11 @@ _MAKE_DIRECTIVES = frozenset(
 
 def _rule_name_part(line: str) -> str | None:
     """The target-name portion of a make rule line, or `None` if it is not a rule."""
+    # A pure standalone error diagnostic terminates Make parsing; its message
+    # cannot define a rule. Do not exempt nested expansions (notably eval), or
+    # a diagnostic followed by a real rule separator.
+    if re.fullmatch(r"\$\(error\s+[^$()]*\)", line.strip()):
+        return None
     index = 0
     while True:
         colon = line.find(":", index)
@@ -4401,6 +4406,27 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
         ),
         _collaboration_module(),
         _collaboration_makefile(),
+        False,
+    ),
+    (
+        "pure Make error diagnostic contains a message colon",
+        _collaboration_host(),
+        _collaboration_module(),
+        _collaboration_makefile() + "\n$(error unavailable: use the governed entry)\n",
+        True,
+    ),
+    (
+        "Make error expansion followed by a rule is not exempt",
+        _collaboration_host(),
+        _collaboration_module(),
+        _collaboration_makefile() + "\n$(error unavailable):\n\t@true\n",
+        False,
+    ),
+    (
+        "nested eval in an error diagnostic is not exempt",
+        _collaboration_host(),
+        _collaboration_module(),
+        _collaboration_makefile() + "\n$(error $(eval $(B6T):;@true))\n",
         False,
     ),
     # rejected: reach-arounds at the make layer

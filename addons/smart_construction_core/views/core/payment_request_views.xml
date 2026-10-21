@@ -75,6 +75,7 @@
                         </div>
                         <group>
                             <group string="申请识别与状态">
+                                <field name="submission_readiness_display" readonly="1" invisible="state not in ['draft', 'rejected']"/>
                                 <field name="business_category_id" options="{'no_create': True}" readonly="state not in ['draft', 'rejected']"/>
                                 <field name="payment_flow_label" readonly="1"/>
                                 <field name="state" readonly="1"/>

@@ -1,3 +1,4 @@
+import '../../../../scripts/verify/lib/probe_toolchain_blocked.mjs';
 import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import path from "node:path";

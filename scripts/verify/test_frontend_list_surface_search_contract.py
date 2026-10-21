@@ -26,6 +26,11 @@ EMPTY_CONTRACT = '[data-semantic-component="ScEmptyState"][data-state="empty"]'
 CONTENT_CONTRACT = '[data-collection-presentation="table"]'
 
 
+def route_helpers(source, prefix=''):
+    body = source.split('function relativeRoutePath(')[1].split('function pageComparableRoute(')[0]
+    return 'const BASE_PATH=' + json.dumps(prefix) + ';\nfunction relativeRoutePath(' + body
+
+
 def validate_search_probe(probe, toolbar, empty_state, header, list_page):
     """Reject a probe that assumes interactions or product hooks that are not declared."""
     assert "press('Enter')" not in probe, 'the list search must submit through the declared control'
@@ -216,12 +221,22 @@ for (const key of ['model','recordId','actionId','menuId']) assert(!dailyDetailC
 assert(!dailyDetailContractMatches({...contract,response:{ok:false,data:contract.response.data}},expected));
 
 """
+        result = subprocess.run(['node', '-e', route_helpers(self.probe) + program], capture_output=True, text=True, cwd=ROOT)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_route_normalization_preserves_namespace_boundary(self):
+        program = route_helpers(self.probe, '/t/test') + """
+const assert = require('node:assert/strict');
+assert.equal(relativeRoutePath('/t/test'), '/');
+assert.equal(relativeRoutePath('/t/test/api/v1/intent'), '/api/v1/intent');
+assert.equal(relativeRoutePath('/t/test-other/api/v1/intent'), '/t/test-other/api/v1/intent');
+"""
         result = subprocess.run(['node', '-e', program], capture_output=True, text=True, cwd=ROOT)
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def run_record_probe_helpers(self, assertions):
         source = self.probe.split('function dailyActorContext(')[1].split('let browser,')[0]
-        result = subprocess.run(['node', '-e', "const assert = require('node:assert/strict');\nfunction dailyActorContext(" + source + assertions], capture_output=True, text=True, cwd=ROOT)
+        result = subprocess.run(['node', '-e', route_helpers(self.probe) + "const assert = require('node:assert/strict');\nfunction dailyActorContext(" + source + assertions], capture_output=True, text=True, cwd=ROOT)
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_record_renderer_profiles_and_identity_execute_real_helpers(self):
@@ -273,7 +288,11 @@ assert(!dailyRecordCheckSummary(checks.map((row,i)=>i===2?{...row,passed:false}:
 assert(!dailyRecordCheckSummary(checks.map(row=>({...row,viewport:'1440'})),viewports).complete);
 assert(!dailyRecordCheckSummary([],[]).complete);
 """)
-        self.assertIn('(!DAILY || recordSummary.complete)', self.probe)
+        self.assertIn('const passed = recordSummary.complete &&', self.probe)
+        self.assertIn('if (!WORKBENCH_ONLY && !FORM_PROFILES_ONLY)', self.probe)
+        self.assertIn('records: recordSummary', self.probe)
+        self.assertNotIn('if (DAILY && isIntent', self.probe)
+        self.assertNotIn('const dailyRuntime = DAILY ?', self.probe)
 
     def test_daily_record_summary_follows_the_contract_gate_shape(self):
         self.run_record_probe_helpers("""

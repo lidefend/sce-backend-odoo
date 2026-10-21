@@ -1,45 +1,30 @@
 #!/usr/bin/env python3
 import unittest
 from unittest.mock import patch
-
 import python_http_smoke_utils as utils
 
 
 class RuntimeProbeDatabaseRoutingTests(unittest.TestCase):
-    @patch.object(utils, "env_value")
-    @patch.object(utils, "http_post_json")
-    def test_login_routes_before_authentication(self, post_json, env_value):
-        values = {"E2E_LOGIN": "probe", "E2E_PASSWORD": "secret"}
-        env_value.side_effect = lambda key: values.get(key, "")
-        post_json.return_value = (200, {"ok": True, "data": {"session": {"token": "token"}}})
+    def test_wrong_actor_is_rejected(self):
+        with patch.object(utils, 'env_value', side_effect=lambda key: {'E2E_LOGIN':'probe','E2E_PASSWORD':'secret'}.get(key,'')), \
+                patch.object(utils, 'http_post_json', return_value=(200, {'ok':True,'data':{'session':{'token':'fixture-token'},'user':{'id':8,'login':'other'}}})):
+            with self.assertRaisesRegex(ValueError, 'principal mismatch'):
+                utils.obtain_runtime_probe_token('https://example.test/t/demo/api/v1/intent')
 
-        ok, token, source = utils.obtain_runtime_probe_token(
-            "http://localhost/api/v1/intent", "sc_product_center"
-        )
+    def test_missing_account_does_not_fall_back_to_bootstrap_secret(self):
+        with patch.object(utils, 'env_value', side_effect=lambda key: {'SC_BOOTSTRAP_LOGIN':'admin','SC_BOOTSTRAP_SECRET':'secret'}.get(key,'')), \
+                patch.object(utils, 'http_post_json') as post:
+            self.assertEqual(utils.obtain_runtime_probe_token('https://example.test/t/demo/api/v1/intent'), (False,'','unconfigured'))
+            post.assert_not_called()
 
-        self.assertTrue(ok)
-        self.assertEqual(token, "token")
-        self.assertEqual(source, "e2e_login")
-        self.assertEqual(post_json.call_args.kwargs["headers"]["X-Odoo-DB"], "sc_product_center")
-
-    @patch.object(utils, "env_value")
-    @patch.object(utils, "http_post_json")
-    def test_bootstrap_routes_before_authentication(self, post_json, env_value):
-        values = {
-            "SC_BOOTSTRAP_LOGIN": "admin",
-            "SC_BOOTSTRAP_SECRET": "secret",
-        }
-        env_value.side_effect = lambda key: values.get(key, "")
-        post_json.return_value = (200, {"ok": True, "data": {"session": {"token": "token"}}})
-
-        ok, _, source = utils.obtain_runtime_probe_token(
-            "http://localhost/api/v1/intent", "sc_product_center"
-        )
-
-        self.assertTrue(ok)
-        self.assertEqual(source, "dev_test_bootstrap")
-        self.assertEqual(post_json.call_args.kwargs["headers"]["X-Odoo-DB"], "sc_product_center")
+    def test_negative_auth_result_is_not_a_token(self):
+        with patch.object(utils, 'env_value', return_value='fixture'), \
+                patch.object(utils, 'http_post_json', return_value=(401, {'ok':False})):
+            with patch.dict(utils.os.environ, {}, clear=True):
+                # No company selection in this case.
+                utils.env_value.side_effect=lambda key: 'fixture' if key in {'E2E_LOGIN','E2E_PASSWORD'} else ''
+                self.assertEqual(utils.obtain_runtime_probe_token('https://example.test/t/demo/api/v1/intent'), (False,'','e2e_login'))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

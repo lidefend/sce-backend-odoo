@@ -28,7 +28,7 @@ def _login(intent_url: str, db_name: str, login: str, password: str) -> tuple[bo
         intent_url,
         None,
         "login",
-        {"db": db_name, "login": login, "password": password},
+        {"login": login, "password": password},
         anonymous=True,
     )
     if status >= 400 or not isinstance(payload, dict) or payload.get("ok") is not True:
@@ -229,7 +229,7 @@ def main() -> int:
         ok, cand_token = _login(intent_url, db_name, cand_login, cand_password)
         if ok and cand_token:
             tokens.append({"login": cand_login, "token": cand_token})
-    probe_ok, probe_token, probe_source = obtain_runtime_probe_token(intent_url, db_name)
+    probe_ok, probe_token, probe_source = obtain_runtime_probe_token(intent_url)
     if probe_ok and probe_token and all(row["token"] != probe_token for row in tokens):
         probe_login = env_value("SC_BOOTSTRAP_LOGIN") if probe_source == "dev_test_bootstrap" else env_value("E2E_LOGIN")
         tokens.append({"login": probe_login or probe_source, "token": probe_token})

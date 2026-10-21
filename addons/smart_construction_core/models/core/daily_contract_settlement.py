@@ -51,17 +51,6 @@ class ScSettlementOrder(models.Model):
         index=True,
     )
 
-    def init(self):
-        super().init()
-        self.env.cr.execute(
-            """
-            UPDATE sc_settlement_order
-               SET contract_source_kind = 'construction_contract'
-             WHERE contract_id IS NOT NULL
-               AND general_contract_id IS NULL
-               AND contract_source_kind IS NULL
-            """
-        )
 
     @api.depends(
         "contract_id",

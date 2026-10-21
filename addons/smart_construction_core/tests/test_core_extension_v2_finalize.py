@@ -153,8 +153,11 @@ class TestCoreExtensionV2Finalize(TransactionCase):
 
         callout = " ".join(arch.xpath("//sheet/div[contains(@class, 'alert')]/text()"))
         self.assertNotIn("自动保存", callout)
-        self.assertIn("保存修改", callout)
-        self.assertIn("提交立项", callout)
+        # The draft callout (保存修改/提交立项 alert) was retired in the
+        # fe-contract-runtime view refactor; the submit action is now the
+        # authoritative header button instead of an alert copy.
+        header_actions = arch.xpath("//form/header/button/@string")
+        self.assertIn("提交立项", header_actions)
 
     def test_project_maintenance_form_preserves_moved_field_constraints(self):
         base_view = self.env.ref("project.edit_project")
@@ -1206,6 +1209,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertIsInstance(projected, dict)
         self.assertEqual(projected["views"]["tree"]["columns"], data["list_profile"]["columns"])
         self.assertFalse(projected["list_profile"]["preference_policy"]["allow_order"])
+        self.assertFalse(projected["list_profile"]["preference_policy"]["allow_width"])
         self.assertEqual(projected["list_profile"]["preference_policy"]["locked_columns"], data["list_profile"]["columns"])
 
     def test_payment_request_formal_list_projects_page_and_total_amount_semantics(self):
@@ -1377,7 +1381,9 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         }
         self.assertTrue(declared, "提交立项 must declare its group authority")
 
-        method = type(self.env["project.project"]).action_sc_submit
+        model_type = type(self.env["project.project"])
+        self.assertIn("self._has_initiation_submit_access()", inspect.getsource(model_type.action_sc_submit))
+        method = model_type._has_initiation_submit_access
         enforced = set(
             re.findall(r'has_group\(\s*"([^"]+)"\s*\)', inspect.getsource(method))
         )

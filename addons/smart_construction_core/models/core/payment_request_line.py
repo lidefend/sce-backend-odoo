@@ -184,16 +184,6 @@ class PaymentRequestLine(models.Model):
                 raise ValidationError("付款申请明细的结算单与结算行不一致。")
             vals["settlement_id"] = canonical_id
 
-    def init(self):
-        self.env.cr.execute(
-            """
-            UPDATE payment_request_line payment_line
-               SET settlement_id = settlement_line.settlement_id
-              FROM sc_settlement_order_line settlement_line
-             WHERE payment_line.settlement_line_id = settlement_line.id
-               AND payment_line.settlement_id IS NULL
-            """
-        )
 
     @api.model_create_multi
     def create(self, vals_list):

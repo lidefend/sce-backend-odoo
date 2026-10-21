@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import './lib/probe_toolchain_blocked.mjs';
 /**
  * S4 browser evidence probe for the batch-C path namespace acceptance.
  *
