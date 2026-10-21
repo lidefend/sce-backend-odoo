@@ -892,6 +892,11 @@ acceptance.runtime.preflight: guard.prod.forbid
 acceptance.runtime.login_probe: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh login-probe
 
+.PHONY: acceptance.runtime.login_probe.internal
+acceptance.runtime.login_probe.internal: guard.prod.forbid
+	@test "$${SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY:-}" = operation_entry_v1
+	@python3 scripts/verify/frontend_acceptance_login_probe.py
+
 acceptance.runtime.infrastructure.restore: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh infrastructure-restore
 

@@ -5,7 +5,8 @@ frontend_acceptance_make() {
   for required in \
     COMPOSE_PROJECT_NAME ENV_FILE DB_USER DB_PASSWORD DB_NAME \
     ODOO_DBFILTER ODOO_PORT DB_DATA REDIS_DATA ODOO_DATA \
-    SC_ENVIRONMENT SC_ALLOW_DEMO_DATA; do
+    SC_ENVIRONMENT SC_ALLOW_DEMO_DATA \
+    SC_ENTRY_NAMESPACE SC_ENTRY_AUDIENCE SC_ENTRY_SHARED_SECRET SC_ENTRY_ROUTE_VERSION; do
     [[ -n "${!required:-}" ]] || {
       echo "[acceptance.make] DENY missing managed identity: $required" >&2
       return 2
@@ -41,6 +42,10 @@ frontend_acceptance_make() {
     "REDIS_DATA=$REDIS_DATA" \
     "ODOO_DATA=$ODOO_DATA" \
     "LIST_DB=false" \
+    "SC_ENTRY_NAMESPACE=$SC_ENTRY_NAMESPACE" \
+    "SC_ENTRY_AUDIENCE=$SC_ENTRY_AUDIENCE" \
+    "SC_ENTRY_SHARED_SECRET=$SC_ENTRY_SHARED_SECRET" \
+    "SC_ENTRY_ROUTE_VERSION=$SC_ENTRY_ROUTE_VERSION" \
     "SC_ENVIRONMENT=$SC_ENVIRONMENT" \
     "SC_ALLOW_DEMO_DATA=$SC_ALLOW_DEMO_DATA" \
     "$@"

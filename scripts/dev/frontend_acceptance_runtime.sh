@@ -660,7 +660,8 @@ PYPROBE
   login-probe)
     preflight
     validate_backend_runtime
-    python3 "$ROOT_DIR/scripts/verify/frontend_acceptance_login_probe.py"
+    source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
+    frontend_acceptance_make acceptance.runtime.login_probe.internal
     ;;
   release-preflight)
     preflight

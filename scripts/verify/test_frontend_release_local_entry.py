@@ -370,6 +370,10 @@ load_profile
                 "ODOO_DATA": "sc-fe-release-123-1-odoo-data",
                 "SC_ENVIRONMENT": "acceptance",
                 "SC_ALLOW_DEMO_DATA": "1",
+                "SC_ENTRY_NAMESPACE": "acceptance",
+                "SC_ENTRY_AUDIENCE": "acceptance-audience",
+                "SC_ENTRY_SHARED_SECRET": "acceptance-only",
+                "SC_ENTRY_ROUTE_VERSION": "acceptance-version",
                 "CAPTURE": str(capture),
                 "PATH": f"{root}:{os.environ['PATH']}",
             }
@@ -396,6 +400,25 @@ load_profile
                 self.assertIn("DB_DATA=sc-fe-release-123-1-db-data", call)
                 self.assertIn("REDIS_DATA=sc-fe-release-123-1-redis-data", call)
                 self.assertIn("ODOO_DATA=sc-fe-release-123-1-odoo-data", call)
+
+            # Exercise real nested Make, whose included base assignments would
+            # otherwise override exported shell variables in its recipe.
+            makefile = root / "Makefile"
+            makefile.write_text(
+                "SC_ENTRY_SHARED_SECRET = unrelated-base\n"
+                "SC_ENTRY_ROUTE_VERSION = unrelated-version\n"
+                "outer:\n\t@$(MAKE) --no-print-directory inner\n"
+                "inner:\n\t@test \"$(SC_ENTRY_SHARED_SECRET)\" = acceptance-only\n"
+                "\t@test \"$(SC_ENTRY_ROUTE_VERSION)\" = acceptance-version\n"
+            )
+            real_env = {**clean_environment, **managed, "PATH": os.environ["PATH"]}
+            real_command = (
+                f'source "{ROOT / "scripts/common/frontend_acceptance_make_identity.sh"}"; '
+                "frontend_acceptance_make outer"
+            )
+            nested = subprocess.run(["bash", "-c", real_command], cwd=root,
+                                    env=real_env, capture_output=True, text=True)
+            self.assertEqual(nested.returncode, 0, nested.stderr)
 
             for drift in ({"ODOO_DB": "foreign"}, {"LIST_DB": "0"}):
                 capture.unlink(missing_ok=True)
