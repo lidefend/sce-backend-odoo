@@ -10,6 +10,58 @@ from scripts.verify.frontend_probe_toolchain_guard import ROOT, check, violation
 
 
 class ProbeToolchainTest(unittest.TestCase):
+    def test_relation_login_uses_observed_request_before_click(self):
+        source = (ROOT / 'scripts/verify/record_relation_roundtrip_acceptance.js').read_text()
+        start = source.index('async function login(page)')
+        login = source[start:source.index('async function waitForRecordSurface', start)]
+        program = """
+const vm = require('node:vm');
+const events = [];
+const page = {
+ goto: async url => { if (url !== 'https://example.invalid/t/test/login') throw Error(url); events.push('goto'); },
+ locator: selector => ({ nth: () => ({ fill: async () => {} }), fill: async () => {}, click: async () => events.push('click') })
+};
+const context = vm.createContext({ FRONTEND_URL: 'https://example.invalid/t/test', LOGIN: 'role', PASSWORD: 'synthetic',
+ authenticateBrowserProbe: async (p, login, submit) => { if (p !== page || login !== 'role') throw Error('identity'); events.push('observe'); await submit(); }, page });
+vm.runInContext(process.argv[1], context);
+context.login(page).then(() => {
+ if (events.join(',') !== 'goto,observe,click') throw Error(events.join(','));
+}).catch(e => { console.error(e.message); process.exitCode = 1; });
+"""
+        result = subprocess.run(['node', '-e', program, login], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(violations(source), [])
+
+    def test_relation_lease_releases_on_probe_failure_and_success(self):
+        source = (ROOT / 'scripts/verify/record_relation_roundtrip_acceptance.js').read_text()
+        start = source.index('async function main()')
+        main = source[start:source.index('async function runProbe', start)].replace('await import(', 'await importStub(')
+        program = """
+const vm = require('node:vm');
+(async () => {
+ for (const fail of [false, true]) {
+  const events = [];
+  const environment = {};
+  const modules = {
+   './lib/frontend_acceptance_environment.mjs': { resolveAcceptanceEnvironment: () => environment },
+   './frontend_authenticated_intent.mjs': { authenticateBrowserProbe: () => {} },
+   './lib/frontend_acceptance_lease.mjs': { acquireAcceptanceLease: async args => {
+    if (args.environment !== environment || args.mode !== 'shared-read') throw Error('lease scope');
+    events.push('acquire'); return { release: async () => events.push('release') };
+   }}
+  };
+  const context = vm.createContext({ importStub: async name => modules[name],
+   runProbe: async () => { events.push('probe'); if (fail) throw Error('expected'); } });
+  vm.runInContext(process.argv[1], context);
+  try { await context.main(); if (fail) throw Error('failure swallowed'); }
+  catch (e) { if (!fail || e.message !== 'expected') throw e; }
+  if (events.join(',') !== 'acquire,probe,release') throw Error(events.join(','));
+ }
+})().catch(e => { console.error(e.message); process.exitCode = 1; });
+"""
+        result = subprocess.run(['node', '-e', program, main], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_execution_detection_excludes_static_and_package_operations(self):
         name = 'scripts/ops/production_acceptance_harness.py'
         for command in [f'python3 -m py_compile {name}', f'scp {name} host:/tmp/',

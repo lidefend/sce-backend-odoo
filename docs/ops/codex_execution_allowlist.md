@@ -1075,3 +1075,10 @@ operation entry、受管嵌套 Make 和真实 HTTP 登录复用隔离入口声�
 浏览器矩阵。HTTP 登录会创建验收会话；成功仅证明登录链路，不替代发布验收或权限测试。
 内部 `acceptance.runtime.login_probe.internal` 只能由 operation entry 调用，禁止手工拼接
 数据库、入口签名或凭据来绕过身份校验。
+
+隔离浏览器验收前，`make acceptance.runtime.contract_receipt SC_ACCEPTANCE_RUNTIME_PROFILE=local`
+复用既有 5180 预览、sc_frontend_acceptance 和 fixture 凭据，解析受管记录身份并生成
+当前 clean 候选的契约回执；只执行运行身份及声明契约断言，不代表完整发布审计。
+随后 `make verify.frontend.relation_roundtrip.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local`
+在同一预览以财务 fixture 账号验证声明关系打开与返回恢复。两者不创建或重置数据库；
+只创建认证会话和本地证据，禁止生产环境。列表仍用现有受管入口及契约前置。

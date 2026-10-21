@@ -75,11 +75,11 @@ Generated from repository source files. This report is informational during the 
 | 1553 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
+| 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1521 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
-| 1516 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1501 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
-| 700 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
+| 734 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 
@@ -162,11 +162,11 @@ Generated from repository source files. This report is informational during the 
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
 | 962 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
+| 953 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 932 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
-| 914 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 908 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
@@ -295,9 +295,9 @@ Generated from repository source files. This report is informational during the 
 | 1553 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | split_plan_required | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1538 | split_plan_required | Python source | `scripts/ops/agent_dispatch_inbox.py` |
+| 1527 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1521 | split_plan_required | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1521 | split_plan_required | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
-| 1516 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1501 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1491 | warning | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |

@@ -110,6 +110,11 @@ def load_registry(path: Path) -> dict:
     for suite_id, suite in suites.items():
         if not isinstance(suite, dict):
             raise BindingError(f"suite {suite_id!r} must be an object")
+        stages = suite.get("stages", ["merge", "deployment"])
+        if (not isinstance(stages, list) or not stages
+                or any(stage not in {"merge", "deployment"} for stage in stages)
+                or len(set(stages)) != len(stages)):
+            raise BindingError(f"suite {suite_id!r} has invalid stages")
         entrypoints = suite.get("entrypoints")
         if not isinstance(entrypoints, list) or not entrypoints:
             raise BindingError(f"suite {suite_id!r} needs at least one entrypoint")

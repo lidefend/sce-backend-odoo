@@ -754,6 +754,45 @@ class CanonicalNavigationTest(unittest.TestCase):
         self.assertIn('canonical_navigation_nav_missing_or_invalid', self.probe(None)['errors'])
 
 
+class EntryBoundContractSessionTest(unittest.TestCase):
+    def test_root_and_prefixed_entries_use_intent_without_database_hints(self):
+        for base in ('https://example.test', 'https://example.test/t/demo'):
+            session = MODULE._HttpSession(base, 'synthetic_db')
+            body = json.dumps({'ok': True, 'data': {'session': {'token': 'synthetic-token'}, 'user': {'id': 7}}})
+            with mock.patch.object(session, 'post', return_value=(200, body)) as post:
+                status, result = session.login('reader', 'synthetic')
+            self.assertEqual(status, 200)
+            self.assertEqual(post.call_args.args[0], '/api/v1/intent')
+            self.assertNotIn('db', post.call_args.args[1]['params'])
+            self.assertEqual(session._headers(), {'Content-Type': 'application/json', 'Authorization': 'Bearer synthetic-token'})
+            self.assertEqual(json.loads(result)['result']['uid'], 7)
+
+    def test_contract_only_stops_before_auth_on_bad_runtime(self):
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(MODULE.sys, 'argv', ['probe', '--contract-only', '--base-url', 'https://example.test', '--db-name', 'synthetic', '--expected-sha', SHA, '--output', folder+'/receipt.json']), \
+             mock.patch.object(MODULE, 'probe_runtime_identity', return_value={'status': 'FAIL'}), \
+             mock.patch.object(MODULE, 'probe_contract_acceptance') as contract, \
+             mock.patch.object(MODULE, 'probe_frontend') as frontend, \
+             mock.patch.object(MODULE, 'probe_login') as login, mock.patch('builtins.print'):
+            self.assertEqual(MODULE.main(), 1)
+            contract.assert_not_called(); frontend.assert_not_called(); login.assert_not_called()
+            self.assertEqual(json.loads(Path(folder+'/receipt.json').read_text())['status'], 'FAIL')
+
+    def test_contract_only_never_implies_release_or_navigation_pass(self):
+        for status in ('PASS', 'FAIL'):
+            with tempfile.TemporaryDirectory() as folder, \
+                 mock.patch.object(MODULE.sys, 'argv', ['probe', '--contract-only', '--base-url', 'https://example.test', '--db-name', 'synthetic', '--expected-sha', SHA, '--output', folder+'/receipt.json', '--contract-output', folder+'/explicit-contract.json']), \
+                 mock.patch.object(MODULE, 'probe_runtime_identity', return_value={'status': 'PASS', 'served_sha': SHA}), \
+                 mock.patch.object(MODULE, 'probe_contract_acceptance', return_value={'status': status}) as contract, \
+                 mock.patch.object(MODULE, 'probe_frontend') as frontend, \
+                 mock.patch.object(MODULE, 'probe_login') as login, mock.patch('builtins.print'):
+                self.assertEqual(MODULE.main(), 0 if status == 'PASS' else 1)
+                self.assertEqual(json.loads(Path(folder+'/receipt.json').read_text()), {'status': status})
+                self.assertEqual(contract.call_args.kwargs['expected_sha'], SHA)
+                self.assertEqual(contract.call_args.kwargs['contract_output'], Path(folder)/'explicit-contract.json')
+                frontend.assert_not_called(); login.assert_not_called()
+
+
 class NamespaceEntryProbeTest(unittest.TestCase):
     """Batch C: the path prefix is the only database selector."""
 

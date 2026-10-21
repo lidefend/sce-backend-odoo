@@ -891,13 +891,10 @@ class _HttpSession:
 
     def _headers(self, anonymous: bool = False) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}
-        if self.namespace:
-            if anonymous:
-                headers["X-Anonymous-Intent"] = "1"
-            elif self.token:
-                headers["Authorization"] = f"Bearer {self.token}"
-        else:
-            headers.update({"X-Odoo-DB": self.db_name, "X-DB": self.db_name})
+        if anonymous:
+            headers["X-Anonymous-Intent"] = "1"
+        elif self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
         return headers
 
     def post(self, path: str, payload: dict[str, Any]) -> tuple[int, str]:
@@ -919,11 +916,6 @@ class _HttpSession:
     def login(self, login: str, password: str) -> tuple[int, str]:
         """Authenticate on the session's own entry shape and retain the token."""
 
-        if not self.namespace:
-            return self.post(
-                "/web/session/authenticate",
-                {"jsonrpc": "2.0", "params": {"db": self.db_name, "login": login, "password": password}},
-            )
         status, body = self.post(
             "/api/v1/intent",
             {
@@ -1395,6 +1387,7 @@ def probe_contract_acceptance(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--contract-only", action="store_true", help="Only runtime identity and declared contract receipt; no release/navigation verdict")
     parser.add_argument("--backup-dir", default=os.getenv("ACCEPTANCE_BACKUP_DIR", ""))
     parser.add_argument("--base-url", default=os.getenv("ACCEPTANCE_BASE_URL", ""), required=not bool(os.getenv("ACCEPTANCE_BASE_URL")))
     parser.add_argument("--db-name", default=os.getenv("DB_NAME", ""), required=not bool(os.getenv("DB_NAME")))
@@ -1432,6 +1425,24 @@ def main() -> int:
         if (declaration is not None and args.record_resolution)
         else (None, ["record_resolution_path_missing"] if declaration is not None else [])
     )
+    if args.contract_only:
+        output = Path(args.output)
+        custody = Path(args.contract_output) if args.contract_output else output.with_name(output.stem + ".contract.json")
+        if runtime_identity.get("status") != "PASS":
+            receipt = {"schema": CONTRACT_RECEIPT_SCHEMA, "status": "FAIL", "enabled": True,
+                       "errors": ["runtime_identity_not_verified"]}
+        else:
+            receipt = probe_contract_acceptance(
+                args.base_url, args.db_name, declaration, resolution,
+                served_sha=str(runtime_identity.get("served_sha") or ""), expected_sha=args.expected_sha,
+                declaration_errors=declaration_errors, resolution_errors=resolution_errors,
+                schema_path=Path(args.schema_asset) if args.schema_asset else None,
+                password=_contract_credential(args.contract_password, args.password), contract_output=custody)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print(json.dumps({"scope": "contract_only", "status": receipt.get("status"),
+                          "errors": receipt.get("errors", []), "output": str(output)}))
+        return 0 if receipt.get("status") == "PASS" else 1
     report = {
         "mode": "dev_acceptance_release_probe",
         "db_name": args.db_name,

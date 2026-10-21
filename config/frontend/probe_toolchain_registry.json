@@ -1345,6 +1345,14 @@
       "status": "blocked_legacy",
       "language": "shell",
       "reason": "Legacy direct client database routing; unsupported runtime verification."
+    },
+    "scripts/verify/record_relation_roundtrip_acceptance.js": {
+      "status": "supported",
+      "reason": "Governed environment and served identity; browser login/system.init binds the actual principal without storage-token guessing or database hints. Real relation assertions remain required.",
+      "prior_recipe_targets": [
+        "verify.daily_dev.relation_roundtrip.browser"
+      ],
+      "audit_rules": []
     }
   }
 }

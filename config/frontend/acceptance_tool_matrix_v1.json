@@ -117,6 +117,17 @@
       "operations": [
         "readonly"
       ]
+    },
+    "relation-roundtrip": {
+      "profiles": [
+        "local",
+        "test",
+        "daily"
+      ],
+      "operations": [
+        "readonly"
+      ],
+      "target_identity_required": true
     }
   }
 }

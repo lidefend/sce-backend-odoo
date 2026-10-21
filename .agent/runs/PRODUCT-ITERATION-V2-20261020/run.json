@@ -302,6 +302,7 @@
     "addons/smart_core/utils/contract_governance_registry.py",
     "addons/smart_core/views/group_authority_reconciliation_views.xml",
     "artifacts/backend/product_module_graph_v2.json",
+    "config/acceptance/evolution_binding.v1.json",
     "config/frontend/acceptance_tool_matrix_v1.json",
     "config/frontend/authoritative_navigation.json",
     "config/frontend/probe_toolchain_registry.json",
@@ -328,6 +329,7 @@
     "docs/ops/codex_workspace_execution_rules.md",
     "docs/ops/iterations/product_iteration_v2_batch7_20261020.md",
     "docs/ops/iterations/product_iteration_v2_handoff_20261020.md",
+    "docs/ops/validation_delivery_protocol.md",
     "docs/planning/custom-frontend-integration/G1_BASELINE_EVIDENCE.json",
     "docs/product/delivery/v1/module_scene_capability_source_v1.json",
     "docs/product/product_capability_matrix_v2.md",
@@ -344,6 +346,7 @@
     "frontend/apps/web/scripts/low_code_menu_navigation_alignment_acceptance.mjs",
     "frontend/apps/web/scripts/low_code_safe_open_acceptance.mjs",
     "frontend/apps/web/scripts/product_capability_catalog_test.ts",
+    "frontend/apps/web/scripts/public_auth_bootstrap_test.mjs",
     "frontend/apps/web/scripts/standard_list_lowcode_loop.mjs",
     "frontend/apps/web/scripts/standard_page_type_browser.mjs",
     "frontend/apps/web/scripts/system_user_experience_shell_acceptance.mjs",
@@ -381,11 +384,14 @@
     "scripts/audit/verification_lane_coverage.py",
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/ci/generate_test_inventory.py",
+    "scripts/common/frontend_acceptance_make_identity.sh",
     "scripts/deploy/fresh_production_history_init.sh",
     "scripts/deploy/prod_sim_fresh_replay.sh",
+    "scripts/dev/frontend_acceptance_runtime.sh",
     "scripts/dev/local_dev_demo_credentials_prepare.sh",
     "scripts/dev/local_environment_doctor.sh",
     "scripts/diag/fe_smoke.sh",
+    "scripts/ops/dev_acceptance_release_probe.py",
     "scripts/ops/ensure_core_tax_baseline.py",
     "scripts/ops/production_acceptance_harness.py",
     "scripts/ops/production_user_password_reset.py",
@@ -395,6 +401,7 @@
     "scripts/ops/test_promote_product_ten_center_policy.py",
     "scripts/ops/test_safe_branch_sync_main.py",
     "scripts/ops/validate_online_visible_surface_verification.sh",
+    "scripts/ops/validation_delivery_plan.py",
     "scripts/release/compare_tenant_rc_history_fingerprints.py",
     "scripts/release/production_candidate_fingerprint.sh",
     "scripts/release/production_candidate_history.sh",
@@ -402,6 +409,7 @@
     "scripts/release/restore_authorized_history_source.sh",
     "scripts/release/tenant_rc_profile_rehearsal.sh",
     "scripts/release/test_tenant_rc_profile_rehearsal.py",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
     "scripts/verify/act_url_missing_scene_report.js",
     "scripts/verify/attachment_upload_frontend_browser_acceptance.js",
     "scripts/verify/backend_contract_boundary_guard.py",
@@ -522,6 +530,8 @@
     "scripts/verify/frontend_form_system_audit.mjs",
     "scripts/verify/frontend_list_surface_structure_browser.mjs",
     "scripts/verify/frontend_probe_toolchain_guard.py",
+    "scripts/verify/frontend_product_page_header_guard.py",
+    "scripts/verify/frontend_scene_component_bridge_guard.py",
     "scripts/verify/generate_field_arch_p0_02_evidence.py",
     "scripts/verify/industry_module_product_boundary_guard.py",
     "scripts/verify/invoice_entry_fact_runtime_smoke.js",
@@ -565,6 +575,7 @@
     "scripts/verify/production_blocker_migration_matrix.sh",
     "scripts/verify/project_task_action_smoke.py",
     "scripts/verify/python_http_smoke_utils.py",
+    "scripts/verify/record_relation_roundtrip_acceptance.js",
     "scripts/verify/registry.yaml",
     "scripts/verify/scene_action_surface_strategy_live_matrix_guard.py",
     "scripts/verify/scene_action_surface_strategy_payload_guard.py",
@@ -584,6 +595,7 @@
     "scripts/verify/test_contract_retirement_declaration.py",
     "scripts/verify/test_coverage_registry.yaml",
     "scripts/verify/test_data_space_provisioning.py",
+    "scripts/verify/test_dev_acceptance_release_identity.py",
     "scripts/verify/test_equipment_usage_p2_extraction_migration.py",
     "scripts/verify/test_error_state_contract.py",
     "scripts/verify/test_form_structure_guidance_retirement.py",
@@ -592,6 +604,7 @@
     "scripts/verify/test_formal_product_field_purity_guard.py",
     "scripts/verify/test_frontend_delivery_hardening_guard.py",
     "scripts/verify/test_frontend_probe_toolchain_guard.py",
+    "scripts/verify/test_frontend_product_page_header_guard.py",
     "scripts/verify/test_frontend_release_local_entry.py",
     "scripts/verify/test_frontend_release_navigation_policy_guard.py",
     "scripts/verify/test_hr_payroll_document_p2_extraction_migration.py",
@@ -615,6 +628,7 @@
     "scripts/verify/test_settlement_order_p2_extraction_migration.py",
     "scripts/verify/test_subcontract_request_p2_extraction_migration.py",
     "scripts/verify/test_ui_surface_stability_db_routing.py",
+    "scripts/verify/test_validation_delivery_plan.py",
     "scripts/verify/test_view_orchestration_product_boundary_guard.py",
     "scripts/verify/test_workflow_action_semantics_completeness_guard.py",
     "scripts/verify/ui_surface_stability_ready.py",
@@ -628,13 +642,7 @@
     "scripts/verify/unified_page_contract_v2_regression_audit.py",
     "scripts/verify/user_entry_delivery_browser_acceptance.js",
     "scripts/verify/view_orchestration_product_boundary_guard.py",
-    "scripts/verify/workflow_action_semantics_completeness_guard.py",
-    "scripts/verify/frontend_scene_component_bridge_guard.py",
-    "scripts/verify/frontend_product_page_header_guard.py",
-    "scripts/verify/test_frontend_product_page_header_guard.py",
-    "scripts/dev/frontend_acceptance_runtime.sh",
-    "scripts/common/frontend_acceptance_make_identity.sh",
-    "frontend/apps/web/scripts/public_auth_bootstrap_test.mjs"
+    "scripts/verify/workflow_action_semantics_completeness_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -4567,10 +4575,11 @@
     }
   },
   "blockers": [
-    "GitHub clean reviewed candidate and current required integration checks pending.",
-    "Preview target identity/snapshot activation and affected target smoke/rollback readiness pending."
+    "Current local P4 changes remain uncommitted; previous five successful remote workflows bind673dccfb only.",
+    "Merge stage still requires valid list_surface_structure and relation_roundtrip evidence.",
+    "Deployment stage retains daily_runtime_entry and path_namespace_identity evidence, explicitly not_run."
   ],
-  "next_exact_step": "lane coverage check and73tests; freeze; exact-head Quick; independent review; archive; Make publication",
+  "next_exact_step": "Freeze reviewed P4 candidate; start existing isolated backend and5180 preview; generate contract receipt; run list and relation only; no full release rerun or remote push before these pass.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",
@@ -4806,6 +4815,43 @@
       "fix": "Declare bounded existing diagnostic entry in authoritative execution allowlist; no ratchet or baseline relaxation",
       "reuse": "Only normative documentation and run record change; runtime/build/contract/probe inputs and governed environment identity unchanged. Reuse original 3fb1eda reports with source/current fingerprints, never rewrite original report SHA.",
       "next": "lane coverage check and73tests; freeze; exact-head Quick; independent review; archive; Make publication"
+    }
+  },
+  "continue61": {
+    "head": "673dccfb54ff54ec393a6931f319405c66312d2a",
+    "dirty": true,
+    "layer": "P4 validation delivery",
+    "classification": "Stage binding defect and real missing browser evidence",
+    "scope": "Separate deployed-server verification from merge; keep list/relation required; bind isolated entry to governed list identity",
+    "remote_ci": "Five latest candidate workflows passed on673dccfb",
+    "next": "Prepare reviewed clean local candidate, reuse existing isolated acceptance runtime and governed contract producer to generate current normalized receipt and record resolution; execute list and relation browser suites, record actual evidence, then exact Quick/review/publication. No server deployment before merge.",
+    "results": {
+      "stage_tests": "passed80tests via verify.validation.delivery.unit",
+      "binding_tests": "passed31tests via verify.acceptance.evolution.binding",
+      "probe_tests": "passed13tests including real login ordering and main lease cleanup on success/failure; toolchain and delivery hardening guards pass",
+      "independent_review": "P4 stage/identity/auth/lease changes reviewed with no remaining code blocker; browser evidence still missing",
+      "iteration": "passed after exact six-path scope reconciliation; L1 only"
+    },
+    "runtime_prerequisite": "Existing contract receipt bound to dfa6fa496af1ba38e594a9b03f702efd081c2ff0; cannot reuse for current identity. Must generate through governed normalized contract entry before browser.",
+    "logs": [
+      "continue61-stage-final-tests.log",
+      "continue61-probe-lease-tests.log",
+      "continue61-iteration-reconciled.log"
+    ],
+    "runtime_status": "not_run; no backend/frontend/fixture writes this continuation; old receipt cannot substitute"
+  },
+  "continue62": {
+    "layer": "P4 acceptance prerequisites",
+    "head": "673dccfb54ff54ec393a6931f319405c66312d2a",
+    "dirty": true,
+    "failure": "normalized receipt producer still authenticates root entry via legacy physical database hints; no browser retry before correction",
+    "plan": "Reuse existing contract assertion engine with contract-only CLI; entry-bound intent login for every entry shape; existing local runtime wrapper resolves fixture identities and supplies existing credential authority. No new database or fixture writes.",
+    "results": {
+      "L1": "ci.local.iteration passed",
+      "contract_tests": "56 passed plus environment guards; contract-output parameter fix pending rerun",
+      "probe_guard": "passed",
+      "lane_coverage": "surface check passed; unit pending",
+      "review": "one contract-output S2 fixed; final review pending"
     }
   }
 }

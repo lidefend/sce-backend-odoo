@@ -1215,6 +1215,13 @@ SC_ACCEPTANCE_REQUIRED_SHA ?= $(if $(ACCEPTANCE_TARGET_SHA),$(ACCEPTANCE_TARGET_
 verify.frontend.list_surface_search_contract.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_list_surface_search_contract
 	@node scripts/verify/acceptance_contract_receipt_test.mjs
+.PHONY: acceptance.runtime.contract_receipt verify.frontend.relation_roundtrip.browser
+acceptance.runtime.contract_receipt: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-contract-prerequisite
+
+verify.frontend.relation_roundtrip.browser: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-relation-roundtrip-browser
+
 verify.frontend.list_surface_structure.browser: guard.prod.forbid verify.frontend.list_surface_search_contract.unit
 	$(foreach key,$(SC_LIST_PREVIEW_URL_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),http://127.0.0.1:5180))
 	$(foreach key,$(SC_LIST_PREVIEW_DB_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),sc_frontend_acceptance))
@@ -1270,7 +1277,7 @@ verify.daily_dev.relation_roundtrip.browser: guard.prod.forbid
 	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
 	@test -n "$(ACCEPTANCE_LOGIN)" -a -n "$(ACCEPTANCE_PASSWORD)" || (echo "ACCEPTANCE_LOGIN and ACCEPTANCE_PASSWORD must be supplied through the environment"; exit 2)
 	@test -n "$(ACCEPTANCE_RECORD_RESOLUTION)" -a -f "$(ACCEPTANCE_RECORD_RESOLUTION)" || (echo "ACCEPTANCE_RECORD_RESOLUTION must point at the managed resolution body"; exit 2)
-	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" DB_NAME="$(DB_NAME)" E2E_LOGIN="$(ACCEPTANCE_LOGIN)" E2E_PASSWORD="$(ACCEPTANCE_PASSWORD)" SC_ACCEPTANCE_TARGET_SHA="$(ACCEPTANCE_TARGET_SHA)" ACCEPTANCE_RECORD_RESOLUTION="$(ACCEPTANCE_RECORD_RESOLUTION)" RELATION_RESOLUTION_KEY="$(RELATION_RESOLUTION_KEY)" RELATION_FIELD="$(RELATION_FIELD)" node scripts/verify/record_relation_roundtrip_acceptance.js
+	@SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" SC_ACCEPTANCE_API_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" DB_NAME="$(DB_NAME)" E2E_LOGIN="$(ACCEPTANCE_LOGIN)" E2E_PASSWORD="$(ACCEPTANCE_PASSWORD)" SC_ACCEPTANCE_TARGET_SHA="$(ACCEPTANCE_TARGET_SHA)" ACCEPTANCE_RECORD_RESOLUTION="$(ACCEPTANCE_RECORD_RESOLUTION)" RELATION_RESOLUTION_KEY="$(RELATION_RESOLUTION_KEY)" RELATION_FIELD="$(RELATION_FIELD)" node scripts/verify/record_relation_roundtrip_acceptance.js
 
 .PHONY: verify.frontend.business_entry.lifecycle.browser
 # Owner-authorized product acceptance for the 项目启停管理 formal business entry
