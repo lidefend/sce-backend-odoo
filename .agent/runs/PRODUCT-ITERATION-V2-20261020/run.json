@@ -603,6 +603,7 @@
     "scripts/verify/test_formal_product_alias_cleanup_migration.py",
     "scripts/verify/test_formal_product_field_purity_guard.py",
     "scripts/verify/test_frontend_delivery_hardening_guard.py",
+    "scripts/verify/test_frontend_list_surface_search_contract.py",
     "scripts/verify/test_frontend_probe_toolchain_guard.py",
     "scripts/verify/test_frontend_product_page_header_guard.py",
     "scripts/verify/test_frontend_release_local_entry.py",
@@ -4852,6 +4853,12 @@
       "probe_guard": "passed",
       "lane_coverage": "surface check passed; unit pending",
       "review": "one contract-output S2 fixed; final review pending"
+    },
+    "runtime_results": {
+      "candidate": "14bd0d67e686b89c3f9c82548677d14265505009",
+      "contract_receipt": "PASS11checks no not_run",
+      "list": "L2 prerequisite failure: extracted helper harness omitted relativeRoutePath; browser not started",
+      "fix": "Include actual dependency in test harness, assert namespace route normalization; no runtime code or thresholds changed"
     }
   }
 }
