@@ -1065,3 +1065,13 @@ before freezing or publishing. Every other conflict aborts to the original HEAD.
 `make verify.workspace.branch.sync-github.unit` tests identity, conflicts and recovery.
 Use environment variables for PR/EXPECTED_HEAD when invoking `make pr.merge`;
 Make command overrides are intentionally rejected by the Quick evidence authority.
+
+## 隔离验收登录诊断入口
+
+`make acceptance.runtime.login_probe SC_ACCEPTANCE_RUNTIME_PROFILE=local` 用于在已启动的
+受管验收后端与现有 fixture 账号上，单独验证登录链路。入口先核对运行时身份，再经
+operation entry、受管嵌套 Make 和真实 HTTP 登录复用隔离入口声明及凭据权威。
+仅允许已登记的隔离验收环境；不创建数据库、不升级模块、不重置 fixture、不启动完整
+浏览器矩阵。HTTP 登录会创建验收会话；成功仅证明登录链路，不替代发布验收或权限测试。
+内部 `acceptance.runtime.login_probe.internal` 只能由 operation entry 调用，禁止手工拼接
+数据库、入口签名或凭据来绕过身份校验。
