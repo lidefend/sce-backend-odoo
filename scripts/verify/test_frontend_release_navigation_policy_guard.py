@@ -4,7 +4,7 @@ import unittest
 import json
 from pathlib import Path
 
-from scripts.verify.frontend_release_navigation_policy_guard import ROLE_MAP, validate, validate_formal_targets, validate_runtime_targets
+from scripts.verify.frontend_release_navigation_policy_guard import ROLE_MAP, _load_role_policy, validate, validate_formal_targets, validate_runtime_targets
 
 
 def _fixture():
@@ -37,20 +37,20 @@ class ReleaseNavigationPolicyGuardTest(unittest.TestCase):
         policies["finance"]["primary_menu_xmlids"] = []
         self.assertTrue(any("finance: release projection differs" in row for row in validate(manifest, policies)))
 
-    def test_finance_historical_payment_entry_is_released_exactly_once(self):
-        manifest, policies = _fixture()
-        historical_menu = "smart_construction_core.menu_sc_historical_payment_fact"
-        manifest["roles"]["finance"] = {
-            "expected_count": 2,
-            "leaf_keys": [
-                "x.menu_finance|x.action_finance|x.model",
-                f"{historical_menu}|smart_construction_core.action_sc_historical_payment_fact|sc.historical.payment.fact",
-            ],
-            "browser_expected_count": 1,
-            "browser_leaf_keys": ["x.menu_finance|x.action_finance|x.model"],
-        }
-        policies["finance"]["primary_menu_xmlids"].append(historical_menu)
+    def test_repository_projection_matches_current_role_authority(self):
+        root = Path(__file__).resolve().parents[2]
+        manifest = json.loads((root / "config/frontend/authoritative_navigation.json").read_text())
+        policies = _load_role_policy()
         self.assertEqual(validate(manifest, policies), [])
+
+        # Reintroducing the retired expectation must still fail closed.
+        manifest["roles"]["finance"]["leaf_keys"].append(
+            "smart_construction_core.menu_sc_historical_payment_fact|"
+            "smart_construction_core.action_sc_historical_payment_fact|sc.historical.payment.fact"
+        )
+        manifest["roles"]["finance"]["expected_count"] += 1
+        self.assertTrue(any("finance: release projection differs" in row
+                            for row in validate(manifest, policies)))
 
     def test_contextual_or_denied_overlap_fails_closed(self):
         manifest, policies = _fixture()

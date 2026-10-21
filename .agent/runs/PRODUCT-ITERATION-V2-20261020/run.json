@@ -425,7 +425,9 @@
     "addons/smart_construction_core/services/business_data_ownership.py",
     "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
     "scripts/verify/construction_core_extension_intent_handlers_split_guard.py",
-    "docs/frontend_productization/decision-authority-inventory-v1.json"
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "config/frontend/authoritative_navigation.json",
+    "scripts/verify/test_frontend_release_navigation_policy_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -4292,6 +4294,35 @@
         "limitation": "Scheduled jobs on main remain failed until corrected main is integrated and a new full run succeeds.",
         "freeze_prepare": "PASS continue53-freeze-prepare.log",
         "independent_increment_review": "No new S0-S2; dirty increment review verifies formal ScIcon, no policy/guard exemptions. Final binding pending."
+      }
+    },
+    "ci_navigation_expectation_repair": {
+      "status": "targeted_passed",
+      "layer": "P4",
+      "classification": "baseline_evidence_defect",
+      "head": "097fc751f641a43d26237f5fbe5ce0e85f7cd718",
+      "files": [
+        "config/frontend/authoritative_navigation.json",
+        "scripts/verify/test_frontend_release_navigation_policy_guard.py"
+      ],
+      "failure_run": 39570476817,
+      "reason": "Retired historical-payment menu remains in finance navigation expectations; product policy and XML both remove/deactivate it.",
+      "blast_radius": "finance expected projection and static guard tests only; runtime and browser declarations unchanged",
+      "validation_plan": [
+        "verify.frontend.release_navigation_policy.guard",
+        "remaining independent static audit checks reuse unchanged remote passing results",
+        "freeze prepare and exact-head Quick before PR update"
+      ],
+      "targeted": {
+        "command": "make verify.frontend.release_navigation_policy.guard",
+        "status": "passed",
+        "tests": 29,
+        "log": ".runtime/agent-runs/PRODUCT-ITERATION-V2-20261020/continue54-navigation.log"
+      },
+      "reuse": {
+        "source_head": "097fc751f641a43d26237f5fbe5ce0e85f7cd718",
+        "source_run": 39570476817,
+        "reason": "Only offline navigation expectations and guard regression test changed. Style/shared-boundary/hardening/lint/typecheck/build inputs unchanged; remote run continued independent static checks and navigation was sole static failure. Runtime release lane not reached, remains not_run."
       }
     }
   },
