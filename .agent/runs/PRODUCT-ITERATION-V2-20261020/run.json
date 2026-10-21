@@ -4586,7 +4586,7 @@
     "Merge stage still requires valid list_surface_structure and relation_roundtrip evidence.",
     "Deployment stage retains daily_runtime_entry and path_namespace_identity evidence, explicitly not_run."
   ],
-  "next_exact_step": "Finish L1 and independent review of final P4 delta; freeze clean candidate, rerun relation with current identity and record evidence reuse for unchanged list assertions/product; exact Quick then governed GitHub publication.",
+  "next_exact_step": "Refresh G1 assets and pass existing guard; freeze metadata-only delta, carry forward bf3882a browser manifest through recorder, then run one exact-head Quick.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",
@@ -4984,6 +4984,19 @@
       "freeze_prepare": "passed continue63-final-freeze.log",
       "final_runtime_trigger": "Frozen delivery lane: local shared profile now declares runtime endpoint, affecting identity prerequisite of list and relation. Run both once at final frozen candidate, retain original diagnostic reports. No full release or unrelated matrix.",
       "next": "clean commit, backend identity, contract receipt, frozen list and relation, merge-stage evidence registration, one Quick"
+    },
+    "frozen_runtime": {
+      "head": "bf3882a592c1b7b0b3c727125231fa68da968675",
+      "list": "passed 316 gated/30 record checks/5 negatives/0 runtime errors",
+      "relation": "passed 13 declared/4openable/4attempts/full restore/0denied/0console",
+      "manifest": ".runtime/acceptance-evolution/evidence.v1.json",
+      "registration": "merge stage passed continue63-evidence-record.log"
+    },
+    "g1_final_gap": {
+      "owner": "P4 generated evidence",
+      "finding": "Independent review caught stale local environment and tool matrix hashes before Quick",
+      "resolution": "Refresh existing G1 evidence preserving baseline3f424993c9f378aaeedd2f26080545ad37ea3f8e; require existing G1 guard in freeze preparation to catch future drift before commit",
+      "impact": "Only G1 generated metadata, freeze Make prerequisite and run record; list/relation source, backend, declaration, fixtures, runtime profile and assertions unchanged from bf3882a. Reuse via governed recorder input hashes; do not rewrite original browser report identities."
     }
   }
 }
