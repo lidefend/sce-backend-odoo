@@ -79,7 +79,7 @@
               </group>
             </group>
             <group>
-              <group string="历史来源">
+              <group string="历史来源" groups="smart_construction_core.group_sc_cap_config_admin">
                 <field name="source_model"/>
                 <field name="source_res_id"/>
               </group>
@@ -192,7 +192,7 @@
               </group>
             </group>
             <group>
-              <group string="历史来源">
+              <group string="历史来源" groups="smart_construction_core.group_sc_cap_config_admin">
                 <field name="source_model"/>
                 <field name="source_res_id"/>
               </group>

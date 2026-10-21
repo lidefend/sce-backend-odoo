@@ -2030,6 +2030,7 @@ verify.runtime_contract.test_placeholder.guard: guard.prod.forbid check-compose-
 .PHONY: verify.lowcode_config.boundary.guard
 verify.lowcode_config.boundary.guard: guard.prod.forbid verify.business_config.guard_inventory verify.smart_core.boundary_guard verify.app_config_engine.boundary_guard verify.view.orchestration_product_boundary_guard verify.view.orchestration_boundary_guard verify.user_module.product_boundary
 	@python3 -m py_compile scripts/verify/lowcode_config_boundary_guard.py
+	@python3 -m unittest discover -s scripts/verify -p test_lowcode_contract_source_declarations.py
 	@python3 scripts/verify/lowcode_config_boundary_guard.py
 
 .PHONY: verify.lowcode_config.customer_baseline.candidate
@@ -2628,17 +2629,6 @@ verify.docs.product_boundary: guard.prod.forbid
 verify.industry_module.product_boundary: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/industry_module_product_boundary_guard.py
 	@python3 scripts/verify/test_industry_module_product_boundary_guard.py
-	@python3 scripts/verify/test_material_plan_p2_extraction_migration.py
-	@python3 scripts/verify/test_material_rfq_p2_extraction_migration.py
-	@python3 scripts/verify/test_material_inbound_p2_extraction_migration.py
-	@python3 scripts/verify/test_pass_through_p2_extraction_migration.py
-	@python3 scripts/verify/test_subcontract_request_p2_extraction_migration.py
-	@python3 scripts/verify/test_construction_diary_p2_extraction_migration.py
-	@python3 scripts/verify/test_settlement_order_p2_extraction_migration.py
-	@python3 scripts/verify/test_equipment_usage_p2_extraction_migration.py
-	@python3 scripts/verify/test_labor_usage_p2_extraction_migration.py
-	@python3 scripts/verify/test_material_rental_order_p2_extraction_migration.py
-	@python3 scripts/verify/test_hr_payroll_document_p2_extraction_migration.py
 	@python3 scripts/verify/industry_module_product_boundary_guard.py
 
 .PHONY: verify.user_module.product_boundary
@@ -3055,3 +3045,29 @@ verify.product_system_parameter_change: guard.prod.forbid
 .PHONY: verify.product.home_objects.contract
 verify.product.home_objects.contract: guard.prod.forbid
 	@MODULE=smart_construction_core TEST_TAGS=home_objects_contract $(MAKE) --no-print-directory local.dev.test
+
+.PHONY: verify.product.retired_views.source_contract
+verify.product.retired_views.source_contract: guard.prod.forbid
+	@python3 scripts/verify/test_retired_product_view_declarations.py
+
+.PHONY: verify.intent_group.authorization.unit
+verify.intent_group.authorization.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_base_handler_type_error.py
+	@python3 addons/smart_core/tests/test_intent_permission_operation_policy.py
+
+.PHONY: verify.baseline.readiness
+verify.baseline.readiness: guard.prod.forbid
+	@MODULE=smart_construction_core TEST_TAGS=baseline_readiness $(MAKE) --no-print-directory local.dev.test
+
+.PHONY: verify.capability.maturity.unit verify.capability.maturity
+verify.capability.maturity.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_capability_maturity.py
+	@python3 -m unittest scripts.verify.test_capability_maturity_evidence
+
+CAPABILITY_MATURITY_BUNDLE ?=
+CAPABILITY_MATURITY_EDITION ?=
+CAPABILITY_MATURITY_REPORT ?= artifacts/backend/capability_maturity_report.json
+verify.capability.maturity: guard.prod.forbid
+	@test -n "$(CAPABILITY_MATURITY_BUNDLE)" || { echo "CAPABILITY_MATURITY_BUNDLE is required" >&2; exit 2; }
+	@test -n "$(CAPABILITY_MATURITY_EDITION)" || { echo "CAPABILITY_MATURITY_EDITION is required" >&2; exit 2; }
+	@python3 scripts/verify/capability_maturity_evidence.py --bundle "$(CAPABILITY_MATURITY_BUNDLE)" --edition "$(CAPABILITY_MATURITY_EDITION)" --report "$(CAPABILITY_MATURITY_REPORT)"

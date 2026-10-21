@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from unittest.mock import patch
+
 from odoo.exceptions import ValidationError
 from odoo.tests import TransactionCase
 from odoo.tests.common import tagged
@@ -28,7 +30,7 @@ class TestConstructionContract(TransactionCase):
         country = self.env.ref("base.cn", raise_if_not_found=False)
         tax_group = self._ensure_tax_group()
         vals = {
-            "name": name,
+            "name": "合同测试 " + name,
             "amount_type": "percent",
             "amount": amount,
             "type_tax_use": tax_use,
@@ -109,6 +111,11 @@ class TestConstructionContract(TransactionCase):
         self.assertEqual(contract.amount_untaxed, 12500.0)
         self.assertAlmostEqual(contract.amount_tax, 1125.0)
         self.assertAlmostEqual(contract.amount_total, 13625.0)
+        # This case covers the configured no-approval transition; the transaction
+        # rolls back the policy change together with its synchronized tier definitions.
+        self.env["sc.approval.policy"].search([
+            ("target_model", "=", "construction.contract"),
+        ]).write({"approval_required": False})
         contract.action_confirm()
         self.assertEqual(contract.state, "confirmed")
         contract.action_set_running()
@@ -128,9 +135,13 @@ class TestConstructionContract(TransactionCase):
             }
         )
 
-        contract.action_confirm()
+        with patch.object(
+            type(self.env["sc.approval.policy"]), "_start_submission_review", return_value=True
+        ) as submit:
+            contract.action_confirm()
+        submit.assert_called_once_with(contract)
 
-        self.assertEqual(contract.state, "confirmed")
+        self.assertEqual(contract.state, "draft")
         self.assertFalse(contract.line_ids)
 
     @tagged("post_install", "-at_install", "sc_regression", "contract")

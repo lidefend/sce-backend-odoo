@@ -386,14 +386,16 @@ class PaymentLedger(models.Model):
     def init(self):
         """Keep every installment while preventing duplicate ledgering per execution."""
         self._cr.execute(
-            "ALTER TABLE payment_ledger "
-            "DROP CONSTRAINT IF EXISTS payment_ledger_uniq_payment_request_id"
-        )
-        self._cr.execute("DROP INDEX IF EXISTS payment_ledger_one_posted_per_request_idx")
-        self._cr.execute(
             "CREATE UNIQUE INDEX IF NOT EXISTS payment_ledger_one_posted_per_execution_idx "
             "ON payment_ledger (payment_execution_id) "
             "WHERE payment_execution_id IS NOT NULL AND state = 'posted'"
+        )
+
+        self._cr.execute(
+            "CREATE INDEX IF NOT EXISTS payment_ledger_canonical_posted_identity_idx "
+            "ON payment_ledger (project_id, company_id, currency_id, partner_id, state) "
+            "WHERE state = 'posted' "
+            "AND normalization_state IN ('normalized', 'legacy_observed_identity')"
         )
 
     @api.depends(

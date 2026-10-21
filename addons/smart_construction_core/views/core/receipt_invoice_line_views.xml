@@ -61,7 +61,7 @@
                                 <field name="amount_source"/>
                             </group>
                         </group>
-                        <group string="历史来源">
+                        <group string="历史来源" groups="smart_construction_core.group_sc_cap_config_admin">
                             <field name="import_batch" readonly="1"/>
                         </group>
                         <group>

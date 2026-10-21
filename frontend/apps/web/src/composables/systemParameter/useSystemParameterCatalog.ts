@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import {
   fetchProductSystemParameterCatalog,
   previewProductSystemParameter,
@@ -31,6 +31,26 @@ export function useSystemParameterCatalog() {
   const publishing = ref(false);
   const mutationError = ref('');
   const changes = ref<ProductSystemParameterChange[]>([]);
+  const pendingValues = reactive(new Map<string, unknown>());
+  let previewRevision = 0;
+
+  function invalidatePreview() {
+    previewRevision += 1;
+    preview.value = null;
+    previewError.value = '';
+    previewLoading.value = false;
+  }
+
+  function currentValueFor(parameter: ProductSystemParameter): unknown {
+    return pendingValues.has(parameter.key)
+      ? pendingValues.get(parameter.key)
+      : parameter.current_value ?? parameter.default;
+  }
+
+  function setValue(parameter: ProductSystemParameter, value: string) {
+    pendingValues.set(parameter.key, value);
+    invalidatePreview();
+  }
 
   const byCategory = computed(() => {
     const map = new Map<string, ProductSystemParameter[]>();
@@ -44,6 +64,8 @@ export function useSystemParameterCatalog() {
 
   async function load() {
     if (!session.token) return;
+    pendingValues.clear();
+    invalidatePreview();
     loading.value = true;
     error.value = '';
     gap.value = '';
@@ -66,19 +88,22 @@ export function useSystemParameterCatalog() {
   }
 
   async function previewFor(parameterKey: string, proposedValue: unknown) {
+    const revision = ++previewRevision;
     previewLoading.value = true;
     previewError.value = '';
     preview.value = null;
     try {
       const result = await previewProductSystemParameter(parameterKey, proposedValue);
+      if (revision !== previewRevision) return;
       preview.value = projectImpactPreview(result);
     } catch (err) {
+      if (revision !== previewRevision) return;
       preview.value = null;
       previewError.value = isProductSystemParameterGap(err)
         ? String(err.message || '')
         : '影响预览暂时无法加载，请稍后重试。';
     } finally {
-      previewLoading.value = false;
+      if (revision === previewRevision) previewLoading.value = false;
     }
   }
 
@@ -141,6 +166,8 @@ export function useSystemParameterCatalog() {
     publishing,
     mutationError,
     changes,
+    currentValueFor,
+    setValue,
     load,
     previewFor,
     publish,

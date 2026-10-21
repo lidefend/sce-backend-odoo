@@ -169,74 +169,10 @@ class PaymentLedgerAllocation(models.Model):
         raise AccessError(_("付款台账合同分摊是不可变事实，不允许删除。"))
 
     def init(self):
-        """Truthful one-time coverage for ledgers created before this model existed.
-
-        A direct request contract is a strong anchor. Every other historical
-        ledger remains explicitly unresolved; upgrade must never guess from a
-        mutable or incomplete historical line set.
-        """
+        """Install the index used by current contract cash projections."""
         self.env.cr.execute(
-            """
-            INSERT INTO payment_ledger_allocation (
-                ledger_id, payment_request_id, payment_request_line_id, contract_id,
-                settlement_id, settlement_line_id, basis_amount,
-                allocated_amount, allocation_state, reason_code, project_id,
-                company_id, currency_id, normalization_state,
-                allocation_key, create_uid, create_date, write_uid, write_date
-            )
-            SELECT l.id, l.payment_request_id, NULL, r.contract_id, r.settlement_id, NULL,
-                   l.amount, l.amount, 'allocated', 'direct_contract',
-                   l.project_id, l.company_id, l.currency_id, l.normalization_state,
-                   'backfill:direct', 1, NOW(), 1, NOW()
-              FROM payment_ledger l
-              JOIN payment_request r ON r.id = l.payment_request_id
-              JOIN construction_contract c ON c.id = r.contract_id
-             WHERE r.contract_id IS NOT NULL
-               AND (r.project_id IS NULL OR c.project_id = r.project_id)
-               AND (r.company_id IS NULL OR c.company_id = r.company_id)
-               AND (r.currency_id IS NULL OR c.currency_id = r.currency_id)
-               AND l.normalization_state IN ('normalized', 'legacy_observed_identity')
-               AND l.project_id = c.project_id
-               AND l.company_id = c.company_id
-               AND l.currency_id = c.currency_id
-               AND NOT EXISTS (
-                    SELECT 1
-                     FROM payment_request_line prl
-                     WHERE prl.request_id = r.id
-                       AND prl.active IS TRUE
-               )
-               AND NOT EXISTS (
-                    SELECT 1 FROM payment_ledger_allocation a WHERE a.ledger_id = l.id
-               )
-            """
-        )
-        self.env.cr.execute(
-            """
-            INSERT INTO payment_ledger_allocation (
-                ledger_id, payment_request_id, payment_request_line_id, contract_id,
-                settlement_id, settlement_line_id, basis_amount,
-                allocated_amount, allocation_state, reason_code, project_id,
-                company_id, currency_id, normalization_state,
-                allocation_key, create_uid, create_date, write_uid, write_date
-            )
-            SELECT l.id, l.payment_request_id, NULL, NULL, r.settlement_id, NULL,
-                   0, 0, 'unresolved_global', 'historical_backfill_unresolved',
-                   l.project_id, l.company_id, l.currency_id,
-                   COALESCE(l.normalization_state, 'legacy_unresolved_identity'),
-                   'backfill:unresolved', 1, NOW(), 1, NOW()
-              FROM payment_ledger l
-              JOIN payment_request r ON r.id = l.payment_request_id
-             WHERE NOT EXISTS (
-                    SELECT 1 FROM payment_ledger_allocation a WHERE a.ledger_id = l.id
-               )
-            """
-        )
-        self.env.cr.execute(
-            """
-            UPDATE payment_ledger_allocation allocation
-               SET payment_request_id = ledger.payment_request_id
-              FROM payment_ledger ledger
-             WHERE allocation.ledger_id = ledger.id
-               AND allocation.payment_request_id IS NULL
-            """
+            "CREATE INDEX IF NOT EXISTS payment_ledger_allocation_contract_identity_idx "
+            "ON payment_ledger_allocation "
+            "(contract_id, project_id, company_id, currency_id, allocation_state, ledger_id) "
+            "WHERE allocation_state = 'allocated' AND contract_id IS NOT NULL"
         )

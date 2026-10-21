@@ -220,7 +220,6 @@
 | `addons/smart_core/handlers/menu_configuration.py` | L4 | 菜单低代码运行时配置：`menu_lowcode_runtime_config` | `smart_core.lowcode.menu_config` |
 | `addons/smart_core/handlers/business_config_change_set.py` | L1/L4 | 统一可逆配置变更集原子发布与批次回滚：`atomic_lowcode_change_set_publish` | `ui.business.config.change.set` |
 | `addons/smart_construction_core/models/support/formal_list_contract_sync.py` | L2 | 行业正式列表契约投影：`industry_formal_list_contract_projection` | `smart_construction_core.formal_settlement_list_contract_sync` |
-| `addons/smart_construction_core/migrations/17.0.0.61/post-migration.py` | L2 | 行业过期契约作用域清理迁移：`industry_stale_contract_scope_cleanup_migration` | `smart_construction_core.stale_contract_scope_cleanup` |
 | `addons/smart_construction_core/hooks.py` | L2 | 行业安装期契约来源状态规范化：`industry_install_contract_source_status_normalization`；必须通过契约模型写入口生成不可变版本 | `smart_construction_core.post_init_lowcode_source_status` |
 
 ## 当前允许直接写审批运行时策略的入口
@@ -228,6 +227,7 @@
 | 文件 | 层级 | 边界 | 预期 source |
 | --- | --- | --- | --- |
 | `addons/smart_construction_core/handlers/approval_policy_configuration.py` | L2/L4 | 行业审批策略低代码配置：`approval_policy_runtime_configuration` | `smart_core.lowcode.approval_policy` |
+| `addons/smart_construction_core/services/product_system_parameter_change.py` | L2/L4 | 受管参数变更集的审批模式映射：`governed_system_parameter_approval_mode` | `sc.product.system.parameter.change` |
 
 ## 当前允许直接写低代码运行时策略的入口
 
@@ -237,7 +237,6 @@
 | `addons/smart_core/model/ui_form_custom_field_wizard.py` | L4 | 自定义字段同步表单策略：`form_custom_field_policy_creation` | `smart_core.lowcode.form_field_policy` |
 | `addons/smart_core/handlers/menu_configuration.py` | L4 | 菜单低代码策略配置：`menu_config_policy_runtime_configuration` | `smart_core.lowcode.menu_config` |
 | `addons/smart_core/handlers/business_config_change_set.py` | L1/L4 | 仅在统一变更集事务内发布菜单策略：`atomic_menu_change_set_publish` | `ui.business.config.change.set` |
-| `addons/smart_construction_core/migrations/17.0.0.61/post-migration.py` | L2 | 行业产品菜单策略基线迁移：`industry_product_menu_policy_baseline_migration` | `smart_construction_core.config_center_label_migration` |
 
 新增直接写 `ui.business.config.contract` 的入口必须先更新本表和 `scripts/verify/backend_contract_boundary_guard.py`，并说明为什么不能通过现有 handler 或用户模块承载。
 新增直接写 `sc.approval.policy` / `sc.approval.step` 的入口必须先更新本表和 `scripts/verify/backend_contract_boundary_guard.py`，并说明为什么不能通过审批配置 handler 承载。
@@ -385,3 +384,7 @@ V2 解引用。动作、模型、视图入口已经经过页面装配、权限�
 
 这一约束不授权删除关联权限、原生 form 策略依赖或按用户角色猜测所需视图。
 关系弹窗投影和复制成本仍需独立取证与优化，不能用一次路径改善宣称整个平台达标。
+
+首版参数 `approval_mode` 的写入复用参数变更集的权限、值域、影响预览、审计和回滚快照；
+仅映射 `payment.request` 策略的模式与启用状态，不编辑审批步骤。通用审批配置 handler
+不能替代参数变更记录及其 previous-value 回滚语义，因此登记上述精确服务路径为独立写入边界。

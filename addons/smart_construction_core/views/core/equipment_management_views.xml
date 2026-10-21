@@ -102,11 +102,7 @@
                         <page string="计划说明">
                             <field name="note" nolabel="1"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
 
@@ -203,11 +199,7 @@
                         <page string="申请说明">
                             <field name="note" nolabel="1"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
 
@@ -281,7 +273,7 @@
                     <button name="action_confirm" string="确认台班" type="object" class="btn-primary" invisible="state != 'approved'" groups="smart_construction_core.group_sc_cap_project_manager"/>
                     <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'" groups="smart_construction_core.group_sc_cap_project_manager"/>
                     <button name="action_cancel" string="取消" type="object" invisible="state in ('confirmed', 'cancel')" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,confirmed"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,confirmed" readonly="1"/>
                 </header>
                 <sheet>
                     <!-- U-C4 G09: 原生 arch 持有本入口的章节身份。 两个概览组带稳定
@@ -307,7 +299,7 @@
                             <field name="price_unit" readonly="state != 'draft'"/>
                             <field name="amount" readonly="1"/>
                             <field name="supplier_id" readonly="state != 'draft'"/>
-                            <field name="recorder_id"/>
+                            <field name="recorder_id" readonly="1"/>
                         </group>
                     </group>
                     <notebook>
@@ -323,6 +315,9 @@
                          tests/test_context_workspace_native_lowcode.py::test_the_prompt_is_feedback_not_a_section）。
                          改由渲染器已有的反馈面承载：不是 group／page，因此永远不会成为章节或导航项；
                          空提示（新建态计算未跑）时整块不显示，而不是显示一个占位的 “—”。 -->
+                    <div class="alert alert-info" role="status" invisible="not processing_advisory">
+                        <field name="processing_advisory" readonly="1" nolabel="1"/>
+                    </div>
                 </sheet>
                 <chatter/>
             </form>
@@ -431,11 +426,7 @@
                         <page string="结算说明">
                             <field name="note" nolabel="1"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
             </form>
@@ -515,11 +506,7 @@
                         <page string="价格说明">
                             <field name="note" nolabel="1"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
             </form>

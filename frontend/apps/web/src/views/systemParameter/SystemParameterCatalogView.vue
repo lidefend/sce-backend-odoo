@@ -40,13 +40,13 @@
                 :options="optionsFor(parameter)"
                 :aria-label="parameter.label"
                 appearance="form-field"
-                @change="onSelect(parameter, $event)"
+                @change="setValue(parameter, $event)"
               />
               <ScButton type="button" variant="secondary" :disabled="previewLoading" @click="previewFor(parameter.key, currentValueFor(parameter))">预览影响</ScButton>
               <ScButton
                 type="button"
                 variant="primary"
-                :disabled="publishing || !preview || preview.parameter !== parameter.key || !preview.ok"
+                :disabled="publishing || !preview || preview.parameter !== parameter.key || !preview.ok || preview.proposed_value !== currentValueFor(parameter)"
                 @click="publish(parameter.key, currentValueFor(parameter), '工作台发布')"
               >
                 {{ publishing ? '发布中...' : '发布' }}
@@ -103,22 +103,13 @@ const {
   publishing,
   mutationError,
   changes,
+  currentValueFor,
+  setValue,
   load,
   previewFor,
   publish,
   rollback,
 } = useSystemParameterCatalog();
-
-const pendingValues = new Map<string, unknown>();
-
-function currentValueFor(parameter: ProductSystemParameter): unknown {
-  if (pendingValues.has(parameter.key)) return pendingValues.get(parameter.key);
-  return parameter.current_value ?? parameter.default;
-}
-
-function onSelect(parameter: ProductSystemParameter, value: string) {
-  pendingValues.set(parameter.key, value);
-}
 
 function valueLabel(value: unknown): string {
   return String(value ?? '');

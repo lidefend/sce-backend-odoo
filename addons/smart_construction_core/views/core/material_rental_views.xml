@@ -136,11 +136,7 @@
                                 </tree>
                             </field>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                        <page string="备注">
+<page string="备注">
                             <field name="note" nolabel="1"/>
                         </page>
                     </notebook>
@@ -249,11 +245,7 @@
                                 </tree>
                             </field>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                        <page string="备注">
+<page string="备注">
                             <field name="note" nolabel="1"/>
                         </page>
                         <page string="退租结算">
@@ -374,11 +366,7 @@
                                 </tree>
                             </field>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                        <page string="备注">
+<page string="备注">
                             <field name="note" nolabel="1"/>
                         </page>
                     </notebook>

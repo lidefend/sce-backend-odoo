@@ -108,14 +108,6 @@ class TestLightFormsConfigurationNativeLowcode(TransactionCase):
     # structure carrier of `sc.approval.policy` when no action scopes the
     # resolution, so retiring it belongs to another group.
     # xmlid -> (model, the sibling actions that keep depending on it)
-    RETAINED_MODEL_WIDE_CARRIERS = {
-        "business_config_contract_sc_approval_policy_form_structure_generated": (
-            "sc.approval.policy", ()),
-    }
-
-    # Facts declared by the retired entry bodies.  No name may be missing from
-    # the model, and every fact must still be reachable from the native arch -
-    # which is exactly what makes the retirement presentation-neutral.
     RETIRED_ENTRY_FACTS = {
         "mail.notification": (
             "sc_subject", "author_id", "sc_message_date", "is_read", "read_date",
@@ -506,33 +498,6 @@ class TestLightFormsConfigurationNativeLowcode(TransactionCase):
 
     # -- retention surface ---------------------------------------------------
 
-    def test_the_model_wide_carriers_stay_active_for_their_unscoped_surface(self):
-        """The regression rule: a shared mirror is never retired by this group.
-
-        Mirror 52 has no action binding, so it is still the structure plane of
-        `sc.approval.policy` on any surface resolved without an action context.
-        Retiring it here would change those surfaces, so it stays active and
-        stays unscoped.
-        """
-        for contract_xmlid, (model, sibling_actions) in self.RETAINED_MODEL_WIDE_CARRIERS.items():
-            with self.subTest(contract=contract_xmlid):
-                record = self._contract(contract_xmlid)
-                self.assertTrue(record.active)
-                self.assertFalse(record.action_id)
-                self.assertFalse(record.view_id)
-                self.assertEqual(record.model, model)
-                for action_xmlid in sibling_actions:
-                    action = self.env.ref("smart_construction_core.%s" % action_xmlid)
-                    self.assertEqual(action.res_model, model)
-
-    def test_the_retained_mirror_still_scopes_in_without_an_action(self):
-        """Mirror 52 keeps answering when no action narrows the resolution."""
-        mirror = self._contract(
-            "business_config_contract_sc_approval_policy_form_structure_generated")
-        configs = self.env["ui.business.config.contract"].sudo()._effective_view_orchestration_contracts(
-            "sc.approval.policy", view_type="form", action_id=0, view_id=0, role_key="")
-        self.assertIn(mirror.name, [config.name for config in configs])
-
     def test_the_entry_release_does_not_leak_to_other_actions_on_the_model(self):
         """Each entry release is scoped to its own action, so siblings are untouched.
 
@@ -647,24 +612,6 @@ class TestLightFormsConfigurationNativeLowcode(TransactionCase):
                     self.assertTrue(nodes, "a registered trace field must exist in the arch")
                     self.assertEqual([node.get("invisible") for node in nodes], ["1"])
                     self.assertNotIn(name, anchored_fields)
-
-    def test_the_released_mirror_declared_nothing_the_arch_dropped(self):
-        """727 is the reverse direction: the native arch must not lose a fact.
-
-        The retired-shaped mirror 52 declared eleven `fields` entries.  Switching
-        the entry to native authority hands structure to the arch, so the arch
-        has to render at least what the mirror rendered.
-        """
-        mirror = self._contract(
-            "business_config_contract_sc_approval_policy_form_structure_generated")
-        declared = {
-            str(row.get("name") or row.get("field") or "").strip()
-            for row in self._form_spec(mirror).get("fields") or []
-            if isinstance(row, dict)
-        }
-        declared.discard("")
-        rendered = set(self._arch_fields("view_sc_approval_policy_form"))
-        self.assertEqual(sorted(declared - rendered), [])
 
     def test_no_retired_declaration_referenced_a_missing_fact(self):
         for model, names in self.RETIRED_ENTRY_FACTS.items():

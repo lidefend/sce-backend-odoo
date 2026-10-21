@@ -99,17 +99,6 @@ class ProjectMaterialPlan(models.Model):
             vals.setdefault("business_category_id", self._resolve_business_category_id(vals))
         return super().create(vals_list)
 
-    def init(self):
-        self.env.cr.execute(
-            """
-            UPDATE project_material_plan plan
-               SET business_category_id = category.id
-              FROM sc_business_category category
-             WHERE plan.business_category_id IS NULL
-               AND category.code = 'material.plan'
-               AND category.target_model = 'project.material.plan'
-            """
-        )
 
     @api.depends("line_ids.quantity", "line_ids.bill_qty")
     def _compute_plan_totals(self):

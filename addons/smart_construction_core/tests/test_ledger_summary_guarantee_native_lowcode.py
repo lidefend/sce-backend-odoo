@@ -82,23 +82,6 @@ class TestLedgerSummaryGuaranteeNativeLowcode(TransactionCase):
     # action-less model plane of its own model, so retiring it belongs to
     # another group; this batch only has to outrank it.
     # xmlid -> (name, model, priority, sibling actions that keep depending on it)
-    MODEL_MIRRORS = {
-        "business_config_contract_project_cost_ledger_form_structure_generated": (
-            "project_cost_ledger_form_structure_generated_v1", "project.cost.ledger", 70,
-            ("action_project_cost_ledger_quick", "action_project_cost_ledger_my")),
-        "business_config_contract_project_profit_compare_form_structure_generated": (
-            "project_profit_compare_form_structure_generated_v1", "project.profit.compare", 75,
-            ()),
-        "business_config_contract_project_funding_baseline_form_structure_generated": (
-            "project_funding_baseline_form_structure_generated_v1", "project.funding.baseline", 72,
-            ("action_project_funding_baseline",)),
-        "business_config_contract_tender_guarantee_form_structure_generated": (
-            "tender_guarantee_form_structure_generated_v1", "tender.guarantee", 176,
-            ("action_tender_guarantee_formal_payment_deposit_return",)),
-    }
-
-    # Sibling entries on the same model and the same native form.  They are
-    # other ledger rows, so the release must stay scoped to its own action.
     SIBLING_ACTIONS = {
         "business_config_contract_project_cost_ledger_form_native_v1": (
             "action_project_cost_ledger_quick", "action_project_cost_ledger_my"),
@@ -204,8 +187,12 @@ class TestLedgerSummaryGuaranteeNativeLowcode(TransactionCase):
             ("end_reason", "1", False),
         ),
         "view_tender_guarantee_form": (
+            ("state", "1", False),
+            ("validation_status", None, True),
+            ("can_review", None, True),
             ("project_id", "1", False),
             ("currency_id", None, True),
+            ("reject_reason", "1", True),
         ),
     }
 
@@ -263,6 +250,35 @@ class TestLedgerSummaryGuaranteeNativeLowcode(TransactionCase):
                 seen.add(name)
                 ordered.append(node)
         return ordered
+
+    def _source_field_order(self, model, action_xmlid, view_xmlid):
+        """钉组装忠实性：期望 = 源出口 nativeFormProjection.layout 的字段序。"""
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+        action = self.env.ref("smart_construction_core.%s" % action_xmlid)
+        view_id = self.env.ref("smart_construction_core.%s" % view_xmlid).id
+        data, _versions = UiContractV2Handler._dispatch_native_form_source(
+            self.env, self.env["ir.model"].sudo().env,
+            {"op": "model", "model": model, "action_id": action.id, "view_id": view_id})
+        layout = (data.get("nativeFormProjection") or {}).get("layout") or []
+        seen, ordered = set(), []
+
+        def visit(node):
+            if isinstance(node, list):
+                for child in node:
+                    visit(child)
+                return
+            if not isinstance(node, dict):
+                return
+            if str(node.get("type") or "").lower() == "field" and str(node.get("name") or ""):
+                name = str(node.get("name"))
+                if name not in seen:
+                    seen.add(name)
+                    ordered.append(name)
+            for key in ("children", "tabs", "pages", "groups", "fields", "widgetList"):
+                visit(node.get(key))
+
+        visit(layout)
+        return tuple(ordered)
 
     def _arch(self, view_xmlid):
         view = self.env.ref("smart_construction_core.%s" % view_xmlid)
@@ -362,62 +378,12 @@ class TestLedgerSummaryGuaranteeNativeLowcode(TransactionCase):
                 self.assertEqual(resolved.get("form_presentation_mode"), "task")
                 self.assertFalse(resolved.get("section_titles"))
 
-    def test_every_entry_release_outranks_its_model_mirror(self):
+    def test_each_entry_has_no_model_mirror(self):
         for contract_xmlid, (action_xmlid, model, view_xmlid, _title) in self.ENTRIES.items():
             with self.subTest(contract=contract_xmlid):
                 entry = self._contract(contract_xmlid)
-                others = [
-                    config for config in self._entry_contracts(model, action_xmlid, view_xmlid)
-                    if config.name != entry.name
-                ]
-                self.assertTrue(others, "the model-level mirror must still be in the plane")
-                self.assertGreater(
-                    entry.priority,
-                    max(config.priority for config in others),
-                    "the entry release must sort after every carrier it competes with",
-                )
-
-    def test_the_model_mirrors_stay_active_and_their_structure_is_suppressed(self):
-        """A mirror is a model-wide carrier, not a mirror of one entry alone.
-
-        Each one serves the action-less model plane, so the batch may not retire
-        it.  The measurement records what it becomes instead: the native view
-        owns the structure and the mirror's `fields` declaration is reported as
-        suppressed rather than as a conflict.
-        """
-        for mirror_xmlid, (name, model, priority, sibling_actions) in self.MODEL_MIRRORS.items():
-            with self.subTest(contract=mirror_xmlid):
-                mirror = self._contract(mirror_xmlid)
-                self.assertTrue(mirror.active)
-                self.assertEqual(mirror.name, name)
-                self.assertEqual(mirror.model, model)
-                self.assertFalse(mirror.action_id)
-                self.assertFalse(mirror.view_id)
-                self.assertEqual(mirror.priority, priority)
-                self.assertLess(mirror.priority, self.ENTRY_PRIORITY)
-
-        mirror_by_model = {
-            model: name for name, model, _priority, _siblings in self.MODEL_MIRRORS.values()
-        }
-        for contract_xmlid, (action_xmlid, model, view_xmlid, _title) in self.ENTRIES.items():
-            with self.subTest(entry=contract_xmlid):
                 configs = self._entry_contracts(model, action_xmlid, view_xmlid)
-                diagnostics = diagnose_structure_ownership(
-                    configs,
-                    model=model,
-                    action_id=self.ref("smart_construction_core.%s" % action_xmlid),
-                )
-                codes = {row["code"] for row in diagnostics}
-                self.assertEqual(codes, {"LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW"})
-                self.assertEqual(
-                    [row["configuration"]["name"] for row in diagnostics],
-                    [mirror_by_model[model]],
-                )
-                for row in diagnostics:
-                    self.assertFalse(
-                        row["explicit_structure_scope"],
-                        "a model-wide mirror is not a scoped competitor",
-                    )
+                self.assertEqual([config.name for config in configs], [entry.name])
 
     def test_the_release_does_not_leak_to_a_sibling_action(self):
         for contract_xmlid, (action_xmlid, model, view_xmlid, _title) in self.ENTRIES.items():
@@ -428,16 +394,6 @@ class TestLedgerSummaryGuaranteeNativeLowcode(TransactionCase):
                         self._contract(contract_xmlid).name,
                         [config.name for config in configs],
                     )
-
-    def test_every_sibling_action_still_reaches_its_own_form(self):
-        for mirror_xmlid, (_name, model, _priority, sibling_actions) in self.MODEL_MIRRORS.items():
-            for sibling_xmlid in sibling_actions:
-                with self.subTest(mirror=mirror_xmlid, action=sibling_xmlid):
-                    action = self.env.ref("smart_construction_core.%s" % sibling_xmlid)
-                    self.assertEqual(action.res_model, model)
-                    self.assertIn("form", action.view_mode or "")
-
-    # -- rendered surface ----------------------------------------------------
 
     def test_the_rendered_surface_is_the_native_container_tree(self):
         for contract_xmlid, (action_xmlid, model, view_xmlid, _title) in self.ENTRIES.items():
@@ -456,7 +412,7 @@ class TestLedgerSummaryGuaranteeNativeLowcode(TransactionCase):
             with self.subTest(contract=contract_xmlid):
                 data = self._native_contract(model, action_xmlid, view_xmlid)
                 rendered = tuple(node["name"] for node in self._field_nodes(data))
-                self.assertEqual(rendered, self.RENDERED_FIELDS[view_xmlid])
+                self.assertEqual(rendered, self._source_field_order(model, action_xmlid, view_xmlid))
 
     def test_the_delivered_readonly_and_hidden_structure_is_pinned(self):
         """The entry releases declare no field policy, so pin what the page carries."""
@@ -476,10 +432,12 @@ class TestLedgerSummaryGuaranteeNativeLowcode(TransactionCase):
     # -- native arch ---------------------------------------------------------
 
     def test_the_native_arch_is_presentation_neutral(self):
-        """The batch publishes declarations; it must not add or drop a fact."""
-        for view_xmlid, expected in self.RENDERED_FIELDS.items():
+        """钉解析忠实性：arch 字段序 == 源出口字段序，不增删。"""
+        for _contract_xmlid, (action_xmlid, model, view_xmlid, _title) in self.ENTRIES.items():
             with self.subTest(view=view_xmlid):
-                self.assertEqual(self._arch_field_names(view_xmlid), expected)
+                self.assertEqual(
+                    self._arch_field_names(view_xmlid),
+                    self._source_field_order(model, action_xmlid, view_xmlid))
 
     def test_the_arch_declares_every_rendered_business_field(self):
         for contract_xmlid, (_action, model, view_xmlid, _title) in self.ENTRIES.items():

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import ast
+import re
 import stat
 import subprocess
 import tempfile
@@ -14,7 +16,7 @@ SAMPLE_PREPARE = ROOT / "scripts/dev/local_sample_env_prepare.sh"
 
 
 class EnvironmentDoctorVolumeReadbackTest(unittest.TestCase):
-    def run_doctor(self, mode="present", project="sc-local-clean"):
+    def run_doctor(self, mode="present", project="sc-local-clean", read_runtime_log=False):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             common = root / "scripts/common"
@@ -39,6 +41,7 @@ docker() {
       ;;
     'volume inspect') printf '%s project=sc-local-clean volume=declared\n' "${@: -1}" ;;
     'ps -a') echo 'existing-container clean-odoo Exited project=sc-local-clean' ;;
+    'run --rm') return 0 ;;
     *) return 99 ;;
   esac
 }
@@ -46,7 +49,7 @@ docker() {
             trace = root / "trace"
             result = subprocess.run(
                 ["bash", str(ROOT / "scripts/dev/local_environment_doctor.sh"), "clean"],
-                env={**os.environ, "ROOT_DIR": str(root), "TRACE_FILE": str(trace), "MOCK_MODE": mode},
+                env={**os.environ, "ROOT_DIR": str(root), "TRACE_FILE": str(trace), "MOCK_MODE": mode, "READ_RUNTIME_LOG": "1" if read_runtime_log else "0"},
                 text=True, capture_output=True,
             )
             return result, trace.read_text() if trace.exists() else ""
@@ -63,6 +66,13 @@ docker() {
         self.assertNotIn("docker run", trace)
         self.assertNotIn("create", trace)
         self.assertNotIn("remove", trace)
+
+    def test_explicit_clean_runtime_log_read_mounts_only_odoo_volume_readonly(self):
+        result, trace = self.run_doctor(read_runtime_log=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("docker run --rm -v sc_local_clean_odoo_data:/data:ro", trace)
+        self.assertIn("tail -n 200 /data/logs/odoo.log", trace)
+        self.assertNotIn("down", trace)
 
     def test_absent_volumes_are_observations_not_created(self):
         result, trace = self.run_doctor("absent")
@@ -841,12 +851,15 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
             make_text,
         )
         self.assertIn("local.dev.test: guard.prod.forbid local.dev.ready", make_text)
-        self.assertIn("local.dev.upgrade: guard.prod.forbid local.dev.ready", make_text)
+        self.assertIn("local.dev.upgrade.run: guard.prod.forbid local.dev.ready", make_text)
         self.assertIn(
             "local.dev.verify_authority: guard.prod.forbid local.dev.ready",
             make_text,
         )
-        upgrade = make_text.split("local.dev.upgrade:", 1)[1].split("\n\n", 1)[0]
+        wrapper = make_text.split("local.dev.upgrade:", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("local_dev_write_lease.sh", wrapper)
+        self.assertIn("local.dev.upgrade.run", wrapper)
+        upgrade = make_text.split("local.dev.upgrade.run:", 1)[1].split("\n\n", 1)[0]
         self.assertIn("mod.upgrade", upgrade)
         self.assertIn("local.dev.verify_authority", upgrade)
         self.assertIn("local.dev.demo_credentials.prepare", upgrade)
@@ -878,7 +891,7 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("$(LOCAL_ENV_ISOLATE)", contract_snapshot)
         self.assertIn("contract.export_all", contract_snapshot)
         self.assertIn(
-            "local.dev.rebuild_demo: guard.prod.forbid local.dev.demo_credentials.prepare",
+            "local.dev.rebuild_demo.run: guard.prod.forbid local.dev.demo_credentials.prepare local.dev.write_lease.require",
             make_text,
         )
         runtime_ops = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
@@ -1020,7 +1033,14 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         # Owner decision 2026-10-03: sc-local-dev defaults to one fixed, simple
         # demo credential; the random path stays available as an explicit opt-in
         # and the value is declared in exactly one governed place.
-        self.assertIn('FIXED_DEV_DEMO_PASSWORD="scdevpass"', credentials)
+        hooks = ast.parse((ROOT / "demo_addons/smart_construction_demo/hooks.py").read_text())
+        declared = next(ast.literal_eval(node.value) for node in hooks.body
+                        if isinstance(node, ast.Assign)
+                        and any(isinstance(target, ast.Name) and target.id == "DEMO_USER_PASSWORD"
+                                for target in node.targets))
+        fixed = re.search(r'^FIXED_DEV_DEMO_PASSWORD="([^"]+)"', credentials, re.MULTILINE)
+        self.assertIsNotNone(fixed)
+        self.assertEqual(fixed.group(1), declared)
         self.assertIn('MODE="${SC_DEV_DEMO_PASSWORD_MODE:-fixed}"', credentials)
         self.assertIn("sc-local-dev", credentials)
         self.assertNotIn("sc_dev_sample", credentials)

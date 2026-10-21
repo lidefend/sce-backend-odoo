@@ -241,6 +241,8 @@ def _resolve_startup_delivery_identity(env, params: dict | None) -> dict:
     if not explicit_product_key and not explicit_base_product_key:
         hook_result = call_extension_hook_first(env, "smart_core_resolve_startup_delivery_identity", env, raw_params)
         hook_payload = hook_result if isinstance(hook_result, dict) else None
+    if not (raw_params.get("delivery_edition_key") or raw_params.get("edition_key")):
+        edition_key = str((hook_payload or {}).get("edition_key") or edition_key).strip() or edition_key
     source = "params" if (explicit_product_key or explicit_base_product_key) else "extension_hook" if hook_payload else "legacy_default"
     base_product_key = (
         explicit_base_product_key

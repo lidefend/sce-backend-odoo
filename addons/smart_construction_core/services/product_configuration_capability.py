@@ -152,3 +152,24 @@ def build_catalog(manifest: dict[str, Any], audiences: Iterable[str]) -> dict[st
         "guardrails": list(manifest.get("guardrails") or []),
         "reason": "" if effective else "no_declared_capability_audience",
     }
+
+
+def build_user_capabilities(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Present the unified provider verdict, without re-evaluating permissions."""
+    labels = {"allow": "可用", "readonly": "只读", "deny": "无权限",
+              "pending": "待开放", "coming_soon": "未发布"}
+    items = []
+    for row in rows:
+        state = row["capability_state"]
+        if state not in labels:
+            raise ValueError("Unknown capability verdict: %s" % state)
+        items.append({
+            "key": row["key"], "label": row["ui_label"],
+            "status": state, "status_label": labels[state],
+            "available": state in {"allow", "readonly"},
+            "reason": row["reason"], "reason_code": row["reason_code"],
+            "entry": row["group_label"], "audience": "",
+            "authority": "系统统一能力权限服务",
+            "description": row["ui_hint"],
+        })
+    return {"items": items, "empty_message": "当前账号没有可展示的业务能力条目，请联系管理员检查能力配置。"}

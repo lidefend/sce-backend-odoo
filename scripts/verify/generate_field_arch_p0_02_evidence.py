@@ -120,9 +120,9 @@ def main() -> int:
                 "legacy_field": row["field_name"],
                 "source_kind": "RESIDUAL_DATABASE_VIEW",
                 "formal_field": formal,
-                "resolution": "REMOVE_VIEW_REFERENCE_DURING_PRODUCT_UPGRADE",
+                "resolution": "FRESH_INSTALL_REQUIRED_NO_DEVELOPMENT_UPGRADE",
                 "destructive_business_data_change": "false",
-                "status": "MIGRATION_17.0.0.76",
+                "status": "DEVELOPMENT_MIGRATION_RETIRED",
             })
 
     write_csv(args.output_dir / "formal-contract-migration-matrix.csv", MATRIX_FIELDS, matrix)

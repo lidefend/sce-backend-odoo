@@ -82,11 +82,7 @@
                         <page string="附件">
                             <field name="attachment_ids" widget="many2many_binary"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
             </form>

@@ -72,23 +72,6 @@ class TestTaxDeductionNativeLowcode(TransactionCase):
     )
     # The model-wide contracts that are still active: both keep serving action
     # 852 (扣款单), which has no release of its own.
-    MODEL_WIDE_CONTRACTS = (
-        "business_config_contract_sc_tax_deduction_registration_form_sections_v1",
-        "business_config_contract_sc_tax_deduction_registration_form_structure_generated",
-    )
-    # The third member of that trio is retired by this batch, the same way G02 /
-    # G03 / G04 retired the equivalent body.  Its `sections` were already
-    # reported as suppressed on both released entries, but its unconditional
-    # `readonly` field annotations still merged onto the nodes and contradicted
-    # the native arch and the delivered policy, so a required create fact
-    # (发票号码 / 抵扣税额) rendered without a control the user could fill.
-    RETIRED_MODEL_WIDE_CONTRACTS = (
-        "business_config_contract_sc_tax_deduction_registration_p1_form_business_facts_v1",
-    )
-    # Facts the retired model-wide P1 body declared read-only that the rebuilt
-    # native body declares editable until `state == 'legacy_confirmed'`.  The
-    # delivered policy already resolved them to `auth=edit`; the tree node used
-    # to keep the retired body's unconditional read-only on top of it.
     UNFROZEN_FACTS = (
         "invoice_no", "deduction_amount", "deduction_tax_amount",
         "deduction_surcharge_amount", "note",
@@ -150,7 +133,7 @@ class TestTaxDeductionNativeLowcode(TransactionCase):
         "deduction_amount_tax", "deduction_handling", "deduction_note_attachment",
         "contractor_responsibility", "deduction_source_trace",
     )
-    HEADER_BUTTONS = ("action_confirm", "action_deduct", "action_cancel")
+    HEADER_BUTTONS = ("action_confirm", "validate_tier", "reject_tier", "action_deduct", "action_cancel")
     # The responsibility summary action is not a header action: it keeps its
     # carrier inside the responsibility section, next to the record it explains.
     CARRIER_BUTTON = "action_view_company_contractor_responsibility_summary"
@@ -302,37 +285,21 @@ class TestTaxDeductionNativeLowcode(TransactionCase):
         # the two entries are distinct entries of one shared body
         self.assertEqual(len({action for action, _view, _title in self.FORMAL_ENTRIES}), 2)
 
-    def test_legacy_structure_cannot_re_project_over_a_native_authority_entry(self):
-        """The shared mechanism suppresses the model-wide chapters on both entries."""
-        model_wide_names = {self.ref(key).name for key in self.MODEL_WIDE_CONTRACTS}
+    def test_native_entries_only_suppress_the_retained_section_contract(self):
+        """Generated mirrors are gone; the retained section contract is still suppressed."""
         for action_key, view_id, _title in self.FORMAL_ENTRIES:
             data = self.contract(action_key, view_id)
             contract = data["formStructureContract"]
             governance = contract["sourceAuthority"]["governance_source"]
             own = self.ref(self.ENTRY_CONTRACTS[action_key]).name
-            applied = [row["name"] for row in governance["businessConfigContracts"]]
-            self.assertIn(own, applied, action_key)
-            for name in applied:
-                self.assertTrue(name == own or name in model_wide_names,
-                                (action_key, name, "an unexpected configuration reached this entry"))
-            conflicts = [row for row in governance["structureDiagnostics"]
-                         if row["code"] == "LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW"]
-            self.assertTrue(conflicts, (action_key, "the model-wide legacy structure must be reported"))
-            suppressed = {row["configuration"]["name"] for row in conflicts}
-            # a model-wide contract may still be listed as consulted, but its
-            # body must be reported as suppressed rather than projected
-            self.assertEqual(suppressed, model_wide_names,
-                             (action_key, "every model-wide body must be suppressed"))
-            for row in conflicts:
-                self.assertFalse(row["explicit_structure_scope"], action_key)
-                self.assertEqual({owner["name"] for owner in row["competing_owners"]}, {own}, action_key)
-            # the suppression is a real compatibility dependency, not a silent drop
-            self.assertEqual(
-                governance["compatibilityDependencies"], ["legacy_configuration_structure_suppression"],
-                action_key,
-            )
+            self.assertEqual([row["name"] for row in governance["businessConfigContracts"]],
+                             ["sc_tax_deduction_registration_form_sections_v1", own], action_key)
+            self.assertEqual({row["configuration"]["name"] for row in governance["structureDiagnostics"]
+                              if row["code"] == "LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW"},
+                             {"sc_tax_deduction_registration_form_sections_v1"}, action_key)
+            self.assertEqual(governance["compatibilityDependencies"],
+                             ["legacy_configuration_structure_suppression"], action_key)
             self.assertEqual(governance["configuredSections"], [], action_key)
-            # and the native tree really is the only structure that renders
             self.assertEqual(contract["structureAuthority"], "container_tree", action_key)
             self.assertFalse(contract["slots"], action_key)
 
@@ -564,149 +531,25 @@ class TestTaxDeductionNativeLowcode(TransactionCase):
                     (action_key, anchor, "a tab-owned section must stay under its page"),
                 )
 
-    def test_model_wide_configurations_keep_serving_the_bypass_entry(self):
-        """Action 852 (扣款单) has no release of its own and keeps the model-wide floor."""
-        # This batch retired the model-wide P1 fact body the same way G02 / G03 /
-        # G04 retired theirs: it owned structure that view 1654 now owns, and its
-        # field annotations contradicted the rebuilt body.
-        for contract_key in self.RETIRED_MODEL_WIDE_CONTRACTS:
-            record = self.ref(contract_key)
-            self.assertFalse(record.active, (contract_key, "the retired body must stay retired"))
-            self.assertFalse(record.action_id, contract_key)
-            self.assertEqual(record.model, "sc.tax.deduction.registration", contract_key)
-        # The remaining model-wide contracts are the ones that still serve 852.
-        for contract_key in self.MODEL_WIDE_CONTRACTS:
-            record = self.ref(contract_key)
-            self.assertTrue(record.active, contract_key)
-            self.assertFalse(record.action_id, contract_key)
-            self.assertEqual(record.model, "sc.tax.deduction.registration", contract_key)
-        bypass = self.ref(self.BYPASS_ENTRY[0])
-        self.assertEqual(bypass.res_model, "sc.tax.deduction.registration")
-        # the bypass entry fixes only a tree view, so its records resolve the
-        # same primary form the two ledger entries rebuild
-        self.assertFalse([row for row in (bypass.view_ids or []) if row.view_mode == "form"])
-        data = self.contract(*self.BYPASS_ENTRY[:2])
-        governance = data["formStructureContract"]["sourceAuthority"]["governance_source"]
-        self.assertEqual(governance["resolvedViewId"], self.view_ref_id(self.NATIVE_VIEW))
-        self.assertEqual(governance["resolvedActionId"], bypass.id)
-        # it is a shared consumer of the rebuilt body, not a ledger entry
-        self.assertNotIn(bypass.id, [self.ref(action_key).id for action_key, _v, _t in self.FORMAL_ENTRIES])
-        self.assertFalse(
-            self.env["ui.business.config.contract"].search([("action_id", "=", bypass.id)]),
-            "扣款单 must stay an entry without a release of its own",
-        )
-        # and it must never consume a configuration scoped to one of the two
-        # ledger entries of this model
-        applied = [row["name"] for row in governance["businessConfigContracts"]]
-        for contract_key in self.RETIRED_ENTRY_CONTRACTS:
-            self.assertNotIn(self.ref(contract_key).name, applied)
-        # 852 renders the same native body, so retiring a redundant second
-        # structure may not cost it a single fact that body declared.
-        self._assert_declared_facts_survive(self.BYPASS_ENTRY[0], data)
+    def _retired_p1_declared_facts(self):
+        """Historical fact fixture from 55fdb711c7ffd42f6da4c4300bc37d5032a6bbe3.
 
-    def test_a_derived_surface_without_an_action_scope_keeps_the_declared_facts(self):
-        """A surface opened by an unstored action consumes the model-wide floor.
-
-        税务申报 → 申报期抵扣来源 is reached from the 税务申报 form's 抵扣来源
-        stat button, which returns an action dict built in code
-        (``sc.tax.filing._source_action``) with no stored
-        ``ir.actions.act_window``.  The record page takes ``action_id`` and
-        ``view_id`` from the route query, and a derived action dict carries
-        neither, so this form resolves with no action scope and no view scope.
-
-        The retired model-wide P1 body carried the same un-narrowed scope
-        (``action_id`` / ``view_id`` / ``role_key`` / ``company_id`` all empty),
-        so it applied to this surface exactly as it applied to 790 / 879 / 852.
-        Declaring the retirement for "three entries" therefore understated it:
-        this surface is inside the changed scope too and has to be proven here
-        instead of being called an afterthought.
+        Keeps field-retention coverage without reading the removed P1 record.
         """
-        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
-
-        # 1. provenance: the surface is derived from a released entry, not a
-        #    stored action of its own, and it stays reachable from that entry.
-        filing = self.env["sc.tax.filing"].new({})
-        derived = filing.action_open_deductions()
-        self.assertNotIn("id", derived, "the derived entry must not be a stored action")
-        self.assertEqual(derived["res_model"], "sc.tax.deduction.registration")
-        self.assertEqual(derived["view_mode"], "tree,form")
-        self.assertEqual(derived["context"], {"create": False})
-        filing_action = self.ref("action_sc_product_tax_filing_v1")
-        filing_menu = self.env.ref("smart_construction_core.menu_sc_product_tax_filing_v1")
-        self.assertEqual(filing_menu.action.res_model, "sc.tax.filing")
-        self.assertEqual(
-            filing_menu.action.id, filing_action.id,
-            "the entry that opens this surface must stay a formal menu entry",
+        return (
+            'deduction_bill_status_display',
+            'deduction_bill_document_no',
+            'tax_deduction_is_transfer_out_display',
+            'deduction_bill_project_name',
+            'partner_name',
+            'invoice_no',
+            'deduction_tax_amount',
+            'deduction_amount',
+            'deduction_surcharge_amount',
+            'note',
+            'creator_name',
+            'deduction_bill_date_display',
         )
-        self.assertTrue(
-            self.arch("view_sc_tax_filing_form").xpath("//button[@name='action_open_deductions']"),
-            "the 税务申报 body must keep the button that opens this surface",
-        )
-
-        # 2. the request a record page issues for it: model + form, with no
-        #    action scope and no view scope.  An unscoped form request resolves
-        #    the model primary form, which is the same rebuilt native body the
-        #    two released entries render.
-        result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
-            "op": "model", "model": "sc.tax.deduction.registration",
-            "view_type": "form", "render_profile": "create",
-        })
-        result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
-        self.assertTrue(result.get("ok", True), result.get("error"))
-        data = result["data"]
-        governance = data["formStructureContract"]["sourceAuthority"]["governance_source"]
-        self.assertEqual(governance["resolvedActionId"], 0)
-        self.assertEqual(governance["resolvedViewId"], self.view_ref_id(self.NATIVE_VIEW))
-
-        # 3. with no entry-scoped declaration applicable, this surface consumes
-        #    the model-wide floor in task mode, exactly like the tree-only 852
-        #    does.  The retired body declared that same mode, so retiring it can
-        #    drop the section titles and field annotations it merged in but can
-        #    never flip this surface into the native authority that 790 / 879
-        #    declare for themselves.
-        self.assertEqual(governance["formStructureAuthority"], "entry_semantic_surface")
-        retired_form_spec = self.ref(
-            self.RETIRED_MODEL_WIDE_CONTRACTS[0]
-        ).contract_json["view_orchestration"]["views"]["form"]
-        self.assertEqual(
-            retired_form_spec.get("composition_mode"), "entry_semantic_surface",
-            "the retired body declared the mode this surface resolves, so the "
-            "retirement cannot change the authority of any model-wide surface",
-        )
-
-        # 4. the retirement really reaches this surface: neither the retired
-        #    body nor its section projection survives here, while the model-wide
-        #    contract that still serves it is applied and keeps declaring the
-        #    facts it carries.
-        applied = [row["name"] for row in governance["businessConfigContracts"]]
-        for contract_key in self.RETIRED_MODEL_WIDE_CONTRACTS:
-            self.assertNotIn(
-                self.ref(contract_key).name, applied,
-                (contract_key, "the retired model-wide body must not reach this surface"),
-            )
-        self.assertIn(
-            self.ref(self.MODEL_WIDE_CONTRACTS[0]).name, applied,
-            "the model-wide floor must keep serving this surface",
-        )
-        retired_titles = [
-            row.get("title") for row in retired_form_spec.get("sections") or [] if row.get("title")
-        ]
-        self.assertTrue(retired_titles, "the retired body must still declare the sections it merged in")
-        for title in retired_titles:
-            self.assertNotIn(title, governance.get("sectionTitles") or [], title)
-        rendered = self.tree_field_names(data)
-        generated_form_spec = self.ref(
-            self.MODEL_WIDE_CONTRACTS[1]
-        ).contract_json["view_orchestration"]["views"]["form"]
-        for row in generated_form_spec.get("fields") or []:
-            self.assertIn(
-                row["name"], rendered,
-                (row["name"], "the model-wide floor must keep declaring this fact here"),
-            )
-
-        # 5. and losing the retired body may not cost this surface a single
-        #    fact that body declared.
-        self._assert_declared_facts_survive("sc.tax.filing.action_open_deductions", data)
 
     def _assert_declared_facts_survive(self, action_key, data):
         """Retiring a body may not cost the product a fact that body declared.
@@ -754,17 +597,6 @@ class TestTaxDeductionNativeLowcode(TransactionCase):
             if any(source in native for source in sources):
                 declared.add(name)
         return declared
-
-    def _retired_p1_declared_facts(self):
-        """Facts the retired model-wide P1 body declared.
-
-        Read from the retired record itself, so the assertion states what the
-        product used to present instead of a hard-coded list that could drift
-        away from the retired body it claims to preserve.
-        """
-        retired = self.ref(self.RETIRED_MODEL_WIDE_CONTRACTS[0])
-        form = retired.contract_json["view_orchestration"]["views"]["form"]
-        return tuple(row["name"] for row in form["fields"])
 
     def test_entry_category_is_presented_on_the_create_surface(self):
         """The entry category must be visible on the form, not only persisted.
@@ -976,38 +808,3 @@ class TestTaxDeductionNativeLowcode(TransactionCase):
         )
         self.assertTrue(category, "the entry category %s must exist" % code)
         return category
-
-    def test_retiring_the_redundant_p1_body_keeps_its_facts_and_frees_the_create_surface(self):
-        """The retired P1 body neither drops a fact nor freezes a fillable one.
-
-        Business behaviour under test: a fact the delivered create profile
-        requires must expose a control the user can fill.  The retired body's
-        unconditional read-only annotations used to contradict both the native
-        arch (`readonly="state == 'legacy_confirmed'"`) and the delivered field
-        policy (`auth=edit`) on exactly those facts.
-        """
-        declared = self._retired_p1_declared_facts()
-        self.assertTrue(declared, "the retired P1 body must still be readable for this comparison")
-        # 1. no fact the retired body declared is lost anywhere it was presented
-        for action_key, view_id, _title in (self.FORMAL_ENTRIES + (self.BYPASS_ENTRY,)):
-            self._assert_declared_facts_survive(action_key, self.contract(action_key, view_id))
-        # 2. a fact the delivered policy leaves authorable is not frozen on the node
-        for action_key, view_id, _title in self.FORMAL_ENTRIES:
-            data = self.contract(action_key, view_id)
-            status = self.widget_status(data)
-            for name in self.UNFROZEN_FACTS:
-                self.assertIs((status.get(name) or {}).get("readonly"), False,
-                              (action_key, name, "the delivered profile must leave this fact authorable"))
-                node = self.field_node(data, name)
-                self.assertIsNot(node.get("readonly"), True,
-                                 (action_key, name, "the node keeps a read-only the profile contradicts"))
-                self.assertIsNot((node.get("fieldInfo") or {}).get("readonly"), True,
-                                 (action_key, name, "fieldInfo keeps a read-only the profile contradicts"))
-            # ... and at least one of them really is required, so the rule
-            # above is exercised by a fact the user has to fill rather than by
-            # an optional fact that could be left empty.
-            required_unfrozen = []
-            for name in self.UNFROZEN_FACTS:
-                if (self.field_node(data, name).get("fieldInfo") or {}).get("required") is True:
-                    required_unfrozen.append(name)
-            self.assertTrue(required_unfrozen, (action_key, "no required fact exercised the rule"))

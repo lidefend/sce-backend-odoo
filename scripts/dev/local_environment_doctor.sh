@@ -69,8 +69,8 @@ done
 compose_dev ps -a
 echo "[local.env.doctor] bounded service logs follow; environment values are not printed"
 compose_dev logs --no-color --tail=120 db redis odoo nginx
-if [[ "${profile}" == "persistent" ]] && docker volume inspect "${ODOO_DATA}" >/dev/null 2>&1; then
-  echo "[local.env.doctor] bounded demo installation log follows"
+if [[ "${profile}" == "persistent" || ( "${profile}" == "clean" && "${READ_RUNTIME_LOG:-0}" == "1" ) ]] && docker volume inspect "${ODOO_DATA}" >/dev/null 2>&1; then
+  echo "[local.env.doctor] bounded installation and runtime logs follow"
   docker run --rm -v "${ODOO_DATA}:/data:ro" alpine:3.20 \
     sh -ceu '
       if [ -f /data/demo_install.log ]; then tail -n 80 /data/demo_install.log; else echo "demo installation stdout log is absent"; fi

@@ -7,6 +7,12 @@ from uuid import uuid4
 from odoo import fields
 from odoo.addons.smart_core.core.base_handler import BaseIntentHandler
 
+CONFIG_ADMIN_GROUPS = [
+    "smart_construction_core.group_sc_cap_business_config_admin",
+    "smart_construction_core.group_sc_cap_config_admin",
+    "smart_construction_core.group_sc_super_admin",
+]
+
 from ..services.product_system_parameter_catalog import (
     impact_preview,
     load_manifest,
@@ -21,22 +27,6 @@ MODULE_MANIFEST = (
     Path(__file__).resolve().parents[1]
     / "data/product_system_parameter_catalog_v1.json"
 )
-
-CONFIG_ADMIN_GROUPS = (
-    "smart_construction_core.group_sc_cap_business_config_admin",
-    "smart_construction_core.group_sc_cap_config_admin",
-    "smart_construction_core.group_sc_super_admin",
-)
-
-
-def _has_group(user, xmlid: str) -> bool:
-    checker = getattr(user, "has_group", None)
-    if not callable(checker):
-        return False
-    try:
-        return bool(checker(xmlid))
-    except Exception:
-        return False
 
 
 def _trace_id(context, prefix: str) -> str:
@@ -66,7 +56,7 @@ class ProductSystemParameterPublishHandler(BaseIntentHandler):
     DESCRIPTION = "Publish a governed system parameter change with audit and rollback snapshot"
     VERSION = "1.0.0"
     ETAG_ENABLED = False
-    REQUIRED_GROUPS = list(CONFIG_ADMIN_GROUPS)
+    REQUIRED_GROUPS = CONFIG_ADMIN_GROUPS
 
     @staticmethod
     def source_authority_contract() -> dict:
@@ -83,15 +73,13 @@ class ProductSystemParameterPublishHandler(BaseIntentHandler):
             "runtime_carrier": "smart_construction_core.handlers.product_system_parameter_change",
         }
 
-    def handle(self, payload=None, ctx=None):
+    def handle(self, params=None, ctx=None):
         trace_id = _trace_id(self.context, "param_publish")
-        if not any(_has_group(self.env.user, group) for group in CONFIG_ADMIN_GROUPS):
-            return _error(self, trace_id, 403, "PERMISSION_DENIED", "只有行业配置管理员可以发布系统参数。")
         try:
             manifest = load_manifest(MODULE_MANIFEST)
         except Exception as exc:
             return _error(self, trace_id, 500, "PRODUCT_SYSTEM_PARAMETER_MANIFEST_MISSING", str(exc))
-        params = payload if isinstance(payload, dict) else {}
+        params = params if isinstance(params, dict) else {}
         parameter_key = str(params.get("parameter_key") or "").strip()
         proposed_value = params.get("proposed_value")
         change_reason = str(params.get("change_reason") or "").strip()
@@ -139,7 +127,7 @@ class ProductSystemParameterRollbackHandler(BaseIntentHandler):
     DESCRIPTION = "Roll back a published system parameter change to its previous value"
     VERSION = "1.0.0"
     ETAG_ENABLED = False
-    REQUIRED_GROUPS = list(CONFIG_ADMIN_GROUPS)
+    REQUIRED_GROUPS = CONFIG_ADMIN_GROUPS
 
     @staticmethod
     def source_authority_contract() -> dict:
@@ -155,11 +143,9 @@ class ProductSystemParameterRollbackHandler(BaseIntentHandler):
             "runtime_carrier": "smart_construction_core.handlers.product_system_parameter_change",
         }
 
-    def handle(self, payload=None, ctx=None):
+    def handle(self, params=None, ctx=None):
         trace_id = _trace_id(self.context, "param_rollback")
-        if not any(_has_group(self.env.user, group) for group in CONFIG_ADMIN_GROUPS):
-            return _error(self, trace_id, 403, "PERMISSION_DENIED", "只有行业配置管理员可以回滚系统参数。")
-        params = payload if isinstance(payload, dict) else {}
+        params = params if isinstance(params, dict) else {}
         change_id = int(params.get("change_id") or 0)
         if not change_id:
             return _error(self, trace_id, 400, "MISSING_CHANGE_ID", "缺少变更记录标识。")
@@ -171,6 +157,18 @@ class ProductSystemParameterRollbackHandler(BaseIntentHandler):
             return _error(self, trace_id, 404, "CHANGE_NOT_FOUND", "未找到当前公司的参数变更记录。")
         if record.state != "published":
             return _error(self, trace_id, 409, "CHANGE_NOT_ROLLBACKABLE", "只有已发布的变更可以回滚。")
+        # A snapshot may only unwind the latest still-published change for
+        # this company and parameter. Equal values do not prove equal history.
+        newer = record.search([
+            ("company_id", "=", record.company_id.id),
+            ("parameter_key", "=", record.parameter_key),
+            ("state", "=", "published"),
+            ("id", ">", record.id),
+        ], limit=1)
+        if newer:
+            return _error(self, trace_id, 409, "CHANGE_SUPERSEDED", "该参数存在更新的已发布变更，请先回滚较新的变更。")
+        if read_parameter_value(self.env, record.parameter_key) != record.proposed_value:
+            return _error(self, trace_id, 409, "PARAMETER_VALUE_CHANGED", "当前参数值已变化，不能覆盖现有配置；请重新读取并核对变更。")
         apply_parameter_value(self.env, record.parameter_key, record.previous_value)
         record.sudo().write(
             {

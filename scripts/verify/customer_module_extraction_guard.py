@@ -87,10 +87,7 @@ def main() -> int:
 
     neutral_defaults = (
         ROOT / "make" / "release.mk",
-        ROOT / "scripts" / "release" / "production_candidate_history.sh",
         ROOT / "scripts" / "deploy" / "prod_sim_oneclick.sh",
-        ROOT / "scripts" / "deploy" / "fresh_production_history_init.sh",
-        ROOT / "scripts" / "deploy" / "prod_sim_fresh_replay.sh",
     )
     for path in neutral_defaults:
         content = path.read_text(encoding="utf-8")

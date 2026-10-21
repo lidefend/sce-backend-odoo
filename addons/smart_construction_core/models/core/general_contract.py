@@ -151,47 +151,6 @@ class ScGeneralContract(models.Model):
         ("amount_total_nonnegative", "CHECK(amount_total >= 0)", "Contract amount must be non-negative."),
     ]
 
-    def init(self):
-        self.env.cr.execute(
-            """
-            UPDATE sc_general_contract
-               SET contract_direction = CASE
-                       WHEN evidence LIKE '%%收入%%'
-                         OR evidence LIKE '%%销售%%'
-                         OR evidence LIKE '%%收款%%'
-                         OR evidence LIKE '%%回款%%'
-                         OR evidence LIKE '%%应收%%'
-                         THEN 'income'
-                       WHEN evidence LIKE '%%供应商%%'
-                         OR evidence LIKE '%%采购%%'
-                         OR evidence LIKE '%%支出%%'
-                         OR evidence LIKE '%%付款%%'
-                         OR evidence LIKE '%%应付%%'
-                         OR evidence LIKE '%%分包%%'
-                         OR evidence LIKE '%%劳务%%'
-                         OR evidence LIKE '%%材料%%'
-                         OR evidence LIKE '%%设备%%'
-                         OR evidence LIKE '%%租赁%%'
-                         OR evidence LIKE '%%咨询%%'
-                         OR evidence LIKE '%%费用%%'
-                         THEN 'expense'
-                       WHEN trim(evidence) = '' THEN 'unknown'
-                       ELSE 'neutral'
-                   END,
-                   contract_direction_source = 'contract_evidence',
-                   contract_direction_reason = CASE
-                       WHEN trim(evidence) = '' THEN '缺少合同方向证据'
-                       ELSE '历史合同类型/属性/名称=' || evidence
-                   END
-              FROM (
-                    SELECT id, concat_ws(' ', contract_type, contract_attribute, contract_name) AS evidence
-                      FROM sc_general_contract
-                     WHERE source_origin = 'legacy'
-                       AND COALESCE(contract_direction, 'neutral') IN ('neutral', 'unknown')
-                   ) classified
-             WHERE sc_general_contract.id = classified.id
-            """
-        )
 
     @api.model_create_multi
     def create(self, vals_list):

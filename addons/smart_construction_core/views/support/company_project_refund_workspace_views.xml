@@ -20,6 +20,9 @@
                     <group name="company_project_refund_processing_note" data-sc-anchor="company_project_refund_processing_note" string="办理说明" col="1">
                         <field name="note" placeholder="可补充退款原因；金额、账户、保证金类型和附件在正式退款单据中填写。"/>
                     </group>
+                    <div class="alert alert-info" role="status" invisible="not processing_advisory">
+                        <field name="processing_advisory" readonly="1" nolabel="1"/>
+                    </div>
                 </sheet>
             </form>
         </field>

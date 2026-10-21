@@ -2,7 +2,7 @@
 import logging
 
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 
 
 _logger = logging.getLogger(__name__)
@@ -36,6 +36,15 @@ class ResCompany(models.Model):
         help="新建采购、销售等业务单据时默认采用的付款条件。",
     )
 
+    def write(self, vals):
+        parameter_fields = {
+            "sc_default_payment_terms", "sc_cost_from_account_move",
+            "sc_cost_from_purchase", "sc_cost_from_stock",
+        }
+        if not self.env.su and parameter_fields.intersection(vals):
+            raise AccessError(_("请通过系统参数变更集发布或回滚参数。"))
+        return super().write(vals)
+
     @api.constrains(
         "sc_cost_from_account_move",
         "sc_cost_from_purchase",
@@ -52,35 +61,6 @@ class ResCompany(models.Model):
                 )
             ) > 1:
                 raise ValidationError(_("每家公司只能启用凭证、采购或入库中的一个成本事实来源。"))
-
-    @api.model
-    def _migrate_legacy_cost_source_parameters(self):
-        """Promote the former database-global authority into every company."""
-        key_to_field = {
-            "smart_construction_core.sc_cost_from_account_move": "sc_cost_from_account_move",
-            "smart_construction_core.sc_cost_from_purchase": "sc_cost_from_purchase",
-            "smart_construction_core.sc_cost_from_stock": "sc_cost_from_stock",
-        }
-        parameters = self.env["ir.config_parameter"].sudo().search(
-            [("key", "in", list(key_to_field))]
-        )
-        if not parameters:
-            return False
-
-        def enabled(raw):
-            return str(raw or "").strip().lower() in {"1", "true", "yes", "on"}
-
-        selected = [parameter.key for parameter in parameters if enabled(parameter.value)]
-        if len(selected) > 1:
-            raise ValidationError(
-                _("旧成本来源配置同时启用了多个权威来源，升级已停止；请先完成受控配置修复。")
-            )
-        values = {field_name: False for field_name in key_to_field.values()}
-        if selected:
-            values[key_to_field[selected[0]]] = True
-        self.sudo().search([]).write(values)
-        parameters.unlink()
-        return True
 
     @api.model
     def _sc_ensure_cny_currency(self):

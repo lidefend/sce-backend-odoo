@@ -349,11 +349,7 @@
                         <page string="验收附件">
                             <field name="attachment_ids" widget="many2many_binary"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
             </form>
@@ -500,7 +496,7 @@
                                     <field name="settlement_status_text" readonly="1"/>
                                     <field name="settlement_settled_amount" readonly="1"/>
                                 </group>
-                                <group string="来源记录">
+                                <group string="来源记录" groups="smart_construction_core.group_sc_cap_config_admin">
                                     <field name="legacy_fact_model" readonly="1"/>
                                     <field name="legacy_fact_id" readonly="1"/>
                                     <field name="legacy_fact_type" readonly="1"/>
@@ -643,7 +639,7 @@
                                     <field name="stock_picking_id" readonly="1"/>
                                     <field name="transfer_inbound_id" readonly="1" invisible="outbound_type != 'transfer'"/>
                                 </group>
-                                <group string="来源记录">
+                                <group string="来源记录" groups="smart_construction_core.group_sc_cap_config_admin">
                                     <field name="legacy_fact_model" readonly="1"/>
                                     <field name="legacy_fact_id" readonly="1"/>
                                     <field name="legacy_fact_type" readonly="1"/>
@@ -782,11 +778,7 @@
                         <page string="附件">
                             <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
             </form>
@@ -930,11 +922,7 @@
                         <page string="结算说明">
                             <field name="note" nolabel="1"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
-                        </page>
-                    </notebook>
+</notebook>
                 </sheet>
                 <chatter/>
             </form>

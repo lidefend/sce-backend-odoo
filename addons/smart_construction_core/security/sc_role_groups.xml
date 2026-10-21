@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <data>
+        <record id="group_sc_role_experience" model="res.groups">
+            <field name="name">SC 角色 - 体验用户</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+            <field name="implied_ids" eval="[(6, 0, [ref('base.group_user')])]"/>
+            <field name="comment">体验身份标记；业务能力由另外分配的正式角色及原生访问规则决定。</field>
+        </record>
         <!-- 基础/组织角色：面向用户维护表中的业务习惯，不直接暴露能力组。 -->
         <record id="group_sc_role_general_user" model="res.groups">
             <field name="name">SC 角色 - 通用角色</field>

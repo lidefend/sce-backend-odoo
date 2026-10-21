@@ -550,17 +550,7 @@ class ProjectionAndRouteTests(unittest.TestCase):
         seed = (ROOT / "data" / "sc_platform_namespace_seed.xml").read_text(encoding="utf-8")
         self.assertIn("<field name=\"display_name\">四川智汇某某建设集团有限公司</field>", seed)
         self.assertNotIn("Demo tenant", seed)
-        migration = ROOT / "migrations" / "17.0.1.1.16" / "post-migration.py"
-        self.assertTrue(migration.exists())
-        migration_source = migration.read_text(encoding="utf-8")
-        self.assertIn('DEMO_TENANT_NAME = "四川智汇某某建设集团有限公司"', migration_source)
-        self.assertIn("sc_platform_namespace", migration_source)
         self.assertIn("<field name=\"display_name\">平台控制台</field>", seed)
-        platform_migration = ROOT / "migrations" / "17.0.1.1.17" / "post-migration.py"
-        self.assertTrue(platform_migration.exists())
-        platform_source = platform_migration.read_text(encoding="utf-8")
-        self.assertIn('PLATFORM_NAMESPACE_NAME = "平台控制台"', platform_source)
-        self.assertIn("sc_platform_namespace", platform_source)
 
     def test_tenants_payload_uses_the_registry_name_and_no_cross_db_company(self):
         ops_source = (CONTROLLERS / "platform_ops_controller.py").read_text(encoding="utf-8")

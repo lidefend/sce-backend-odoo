@@ -232,6 +232,7 @@ class TestSettlementFactImmutabilityV1(TransactionCase):
                 "settlement_line_id": other_line.id,
                 "contract_id": self.contract.id,
                 "amount": 1.0,
+                "current_pay_amount": 1.0,
             }
         )
         self.assertEqual(matching.settlement_id, other)
@@ -246,6 +247,7 @@ class TestSettlementFactImmutabilityV1(TransactionCase):
                     "settlement_line_id": other_line.id,
                     "contract_id": self.contract.id,
                     "amount": 1.0,
+                    "current_pay_amount": 1.0,
                 }
             )
         with self.assertRaises(ValidationError):

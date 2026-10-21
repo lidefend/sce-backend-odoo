@@ -53,15 +53,16 @@
                      章节导航；内层列组（适用业务／执行方式）与 one2many 步骤表单的分组是布局与
                      子表口径，不承载入口章节身份，故不设锚点。 -->
                 <sheet>
+                    <div class="alert alert-info" invisible="target_model != 'payment.request'">付款申请的启用审批和审批方式请在“系统参数”中发布或回滚。</div>
                     <group name="sc_approval_policy_rules" data-sc-anchor="sc_approval_policy_rules" string="业务规则">
                         <group string="适用业务">
                             <field name="name" string="规则名称"/>
-                            <field name="target_model" string="业务单据"/>
-                            <field name="approval_required" string="启用审批"/>
+                            <field name="target_model" string="业务单据" readonly="target_model == 'payment.request'"/>
+                            <field name="approval_required" string="启用审批" readonly="target_model == 'payment.request'"/>
                         </group>
                         <group string="执行方式">
                             <field name="trigger" string="触发时点"/>
-                            <field name="mode" string="审批方式"/>
+                            <field name="mode" string="审批方式" readonly="target_model == 'payment.request'"/>
                             <field name="manager_scope_key" string="默认审批岗位"/>
                             <field name="step_count" readonly="1" string="步骤数"/>
                         </group>
@@ -69,10 +70,10 @@
                     <group name="sc_approval_policy_runtime" data-sc-anchor="sc_approval_policy_runtime" string="系统承载">
                         <group>
                             <field name="runtime_state" string="执行状态"/>
-                            <field name="active" string="规则有效"/>
+                            <field name="active" string="规则有效" readonly="target_model == 'payment.request'"/>
                         </group>
                         <group>
-                            <field name="company_id" groups="base.group_multi_company" string="公司"/>
+                            <field name="company_id" groups="base.group_multi_company" string="公司" readonly="target_model == 'payment.request'"/>
                             <field name="manager_group_id" invisible="1"/>
                         </group>
                     </group>

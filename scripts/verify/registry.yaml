@@ -1532,18 +1532,6 @@ entries:
   owner: platform-team
   date: '2026-10-09'
   reason: 'Governed unittest module invocation in: verify.product_view_structure.contract.unit'
-- script: test_retired_p1_alias_view_cleanup_migration.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-13'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_retired_p2_form_view_cleanup_migration.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-12'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_scene_audit_disclosure_guard.py
   status: active
   owner: platform-team
@@ -1730,3 +1718,18 @@ entries:
   date: '2026-08-10'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_retired_product_view_declarations.py
+  status: active
+  owner: platform-team
+  date: '2026-10-21'
+  reason: 'Governed unittest invocation in: verify.product.retired_views.source_contract'
+- script: test_view_orchestration_product_boundary_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-21'
+  reason: 'Governed unittest invocation in: verify.view.orchestration_product_boundary_guard'
+- script: test_contract_retirement_declaration.py
+  status: active
+  owner: platform-team
+  date: '2026-10-21'
+  reason: 'Governed unittest invocation in: verify.contract_retirement.declaration.unit'

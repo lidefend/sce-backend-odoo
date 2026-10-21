@@ -553,14 +553,6 @@ def _finalize_layout_dsl(contract: dict[str, Any]) -> None:
             if not isinstance(node, dict):
                 raise ValueError(f"{path}[{index}] must be an object")
             node_path = f"{path}[{index}]"
-            attributes = _dict(node.get("attributes"))
-            style_tokens = set(" ".join(_text(value) for value in (
-                node.get("class"), node.get("className"), node.get("styleToken"),
-                attributes.get("class"), attributes.get("className"), attributes.get("contractStyleToken"),
-            )).split())
-            if "alert" in style_tokens or _text(attributes.get("role")).lower() == "alert":
-                from .form_configuration_compiler import FormConfigurationError
-                raise FormConfigurationError("NATIVE_FEEDBACK_INTERACTION_REQUIRED", node_path)
             container_id = _text(
                 node.get("containerId")
                 or node.get("widgetId")

@@ -103,6 +103,13 @@ class TreasuryLedger(models.Model):
             """
         )
 
+        self.env.cr.execute(
+            "CREATE INDEX IF NOT EXISTS sc_treasury_ledger_posted_payment_identity_idx "
+            "ON sc_treasury_ledger (payment_request_id, project_id, company_id, currency_id, "
+            "partner_id, direction, source_model, source_res_id) "
+            "WHERE state = 'posted' AND payment_request_id IS NOT NULL"
+        )
+
     @api.model_create_multi
     def create(self, vals_list):
         if self.env.context.get("sc_treasury_authority_token") is not _TREASURY_AUTHORITY_TOKEN:

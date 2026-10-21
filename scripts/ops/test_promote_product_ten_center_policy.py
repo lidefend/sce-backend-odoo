@@ -68,6 +68,26 @@ class ProductTenCenterPolicyPromotionTests(unittest.TestCase):
                     else:
                         self.assertEqual(depth, 3)
 
+    def test_iterating_finance_entries_publish_only_in_preview_without_permission_overrides(self):
+        raw = json.loads(SOURCE_PATH.read_text())
+        keys = {"smart_construction_core." + key for key in (
+            "menu_payment_ledger", "menu_sc_treasury_ledger", "menu_sc_settlement_order")}
+        selected = [row for row in raw["entries"] if row["menu_xmlid"] in keys]
+        self.assertEqual(len(selected), 3)
+        for row in selected:
+            self.assertEqual(row["release_state"], "preview")
+            self.assertFalse({"groups_id", "required_roles", "readonly", "domain"} & set(row))
+        _, publication = project(load_source())
+        for product in publication["products"]:
+            rows = {row["menu_xmlid"]: row for group in product["menu_groups"] for row in group["menus"]}
+            if product["edition_key"] == "standard":
+                self.assertFalse(keys & set(rows))
+            else:
+                self.assertTrue(keys <= set(rows))
+                for key in keys:
+                    self.assertEqual(rows[key]["release_state"], "preview")
+                    self.assertEqual(rows[key]["action_xmlid"], native_facts()[key]["action"])
+
     def test_unreleased_quick_creation_is_only_in_preview(self):
         _, publication = project(load_source())
         for product in publication["products"]:
@@ -221,11 +241,11 @@ class ProductTenCenterPolicyPromotionTests(unittest.TestCase):
         def menus(payload):
             return {product["edition_key"]: {row["menu_xmlid"]: row for group in product["menu_groups"] for row in group["menus"]} for product in payload["products"]}
         before = menus(project(source)[1])
-        self.assertEqual(len(before["standard"]), 90)
+        self.assertEqual(len(before["standard"]), 91)
         self.assertTrue({
             "smart_construction_core.menu_sc_project_quick_create",
-            "smart_construction_core.menu_ui_menu_config_policy_business_config",
         } <= set(before["preview"]) - set(before["standard"]))
+        self.assertIn("smart_construction_core.menu_ui_menu_config_policy_business_config", before["standard"])
         for key, row in before["standard"].items():
             self.assertEqual(row, before["preview"][key])
             self.assertEqual(row["release_state"], "released")

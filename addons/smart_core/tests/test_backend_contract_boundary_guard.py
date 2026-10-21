@@ -22,10 +22,10 @@ class BackendContractBoundaryGuardTests(unittest.TestCase):
         self.assertEqual(report["schema_version"], "1.0")
         self.assertEqual(report["error_count"], 0)
         self.assertEqual(report["errors"], [])
-        self.assertEqual(report["contract_writer_count"], 6)
-        self.assertEqual(report["approval_policy_writer_count"], 1)
-        self.assertEqual(report["lowcoding_policy_writer_count"], 4)
-        self.assertEqual(report["writer_boundary_count"], 11)
+        self.assertEqual(report["contract_writer_count"], 5)
+        self.assertEqual(report["approval_policy_writer_count"], 2)
+        self.assertEqual(report["lowcoding_policy_writer_count"], 3)
+        self.assertEqual(report["writer_boundary_count"], 10)
         self.assertEqual(report["writer_file_count"], 7)
         self.assertIn("addons/smart_core/handlers/form_field_configuration.py", report["writer_paths"])
         self.assertIn("addons/smart_core/handlers/menu_configuration.py", report["writer_paths"])
@@ -219,24 +219,6 @@ class BackendContractBoundaryGuardTests(unittest.TestCase):
                 )
             ]["expected_source"],
             "smart_core.lowcode.approval_policy",
-        )
-        self.assertEqual(
-            by_boundary[
-                (
-                    "addons/smart_construction_core/migrations/17.0.0.61/post-migration.py",
-                    "industry_stale_contract_scope_cleanup_migration",
-                )
-            ]["expected_source"],
-            "smart_construction_core.stale_contract_scope_cleanup",
-        )
-        self.assertEqual(
-            allowed_by_boundary[
-                (
-                    "addons/smart_construction_core/migrations/17.0.0.61/post-migration.py",
-                    "industry_product_menu_policy_baseline_migration",
-                )
-            ]["expected_source"],
-            "smart_construction_core.config_center_label_migration",
         )
         self.assertEqual(
             allowed_by_boundary[

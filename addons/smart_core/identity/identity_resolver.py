@@ -179,6 +179,19 @@ class IdentityResolver:
         ext_map = user.groups_id.sudo().get_external_id()
         return {xml for xml in ext_map.values() if xml}
 
+    def assigned_role_codes(self, user_xmlids: set) -> List[str]:
+        """All actual declared memberships, before exclusive display selection.
+
+        Capability consumers need membership facts, not the primary display role.
+        No role hierarchy, name inference or synthetic fallback grants membership.
+        """
+        order = dict.fromkeys((*self._role_precedence, *self._role_groups_explicit,
+                               *self._role_groups_capability_fallback))
+        return [role for role in order if (
+            set(self._role_groups_explicit.get(role) or ())
+            | set(self._role_groups_capability_fallback.get(role) or ())
+        ) & user_xmlids]
+
     def resolve_role_code_with_evidence(self, user_xmlids: set) -> tuple[str, dict]:
         role_codes, evidence = self.resolve_role_codes_with_evidence(user_xmlids)
         return role_codes[0], evidence

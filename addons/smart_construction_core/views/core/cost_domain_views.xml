@@ -334,7 +334,7 @@
                             <field name="amount" readonly="is_generated"/>
                             <field name="currency_id" readonly="1"/>
                         </group>
-                        <group string="来源追溯">
+                        <group string="来源追溯" groups="smart_construction_core.group_sc_cap_config_admin">
                             <field name="source_model"/>
                             <field name="source_id"/>
                             <field name="source_line_id"/>

@@ -889,6 +889,24 @@
       "delivery": "PREVIEW_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
       "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_payment_ledger",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_treasury_ledger",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_settlement_order",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
     }
   ],
   "root_menu_xmlid": "smart_construction_core.menu_sc_root",
@@ -937,6 +955,15 @@
           "exclusive_surface": true,
           "group_xmlids": [
             "smart_core.group_smart_core_admin"
+          ]
+        },
+        {
+          "role_code": "experience",
+          "label": "体验用户",
+          "precedence": 15,
+          "exclusive_surface": true,
+          "group_xmlids": [
+            "smart_construction_core.group_sc_role_experience"
           ]
         },
         {
@@ -1117,6 +1144,11 @@
                 "projects.list",
                 "projects.ledger"
               ]
+            },
+            "experience": {
+              "landing_scene_candidates": [
+                "workspace.home"
+              ]
             }
           }
         },
@@ -1226,6 +1258,11 @@
                 "workspace.home",
                 "projects.list",
                 "projects.ledger"
+              ]
+            },
+            "experience": {
+              "landing_scene_candidates": [
+                "workspace.home"
               ]
             }
           }

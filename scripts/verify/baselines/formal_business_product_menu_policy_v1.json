@@ -23,9 +23,9 @@
     "effective_capability_count_per_product": 91,
     "menu_count_by_product": {
       "construction.standard": 91,
-      "construction.preview": 128
+      "construction.preview": 131
     },
-    "full_product_entry_count": 128
+    "full_product_entry_count": 131
   },
   "role_catalog": {
     "catalog_version": "v1",
@@ -50,6 +50,15 @@
         "exclusive_surface": true,
         "group_xmlids": [
           "smart_core.group_smart_core_admin"
+        ]
+      },
+      {
+        "role_code": "experience",
+        "label": "体验用户",
+        "precedence": 15,
+        "exclusive_surface": true,
+        "group_xmlids": [
+          "smart_construction_core.group_sc_role_experience"
         ]
       },
       {
@@ -229,6 +238,11 @@
               "workspace.home",
               "projects.list",
               "projects.ledger"
+            ]
+          },
+          "experience": {
+            "landing_scene_candidates": [
+              "workspace.home"
             ]
           }
         }
@@ -6630,6 +6644,11 @@
               "projects.list",
               "projects.ledger"
             ]
+          },
+          "experience": {
+            "landing_scene_candidates": [
+              "workspace.home"
+            ]
           }
         }
       },
@@ -9900,6 +9919,48 @@
               ],
               "visible_menu_path": "智慧施工管理平台 / 合同中心 / 支出结算",
               "sequence": 60
+            },
+            {
+              "access_level": "public",
+              "action_xmlid": "smart_construction_core.action_sc_settlement_order",
+              "business_entry_contract_version": "business_entry_disposition.v1",
+              "capability_key": "construction.menu.smart_construction_core_menu_sc_settlement_order",
+              "capability_maturity": "PREVIEW_FOUNDATION",
+              "control_granularity": "user_visible_menu_page",
+              "control_object": "P1 施工行业正式产品入口",
+              "disposition_policy": "keep_list_form",
+              "enabled": true,
+              "entry_intent": "handling",
+              "entry_intent_label": "办理",
+              "entry_target_policy": "keep_list_form",
+              "group_key": "construction.合同中心",
+              "group_label": "合同中心",
+              "integration_target": "sc.settlement.order 结算单",
+              "label": "结算单",
+              "locked_data_policy": "odoo_model_acl_and_record_rules",
+              "menu_key": "smart_construction_core.menu_sc_settlement_order",
+              "menu_xmlid": "smart_construction_core.menu_sc_settlement_order",
+              "model": "sc.settlement.order",
+              "name": "结算单",
+              "page_key": "smart_construction_core.menu_sc_settlement_order",
+              "page_label": "结算单",
+              "policy_note": "locked_complete_product_menu_surface",
+              "product_domain": "合同中心",
+              "product_domain_label": "合同中心",
+              "product_key": "合同中心",
+              "productization_source": "p1_locked_menu_surface_projection",
+              "release_domain": "construction",
+              "release_state": "preview",
+              "res_model": "sc.settlement.order",
+              "source_kind": "p1_locked_menu_surface_projection",
+              "target_scene_key": "",
+              "title": "结算单",
+              "view_modes": [
+                "tree",
+                "form"
+              ],
+              "visible_menu_path": "智慧施工管理平台 / 合同中心 / 结算单",
+              "sequence": 113
             }
           ]
         },
@@ -10591,6 +10652,90 @@
               ],
               "visible_menu_path": "智慧施工管理平台 / 财务中心 / 工程进度款收入登记",
               "sequence": 120
+            },
+            {
+              "access_level": "public",
+              "action_xmlid": "smart_construction_core.action_payment_ledger",
+              "business_entry_contract_version": "business_entry_disposition.v1",
+              "capability_key": "construction.menu.smart_construction_core_menu_payment_ledger",
+              "capability_maturity": "PREVIEW_FOUNDATION",
+              "control_granularity": "user_visible_menu_page",
+              "control_object": "P1 施工行业正式产品入口",
+              "disposition_policy": "keep_list_form",
+              "enabled": true,
+              "entry_intent": "handling",
+              "entry_intent_label": "办理",
+              "entry_target_policy": "keep_list_form",
+              "group_key": "construction.财务中心",
+              "group_label": "财务中心",
+              "integration_target": "payment.ledger 支付台账",
+              "label": "支付台账",
+              "locked_data_policy": "odoo_model_acl_and_record_rules",
+              "menu_key": "smart_construction_core.menu_payment_ledger",
+              "menu_xmlid": "smart_construction_core.menu_payment_ledger",
+              "model": "payment.ledger",
+              "name": "支付台账",
+              "page_key": "smart_construction_core.menu_payment_ledger",
+              "page_label": "支付台账",
+              "policy_note": "locked_complete_product_menu_surface",
+              "product_domain": "财务中心",
+              "product_domain_label": "财务中心",
+              "product_key": "财务中心",
+              "productization_source": "p1_locked_menu_surface_projection",
+              "release_domain": "construction",
+              "release_state": "preview",
+              "res_model": "payment.ledger",
+              "source_kind": "p1_locked_menu_surface_projection",
+              "target_scene_key": "",
+              "title": "支付台账",
+              "view_modes": [
+                "tree",
+                "form"
+              ],
+              "visible_menu_path": "智慧施工管理平台 / 财务中心 / 支付台账",
+              "sequence": 111
+            },
+            {
+              "access_level": "public",
+              "action_xmlid": "smart_construction_core.action_sc_treasury_ledger",
+              "business_entry_contract_version": "business_entry_disposition.v1",
+              "capability_key": "construction.menu.smart_construction_core_menu_sc_treasury_ledger",
+              "capability_maturity": "PREVIEW_FOUNDATION",
+              "control_granularity": "user_visible_menu_page",
+              "control_object": "P1 施工行业正式产品入口",
+              "disposition_policy": "keep_list_form",
+              "enabled": true,
+              "entry_intent": "handling",
+              "entry_intent_label": "办理",
+              "entry_target_policy": "keep_list_form",
+              "group_key": "construction.财务中心",
+              "group_label": "财务中心",
+              "integration_target": "sc.treasury.ledger 资金台账",
+              "label": "资金台账",
+              "locked_data_policy": "odoo_model_acl_and_record_rules",
+              "menu_key": "smart_construction_core.menu_sc_treasury_ledger",
+              "menu_xmlid": "smart_construction_core.menu_sc_treasury_ledger",
+              "model": "sc.treasury.ledger",
+              "name": "资金台账",
+              "page_key": "smart_construction_core.menu_sc_treasury_ledger",
+              "page_label": "资金台账",
+              "policy_note": "locked_complete_product_menu_surface",
+              "product_domain": "财务中心",
+              "product_domain_label": "财务中心",
+              "product_key": "财务中心",
+              "productization_source": "p1_locked_menu_surface_projection",
+              "release_domain": "construction",
+              "release_state": "preview",
+              "res_model": "sc.treasury.ledger",
+              "source_kind": "p1_locked_menu_surface_projection",
+              "target_scene_key": "",
+              "title": "资金台账",
+              "view_modes": [
+                "tree",
+                "form"
+              ],
+              "visible_menu_path": "智慧施工管理平台 / 财务中心 / 资金台账",
+              "sequence": 113
             }
           ]
         },
@@ -14122,6 +14267,32 @@
         },
         {
           "access_level": "public",
+          "capability_key": "construction.menu.smart_construction_core_menu_sc_settlement_order",
+          "capability_maturity": "PREVIEW_FOUNDATION",
+          "control_object": "P1 施工行业正式产品入口",
+          "disposition_policy": "keep_list_form",
+          "enabled": true,
+          "entry_intent": "handling",
+          "entry_intent_label": "办理",
+          "entry_target_policy": "keep_list_form",
+          "group_key": "construction.合同中心",
+          "group_label": "合同中心",
+          "integration_target": "sc.settlement.order 结算单",
+          "label": "结算单",
+          "menu_xmlid": "smart_construction_core.menu_sc_settlement_order",
+          "product_domain": "合同中心",
+          "product_domain_label": "合同中心",
+          "product_key": "合同中心",
+          "release_state": "preview",
+          "res_model": "sc.settlement.order",
+          "source_kind": "p1_locked_menu_surface_projection",
+          "target_scene_key": "",
+          "visible_menu_path": "智慧施工管理平台 / 合同中心 / 结算单",
+          "entry_kind": "user_visible_menu_page",
+          "target_page_key": "smart_construction_core.menu_sc_settlement_order"
+        },
+        {
+          "access_level": "public",
           "capability_key": "construction.menu.smart_construction_core_menu_sc_p1_project_budget",
           "capability_maturity": "RELEASED_FOUNDATION",
           "control_object": "P1 施工行业正式产品入口",
@@ -14535,6 +14706,58 @@
           "visible_menu_path": "智慧施工管理平台 / 财务中心 / 工程进度款收入登记",
           "entry_kind": "user_visible_menu_page",
           "target_page_key": "smart_construction_core.menu_sc_engineering_progress_income"
+        },
+        {
+          "access_level": "public",
+          "capability_key": "construction.menu.smart_construction_core_menu_payment_ledger",
+          "capability_maturity": "PREVIEW_FOUNDATION",
+          "control_object": "P1 施工行业正式产品入口",
+          "disposition_policy": "keep_list_form",
+          "enabled": true,
+          "entry_intent": "handling",
+          "entry_intent_label": "办理",
+          "entry_target_policy": "keep_list_form",
+          "group_key": "construction.财务中心",
+          "group_label": "财务中心",
+          "integration_target": "payment.ledger 支付台账",
+          "label": "支付台账",
+          "menu_xmlid": "smart_construction_core.menu_payment_ledger",
+          "product_domain": "财务中心",
+          "product_domain_label": "财务中心",
+          "product_key": "财务中心",
+          "release_state": "preview",
+          "res_model": "payment.ledger",
+          "source_kind": "p1_locked_menu_surface_projection",
+          "target_scene_key": "",
+          "visible_menu_path": "智慧施工管理平台 / 财务中心 / 支付台账",
+          "entry_kind": "user_visible_menu_page",
+          "target_page_key": "smart_construction_core.menu_payment_ledger"
+        },
+        {
+          "access_level": "public",
+          "capability_key": "construction.menu.smart_construction_core_menu_sc_treasury_ledger",
+          "capability_maturity": "PREVIEW_FOUNDATION",
+          "control_object": "P1 施工行业正式产品入口",
+          "disposition_policy": "keep_list_form",
+          "enabled": true,
+          "entry_intent": "handling",
+          "entry_intent_label": "办理",
+          "entry_target_policy": "keep_list_form",
+          "group_key": "construction.财务中心",
+          "group_label": "财务中心",
+          "integration_target": "sc.treasury.ledger 资金台账",
+          "label": "资金台账",
+          "menu_xmlid": "smart_construction_core.menu_sc_treasury_ledger",
+          "product_domain": "财务中心",
+          "product_domain_label": "财务中心",
+          "product_key": "财务中心",
+          "release_state": "preview",
+          "res_model": "sc.treasury.ledger",
+          "source_kind": "p1_locked_menu_surface_projection",
+          "target_scene_key": "",
+          "visible_menu_path": "智慧施工管理平台 / 财务中心 / 资金台账",
+          "entry_kind": "user_visible_menu_page",
+          "target_page_key": "smart_construction_core.menu_sc_treasury_ledger"
         },
         {
           "access_level": "public",

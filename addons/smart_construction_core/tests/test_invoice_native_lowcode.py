@@ -45,7 +45,6 @@ class TestInvoiceNativeLowcode(TransactionCase):
             "data/invoice_input_form_productization_contract.xml",
             "data/invoice_output_tax_form_productization_contract.xml",
             "data/view_orchestration_form_section_contract_data.xml",
-            "data/p1_daily_business_form_orchestration_contract_data.xml",
         ):
             convert_file(self.env, "smart_construction_core", source, {}, mode="update", noupdate=False)
 
@@ -96,38 +95,6 @@ class TestInvoiceNativeLowcode(TransactionCase):
 
     def tree_nodes(self, data):
         return [n for n, _parent in self.walk(data["layoutContract"]["containerTree"])]
-
-    def test_four_entries_retire_legacy_structure_and_keep_fields(self):
-        self.assertFalse(self.ref("business_config_contract_sc_invoice_registration_form_sections_v1").active)
-        self.assertFalse(self.ref("business_config_contract_sc_invoice_registration_p1_form_business_facts_v1").active)
-        self.assertFalse(self.ref("business_config_contract_sc_invoice_registration_form_structure_generated").active)
-        for contract_key in (
-            "business_config_contract_invoice_input_productized_form_v1",
-            "business_config_contract_invoice_output_application_productized_form_v1",
-            "business_config_contract_invoice_output_registration_productized_form_v1",
-            "business_config_contract_invoice_prepaid_tax_productized_form_v1",
-        ):
-            record = self.ref(contract_key)
-            self.assertTrue(record.active)
-            form_spec = record.contract_json["view_orchestration"]["views"]["form"]
-            self.assertEqual(form_spec["composition_mode"], "native_semantic_surface")
-            self.assertNotIn("sections", form_spec)
-            self.assertNotIn("fields", form_spec)
-        for action_key, required in self.FORMAL_ACTIONS:
-            data = self.contract(action_key)
-            g = data["formStructureContract"]["sourceAuthority"]["governance_source"]
-            self.assertEqual(g["resolvedActionId"], self.ref(action_key).id)
-            self.assertEqual(g["resolvedViewId"], self.ref("view_sc_invoice_registration_form").id)
-            self.assertIn("formStructureAuthority", g)
-            self.assertEqual(g["formStructureAuthority"], "native_authority")
-            self.assertIn("formPresentationMode", g)
-            self.assertEqual(g["formPresentationMode"], "task")
-            self.assertEqual(g["compatibilityDependencies"], [])
-            self.assertEqual(g["configuredSections"], [])
-            names = {n.get("name") for n in self.tree_nodes(data)}
-            for field in (*required, *self.SHARED_PRESENT_FIELDS):
-                self.assertIn(field, names, (action_key, field))
-                self.assertEqual(len(self.field_nodes(data, field)), 1, (action_key, field))
 
     def test_shared_form_effective_field_rules(self):
         """Field presence is not usability: ownership, conditional visibility
@@ -200,70 +167,6 @@ class TestInvoiceNativeLowcode(TransactionCase):
             names = [n.get("name") for n in self.tree_nodes(data) if n.get("type") == "field" and n.get("name")]
             self.assertEqual(len(names), len(set(names)),
                              (action_key, sorted({n for n in names if names.count(n) > 1})))
-
-    def test_tax_type_input_visibility_is_preexisting_native_rule(self):
-        """The retired input contract listed tax_type in its section while the
-        native view kept it in the prepaid-only group.  Reconstruct the legacy
-        composite (entry contract + active shared layers + no native contract)
-        in-transaction and prove the legacy projection never changed the
-        tax_type node modifiers: the input-direction hiding is a preexisting
-        native rule, not a migration regression."""
-        migrated = self.contract("action_sc_invoice_input")
-        native_config = self.ref("business_config_contract_invoice_input_productized_form_v1")
-        native_config.active = False
-        self.ref("business_config_contract_sc_invoice_registration_form_sections_v1").active = True
-        self.ref("business_config_contract_sc_invoice_registration_p1_form_business_facts_v1").active = True
-        self.ref("business_config_contract_sc_invoice_registration_form_structure_generated").active = True
-        # Mechanism-equivalent replica of the retired input contract for
-        # tax_type: section membership plus a field row without semantic keys
-        # (the retired contract declared no readonly/visible on tax_type).
-        legacy_replica = self.env["ui.business.config.contract"].create({
-            "name": "uc4_legacy_input_replica_for_tax_type",
-            "model": "sc.invoice.registration",
-            "view_type": "form",
-            "action_id": self.ref("action_sc_invoice_input").id,
-            "priority": 700,
-            "company_id": False,
-            "active": True,
-            "status": "published",
-            "version_no": 1,
-            "contract_json": {"view_orchestration": {
-                "context": {"source": "smart_construction_core.product_release",
-                            "source_status": "product_release"},
-                "views": {"form": {
-                    "title": "进项发票",
-                    "composition_mode": "entry_semantic_surface",
-                    "columns": 2,
-                    "sections": [
-                        {"title": "办理主信息", "sequence": 10, "columns": 2,
-                         "fields": ["state", "validation_status", "name", "direction"]},
-                        {"title": "进项税务信息", "sequence": 40, "columns": 2,
-                         "fields": ["tax_rate", "tax_type", "invoice_content", "cost_category_name"]},
-                    ],
-                    "fields": [
-                        {"name": "tax_type", "sequence": 270},
-                        {"name": "cost_category_name", "sequence": 290},
-                    ],
-                }},
-            }},
-        })
-        legacy = self.contract("action_sc_invoice_input")
-        legacy_g = legacy["formStructureContract"]["sourceAuthority"]["governance_source"]
-        # sanity: the reconstruction actually engages the legacy path
-        self.assertEqual(legacy_g["formStructureAuthority"], "entry_semantic_surface")
-        self.assertTrue(legacy_g["configuredSections"])
-        # the compared nodes are structurally identical between composites
-        m_node, l_node = self.field_node(migrated, "tax_type"), self.field_node(legacy, "tax_type")
-        self.assertEqual(l_node.get("modifiers"), m_node.get("modifiers"))
-        self.assertEqual(l_node.get("attributes"), m_node.get("attributes"))
-        m_group = self.group_node(migrated, "invoice_prepaid_tax")
-        l_group = self.group_node(legacy, "invoice_prepaid_tax")
-        self.assertEqual(l_group["attributes"]["invisible"], self.PREPAID_INVISIBLE)
-        self.assertEqual(l_group["modifiers"]["invisible"]["raw"], m_group["modifiers"]["invisible"]["raw"])
-        # an input-direction record keeps the prepaid group hidden under the
-        # legacy composite too: the section listing never flipped it
-        self.assertIn("prepaid_tax", l_group["attributes"]["invisible"])
-        legacy_replica.active = False
 
     def test_shared_native_form_anchors_and_bypass_actions(self):
         from lxml import etree

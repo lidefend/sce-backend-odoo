@@ -515,6 +515,11 @@
           "name": "支出结算",
           "delivery": "RELEASED_FOUNDATION",
           "release_state": "released"
+        },
+        {
+          "name": "结算单",
+          "delivery": "PREVIEW_FOUNDATION",
+          "release_state": "preview"
         }
       ]
     },
@@ -607,6 +612,16 @@
         },
         {
           "name": "工程进度款收入登记",
+          "delivery": "PREVIEW_FOUNDATION",
+          "release_state": "preview"
+        },
+        {
+          "name": "支付台账",
+          "delivery": "PREVIEW_FOUNDATION",
+          "release_state": "preview"
+        },
+        {
+          "name": "资金台账",
           "delivery": "PREVIEW_FOUNDATION",
           "release_state": "preview"
         }

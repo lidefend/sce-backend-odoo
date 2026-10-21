@@ -74,22 +74,6 @@ class TestDocumentNativeLowcode(TransactionCase):
             yield node
             yield from TestDocumentNativeLowcode.walk(node.get("children", []))
 
-    def test_two_entries_retire_only_redundant_structure(self):
-        self.assertFalse(self.ref("business_config_contract_sc_document_admin_document_form_structure_generated").active)
-        for key, required in (
-            ("action_sc_certificate_registration", ("project_id", "certificate_name", "certificate_no", "holder_name", "valid_until")),
-            ("action_sc_product_policy_document_v1", ("document_title", "policy_category", "policy_version", "confidentiality_level")),
-        ):
-            c = self.contract(key)
-            g = c["formStructureContract"]["sourceAuthority"]["governance_source"]
-            self.assertEqual(g["resolvedActionId"], self.ref(key).id)
-            self.assertEqual(g["resolvedViewId"], self.ref("view_sc_document_admin_document_form").id)
-            self.assertEqual(g.get("compatibilityDependencies", []), [])
-            self.assertEqual(g.get("configuredSections", []), [])
-            names = {n.get("name") for n in self.walk(c["layoutContract"]["containerTree"])}
-            for field in (*required, "legacy_document_no", "legacy_document_state", "legacy_source_table", "legacy_source_id", "attachment_ids", "description", "result_note"):
-                self.assertIn(field, names, (key, field))
-
     def test_shared_archive_borrow_keep_capabilities_and_classification(self):
         from lxml import etree
         arch = etree.fromstring(self.ref("view_sc_document_admin_document_form").arch_db.encode())

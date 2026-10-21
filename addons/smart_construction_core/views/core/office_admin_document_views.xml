@@ -115,9 +115,7 @@
                 <field name="due_date"/>
                 <field name="active"/>
               </group>
-              <group string="历史来源">
-              </group>
-            </group>
+</group>
             <notebook>
               <page string="说明">
                 <field name="description"/>

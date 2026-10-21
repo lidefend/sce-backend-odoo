@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import ast
+import importlib.util
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -12,6 +13,19 @@ ROOT = Path(__file__).resolve().parents[2]
 XML_ROOT = ROOT / "addons/smart_construction_core"
 PRODUCT_SOURCE = "smart_construction_core.product_release"
 ALLOWED_COMPOSITION_MODES = {"entry_semantic_surface", "semantic_entry_surface"}
+
+_SPEC = importlib.util.spec_from_file_location(
+    "form_structure_authority", ROOT / "addons/smart_core/core/form_structure_authority.py"
+)
+_AUTHORITY = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(_AUTHORITY)
+
+
+def valid_form_composition(form: dict) -> bool:
+    mode = _text(form.get("composition_mode"))
+    if mode == "native_semantic_surface":
+        return not _AUTHORITY.structural_form_declarations(form)
+    return mode in ALLOWED_COMPOSITION_MODES
 
 
 def _text(value) -> str:
@@ -68,8 +82,8 @@ def main() -> int:
         label = f"{path.relative_to(ROOT)}:{record_id}"
         if form.get("layout"):
             errors.append(f"{label}: product_release form contracts must not declare layout; use fields/sections plus backend composition_mode")
-        if form.get("fields") and _text(form.get("composition_mode")) not in ALLOWED_COMPOSITION_MODES:
-            errors.append(f"{label}: product_release form fields require composition_mode=entry_semantic_surface")
+        if (form.get("fields") or _text(form.get("composition_mode")) == "native_semantic_surface") and not valid_form_composition(form):
+            errors.append(f"{label}: product_release form requires declared semantic composition; native mode permits only nonstructural annotations")
 
     if errors:
         print("[view_orchestration_product_boundary_guard] FAIL")

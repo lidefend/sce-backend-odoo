@@ -1628,6 +1628,28 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual(identity.get("source"), "params")
         self.assertTrue(identity.get("no_business_fact_authority"))
 
+    def test_system_init_delivery_identity_preserves_extension_edition(self):
+        for edition in ('preview', 'standard'):
+            with self.subTest(edition=edition), patch(
+                'odoo.addons.smart_core.handlers.system_init.call_extension_hook_first',
+                return_value={'product_key': 'vertical.' + edition,
+                              'base_product_key': 'vertical', 'edition_key': edition},
+            ):
+                identity = _resolve_startup_delivery_identity(self.env, {})
+                self.assertEqual(identity['product_key'], 'vertical.' + edition)
+                self.assertEqual(identity['edition_key'], edition)
+                self.assertEqual(identity['base_product_key'], 'vertical')
+                self.assertEqual(identity['source'], 'extension_hook')
+
+    def test_system_init_delivery_identity_keeps_explicit_edition(self):
+        with patch('odoo.addons.smart_core.handlers.system_init.call_extension_hook_first') as hook:
+            identity = _resolve_startup_delivery_identity(self.env, {
+                'delivery_product_key': 'vertical.preview', 'delivery_edition_key': 'preview',
+            })
+            hook.assert_not_called()
+            self.assertEqual(identity['edition_key'], 'preview')
+            self.assertEqual(identity['product_key'], 'vertical.preview')
+
     def test_system_init_industry_extension_modules_are_configurable(self):
         self.env["ir.config_parameter"].sudo().set_param(
             "smart_core.industry_extension_modules",

@@ -1381,7 +1381,9 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         }
         self.assertTrue(declared, "提交立项 must declare its group authority")
 
-        method = type(self.env["project.project"]).action_sc_submit
+        model_type = type(self.env["project.project"])
+        self.assertIn("self._has_initiation_submit_access()", inspect.getsource(model_type.action_sc_submit))
+        method = model_type._has_initiation_submit_access
         enforced = set(
             re.findall(r'has_group\(\s*"([^"]+)"\s*\)', inspect.getsource(method))
         )

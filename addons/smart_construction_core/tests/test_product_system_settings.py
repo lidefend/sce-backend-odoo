@@ -41,22 +41,3 @@ class TestProductSystemSettings(TransactionCase):
         self.assertFalse(first_company.sc_cost_from_stock)
         self.assertTrue(second_company.sc_cost_from_stock)
         self.assertFalse(second_company.sc_cost_from_purchase)
-
-    def test_legacy_global_source_is_promoted_to_all_companies_once(self):
-        second_company = self.env["res.company"].create(
-            {"name": "旧配置迁移公司", "currency_id": self.env.company.currency_id.id}
-        )
-        params = self.env["ir.config_parameter"].sudo()
-        keys = (
-            "smart_construction_core.sc_cost_from_account_move",
-            "smart_construction_core.sc_cost_from_purchase",
-            "smart_construction_core.sc_cost_from_stock",
-        )
-        for key in keys:
-            params.set_param(key, "True" if key.endswith("sc_cost_from_purchase") else "False")
-        self.env["res.company"]._migrate_legacy_cost_source_parameters()
-        companies = self.env.company | second_company
-        self.assertTrue(all(companies.mapped("sc_cost_from_purchase")))
-        self.assertFalse(any(companies.mapped("sc_cost_from_account_move")))
-        self.assertFalse(any(companies.mapped("sc_cost_from_stock")))
-        self.assertFalse(params.search_count([("key", "in", list(keys))]))

@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="0">
+        <record id="group_sc_role_experience" model="res.groups">
+            <field name="sc_assignable_user_permission">1</field>
+        </record>
         <!-- 用户配置管理员只能分配用户角色组；能力组由平台管理员在角色定义层维护。 -->
         <record id="group_sc_business_full" model="res.groups">
             <field name="sc_assignable_user_permission">0</field>

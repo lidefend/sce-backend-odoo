@@ -97,36 +97,6 @@ class TestEngineeringProcessNativeLowcode(TransactionCase):
     # plane of actions that this batch must not touch, so retiring it belongs to
     # another group (see 8.36 G10 A/B in the iteration record).
     # xmlid -> (model, the sibling actions that keep depending on it)
-    RETAINED_MODEL_WIDE_CARRIERS = {
-        "business_config_contract_sc_safety_issue_form_structure_generated": (
-            "sc.safety.issue", ()),
-        "business_config_contract_sc_project_document_form_structure_generated": (
-            "sc.project.document", (
-                "action_sc_project_document_safety",
-                "action_sc_project_document_quality",
-                "action_sc_project_document_self_inspection",
-                "action_sc_project_document_archive",
-            )),
-        "business_config_contract_sc_construction_diary_form_structure_generated": (
-            "sc.construction.diary", (
-                "action_sc_construction_daily_report",
-                "action_sc_construction_weekly_report",
-                "action_sc_construction_monthly_report",
-            )),
-        "business_config_contract_project_progress_entry_form_structure_generated": (
-            "project.progress.entry", ("action_project_progress_quick",)),
-    }
-
-    # The diary shape is split across a sparse field mirror and a policy carrier;
-    # both stay active for the same reason and neither is an entry release.
-    RETAINED_DIARY_AUXILIARY_CARRIERS = {
-        "business_config_contract_sc_construction_diary_form_p1_fields_v1": "sc.construction.diary",
-        "business_config_contract_sc_construction_diary_p1_form_business_facts_v1": "sc.construction.diary",
-    }
-
-    # Facts declared by the retired entry bodies.  No name may be missing from
-    # the model, and every fact must still be reachable from the native arch -
-    # which is exactly what makes the retirement presentation-neutral.
     RETIRED_ENTRY_FACTS = {
         "sc.safety.issue": (
             "state", "name", "project_id", "issue_category", "issue_level", "issue_date",
@@ -178,7 +148,7 @@ class TestEngineeringProcessNativeLowcode(TransactionCase):
             "attachment_ids", "processing_advisory",
         ),
         "view_sc_construction_diary_form": (
-            "state", "name", "date_diary", "report_period_start", "report_period_end",
+            "can_review", "validation_status", "state", "reject_reason", "name", "date_diary", "report_period_start", "report_period_end",
             "document_no", "title", "project_id", "diary_type", "category",
             "handler_name", "construction_unit", "project_manager", "weather",
             "manpower_count", "attendance_equipment", "quality_name", "description",
@@ -187,7 +157,7 @@ class TestEngineeringProcessNativeLowcode(TransactionCase):
             "header_description", "note", "attachment_ids", "active",
         ),
         "view_sc_project_document_form": (
-            "state", "name", "document_kind", "project_id", "wbs_id", "task_id",
+            "state", "validation_status", "can_review", "name", "document_kind", "project_id", "wbs_id", "task_id",
             "contract_id", "doc_type_id", "doc_subtype_id", "is_mandatory",
             "date_doc", "version", "responsible_id", "attachment_count",
             "company_id", "note", "attachment_ids",
@@ -432,44 +402,6 @@ class TestEngineeringProcessNativeLowcode(TransactionCase):
             diagnose_structure_ownership([native, competitor], model=model, action_id=999)
 
     # -- retention surface ---------------------------------------------------
-
-    def test_the_model_wide_carriers_stay_active_for_their_sibling_actions(self):
-        """The regression rule: a shared mirror is never retired by this group.
-
-        Each retained carrier is the last structure writer for at least one
-        action that renders the same native form without being a counted entry
-        (730/731/732, 598-601, 586).  Retiring them here would shrink those
-        sibling surfaces, so they stay active and stay unscoped.
-        """
-        for contract_xmlid, (model, sibling_actions) in self.RETAINED_MODEL_WIDE_CARRIERS.items():
-            with self.subTest(contract=contract_xmlid):
-                record = self._contract(contract_xmlid)
-                self.assertTrue(record.active)
-                self.assertFalse(record.action_id)
-                self.assertFalse(record.view_id)
-                self.assertEqual(record.model, model)
-                for action_xmlid in sibling_actions:
-                    action = self.env.ref("smart_construction_core.%s" % action_xmlid)
-                    self.assertEqual(action.res_model, model)
-
-    def test_the_diary_auxiliary_carriers_are_retained(self):
-        for contract_xmlid, model in self.RETAINED_DIARY_AUXILIARY_CARRIERS.items():
-            with self.subTest(contract=contract_xmlid):
-                record = self._contract(contract_xmlid)
-                self.assertTrue(record.active)
-                self.assertFalse(record.action_id)
-                self.assertFalse(record.view_id)
-                self.assertEqual(record.model, model)
-
-    def test_the_sibling_actions_still_exist_and_reach_their_own_form(self):
-        for _contract_xmlid, (model, sibling_actions) in self.RETAINED_MODEL_WIDE_CARRIERS.items():
-            for action_xmlid in sibling_actions:
-                with self.subTest(action=action_xmlid):
-                    action = self.env.ref("smart_construction_core.%s" % action_xmlid)
-                    self.assertEqual(action.res_model, model)
-                    self.assertIn("form", action.view_mode or "")
-
-    # -- native arch ---------------------------------------------------------
 
     def test_the_native_arch_declares_every_business_section_identity(self):
         for view_xmlid, expected in self.NATIVE_SECTIONS.items():

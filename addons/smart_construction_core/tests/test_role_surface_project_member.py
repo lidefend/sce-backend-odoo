@@ -181,16 +181,13 @@ class TestProjectMemberRoleSurface(TransactionCase):
 
     def test_historical_payment_is_explicit_for_authorized_uat_roles(self):
         history_xmlid = "smart_construction_core.menu_sc_historical_payment_fact"
-        for role in ("finance", "executive", "business_config_admin"):
-            with self.subTest(role=role):
-                self.assertIn(
-                    history_xmlid,
-                    ROLE_SURFACE_OVERRIDES[role]["primary_menu_xmlids"],
-                )
-        self.assertNotIn(
-            history_xmlid,
-            ROLE_SURFACE_OVERRIDES["project_member"]["primary_menu_xmlids"],
-        )
+        # 历史付款事实属审计专用信息：不再进入任何正常角色的发布导航面，
+        # 只在审计入口（历史付款事实 action/model）保留可追溯能力。
+        for role in ("finance", "executive", "business_config_admin", "project_member"):
+            self.assertNotIn(
+                history_xmlid,
+                ROLE_SURFACE_OVERRIDES[role]["primary_menu_xmlids"],
+            )
 
     def test_pm_cost_surface_exposes_full_boq_to_plan_chain(self):
         primary_menu_xmlids = set(ROLE_SURFACE_OVERRIDES["pm"]["primary_menu_xmlids"])
@@ -767,29 +764,17 @@ class TestProjectMemberRoleSurface(TransactionCase):
             user_management["menu_xmlid"],
             "smart_construction_core.menu_sc_runtime_user_management",
         )
-        # Same contract invariant as the executive and project-member cases:
-        # a declared authority is either delivered or carries an explicit
-        # denial with a reason_code, and never disappears silently.
-        # ``menu_sc_historical_payment_fact`` is a declared-but-unreleased
-        # locked-candidate menu (``product_policy_sync`` keeps a legacy/roadmap
-        # row inactive), so the admissible outcome is the recorded denial; it
-        # must not be forced into ``primary_actions`` by widening the delivery
-        # engine.
-        historical_delivered = [
-            row for row in config_contract["primary_actions"]
-            if row["action_xmlid"] == "smart_construction_core.action_sc_historical_payment_fact"
-        ]
-        historical_denied = [
-            row for row in config_contract["denied_actions"]
-            if row["action_xmlid"] == "smart_construction_core.action_sc_historical_payment_fact"
-        ]
-        self.assertEqual(
-            len(historical_delivered) + len(historical_denied),
-            1,
-            "declared historical-payment-fact authority must be delivered or denied exactly once",
+        # 历史付款事实已从正常角色发布面退出（审计专用）。它不再是任何
+        # 角色的 primary 声明，因此既不应被投递为 primary action，也不应
+        # 产生一条面向业务用户的拒绝记录；其能力仅保留在审计专用入口。
+        self.assertNotIn(
+            "smart_construction_core.action_sc_historical_payment_fact",
+            [row["action_xmlid"] for row in config_contract["primary_actions"]],
         )
-        if historical_denied:
-            self.assertEqual(historical_denied[0]["reason_code"], "PRODUCT_ENTRY_NOT_VISIBLE")
+        self.assertNotIn(
+            "smart_construction_core.action_sc_historical_payment_fact",
+            [row["action_xmlid"] for row in config_contract["denied_actions"]],
+        )
         self.assertFalse(config_contract["role_home_actions"])
 
         admin_result = RouteAuthorityValidateHandler(self.env(user=config_user)).handle({
@@ -828,7 +813,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
         self.assertTrue(surface["exposure_policy_declared"])
         self.assertEqual(
             surface["primary_menu_xmlids"],
-            ["smart_construction_core.menu_sc_historical_payment_fact"],
+            [],
         )
         contract = MenuService(self.env(user=executive_user)).build_route_authority(surface)
         self.assertEqual(contract["principal_scope"], {

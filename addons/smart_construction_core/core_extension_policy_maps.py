@@ -2,6 +2,18 @@
 from __future__ import annotations
 
 ROLE_SURFACE_OVERRIDES = {
+    "experience": {
+        "label": "体验用户",
+        "exclusive_surface": True,
+        "landing_scene_candidates": ["workspace.home"],
+        "discover_installed_capabilities": True,
+        "menu_xmlids": ["smart_construction_core.menu_sc_root"],
+        "primary_menu_xmlids": [],
+        "role_home_menu_xmlids": ["smart_construction_core.menu_sc_workspace_home"],
+        "contextual_menu_xmlids": [],
+        "admin_menu_xmlids": [],
+        "denied_menu_xmlids": [],
+    },
     "restricted": {
         "label": "受限用户",
         "landing_scene_candidates": ["workspace.home"],
@@ -252,7 +264,6 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_business_config_center",
         ],
         "primary_menu_xmlids": [
-            "smart_construction_core.menu_sc_historical_payment_fact",
         ],
         "role_home_menu_xmlids": [
             "smart_construction_core.menu_sc_workspace_home",
@@ -500,7 +511,6 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_payment_request",
         ],
         "primary_menu_xmlids": [
-            "smart_construction_core.menu_sc_historical_payment_fact",
             "smart_construction_core.menu_payment_request_receive",
             "smart_construction_core.menu_sc_receipt_income",
             "smart_construction_core.menu_sc_user_income",
@@ -700,7 +710,6 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_data_center",
         ],
         "primary_menu_xmlids": [
-            "smart_construction_core.menu_sc_historical_payment_fact",
         ],
         "role_home_menu_xmlids": [
             "smart_construction_core.menu_sc_workspace_home",
@@ -782,6 +791,7 @@ ROLE_SURFACE_OVERRIDES = {
 }
 
 ROLE_GROUPS_EXPLICIT = {
+    "experience": {"smart_construction_core.group_sc_role_experience"},
     "system_admin": {
         "smart_core.group_smart_core_admin",
     },
@@ -830,7 +840,7 @@ ROLE_GROUPS_CAPABILITY_FALLBACK = {
     },
 }
 
-ROLE_PRECEDENCE = ("system_admin", "business_full", "business_config_admin", "executive", "owner", "pm", "finance", "cost")
+ROLE_PRECEDENCE = ("system_admin", "experience", "business_full", "business_config_admin", "executive", "owner", "pm", "finance", "cost")
 
 NAV_MENU_SCENE_MAP = {
     "smart_construction_core.menu_sc_project_initiation": "projects.intake",

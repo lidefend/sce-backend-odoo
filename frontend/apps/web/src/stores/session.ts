@@ -1,3 +1,4 @@
+import { requireStructuredStartupCapabilities } from '../app/productCapabilityCatalogProjection';
 import { getPublicAuthPageContracts } from '../services/accountActivation';
 import { defineStore } from 'pinia';
 import type { AppInitResponse, CanonicalNavigationModel, LoginResponse, NavMeta, NavNode, RecordContextContract, RecordContextOption } from '@sc/schema';
@@ -1446,25 +1447,11 @@ export const useSessionStore = defineStore('session', {
         && typeof result.feature_flags === 'object'
         && !Array.isArray(result.feature_flags)
       ) ? result.feature_flags as Record<string, unknown> : {};
-      const rawCapabilities = (result as AppInitResponse & { capabilities?: Array<string | { key?: string }> }).capabilities ?? [];
-      this.capabilities = rawCapabilities
-        .map((cap) => (typeof cap === 'string' ? cap : cap?.key || ''))
-        .filter((cap) => typeof cap === 'string' && cap.length > 0);
+      const rawCapabilities = (result as AppInitResponse & { capabilities?: Array<string | { key?: string }> }).capabilities;
+      requireStructuredStartupCapabilities(rawCapabilities);
+      this.capabilities = rawCapabilities.map((cap) => cap.key);
       this.capabilityCatalog = rawCapabilities.reduce<Record<string, CapabilityRuntimeMeta>>((acc, item) => {
         if (!item || typeof item === 'string') {
-          if (typeof item === 'string' && item.trim()) {
-            const key = item.trim();
-            acc[key] = {
-              key,
-              label: key,
-              state: 'READY',
-              capability_state: 'allow',
-              reason: '',
-              reason_code: '',
-              group_key: '',
-              group_label: '',
-            };
-          }
           return acc;
         }
         const key = String(item.key || '').trim();

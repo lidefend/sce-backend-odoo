@@ -191,7 +191,7 @@
                         <group>
                             <field name="note"/>
                         </group>
-                        <group string="冲销追溯" invisible="state != 'reversed'">
+                        <group string="冲销追溯" invisible="state != 'reversed'" groups="smart_construction_core.group_sc_cap_config_admin">
                             <field name="reversed_at" readonly="1"/>
                             <field name="reversed_by_id" readonly="1"/>
                             <field name="reversal_execution_id" readonly="1"/>

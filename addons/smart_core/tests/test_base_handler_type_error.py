@@ -3,6 +3,7 @@ import importlib.util
 import sys
 import types
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -157,6 +158,59 @@ class TestBaseHandlerTypeError(unittest.TestCase):
         result = handler.run(payload={"intent": "api.data.write", "params": {"model": "x.model"}})
 
         self.assertEqual(result, {"ok": True})
+
+    def test_declared_read_groups_are_enforced_before_body(self):
+        for intent in ("read.intent", "api.data.write"):
+            class Handler(self.base.BaseIntentHandler):
+                INTENT_TYPE = intent
+                REQUIRED_GROUPS = ["missing.group"]
+                def handle(self):
+                    raise AssertionError("unauthorized handler body reached")
+            with self.assertRaisesRegex(Exception, "PERMISSION_DENIED"):
+                Handler(env=_FakeEnv()).run()
+
+    def test_group_projection_matches_execution_for_partial_membership_and_denial(self):
+        registry = types.ModuleType("odoo.addons.smart_core.core.handler_registry")
+        class Allowed(self.base.BaseIntentHandler):
+            INTENT_TYPE = "read.allowed"
+            REQUIRED_GROUPS = ["missing.group", "allowed.group"]
+            ALIASES = ["read.alias"]
+            def handle(self):
+                return True
+        class Denied(Allowed):
+            INTENT_TYPE = "read.denied"
+            REQUIRED_GROUPS = ["missing.group"]
+            ALIASES = []
+        registry.HANDLER_REGISTRY = {"read.allowed": Allowed, "read.denied": Denied}
+        name = "odoo.addons.smart_core.core.intent_surface_builder"
+        spec = importlib.util.spec_from_file_location(name, Path(__file__).resolve().parents[1] / "core/intent_surface_builder.py")
+        module = importlib.util.module_from_spec(spec)
+        with patch.dict(sys.modules, {"odoo.addons.smart_core.core.handler_registry": registry}):
+            spec.loader.exec_module(module)
+        module.registered_handlers = lambda env: registry.HANDLER_REGISTRY
+        visible, metadata = module.IntentSurfaceBuilder().collect(_FakeEnv(), _FakeEnv.user)
+        self.assertEqual(visible, ["read.allowed"])
+        self.assertEqual(metadata["read.allowed"]["aliases"], ["read.alias"])
+        self.assertTrue(Allowed(env=_FakeEnv()).run())
+        with self.assertRaisesRegex(Exception, "PERMISSION_DENIED"):
+            Denied(env=_FakeEnv()).run()
+        policy = sys.modules["odoo.addons.smart_core.security.intent_authorization"]
+        with patch.object(policy, "registered_handlers", return_value=registry.HANDLER_REGISTRY):
+            self.assertTrue(policy.authorize_intent(_FakeEnv(), "read.allowed", {})["allowed"])
+            with self.assertRaisesRegex(Exception, "PERMISSION_DENIED"):
+                policy.authorize_intent(_FakeEnv(), "read.denied", {})
+        with patch.object(policy, "user_is_tenant_config_admin", return_value=True):
+            visible, _ = module.IntentSurfaceBuilder().collect(_FakeEnv(), _FakeEnv.user)
+            self.assertEqual(visible, ["read.allowed", "read.denied"])
+            self.assertTrue(Denied(env=_FakeEnv()).run())
+
+    def test_missing_write_declaration_remains_denied(self):
+        class Handler(self.base.BaseIntentHandler):
+            INTENT_TYPE = "api.data.write"
+            def handle(self):
+                raise AssertionError("undeclared write reached")
+        with self.assertRaisesRegex(Exception, "REQUIRED_GROUPS"):
+            Handler(env=_FakeEnv()).run()
 
     def test_var_keyword_handler_receives_runtime_mapping(self):
         base_cls = self.base.BaseIntentHandler

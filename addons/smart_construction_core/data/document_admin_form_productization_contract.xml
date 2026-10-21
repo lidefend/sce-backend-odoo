@@ -30,8 +30,4 @@
     </data>
     <!-- Redundant model-wide sequence mirror; native defaults retain shared fields.
          Archive/borrow keep their existing action-scoped product surfaces. -->
-    <function model="ui.business.config.contract" name="write">
-        <value eval="[ref('smart_construction_core.business_config_contract_sc_document_admin_document_form_structure_generated')]"/>
-        <value eval="{'active': False}"/>
-    </function>
 </odoo>

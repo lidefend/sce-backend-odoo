@@ -30,8 +30,4 @@
     <!-- U-C4 G02: redundant model-wide sequence mirror (noupdate origin);
          precise ORM retirement, same pattern as the U-C3 document mirror.
          The rebuilt native form view 1651 owns the structure. -->
-    <function model="ui.business.config.contract" name="write">
-        <value eval="[ref('smart_construction_core.business_config_contract_sc_invoice_registration_form_structure_generated')]"/>
-        <value eval="{'active': False}"/>
-    </function>
 </odoo>

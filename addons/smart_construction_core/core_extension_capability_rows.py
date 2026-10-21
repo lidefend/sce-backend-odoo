@@ -32,6 +32,12 @@ def normalize_capability_row(row: dict[str, Any]) -> dict[str, Any] | None:
         "source_module": "smart_construction_core",
         "owner_module": "smart_core",
         "status": status,
+        # Preserve the user-specific verdict; normalization is not authorization.
+        **{field: row[field] for field in (
+            "state", "capability_state", "capability_state_reason", "reason_code", "reason"
+        ) if field in row},
+        **({"default_payload": dict(row["default_payload"])}
+           if isinstance(row.get("default_payload"), dict) else {}),
         "group_key": group_key,
         "group_label": str(row.get("group_label") or "").strip(),
         "group_icon": group_icon,

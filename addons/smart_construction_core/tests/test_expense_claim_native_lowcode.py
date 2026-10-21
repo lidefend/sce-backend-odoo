@@ -48,7 +48,6 @@ class TestExpenseClaimNativeLowcode(TransactionCase):
     FORMAL_ENTRIES = (RECLAIM_ENTRY, DEDUCTION_ENTRY, ADVANCE_FUND_ENTRY)
     # The model wide generated configuration sc.expense.claim fell back to before
     # 793 declared an entry release of its own.
-    MODEL_WIDE_GENERATED_CONTRACT = "sc_expense_claim_form_structure_generated_v1"
 
     CLAIM_DECLARED = (
         "state", "validation_status", "name", "claim_flow_label", "claim_type", "direction",
@@ -90,7 +89,7 @@ class TestExpenseClaimNativeLowcode(TransactionCase):
         "deduction_payment_account", "contractor_responsibility", "deduction_source_trace",
     )
     HEADER_BUTTONS = (
-        "action_submit", "validate_tier", "reject_tier", "action_approve", "action_done",
+        "action_submit", "validate_tier", "reject_tier", "action_done",
         "action_cancel",
     )
     # The responsibility summary action is not a header action: it keeps its
@@ -313,38 +312,22 @@ class TestExpenseClaimNativeLowcode(TransactionCase):
         # the structure the entry renders is the native body, not the sparse
         # model-wide annotation the entry used to fall back to
         self.assertTrue(self.tree_field_names(data), "备用金 must consume a native body")
-        # the fallback configuration keeps serving its other consumers untouched
-        generated = self.env["ui.business.config.contract"].search(
-            [("name", "=", self.MODEL_WIDE_GENERATED_CONTRACT)])
-        self.assertEqual(len(generated), 1, "the model-wide configuration must not be deleted")
-        self.assertTrue(generated.active)
-        self.assertFalse(generated.action_id)
-        self.assertNotIn(generated.name, [row["name"] for row in governance["businessConfigContracts"]])
         # the three entries are distinct entries of one shared body
         self.assertEqual(len({action for action, _view, _title in self.FORMAL_ENTRIES}), 3)
 
-    def test_legacy_structure_cannot_re_project_over_a_native_authority_entry(self):
-        """The shared mechanism suppresses the legacy chapters on all three entries."""
-        model_wide = self.MODEL_WIDE_GENERATED_CONTRACT
+    def test_native_entries_have_no_legacy_structure_dependency(self):
+        """Only the entry release supplies semantics after mirror removal."""
         for action_key, view_id, _title in self.FORMAL_ENTRIES:
-            governance = self.governance(action_key, view_id)
-            applied = [row["name"] for row in governance["businessConfigContracts"]]
+            data = self.contract(action_key, view_id)
+            contract = data["formStructureContract"]
+            governance = contract["sourceAuthority"]["governance_source"]
             own = self.ref(self.ENTRY_CONTRACTS[action_key]).name
-            self.assertEqual(applied, [own], action_key)
-            conflicts = [row for row in governance["structureDiagnostics"]
-                         if row["code"] == "LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW"]
-            self.assertTrue(conflicts, (action_key, "the model-wide legacy structure must be reported"))
-            suppressed = {row["configuration"]["name"] for row in conflicts}
-            self.assertIn(model_wide, suppressed, action_key)
-            for row in conflicts:
-                self.assertFalse(row["explicit_structure_scope"], action_key)
-                self.assertEqual({owner["name"] for owner in row["competing_owners"]}, {own}, action_key)
-            # the suppression is a real compatibility dependency, not a silent drop
-            self.assertEqual(
-                governance["compatibilityDependencies"], ["legacy_configuration_structure_suppression"],
-                action_key,
-            )
+            self.assertEqual([row["name"] for row in governance["businessConfigContracts"]], [own], action_key)
+            self.assertEqual(governance["structureDiagnostics"], [], action_key)
+            self.assertEqual(governance["compatibilityDependencies"], [], action_key)
             self.assertEqual(governance["configuredSections"], [], action_key)
+            self.assertEqual(contract["structureAuthority"], "container_tree", action_key)
+            self.assertFalse(contract["slots"], action_key)
 
     def test_sibling_entries_keep_their_own_configuration_structure(self):
         """Fourteen sibling configurations of the same model are shared surface, not scope."""

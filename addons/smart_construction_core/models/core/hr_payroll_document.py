@@ -418,20 +418,6 @@ class ScHrPayrollDocument(models.Model):
             raise UserError(_("项目薪资已付款金额必须由薪资发放登记汇总，不能直接修改。"))
         return super().write(vals)
 
-    def init(self):
-        self.env.cr.execute(
-            """
-            UPDATE sc_hr_payroll_document
-               SET employee_status = COALESCE(NULLIF(employee_status, ''), NULLIF(legacy_document_state, '')),
-                   employee_type = COALESCE(NULLIF(employee_type, ''), NULLIF(item_type, '')),
-                   contact_phone = COALESCE(
-                       NULLIF(contact_phone, ''),
-                       NULLIF(substring(COALESCE(description, '') from '联系方式[：:]\\s*([^\\n\\r]+)'), '')
-                   ),
-                   payout_unit = COALESCE(NULLIF(payout_unit, ''), NULLIF(payer_unit, ''))
-             WHERE legacy_source_table IS NOT NULL
-            """
-        )
 
     department_id = fields.Many2one(ondelete="restrict", help='薪资核算建议补充所属部门')
 

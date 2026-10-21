@@ -89,8 +89,7 @@ from . import test_um_p3_subcontract_cumulative_settlement_boundaries
 from . import test_um_p3_payment_ledger_request_permission_boundaries
 from . import test_um_p3_subcontract_cumulative_amount_boundaries
 from . import test_historical_payment_fact_boundaries
-from . import test_orphan_handoff_ui_migration
-from . import test_runtime_view_contract_cleanup_migration
+from . import test_formal_entry_metadata_runtime
 from . import test_material_supplier_return
 from . import test_equipment_usage_product
 from . import test_subcontract_cost_registration
@@ -137,3 +136,7 @@ from . import test_system_permission_http
 from . import test_system_permission_accounting
 
 from . import test_system_permission_business
+
+from . import test_baseline_readiness
+
+from . import test_experience_role_surface

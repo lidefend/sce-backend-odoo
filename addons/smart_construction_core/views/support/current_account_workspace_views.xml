@@ -21,6 +21,9 @@
                     <group name="current_account_processing_note" data-sc-anchor="current_account_processing_note" string="办理说明" col="1">
                         <field name="note" placeholder="可补充本次借款、还款或调拨的业务背景；金额、账户和附件在正式单据中填写。"/>
                     </group>
+                    <div class="alert alert-info" role="status" invisible="not processing_advisory">
+                        <field name="processing_advisory" readonly="1" nolabel="1"/>
+                    </div>
                 </sheet>
             </form>
         </field>

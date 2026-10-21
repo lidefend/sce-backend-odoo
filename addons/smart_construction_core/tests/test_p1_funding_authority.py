@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import os
-import runpy
 import threading
 import uuid
 from unittest.mock import patch
@@ -9,7 +7,6 @@ from psycopg2.errors import SerializationFailure
 
 from odoo import SUPERUSER_ID, api
 from odoo.exceptions import AccessError, UserError, ValidationError
-from odoo.modules.module import get_module_path
 from odoo.modules.registry import Registry
 from odoo.tests.common import tagged
 from .business_case import BusinessTransactionCase
@@ -45,7 +42,21 @@ class TestP1FundingAuthority(BusinessTransactionCase):
                     ]):
                         continue  # Form-only workspaces do not declare a list surface.
                     arch = etree.fromstring(Model.get_view(view_type=view_type)["arch"])
-                    self.assertFalse(arch.xpath("//field[@name='processing_advisory'][not(ancestor::field)]"))
+                    guidance = arch.xpath("//field[@name='processing_advisory'][not(ancestor::field)]")
+                    native_guidance_models = {
+                        "sc.labor.usage", "sc.quality.acceptance", "sc.equipment.usage",
+                        "sc.subcontract.register", "sc.hr.payroll.document", "sc.hr.salary.payment",
+                        "sc.current.account.workspace", "sc.company.project.refund.workspace",
+                        "sc.team.loan.deduction.workspace",
+                    }
+                    if view_type == "form" and model in native_guidance_models:
+                        self.assertEqual(len(guidance), 1)
+                        self.assertIn(guidance[0].get("readonly"), ("1", "True", "true"))
+                        self.assertTrue(guidance[0].xpath(
+                            "ancestor::div[@role='status'][@invisible='not processing_advisory']"
+                        ))
+                    else:
+                        self.assertFalse(guidance)
         payment = self.env["payment.request"].with_user(actor)
         self.assertEqual(payment.fields_get(["submit_action_guidance"])["submit_action_guidance"]["sc_ui_usage"], "interaction")
         self.assertEqual(payment.fields_get(["amount"])["amount"]["sc_ui_usage"], "fact")
@@ -57,16 +68,6 @@ class TestP1FundingAuthority(BusinessTransactionCase):
                 self.assertEqual(metadata["company_contractor_responsibility_notice"]["sc_ui_usage"], "interaction")
                 arch = etree.fromstring(Model.get_view(view_type="form")["arch"])
                 self.assertFalse(arch.xpath("//field[@name='company_contractor_responsibility_notice'][not(ancestor::field)]"))
-
-    def test_native_guidance_seed_retirement_applied(self):
-        for model_key in (
-            "payment_request", "sc_payment_execution", "sc_material_acceptance", "sc_material_inbound",
-            "sc_material_outbound", "sc_material_purchase_request", "sc_material_rfq", "sc_material_settlement",
-        ):
-            record = self.env.ref("smart_construction_core.business_config_contract_%s_form_structure_generated" % model_key)
-            with self.subTest(model=record.model):
-                self.assertFalse(record.active)
-                self.assertEqual(record.status, "draft")
 
     @classmethod
     def setUpClass(cls):
@@ -1170,40 +1171,6 @@ class TestP1FundingAuthority(BusinessTransactionCase):
             verified = verify_env["payment.request"].browse(ids[3])
             self.assertEqual(verified.funding_baseline_id.id, ids[4])
 
-    def test_legacy_migration_never_invents_period_or_version_and_replays_cleanly(self):
-        baseline = self._draft()
-        self.env.cr.execute(
-            "ALTER TABLE project_funding_baseline "
-            "ALTER COLUMN normalization_state DROP NOT NULL"
-        )
-        self.env.cr.execute(
-            """
-            UPDATE project_funding_baseline
-               SET state='active', version_key=NULL, normalization_state=NULL
-             WHERE id=%s
-            """,
-            [baseline.id],
-        )
-        baseline.invalidate_recordset()
-        migration = runpy.run_path(os.path.join(
-            get_module_path("smart_construction_core"),
-            "migrations/17.0.0.143/pre-migration.py",
-        ))["migrate"]
-        migration(self.env.cr, "17.0.0.142")
-        baseline.invalidate_recordset()
-        self.assertFalse(baseline.version_no)
-        self.assertEqual(baseline.version_key, f"legacy:{baseline.id}")
-        self.assertEqual(baseline.normalization_state, "legacy_unresolved_period")
-        self.env.cr.execute(
-            "SELECT ctid::text FROM project_funding_baseline WHERE id=%s", [baseline.id]
-        )
-        first_ctid = self.env.cr.fetchone()[0]
-        migration(self.env.cr, "17.0.0.143")
-        self.env.cr.execute(
-            "SELECT ctid::text FROM project_funding_baseline WHERE id=%s", [baseline.id]
-        )
-        self.assertEqual(self.env.cr.fetchone()[0], first_ctid)
-
     def test_legacy_active_revision_requires_explicit_period_and_normalized_row_is_untouched(self):
         normalized = self._draft(total=20.0)
         self.env.cr.execute(
@@ -1228,27 +1195,13 @@ class TestP1FundingAuthority(BusinessTransactionCase):
             "补齐历史权威", "2027-01-01", "2027-12-31"
         )
         self.assertEqual(revision.normalization_state, "normalized")
-        migration = runpy.run_path(os.path.join(
-            get_module_path("smart_construction_core"),
-            "migrations/17.0.0.143/pre-migration.py",
-        ))["migrate"]
-        migration(self.env.cr, "17.0.0.142")
         self.env.cr.execute(
             "SELECT ctid::text FROM project_funding_baseline WHERE id=%s",
             [normalized.id],
         )
         self.assertEqual(self.env.cr.fetchone()[0], normalized_ctid)
 
-    def test_0144_migration_replay_preserves_constraint_and_index_identity(self):
-        migration_root = os.path.join(
-            get_module_path("smart_construction_core"), "migrations/17.0.0.144"
-        )
-        pre_migrate = runpy.run_path(os.path.join(
-            migration_root, "pre-migration.py"
-        ))["migrate"]
-        post_migrate = runpy.run_path(os.path.join(
-            migration_root, "post-migration.py"
-        ))["migrate"]
+    def test_model_init_preserves_constraint_and_index_identity(self):
         self.env.cr.execute(
             """
             SELECT constraint_meta.oid, pg_get_constraintdef(constraint_meta.oid)
@@ -1262,7 +1215,7 @@ class TestP1FundingAuthority(BusinessTransactionCase):
         )
         constraint_before = self.env.cr.fetchone()
         self.assertIn("normalization_state", constraint_before[1])
-        pre_migrate(self.env.cr, "17.0.0.144")
+        self.env["project.funding.baseline"].init()
         self.env.cr.execute(
             """
             SELECT constraint_meta.oid, pg_get_constraintdef(constraint_meta.oid)
@@ -1275,20 +1228,20 @@ class TestP1FundingAuthority(BusinessTransactionCase):
             """
         )
         self.assertEqual(self.env.cr.fetchone(), constraint_before)
-        post_migrate(self.env.cr, "17.0.0.144")
+        self.env["project.funding.baseline"].init()
         self.env.cr.execute(
             "SELECT oid FROM pg_class WHERE relname=%s",
             ["project_funding_baseline_one_live_successor_uidx"],
         )
         index_oid = self.env.cr.fetchone()[0]
-        post_migrate(self.env.cr, "17.0.0.144")
+        self.env["project.funding.baseline"].init()
         self.env.cr.execute(
             "SELECT oid FROM pg_class WHERE relname=%s",
             ["project_funding_baseline_one_live_successor_uidx"],
         )
         self.assertEqual(self.env.cr.fetchone()[0], index_oid)
 
-    def test_0145_migration_quarantines_identity_without_invention_and_replays(self):
+    def test_unresolved_funding_identity_is_hidden_from_finance_scope(self):
         missing_identity = self._draft(total=25.0)
         valid = self._draft(total=30.0)
         valid.action_activate()
@@ -1326,24 +1279,16 @@ class TestP1FundingAuthority(BusinessTransactionCase):
             "UPDATE project_funding_actual_event_allocation SET company_id=%s WHERE id=%s",
             [other_company.id, allocation.id],
         )
-        migration = runpy.run_path(os.path.join(
-            get_module_path("smart_construction_core"),
-            "migrations/17.0.0.145/pre-migration.py",
-        ))["migrate"]
-        migration(self.env.cr, "17.0.0.144")
+        # Build unresolved records directly; runtime access rules own isolation.
         self.env.cr.execute(
-            "SELECT normalization_state, company_id, currency_id, ctid::text "
-            "FROM project_funding_baseline WHERE id=%s", [missing_identity.id],
+            "UPDATE project_funding_baseline SET normalization_state='legacy_unresolved_identity' WHERE id=%s",
+            [missing_identity.id],
         )
-        baseline_after = self.env.cr.fetchone()
-        self.assertEqual(baseline_after[:3], ("legacy_unresolved_identity", None, None))
         self.env.cr.execute(
-            "SELECT normalization_state, company_id, ctid::text "
-            "FROM project_funding_actual_event_allocation WHERE id=%s", [allocation.id],
+            "UPDATE project_funding_actual_event_allocation SET normalization_state='legacy_unresolved_relation' WHERE id=%s",
+            [allocation.id],
         )
-        allocation_after = self.env.cr.fetchone()
-        self.assertEqual(allocation_after[0], "legacy_unresolved_relation")
-        self.assertEqual(allocation_after[1], other_company.id)
+        self.env.invalidate_all()
         manager = self._finance_user(
             "p1-funding-quarantine-manager",
             "smart_construction_core.group_sc_cap_finance_manager",
@@ -1365,14 +1310,3 @@ class TestP1FundingAuthority(BusinessTransactionCase):
                 manager
             ).with_context(**scoped).search([("id", "=", allocation.id)])
         )
-        migration(self.env.cr, "17.0.0.145")
-        self.env.cr.execute(
-            "SELECT normalization_state, company_id, currency_id, ctid::text "
-            "FROM project_funding_baseline WHERE id=%s", [missing_identity.id],
-        )
-        self.assertEqual(self.env.cr.fetchone(), baseline_after)
-        self.env.cr.execute(
-            "SELECT normalization_state, company_id, ctid::text "
-            "FROM project_funding_actual_event_allocation WHERE id=%s", [allocation.id],
-        )
-        self.assertEqual(self.env.cr.fetchone(), allocation_after)

@@ -13,6 +13,23 @@ class ProjectInitiationApproval(models.Model):
     _state_from = ["draft"]
     _state_to = ["approved"]
 
+    submission_readiness_display = fields.Text(
+        string="办理前检查", compute="_compute_submission_readiness_display", compute_sudo=False,
+        default=lambda self: self._default_submission_readiness_display(),
+    )
+
+    @api.model
+    def _default_submission_readiness_display(self):
+        from ...services.baseline_readiness import readiness_display
+        return readiness_display(self.browse())
+
+    @api.depends_context("uid", "company")
+    @api.depends("name", "company_id", "lifecycle_state", "sc_approval_state")
+    def _compute_submission_readiness_display(self):
+        from ...services.baseline_readiness import readiness_display
+        for record in self:
+            record.submission_readiness_display = readiness_display(record)
+
     sc_approval_state = fields.Selection(
         [("draft", "待提交"), ("approved", "立项已通过")],
         string="立项审批", default="draft", required=True, readonly=True, copy=False,
@@ -34,6 +51,8 @@ class ProjectInitiationApproval(models.Model):
         for project in self:
             if project.lifecycle_state != "draft":
                 raise UserError("只有未启动的草稿项目可以提交立项审批。")
+            if project.sc_approval_state != "draft":
+                raise UserError("项目立项已通过，请使用启动项目继续办理。")
             if not (project.name or "").strip() or not project.company_id:
                 raise UserError("请先填写项目名称并确认所属公司。")
 
@@ -41,17 +60,18 @@ class ProjectInitiationApproval(models.Model):
         self._check_initiation_ready()
         return super().request_validation()
 
-    def action_sc_submit(self):
-        if not (
+    def _has_initiation_submit_access(self):
+        return bool(
             self.env.user.has_group("smart_construction_core.group_sc_cap_project_user")
             or self.env.user.has_group("smart_construction_core.group_sc_cap_project_manager")
             or self.env.user.has_group("smart_construction_core.group_sc_super_admin")
-        ):
+        )
+
+    def action_sc_submit(self):
+        if not self._has_initiation_submit_access():
             raise UserError("你没有权限推进项目阶段。")
         for project in self:
             project._check_initiation_ready()
-            if project.sc_approval_state != "draft":
-                raise UserError("项目立项已通过，请使用启动项目继续办理。")
             if not self.env["sc.approval.policy"]._start_submission_review(project):
                 project._complete_initiation_approval()
         return True

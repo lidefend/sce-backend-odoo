@@ -135,7 +135,7 @@
                             <field name="due_date" />
                             <field name="active" />
                         </group>
-                        <group data-sc-anchor="document_source" name="document_source" string="来源追溯" invisible="fact_type not in ['certificate_registration', 'policy_document']">
+                        <group data-sc-anchor="document_source" name="document_source" string="来源追溯" invisible="fact_type not in ['certificate_registration', 'policy_document']" groups="smart_construction_core.group_sc_cap_config_admin">
                             <field name="legacy_document_no" readonly="1" />
                             <field name="legacy_document_state" readonly="1" />
                             <field name="legacy_source_table" readonly="1" />

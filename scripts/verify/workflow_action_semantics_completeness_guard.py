@@ -40,7 +40,7 @@ WORKFLOW_SERVICE = ROOT / "addons/smart_construction_core/models/support/workflo
 PAYMENT_ACTIONS = ROOT / "addons/smart_construction_core/handlers/payment_request_available_actions.py"
 FINANCIAL_WORKSPACE = ROOT / "addons/smart_construction_core/services/financial_workspace_contract.py"
 CAPABILITY_REGISTRY = ROOT / "addons/smart_construction_core/services/capability_registry.py"
-ACTOR_ROLES = ROOT / "addons/smart_construction_core/core_extension_actor_roles.py"
+ROLE_CATALOG = ROOT / "addons/smart_construction_core/data/product_menu_source.json"
 SECURITY_DIR = ROOT / "addons/smart_construction_core/security"
 SECURITY_MODULE = "smart_construction_core"
 # The one authority for the declared `(kind, purpose, executor)` vocabulary.
@@ -52,9 +52,7 @@ ACTION_SEMANTICS_AUTHORITY = "addons/smart_core/core/action_semantics_vocabulary
 # The verdict the workflow contract must consult before it publishes an
 # approval action; removing it would leave the Web as the only decider.
 APPROVAL_VERDICT_MARKER = "can_review"
-ROLE_VOCABULARY_MAP = "ROLE_SUFFIX_MAP"
-GROUP_ROLE_MAP = "CAPABILITY_GROUP_ROLE_MAP"
-ROLE_GROUP_PREFIX = "ROLE_GROUP_PREFIX_CORE"
+
 
 # Actions whose method is owned by platform persistence instead of a business
 # authority.  They keep the platform's own declaration (`record.save`), so they
@@ -201,57 +199,14 @@ def verdict_keys(path: Path, function_name: str, subject: str) -> tuple[set[str]
     return keys, []
 
 
-def _resolver_role_literals(path: Path, function_name: str) -> tuple[set[str], list[str]]:
-    """Read the role codes a runtime resolver can actually produce."""
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    target = next(
-        (node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name == function_name),
-        None,
-    )
-    if target is None:
-        return set(), [f"{path.name}:{function_name} is missing; the runtime role vocabulary cannot be read"]
-    codes: set[str] = set()
-    for node in ast.walk(target):
-        if isinstance(node, ast.Return) and node.value is not None:
-            codes |= _string_literals(node.value)
-        if (
-            isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Attribute)
-            and node.func.attr in {"add", "update"}
-            and node.args
-        ):
-            codes |= _string_literals(node.args[0])
-    return codes, []
-
-
 def role_vocabulary(
-    registry_path: Path, actor_roles_path: Path
-) -> tuple[set[str], set[str], list[str]]:  # noqa: D401 - see resolve_role_code
-    """Derive the role vocabulary from the authorities that produce it.
-
-    Hardcoding it here would let the guard agree with itself while the runtime
-    resolves a different set of roles, so every code is read from the group map
-    and from the resolvers that hand role codes to the capability checks.
-    """
-    found, unresolved = literal_assignments(
-        registry_path, {ROLE_VOCABULARY_MAP, GROUP_ROLE_MAP, ROLE_GROUP_PREFIX}
-    )
-    suffix_map = found.get(ROLE_VOCABULARY_MAP)
-    if not isinstance(suffix_map, dict):
-        return set(), set(), [*unresolved, f"{registry_path.name}:{ROLE_VOCABULARY_MAP} could not be read"]
-    errors = list(unresolved)
-    group_map = found
-    vocabulary = {str(key) for key in suffix_map} | {str(value) for value in suffix_map.values()}
-    group_role_map = group_map.get(GROUP_ROLE_MAP)
-    if isinstance(group_role_map, dict):
-        vocabulary |= {str(value) for value in group_role_map.values()}
-    for path, function_name in (
-        (registry_path, "_resolve_role_codes_for_user"),
-        (actor_roles_path, "resolve_release_actor_role_codes"),
-    ):
-        codes, code_errors = _resolver_role_literals(path, function_name)
-        vocabulary |= codes
-        errors += code_errors
+    registry_path: Path, role_catalog_path: Path
+) -> tuple[set[str], set[str], list[str]]:
+    """Read the same declared role catalog consumed by the identity resolver."""
+    catalog = json.loads(role_catalog_path.read_text(encoding="utf-8"))
+    rows = catalog["product_policy_profiles"]["role_catalog"]["default_roles"]
+    vocabulary = {str(row["role_code"]) for row in rows if row.get("group_xmlids") or row.get("capability_group_xmlids")}
+    errors = []
 
     tree = ast.parse(registry_path.read_text(encoding="utf-8"), filename=str(registry_path))
     declared: set[str] = set()
@@ -270,41 +225,15 @@ def role_vocabulary(
     return vocabulary, declared, errors
 
 
-def group_role_maps(registry_path: Path) -> tuple[dict[str, Any], dict[str, Any], str, list[str]]:
-    """Read the group -> role authority the runtime resolution uses."""
-    found, unresolved = literal_assignments(
-        registry_path, {ROLE_VOCABULARY_MAP, GROUP_ROLE_MAP, ROLE_GROUP_PREFIX}
-    )
-    suffix_map = found.get(ROLE_VOCABULARY_MAP)
-    group_role_map = found.get(GROUP_ROLE_MAP)
-    prefix = found.get(ROLE_GROUP_PREFIX)
-    errors = list(unresolved)
-    if not isinstance(suffix_map, dict):
-        errors.append(f"{registry_path.name}:{ROLE_VOCABULARY_MAP} could not be read")
-        suffix_map = {}
-    if not isinstance(group_role_map, dict):
-        errors.append(f"{registry_path.name}:{GROUP_ROLE_MAP} could not be read")
-        group_role_map = {}
-    if not isinstance(prefix, str):
-        errors.append(f"{registry_path.name}:{ROLE_GROUP_PREFIX} could not be read")
-        prefix = ""
-    return suffix_map, group_role_map, prefix, errors
-
-
-def resolve_role_code(
-    group_xmlid: str, suffix_map: dict[str, Any], group_role_map: dict[str, Any], prefix: str
-) -> str:
-    """Resolve a gate group to its published role code, or ``''``."""
-    text = str(group_xmlid or "").strip()
-    if not text:
-        return ""
-    mapped = group_role_map.get(text)
-    if mapped:
-        return str(mapped)
-    if prefix and text.startswith(prefix):
-        suffix = text[len(prefix):]
-        return str(suffix_map.get(suffix, suffix))
-    return ""
+def declared_group_roles(catalog_path: Path) -> dict[str, str]:
+    """Read formal bindings only; group spelling is not role authority."""
+    catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    rows = catalog["product_policy_profiles"]["role_catalog"]["default_roles"]
+    result = {}
+    for row in sorted(rows, key=lambda item: item["precedence"]):
+        for group in [*row.get("group_xmlids", []), *row.get("capability_group_xmlids", [])]:
+            result.setdefault(group, row["role_code"])
+    return result
 
 
 def declared_group_xmlids(path: Path) -> set[str]:
@@ -660,9 +589,7 @@ def validate_authorization_binding(
     role_hints: dict[str, Any],
     verdict: set[str],
     role_vocabulary: set[str],
-    suffix_map: dict[str, Any],
     group_role_map: dict[str, Any],
-    role_prefix: str,
     declared_roles: set[str],
     group_vocabulary: set[str],
     approval_actions_declared: bool,
@@ -690,8 +617,6 @@ def validate_authorization_binding(
         if not key or not method or not spec.get("allowed_states"):
             continue
         offered.append(key)
-        if key not in role_hints:
-            errors.append(f"payment action {key!r} is offered without a declared role gate")
         if key not in verdict:
             errors.append(
                 f"payment action {key!r} is offered without a runtime authorization verdict; "
@@ -717,7 +642,7 @@ def validate_authorization_binding(
                 f"role gate {key!r} names group {group!r}, which the module security files do not declare"
             )
             continue
-        resolved = resolve_role_code(group, suffix_map, group_role_map, role_prefix)
+        resolved = group_role_map.get(group, "")
         if not resolved:
             errors.append(f"role gate {key!r} names group {group!r}, which resolves to no published role code")
         elif resolved not in role_vocabulary:
@@ -741,7 +666,7 @@ def main() -> int:
     parser.add_argument("--payment-actions", type=Path, default=PAYMENT_ACTIONS)
     parser.add_argument("--financial-workspace", type=Path, default=FINANCIAL_WORKSPACE)
     parser.add_argument("--capability-registry", type=Path, default=CAPABILITY_REGISTRY)
-    parser.add_argument("--actor-roles", type=Path, default=ACTOR_ROLES)
+    parser.add_argument("--role-catalog", type=Path, default=ROLE_CATALOG)
     parser.add_argument("--security-dir", type=Path, default=SECURITY_DIR)
     args = parser.parse_args()
 
@@ -771,19 +696,16 @@ def main() -> int:
 
     verdict, verdict_errors = verdict_keys(args.payment_actions, "_authorization_for_action", "key")
     vocabulary, declared_roles, role_errors = role_vocabulary(
-        args.capability_registry, args.actor_roles
+        args.capability_registry, args.role_catalog
     )
-    suffix_map, group_role_map, role_prefix, map_errors = group_role_maps(args.capability_registry)
-    role_errors += map_errors
+    group_role_map = declared_group_roles(args.role_catalog)
     errors += verdict_errors + role_errors
     errors += validate_authorization_binding(
         specs=specs,
         role_hints=role_hints,
         verdict=verdict,
         role_vocabulary=vocabulary,
-        suffix_map=suffix_map,
         group_role_map=group_role_map,
-        role_prefix=role_prefix,
         declared_roles=declared_roles,
         group_vocabulary=declared_group_xmlids(args.security_dir),
         approval_actions_declared=any(

@@ -41,8 +41,8 @@
                         <group>
                             <group>
                                 <field name="adjustment_kind"/>
-                                <field name="source_model"/>
-                                <field name="source_record_id"/>
+                                <field name="source_model" groups="smart_construction_core.group_sc_cap_config_admin"/>
+                                <field name="source_record_id" groups="smart_construction_core.group_sc_cap_config_admin"/>
                                 <field name="source_kind"/>
                                 <field name="project_id"/>
                                 <field name="operation_strategy"/>

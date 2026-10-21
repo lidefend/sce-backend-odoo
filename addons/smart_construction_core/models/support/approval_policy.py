@@ -936,6 +936,11 @@ class ScApprovalPolicy(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        default_target = self.default_get(["target_model"]).get("target_model") if not self.env.su else None
+        if not self.env.su and any(
+            vals.get("target_model", default_target) == "payment.request" for vals in vals_list
+        ):
+            raise AccessError(_("请通过系统参数变更集维护付款申请审批模式。"))
         for vals in vals_list:
             vals.update(self._normalize_approval_toggle_vals(vals))
             scope_key = vals.get("manager_scope_key")
@@ -948,6 +953,12 @@ class ScApprovalPolicy(models.Model):
         return records
 
     def write(self, vals):
+        parameter_fields = {"approval_required", "mode", "active", "company_id", "target_model"}
+        if not self.env.su and parameter_fields.intersection(vals) and (
+            vals.get("target_model") == "payment.request"
+            or any(policy.target_model == "payment.request" for policy in self)
+        ):
+            raise AccessError(_("请通过系统参数变更集发布或回滚付款申请审批模式。"))
         if "manager_scope_key" in vals and "manager_group_id" not in vals:
             group = self._group_for_approval_scope(vals.get("manager_scope_key"))
             vals = dict(vals, manager_group_id=group.id if group else False)
@@ -971,6 +982,8 @@ class ScApprovalPolicy(models.Model):
         return res
 
     def unlink(self):
+        if not self.env.su and any(policy.target_model == "payment.request" for policy in self):
+            raise AccessError(_("付款申请审批模式由系统参数变更集维护，不能直接删除。"))
         active_policies = self.filtered("active")
         if active_policies:
             raise UserError("请先停用审批规则后再删除。")

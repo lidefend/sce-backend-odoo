@@ -68,11 +68,6 @@ class TestHrPayrollNativeLowcode(TransactionCase):
         "action_sc_product_project_salary_payment_v1":
             "business_config_contract_project_salary_payment_productized_form_v1",
     }
-    # The model-wide sparse field-order annotation: no action scope, so it keeps
-    # serving the model.  It is an annotation, not a structure, and this batch
-    # neither deletes nor rewrites it.
-    MODEL_WIDE_CONTRACT = "business_config_contract_sc_hr_payroll_document_form_structure_generated"
-
     ENTRY_MENUS = {
         "action_sc_payroll_management": "menu_sc_payroll_management",
         "action_sc_product_project_payroll_v1": "menu_sc_product_project_payroll_v1",
@@ -504,15 +499,6 @@ class TestHrPayrollNativeLowcode(TransactionCase):
     # ------------------------------------------------------------------ #
     # 6. the model-wide annotation keeps serving the model
     # ------------------------------------------------------------------ #
-    def test_the_model_wide_annotation_keeps_serving_the_model(self):
-        record = self.ref(self.MODEL_WIDE_CONTRACT)
-        self.assertTrue(record.active)
-        self.assertEqual(record.model, "sc.hr.payroll.document")
-        self.assertFalse(record.action_id, "the annotation must stay model-wide")
-        form = record.contract_json["view_orchestration"]["views"]["form"]
-        self.assertNotIn("sections", form)
-        self.assertNotIn("columns", form)
-        self.assertEqual(len(form["fields"]), 27, "the annotation is a field-order list")
 
     def test_a_retired_body_no_longer_re_projects_over_the_native_authority(self):
         """The retired bodies are gone, so no entry can be re-projected by them."""

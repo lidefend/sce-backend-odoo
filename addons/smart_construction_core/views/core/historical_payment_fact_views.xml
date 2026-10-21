@@ -106,6 +106,6 @@
                 <p>历史付款仅用于追溯，不进入新系统付款执行或审批流程。</p>
             </field>
         </record>
-        <menuitem id="menu_sc_historical_payment_fact" name="历史付款" parent="smart_construction_core.menu_sc_finance_center" action="smart_construction_core.action_sc_historical_payment_fact" sequence="45" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
+        <menuitem id="menu_sc_historical_payment_fact" name="历史付款" parent="smart_construction_core.menu_sc_finance_center" action="smart_construction_core.action_sc_historical_payment_fact" sequence="45" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" active="False" />
     </data>
 </odoo>

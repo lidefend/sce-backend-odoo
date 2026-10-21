@@ -1238,25 +1238,8 @@ class ScPaymentExecution(models.Model):
 
     def init(self):
         self.env.cr.execute(
-            "DROP INDEX IF EXISTS sc_payment_execution_one_active_per_request_idx"
-        )
-        self.env.cr.execute(
-            "CREATE UNIQUE INDEX "
+            "CREATE UNIQUE INDEX IF NOT EXISTS "
             "sc_payment_execution_one_active_per_request_idx "
             "ON sc_payment_execution (payment_request_id) "
             "WHERE payment_request_id IS NOT NULL AND state IN ('draft', 'confirmed')"
-        )
-        self.env.cr.execute(
-            """
-            UPDATE sc_payment_execution execution
-               SET business_category_id = category.id
-              FROM sc_business_category category
-             WHERE execution.business_category_id IS NULL
-               AND category.target_model = 'sc.payment.execution'
-               AND category.code = CASE
-                   WHEN COALESCE(execution.payment_family, '') IN ('公司财务支出', 'actual_outflow')
-                       THEN 'finance.payment.execution.company'
-                   ELSE 'finance.payment.execution.partner'
-               END
-            """
         )

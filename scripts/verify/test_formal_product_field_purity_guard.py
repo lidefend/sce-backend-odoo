@@ -28,7 +28,7 @@ class FormalProductFieldPurityGuardTest(unittest.TestCase):
     def test_migration_cleanup_is_not_a_published_surface(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            path = root / "addons/smart_construction_core/migrations/17.0.0.76/pre-migration.py"
+            path = root / "addons/smart_construction_core/migrations/test_fixture/pre-migration.py"
             path.parent.mkdir(parents=True)
             path.write_text("prefix = 'p1_visible_'\\n", encoding="utf-8")
             self.assertEqual(scan(root), [])

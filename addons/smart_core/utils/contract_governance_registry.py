@@ -15,7 +15,7 @@ LEGACY_RECORD_CONTEXT_CLEAR_MODELS: set[str] = set()
 LEGACY_DELETE_ONLY_MODELS = {"res.company", "hr.department", "res.users"}
 _LEGACY_STANDARD_LIST_PROFILE_REGISTRY: list[dict[str, Any]] = []
 # Workflow projection profiles owned by modules other than the industry module.
-# `smart_construction_core` must not declare a profile for a model that a user
+# An industry module must not declare a profile for a model that a user
 # or product module owns; the owning module registers it here and the workflow
 # service merges it when it reads a record.  Keeping the two apart is what lets
 # a missing capability stay visible instead of being back-filled by the

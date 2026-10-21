@@ -175,57 +175,6 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertEqual(fields["stock_picking_id"]["visible_profiles"], ["readonly"])
         self.assertIn("line_ids", fields)
 
-    def test_material_inbound_contract_uses_native_structure_without_compatibility(self):
-        convert_file(
-            self.env,
-            "smart_construction_core",
-            "data/material_inbound_native_form_retirement.xml",
-            {},
-            mode="update",
-            noupdate=False,
-        )
-        self.env["sc.business.category"]._sync_seed_form_policies()
-
-        retired_xmlids = (
-            "business_config_contract_sc_material_inbound_form_sections_v1",
-            "business_config_contract_sc_material_inbound_form_structure_generated",
-            "business_config_contract_sc_material_inbound_p1_form_business_facts_v1",
-            "business_config_contract_material_inbound_productized_form_v1",
-        )
-        for xmlid in retired_xmlids:
-            self.assertFalse(self.env.ref("smart_construction_core.%s" % xmlid).active, xmlid)
-        native_contract = self.env.ref(
-            "smart_construction_core.business_config_contract_material_inbound_native_form_v1"
-        )
-        action = self.env.ref("smart_construction_core.action_sc_material_inbound_handling")
-        menu = self.env.ref("smart_construction_core.menu_sc_material_inbound")
-        view = self.env.ref("smart_construction_core.view_sc_material_inbound_form")
-        self.assertTrue(native_contract.active)
-        self.assertEqual(native_contract.action_id, action)
-
-        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
-
-        result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
-            "op": "model",
-            "model": "sc.material.inbound",
-            "action_id": action.id,
-            "menu_id": menu.id,
-            "view_type": "form",
-            "render_profile": "create",
-        })
-        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
-        self.assertTrue(envelope.get("ok", True), envelope.get("error"))
-        contract = envelope["data"]
-        structure = contract["formStructureContract"]
-        self.assertEqual(structure["structureAuthority"], "container_tree")
-        provenance = structure["sourceAuthority"]["governance_source"]
-        self.assertEqual(provenance["resolvedActionId"], action.id)
-        self.assertEqual(provenance["resolvedViewId"], view.id)
-        self.assertEqual(provenance.get("configuredSections", []), [])
-        self.assertEqual(provenance.get("compatibilityDependencies", []), [])
-        self.assertFalse(provenance["legacyFieldPolicyOverlay"])
-        self.assertFalse(provenance["formLayoutOverlay"])
-
     def test_material_acceptance_line_has_authoritative_business_display_name(self):
         acceptance = self.env["sc.material.acceptance"].create(
             {
@@ -287,91 +236,6 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             outbound_form.index('name="origin_issue_line_id"'),
         )
 
-    def test_material_outbound_and_return_contracts_use_native_structure_without_compatibility(self):
-        for data_file in (
-            "views/menu_business_taxonomy.xml",
-            "views/menu_product_project_wave1.xml",
-            "views/support/user_confirmed_formal_list_alignment_views.xml",
-        ):
-            convert_file(
-                self.env,
-                "smart_construction_core",
-                data_file,
-                {},
-                mode="update",
-                noupdate=False,
-            )
-        convert_file(
-            self.env,
-            "smart_construction_core",
-            "data/material_outbound_native_form_retirement.xml",
-            {},
-            mode="update",
-            noupdate=False,
-        )
-        self.env["sc.business.category"]._sync_seed_form_policies()
-
-        for xmlid in (
-            "business_config_contract_sc_material_outbound_form_structure_generated",
-            "business_config_contract_material_outbound_productized_form_v1",
-        ):
-            self.assertFalse(self.env.ref("smart_construction_core.%s" % xmlid).active, xmlid)
-
-        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
-
-        view = self.env.ref("smart_construction_core.view_sc_material_outbound_form")
-        legacy_material_group = self.env.ref("smart_construction_core.menu_sc_material_management_group")
-        return_menu = self.env.ref("smart_construction_core.menu_sc_material_return")
-        outbound_action = self.env.ref("smart_construction_core.action_sc_material_outbound")
-        return_action = self.env.ref("smart_construction_core.action_sc_material_return")
-        self.assertEqual(return_menu.parent_id, legacy_material_group)
-        self.assertFalse(legacy_material_group.active)
-        self.assertIn("('outbound_type', '=', 'issue')", outbound_action.domain)
-        self.assertIn("'current_business_category_code': 'material.outbound'", outbound_action.context)
-        self.assertIn("('outbound_type', '=', 'return')", return_action.domain)
-        self.assertIn("'current_business_category_code': 'material.return'", return_action.context)
-        entry_specs = (
-            (
-                "material.outbound",
-                "action_sc_material_outbound",
-                "menu_sc_material_outbound",
-                "business_config_contract_material_outbound_native_form_v1",
-            ),
-            (
-                "material.return",
-                "action_sc_material_return",
-                "menu_sc_material_return",
-                "business_config_contract_material_return_native_form_v1",
-            ),
-        )
-        for category_code, action_xmlid, menu_xmlid, contract_xmlid in entry_specs:
-            action = self.env.ref("smart_construction_core.%s" % action_xmlid)
-            menu = self.env.ref("smart_construction_core.%s" % menu_xmlid)
-            native_contract = self.env.ref("smart_construction_core.%s" % contract_xmlid)
-            self.assertTrue(native_contract.active)
-            self.assertEqual(native_contract.action_id, action)
-            result = UiContractV2Handler(
-                self.env, su_env=self.env["ir.model"].sudo().env
-            ).handle({
-                "op": "model",
-                "model": "sc.material.outbound",
-                "action_id": action.id,
-                "menu_id": menu.id,
-                "view_type": "form",
-                "render_profile": "create",
-                "context": {"current_business_category_code": category_code},
-            })
-            envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
-            self.assertTrue(envelope.get("ok", True), envelope.get("error"))
-            structure = envelope["data"]["formStructureContract"]
-            self.assertEqual(structure["structureAuthority"], "container_tree")
-            provenance = structure["sourceAuthority"]["governance_source"]
-            self.assertEqual(provenance["resolvedActionId"], action.id)
-            self.assertEqual(provenance["resolvedViewId"], view.id)
-            self.assertEqual(provenance.get("configuredSections", []), [])
-            self.assertEqual(provenance.get("compatibilityDependencies", []), [])
-            self.assertFalse(provenance["legacyFieldPolicyOverlay"])
-            self.assertFalse(provenance["formLayoutOverlay"])
     def test_material_supplier_return_policy_and_view_preserve_business_sections(self):
         from odoo.addons.smart_construction_core.models.support.business_form_policy_templates import (
             get_business_category_form_policy_templates,
@@ -875,6 +739,9 @@ class TestUserFeedbackBusinessViews(TransactionCase):
     def test_material_plan_generates_internal_rfq_with_plan_fields(self):
         self.env.user.groups_id |= self.env.ref("smart_construction_core.group_sc_cap_material_user")
         supplier = self.env["res.partner"].create({"name": "Plan RFQ Supplier", "supplier_rank": 1})
+        material = self.env["sc.material.catalog"].create({
+            "name": "Plan RFQ Material", "spec_model": "Plan-Spec", "uom_text": "件",
+        })
         plan = self.env["project.material.plan"].create(
             {
                 "project_id": self.project.id,
@@ -885,6 +752,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
                         0,
                         {
                             "product_id": self.product.id,
+                            "material_catalog_id": material.id,
                             "spec": "Plan-Spec",
                             "quantity": 4,
                             "vendor_id": supplier.id,
@@ -922,6 +790,9 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.env.user.groups_id |= self.env.ref("smart_construction_core.group_sc_cap_material_user")
         supplier = self.env["res.partner"].create({"name": "Plan RFQ Multi Supplier A", "supplier_rank": 1})
         supplier_b = self.env["res.partner"].create({"name": "Plan RFQ Multi Supplier B", "supplier_rank": 1})
+        material = self.env["sc.material.catalog"].create({
+            "name": "Plan RFQ Material", "spec_model": "Multi-Spec", "uom_text": "件",
+        })
         plan = self.env["project.material.plan"].create(
             {
                 "project_id": self.project.id,
@@ -932,6 +803,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
                         0,
                         {
                             "product_id": self.product.id,
+                            "material_catalog_id": material.id,
                             "spec": "Multi-Spec",
                             "quantity": 6,
                             "vendor_id": supplier.id,
@@ -1038,6 +910,12 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             }
         )
 
+        self.env.user.groups_id |= self.env.ref("smart_construction_core.group_sc_cap_material_manager")
+        self.env["sc.approval.policy"].search([
+            ("target_model", "=", "sc.material.rfq"),
+        ]).write({"approval_required": False})
+        rfq.action_submit()
+        rfq.action_select()
         action = rfq.action_create_purchase_order()
         purchase_order = self.env["purchase.order"].browse(action["res_id"])
         acceptance = self.env["sc.material.acceptance"].create({"purchase_order_id": purchase_order.id})
@@ -1659,10 +1537,10 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         settlement_tree = self.env.ref("smart_construction_core.view_sc_material_settlement_tree").arch_db
 
         for arch in (purchase_request_tree, acceptance_tree, inbound_tree, rfq_tree):
-            self.assertIn('name="legacy_fact_type"', arch)
+            self.assertNotIn('name="legacy_fact_type"', arch)
         self.assertIn('name="purpose"', outbound_tree)
-        self.assertIn('name="legacy_fact_type"', outbound_tree)
-        self.assertIn('name="legacy_fact_type"', settlement_tree)
+        self.assertNotIn('name="legacy_fact_type"', outbound_tree)
+        self.assertNotIn('name="legacy_fact_type"', settlement_tree)
         self.assertIn('name="amount_untaxed" sum="未税金额合计"', settlement_tree)
         self.assertIn('name="tax_amount" sum="税额合计"', settlement_tree)
         self.assertIn('name="amount_total" sum="结算金额合计"', settlement_tree)
@@ -1806,15 +1684,20 @@ class TestUserFeedbackBusinessViews(TransactionCase):
                 ],
             }
         )
-        self.env["sc.settlement.adjustment"].create(
+        adjustment = self.env["sc.settlement.adjustment"].create(
             {
                 "settlement_id": settlement.id,
                 "adjustment_type": "deduction",
-                "state": "confirmed",
                 "item_name": "扣款事项",
                 "amount": 15,
             }
         )
+
+        self.env["sc.approval.policy"].search([
+            ("target_model", "=", "sc.settlement.adjustment"),
+        ]).write({"approval_required": False})
+        adjustment.action_confirm()
+        self.assertEqual(adjustment.state, "confirmed")
 
         self.assertEqual(settlement.amount_total, 100)
         self.assertEqual(settlement.settlement_unit_id, self.partner)
@@ -1825,17 +1708,17 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertEqual(settlement.contract_subject, "Feedback Income Contract")
         self.assertEqual(settlement.engineering_address, "Feedback Road 1")
         self.assertEqual(settlement.deduction_amount, 15)
-        self.assertEqual(settlement.unpaid_amount, 100)
+        self.assertEqual(settlement.unpaid_amount, 85)
         self.assertEqual(settlement.employer_name, self.partner.display_name)
         self.assertEqual(settlement.contractor_name, self.env.company.partner_id.display_name)
 
         tree = self.env.ref("smart_construction_core.view_sc_settlement_order_tree").arch_db
-        self.assertIn('name="contract_subject"', tree)
-        self.assertIn('name="contract_total_amount" sum="合同总额合计"', tree)
-        self.assertIn('name="submitted_amount" sum="送审金额合计"', tree)
-        self.assertIn('name="approved_amount" sum="审定金额合计"', tree)
-        self.assertIn('name="requested_fund_amount" sum="申请资金金额合计"', tree)
-        self.assertIn('name="engineering_address"', tree)
+        self.assertIn('name="contract_source_kind"', tree)
+        self.assertIn('name="source_contract_name"', tree)
+        self.assertIn('name="settlement_stage_id"', tree)
+        self.assertIn('name="amount_total" sum="金额合计"', tree)
+        self.assertIn('name="amount_paid" sum="已付款金额合计"', tree)
+        self.assertIn('name="unpaid_amount" sum="未付款金额合计"', tree)
 
     def test_currency_defaults_to_cny_and_is_hidden_from_business_views(self):
         cny = self.env.ref("base.CNY")

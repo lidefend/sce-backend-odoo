@@ -1047,50 +1047,6 @@ class ConstructionContract(models.Model):
             record.expense_contract_category_id = record.expense_contract_category_auto_id.id
         return records
 
-    def init(self):
-        self.env.cr.execute(
-            """
-            ALTER TABLE construction_contract
-                ADD COLUMN IF NOT EXISTS original_contract_id integer
-            """
-        )
-        self.env.cr.execute(
-            """
-            DO $$
-            BEGIN
-                IF NOT EXISTS (
-                    SELECT 1
-                      FROM pg_constraint
-                     WHERE conname = 'construction_contract_original_contract_id_fkey'
-                ) THEN
-                    ALTER TABLE construction_contract
-                        ADD CONSTRAINT construction_contract_original_contract_id_fkey
-                        FOREIGN KEY (original_contract_id)
-                        REFERENCES construction_contract(id)
-                        ON DELETE RESTRICT;
-                END IF;
-            END $$
-            """
-        )
-        self.env.cr.execute(
-            """
-            CREATE INDEX IF NOT EXISTS construction_contract_original_contract_id_index
-                ON construction_contract(original_contract_id)
-            """
-        )
-        self.env.cr.execute(
-            """
-            UPDATE construction_contract contract
-               SET business_category_id = category.id
-              FROM sc_business_category category
-             WHERE contract.business_category_id IS NULL
-               AND category.code = CASE
-                       WHEN contract.type = 'in' THEN 'contract.expense'
-                       ELSE 'contract.income'
-                   END
-               AND category.target_model = 'construction.contract'
-            """
-        )
     def write(self, vals):
         vals = dict(vals or {})
         if "state" in vals and not self.env.context.get("allow_transition"):

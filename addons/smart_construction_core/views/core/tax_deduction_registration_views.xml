@@ -157,7 +157,7 @@
                                             invisible="not company_contractor_responsibility_summary_id"/>
                                 </group>
                             </page>
-                            <page string="迁移来源" invisible="source_origin != 'legacy'">
+                            <page string="迁移来源" invisible="source_origin != 'legacy'" groups="smart_construction_core.group_sc_cap_config_admin">
                                 <group name="deduction_source_trace" data-sc-anchor="deduction_source_trace" string="来源追溯">
                                     <field name="legacy_source_model" readonly="1"/>
                                     <field name="legacy_source_table" readonly="1"/>

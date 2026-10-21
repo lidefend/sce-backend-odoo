@@ -3784,36 +3784,6 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         finally:
             self.module.IdentityResolver = original_resolver
 
-    def test_project_contract_scope_migration_is_repeatable_and_exact(self):
-        migration_path = (
-            Path(__file__).resolve().parents[2]
-            / "smart_construction_core"
-            / "migrations"
-            / "17.0.0.133"
-            / "post-migration.py"
-        )
-        spec = importlib.util.spec_from_file_location("project_scope_migration", migration_path)
-        migration = importlib.util.module_from_spec(spec)
-        assert spec.loader is not None
-        spec.loader.exec_module(migration)
-
-        class _Cursor:
-            def __init__(self):
-                self.statements = []
-
-            def execute(self, statement):
-                self.statements.append(statement)
-
-        cursor = _Cursor()
-        migration.migrate(cursor, "17.0.0.132")
-        migration.migrate(cursor, "17.0.0.133")
-
-        self.assertEqual(len(cursor.statements), 2)
-        self.assertEqual(cursor.statements[0], cursor.statements[1])
-        self.assertIn("business_config_contract_project_project_form_structure_generated", cursor.statements[0])
-        self.assertIn("business_config_contract_project_project_form_structure_v1", cursor.statements[0])
-        self.assertIn("IS DISTINCT FROM", cursor.statements[0])
-
     def test_form_structure_projection_uses_current_user_field_authority(self):
         class _Field:
             def __init__(self, field_type, string, groups=""):

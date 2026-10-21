@@ -178,7 +178,7 @@
                                     class="btn-secondary"
                                     invisible="not company_contractor_responsibility_summary_id"/>
                         </group>
-                        <group name="payment_source_trace" data-sc-anchor="payment_source_trace" string="来源与系统追溯" invisible="state != 'legacy_confirmed'">
+                        <group name="payment_source_trace" data-sc-anchor="payment_source_trace" string="来源与系统追溯" invisible="state != 'legacy_confirmed'" groups="smart_construction_core.group_sc_cap_config_admin">
                             <field name="payment_family" readonly="1"/>
                             <field name="source_kind" readonly="1"/>
                             <field name="push_result" readonly="1"/>

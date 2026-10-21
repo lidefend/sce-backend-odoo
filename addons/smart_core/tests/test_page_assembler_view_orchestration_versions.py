@@ -74,6 +74,20 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.PageAssembler = _load_page_assembler()
         self.assembler = self.PageAssembler.__new__(self.PageAssembler)
 
+    def test_create_sentinel_does_not_fetch_a_persisted_record(self):
+        from unittest.mock import Mock
+        for record_id in ("new", "NEW", " new ", None):
+            with self.subTest(record_id=record_id):
+                model = Mock()
+                model.fields_get.return_value = {"name": {"type": "char"}}
+                result = self.assembler._fetch_initial_data(
+                    {"x.document": model}, "x.document", ["form"],
+                    {"view_type": "form", "record_id": record_id}, {"views": {"form": {}}},
+                )
+                self.assertEqual(result, {})
+                model.browse.assert_not_called()
+                model.search.assert_not_called()
+
     def test_requested_view_type_binds_the_active_view_identity(self):
         # A record-detail load declares ``view_type=form`` while the same action
         # still assembles its tree/search family.  Keying the published

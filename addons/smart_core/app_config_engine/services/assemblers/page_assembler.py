@@ -4422,6 +4422,7 @@ class PageAssembler:
         requested_view_type = str(p.get("view_type") or p.get("viewType") or "").strip().lower()
         wants_form_record = (
             p.get("record_id")
+            and str(p["record_id"]).strip().lower() != "new"
             and (
                 requested_view_type in {"form", ""}
                 or "form" in (view_types or [])

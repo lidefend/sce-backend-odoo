@@ -13,6 +13,7 @@ from ..utils.backend_contract_boundaries import (
 )
 from ..utils.extension_hooks import call_extension_hook_first
 from .auth import get_user_from_token
+from .intent_authorization import authorize_intent
 
 SOURCE_KIND = "odoo_native_permission_projection"
 SOURCE_AUTHORITIES = ("odoo.access", "ir.rule", "ir.ui.menu", "ir.actions", "sc.entitlement", "sc.capability")
@@ -330,6 +331,8 @@ def check_intent_permission(ctx):
                 ctx.uid = identity_id(user)
             except Exception:
                 pass
+
+        authorize_intent(env, intent_name, ctx_params)
 
         # 3. 正常的权限检查逻辑
         model = _param_value(ctx_params, "model")

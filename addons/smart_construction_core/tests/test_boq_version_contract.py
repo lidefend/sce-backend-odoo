@@ -140,7 +140,7 @@ class TestBoqVersionContract(TransactionCase):
         )
         Allocation = self.env["project.boq.allocation"]
         for line in first | second:
-            Allocation._create_authoritative(
+            Allocation.create(
                 {
                     "boq_line_id": line.id,
                     "execution_scope_id": located_scope.id,
@@ -338,8 +338,9 @@ class TestBoqVersionContract(TransactionCase):
         )
         self.assertEqual(skipped, 0)
         self.assertEqual(len(rows), 1)
-        self.assertIn(unit_name, created_uoms)
-        self.assertTrue(rows[0]["uom_id"])
+        self.assertNotIn(unit_name, created_uoms)
+        self.assertEqual(self.env["uom.uom"].browse(rows[0]["uom_id"]).name, "项")
+        self.assertFalse(self.env["uom.uom"].search_count([("name", "=", unit_name)]))
 
     def test_boq_uom_aliases_and_missing_unit_use_business_item_unit(self):
         wizard = self.env["project.boq.import.wizard"].create(
@@ -518,7 +519,7 @@ class TestBoqVersionContract(TransactionCase):
         self.assertEqual(material.target_quantity, 0.8)
         self.assertAlmostEqual(material.target_amount, 2.8)
         line_action = plan.action_open_lines()
-        self.assertEqual(line_action["res_model"], "project.cost.plan.line")
+        self.assertEqual(line_action["res_model"], "project.cost.plan.node")
         self.assertEqual(line_action["domain"], [("plan_id", "=", plan.id)])
         self.assertEqual(line_action["context"]["default_plan_id"], plan.id)
         plan.action_validate()

@@ -54,16 +54,20 @@ class TestProjectInitiationNativeLowcode(TransactionCase):
 
     ENTRY_CONTRACT = "business_config_contract_project_project_form_structure_v1"
     ENTRY_CONTRACT_NAME = "project_project_form_structure_v1"
-    MIRROR_CONTRACT = "business_config_contract_project_project_form_structure_generated"
-    MIRROR_CONTRACT_NAME = "project_project_form_structure_generated_v1"
     ACTION = "action_project_initiation"
-    ACTION_ID = 724
+    ACTION_ID = None  # 契约驱动：setUpClass 按 XMLID 解析
     VIEW = "view_project_create_form"
-    VIEW_ID = 1503
+    VIEW_ID = None
     MODEL = "project.project"
     TITLE = "项目立项"
     ENTRY_PRIORITY = 800
     MIRROR_PRIORITY = 77
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.ACTION_ID = cls.env.ref("smart_construction_core.%s" % cls.ACTION).id
+        cls.VIEW_ID = cls.env.ref("smart_construction_core.%s" % cls.VIEW).id
 
     # Sibling entries on the same model that must keep rendering whatever they
     # rendered before this batch.  725 is the 「快速创建项目」 dispatch that
@@ -80,6 +84,7 @@ class TestProjectInitiationNativeLowcode(TransactionCase):
     # document order.  Pinned so the batch provably keeps the rendered field
     # set unchanged (same 10 business rows; two retired tutorial-only fields removed).
     RENDERED_FIELDS = (
+        "submission_readiness_display",
         "name",
         "initiation_date", "manager_id", "operation_strategy", "owner_id",
         "project_type_id", "project_category_id", "location", "start_date",
@@ -238,23 +243,6 @@ class TestProjectInitiationNativeLowcode(TransactionCase):
         self.assertEqual(context.get("source"), "smart_construction_core.product_release")
         self.assertEqual(context.get("source_status"), "product_release")
 
-    def test_the_mirror_is_retired_with_the_entry(self):
-        """Mirror 46 is action-bound, so the retirement is all-or-nothing.
-
-        Leaving it active makes it the last structure writer for this action and
-        the ownership diagnosis refuses the surface.  The record stays declared
-        (explicitly retired) rather than being dropped from the data file.
-        """
-        mirror = self._contract(self.MIRROR_CONTRACT)
-        self.assertEqual(mirror.name, self.MIRROR_CONTRACT_NAME)
-        self.assertFalse(mirror.active)
-        self.assertEqual(mirror.model, self.MODEL)
-        # It is a mirror of THIS entry: it never served an action-less surface,
-        # which is what would forbid retiring it.
-        self.assertEqual(mirror.action_id.id, self.ACTION_ID)
-        self.assertEqual(mirror.view_id.id, self.VIEW_ID)
-        configs = self._entry_contracts()
-        self.assertNotIn(mirror.name, [config.name for config in configs])
 
     # -- resolution surface --------------------------------------------------
 

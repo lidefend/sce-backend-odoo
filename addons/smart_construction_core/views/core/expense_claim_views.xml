@@ -258,7 +258,7 @@
                                             invisible="not company_contractor_responsibility_summary_id"/>
                                 </group>
                             </page>
-                            <page string="迁移来源" invisible="source_origin != 'legacy'">
+                            <page string="迁移来源" invisible="source_origin != 'legacy'" groups="smart_construction_core.group_sc_cap_config_admin">
                                 <group name="deduction_source_trace" data-sc-anchor="deduction_source_trace" string="来源追溯">
                                     <!-- Migrated provenance facts stay: no other presenter carries
                                          them.  The retired entry configuration declared the same
@@ -387,7 +387,7 @@
                                             invisible="not company_contractor_responsibility_summary_id"/>
                                 </group>
                             </page>
-                            <page string="迁移来源" invisible="source_origin != 'legacy'">
+                            <page string="迁移来源" invisible="source_origin != 'legacy'" groups="smart_construction_core.group_sc_cap_config_admin">
                                 <group name="claim_source_trace" data-sc-anchor="claim_source_trace" string="来源追溯">
                                     <!-- Migrated provenance facts stay: no other presenter carries
                                          them.  The retired entry configuration declared the same

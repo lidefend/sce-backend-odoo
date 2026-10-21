@@ -728,6 +728,24 @@ class ProjectFundingActualEventAllocation(models.Model):
         ("normalized_identity_present", "CHECK(normalization_state != 'normalized' OR (baseline_id IS NOT NULL AND project_id IS NOT NULL AND company_id IS NOT NULL AND currency_id IS NOT NULL))", "标准资金分配事实必须固化基线、项目、公司与币种身份。"),
     ]
 
+    def init(self):
+        """Install indexes for current funding aggregation queries."""
+        self.env.cr.execute(
+            "CREATE INDEX IF NOT EXISTS project_funding_allocation_line_effect_idx "
+            "ON project_funding_actual_event_allocation (plan_line_id, normalization_state) "
+            "INCLUDE (effective_amount, actual_event_id)"
+        )
+        self.env.cr.execute(
+            "CREATE INDEX IF NOT EXISTS project_funding_allocation_baseline_effect_idx "
+            "ON project_funding_actual_event_allocation (baseline_id, normalization_state) "
+            "INCLUDE (effective_amount, actual_event_id)"
+        )
+        self.env.cr.execute(
+            "CREATE INDEX IF NOT EXISTS project_funding_allocation_event_effect_idx "
+            "ON project_funding_actual_event_allocation (actual_event_id, normalization_state) "
+            "INCLUDE (effective_amount, plan_line_id)"
+        )
+
     @api.model_create_multi
     def create(self, vals_list):
         if self.env.context.get("_sc_funding_allocation_token") is not _FUNDING_ALLOCATION_TOKEN:

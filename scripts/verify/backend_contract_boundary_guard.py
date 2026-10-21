@@ -241,12 +241,6 @@ ALLOWED_DIRECT_CONTRACT_WRITERS = {
         "reason": "upgrades released industry list contracts from transition fields to formal product fields",
         "expected_source": "smart_construction_core.formal_settlement_list_contract_sync",
     },
-    "addons/smart_construction_core/migrations/17.0.0.61/post-migration.py": {
-        "layer": "L2",
-        "boundary": "industry_stale_contract_scope_cleanup_migration",
-        "reason": "archives stale action-scoped business config contracts whose action model no longer matches the contract model",
-        "expected_source": "smart_construction_core.stale_contract_scope_cleanup",
-    },
     "addons/smart_construction_core/hooks.py": {
         "layer": "L2",
         "boundary": "industry_install_contract_source_status_normalization",
@@ -255,6 +249,13 @@ ALLOWED_DIRECT_CONTRACT_WRITERS = {
     },
 }
 ALLOWED_APPROVAL_POLICY_RUNTIME_WRITERS = {
+    "addons/smart_construction_core/services/product_system_parameter_change.py": {
+        "layer": "L2/L4",
+        "boundary": "governed_system_parameter_approval_mode",
+        "reason": "maps the approved parameter change-set publish/rollback to payment.request policy without editing steps; the parameter audit and previous-value snapshot are owned by its dedicated handler",
+        "expected_source": "sc.product.system.parameter.change",
+        "target_models": ["sc.approval.policy"],
+    },
     "addons/smart_construction_core/handlers/approval_policy_configuration.py": {
         "layer": "L2/L4",
         "boundary": "approval_policy_runtime_configuration",
@@ -283,13 +284,6 @@ ALLOWED_LOWCODING_POLICY_RUNTIME_WRITERS = {
         "boundary": "menu_config_policy_runtime_configuration",
         "reason": "business configuration UI writes menu runtime policies",
         "expected_source": BOUNDARY_CONSTANTS["MENU_ORCHESTRATION_SOURCE_TENANT_LOWCODING"],
-        "target_models": ["ui.menu.config.policy"],
-    },
-    "addons/smart_construction_core/migrations/17.0.0.61/post-migration.py": {
-        "layer": "L2",
-        "boundary": "industry_product_menu_policy_baseline_migration",
-        "reason": "normalizes legacy config menu labels in released menu runtime policies during industry module upgrade",
-        "expected_source": "smart_construction_core.config_center_label_migration",
         "target_models": ["ui.menu.config.policy"],
     },
 }

@@ -2,7 +2,7 @@
 # ==================== Dev =============================
 # ======================================================
 .PHONY: local.dev.rebuild_realistic local.dev.verify_realistic
-.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick prod.sim.fresh.replay prod.sim.data.replay prod.sim.business.usable.init prod.sim.replay.then.usable.init prod.sim.replay.then.project frontend.dev frontend.stop frontend.restart frontend.logs acceptance.runtime.preflight acceptance.runtime.infrastructure.restore frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health backend.acceptance.logs frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev_acceptance.publish release.daily_product_navigation.snapshot release.daily_product_navigation.refresh release.daily_product_navigation.converge local.dev.demo_credentials.prepare local.dev.ready local.dev.up local.dev.down local.dev.restart local.dev.frontend local.dev.frontend.watch local.dev.candidate.frontend.up local.dev.candidate.frontend.down local.dev.candidate.frontend.health local.dev.candidate.frontend.visual-smoke local.dev.logs local.dev.ps local.dev.test local.dev.upgrade local.dev.verify_authority local.dev.sync_demo local.dev.demo_users.sync local.dev.reset_payment_request_fixture local.dev.demo.settlement_snapshot.repair local.dev.snapshot local.dev.contract_snapshot local.dev.project_create_contract_action_scope local.dev.project_profile_write_fixture local.dev.project_profile_write_browser local.dev.personnel_authorization_fixture local.dev.personnel_authorization_browser local.dev.tender_award_fixture local.dev.tender_award_browser verify.local.dev.tender_award.unit verify.local.dev.tender_award.journey local.dev.rebuild_demo local.dev.verify_demo local.dev.health verify.local.dev.frontend.quick.unit verify.local.dev.frontend.quick.gate verify.local.dev.payment_request.native_parity.readonly verify.local.dev.payment_request.floorplan.readonly verify.local.dev.payment_request.floorplan.submit verify.local.dev.payment_request.full_chain verify.local.dev.payment_request.settlement_component.journey verify.local.dev.payment_request.attachment_m2m.journey local.sample.require_env local.sample.ready local.sample.prepare local.sample.up local.sample.down local.sample.logs local.sample.snapshot local.sample.restore local.sample.discard local.sample.health local.clean.require_env local.clean.prepare local.clean.up local.clean.down local.clean.restart local.clean.logs local.clean.frontend local.env.status verify.local.development_lifecycle.unit verify.local.dev.project_create_contract_action_scope verify.local.dev.form_structure_surface_capability.orm verify.local.dev.canonical_navigation_projection.orm verify.local.dev.platform_database_governance.orm local.dev.data_space.enroll_identities verify.local.dev.data_space_identity_enrollment.orm verify.local.dev.data_space_uncached_membership.orm
+.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick frontend.dev frontend.stop frontend.restart frontend.logs acceptance.runtime.preflight acceptance.runtime.infrastructure.restore frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health backend.acceptance.logs frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev_acceptance.publish release.daily_product_navigation.snapshot release.daily_product_navigation.refresh release.daily_product_navigation.converge local.dev.demo_credentials.prepare local.dev.ready local.dev.up local.dev.down local.dev.restart local.dev.frontend local.dev.frontend.watch local.dev.candidate.frontend.up local.dev.candidate.frontend.down local.dev.candidate.frontend.health local.dev.candidate.frontend.visual-smoke local.dev.logs local.dev.ps local.dev.test local.dev.upgrade local.dev.verify_authority local.dev.sync_demo local.dev.demo_users.sync local.dev.reset_payment_request_fixture local.dev.demo.settlement_snapshot.repair local.dev.snapshot local.dev.contract_snapshot local.dev.project_create_contract_action_scope local.dev.project_profile_write_fixture local.dev.project_profile_write_browser local.dev.personnel_authorization_fixture local.dev.personnel_authorization_browser local.dev.tender_award_fixture local.dev.tender_award_browser verify.local.dev.tender_award.unit verify.local.dev.tender_award.journey local.dev.rebuild_demo local.dev.verify_demo local.dev.health verify.local.dev.frontend.quick.unit verify.local.dev.frontend.quick.gate verify.local.dev.payment_request.native_parity.readonly verify.local.dev.payment_request.floorplan.readonly verify.local.dev.payment_request.floorplan.submit verify.local.dev.payment_request.full_chain verify.local.dev.payment_request.settlement_component.journey verify.local.dev.payment_request.attachment_m2m.journey local.sample.require_env local.sample.ready local.sample.prepare local.sample.up local.sample.down local.sample.logs local.sample.snapshot local.sample.restore local.sample.discard local.sample.health local.clean.require_env local.clean.prepare local.clean.up local.clean.down local.clean.restart local.clean.logs local.clean.frontend local.env.status verify.local.development_lifecycle.unit verify.local.dev.project_create_contract_action_scope verify.local.dev.form_structure_surface_capability.orm verify.local.dev.canonical_navigation_projection.orm verify.local.dev.platform_database_governance.orm local.dev.data_space.enroll_identities verify.local.dev.data_space_identity_enrollment.orm verify.local.dev.data_space_uncached_membership.orm
 up: check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/dev/up.sh
 down: check-compose-project check-compose-env
@@ -756,7 +756,7 @@ local.clean.restart: guard.prod.forbid local.clean.require_env
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" restart
 
 local.clean.logs: guard.prod.forbid local.clean.require_env
-	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" READ_RUNTIME_LOG=1 \
 	  bash scripts/dev/local_environment_doctor.sh clean
 
 local.clean.frontend: guard.prod.forbid local.clean.prepare local.clean.frontend.prepare_output
@@ -1030,16 +1030,13 @@ verify.contract.project_ledger_entry_carrier.orm: guard.prod.forbid local.dev.re
 # ledger is the single project-center record entry, so its runtime contract must
 # render the composition its authoritative native form declares; a stale legacy
 # ui.form.field.policy overlay from the retired 项目信息编辑 era suppressed
-# project_code. The migration in migrations/17.0.0.170 carries the repair into
-# every module upgrade; this entry reports/repairs an already-deployed database
+# project_code. This entry reports/repairs an already-deployed database
 # through the registered compose project and DB_NAME binding.
 .PHONY: verify.project.ledger.field_overlay.repair.unit project.ledger.field_overlay.repair
 verify.project.ledger.field_overlay.repair.unit: guard.prod.forbid
 	@python3 -m py_compile \
 	  scripts/ops/repair_project_ledger_field_overlay.py \
 	  addons/smart_construction_core/services/project_ledger_field_overlay_repair.py
-	@python3 -c "import ast,sys; [ast.parse(open(p).read()) for p in sys.argv[1:]]" \
-	  addons/smart_construction_core/migrations/17.0.0.170/pre-migration.py
 project.ledger.field_overlay.repair: guard.prod.forbid check-compose-project check-compose-env verify.project.ledger.field_overlay.repair.unit
 	@PROJECT_LEDGER_OVERLAY_ACTION="$${PROJECT_LEDGER_OVERLAY_ACTION:-report}" \
 	  $(MAKE) --no-print-directory odoo.shell.exec < scripts/ops/repair_project_ledger_field_overlay.py
@@ -1148,22 +1145,6 @@ prod.restart.full: guard.prod.danger check-compose-project check-compose-env
 
 deploy.prod.sim.oneclick: guard.prod.forbid check-compose-project check-compose-env gate.compose.config
 	@$(RUN_ENV) COMPOSE_FILES="-f $(COMPOSE_FILE_BASE) -f docker-compose.prod-sim.yml" bash scripts/deploy/prod_sim_oneclick.sh
-
-prod.sim.fresh.replay: guard.prod.forbid check-compose-project check-compose-env gate.compose.config
-	@$(RUN_ENV) ENV=test ENV_FILE=.env.prod.sim COMPOSE_FILES="-f $(COMPOSE_FILE_BASE) -f docker-compose.prod-sim.yml" bash scripts/deploy/prod_sim_fresh_replay.sh
-
-prod.sim.data.replay: guard.prod.forbid check-compose-project check-compose-env
-	@$(RUN_ENV) ENV=test ENV_FILE=.env.prod.sim COMPOSE_FILES="-f $(COMPOSE_FILE_BASE) -f docker-compose.prod-sim.yml" DB_NAME=$(DB_NAME) HISTORY_CONTINUITY_MODE=replay HISTORY_CONTINUITY_INCLUDE_FORMAL_PROJECTIONS=0 HISTORY_CONTINUITY_USE_PACKAGED_PAYLOADS="$(or $(HISTORY_CONTINUITY_USE_PACKAGED_PAYLOADS),1)" RUN_ID="$(RUN_ID)" HISTORY_CONTINUITY_START_AT="$(HISTORY_CONTINUITY_START_AT)" HISTORY_CONTINUITY_STOP_AFTER="$(HISTORY_CONTINUITY_STOP_AFTER)" MIGRATION_REPLAY_DB_ALLOWLIST="$(or $(MIGRATION_REPLAY_DB_ALLOWLIST),$(DB_NAME))" MIGRATION_ARTIFACT_ROOT="$(MIGRATION_ARTIFACT_ROOT)" bash scripts/migration/history_continuity_oneclick.sh
-
-prod.sim.business.usable.init: guard.prod.forbid check-compose-project check-compose-env
-	@$(RUN_ENV) ENV=test ENV_FILE=.env.prod.sim COMPOSE_FILES="-f $(COMPOSE_FILE_BASE) -f docker-compose.prod-sim.yml" DB_NAME=$(DB_NAME) FORMAL_PROJECTION_ARTIFACT_ROOT="$(FORMAL_PROJECTION_ARTIFACT_ROOT)" MIGRATION_ARTIFACT_ROOT="$(MIGRATION_ARTIFACT_ROOT)" MIGRATION_REPLAY_DB_ALLOWLIST="$(or $(MIGRATION_REPLAY_DB_ALLOWLIST),$(DB_NAME))" bash scripts/migration/history_business_usable_init.sh
-
-prod.sim.replay.then.usable.init: guard.prod.forbid check-compose-project check-compose-env
-	@$(MAKE) prod.sim.data.replay
-	@$(MAKE) prod.sim.business.usable.init
-
-prod.sim.replay.then.project: guard.prod.forbid check-compose-project check-compose-env
-	@$(MAKE) prod.sim.replay.then.usable.init
 
 .PHONY: dev.rebuild
 dev.rebuild: guard.codex.fast.noheavy guard.prod.forbid check-compose-project check-compose-env gate.compose.config
@@ -1567,3 +1548,36 @@ local.dev.user_permission.rehearsal: guard.prod.forbid local.dev.ready
 	  ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_USER_PERMISSION_REHEARSE=1 \
 	  SC_ACCEPTANCE_USER_PERMISSION_SOURCE_SHA256="$$(sha256sum addons/smart_construction_core/views/support/runtime_user_management_views.xml | cut -d ' ' -f 1)" \
 	  bash -c 'source "$$ROOT_DIR/scripts/common/env.sh"; exec bash "$$ROOT_DIR/scripts/ops/odoo_shell_exec.sh"' < scripts/verify/user_permission_view_contract_boundary_guard.py
+
+.PHONY: verify.local.dev.system_parameter.browser
+verify.local.dev.system_parameter.browser: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/verify/local_dev_system_parameter_browser.sh
+
+.PHONY: verify.local.dev.system_parameter.mutation
+verify.local.dev.system_parameter.mutation: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_PARAMETER_SCENARIO="$(or $(SC_PARAMETER_SCENARIO),payment_terms)" bash scripts/verify/local_dev_system_parameter_browser.sh --mutation
+
+.PHONY: verify.local.dev.system_parameter.denial
+verify.local.dev.system_parameter.denial: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/verify/local_dev_system_parameter_browser.sh --denial
+
+.PHONY: verify.local.dev.readiness.browser verify.local.dev.readiness.readback
+verify.local.dev.readiness.browser: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  READINESS_CASE_KEYS="$(READINESS_CASE_KEYS)" bash scripts/verify/local_dev_readiness_browser.sh
+
+verify.local.dev.readiness.readback: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/verify/local_dev_readiness_browser.sh --readback
+
+.PHONY: verify.local.dev.capability.browser verify.local.dev.capability.readback
+verify.local.dev.capability.browser: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  CAPABILITY_CASE_KEYS="$(CAPABILITY_CASE_KEYS)" CAPABILITY_NAVIGATION_KEYS="$(CAPABILITY_NAVIGATION_KEYS)" bash scripts/verify/local_dev_capability_browser.sh
+
+verify.local.dev.capability.readback: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/verify/local_dev_capability_browser.sh --readback

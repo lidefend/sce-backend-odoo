@@ -557,28 +557,6 @@ class ScInvoiceRegistration(models.Model):
             super(ScInvoiceRegistration, rec).write(normalized_values)
         return True
 
-    def init(self):
-        self.env.cr.execute(
-            """
-            UPDATE sc_invoice_registration
-               SET business_category_id = CASE
-                   WHEN source_kind = 'prepaid_tax' OR direction = 'prepaid' THEN (
-                       SELECT id FROM sc_business_category WHERE code = 'invoice.prepaid_tax' LIMIT 1
-                   )
-                   WHEN source_kind = 'input_invoice_tax' OR direction = 'input' THEN (
-                       SELECT id FROM sc_business_category WHERE code = 'invoice.input.report' LIMIT 1
-                   )
-                   WHEN source_kind = 'output_invoice_tax' AND invoice_content = '销项开票申请' THEN (
-                       SELECT id FROM sc_business_category WHERE code = 'invoice.output.application' LIMIT 1
-                   )
-                   WHEN source_kind = 'output_invoice_tax' OR direction = 'output' THEN (
-                       SELECT id FROM sc_business_category WHERE code = 'invoice.output.registration' LIMIT 1
-                   )
-                   ELSE NULL
-               END
-             WHERE business_category_id IS NULL
-            """
-        )
 
     def _write_invoice_state(self, values):
         return self.with_context(sc_invoice_state_token=_INVOICE_STATE_TOKEN).write(values)

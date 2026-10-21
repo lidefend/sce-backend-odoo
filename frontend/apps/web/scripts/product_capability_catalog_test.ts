@@ -12,6 +12,8 @@ import assert from 'node:assert/strict';
 
 import {
   capabilityStatusLabel,
+  projectUserCapabilities,
+  requireStructuredStartupCapabilities,
   isProductCapabilityCatalogGap,
   projectCapabilities,
   projectConfigurationCards,
@@ -152,6 +154,21 @@ assert.equal(capabilityStatusLabel('available'), '可用', 'available label');
 assert.equal(capabilityStatusLabel('partial'), '部分可用', 'partial label');
 assert.equal(capabilityStatusLabel('planned'), '未发布', 'planned label');
 assert.equal(capabilityStatusLabel('unknown'), 'unknown', 'an unknown declared status is echoed');
+cases += 4;
+
+const personal = { ...item('finance', '', 'deny', false), status_label: '无权限', reason: '需要财务权限', reason_code: 'FORBIDDEN' };
+assert.deepEqual(projectUserCapabilities({ user_capabilities: { items: [personal], empty_message: '无业务权限' } }).items, [personal]);
+assert.deepEqual(projectUserCapabilities({ user_capabilities: { items: [], empty_message: '无业务权限' } }), { items: [], empty_message: '无业务权限' });
+for (const invalid of [undefined, {}, { user_capabilities: {} }, { user_capabilities: { items: [personal] } }, { user_capabilities: { items: [{ ...personal, status_label: '' }], empty_message: 'empty' } }]) {
+  assert.throws(() => projectUserCapabilities(invalid), isProductCapabilityCatalogGap);
+  cases++;
+}
+requireStructuredStartupCapabilities([]);
+requireStructuredStartupCapabilities([{ key: 'finance', state: 'LOCKED', capability_state: 'deny' }]);
+for (const invalid of [undefined, ['legacy'], [{ key: 'missing-verdict' }]]) {
+  assert.throws(() => requireStructuredStartupCapabilities(invalid), isProductCapabilityCatalogGap);
+  cases++;
+}
 cases += 4;
 
 console.log(`[product_capability_catalog_test] PASS cases=${cases}`);

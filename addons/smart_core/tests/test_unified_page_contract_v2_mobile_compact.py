@@ -3857,11 +3857,15 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
 
         legacy_feedback = deepcopy(source)
         legacy_feedback["views"]["form"]["layout"][1]["children"][1]["class"] = "alert alert-warning"
-        with self.assertRaisesRegex(ValueError, "NATIVE_FEEDBACK_INTERACTION_REQUIRED"):
-            assembler.assemble_unified_page_contract_v2(
-                legacy_feedback, source_type="ui.contract", client_type="web_pc",
-                request_id="test.native.feedback.rejected",
-            )
+        # 解析不改变原生语义：div.alert 是布局节点，应原样组合进契约，
+        # 反馈呈现交给前端按 sc_ui_usage="interaction" 处理。
+        feedback_contract = assembler.assemble_unified_page_contract_v2(
+            legacy_feedback, source_type="ui.contract", client_type="web_pc",
+            request_id="test.native.feedback.composed",
+        )
+        feedback_div = feedback_contract["layoutContract"]["containerTree"][1]["children"][1]
+        self.assertEqual(feedback_div["type"], "div")
+        self.assertEqual(feedback_div["class"], "alert alert-warning")
 
         full = assembler.assemble_unified_page_contract_v2(
             source,

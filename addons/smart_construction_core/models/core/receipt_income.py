@@ -770,26 +770,3 @@ class ScReceiptIncome(models.Model):
                AND state IN ('received', 'legacy_confirmed')
             """
         )
-        self.env.cr.execute(
-            """
-            UPDATE sc_receipt_income receipt
-               SET business_category_id = category.id
-              FROM sc_business_category category
-             WHERE receipt.business_category_id IS NULL
-               AND category.target_model = 'sc.receipt.income'
-               AND category.code = CASE
-                   WHEN receipt.source_kind = 'receipt_income'
-                        AND (
-                            COALESCE(receipt.source_family, '') = 'engineering_progress_receipt_visible'
-                            OR COALESCE(receipt.income_category, '') = '工程进度款收入'
-                        )
-                       THEN 'finance.receipt.income.progress'
-                   WHEN receipt.source_kind = 'residual_receipt'
-                        OR COALESCE(receipt.receipt_type, '') = '其他类型收款'
-                       THEN 'finance.receipt.income.residual'
-                   WHEN receipt.source_kind = 'receipt_income'
-                       THEN 'finance.receipt.income.project'
-                   ELSE NULL
-               END
-            """
-        )

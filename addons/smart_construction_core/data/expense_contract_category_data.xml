@@ -104,5 +104,4 @@
         <field name="active">1</field>
     </record>
 
-    <function model="sc.settlement.order" name="_backfill_settlement_stage_ids"/>
 </odoo>

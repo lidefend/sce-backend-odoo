@@ -65,17 +65,17 @@ class TestPaymentRequestAvailableActionsBackend(BusinessTransactionCase):
             }
         )
         payment.write({"contract_id": contract.id})
-        return payment
-
-    def test_native_partner_guidance_default_soft_and_explicit_policy(self):
-        """Real ORM facts/policy and available precheck; no submission side effects."""
-        payment = self._create_payment_request_minimal()
         baseline = self.env["project.funding.baseline"].create({
             "project_id": payment.project_id.id, "total_amount": 1000.0,
             "period_start": "2026-01-01", "period_end": "2026-12-31",
             "line_ids": [(0, 0, {"name": "风险验收预算", "planned_amount": 1000.0})],
         })
         baseline.action_activate()
+        return payment
+
+    def test_native_partner_guidance_default_soft_and_explicit_policy(self):
+        """Real ORM facts/policy and available precheck; no submission side effects."""
+        payment = self._create_payment_request_minimal()
         partner = payment.partner_id
         params = self.env["ir.config_parameter"].sudo()
         handler = PaymentRequestAvailableActionsHandler(self.env, payload={})
