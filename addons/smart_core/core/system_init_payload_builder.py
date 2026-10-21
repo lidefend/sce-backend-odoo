@@ -285,10 +285,10 @@ class SystemInitPayloadBuilder:
             page = pages.get(page_key)
             if isinstance(page, dict):
                 selected_pages[page_key] = page
-        if not selected_pages:
+        if not selected_pages and not isinstance(payload.get("error_states"), dict):
             return {}
         out = {"pages": selected_pages}
-        for key in ("schema_version", "contract_version", "meta"):
+        for key in ("schema_version", "contract_version", "meta", "error_states"):
             value = payload.get(key)
             if value is not None:
                 out[key] = value

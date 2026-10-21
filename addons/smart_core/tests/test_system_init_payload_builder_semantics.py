@@ -284,6 +284,24 @@ class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):
         self.assertIn("executive", role_surface_map)
         self.assertEqual((payload.get("role_surface_provider_meta") or {}).get("selected_provider"), "smart_construction_core")
 
+    def test_error_declaration_survives_actual_startup_projection(self):
+        from odoo.addons.smart_core.core.page_contracts_builder import build_page_contracts, build_public_auth_page_contracts
+        pages = build_page_contracts({})
+        projected = target.SystemInitPayloadBuilder.build_startup_surface({
+            "user": {"id": 1}, "nav": [], "nav_meta": {}, "intents": [],
+            "feature_flags": {}, "default_route": {"scene_key": "workspace.home"},
+            "role_surface": {"landing_scene_key": "workspace.home"},
+            "contract_version": "1.0.0", "schema_version": "1.0.0", "scene_version": "v1",
+            "page_contracts": pages,
+        })
+        self.assertEqual(projected["page_contracts"]["error_states"], pages["error_states"])
+        self.assertEqual(build_public_auth_page_contracts()["error_states"], pages["error_states"])
+        self.assertNotIn("login", projected["page_contracts"]["pages"])
+        no_pages = target.SystemInitPayloadBuilder._build_minimal_page_contracts({"page_contracts": {"pages": {}, "error_states": pages["error_states"]}})
+        self.assertEqual(no_pages["error_states"], pages["error_states"])
+        self.assertEqual(no_pages["pages"], {})
+        self.assertTrue(build_public_auth_page_contracts()["pages"]["login"]["texts"]["session_expired_notice"])
+
     def test_build_startup_surface_keeps_default_page_contracts_only(self):
         payload = target.SystemInitPayloadBuilder.build_startup_surface(
             {

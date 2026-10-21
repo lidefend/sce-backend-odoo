@@ -768,6 +768,7 @@ async function main() {
 
     const expiredReturnUrl = page.url();
     const expiredReturnPath = `${entryRelativePath(new URL(expiredReturnUrl).pathname)}${new URL(expiredReturnUrl).search}${new URL(expiredReturnUrl).hash}`;
+    const publicLoginResponse = page.waitForResponse(response => response.url().includes('/api/v1/auth/page-contracts') && response.status() === 200, { timeout: 45000 });
     remove = await interceptNextBusiness(page, (route) => fulfillError(route, 401, 'SESSION_EXPIRED', 'expired'), TARGETS.payment_request);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForURL(/\/login\?reason=session_expired/, { timeout: 30000 });
@@ -775,9 +776,12 @@ async function main() {
       !page.url().includes('redirect=') && new URL(page.url()).pathname === entryScopedPath('/login'),
       `expired session retained sensitive route or left entry namespace actual=${page.url()} expected=${entryScopedPath('/login')}`,
     );
+    const publicLoginDeclaration = await (await publicLoginResponse).json();
+    const expiredNotice = publicLoginDeclaration?.data?.pages?.login?.texts?.session_expired_notice;
+    check(typeof expiredNotice === 'string' && expiredNotice.trim(), 'CONTRACT_GAP: public login session_expired_notice');
     await page.locator('[data-session-expired-notice]').waitFor({ state: 'visible', timeout: 30000 });
     check(
-      await page.locator('[data-session-expired-notice]').textContent() === authenticatedIntents.get(page)?.startupData?.page_contracts?.pages?.login?.texts?.session_expired_notice,
+      await page.locator('[data-session-expired-notice]').textContent() === expiredNotice,
       'expired session explanation must be visible exactly once',
     );
     const retainedReturnPath = await page.evaluate(() => window.sessionStorage.getItem('sc.session_expired.return_path.v1'));
