@@ -4586,7 +4586,7 @@
     "Merge stage still requires valid list_surface_structure and relation_roundtrip evidence.",
     "Deployment stage retains daily_runtime_entry and path_namespace_identity evidence, explicitly not_run."
   ],
-  "next_exact_step": "Refresh G1 assets and pass existing guard; freeze metadata-only delta, carry forward bf3882a browser manifest through recorder, then run one exact-head Quick.",
+  "next_exact_step": "Freeze field-usage correction; validate current contract/list/relation and exact-head Quick. Keep GitHub unchanged until passed.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",
@@ -4997,6 +4997,27 @@
       "finding": "Independent review caught stale local environment and tool matrix hashes before Quick",
       "resolution": "Refresh existing G1 evidence preserving baseline3f424993c9f378aaeedd2f26080545ad37ea3f8e; require existing G1 guard in freeze preparation to catch future drift before commit",
       "impact": "Only G1 generated metadata, freeze Make prerequisite and run record; list/relation source, backend, declaration, fixtures, runtime profile and assertions unchanged from bf3882a. Reuse via governed recorder input hashes; do not rewrite original browser report identities."
+    },
+    "quick_failure": {
+      "head": "80fa6e1e31928470b7e0f59c0e8ec3a717504c9c",
+      "status": "failed",
+      "failed_target": "verify.native_form.declarations.unit",
+      "passed_shards": 7,
+      "owner": "P1 historical list policy vs model field usage",
+      "correction": "legal_next_action_display has authoritative sc_ui_usage=interaction; remove old list policy/profile references and newly added XML field, preserve interaction declaration and P0 forbidden-body rule. Initial XML addition was incomplete ownership analysis.",
+      "earliest": "L1 static native declaration +policy-field cross-check; L2 ORM targeted policy/XML; L3 isolated upgrade; affected frozen list only invalidated by P1; relation independent but recorder decides reuse"
+    },
+    "field_usage_correction": {
+      "status": "targeted_validation_passed",
+      "identity": "80fa6e1e3 + six-file dirty scope",
+      "checks": {
+        "native_static": "3 passed",
+        "L1_iteration": "passed",
+        "ORM": "isolated module upgrade plus 2 selected policy/native-view tests passed",
+        "review": "Independent no blockers; original XML-add direction withdrawn"
+      },
+      "affected": "P1 native field-use policy and shared extension inputs; recorder maps shared extension files to both list/relation suites, so final runtime lane must reissue both at new candidate. Other product-release matrices unchanged.",
+      "next": "freeze generated reports and clean candidate; contract, list, relation, record merge evidence; justified Quick after owner-layer fix"
     }
   }
 }

@@ -78,7 +78,6 @@ class TestP1PaymentRequestCapability(BusinessTransactionCase):
             "payee_unit_display",
             "payment_basis_type",
             "payee_account_completeness",
-            "legal_next_action_display",
             "request_amount_display",
         ]
         self.assertEqual(policy["visible"], expected)
@@ -100,7 +99,9 @@ class TestP1PaymentRequestCapability(BusinessTransactionCase):
             },
         )
         self.assertEqual(policy["roles"]["payee_account_completeness"], "status")
-        self.assertEqual(policy["roles"]["legal_next_action_display"], "status")
+        self.assertNotIn("legal_next_action_display", policy["roles"])
+        for name in policy["visible"]:
+            self.assertNotEqual(getattr(self.env["payment.request"]._fields[name], "sc_ui_usage", None), "interaction")
         self.assertEqual(policy["roles"]["state"], "status")
         self.assertEqual(policy["roles"]["payment_basis_type"], "status")
 

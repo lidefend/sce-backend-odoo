@@ -970,9 +970,9 @@ LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL = {
 BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
     "payment.request": {
         # The payment handling list is a task surface, not a generic model
-        # dump.  These nine facts let the operator identify the request,
-        # understand the payment basis and decide the next legal step without
-        # opening every record.  Keep them ahead of audit and auxiliary
+        # dump. These eight facts identify the request and its payment basis.
+        # Next-action guidance is declared as interaction, not a fact column.
+        # Keep facts ahead of audit and auxiliary
         # columns when the responsive width budget is applied.
         "visible": [
             "state",
@@ -982,7 +982,6 @@ BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
             "payee_unit_display",
             "payment_basis_type",
             "payee_account_completeness",
-            "legal_next_action_display",
             "request_amount_display",
         ],
         "critical": [
@@ -993,7 +992,6 @@ BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
             "payee_unit_display",
             "payment_basis_type",
             "payee_account_completeness",
-            "legal_next_action_display",
             "request_amount_display",
         ],
         "hidden": [
@@ -1017,7 +1015,6 @@ BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL = {
             "payee_unit_display": "relation",
             "payment_basis_type": "status",
             "payee_account_completeness": "status",
-            "legal_next_action_display": "status",
             "request_amount_display": "money",
             "actual_payee_unit_display": "relation",
             "payer_unit_display": "relation",

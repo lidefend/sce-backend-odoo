@@ -34,7 +34,7 @@ Generated from repository source files. This report is informational during the 
 | 2934 | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2925 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2894 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
-| 2726 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
+| 2727 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2584 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2425 | Python source | `addons/smart_core/handlers/system_init.py` |
@@ -52,8 +52,8 @@ Generated from repository source files. This report is informational during the 
 | 1930 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1885 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 1870 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1870 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
+| 1869 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1844 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1816 | Python source | `scripts/audit/verification_lane_coverage.py` |
@@ -95,8 +95,8 @@ Generated from repository source files. This report is informational during the 
 | 1469 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1440 | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
-| 1417 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1415 | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
+| 1414 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1403 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1398 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1395 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
@@ -252,7 +252,7 @@ Generated from repository source files. This report is informational during the 
 | 2934 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2925 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2894 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
-| 2726 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
+| 2727 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2584 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2425 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
@@ -270,8 +270,8 @@ Generated from repository source files. This report is informational during the 
 | 1930 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1885 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 1870 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1870 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
+| 1869 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1844 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1816 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
@@ -305,8 +305,8 @@ Generated from repository source files. This report is informational during the 
 | 1469 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1440 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
-| 1417 | warning | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1415 | warning | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
+| 1414 | warning | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1403 | warning | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1398 | warning | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1395 | warning | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |

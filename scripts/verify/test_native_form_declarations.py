@@ -27,6 +27,32 @@ class NativeFormDeclarationTest(unittest.TestCase):
         self.assertEqual(form.findall("sheet//field[@name='state']"), [])
         self.assertEqual(form.findall(".//group[@string='办理提示']"), [])
 
+    def test_payment_list_declarations_respect_native_field_usage(self):
+        product = ROOT / 'addons/smart_construction_core'
+        interaction = set()
+        for node in ast.walk(ast.parse((product / 'models/core/payment_request.py').read_text())):
+            if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call):
+                if any(k.arg == 'sc_ui_usage' and isinstance(k.value, ast.Constant)
+                       and k.value.value == 'interaction' for k in node.value.keywords):
+                    interaction.update(t.id for t in node.targets if isinstance(t, ast.Name))
+        self.assertIn('legal_next_action_display', interaction)
+        policy = runpy.run_path(str(product / 'core_extension_policy_maps.py'))['BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL']['payment.request']
+        profiles = []
+        for node in ast.walk(ast.parse((product / 'core_extension.py').read_text())):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'register_legacy_standard_list_profile':
+                profile = ast.literal_eval(node.args[0])
+                if profile.get('model_name') == 'payment.request':
+                    profiles.append(profile)
+        self.assertEqual(len(profiles), 1)
+        for columns in (policy['visible'], policy['critical'], policy['roles'],
+                        profiles[0]['columns_order'], profiles[0]['column_labels']):
+            self.assertFalse(interaction.intersection(columns), interaction.intersection(columns))
+        root = ET.parse(product / 'views/support/user_confirmed_formal_list_views.xml').getroot()
+        tree = root.find("record[@id='view_payment_request_formal_payment_apply_tree']/field[@name='arch']/tree")
+        fields = {field.get('name') for field in tree.iter('field')}
+        self.assertFalse(set(policy['critical']) - fields)
+        self.assertFalse(fields.intersection(interaction))
+
     def test_native_interaction_declaration_descendants(self):
         package = types.ModuleType('guidance_source_core')
         package.__path__ = [str(ROOT / 'addons/smart_core')]

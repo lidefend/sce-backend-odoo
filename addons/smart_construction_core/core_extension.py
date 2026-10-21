@@ -828,7 +828,7 @@ register_legacy_standard_list_profile({
     "columns_order": [
         "state", "name", "date_request",
         "project_name_display", "payee_unit_display", "payment_basis_type",
-        "payee_account_completeness", "legal_next_action_display",
+        "payee_account_completeness",
         "request_amount_display", "actual_payee_unit_display",
         "payer_unit_display", "actual_paid_amount_display", "cost_type_display",
         "note_display", "payment_account_no_display", "amount_uppercase_display",
@@ -840,7 +840,6 @@ register_legacy_standard_list_profile({
         "date_request": "申请日期", "project_name_display": "项目名称",
         "payee_unit_display": "收款单位", "payment_basis_type": "付款依据",
         "payee_account_completeness": "账户完整度",
-        "legal_next_action_display": "下一步",
         "request_amount_display": "申请付款金额",
         "actual_payee_unit_display": "实际收款单位",
         "payer_unit_display": "付款单位",
