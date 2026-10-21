@@ -12,7 +12,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
-| 7062 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
+| 7088 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 5796 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 5370 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
@@ -141,10 +141,10 @@ Generated from repository source files. This report is informational during the 
 | 1094 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
+| 1093 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
 | 1091 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
 | 1087 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
-| 1080 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
 | 1060 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
@@ -230,7 +230,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
-| 7062 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
+| 7088 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 5796 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 5370 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |

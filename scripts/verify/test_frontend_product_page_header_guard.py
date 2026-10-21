@@ -973,6 +973,19 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
         )
         self.assertTrue(any("must be defined exactly once" in item for item in failures), failures)
 
+    def test_pure_error_message_colon_is_not_a_rule(self):
+        self.assertEqual(self._with_fragment_include(
+            "include make/_inj_frag.mk",
+            "$(error unavailable: use the governed entry)\n",
+        ), [])
+
+    def test_error_rule_suffix_and_nested_eval_remain_rejected(self):
+        for fragment in ("$(error unavailable):\n\t@true\n",
+                         "$(error $(eval $(_HT):;@true))\n"):
+            with self.subTest(fragment=fragment):
+                failures = self._with_fragment_include("include make/_inj_frag.mk", fragment)
+                self.assertTrue(any("non-literal target" in item for item in failures), failures)
+
     def test_variable_target_name_must_not_shadow_the_guarded_target(self):
         """`$(VAR):` 目标名静态不可知，按失败关闭方向处理（要求显式登记）。"""
         failures = self._with_fragment_include(
