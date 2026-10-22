@@ -869,6 +869,7 @@ class MakeTargetTests(unittest.TestCase):
         for target in (
             "daily.runtime.duty.edition_release.remote_readback:",
             "daily.runtime.duty.edition_release.remote_publish:",
+            "daily.runtime.duty.edition_release.remote_select:",
         ):
             body = self.make.split(target, 1)[1].split("\n\n", 1)[0]
             self.assertIn('python3 "$(DAILY_DUTY_EDITION_TOOL)"', body, target)
@@ -886,6 +887,12 @@ class MakeTargetTests(unittest.TestCase):
             "daily.runtime.duty.edition_release.remote_readback:", 1
         )[1].split("\n\n", 1)[0]
         self.assertNotIn("CONFIRM_DAILY_DUTY_EDITION_RELEASE", readback)
+
+    def test_select_requires_the_exact_confirmation_on_the_entry(self):
+        body = self.make.split("daily.runtime.duty.edition_release.remote_select:", 1)[1]
+        body = body.split("\n\n", 1)[0]
+        self.assertIn("SC_CONFIRM_DAILY_DUTY_EDITION_SELECT", body)
+        self.assertIn("SELECT_DAILY_DUTY_EDITION", body)
 
     def test_the_release_entries_are_inside_the_immutable_tool_tree(self):
         recipe = self.make.split("daily.candidate.continuity.remote_install:", 1)[1]
