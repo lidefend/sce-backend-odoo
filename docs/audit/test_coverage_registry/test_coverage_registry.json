@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 188,
+    "odoo_tags": 190,
     "gated": 3,
-    "on_demand": 36,
+    "on_demand": 38,
     "unwired": 149,
-    "odoo_tag_declarations": 406,
+    "odoo_tag_declarations": 408,
     "gated_declarations": 95,
-    "uncovered_declarations": 311,
+    "uncovered_declarations": 313,
     "ci_unit_scripts": 16,
     "ci_unit_scripts_wired": 16,
     "ci_unit_scripts_unwired": 0
@@ -952,6 +952,34 @@
       "owner": "demo-team",
       "evidence": [
         "make:verify.local.dev.demo_loaded_chains.orm :: demo_loaded_chains"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "demo_usage_foundation_approval",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "demo_addons/smart_construction_demo/tests/test_demo_usage_foundation_approval.py"
+      ],
+      "owner": "demo-team",
+      "evidence": [
+        "make:verify.local.dev.demo_usage_foundation_approval.orm :: demo_usage_foundation_approval"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "demo_usage_foundation_master_data",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "demo_addons/smart_construction_demo/tests/test_demo_usage_foundation_master_data.py"
+      ],
+      "owner": "demo-team",
+      "evidence": [
+        "make:verify.local.dev.demo_usage_foundation_master_data.orm :: demo_usage_foundation_master_data"
       ],
       "disposition": "class-selected"
     },
