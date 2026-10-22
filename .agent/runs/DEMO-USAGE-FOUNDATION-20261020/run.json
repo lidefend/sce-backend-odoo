@@ -63,7 +63,15 @@
     "scripts/dev/local_dev_demo_credentials_prepare.sh",
     "scripts/verify/test_local_development_lifecycle.py",
     "scripts/verify/registry.yaml",
-    "scripts/verify/test_coverage_registry.yaml"
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/local_dev_demo_project_identity_repair.py",
+    "demo_addons/smart_construction_demo/data/base/20_projects.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s65_cost_budget_funding_surface/10_cost_budget_funding_records.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s69_payment_ledger_surface/10_payment_ledger_records.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s73_risk_settlement_surface/10_risk_settlement_records.xml",
+    "demo_addons/smart_construction_demo/seed/showroom_catalog.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_20_projects_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_demo_showroom.py"
   ],
   "environment": {
     "kind": "offline",
@@ -677,8 +685,31 @@
     },
     "next": "R3 content finalized using this handoff summary; locate original evidence (DG-06), do not rerun S5. See plan section 11."
   },
+  "project_identity_repair": {
+    "status": "passed",
+    "identity": {
+      "runtime": "sc-local-dev db=sc_dev_demo",
+      "stage": "head_plus_demo_project_identity_repair"
+    },
+    "commands": [
+      {
+        "command": "DB_NAME=sc_dev_demo bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_demo_project_identity_repair.py",
+        "status": "passed",
+        "layer": "L3",
+        "detail": "codes=16 owners=25 test_residue_deleted=7 contracts_confirmed=1"
+      }
+    ],
+    "readback": {
+      "project_total": 26,
+      "non_demo_code": 0,
+      "bad_owner": 0,
+      "owners": ["张建国"],
+      "codes_all_demo_pj": true
+    },
+    "notes": "DG-07 resolved: unified project codes to DEMO-PJ-* and assigned the real user pm1 (张建国) as owner/manager across all demo projects; removed 7 empty test-residue projects (成本并发隔离测试项目); promoted s69 payment-ledger contract through its real confirm action (draft -> confirmed) so the approved settlement and done payment are backed by an in-force contract."
+  },
   "blockers": [],
-  "next_exact_step": "R3 content finalized only. Locate S5 original readback evidence for DG-06; do not rerun S5. Preserve six dirty documentation/context files. Re-read PR 712 (observed OPEN at 8baa36c1172c505ffb7b8288ef94e865f7c15c1b); after verified merge, governed R1 sync and section 11.2 contract mapping precede affected R4 browser relay.",
+  "next_exact_step": "Demo data baseline repaired on sc_dev_demo: DEMO-PJ-* codes, real owner pm1, test residue removed, s69 contract confirmed. Remaining: role allow/deny verification and the three showcase-case validation per docs/demo/demo_data_quality_standard_v1.md, then PR push/merge and target acceptance.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",
