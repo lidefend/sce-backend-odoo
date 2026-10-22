@@ -178,6 +178,8 @@ def _probe_account(
         "role_code": None,
         "role_ok": False,
         "company_ok": False,
+        "actual_company_id": None,
+        "actual_allowed_company_ids": [],
         "route_ok": False,
         "my_work_ok": False,
         "first_screen_counts": {},
@@ -221,9 +223,11 @@ def _probe_account(
         "expected_allowed_company_ids",
         scope["expected_allowed_company_ids"],
     )
+    result["actual_company_id"] = user.get("company_id")
+    result["actual_allowed_company_ids"] = user.get("allowed_company_ids") or []
     result["company_ok"] = (
         user.get("company_id") == scope["expected_company_id"]
-        and user.get("allowed_company_ids") == expected_allowed_company_ids
+        and set(result["actual_allowed_company_ids"]) == set(expected_allowed_company_ids)
     )
     result["route_ok"] = bool(route.get("route")) and bool(route.get("scene_key"))
 

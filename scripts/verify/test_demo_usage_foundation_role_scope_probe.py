@@ -192,6 +192,23 @@ class DemoUsageFoundationRoleScopeProbeTest(unittest.TestCase):
         self.assertFalse(report["summary"]["overall_pass"])
         self.assertTrue(any(not a["company_ok"] for a in report["accounts"]))
 
+    def test_probe_accepts_allowed_company_order_from_login_contract(self):
+        def fake_post_reversed_companies(url, payload, token=None):
+            if payload.get("intent") == "system.init":
+                data = _fake_post(url, payload, token)[1]["data"]
+                data["user"]["allowed_company_ids"] = [2, 1]
+                return 200, {"ok": True, "data": data}
+            return _fake_post(url, payload, token)
+
+        with patch.object(mod, "_login", side_effect=_fake_login), patch.object(
+            mod, "_post", side_effect=fake_post_reversed_companies
+        ):
+            report = probe(_small_manifest(), "http://x", "demo", "123456")
+
+        ct = next(a for a in report["accounts"] if a["key"] == "ct")
+        self.assertTrue(ct["company_ok"])
+        self.assertEqual(ct["actual_allowed_company_ids"], [2, 1])
+
     def test_probe_fails_on_empty_first_screen_when_required(self):
         manifest = _small_manifest()
         manifest["accounts"][0]["first_screen_expectation"] = "non_empty"

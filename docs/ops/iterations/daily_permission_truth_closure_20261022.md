@@ -45,6 +45,11 @@
 - `scripts/verify/baselines/intent_canonical_alias_snapshot.json`
   - refreshes the stale export snapshot from 106 to 123 canonical intents. The
     catalog diff contains only additions, with no removals, renames or alias changes.
+- `scripts/verify/demo_usage_foundation_role_scope_probe.py` and its unit test
+  - retain the observed company order for audit while comparing allowed companies
+    as a set, because Odoo does not define authorization semantics from relation
+    order. The probe now records the actual company id and allowed set instead of
+    reporting only a boolean.
 
 ## Verification
 
@@ -70,6 +75,11 @@ Observed failures during implementation were used to narrow the fix:
 - the same run exposed an intent-catalog snapshot last generated when the catalog
   had 106 canonical intents. The regenerated baseline now matches all 123 current
   canonical intents and the unchanged four aliases.
+- after the exact `2a0a61e87b3e` deployment and restart, the role smoke found that
+  `wutao` and `demo_full` still had the `business_full` role but only company 1 in
+  the live login/token contract. This is a real account-data projection gap, not
+  an ordering issue; repair is performed through the declared demo seed carrier
+  and followed by authoritative login/readback.
 
 ## Runtime verification
 
@@ -86,6 +96,7 @@ Product candidate `3cd91872bec755eae0b31021b1cb71adc49d9368` was deployed throug
 | L1 | `make verify.frontend.intent_channel.guard` | PASS, 8 tests |
 | L1 | `make verify.scene.company_snapshot.collect` | PASS, 17 tests plus two live company snapshots |
 | L1 | `make verify.intent.canonical_alias.snapshot.guard` | PASS, 123 canonical and 4 aliases |
+| L1 | `make verify.demo.usage_foundation_role_scope.unit` | PASS, 15 tests |
 | L1 | `make verify.docs.all` | PASS |
 | L1 | `make verify.agent.ledger.unit` | PASS, 18 tests |
 | L1 | `make verify.smart_core.ui_base_asset_refresh.unit` | PASS, 9 tests |
@@ -115,11 +126,18 @@ The next Quick run reached the final shard and found a pre-existing target-name 
 
 The subsequent restricted run found that the intent-channel guard treated documentation text `/api/...` as a concrete endpoint. The guard now ignores placeholder tokens containing `...` while retaining exact-path enforcement for actual transport routes.
 
-After the three verification-baseline corrections, the full restricted lane passed
+After the verification-baseline corrections, the full restricted lane passed
 through frontend build, role and company matrices, product action/module smoke,
 backend contract closure and governance truth. The pass is bound to deployed product
 revision `3cd91872`; the subsequent changes are P4 verification corrections and
 documentation, not a new product-runtime claim.
+
+The later `2a0a61e87b3e` deployment exposed the account-membership gap described
+above after the process restart. The previous live snapshot had observed the
+declared two-company set before that restart; the post-restart login contract
+showed only company 1 for both business-full accounts. Final closure therefore
+requires the demo seed carrier to reconverge membership and a fresh exact-SHA
+login/token/system-init readback.
 
 ## Rollback
 
@@ -129,7 +147,8 @@ documentation, not a new product-runtime claim.
 
 ## Next exact step
 
-Freeze the verification-only follow-up on a clean HEAD, run the final exact-head Quick,
-deploy and read back that SHA, then publish the branch for remote required checks and
-protected merge. Until those steps finish, mainline integration and final version
-release remain unclaimed.
+Replay the declared demo seed membership through the governed daily duty, prove
+`wutao` and `demo_full` expose company `[1,2]` again, then freeze the final P4
+follow-up, run the final exact-head Quick, realign both runtime duties and publish
+for remote required checks and protected merge. Until those steps finish, mainline
+integration and final version release remain unclaimed.
