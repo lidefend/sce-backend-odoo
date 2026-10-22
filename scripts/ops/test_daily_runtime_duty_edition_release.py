@@ -476,8 +476,8 @@ class ReadbackAssertionTests(unittest.TestCase):
 
 
 class EntryTests(unittest.TestCase):
-    def _patch(self, *, state=None, released=None, output=None):
-        duty = ENTRY.resolve_release_duty(CUSTOMER_DUTY)
+    def _patch(self, *, state=None, released=None, output=None, duty_name=CUSTOMER_DUTY):
+        duty = ENTRY.resolve_release_duty(duty_name)
         stack = Path("/opt/projects/secure/daily-runtime-duties") / STACK
         return duty, [
             mock.patch.object(
@@ -507,6 +507,126 @@ class EntryTests(unittest.TestCase):
     def test_unsupported_action_is_refused(self):
         with self.assertRaisesRegex(ENTRY.EditionReleaseEntryError, "unsupported"):
             ENTRY.execute(CUSTOMER_DUTY, action="drop")
+
+    def test_select_requires_the_exact_confirmation(self):
+        duty, patchers = self._patch(output=[])
+        with mock.patch.object(ENTRY, "resolve_release_duty", return_value=duty):
+            for patcher in patchers:
+                patcher.start()
+                self.addCleanup(patcher.stop)
+            with mock.patch.dict(os.environ, {}, clear=True):
+                with self.assertRaisesRegex(ENTRY.EditionReleaseEntryError, "SC_CONFIRM_DAILY_DUTY_EDITION_SELECT"):
+                    ENTRY.execute(CUSTOMER_DUTY, action="select", product_key=PREVIEW)
+
+    def test_select_sets_the_startup_edition_and_reads_it_back(self):
+        before = "%s%s\n" % (
+            ENTRY.SELECT_READBACK_MARKER,
+            json.dumps(
+                {
+                    "database": "sc_tenant_sample_dev",
+                    "parameter": STANDARD,
+                    "identity": {"product_key": STANDARD, "edition_key": "standard"},
+                },
+                sort_keys=True,
+            ),
+        )
+        write = "%s%s\n" % (
+            ENTRY.SELECT_WRITE_MARKER,
+            json.dumps(
+                {
+                    "database": "sc_tenant_sample_dev",
+                    "key": "smart_construction_bundle.product_key",
+                    "before": STANDARD,
+                    "value": PREVIEW,
+                },
+                sort_keys=True,
+            ),
+        )
+        after = "%s%s\n" % (
+            ENTRY.SELECT_READBACK_MARKER,
+            json.dumps(
+                {
+                    "database": "sc_tenant_sample_dev",
+                    "parameter": PREVIEW,
+                    "identity": {"product_key": PREVIEW, "edition_key": "preview"},
+                },
+                sort_keys=True,
+            ),
+        )
+        duty, patchers = self._patch(output=[before, write, after], duty_name=DEMO_DUTY)
+        with tempfile.TemporaryDirectory() as temporary:
+            tool_root = self._tool_root(Path(temporary))
+            with mock.patch.object(ENTRY, "resolve_release_duty", return_value=duty):
+                for patcher in patchers:
+                    patcher.start()
+                    self.addCleanup(patcher.stop)
+                with mock.patch.object(ENTRY, "restart_duty_odoo", return_value="healthy") as restart:
+                    with mock.patch.dict(
+                        os.environ,
+                        {"SC_CONFIRM_DAILY_DUTY_EDITION_SELECT": "SELECT_DAILY_DUTY_EDITION"},
+                        clear=True,
+                    ):
+                        evidence = ENTRY.execute(
+                            DEMO_DUTY, action="select", product_key=PREVIEW, tool_root=tool_root
+                        )
+        restart.assert_called_once()
+        self.assertEqual(evidence["action"], "select")
+        self.assertEqual(evidence["product_key"], PREVIEW)
+        self.assertEqual(evidence["select_after"]["identity"]["product_key"], PREVIEW)
+        self.assertEqual(evidence["select_before"]["identity"]["product_key"], STANDARD)
+
+    def test_select_is_refused_when_the_resolved_identity_differs(self):
+        before = "%s%s\n" % (
+            ENTRY.SELECT_READBACK_MARKER,
+            json.dumps(
+                {
+                    "database": "sc_tenant_sample_dev",
+                    "parameter": STANDARD,
+                    "identity": {"product_key": STANDARD, "edition_key": "standard"},
+                },
+                sort_keys=True,
+            ),
+        )
+        write = "%s%s\n" % (
+            ENTRY.SELECT_WRITE_MARKER,
+            json.dumps(
+                {
+                    "database": "sc_tenant_sample_dev",
+                    "key": "smart_construction_bundle.product_key",
+                    "before": STANDARD,
+                    "value": PREVIEW,
+                },
+                sort_keys=True,
+            ),
+        )
+        after = "%s%s\n" % (
+            ENTRY.SELECT_READBACK_MARKER,
+            json.dumps(
+                {
+                    "database": "sc_tenant_sample_dev",
+                    "parameter": STANDARD,
+                    "identity": {"product_key": STANDARD, "edition_key": "standard"},
+                },
+                sort_keys=True,
+            ),
+        )
+        duty, patchers = self._patch(output=[before, write, after], duty_name=DEMO_DUTY)
+        with tempfile.TemporaryDirectory() as temporary:
+            tool_root = self._tool_root(Path(temporary))
+            with mock.patch.object(ENTRY, "resolve_release_duty", return_value=duty):
+                for patcher in patchers:
+                    patcher.start()
+                    self.addCleanup(patcher.stop)
+                with mock.patch.object(ENTRY, "restart_duty_odoo", return_value="healthy"):
+                    with mock.patch.dict(
+                        os.environ,
+                        {"SC_CONFIRM_DAILY_DUTY_EDITION_SELECT": "SELECT_DAILY_DUTY_EDITION"},
+                        clear=True,
+                    ):
+                        with self.assertRaisesRegex(ENTRY.EditionReleaseEntryError, "resolves startup identity"):
+                            ENTRY.execute(
+                                DEMO_DUTY, action="select", product_key=PREVIEW, tool_root=tool_root
+                            )
 
     def test_publish_requires_the_exact_confirmation(self):
         duty, patchers = self._patch()
@@ -749,6 +869,7 @@ class MakeTargetTests(unittest.TestCase):
         for target in (
             "daily.runtime.duty.edition_release.remote_readback:",
             "daily.runtime.duty.edition_release.remote_publish:",
+            "daily.runtime.duty.edition_release.remote_select:",
         ):
             body = self.make.split(target, 1)[1].split("\n\n", 1)[0]
             self.assertIn('python3 "$(DAILY_DUTY_EDITION_TOOL)"', body, target)
@@ -766,6 +887,12 @@ class MakeTargetTests(unittest.TestCase):
             "daily.runtime.duty.edition_release.remote_readback:", 1
         )[1].split("\n\n", 1)[0]
         self.assertNotIn("CONFIRM_DAILY_DUTY_EDITION_RELEASE", readback)
+
+    def test_select_requires_the_exact_confirmation_on_the_entry(self):
+        body = self.make.split("daily.runtime.duty.edition_release.remote_select:", 1)[1]
+        body = body.split("\n\n", 1)[0]
+        self.assertIn("SC_CONFIRM_DAILY_DUTY_EDITION_SELECT", body)
+        self.assertIn("SELECT_DAILY_DUTY_EDITION", body)
 
     def test_the_release_entries_are_inside_the_immutable_tool_tree(self):
         recipe = self.make.split("daily.candidate.continuity.remote_install:", 1)[1]

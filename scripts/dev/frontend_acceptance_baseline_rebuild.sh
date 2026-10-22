@@ -17,6 +17,7 @@ source "$ROOT_DIR/scripts/common/frontend_acceptance_guard.sh"
 
 readonly EXPECTED_PROJECT="sc-fe-r2-p1-01"
 readonly EXPECTED_DATABASE="sc_frontend_acceptance"
+readonly DB_INIT_EXTRA_DATABASE="sc_odoo"
 readonly EXPECTED_FILTER='^sc_frontend_acceptance$'
 readonly EXPECTED_DB_VOLUME="sc_fe_r2_p1_01_db"
 readonly EXPECTED_REDIS_VOLUME="sc_fe_r2_p1_01_redis"
@@ -92,10 +93,12 @@ require_database_volume_scope() {
       return
     }
   done
-  [[ ",${expected}," == *",${EXPECTED_DATABASE},"* ]] || {
-    deny "EXPECTED_DATABASES must include $EXPECTED_DATABASE"
-    return
-  }
+  if [[ -z "${1:-}" ]]; then
+    [[ ",${expected}," == *",${EXPECTED_DATABASE},"* ]] || {
+      deny "EXPECTED_DATABASES must include $EXPECTED_DATABASE"
+      return
+    }
+  fi
   [[ "$actual" == "$expected" ]] || {
     echo "[acceptance.baseline.rebuild] DENY PostgreSQL volume database scope mismatch expected=$expected actual=$actual" >&2
     return 2
@@ -460,12 +463,12 @@ rebuild() {
   trap rollback_on_failure EXIT
   destructive_started=1
   compose_dev down --remove-orphans
-  remove_volume_exact "$DB_DATA"
-  remove_volume_exact "$REDIS_DATA"
-  remove_volume_exact "$ODOO_DATA"
+  remove_volume_exact "$DB_DATA" || { echo "[acceptance.baseline.rebuild] FAIL database_volume_remove" >&2; return 1; }
+  remove_volume_exact "$REDIS_DATA" || { echo "[acceptance.baseline.rebuild] FAIL session_volume_remove" >&2; return 1; }
+  remove_volume_exact "$ODOO_DATA" || { echo "[acceptance.baseline.rebuild] FAIL filestore_volume_remove" >&2; return 1; }
   compose_dev up -d --wait db redis
   compose_dev create odoo >/dev/null
-  require_database_volume_scope "$EXPECTED_DATABASE"
+  require_database_volume_scope "$DB_INIT_EXTRA_DATABASE"
   require_volume_mount_scope "$DB_DATA" db
   require_volume_mount_scope "$REDIS_DATA" redis
   require_volume_mount_scope "$ODOO_DATA" odoo

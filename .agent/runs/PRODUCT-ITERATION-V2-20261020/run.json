@@ -4579,14 +4579,85 @@
         "continue54-batch-orm.log",
         "continue54-workitem-orm.log"
       ]
+    },
+    "daily_runtime_first_preview_release": {
+      "identity": {
+        "head": "9734b5c6a687e3d1f2e3e6351d28de36d709f143",
+        "stage": "clean_main_deployed_to_daily_runtime"
+      },
+      "layer": "P4 governed daily-runtime deployment",
+      "scope": "sc-root daily runtime sc_demo (duty=demo); main 9734b5c6a already merged (PR #712)",
+      "commands": [
+        {
+          "command": "make daily.runtime.main.bundle_sync DAILY_RUNTIME_EXPECTED_SHA=9734b5c6a... DAILY_RUNTIME_EXPECTED_OLD_SHA=74063688e...",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "remote 74063688e -> 9734b5c6a fast-forward, origin_main unchanged"
+        },
+        {
+          "command": "make daily.runtime.source_revision.align DAILY_RUNTIME_DUTY=demo DAILY_RUNTIME_DATABASE=sc_demo",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "served git_sha/source_revision=9734b5c6a, odoo container recreated+healthy"
+        },
+        {
+          "command": "make daily.runtime.published_face.converge DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES=smart_core,smart_construction_core DAILY_RUNTIME_PUBLISHED_FACE_LOGIN=wutao",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "module upgrade smart_core+smart_construction_core+smart_construction_demo; construction.standard snapshot_id=11 released=91 gate=91; construction.preview snapshot_id=12 released=91 preview=40 gate=131; guard_status=PASS; recovery_point verified"
+        },
+        {
+          "command": "make daily.runtime.frontend.build DAILY_RUNTIME_FRONTEND_BUILD_SHA=9734b5c6a...",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "frontend rebuilt; fingerprint=eebec2bfc2888c3248dda7e0b49a5a759a68e3c293711c758b3afc8ebb39035a; entry_asset=index-B4UeQRQJ.js"
+        },
+        {
+          "command": "make daily.runtime.database.duty.refresh DAILY_RUNTIME_DATABASE_DUTY_SELECTION='demo platform_control'",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "demo and platform_control refreshed to source 9734b5c6a and new frontend fingerprint"
+        },
+        {
+          "command": "make daily.runtime.entry.verify DAILY_RUNTIME_EXPECTED_SHA=9734b5c6a...",
+          "status": "passed",
+          "layer": "L4"
+        },
+        {
+          "command": "make verify.demo.role_startup.smoke (wutao, demo_finance; BASE_URL=http://1.95.85.92:18081)",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "both roles passed login -> system.init -> my.work.summary"
+        }
+      ],
+      "p4_fix": "scripts/ops/daily_runtime_published_face_converge.py: Makefile:86 bare export (triggered by .env.dev) freezes recursive vars DAILY_RUNTIME_ENTRY_FLAGS/_SELECTION_FLAGS/_EXPECTED_SHA_FLAG at empty parent digest, so the child make's ?= never re-expanded them and dropped --expect-entry-digest/--duty/--expected-sha. Fixed by env.pop of the frozen copies in run_governed_duty_upgrade; unit tests 32 OK.",
+      "smoke": {
+        "health": "served /t/demo/api/runtime-version git_sha=9734b5c6a; frontend_build_sha256=eebec2bfc2888c3248dda7e0b49a5a759a68e3c293711c758b3afc8ebb39035a; entry=index-B4UeQRQJ.js",
+        "entry_verify": "daily.runtime.entry.verify PASS",
+        "role_startup": "wutao and demo_finance PASS",
+        "rollback": "pre-upgrade recovery point /data/backups/daily-demo-dev/sc_demo-20261021T141845Z-3acc5f5b verified=true",
+        "finance_entries": "finance.ledger.payment/treasury/settlement.order: wutao(uid39) NAVIGATION_AUTHORITY_DENIED; demo_readonly(uid54) PERMISSION_DENIED"
+      },
+      "blocking_gap": {
+        "id": "PREVIEW-IDENTITY-NOT-ACTIVATED",
+        "detail": "startup delivery identity still construction.standard (smart_construction_bundle/services/bundle_registry.py product_profile hardcodes standard). Preview snapshot is released but preview-only entries (incl. the three finance entries) are not in wutao's published route authority (105 pairs, standard 90 primary). Activating preview requires a P2 code change or a runtime edition-selection mechanism; this is the PREVIEW-TARGET/PREVIEW-ACTIVATION owner decision, not a deployment step."
+      },
+      "not_run": [
+        {
+          "gate": "three-finance-entry role allow/deny contract smoke green",
+          "reason": "preview identity not activated, entries not published to navigation authority"
+        },
+        {
+          "gate": "Batch 12 and user acceptance",
+          "reason": "do not merge main before completed"
+        }
+      ]
     }
   },
   "blockers": [
-    "Current local P4 changes remain uncommitted; previous five successful remote workflows bind673dccfb only.",
-    "Merge stage still requires valid list_surface_structure and relation_roundtrip evidence.",
-    "Deployment stage retains daily_runtime_entry and path_namespace_identity evidence, explicitly not_run."
+    "PREVIEW-IDENTITY-NOT-ACTIVATED: daily runtime serves construction.standard; preview snapshot released but preview-only entries (incl. three finance entries) are not activated. Owner decision required to switch bundle product_profile to preview or add a runtime edition selector."
   ],
-  "next_exact_step": "Freeze field-usage correction; validate current contract/list/relation and exact-head Quick. Keep GitHub unchanged until passed.",
+  "next_exact_step": "Owner decision on preview activation: switch smart_construction_bundle product_profile to construction.preview (or add a governed runtime edition selector) so the three preview finance entries publish to the daily navigation authority; then rerun the three-finance-entry role smoke.",
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",

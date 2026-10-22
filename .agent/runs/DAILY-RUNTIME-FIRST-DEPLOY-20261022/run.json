@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-RUNTIME-FIRST-DEPLOY-20261022",
+  "branch": "fix/daily-runtime-first-deploy-20261022",
+  "status": "verification_pending",
+  "baseline_sha": "9734b5c6a687e3d1f2e3e6351d28de36d709f143",
+  "goal": ".agent/goals/DAILY-RUNTIME-FIRST-DEPLOY-20261022.yaml",
+  "record": "docs/ops/iterations/daily_runtime_first_version_deploy_20261022.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-RUNTIME-FIRST-DEPLOY-20261022.yaml",
+    ".agent/runs/DAILY-RUNTIME-FIRST-DEPLOY-20261022/run.json",
+    ".agent/runs/PRODUCT-ITERATION-V2-20261020/run.json",
+    "docs/ops/iterations/daily_runtime_first_version_deploy_20261022.md",
+    "scripts/ops/daily_runtime_published_face_converge.py",
+    "addons/smart_construction_bundle/core_extension.py",
+    "addons/smart_construction_bundle/tests/test_startup_delivery_identity.py",
+    "make/daily_candidate.mk",
+    "scripts/ops/daily_runtime_duty_edition_release.py",
+    "scripts/ops/test_daily_runtime_duty_edition_release.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "deployment evidence was produced by the governed sc-root daily-runtime entries; this run validates only the bounded P4 fix and documentation"
+  },
+  "checks": {
+    "published_face_converge": {
+      "target": "verify.daily.runtime.published_face.converge",
+      "inputs": [
+        "scripts/ops/daily_runtime_published_face_converge.py",
+        "scripts/ops/test_daily_runtime_published_face_converge.py"
+      ],
+      "kind": "offline"
+    },
+    "docs_product_boundary": {
+      "target": "verify.docs.product_boundary",
+      "inputs": [
+        "docs/product/formal_product_boundary_v1.md",
+        "docs/ops/iterations/daily_runtime_first_version_deploy_20261022.md",
+        "scripts/verify/product_boundary_catalog_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/DAILY-RUNTIME-FIRST-DEPLOY-20261022.yaml",
+        ".agent/runs/DAILY-RUNTIME-FIRST-DEPLOY-20261022/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "verification_results": {
+    "closeout": {
+      "identity": {
+        "head": "9734b5c6a687e3d1f2e3e6351d28de36d709f143",
+        "stage": "head_plus_deployment_fix_scope"
+      },
+      "commands": [
+        {
+          "command": "make verify.daily.runtime.published_face.converge",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 32
+        },
+        {
+          "command": "make verify.docs.all",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "make verify.agent.ledger.unit",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 18
+        },
+        {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 47
+        },
+        {
+          "command": "make daily.runtime.entry.verify DAILY_RUNTIME_EXPECTED_SHA=9734b5c6a...",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "tenant and platform-control runtime identity, namespace, database and served frontend aligned"
+        },
+        {
+          "command": "make verify.demo.role_startup.smoke (wutao, demo_finance)",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "both login -> system.init -> my.work.summary chains passed against http://1.95.85.92:18081/t/demo"
+        }
+      ]
+    },
+    "preview_activation_mechanism": {
+      "identity": {
+        "head": "c2c6a94255ec9ea1611da2a0facee7fc961ea516",
+        "stage": "head_plus_preview_activation_dirty_scope"
+      },
+      "layer": "P2 bundle carrier + P4 governed edition select",
+      "scope": "smart_construction_bundle startup hook reads smart_construction_bundle.product_key carrier parameter; daily_runtime_duty_edition_release gains a governed select action that writes the parameter, restarts the duty and reads the resolved startup identity back.",
+      "commands": [
+        {
+          "command": "make local.dev.test MODULE=smart_construction_bundle TEST_TAGS=sc_gate",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 46
+        },
+        {
+          "command": "make verify.daily.duty.edition_release",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 53
+        },
+        {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "make verify.agent.ledger.unit",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 18
+        },
+        {
+          "command": "make verify.docs.product_boundary",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 7
+        }
+      ],
+      "not_run": [
+        {
+          "gate": "demo duty edition select (construction.preview) + three-finance-entry role smoke",
+          "reason": "next governed remote step after local commit"
+        }
+      ]
+    },
+    "preview_activation_verified": {
+      "identity": {
+        "head": "dbeb09cf62533098adc2ec6917a3735bf370f05c",
+        "stage": "candidate_deployed_preview_activated_on_daily_runtime"
+      },
+      "layer": "P4 governed select + readback",
+      "scope": "daily demo duty startup edition switched to construction.preview; three preview finance entries published to navigation authority",
+      "commands": [
+        {
+          "command": "make daily.runtime.candidate.bundle_sync DAILY_CANDIDATE_EXPECTED_SHA=dbeb09cf6...",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "remote product tree 9734b5c6a -> dbeb09cf6 (detached candidate), origin_main_mutated=false"
+        },
+        {
+          "command": "make daily.runtime.duty.edition_release.remote_select DAILY_DUTY_EDITION_DUTY=demo DAILY_DUTY_EDITION_PRODUCT_KEY=construction.preview",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "smart_construction_bundle.product_key=construction.preview; startup identity resolves construction.preview (extension_hook) after restart"
+        },
+        {
+          "command": "finance capability probe (wutao + demo_readonly)",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "wutao: finance.ledger.payment/treasury/settlement.order all READY(allow); demo_readonly: all LOCKED(PERMISSION_DENIED)"
+        },
+        {
+          "command": "published route authority probe (wutao)",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "primary_actions 90 -> 130; three finance entries published with routes /a/700, /a/762, /a/775"
+        }
+      ],
+      "rollback": {
+        "edition": "re-select construction.standard (or clear smart_construction_bundle.product_key parameter)",
+        "code": "remote product tree can return to main 9734b5c6a",
+        "database": "/data/backups/daily-demo-dev/sc_demo-20261021T141845Z-3acc5f5b/database.dump (verified)"
+      }
+    }
+  },
+  "blockers": [
+    "Remote product tree currently serves detached candidate dbeb09cf6; it must return to main after the fix branch merges."
+  ],
+  "next_exact_step": "Open and merge the governed PR for fix/daily-runtime-first-deploy-20261022 into main, then redeploy main to the daily runtime (main.bundle_sync + source_revision.align + published_face.converge) so the runtime serves main again while the preview edition parameter stays active.",
+  "handoff": {
+    "at": "2026-10-22",
+    "worktree": "/home/lidefend/workspace/sce-backend-odoo",
+    "deployed_sha": "9734b5c6a687e3d1f2e3e6351d28de36d709f143",
+    "daily_action": "inactive",
+    "preview_identity": "not_activated"
+  }
+}
