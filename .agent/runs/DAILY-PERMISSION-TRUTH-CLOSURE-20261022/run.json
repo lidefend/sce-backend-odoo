@@ -19,15 +19,25 @@
     "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
     "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
     "make/dev_test.mk",
+    "make/ci.mk",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/verify/baselines/intent_canonical_alias_snapshot.json",
+    "scripts/verify/baselines/scene_company_snapshot_collect.json",
     "scripts/verify/capability_provider_guard.py",
     "scripts/verify/baselines/capability_provider_guard.json",
     "scripts/verify/demo_usage_foundation_role_scope_probe.py",
     "scripts/verify/demo_usage_foundation_role_scope_manifest.json",
     "scripts/verify/test_demo_usage_foundation_role_scope_probe.py",
+    "scripts/verify/frontend_intent_channel_guard.py",
+    "scripts/verify/test_scene_company_snapshot_collect.py",
+    "scripts/verify/test_frontend_intent_channel_guard.py",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
-    "docs/ops/iterations/daily_permission_truth_closure_20261022.md"
+    "docs/ops/audit/product_delivery_governance_truth_guard_report.md",
+    "docs/ops/iterations/daily_permission_truth_closure_20261022.md",
+    "docs/product/delivery/v1/delivery_readiness_scoreboard_v1.md"
   ],
   "environment": {
     "kind": "runtime",
@@ -100,8 +110,53 @@
         "addons/smart_core/core/capability_provider.py"
       ],
       "kind": "offline"
+    },
+    "intent_channel_guard": {
+      "target": "verify.frontend.intent_channel.guard",
+      "inputs": [
+        "scripts/verify/frontend_intent_channel_guard.py",
+        "scripts/verify/test_frontend_intent_channel_guard.py",
+        "frontend/apps/web/src/services/accountActivation.ts",
+        "frontend/apps/web/src/components/platform-duty/dutyAction.ts",
+        "frontend/apps/web/src/components/platform-duty/dutyAction.test.ts"
+      ],
+      "kind": "offline"
+    },
+    "company_snapshot": {
+      "target": "verify.scene.company_snapshot.collect",
+      "inputs": [
+        "make/dev_test.mk",
+        "scripts/verify/baselines/scene_company_snapshot_collect.json",
+        "scripts/verify/scene_company_snapshot_collect.py",
+        "scripts/verify/scene_registry_asset_snapshot_guard.py",
+        "scripts/verify/test_scene_company_snapshot_collect.py"
+      ],
+      "kind": "runtime"
+    },
+    "company_matrix": {
+      "target": "verify.scene.base_contract_source_mix.company_matrix.guard",
+      "inputs": [
+        "make/dev_test.mk",
+        "scripts/verify/baselines/scene_company_snapshot_collect.json",
+        "scripts/verify/baselines/scene_base_contract_source_mix_company_matrix_guard.json",
+        "scripts/verify/scene_company_snapshot_collect.py",
+        "scripts/verify/scene_base_contract_source_mix_company_matrix_guard.py",
+        "scripts/verify/scene_registry_asset_snapshot_guard.py",
+        "scripts/verify/test_scene_company_snapshot_collect.py"
+      ],
+      "kind": "runtime"
+    },
+    "intent_alias_snapshot": {
+      "target": "verify.intent.canonical_alias.snapshot.guard",
+      "inputs": [
+        "docs/contract/exports/intent_catalog.json",
+        "scripts/verify/baselines/intent_canonical_alias_snapshot.json",
+        "scripts/verify/intent_canonical_alias_snapshot_guard.py",
+        "scripts/verify/intent_canonical_alias_snapshot_schema_guard.py"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Refresh generated evidence, freeze the final clean HEAD, run ci.local.quick, redeploy that exact SHA, then publish for remote CI and protected merge."
+  "next_exact_step": "Review and commit the verified P4 corrections, prove the worktree clean, run the final exact-head ci.local.quick, deploy and read back that SHA, then publish for current remote checks and protected merge."
 }

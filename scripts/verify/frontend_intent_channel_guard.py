@@ -23,17 +23,10 @@ DIRECT_TRANSPORT_EXCEPTIONS = {
             "/api/v1/auth/page-contracts",
         }
     ),
-    # Platform control is a separate declared transport surface: every route is
-    # published by the backend platform-duty contract and authorized by the
-    # platform-control instance checks, not by the tenant intent channel. Keep
-    # the literals in the one duty declaration module.
-    "frontend/apps/web/src/components/platform-duty/dutyAction.ts": frozenset(
-        {
-            "/api/ops/tenants",
-            "/api/ops/maintenance/access",
-            "/api/ops/job/status",
-            "/api/ops/subscription/set",
-        }
+    # This unit test uses one exact contract endpoint as a synthetic fixture.
+    # It is not an additional transport adapter or a general /api/ops/* escape.
+    "frontend/apps/web/src/components/platform-duty/dutyAction.test.ts": frozenset(
+        {"/api/ops/maintenance/access"}
     ),
 }
 API_PATH_RE = re.compile(
@@ -67,7 +60,7 @@ def scan_api_paths(root: Path = ROOT) -> tuple[list[str], set[str], set[tuple[st
         for match in API_PATH_RE.finditer(text):
             api_reference = str(match.group("value") or "").strip()
             api_path = re.split(r"[?#]", api_reference, maxsplit=1)[0]
-            if not api_path:
+            if not api_path or "..." in api_path:
                 continue
             found_paths.add(api_path)
             if not is_allowed_api_path(rel, api_path):

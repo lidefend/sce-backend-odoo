@@ -33,14 +33,24 @@ goal:
     - addons/smart_construction_core/tests
     - addons/smart_construction_scene/tests
     - make/dev_test.mk
+    - make/ci.mk
+    - scripts/audit/verification_lane_baseline.json
+    - scripts/audit/verification_lane_dispositions.json
+    - scripts/verify/baselines/intent_canonical_alias_snapshot.json
+    - scripts/verify/baselines/scene_company_snapshot_collect.json
     - scripts/verify/capability_provider_guard.py
     - scripts/verify/baselines/capability_provider_guard.json
     - scripts/verify/demo_usage_foundation_role_scope_probe.py
     - scripts/verify/demo_usage_foundation_role_scope_manifest.json
     - scripts/verify/test_demo_usage_foundation_role_scope_probe.py
+    - scripts/verify/frontend_intent_channel_guard.py
+    - scripts/verify/test_scene_company_snapshot_collect.py
+    - scripts/verify/test_frontend_intent_channel_guard.py
     - docs/audit/test_coverage_registry/test_coverage_registry.json
     - docs/engineering_convergence/complexity_budget_report.md
     - docs/engineering_convergence/split_plan_queue.md
+    - docs/ops/audit/product_delivery_governance_truth_guard_report.md
+    - docs/product/delivery/v1/delivery_readiness_scoreboard_v1.md
     - .agent/active-runs.json
     - .agent/goals/DAILY-PERMISSION-TRUTH-CLOSURE-20261022.yaml
     - .agent/runs/DAILY-PERMISSION-TRUTH-CLOSURE-20261022/run.json

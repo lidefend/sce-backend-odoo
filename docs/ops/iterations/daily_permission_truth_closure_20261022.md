@@ -32,6 +32,19 @@
   - aligns the expected company closure with the current demo seed declaration: main company plus the declared second operating company.
 - `make/dev_test.mk`
   - registers non-zero ORM checks for capability-target authorization and payment prerequisite permission behavior.
+- `scripts/verify/baselines/scene_company_snapshot_collect.json` and
+  `scripts/verify/test_scene_company_snapshot_collect.py`
+  - use the declared multi-company `business_full` account `demo_full` for both
+    company snapshots. The previous `demo_role_pm` sample correctly exposes only
+    company 1 after account-level scope was tightened, so it could not prove the
+    company-2 projection.
+- `scripts/verify/frontend_intent_channel_guard.py` and its unit test
+  - ignore documentation placeholders containing `...`, keep exact-path checks for
+    real transport literals, and bind the one synthetic `/api/ops/*` test fixture
+    to the exact test file rather than a product transport adapter.
+- `scripts/verify/baselines/intent_canonical_alias_snapshot.json`
+  - refreshes the stale export snapshot from 106 to 123 canonical intents. The
+    catalog diff contains only additions, with no removals, renames or alias changes.
 
 ## Verification
 
@@ -51,18 +64,28 @@ Observed failures during implementation were used to narrow the fix:
 - the first capability test run exposed stale action-count and hidden compatibility-target assertions; tests were corrected without changing ACL/publication assertions;
 - the first payment test run exposed the sibling material-settlement balance check; both checks now use the same permission guard.
 - the first deployed account sweep showed that applying `[1,2]` to every role was too broad; the live seed grants the second company only to `wutao`, `demo_full`, `demo_role_owner`, and `demo_role_executive`. The declaration now carries account-specific company scope.
+- the next restricted run showed the company secondary snapshot was still using
+  the now single-company PM account. Switching the sample to `demo_full` produced
+  two live company snapshots with `asset_ratio=1.0`; the threshold was not relaxed.
+- the same run exposed an intent-catalog snapshot last generated when the catalog
+  had 106 canonical intents. The regenerated baseline now matches all 123 current
+  canonical intents and the unchanged four aliases.
 
 ## Runtime verification
 
-Product candidate `20f6275f9292ccda03b4a4d075d72b4e9f60b673` was deployed through the governed candidate lane. Both the tenant and platform-control duties restarted and reported that exact source revision.
+Product candidate `3cd91872bec755eae0b31021b1cb71adc49d9368` was deployed through the governed candidate lane. Both the tenant and platform-control duties restarted and reported that exact source revision.
 
 | Layer | Command / observation | Result |
 |---|---|---|
-| L4 | `daily.runtime.entry.verify` at `20f6275f9292` | PASS, 66/66 |
+| L4 | `daily.runtime.entry.verify` at `3cd91872` | PASS, 66/66 |
 | L4 | `verify.demo.usage_foundation_role_scope.smoke` | PASS, 11/11 accounts plus the wrong-password negative |
 | L4 | `wutao` and `demo_full` `system.init` capability readback | 57 capabilities READY, 0 LOCKED; deprecated aggregate absent |
 | L4 | `demo_role_finance` `my.work.summary` | HTTP 200 |
 | L4 | `verify.frontend.product_configuration_capability.browser` | PASS, 31 assertions, 0 console/page errors, 0 failed requests |
+| L4 | Company matrix with `demo_full` | PASS, company ids `[1,2]`, 66 scenes each, asset ratio `1.0` |
+| L1 | `make verify.frontend.intent_channel.guard` | PASS, 8 tests |
+| L1 | `make verify.scene.company_snapshot.collect` | PASS, 17 tests plus two live company snapshots |
+| L1 | `make verify.intent.canonical_alias.snapshot.guard` | PASS, 123 canonical and 4 aliases |
 | L1 | `make verify.docs.all` | PASS |
 | L1 | `make verify.agent.ledger.unit` | PASS, 18 tests |
 | L1 | `make verify.smart_core.ui_base_asset_refresh.unit` | PASS, 9 tests |
@@ -90,6 +113,14 @@ The first exact-head Quick exposed a verification-lane ledger gap, not a product
 
 The next Quick run reached the final shard and found a pre-existing target-name typo in `ci.local.quick.run`: `verify.frontend.static.image_decoupling` did not exist, while the governed target is `verify.frontend.static.image.decoupling`. The prerequisite now names the real target; this also wires the fifteen production/release tools owned by that target into the exact-head local lane, so no remote-only exemptions were needed.
 
+The subsequent restricted run found that the intent-channel guard treated documentation text `/api/...` as a concrete endpoint. The guard now ignores placeholder tokens containing `...` while retaining exact-path enforcement for actual transport routes.
+
+After the three verification-baseline corrections, the full restricted lane passed
+through frontend build, role and company matrices, product action/module smoke,
+backend contract closure and governance truth. The pass is bound to deployed product
+revision `3cd91872`; the subsequent changes are P4 verification corrections and
+documentation, not a new product-runtime claim.
+
 ## Rollback
 
 - Revert this branch's product commits.
@@ -98,4 +129,7 @@ The next Quick run reached the final shard and found a pre-existing target-name 
 
 ## Next exact step
 
-Rerun the final clean Quick gate, deploy the resulting SHA, prove the scene asset ratio and all role snapshots recover, then publish the exact branch candidate for remote CI and protected merge.
+Freeze the verification-only follow-up on a clean HEAD, run the final exact-head Quick,
+deploy and read back that SHA, then publish the branch for remote required checks and
+protected merge. Until those steps finish, mainline integration and final version
+release remain unclaimed.
