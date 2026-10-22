@@ -616,6 +616,12 @@ entries:
   date: '2026-08-25'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_demo_date_caliber_repair.py
+  status: orphan
+  owner: platform-team
+  date: '2026-10-21'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: local_dev_finance_center_ids.py
   status: active
   owner: platform-team
