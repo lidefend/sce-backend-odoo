@@ -156,6 +156,11 @@ was the recovery point (`sha256=34de6d27072f6565c23739dd2375f5d40498f33d68f154b7
 The filestore registration anomaly remains a separate operational observation;
 it does not invalidate this database-only repair.
 
+Gitee publication preflight compared the candidate with the still-old target
+main and found three historical EOF blank-line violations. They were normalized
+in the current topic so the owned publication gate remains strict; no executable
+statement or contract changed.
+
 ## Rollback
 
 - Revert this branch's product commits.

@@ -257,4 +257,3 @@ SHA256 分别为 `80fc295215cff289fc9d6b0507780c6fdb3550e8f7e8be3ec738bdae334fca
   3 条 pilot 旧回执当前重放均为 `worktree content changed after receipt`，只能作为历史证据。
 - 回执身份重放：7 条旧回执中 4 条通过文件身份复核、3 条 pilot 失败；身份通过不等于语义验收通过。
   旧 schema 1 回执保持可读、可审核，但不会被本批自动改写或补写替代关系。
-

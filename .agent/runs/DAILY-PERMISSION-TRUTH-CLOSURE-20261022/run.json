@@ -11,8 +11,10 @@
     ".agent/goals/DAILY-PERMISSION-TRUTH-CLOSURE-20261022.yaml",
     ".agent/runs/DAILY-PERMISSION-TRUTH-CLOSURE-20261022/run.json",
     "addons/smart_core/core/ui_base_contract_asset_repository.py",
+    "addons/smart_core/handlers/ui_contract_v2_form_structure.py",
     "addons/smart_core/tests/test_ui_base_contract_asset_repository.py",
     "addons/smart_construction_core/services/capability_registry.py",
+    "addons/smart_construction_core/core_extension_relation_entry_policy.py",
     "addons/smart_construction_scene/services/capability_scene_targets.py",
     "addons/smart_construction_core/models/core/payment_request.py",
     "addons/smart_construction_core/tests/test_capability_registry_service.py",
@@ -35,6 +37,7 @@
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/agent_dispatch_inbox.md",
     "docs/ops/audit/product_delivery_governance_truth_guard_report.md",
     "docs/ops/iterations/daily_permission_truth_closure_20261022.md",
     "docs/product/delivery/v1/delivery_readiness_scoreboard_v1.md"

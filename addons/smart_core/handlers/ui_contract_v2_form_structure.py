@@ -465,4 +465,3 @@ def build_form_structure_contract(
             "governance_source": governance_source,
         },
     }
-
