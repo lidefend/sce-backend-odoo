@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-COMPANY-MEMBERSHIP-PERSISTENCE-20261023",
+  "branch": "fix/demo-company-membership-persistence-20261023",
+  "status": "active",
+  "baseline_sha": "845854a0b15635f7635cedf6f073831e5e9457c8",
+  "goal": ".agent/goals/DEMO-COMPANY-MEMBERSHIP-PERSISTENCE-20261023.yaml",
+  "record": "docs/ops/iterations/demo_company_membership_persistence_20261023.md",
+  "scope": [
+    "demo_addons/smart_construction_demo/data/demo/wutao_full_product_user.xml",
+    "demo_addons/smart_construction_demo/tests/test_demo_organization_baseline.py",
+    "docs/ops/iterations/demo_company_membership_persistence_20261023.md",
+    ".agent/active-runs.json",
+    ".agent/goals/DEMO-COMPANY-MEMBERSHIP-PERSISTENCE-20261023.yaml",
+    ".agent/runs/DEMO-COMPANY-MEMBERSHIP-PERSISTENCE-20261023/run.json"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "registered smart_construction_demo lifecycle data carrier, governed daily demo duty seed and read-only role-scope probe"
+  },
+  "checks": {
+    "demo_lifecycle_unit": {
+      "target": "verify.demo.lifecycle.unit",
+      "inputs": [
+        "make/dev_test.mk",
+        "demo_addons/smart_construction_demo/data/demo/wutao_full_product_user.xml",
+        "demo_addons/smart_construction_demo/tests/test_demo_organization_baseline.py",
+        "demo_addons/smart_construction_demo/seed/steps/step_company_membership.py"
+      ],
+      "kind": "offline"
+    },
+    "role_scope_smoke": {
+      "target": "verify.demo.usage_foundation_role_scope.smoke",
+      "inputs": [
+        "scripts/verify/demo_usage_foundation_role_scope_probe.py",
+        "scripts/verify/demo_usage_foundation_role_scope_manifest.json"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Freeze and commit the P1 fix, run Quick, deploy the candidate, upgrade smart_construction_demo, replay demo_company_membership and prove a later restart preserves [1,2]."
+}

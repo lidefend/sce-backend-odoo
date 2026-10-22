@@ -19,6 +19,7 @@
     "fix/daily-platform-job-status-20261018": ".agent/runs/PLATFORM-DUTY-JOB-LIST-20261018/run.json",
     "fix/daily-runtime-payload-import-closeout-20261016": ".agent/runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/run.json",
     "fix/demo-runtime-closeout-20261017": ".agent/runs/DEMO-RUNTIME-CLOSEOUT-20261017/run.json",
+    "fix/demo-company-membership-persistence-20261023": ".agent/runs/DEMO-COMPANY-MEMBERSHIP-PERSISTENCE-20261023/run.json",
     "fix/fe-contract-runtime-02-consumption-stop-closure": ".agent/runs/FE-CONTRACT-RUNTIME-02/run.json",
     "fix/frontend-static-image-decoupling-20261018": ".agent/runs/FRONTEND-STATIC-IMAGE-DECOUPLING-20261018/run.json",
     "fix/local-development-environment-closeout-20261016": ".agent/runs/LOCAL-DEVELOPMENT-ENVIRONMENT-CLOSEOUT-20261016/run.json",

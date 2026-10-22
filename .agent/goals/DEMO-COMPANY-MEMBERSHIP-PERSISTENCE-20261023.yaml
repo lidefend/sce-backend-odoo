@@ -1,0 +1,32 @@
+schema_version: 1
+goal:
+  id: DEMO-COMPANY-MEMBERSHIP-PERSISTENCE-20261023
+  status: active
+  title: Preserve demo business-full company membership across upgrades
+  objective: >-
+    Prevent smart_construction_demo module data from resetting wutao and
+    demo_full to company 1 during module updates, leaving demo_company_membership
+    as the single idempotent owner of the declared runtime company scope.
+  formal_product_layer: P1 construction demo product baseline
+  layer_target: smart_construction_demo module data and membership seed
+  modules_or_tools:
+    - smart_construction_demo
+    - scripts/verify/demo_usage_foundation_role_scope_probe.py
+    - docs/ops/iterations
+  scope:
+    - demo_addons/smart_construction_demo/data/demo/wutao_full_product_user.xml
+    - demo_addons/smart_construction_demo/tests/test_demo_organization_baseline.py
+    - docs/ops/iterations/demo_company_membership_persistence_20261023.md
+    - .agent/active-runs.json
+    - .agent/goals/DEMO-COMPANY-MEMBERSHIP-PERSISTENCE-20261023.yaml
+    - .agent/runs/DEMO-COMPANY-MEMBERSHIP-PERSISTENCE-20261023/run.json
+  exclusions:
+    - no ACL or group widening
+    - no platform-admin changes
+    - no direct database repair outside the declared demo seed
+    - no Gitee PR or Gitee integration workflow
+  acceptance:
+    - module XML no longer declares company_ids for the two business-full users
+    - demo lifecycle unit remains green
+    - deployed module upgrade followed by demo membership seed leaves both users at [1,2]
+    - a subsequent restart/upgrade does not reset membership

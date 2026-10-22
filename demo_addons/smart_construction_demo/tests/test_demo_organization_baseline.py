@@ -40,6 +40,7 @@ ROLE_MATRIX_USERS = "data/demo/role_matrix_demo_users.xml"
 EMPLOYEES = "data/demo/sc_demo_employees.xml"
 BINDINGS = "data/demo/sc_demo_organization_bindings.xml"
 MIGRATION = "migrations/17.0.0.4.0/post-migration.py"
+FULL_PRODUCT_USERS = "data/demo/wutao_full_product_user.xml"
 EXPECTED_MANIFEST_VERSION = "17.0.0.4.0"
 
 USER_SEED_FILES = [USERS, ROLE_MATRIX_USERS]
@@ -636,6 +637,24 @@ class TestDemoOrganizationBaseline(unittest.TestCase):
         for login in logins:
             with self.subTest(login=login):
                 self.assertFalse(login.startswith(("fixture_", "svc_", "acceptance_")))
+
+    def test_full_product_user_xml_does_not_reset_runtime_company_membership(self):
+        root = ET.parse(DEMO_ROOT / FULL_PRODUCT_USERS).getroot()
+        records = {
+            record.get("id"): record
+            for record in root.findall(".//record")
+            if record.get("model") == "res.users"
+        }
+        self.assertEqual(
+            {"user_wutao_full_product", "user_demo_full"},
+            set(records),
+        )
+        for record_id, record in records.items():
+            with self.subTest(record=record_id):
+                self.assertFalse(
+                    any(field.get("name") == "company_ids" for field in record.findall("field")),
+                    "runtime company_ids must be owned by demo_company_membership, not module XML",
+                )
 
     def test_verify_step_checks_second_company_registration_and_membership(self):
         verify = _path("seed/steps/step_90_verify_demo.py").read_text(encoding="utf-8")
