@@ -161,6 +161,15 @@ main and found three historical EOF blank-line violations. They were normalized
 in the current topic so the owned publication gate remains strict; no executable
 statement or contract changed.
 
+GitHub PR checks then exposed a gate-ordering defect: `merge_policy_gate` could
+turn green while public, professional and frontend fact workflows were still
+running. The gate now has a `wait_for_fact_checks` job that reads the latest
+workflow run for the exact head and event, requires
+`public_guard`, `professional_quality_gate`, and `frontend_release_gate` to be
+completed successfully, and only then permits the protected
+`merge_policy_gate` verdict. A failed or missing fact workflow keeps the gate
+red; the timeout path is also fail-closed.
+
 ## Rollback
 
 - Revert this branch's product commits.
@@ -169,8 +178,6 @@ statement or contract changed.
 
 ## Next exact step
 
-Commit the role-scope verifier correction and membership evidence, run the final
-exact-head Quick, deploy and realign that SHA on both duties, rerun entry and
-product acceptance, then publish for remote required checks and protected merge.
-Until those steps finish, mainline integration and final version release remain
-unclaimed.
+Run the new gate correction through Quick and GitHub required checks, verify that
+`merge_policy_gate` remains pending until all factual workflows complete on the
+same head, then publish and merge only after the complete exact-head check set.

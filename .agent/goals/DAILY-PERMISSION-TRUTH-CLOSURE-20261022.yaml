@@ -25,6 +25,7 @@ goal:
     - scripts/ops
     - docs/ops/iterations
   scope:
+    - .github/workflows/merge_policy_gate.yml
     - addons/smart_core/core/ui_base_contract_asset_repository.py
     - addons/smart_core/handlers/ui_contract_v2_form_structure.py
     - addons/smart_core/tests/test_ui_base_contract_asset_repository.py
@@ -38,6 +39,8 @@ goal:
     - make/ci.mk
     - scripts/audit/verification_lane_baseline.json
     - scripts/audit/verification_lane_dispositions.json
+    - scripts/ci/test_ci_risk_workflow_contract.py
+    - scripts/ci/test_merge_policy_gate.py
     - scripts/verify/baselines/intent_canonical_alias_snapshot.json
     - scripts/verify/baselines/scene_company_snapshot_collect.json
     - scripts/verify/capability_provider_guard.py

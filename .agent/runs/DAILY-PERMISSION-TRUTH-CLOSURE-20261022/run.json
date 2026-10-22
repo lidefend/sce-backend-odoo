@@ -7,6 +7,7 @@
   "goal": ".agent/goals/DAILY-PERMISSION-TRUTH-CLOSURE-20261022.yaml",
   "record": "docs/ops/iterations/daily_permission_truth_closure_20261022.md",
   "scope": [
+    ".github/workflows/merge_policy_gate.yml",
     ".agent/active-runs.json",
     ".agent/goals/DAILY-PERMISSION-TRUTH-CLOSURE-20261022.yaml",
     ".agent/runs/DAILY-PERMISSION-TRUTH-CLOSURE-20261022/run.json",
@@ -24,6 +25,8 @@
     "make/ci.mk",
     "scripts/audit/verification_lane_baseline.json",
     "scripts/audit/verification_lane_dispositions.json",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/ci/test_merge_policy_gate.py",
     "scripts/verify/baselines/intent_canonical_alias_snapshot.json",
     "scripts/verify/baselines/scene_company_snapshot_collect.json",
     "scripts/verify/capability_provider_guard.py",
