@@ -185,12 +185,15 @@ def _assert_startup_identity() -> dict:
     identity = call_extension_hook_first(env, "smart_core_resolve_startup_delivery_identity", env, {})  # noqa: F821
     if not isinstance(identity, dict):
         raise AssertionError("startup delivery identity hook did not return a dict")
-    if _text(identity.get("product_key")) != "construction.standard":
-        raise AssertionError(f"startup product_key drift: {identity!r}")
-    if _text(identity.get("base_product_key")) != EXPECTED_BASE_PRODUCT_KEY:
+    base_product_key = _text(identity.get("base_product_key"))
+    edition_key = _text(identity.get("edition_key"))
+    product_key = _text(identity.get("product_key"))
+    if base_product_key != EXPECTED_BASE_PRODUCT_KEY:
         raise AssertionError(f"startup base_product_key drift: {identity!r}")
-    if _text(identity.get("edition_key")) != "standard":
+    if edition_key not in ("standard", "preview"):
         raise AssertionError(f"startup edition_key drift: {identity!r}")
+    if product_key != f"{EXPECTED_BASE_PRODUCT_KEY}.{edition_key}":
+        raise AssertionError(f"startup product_key drift: {identity!r}")
     return identity
 
 
