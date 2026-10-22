@@ -1295,7 +1295,7 @@ def _ensure_s86_rental_settlement_payment(env) -> None:
                     "actual_payee_unit": "德阳恒通周转材料租赁有限公司",
                     "payment_account_name": "德阳恒通周转材料租赁有限公司",
                     "payment_bank_name": "中国银行德阳分行",
-                    "payment_account_no": "DEMO-ACCT-0090",
+                    "payment_account_no": "6222021000000090",
                     "note": "周转材料租赁费支付申请。",
                 }
             )

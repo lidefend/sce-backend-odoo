@@ -13,7 +13,7 @@
     <record id="sc_demo_fund_account_086_general" model="sc.fund.account">
       <field name="sequence">86</field>
       <field name="name">项目基本户</field>
-      <field name="account_no">DEMO-ACCT-0086</field>
+      <field name="account_no">6222021000000086</field>
       <field name="account_type">基本户</field>
       <field name="bank_name">中国银行德阳示范支行</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
@@ -27,7 +27,7 @@
     <record id="sc_demo_fund_account_086_supervision" model="sc.fund.account">
       <field name="sequence">87</field>
       <field name="name">工资监管户</field>
-      <field name="account_no">DEMO-ACCT-0087</field>
+      <field name="account_no">6222021000000087</field>
       <field name="account_type">工资监管户</field>
       <field name="bank_name">中国农业银行德阳示范支行</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
@@ -112,7 +112,7 @@
       <field name="receipt_partner_name">德阳市旌阳产业某某发展集团有限公司</field>
       <field name="receipt_payee_name">招标代理机构</field>
       <field name="receipt_bank_name">中国银行德阳分行</field>
-      <field name="receipt_bank_account">DEMO-ACCT-0088</field>
+      <field name="receipt_bank_account">6222021000000088</field>
       <field name="remark">标书购买</field>
     </record>
 
@@ -234,7 +234,7 @@
       <field name="date_request">2025-06-05</field>
       <field name="payment_account_name">德阳市旌阳产业某某发展集团有限公司</field>
       <field name="payment_bank_name">中国银行德阳示范支行</field>
-      <field name="payment_account_no">DEMO-ACCT-0089</field>
+      <field name="payment_account_no">6222021000000089</field>
       <field name="note">智慧园区配套工程投标保证金缴纳。</field>
     </record>
 
@@ -248,7 +248,7 @@
       <field name="date_request">2025-06-20</field>
       <field name="payment_account_name">项目基本户</field>
       <field name="payment_bank_name">中国银行德阳示范支行</field>
-      <field name="payment_account_no">DEMO-ACCT-0086</field>
+      <field name="payment_account_no">6222021000000086</field>
       <field name="note">投标保证金按流程退回，入项目基本户。</field>
     </record>
 

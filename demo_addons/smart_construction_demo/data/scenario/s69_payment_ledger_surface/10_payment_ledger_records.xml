@@ -114,7 +114,7 @@
       <field name="actual_payee_unit">德阳宏源钢材贸易有限公司</field>
       <field name="payment_account_name">德阳宏源钢材贸易有限公司</field>
       <field name="payment_bank_name">中国银行德阳示范支行</field>
-      <field name="payment_account_no">DEMO-PAYEE-0069</field>
+      <field name="payment_account_no">6222021000000069</field>
       <field name="note">支付台账来源付款申请。</field>
     </record>
 

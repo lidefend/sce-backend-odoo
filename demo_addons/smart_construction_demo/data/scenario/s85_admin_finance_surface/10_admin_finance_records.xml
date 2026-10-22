@@ -13,7 +13,7 @@
     <record id="sc_demo_fund_account_085_project" model="sc.fund.account">
       <field name="sequence">85</field>
       <field name="name">项目监管户</field>
-      <field name="account_no">DEMO-ACCT-0085</field>
+      <field name="account_no">6222021000000085</field>
       <field name="account_type">监管户</field>
       <field name="bank_name">中国建设银行德阳示范支行</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
