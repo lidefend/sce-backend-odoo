@@ -164,7 +164,7 @@ Generated from repository source files. This report is informational during the 
 | 962 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 955 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
-| 941 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
+| 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 932 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
