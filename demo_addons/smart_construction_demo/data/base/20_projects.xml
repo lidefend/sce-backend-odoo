@@ -4,7 +4,7 @@
     <!-- P1：全量项目 -->
     <record id="sc_demo_project_001" model="project.project">
         <field name="name">德阳智能制造产教融合项目</field>
-        <field name="project_code">SC-DEY-2025-001</field>
+        <field name="project_code">DEMO-PJ-001</field>
         <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
         <field name="company_id" ref="base.main_company"/>
         <field name="project_type_id" ref="smart_construction_demo.sc_demo_dict_project_type_municipal"/>
@@ -22,6 +22,7 @@
     <!-- P2：基础资料项目 -->
     <record id="sc_demo_project_002" model="project.project">
         <field name="name">城东片区安置房项目</field>
+        <field name="project_code">DEMO-PJ-002</field>
         <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
         <field name="company_id" ref="base.main_company"/>
         <field name="active">True</field>

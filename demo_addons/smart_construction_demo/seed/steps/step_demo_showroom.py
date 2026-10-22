@@ -198,6 +198,7 @@ def _ensure_contract_chain(env, project, idx):
 def run(env):
     Project = business_model(env, "project.project")
     demo_pm = _get_demo_user(env, "demo_pm")
+    pm_person = _get_demo_user(env, "pm1")
     # project.company_id is a stored compute derived from the analytic
     # account or the partner's company; a name-only create leaves it empty,
     # which later breaks company-scoped facts (e.g. funding baselines that
@@ -208,9 +209,18 @@ def run(env):
         created = False
         if not project:
             project = Project.create(
-                {"name": spec["name"], "company_id": seed_company_id}
+                {
+                    "name": spec["name"],
+                    "project_code": spec.get("code") or spec["name"],
+                    "company_id": seed_company_id,
+                    "user_id": pm_person.id if pm_person else False,
+                }
             )
             created = True
+        elif pm_person and not project.user_id:
+            project.write({"user_id": pm_person.id})
+        if pm_person and not project.manager_id:
+            project.write({"manager_id": pm_person.id})
         prepare_project(env, project)
         _ensure_boq(env, project, idx)
         _ensure_tasks(env, project, demo_pm, TASKS_PER_PROJECT)
