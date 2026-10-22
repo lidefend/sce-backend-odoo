@@ -1,108 +1,92 @@
-# Demo 用户使用基础数据迭代交接（2026-10-20）
+# Demo 首版展示与使用引导交接（2026-10-21 更新）
 
-## 1. 身份
+## 当前任务
 
-- Repository：`/home/lidefend/workspace/sce-backend-odoo-local-env`
-- Branch：`feature/demo-iteration-line-20261020`
-- Current main baseline：`74063688e928d25c8e65037ac3306956c954244d`
-- Plan：`docs/demo/demo_usage_foundation_plan_v1.md`
-- Goal：`.agent/goals/DEMO-USAGE-FOUNDATION-20261020.yaml`
+所有者已批准更新后的 [计划](../../demo/demo_usage_foundation_plan_v1.md)，并安排其他执行器实施。
+本次仅更新规划与台账；没有产品、数据库、定时器、部署或远端写入。
+P4 交付规划负责 Demo 数据/场景与证据；P0–P3 产品语义必须在所属层修复。
+
+## 精确身份
+
+- 工作树：`/home/lidefend/workspace/sce-backend-odoo-local-env`
+- 分支：`feature/demo-iteration-line-20261020`
+- 规划前 HEAD：`ca1f66bbb6b1ef26b35e57a284c49d60f95d66d8`
+- 盘点 GitHub main：`74063688e928d25c8e65037ac3306956c954244d`
+- 产品 PR #712：盘点时 OPEN，HEAD `097fc751f641a43d26237f5fbe5ce0e85f7cd718`；必须重新读取，不能当作已合并。
 - Run：`.agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json`
+- 本轮六个文档/上下文文件保留为未提交修改，交接接收后不得清理或覆盖；没有冻结交付候选。
 
-## 2. 当前状态
+## 启动与第一精确动作
 
-- 计划：已完成
-- F1–F3：实现、证据和运行时回读已完成
-- F3 银行账户：`res.partner.bank=9`，已加载
-- 下一批次：F4 审批、编号和权限配置
-- F4–F8：`not_started`
-- 主线集成：`not_run`
-- 部署：`not_run`
-- 用户验收：`not_run`
-- Run 状态：`active`
+1. 在上述工作树读取 AGENTS、context 和当前计划；核对分支、HEAD、全部 dirty/untracked。
+2. 运行 `make agent.run.resume`，确认选中本 run、outside_scope 为空；识别并保留本轮规划改动。
+3. 只读读取 GitHub main 与 PR #712 的实际状态及 SHA；不使用 Gitee 作为主线权威。
+4. 产出 R1 差异/依赖/受影响集合：Demo 未集成提交、与产品候选重叠文件、旧缺口的新状态、
+   开发迁移/修复依赖、需要复用或补验的用例。先登记文件与层级，再实施。
+5. 产品依赖进入 main 后，通过既有受管同步入口整合；不用裸 rebase/merge，不恢复旧镜像与迁移文件。
+   同步前先妥善提交当前规划改动，满足入口 clean 条件。当前 24 提交不代表自动授权绕过 extended 同步门禁。
 
-## 3. 执行器启动
+依赖未合并时可以准备 R2 的案例映射；不得在 Demo 写兼容逻辑替代新产品契约。
+不触碰主产品工作树的进行中候选，不与其他执行器争用数据库写操作。
 
-```bash
-cd /home/lidefend/workspace/sce-backend-odoo-local-env
-git switch feature/demo-iteration-line-20261020
-git status --short
-make agent.run.resume
-```
+## 执行顺序
 
-必须确认：
+R1 基线对齐 → R2 展示主线 → R3 角色引导 → R4 页面真实办理 → R5 目标环境验收。
+详细范围、退出条件、验证策略、后续增强见计划；不再从 F1 重启，也不以全部菜单/角色全量重跑作为默认动作。
 
-1. HEAD 是 planning commit；
-2. worktree clean；
-3. run 解析到 `DEMO-USAGE-FOUNDATION-20261020`；
-4. 当前 worktree 只有本 demo 执行器一个写入者；
-5. 不触碰主产品 worktree `/home/lidefend/workspace/sce-backend-odoo`。
+首版必须分别说明产品能力成熟度和角色办理权限。选择一个主项目串起合同、结算、付款、经营结果，
+优先补付款申请的页面真实接力。已有 API 命名测试实际在 ORM 层，不替代 HTTP/浏览器证据。
 
-## 4. 第一精确动作
+## 历史证据与未闭合项
 
-从 F1 开始：先写“用户路径 → 基础数据 requirement”只读清单和审计测试，不补业务数据。
+- F2：11 账号与 1 负例；F3–F5：主数据、审批人、编号、项目前置已有定向结果。
+- F6：公开模型动作及黄金链通过；页面完整创建/提交/审批/回读尚未证明。
+- F7：10 日 40 步事务测试通过；目标定时器、用户决策等待、体验清理仍需按启用范围验收。
+- F8：5 条入口测试，实际 4 种角色；不能标为跨角色办理闭环通过。
+- 日期已对齐 2026-10，2025 项目起点可为合法历史；以后应使用明确业务日历，不机械平移所有历史。
+- 旧缺口表中就绪/体验角色/权限项目需结合产品 PR 重新核销，不能仅凭源码存在认定目标部署完成。
+- `scripts/verify/local_dev_demo_date_caliber_repair.py` 是开发期修复载体；不再次执行，清理发布依赖并保留当前数据。
+- 历史生命周期离线测试曾记录断言失败，需在 R1 按新基线判定是否仍影响本次，不掩盖、不无因重跑。
 
-F1 的最小产物：
+## 验证与交付状态
 
-- 一份机器可读 manifest，至少覆盖 U0–U5；
-- 一个只读审计入口，返回每项 observed/missing/blocked；
-- 每个缺口的责任层、repair hint、阻断批次；
-- 非零离线测试，覆盖完整、缺失、非法声明和重复键。
+本轮只跑文档/台账验证，具体结果记入同一 run 的 `first_release_guidance_replan`。
+不跑 Quick、浏览器、模块升级、重置或部署；理由是仅规划内容改变，不影响运行输入。
+后续复用历史结果必须声明依赖未变与环境 readback，不能机械复制历史 passed。
 
-完成 F1 后停止，向所有者报告：
+本线主线集成 not_run；部署 not_run；目标用户验收 not_run。预览契约门禁与展示交互收口分阶段记录。
+最终新用户无需口头指路完成一项任务，才可宣称引导体验验收完成。
 
-- 已存在但字段不完整的基础数据；
-- 完全缺失的基础数据；
-- 需要 P0/P1/P2/P3 修复的产品缺口；
-- 可继续进入 F2 的精确文件范围。
+## 回滚与退出
 
-## 5. 批次顺序
+本轮可仅撤回六个规划/上下文文件的差异，不触及数据。后续具体批次登记自身回滚与恢复措施。
+实现授权由接手执行器的任务承接；本次规划不授权绕过 GitHub 保护、数据库身份或任何受管发布检查。
 
-`F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8`
+## 启动执行补记（2026-10-21，优先于上文第一动作）
 
-任一前批失败时，不启动后批。每批执行器必须：
+所有者已要求立即启动。R1 身份、差异、依赖与受影响集合盘点已完成；R2 已完成源码主案例与角色引导初稿。
+当时 GitHub main 与 PR #712 尚未变化；最新只读身份见下方 R3 补记。14 个重叠路径详见 run；两条新发现 DG-01/DG-02 见缺口登记。
+主案例选定 s69 同项目合同—结算—付款；不把 s70 不同项目的回款拼入。
 
-- 更新同一份 run 结果索引；
-- 写批次记录；
-- 记录测试数、身份、环境 readback、失败分类和原始日志路径；
-- 只重跑受影响集合；
-- 完成后向所有者提交短交接，不自行合并 main。
+接手从计划第 10 节继续：先通过既有受管只读入口核对案例实际对象、角色可见与动作/就绪契约，
+再定展示内容。若当前环境契约不同，登记依赖，勿改共享运行时或执行 fixture reset。
+依赖新主线的代码集成、升级及页面办理验证等 PR #712 合并后进行。
+本次仅改现有计划/台账，未改产品/数据、未运行 seed、未提交推送或部署。
 
-## 6. 立即发现的缺口
+## R3 调度完成补记（2026-10-21，当前续跑入口）
 
-| 缺口 | 归属 | 影响 | 处理 |
-|---|---|---|---|
-| demo 分支缺 active-run 绑定 | P4 context | `agent.run.resume` 原返回 unregistered | 本交接同步补齐 |
-| `system_fact` 仍是 `unbound` | P4 | 每日定时任务不产生真实业务事实 | F7 |
-| readiness 以记录存在性为主 | P4 validation | 错误地把“表里有数”当成“用户可用” | F1/F3/F5 |
-| role smoke 只覆盖 3 角色 | P4 validation | 业务全功能账号可能登录后无真实待办 | F2/F8 |
-| 2025 固定日期、50/100 样例金额 | P4 data | 演示数据与当前业务日期/金额感不一致 | F3/F8 |
-| 场景 manifest 仅 D1–D3 | P4 scenario | 声明 10 天但无法连续每日推进 | F7 |
+四类角色内容已定稿于计划 §11；本轮 P4 文档/上下文编辑限定原六文件，无产品实现或数据库访问。
+本次只读 GitHub 核验 PR #712 OPEN、head `8baa36c1172c505ffb7b8288ef94e865f7c15c1b`、
+base `74063688e928d25c8e65037ac3306956c954244d`；上文 097fc 是历史盘点身份。
 
-产品缺口继续使用 `docs/demo/product_gap_registry_v1.md` 的 owning-layer 登记，不在 demo 数据层兜底。
+S5 摘要位于 run 根键 `r2_s69_live_readback`，不是 verification_results 内。
+摘要绑定 Demo HEAD 与 sc-local-dev/sc_dev_demo，但没有原始命令/日志/时间/部署版本；本工作树对应
+runtime run 目录及 artifacts 未找到 s69 原始记录。保留交接事实并登记 DG-06，未重复访问数据库。
+合同 draft 与后续终态的解释、税口径/余额、角色动作和关联读取权限分别登记 DG-03/04/05。
 
-## 7. 边界与排除
-
-- 不修改主产品 worktree。
-- 不新建 database、tenant、Compose project、port、volume 或 credential。
-- 不直接写 `ir.config_parameter` 改变产品配置。
-- 不手工写业务终态、审批历史、台账或派生投影。
-- 不在 demo 层按角色名/模型前缀/菜单数量推导产品能力。
-- 已完成的 demo 机制线 Batch 1–6 不重做；只消费其入口和证据。
-- 体验 reset 只清理体验用户操作增量，不重置 demo 基线。
-
-## 8. 完成维度
-
-- 批次验收：F1–F8 各自完成并通过定向验证后分别成立。
-- 主线集成：未执行；需所有者单独授权。
-- 部署：未执行；timer 变更属于后续受管部署步骤。
-- 用户验收：未执行；F8 完成后另行报告。
-
-## 9. 回滚
-
-- 计划/交接回滚：撤回本规划提交。
-- F1 manifest/verifier 回滚：删除新增工具与测试，保留原缺口登记。
-- F2–F5 数据回滚：按具体 seed/XML/管理变更集回退；不使用全库重建。
-- F6 API 驱动回滚：停用驱动入口，保留日志。
-- F7 定时任务回滚：停用新 timer/入口并恢复前一计划；不删除用户历史证据。
-- F8 浏览器验收回滚：只修正 owning layer，不降低验收门槛。
+第一精确动作：定位 S5 原始证据，补路径/身份或保留证据缺口；不自行重跑 S5。
+接着回读 PR #712；合并前可整理 §11.2 契约依赖，不执行依赖新契约的集成与页面接力。
+合并后受管 R1 同步，并对齐具体响应路径/声明/消费后补 R4 受影响行为。
+本轮六文件继续未提交；不 commit/push/rebase/seed/迁移/部署，原改动完整保留。
+R3 状态仅为内容定稿；产品落地、主线集成、部署、目标用户验收均未完成。
+验证结果见 run.verification_results.r3_role_guidance_content，原始日志在本工作树 .runtime 对应 run 下。

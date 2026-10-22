@@ -22,10 +22,11 @@ goal:
     full_sha: 74063688e928d25c8e65037ac3306956c954244d
     source: dedicated_demo_worktree
   objective: >-
-    Build a user-first demo foundation from identity and scope through master
-    data, workflow configuration, project baseline, API-driven business
-    journeys and daily runtime evolution, while routing product gaps to their
-    owning P0/P1/P2/P3 layers.
+    Deliver first-release demo guidance: understand one coherent project case,
+    discover the next authorized action, complete one real browser role-relay
+    journey, and observe its business outcome. Reuse bounded F1-F8 evidence;
+    separate capability maturity from role permissions and preview contract
+    publication from subsequent presentation/interaction acceptance.
   product_boundary:
     standard_vs_user_specific: demo_delivery_tool
     why_here: >-
@@ -57,13 +58,16 @@ goal:
     - keep_demo_baseline_fingerprint_stable_across_experience_reset
     - no_new_database_tenant_compose_or_credentials
   next_exact_step: >-
-    F1-F8 and DUF-01/04/05/06/07 all closed. Remaining: mainline integration,
-    deployment and target user acceptance are owner-gated.
+    R3 role guidance content is finalized in plan section 11, not implemented.
+    Locate S5 original readback evidence (DG-06); do not rerun the database probe.
+    Preserve all six uncommitted documentation/context changes. Re-read PR 712
+    (last observed OPEN at 8baa36c1172c505ffb7b8288ef94e865f7c15c1b);
+    wait for verified merge before governed R1 sync and dependent R4 browser work.
   completion:
     scope: demo_user_usage_foundation_v1
     overall_goal: in_progress
     result_index: .agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json
-    local_batch_acceptance: F1_F8_complete
+    local_batch_acceptance: R3_content_finalized_contract_and_browser_validation_pending
     mainline_integration: not_run
     deployment: not_run
     target_user_delivery: not_run

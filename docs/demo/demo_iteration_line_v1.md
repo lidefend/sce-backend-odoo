@@ -1,6 +1,7 @@
 # Demo 迭代线总体计划 v1
 
-> 状态：Batch 0 计划冻结，后续按批次实施。
+> R3 内容定稿见首版计划 §11；S5 原始证据追溯、角色动作契约与页面验收仍待完成，六文件保持未提交。
+> 状态：历史机制设计。当前执行顺序、证据边界与首版范围以 [首版展示引导计划](demo_usage_foundation_plan_v1.md) 为准；下文旧批次“下一步”不再作为续跑指令。
 > 后续用户基础数据迭代见
 > [Demo 用户使用基础数据迭代计划 v1](demo_usage_foundation_plan_v1.md)。
 > 分支/基线：`feature/demo-iteration-line-20261020` @ `13b0395db4da63147b3f9c311a4bb5d060dc6a4e`
