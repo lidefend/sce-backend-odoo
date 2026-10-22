@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-RUNTIME-FIRST-DEPLOY-20261022",
+  "branch": "fix/daily-runtime-first-deploy-20261022",
+  "status": "verification_pending",
+  "baseline_sha": "9734b5c6a687e3d1f2e3e6351d28de36d709f143",
+  "goal": ".agent/goals/DAILY-RUNTIME-FIRST-DEPLOY-20261022.yaml",
+  "record": "docs/ops/iterations/daily_runtime_first_version_deploy_20261022.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-RUNTIME-FIRST-DEPLOY-20261022.yaml",
+    ".agent/runs/DAILY-RUNTIME-FIRST-DEPLOY-20261022/run.json",
+    ".agent/runs/PRODUCT-ITERATION-V2-20261020/run.json",
+    "docs/ops/iterations/daily_runtime_first_version_deploy_20261022.md",
+    "scripts/ops/daily_runtime_published_face_converge.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "deployment evidence was produced by the governed sc-root daily-runtime entries; this run validates only the bounded P4 fix and documentation"
+  },
+  "checks": {
+    "published_face_converge": {
+      "target": "verify.daily.runtime.published_face.converge",
+      "inputs": [
+        "scripts/ops/daily_runtime_published_face_converge.py",
+        "scripts/ops/test_daily_runtime_published_face_converge.py"
+      ],
+      "kind": "offline"
+    },
+    "docs_product_boundary": {
+      "target": "verify.docs.product_boundary",
+      "inputs": [
+        "docs/product/formal_product_boundary_v1.md",
+        "docs/ops/iterations/daily_runtime_first_version_deploy_20261022.md",
+        "scripts/verify/product_boundary_catalog_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/DAILY-RUNTIME-FIRST-DEPLOY-20261022.yaml",
+        ".agent/runs/DAILY-RUNTIME-FIRST-DEPLOY-20261022/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "verification_results": {
+    "closeout": {
+      "identity": {
+        "head": "9734b5c6a687e3d1f2e3e6351d28de36d709f143",
+        "stage": "head_plus_deployment_fix_scope"
+      },
+      "commands": [
+        {
+          "command": "make verify.daily.runtime.published_face.converge",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 32
+        },
+        {
+          "command": "make verify.docs.all",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "make verify.agent.ledger.unit",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 18
+        },
+        {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 47
+        },
+        {
+          "command": "make daily.runtime.entry.verify DAILY_RUNTIME_EXPECTED_SHA=9734b5c6a...",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "tenant and platform-control runtime identity, namespace, database and served frontend aligned"
+        },
+        {
+          "command": "make verify.demo.role_startup.smoke (wutao, demo_finance)",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "both login -> system.init -> my.work.summary chains passed against http://1.95.85.92:18081/t/demo"
+        }
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish fix/daily-runtime-first-deploy-20261022 through the normal governed PR lane; deployment itself is complete at main 9734b5c6a.",
+  "handoff": {
+    "at": "2026-10-22",
+    "worktree": "/home/lidefend/workspace/sce-backend-odoo",
+    "deployed_sha": "9734b5c6a687e3d1f2e3e6351d28de36d709f143",
+    "daily_action": "inactive",
+    "preview_identity": "not_activated"
+  }
+}

@@ -673,6 +673,21 @@ def run_governed_duty_upgrade(options, binding: dict) -> dict:
             "DAILY_RUNTIME_SSH_HOST": options.ssh_host,
         }
     )
+    # Makefile:86 runs a bare ``export`` whenever ``.env.dev`` exists, which
+    # freezes recursive make variables such as ``DAILY_RUNTIME_ENTRY_FLAGS``,
+    # ``DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS`` and
+    # ``DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG`` at the parent make's
+    # still-empty digest/selection. The child make would treat those frozen
+    # copies as already defined and never re-expand them against the values we
+    # computed here, silently dropping ``--expect-entry-digest``,
+    # ``--duty`` and ``--expected-sha``. Drop the inherited copies so the child
+    # make re-expands them from this process's environment.
+    for _frozen in (
+        "DAILY_RUNTIME_ENTRY_FLAGS",
+        "DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS",
+        "DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG",
+    ):
+        env.pop(_frozen, None)
     make_bin = shutil.which("make") or "/usr/bin/make"
     completed = subprocess.run(
         [make_bin, "--no-print-directory", "daily.runtime.database.duty.upgrade"],

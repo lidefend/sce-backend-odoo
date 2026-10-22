@@ -1,0 +1,45 @@
+schema_version: 1
+goal:
+  id: DAILY-RUNTIME-FIRST-DEPLOY-20261022
+  title: daily_runtime_first_version_deploy_closeout
+  status: active
+  formal_product_layer: P4
+  supporting_layers: []
+  layer_target: Daily runtime deployment tooling and deployment evidence
+  module:
+    - scripts/ops
+    - docs/ops
+  baseline:
+    branch: fix/daily-runtime-first-deploy-20261022
+    full_sha: 9734b5c6a687e3d1f2e3e6351d28de36d709f143
+    source: main
+  objective: >-
+    Preserve the verified daily-runtime published-face converge fix and record the
+    completed first-version deployment of main 9734b5c6a to sc-root.
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_tool
+    why_here: >-
+      The change fixes a Make environment handoff in P4 deployment tooling and
+      records runtime evidence; product behavior is unchanged.
+    why_not_elsewhere:
+      - no_product_code_change
+      - no_database_or_compose_change
+      - no_demo_seed_change
+    blast_radius:
+      - daily runtime published-face convergence
+      - deployment evidence and rollback record
+  constraints:
+    - no_product_semantic_change
+    - no_direct_main_rewrite
+    - preserve_recovery_point
+  next_exact_step: >-
+    Run local iteration and Agent ledger gates, commit the bounded fix on the
+    fix branch, and publish through the normal governed PR lane.
+  completion:
+    scope: daily_runtime_first_version_deploy
+    overall_goal: in_progress
+    result_index: .agent/runs/DAILY-RUNTIME-FIRST-DEPLOY-20261022/run.json
+    local_batch_acceptance: passed
+    mainline_integration: not_run
+    deployment: deployed_daily_standard_preview_pending
+    target_user_delivery: startup_verified_preview_pending
