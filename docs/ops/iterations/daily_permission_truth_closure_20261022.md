@@ -170,6 +170,13 @@ completed successfully, and only then permits the protected
 `merge_policy_gate` verdict. A failed or missing fact workflow keeps the gate
 red; the timeout path is also fail-closed.
 
+The first live run of that correction exposed an Actions API filtering
+inconsistency: a workflow run present for the exact head was omitted when the
+API query also supplied `event=pull_request`. Both the final merge gate and the
+candidate gate now query by exact head only and apply the event identity through
+the shared selector, avoiding a false pending timeout while retaining exact-head
+and exact-event checks.
+
 ## Rollback
 
 - Revert this branch's product commits.

@@ -31,6 +31,7 @@ class MergePolicyGateContractTests(unittest.TestCase):
         self.assertIn('test "${{ needs.wait_for_fact_checks.result }}" = success', merge_job)
         self.assertIn("select_authoritative_workflow_run.py", wait_job)
         self.assertIn("actions/workflows/${workflow}/runs", wait_job)
+        self.assertNotIn("event=${GITHUB_EVENT_NAME}", wait_job)
         self.assertIn("public_guard.yml", wait_job)
         self.assertIn("professional_quality_gate.yml", wait_job)
         self.assertIn("frontend_release_gate.yml", wait_job)

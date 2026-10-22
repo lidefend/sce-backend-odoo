@@ -86,7 +86,7 @@ jobs:
           for attempt in $(seq 1 450); do
             pending=0
             for workflow in "${required[@]}"; do
-              runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&event=${GITHUB_EVENT_NAME}&per_page=100")"
+              runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&per_page=100")"
               latest="$(python3 scripts/ci/select_authoritative_workflow_run.py \
                 --repository "$GITHUB_REPOSITORY" \
                 --workflow-path ".github/workflows/${workflow}" \
