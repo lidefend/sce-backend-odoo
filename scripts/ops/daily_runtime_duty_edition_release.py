@@ -48,6 +48,7 @@ import os
 import re
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 
@@ -59,12 +60,18 @@ import daily_runtime_duty_payload as duty_runtime  # noqa: E402
 
 MARKER = "DAILY_DUTY_EDITION_REPORT="
 READBACK_MARKER = "DAILY_DUTY_EDITION_READBACK="
-ACTIONS = ("readback", "publish")
+SELECT_WRITE_MARKER = "DAILY_DUTY_EDITION_SELECT_WRITE="
+SELECT_READBACK_MARKER = "DAILY_DUTY_EDITION_SELECT_READBACK="
+ACTIONS = ("readback", "publish", "select")
 CONFIRMATIONS = {
     "publish": (
         "CONFIRM_DAILY_DUTY_EDITION_RELEASE",
         "RELEASE_DECLARED_EDITION_INTO_DAILY_DUTY",
-    )
+    ),
+    "select": (
+        "SC_CONFIRM_DAILY_DUTY_EDITION_SELECT",
+        "SELECT_DAILY_DUTY_EDITION",
+    ),
 }
 PLATFORM_CONTROL_PURPOSE = "platform_control"
 SNAPSHOT_CARRIER_PURPOSES = ("customer", "demo")
@@ -129,6 +136,37 @@ for _name in %(scripts)r:
     _path = _ENTRY / _name
     exec(compile(_path.read_text(encoding="utf-8"), str(_path), "exec"), globals())
 """ % {"mount": RELEASE_ENTRY_MOUNT, "scripts": list(RELEASE_ENTRY_SCRIPTS)}
+
+
+# The startup delivery identity is a bundle carrier parameter, not a snapshot:
+# selecting an edition writes the same parameter the startup hook now reads and
+# then proves the runtime resolves the selected identity in a separate process.
+SELECT_WRITE_SCRIPT = """
+import json
+
+_key = "smart_construction_bundle.product_key"
+_value = "%%(product_key)s"
+_params = env["ir.config_parameter"].sudo()
+_before = str(_params.get_param(_key, "") or "").strip()
+_params.set_param(_key, _value)
+env.cr.commit()
+print("%(marker)s" + json.dumps(
+    {"database": env.cr.dbname, "key": _key, "before": _before, "value": _value},
+    ensure_ascii=False, sort_keys=True))
+""" % {"marker": SELECT_WRITE_MARKER}
+
+
+SELECT_READBACK_SCRIPT = """
+import json
+from odoo.addons.smart_core.handlers.system_init import _resolve_startup_delivery_identity
+
+_key = "smart_construction_bundle.product_key"
+_value = str(env["ir.config_parameter"].sudo().get_param(_key, "") or "").strip()
+_identity = _resolve_startup_delivery_identity(env, {})
+print("%(marker)s" + json.dumps(
+    {"database": env.cr.dbname, "parameter": _value, "identity": _identity},
+    ensure_ascii=False, sort_keys=True, default=str))
+""" % {"marker": SELECT_READBACK_MARKER}
 
 
 class EditionReleaseEntryError(RuntimeError):
@@ -339,6 +377,40 @@ def readback_report(output: str) -> dict:
     _fail("the readback emitted no report")
 
 
+def _select_marker_report(output: str, marker: str) -> dict:
+    for line in reversed(output.splitlines()):
+        row = line.strip()
+        if row.startswith(marker):
+            try:
+                report = json.loads(row[len(marker):])
+            except json.JSONDecodeError as exc:
+                _fail("the edition select report is not JSON: %s" % exc)
+            if isinstance(report, dict):
+                return report
+            _fail("the edition select report is not an object")
+    _fail("the edition select emitted no report")
+
+
+def restart_duty_odoo(container: str) -> str:
+    """Restart the duty's own odoo container and wait for declared readiness."""
+    duty_runtime.run(["docker", "restart", container])
+    deadline = time.monotonic() + 180
+    while time.monotonic() < deadline:
+        health = duty_runtime.run(
+            [
+                "docker", "inspect", "-f",
+                "{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}",
+                container,
+            ]
+        ).strip()
+        if health == "healthy":
+            return health
+        if health in ("unhealthy", "exited", "dead"):
+            _fail("duty odoo container %s is %s after restart" % (container, health))
+        time.sleep(2)
+    _fail("duty odoo container %s did not become healthy after restart" % container)
+
+
 def assert_readback(
     report: dict,
     duty: dict,
@@ -448,6 +520,58 @@ def execute(
     entry_root = root / RELEASE_ENTRY_DIRECTORY
     digests = entry_digests(entry_root)
     tool_sha = tool_identity(root)
+
+    if action == "select":
+        variable, expected = CONFIRMATIONS[action]
+        if os.environ.get(variable) != expected:
+            _fail("%s must be set to the exact confirmation value" % variable)
+        assert_declared_product_key(duty, product_key)
+        before_report = _select_marker_report(
+            run_script(readback_command(duty, base, entry_root), SELECT_READBACK_SCRIPT, ops_root),
+            SELECT_READBACK_MARKER,
+        )
+        write_report = _select_marker_report(
+            run_script(
+                readback_command(duty, base, entry_root),
+                SELECT_WRITE_SCRIPT % {"product_key": product_key},
+                ops_root,
+            ),
+            SELECT_WRITE_MARKER,
+        )
+        restart_duty_odoo(str(application.get("container") or ""))
+        after_report = _select_marker_report(
+            run_script(readback_command(duty, base, entry_root), SELECT_READBACK_SCRIPT, ops_root),
+            SELECT_READBACK_MARKER,
+        )
+        selected = str((after_report.get("identity") or {}).get("product_key") or "").strip()
+        if selected != product_key:
+            _fail(
+                "duty %s resolves startup identity %s after select, expected %s"
+                % (duty["duty"], selected or "<empty>", product_key)
+            )
+        return {
+            "schema_version": "daily_runtime_duty_edition_release.v1",
+            "action": action,
+            "duty": duty["duty"],
+            "database": duty["database"],
+            "database_role": duty["database_role"],
+            "environment_id": duty["environment_id"],
+            "tenant_key": duty["tenant_key"],
+            "data_purpose": duty["data_purpose"],
+            "edition_carrier": CARRIER_SEMANTIC,
+            "declared_allowed_product_keys": duty["edition"]["allowed_product_keys"],
+            "product_key": product_key,
+            "version": "",
+            "source_revision": values.get("SC_SOURCE_REVISION", ""),
+            "application": application,
+            "stack_compose": str(stack),
+            "duty_environment": str(env_path),
+            "release_entry_scripts": digests,
+            "tool_sha": tool_sha,
+            "select_before": before_report,
+            "select_write": write_report,
+            "select_after": after_report,
+        }
 
     version = ""
     if action == "publish":

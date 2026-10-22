@@ -12,7 +12,12 @@
     ".agent/runs/DAILY-RUNTIME-FIRST-DEPLOY-20261022/run.json",
     ".agent/runs/PRODUCT-ITERATION-V2-20261020/run.json",
     "docs/ops/iterations/daily_runtime_first_version_deploy_20261022.md",
-    "scripts/ops/daily_runtime_published_face_converge.py"
+    "scripts/ops/daily_runtime_published_face_converge.py",
+    "addons/smart_construction_bundle/core_extension.py",
+    "addons/smart_construction_bundle/tests/test_startup_delivery_identity.py",
+    "make/daily_candidate.mk",
+    "scripts/ops/daily_runtime_duty_edition_release.py",
+    "scripts/ops/test_daily_runtime_duty_edition_release.py"
   ],
   "environment": {
     "kind": "offline",
@@ -91,10 +96,55 @@
           "detail": "both login -> system.init -> my.work.summary chains passed against http://1.95.85.92:18081/t/demo"
         }
       ]
+    },
+    "preview_activation_mechanism": {
+      "identity": {
+        "head": "c2c6a94255ec9ea1611da2a0facee7fc961ea516",
+        "stage": "head_plus_preview_activation_dirty_scope"
+      },
+      "layer": "P2 bundle carrier + P4 governed edition select",
+      "scope": "smart_construction_bundle startup hook reads smart_construction_bundle.product_key carrier parameter; daily_runtime_duty_edition_release gains a governed select action that writes the parameter, restarts the duty and reads the resolved startup identity back.",
+      "commands": [
+        {
+          "command": "make local.dev.test MODULE=smart_construction_bundle TEST_TAGS=sc_gate",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 46
+        },
+        {
+          "command": "make verify.daily.duty.edition_release",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 53
+        },
+        {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "make verify.agent.ledger.unit",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 18
+        },
+        {
+          "command": "make verify.docs.product_boundary",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 7
+        }
+      ],
+      "not_run": [
+        {
+          "gate": "demo duty edition select (construction.preview) + three-finance-entry role smoke",
+          "reason": "next governed remote step after local commit"
+        }
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish fix/daily-runtime-first-deploy-20261022 through the normal governed PR lane; deployment itself is complete at main 9734b5c6a.",
+  "next_exact_step": "Activate preview startup edition on demo duty via daily.runtime.duty.edition_release.remote_select (product-key construction.preview), verify the three finance entries publish and role smoke, then commit and open the governed PR.",
   "handoff": {
     "at": "2026-10-22",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",

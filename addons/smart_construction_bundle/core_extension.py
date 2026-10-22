@@ -35,7 +35,22 @@ def smart_core_resolve_startup_delivery_identity(env, params=None):
     if bundle not in {"", "construction"}:
         return None
     profile = product_profile()
-    product_key = str(profile.get("product_key") or "construction.standard").strip() or "construction.standard"
+    # The bundle carrier parameter owns the deployed edition: the XML seed
+    # defaults to construction.standard, and a target environment that serves
+    # the preview edition reads construction.preview from the parameter without
+    # any Python hard-code of a non-default edition.
+    runtime_product_key = ""
+    try:
+        runtime_product_key = str(
+            env["ir.config_parameter"].sudo().get_param("smart_construction_bundle.product_key") or ""
+        ).strip()
+    except Exception:
+        runtime_product_key = ""
+    product_key = (
+        runtime_product_key
+        or str(profile.get("product_key") or "construction.standard").strip()
+        or "construction.standard"
+    )
     if "." in product_key:
         base_product_key, edition_key = product_key.split(".", 1)
     else:

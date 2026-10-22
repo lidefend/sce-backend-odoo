@@ -241,7 +241,7 @@ DAILY_DUTY_EDITION_DUTY ?= customer_tenant_dev
 DAILY_DUTY_EDITION_PRODUCT_KEY ?= construction.standard
 DAILY_DUTY_EDITION_EVIDENCE ?=
 
-.PHONY: verify.daily.duty.edition_release daily.runtime.duty.edition_release.remote_install daily.runtime.duty.edition_release.remote_readback daily.runtime.duty.edition_release.remote_publish
+.PHONY: verify.daily.duty.edition_release daily.runtime.duty.edition_release.remote_install daily.runtime.duty.edition_release.remote_readback daily.runtime.duty.edition_release.remote_publish daily.runtime.duty.edition_release.remote_select
 
 verify.daily.duty.edition_release: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/daily_runtime_duty_edition_release.py scripts/ops/test_daily_runtime_duty_edition_release.py
@@ -261,6 +261,13 @@ daily.runtime.duty.edition_release.remote_publish: daily.runtime.duty.edition_re
 	@test "$${CONFIRM_DAILY_DUTY_EDITION_RELEASE:-}" = "RELEASE_DECLARED_EDITION_INTO_DAILY_DUTY" || { echo "exact daily duty edition release confirmation is required" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'CONFIRM_DAILY_DUTY_EDITION_RELEASE=RELEASE_DECLARED_EDITION_INTO_DAILY_DUTY python3 "$(DAILY_DUTY_EDITION_TOOL)" publish --duty "$(DAILY_DUTY_EDITION_DUTY)" --product-key "$(DAILY_DUTY_EDITION_PRODUCT_KEY)" --evidence "$(DAILY_DUTY_EDITION_EVIDENCE)"'
+
+daily.runtime.duty.edition_release.remote_select: daily.runtime.duty.edition_release.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+	@[[ "$(DAILY_DUTY_EDITION_PRODUCT_KEY)" =~ ^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$$ ]] || { echo "invalid daily duty edition product key" >&2; exit 2; }
+	@test "$${SC_CONFIRM_DAILY_DUTY_EDITION_SELECT:-}" = "SELECT_DAILY_DUTY_EDITION" || { echo "exact daily duty edition select confirmation is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'SC_CONFIRM_DAILY_DUTY_EDITION_SELECT=SELECT_DAILY_DUTY_EDITION python3 "$(DAILY_DUTY_EDITION_TOOL)" select --duty "$(DAILY_DUTY_EDITION_DUTY)" --product-key "$(DAILY_DUTY_EDITION_PRODUCT_KEY)" --evidence "$(DAILY_DUTY_EDITION_EVIDENCE)"'
 
 # The narrow payload import operator is carried by the unified onboarding
 # mechanism: the platform owns the account lifecycle (provision/grant/revoke)

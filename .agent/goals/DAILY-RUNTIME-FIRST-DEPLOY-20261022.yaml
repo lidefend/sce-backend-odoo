@@ -9,13 +9,17 @@ goal:
   module:
     - scripts/ops
     - docs/ops
+    - addons/smart_construction_bundle
+    - make
   baseline:
     branch: fix/daily-runtime-first-deploy-20261022
     full_sha: 9734b5c6a687e3d1f2e3e6351d28de36d709f143
     source: main
   objective: >-
     Preserve the verified daily-runtime published-face converge fix and record the
-    completed first-version deployment of main 9734b5c6a to sc-root.
+    completed first-version deployment of main 9734b5c6a to sc-root, then close
+    the first-preview release by activating the preview startup edition on the
+    daily demo duty and verifying the three preview finance entries.
   product_boundary:
     standard_vs_user_specific: ops_delivery_tool
     why_here: >-
@@ -33,8 +37,8 @@ goal:
     - no_direct_main_rewrite
     - preserve_recovery_point
   next_exact_step: >-
-    Run local iteration and Agent ledger gates, commit the bounded fix on the
-    fix branch, and publish through the normal governed PR lane.
+    Activate preview startup edition on demo duty via the governed edition select
+    entry, verify the three finance entries publish, then commit and open the PR.
   completion:
     scope: daily_runtime_first_version_deploy
     overall_goal: in_progress
