@@ -93,6 +93,8 @@ Product candidate `3cd91872bec755eae0b31021b1cb71adc49d9368` was deployed throug
 | L4 | `demo_role_finance` `my.work.summary` | HTTP 200 |
 | L4 | `verify.frontend.product_configuration_capability.browser` | PASS, 31 assertions, 0 console/page errors, 0 failed requests |
 | L4 | Company matrix with `demo_full` | PASS, company ids `[1,2]`, 66 scenes each, asset ratio `1.0` |
+| L4 | Role-scope smoke after membership repair | PASS, 11/11 accounts; `wutao` and `demo_full` both expose company `[1,2]` |
+| L4 | `verify.frontend.product_configuration_capability.browser` after repair | PASS, 31 assertions |
 | L1 | `make verify.frontend.intent_channel.guard` | PASS, 8 tests |
 | L1 | `make verify.scene.company_snapshot.collect` | PASS, 17 tests plus two live company snapshots |
 | L1 | `make verify.intent.canonical_alias.snapshot.guard` | PASS, 123 canonical and 4 aliases |
@@ -135,9 +137,24 @@ documentation, not a new product-runtime claim.
 The later `2a0a61e87b3e` deployment exposed the account-membership gap described
 above after the process restart. The previous live snapshot had observed the
 declared two-company set before that restart; the post-restart login contract
-showed only company 1 for both business-full accounts. Final closure therefore
-requires the demo seed carrier to reconverge membership and a fresh exact-SHA
-login/token/system-init readback.
+showed only company 1 for both business-full accounts.
+
+The governed `daily.runtime.database.duty.seed` entry replayed the declared
+`release_seed -> demo_full` chain, including `demo_company_membership`, and
+reported all 21 executed steps plus a healthy restart. A fresh login/token/
+`system.init` readback then showed `wutao` and `demo_full` with company 1 and
+allowed companies `[1,2]`. The role matrix returned to 11/11, both company scene
+snapshots remained live at ratio 1.0, and the product-capability browser remained
+31/31.
+
+Recovery boundary: the paired backup tool refused the seed write because the
+existing filestore already contained 185 unregistered entries. For this
+database-only membership repair, the verified pre-upgrade `sc_demo` database dump
+created by published-face convergence at
+`/data/backups/daily-demo-dev/sc_demo-20261022T133050Z-f17dfe12/database.dump`
+was the recovery point (`sha256=34de6d27072f6565c23739dd2375f5d40498f33d68f154b7ecafb4944123398a`).
+The filestore registration anomaly remains a separate operational observation;
+it does not invalidate this database-only repair.
 
 ## Rollback
 
@@ -147,8 +164,8 @@ login/token/system-init readback.
 
 ## Next exact step
 
-Replay the declared demo seed membership through the governed daily duty, prove
-`wutao` and `demo_full` expose company `[1,2]` again, then freeze the final P4
-follow-up, run the final exact-head Quick, realign both runtime duties and publish
-for remote required checks and protected merge. Until those steps finish, mainline
-integration and final version release remain unclaimed.
+Commit the role-scope verifier correction and membership evidence, run the final
+exact-head Quick, deploy and realign that SHA on both duties, rerun entry and
+product acceptance, then publish for remote required checks and protected merge.
+Until those steps finish, mainline integration and final version release remain
+unclaimed.
