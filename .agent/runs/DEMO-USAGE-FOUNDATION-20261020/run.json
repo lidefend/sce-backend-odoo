@@ -62,6 +62,7 @@
     "scripts/verify/test_demo_usage_foundation_role_scope_probe.py",
     "scripts/dev/local_dev_demo_credentials_prepare.sh",
     "scripts/verify/test_local_development_lifecycle.py",
+    "scripts/verify/registry.yaml",
     "scripts/verify/test_coverage_registry.yaml"
   ],
   "environment": {
