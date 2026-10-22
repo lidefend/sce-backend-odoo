@@ -80,7 +80,7 @@
       <field name="date_request">2025-03-11</field>
       <field name="payment_account_name">德阳宏源钢材贸易有限公司</field>
       <field name="payment_bank_name">中国银行德阳分行</field>
-      <field name="payment_account_no">6222021000000070</field>
+      <field name="payment_account_no">DEMO-ACCT-0070</field>
       <field name="note">付款执行来源付款申请。</field>
     </record>
   </data>
@@ -155,7 +155,7 @@
       <field name="income_category">主营业务收入</field>
       <field name="payment_method">银行转账</field>
       <field name="receiving_account_name">四川华川某某建设集团有限公司</field>
-      <field name="receiving_account_no">6222021000000071</field>
+      <field name="receiving_account_no">DEMO-ACCT-0071</field>
       <field name="amount">1200000.0</field>
       <field name="settlement_amount">1200000.0</field>
       <field name="currency_id" ref="base.CNY"/>
@@ -190,7 +190,7 @@
       <field name="date_document">2025-03-13</field>
       <field name="document_no">DZ-2025-001</field>
       <field name="account_name">项目基本户</field>
-      <field name="bank_account_no">6222021000000072</field>
+      <field name="bank_account_no">DEMO-ACCT-0072</field>
       <field name="account_balance">1914000.0</field>
       <field name="bank_balance">1914000.0</field>
       <field name="system_difference">0.0</field>
