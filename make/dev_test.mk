@@ -2765,8 +2765,29 @@ verify.scene.contract.field_schema.guard: guard.prod.forbid
 verify.capability.provider.guard: guard.prod.forbid
 	@python3 scripts/verify/capability_provider_guard.py
 
+.PHONY: verify.smart_core.ui_base_asset_refresh.unit
+verify.smart_core.ui_base_asset_refresh.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_ui_base_contract_asset_repository.py
+
 verify.capability.registry.smoke: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) python3 scripts/verify/capability_registry_smoke.py
+
+PERMISSION_TRUTH_ENV_FILE ?= $(LOCAL_DEV_ENV_FILE)
+
+.PHONY: verify.daily.permission_truth.capability.orm verify.daily.permission_truth.payment.orm
+verify.daily.permission_truth.capability.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory \
+	  ENV=dev ENV_FILE="$(PERMISSION_TRUTH_ENV_FILE)" \
+	  MODULE=smart_construction_core \
+	  TEST_TAGS="/smart_construction_core:TestQueryCapabilityNativeAcl" \
+	  test.safe
+
+verify.daily.permission_truth.payment.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory \
+	  ENV=dev ENV_FILE="$(PERMISSION_TRUTH_ENV_FILE)" \
+	  MODULE=smart_construction_core \
+	  TEST_TAGS="/smart_construction_core:TestPaymentRequestAvailableActionsBackend" \
+	  test.safe
 
 verify.scene.hud.trace.smoke: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) python3 scripts/verify/scene_hud_trace_smoke.py

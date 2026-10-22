@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-PERMISSION-TRUTH-CLOSURE-20261022",
+  "branch": "fix/daily-permission-truth-20261022",
+  "status": "verification_pending",
+  "baseline_sha": "2a5db0a2eef0b5850db93d508fef478594dd2942",
+  "goal": ".agent/goals/DAILY-PERMISSION-TRUTH-CLOSURE-20261022.yaml",
+  "record": "docs/ops/iterations/daily_permission_truth_closure_20261022.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-PERMISSION-TRUTH-CLOSURE-20261022.yaml",
+    ".agent/runs/DAILY-PERMISSION-TRUTH-CLOSURE-20261022/run.json",
+    "addons/smart_core/core/ui_base_contract_asset_repository.py",
+    "addons/smart_core/tests/test_ui_base_contract_asset_repository.py",
+    "addons/smart_construction_core/services/capability_registry.py",
+    "addons/smart_construction_scene/services/capability_scene_targets.py",
+    "addons/smart_construction_core/models/core/payment_request.py",
+    "addons/smart_construction_core/tests/test_capability_registry_service.py",
+    "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
+    "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+    "make/dev_test.mk",
+    "scripts/verify/capability_provider_guard.py",
+    "scripts/verify/baselines/capability_provider_guard.json",
+    "scripts/verify/demo_usage_foundation_role_scope_probe.py",
+    "scripts/verify/demo_usage_foundation_role_scope_manifest.json",
+    "scripts/verify/test_demo_usage_foundation_role_scope_probe.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/daily_permission_truth_closure_20261022.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "registered sc-root demo and platform-control duties; local.dev for module tests; no new environment or credential"
+  },
+  "checks": {
+    "role_scope_unit": {
+      "target": "verify.demo.usage_foundation_role_scope.unit",
+      "inputs": [
+        "scripts/verify/demo_usage_foundation_role_scope_manifest.json",
+        "scripts/verify/test_demo_usage_foundation_role_scope_probe.py",
+        "scripts/verify/demo_usage_foundation_role_scope_probe.py"
+      ],
+      "kind": "offline"
+    },
+    "my_work_guard": {
+      "target": "verify.frontend.my_work_approval.guard",
+      "inputs": [
+        "addons/smart_construction_core/handlers/my_work_summary.py",
+        "addons/smart_construction_core/services/payment_request_work_item_service.py",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "scripts/verify/frontend_my_work_approval_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "capability_registry": {
+      "target": "verify.daily.permission_truth.capability.orm",
+      "inputs": [
+        "make/dev_test.mk",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_scene/services/capability_scene_targets.py",
+        "addons/smart_construction_core/tests/test_capability_registry_service.py"
+      ],
+      "kind": "runtime"
+    },
+    "payment_permission": {
+      "target": "verify.daily.permission_truth.payment.orm",
+      "inputs": [
+        "make/dev_test.mk",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py"
+      ],
+      "kind": "runtime"
+    },
+    "ui_base_asset_refresh": {
+      "target": "verify.smart_core.ui_base_asset_refresh.unit",
+      "inputs": [
+        "make/dev_test.mk",
+        "addons/smart_core/core/ui_base_contract_asset_repository.py",
+        "addons/smart_core/tests/test_ui_base_contract_asset_repository.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/DAILY-PERMISSION-TRUTH-CLOSURE-20261022.yaml",
+        ".agent/runs/DAILY-PERMISSION-TRUTH-CLOSURE-20261022/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "capability_provider_guard": {
+      "target": "verify.capability.provider.guard",
+      "inputs": [
+        "scripts/verify/capability_provider_guard.py",
+        "scripts/verify/baselines/capability_provider_guard.json",
+        "addons/smart_core/core/capability_provider.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Refresh generated evidence, freeze the final clean HEAD, run ci.local.quick, redeploy that exact SHA, then publish for remote CI and protected merge."
+}

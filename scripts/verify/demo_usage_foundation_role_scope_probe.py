@@ -96,6 +96,15 @@ def validate_manifest(data: dict) -> None:
             )
         if account.get("expectation") == "role_code":
             _require_str(account.get("expected_role_code"), "expected_role_code", f"account {key}")
+        company_ids = account.get("expected_allowed_company_ids")
+        if company_ids is not None and (
+            not isinstance(company_ids, list)
+            or not company_ids
+            or not all(isinstance(value, int) and value > 0 for value in company_ids)
+        ):
+            raise ManifestError(
+                f"account {key} expected_allowed_company_ids must be a non-empty list of positive integers"
+            )
         if "first_screen_expectation" in account and account.get(
             "first_screen_expectation"
         ) not in VALID_FIRST_SCREEN_EXPECTATIONS:
@@ -208,9 +217,13 @@ def _probe_account(
         result["role_ok"] = bool(role_code)
 
     scope = manifest["company_scope"]
+    expected_allowed_company_ids = account.get(
+        "expected_allowed_company_ids",
+        scope["expected_allowed_company_ids"],
+    )
     result["company_ok"] = (
         user.get("company_id") == scope["expected_company_id"]
-        and user.get("allowed_company_ids") == scope["expected_allowed_company_ids"]
+        and user.get("allowed_company_ids") == expected_allowed_company_ids
     )
     result["route_ok"] = bool(route.get("route")) and bool(route.get("scene_key"))
 

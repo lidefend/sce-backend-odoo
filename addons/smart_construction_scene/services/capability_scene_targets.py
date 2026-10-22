@@ -21,6 +21,7 @@ CAPABILITY_ENTRY_SCENE_MAP: dict[str, str] = {
     "project.execution.enter": "project.execution",
     "project.execution.advance": "project.execution",
     "project.lifecycle.open": "portal.lifecycle",
+    "project.task.list": "task.center",
     "project.task.board": "task.board",
     "project.document.open": "projects.ledger",
     "project.structure.manage": "cost.project_boq",

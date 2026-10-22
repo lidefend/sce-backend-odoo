@@ -21,6 +21,7 @@
       "expectation": "role_code",
       "expected_role_code": "business_full",
       "label": "业务全功能账号（纯能力，无项目成员）",
+      "expected_allowed_company_ids": [1, 2],
       "first_screen_expectation": "record"
     },
     {
@@ -29,6 +30,7 @@
       "expectation": "role_code",
       "expected_role_code": "business_full",
       "label": "业务全功能账号（项目范围，验收主账号）",
+      "expected_allowed_company_ids": [1, 2],
       "first_screen_expectation": "non_empty"
     },
     {
@@ -53,6 +55,7 @@
       "expectation": "role_code",
       "expected_role_code": "owner",
       "label": "企业负责人",
+      "expected_allowed_company_ids": [1, 2],
       "first_screen_expectation": "record"
     },
     {
@@ -61,6 +64,7 @@
       "expectation": "role_code",
       "expected_role_code": "executive",
       "label": "管理层",
+      "expected_allowed_company_ids": [1, 2],
       "first_screen_expectation": "record"
     },
     {

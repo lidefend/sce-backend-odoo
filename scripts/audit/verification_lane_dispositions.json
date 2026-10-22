@@ -1617,6 +1617,16 @@
       "owner": "platform-team",
       "reason": "duty 家族的聚焦验证入口（本地单测/ORM），需要本地 duty 环境或数据库，未接入任何自动化 lane；由本轮运行记录手工调用并留证。"
     },
+    "verify.daily.permission_truth.capability.orm": {
+      "disposition": "runtime_audit_probe",
+      "owner": "construction-product",
+      "reason": "On-demand Odoo ORM verification for deployed capability targets; it requires an installed disposable Odoo database and is invoked by the daily permission closeout run rather than shared static lanes."
+    },
+    "verify.daily.permission_truth.payment.orm": {
+      "disposition": "runtime_audit_probe",
+      "owner": "construction-product",
+      "reason": "On-demand Odoo ORM verification for payment prerequisite authorization; it requires an installed disposable Odoo database and is invoked by the daily permission closeout run rather than shared static lanes."
+    },
     "verify.daily_dev.acceptance_fixture.unit": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",

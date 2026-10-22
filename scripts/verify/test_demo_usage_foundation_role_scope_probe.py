@@ -46,6 +46,7 @@ def _small_manifest() -> dict:
                 "login": "ct1",
                 "expectation": "valid_surface",
                 "label": "合同",
+                "expected_allowed_company_ids": [1, 2],
             },
         ],
         "negatives": [
@@ -68,13 +69,14 @@ def _fake_login(base_url, namespace, login, password):
 def _fake_post(url, payload, token=None):
     intent = payload.get("intent")
     if intent == "system.init":
+        allowed_company_ids = [1, 2] if token == "tok-ct1" else [1]
         return 200, {
             "ok": True,
             "data": {
                 "role_surface": {"role_code": "pm"},
                 "user": {
                     "company_id": 1,
-                    "allowed_company_ids": [1],
+                    "allowed_company_ids": allowed_company_ids,
                 },
                 "default_route": {"route": "/", "scene_key": "workspace.home"},
             },

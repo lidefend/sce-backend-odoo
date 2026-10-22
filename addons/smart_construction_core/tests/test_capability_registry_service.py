@@ -227,7 +227,7 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
     def test_all_query_bindings_follow_native_action_model_and_groups(self):
         user = self._actor([])
         definitions = [row for row in capability_registry.capability_definitions() if row.get('access_action')]
-        self.assertEqual(len(definitions), 11)
+        self.assertEqual(len(definitions), 10)
         actors = [user, self._actor(['smart_construction_core.group_sc_cap_finance_read'], login='query-finance-reader'),
                   self._actor(['smart_construction_core.group_sc_cap_cost_read'], login='query-cost-reader')]
         for user in actors:
@@ -241,6 +241,65 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
                 self.assertEqual(verdict['state'], 'allow' if expected else 'deny', row['key'])
                 self.assertFalse(row.get('required_roles'))
                 self.assertFalse(row.get('access_model'))
+
+    def test_reachable_scene_targets_replace_false_navigation_denials(self):
+        from unittest.mock import patch
+
+        user = self._actor(
+            [
+                'smart_construction_core.group_sc_cap_project_read',
+                'smart_construction_core.group_sc_cap_finance_read',
+                'smart_construction_core.group_sc_cap_contract_read',
+            ],
+            login='reachable-capability-targets',
+        )
+        env = user.with_user(user).env
+        payment_action = env.ref(
+            'smart_construction_core.action_payment_request_user_payment_apply'
+        )
+        payment_menu = env.ref('smart_construction_core.menu_sc_user_payment_apply')
+        income_action = env.ref(
+            'smart_construction_core.action_construction_contract_income'
+        )
+        income_menu = env.ref(
+            'smart_construction_core.menu_sc_p1_income_contract'
+        )
+        expense_action = env.ref(
+            'smart_construction_core.action_construction_contract_expense'
+        )
+        expense_menu = env.ref(
+            'smart_construction_core.menu_sc_p1_expense_contract'
+        )
+        published_pairs = {
+            payment_action.id: (payment_menu.id, payment_action.id),
+            income_action.id: (income_menu.id, income_action.id),
+            expense_action.id: (expense_menu.id, expense_action.id),
+        }
+        with patch.object(
+            capability_registry,
+            '_published_query_pair',
+            side_effect=lambda _user, action_id: published_pairs.get(action_id),
+        ):
+            rows = {
+                row['key']: row
+                for row in capability_registry.list_capabilities_for_user(env, user)
+            }
+        self.assertEqual(rows['project.task.list']['state'], 'READY')
+        self.assertEqual(
+            rows['project.task.list']['default_payload']['scene_key'],
+            'task.center',
+        )
+        self.assertEqual(rows['finance.payment_request.list']['state'], 'READY')
+        self.assertEqual(
+            rows['finance.payment_request.list']['default_payload']['route'],
+            '/a/%s?menu_id=%s' % (
+                env.ref('smart_construction_core.action_payment_request_user_payment_apply').id,
+                env.ref('smart_construction_core.menu_sc_user_payment_apply').id,
+            ),
+        )
+        self.assertNotIn('contract.center.open', rows)
+        self.assertEqual(rows['contract.income.track']['state'], 'READY')
+        self.assertEqual(rows['contract.expense.track']['state'], 'READY')
 
     def test_action_model_change_is_not_hidden_by_copied_model_binding(self):
         user = self._actor(['smart_construction_core.group_sc_cap_project_read'])
@@ -268,7 +327,7 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
         matrix = capability_registry.build_capability_matrix_for_user(env, user)
         links = {row['key']: row for section in matrix['sections'] for row in section['items']}
         for definition in capability_registry.capability_definitions():
-            if not definition.get('access_action'):
+            if not definition.get('access_action') or not definition.get('visible', True):
                 continue
             key = definition['key']
             action = env.ref(definition['access_action'])

@@ -2332,7 +2332,10 @@ class PaymentRequest(models.Model):
             "suggested_action": str(suggested_action or ""),
             "reasons": [str(item) for item in (reasons or []) if str(item or "").strip()],
             "hints": [str(item) for item in (hints or []) if str(item or "").strip()],
-            "force_block_enabled": code == "P0_MATERIAL_SETTLEMENT_NOT_CONFIRMED" or self._payment_force_block_enabled(code),
+            "force_block_enabled": code in {
+                "P0_MATERIAL_SETTLEMENT_NOT_CONFIRMED",
+                "P0_MATERIAL_SETTLEMENT_NOT_READABLE",
+            } or self._payment_force_block_enabled(code),
         }
 
     def _payment_advisory_from_exception(self, exc):
@@ -2346,6 +2349,7 @@ class PaymentRequest(models.Model):
             "P0_PAYMENT_SETTLEMENT_NOT_READY", "P0_PAYMENT_FUNDING_NOT_READY",
             "P0_PAYMENT_FUNDING_CAP_EXCEEDED",
             "P0_MATERIAL_SETTLEMENT_NOT_CONFIRMED",
+            "P0_MATERIAL_SETTLEMENT_NOT_READABLE",
         }
         if isinstance(exc, (AccessError, ValidationError)) or not isinstance(exc, UserError) or code not in supported:
             raise exc
@@ -2356,6 +2360,7 @@ class PaymentRequest(models.Model):
             "P0_PAYMENT_FUNDING_BASELINE_INVALID": "fix_project_funding_baseline",
             "P0_PAYMENT_FUNDING_CAP_EXCEEDED": "adjust_payment_amount_or_funding",
             "P0_PAYMENT_NOT_FULLY_PAID": "complete_payment_execution",
+            "P0_MATERIAL_SETTLEMENT_NOT_READABLE": "request_material_settlement_read_access",
         }.get(code, "")
         return self._payment_advisory(code, text or code, suggested_action=suggested)
 
@@ -2476,7 +2481,12 @@ class PaymentRequest(models.Model):
             try:
                 check()
             except UserError as exc:
-                advisories.append(self._payment_advisory_from_exception(exc))
+                advisory = self._payment_advisory_from_exception(exc)
+                if not any(
+                    item.get("reason_code") == advisory.get("reason_code")
+                    for item in advisories
+                ):
+                    advisories.append(advisory)
         return advisories
 
     def _handle_payment_advisories(self, action_name, advisories):
@@ -3140,11 +3150,25 @@ class PaymentRequest(models.Model):
         data = self.sudo().read_group(domain, ["amount:sum"], [])
         return data[0].get("amount_sum", data[0].get("amount", 0.0)) if data else 0.0
 
+    def _ensure_material_settlement_readable(self, rec, settlement):
+        try:
+            settlement.check_access_rights("read")
+            settlement.check_access_rule("read")
+        except AccessError:
+            raise_guard(
+                "P0_MATERIAL_SETTLEMENT_NOT_READABLE",
+                f"付款申请[{rec.display_name}]",
+                "提交/审批材料付款申请",
+                reasons=[_("当前账号无权核验关联材料结算")],
+                hints=[_("请联系材料负责人补充项目范围，或由有权限的财务人员办理")],
+            )
+
     def _check_material_settlement_remaining_amount(self):
         for rec in self:
             settlement = rec.material_settlement_id
             if rec.type != "pay" or not settlement:
                 continue
+            self._ensure_material_settlement_readable(rec, settlement)
             if settlement.state != "confirmed":
                 raise_guard(
                     "P0_MATERIAL_SETTLEMENT_NOT_CONFIRMED",
@@ -3161,6 +3185,7 @@ class PaymentRequest(models.Model):
             settlement = rec.material_settlement_id
             if rec.type != "pay" or not settlement:
                 continue
+            self._ensure_material_settlement_readable(rec, settlement)
             precision = rec.currency_id.rounding if rec.currency_id else 0.01
             requested = rec._material_settlement_requested_amount_excluding_self()
             payable = (settlement.amount_total or 0.0) - (requested or 0.0)

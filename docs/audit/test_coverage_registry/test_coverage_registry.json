@@ -4,8 +4,8 @@
   "counts": {
     "odoo_tags": 190,
     "gated": 3,
-    "on_demand": 38,
-    "unwired": 149,
+    "on_demand": 40,
+    "unwired": 147,
     "odoo_tag_declarations": 408,
     "gated_declarations": 95,
     "uncovered_declarations": 313,
@@ -1440,14 +1440,16 @@
     },
     {
       "group": "payment_request_available_actions_backend",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.daily.permission_truth.payment.orm :: /TestPaymentRequestAvailableActionsBackend (class selection)"
+      ],
       "disposition": "wire-pending"
     },
     {
@@ -1747,14 +1749,16 @@
     },
     {
       "group": "query_capability_native_acl",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_capability_registry_service.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.daily.permission_truth.capability.orm :: /TestQueryCapabilityNativeAcl (class selection)"
+      ],
       "disposition": "known-gap"
     },
     {

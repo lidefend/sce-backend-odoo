@@ -1,0 +1,60 @@
+schema_version: 1
+goal:
+  id: DAILY-PERMISSION-TRUTH-CLOSURE-20261022
+  status: active
+  title: Daily business-full permission truth closure
+  objective: >-
+    Close the runtime permission-truth gaps found on the daily development
+    server: capability targets must not report false navigation denial, finance
+    my-work must not fail on an unreadable material-settlement prerequisite,
+    role-scope expectations must match the declared two-company demo tenant, and
+    the platform-control duty must serve the same deployed revision as the
+    tenant face.
+  formal_product_layer: P1 construction standards with bounded P4 delivery
+  layer_targets:
+    - smart_core UI base contract asset cache refresh eligibility
+    - smart_construction_core capability registry and payment-request prerequisite projection
+    - smart_construction_scene capability-to-scene target declaration
+    - daily demo role-scope acceptance declaration
+    - governed daily-runtime deployment and readback
+  modules_or_tools:
+    - smart_core
+    - smart_construction_core
+    - smart_construction_scene
+    - scripts/verify
+    - scripts/ops
+    - docs/ops/iterations
+  scope:
+    - addons/smart_core/core/ui_base_contract_asset_repository.py
+    - addons/smart_core/tests/test_ui_base_contract_asset_repository.py
+    - addons/smart_construction_core/services/capability_registry.py
+    - addons/smart_construction_scene/services/capability_scene_targets.py
+    - addons/smart_construction_core/models/core/payment_request.py
+    - addons/smart_construction_core/tests
+    - addons/smart_construction_scene/tests
+    - make/dev_test.mk
+    - scripts/verify/capability_provider_guard.py
+    - scripts/verify/baselines/capability_provider_guard.json
+    - scripts/verify/demo_usage_foundation_role_scope_probe.py
+    - scripts/verify/demo_usage_foundation_role_scope_manifest.json
+    - scripts/verify/test_demo_usage_foundation_role_scope_probe.py
+    - docs/audit/test_coverage_registry/test_coverage_registry.json
+    - docs/engineering_convergence/complexity_budget_report.md
+    - docs/engineering_convergence/split_plan_queue.md
+    - .agent/active-runs.json
+    - .agent/goals/DAILY-PERMISSION-TRUTH-CLOSURE-20261022.yaml
+    - .agent/runs/DAILY-PERMISSION-TRUTH-CLOSURE-20261022/run.json
+    - docs/ops/iterations/daily_permission_truth_closure_20261022.md
+  exclusions:
+    - no ACL widening or new role grant
+    - no frontend permission inference or local lock-state override
+    - no public intent rename or startup-chain semantic change
+    - no new database, compose profile, port, volume or credential authority
+    - no production deployment
+  acceptance:
+    - capability authorization and entry targets agree for the affected capability keys
+    - finance my-work completes without an unhandled related-record AccessError
+    - role-scope declaration matches the declared demo company membership
+    - tenant and platform-control runtime identity match the deployed main SHA
+    - capability-provider boundary guard and run ledger remain green
+    - targeted non-zero tests and browser/runtime readbacks pass
