@@ -141,10 +141,51 @@
           "reason": "next governed remote step after local commit"
         }
       ]
+    },
+    "preview_activation_verified": {
+      "identity": {
+        "head": "dbeb09cf62533098adc2ec6917a3735bf370f05c",
+        "stage": "candidate_deployed_preview_activated_on_daily_runtime"
+      },
+      "layer": "P4 governed select + readback",
+      "scope": "daily demo duty startup edition switched to construction.preview; three preview finance entries published to navigation authority",
+      "commands": [
+        {
+          "command": "make daily.runtime.candidate.bundle_sync DAILY_CANDIDATE_EXPECTED_SHA=dbeb09cf6...",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "remote product tree 9734b5c6a -> dbeb09cf6 (detached candidate), origin_main_mutated=false"
+        },
+        {
+          "command": "make daily.runtime.duty.edition_release.remote_select DAILY_DUTY_EDITION_DUTY=demo DAILY_DUTY_EDITION_PRODUCT_KEY=construction.preview",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "smart_construction_bundle.product_key=construction.preview; startup identity resolves construction.preview (extension_hook) after restart"
+        },
+        {
+          "command": "finance capability probe (wutao + demo_readonly)",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "wutao: finance.ledger.payment/treasury/settlement.order all READY(allow); demo_readonly: all LOCKED(PERMISSION_DENIED)"
+        },
+        {
+          "command": "published route authority probe (wutao)",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "primary_actions 90 -> 130; three finance entries published with routes /a/700, /a/762, /a/775"
+        }
+      ],
+      "rollback": {
+        "edition": "re-select construction.standard (or clear smart_construction_bundle.product_key parameter)",
+        "code": "remote product tree can return to main 9734b5c6a",
+        "database": "/data/backups/daily-demo-dev/sc_demo-20261021T141845Z-3acc5f5b/database.dump (verified)"
+      }
     }
   },
-  "blockers": [],
-  "next_exact_step": "Activate preview startup edition on demo duty via daily.runtime.duty.edition_release.remote_select (product-key construction.preview), verify the three finance entries publish and role smoke, then commit and open the governed PR.",
+  "blockers": [
+    "Remote product tree currently serves detached candidate dbeb09cf6; it must return to main after the fix branch merges."
+  ],
+  "next_exact_step": "Open and merge the governed PR for fix/daily-runtime-first-deploy-20261022 into main, then redeploy main to the daily runtime (main.bundle_sync + source_revision.align + published_face.converge) so the runtime serves main again while the preview edition parameter stays active.",
   "handoff": {
     "at": "2026-10-22",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo",

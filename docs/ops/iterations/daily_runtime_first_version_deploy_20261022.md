@@ -58,16 +58,20 @@
 
 ## 6. 未完成边界
 
-- 日常运行时 startup delivery identity 仍为 `construction.standard`。
-- `construction.preview` 快照已发布，但 preview-only 入口尚未激活；三个财务入口仍按
-  navigation authority 拒绝。
-- Preview 激活需要 P2 产品身份切换或受管运行时 edition selector 的 owner 决策，
-  不属于本部署步骤。
+- Preview 激活已完成（2026-10-22 收口）：
+  - `smart_construction_bundle` startup hook 改为读取 carrier 参数
+    `smart_construction_bundle.product_key`（XML 种子默认 `construction.standard`）。
+  - 受管 `daily.runtime.duty.edition_release.remote_select` 将 demo duty 的
+    startup edition 切换为 `construction.preview` 并回读验证。
+  - `wutao` 导航权威 `primary_actions` 90 → 130；三个 preview 财务入口
+    （收付款台账 / 资金台账 / 结算单）全部 `READY`，`demo_readonly` 仍
+    `PERMISSION_DENIED`。
+- 远端产品树当前为 detached candidate `dbeb09cf6`，待 fix 分支合入 main 后切回 main。
 
 ## 7. 结论
 
 - 批次验收：不适用
 - 首版部署：完成（`9734b5c6a` 已服务）
 - 主线上仍保持 `9734b5c6a`
-- 用户验收：启动链通过；preview-only 财务入口待 activation
+- 用户验收：启动链通过；preview-only 财务入口已激活并通过角色允许/拒绝冒烟
 - 回滚：可用
