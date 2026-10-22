@@ -138,8 +138,14 @@ def run(env):
         for line in Boq.search(
             [("project_id", "=", project.id), ("line_type", "=", "item")]
         ):
+            # Scene XML carriers (e.g. s79 fire-pipe) already declare a full
+            # 100% allocation for their own BOQ lines. A second allocation to
+            # the showroom scope would push the cumulative quantity past the
+            # source quantity and fail the product's allocation-bounds check.
+            # Skip any item that already carries an active allocation instead
+            # of only skipping the same scope.
             if Allocation.search_count(
-                [("boq_line_id", "=", line.id), ("execution_scope_id", "=", scope.id)]
+                [("boq_line_id", "=", line.id), ("active", "=", True)]
             ):
                 continue
             Allocation.create(
