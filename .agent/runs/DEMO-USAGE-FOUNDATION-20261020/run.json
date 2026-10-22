@@ -3,7 +3,7 @@
   "id": "DEMO-USAGE-FOUNDATION-20261020",
   "branch": "feature/demo-iteration-line-20261020",
   "status": "active",
-  "baseline_sha": "74063688e928d25c8e65037ac3306956c954244d",
+  "baseline_sha": "c937f2ee60162463f4914e148baac20b0a1406db",
   "goal": ".agent/goals/DEMO-USAGE-FOUNDATION-20261020.yaml",
   "record": "docs/ops/iterations/demo_usage_foundation_handoff_20261020.md",
   "scope": [
@@ -681,7 +681,7 @@
   "handoff": {
     "at": "2026-10-21",
     "worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",
-    "baseline_main": "74063688e928d25c8e65037ac3306956c954244d",
+    "baseline_main": "c937f2ee60162463f4914e148baac20b0a1406db",
     "first_batch": "R3_content_finalized_contract_dependencies_pending",
     "do_not_redo": "Reuse historical mechanism Batch 1-6 and F1-F8 evidence within proven scope; run only affected units.",
     "mainline_integration": "not_run",
