@@ -164,6 +164,7 @@ Generated from repository source files. This report is informational during the 
 | 962 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 955 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
+| 941 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 932 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
@@ -198,10 +199,9 @@ Generated from repository source files. This report is informational during the 
 | 830 | Python source | `scripts/release/test_production_release_contract.py` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 827 | Python source | `addons/smart_construction_core/core_extension_system_init_rows.py` |
-| 821 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
+| 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
 | 815 | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
 | 815 | Python source | `scripts/verify/frontend_decision_authority.py` |
-| 811 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
 | 810 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
