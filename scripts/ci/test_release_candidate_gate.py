@@ -31,6 +31,7 @@ class ReleaseCandidateGateContractTests(unittest.TestCase):
         self.assertIn("frontend_release_gate.yml", self.workflow)
         self.assertIn("merge_policy_gate.yml", self.workflow)
         self.assertIn("select_authoritative_workflow_run.py", self.workflow)
+        self.assertNotIn("event=${GITHUB_EVENT_NAME}", self.workflow)
         self.assertIn("candidate workflow failed", self.workflow)
         self.assertIn("timed out waiting for exact-head candidate checks", self.workflow)
 

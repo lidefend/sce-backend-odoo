@@ -1003,8 +1003,8 @@ verify.scene.registry_asset_snapshot.company_primary: guard.prod.forbid
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_FETCH_BACKOFF_SEC=$${SC_SCENE_REGISTRY_ASSET_SNAPSHOT_FETCH_BACKOFF_SEC:-1} \
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=1 \
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_STATE_FILE=artifacts/backend/scene_registry_asset_snapshot_state.company_primary.json \
-	E2E_LOGIN=$${COMPANY_PRIMARY_LOGIN:-admin} \
-	E2E_PASSWORD=$${COMPANY_PRIMARY_PASSWORD:-$${ADMIN_PASSWD:-admin}} \
+	E2E_LOGIN=$${COMPANY_PRIMARY_LOGIN:-demo_full} \
+	E2E_PASSWORD=$${COMPANY_PRIMARY_PASSWORD:-$${SC_DEMO_USER_PASSWORD:-demo}} \
 	E2E_COMPANY_ID=$${COMPANY_PRIMARY_ID:-1} \
 	python3 scripts/verify/scene_registry_asset_snapshot_guard.py
 
@@ -1015,8 +1015,8 @@ verify.scene.registry_asset_snapshot.company_secondary: guard.prod.forbid
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_FETCH_BACKOFF_SEC=$${SC_SCENE_REGISTRY_ASSET_SNAPSHOT_FETCH_BACKOFF_SEC:-1} \
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=1 \
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_STATE_FILE=artifacts/backend/scene_registry_asset_snapshot_state.company_secondary.json \
-	E2E_LOGIN=$${COMPANY_SECONDARY_LOGIN:-$${ROLE_PM_LOGIN:-demo_role_pm}} \
-	E2E_PASSWORD=$${COMPANY_SECONDARY_PASSWORD:-$${ROLE_PM_PASSWORD:-$${SC_DEMO_USER_PASSWORD:-demo}}} \
+	E2E_LOGIN=$${COMPANY_SECONDARY_LOGIN:-demo_full} \
+	E2E_PASSWORD=$${COMPANY_SECONDARY_PASSWORD:-$${SC_DEMO_USER_PASSWORD:-demo}} \
 	E2E_COMPANY_ID=$${COMPANY_SECONDARY_ID:-2} \
 	python3 scripts/verify/scene_registry_asset_snapshot_guard.py
 
@@ -2765,8 +2765,29 @@ verify.scene.contract.field_schema.guard: guard.prod.forbid
 verify.capability.provider.guard: guard.prod.forbid
 	@python3 scripts/verify/capability_provider_guard.py
 
+.PHONY: verify.smart_core.ui_base_asset_refresh.unit
+verify.smart_core.ui_base_asset_refresh.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_ui_base_contract_asset_repository.py
+
 verify.capability.registry.smoke: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) python3 scripts/verify/capability_registry_smoke.py
+
+PERMISSION_TRUTH_ENV_FILE ?= $(LOCAL_DEV_ENV_FILE)
+
+.PHONY: verify.daily.permission_truth.capability.orm verify.daily.permission_truth.payment.orm
+verify.daily.permission_truth.capability.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory \
+	  ENV=dev ENV_FILE="$(PERMISSION_TRUTH_ENV_FILE)" \
+	  MODULE=smart_construction_core \
+	  TEST_TAGS="/smart_construction_core:TestQueryCapabilityNativeAcl" \
+	  test.safe
+
+verify.daily.permission_truth.payment.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory \
+	  ENV=dev ENV_FILE="$(PERMISSION_TRUTH_ENV_FILE)" \
+	  MODULE=smart_construction_core \
+	  TEST_TAGS="/smart_construction_core:TestPaymentRequestAvailableActionsBackend" \
+	  test.safe
 
 verify.scene.hud.trace.smoke: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) python3 scripts/verify/scene_hud_trace_smoke.py

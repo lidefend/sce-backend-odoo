@@ -179,6 +179,8 @@ class TestUiBaseContractAssetRepository(unittest.TestCase):
             self.assertTrue(target._should_auto_refresh_missing_assets(env))
         with patch.dict(os.environ, {"ENV": "test"}, clear=True):
             self.assertTrue(target._should_auto_refresh_missing_assets(env))
+        with patch.dict(os.environ, {"ENV": "demo"}, clear=True):
+            self.assertTrue(target._should_auto_refresh_missing_assets(env))
         with patch.dict(os.environ, {"ENV": "prod"}, clear=True):
             self.assertFalse(target._should_auto_refresh_missing_assets(env))
 

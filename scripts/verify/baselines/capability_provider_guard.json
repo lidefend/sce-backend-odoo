@@ -2,7 +2,9 @@
   "provider_file": "addons/smart_core/core/capability_provider.py",
   "provider_module": "odoo.addons.smart_core.core.capability_provider",
   "allowed_importers": [
-    "addons/smart_core/handlers/system_init.py"
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_construction_core/handlers/product_configuration_capability.py",
+    "addons/smart_construction_core/tests/test_capability_registry_service.py"
   ],
   "required_symbols": [
     "load_capabilities_for_user"

@@ -188,6 +188,44 @@ class TestPaymentRequestAvailableActionsBackend(BusinessTransactionCase):
         reject = next(item for item in actions if item.get("key") == "reject")
         self.assertIn("reason", list(reject.get("required_params") or []))
 
+    def test_unreadable_material_settlement_is_a_blocking_advisory(self):
+        payment = self._create_payment_request_minimal()
+        material_settlement = self.env["sc.material.settlement"].create(
+            {
+                "name": "UNREADABLE-MATERIAL-SETTLEMENT",
+                "project_id": payment.project_id.id,
+                "supplier_id": payment.partner_id.id,
+                "currency_id": self.env.company.currency_id.id,
+            }
+        )
+        # The advisory fixture intentionally isolates the read-authority failure
+        # from the independent payment-basis consistency constraint.
+        self.env.cr.execute(
+            "UPDATE payment_request SET material_settlement_id = %s WHERE id = %s",
+            (material_settlement.id, payment.id),
+        )
+        payment.invalidate_recordset(["material_settlement_id"])
+        finance_user = self._create_user(
+            "payment_actions_finance_without_material_scope",
+            [
+                "base.group_user",
+                "smart_construction_core.group_sc_role_finance_manager",
+            ],
+        )
+        actor_payment = payment.with_user(finance_user)
+        advisories = actor_payment._collect_payment_advisories("submit")
+        blocked = [
+            item
+            for item in advisories
+            if item.get("reason_code") == "P0_MATERIAL_SETTLEMENT_NOT_READABLE"
+        ]
+        self.assertEqual(len(blocked), 1)
+        self.assertTrue(blocked[0].get("force_block_enabled"))
+        self.assertEqual(
+            blocked[0].get("suggested_action"),
+            "request_material_settlement_read_access",
+        )
+
     def test_approve_reject_role_facts_derive_from_pending_tier_review(self):
         self.env["sc.approval.policy"].create({
             "name": "Synthetic payment tier approval",

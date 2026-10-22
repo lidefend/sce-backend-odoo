@@ -146,4 +146,3 @@ def smart_core_relation_entry_policy(env, payload):
             },
         }
     return None
-

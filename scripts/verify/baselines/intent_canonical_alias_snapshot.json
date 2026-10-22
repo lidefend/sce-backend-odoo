@@ -1,6 +1,6 @@
 {
   "source": "docs.contract.exports.intent_catalog",
-  "canonical_count": 106,
+  "canonical_count": 123,
   "alias_count": 4,
   "rows": [
     {
@@ -17,6 +17,11 @@
       "name": "api.data.create",
       "status": "canonical",
       "canonical": "api.data.create"
+    },
+    {
+      "name": "api.data.import",
+      "status": "canonical",
+      "canonical": "api.data.import"
     },
     {
       "name": "api.data.unlink",
@@ -112,6 +117,26 @@
       "name": "chatter.activity.update",
       "status": "canonical",
       "canonical": "chatter.activity.update"
+    },
+    {
+      "name": "chatter.attachment.delete",
+      "status": "canonical",
+      "canonical": "chatter.attachment.delete"
+    },
+    {
+      "name": "chatter.followers.list",
+      "status": "canonical",
+      "canonical": "chatter.followers.list"
+    },
+    {
+      "name": "chatter.followers.update",
+      "status": "canonical",
+      "canonical": "chatter.followers.update"
+    },
+    {
+      "name": "chatter.message.delete",
+      "status": "canonical",
+      "canonical": "chatter.message.delete"
     },
     {
       "name": "chatter.post",
@@ -244,6 +269,11 @@
       "canonical": "payment.record.create"
     },
     {
+      "name": "payment.request.add.settlement.lines",
+      "status": "canonical",
+      "canonical": "payment.request.add.settlement.lines"
+    },
+    {
       "name": "payment.request.approve",
       "status": "canonical",
       "canonical": "payment.request.approve"
@@ -279,6 +309,16 @@
       "canonical": "payment.request.reject"
     },
     {
+      "name": "payment.request.settlement.preview",
+      "status": "canonical",
+      "canonical": "payment.request.settlement.preview"
+    },
+    {
+      "name": "payment.request.settlement.search",
+      "status": "canonical",
+      "canonical": "payment.request.settlement.search"
+    },
+    {
       "name": "payment.request.submit",
       "status": "canonical",
       "canonical": "payment.request.submit"
@@ -287,6 +327,31 @@
       "name": "permission.check",
       "status": "canonical",
       "canonical": "permission.check"
+    },
+    {
+      "name": "project.boq.export.request",
+      "status": "canonical",
+      "canonical": "project.boq.export.request"
+    },
+    {
+      "name": "project.boq.import.dangerous.execute",
+      "status": "canonical",
+      "canonical": "project.boq.import.dangerous.execute"
+    },
+    {
+      "name": "project.boq.import.dangerous.preview",
+      "status": "canonical",
+      "canonical": "project.boq.import.dangerous.preview"
+    },
+    {
+      "name": "project.boq.import.preview.fetch",
+      "status": "canonical",
+      "canonical": "project.boq.import.preview.fetch"
+    },
+    {
+      "name": "project.boq.line.patch",
+      "status": "canonical",
+      "canonical": "project.boq.line.patch"
     },
     {
       "name": "project.connection.transition",
@@ -307,6 +372,11 @@
       "name": "project.dashboard.block.fetch",
       "status": "canonical",
       "canonical": "project.dashboard.block.fetch"
+    },
+    {
+      "name": "project.dashboard.chart.fetch",
+      "status": "canonical",
+      "canonical": "project.dashboard.chart.fetch"
     },
     {
       "name": "project.dashboard.enter",
@@ -347,6 +417,11 @@
       "name": "project.initiation.enter",
       "status": "canonical",
       "canonical": "project.initiation.enter"
+    },
+    {
+      "name": "project.overview.rich_text.patch",
+      "status": "canonical",
+      "canonical": "project.overview.rich_text.patch"
     },
     {
       "name": "project.plan_bootstrap.block.fetch",
@@ -474,6 +549,11 @@
       "canonical": "scene.packages.installed"
     },
     {
+      "name": "search.favorite.delete",
+      "status": "canonical",
+      "canonical": "search.favorite.delete"
+    },
+    {
       "name": "search.favorite.set",
       "status": "canonical",
       "canonical": "search.favorite.set"
@@ -492,6 +572,11 @@
       "name": "settlement.enter",
       "status": "canonical",
       "canonical": "settlement.enter"
+    },
+    {
+      "name": "smart_core.contract_slo.snapshot",
+      "status": "canonical",
+      "canonical": "smart_core.contract_slo.snapshot"
     },
     {
       "name": "system.init",

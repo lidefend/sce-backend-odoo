@@ -314,7 +314,10 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         self.assertEqual(((task_board.get("target") or {}).get("route")), "/s/task.board")
         self.assertFalse(bool(((task_board.get("target") or {}).get("menu_xmlid"))))
         self.assertFalse(bool(((task_board.get("target") or {}).get("action_xmlid"))))
-        self.assertNotIn("project.task.list", target_capability.CAPABILITY_ENTRY_SCENE_MAP)
+        self.assertEqual(
+            target_capability.CAPABILITY_ENTRY_SCENE_MAP["project.task.list"],
+            "task.center",
+        )
         self.assertEqual(
             target_capability.CAPABILITY_ENTRY_SCENE_MAP["project.task.board"],
             "task.board",

@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: merge-policy-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
@@ -64,9 +65,65 @@ jobs:
           make verify.product.release.version
           git diff --check
 
+  wait_for_fact_checks:
+    needs: classify
+    if: needs.classify.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HEAD_SHA: ${{ needs.classify.outputs.head }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.classify.outputs.head }}
+          persist-credentials: false
+
+      - name: Wait for exact-head fact workflows
+        run: |
+          set -euo pipefail
+          required=(public_guard.yml professional_quality_gate.yml frontend_release_gate.yml)
+          for attempt in $(seq 1 450); do
+            pending=0
+            for workflow in "${required[@]}"; do
+              runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&per_page=100")"
+              latest="$(python3 scripts/ci/select_authoritative_workflow_run.py \
+                --repository "$GITHUB_REPOSITORY" \
+                --workflow-path ".github/workflows/${workflow}" \
+                --head "$HEAD_SHA" \
+                --event "$GITHUB_EVENT_NAME" <<<"$runs")"
+              test -n "$latest" || { pending=1; continue; }
+              status="$(jq -r '.status' <<<"$latest")"
+              conclusion="$(jq -r '.conclusion // empty' <<<"$latest")"
+              test "$status" = completed || { pending=1; continue; }
+              test "$conclusion" = success || {
+                echo "fact workflow failed: ${workflow} conclusion=${conclusion}" >&2
+                exit 1
+              }
+            done
+            test "$pending" = 0 && exit 0
+            sleep 20
+          done
+          echo "timed out waiting for exact-head fact workflows" >&2
+          exit 1
+
+      - name: Publish fact workflow summary
+        run: |
+          {
+            echo "## Merge Fact Dependencies"
+            echo ""
+            echo "All factual workflows completed successfully on the exact PR head."
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Head SHA | ${HEAD_SHA} |"
+            echo "| Event | ${GITHUB_EVENT_NAME} |"
+            echo "| Workflows | public_guard, professional_quality_gate, frontend_release_gate |"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
   merge_policy_gate:
     name: merge_policy_gate
-    needs: [classify, fast]
+    needs: [classify, fast, wait_for_fact_checks]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -78,6 +135,7 @@ jobs:
       - name: Resolve merge-policy lane once
         run: |
           set -euo pipefail
+          test "${{ needs.wait_for_fact_checks.result }}" = success
           if [ "${{ needs.classify.outputs.lane }}" = "FAST" ]; then
             test "${{ needs.fast.result }}" = success
             exit 0
@@ -91,6 +149,7 @@ jobs:
           PROFESSIONAL_MODE: ${{ needs.classify.outputs.professional_mode }}
           CANDIDATE_REQUESTED: ${{ needs.classify.outputs.candidate_requested }}
           FAST_RESULT: ${{ needs.fast.result }}
+          FACT_RESULT: ${{ needs.wait_for_fact_checks.result }}
         run: |
           set -euo pipefail
           effective_frontend="${FRONTEND_MODE}"
@@ -119,6 +178,7 @@ jobs:
             echo "| Effective frontend lane | ${effective_frontend} |"
             echo "| Effective professional lane | ${effective_professional} |"
             echo "| Fast job result | ${FAST_RESULT} |"
+            echo "| Fact workflow result | ${FACT_RESULT} |"
             echo ""
             if [ "${CANDIDATE_REQUESTED}" != "true" ] && { [ "${FRONTEND_MODE}" = "full" ] || [ "${PROFESSIONAL_MODE}" = "full" ]; }; then
               echo "Ordinary PR governance changes were downgraded from candidate-grade validation to daily iteration lanes."

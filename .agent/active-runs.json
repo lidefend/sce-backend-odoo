@@ -13,6 +13,7 @@
     "fix/ci-backend-sharding-cache-20261017": ".agent/runs/CI-REMOTE-EFFICIENCY-20261017/run.json",
     "fix/daily-acceptance-demo-profile-20261019": ".agent/runs/ACCEPTANCE-EVIDENCE-LAYER-REUSE-20261019/run.json",
     "fix/daily-entry-cookie-session-scope-20261019": ".agent/runs/DAILY-ENTRY-COOKIE-SESSION-SCOPE-20261019/run.json",
+    "fix/daily-permission-truth-20261022": ".agent/runs/DAILY-PERMISSION-TRUTH-CLOSURE-20261022/run.json",
     "fix/daily-runtime-first-deploy-20261022": ".agent/runs/DAILY-RUNTIME-FIRST-DEPLOY-20261022/run.json",
     "fix/daily-entry-registry-closure-20261018": ".agent/runs/DAILY-ENTRY-REGISTRY-CLOSURE-20261018/run.json",
     "fix/daily-platform-job-status-20261018": ".agent/runs/PLATFORM-DUTY-JOB-LIST-20261018/run.json",

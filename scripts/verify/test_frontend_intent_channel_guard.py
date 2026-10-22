@@ -4,6 +4,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest import mock
 
 import frontend_intent_channel_guard as guard
 
@@ -55,6 +56,15 @@ class FrontendIntentChannelGuardTest(unittest.TestCase):
         )
         self.assertIn("/api/v1/auth/activation/start", found_paths)
         self.assertTrue(any("forbidden api path" in row for row in violations))
+
+    def test_api_placeholder_is_not_a_transport_path(self):
+        with mock.patch.object(guard, "DIRECT_TRANSPORT_EXCEPTIONS", {}):
+            violations, found_paths, _used = self._scan_source(
+                "frontend/apps/web/src/example.ts",
+                "const note = '/api/...';",
+            )
+        self.assertEqual([], violations)
+        self.assertEqual(set(), found_paths)
 
     def test_query_suffix_cannot_hide_unknown_auth_route(self):
         violations, found_paths, _used = self._scan_source(

@@ -41,6 +41,8 @@ def _cap(
     required_groups: list[str] | None = None,
     status: str = "ga",
     access_action: str = "",
+    visible: bool = True,
+    replacement_capabilities: list[str] | None = None,
 ) -> dict[str, Any]:
     return {
         "key": key,
@@ -52,6 +54,8 @@ def _cap(
         "status": status,
         "intent": "ui.contract",
         "access_action": access_action,
+        "visible": bool(visible),
+        "replacement_capabilities": list(replacement_capabilities or []),
     }
 
 
@@ -65,7 +69,13 @@ _CAPABILITIES: list[dict[str, Any]] = [
     _cap("project.execution.enter", "项目执行入口", "进入项目执行最小入口", "project_management", required_roles=["pm", "executive"]),
     _cap("project.execution.advance", "推进执行", "执行最小推进动作", "project_management", required_roles=["pm", "executive"]),
     _cap("project.lifecycle.open", "生命周期视图", "查看项目生命周期与阻塞项", "project_management", required_roles=["pm", "executive"]),
-    _cap("project.task.list", "任务列表", "查看项目任务与待办", "project_management", access_action="project.action_view_all_task"),
+    _cap(
+        "project.task.list",
+        "任务列表",
+        "查看项目任务与待办",
+        "project_management",
+        required_groups=["smart_construction_core.group_sc_cap_project_read"],
+    ),
     _cap("project.task.board", "任务看板", "按状态查看任务推进", "project_management", required_roles=["pm", "executive"]),
     _cap("project.document.open", "项目文档", "进入项目文档视图", "project_management", required_roles=["pm", "executive"]),
     _cap("project.structure.manage", "执行结构", "进入执行结构与WBS能力", "project_management", required_roles=["pm", "executive"]),
@@ -73,7 +83,13 @@ _CAPABILITIES: list[dict[str, Any]] = [
     _cap("project.weekly_report.open", "周报入口", "进入项目周报与周度复盘", "project_management", required_roles=["pm", "executive"]),
     _cap("project.lifecycle.transition", "生命周期流转", "执行项目生命周期流转动作", "project_management", required_roles=["pm", "executive"]),
 
-    _cap("finance.payment_request.list", "付款申请列表", "查看付款申请列表", "finance_management", access_action="smart_construction_core.action_payment_request_my"),
+    _cap(
+        "finance.payment_request.list",
+        "付款申请列表",
+        "查看付款申请列表",
+        "finance_management",
+        access_action="smart_construction_core.action_payment_request_user_payment_apply",
+    ),
     _cap("finance.payment_request.form", "付款申请表单", "进入付款申请详情与编辑", "finance_management", required_roles=["finance", "executive"], required_groups=["smart_construction_core.group_sc_cap_finance_read"]),
     _cap("finance.approval.center", "审批中心入口", "进入财务审批工作台", "finance_management", required_roles=["finance", "executive"]),
     _cap("finance.ledger.payment", "收付款台账", "查看收付款台账", "finance_management", access_action="smart_construction_core.action_payment_ledger"),
@@ -90,7 +106,16 @@ _CAPABILITIES: list[dict[str, Any]] = [
     _cap("cost.progress.report", "进度填报", "进入进度填报与对比", "cost_management", required_roles=["pm", "executive"]),
     _cap("cost.profit.compare", "盈亏对比", "查看盈亏对比分析", "cost_management", access_action="smart_construction_core.action_project_profit_compare"),
 
-    _cap("contract.center.open", "合同中心", "进入合同中心", "contract_management", access_action="smart_construction_core.action_construction_contract"),
+    _cap(
+        "contract.center.open",
+        "合同中心",
+        "进入合同中心",
+        "contract_management",
+        access_action="smart_construction_core.action_construction_contract",
+        status="deprecated",
+        visible=False,
+        replacement_capabilities=["contract.income.track", "contract.expense.track"],
+    ),
     _cap("contract.income.track", "收入合同", "查看收入合同进展", "contract_management", access_action="smart_construction_core.action_construction_contract_income"),
     _cap("contract.expense.track", "支出合同", "查看支出合同与付款", "contract_management", access_action="smart_construction_core.action_construction_contract_expense"),
     _cap("contract.settlement.audit", "结算审核", "查看结算审核视图", "contract_management", required_roles=["finance", "executive"], required_groups=["smart_construction_core.group_sc_cap_contract_read"]),
@@ -259,6 +284,8 @@ def list_capabilities_for_user_with_timings(env, user) -> tuple[list[dict[str, A
     entry_target_total_ms = 0
     resolve_payload_total_ms = 0
     for idx, defn in enumerate(definitions, start=1):
+        if not bool(defn.get("visible", True)):
+            continue
         iter_ts = time.perf_counter()
         visible, allowed, reason_code, reason = _capability_access(defn, role_codes, user)
         cap_state, cap_state_reason = _capability_state(defn, allowed)

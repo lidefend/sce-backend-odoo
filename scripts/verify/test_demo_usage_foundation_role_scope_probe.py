@@ -46,6 +46,7 @@ def _small_manifest() -> dict:
                 "login": "ct1",
                 "expectation": "valid_surface",
                 "label": "合同",
+                "expected_allowed_company_ids": [1, 2],
             },
         ],
         "negatives": [
@@ -68,13 +69,14 @@ def _fake_login(base_url, namespace, login, password):
 def _fake_post(url, payload, token=None):
     intent = payload.get("intent")
     if intent == "system.init":
+        allowed_company_ids = [1, 2] if token == "tok-ct1" else [1]
         return 200, {
             "ok": True,
             "data": {
                 "role_surface": {"role_code": "pm"},
                 "user": {
                     "company_id": 1,
-                    "allowed_company_ids": [1],
+                    "allowed_company_ids": allowed_company_ids,
                 },
                 "default_route": {"route": "/", "scene_key": "workspace.home"},
             },
@@ -189,6 +191,23 @@ class DemoUsageFoundationRoleScopeProbeTest(unittest.TestCase):
             report = probe(_small_manifest(), "http://x", "demo", "123456")
         self.assertFalse(report["summary"]["overall_pass"])
         self.assertTrue(any(not a["company_ok"] for a in report["accounts"]))
+
+    def test_probe_accepts_allowed_company_order_from_login_contract(self):
+        def fake_post_reversed_companies(url, payload, token=None):
+            if payload.get("intent") == "system.init":
+                data = _fake_post(url, payload, token)[1]["data"]
+                data["user"]["allowed_company_ids"] = [2, 1]
+                return 200, {"ok": True, "data": data}
+            return _fake_post(url, payload, token)
+
+        with patch.object(mod, "_login", side_effect=_fake_login), patch.object(
+            mod, "_post", side_effect=fake_post_reversed_companies
+        ):
+            report = probe(_small_manifest(), "http://x", "demo", "123456")
+
+        ct = next(a for a in report["accounts"] if a["key"] == "ct")
+        self.assertTrue(ct["company_ok"])
+        self.assertEqual(ct["actual_allowed_company_ids"], [2, 1])
 
     def test_probe_fails_on_empty_first_screen_when_required(self):
         manifest = _small_manifest()

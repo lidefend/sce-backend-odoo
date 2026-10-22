@@ -22,11 +22,21 @@ class MergePolicyGateContractTests(unittest.TestCase):
         self.assertIn("--base", self.workflow)
         self.assertIn("--head", self.workflow)
 
-    def test_merge_gate_does_not_poll_sibling_workflows(self) -> None:
+    def test_merge_gate_waits_for_authoritative_fact_workflows(self) -> None:
         merge_job = self.workflow.split("  merge_policy_gate:", 1)[1]
-        self.assertNotIn("select_authoritative_workflow_run.py", merge_job)
-        self.assertNotIn("actions/workflows/${workflow}/runs", merge_job)
-        self.assertNotIn("sleep 10", merge_job)
+        wait_job = self.workflow.split("  wait_for_fact_checks:", 1)[1].split(
+            "  merge_policy_gate:", 1
+        )[0]
+        self.assertIn("needs: [classify, fast, wait_for_fact_checks]", merge_job)
+        self.assertIn('test "${{ needs.wait_for_fact_checks.result }}" = success', merge_job)
+        self.assertIn("select_authoritative_workflow_run.py", wait_job)
+        self.assertIn("actions/workflows/${workflow}/runs", wait_job)
+        self.assertNotIn("event=${GITHUB_EVENT_NAME}", wait_job)
+        self.assertIn("public_guard.yml", wait_job)
+        self.assertIn("professional_quality_gate.yml", wait_job)
+        self.assertIn("frontend_release_gate.yml", wait_job)
+        self.assertIn("sleep 20", wait_job)
+        self.assertIn("timeout-minutes: 150", wait_job)
 
     def test_summary_publishes_effective_daily_vs_candidate_lane(self) -> None:
         self.assertIn("Publish lane summary", self.workflow)
