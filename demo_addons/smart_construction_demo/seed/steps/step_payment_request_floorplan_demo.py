@@ -156,6 +156,12 @@ def run(env):
         raise RuntimeError("unsupported payment fixture scope")
     contract = env.ref("smart_construction_demo.sc_demo_contract_in_069_payment")
     prepare_project(env, contract.project_id)
+    from .step_40_contracts_demo import _confirm_contract
+    # The historical payment chain (settlement approve + payment done) presumes
+    # an in-force contract; the XML carrier only creates the draft, so promote
+    # the s69 contract through its real confirm action before any fixture or
+    # payment reads it. Idempotent for an already-confirmed contract.
+    _confirm_contract(contract)
     payment_model = business_model(env, "payment.request")
     ledger_model = env["payment.ledger"].sudo()
     existing = _owned_fixture(env)

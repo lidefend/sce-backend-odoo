@@ -342,8 +342,10 @@ def declared_stage(project):
 def run(env):
     ICP = env["ir.config_parameter"].sudo()
 
-    demo_pm = _get_user(env, "demo_pm")
-    demo_cost = _get_user(env, "demo_cost")
+    # The project owner/manager fields must reference real, named people, not
+    # the capability-seat accounts ("项目经理岗"/"成本岗") that drive actions.
+    pm_person = _get_user(env, "pm1")
+    cost_person = _get_user(env, "cost1")
 
     owner = _get_or_create_partner(env, "德阳市城市某某建设投资集团有限公司")
     supplier = _get_or_create_partner(env, "德阳建科建材有限公司")
@@ -369,9 +371,10 @@ def run(env):
             "name": "城西科创园一期工程（立项阶段）",
             "partner_id": False,
             "owner_id": owner.id,
-            "manager_id": demo_pm.id if demo_pm else False,
-            "cost_manager_id": demo_cost.id if demo_cost else False,
-            "doc_manager_id": demo_pm.id if demo_pm else False,
+            "user_id": pm_person.id if pm_person else False,
+            "manager_id": pm_person.id if pm_person else False,
+            "cost_manager_id": cost_person.id if cost_person else False,
+            "doc_manager_id": pm_person.id if pm_person else False,
             "project_type_id": project_type.id if project_type else False,
             "project_category_id": project_category.id if project_category else False,
             "lifecycle_state": "draft",
@@ -388,9 +391,10 @@ def run(env):
             "name": "滨江路市政道路提升工程（前期阶段）",
             "partner_id": owner.id,
             "owner_id": owner.id,
-            "manager_id": demo_pm.id if demo_pm else False,
-            "cost_manager_id": demo_cost.id if demo_cost else False,
-            "doc_manager_id": demo_pm.id if demo_pm else False,
+            "user_id": pm_person.id if pm_person else False,
+            "manager_id": pm_person.id if pm_person else False,
+            "cost_manager_id": cost_person.id if cost_person else False,
+            "doc_manager_id": pm_person.id if pm_person else False,
             "project_type_id": project_type.id if project_type else False,
             "project_category_id": project_category.id if project_category else False,
             "lifecycle_state": "draft",
@@ -409,9 +413,10 @@ def run(env):
             "name": "东环路城市快速路提升工程（在建阶段）",
             "partner_id": owner.id,
             "owner_id": owner.id,
-            "manager_id": demo_pm.id if demo_pm else False,
-            "cost_manager_id": demo_cost.id if demo_cost else False,
-            "doc_manager_id": demo_pm.id if demo_pm else False,
+            "user_id": pm_person.id if pm_person else False,
+            "manager_id": pm_person.id if pm_person else False,
+            "cost_manager_id": cost_person.id if cost_person else False,
+            "doc_manager_id": pm_person.id if pm_person else False,
             "project_type_id": project_type.id if project_type else False,
             "project_category_id": project_category.id if project_category else False,
             "lifecycle_state": "draft",
@@ -608,9 +613,10 @@ def run(env):
                 "name": name,
                 "partner_id": owner.id,
                 "owner_id": owner.id,
-                "manager_id": demo_pm.id if demo_pm else False,
-                "cost_manager_id": demo_cost.id if demo_cost else False,
-                "doc_manager_id": demo_pm.id if demo_pm else False,
+                "user_id": pm_person.id if pm_person else False,
+                "manager_id": pm_person.id if pm_person else False,
+                "cost_manager_id": cost_person.id if cost_person else False,
+                "doc_manager_id": pm_person.id if pm_person else False,
                 "project_type_id": project_type.id if project_type else False,
                 "project_category_id": project_category.id if project_category else False,
                 "lifecycle_state": state,
@@ -641,12 +647,14 @@ def run(env):
             vals["partner_id"] = owner.id
         if not project.owner_id and owner:
             vals["owner_id"] = owner.id
-        if demo_pm and not project.manager_id:
-            vals["manager_id"] = demo_pm.id
-        if demo_cost and not project.cost_manager_id:
-            vals["cost_manager_id"] = demo_cost.id
-        if demo_pm and not project.doc_manager_id:
-            vals["doc_manager_id"] = demo_pm.id
+        if pm_person:
+            vals["user_id"] = pm_person.id
+        if pm_person and not project.manager_id:
+            vals["manager_id"] = pm_person.id
+        if cost_person and not project.cost_manager_id:
+            vals["cost_manager_id"] = cost_person.id
+        if pm_person and not project.doc_manager_id:
+            vals["doc_manager_id"] = pm_person.id
         vals["sc_project_showcase"] = True
         if vals:
             project.write(vals)

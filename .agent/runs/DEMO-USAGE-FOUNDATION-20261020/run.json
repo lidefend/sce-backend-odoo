@@ -1,0 +1,725 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-USAGE-FOUNDATION-20261020",
+  "branch": "feature/demo-iteration-line-20261020",
+  "status": "active",
+  "baseline_sha": "c937f2ee60162463f4914e148baac20b0a1406db",
+  "goal": ".agent/goals/DEMO-USAGE-FOUNDATION-20261020.yaml",
+  "record": "docs/ops/iterations/demo_usage_foundation_handoff_20261020.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DEMO-USAGE-FOUNDATION-20261020.yaml",
+    ".agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json",
+    "config/frontend/role_surface_exposure_declarations_v1.json",
+    "docs/demo/demo_iteration_line_v1.md",
+    "docs/demo/demo_usage_foundation_plan_v1.md",
+    "docs/demo/demo_usage_foundation_manifest_v1.json",
+    "docs/demo/product_gap_registry_v1.md",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/demo_usage_foundation_handoff_20261020.md",
+    "docs/ops/iterations/demo_usage_foundation_f1_20261020.md",
+    "docs/ops/iterations/demo_usage_foundation_f2_20261020.md",
+    "docs/ops/iterations/demo_usage_foundation_f3_20261020.md",
+    "docs/ops/iterations/demo_usage_foundation_f4_20261021.md",
+    "docs/ops/iterations/demo_usage_foundation_f5_20261021.md",
+    "docs/ops/iterations/demo_usage_foundation_f6_20261021.md",
+    "docs/ops/iterations/demo_usage_foundation_f7_20261021.md",
+    "docs/ops/iterations/demo_usage_foundation_f8_20261021.md",
+    "docs/ops/iterations/demo_usage_foundation_duf04_20261021.md",
+    "docs/planning/custom-frontend-integration/G1_BASELINE_EVIDENCE.json",
+    "docs/product/frontend_business_entry_acceptance_v1.csv",
+    "demo_addons/smart_construction_demo/__manifest__.py",
+    "demo_addons/smart_construction_demo/data/base/16_bank_accounts.xml",
+    "demo_addons/smart_construction_demo/tests/__init__.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_usage_foundation_master_data.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_usage_foundation_approval.py",
+    "demo_addons/smart_construction_demo/models/scenario_tick.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_scenario_tick.py",
+    "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json",
+    "scripts/verify/test_demo_scenario_step.py",
+    "scripts/verify/user_entry_delivery_browser_acceptance.js",
+    "scripts/verify/local_dev_demo_date_caliber_repair.py",
+    "demo_addons/smart_construction_demo/data/base/20_projects.xml",
+    "demo_addons/smart_construction_demo/data/base/25_project_tasks.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s10_contract_payment/20_payment_requests.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s10_contract_payment/25_workbench_actions.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s10_contract_payment/30_invoices.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s20_settlement_clearing/10_payments.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s30_settlement_workflow/30_assert_state.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s66_ledger_entity_surface/10_ledger_entity_records.xml",
+    "make/dev.mk",
+    "make/dev_test.mk",
+    "scripts/verify/demo_usage_foundation_audit.py",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/verify/test_demo_usage_foundation_audit.py",
+    "scripts/verify/demo_usage_foundation_role_scope_manifest.json",
+    "scripts/verify/demo_usage_foundation_role_scope_probe.py",
+    "scripts/verify/test_demo_usage_foundation_role_scope_probe.py",
+    "scripts/dev/local_dev_demo_credentials_prepare.sh",
+    "scripts/verify/test_local_development_lifecycle.py",
+    "scripts/verify/registry.yaml",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/local_dev_demo_project_identity_repair.py",
+    "demo_addons/smart_construction_demo/data/base/20_projects.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s65_cost_budget_funding_surface/10_cost_budget_funding_records.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s69_payment_ledger_surface/10_payment_ledger_records.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s73_risk_settlement_surface/10_risk_settlement_records.xml",
+    "demo_addons/smart_construction_demo/seed/showroom_catalog.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_20_projects_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_demo_showroom.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "planning validation uses existing local docs and offline demo guards; F1-F8 must declare governed runtime readbacks before runtime writes or acceptance"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/DEMO-USAGE-FOUNDATION-20261020.yaml",
+        ".agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "docs_product_boundary": {
+      "target": "verify.docs.product_boundary",
+      "inputs": [
+        "docs/product/formal_product_boundary_v1.md",
+        "docs/demo/demo_iteration_line_v1.md",
+        "docs/demo/demo_usage_foundation_plan_v1.md",
+        "scripts/verify/product_boundary_catalog_guard.py",
+        "scripts/verify/test_product_boundary_catalog_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "baseline_readiness": {
+      "target": "verify.demo.baseline_readiness.unit",
+      "inputs": [
+        "scripts/verify/baseline_readiness_manifest.json",
+        "scripts/verify/baseline_readiness_verifier.py",
+        "scripts/verify/test_baseline_readiness_verifier.py"
+      ],
+      "kind": "offline"
+    },
+    "scenario_step": {
+      "target": "verify.demo.scenario_step.unit",
+      "inputs": [
+        "scripts/verify/demo_scenario_step.py",
+        "scripts/verify/test_demo_scenario_step.py",
+        "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json"
+      ],
+      "kind": "offline"
+    },
+    "usage_foundation": {
+      "target": "verify.demo.usage_foundation.unit",
+      "inputs": [
+        "docs/demo/demo_usage_foundation_manifest_v1.json",
+        "scripts/verify/demo_usage_foundation_audit.py",
+        "scripts/verify/test_demo_usage_foundation_audit.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "role_scope_unit": {
+      "target": "verify.demo.usage_foundation_role_scope.unit",
+      "inputs": [
+        "scripts/verify/demo_usage_foundation_role_scope_manifest.json",
+        "scripts/verify/demo_usage_foundation_role_scope_probe.py",
+        "scripts/verify/test_demo_usage_foundation_role_scope_probe.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "role_scope_smoke": {
+      "target": "verify.demo.usage_foundation_role_scope.smoke",
+      "inputs": [
+        "scripts/verify/demo_usage_foundation_role_scope_manifest.json",
+        "scripts/verify/demo_usage_foundation_role_scope_probe.py"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/DEMO-USAGE-FOUNDATION-20261020/role_scope_readback.json"
+      }
+    },
+    "master_data_orm": {
+      "target": "verify.local.dev.demo_usage_foundation_master_data.orm",
+      "inputs": [
+        "demo_addons/smart_construction_demo/tests/test_demo_usage_foundation_master_data.py",
+        "demo_addons/smart_construction_demo/data/base/16_bank_accounts.xml",
+        "demo_addons/smart_construction_demo/__manifest__.py"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/DEMO-USAGE-FOUNDATION-20261020/master_data_readback.json"
+      }
+    },
+    "approval_orm": {
+      "target": "verify.local.dev.demo_usage_foundation_approval.orm",
+      "inputs": [
+        "demo_addons/smart_construction_demo/tests/test_demo_usage_foundation_approval.py"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/DEMO-USAGE-FOUNDATION-20261020/approval_readback.json"
+      }
+    }
+  },
+  "verification_results": {
+    "planning_validation": {
+      "identity": {
+        "head": "bd614470aae7730eacf8a3c8f5b0cde81d322e99",
+        "stage": "head_plus_planning_dirty_scope"
+      },
+      "commands": [
+        {
+          "command": "python3 -m json.tool .agent/active-runs.json && python3 -m json.tool .agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "make agent.run.resume",
+          "status": "passed",
+          "layer": "L1",
+          "detail": "resolved DEMO-USAGE-FOUNDATION-20261020; outside_scope=[]"
+        },
+        {
+          "command": "make verify.agent.ledger.unit",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 18
+        },
+        {
+          "command": "make verify.docs.all",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "make verify.demo.baseline_readiness.unit",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 11
+        },
+        {
+          "command": "make verify.demo.scenario_step.unit",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 9
+        },
+        {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "layer": "L1",
+          "test_count": 16
+        }
+      ],
+      "environment_note": "The first ledger/docs attempt was blocked by the execution sandbox because the sibling demo worktree is read-only by default. The exact same commands passed after explicit sandbox escalation; this was an environment permission condition, not a product or document failure."
+    },
+    "f1_usage_foundation_manifest": {
+      "identity": {
+        "head": "71b9fb90c856de1a2b4fcf40cbef4ede36e3646c",
+        "stage": "head_plus_f1_dirty_scope"
+      },
+      "commands": [
+        {
+          "command": "python3 -m json.tool docs/demo/demo_usage_foundation_manifest_v1.json",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "make verify.demo.usage_foundation.unit",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 17
+        },
+        {
+          "command": "python3 scripts/verify/demo_usage_foundation_audit.py --manifest docs/demo/demo_usage_foundation_manifest_v1.json",
+          "status": "passed",
+          "layer": "L2",
+          "detail": "coverage_complete=true; overall_status=blocked; summary observed=10 missing=0 blocked=2; data_readback=not_run"
+        }
+      ],
+      "notes": "F1 is a declaration-coverage audit only. It does not read the database and does not write foundation data; blocked reflects the open DUF gaps, which is the expected pre-implementation state."
+    },
+    "f2_role_scope": {
+      "identity": {
+        "head": "329e43c364310048e8800359fcc6c394078e4d16",
+        "stage": "head_plus_f2_dirty_scope",
+        "runtime": "sc-local-dev db=sc_dev_demo http://127.0.0.1:18081 namespace=demo"
+      },
+      "commands": [
+        {
+          "command": "make verify.demo.usage_foundation_role_scope.unit",
+          "status": "passed",
+          "layer": "L2",
+          "test_count": 14
+        },
+        {
+          "command": "make verify.demo.usage_foundation_role_scope.smoke",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "runtime read-only startup acceptance; account_passed=11/11 negative_passed=1/1; demo_full first-screen non-empty; readback=.runtime/agent-runs/DEMO-USAGE-FOUNDATION-20261020/role_scope_readback.json"
+        }
+      ],
+      "notes": "Role codes and company scope correct across business_full/pm/finance/owner/executive/cost/project_member and contract/purchase/material capability seats. wutao/pm/finance empty first screen is a fact-derived state blocked by F4-F7, not an F2 data defect."
+    },
+    "f3_master_data": {
+      "identity": {
+        "head": "8e43ca7744b7420d6dff5b7de376222cba6c2077",
+        "stage": "head_plus_f3_dirty_scope",
+        "runtime": "sc-local-dev db=sc_dev_demo"
+      },
+      "commands": [
+        {
+          "command": "make verify.local.dev.demo_usage_foundation_master_data.orm (diagnostic)",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "res.partner=67 bank=0 tax=9 uom=29 dictionary=66 cost_code=9 material_catalog=3 material_price=1 project=33 task=163; date_2025 project=1 task=7"
+        },
+        {
+          "command": "make local.dev.upgrade MODULE=smart_construction_demo CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_demo",
+          "status": "blocked",
+          "layer": "L3",
+          "detail": "product_defect: _update_user_groups_view raises ValidationError 'action_sc_review_group_authority 对 res.users 无效'; blocks loading 16_bank_accounts.xml into sc_dev_demo"
+        }
+      ],
+      "notes": "F3 master-data fix authored (16_bank_accounts.xml + manifest + ORM acceptance test). Runtime load is blocked by a pre-existing product/customer view binding defect (registry item 15), not by the demo data. Bank-account acceptance stays fail-closed until the owning layer fixes the view and the module can upgrade."
+    },
+    "duf06_branch_sync": {
+      "identity": {
+        "old_head": "c2a4b57ee59da88cfbe533dc7ab318efc01ed51c",
+        "new_head": "aed606e3f3db340465840771a67149c57e0b5c5e",
+        "covered_prefix": "bd614470aae7730eacf8a3c8f5b0cde81d322e99",
+        "covered_merge": "a5dac75fedea381b716b25c85d5f56820d39e315",
+        "main": "74063688e928d25c8e65037ac3306956c954244d"
+      },
+      "commands": [
+        {
+          "command": "make workspace.branch.sync-main.extended ... COVERED_PREFIX=bd614470a COVERED_MERGE=a5dac75f",
+          "status": "passed",
+          "layer": "L4",
+          "detail": "replayed 14 unintegrated commits onto main; active-runs index merged; generated evidence marked invalidated; recovery bundle verified"
+        },
+        {
+          "command": "make refresh.generated_reports && make test.coverage.registry.export && g1_acceptance_baseline_guard --write",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "python3 scripts/audit/verification_lane_coverage.py --write-baseline && make audit.verification.lane_coverage.check",
+          "status": "passed",
+          "layer": "L1"
+        },
+        {
+          "command": "make local.dev.upgrade MODULE=smart_construction_demo CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_demo",
+          "status": "passed",
+          "layer": "L3",
+          "detail": "post-sync upgrade completed; log=.runtime/duf06-20261020/upgrade-post-sync.log"
+        },
+        {
+          "command": "make verify.local.dev.demo_usage_foundation_master_data.orm",
+          "status": "passed",
+          "layer": "L3",
+          "test_count": 1,
+          "detail": "0 failed; bank=9 tax=9 uom=29 dictionary=66 cost_code=9 material_catalog=3 project=33 task=163; log=.runtime/duf06-20261020/master-data-post-sync.log"
+        }
+      ],
+      "f4_approval": {
+        "identity": {
+          "head": "6fcd63fcd0c1b0b5e9a3d74480980a0d1f8b1fd8",
+          "stage": "head_plus_f4_dirty_scope",
+          "runtime": "sc-local-dev db=sc_dev_demo"
+        },
+        "commands": [
+          {
+            "command": "make verify.local.dev.demo_action_roles.orm",
+            "status": "passed",
+            "layer": "L3",
+            "test_count": 7
+          },
+          {
+            "command": "make verify.local.dev.demo_usage_foundation_approval.orm",
+            "status": "passed",
+            "layer": "L3",
+            "test_count": 1,
+            "detail": "policies=15 steps=35 zero_reviewer_steps=[] numbering_active=65; every approval step has an active internal reviewer group"
+          }
+        ],
+        "notes": "F4 approval/numbering/permission configuration is already ready in the runtime; no P4 data fix required. The fail-closed probe closes the readiness gap of proving real reviewers per tier, not just policy presence."
+      },
+      "f5_project_baseline": {
+        "identity": {
+          "head": "9e0f7bcbb176b0e04eec07ec4f0acba4d4d90786",
+          "stage": "head_plus_f5_dirty_scope",
+          "runtime": "sc-local-dev db=sc_dev_demo"
+        },
+        "commands": [
+          {
+            "command": "make verify.local.dev.baseline_readiness.orm",
+            "status": "passed",
+            "layer": "L3",
+            "test_count": 1,
+            "detail": "test_g0_g4_hard_baseline_ready passed; G0-G4 hard baseline ready including G4 project baseline (project_basic/project_parties/membership_scope/funding_baseline/budget_boq_wbs/settlement_anchor)"
+          }
+        ],
+        "notes": "Project startup baseline is ready in the runtime; no P4 data fix required. Credential guard realigned from scdevpass to 123456 per owner 2026-10-21 decision, which unblocked the ORM readback. verify.local.development_lifecycle.unit has one pre-existing unrelated failure (local.dev.upgrade target form assertion, introduced by main-baseline sync), recorded but not fixed."
+      },
+      "f6_api_chain": {
+        "identity": {
+          "head": "73644152d89d367b315a2170dddee2459aebd88c",
+          "stage": "head_plus_f6_dirty_scope",
+          "runtime": "sc-local-dev db=sc_dev_demo"
+        },
+        "commands": [
+          {
+            "command": "make verify.local.dev.api_scenario.orm",
+            "status": "passed",
+            "layer": "L3",
+            "test_count": 2,
+            "detail": "four-tier approval chain draft->submit->real reviewers->approved; non-reviewer rejected; duplicate submit raises UserError (idempotent)"
+          },
+          {
+            "command": "make verify.local.dev.golden_chain.orm",
+            "status": "passed",
+            "layer": "L3",
+            "test_count": 1,
+            "detail": "frozen chain settlement->payment->ledger->receipt->treasury->reconciliation amount/state/role relay consistent"
+          }
+        ],
+        "notes": "API/ORM-level full business chain is ready; no P4 fix required. HTTP transport trace_id/request_id and full ui.contract create/submit browser chain are F8 browser-acceptance scope."
+      },
+      "f7_duf01_system_fact_binding": {
+        "identity": {
+          "head": "b9d84ce6d5182d1d410231f060291eec36914aeb",
+          "stage": "head_plus_f7_duf01_dirty_scope",
+          "runtime": "sc-local-dev db=sc_dev_demo"
+        },
+        "commands": [
+          {
+            "command": "make verify.local.dev.scenario_tick.orm",
+            "status": "passed",
+            "layer": "L3",
+            "test_count": 3,
+            "detail": "40 steps = 20 todo + 20 advanced, 0 unbound, 10 business days; all 20 facts bound to public actions/readbacks"
+          },
+          {
+            "command": "make verify.demo.scenario_step.unit",
+            "status": "passed",
+            "layer": "L2",
+            "test_count": 9
+          }
+        ],
+        "notes": "DUF-01 and DUF-05 resolved: 10-day narrative (40 steps) authored; system_fact binds to verifiable facts via project_lifecycle/lifecycle/readback with fail-closed fallback; drive_seeded_record used for precise per-record binding."
+      },
+      "f8_browser_acceptance": {
+        "identity": {
+          "head": "d500158f171c4fcda02dd9b69ebe3f5c02a0d762",
+          "stage": "head_plus_f8_dirty_scope",
+          "runtime": "sc-local-dev db=sc_dev_demo nginx=18081"
+        },
+        "commands": [
+          {
+            "command": "make verify.user.entry.delivery.browser_acceptance",
+            "status": "passed",
+            "layer": "L4",
+            "detail": "5 role entries all pass (executive, pm, pm_my_work_menu, finance, business_full); business_full home non-empty"
+          }
+        ],
+        "notes": "DUF-07 resolved (db-hint 409 + namespace); #17 executive menu tree fixed by owning layer. Browser acceptance passes 5 role entries; deprecated back-home click-chain entry removed."
+      },
+      "duf04_date_caliber": {
+        "identity": {
+          "head": "ff5499009307be10fa1aa3400ec2c5a552402e05",
+          "stage": "head_plus_duf04_dirty_scope",
+          "runtime": "sc-local-dev db=sc_dev_demo"
+        },
+        "commands": [
+          {
+            "command": "DB_NAME=sc_dev_demo bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_demo_date_caliber_repair.py",
+            "status": "passed",
+            "layer": "L3",
+            "detail": "tasks=7 payments=8 invoices=2 projects=2"
+          },
+          {
+            "command": "make verify.local.dev.demo_usage_foundation_master_data.orm",
+            "status": "passed",
+            "layer": "L3",
+            "test_count": 2,
+            "detail": "task deadline 2025 count=0; draft payment/invoice 2025 dates=0; project start 2025 count=1 (legitimate 2-year timeline)"
+          }
+        ],
+        "notes": "DUF-04 resolved: actionable work items moved to the 2026-10 current window; project timeline start (2025-01) retained as legitimate project history; no 50/100 placeholder amounts found."
+      }
+    },
+    "first_release_guidance_replan": {
+      "status": "passed",
+      "date": "2026-10-21",
+      "layer": "P4",
+      "scope": [
+        "docs/demo/demo_usage_foundation_plan_v1.md",
+        "docs/ops/iterations/demo_usage_foundation_handoff_20261020.md",
+        ".agent/goals/DEMO-USAGE-FOUNDATION-20261020.yaml",
+        ".agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json",
+        "docs/demo/demo_iteration_line_v1.md",
+        "docs/demo/product_gap_registry_v1.md"
+      ],
+      "identity": {
+        "head": "ca1f66bbb6b1ef26b35e57a284c49d60f95d66d8",
+        "stage": "head_plus_documentation_dirty_scope",
+        "github_main_observed": "74063688e928d25c8e65037ac3306956c954244d",
+        "product_pr": 712,
+        "product_candidate": "097fc751f641a43d26237f5fbe5ce0e85f7cd718",
+        "product_pr_state_observed": "OPEN"
+      },
+      "authority": "Owner approved plan and handoff changes only; another executor performs implementation. No product/runtime/remote mutation in this turn.",
+      "evidence_limits": [
+        "F6 proves ORM public-action behavior, not HTTP/browser full journey",
+        "F8 proves five entry cases across four roles, not business submission/approval loop",
+        "F7 transaction tests do not prove deployed timer/reset acceptance"
+      ],
+      "validation": [
+        {
+          "command": "make verify.agent.ledger.unit",
+          "status": "passed",
+          "test_count": 18,
+          "log": ".runtime/agent-runs/DEMO-USAGE-FOUNDATION-20261020/first-release-plan-ledger.log"
+        },
+        {
+          "command": "make verify.docs.all",
+          "status": "passed",
+          "product_boundary_test_count": 7,
+          "log": ".runtime/agent-runs/DEMO-USAGE-FOUNDATION-20261020/first-release-plan-docs.log"
+        },
+        {
+          "command": "git diff --check",
+          "status": "passed"
+        }
+      ],
+      "implementation": "not_run",
+      "skipped": {
+        "runtime_and_browser": "documentation-only; no changed runtime inputs",
+        "quick_and_publication": "not a frozen delivery candidate; no publication requested"
+      }
+    },
+    "r1_r2_premerge_start": {
+      "status": "in_progress",
+      "identity": {
+        "demo_head": "ca1f66bbb6b1ef26b35e57a284c49d60f95d66d8",
+        "main": "74063688e928d25c8e65037ac3306956c954244d",
+        "product_candidate": "097fc751f641a43d26237f5fbe5ce0e85f7cd718",
+        "pr_state": "OPEN",
+        "stage": "head_plus_documentation_dirty_scope"
+      },
+      "scope": [
+        "docs/demo/demo_usage_foundation_plan_v1.md",
+        "docs/demo/product_gap_registry_v1.md",
+        "docs/ops/iterations/demo_usage_foundation_handoff_20261020.md",
+        ".agent/goals/DEMO-USAGE-FOUNDATION-20261020.yaml",
+        ".agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json"
+      ],
+      "completed": [
+        "read_only_identity_and_dependency_inventory",
+        "exact_overlap_14_paths",
+        "source_bound_primary_case_selection",
+        "affected_validation_plan"
+      ],
+      "overlap_paths": [
+        ".agent/active-runs.json",
+        "docs/audit/test_coverage_registry/test_coverage_registry.json",
+        "docs/engineering_convergence/complexity_budget_report.md",
+        "docs/engineering_convergence/split_plan_queue.md",
+        "docs/engineering_convergence/test_inventory.csv",
+        "docs/engineering_convergence/test_inventory_summary.md",
+        "make/dev.mk",
+        "make/dev_test.mk",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/dev/local_dev_demo_credentials_prepare.sh",
+        "scripts/verify/test_coverage_registry.yaml",
+        "scripts/verify/test_local_development_lifecycle.py",
+        "scripts/verify/user_entry_delivery_browser_acceptance.js"
+      ],
+      "r1_status": "inventory_complete_integration_pending",
+      "r2_status": "source_mapping_complete_runtime_and_presentation_pending",
+      "runtime": "not_run",
+      "product_changes": "not_run",
+      "findings": [
+        {
+          "id": "DG-01",
+          "detail": "s69 payment and s70 receipt golden-chain records belong to different projects; do not present as one transaction chain"
+        },
+        {
+          "id": "DG-02",
+          "detail": "_guidance_fixture uses amount=100.0; earlier no-small-sample statement only covered searched data files, not all seed code. Purpose and visibility need explicit disposition."
+        }
+      ],
+      "validation": {
+        "docs": "passed",
+        "ledger": "passed_18_tests",
+        "diff_check": "passed",
+        "logs": [
+          ".runtime/agent-runs/DEMO-USAGE-FOUNDATION-20261020/r1-r2-docs.log",
+          ".runtime/agent-runs/DEMO-USAGE-FOUNDATION-20261020/r1-r2-ledger.log"
+        ]
+      }
+    },
+    "r3_role_guidance_content": {
+      "status": "content_finalized",
+      "date": "2026-10-21",
+      "layer": "P4",
+      "scope": [
+        "docs/demo/demo_usage_foundation_plan_v1.md",
+        "docs/ops/iterations/demo_usage_foundation_handoff_20261020.md",
+        ".agent/goals/DEMO-USAGE-FOUNDATION-20261020.yaml",
+        ".agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json",
+        "docs/demo/demo_iteration_line_v1.md",
+        "docs/demo/product_gap_registry_v1.md"
+      ],
+      "identity": {
+        "head": "ca1f66bbb6b1ef26b35e57a284c49d60f95d66d8",
+        "stage": "head_plus_six_documentation_context_dirty_paths",
+        "product_pr": 712,
+        "product_candidate_observed": "8baa36c1172c505ffb7b8288ef94e865f7c15c1b",
+        "product_pr_state_observed": "OPEN",
+        "product_pr_base_observed": "74063688e928d25c8e65037ac3306956c954244d"
+      },
+      "boundary": {
+        "target": "existing_demo_plan_handoff_and_result_index",
+        "why_here": "P4 delivery content documents existing facts and dependencies; no new product or permission semantics",
+        "exclusions": [
+          "product_code",
+          "main_product_worktree",
+          "database_reads_or_writes",
+          "commit_push_rebase",
+          "seed_migration_deployment"
+        ]
+      },
+      "s5_evidence": {
+        "summary_path": ".agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json#/r2_s69_live_readback",
+        "original_log": "not_located",
+        "searched": [
+          ".runtime/agent-runs/DEMO-USAGE-FOUNDATION-20261020",
+          "artifacts"
+        ],
+        "identity_limit": "summary records Demo HEAD and profile/database only; no command, timestamp, log path or deployed version",
+        "historical_role_scope_readback": "not a substitute for S5",
+        "rerun": "not_run"
+      },
+      "completed": [
+        "four_role_content_finalized",
+        "permission_and_contract_dependency_table",
+        "historical_source_vs_reported_runtime_amount_and_state_separated"
+      ],
+      "open_dependencies": [
+        "DG-03",
+        "DG-04",
+        "DG-05",
+        "DG-06"
+      ],
+      "validation": {
+        "layer": "L1",
+        "stage_identity": "ca1f66bbb6b1ef26b35e57a284c49d60f95d66d8 + six documentation/context dirty paths",
+        "checks": [
+          {
+            "command": "make verify.agent.ledger.unit",
+            "status": "passed",
+            "test_count": 18,
+            "log": ".runtime/agent-runs/DEMO-USAGE-FOUNDATION-20261020/r3-role-content-ledger.log"
+          },
+          {
+            "command": "make verify.docs.all",
+            "status": "passed",
+            "product_boundary_test_count": 7,
+            "log": ".runtime/agent-runs/DEMO-USAGE-FOUNDATION-20261020/r3-role-content-docs.log"
+          },
+          {
+            "command": "git diff --check",
+            "status": "passed"
+          }
+        ]
+      },
+      "implementation": "not_run",
+      "browser_acceptance": "not_run",
+      "skipped": {
+        "L2_L4": "documentation-only; runtime inputs unchanged; S5 explicitly not rerun",
+        "L5": "dirty planning scope, no publication requested"
+      },
+      "next_exact_step": "R3 content finalized only. Locate S5 original readback evidence for DG-06; do not rerun S5. Preserve six dirty documentation/context files. Re-read PR 712 (observed OPEN at 8baa36c1172c505ffb7b8288ef94e865f7c15c1b); after verified merge, governed R1 sync and section 11.2 contract mapping precede affected R4 browser relay."
+    }
+  },
+  "r2_s69_live_readback": {
+    "status": "in_progress",
+    "identity": {
+      "demo_head": "ca1f66bbb6b1ef26b35e57a284c49d60f95d66d8",
+      "runtime": "sc-local-dev db=sc_dev_demo",
+      "stage": "head_plus_documentation_dirty_scope"
+    },
+    "readback": {
+      "project": "支付台账项目 / S69-PAY-2025-001 / in_progress / funding_enabled",
+      "funding": "active total=1000000 period=2025-01-01..2026-12-31",
+      "contract": "state=draft type=in amount_total=271200 (240000 base x 1.13 tax) partner=德阳蓉钢供应链有限公司",
+      "settlement": "state=approve amount=240000 approved=240000 contract_linked",
+      "payment": "state=done amount=120000 settlement+contract linked",
+      "ledger": "posted 120000",
+      "execution": "paid",
+      "visibility": "fin_mgr=read fin_01=read project_a_member=read; settlement_user=denied material_01=denied"
+    },
+    "findings": [
+      "contract amount_total is 271200 (tax-inclusive), not the 240000 source-declared base; display must bind the runtime contract fact, not the source literal",
+      "contract state is draft while settlement=approve and payment=done; the showcase must state the contract lifecycle fact explicitly, not imply signed",
+      "project_code S69-PAY-2025-001 still embeds 2025 (date-caliber cosmetic item, not a chain defect)",
+      "payment.request visibility boundary confirmed: finance seats and business initiator read, settlement/material seats AccessError-denied"
+    ],
+    "evidence": {
+      "command": "DB_NAME=sc_dev_demo COMPOSE_PROJECT_NAME=sc-local-dev bash scripts/ops/odoo_shell_exec.sh < inline python readback (heredoc stdin)",
+      "raw_log": "unavailable — inline stdin execution was not persisted to .runtime/agent-runs or artifacts/",
+      "status": "summary_only_raw_log_unavailable",
+      "gap": "DG-06"
+    },
+    "next": "R3 content finalized using this handoff summary; locate original evidence (DG-06), do not rerun S5. See plan section 11."
+  },
+  "project_identity_repair": {
+    "status": "passed",
+    "identity": {
+      "runtime": "sc-local-dev db=sc_dev_demo",
+      "stage": "head_plus_demo_project_identity_repair"
+    },
+    "commands": [
+      {
+        "command": "DB_NAME=sc_dev_demo bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_demo_project_identity_repair.py",
+        "status": "passed",
+        "layer": "L3",
+        "detail": "codes=16 owners=25 test_residue_deleted=7 contracts_confirmed=1"
+      }
+    ],
+    "readback": {
+      "project_total": 26,
+      "non_demo_code": 0,
+      "bad_owner": 0,
+      "owners": ["张建国"],
+      "codes_all_demo_pj": true
+    },
+    "notes": "DG-07 resolved: unified project codes to DEMO-PJ-* and assigned the real user pm1 (张建国) as owner/manager across all demo projects; removed 7 empty test-residue projects (成本并发隔离测试项目); promoted s69 payment-ledger contract through its real confirm action (draft -> confirmed) so the approved settlement and done payment are backed by an in-force contract."
+  },
+  "blockers": [],
+  "next_exact_step": "Demo data baseline repaired on sc_dev_demo: DEMO-PJ-* codes, real owner pm1, test residue removed, s69 contract confirmed. Remaining: role allow/deny verification and the three showcase-case validation per docs/demo/demo_data_quality_standard_v1.md, then PR push/merge and target acceptance.",
+  "handoff": {
+    "at": "2026-10-21",
+    "worktree": "/home/lidefend/workspace/sce-backend-odoo-local-env",
+    "baseline_main": "c937f2ee60162463f4914e148baac20b0a1406db",
+    "first_batch": "R3_content_finalized_contract_dependencies_pending",
+    "do_not_redo": "Reuse historical mechanism Batch 1-6 and F1-F8 evidence within proven scope; run only affected units.",
+    "mainline_integration": "not_run",
+    "deployment": "not_run",
+    "target_user_delivery": "not_run",
+    "next_exact_step": "R3 content finalized only. Locate S5 original readback evidence for DG-06; do not rerun S5. Preserve six dirty documentation/context files. Re-read PR 712 (observed OPEN at 8baa36c1172c505ffb7b8288ef94e865f7c15c1b); after verified merge, governed R1 sync and section 11.2 contract mapping precede affected R4 browser relay.",
+    "working_tree_note": "Planning changes intentionally uncommitted; preserve all six owned documentation/context files."
+  }
+}

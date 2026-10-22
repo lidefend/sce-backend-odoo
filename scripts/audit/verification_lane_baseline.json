@@ -1,6 +1,6 @@
 {
   "schema_version": "verification-lane-coverage/v1",
-  "rationale": "Frozen debt ratchet for the verification surface. Every list is an allowance, never a target: a batch may only shrink it. Growth fails --check until it is explicitly reviewed and the baseline is deliberately rewritten. 2026-10-21 PRODUCT-ITERATION-V2: retire removed historical replay target identities and register the exact14 new manual verification entries; numeric ceilings unchanged.",
+  "rationale": "Frozen debt ratchet for the verification surface. Every list is an allowance, never a target: a batch may only shrink it. Growth fails --check until it is explicitly reviewed and the baseline is deliberately rewritten.",
   "review_triggers": [
     {
       "group": "targets_zero_reference",
@@ -53,11 +53,11 @@
       "defect": "New hard-checked register: a make target whose recipe calls a path that is absent from the tree cannot run. 226 targets qualify (187 references to scripts/migration/*, which .gitignore line 116 keeps out of the clean product repository as customer migration collateral, plus relocated or never-added verify/root scripts). Each is registered with an owner, a reason and a review date; 0 may be unregistered."
     }
   ],
-  "max_targets_zero_reference": 817,
+  "max_targets_zero_reference": 641,
   "max_scripts_unreferenced_anywhere": 104,
   "max_targets_missing_asset_unregistered": 0,
   "max_stale_missing_asset_dispositions": 0,
-  "recorded_targets_missing_asset": 226,
+  "recorded_targets_missing_asset": 21,
   "max_targets_zero_reference_unregistered": 0,
   "max_scripts_unreferenced_unregistered": 0,
   "max_stale_target_dispositions": 0,
@@ -68,8 +68,8 @@
   "max_unregistered_remote_only_scripts": 0,
   "max_stale_local_only_exemptions": 0,
   "max_stale_remote_only_exemptions": 0,
-  "recorded_targets_defined": 2443,
-  "recorded_targets_unreached_from_anchor": 2251,
+  "recorded_targets_defined": 2234,
+  "recorded_targets_unreached_from_anchor": 2042,
   "recorded_anchor_union_targets": 198,
   "max_registrations_missing_owner": 0,
   "max_registrations_missing_basis": 0,
@@ -412,6 +412,9 @@
       "verify.demo.experience_reset_scope.unit",
       "verify.demo.role_startup.smoke",
       "verify.demo.scenario_step.unit",
+      "verify.demo.usage_foundation.unit",
+      "verify.demo.usage_foundation_role_scope.smoke",
+      "verify.demo.usage_foundation_role_scope.unit",
       "verify.dev.acceptance.contract",
       "verify.dev.acceptance.record_identity.resolve",
       "verify.direct_acceptance_engineering_settlement.income_projection",
@@ -673,7 +676,6 @@
       "verify.role.project_member.unification.guard",
       "verify.role.system_admin.minimum_permission_audit.guard",
       "verify.role_surface.landing.contract.unit",
-      "verify.round.v0_6.mini",
       "verify.scene.coverage.dashboard",
       "verify.scene.data_source.schema.guard",
       "verify.scene.inventory.draft.diff.report",

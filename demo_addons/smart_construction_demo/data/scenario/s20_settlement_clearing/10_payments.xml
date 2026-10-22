@@ -17,7 +17,7 @@
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
       <field name="currency_id" ref="base.CNY"/>
       <field name="amount">5000000.00</field>
-      <field name="date_request">2025-04-01</field>
+      <field name="date_request">2026-10-20</field>
       <field name="note">依据首期收入结算单发起收款申请。</field>
     </record>
 

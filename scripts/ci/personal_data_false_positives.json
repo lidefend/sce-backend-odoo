@@ -329,6 +329,20 @@
       "blob_id": "67fb4473755bc98f1bc8ccf3e630520ad5701a79",
       "classification": "BANK_ACCOUNT_PATTERN",
       "reason": "verified_synthetic_demo_business_fixture_prior_revision_superseded_in_branch"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "demo_addons/smart_construction_demo/data/scenario/s69_payment_ledger_surface/10_payment_ledger_records.xml",
+      "blob_id": "fbf5424bd9182c12ba773b03559e506071ee42d4",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_business_fixture_sequential_placeholder"
+    },
+    {
+      "rule_id": "PD001",
+      "path": "demo_addons/smart_construction_demo/data/scenario/s85_admin_finance_surface/10_admin_finance_records.xml",
+      "blob_id": "16b7a48cbebc61b688f5177669654f9bf2180caa",
+      "classification": "GOVERNMENT_ID_PATTERN",
+      "reason": "verified_synthetic_demo_business_fixture_prior_revision_superseded_in_branch"
     }
   ]
 }

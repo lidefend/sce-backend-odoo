@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-  <data noupdate="1">
+  <data noupdate="0">
 
     <!-- S10: 收款申请（起始态 draft；合同 type=out 对应申请 type=receive）。
          本条为合同依据（无结算单），依据口径 payment_basis_type=contract；币种默认 CNY
@@ -13,8 +13,8 @@
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
       <field name="currency_id" ref="base.CNY"/>
       <field name="amount">5000000.0</field>
-      <field name="date_request">2025-04-01</field>
-      <field name="note">主体结构工程于2025年3月完成形象进度，按施工总承包合同付款条款发起首期进度款申请。</field>
+      <field name="date_request">2026-10-20</field>
+      <field name="note">主体结构工程于2026年10月完成形象进度，按施工总承包合同付款条款发起首期进度款申请。</field>
     </record>
 
   </data>

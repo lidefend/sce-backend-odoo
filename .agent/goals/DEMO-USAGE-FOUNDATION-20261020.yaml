@@ -1,0 +1,73 @@
+schema_version: 1
+goal:
+  id: DEMO-USAGE-FOUNDATION-20261020
+  title: demo_user_usage_foundation_v1
+  status: active
+  formal_product_layer: P4
+  supporting_layers:
+    - P0
+    - P1
+    - P2
+    - P3
+  layer_target: >-
+    Demo baseline data, scenario data, API/browser acceptance and daily runtime
+    tooling that make the product consumable through real user workflows.
+  module:
+    - smart_construction_demo
+    - scripts/verify
+    - deploy/demo-tenant
+    - docs/demo
+  baseline:
+    branch: feature/demo-iteration-line-20261020
+    full_sha: 74063688e928d25c8e65037ac3306956c954244d
+    source: dedicated_demo_worktree
+  objective: >-
+    Deliver first-release demo guidance: understand one coherent project case,
+    discover the next authorized action, complete one real browser role-relay
+    journey, and observe its business outcome. Reuse bounded F1-F8 evidence;
+    separate capability maturity from role permissions and preview contract
+    publication from subsequent presentation/interaction acceptance.
+  product_boundary:
+    standard_vs_user_specific: demo_delivery_tool
+    why_here: >-
+      Demo seed data, user journey probes, scenario facts and scheduled demo
+      evolution are P4 delivery tooling. They consume public product contracts
+      and actions without owning product semantics.
+    why_not_elsewhere:
+      - no_product_semantics_or_permission_rules_in_demo_layer
+      - no_frontend_or_demo_side_inference_for_missing_contracts
+      - no_direct_business_terminal_state_or_approval_history_writes
+      - no_unregistered_database_tenant_compose_or_credentials
+      - experience_reset_does_not_reset_demo_baseline
+    blast_radius:
+      - demo users, companies, project membership and visible workload
+      - demo partners, bank accounts, taxes, units, materials and dictionaries
+      - approval/numbering/permission consumption
+      - project funding, budget, BOQ and settlement anchors
+      - scenario tick, daily timer and experience reset scope
+      - API and browser user-journey evidence
+  constraints:
+    - user_journey_before_table_inventory
+    - foundation_data_must_precede_transactional_facts
+    - presence_is_not_actionability
+    - report_product_gaps_to_owning_layers_immediately
+    - transactional_facts_only_through_public_actions
+    - no_auto_approval_or_forged_terminal_states
+    - no_derived_projection_seeding
+    - experience_reset_cleans_only_user_generated_delta
+    - keep_demo_baseline_fingerprint_stable_across_experience_reset
+    - no_new_database_tenant_compose_or_credentials
+  next_exact_step: >-
+    R3 role guidance content is finalized in plan section 11, not implemented.
+    Locate S5 original readback evidence (DG-06); do not rerun the database probe.
+    Preserve all six uncommitted documentation/context changes. Re-read PR 712
+    (last observed OPEN at 8baa36c1172c505ffb7b8288ef94e865f7c15c1b);
+    wait for verified merge before governed R1 sync and dependent R4 browser work.
+  completion:
+    scope: demo_user_usage_foundation_v1
+    overall_goal: in_progress
+    result_index: .agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json
+    local_batch_acceptance: R3_content_finalized_contract_and_browser_validation_pending
+    mainline_integration: not_run
+    deployment: not_run
+    target_user_delivery: not_run

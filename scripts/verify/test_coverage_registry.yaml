@@ -384,6 +384,22 @@ entries:
   gate: 'make:verify.local.dev.scenario_tick.orm :: demo_scenario_tick'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: demo_usage_foundation_approval
+  kind: odoo_tag
+  status: on-demand
+  owner: demo-team
+  dispose: class-selected
+  gate: 'make:verify.local.dev.demo_usage_foundation_approval.orm :: demo_usage_foundation_approval'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: demo_usage_foundation_master_data
+  kind: odoo_tag
+  status: on-demand
+  owner: demo-team
+  dispose: class-selected
+  gate: 'make:verify.local.dev.demo_usage_foundation_master_data.orm :: demo_usage_foundation_master_data'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: dictionary_scope_delivery
   kind: odoo_tag
   status: on-demand

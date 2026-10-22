@@ -8,5 +8,7 @@ from . import test_demo_baseline_readiness
 from . import test_demo_golden_chain
 from . import test_demo_api_scenario
 from . import test_demo_scenario_tick
+from . import test_demo_usage_foundation_master_data
+from . import test_demo_usage_foundation_approval
 
 from . import test_startup_metadata_performance

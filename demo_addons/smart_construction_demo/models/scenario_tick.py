@@ -29,6 +29,114 @@ SCAN_MODELS = (
     "sc.material.inbound",
 )
 
+# system_fact bindings: each demo-internal fact key must resolve to a real,
+# verifiable product fact. ``kind=readback`` proves an already-seeded state
+# through a public read; ``kind=lifecycle`` drives a seeded record through its
+# own public action chain. A fact without a binding, or whose binding fails,
+# stays ``unbound`` (never silently executed).
+_FACT_BINDINGS = {
+    "demo.scenario.fact.project_approved": {
+        "kind": "project_lifecycle",
+        "project_code": "DEMO-PJ-EXEC",
+        "state": "in_progress",
+    },
+    "demo.scenario.fact.wbs_boq_published": {
+        "kind": "readback",
+        "model": "construction.work.breakdown",
+        "project_code": "DEMO-PJ-EXEC",
+    },
+    "demo.scenario.fact.material_plan": {
+        "kind": "lifecycle",
+        "record": "sc_demo_plan_080_master",
+        "state": "in_progress",
+    },
+    "demo.scenario.fact.construction_log": {
+        "kind": "lifecycle",
+        "record": "sc_demo_construction_diary_070_daily",
+        "state": "confirmed",
+    },
+    "demo.scenario.fact.purchase_order": {
+        "kind": "lifecycle",
+        "record": "sc_demo_material_purchase_request_080_steel",
+        "state": "approved",
+    },
+    "demo.scenario.fact.material_arrival": {
+        "kind": "lifecycle",
+        "record": "sc_demo_material_inbound_080_steel",
+        "state": "received",
+    },
+    "demo.scenario.fact.contract_signed": {
+        "kind": "lifecycle",
+        "record": "sc_demo_general_contract_066_income",
+        "state": "signed",
+    },
+    "demo.scenario.fact.output_invoice": {
+        "kind": "lifecycle",
+        "record": "sc_demo_invoice_registration_088_output",
+        "state": "registered",
+    },
+    "demo.scenario.fact.material_outbound": {
+        "kind": "lifecycle",
+        "record": "sc_demo_material_outbound_065_rebar",
+        "state": "issued",
+    },
+    "demo.scenario.fact.daily_receipt": {
+        "kind": "lifecycle",
+        "record": "sc_demo_receipt_income_070_progress",
+        "state": "received",
+    },
+    "demo.scenario.fact.risk_settlement": {
+        "kind": "lifecycle",
+        "record": "sc_demo_project_settlement_073_risk",
+        "state": "confirmed",
+    },
+    "demo.scenario.fact.risk_action_claimed": {
+        "kind": "lifecycle",
+        "record": "sc_demo_project_risk_action_073_cost",
+        "state": "claimed",
+    },
+    "demo.scenario.fact.cockpit_fund": {
+        "kind": "lifecycle",
+        "record": "sc_demo_dashboard_fact_068_fund",
+        "state": "in_progress",
+    },
+    "demo.scenario.fact.workbench_todo": {
+        "kind": "lifecycle",
+        "record": "sc_demo_workbench_item_068_todo",
+        "state": "in_progress",
+    },
+    "demo.scenario.fact.hazard_controlled": {
+        "kind": "lifecycle",
+        "record": "sc_demo_hazard_source_089_high_support",
+        "state": "controlled",
+    },
+    "demo.scenario.fact.safety_plan_approved": {
+        "kind": "lifecycle",
+        "record": "sc_demo_safety_plan_089_dangerous",
+        "state": "approved",
+    },
+    "demo.scenario.fact.payroll_done": {
+        "kind": "lifecycle",
+        "record": "sc_demo_hr_payroll_085_salary",
+        "state": "done",
+    },
+    "demo.scenario.fact.loan_confirmed": {
+        "kind": "lifecycle",
+        "record": "sc_demo_financing_loan_085_bank",
+        "state": "confirmed",
+    },
+    "demo.scenario.fact.tender_won": {
+        "kind": "lifecycle",
+        "record": "sc_demo_tender_bid_086_complex",
+        "state": "won",
+    },
+    "demo.scenario.fact.fund_transfer": {
+        "kind": "lifecycle",
+        "record": "sc_demo_fund_operation_086_transfer",
+        "state": "done",
+    },
+}
+
 
 class DemoScenarioTick(models.AbstractModel):
     _name = "demo.scenario.tick"
@@ -92,6 +200,78 @@ class DemoScenarioTick(models.AbstractModel):
         return first.id
 
     @api.model
+    def _bind_system_fact(self, step: dict) -> tuple[str, str]:
+        """Bind one demo-internal system fact to a verified product fact.
+
+        Returns ``(status, reason)`` where status is ``advanced`` when the fact
+        is provably true through a public action/read, or ``unbound`` when no
+        binding exists or the binding cannot be proven. Never fabricates a fact.
+        """
+        intent = step["intent_or_action"]
+        binding = _FACT_BINDINGS.get(intent)
+        if not binding:
+            return "unbound", "no_binding"
+        try:
+            if binding["kind"] == "readback":
+                return self._readback_fact(binding)
+            if binding["kind"] == "project_lifecycle":
+                return self._project_lifecycle_fact(binding)
+            return self._lifecycle_fact(binding)
+        except Exception as exc:  # noqa: BLE001 - fail closed, never fabricate
+            return "unbound", f"{type(exc).__name__}: {exc}"
+
+    @api.model
+    def _readback_fact(self, binding: dict) -> tuple[str, str]:
+        project_code = binding.get("project_code")
+        domain: list = []
+        if project_code:
+            if binding["model"] == "project.project":
+                domain.append(("project_code", "=", project_code))
+            else:
+                domain.append(("project_id.project_code", "=", project_code))
+        records = self.env[binding["model"]].sudo().search(domain)
+        if not records:
+            return "unbound", "no_record"
+        states = binding.get("states")
+        if states:
+            field = binding.get("field") or getattr(records[0], "_state_field", "state")
+            if not any(records.filtered(lambda r: r[field] in states)):
+                return "unbound", f"state_not_in_{states}"
+        return "advanced", binding["model"]
+
+    @api.model
+    def _project_lifecycle_fact(self, binding: dict) -> tuple[str, str]:
+        from ..seed.steps.step_20_projects_demo import _apply_lifecycle
+
+        project = (
+            self.env["project.project"]
+            .sudo()
+            .search([("project_code", "=", binding["project_code"])], limit=1)
+        )
+        if not project:
+            return "unbound", "no_record"
+        _apply_lifecycle(project, binding["state"])
+        if project.lifecycle_state != binding["state"]:
+            return "unbound", f"state_{project.lifecycle_state}"
+        return "advanced", binding["project_code"]
+
+    @api.model
+    def _lifecycle_fact(self, binding: dict) -> tuple[str, str]:
+        from ..tools.scenario_loader import drive_seeded_record
+
+        record = self.env.ref(
+            f"smart_construction_demo.{binding['record']}",
+            raise_if_not_found=False,
+        )
+        if not record:
+            return "unbound", "record_missing"
+        drive_seeded_record(self.env, record, binding["state"])
+        field = getattr(record, "_state_field", "state")
+        if record[field] != binding["state"]:
+            return "unbound", f"state_{record[field]}_expected_{binding['state']}"
+        return "advanced", binding["record"]
+
+    @api.model
     def run_tick(self) -> dict:
         manifest = self._manifest()
         ledger = self._ledger()
@@ -121,10 +301,16 @@ class DemoScenarioTick(models.AbstractModel):
             raise UserError(_("ir.model missing for project.project"))
         todos = 0
         unbound = 0
+        unbound_reasons: dict[str, str] = {}
         for step in day_steps:
             if step["actor_mode"] == "system_fact":
-                ledger[step["idempotency_key"]] = "unbound"
-                unbound += 1
+                status, reason = self._bind_system_fact(step)
+                ledger[step["idempotency_key"]] = status
+                if status == "advanced":
+                    pass
+                else:
+                    unbound += 1
+                    unbound_reasons[step["idempotency_key"]] = reason
                 continue
 
             users = self._role_users(step["actor_role"])
@@ -164,6 +350,7 @@ class DemoScenarioTick(models.AbstractModel):
             "business_date": next_date,
             "todos": todos,
             "unbound": unbound,
+            "unbound_reasons": unbound_reasons,
         }
 
     @api.model

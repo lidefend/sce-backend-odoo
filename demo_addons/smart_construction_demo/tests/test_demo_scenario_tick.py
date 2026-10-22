@@ -57,30 +57,31 @@ class TestDemoScenarioTickPreflight(TransactionCase):
 
 @tagged("post_install", "-at_install", "-standard", "demo_scenario_tick")
 class TestDemoScenarioTickRun(TransactionCase):
-    def test_run_tick_advances_three_days_and_records_heartbeat(self):
+    def test_run_tick_advances_ten_days_and_records_heartbeat(self):
         self.env["ir.config_parameter"].sudo().set_param("sc.demo.scenario.ledger", "{}")
         tick = self.env["demo.scenario.tick"]
 
         dates = []
-        for _ in range(3):
+        for _ in range(10):
             result = tick.run_tick()
             self.assertEqual(result["status"], "advanced")
             self.assertTrue(result["business_date"])
             dates.append(result["business_date"])
 
-        self.assertEqual(len(set(dates)), 3)
+        self.assertEqual(len(set(dates)), 10)
         ledger = json.loads(
             self.env["ir.config_parameter"]
             .sudo()
             .get_param("sc.demo.scenario.ledger", "{}")
         )
-        self.assertEqual(len(ledger), 12)
+        self.assertEqual(len(ledger), 40)
         self.assertEqual(
-            sorted(key for key, value in ledger.items() if value == "todo").__len__(), 6
+            sorted(key for key, value in ledger.items() if value == "todo").__len__(), 20
         )
         self.assertEqual(
-            sorted(key for key, value in ledger.items() if value == "unbound").__len__(), 6
+            sorted(key for key, value in ledger.items() if value == "advanced").__len__(), 20
         )
+        self.assertNotIn("unbound", set(ledger.values()))
         self.assertTrue(
             self.env["ir.config_parameter"]
             .sudo()

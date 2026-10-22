@@ -21,6 +21,7 @@
         "data/base/13_departments_tree.xml",
         "data/base/14_jobs.xml",
         "data/base/15_seed_partners.xml",
+        "data/base/16_bank_accounts.xml",
         "data/base/20_projects.xml",
         "data/base/25_project_tasks.xml",
         "data/demo/sc_demo_users.xml",

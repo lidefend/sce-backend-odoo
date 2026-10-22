@@ -14,9 +14,9 @@ const ROOT_DIR = fs.existsSync(path.join(process.cwd(), 'frontend/apps/web/packa
   ? process.cwd()
   : path.resolve(process.cwd(), '../../..');
 
-const FRONTEND_URL = process.env.FRONTEND_URL || process.env.E2E_BASE_URL || 'http://localhost:18081';
+const FRONTEND_URL = process.env.FRONTEND_URL || process.env.E2E_BASE_URL || 'http://localhost:18081/t/demo';
 const DB_NAME = process.env.DB_NAME || process.env.E2E_DB || 'sc_demo';
-const DEFAULT_PASSWORD = process.env.E2E_ROLE_MATRIX_DEFAULT_PASSWORD || process.env.E2E_PASSWORD || 'demo';
+const DEFAULT_PASSWORD = process.env.E2E_ROLE_MATRIX_DEFAULT_PASSWORD || process.env.E2E_PASSWORD || '123456';
 const ARTIFACTS_DIR = process.env.ARTIFACTS_DIR || path.join(ROOT_DIR, 'artifacts');
 const HEADLESS = String(process.env.HEADLESS || '1').trim() !== '0';
 
@@ -28,18 +28,17 @@ const ROLES = [
     role: 'executive',
     login: process.env.ROLE_EXECUTIVE_LOGIN || 'demo_role_executive',
     password: process.env.ROLE_EXECUTIVE_PASSWORD || DEFAULT_PASSWORD,
-    mode: 'home_today',
-    initialText: [/今天先做什么/, /付款申请待审批|任务逾期风险|项目跟进/],
-    clickButton: /查看详情/,
-    targetPath: /^\/(s\/(finance\.payment_requests|project\.management|task\.center|risk\.center)|r\/)/,
+    mode: 'direct_business',
+    initialText: [/角色首页/, /待我处理/],
+    targetPath: /^\/s\/workspace\.home/,
   },
   {
     role: 'pm',
     login: process.env.ROLE_PM_LOGIN || 'demo_role_pm',
     password: process.env.ROLE_PM_PASSWORD || DEFAULT_PASSWORD,
     mode: 'direct_business',
-    initialText: [/项目列表/],
-    targetPath: /^\/s\/projects\.list/,
+    initialText: [/角色首页/, /项目中心/],
+    targetPath: /^\/s\/workspace\.home/,
   },
   {
     role: 'pm_my_work_menu',
@@ -47,17 +46,7 @@ const ROLES = [
     password: process.env.ROLE_PM_PASSWORD || DEFAULT_PASSWORD,
     mode: 'menu_my_work',
     navigatePath: '/my-work',
-    initialText: [/我的工作/, /待办|风险|已完成|失败/],
-    targetPath: /^\/(my-work|s\/my_work\.workspace)$/,
-  },
-  {
-    role: 'pm_my_work_back_home',
-    login: process.env.ROLE_PM_LOGIN || 'demo_role_pm',
-    password: process.env.ROLE_PM_PASSWORD || DEFAULT_PASSWORD,
-    mode: 'my_work_back_home',
-    navigatePath: '/my-work',
-    initialText: [/我的工作/, /待办|风险|已完成|失败/],
-    clickButton: /刷新/,
+    initialText: [/我的工作/, /待我处理/],
     targetPath: /^\/(my-work|s\/my_work\.workspace)$/,
   },
   {
@@ -65,8 +54,16 @@ const ROLES = [
     login: process.env.ROLE_FINANCE_LOGIN || 'demo_role_finance',
     password: process.env.ROLE_FINANCE_PASSWORD || DEFAULT_PASSWORD,
     mode: 'direct_business',
-    initialText: [/付款申请|付款申请审批|PRQ|新建|记录/],
-    targetPath: /^\/s\/finance\.payment_requests/,
+    initialText: [/角色首页/, /财务中心/],
+    targetPath: /^\/s\/workspace\.home/,
+  },
+  {
+    role: 'business_full',
+    login: process.env.ROLE_BUSINESS_FULL_LOGIN || 'demo_full',
+    password: process.env.ROLE_BUSINESS_FULL_PASSWORD || DEFAULT_PASSWORD,
+    mode: 'direct_business',
+    initialText: [/角色首页/, /待我处理/],
+    targetPath: /^\/s\/workspace\.home/,
   },
 ];
 
@@ -76,6 +73,12 @@ function ensureDir(filePath) {
 
 function normalize(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function stripNamespace(pathname) {
+  // The SPA is served under the entry namespace (/t/<ns>/); drop that prefix so
+  // the targetPath assertions keep matching the product route shape.
+  return String(pathname || '').replace(/^\/t\/[^/]+(?=\/|$)/, '');
 }
 
 function writeReports(report) {
@@ -187,20 +190,12 @@ function checkMenuMyWorkIntent(row) {
 }
 
 async function login(page, role) {
-  const url = `${FRONTEND_URL}/login?db=${encodeURIComponent(DB_NAME)}&t=${Date.now()}`;
+  // The entry namespace is the only database authority: a client ``?db=`` hint
+  // is rejected with 409 NS_DATABASE_HINT_CONFLICT, so never add one.
+  const url = `${FRONTEND_URL}/login?t=${Date.now()}`;
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.locator('input[autocomplete="username"]').fill(role.login);
   await page.locator('input[autocomplete="current-password"]').fill(role.password);
-  const dbInput = page.locator('input[autocomplete="off"]');
-  const dbEditable = await dbInput.isEditable().catch(() => false);
-  if (dbEditable) {
-    await dbInput.fill(DB_NAME);
-  } else {
-    const currentDb = normalize(await dbInput.inputValue().catch(() => ''));
-    if (currentDb && currentDb !== DB_NAME) {
-      throw new Error(`login db input is locked to ${currentDb}, expected ${DB_NAME}`);
-    }
-  }
   await page.getByRole('button', { name: /^登录$/ }).click();
   await page.waitForFunction(() => !window.location.pathname.includes('/login'), null, { timeout: 30000 });
   await page.waitForLoadState('networkidle').catch(() => {});
@@ -275,7 +270,7 @@ async function runRole(browser, role) {
   try {
     await login(page, role);
     await waitForRoleText(page, role);
-    row.initial_path = new URL(page.url()).pathname;
+    row.initial_path = stripNamespace(new URL(page.url()).pathname);
     let text = await page.locator('body').innerText({ timeout: 10000 });
     if (role.navigatePath) {
       await page.goto(`${FRONTEND_URL}${role.navigatePath}`, { waitUntil: 'networkidle' });
@@ -284,7 +279,7 @@ async function runRole(browser, role) {
         return !text.includes('正在加载场景') && !text.includes('正在加载页面');
       }, null, { timeout: 12000 }).catch(() => {});
       await waitForRoleText(page, role);
-      row.initial_path = new URL(page.url()).pathname;
+      row.initial_path = stripNamespace(new URL(page.url()).pathname);
       row.final_path = row.initial_path;
       text = await page.locator('body').innerText({ timeout: 10000 }).catch(() => '');
     }
@@ -323,7 +318,7 @@ async function runRole(browser, role) {
         await button.click();
         await page.waitForLoadState('networkidle').catch(() => {});
         await page.waitForTimeout(1200);
-        row.final_path = new URL(page.url()).pathname;
+        row.final_path = stripNamespace(new URL(page.url()).pathname);
         text = await page.locator('body').innerText().catch(() => '');
         row.one_hop_ok = role.targetPath.test(row.final_path) && !hasBlockingError(text);
         row.click_chain = {

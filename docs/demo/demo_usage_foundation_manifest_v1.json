@@ -1,0 +1,513 @@
+{
+  "schema_version": 1,
+  "id": "demo.usage.foundation",
+  "owner_layer": "P4",
+  "audit_kind": "declaration_coverage",
+  "authority": "docs/demo/demo_usage_foundation_plan_v1.md",
+  "layers": {
+    "U0": {
+      "title": "identity_and_scope",
+      "owner_layers": ["P0", "P2", "P3"],
+      "blocking_batch": "F2",
+      "seedable": true
+    },
+    "U1": {
+      "title": "business_master_data",
+      "owner_layers": ["P1", "P2"],
+      "blocking_batch": "F3",
+      "seedable": true
+    },
+    "U2": {
+      "title": "project_reference_data",
+      "owner_layers": ["P1", "P2"],
+      "blocking_batch": "F3",
+      "seedable": true
+    },
+    "U3": {
+      "title": "workflow_and_permission_config",
+      "owner_layers": ["P0", "P1", "P3"],
+      "blocking_batch": "F4",
+      "seedable": true
+    },
+    "U4": {
+      "title": "project_startup_baseline",
+      "owner_layers": ["P1", "P2"],
+      "blocking_batch": "F5",
+      "seedable": true
+    },
+    "U5": {
+      "title": "daily_facts",
+      "owner_layers": ["P1", "P4"],
+      "blocking_batch": "F7",
+      "seedable": true
+    },
+    "U6": {
+      "title": "derived_projections",
+      "owner_layers": ["P1", "P3"],
+      "blocking_batch": "F6",
+      "seedable": false,
+      "derived_only": true
+    }
+  },
+  "user_actions": [
+    {
+      "key": "login_surface",
+      "title": "登录并进入默认工作台（system.init / role_surface / default_route）",
+      "layer": "U0",
+      "blocking_batch": "F2"
+    },
+    {
+      "key": "my_work_today",
+      "title": "我的工作：今天要办什么",
+      "layer": "U6",
+      "blocking_batch": "F7",
+      "derived_only": true
+    },
+    {
+      "key": "open_project",
+      "title": "新建或打开项目",
+      "layer": "U4",
+      "blocking_batch": "F5"
+    },
+    {
+      "key": "select_master_data",
+      "title": "选择业主/供应商/税/付款条件/材料/成本项",
+      "layer": "U1",
+      "blocking_batch": "F3"
+    },
+    {
+      "key": "establish_baseline",
+      "title": "建立资金基线、预算、BOQ/WBS",
+      "layer": "U4",
+      "blocking_batch": "F5"
+    },
+    {
+      "key": "create_contract_basis",
+      "title": "创建合同/采购依据",
+      "layer": "U4",
+      "blocking_batch": "F5"
+    },
+    {
+      "key": "submit_contract",
+      "title": "提交合同",
+      "layer": "U3",
+      "blocking_batch": "F4"
+    },
+    {
+      "key": "approve_contract",
+      "title": "审批人收到真实待办并办理",
+      "layer": "U3",
+      "blocking_batch": "F4"
+    },
+    {
+      "key": "settlement_payment_ledger",
+      "title": "结算、付款申请、付款登记与台账",
+      "layer": "U4",
+      "blocking_batch": "F6"
+    },
+    {
+      "key": "workbench_cockpit",
+      "title": "工作台与驾驶舱从事实派生",
+      "layer": "U6",
+      "blocking_batch": "F6",
+      "derived_only": true
+    },
+    {
+      "key": "daily_tick",
+      "title": "每日定时任务推进 demo 叙事",
+      "layer": "U5",
+      "blocking_batch": "F7"
+    },
+    {
+      "key": "experience_reset",
+      "title": "体验用户操作增量被单独清理",
+      "layer": "U5",
+      "blocking_batch": "F7"
+    }
+  ],
+  "requirements": [
+    {
+      "key": "company_identity",
+      "layer": "U0",
+      "user_action": "login_surface",
+      "prerequisite": "hard",
+      "read_entry": "res.company (name/vat/address/phone)",
+      "scope": "demo company identity",
+      "owner_layer": "P2",
+      "repair_hint": "补齐公司法定名称、统一社会信用代码、地址、联系方式",
+      "acceptance_method": "company readback 字段非空且合法",
+      "gap_ref": null
+    },
+    {
+      "key": "currency_fiscal",
+      "layer": "U0",
+      "user_action": "login_surface",
+      "prerequisite": "hard",
+      "read_entry": "res.currency / res.company currency_id / account fiscal year",
+      "scope": "demo company currency and fiscal calendar",
+      "owner_layer": "P2",
+      "repair_hint": "配置公司本位币、会计年度与日记账",
+      "acceptance_method": "币种与会计年度回读有效",
+      "gap_ref": null
+    },
+    {
+      "key": "user_role_surface",
+      "layer": "U0",
+      "user_action": "login_surface",
+      "prerequisite": "hard",
+      "read_entry": "res.users groups / system.init / role_surface / default_route",
+      "scope": "business users, roles and capability groups",
+      "owner_layer": "P2",
+      "repair_hint": "补齐业务全功能账号与关键角色，role_surface 与默认路由正确",
+      "acceptance_method": "role_surface.role_code 与默认路由正确",
+      "gap_ref": "DUF-03"
+    },
+    {
+      "key": "company_access_scope",
+      "layer": "U0",
+      "user_action": "login_surface",
+      "prerequisite": "hard",
+      "read_entry": "res.company access / user company_ids / department / job / employee",
+      "scope": "company access, department, job, employee",
+      "owner_layer": "P2",
+      "repair_hint": "补齐公司访问、部门、岗位、员工归属",
+      "acceptance_method": "用户只看到职责内公司",
+      "gap_ref": null
+    },
+    {
+      "key": "project_membership_scope",
+      "layer": "U0",
+      "user_action": "open_project",
+      "prerequisite": "hard",
+      "read_entry": "project membership / project data scope",
+      "scope": "project members and data scope",
+      "owner_layer": "P3",
+      "repair_hint": "补齐项目成员与项目数据范围",
+      "acceptance_method": "登录后项目列表与成员一致",
+      "gap_ref": null
+    },
+    {
+      "key": "data_rule_scope",
+      "layer": "U0",
+      "user_action": "open_project",
+      "prerequisite": "hard",
+      "read_entry": "ir.rule / record rules / data permissions",
+      "scope": "data permissions and record rules",
+      "owner_layer": "P0",
+      "repair_hint": "补齐数据权限与记录规则",
+      "acceptance_method": "跨公司/越权负例被拒",
+      "gap_ref": null
+    },
+    {
+      "key": "partners_bank_accounts",
+      "layer": "U1",
+      "user_action": "select_master_data",
+      "prerequisite": "hard",
+      "read_entry": "res.partner / res.partner.bank / contacts",
+      "scope": "owners, customers, suppliers, subcontractors",
+      "owner_layer": "P2",
+      "repair_hint": "补齐业主/客户/供应商/分包商、联系人、银行账户、付款条件",
+      "acceptance_method": "表单候选集完整且关键字段有效",
+      "gap_ref": null
+    },
+    {
+      "key": "taxes_payment_terms",
+      "layer": "U1",
+      "user_action": "select_master_data",
+      "prerequisite": "hard",
+      "read_entry": "account.tax / account.payment.term",
+      "scope": "taxes and payment terms",
+      "owner_layer": "P1",
+      "repair_hint": "补齐税种税率、付款条件",
+      "acceptance_method": "税率与付款条件可选且有效",
+      "gap_ref": null
+    },
+    {
+      "key": "uom_catalog",
+      "layer": "U1",
+      "user_action": "select_master_data",
+      "prerequisite": "hard",
+      "read_entry": "uom.uom / 计量单位",
+      "scope": "units of measure",
+      "owner_layer": "P1",
+      "repair_hint": "补齐计量单位",
+      "acceptance_method": "BOQ/材料单位可选",
+      "gap_ref": null
+    },
+    {
+      "key": "project_dictionaries",
+      "layer": "U2",
+      "user_action": "open_project",
+      "prerequisite": "hard",
+      "read_entry": "项目类型/类别、成本项、合同类型、资料类型字典",
+      "scope": "project dictionaries",
+      "owner_layer": "P1",
+      "repair_hint": "补齐项目类型/类别、成本项、合同类型、资料类型",
+      "acceptance_method": "项目/合同表单无空选项",
+      "gap_ref": null
+    },
+    {
+      "key": "material_catalog_price",
+      "layer": "U2",
+      "user_action": "select_master_data",
+      "prerequisite": "conditional",
+      "read_entry": "sc.material.catalog / sc.material.price",
+      "scope": "material catalog and prices",
+      "owner_layer": "P1",
+      "repair_hint": "补齐材料目录与材料价格",
+      "acceptance_method": "材料可选且有价格",
+      "gap_ref": null
+    },
+    {
+      "key": "cost_structure_templates",
+      "layer": "U2",
+      "user_action": "establish_baseline",
+      "prerequisite": "hard",
+      "read_entry": "成本科目树 / WBS/BOQ 模板 / 合同模板",
+      "scope": "cost structure and templates",
+      "owner_layer": "P1",
+      "repair_hint": "补齐成本科目树、WBS/BOQ 模板、合同模板",
+      "acceptance_method": "预算/BOQ/合同表单可用",
+      "gap_ref": null
+    },
+    {
+      "key": "approval_policy_steps",
+      "layer": "U3",
+      "user_action": "submit_contract",
+      "prerequisite": "hard",
+      "read_entry": "sc.approval.policy / approval steps / approval scope",
+      "scope": "approval policy",
+      "owner_layer": "P1",
+      "repair_hint": "补齐审批策略、审批步骤、审批范围",
+      "acceptance_method": "提交生成真实审批实例",
+      "gap_ref": null
+    },
+    {
+      "key": "approval_assignees",
+      "layer": "U3",
+      "user_action": "approve_contract",
+      "prerequisite": "hard",
+      "read_entry": "sc.approval tier reviewer / res.users",
+      "scope": "approval reviewers",
+      "owner_layer": "P1",
+      "repair_hint": "每级审批人有真实内部用户，不得用组织负责人冒充审批人",
+      "acceptance_method": "每级 pending review 有真实内部用户",
+      "gap_ref": null
+    },
+    {
+      "key": "numbering_rules",
+      "layer": "U3",
+      "user_action": "submit_contract",
+      "prerequisite": "hard",
+      "read_entry": "ir.sequence / sc.product.numbering.rule",
+      "scope": "document numbering",
+      "owner_layer": "P0",
+      "repair_hint": "补齐单据编号规则",
+      "acceptance_method": "编号符合当前规则",
+      "gap_ref": null
+    },
+    {
+      "key": "menus_actions_capabilities",
+      "layer": "U3",
+      "user_action": "submit_contract",
+      "prerequisite": "conditional",
+      "read_entry": "菜单 / 动作 / 场景 / 能力发布",
+      "scope": "published menus, actions and capabilities",
+      "owner_layer": "P0",
+      "repair_hint": "发布菜单、动作、场景与能力",
+      "acceptance_method": "角色可见菜单/动作正确",
+      "gap_ref": null
+    },
+    {
+      "key": "permission_boundaries",
+      "layer": "U3",
+      "user_action": "approve_contract",
+      "prerequisite": "hard",
+      "read_entry": "数据权限 / 记录规则 / 办理权限",
+      "scope": "permission boundaries",
+      "owner_layer": "P0",
+      "repair_hint": "补齐数据权限与记录规则",
+      "acceptance_method": "未授权角色不能办理",
+      "gap_ref": null
+    },
+    {
+      "key": "project_master",
+      "layer": "U4",
+      "user_action": "open_project",
+      "prerequisite": "hard",
+      "read_entry": "project.project (name/code/company/operating mode/type/category)",
+      "scope": "project master",
+      "owner_layer": "P1",
+      "repair_hint": "补齐项目名称、编号、公司、经营方式、项目类型/类别",
+      "acceptance_method": "项目可创建并进入可办理状态",
+      "gap_ref": null
+    },
+    {
+      "key": "project_parties_owners",
+      "layer": "U4",
+      "user_action": "open_project",
+      "prerequisite": "hard",
+      "read_entry": "project.project owner / parties / dates / owners",
+      "scope": "project parties and owners",
+      "owner_layer": "P2",
+      "repair_hint": "补齐业主、项目经理、成本/资料负责人、地点、日期",
+      "acceptance_method": "负责人字段完整且为真实用户",
+      "gap_ref": null
+    },
+    {
+      "key": "funding_baseline",
+      "layer": "U4",
+      "user_action": "establish_baseline",
+      "prerequisite": "hard",
+      "read_entry": "project.funding.baseline (version/period/amount)",
+      "scope": "funding baseline",
+      "owner_layer": "P1",
+      "repair_hint": "开启资金承载并建立生效资金基线",
+      "acceptance_method": "资金基线版本/期间/金额有效",
+      "gap_ref": null
+    },
+    {
+      "key": "budget_boq_wbs",
+      "layer": "U4",
+      "user_action": "establish_baseline",
+      "prerequisite": "hard",
+      "read_entry": "预算/目标成本 / BOQ 版本与清单 / WBS/LBS/标段",
+      "scope": "budget, BOQ and WBS",
+      "owner_layer": "P1",
+      "repair_hint": "补齐预算/目标成本、BOQ 清单、WBS/LBS",
+      "acceptance_method": "BOQ 清单与 WBS 非空",
+      "gap_ref": null
+    },
+    {
+      "key": "contract_basis_anchor",
+      "layer": "U4",
+      "user_action": "create_contract_basis",
+      "prerequisite": "hard",
+      "read_entry": "合同/采购依据创建所需项目锚点与模板",
+      "scope": "contract and procurement basis",
+      "owner_layer": "P1",
+      "repair_hint": "补齐合同/采购依据类型与模板",
+      "acceptance_method": "创建合同/采购依据时类型与模板可选",
+      "gap_ref": null
+    },
+    {
+      "key": "settlement_anchor",
+      "layer": "U4",
+      "user_action": "settlement_payment_ledger",
+      "prerequisite": "hard",
+      "read_entry": "合同或采购订单等结算依据",
+      "scope": "settlement anchor",
+      "owner_layer": "P1",
+      "repair_hint": "补齐合同或采购订单等结算依据",
+      "acceptance_method": "付款提交前能发现硬前置缺口",
+      "gap_ref": null
+    },
+    {
+      "key": "daily_fact_binding",
+      "layer": "U5",
+      "user_action": "daily_tick",
+      "prerequisite": "hard",
+      "read_entry": "scenario intent/action handler / system_fact",
+      "scope": "daily tick fact binding",
+      "owner_layer": "P4",
+      "repair_hint": "system_fact 绑定公开 intent/action，未绑定保持未推进",
+      "acceptance_method": "每日 tick 推进真实业务事实",
+      "gap_ref": "DUF-01"
+    },
+    {
+      "key": "business_day_coverage",
+      "layer": "U5",
+      "user_action": "daily_tick",
+      "prerequisite": "hard",
+      "read_entry": "demo_scenario_manifest steps (10 business days)",
+      "scope": "10-day narrative",
+      "owner_layer": "P4",
+      "repair_hint": "补齐 10 日叙事步骤与幂等键",
+      "acceptance_method": "10 日连续推进且幂等",
+      "gap_ref": "DUF-05"
+    },
+    {
+      "key": "experience_reset_scope",
+      "layer": "U5",
+      "user_action": "experience_reset",
+      "prerequisite": "hard",
+      "read_entry": "experience reset scope planner",
+      "scope": "experience reset",
+      "owner_layer": "P4",
+      "repair_hint": "体验 reset 只清理体验用户操作增量，不重置 demo 基线",
+      "acceptance_method": "体验增量清零且基线指纹不变",
+      "gap_ref": null
+    },
+    {
+      "key": "my_work_derived",
+      "layer": "U6",
+      "user_action": "my_work_today",
+      "prerequisite": "conditional",
+      "read_entry": "sc.workbench.item / my.work.summary (derived)",
+      "scope": "my work derived projection",
+      "owner_layer": "P3",
+      "repair_hint": "我的工作由事实派生，禁止直接 seed",
+      "acceptance_method": "首页任务与业务事实一致",
+      "gap_ref": null
+    },
+    {
+      "key": "cockpit_derived",
+      "layer": "U6",
+      "user_action": "workbench_cockpit",
+      "prerequisite": "conditional",
+      "read_entry": "sc.dashboard.cockpit.fact / operating metrics (derived)",
+      "scope": "cockpit and operating metrics",
+      "owner_layer": "P1",
+      "repair_hint": "驾驶舱与经营指标由事实派生，禁止直接 seed",
+      "acceptance_method": "指标与事实一致",
+      "gap_ref": null
+    }
+  ],
+  "gaps": [
+    {
+      "id": "DUF-01",
+      "title": "每日 system_fact 未绑定执行器",
+      "owner_layer": "P4",
+      "blocking_batches": ["F7"],
+      "repair_hint": "system_fact 绑定公开 intent/action 处理器；未绑定步骤保持未推进",
+      "status": "open",
+      "registry_item": 11
+    },
+    {
+      "id": "DUF-02",
+      "title": "就绪检查仅证明记录存在",
+      "owner_layer": "P4",
+      "blocking_batches": ["F1", "F3", "F5"],
+      "repair_hint": "增加字段完整性、公开候选集、角色可见与动作可用断言",
+      "status": "open",
+      "registry_item": 10
+    },
+    {
+      "id": "DUF-03",
+      "title": "角色启动验收覆盖不足",
+      "owner_layer": "P4",
+      "blocking_batches": ["F2", "F8"],
+      "repair_hint": "增加业务全功能账号、首屏非空与实际下一步断言",
+      "status": "open",
+      "registry_item": 12
+    },
+    {
+      "id": "DUF-04",
+      "title": "演示数据时间与金额失真",
+      "owner_layer": "P4",
+      "blocking_batches": ["F3", "F8"],
+      "repair_hint": "以业务日历和金额规则回读，不按文本字符串验收",
+      "status": "open",
+      "registry_item": 13
+    },
+    {
+      "id": "DUF-05",
+      "title": "10 日叙事未完整声明",
+      "owner_layer": "P4",
+      "blocking_batches": ["F7"],
+      "repair_hint": "补齐可执行 10 日步骤与幂等键",
+      "status": "open",
+      "registry_item": 14
+    }
+  ]
+}

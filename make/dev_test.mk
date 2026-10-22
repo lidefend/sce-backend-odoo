@@ -3008,6 +3008,20 @@ verify.demo.baseline_readiness.unit: guard.prod.forbid
 verify.demo.scenario_step.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_demo_scenario_step.py
 
+.PHONY: verify.demo.usage_foundation.unit
+verify.demo.usage_foundation.unit: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_demo_usage_foundation_audit.py
+
+.PHONY: verify.demo.usage_foundation_role_scope.unit
+verify.demo.usage_foundation_role_scope.unit: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_demo_usage_foundation_role_scope_probe.py
+
+.PHONY: verify.demo.usage_foundation_role_scope.smoke
+verify.demo.usage_foundation_role_scope.smoke: guard.prod.forbid
+	@E2E_BASE_URL="$(if $(E2E_BASE_URL),$(E2E_BASE_URL),http://127.0.0.1:18081)" \
+	  E2E_PASSWORD="$(if $(E2E_PASSWORD),$(E2E_PASSWORD),123456)" \
+	  python3 scripts/verify/demo_usage_foundation_role_scope_probe.py
+
 .PHONY: verify.demo.experience_reset_scope.unit
 verify.demo.experience_reset_scope.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_experience_reset_scope.py
