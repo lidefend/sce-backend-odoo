@@ -39,5 +39,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Freeze and commit the P1 fix, run Quick, deploy the candidate, upgrade smart_construction_demo, replay demo_company_membership and prove a later restart preserves [1,2]."
+  "next_exact_step": "Commit the runtime proof, run final exact-head Quick, publish the GitHub PR and merge after the complete ordered required-check set."
 }

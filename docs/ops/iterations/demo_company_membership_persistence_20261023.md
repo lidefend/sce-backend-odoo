@@ -29,10 +29,25 @@ membership added by `demo_company_membership`.
 ## Verification
 
 - `make verify.demo.lifecycle.unit`: PASS, 142 tests.
-- exact-head Quick, module upgrade, seed replay and post-restart role readback:
-  pending in this batch.
+- candidate deployment `c947d561b`: PASS on the registered daily demo duty.
+- governed `smart_construction_demo` upgrade: PASS with a verified pre-upgrade
+  database recovery point.
+- `demo_company_membership` seed replay after the first upgrade: PASS; the role
+  probe observed `wutao` and `demo_full` at `[1,2]`.
+- a second identical module upgrade without replaying seed: PASS; the role probe
+  again observed 11/11 accounts and both business-full users at `[1,2]`.
+
+This second-upgrade result is the discriminating proof: the previous XML
+behavior reset both users during an upgrade, while the corrected module data
+leaves `company_ids` untouched.
 
 ## Rollback
 
 Revert this commit and re-run the declared demo seed. No ACL or data migration
 schema change is involved.
+
+## Next exact step
+
+Freeze the final documentation head, run Quick, publish the exact branch as a
+GitHub PR, wait for all required checks and the ordered fact workflows, then
+merge through the protected PR flow.
