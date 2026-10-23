@@ -1516,6 +1516,10 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   max-width: 100%;
 }
 
+.template-form-section--compact-summary :deep(.t-descriptions__body) {
+  width: auto;
+}
+
 .readonly-value {
   font: var(--sc-font-body-medium);
   box-sizing: border-box;

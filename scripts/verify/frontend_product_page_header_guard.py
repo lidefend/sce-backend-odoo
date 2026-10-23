@@ -626,6 +626,8 @@ def validate() -> list[str]:
         "width: fit-content",
         "width: max-content",
         "container-type: normal",
+        ":deep(.t-descriptions__body)",
+        "width: auto",
     ):
         if marker not in form_section:
             failures.append(f"structural header summary does not stay content-sized: {marker}")
