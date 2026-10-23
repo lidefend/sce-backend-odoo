@@ -1511,7 +1511,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   min-width: 0;
 }
 
-.template-form-section--compact-summary .template-form-section-descriptions {
+.template-form-section--compact-summary :deep(.template-form-section-descriptions) {
   width: max-content;
   max-width: 100%;
 }
