@@ -21,6 +21,19 @@ SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 CONFIRMATION = "PUBLISH_EXACT_DAILY_RUNTIME_VERSION"
 ENTRY_DECLARATION = Path("config/ops/daily_runtime_entry.v1.json")
 DEFAULT_REPORT_ROOT = ".runtime/final-acceptance/daily-deployed/release"
+# Makefile exports every variable when an operator env file is present. That
+# freezes recursively expanded argument builders at the parent make's values,
+# so a child make can see a non-empty input while still receiving an empty
+# ``--expect-entry-digest`` or missing duty/selection flags. Drop only the
+# derived builders and let each child make re-expand them from this step.
+FROZEN_RECURSIVE_MAKE_VARIABLES = (
+    "DAILY_RUNTIME_CANDIDATE_SHA_FLAG",
+    "DAILY_RUNTIME_DUTY_FLAG",
+    "DAILY_RUNTIME_LEGACY_EXPECTED_SHA_FLAG",
+    "DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG",
+    "DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS",
+    "DAILY_RUNTIME_ENTRY_FLAGS",
+)
 
 
 class ReleaseError(RuntimeError):
@@ -305,6 +318,8 @@ def execute(
     for step in steps:
         started = time.monotonic()
         environment = {**os.environ, **step.environment}
+        for variable in FROZEN_RECURSIVE_MAKE_VARIABLES:
+            environment.pop(variable, None)
         code, stdout, stderr = runner(step.command(), repository, environment)
         record = {
             "key": step.key,

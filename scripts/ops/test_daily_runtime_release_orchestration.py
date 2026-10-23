@@ -70,6 +70,14 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
         self.assertEqual(steps[2].variables["DAILY_RUNTIME_DATABASE_DUTY_SELECTION"],
                          "demo platform_control")
         self.assertEqual(
+            steps[2].variables["DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST"],
+            "d" * 64,
+        )
+        self.assertEqual(
+            steps[2].variables["DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST"],
+            "e" * 64,
+        )
+        self.assertEqual(
             steps[2].environment["SC_CONFIRM_DAILY_RUNTIME_DUTY_REFRESH"],
             "REFRESH_DAILY_RUNTIME_DUTY_STACK_AND_APPLICATION",
         )
@@ -117,6 +125,33 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
         self.assertIn(
             "BUILD_AND_DECLARE_DAILY_RUNTIME_FRONTEND_AT_DEPLOYED_HEAD",
             calls[1][1]["CONFIRM_DAILY_RUNTIME_FRONTEND_BUILD"],
+        )
+
+    def test_execute_releases_frozen_recursive_make_arguments(self):
+        steps = orchestration.plan_steps(ROOT, arguments(), identity())
+        frozen = {
+            variable: "stale-parent-value"
+            for variable in orchestration.FROZEN_RECURSIVE_MAKE_VARIABLES
+        }
+        observed = {}
+
+        def runner(command, cwd, environment):
+            observed.update(environment)
+            return 0, "ok", ""
+
+        with mock.patch.dict(os.environ, frozen):
+            orchestration.execute(
+                ROOT,
+                [steps[2]],
+                runner=runner,
+                report=ROOT / ".runtime" / "test-release-environment.json",
+            )
+
+        for variable in orchestration.FROZEN_RECURSIVE_MAKE_VARIABLES:
+            self.assertNotIn(variable, observed)
+        self.assertEqual(
+            observed["SC_CONFIRM_DAILY_RUNTIME_DUTY_REFRESH"],
+            "REFRESH_DAILY_RUNTIME_DUTY_STACK_AND_APPLICATION",
         )
 
     def test_every_step_is_a_defined_make_target(self):

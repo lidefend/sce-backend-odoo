@@ -40,6 +40,10 @@
   `sync → frontend build → duty refresh → demo align → platform align → published face → entry verify`.
 - Added `DAILY_RUNTIME_RELEASE_PLAN=1` to the same main/candidate release entry
   for read-only sequence inspection, without creating a second dead Make target.
+- Fixed recursive-Make argument freezing exposed by the first live candidate
+  release: the orchestrator now removes parent-expanded `*_FLAGS` builders
+  before each child Make, so digest, duty and selection options are re-expanded
+  from the exact step inputs instead of silently becoming empty.
 - Wired the presentation unit lane into the frontend Quick gate and the release
   orchestration unit lane into delivery freeze preparation.
 
@@ -47,8 +51,9 @@
 
 - `make verify.frontend.presentation.lane.unit`: PASS, 42 tests plus the vendor
   coupling guard and JavaScript syntax check.
-- `make verify.daily.runtime.release_orchestration.unit`: PASS, 6 tests covering
-  main/candidate order, identity fields, fail-fast behavior and Make wiring.
+- `make verify.daily.runtime.release_orchestration.unit`: PASS, 7 tests covering
+  main/candidate order, identity fields, fail-fast behavior, release-input
+  propagation and Make wiring.
 - `DAILY_RUNTIME_RELEASE_PLAN=1 make daily.runtime.candidate.release`: PASS and
   prints the complete main/candidate sequence without executing it.
 - `make audit.verification.lane_coverage.check`: PASS. The former dead-surface
@@ -59,6 +64,10 @@
   errors and no mobile overflow.
 - Presentation evidence was consumed by the new adapter:
   targets=1, mutations=0, runtime_errors=0.
+- First live candidate release: bundle sync and frontend build PASS; duty refresh
+  failed closed because the parent Make had exported empty recursive argument
+  builders. The failure was classified as a P4 validation-tool defect; the
+  release-input propagation fix and regression test own the correction.
 
 ## Risk and rollback
 
