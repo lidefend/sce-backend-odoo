@@ -625,6 +625,7 @@ def validate() -> list[str]:
         "'template-form-section-descriptions--compact-summary': compactSummary",
         "width: fit-content",
         "width: max-content",
+        "container-type: normal",
     ):
         if marker not in form_section:
             failures.append(f"structural header summary does not stay content-sized: {marker}")
@@ -660,7 +661,7 @@ def validate() -> list[str]:
         "font-size:var(--sc-product-text-title)",
         "font-weight:var(--sc-pattern-page-header-title-weight)",
         "line-height:32px",
-        "grid-template-columns: minmax(0, 1fr) minmax(14rem, max-content) auto",
+        "grid-template-columns: minmax(0, 1fr) minmax(18rem, max-content) auto",
     ):
         if marker not in component:
             failures.append(f"ProductPageHeader does not consume semantic title typography: {marker}")

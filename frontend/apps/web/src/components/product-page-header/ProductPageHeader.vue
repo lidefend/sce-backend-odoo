@@ -83,7 +83,7 @@ const model = computed(() => resolveProductPageHeaderModel({
 .product-page-header {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(14rem, max-content) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, max-content) auto;
   align-items: center;
   gap: var(--sc-space-sm);
   min-width: 0;

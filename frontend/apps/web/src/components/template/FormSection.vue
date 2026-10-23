@@ -1161,6 +1161,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   justify-self: start;
   width: fit-content;
   max-width: 100%;
+  container-type: normal;
 }
 
 .template-form-section-descriptions--compact-summary {
