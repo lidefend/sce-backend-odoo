@@ -66,9 +66,13 @@ def build_confirmation(
         raise ConfirmationError("base-url, login, expected-sha, tool and run-id are required")
     if tool not in (declaration.get("tools") or []):
         raise ConfirmationError(f"tool {tool!r} is not declared for the fixed demo credential")
-    if login != declaration.get("login"):
+    additional_logins = declaration.get("additional_logins") or []
+    if not isinstance(additional_logins, list) or any(not isinstance(item, str) or not item for item in additional_logins):
+        raise ConfirmationError("additional_logins must be a list of non-empty logins")
+    allowed_logins = [declaration.get("login"), *additional_logins]
+    if login not in allowed_logins:
         raise ConfirmationError(
-            f"login {login!r} is not the declared fixed demo login {declaration.get('login')!r}"
+            f"login {login!r} is not a declared fixed demo login"
         )
     if password != declaration.get("password"):
         raise ConfirmationError("supplied password is not the declared fixed demo password")

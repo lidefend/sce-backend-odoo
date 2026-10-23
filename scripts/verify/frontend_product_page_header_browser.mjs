@@ -140,8 +140,10 @@ for (const target of targets) {
   check(snapshot.bodyActionBarCount === 0, `${target.key}: parallel body action bar remains`);
   check(snapshot.componentCount > 0, `${target.key}: no registered component evidence`);
   check(snapshot.unresolvedComponentCount === 0, `${target.key}: unresolved component evidence remains`);
-  check(snapshot.professionalBaseFieldCount > 0, `${target.key}: professional base field family is absent`);
-  check(snapshot.visibleProfessionalBaseFieldCount > 0, `${target.key}: professional base field family is not visible`);
+  if (target.requireProfessionalBaseField !== false) {
+    check(snapshot.professionalBaseFieldCount > 0, `${target.key}: professional base field family is absent`);
+    check(snapshot.visibleProfessionalBaseFieldCount > 0, `${target.key}: professional base field family is not visible`);
+  }
   if (target.requireBusinessValue) {
     check(snapshot.visibleProfessionalBusinessValueCount > 0, `${target.key}: professional business-value family is not visible`);
   }

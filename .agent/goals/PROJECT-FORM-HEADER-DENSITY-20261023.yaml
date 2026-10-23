@@ -1,0 +1,83 @@
+schema_version: 1
+goal:
+  id: PROJECT-FORM-HEADER-DENSITY-20261023
+  status: active
+  title: Compact the shared product form header without changing product semantics
+  objective: >-
+    Remove excessive empty space from the shared product form header on desktop
+    and narrow viewports while preserving the single ProductPageHeader
+    authority, title, status, action settlement, contract inputs and permissions.
+  formal_product_layer: P0 platform kernel product
+  layer_target: shared product page header and form header presentation
+  modules_or_tools:
+    - frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue
+    - frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue
+    - frontend/apps/web/src/components/template/FormSection.vue
+    - frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue
+    - frontend/apps/web/src/components/design-system/ScDescriptions.vue
+    - scripts/verify/frontend_product_page_header_guard.py
+    - scripts/verify/frontend_product_page_header_browser.mjs
+    - make/frontend.mk
+    - config/acceptance/daily_demo_credential.v1.json
+    - scripts/verify/frontend_authenticated_intent.mjs
+    - scripts/verify/test_frontend_delivery_hardening_guard.py
+    - scripts/verify/daily_demo_credential_confirmation.py
+    - scripts/verify/test_daily_demo_credential_confirmation.py
+    - scripts/verify/frontend_list_surface_structure_browser.mjs
+    - scripts/verify/test_frontend_list_surface_search_contract.py
+  scope:
+    - frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue
+    - frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue
+    - frontend/apps/web/src/components/template/FormSection.vue
+    - frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue
+    - frontend/apps/web/src/components/design-system/ScDescriptions.vue
+    - scripts/verify/frontend_product_page_header_guard.py
+    - scripts/verify/test_frontend_product_page_header_guard.py
+    - scripts/verify/frontend_product_page_header_browser.mjs
+    - make/frontend.mk
+    - config/acceptance/daily_demo_credential.v1.json
+    - scripts/verify/frontend_authenticated_intent.mjs
+    - scripts/verify/test_frontend_delivery_hardening_guard.py
+    - scripts/verify/daily_demo_credential_confirmation.py
+    - scripts/verify/test_daily_demo_credential_confirmation.py
+    - scripts/verify/frontend_list_surface_structure_browser.mjs
+    - scripts/verify/test_frontend_list_surface_search_contract.py
+    - docs/ops/iterations/project_form_header_density_20261023.md
+    - docs/engineering_convergence/complexity_budget_report.md
+    - docs/engineering_convergence/split_plan_queue.md
+    - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+    - .agent/active-runs.json
+    - .agent/goals/PROJECT-FORM-HEADER-DENSITY-20261023.yaml
+    - .agent/runs/PROJECT-FORM-HEADER-DENSITY-20261023/run.json
+  product_boundary:
+    standard_vs_user_specific: platform_generic_presentation_mechanism
+    why_here: >-
+      The project form symptom is produced by the shared ProductPageHeader and
+      form-header consumer allocating unused status width and stacking each slot
+      on narrow screens. Fixing the shared mechanism avoids a project-specific
+      frontend branch or duplicated layout authority.
+    why_not_elsewhere:
+      - no project field, action, permission or state semantic change
+      - no backend contract or runtime low-code configuration change
+      - no project.model special case in the frontend
+      - no ACL, role or visibility change
+    blast_radius:
+      - every direct consumer of ProductPageHeader
+      - contract form header action and status placement
+      - desktop, tablet and mobile form-header density
+  exclusions:
+    - no business contract changes
+    - no ACL, role, visibility, required, readonly or action changes
+    - no project.project special case
+    - no direct database or runtime configuration write
+  acceptance:
+    - desktop header no longer reserves an empty status column
+    - narrow header places status and actions on one compact row beneath identity
+    - a structural form header with a sparse fact row sizes to its declared content instead of stretching a one-item descriptions table across the entire body
+    - project form remains free of horizontal overflow
+    - project form page still has one title, one status authority and the declared actions
+  rollback:
+    - revert this topic commit; no data migration or runtime configuration rollback is required
+  next_exact_step: >-
+    Register the run, implement the shared header layout correction and its
+    non-zero guard, then capture before/after project-form geometry.

@@ -2,7 +2,7 @@
   <ScCard
     v-if="displayFields.length || fieldSelectionMode || fieldConfigEditable || slots.action"
     :bordered="frame ? undefined : false"
-    :class="['template-form-section', toneClass, { 'template-form-section--readonly': allFieldsReadonly, 'template-form-section--frameless': !frame }]"
+    :class="['template-form-section', toneClass, { 'template-form-section--readonly': allFieldsReadonly, 'template-form-section--frameless': !frame, 'template-form-section--compact-summary': compactSummary }]"
     data-component="FormSection"
     data-semantic-component="FormSection"
     :data-state="allFieldsReadonly ? 'readonly' : 'editable'"
@@ -28,6 +28,7 @@
     <ScDescriptions
       v-if="segment.facts"
       class="template-form-section-descriptions"
+      :compact="compactSummary"
       data-detail-facts="official-standard-detail"
       :bordered="false"
       :column="detailFactColumns"
@@ -493,6 +494,7 @@ const props = withDefaults(defineProps<{
   inputPlaceholder?: (label: string) => string;
   preferReadonlyFacts?: boolean;
   fillOrphanRows?: boolean;
+  compactSummary?: boolean;
 }>(), {
   frame: true,
   columns: undefined,
@@ -514,6 +516,7 @@ const props = withDefaults(defineProps<{
   inputPlaceholder: (label: string) => resolveInputPlaceholder(label),
   preferReadonlyFacts: false,
   fillOrphanRows: true,
+  compactSummary: false,
 });
 
 const sceneUiKit = useOptionalSceneUiKit();
@@ -1150,6 +1153,13 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .template-form-section--frameless {
   grid-column: auto;
   min-width: 0;
+  max-width: 100%;
+  container-type: normal;
+}
+
+.template-form-section--compact-summary {
+  justify-self: start;
+  width: fit-content;
   max-width: 100%;
   container-type: normal;
 }

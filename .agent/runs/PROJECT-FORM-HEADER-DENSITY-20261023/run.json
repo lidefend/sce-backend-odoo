@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "id": "PROJECT-FORM-HEADER-DENSITY-20261023",
+  "branch": "fix/project-form-header-density-20261023",
+  "status": "active",
+  "baseline_sha": "1cafd87e2b0020f611a5f375aa4a2655c713f48f",
+  "goal": ".agent/goals/PROJECT-FORM-HEADER-DENSITY-20261023.yaml",
+  "record": "docs/ops/iterations/project_form_header_density_20261023.md",
+  "scope": [
+    "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
+    "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+    "frontend/apps/web/src/components/template/FormSection.vue",
+    "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+    "frontend/apps/web/src/components/design-system/ScDescriptions.vue",
+    "scripts/verify/frontend_product_page_header_guard.py",
+    "scripts/verify/test_frontend_product_page_header_guard.py",
+    "scripts/verify/frontend_product_page_header_browser.mjs",
+    "make/frontend.mk",
+    "config/acceptance/daily_demo_credential.v1.json",
+    "scripts/verify/frontend_authenticated_intent.mjs",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py",
+    "scripts/verify/daily_demo_credential_confirmation.py",
+    "scripts/verify/test_daily_demo_credential_confirmation.py",
+    "scripts/verify/frontend_list_surface_structure_browser.mjs",
+    "scripts/verify/test_frontend_list_surface_search_contract.py",
+    "docs/ops/iterations/project_form_header_density_20261023.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    ".agent/active-runs.json",
+    ".agent/goals/PROJECT-FORM-HEADER-DENSITY-20261023.yaml",
+    ".agent/runs/PROJECT-FORM-HEADER-DENSITY-20261023/run.json"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "registered daily demo runtime and existing ProductPageHeader acceptance tooling"
+  },
+  "checks": {
+    "header_unit": {
+      "target": "verify.frontend.product_page_header.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/design-system/ScDescriptions.vue",
+        "frontend/apps/web/src/app/presentation/productPageHeader.ts",
+        "frontend/apps/web/src/app/presentation/productPageHeaderAdapters.ts",
+        "frontend/apps/web/scripts/product_page_header_model_test.ts",
+        "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+        "scripts/verify/frontend_product_page_header_guard.py",
+        "scripts/verify/test_frontend_product_page_header_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "header_browser": {
+      "target": "verify.frontend.product_page_header.browser",
+      "inputs": [
+        "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/design-system/ScDescriptions.vue",
+        "scripts/verify/frontend_product_page_header_browser.mjs",
+        "scripts/verify/frontend_authenticated_intent.mjs",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "scripts/verify/lib/frontend_acceptance_environment.mjs",
+        "config/frontend/acceptance_environments_v1.json",
+        "config/frontend/acceptance_tool_matrix_v1.json",
+        "make/frontend.mk"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the final evidence delta, rerun freeze preparation if generated inputs change, then run one exact-head Quick and publish the GitHub PR."
+}

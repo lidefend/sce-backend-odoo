@@ -206,6 +206,7 @@
             :title="segmentIndex === renderSegments(node).findIndex((item) => item.kind === 'field') ? fieldSectionTitle(node) : ''"
             :columns="nodeColumns(node)"
             :inherited-semantic-role="semanticFormRole(node)"
+            :compact-summary="nodeType(node) === 'header'"
             :fields="fieldSchemasForNodes(segment.nodes)"
             :relation-adapter="relationAdapter"
             :field-actions="fieldActions"

@@ -373,18 +373,18 @@ function canonicalButtonVariant(action: CanonicalFormAction): 'primary' | 'ghost
 .meta { margin: 1px 0; color: var(--sc-semantic-text-muted); font-size: 12px; }
 .header-status-item { margin: 0; color: var(--sc-semantic-text-muted); font-size: 12px; line-height: 1.3; }
 .header-status-item--danger { color: var(--sc-app-warning-text); }
-.record-header-status { display: grid; grid-template-columns: max-content minmax(12rem, 1fr); align-items: center; justify-content: end; gap: 8px 12px; min-width: 0; }
+.record-header-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 12px; min-width: 0; }
 .record-header-context { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-height: 30px; color: var(--sc-app-text-secondary); font-size: 12px; white-space: nowrap; }
 .record-header-context strong { padding: 4px 8px; border: 1px solid var(--sc-app-border); border-radius: 999px; background: var(--sc-app-panel-muted); color: var(--sc-app-text-primary); font-size: 12px; }
 .record-header-context span { font-weight: 600; }
-.record-header-intake { display: grid; gap: 2px; }
+.record-header-intake { display: flex; flex-wrap: wrap; gap: 2px 12px; min-width: 0; }
 .form-header-action-separator { align-self: center; width: 1px; height: 16px; background: var(--sc-app-border); }
 .form-header-navigation-actions,
 .form-header-primary-actions { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .form-header-mobile-actions { display: none; }
 .native-statusbar--header {
-  display: grid;
-  grid-template-columns: max-content minmax(9rem, 14rem);
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: end;
   gap: 8px;
@@ -400,23 +400,22 @@ function canonicalButtonVariant(action: CanonicalFormAction): 'primary' | 'ghost
   color: var(--sc-app-text-secondary);
   font-size: 12px;
 }
-.native-statusbar-edit-control { width: 100%; min-width: 0; }
-@container page-header-status (max-width: 31rem) {
-  .record-header-status { grid-template-columns: minmax(0, 1fr); justify-content: stretch; }
+.native-statusbar-edit-control { flex: 0 1 14rem; width: 14rem; max-width: 100%; min-width: 0; }
+@container page-header-status (max-width: 14rem) {
+  .record-header-status { flex-direction: column; align-items: flex-start; justify-content: flex-start; }
   .record-header-context,
   .native-statusbar-current { justify-content: flex-start; }
   .native-statusbar--header { justify-content: start; }
 }
 @media (max-width: 860px) {
-  .record-header-status { width: 100%; }
+  .record-header-status { width: auto; }
   .record-header-context { justify-content: flex-start; }
-  .native-statusbar--header { width: 100%; }
+  .native-statusbar--header { width: auto; }
 }
 @media (max-width: 520px) {
   .record-header-status { gap: 6px; }
   .record-header-context { min-height: 24px; }
   .record-header-context strong { padding: 3px 7px; }
-  .native-statusbar--header { grid-template-columns: minmax(0, 1fr); }
   .native-statusbar-current { justify-content: flex-start; }
   .form-header-navigation-actions,
   .form-header-more-actions,
