@@ -171,6 +171,7 @@
             :inside-detail-card="insideDetailCard || isDetailCard(node)"
             :columns="nodeColumns(node)"
             :inherited-semantic-role="semanticFormRole(node)"
+            :compact-summary="nodeType(node) === 'header'"
             :authoritative-business-section-mode="authoritativeBusinessSectionMode"
             @field-change="emit('field-change', $event)"
             @field-action="emit('field-action', $event)"

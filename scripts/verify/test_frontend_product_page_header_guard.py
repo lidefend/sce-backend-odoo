@@ -307,15 +307,69 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
             value = real(path, *args, **kwargs)
             if path.name == "ProductPageHeader.vue":
                 return value.replace(
-                    ".product-page-header__identity{flex:0 1 auto;min-width:0}",
+                    ".product-page-header__identity{grid-column:1/-1;min-width:0}",
                     ".product-page-header__identity{min-width:0}",
                 )
             return value
 
         with patch("pathlib.Path.read_text", altered):
             self.assertIn(
-                "ProductPageHeader mobile identity retains a desktop flex basis",
+                "ProductPageHeader mobile identity does not own a full header row",
                 validate(),
+            )
+
+    def test_mobile_status_and_actions_cannot_split_into_extra_rows(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ProductPageHeader.vue":
+                return value.replace(
+                    ".product-page-header__actions{grid-column:2;width:auto;justify-self:end}",
+                    ".product-page-header__actions{width:100%}",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertIn(
+                "ProductPageHeader mobile actions do not share the compact status row",
+                validate(),
+            )
+
+    def test_contract_header_cannot_reserve_an_empty_status_column(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ContractFormProductHeader.vue":
+                return value.replace(
+                    ".native-statusbar--header {\n  display: flex;",
+                    ".native-statusbar--header {\n  display: grid;\n  grid-template-columns: max-content minmax(9rem, 14rem);",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            failures = validate()
+            self.assertTrue(
+                any("contract header does not compact status content" in item for item in failures)
+            )
+
+    def test_structural_header_summary_cannot_stretch_to_the_body_width(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "FormSection.vue":
+                return value.replace(
+                    "'template-form-section--compact-summary': compactSummary",
+                    "'template-form-section--compact-summary': false",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertIn(
+                "structural header summary does not stay content-sized",
+                "\n".join(validate()),
             )
 
     def test_page_title_cannot_restore_detached_literals(self):

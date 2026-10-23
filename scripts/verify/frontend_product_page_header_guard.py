@@ -609,6 +609,27 @@ def validate() -> list[str]:
     for marker in ('form-header-mobile-actions', 'mobileActionAuthority', 'mobilePresentedDirectActions', 'aria-label="更多页面操作"', ':data-mobile-action-count', ':data-mobile-action-keys'):
         if marker not in contract:
             failures.append(f"contract header mobile action settlement misses {marker}")
+    for marker in (
+        ".record-header-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end;",
+        ".native-statusbar--header {\n  display: flex;\n  flex-wrap: wrap;\n",
+        ".native-statusbar-edit-control { flex: 0 1 14rem; width: 14rem; max-width: 100%; min-width: 0; }",
+    ):
+        if marker not in contract:
+            failures.append(f"contract header does not compact status content: {marker}")
+    if "grid-template-columns: max-content minmax(9rem, 14rem)" in contract:
+        failures.append("contract header reserves an empty read-only status column")
+    form_section = source("frontend/apps/web/src/components/template/FormSection.vue")
+    form_renderer = source("frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue")
+    for marker in (
+        "'template-form-section--compact-summary': compactSummary",
+        "'template-form-section-descriptions--compact-summary': compactSummary",
+        "width: fit-content",
+        "width: max-content",
+    ):
+        if marker not in form_section:
+            failures.append(f"structural header summary does not stay content-sized: {marker}")
+    if ':compact-summary="nodeType(node) === \'header\'"' not in form_renderer:
+        failures.append("structural header container does not opt into compact summary presentation")
     if 'v-if="headerOverflowItems.length && !isNarrowViewport"' not in contract:
         failures.append("contract header desktop overflow must be structurally excluded on narrow viewports")
     if 'v-if="headerOverflowItems.length" class="form-header-more-actions"' in contract:
@@ -639,16 +660,24 @@ def validate() -> list[str]:
         "font-size:var(--sc-product-text-title)",
         "font-weight:var(--sc-pattern-page-header-title-weight)",
         "line-height:32px",
+        "grid-template-columns: minmax(0, 1fr) auto auto",
     ):
         if marker not in component:
             failures.append(f"ProductPageHeader does not consume semantic title typography: {marker}")
     if "font-size:22px" in component or "font-weight:700" in component:
         failures.append("ProductPageHeader restores detached title typography literals")
-    if ".product-page-header__identity{flex:0 1 auto;min-width:0}" not in component:
-        failures.append("ProductPageHeader mobile identity retains a desktop flex basis")
-    if ".product-page-header__status{flex:0 1 auto;width:100%" not in component:
-        failures.append("ProductPageHeader mobile status retains a desktop flex basis as vertical height")
-    for marker in ("flex-wrap: wrap", "container-name:page-header-status", "container-type:inline-size"):
+    if ".product-page-header__identity{grid-column:1/-1;min-width:0}" not in component:
+        failures.append("ProductPageHeader mobile identity does not own a full header row")
+    if (
+        ".product-page-header__status{grid-column:1;width:auto;max-width:100%;justify-self:start;text-align:left}"
+        not in component
+    ):
+        failures.append("ProductPageHeader mobile status does not share the compact action row")
+    if ".product-page-header__actions{grid-column:2;width:auto;justify-self:end}" not in component:
+        failures.append("ProductPageHeader mobile actions do not share the compact status row")
+    if "flex:1 1 22rem" in component:
+        failures.append("ProductPageHeader reserves a fixed desktop status width")
+    for marker in ("flex-wrap:wrap", "container-name:page-header-status", "container-type:inline-size"):
         if marker not in component:
             failures.append(f"ProductPageHeader status layout does not respond to available container space: {marker}")
     if "@media(max-width:1500px){.product-page-header--task[data-has-status='true']" in component:
