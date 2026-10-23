@@ -570,11 +570,52 @@ def _adapter_relation_roundtrip(data: dict, head: str, contract: dict | None = N
     }
 
 
+def _adapter_presentation_header(data: dict, head: str, contract: dict | None = None) -> dict:
+    _require(
+        data.get("schema") == "frontend_product_page_header_browser.v1",
+        "unexpected presentation header schema",
+    )
+    _require(data.get("passed") is True, "presentation header browser did not pass")
+    provenance = data.get("provenance") or {}
+    _require(
+        provenance.get("expected_sha") == head,
+        f"presentation evidence is bound to {provenance.get('expected_sha')!r}, expected {head}",
+    )
+    for key in ("console", "pageerror", "http", "mutations"):
+        value = data.get(key) or []
+        _require(not value, f"presentation browser recorded {key}")
+    _require(int(data.get("mutationCount") or 0) == 0, "presentation browser recorded mutations")
+    targets = data.get("targets")
+    _require(isinstance(targets, list) and targets, "presentation browser has no targets")
+    _require(
+        len(targets) >= _min_count(contract, "targets_total"),
+        f"presentation targets total={len(targets)} is below the declared minimum",
+    )
+    for target in targets:
+        _require(isinstance(target, dict) and bool(target.get("key")), "presentation target is invalid")
+        _require(target.get("mobileOverflow") is not True, f"{target['key']}: mobile overflow")
+        _require(int(target.get("headerCount") or 0) == 1, f"{target['key']}: header count is not one")
+        _require(int(target.get("h1Count") or 0) == 1, f"{target['key']}: h1 count is not one")
+        _require(
+            int(target.get("unresolvedComponentCount") or 0) == 0,
+            f"{target['key']}: unresolved components remain",
+        )
+        _require(bool(target.get("pagePattern")), f"{target['key']}: page pattern missing")
+    return {
+        "counts": {
+            "targets": len(targets),
+            "mutations": 0,
+            "runtime_errors": 0,
+        }
+    }
+
+
 ADAPTERS = {
     "entry_verify": _adapter_entry_verify,
     "path_ns_c": _adapter_path_ns_c,
     "list_surface": _adapter_list_surface,
     "relation_roundtrip": _adapter_relation_roundtrip,
+    "presentation_header": _adapter_presentation_header,
 }
 
 

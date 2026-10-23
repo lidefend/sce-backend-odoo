@@ -26,7 +26,22 @@ fs.mkdirSync(path.dirname(output), { recursive: true });
 const browser = await launchChromium({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await context.newPage();
-const evidence = { console: [], pageerror: [], http: [], mutations: [], targets: [] };
+const evidence = {
+  schema: 'frontend_product_page_header_browser.v1',
+  passed: false,
+  provenance: {
+    profile: acceptance.profile,
+    base_url: acceptance.baseUrl,
+    database: acceptance.database,
+    login: acceptance.login,
+    expected_sha: acceptance.provenance.expectedSha,
+  },
+  console: [],
+  pageerror: [],
+  http: [],
+  mutations: [],
+  targets: [],
+};
 page.on('console', (message) => { if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) evidence.console.push(message.text()); });
 page.on('pageerror', (error) => evidence.pageerror.push(error.message));
 page.on('response', (response) => { if (response.status() >= 500) evidence.http.push({ status: response.status(), url: response.url() }); });
@@ -48,8 +63,29 @@ await page.getByRole('button', { name: /^登录$/ }).click();
 await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45_000 });
 
 for (const target of targets) {
-  check(typeof target.route === 'string' && target.route.startsWith('/'), 'target route is invalid');
-  await page.goto(`${acceptance.baseUrl}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  if (target.entryObjectModel) {
+    check(
+      typeof target.entryObjectModel === 'string'
+        && /^[a-z][a-z0-9_.]+$/.test(target.entryObjectModel),
+      'entry object model is invalid',
+    );
+    await page.goto(`${acceptance.baseUrl}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    const objectEntry = page.locator(
+      `[data-login-home-block="my_objects"] article[data-object-model="${target.entryObjectModel}"]`,
+    ).first();
+    await objectEntry.waitFor({ state: 'visible', timeout: 45_000 });
+    await objectEntry.getByRole('button', { name: '打开', exact: true }).click();
+    const recordRoute = new RegExp(
+      `/r/${target.entryObjectModel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/\\d+`,
+    );
+    await page.waitForURL(
+      (url) => recordRoute.test(url.pathname),
+      { timeout: 45_000 },
+    );
+  } else {
+    check(typeof target.route === 'string' && target.route.startsWith('/'), 'target route is invalid');
+    await page.goto(`${acceptance.baseUrl}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  }
   const header = page.locator('[data-product-page-header]');
   await header.waitFor({ state: 'visible', timeout: 45_000 });
   await page.waitForFunction(() => !/正在载入|正在加载|正在初始化/.test(document.body.innerText || ''), null, { timeout: 45_000 });
@@ -182,6 +218,7 @@ check(evidence.console.length === 0, `console errors: ${JSON.stringify(evidence.
 check(evidence.pageerror.length === 0, `page errors: ${JSON.stringify(evidence.pageerror)}`);
 check(evidence.http.length === 0, `http 5xx: ${JSON.stringify(evidence.http)}`);
 check(evidence.mutations.length === 0, `business mutations: ${JSON.stringify(evidence.mutations)}`);
+evidence.passed = true;
 fs.writeFileSync(output, `${JSON.stringify({ ...evidence, mutationCount: 0 }, null, 2)}\n`);
 await browser.close();
 console.log(`[frontend_product_page_header_browser] PASS targets=${evidence.targets.length} mutations=0 errors=0`);

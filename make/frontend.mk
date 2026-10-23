@@ -243,9 +243,13 @@ verify.frontend.collection_selection_control.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_collection_selection_control_guard.py
 	@python3 scripts/verify/frontend_collection_selection_control_guard.py
 
-.PHONY: verify.frontend.product_page_header.browser
+.PHONY: verify.frontend.product_page_header.browser verify.frontend.presentation.lane.unit
 verify.frontend.product_page_header.browser: guard.prod.forbid
 	@node scripts/verify/frontend_product_page_header_browser.mjs
+
+verify.frontend.presentation.lane.unit: guard.prod.forbid verify.frontend.playwright_vendor_coupling.guard
+	@python3 -m unittest scripts.verify.test_acceptance_evolution_binding_guard
+	@node --check scripts/verify/frontend_product_page_header_browser.mjs
 
 .PHONY: verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.contract_shape_projection.unit verify.semantic_runtime_resolution verify.frontend.professional_base_field.unit verify.frontend.component_driver_takeover.unit refresh.frontend.component_driver_takeover.inventory
 verify.frontend.component_driver_takeover.unit: guard.prod.forbid
@@ -1108,6 +1112,7 @@ verify.frontend.playwright_vendor_coupling.guard: guard.prod.forbid
 verify.frontend.quick.gate: verify.frontend.j13_required_value_semantics.unit verify.frontend.canonical_form_presenter.unit verify.frontend.hierarchy_command_authority.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.contract_field_occurrence_identity.unit verify.frontend.contract_form_save_failure_recovery.unit verify.frontend.contract_error_business_ownership.unit verify.frontend.standard_form_composition.unit verify.frontend.adopted_form_engine_decision.unit verify.frontend.adopted_form_validation_identity.unit verify.frontend.standard_collection_composition.unit verify.frontend.standard_shell_composition.unit verify.frontend.native_section_navigation.unit verify.frontend.native_collaboration_presentation.unit verify.frontend.cross_model_action_navigation.unit verify.frontend.contract_render_profile.unit verify.frontend.collection_status_presentation.unit
 verify.frontend.quick.gate: verify.frontend.playwright_vendor_coupling.guard
 verify.frontend.quick.gate: verify.frontend.business_entry.evidence_scope.unit
+verify.frontend.quick.gate: verify.frontend.presentation.lane.unit
 verify.frontend.quick.gate: guard.prod.forbid verify.frontend.workspace_content_alignment.guard verify.frontend.page_identity verify.frontend.contract_header_action.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.relation_entry.contract_guard verify.frontend.relation_read_closure.guard verify.frontend.modifiers_runtime.guard verify.frontend.onchange_roundtrip.guard verify.frontend.onchange_contract_schema.guard verify.frontend.onchange_line_patch.guard verify.frontend.x2many_command_semantic.guard verify.frontend.x2many_inline_edit.guard verify.contract.subviews.guard verify.frontend.view_type_render_coverage.guard verify.frontend.view_type_contract_semantic.guard verify.frontend.search_groupby_savedfilters.guard verify.frontend.saved_search_capability.unit verify.frontend.record_denied_reason.unit verify.frontend.contract_record_action_state.unit verify.frontend.group_summary_runtime.guard verify.frontend.grouped_rows_runtime.guard verify.frontend.grouped_pagination_semantic.guard verify.frontend.grouped_pagination_semantic_drift.guard verify.frontend.grouped_contract_consistency.guard verify.frontend.grouped_drift_summary.baseline.guard verify.frontend.typecheck.strict verify.frontend.build
 	@echo "[OK] verify.frontend.quick.gate done"
 
@@ -1238,11 +1243,31 @@ verify.frontend.list_surface_structure.browser: guard.prod.forbid verify.fronten
 # A receipt supplied for another runtime still fails closed on the database
 # binding; this lane never silently skips a declared prerequisite.
 DAILY_DEMO_CREDENTIAL_DECLARATION ?= config/acceptance/daily_demo_credential.v1.json
+FRONTEND_PRESENTATION_TARGETS_FILE ?= config/acceptance/frontend_presentation_targets.v1.json
+FRONTEND_PRESENTATION_LOGIN ?= demo_full
+FRONTEND_PRESENTATION_OUTPUT ?= .runtime/final-acceptance/frontend-presentation/header.json
 
 .PHONY: verify.daily.demo_credential.confirmation
 verify.daily.demo_credential.confirmation: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/daily_demo_credential_confirmation.py scripts/verify/test_daily_demo_credential_confirmation.py
 	@python3 -m unittest scripts.verify.test_daily_demo_credential_confirmation
+
+.PHONY: verify.frontend.presentation.browser
+verify.frontend.presentation.browser: guard.prod.forbid verify.daily.demo_credential.confirmation
+	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
+	@test -n "$(ACCEPTANCE_BASE_URL)" || (echo "explicit ACCEPTANCE_BASE_URL is required"; exit 2)
+	@test -n "$${ACCEPTANCE_PASSWORD:-}" || (echo "ACCEPTANCE_PASSWORD is required"; exit 2)
+	@set -e; \
+	  RUN_ID="$${SC_ACCEPTANCE_RUN_ID:-presentation-$$(git rev-parse --short=12 HEAD)-$$(date +%s)}"; \
+	  CONFIRM="$${SC_ACCEPTANCE_DAILY_CREDENTIAL_CONFIRMATION:-$$(python3 scripts/verify/daily_demo_credential_confirmation.py \
+	    --declaration "$(DAILY_DEMO_CREDENTIAL_DECLARATION)" \
+	    --base-url "$(ACCEPTANCE_BASE_URL)" \
+	    --login "$(FRONTEND_PRESENTATION_LOGIN)" \
+	    --expected-sha "$(ACCEPTANCE_TARGET_SHA)" \
+	    --tool geometry-scroll-audit \
+	    --run-id "$$RUN_ID")}"; \
+	  TARGETS_JSON="$$(python3 -c 'import json,sys; print(json.dumps(json.load(open(sys.argv[1]))["targets"], separators=(",", ":")))' "$(FRONTEND_PRESENTATION_TARGETS_FILE)")"; \
+	  SC_ACCEPTANCE_RUN_ID="$$RUN_ID" SC_ACCEPTANCE_DAILY_CREDENTIAL_CONFIRMATION="$$CONFIRM" SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_API_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_LOGIN="$(FRONTEND_PRESENTATION_LOGIN)" PRODUCT_PAGE_HEADER_TARGETS_JSON="$$TARGETS_JSON" PRODUCT_PAGE_HEADER_OUTPUT="$(FRONTEND_PRESENTATION_OUTPUT)" node scripts/verify/frontend_product_page_header_browser.mjs
 
 verify.daily_dev.list_surface.readonly.browser: guard.prod.forbid verify.daily.demo_credential.confirmation
 	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)

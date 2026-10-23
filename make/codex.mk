@@ -689,7 +689,7 @@ verify.workspace.worktree.guard: guard.prod.forbid
 	@python3 -m unittest scripts/ops/test_safe_worktree_create.py scripts/ops/test_safe_worktree_cleanup.py
 
 # ------------------ Main sync (safe) ------------------
-.PHONY: main.sync daily.runtime.main.bundle_sync verify.daily.runtime.main.bundle_sync daily.runtime.candidate.bundle_sync verify.daily.runtime.candidate.bundle_sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee daily.runtime.source_revision.align verify.daily.runtime.source_revision.align daily.runtime.frontend.build verify.daily.runtime.frontend.build
+.PHONY: main.sync daily.runtime.main.bundle_sync verify.daily.runtime.main.bundle_sync daily.runtime.candidate.bundle_sync verify.daily.runtime.candidate.bundle_sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee daily.runtime.source_revision.align verify.daily.runtime.source_revision.align daily.runtime.frontend.build verify.daily.runtime.frontend.build daily.runtime.main.release daily.runtime.candidate.release verify.daily.runtime.release_orchestration.unit
 
 DAILY_RUNTIME_SSH_HOST ?= sc-root
 DAILY_RUNTIME_EXPECTED_SHA ?=
@@ -1454,7 +1454,36 @@ daily.runtime.published_face.converge: guard.prod.forbid verify.daily.runtime.pu
 		$(if $(DAILY_RUNTIME_PUBLISHED_FACE_FORCE_UPGRADE),--force-upgrade,) \
 		--report "$(DAILY_RUNTIME_PUBLISHED_FACE_REPORT)"
 
-daily.runtime.candidate.release: guard.prod.forbid daily.runtime.candidate.bundle_sync daily.runtime.source_revision.align daily.runtime.published_face.converge
+DAILY_RUNTIME_RELEASE_EXPECTED_SHA ?= $(DAILY_CANDIDATE_EXPECTED_SHA)
+DAILY_RUNTIME_RELEASE_EXPECTED_OLD_SHA ?= $(DAILY_CANDIDATE_EXPECTED_OLD_SHA)
+DAILY_RUNTIME_RELEASE_EXPECTED_CANDIDATE_SHA ?= $(DAILY_RUNTIME_EXPECTED_CANDIDATE_SHA)
+DAILY_RUNTIME_RELEASE_SOURCE_BRANCH ?= $(DAILY_CANDIDATE_SOURCE_BRANCH)
+DAILY_RUNTIME_RELEASE_DECLARATION_DIGEST ?= $(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)
+DAILY_RUNTIME_RELEASE_ENTRY_DIGEST ?= $(DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST)
+DAILY_RUNTIME_RELEASE_PUBLISHED_FACE_LOGIN ?= $(DAILY_RUNTIME_PUBLISHED_FACE_LOGIN)
+DAILY_RUNTIME_RELEASE_REPORT_ROOT ?= .runtime/final-acceptance/daily-deployed/release
+DAILY_RUNTIME_RELEASE_PLAN ?= 0
+DAILY_RUNTIME_RELEASE_ARGS = \
+	--repo-root "$(CURDIR)" \
+	--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+	--expected-sha "$(DAILY_RUNTIME_RELEASE_EXPECTED_SHA)" \
+	--expected-old-sha "$(DAILY_RUNTIME_RELEASE_EXPECTED_OLD_SHA)" \
+	--expected-candidate-sha "$(DAILY_RUNTIME_RELEASE_EXPECTED_CANDIDATE_SHA)" \
+	--source-branch "$(DAILY_RUNTIME_RELEASE_SOURCE_BRANCH)" \
+	--declaration-digest "$(DAILY_RUNTIME_RELEASE_DECLARATION_DIGEST)" \
+	--entry-digest "$(DAILY_RUNTIME_RELEASE_ENTRY_DIGEST)" \
+	--published-face-login "$(DAILY_RUNTIME_RELEASE_PUBLISHED_FACE_LOGIN)" \
+	--report-root "$(DAILY_RUNTIME_RELEASE_REPORT_ROOT)"
+
+verify.daily.runtime.release_orchestration.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_release_orchestration.py scripts/ops/test_daily_runtime_release_orchestration.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_release_orchestration
+
+daily.runtime.main.release: guard.prod.forbid verify.daily.runtime.release_orchestration.unit
+	@CONFIRM_DAILY_RUNTIME_RELEASE="$${CONFIRM_DAILY_RUNTIME_RELEASE:-}" python3 scripts/ops/daily_runtime_release_orchestration.py --mode main $(DAILY_RUNTIME_RELEASE_ARGS) $(if $(filter 1,$(DAILY_RUNTIME_RELEASE_PLAN)),--plan,)
+
+daily.runtime.candidate.release: guard.prod.forbid verify.daily.runtime.release_orchestration.unit
+	@CONFIRM_DAILY_RUNTIME_RELEASE="$${CONFIRM_DAILY_RUNTIME_RELEASE:-}" python3 scripts/ops/daily_runtime_release_orchestration.py --mode candidate $(DAILY_RUNTIME_RELEASE_ARGS) $(if $(filter 1,$(DAILY_RUNTIME_RELEASE_PLAN)),--plan,)
 
 mirror.main.gitee: guard.prod.forbid
 	@bash scripts/ops/mirror_main_gitee.sh

@@ -1,0 +1,67 @@
+schema_version: 1
+goal:
+  id: DELIVERY-LANES-ORCHESTRATION-20261023
+  status: active
+  title: Route presentation-only changes through a lightweight browser lane and sequence daily releases
+  objective: >-
+    Close two P4 delivery gaps: presentation-only frontend changes must require
+    a focused presentation browser suite instead of the full list/path matrix,
+    and daily release must execute frontend build, duty refresh, both source
+    revision alignments, published-face convergence and entry readback in one
+    fail-fast governed sequence.
+  formal_product_layer: P4 ops delivery tooling
+  layer_target: acceptance classification and daily release orchestration
+  modules_or_tools:
+    - config/acceptance
+    - scripts/verify
+    - scripts/ops
+    - make
+  scope:
+    - config/acceptance/evolution_binding.v1.json
+    - config/acceptance/frontend_presentation_targets.v1.json
+    - scripts/verify/frontend_product_page_header_browser.mjs
+    - scripts/verify/acceptance_evolution_binding_guard.py
+    - scripts/verify/test_acceptance_evolution_binding_guard.py
+    - scripts/audit/verification_lane_dispositions.json
+    - scripts/ops/daily_runtime_release_orchestration.py
+    - scripts/ops/test_daily_runtime_release_orchestration.py
+    - make/frontend.mk
+    - make/codex.mk
+    - make/ci.mk
+    - docs/ops/iterations/delivery_lane_orchestration_20261023.md
+    - docs/engineering_convergence/complexity_budget_report.md
+    - docs/engineering_convergence/test_inventory.csv
+    - docs/engineering_convergence/test_inventory_summary.md
+    - .agent/active-runs.json
+    - .agent/goals/DELIVERY-LANES-ORCHESTRATION-20261023.yaml
+    - .agent/runs/DELIVERY-LANES-ORCHESTRATION-20261023/run.json
+  product_boundary:
+    standard_vs_user_specific: platform_delivery_mechanism
+    why_here: >-
+      Classification, evidence adapters and release command ordering are delivery
+      tooling responsibilities; they do not change frontend, backend, product
+      contracts or runtime data semantics.
+    why_not_elsewhere:
+      - no product UI or contract change
+      - no backend model, ACL or permission change
+      - no customer-specific configuration
+      - no manual environment assembly
+    blast_radius:
+      - acceptance suite selection for presentation-only frontend files
+      - daily main and candidate release command sequence
+      - generated release reports and existing governed targets
+  exclusions:
+    - no relaxation of current required checks
+    - no direct remote command outside governed Make targets
+    - no database, module, fixture or business-data write
+    - no product behavior change
+  acceptance:
+    - presentation-only files select frontend_contract and frontend_presentation, not list_surface_structure or path_namespace_identity
+    - presentation evidence requires one declared project-form target, no mutation, no runtime error and no overflow
+    - daily release always executes steps in the declared order and stops at the first failure
+    - main and candidate modes bind their exact source identities
+  rollback:
+    - revert this P4 topic; no product data or schema rollback is required
+  next_exact_step: >-
+    Register the run, implement the presentation evidence adapter and lightweight
+    browser entry, then add the fail-fast daily release orchestrator.
