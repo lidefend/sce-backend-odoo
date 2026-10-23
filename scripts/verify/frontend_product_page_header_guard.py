@@ -660,7 +660,7 @@ def validate() -> list[str]:
         "font-size:var(--sc-product-text-title)",
         "font-weight:var(--sc-pattern-page-header-title-weight)",
         "line-height:32px",
-        "grid-template-columns: minmax(0, 1fr) auto auto",
+        "grid-template-columns: minmax(0, 1fr) minmax(14rem, max-content) auto",
     ):
         if marker not in component:
             failures.append(f"ProductPageHeader does not consume semantic title typography: {marker}")
@@ -669,7 +669,7 @@ def validate() -> list[str]:
     if ".product-page-header__identity{grid-column:1/-1;min-width:0}" not in component:
         failures.append("ProductPageHeader mobile identity does not own a full header row")
     if (
-        ".product-page-header__status{grid-column:1;width:auto;max-width:100%;justify-self:start;text-align:left}"
+        ".product-page-header__status{grid-column:1;width:100%;max-width:100%;text-align:left}"
         not in component
     ):
         failures.append("ProductPageHeader mobile status does not share the compact action row")

@@ -83,7 +83,7 @@ const model = computed(() => resolveProductPageHeaderModel({
 .product-page-header {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, max-content) auto;
   align-items: center;
   gap: var(--sc-space-sm);
   min-width: 0;
@@ -134,7 +134,7 @@ const model = computed(() => resolveProductPageHeaderModel({
 }
 .product-page-header--title-hidden:not([data-has-status='true']) .product-page-header__actions { margin-left:auto; }
 .product-page-header--dialog { box-shadow:none; border-width:0 0 1px; border-radius:0; }
-@media(max-width:860px){.product-page-header{grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:var(--sc-space-sm);row-gap:var(--sc-space-xs)}.product-page-header__identity{grid-column:1/-1;min-width:0}.product-page-header__status{grid-column:1;width:auto;max-width:100%;justify-self:start;text-align:left}.product-page-header__actions{grid-column:2;width:auto;justify-self:end}}
+@media(max-width:860px){.product-page-header{grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:var(--sc-space-sm);row-gap:var(--sc-space-xs)}.product-page-header__identity{grid-column:1/-1;min-width:0}.product-page-header__status{grid-column:1;width:100%;max-width:100%;text-align:left}.product-page-header__actions{grid-column:2;width:auto;justify-self:end}}
 @media (max-width: 860px) {
   .product-page-header--task[data-render-profile='readonly'] {
     grid-template-columns: minmax(0, 1fr) auto;
