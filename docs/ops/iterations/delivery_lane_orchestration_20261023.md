@@ -38,7 +38,8 @@
   `make daily.runtime.main.release` and
   `make daily.runtime.candidate.release` run:
   `sync → frontend build → duty refresh → demo align → platform align → published face → entry verify`.
-- Added `make daily.runtime.release.plan` for a read-only sequence inspection.
+- Added `DAILY_RUNTIME_RELEASE_PLAN=1` to the same main/candidate release entry
+  for read-only sequence inspection, without creating a second dead Make target.
 - Wired the presentation unit lane into the frontend Quick gate and the release
   orchestration unit lane into delivery freeze preparation.
 
@@ -48,7 +49,11 @@
   coupling guard and JavaScript syntax check.
 - `make verify.daily.runtime.release_orchestration.unit`: PASS, 6 tests covering
   main/candidate order, identity fields, fail-fast behavior and Make wiring.
-- `make daily.runtime.release.plan`: PASS for both main and candidate modes.
+- `DAILY_RUNTIME_RELEASE_PLAN=1 make daily.runtime.candidate.release`: PASS and
+  prints the complete main/candidate sequence without executing it.
+- `make audit.verification.lane_coverage.check`: PASS. The former dead-surface
+  disposition for `daily.runtime.database.duty.refresh` was removed because the
+  release orchestrator now references and executes it.
 - `make verify.frontend.presentation.browser`: PASS against daily
   `804e793d…`; one project-form target, zero mutations, zero console/page/HTTP
   errors and no mobile overflow.

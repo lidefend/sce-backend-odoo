@@ -22,6 +22,7 @@ goal:
     - scripts/verify/frontend_product_page_header_browser.mjs
     - scripts/verify/acceptance_evolution_binding_guard.py
     - scripts/verify/test_acceptance_evolution_binding_guard.py
+    - scripts/audit/verification_lane_dispositions.json
     - scripts/ops/daily_runtime_release_orchestration.py
     - scripts/ops/test_daily_runtime_release_orchestration.py
     - make/frontend.mk
