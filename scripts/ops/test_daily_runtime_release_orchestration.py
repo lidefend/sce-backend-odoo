@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import importlib.util
+import io
 import os
 import sys
 import unittest
@@ -147,7 +149,7 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
             orchestration, "validate_identity", return_value=identity()
         ), mock.patch.object(
             orchestration, "execute", return_value={"status": "PASS"}
-        ) as execute, mock.patch.dict(os.environ, {}, clear=True):
+        ) as execute, mock.patch.dict(os.environ, {}, clear=True), contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(orchestration.main(argv), 2)
             execute.assert_not_called()
 

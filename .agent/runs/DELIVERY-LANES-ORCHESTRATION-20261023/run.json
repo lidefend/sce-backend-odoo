@@ -18,6 +18,9 @@
     "make/codex.mk",
     "make/ci.mk",
     "docs/ops/iterations/delivery_lane_orchestration_20261023.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
     ".agent/active-runs.json",
     ".agent/goals/DELIVERY-LANES-ORCHESTRATION-20261023.yaml",
     ".agent/runs/DELIVERY-LANES-ORCHESTRATION-20261023/run.json"
