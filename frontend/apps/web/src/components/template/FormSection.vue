@@ -1511,6 +1511,11 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   min-width: 0;
 }
 
+.template-form-section--compact-summary .template-form-section-descriptions {
+  width: max-content;
+  max-width: 100%;
+}
+
 .readonly-value {
   font: var(--sc-font-body-medium);
   box-sizing: border-box;
