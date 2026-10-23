@@ -1,0 +1,15 @@
+{
+  "schema": "frontend_presentation_targets.v1",
+  "profile": "daily",
+  "login": "demo_full",
+  "targets": [
+    {
+      "key": "project-form",
+      "entryObjectModel": "project.project",
+      "presentationMode": "workspace",
+      "renderProfile": "readonly",
+      "pagePattern": "workspace-form",
+      "requireProfessionalBaseField": false
+    }
+  ]
+}

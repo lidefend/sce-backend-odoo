@@ -35,6 +35,22 @@
         "deployment"
       ]
     },
+    "frontend_presentation": {
+      "description": "纯呈现组件的轻量页面证据：页面身份、契约消费、零写入、零运行错误与响应式无溢出",
+      "entrypoints": [
+        "make verify.frontend.presentation.browser"
+      ],
+      "evidence": {
+        "adapter": "presentation_header",
+        "min_counts": {
+          "targets_total": 1
+        }
+      },
+      "stages": [
+        "merge",
+        "deployment"
+      ]
+    },
     "governance_static": {
       "description": "静态守卫、结构锁与治理清单",
       "entrypoints": [
@@ -263,6 +279,21 @@
       "suites": [
         "frontend_contract",
         "list_surface_structure"
+      ]
+    },
+    {
+      "id": "frontend-presentation",
+      "paths": [
+        "frontend/apps/web/src/components/product-page-header/**",
+        "frontend/apps/web/src/components/product-page-patterns/**",
+        "frontend/apps/web/src/components/design-system/ScDescriptions.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue"
+      ],
+      "suites": [
+        "frontend_contract",
+        "frontend_presentation"
       ]
     },
     {

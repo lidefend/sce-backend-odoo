@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "id": "DELIVERY-LANES-ORCHESTRATION-20261023",
+  "branch": "fix/delivery-lanes-orchestration-20261023",
+  "status": "active",
+  "baseline_sha": "804e793d4e82e622e58e92d09f7c94614be05312",
+  "goal": ".agent/goals/DELIVERY-LANES-ORCHESTRATION-20261023.yaml",
+  "record": "docs/ops/iterations/delivery_lane_orchestration_20261023.md",
+  "scope": [
+    "config/acceptance/evolution_binding.v1.json",
+    "config/acceptance/frontend_presentation_targets.v1.json",
+    "scripts/verify/frontend_product_page_header_browser.mjs",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/ops/daily_runtime_release_orchestration.py",
+    "scripts/ops/test_daily_runtime_release_orchestration.py",
+    "make/frontend.mk",
+    "make/codex.mk",
+    "make/ci.mk",
+    "docs/ops/iterations/delivery_lane_orchestration_20261023.md",
+    ".agent/active-runs.json",
+    ".agent/goals/DELIVERY-LANES-ORCHESTRATION-20261023.yaml",
+    ".agent/runs/DELIVERY-LANES-ORCHESTRATION-20261023/run.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing acceptance and daily runtime Make entries; tests use fake runners before any live execution"
+  },
+  "checks": {
+    "presentation_lane_unit": {
+      "target": "verify.frontend.presentation.lane.unit",
+      "inputs": [
+        "config/acceptance/evolution_binding.v1.json",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        "scripts/verify/frontend_product_page_header_browser.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "release_orchestration_unit": {
+      "target": "verify.daily.runtime.release_orchestration.unit",
+      "inputs": [
+        "scripts/ops/daily_runtime_release_orchestration.py",
+        "scripts/ops/test_daily_runtime_release_orchestration.py",
+        "config/ops/daily_runtime_entry.v1.json",
+        "make/codex.mk",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "presentation_browser": {
+      "target": "verify.frontend.presentation.browser",
+      "inputs": [
+        "config/acceptance/frontend_presentation_targets.v1.json",
+        "scripts/verify/frontend_product_page_header_browser.mjs",
+        "scripts/verify/lib/frontend_acceptance_environment.mjs",
+        "config/frontend/acceptance_environments_v1.json",
+        "config/frontend/acceptance_tool_matrix_v1.json",
+        "make/frontend.mk"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Freeze the candidate, run exact-head Quick, publish the P4 PR and verify the orchestration entry through protected merge and deployment."
+}

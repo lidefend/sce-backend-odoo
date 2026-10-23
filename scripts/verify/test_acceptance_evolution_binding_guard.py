@@ -112,6 +112,27 @@ def _list_surface(head: str = HEAD) -> dict:
     }
 
 
+def _presentation(head: str = HEAD, *, passed: bool = True) -> dict:
+    return {
+        "schema": "frontend_product_page_header_browser.v1",
+        "passed": passed,
+        "provenance": {"expected_sha": head},
+        "console": [],
+        "pageerror": [],
+        "http": [],
+        "mutations": [],
+        "mutationCount": 0,
+        "targets": [{
+            "key": "project-form",
+            "headerCount": 1,
+            "h1Count": 1,
+            "unresolvedComponentCount": 0,
+            "pagePattern": "workspace-form",
+            "mobileOverflow": False,
+        }],
+    }
+
+
 def _relation(head: str = HEAD) -> dict:
     return {
         "schema": "record-relation-roundtrip-acceptance.v1",
@@ -186,6 +207,35 @@ class TestGlobAndPlan(unittest.TestCase):
         self.assertEqual(plan["status"], "PASS")
         self.assertEqual(plan["required_suites"], ["governance_static"])
         self.assertEqual(plan["required_evidence_suites"], [])
+
+    def test_presentation_owned_frontend_files_use_the_lightweight_lane(self):
+        for path in (
+            "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
+            "frontend/apps/web/src/components/template/FormSection.vue",
+            "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        ):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+            self.assertEqual(plan["matched_rules"][path], "frontend-presentation")
+            self.assertEqual(
+                plan["required_suites"],
+                ["frontend_contract", "frontend_presentation"],
+            )
+            self.assertEqual(plan["required_evidence_suites"], ["frontend_presentation"])
+
+        runtime_path = "frontend/apps/web/src/api/businessConfig.ts"
+        plan = guard.build_plan(self.registry, [runtime_path], "base", HEAD)
+        self.assertEqual(plan["matched_rules"][runtime_path], "frontend-runtime")
+        self.assertEqual(
+            plan["required_suites"],
+            ["frontend_contract", "list_surface_structure"],
+        )
+
+    def test_presentation_lane_is_wired_into_the_frontend_quick_gate(self):
+        makefile = (ROOT / "make" / "frontend.mk").read_text(encoding="utf-8")
+        self.assertIn(
+            "verify.frontend.quick.gate: verify.frontend.presentation.lane.unit",
+            makefile,
+        )
 
     def test_acceptance_runners_require_their_own_runtime_evidence(self):
         plan = guard.build_plan(
@@ -354,6 +404,23 @@ class TestAdapters(unittest.TestCase):
         broken["passed"] = False
         with self.assertRaises(guard.BindingError):
             guard._adapter_list_surface(broken, HEAD)
+
+    def test_presentation_adapter(self):
+        result = guard._adapter_presentation_header(_presentation(), HEAD)
+        self.assertEqual(result["counts"]["targets"], 1)
+        self.assertEqual(result["counts"]["mutations"], 0)
+        with self.assertRaisesRegex(guard.BindingError, "did not pass"):
+            guard._adapter_presentation_header(_presentation(passed=False), HEAD)
+        with self.assertRaisesRegex(guard.BindingError, "bound to"):
+            guard._adapter_presentation_header(_presentation(OTHER), HEAD)
+        broken = _presentation()
+        broken["mutations"] = [{"intent": "api.data.write"}]
+        with self.assertRaisesRegex(guard.BindingError, "mutations"):
+            guard._adapter_presentation_header(broken, HEAD)
+        broken = _presentation()
+        broken["targets"][0]["mobileOverflow"] = True
+        with self.assertRaisesRegex(guard.BindingError, "mobile overflow"):
+            guard._adapter_presentation_header(broken, HEAD)
         with self.assertRaises(guard.BindingError):
             guard._adapter_list_surface(_list_surface(OTHER), HEAD)
         broken = _list_surface()
