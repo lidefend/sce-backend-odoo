@@ -184,7 +184,7 @@ verify.frontend.overview_rich_text.unit: guard.prod.forbid
 	@node /tmp/overview-rich-text-model-test.mjs
 
 .PHONY: verify.frontend.product_page_header.unit verify.frontend.collection_action_toolbar.unit verify.frontend.collection_aggregate_footer.unit verify.frontend.collection_group_header.unit verify.frontend.collection_summary_strip.unit verify.frontend.collection_mobile_record_row.unit verify.frontend.collection_kanban_record_card.unit verify.frontend.collection_navigation_controls.unit verify.frontend.collection_row_action_identity.unit verify.frontend.collection_row_cell.unit verify.frontend.collection_selection_control.unit
-verify.frontend.product_page_header.unit: guard.prod.forbid
+verify.frontend.product_page_header.unit: guard.prod.forbid verify.frontend.playwright_vendor_coupling.guard
 	@node frontend/apps/web/scripts/readonly_block_component_test.mjs --kind form-header
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-page-header-model-test.mjs >/dev/null
 	@node /tmp/product-page-header-model-test.mjs

@@ -14,16 +14,20 @@ goal:
     - frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue
     - frontend/apps/web/src/components/template/FormSection.vue
     - frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue
+    - frontend/apps/web/src/components/design-system/ScDescriptions.vue
     - scripts/verify/frontend_product_page_header_guard.py
     - scripts/verify/frontend_product_page_header_browser.mjs
+    - make/frontend.mk
   scope:
     - frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue
     - frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue
     - frontend/apps/web/src/components/template/FormSection.vue
     - frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue
+    - frontend/apps/web/src/components/design-system/ScDescriptions.vue
     - scripts/verify/frontend_product_page_header_guard.py
     - scripts/verify/test_frontend_product_page_header_guard.py
     - scripts/verify/frontend_product_page_header_browser.mjs
+    - make/frontend.mk
     - docs/ops/iterations/project_form_header_density_20261023.md
     - .agent/active-runs.json
     - .agent/goals/PROJECT-FORM-HEADER-DENSITY-20261023.yaml

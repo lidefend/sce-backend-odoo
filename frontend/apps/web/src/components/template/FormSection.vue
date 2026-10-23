@@ -27,8 +27,8 @@
     <template v-for="(segment, segmentIndex) in detailFieldSegments" :key="segmentIndex">
     <ScDescriptions
       v-if="segment.facts"
-      :class="['template-form-section-descriptions', { 'template-form-section-descriptions--compact-summary': compactSummary }]"
-      :style="compactSummary ? { width: 'max-content', maxWidth: '100%' } : undefined"
+      class="template-form-section-descriptions"
+      :compact="compactSummary"
       data-detail-facts="official-standard-detail"
       :bordered="false"
       :column="detailFactColumns"
@@ -1164,11 +1164,6 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   container-type: normal;
 }
 
-.template-form-section-descriptions--compact-summary {
-  width: max-content;
-  max-width: 100%;
-}
-
 .template-form-section-hint {
   font: var(--sc-font-body-small);
   margin: -4px 0 10px;
@@ -1509,15 +1504,6 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .template-form-section-descriptions {
   width: 100%;
   min-width: 0;
-}
-
-.template-form-section--compact-summary :deep(.template-form-section-descriptions) {
-  width: max-content;
-  max-width: 100%;
-}
-
-.template-form-section--compact-summary :deep(.t-descriptions__body) {
-  width: auto;
 }
 
 .readonly-value {

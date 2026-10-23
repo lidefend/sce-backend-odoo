@@ -545,6 +545,16 @@ def validate() -> list[str]:
         if len(definition_files) == 1
         else []
     )
+    header_prerequisites: set[str] = set()
+    for path in definition_files:
+        for line in makefile_chain[path].splitlines():
+            if re.match(rf"^{re.escape(wired_target)}\s*:", line):
+                header_prerequisites.update(line.split(":", 1)[1].split("#")[0].split())
+    if "verify.frontend.playwright_vendor_coupling.guard" not in header_prerequisites:
+        failures.append(
+            "product page header unit gate does not reject vendor-internal probe coupling "
+            "before runtime/Quick validation"
+        )
     if any(_ignored_recipe_prefix(line) for line in recipe):
         failures.append(
             "header entry contract test wiring loses failure propagation "
@@ -620,19 +630,20 @@ def validate() -> list[str]:
         failures.append("contract header reserves an empty read-only status column")
     form_section = source("frontend/apps/web/src/components/template/FormSection.vue")
     form_renderer = source("frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue")
+    descriptions = source("frontend/apps/web/src/components/design-system/ScDescriptions.vue")
     for marker in (
         "'template-form-section--compact-summary': compactSummary",
-        "'template-form-section-descriptions--compact-summary': compactSummary",
         "width: fit-content",
-        "width: max-content",
         "container-type: normal",
-        ":deep(.t-descriptions__body)",
-        "width: auto",
+        ':compact="compactSummary"',
     ):
         if marker not in form_section:
             failures.append(f"structural header summary does not stay content-sized: {marker}")
     if ':compact-summary="nodeType(node) === \'header\'"' not in form_renderer:
         failures.append("structural header container does not opt into compact summary presentation")
+    for marker in ("'sc-descriptions--compact': compact", "width: max-content", "width: auto"):
+        if marker not in descriptions:
+            failures.append(f"ScDescriptions compact consumption is incomplete: {marker}")
     if 'v-if="headerOverflowItems.length && !isNarrowViewport"' not in contract:
         failures.append("contract header desktop overflow must be structurally excluded on narrow viewports")
     if 'v-if="headerOverflowItems.length" class="form-header-more-actions"' in contract:

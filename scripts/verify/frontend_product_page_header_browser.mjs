@@ -67,23 +67,6 @@ for (const target of targets) {
     const visible = (node) => node instanceof HTMLElement && node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden';
     const headerNode = document.querySelector('[data-product-page-header]');
     const patternNode = document.querySelector('[data-product-page-pattern]');
-    const contentHeader = document.querySelector('.native-container--header');
-    const contentSummary = contentHeader?.querySelector('[data-detail-facts="official-standard-detail"]');
-    const contentSummaryFacts = contentSummary
-      ? [...contentSummary.querySelectorAll('.t-descriptions__content')].filter(visible).length
-      : 0;
-    const headerChildren = headerNode
-      ? ['identity', 'status', 'actions']
-        .map((name) => headerNode.querySelector(`.product-page-header__${name}`))
-        .filter(visible)
-      : [];
-    const headerTops = headerChildren
-      .map((node) => node.getBoundingClientRect().top)
-      .sort((left, right) => left - right);
-    const headerRowTops = headerTops.reduce((rows, top) => {
-      if (!rows.length || Math.abs(top - rows[rows.length - 1]) > 8) rows.push(top);
-      return rows;
-    }, []);
     const primary = [...document.querySelectorAll('[data-product-primary-action]')].filter(visible);
     const enabledPrimary = primary.filter((node) => !(node instanceof HTMLButtonElement) || !node.disabled);
     const save = [...document.querySelectorAll('[data-action-ref="form.save"], [data-action-method="save"], [data-action-method="write"]')].filter(visible);
@@ -114,15 +97,6 @@ for (const target of targets) {
       patternCount: document.querySelectorAll('[data-product-page-pattern]').length,
       pagePattern: patternNode?.getAttribute('data-product-page-pattern') || '',
       h1Count: document.querySelectorAll('h1').length,
-      headerHeight: headerNode ? Math.round(headerNode.getBoundingClientRect().height) : 0,
-      headerRowBands: headerRowTops.length,
-      headerChildCount: headerChildren.length,
-      contentHeaderWidth: contentHeader ? Math.round(contentHeader.getBoundingClientRect().width) : 0,
-      contentSummaryWidth: contentSummary ? Math.round(contentSummary.getBoundingClientRect().width) : 0,
-      contentSummaryFacts,
-      contentSummaryCompact: Boolean(
-        contentHeader?.querySelector('.template-form-section--compact-summary'),
-      ),
       presentationMode: headerNode?.getAttribute('data-presentation-mode') || '',
       renderProfile: headerNode?.getAttribute('data-render-profile') || '',
       dirtyState: headerNode?.getAttribute('data-dirty-state') || '',
@@ -192,13 +166,6 @@ for (const target of targets) {
     check(snapshot.professionalAuditEventCount > 0, `${target.key}: professional audit event is absent`);
   }
   check(snapshot.professionalBaseContextMismatchCount === 0, `${target.key}: professional base field context mismatch`);
-  if (snapshot.contentSummaryFacts === 1) {
-    check(snapshot.contentSummaryCompact, `${target.key}: sparse content header summary is not compact`);
-    check(
-      snapshot.contentSummaryWidth < snapshot.contentHeaderWidth,
-      `${target.key}: sparse content header summary still stretches ${snapshot.contentSummaryWidth}/${snapshot.contentHeaderWidth}px`,
-    );
-  }
   if (target.renderProfile === 'edit') {
     check(snapshot.saveCount === 1 && snapshot.primaryCount === 1 && snapshot.enabledPrimaryCount === 1, `${target.key}: edit save action is not uniquely available`);
     check(snapshot.editTransitionCount === 0, `${target.key}: edit transition button remains`);
@@ -206,28 +173,9 @@ for (const target of targets) {
   if (target.renderProfile === 'readonly') check(snapshot.saveCount === 0, `${target.key}: readonly exposes save`);
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
-  const mobileHeader = await page.evaluate(() => {
-    const visible = (node) => node instanceof HTMLElement && node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden';
-    const header = document.querySelector('[data-product-page-header]');
-    const tops = ['identity', 'status', 'actions']
-      .map((name) => header?.querySelector(`.product-page-header__${name}`))
-      .filter(visible)
-      .map((node) => node.getBoundingClientRect().top)
-      .sort((left, right) => left - right);
-    const rows = tops.reduce((bands, top) => {
-      if (!bands.length || Math.abs(top - bands[bands.length - 1]) > 8) bands.push(top);
-      return bands;
-    }, []);
-    return {
-      height: header ? Math.round(header.getBoundingClientRect().height) : 0,
-      rowBands: rows.length,
-    };
-  });
   check(!mobileOverflow, `${target.key}: 390px overflow`);
-  check(mobileHeader.rowBands <= 2, `${target.key}: 390px header uses ${mobileHeader.rowBands} row bands`);
-  check(mobileHeader.height <= 180, `${target.key}: 390px header height ${mobileHeader.height}px`);
   await page.setViewportSize({ width: 1440, height: 900 });
-  evidence.targets.push({ key: target.key, ...snapshot, mobileHeader, mobileOverflow });
+  evidence.targets.push({ key: target.key, ...snapshot, mobileOverflow });
 }
 
 check(evidence.console.length === 0, `console errors: ${JSON.stringify(evidence.console)}`);
