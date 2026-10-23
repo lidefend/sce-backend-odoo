@@ -419,11 +419,22 @@ class DailyRuntimeCandidateReleaseCouplingTests(unittest.TestCase):
         lines = [line for line in text.splitlines() if line.startswith(COUPLE_TARGET)]
         self.assertEqual(len(lines), 1, "daily.runtime.candidate.release must exist exactly once")
         prerequisites = lines[0].split(":", 1)[1]
-        self.assertIn("daily.runtime.candidate.bundle_sync", prerequisites)
-        self.assertIn("daily.runtime.published_face.converge", prerequisites)
-        # The served identity must be declared before the face is frozen, because
-        # the face is projected through the module code at that exact revision.
-        self.assertIn("daily.runtime.source_revision.align", prerequisites)
+        self.assertIn("verify.daily.runtime.release_orchestration.unit", prerequisites)
+        orchestration = (
+            ROOT / "scripts" / "ops" / "daily_runtime_release_orchestration.py"
+        ).read_text(encoding="utf-8")
+        ordered_targets = [
+            "daily.runtime.candidate.bundle_sync",
+            "daily.runtime.frontend.build",
+            "daily.runtime.database.duty.refresh",
+            "daily.runtime.source_revision.align",
+            "daily.runtime.published_face.converge",
+            "daily.runtime.entry.verify",
+        ]
+        positions = [
+            orchestration.index(f'target="{target}"') for target in ordered_targets
+        ]
+        self.assertEqual(positions, sorted(positions))
 
     def test_published_face_refresh_upgrades_projection_code_before_freezing(self) -> None:
         recipe = self._recipe(FACE_TARGET)

@@ -68,6 +68,11 @@
   failed closed because the parent Make had exported empty recursive argument
   builders. The failure was classified as a P4 validation-tool defect; the
   release-input propagation fix and regression test own the correction.
+- Second live candidate release: sync, frontend build, duty refresh, both source
+  revision alignments PASS. Published-face verification exposed a stale direct-
+  prerequisite assertion in its coupling test. The assertion now verifies that
+  the single release entry owns the orchestration unit and that the executable
+  sequence preserves both code and published faces in order.
 
 ## Risk and rollback
 
