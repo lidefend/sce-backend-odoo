@@ -742,6 +742,10 @@ verify.frontend.form_canvas_layout.unit: guard.prod.forbid
 	@node /tmp/form-canvas-layout-contract-test.mjs
 	@node frontend/apps/web/scripts/readonly_block_component_test.mjs --kind native-layout
 
+.PHONY: verify.frontend.project_detail_summary.browser
+verify.frontend.project_detail_summary.browser: guard.prod.forbid
+	@node scripts/verify/frontend_project_detail_summary_browser.mjs
+
 verify.frontend.form_canvas_layout.guard: guard.prod.forbid verify.frontend.form_canvas_layout.unit
 	@python3 -m unittest scripts.verify.test_frontend_form_canvas_wide_grid_guard
 	@python3 scripts/verify/frontend_form_canvas_wide_grid_guard.py

@@ -1455,6 +1455,70 @@ function emitNativeAction(node: NativeFormLayoutNode) {
  * containers; the renderer owns their visual output. */
 .native-form-tree.native-form-tree .sc-project-overview { gap: var(--sc-space-md); }
 .native-form-tree.native-form-tree .sc-project-overview__header { gap: var(--sc-space-md); }
+/* Declared overview identity: the body must own the remaining flex space.
+ * Its readonly field batches use content sizing, not maintenance-grid tracks
+ * or inline-size containment (which collapsed this body to 112px). Keep every
+ * field occurrence and label; only the presentation wrappers change layout. */
+.native-form-tree.native-form-tree .sc-project-overview__header {
+  flex-wrap: wrap;
+}
+.sc-project-overview__header > .native-form-tree > .native-container {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.sc-project-overview__header > .native-actions {
+  flex: 0 0 auto;
+}
+.native-form-tree .sc-project-overview__header > .native-form-tree > .native-container > .native-form-tree > .native-container,
+.native-form-tree.native-form-tree .native-container.sc-project-stage__desc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sc-space-xs);
+}
+.sc-project-overview__header > .native-form-tree > .native-container > .native-form-tree > .native-container .native-form-tree,
+.sc-project-stage__desc .native-form-tree,
+.sc-project-stage__desc .native-container {
+  display: contents;
+}
+.sc-project-overview__header :deep(.template-form-section--readonly),
+.sc-project-stage__desc :deep(.template-form-section--readonly) {
+  container-type: normal;
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+.sc-project-overview__header :deep(.template-form-section--readonly .template-form-section-grid),
+.sc-project-stage__desc :deep(.template-form-section--readonly .template-form-section-grid) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sc-space-xs) var(--sc-space-md);
+}
+.sc-project-overview__header :deep(.template-form-section--readonly .field),
+.sc-project-stage__desc :deep(.template-form-section--readonly .field) {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-space-xs);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.sc-project-overview__header :deep(.template-form-section--readonly .field-label-row),
+.sc-project-stage__desc :deep(.template-form-section--readonly .field-label-row) {
+  margin: 0;
+}
+.sc-project-overview__header :deep(.template-form-section--readonly .field-control-row),
+.sc-project-stage__desc :deep(.template-form-section--readonly .field-control-row) {
+  width: auto;
+  min-width: 0;
+}
+.sc-project-overview__header .native-static-text,
+.sc-project-stage__desc .native-static-text {
+  margin: 0;
+}
+@media (max-width: 520px) {
+  .sc-project-overview__header > .native-form-tree > .native-container {
+    flex-basis: 100%;
+  }
+}
 .native-form-tree.native-form-tree .sc-project-title {
   font: var(--sc-font-title-large);
   font-weight: var(--sc-product-text-weight-bold);
