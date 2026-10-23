@@ -73,6 +73,11 @@
   prerequisite assertion in its coupling test. The assertion now verifies that
   the single release entry owns the orchestration unit and that the executable
   sequence preserves both code and published faces in order.
+- Third live candidate release: all seven steps PASS. Receipt review found the
+  frontend-build result still written to the legacy default path because its
+  derived report alias was frozen by the parent Make. The step now names both
+  the receipt and report path explicitly, and the regression lane guards their
+  candidate-scoped equality.
 
 ## Risk and rollback
 

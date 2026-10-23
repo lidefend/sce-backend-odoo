@@ -67,6 +67,15 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
         )
         self.assertEqual(steps[0].target, "daily.runtime.candidate.bundle_sync")
         self.assertEqual(steps[1].target, "daily.runtime.frontend.build")
+        self.assertEqual(
+            steps[1].variables["DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT"],
+            steps[1].variables["DAILY_RUNTIME_FRONTEND_BUILD_REPORT"],
+        )
+        self.assertTrue(
+            steps[1].variables["DAILY_RUNTIME_FRONTEND_BUILD_REPORT"].endswith(
+                "/frontend-build.json"
+            )
+        )
         self.assertEqual(steps[2].variables["DAILY_RUNTIME_DATABASE_DUTY_SELECTION"],
                          "demo platform_control")
         self.assertEqual(
