@@ -29,6 +29,9 @@ goal:
     - scripts/verify/frontend_product_page_header_browser.mjs
     - make/frontend.mk
     - docs/ops/iterations/project_form_header_density_20261023.md
+    - docs/engineering_convergence/complexity_budget_report.md
+    - docs/engineering_convergence/split_plan_queue.md
+    - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
     - .agent/active-runs.json
     - .agent/goals/PROJECT-FORM-HEADER-DENSITY-20261023.yaml
     - .agent/runs/PROJECT-FORM-HEADER-DENSITY-20261023/run.json

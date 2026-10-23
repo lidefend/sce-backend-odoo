@@ -17,6 +17,9 @@
     "scripts/verify/frontend_product_page_header_browser.mjs",
     "make/frontend.mk",
     "docs/ops/iterations/project_form_header_density_20261023.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     ".agent/active-runs.json",
     ".agent/goals/PROJECT-FORM-HEADER-DENSITY-20261023.yaml",
     ".agent/runs/PROJECT-FORM-HEADER-DENSITY-20261023/run.json"
@@ -62,5 +65,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the verification-only delta with an impact note that product code is unchanged from the measured candidate, then run the exact-head Quick and publish the GitHub PR."
+  "next_exact_step": "Commit the final evidence delta, rerun freeze preparation if generated inputs change, then run one exact-head Quick and publish the GitHub PR."
 }
