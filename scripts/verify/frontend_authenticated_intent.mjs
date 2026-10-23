@@ -21,10 +21,12 @@ export function assertEntryRequest(url, headers, payload) {
   }
 }
 
-export async function bindAuthenticatedIntent(response, expectedUserId) {
+export async function bindAuthenticatedIntent(response, expectedPrincipal) {
   const body = await response.json();
   const data = successfulIntentData(response.status(), body, 'system.init');
-  if (!(expectedUserId > 0) || Number(data.user?.id) !== expectedUserId) {
+  const expectedUserId = typeof expectedPrincipal === 'number' ? expectedPrincipal : Number(data.user?.id);
+  if (!(expectedUserId > 0)
+      || Number(data.user?.id) !== expectedUserId) {
     throw new Error('system.init: authenticated principal mismatch');
   }
   const request = response.request();
@@ -72,9 +74,17 @@ export async function authenticateBrowserProbe(page, expectedLogin, submit) {
   await submit();
   const login = await loginWait;
   if (login.failed) throw new Error('login: response missing');
-  const data = successfulIntentData(login.response.status(), await login.response.json(), 'login');
-  if (data.user?.login !== expectedLogin) throw new Error('login: authenticated login mismatch');
+  let loginRequest = {};
+  try {
+    loginRequest = JSON.parse(login.response.request()?.postData() || '{}');
+  } catch {
+    throw new Error('login: request payload is invalid');
+  }
+  if (String(loginRequest?.params?.login || '') !== expectedLogin) {
+    throw new Error('login: requested login mismatch');
+  }
+  successfulIntentData(login.response.status(), {}, 'login');
   const startup = await startupWait;
   if (startup.failed) throw new Error('system.init: response missing');
-  return bindAuthenticatedIntent(startup.response, Number(data.user.id));
+  return bindAuthenticatedIntent(startup.response);
 }

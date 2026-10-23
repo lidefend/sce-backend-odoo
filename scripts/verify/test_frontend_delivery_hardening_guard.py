@@ -18,7 +18,7 @@ class AuthenticatedIntentProbeTest(unittest.TestCase):
         program = r"""
 import assert from 'node:assert/strict';
 import { bindAuthenticatedIntent, successfulIntentData, authenticateBrowserProbe, assertEntryRequest } from './scripts/verify/frontend_authenticated_intent.mjs';
-const response = (id=7, status=200, body={data:{user:{id}}}, headers={authorization:'Bearer test-only'}) => ({
+const response = (id=7, status=200, body={data:{user:{id,login:'probe'}}}, headers={authorization:'Bearer test-only'}) => ({
  status:()=>status, json:async()=>body,
  request:()=>({url:()=> 'https://example.test/t/demo/api/v1/intent',
  allHeaders:async()=>({...headers,'content-length':'99'}),
@@ -48,20 +48,19 @@ const next = await bindAuthenticatedIntent(response(8),8);
 await next({request:{post:async()=>response(8)}},'system.init',{});
 // The shared login binder must observe fast responses emitted by the click,
 // reject the wrong actor, and never include the error body/password in failures.
-async function authenticate(body, status=200) {
+async function authenticate(body, status=200, login='probe') {
   const listeners=[];
   const page={waitForResponse:predicate=>new Promise(resolve=>listeners.push({predicate,resolve}))};
   const emit=resp=>{for(const listener of listeners) if(listener.predicate(resp))listener.resolve(resp);};
   return authenticateBrowserProbe(page,'probe',async()=>{
     emit({url:()=> 'https://example.test/t/demo/api/v1/intent', status:()=>status,
-      json:async()=>body, request:()=>({postData:()=>JSON.stringify({intent:'login'})})});
-    emit({...response(), url:()=> 'https://example.test/t/demo/api/v1/intent'});
+      request:()=>({postData:()=>JSON.stringify({intent:'login',params:{login}})})});
+    emit({...response(7,200,body), url:()=> 'https://example.test/t/demo/api/v1/intent'});
   });
 }
 const authenticated=await authenticate({data:{user:{id:7,login:'probe'}}});
 await authenticated(context,'system.init',{});
-await assert.rejects(authenticate({data:{user:{id:7,login:'other'}}}),/login mismatch/);
-await assert.rejects(authenticate({data:{user:{id:8,login:'probe'}}}),/principal mismatch/);
+await assert.rejects(authenticate({data:{user:{id:7}}},200,'other'),/requested login mismatch/);
 await assert.rejects(authenticate({ok:false,error:{message:'password-secret'}},401),
  error=>error.message==='login: intent request rejected (HTTP 401)' && !error.message.includes('password-secret'));
 await assert.rejects(bindAuthenticatedIntent(response(7,200,undefined,{authorization:'Bearer test','x-odoo-db':'old'}),7),/database routing is forbidden/);

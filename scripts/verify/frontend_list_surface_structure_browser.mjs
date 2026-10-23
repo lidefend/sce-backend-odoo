@@ -701,7 +701,7 @@ function dailyReadonlyRequest(method, pathname, body) {
     }
     return true;
   }
-  return ['login', 'auth.login', 'system.init', 'ui.contract', 'ui.contract.v2', 'my.work.summary', 'load_view', 'load_contract', 'action.view', 'app.init', 'session.info', 'session.bootstrap', 'sys.intents', 'route.authority.validate', 'record.context.search', 'user.view.preference.get', 'chatter.timeline', 'chatter.followers.list', 'global.message.conversations', 'global.message.inbox', 'file.download', 'telemetry.track', 'usage.track'].includes(body.intent);
+  return ['login', 'auth.login', 'system.init', 'ui.contract', 'ui.contract.v2', 'my.work.summary', 'load_view', 'load_contract', 'action.view', 'app.init', 'app.catalog', 'product.configuration.capability.catalog', 'session.info', 'session.bootstrap', 'sys.intents', 'route.authority.validate', 'record.context.search', 'user.view.preference.get', 'chatter.timeline', 'chatter.followers.list', 'global.message.conversations', 'global.message.inbox', 'file.download', 'telemetry.track', 'usage.track'].includes(body.intent);
 }
 
 function dailyDeclaredLanding(init) {

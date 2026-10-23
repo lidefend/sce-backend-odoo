@@ -53,6 +53,8 @@ class FixedDemoCredentialTest(unittest.TestCase):
         self.assertEqual(self.declaration["profile"], "daily")
         self.assertEqual(self.declaration["operation"], "readonly")
         self.assertEqual(self.declaration["login"], "fixture_role_config_admin")
+        self.assertIn("demo_full", self.declaration["additional_logins"])
+        self.assertIn("sc_test_admin", self.declaration["additional_logins"])
         self.assertIn("2026-10-19", self.declaration["owner_ruling"]["date"])
 
     def test_confirmation_is_identity_bound_and_short_lived(self):
@@ -64,6 +66,8 @@ class FixedDemoCredentialTest(unittest.TestCase):
         self.assertEqual(confirmation["runId"], "unit-run")
         expires = confirmation["expiresAt"]
         self.assertTrue(expires.endswith("Z"))
+        business_full = self.build(login="demo_full")
+        self.assertEqual(business_full["login"], "demo_full")
 
     def test_refuses_other_login_tool_or_password(self):
         with self.assertRaises(self.helper.ConfirmationError):

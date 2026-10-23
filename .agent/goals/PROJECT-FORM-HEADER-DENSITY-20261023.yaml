@@ -18,6 +18,13 @@ goal:
     - scripts/verify/frontend_product_page_header_guard.py
     - scripts/verify/frontend_product_page_header_browser.mjs
     - make/frontend.mk
+    - config/acceptance/daily_demo_credential.v1.json
+    - scripts/verify/frontend_authenticated_intent.mjs
+    - scripts/verify/test_frontend_delivery_hardening_guard.py
+    - scripts/verify/daily_demo_credential_confirmation.py
+    - scripts/verify/test_daily_demo_credential_confirmation.py
+    - scripts/verify/frontend_list_surface_structure_browser.mjs
+    - scripts/verify/test_frontend_list_surface_search_contract.py
   scope:
     - frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue
     - frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue
@@ -28,6 +35,13 @@ goal:
     - scripts/verify/test_frontend_product_page_header_guard.py
     - scripts/verify/frontend_product_page_header_browser.mjs
     - make/frontend.mk
+    - config/acceptance/daily_demo_credential.v1.json
+    - scripts/verify/frontend_authenticated_intent.mjs
+    - scripts/verify/test_frontend_delivery_hardening_guard.py
+    - scripts/verify/daily_demo_credential_confirmation.py
+    - scripts/verify/test_daily_demo_credential_confirmation.py
+    - scripts/verify/frontend_list_surface_structure_browser.mjs
+    - scripts/verify/test_frontend_list_surface_search_contract.py
     - docs/ops/iterations/project_form_header_density_20261023.md
     - docs/engineering_convergence/complexity_budget_report.md
     - docs/engineering_convergence/split_plan_queue.md

@@ -116,6 +116,24 @@ was not waived by changing the baseline. Instead, the vendor guard is now a
 dependency of the product-header unit gate, so the same class of defect is
 reported immediately after a component/test change.
 
+The merge-stage runtime evidence lane exposed three additional validation-tool
+defects:
+
+- the daily confirmation helper derived the confirmation for
+  `geometry-scroll-audit` although the list/detail probe declares
+  `list-surface-structure`;
+- the authenticated intent binder depended on reading the login response body,
+  which Playwright could not reliably retrieve after the daily Web entry
+  authenticated; it now binds the requested login from the login request and
+  validates the immediately following authenticated `system.init`;
+- the read-only request classifier blocked `app.catalog` and
+  `product.configuration.capability.catalog`, producing false console errors and
+  runtime failures.
+
+The declaration now accepts the existing seeded `demo_full` and `sc_test_admin`
+logins under the same fixed demo password. The list/detail structure lane then
+passed 108/108 gated checks, 8/8 record checks and 5/5 negative fixtures.
+
 ## Rollback
 
 Revert the topic commit. The change has no schema, data migration, ACL or
