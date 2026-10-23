@@ -61,6 +61,9 @@ contract change.
 - Mark structural `header` field batches as compact summaries. The official
   descriptions composition is content-sized within the header instead of
   stretching a sparse row across the complete form body.
+- Keep the compact summary and status containers out of `inline-size`
+  containment while they are being content-sized, and consume the official
+  descriptions root/table width through the component boundary.
 - Preserve all declared fields, visibility, status, action settlement and
   project workflow semantics. No `project.project` special case is added.
 
@@ -74,7 +77,32 @@ contract change.
   components.
 - `make verify.frontend.style_system.guard`: PASS, zero hard-coded color refs.
 - `make verify.frontend.build`: PASS.
-- Live project-form geometry before/after verification remains pending.
+- Governed `verify.frontend.product_page_header.browser` against the daily
+  project record: PASS, one target, zero mutations, zero console/page/HTTP
+  errors, zero horizontal overflow.
+
+The same record (`project.project/15`, login `demo_full`) was measured before
+and after:
+
+| Viewport | Header before | Header after | Top summary before | Top summary after |
+| --- | ---: | ---: | ---: | ---: |
+| 1440x1100 | 53px, status track 506px | 53px, status track 288px | 1145px | 142px |
+| 1280x800 | 85px | 53px | 1001px | 142px |
+| 768x1024 | 139px | 93px | 681px | 142px |
+| 390x844 | 197px | 123px | 303px | 142px |
+
+At 390px the header now has two row bands rather than three; identity occupies
+the first row and status/actions share the second. The content-top approval fact
+no longer occupies the complete body width. Final screenshots and geometry are
+under `.runtime/project-form-presentation/candidate-d11e1311/`; baseline
+screenshots are under
+`.runtime/project-form-presentation/content-header-descriptions/`.
+
+`make verify.form_container_presentation.guard` remains blocked by two
+pre-existing findings outside this batch: unconsumed
+`alert/alert-*` vocabulary and a projection baseline leaf span of `12` where the
+guard expects `24`. This batch does not modify that projection or vocabulary;
+the finding is recorded rather than hidden or waived.
 
 ## Rollback
 
@@ -83,5 +111,6 @@ runtime-configuration rollback requirement.
 
 ## Next exact step
 
-Commit the candidate, serve the exact candidate bundle on the governed daily
-runtime, and compare header and content-summary geometry against the baseline.
+Commit the verification-only delta with an impact note that product code is
+unchanged from the measured candidate, then run the exact-head Quick and publish
+the GitHub PR.

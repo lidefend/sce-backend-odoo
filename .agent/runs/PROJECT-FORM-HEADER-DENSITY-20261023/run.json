@@ -58,5 +58,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the candidate, serve the exact candidate bundle on the governed daily runtime, and compare header and content-summary geometry against the baseline."
+  "next_exact_step": "Commit the verification-only delta with an impact note that product code is unchanged from the measured candidate, then run the exact-head Quick and publish the GitHub PR."
 }
