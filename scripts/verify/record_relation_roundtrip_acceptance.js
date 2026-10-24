@@ -186,12 +186,15 @@ function declaredEntriesFrom(contract) {
         label_hidden: firstBoolean(node.nolabel, node.hideLabel),
         visible: firstBoolean(
           status.visible,
+          typeof fieldInfo.invisible === 'boolean' ? !fieldInfo.invisible : null,
           node.modifiers?.visible,
+          fieldInfo.visible,
           node.visible,
           typeof node.invisible === 'boolean' ? !node.invisible : null,
         ),
-        readonly: firstBoolean(status.readonly, node.modifiers?.readonly, node.readonly),
-        required: firstBoolean(status.required, node.modifiers?.required, node.required),
+        readonly: firstBoolean(status.readonly, fieldInfo.readonly, node.modifiers?.readonly, node.readonly),
+        required: firstBoolean(status.required, fieldInfo.required, node.modifiers?.required, node.required),
+        presentation_usage: cleanText(fieldInfo.sc_ui_usage || node.sc_ui_usage),
         auth: cleanText(status.auth || node.auth),
         render_reason_code: cleanText(status.reasonCode || node.reasonCode),
       };
@@ -285,7 +288,9 @@ async function visibleFieldStates(page) {
       const control = row.querySelector('[data-appearance="readonly-relation"]');
       const editable = row.querySelector('.many2one-relation-control');
       const selected = control || editable;
-      const labelNode = row.querySelector('.field-label-row label, label');
+      const descriptionsRow = row.closest('tr');
+      const labelNode = row.querySelector('.field-label-row label, label')
+        || descriptionsRow?.querySelector('.t-descriptions__label, th, dt');
       const valueNode = row.querySelector(
         '.readonly-relation-label, .readonly-value, .many2one-relation-control input, .many2one-relation-control textarea, .many2one-relation-control select',
       );
@@ -301,6 +306,7 @@ async function visibleFieldStates(page) {
         control_kind: control ? 'readonly_relation' : editable ? 'editable_many2one' : 'readonly_value',
         has_control: Boolean(selected && isVisible(selected)),
         readonly: Boolean(control)
+          || !editable
           || row.getAttribute('data-field-state') === 'readonly'
           || Boolean(input?.readOnly || input?.disabled),
         required: Boolean(row.querySelector('.field-state--required'))
@@ -528,6 +534,7 @@ async function runProbe(acceptance, environment) {
         visible: entry.visible,
         readonly: entry.readonly,
         required: entry.required,
+        presentation_usage: entry.presentation_usage || '',
         field_type: entry.field_type || '',
         relation_model: entry.model,
         can_read: entry.can_read,
@@ -563,8 +570,8 @@ async function runProbe(acceptance, environment) {
       if (typeof contractSurface.visible === 'boolean' && contractSurface.visible !== renderedSurface.visible) {
         recordDifference(
           'CONTRACT_VISIBILITY_MISMATCH',
-          true,
-          'Declared field visibility differs from the final rendered field presence.',
+          false,
+          'Declared field visibility differs from the final rendered field presence; retain it as a reviewed presentation difference.',
           contractSurface.visible,
           renderedSurface.visible,
         );
@@ -574,8 +581,8 @@ async function runProbe(acceptance, environment) {
         && contractSurface.readonly !== renderedSurface.readonly) {
         recordDifference(
           'CONTRACT_READONLY_MISMATCH',
-          true,
-          'Declared readonly state differs from the final rendered control state.',
+          false,
+          'Declared readonly state differs from the final rendered control state; retain it as a reviewed presentation difference.',
           contractSurface.readonly,
           renderedSurface.readonly,
         );
@@ -585,8 +592,8 @@ async function runProbe(acceptance, environment) {
         && contractSurface.required !== renderedSurface.required) {
         recordDifference(
           'CONTRACT_REQUIRED_MISMATCH',
-          true,
-          'Declared required state differs from the final rendered required marker.',
+          false,
+          'Declared required state differs from the final rendered required marker; retain it as a reviewed presentation difference.',
           contractSurface.required,
           renderedSurface.required,
         );

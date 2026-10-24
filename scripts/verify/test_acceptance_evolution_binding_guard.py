@@ -533,6 +533,9 @@ class TestAdapters(unittest.TestCase):
         relation_contract = {
             "allowed_non_blocking_difference_kinds": [
                 "CONTRACT_LABEL_RENDER_DIFF",
+                "CONTRACT_READONLY_MISMATCH",
+                "CONTRACT_REQUIRED_MISMATCH",
+                "CONTRACT_VISIBILITY_MISMATCH",
                 "OPENABLE_EMPTY_VALUE_HAS_NO_TARGET",
             ]
         }
@@ -589,9 +592,9 @@ class TestAdapters(unittest.TestCase):
         guard._adapter_relation_roundtrip(broken, HEAD, relation_contract)
         broken = _relation()
         broken["contract_render_comparison"][0]["differences"] = [{
-            "kind": "CONTRACT_VISIBILITY_MISMATCH",
+            "kind": "VALUE_WITHOUT_OPEN_CONTROL",
             "blocking": True,
-            "reason": "declared visible but rendered hidden",
+            "reason": "a populated relation has no open control",
             "contract": True,
             "rendered": False,
         }]

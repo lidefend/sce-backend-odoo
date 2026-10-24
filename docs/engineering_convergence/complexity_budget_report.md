@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `4911`
 - Files requiring split plan: `71`
-- Files above warning threshold: `141`
+- Files above warning threshold: `142`
 
 ## Split Plan Required
 
@@ -159,7 +159,7 @@ Generated from repository source files. This report is informational during the 
 | 996 | Python source | `scripts/ops/daily_runtime_legacy_stack_retire.py` |
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 992 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
-| 985 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
+| 988 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 976 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 972 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
@@ -210,6 +210,7 @@ Generated from repository source files. This report is informational during the 
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
 | 806 | Python source | `addons/smart_construction_core/models/core/funding_baseline.py` |
 | 803 | Python source | `scripts/verify/frontend_product_page_header_guard.py` |
+| 803 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
 | 802 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
 | 801 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |

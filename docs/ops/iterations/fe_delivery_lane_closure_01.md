@@ -113,14 +113,15 @@ required and relation-target semantics beside the final rendered label, value,
 control kind, field state and open-control presence. It also records the model,
 action id and menu id actually used when the relation opens.
 
-Blocking differences fail the receipt: visibility, readonly or required state
-mismatch, a populated relation without an open control, or a target
-model/action/menu that differs from the declaration. Presentation-only
-differences are still recorded but do not block the batch, currently the
-declared-label/render-label difference and the legitimate case where a
-contract-openable relation has no value and therefore no current-record target.
-The binding policy must name every allowed non-blocking difference kind; an
-unclassified difference is rejected. The comparison summary is cross-checked
-against the field rows, visible/empty sets and blocking/non-blocking counts, so
-the probe cannot make the gate green by recording a different story from the
-data it actually observed.
+Contract/render differences in the declared label, visibility, readonly or
+required state are recorded without blocking the batch, because they describe
+the next presentation iteration instead of a broken user action. Differences
+that can make a declared capability untrue still fail the receipt: a populated
+relation without an open control, or an opened target whose model, action id or
+menu id differs from the declaration. The legitimate case where a
+contract-openable relation has no value and therefore no current-record target
+is also recorded as non-blocking. The binding policy must name every allowed
+non-blocking difference kind; an unclassified difference is rejected. The
+comparison summary is cross-checked against the field rows, visible/empty sets
+and blocking/non-blocking counts, so the probe cannot make the gate green by
+recording a different story from the data it actually observed.

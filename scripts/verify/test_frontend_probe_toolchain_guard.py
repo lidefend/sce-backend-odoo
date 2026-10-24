@@ -95,6 +95,8 @@ for (const mutation of [null, b=>delete b.schema, b=>b.expected_sha='b'.repeat(4
         self.assertIn('contract_render_comparison_summary', source)
         self.assertIn('OPENABLE_EMPTY_VALUE_HAS_NO_TARGET', source)
         self.assertIn('CONTRACT_LABEL_RENDER_DIFF', source)
+        self.assertIn('CONTRACT_READONLY_MISMATCH', source)
+        self.assertIn('CONTRACT_VISIBILITY_MISMATCH', source)
         self.assertIn('RELATION_TARGET_ACTION_MISMATCH', source)
         self.assertNotIn(
             "has_value: !['', '-'].includes(String(row.textContent || '')",

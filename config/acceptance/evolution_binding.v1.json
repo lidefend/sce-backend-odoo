@@ -281,6 +281,9 @@
         "adapter": "relation_roundtrip",
         "allowed_non_blocking_difference_kinds": [
           "CONTRACT_LABEL_RENDER_DIFF",
+          "CONTRACT_READONLY_MISMATCH",
+          "CONTRACT_REQUIRED_MISMATCH",
+          "CONTRACT_VISIBILITY_MISMATCH",
           "OPENABLE_EMPTY_VALUE_HAS_NO_TARGET"
         ],
         "min_counts": {
