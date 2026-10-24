@@ -98,7 +98,7 @@ for (const mutation of [null, b=>delete b.schema, b=>b.expected_sha='b'.repeat(4
         self.assertIn('CONTRACT_READONLY_MISMATCH', source)
         self.assertIn('CONTRACT_VISIBILITY_MISMATCH', source)
         self.assertIn('RELATION_TARGET_ACTION_MISMATCH', source)
-        self.assertIn("previousCell?.matches('.t-descriptions__label')", source)
+        self.assertIn("previousCell?.tagName === 'TD'", source)
         self.assertIn('const controlFieldSet = new Set(', source)
         self.assertNotIn(
             "has_value: !['', '-'].includes(String(row.textContent || '')",

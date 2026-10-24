@@ -290,7 +290,7 @@ async function visibleFieldStates(page) {
       const selected = control || editable;
       const contentCell = row.closest('td');
       const previousCell = contentCell?.previousElementSibling;
-      const descriptionsLabel = previousCell?.matches('.t-descriptions__label')
+      const descriptionsLabel = previousCell?.tagName === 'TD'
         ? previousCell
         : null;
       const labelNode = row.querySelector('.field-label-row label, label')
