@@ -1,0 +1,39 @@
+schema_version: 1
+goal:
+  id: FE-DELIVERY-GENERATED-CLOSURE-01
+  status: active
+  title: Close all generated evidence for the PR 721 candidate
+  formal_product_layer: P4
+  layer_target:
+    - generated evidence closure
+  module: repository verification harness
+  standard_vs_user_specific: generated delivery evidence; no product semantics
+  objective: Refresh every affected generated carrier from a clean bba4108b checkout, prove the full preflight and repeat generation are stable, then form one final candidate commit.
+  why_here: The official generator and preflight targets own these artifacts.
+  why_not_elsewhere:
+    - Product source and tests must not change.
+    - Generated files must not be edited by hand.
+    - Checks must not be skipped or downgraded.
+  scope:
+    - .agent/
+    - docs/
+    - scripts/
+  owned_paths:
+    - .agent/active-runs.json
+    - .agent/goals/FE-DELIVERY-GENERATED-CLOSURE-01.yaml
+    - .agent/runs/FE-DELIVERY-GENERATED-CLOSURE-01/run.json
+    - docs/ops/iterations/fe_delivery_generated_closure_01.md
+    - docs/engineering_convergence/
+    - docs/audit/test_coverage_registry/test_coverage_registry.json
+    - contracts/generated/contract_structure_fingerprint.json
+  exclusions:
+    - product code and test assertions
+    - merge gate policy changes
+    - push, merge or deployment
+    - cleanup of old evidence or worktrees
+  acceptance:
+    - complete generated-evidence preflight passes
+    - second generation produces no new diff
+    - coverage, structure and generated-report checks pass
+    - no product source or assertion changes
+    - one final local candidate commit is created
