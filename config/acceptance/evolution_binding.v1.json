@@ -281,7 +281,7 @@
         "adapter": "relation_roundtrip",
         "min_counts": {
           "declared_entry_count": 13,
-          "declared_openable": 4
+          "declared_openable": 3
         }
       },
       "stages": [

@@ -134,6 +134,8 @@ def _presentation(head: str = HEAD, *, passed: bool = True) -> dict:
 
 
 def _relation(head: str = HEAD) -> dict:
+    fields = ["user_id", "manager_id", "partner_id"]
+    declared = {"can_read": True, "can_open": True, "action_id": 807, "menu_id": 430}
     return {
         "schema": "record-relation-roundtrip-acceptance.v1",
         "status": "pass",
@@ -143,7 +145,15 @@ def _relation(head: str = HEAD) -> dict:
         "console_errors": [],
         "denied_requests": [],
         "declared_entry_count": 13,
-        "declared_openable": [{}, {}, {}, {}],
+        "declared_openable": [
+            {"field": field, "declared": dict(declared)} for field in fields
+        ],
+        "controls": [{"field": field, "label": field} for field in fields],
+        "attempts": [
+            {"field": field, "outcome": "opened"} for field in fields
+        ],
+        "contract_openable_fields": fields,
+        "visible_relation_control_fields": fields,
         "roundtrip": {
             "field": "user_id",
             "restored": {
@@ -464,7 +474,8 @@ class TestAdapters(unittest.TestCase):
 
     def test_relation_roundtrip_adapter(self):
         result = guard._adapter_relation_roundtrip(_relation(), HEAD)
-        self.assertEqual(result["counts"]["openable_entries"], 4)
+        self.assertEqual(result["counts"]["openable_entries"], 3)
+        self.assertEqual(result["counts"]["opened_entries"], 3)
         broken = _relation()
         broken["failures"] = ["x"]
         with self.assertRaises(guard.BindingError):
@@ -480,6 +491,18 @@ class TestAdapters(unittest.TestCase):
         broken = _relation()
         broken["console_errors"] = ["boom"]
         with self.assertRaises(guard.BindingError):
+            guard._adapter_relation_roundtrip(broken, HEAD)
+        broken = _relation()
+        broken["visible_relation_control_fields"] = ["user_id", "manager_id"]
+        with self.assertRaisesRegex(guard.BindingError, "diverge"):
+            guard._adapter_relation_roundtrip(broken, HEAD)
+        broken = _relation()
+        broken["attempts"].pop()
+        with self.assertRaisesRegex(guard.BindingError, "every contract-openable"):
+            guard._adapter_relation_roundtrip(broken, HEAD)
+        broken = _relation()
+        broken["declared_openable"][0]["declared"]["action_id"] = None
+        with self.assertRaisesRegex(guard.BindingError, "action/menu"):
             guard._adapter_relation_roundtrip(broken, HEAD)
 
 

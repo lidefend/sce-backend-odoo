@@ -94,3 +94,13 @@ different scenario from the one declared by the lane. The wrapper now consumes
 `SC_ACCEPTANCE_RELATION_LOGIN`, `RELATION_RESOLUTION_KEY` and `RELATION_FIELD`
 verbatim, with `fixture_role_config_admin` as the default authorized actor. The
 probe assertions remain unchanged.
+
+The relation probe now derives its expected set from `layoutContract`: every
+layout relation with `can_read=true && can_open=true` must have a public open
+control with a published action/menu pair, every public relation control must
+map back to such a declared entry, and every declared field must be attempted.
+The evidence records the contract fields, visible fields, attempts and opened
+counts separately, so a change in the declared surface cannot silently reduce
+the executed set. The fact-layer minimum is three after the P0 `can_open=false`
+correction for the unpublished company relation, not the previous accidental
+four.

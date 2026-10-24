@@ -45,7 +45,6 @@ const RESOLUTION_KEY = String(process.env.RELATION_RESOLUTION_KEY || 'project').
 // back to a stale id.
 const IDENTITY_SOURCE = String(process.env.RELATION_IDENTITY_SOURCE || 'resolution').trim();
 const PINNED_FIELD = String(process.env.RELATION_FIELD || '').trim();
-const MAX_CONTROLS = Number(process.env.RELATION_MAX_CONTROLS || 6);
 let outDir;
 
 let MODEL = '';
@@ -163,6 +162,37 @@ function declaredEntriesFrom(contract) {
     Object.values(node).forEach(walk);
   };
   walk(contract);
+  return out;
+}
+
+function layoutRelationEntriesFrom(contract) {
+  const out = {};
+  const layout = contract && typeof contract === 'object'
+    ? (contract.layoutContract || contract.layout || null)
+    : null;
+  const walk = (node) => {
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    if (!node || typeof node !== 'object') return;
+    const fieldInfo = node.fieldInfo && typeof node.fieldInfo === 'object' ? node.fieldInfo : {};
+    const entry = fieldInfo.relation_entry || node.relation_entry || node.relationEntry;
+    const name = String(node.name || node.fieldName || node.field_name || '').trim();
+    if (entry && typeof entry === 'object' && name && !out[name]) {
+      out[name] = {
+        model: String(entry.model || '').trim(),
+        action_id: entry.action_id ?? null,
+        menu_id: entry.menu_id ?? null,
+        entry_intent: String(entry.entry_intent || ''),
+        can_read: entry.can_read ?? null,
+        can_open: entry.can_open ?? null,
+        model_write_authority: entry.model_write_authority ?? null,
+      };
+    }
+    Object.values(node).forEach(walk);
+  };
+  walk(layout);
   return out;
 }
 
@@ -359,19 +389,40 @@ async function runProbe(acceptance, environment) {
     if (before.has_error) throw new Error('source record surface did not render');
 
     await waitForRelationControls(page);
-    const declared = contractPayload ? declaredEntriesFrom(contractPayload) : {};
+    const broadDeclared = contractPayload ? declaredEntriesFrom(contractPayload) : {};
+    const layoutDeclared = contractPayload ? layoutRelationEntriesFrom(contractPayload) : {};
+    const declared = Object.keys(layoutDeclared).length ? layoutDeclared : broadDeclared;
     result.declared_entry_count = Object.keys(declared).length;
+    result.declared_relation_entries = declared;
     const controls = await visibleRelationControls(page);
+    const contractOpenable = Object.entries(declared)
+      .filter(([, entry]) => entry && entry.can_read === true && entry.can_open === true)
+      .map(([field, entry]) => ({ field, declared: entry }));
+    const contractOpenableFields = contractOpenable.map((row) => row.field);
+    const controlFields = controls.map((row) => row.field);
+    const missingControls = contractOpenableFields.filter((field) => !controlFields.includes(field));
+    const undeclaredControls = controlFields.filter((field) => {
+      const entry = declared[field];
+      return !entry || entry.can_read !== true || entry.can_open !== true;
+    });
+    const invalidOpeners = contractOpenable
+      .filter(({ declared: entry }) => !(Number(entry.action_id) > 0 && Number(entry.menu_id) > 0))
+      .map((row) => row.field);
+    if (missingControls.length) throw new Error(`declared openable relations have no public control: ${missingControls.join(',')}`);
+    if (undeclaredControls.length) throw new Error(`public relation controls are not declared openable: ${undeclaredControls.join(',')}`);
+    if (invalidOpeners.length) throw new Error(`declared openable relations lack action/menu authority: ${invalidOpeners.join(',')}`);
     const ordered = PINNED_FIELD
-      ? [PINNED_FIELD, ...controls.map((row) => row.field)]
-      : controls.map((row) => row.field);
-    const targets = [...new Set(ordered)].slice(0, MAX_CONTROLS);
+      ? [PINNED_FIELD, ...contractOpenableFields]
+      : contractOpenableFields;
+    const targets = [...new Set(ordered)];
     if (!targets.length) throw new Error('no visible declared relation-open control found on the source record');
     result.controls = controls;
+    result.contract_openable_fields = contractOpenableFields;
+    result.visible_relation_control_fields = controlFields;
     result.declared_openable = targets.map((field) => ({
       field,
       label: controls.find((row) => row.field === field)?.label || '',
-      declared: declared[field] || null,
+      declared: declared[field],
     }));
 
     for (const field of targets) {

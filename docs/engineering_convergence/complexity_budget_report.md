@@ -158,6 +158,7 @@ Generated from repository source files. This report is informational during the 
 | 996 | Python source | `scripts/ops/daily_runtime_legacy_stack_retire.py` |
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 992 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
+| 978 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
 | 976 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 972 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
@@ -165,7 +166,6 @@ Generated from repository source files. This report is informational during the 
 | 962 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
-| 933 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 932 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
@@ -180,6 +180,7 @@ Generated from repository source files. This report is informational during the 
 | 885 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 877 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
+| 876 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 872 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
 | 868 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 864 | Python source | `scripts/verify/test_local_quick_evidence.py` |
@@ -187,7 +188,6 @@ Generated from repository source files. This report is informational during the 
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 854 | Python source | `scripts/ops/test_daily_runtime_duty_operator_grant.py` |
-| 853 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |
 | 849 | Python source | `scripts/verify/test_system_performance_baseline.py` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |

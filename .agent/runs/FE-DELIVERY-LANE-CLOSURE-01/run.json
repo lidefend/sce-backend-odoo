@@ -26,6 +26,7 @@
     "addons/smart_core/tests/test_runtime_view_contract_fail_closed.py",
     "make/frontend.mk",
     "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/verify/record_relation_roundtrip_acceptance.js",
     "scripts/verify/test_frontend_probe_toolchain_guard.py",
     "scripts/dev/frontend_acceptance_runtime_profile.py",
     "scripts/dev/frontend_standard_preview.py",
