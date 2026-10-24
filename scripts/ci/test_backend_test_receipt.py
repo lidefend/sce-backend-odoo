@@ -14,6 +14,130 @@ from unittest.mock import patch
 import backend_test_receipt as receipt
 
 
+class JobObservationTest(unittest.TestCase):
+    def setUp(self):
+        self.head = 'a' * 40
+        self.workflow = '.github/workflows/professional_quality_gate.yml'
+        repository = {'id': receipt.REPOSITORY_ID, 'full_name': receipt.REPOSITORY}
+        self.run_path = 'actions/runs/10/attempts/2'
+        self.job_path = 'actions/jobs/30'
+        self.responses = {
+            self.run_path: {'id': 10, 'run_attempt': 2, 'head_sha': self.head,
+                'repository': dict(repository), 'head_repository': dict(repository),
+                'event': 'pull_request', 'path': self.workflow,
+                'status': 'completed', 'conclusion': 'success'},
+            self.job_path: {'id': 30, 'run_id': 10, 'run_attempt': 2,
+                'head_sha': self.head, 'status': 'completed', 'conclusion': 'success',
+                'steps': [dict(number=1, name='standard', status='completed', conclusion='success'),
+                          dict(number=2, name='full', status='completed', conclusion='skipped')]},
+            'git/commits/' + self.head: {'sha': self.head, 'tree': {'sha': 'b' * 40}},
+        }
+
+    def observe(self, **overrides):
+        arguments = dict(run_id=10, attempt=2, job_id=30,
+                         expected_head=self.head, workflow_path=self.workflow)
+        arguments.update(overrides)
+        with patch.object(receipt, 'github_bytes',
+                          side_effect=lambda path: json.dumps(self.responses[path]).encode()):
+            return receipt.observe_github_job(**arguments)
+
+    def test_success_and_skip_remain_distinct_not_reusable(self):
+        result = self.observe()
+        self.assertEqual(['success', 'skipped'], [s['conclusion'] for s in result['steps']])
+        self.assertFalse(result['reuse_ready'])
+        self.assertFalse(result['quick_receipt'])
+        self.assertIn('environment_identity_not_attested', result['blockers'])
+        self.assertEqual(3, len(result['metadata_sha256']))
+        self.assertEqual('verified', result['platform_origin'])
+
+    def test_failed_execution_preserved_not_promoted(self):
+        self.responses[self.run_path]['conclusion'] = 'failure'
+        self.responses[self.job_path]['conclusion'] = 'failure'
+        self.responses[self.job_path]['steps'][0]['conclusion'] = 'failure'
+        result = self.observe()
+        self.assertEqual('failure', result['job_conclusion'])
+        self.assertEqual('failure', result['steps'][0]['conclusion'])
+        self.assertFalse(result['reuse_ready'])
+
+    def test_invalid_requested_identity_never_fetches(self):
+        for change in ({'run_id': True}, {'attempt': 0}, {'job_id': -1},
+                       {'expected_head': None}, {'expected_head': 'main'},
+                       {'workflow_path': 'https://foreign.invalid/workflow'}):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                self.observe(**change)
+
+    def test_foreign_repository_refused(self):
+        for field in ('repository', 'head_repository'):
+            original = copy.deepcopy(self.responses[self.run_path][field])
+            self.responses[self.run_path][field]['id'] = 1
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, 'foreign'):
+                self.observe()
+            self.responses[self.run_path][field] = original
+
+    def test_run_and_job_attempt_head_workflow_mismatch_refused(self):
+        for endpoint, fields in (
+            (self.run_path, {'id': 11, 'run_attempt': 1, 'head_sha': 'c' * 40,
+                             'path': 'other.yml', 'event': 'pull_request_target', 'status': 'queued'}),
+            (self.job_path, {'id': 31, 'run_id': 11, 'run_attempt': 1,
+                             'head_sha': 'c' * 40, 'status': 'in_progress'})):
+            for field, value in fields.items():
+                original = self.responses[endpoint][field]
+                self.responses[endpoint][field] = value
+                with self.subTest(endpoint=endpoint, field=field), self.assertRaises(ValueError):
+                    self.observe()
+                self.responses[endpoint][field] = original
+
+    def test_missing_or_ambiguous_steps_refused(self):
+        original = self.responses[self.job_path]['steps']
+        for steps in (None, [], [original[0], original[0]],
+                      [dict(original[0], number=True)], [dict(original[0], conclusion='unknown')],
+                      [dict(original[0], status='in_progress')]):
+            self.responses[self.job_path]['steps'] = steps
+            with self.subTest(steps=steps), self.assertRaises(ValueError):
+                self.observe()
+        self.responses[self.job_path]['steps'] = original
+
+    def test_tree_identity_required(self):
+        path = 'git/commits/' + self.head
+        self.responses[path]['tree']['sha'] = 'branch'
+        with self.assertRaisesRegex(ValueError, 'tree identity'):
+            self.observe()
+
+    def test_unknown_run_conclusion_refused(self):
+        self.responses[self.run_path]['conclusion'] = None
+        with self.assertRaisesRegex(ValueError, 'conclusion'):
+            self.observe()
+
+
+class WorkflowDefinitionObservationTest(unittest.TestCase):
+    def observe(self, values):
+        with patch.dict(os.environ, values, clear=True):
+            return receipt.workflow_definition_observation()
+
+    def test_absent_is_not_filled_from_checkout_sha(self):
+        self.assertEqual({'status': 'not_captured', 'attested': False},
+                         self.observe({'GITHUB_SHA': 'a' * 40, 'HEAD_SHA': 'b' * 40}))
+
+    def test_merge_workflow_identity_is_distinct_and_not_attested(self):
+        value = self.observe({'GITHUB_SHA': 'a' * 40, 'GITHUB_WORKFLOW_SHA': 'b' * 40,
+            'GITHUB_WORKFLOW_REF': receipt.REPOSITORY + '/.github/workflows/backend_test_suite.yml@refs/pull/723/merge',
+            'UNRELATED_SECRET': 'not-collected'})
+        self.assertEqual('b' * 40, value['sha'])
+        self.assertEqual('refs/pull/723/merge', value['ref'])
+        self.assertEqual('producer_observed', value['status'])
+        self.assertFalse(value['attested'])
+        self.assertNotIn('not-collected', json.dumps(value))
+
+    def test_incomplete_or_foreign_definition_refused(self):
+        good = receipt.REPOSITORY + '/.github/workflows/backend_test_suite.yml@refs/heads/main'
+        for values in ({'GITHUB_WORKFLOW_SHA': 'b' * 40}, {'GITHUB_WORKFLOW_REF': good},
+                       {'GITHUB_WORKFLOW_SHA': 'main', 'GITHUB_WORKFLOW_REF': good},
+                       {'GITHUB_WORKFLOW_SHA': 'b' * 40, 'GITHUB_WORKFLOW_REF': good.replace(receipt.REPOSITORY, 'foreign/repo')},
+                       {'GITHUB_WORKFLOW_SHA': 'b' * 40, 'GITHUB_WORKFLOW_REF': good + '\ncredential'}):
+            with self.subTest(values=values), self.assertRaises(ValueError):
+                self.observe(values)
+
+
 class ExecutionReceiptTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -43,6 +167,40 @@ class ExecutionReceiptTest(unittest.TestCase):
         self.output = self.home / 'receipts'
         self.now = datetime(2026, 10, 24, tzinfo=timezone.utc)
         self.environment = {'python':'3.10.22','packages':[{'name':'fixture','version':'1'}]}
+
+    def test_record_preserves_workflow_sha_separate_from_test_source(self):
+        with patch.dict(os.environ, {'GITHUB_WORKFLOW_SHA': 'f' * 40,
+                'GITHUB_WORKFLOW_REF': receipt.REPOSITORY + '/.github/workflows/backend_test_suite.yml@refs/pull/723/merge'}):
+            result = self.record()
+        self.assertEqual(self.head, result['source_head'])
+        self.assertEqual('f' * 40, result['workflow_definition']['sha'])
+        self.assertFalse(result['workflow_definition']['attested'])
+        self.assertFalse(result['reuse_ready'])
+
+    def test_invalid_definition_leaves_no_success_receipt(self):
+        with patch.dict(os.environ, {'GITHUB_WORKFLOW_SHA': 'invalid', 'GITHUB_WORKFLOW_REF': ''}):
+            with self.assertRaisesRegex(ValueError, 'workflow definition'):
+                self.record()
+        self.assertFalse((self.output / 'example/receipt.json').exists())
+
+    def test_workflow_definition_cannot_self_attest_and_old_receipts_remain_valid(self):
+        self.record()
+        path = self.output / 'example/receipt.json'
+        original = json.loads(path.read_text())
+        for definition in ({'status': 'not_captured', 'attested': True},
+                           {'status': 'producer_observed', 'attested': True, 'sha': 'a' * 40,
+                            'path': '.github/workflows/backend_test_suite.yml', 'ref': 'refs/heads/main'}):
+            changed = dict(original, workflow_definition=definition)
+            path.write_bytes(receipt.canonical(changed))
+            with self.subTest(definition=definition), self.assertRaises(ValueError):
+                receipt.verify(path.parent, expected_head=self.head,
+                    expected_digest=receipt.digest(path.read_bytes()), now=self.now)
+        original.pop('workflow_definition')
+        path.write_bytes(receipt.canonical(original))
+        result = receipt.verify(path.parent, expected_head=self.head,
+            expected_digest=receipt.digest(path.read_bytes()), now=self.now)
+        self.assertEqual('verified', result['integrity'])
+        self.assertFalse(result['reuse_ready'])
 
     def record(self, **overrides):
         args = dict(module='example', kind='python', head=self.head, base=self.head,

@@ -256,3 +256,37 @@ CLI 显式 --path 不启用 Git 证明；缺失对象、非完整 SHA、symlink�
 实际已存在提交的只读对照：相对 1ddade160 的采集增量 frontend_mode full→skip；相对 88b4c160 的完整未发布变更仍 full→full，继承的交付入口改动没有被排除。两者 professional_mode 均 full。最终精确版本对照写入 .runtime/fe-incremental-validation-02/make-scope-final-comparison.json；分析不执行测试，不是远端 CI 成功或实测耗时收益。
 
 本轮未修改风险政策 JSON、workflow 必需检查或产品源码；未跑完整 Quick、前端构建/类型检查/浏览器、14 模块全量。只形成可审阅本地 checkpoint；未推送、合并或部署。真实远端回执、动态事实完整依赖及后端测试复用收益仍 verification_pending，节省仍记 0 秒。
+
+## 远端步骤来源采集（e28b59911 后的本地未提交增量）
+
+上述“未推送/真实远端回执未完成”为历史阶段状态。经 Owner 单独批准，e28b59911ea2fb66f1f9cdad54754e72ef0486c2 已进入 draft PR #723，四项必要 CI 通过；14 个后端目标的回执来源已核验，673 项仍全量执行，复用收益为 0。列表与关系证据由既有控制器批准沿用。当前合并准入停在 exact-head Quick 缺失，远端普通 PR 成功不等于完整 Quick 成功。当前索引为 `.runtime/fe-incremental-validation-02/remote-integration-status.json`，保留所有旧记录。
+
+本次 P4 仅在既有 `backend_test_receipt.py` 增加 `observe-job` 只读入口及负例测试。固定 GitHub 仓库和 GET 接口，绑定 run、attempt、job、head、workflow 及提交 tree；保留逐步骤 success/failure/skipped，不把绿色 job 推导为其脚本内部全部执行。平台候选身份不等于实际 checkout，输出明确列出 checkout、执行定义、目标覆盖、环境及依赖闭包的证据缺口；`quick_receipt`、`reuse_ready` 均为 false。未修改 Quick 控制器、必需门禁、产品语义或权限，也未建立第二套复用决策引擎。
+
+40 项相关 Python 测试通过，耗时 2.705 秒，独立只读复核无阻断。真实 API 采集核验后端 job 120891884947 与前端 job 120891827326（均 attempt 1、远端 e28b59911），普通检查 success、完整检查 skipped 被分别保留。前端数据来自既有运行的只读查询，没有重新执行前端检查。采集器源码摘要、测试日志及观察文件摘要绑定于 `.runtime/fe-incremental-validation-02/job-observation-validation.json`。本轮没有签发正式 Quick 回执、提交、推送、合并或部署；下一步仍须绑定实际执行定义与输入/环境，不能将这些观察直接登记为 REUSE。
+
+后续补齐执行时的 workflow 定义身份采集：`GITHUB_WORKFLOW_SHA/REF` 与实际被测 `source_head/tree` 分开保存。PR 的 workflow 可能取自合并引用，不能用测试 checkout SHA 替代。缺失记录为 `not_captured`，有值也仅为 `producer_observed/attested=False`；格式错误、单边缺失、外仓库及自认证拒绝。兼容历史回执缺字段，既有平台认证、执行定义及动态事实依赖缺口没有被豁免。未修改 workflow 或必需检查；执行时实际采集尚待后续单独授权发布后验证。
+
+本地最终 46 项相关测试通过（2.790 秒，`workflow-identity-final-tests.log`），独立复核无阻断；前一个 45 项中间运行仅作历史记录。使用新验证器对四个原始归档内的 14 份回执执行本地完整性回读，14/14 通过且均保留 workflow 字段缺失和 `reuse_ready=False`。这不是新的平台认证或测试执行，未重跑 673 项测试。当前源码与日志摘要绑定于 `workflow-identity-validation.json`；此前 40 项结果属于前一版采集器。当前本地修改未提交，远端仍为 e28b59911，Quick 准入仍未通过，测试复用节省仍为 0 秒。
+
+以上为实施时状态。采集器增量以四个已审阅文件保存为本地 checkpoint，提交身份及精确增量分类记入 `.runtime/fe-incremental-validation-02/collector-checkpoint.json`。提交前再次核对 46 项测试的源码与日志摘要一致，沿用结果，不重复执行。checkpoint 仅保存本地工作，不是正式候选冻结或交付资格；未运行生成准备、完整 Quick、前端或 ORM 验收，不触发远端 CI。当前远端仍为 e28b59911；新提交不得继承其 CI 成功。
+
+## 采集器启动入口边界诊断（141e0994c 后未提交增量）
+
+精确 e28b59911..141e0994c 差异触发 `unknown_impact:scripts/ci/backend_test_receipt.py`，原选择仍为 14 模块 full；没有执行该计划。`scripts/test/test.sh` 确实在 ORM 前调用采集器 `environment`，因此不能整文件加入 NON_RUNTIME。此次在既有影响规划器增加独立诊断字段，不修改 select、required 输出或远端 CI。
+
+比较仅读取两端普通 Git blob 和未变化的启动脚本，保留模块初始化、environment 分支与受限代码范围。参数解析、动态初始化、嵌套作用域、赋值表达式和反射无法证明时返回 unproven；不是通用 Python 依赖分析，也不证明环境等价。真实两端指纹一致，字段 `reuse_authorized=False/selection_changed=False` 保持，不能据此制造历史 REUSE。
+
+独立复核报告的顶层动态执行、嵌套绑定及 lambda 赋值表达式遗漏已通过保守拒绝关闭。白名单收紧期间一次未允许现有算术常量导致 12 个测试错误，原日志 `collector-entrypoint-reviewed-tests.log` 保留；修正固定初始化形状后最终 38 项通过（0.603 秒，`collector-entrypoint-closed-tests.log`），定向复核无剩余已报阻断。源码摘要、结果与真实提交对照见 `.runtime/fe-incremental-validation-02/collector-entrypoint-validation.json`。未改产品、未执行前端/ORM/Quick、未推送或部署，实际测试复用收益仍为 0。
+
+## 最终收口裁决：BLOCKED，不具备交付资格
+
+本节为当前裁决；前述未提交、checkpoint 和各阶段结果均保留历史含义。独立复核确认采集能力的本地实现通过，但不能把旧执行缺失的事实补写为已认证。整体精准增量验证目标仍未完成，run 保持 verification_pending；不是把“采集通过”改称“减负完成”。
+
+本次新增的有界 AST 诊断不参与模块选择，也不能促成合法 REUSE。为避免长期维护不完整的 Python 等价分析器，已将其 160 行实现和 118 行测试从候选撤回；原始 patch、哈希、38 项测试、失败日志及真实提交比较均保存在现有 `.runtime/fe-incremental-validation-02/collector-entrypoint-archive.json` 所指证据中。前述诊断结果仅为归档观察，不是当前候选提供的运行功能。
+
+保留的实现仅为既有采集器的 job/step 来源核验及独立 workflow 身份保存，46 项定向测试证据的源码/日志哈希仍匹配；14 份历史回执兼容回读不等于执行重跑或复用授权。远端 e28b59911 的 14 模块/673 项测试已实跑，workflow 墙钟 716 秒，目标执行耗时之和 1046 秒（并行，不能与墙钟混用），后端测试复用节省为 0 秒。构建缓存收益不计入测试复用。
+
+Quick 仍 BLOCKED：41 个顶层目标中 12 个静态可达不是完整执行证明；其余 29 个不能据此直接判为必须重跑。现有控制器仅接受同候选分片组合或纯 bookkeeping 的完整回执沿用，不能把普通 PR 绿色检查拼成 Quick PASS。后端 REUSE 仍 BLOCKED：历史回执缺失被认证的执行定义、artifact attempt、动态契约/事实范围与完整依赖闭包，新采集字段不能倒填这些事实。
+
+最终本地身份、差异清单、原始证据哈希、远端只读回查、准入阻断及回滚范围统一写入 `.runtime/fe-incremental-validation-02/closeout-package.json`。本地 checkpoint 不是正式冻结候选；未运行 freeze.prepare/完整 Quick/前端或 ORM 验收，未推送、更新 PR、合并或部署。下一步只允许基于具体缺口定义最小补证范围后重新进入执行，不能继续堆叠观测代码，也不能默认全跑 14 模块或放宽门禁。

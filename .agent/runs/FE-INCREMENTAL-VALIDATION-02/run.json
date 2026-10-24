@@ -116,8 +116,11 @@
       ]
     }
   },
-  "blockers": [],
-  "next_exact_step": "Local checkpoint and exact-SHA comparison; remote publication/CI require separate authorization. Do not run full Quick or frontend product checks to validate this classifier. Backend test receipt reuse remains disabled.",
+  "blockers": [
+    "Quick controller lacks valid exact-head receipt; remote selected steps are not equivalent to all Quick targets.",
+    "Historical backend receipts lack attested execution definition/attempt and certified dynamic contract, fact scope and dependency closure; these cannot be reconstructed by setting metadata fields."
+  ],
+  "next_exact_step": "Review BLOCKED closeout package. Do not publish, merge, deploy or rerun full suites to hide missing proof. Reopen execution only for a concretely defined missing-evidence scope; preserve current collection changes and historical evidence. Overall incremental validation objective remains verification_pending.",
   "id": "FE-INCREMENTAL-VALIDATION-02",
   "branch": "fix/fe-incremental-validation-01",
   "status": "verification_pending",
@@ -151,7 +154,42 @@
     "remote_classification_limit": "Bounded backend-only Make recipe classification implemented locally; only exact Git proof removes make/ci.mk frontend-full trigger. Wider changes remain full. Not published or executed remotely.",
     "routing_failed_fixture": "routing-final-test.log retained: test used a registered UI path as unknown. Incorrect initial passed record corrected to failed through existing entry (routing-correction-record.log); fixture path fixed, fresh run passed. No assertion weakened.",
     "scope_closeout": "Local routing batch closed only. No remote classifier policy change: full PR inherits frontend decision-authority/entry changes from 1ddade160; current collection delta is not the complete PR scope. No full Quick/frontend product execution.",
-    "make_recipe_scope": "PASS verify.ci.orm_selection.unit:34 classifier +17 workflow tests; make-scope-bytes-tests.log. Exact SHA/merge-base ordinary blob comparison only erases literal Python lines inside unchanged backend target; other bytes unchanged. HIGH_RISK/professional full retained. Independent S2 newline normalization finding fixed using strict byte decode and CRLF/CR negatives; review closed."
+    "make_recipe_scope": "PASS verify.ci.orm_selection.unit:34 classifier +17 workflow tests; make-scope-bytes-tests.log. Exact SHA/merge-base ordinary blob comparison only erases literal Python lines inside unchanged backend target; other bytes unchanged. HIGH_RISK/professional full retained. Independent S2 newline normalization finding fixed using strict byte decode and CRLF/CR negatives; review closed.",
+    "job_observation": {
+      "status": "passed_scoped_tests_and_live_readonly_collection",
+      "evidence": ".runtime/fe-incremental-validation-02/job-observation-validation.json",
+      "formal_quick_receipt": false
+    },
+    "workflow_identity_observation": {
+      "status": "passed_scoped_tests_and_legacy_integrity",
+      "evidence": ".runtime/fe-incremental-validation-02/workflow-identity-validation.json",
+      "test_count": 46,
+      "actual_ci_capture": "not_run_unpublished",
+      "quick_receipt": false
+    },
+    "collector_checkpoint": {
+      "status": "local_checkpoint_prepared_not_delivery_freeze",
+      "scope": "four reviewed collector/test/run/iteration files",
+      "test_evidence": ".runtime/fe-incremental-validation-02/workflow-identity-validation.json",
+      "next_identity_evidence": ".runtime/fe-incremental-validation-02/collector-checkpoint.json"
+    },
+    "collector_environment_boundary": {
+      "status": "archived_diagnostic_not_delivery_code",
+      "evidence": ".runtime/fe-incremental-validation-02/collector-entrypoint-validation.json",
+      "test_count": 38,
+      "archive": ".runtime/fe-incremental-validation-02/collector-entrypoint-archive.json"
+    },
+    "closeout": {
+      "verdict": "BLOCKED",
+      "independent_review": "collection implementation accepted; historical Quick/reuse evidence insufficient",
+      "collection_local": "PASS",
+      "incremental_reuse_goal": "NOT_ACHIEVED",
+      "quick": "BLOCKED",
+      "backend_reuse": "BLOCKED",
+      "actual_test_reuse_savings_seconds": 0,
+      "diagnostic_code": "archived_and_withdrawn_from_candidate",
+      "final_package": ".runtime/fe-incremental-validation-02/closeout-package.json"
+    }
   },
   "runtime_diagnostics": {
     "purpose": "collector mechanism only; excluded from reusable offline check receipts",

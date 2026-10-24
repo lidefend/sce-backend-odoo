@@ -161,6 +161,26 @@ def archive_attempt(*, output: Path, module: str, attempt: int, head: str,
     return result
 
 
+def workflow_definition_observation(environment: dict | None = None) -> dict:
+    """Capture the workflow identity separately from the checked-out code.
+
+    On PR runs the workflow may come from the merge ref while tests explicitly
+    check out the head. Never fill missing workflow facts with the test SHA.
+    These environment values are producer assertions, not platform attestation.
+    """
+    environment = os.environ if environment is None else environment
+    sha = environment.get('GITHUB_WORKFLOW_SHA')
+    ref = environment.get('GITHUB_WORKFLOW_REF')
+    if not sha and not ref:
+        return {'status': 'not_captured', 'attested': False}
+    pattern = re.escape(REPOSITORY) + r'/\.github/workflows/([A-Za-z0-9_-]+\.ya?ml)@(refs/(?:heads|tags|pull)/[^\s@]+)'
+    match = re.fullmatch(pattern, ref or '')
+    if not re.fullmatch(r'[0-9a-f]{40}', sha or '') or not match:
+        raise ValueError('invalid or incomplete workflow definition identity')
+    return {'status': 'producer_observed', 'attested': False, 'sha': sha,
+            'path': '.github/workflows/' + match.group(1), 'ref': match.group(2)}
+
+
 def record(root: Path, *, module: str, kind: str, head: str, base: str,
            database: str, status: int, log: Path, context_file: Path, output: Path,
            now: datetime | None = None, selection: str = '', duration_seconds: float | None = None, secrets_file: Path | None = None, scope_plan: Path | None = None) -> dict:
@@ -200,6 +220,7 @@ def record(root: Path, *, module: str, kind: str, head: str, base: str,
     image_ids = [runtime.get('odoo_image_id')] + [runtime['services'][s].get('image_id') for s in ('db', 'redis')]
     if any(not re.fullmatch(r'sha256:[0-9a-f]{64}', str(value)) for value in image_ids):
         raise ValueError('content-bound runtime image identity missing')
+    workflow_definition = workflow_definition_observation()
     now = now or datetime.now(timezone.utc)
     output.mkdir(parents=True, exist_ok=True)
     target = output / module
@@ -225,6 +246,7 @@ def record(root: Path, *, module: str, kind: str, head: str, base: str,
         'issued_at': now.isoformat(), 'expires_at': (now + MAX_AGE).isoformat(),
         'provenance': {key: os.environ.get(key) for key in
                        ('GITHUB_REPOSITORY', 'GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'GITHUB_JOB')},
+        'workflow_definition': workflow_definition,
         'files': {name: digest((target / name).read_bytes()) for name in ('execution.log', 'runtime.json', 'python.json')},
         'reuse_ready': False,
         'blockers': ['platform_source_not_authenticated', 'runtime_contract_readback_missing', 'fact_scope_readback_missing',
@@ -266,6 +288,19 @@ def verify(directory: Path, *, expected_head: str, expected_digest: str,
     # check to a successful reusable test verdict, even if JSON requests it.
     if receipt.get('reuse_ready') is not False:
         raise ValueError('observation cannot self-authorize reuse')
+    if 'workflow_definition' in receipt:
+        definition = receipt['workflow_definition']
+        if not isinstance(definition, dict):
+            raise ValueError('invalid workflow definition observation')
+        if definition == {'status': 'not_captured', 'attested': False}:
+            pass
+        else:
+            expected = workflow_definition_observation({
+                'GITHUB_WORKFLOW_SHA': definition.get('sha'),
+                'GITHUB_WORKFLOW_REF': REPOSITORY + '/' + str(definition.get('path')) + '@' + str(definition.get('ref')),
+            })
+            if definition != expected:
+                raise ValueError('workflow definition observation cannot self-attest')
     return {'integrity': 'verified', 'source_head': expected_head, 'module': receipt['module'],
             'reuse_ready': False, 'blockers': ['platform_source_not_authenticated',
                 'runtime_contract_readback_missing', 'fact_scope_readback_missing', 'target_dependency_closure_not_certified']}
@@ -419,9 +454,80 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
                          'target_dependency_closure_not_certified']}
 
 
+def observe_github_job(*, run_id: int, attempt: int, job_id: int,
+                       expected_head: str, workflow_path: str) -> dict:
+    """Authenticate completed step observations, never a Quick/test reuse receipt.
+
+    A green job is not proof of its shell branches, checkout, target coverage or
+    test environment. Preserve failed/skipped steps rather than converting the
+    job conclusion into target-level success.
+    """
+    workflows = {'.github/workflows/' + name + '.yml' for name in (
+        'professional_quality_gate', 'frontend_release_gate', 'public_guard',
+        'merge_policy_gate', 'backend_test_suite')}
+    if (any(type(v) is not int or v <= 0 for v in (run_id, attempt, job_id))
+            or not isinstance(expected_head, str)
+            or not re.fullmatch('[0-9a-f]{40}', expected_head)
+            or workflow_path not in workflows):
+        raise ValueError('invalid exact job observation identity')
+    paths = [f'actions/runs/{run_id}/attempts/{attempt}',
+             f'actions/jobs/{job_id}', f'git/commits/{expected_head}']
+    raw = {path: github_bytes(path) for path in paths}
+    run, job, commit = (json.loads(raw[path]) for path in paths)
+    if not all(isinstance(value, dict) for value in (run, job, commit)):
+        raise ValueError('invalid platform metadata shape')
+    for field in ('repository', 'head_repository'):
+        repository = run.get(field)
+        if (not isinstance(repository, dict)
+                or repository.get('id') != REPOSITORY_ID
+                or repository.get('full_name') != REPOSITORY):
+            raise ValueError('foreign repository')
+    if (run.get('id') != run_id or run.get('run_attempt') != attempt
+            or run.get('head_sha') != expected_head or run.get('path') != workflow_path
+            or run.get('event') not in ('pull_request', 'workflow_dispatch', 'schedule')
+            or run.get('status') != 'completed'):
+        raise ValueError('run observation identity mismatch or unfinished')
+    if (job.get('id') != job_id or job.get('run_id') != run_id
+            or job.get('run_attempt') != attempt or job.get('head_sha') != expected_head
+            or job.get('status') != 'completed'):
+        raise ValueError('job observation identity mismatch or unfinished')
+    tree = (commit.get('tree') or {}).get('sha')
+    if commit.get('sha') != expected_head or not isinstance(tree, str) or not re.fullmatch('[0-9a-f]{40}', tree):
+        raise ValueError('source tree identity missing')
+    conclusions = {'success', 'failure', 'skipped', 'cancelled', 'timed_out',
+                   'neutral', 'action_required', 'stale', 'startup_failure'}
+    if run.get('conclusion') not in conclusions or job.get('conclusion') not in conclusions:
+        raise ValueError('unknown execution conclusion')
+    steps = job.get('steps')
+    if not isinstance(steps, list) or not steps:
+        raise ValueError('step observations missing')
+    numbers, observations = set(), []
+    for step in steps:
+        if (not isinstance(step, dict) or type(step.get('number')) is not int
+                or step['number'] <= 0 or step['number'] in numbers
+                or not isinstance(step.get('name'), str) or not step['name']
+                or step.get('status') != 'completed' or step.get('conclusion') not in conclusions):
+            raise ValueError('invalid or ambiguous step observation')
+        numbers.add(step['number'])
+        observations.append({key: step.get(key) for key in (
+            'number', 'name', 'status', 'conclusion', 'started_at', 'completed_at')})
+    return {
+        'schema': 'github-job-observation/v1', 'platform_origin': 'verified',
+        'repository': REPOSITORY, 'head': expected_head, 'tree': tree,
+        'run_id': run_id, 'attempt': attempt, 'job_id': job_id,
+        'workflow_path': workflow_path, 'run_conclusion': run['conclusion'],
+        'job_conclusion': job['conclusion'], 'steps': observations,
+        'metadata_sha256': {path: digest(value) for path, value in raw.items()},
+        'reuse_ready': False, 'quick_receipt': False,
+        'blockers': ['checkout_identity_not_attested', 'execution_definition_not_attested',
+                     'target_coverage_not_attested', 'environment_identity_not_attested',
+                     'target_dependency_closure_not_certified'],
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument('mode', choices=('environment', 'context', 'record', 'verify', 'verify-origin', 'verify-contract-source', 'archive-attempt'))
+    parser.add_argument('mode', choices=('environment', 'context', 'record', 'verify', 'verify-origin', 'verify-contract-source', 'archive-attempt', 'observe-job'))
     parser.add_argument('--output', type=Path)
     parser.add_argument('--head')
     parser.add_argument('--base', default='')
@@ -443,6 +549,8 @@ def main() -> None:
     parser.add_argument('--attempt', type=int)
     parser.add_argument('--artifact-id', type=int)
     parser.add_argument('--shard', type=int)
+    parser.add_argument('--job-id', type=int)
+    parser.add_argument('--workflow-path')
     args = parser.parse_args()
     if args.mode == 'environment':
         print(ENV_MARKER + canonical(python_environment()).decode())
@@ -462,6 +570,9 @@ def main() -> None:
     elif args.mode == 'verify-contract-source':
         print(json.dumps(contract_source_binding(json.loads(args.contract.read_text()),
                                                 json.loads(args.source_payload.read_text()))))
+    elif args.mode == 'observe-job':
+        print(json.dumps(observe_github_job(run_id=args.run_id, attempt=args.attempt,
+            job_id=args.job_id, expected_head=args.head, workflow_path=args.workflow_path)))
     elif args.mode == 'verify-origin':
         print(json.dumps(verify_github_origin(run_id=args.run_id, attempt=args.attempt,
             artifact_id=args.artifact_id, shard=args.shard, expected_head=args.head, module=args.module)))
