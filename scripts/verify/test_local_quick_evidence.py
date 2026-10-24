@@ -551,9 +551,33 @@ class ShardCompositionTests(unittest.TestCase):
                                            popen=self._shard_job(calls))
         assert receipt is not None
         self.assertEqual(evidence.verify(self.root, self.head), receipt)
-        self.assertEqual(sorted(command[-1] for command in calls), ["0", "1"])
+        self.assertEqual(
+            sorted(command[command.index("--shard") + 1] for command in calls),
+            ["0", "1"],
+        )
         for index in (0, 1):
             self.assertTrue(self._part_path(index).is_file(), index)
+
+    def test_concurrent_shard_defers_transient_clean_check_to_the_single_composition_barrier(self) -> None:
+        command = evidence.shard_command(self.root, 2, 0, defer_clean_check=True)
+        self.assertIn("--defer-clean-check", command)
+
+        def runner(_command, **_kwargs):
+            (self.root / "tracked.txt").write_text("transient dirty state\n", encoding="utf-8")
+            return subprocess.CompletedProcess([], 0)
+
+        with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
+            evidence.run_shard(
+                self.root,
+                2,
+                0,
+                runner=runner,
+                verify_clean_end=False,
+            )
+        self.assertTrue(self._part_path(0).is_file())
+        with self.assertRaisesRegex(evidence.EvidenceError, "must be clean"):
+            evidence.compose(self.root, 2, self.head)
+        self.assertFalse(evidence.evidence_path(self.root, self.head).exists())
 
     def test_concurrent_shard_failure_fails_the_run_without_a_receipt(self) -> None:
         calls: list[list[str]] = []

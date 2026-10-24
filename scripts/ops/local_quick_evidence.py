@@ -624,7 +624,14 @@ def _checked_shard_layout(shards: object, index: object) -> tuple[int, int]:
     return shards, index
 
 
-def run_shard(root: Path, shards: int, index: int, runner=subprocess.run, reuse: bool = True) -> Path:
+def run_shard(
+    root: Path,
+    shards: int,
+    index: int,
+    runner=subprocess.run,
+    reuse: bool = True,
+    verify_clean_end: bool = True,
+) -> Path:
     """Run one bounded shard of the declared quick target list and record its part receipt."""
     require_safe_make_environment()
     shards, index = _checked_shard_layout(shards, index)
@@ -665,7 +672,8 @@ def run_shard(root: Path, shards: int, index: int, runner=subprocess.run, reuse:
     )
     if completed.returncode:
         raise QuickRunFailed(completed.returncode)
-    require_exact_clean_head(root, start_head)
+    if verify_clean_end:
+        require_exact_clean_head(root, start_head)
     part = {
         "schema_version": COMPOSITION_SCHEMA,
         "suite": SUITE,
@@ -681,15 +689,24 @@ def run_shard(root: Path, shards: int, index: int, runner=subprocess.run, reuse:
     return part_path
 
 
-def shard_command(root: Path, shards: int, index: int) -> list[str]:
+def shard_command(
+    root: Path,
+    shards: int,
+    index: int,
+    *,
+    defer_clean_check: bool = False,
+) -> list[str]:
     """The governed shard entry point, so a concurrent shard is a real shard.
 
     A worker never reimplements a shard: it runs the same public ``shard`` mode
     a developer or a resumed run would run, so part receipts, reuse and every
     fail-closed check stay in one place.
     """
-    return [sys.executable, str(Path(__file__).resolve()), "shard",
-            "--root", str(root), "--shards", str(shards), "--shard", str(index)]
+    command = [sys.executable, str(Path(__file__).resolve()), "shard",
+               "--root", str(root), "--shards", str(shards), "--shard", str(index)]
+    if defer_clean_check:
+        command.append("--defer-clean-check")
+    return command
 
 
 def _shard_popen(command: list[str], handle, root: Path):
@@ -764,7 +781,11 @@ def run_shards_concurrently(root: Path, shards: int, jobs: int, head: str,
             started = time.monotonic()
             try:
                 with path.open("w", encoding="utf-8") as handle:
-                    process = popen(shard_command(root, shards, index), handle, root)
+                    process = popen(
+                        shard_command(root, shards, index, defer_clean_check=True),
+                        handle,
+                        root,
+                    )
                     returncode = process.wait()
             except BaseException as exc:  # noqa: BLE001 - report the real shard failure, not a missing outcome
                 with lock:
@@ -993,6 +1014,7 @@ def main() -> int:
     parser.add_argument("--base")
     parser.add_argument("--shards", type=int)
     parser.add_argument("--shard", type=int, dest="shard_index")
+    parser.add_argument("--defer-clean-check", action="store_true")
     parser.add_argument("--diagnostic", action="store_true")
     parser.add_argument("--jobs", type=int)
     parser.add_argument("--keep", type=int)
@@ -1002,7 +1024,7 @@ def main() -> int:
             if args.base is None or args.expected_head is None:
                 raise EvidenceError("bookkeeping-delta requires --base and --expected-head")
             if (args.shards is not None or args.shard_index is not None or args.keep is not None
-                    or args.diagnostic or args.jobs is not None):
+                    or args.diagnostic or args.jobs is not None or args.defer_clean_check):
                 raise EvidenceError("bookkeeping-delta does not accept --shards, --shard, --keep, --jobs or --diagnostic")
             for path in require_bookkeeping_delta(
                 repository_root(args.root), args.base, args.expected_head
@@ -1010,14 +1032,15 @@ def main() -> int:
                 print(path)
             return 0
         if args.mode == "run":
-            if args.expected_head is not None or args.shard_index is not None or args.keep is not None:
+            if (args.expected_head is not None or args.shard_index is not None
+                    or args.keep is not None or args.defer_clean_check):
                 raise EvidenceError("run mode does not accept --expected-head, --shard or --keep")
             path = run_default(args.root, args.shards, args.diagnostic, jobs=args.jobs)
         elif args.mode == "verify":
             if args.expected_head is None:
                 raise EvidenceError("verify mode requires --expected-head")
             if (args.shards is not None or args.shard_index is not None or args.keep is not None
-                    or args.diagnostic or args.jobs is not None):
+                    or args.diagnostic or args.jobs is not None or args.defer_clean_check):
                 raise EvidenceError("verify mode does not accept --shards, --shard, --keep, --jobs or --diagnostic")
             path = verify(args.root, args.expected_head)
         elif args.mode == "shard":
@@ -1025,10 +1048,15 @@ def main() -> int:
                 raise EvidenceError("shard mode requires --shards and --shard")
             if args.expected_head is not None or args.keep is not None or args.diagnostic or args.jobs is not None:
                 raise EvidenceError("shard mode does not accept --expected-head, --keep, --jobs or --diagnostic")
-            path = run_shard(args.root, args.shards, args.shard_index)
+            path = run_shard(
+                args.root,
+                args.shards,
+                args.shard_index,
+                verify_clean_end=not args.defer_clean_check,
+            )
         elif args.mode == "prune":
             if (args.shards is not None or args.shard_index is not None or args.expected_head is not None
-                    or args.diagnostic or args.jobs is not None):
+                    or args.diagnostic or args.jobs is not None or args.defer_clean_check):
                 raise EvidenceError("prune mode does not accept --shards, --shard, --expected-head, --jobs or --diagnostic")
             keep = RECEIPT_RETENTION if args.keep is None else args.keep
             removed = prune_receipts(repository_root(args.root), keep)
