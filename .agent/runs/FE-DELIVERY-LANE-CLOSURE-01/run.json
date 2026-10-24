@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "id": "FE-DELIVERY-LANE-CLOSURE-01",
+  "branch": "feature/project-detail-productization-01",
+  "baseline_sha": "fa48fdd625dcd3eb68471ac9b52b61021f37c4df",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-DELIVERY-LANE-CLOSURE-01.yaml",
+  "record": "docs/ops/iterations/fe_delivery_lane_closure_01.md",
+  "scope": [".agent/", "AGENTS.md", "config/", "docs/", "make/", "scripts/"],
+  "owned_paths": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-DELIVERY-LANE-CLOSURE-01.yaml",
+    ".agent/runs/FE-DELIVERY-LANE-CLOSURE-01/run.json",
+    "docs/ops/iterations/fe_delivery_lane_closure_01.md",
+    "make/contract.mk",
+    "make/ci.mk",
+    "make/dev.mk",
+    "make/frontend.mk",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "scripts/audit/verification_lane_coverage.py",
+    "config/acceptance/evolution_binding.v1.json",
+    "config/acceptance/backend_contract_instance_daily_v1.json",
+    "config/acceptance/backend_contract_instance_v1.json",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/tests/test_runtime_view_contract_fail_closed.py",
+    "make/frontend.mk",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/verify/record_relation_roundtrip_acceptance.js",
+    "scripts/verify/test_frontend_probe_toolchain_guard.py",
+    "scripts/dev/frontend_acceptance_runtime_profile.py",
+    "scripts/dev/frontend_standard_preview.py",
+    "scripts/ops/acceptance_evolution_record.py",
+    "scripts/verify/acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_frontend_standard_preview.py",
+    "scripts/verify/test_dev_acceptance_release_identity.py",
+    "scripts/verify/test_frontend_probe_toolchain_guard.py"
+  ],
+  "owner_approvals": [{"stage": "lane_closure", "status": "approved", "approved_by": "Owner", "approved_at": "2026-10-24T00:00:00+08:00", "scope": "Classify all 14 targets, wire deterministic and explicit runtime lanes, validate, and form a local candidate."}],
+  "previous_active_run": ".agent/runs/FE-DELIVERY-PR-FIX-02/run.json",
+  "entry_evidence": {
+    "status": ".runtime/agent-runs/FE-DELIVERY-LANE-CLOSURE-01/entry-status.txt",
+    "tracked_diff": ".runtime/agent-runs/FE-DELIVERY-LANE-CLOSURE-01/entry-tracked.diff",
+    "preserved_hashes": ".runtime/agent-runs/FE-DELIVERY-LANE-CLOSURE-01/entry-files.sha256",
+    "status_sha256": "2817aea9655ab0f868d93cd286113bd8f93ad8da4c3281faf96e7453108140f5",
+    "tracked_diff_sha256": "e456b7df9f5e6b45ee7d62ff094f3d8b514c1e5c7f61a56a92b1474c115727df",
+    "preserved_manifest_sha256": "d3e6ee7a0a0a1cb4c828022e16e03af432fbdbb1b7f527e8bb26c077fc91f649"
+  },
+  "environment": {"kind": "offline", "candidate_sha": "fa48fdd625dcd3eb68471ac9b52b61021f37c4df", "candidate_dirty": true, "production_changes": false},
+  "checks": {
+    "summary_browser": {
+      "command": "make verify.frontend.project_detail_summary.browser",
+      "status": "passed",
+      "test_count": 28,
+      "identity": "clean candidate clone with the browser routing correction"
+    },
+    "playwright_vendor_coupling": {
+      "command": "make verify.frontend.playwright_vendor_coupling.guard",
+      "status": "passed",
+      "test_count": 7
+    },
+    "lane_coverage": {
+      "command": "make audit.verification.lane_coverage.check",
+      "status": "passed",
+      "identity": "clean candidate clone"
+    },
+    "workflow_contract": {
+      "command": "make verify.ci.workflow.contract",
+      "status": "passed",
+      "test_count": 79
+    },
+    "generated_evidence": {
+      "command": "make ci.generated_evidence.preflight",
+      "status": "passed",
+      "identity": "clean candidate clone"
+    },
+    "evidence_input_policy": {
+      "command": "python3 -m unittest scripts.verify.test_acceptance_evolution_binding_guard",
+      "status": "passed",
+      "test_count": 39,
+      "identity": "target-scoped Make input migration"
+    }
+  },
+  "verification_results": [
+    {
+      "layer": "L1",
+      "command": "make audit.verification.lane_coverage.check",
+      "status": "passed",
+      "failure_owner": null
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.ci.workflow.contract",
+      "status": "passed",
+      "test_count": 79,
+      "failure_owner": null
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.frontend.project_detail_summary.browser",
+      "status": "passed",
+      "test_count": 28,
+      "failure_owner": null
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.frontend.playwright_vendor_coupling.guard",
+      "status": "passed",
+      "test_count": 7,
+      "failure_owner": null
+    },
+    {
+      "layer": "L5",
+      "command": "make ci.generated_evidence.preflight",
+      "status": "passed",
+      "failure_owner": null
+    },
+    {
+      "layer": "L1",
+      "command": "python3 -m unittest scripts.verify.test_acceptance_evolution_binding_guard",
+      "status": "passed",
+      "test_count": 39,
+      "failure_owner": null
+    },
+    {
+      "layer": "L5",
+      "command": "make verify.validation.delivery.unit",
+      "status": "passed",
+      "test_count": 87,
+      "failure_owner": null
+    }
+  ],
+  "blockers": [
+    "The reviewed evidence-input policy correction must be committed as a new exact candidate.",
+    "relation_roundtrip must be rerun because its executable Make input changed; presentation and list inputs remain reusable."
+  ],
+  "next_exact_step": "Commit the exact-checkout authority support, rerun list_surface_structure and relation_roundtrip at the final head, record the migrated manifest, and rerun merge admission.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

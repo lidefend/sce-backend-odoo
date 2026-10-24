@@ -1,0 +1,20 @@
+schema_version: 1
+goal:
+  id: FE-PROJECT-DETAIL-01
+  status: verification_pending
+  title: Project detail summary presentation
+  formal_product_layer: P0
+  objective: Repair declared native summary layout without changing field identity or behavior.
+  scope:
+    - frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue
+    - frontend/apps/web/scripts/readonly_block_component_test.mjs
+    - scripts/verify/frontend_project_detail_summary_browser.mjs
+    - make/frontend.mk
+    - .agent/active-runs.json
+    - .agent/goals/FE-PROJECT-DETAIL-01.yaml
+    - .agent/runs/FE-PROJECT-DETAIL-01/run.json
+    - docs/ops/iterations/fe_project_detail_01.md
+  exclusions:
+    - no binding, field, permission, action or configuration changes
+    - no deployment or business writes
+  next_exact_step: Await manual review of local commit and existing baseline guard findings.

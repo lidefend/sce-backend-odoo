@@ -140,3 +140,8 @@ from . import test_system_permission_business
 from . import test_baseline_readiness
 
 from . import test_experience_role_surface
+
+from . import test_native_advisory_draft
+from . import test_feedback_evaluation_rt_http
+from . import test_feedback_evaluation_rt_restore
+from . import test_company_project_refund_feedback

@@ -35,6 +35,8 @@ from .semantic_registry_generated import (
     DERIVATION_DEFAULT,
     DERIVATION_RULES,
     SEMANTIC_COMPONENTS,
+    FIELD_CONTRACT_VERSION,
+    COMPONENT_REGISTRATIONS,
 )
 
 _logger = logging.getLogger(__name__)
@@ -239,7 +241,15 @@ def legacy_component_key(widget_type: str = "", field: Any = None) -> str:
 # finalizer or a construction-product extension must not each carry their own
 # copy, because the frontend rejects a registry entry without a version and a
 # second copy is exactly the driftable vocabulary this module removed.
-COMPONENT_CONTRACT_VERSION = "1.0"
+COMPONENT_CONTRACT_VERSION = FIELD_CONTRACT_VERSION
+
+
+def component_registration(component_key: str) -> dict[str, str]:
+    """Backend identity only. Client support/config compatibility is not decided here."""
+    key = _text(component_key)
+    if key not in COMPONENT_REGISTRATIONS:
+        raise ValueError(f"COMPONENT_UNREGISTERED: {key}")
+    return dict(COMPONENT_REGISTRATIONS[key])
 
 
 def component_registry(component_keys: Any) -> dict[str, dict[str, str]]:
@@ -249,22 +259,11 @@ def component_registry(component_keys: Any) -> dict[str, dict[str, str]]:
     generic assembler, a page extended by a product-layer normalizer and a page
     handler that adds a control all publish the identical identity fact.
 
-    Fail-closed: a key no carrier declares is reported and left out, so a page
-    cannot publish an identity the frontend has no registration for.  The
-    frontend rejects such a key anyway (``PROFESSIONAL_COMPONENT_UNREGISTERED``),
-    and dropping it here makes the contract say the same thing the renderer
-    enforces instead of shipping a registration that cannot resolve.
+    Unknown identities raise instead of silently disappearing. A registered
+    node is a backend-known identity, never evidence of client support.
     """
-    declared = set(SEMANTIC_COMPONENTS.values())
     keys = component_keys if isinstance(component_keys, (list, tuple, set, frozenset)) else []
     registry: dict[str, dict[str, str]] = {}
     for key in sorted({_text(k) for k in keys if _text(k)}):
-        if key not in declared:
-            _logger.error(
-                "contract_component_undeclared componentKey=%s; contracts/registry/component.yaml does not "
-                "declare it, so the key is not published. Declare the field's semantic instead.",
-                key,
-            )
-            continue
-        registry[key] = {"version": COMPONENT_CONTRACT_VERSION}
+        registry[key] = {"version": component_registration(key)["version"]}
     return registry

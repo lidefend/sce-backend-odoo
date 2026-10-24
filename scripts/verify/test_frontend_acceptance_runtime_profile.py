@@ -43,6 +43,29 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         self.assertEqual(values["BACKEND_ACCEPTANCE_PORT"], "18082")
         self.assertEqual(values["FRONTEND_ACCEPTANCE_PORT"], "5175")
 
+    def test_exact_checkout_uses_reviewed_primary_worktree_authority(self):
+        with tempfile.TemporaryDirectory() as directory:
+            authority = Path(directory).resolve()
+            subprocess.run(
+                ["git", "init", "-q"], cwd=authority, check=True, capture_output=True
+            )
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "SC_PR_MERGE_EXACT_CHECKOUT": "1",
+                    "SC_PR_MERGE_AUTHORITY_ROOT": str(authority),
+                },
+                clear=False,
+            ):
+                self.assertEqual(PROFILE._primary_worktree(), authority)
+                with mock.patch.dict(
+                    os.environ,
+                    {"SC_PR_MERGE_AUTHORITY_ROOT": "."},
+                    clear=False,
+                ):
+                    with self.assertRaisesRegex(ValueError, "must be absolute"):
+                        PROFILE._primary_worktree()
+
     def test_rejects_database_filter_drift(self):
         self.policy["profiles"]["local"]["managed_runtime"]["database_filter"] = "^sc_demo$"
         with self.assertRaisesRegex(ValueError, "database_filter"):

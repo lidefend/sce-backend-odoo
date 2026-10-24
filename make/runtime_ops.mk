@@ -579,7 +579,11 @@ verify.form_view.native_structure.boundary_guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/form_view_native_structure_boundary_guard.py
 	@python3 scripts/verify/form_view_native_structure_boundary_guard.py
 
-verify.form_container_presentation.guard: guard.prod.forbid
+.PHONY: verify.form_container_presentation.unit
+verify.form_container_presentation.unit: guard.prod.forbid
+	@python3 -m unittest discover -s scripts/verify -p 'test_form_container_presentation_consumption_guard.py' -v
+
+verify.form_container_presentation.guard: guard.prod.forbid verify.form_container_presentation.unit verify.frontend.native_text_presentation.unit verify.frontend.node_component.component
 	@python3 -m py_compile scripts/verify/form_container_presentation_consumption_guard.py
 	@python3 scripts/verify/form_container_presentation_consumption_guard.py
 

@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "FE-DELIVERY-PR-FIX-02",
+  "branch": "feature/project-detail-productization-01",
+  "baseline_sha": "d7edc7ffbf1e5e01143a0be9431d22783f445ec4",
+  "status": "active",
+  "goal": ".agent/goals/FE-DELIVERY-PR-FIX-02.yaml",
+  "record": "docs/ops/iterations/fe_delivery_pr_fix_02.md",
+  "scope": [".agent/", "AGENTS.md", "config/", "docs/", "make/", "scripts/"],
+  "owned_paths": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-DELIVERY-PR-FIX-02.yaml",
+    ".agent/runs/FE-DELIVERY-PR-FIX-02/run.json",
+    "docs/ops/iterations/fe_delivery_pr_fix_02.md",
+    "scripts/verify/frontend_project_detail_summary_browser.mjs"
+  ],
+  "owner_approvals": [
+    {
+      "stage": "probe_fix",
+      "status": "approved",
+      "approved_by": "Owner",
+      "approved_at": "2026-10-24T00:00:00+08:00",
+      "scope": "Repair only the four flagged summary probe assertions and form a fully validated local candidate."
+    }
+  ],
+  "previous_active_run": ".agent/runs/FE-DELIVERY-GENERATED-CLOSURE-01/run.json",
+  "entry_evidence": {
+    "status": ".runtime/agent-runs/FE-DELIVERY-PR-FIX-02/entry-status.txt",
+    "tracked_diff": ".runtime/agent-runs/FE-DELIVERY-PR-FIX-02/entry-tracked.diff",
+    "preserved_hashes": ".runtime/agent-runs/FE-DELIVERY-PR-FIX-02/entry-files.sha256",
+    "status_sha256": "eeddf04b94e796e3412b5cb780a7a1ba75b2f60de273f47f386d245ad4a823b1",
+    "tracked_diff_sha256": "7ac75a42ef2b5de1c73d357571ebe8120cd4d04728d99d43bf4e262cecb86f0c",
+    "preserved_manifest_sha256": "d854c5363b4e3906200030cce30fa00ff7dc1dd12e5e87d841b79af6081c950a"
+  },
+  "environment": {"kind": "offline", "candidate_sha": "d7edc7ffbf1e5e01143a0be9431d22783f445ec4", "candidate_dirty": true, "production_changes": false},
+  "checks": {},
+  "verification_results": [
+    {"id": "summary_probe", "command": "make verify.frontend.project_detail_summary.browser", "status": "passed", "test_count": 28, "summary": "Four viewport widths pass with business/public-surface assertions."},
+    {"id": "vendor_guard", "command": "make verify.frontend.playwright_vendor_coupling.guard", "status": "passed", "test_count": 7, "summary": "Geometry count for the probe is now zero; guard and baseline unchanged."}
+  ],
+  "blockers": [],
+  "next_exact_step": "Run affected presenter/native-form targets, commit the probe fix, then run Quick on the final clean candidate.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

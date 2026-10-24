@@ -1,0 +1,31 @@
+schema_version: 1
+goal:
+  id: FE-DELIVERY-PR-FIX-02
+  status: active
+  title: Repair project detail summary probe assertions
+  formal_product_layer: P4
+  layer_target: browser verification probe
+  module: repository verification harness
+  standard_vs_user_specific: verification mechanism; no product semantics
+  objective: Replace four inline geometry checks with stable business and public-surface assertions without changing product code, guard or baseline.
+  why_here: The probe owns its assertions and the guard owns style-coupling policy.
+  why_not_elsewhere:
+    - Product CSS and renderer behavior must not change.
+    - The guard and baseline must not be relaxed.
+  scope: [.agent/, docs/, scripts/verify/frontend_project_detail_summary_browser.mjs]
+  owned_paths:
+    - .agent/active-runs.json
+    - .agent/goals/FE-DELIVERY-PR-FIX-02.yaml
+    - .agent/runs/FE-DELIVERY-PR-FIX-02/run.json
+    - docs/ops/iterations/fe_delivery_pr_fix_02.md
+    - scripts/verify/frontend_project_detail_summary_browser.mjs
+  exclusions:
+    - product code, CSS and renderers
+    - guard or baseline changes
+    - push, merge or deployment
+  acceptance:
+    - four geometry checks are replaced with behavior/public-surface checks
+    - summary probe passes
+    - vendor guard passes without baseline change
+    - affected presenter/native-form checks pass
+    - final candidate Quick and generated evidence pass

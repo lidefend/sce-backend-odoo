@@ -1,3 +1,4 @@
+import { projectNodeComponents, type FeedbackEvaluationOverride } from './nodeComponentPresentation';
 import { requireDeclaredLayoutColumns } from '../../components/template/layoutSpan';
 import { normalizeActionSemantics } from '@sc/schema';
 import { contractAuthLevelDeniesAccess, contractAuthLevelGrantsEdit, normalizeContractAuthLevel } from '../contract/contractAuthLevel';
@@ -398,7 +399,8 @@ function presentNode(
   ]);
   const currentValues = resolveContractV2ModifierValues(store, runtimeValues);
   const resolveFieldValue = (field: string) => currentValues[field];
-  const layoutInvisible = evaluateNativeModifierValue(containerModifierValue(container, 'invisible'), resolveFieldValue);
+  const explicitFeedback = container.componentKey === 'sc.feedback.message';
+  const layoutInvisible = explicitFeedback ? false : evaluateNativeModifierValue(containerModifierValue(container, 'invisible'), resolveFieldValue);
   const layoutReadonly = evaluateNativeModifierValue(containerModifierValue(container, 'readonly'), resolveFieldValue);
   const layoutRequired = evaluateNativeModifierValue(containerModifierValue(container, 'required'), resolveFieldValue);
   const visible = ancestorVisible && container.visible !== false && !layoutInvisible
@@ -456,6 +458,9 @@ function presentNode(
     text: text(container.text),
     attributes: Object.freeze({ ...container.attributes }),
     nativePresentation: Object.freeze({
+      containerId: container.containerId,
+      componentKey: container.componentKey,
+      componentConfig: container.componentConfig,
       displayLabel: text(container.displayLabel),
       semanticTitle: text(container.semanticTitle),
       semanticAnchor: text(container.semanticAnchor),
@@ -658,7 +663,10 @@ export function presentContractV2Form(
   store: ContractV2NormalizedStore,
   mode: CanonicalFormRenderMode,
   runtimeValues?: ContractV2Dictionary,
-  context?: { recordPersisted?: boolean },
+  context?: {
+    recordPersisted?: boolean;
+    feedbackEvaluations?: ReadonlyMap<string, FeedbackEvaluationOverride>;
+  },
 ): CanonicalFormRenderModel {
   const recordPersisted = context?.recordPersisted;
   const snapshot = store.snapshot;
@@ -720,6 +728,20 @@ export function presentContractV2Form(
       snapshot.layoutContract.componentRegistry, snapshot.pageInfo.clientType,
     )
   ));
+  const explicitNodes = projectNodeComponents(snapshot, context?.feedbackEvaluations);
+  function bindExplicitNodes(node: CanonicalFormNode) {
+    const presentation = explicitNodes.presentations.get(node.nodeId);
+    node.nativePresentation = Object.freeze({...node.nativePresentation,
+      ...(presentation ? {nodeComponent: presentation} : {}),
+      feedbackContentOwned: explicitNodes.ownedContent.has(node.nodeId) && !presentation});
+    if (presentation?.visibilityOwner === 'feedback_evaluation') {
+      node.visible = Boolean(presentation.parentVisible) && presentation.visible;
+    } else if (presentation) {
+      node.visible = node.visible && presentation.visible;
+    }
+    node.children.forEach(bindExplicitNodes);
+  }
+  nodes.forEach(bindExplicitNodes);
   const actionCandidates = allActions.filter((action) => (
     action.visible
     &&

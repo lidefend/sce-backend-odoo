@@ -14,6 +14,31 @@ class _BaseIntentHandler:
         self.context = context or {}
 
 
+class _FieldsGetFixtureModel:
+    """Minimal production-shaped fields_get() for local fake Odoo models."""
+
+    _fields = {}
+
+    def fields_get(self, names=None):
+        field_names = list(self._fields) if names is None else names
+        if isinstance(field_names, str):
+            field_names = [field_names]
+        metadata = {}
+        for name in field_names:
+            field = self._fields.get(name)
+            if field is None:
+                continue
+            meta = dict(field) if isinstance(field, dict) else {}
+            for key in ("type", "string", "sc_ui_usage"):
+                value = getattr(field, key, None)
+                if value is not None:
+                    meta[key] = value
+            meta.setdefault("type", "")
+            meta.setdefault("string", str(name))
+            metadata[name] = meta
+        return metadata
+
+
 def _install_module(name, **attrs):
     module = types.ModuleType(name)
     for key, value in attrs.items():
@@ -1952,7 +1977,7 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
         class User:
             groups_id = []
 
-        class PartnerModel:
+        class PartnerModel(_FieldsGetFixtureModel):
             _fields = {
                 "name": object(),
                 "email": object(),
@@ -2276,7 +2301,7 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
         class User:
             id = 42
 
-        class PartnerModel:
+        class PartnerModel(_FieldsGetFixtureModel):
             _fields = {"name": object(), "email": object(), "state": object(), "partner_id": object()}
 
         class EmptyRef:
@@ -2374,7 +2399,7 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
         class Company:
             id = 7
 
-        class PartnerModel:
+        class PartnerModel(_FieldsGetFixtureModel):
             _fields = {"name": object()}
 
         class ContractModel(list):
@@ -2416,7 +2441,7 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
         class Company:
             id = 7
 
-        class PartnerModel:
+        class PartnerModel(_FieldsGetFixtureModel):
             _fields = {"name": object()}
 
         class ContractModel:
@@ -2460,7 +2485,7 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
         class Company:
             id = 7
 
-        class PartnerModel:
+        class PartnerModel(_FieldsGetFixtureModel):
             _fields = {"amount_total": object(), "company_id": object(), "state": object()}
 
         class EmptyRef:
@@ -2559,7 +2584,7 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
         class Company:
             id = 7
 
-        class PartnerModel:
+        class PartnerModel(_FieldsGetFixtureModel):
             _fields = {"amount_total": object()}
 
         class ContractModel(list):
@@ -2602,7 +2627,7 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
         class Company:
             id = 7
 
-        class PartnerModel:
+        class PartnerModel(_FieldsGetFixtureModel):
             _fields = {"amount_total": object()}
 
         class ContractModel:
@@ -2861,7 +2886,7 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
         class User:
             id = 42
 
-        class PartnerModel:
+        class PartnerModel(_FieldsGetFixtureModel):
             _fields = {"amount_total": object(), "company_id": object(), "state": object()}
 
         class EmptyRef:
@@ -2980,7 +3005,7 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
             def __init__(self, field_type):
                 self.type = field_type
 
-        class PartnerModel:
+        class PartnerModel(_FieldsGetFixtureModel):
             _fields = {
                 "amount_total": Field("float"),
                 "company_id": Field("many2one"),
@@ -3075,7 +3100,7 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
         class User:
             id = 42
 
-        class PartnerModel:
+        class PartnerModel(_FieldsGetFixtureModel):
             _fields = {
                 "name": object(),
                 "email": object(),

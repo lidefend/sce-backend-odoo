@@ -4,6 +4,7 @@ import sys
 import types
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 class _BaseIntentHandler:
@@ -192,6 +193,76 @@ class TestApiOnchangeRecordIdBoundaries(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(result["data"]["patch"]["original_label"], "基础设置")
         self.assertEqual(result["data"]["patch"]["preview_summary"], "保存后刷新页面生效")
+
+    def feedback_params(self, **overrides):
+        params = {
+            "model": "x.model",
+            "values": {},
+            "changed_fields": [],
+            "feedback_evaluation": {
+                "version": "1.0.0",
+                "operation": "describe",
+                "request_id": "r6_3_handler",
+                "view_id": 1,
+                "container_id": "feedback",
+            },
+        }
+        params.update(overrides)
+        return params
+
+    def test_feedback_requires_draft_capability_before_transport(self):
+        handler = self.module.ApiOnchangeHandler(
+            env=_Env({"x.model": _Model()}),
+            params=self.feedback_params(),
+        )
+        result = handler.handle()
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["code"], 409)
+        self.assertEqual(result["error"]["reason_code"], "COMPONENT_CAPABILITY_REQUIRED")
+        self.assertEqual(
+            result["error"]["details"]["feedback_evaluation"]["diagnostic"]["path"],
+            "feedback_evaluation.capability",
+        )
+
+    def test_feedback_rejects_mixed_patch_inputs(self):
+        for overrides in (
+            {"values": {"note": "unsafe"}},
+            {"changed_fields": ["note"]},
+            {"include_v2_patch": True},
+            {"client_contract_capabilities": ["form.feedback.message.v1", "form.feedback.draft.v1"], "contract_version": "2.2.0"},
+        ):
+            with self.subTest(overrides=overrides):
+                handler = self.module.ApiOnchangeHandler(
+                    env=_Env({"x.model": _Model()}),
+                    params=self.feedback_params(**overrides),
+                )
+                result = handler.handle()
+                self.assertFalse(result["ok"])
+                self.assertEqual(result["code"], 400)
+                self.assertEqual(result["error"]["reason_code"], "FEEDBACK_CONFIG_INVALID")
+
+    def test_feedback_success_is_the_only_payload_and_contains_no_patch(self):
+        params = self.feedback_params(client_contract_capabilities=[
+            "form.feedback.message.v1",
+            "form.feedback.draft.v1",
+        ])
+        handler = self.module.ApiOnchangeHandler(env=_Env({"x.model": _Model()}), params=params)
+        payload = {
+            "version": "1.0.0",
+            "request_id": "r6_3_handler",
+            "status": "described",
+            "binding": {"etag": "a" * 64},
+        }
+        with patch.object(self.module, "evaluate_feedback", return_value=payload) as evaluate:
+            result = handler.handle()
+        self.assertTrue(result["ok"], result)
+        self.assertEqual(result["data"]["feedback_evaluation"], payload)
+        self.assertEqual(result["data"]["patch"], {})
+        self.assertEqual(result["data"]["modifiers_patch"], {})
+        self.assertEqual(result["data"]["line_patches"], [])
+        self.assertNotIn("unified_page_patch_v2", result)
+        self.assertNotIn("lite_preview", result)
+        evaluate.assert_called_once()
 
 
 if __name__ == "__main__":

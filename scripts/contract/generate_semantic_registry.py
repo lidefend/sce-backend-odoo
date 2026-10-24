@@ -30,6 +30,7 @@ import sys
 from pathlib import Path
 
 import yaml
+import jsonschema
 
 ROOT = Path(__file__).resolve().parents[2]
 SEMANTIC_REL = Path("contracts/registry/semantic.yaml")
@@ -73,9 +74,33 @@ DERIVATION_DEFAULT = {default!r}
 '''
 
 
+class UniqueKeyLoader(yaml.SafeLoader):
+    """Reject duplicates before YAML can silently discard an identity."""
+
+    def construct_mapping(self, node, deep=False):
+        keys = set()
+        for key_node, _ in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in keys:
+                raise SystemExit(f"duplicate YAML key: {key!r}")
+            keys.add(key)
+        return super().construct_mapping(node, deep=deep)
+
+
 def load(path: Path) -> dict:
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    data = yaml.load(path.read_text(encoding="utf-8"), Loader=UniqueKeyLoader)
     return data if isinstance(data, dict) else {}
+
+
+def validate_component_registry(component: dict) -> None:
+    schema = json.loads((ROOT / "contracts/registry/registry.schema.json").read_text())
+    try:
+        jsonschema.Draft202012Validator(schema).validate(component)
+    except jsonschema.ValidationError as exc:
+        raise SystemExit(f"invalid component registry: {exc.message}") from exc
+    for key, entry in component["components"].items():
+        if entry.get("kind", "field") == "field" and entry["renderer"] not in component["renderers"]:
+            raise SystemExit(f"component {key!r} names unregistered renderer")
 
 
 def registry_versions(root: Path = ROOT) -> int:
@@ -116,6 +141,7 @@ def render_rule(rule: dict) -> str:
 
 
 def render(semantic: dict, component: dict, *, version: int) -> str:
+    validate_component_registry(component)
     derivation = semantic.get("derivation") or {}
     rules = derivation.get("rules") or []
     semantics = semantic.get("semantics") or {}
@@ -147,6 +173,8 @@ def render(semantic: dict, component: dict, *, version: int) -> str:
                 f"[generate-semantic-registry] FAIL: semantic {key!r} points at unregistered "
                 f"component {component_key!r}"
             )
+        if components[component_key].get("kind", "field") != "field":
+            raise SystemExit(f"field semantic {key!r} cannot reference node component {component_key!r}")
         mapping.append(f"    {key!r}: {component_key!r},")
 
     sources = (SEMANTIC_REL.as_posix(), COMPONENT_REL.as_posix())
@@ -166,6 +194,14 @@ def render(semantic: dict, component: dict, *, version: int) -> str:
         + "\n# semantic -> the component key the frontend renders.\n"
         "SEMANTIC_COMPONENTS = {\n"
         + "\n".join(mapping)
+        + "\n}\n"
+        + "\n# Backend registration identity only; no client support is implied.\n"
+        + f"FIELD_CONTRACT_VERSION = {component['defaults']['field_contract_version']!r}\n"
+        + "COMPONENT_REGISTRATIONS = {\n"
+        + "\n".join(
+            f"    {key!r}: {dict(kind=entry.get('kind', 'field'), version=entry['version'] if entry.get('kind') == 'node' else component['defaults']['field_contract_version'])!r},"
+            for key, entry in sorted(components.items())
+        )
         + "\n}\n"
     )
 
@@ -212,11 +248,14 @@ def render_frontend_registry(component: dict, *, version: int) -> str:
     type-directed ``rendererByFieldType`` derivation and the readiness fallback
     are behaviour and stay in ``professionalComponentRegistry.ts``.
     """
+    validate_component_registry(component)
     components = component.get("components") or {}
     defaults = component.get("defaults") if isinstance(component.get("defaults"), dict) else {}
     default_readiness = str(defaults.get("readiness") or "ready")
     rows: list[str] = []
     for key, entry in components.items():
+        if entry.get("kind", "field") == "node":
+            continue
         entry = entry if isinstance(entry, dict) else {}
         semantic = entry.get("semantic")
         renderer = entry.get("renderer")
@@ -244,6 +283,9 @@ def render_frontend_registry(component: dict, *, version: int) -> str:
         )
         + "\n".join(rows)
         + "\n];\n"
+        + "\nexport const NODE_COMPONENT_REGISTRATIONS: Readonly<Record<string, {kind: 'node'; version: string}>> = Object.freeze({\n"
+        + "\n".join(f"  {key!r}: {{kind: 'node', version: {entry['version']!r}}}," for key, entry in components.items() if entry.get('kind') == 'node')
+        + "\n});\n"
     )
 
 
@@ -418,6 +460,13 @@ def main() -> int:
     parser.add_argument("--check", action="store_true", help="verify the carrier is in sync")
     args = parser.parse_args()
 
+    # Bootstrap the resolver from the freshly rendered source in memory. The
+    # checked-in carrier may predate a generator/runtime protocol change.
+    import types
+    module_name = "core.contract_runtime.semantic_registry_generated"
+    generated = types.ModuleType(module_name)
+    exec(compile(render_repository_carrier(), str(CARRIER_REL), "exec"), generated.__dict__)
+    sys.modules[module_name] = generated
     artifacts = (
         (CARRIER_REL, render_repository_carrier()),
         (FRONTEND_REL, render_frontend_repository()),

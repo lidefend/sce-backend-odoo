@@ -630,7 +630,81 @@ def _finalize_layout_dsl(contract: dict[str, Any]) -> None:
     contract["layoutContract"] = layout
 
 
-def assemble_unified_page_contract_v2(
+def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, **kwargs):
+    """Explicit node declarations are validated before scoped body admission exits."""
+    from .node_component_validation import KEYS, validate_final_nodes
+    from .field_presentation_usage import _feedback_assembly_scope
+    from .form_configuration_compiler import FormConfigurationError
+    from .native_advisory import project as project_native_advisory
+    draft_feedback = kwargs.pop("draft_feedback", None)
+    source_contract = project_native_advisory(source_contract, node_actor_env)
+    raw_nodes = []
+    def collect(value):
+        if isinstance(value, list):
+            for row in value:
+                collect(row)
+        elif isinstance(value, dict):
+            if "type" in value or "componentKey" in value:
+                raw_nodes.append(value)
+            for key in ("children", "pages", "tabs", "nodes", "items"):
+                if key in value:
+                    collect(value[key])
+    source = _dict(source_contract)
+    marker = _dict(source.get("nativeFormProjection"))
+    ui = _dict(source.get("ui")) or source
+    raw_layout = marker.get("layout") if marker else _dict(_dict(ui.get("views")).get("form")).get("layout", [])
+    collect(raw_layout)
+    declarations = [n for n in raw_nodes if n.get("componentKey") in KEYS]
+    if not declarations:
+        return _assemble_unified_page_contract_v2(source_contract, **kwargs)
+    references = set()
+    for node in declarations:
+        config = node.get("componentConfig")
+        if not isinstance(config, dict):
+            raise FormConfigurationError("FEEDBACK_CONFIG_INVALID", "componentConfig")
+        ref = config.get("contentRef")
+        if isinstance(ref, dict) and isinstance(ref.get("containerId"), str):
+            references.add(ref["containerId"])
+    admitted = set()
+    for node in raw_nodes:
+        if node.get("type") != "field":
+            continue
+        locator = node.get("native_locator") or node.get("nativeLocator")
+        occurrence = node.get("occurrence_index", node.get("occurrenceIndex"))
+        name = node.get("name")
+        if not name or not locator or type(occurrence) is not int:
+            continue
+        widget_id = f"field.{name}.occ.{_fingerprint({'locator': locator, 'occurrence': occurrence})}"
+        if widget_id in references:
+            admitted.add((name, locator, occurrence))
+    with _feedback_assembly_scope(admitted):
+        try:
+            contract = _assemble_unified_page_contract_v2(source_contract, **kwargs)
+        except FormConfigurationError:
+            raise
+        except ValueError as exc:
+            raise FormConfigurationError("FEEDBACK_CONFIG_INVALID", "layoutContract.containerTree") from exc
+        from .node_component_validation import walk
+        tree = contract["layoutContract"]["containerTree"]
+        projected = [n for n, _ in walk(tree) if n.get("componentKey") in KEYS]
+        if len(projected) != len(declarations):
+            raise FormConfigurationError(
+                "FEEDBACK_CONFIG_INVALID",
+                "layoutContract.containerTree",
+                declared=len(declarations),
+                projected=len(projected),
+            )
+        validate_final_nodes(
+            node_actor_env,
+            contract,
+            deepcopy(tree),
+            apply_visibility=False,
+            draft_feedback=draft_feedback,
+        )
+        return contract
+
+
+def _assemble_unified_page_contract_v2(
     source_contract: dict[str, Any],
     *,
     source_type: str = "",
@@ -1963,7 +2037,7 @@ def _normalize_native_layout_nodes(
             for key in ("readonly", "required", "invisible", "column_invisible"):
                 if key in field and key not in node:
                     node[key] = deepcopy(field.get(key))
-            assert_field_body_usage(field, node_path, hidden=statically_hidden(node))
+            assert_field_body_usage(field, node_path, hidden=statically_hidden(node), occurrence=node)
             normalized = _native_field_node(node, field, layout_type=layout_type)
             if node_name:
                 subview = _dict((form_subviews or {}).get(node_name))

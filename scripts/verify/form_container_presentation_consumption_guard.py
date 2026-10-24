@@ -31,9 +31,12 @@ it can fail rather than only pass.
 from __future__ import annotations
 
 import importlib.util
+import json
+import re
 import sys
 import types
 from pathlib import Path
+from xml.etree import ElementTree
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -41,8 +44,46 @@ HANDLERS = ROOT / "addons/smart_core/handlers"
 RENDERER_PATH = ROOT / "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
 FORM_SECTION_PATH = ROOT / "frontend/apps/web/src/components/template/FormSection.vue"
 CHILD_SEQUENCE_PATH = ROOT / "frontend/apps/web/src/components/template/nativeChildSequence.ts"
+NATIVE_TEXT_PATH = ROOT / "frontend/apps/web/src/components/template/nativeTextPresentation.ts"
+VUE_LOGIN_PATH = ROOT / "addons/smart_construction_core/views/web_login_views.xml"
+VUE_SIGNUP_PATH = ROOT / "addons/smart_construction_core/views/signup_templates.xml"
+OCA_INJECTION_TEMPLATE_PATH = (
+    ROOT / "addons_external/oca_server_ux/base_tier_validation/templates/tier_validation_templates.xml"
+)
+OCA_INJECTION_MODEL_PATH = ROOT / "addons_external/oca_server_ux/base_tier_validation/models/tier_validation.py"
+OCA_COMPONENT_PATH = (
+    ROOT / "addons_external/oca_server_ux/base_tier_validation/static/src/components/"
+    "tier_review_widget/tier_review_widget.xml"
+)
+GENERATED_CONTRACT_PATH = ROOT / "contracts/generated/product_view_structure_contract.json"
 VOCABULARY_MARKER = "Declared presentation vocabulary"
 CONTAINER_MERGE = "...declaredPresentationTokens(node),"
+LEGACY_ALERT_TOKENS = frozenset({
+    "alert", "alert-info", "alert-warning", "alert-danger", "alert-link",
+})
+LEGACY_VUE_REJECTION_MARKER = "export function assertNativePresentationConsumption"
+LEGACY_HIDDEN_VALIDATION_MARKER = "validateNativePresentationDeclarations(nodes);"
+LEGACY_EXPLICIT_OWNER_MARKER = "if (node.nodeComponent) return;"
+CONSUMER_CLASSES = {
+    "vue_form": "Vue native form declaration; explicit feedback component or ContractGapError",
+    "qweb_native": "server-rendered QWeb page outside the Vue native-form renderer",
+    "oca_qweb_injection": "QWeb template rendered by get_view and injected into native form arch",
+    "oca_component": "OCA Owl component outside the Vue native-form renderer",
+    "odoo_legacy_widget": "native Odoo widget outside the Vue native-form renderer",
+    "generated_historical_snapshot": "historical/generated evidence only",
+}
+KNOWN_CONSUMER_SOURCES = {
+    "frontend/apps/web/src/components/template/nativeTextPresentation.ts": "vue_form",
+    "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue": "vue_form",
+    "addons/smart_construction_core/views/web_login_views.xml": "qweb_native",
+    "addons/smart_construction_core/views/signup_templates.xml": "qweb_native",
+    "addons_external/oca_server_ux/base_tier_validation/templates/tier_validation_templates.xml":
+        "oca_qweb_injection",
+    "addons_external/oca_server_ux/base_tier_validation/static/src/components/"
+    "tier_review_widget/tier_review_widget.xml": "oca_component",
+    "addons/smart_construction_core/static/src/js/insight/insight_widget.js": "odoo_legacy_widget",
+    "contracts/generated/product_view_structure_contract.json": "generated_historical_snapshot",
+}
 # A declared layout container must reach its declared children.  The recursive
 # child renderer inserts one wrapper node between a container and its children;
 # the renderer must keep that wrapper transparent for every layout-container
@@ -67,11 +108,37 @@ LAYOUT_CONTAINER_ITEM_MARKER = ':frame="!isDeclaredLayoutContainer(node)"'
 LAYOUT_CONTAINER_POLICY_MARKER = "declaredLayoutChildSegments(children, nodeType)"
 LAYOUT_CONTAINER_POLICY_DECL = "export function declaredLayoutChildSegments<T>(nodes: readonly T[], typeOf: (node: T) => string) {"
 LAYOUT_CONTAINER_TOKENS_DECL = "export const DECLARED_LAYOUT_CONTAINER_TOKENS = ['row', 'd-flex', 'd-inline-flex'];"
-FORM_SECTION_FRAMELESS_REQUIRED = (
-    ".template-form-section--frameless",
-    "grid-column: auto",
-    "container-type: normal",
-)
+FORM_SECTION_FRAMELESS_SELECTOR = ".template-form-section--frameless"
+FORM_SECTION_FRAMELESS_REQUIRED = {"grid-column": "auto", "container-type": "normal"}
+
+
+def _frameless_rule_matches(source: str):
+    # This is a deliberately bounded static check for the SFC's standalone
+    # rule, not a CSS cascade evaluator. Comments and other selectors cannot
+    # supply declarations for this rule. Duplicate rules fail closed below.
+    styles = "\n".join(re.findall(r"<style\b[^>]*>(.*?)</style>", source, re.S))
+    styles = re.sub(r"/\*.*?\*/", "", styles, flags=re.S)
+    return list(re.finditer(
+        r"(?:^|(?<=[{}]))\s*" + re.escape(FORM_SECTION_FRAMELESS_SELECTOR)
+        + r"\s*\{(?P<body>[^{}]*)\}", styles, re.S,
+    ))
+
+
+def _frameless_rule_errors(source: str) -> list[str]:
+    rules = _frameless_rule_matches(source)
+    if len(rules) != 1:
+        return ["FormSection must declare exactly one standalone frameless rule"]
+    declarations = {}
+    for declaration in rules[0].group("body").split(";"):
+        if ":" in declaration:
+            key, value = declaration.split(":", 1)
+            declarations[key.strip()] = value.strip()
+    return [
+        f"FormSection {FORM_SECTION_FRAMELESS_SELECTOR}: {key} must be {expected}, "
+        f"got {declarations.get(key)!r}"
+        for key, expected in FORM_SECTION_FRAMELESS_REQUIRED.items()
+        if declarations.get(key) != expected
+    ]
 
 
 
@@ -113,16 +180,20 @@ def _declared_layout_span_errors(module) -> list[str]:
         normalized = module.normalize_post_projected_container_tree({}, tree)
         return [child.get("span") for child in (normalized[0].get("children") or [])]
 
-    baseline = child_spans([{
+    baseline_tree = module.normalize_post_projected_container_tree({}, [{
         "type": "group",
         "name": "baseline",
         "attributes": {"class": "text-muted"},
         "children": [{"type": "field", "name": "name"}],
     }])
-    if baseline != [24]:
+    baseline = [child.get("span") for child in baseline_tree[0]["children"]]
+    # Formal contract: native_view_reuse_frontend_spec_v1.md, layout coordinate
+    # registration (line 371): P0 default=2 columns on the 24-unit grid.
+    # Keep an independent oracle, not a value imported from the implementation.
+    if baseline_tree[0].get("columns") != 2 or baseline != [12]:
         errors.append(
-            "baseline: a container that declares no layout must publish the grid width "
-            f"to its leaf, got {baseline}"
+            "baseline: the contract requires default columns=2 and leaf span=12; "
+            f"got columns={baseline_tree[0].get('columns')}, spans={baseline}"
         )
 
     four_columns = child_spans([{
@@ -245,6 +316,158 @@ def _renderer_vocabulary_errors(source: str, vocabulary: frozenset) -> list[str]
             f"{missing}"
         )
     return errors
+
+
+def classify_presentation_consumer(path: str) -> str:
+    """Classify a declaration site by its actual runtime owner.
+
+    Source-directory ownership is not enough: OCA QWeb templates are rendered
+    by ``get_view`` and injected into form arch, while the OCA review table is
+    an Owl component.  Generated contracts remain evidence, never a current
+    Vue consumer.
+    """
+    if (
+        path.startswith("scripts/verify/")
+        or "/tests/" in path
+        or path.startswith("tests/")
+        or "/scripts/" in path
+    ):
+        return "test_fixture"
+    if path.startswith("contracts/generated/"):
+        return "generated_historical_snapshot"
+    expected = KNOWN_CONSUMER_SOURCES.get(path)
+    if expected:
+        return expected
+    if path.startswith("frontend/apps/web/src/") and path.endswith((".vue", ".ts")):
+        return "vue_form"
+    if path.startswith("addons_external/") and "/static/src/" in path:
+        return "oca_component"
+    if path.startswith("addons_external/") and "/templates/" in path:
+        return "oca_qweb_injection"
+    if path.startswith("addons/") and path.endswith(".xml"):
+        return "qweb_native" if "<template" in (ROOT / path).read_text(encoding="utf-8") else "vue_form"
+    return "unclassified"
+
+
+def _qweb_template_ids(path: Path) -> set[str]:
+    root = ElementTree.parse(path).getroot()
+    return {
+        str(node.get("id"))
+        for node in root.iter("template")
+        if node.get("id")
+    }
+
+
+def _legacy_feedback_consumption_errors(module, renderer: str, native_text: str) -> list[str]:
+    errors: list[str] = []
+    projection_legacy = getattr(module, "FORM_PRESENTATION_LEGACY_FEEDBACK_TOKENS", frozenset())
+    projection_layout = getattr(module, "FORM_PRESENTATION_LAYOUT_TOKENS", frozenset())
+    if set(projection_legacy) != LEGACY_ALERT_TOKENS:
+        errors.append(
+            "the projection must explicitly recognize every legacy feedback token; "
+            f"got {sorted(projection_legacy)}"
+        )
+    overlap = LEGACY_ALERT_TOKENS & set(projection_layout)
+    if overlap:
+        errors.append(
+            "legacy feedback tokens must not be layout presentation tokens; "
+            f"CSS rules cannot satisfy their semantic ownership: {sorted(overlap)}"
+        )
+    for token in sorted(LEGACY_ALERT_TOKENS):
+        published = module.declared_presentation_tokens(
+            {"type": "div", "attributes": {"class": token}}, f"guard.legacy.{token}",
+        )
+        if token not in published:
+            errors.append(f"legacy feedback token {token!r} must remain visible to the Vue rejection rule")
+
+    if LEGACY_VUE_REJECTION_MARKER not in native_text:
+        errors.append("native text must expose one explicit legacy-alert rejection entry")
+    if "LEGACY_NATIVE_ALERT_TOKENS" not in native_text:
+        errors.append("native text must carry the five-token legacy alert vocabulary")
+    missing_native_tokens = sorted(
+        token for token in LEGACY_ALERT_TOKENS if f"'{token}'" not in native_text
+    )
+    if missing_native_tokens:
+        errors.append(f"native text legacy vocabulary is incomplete: {missing_native_tokens}")
+    if LEGACY_EXPLICIT_OWNER_MARKER not in native_text:
+        errors.append("explicit feedback/navigation node components must own their declarations")
+    if "role: 'status'" not in native_text:
+        errors.append("role=status must remain distinct from legacy role=alert rejection")
+    if LEGACY_HIDDEN_VALIDATION_MARKER not in renderer:
+        errors.append(
+            "NativeFormTreeRenderer must validate declarations recursively before visibility filtering"
+        )
+
+    expected_templates = {
+        VUE_LOGIN_PATH: {"sc_web_login_inherit"},
+        VUE_SIGNUP_PATH: {"sc_auth_signup_buttons_cn", "sc_auth_signup_reset_cn"},
+    }
+    for path, required in expected_templates.items():
+        try:
+            template_ids = _qweb_template_ids(path)
+        except (OSError, ElementTree.ParseError) as exc:
+            errors.append(f"cannot verify QWeb template ownership for {path.relative_to(ROOT)}: {exc}")
+            continue
+        missing = sorted(required - template_ids)
+        if missing:
+            errors.append(f"QWeb native consumer templates missing from {path.relative_to(ROOT)}: {missing}")
+
+    try:
+        oca_templates = _qweb_template_ids(OCA_INJECTION_TEMPLATE_PATH)
+    except (OSError, ElementTree.ParseError) as exc:
+        errors.append(f"cannot verify OCA QWeb injection template: {exc}")
+    else:
+        if "tier_validation_label" not in oca_templates:
+            errors.append("OCA tier-validation label template is no longer identifiable")
+    oca_model = OCA_INJECTION_MODEL_PATH.read_text(encoding="utf-8")
+    for marker in (
+        '"base_tier_validation.tier_validation_label"',
+        "node.addprevious(new_element)",
+        "def get_view(",
+    ):
+        if marker not in oca_model:
+            errors.append(
+                "OCA tier-validation QWeb content is rendered and injected into native form arch; "
+                f"missing ownership evidence {marker!r}"
+            )
+    oca_component = OCA_COMPONENT_PATH.read_text(encoding="utf-8")
+    if "'alert-danger'" not in oca_component or "'alert-success'" not in oca_component:
+        errors.append("OCA review-widget status classes must remain owned by the OCA component")
+
+    generated = json.loads(GENERATED_CONTRACT_PATH.read_text(encoding="utf-8"))
+    if not generated:
+        errors.append("generated contract snapshot must remain readable as historical evidence")
+    generated_relative = str(GENERATED_CONTRACT_PATH.relative_to(ROOT))
+    if classify_presentation_consumer(generated_relative) != "generated_historical_snapshot":
+        errors.append("generated contract tokens must not be classified as current Vue consumption")
+    for path, expected in KNOWN_CONSUMER_SOURCES.items():
+        actual = classify_presentation_consumer(path)
+        if actual != expected:
+            errors.append(f"consumer classification drift for {path}: expected {expected}, got {actual}")
+        if actual not in CONSUMER_CLASSES:
+            errors.append(f"consumer class has no documented rule: {actual}")
+    return errors
+
+
+def _legacy_consumption_self_test(module, renderer: str, native_text: str, errors: list[str]) -> None:
+    """Mutate each semantic ownership fact; a string-only gate cannot pass."""
+    missing_token = native_text.replace("  'alert-link',\n", "", 1)
+    if missing_token == native_text:
+        errors.append("self-test could not mutate the legacy alert vocabulary")
+    elif not _legacy_feedback_consumption_errors(module, renderer, missing_token):
+        errors.append("self-test: a missing legacy token was not detected")
+
+    no_explicit_owner = native_text.replace(LEGACY_EXPLICIT_OWNER_MARKER, "", 1)
+    if no_explicit_owner == native_text:
+        errors.append("self-test could not mutate explicit feedback ownership")
+    elif not _legacy_feedback_consumption_errors(module, renderer, no_explicit_owner):
+        errors.append("self-test: explicit component ownership was not detected")
+
+    no_hidden_validation = renderer.replace(LEGACY_HIDDEN_VALIDATION_MARKER, "", 1)
+    if no_hidden_validation == renderer:
+        errors.append("self-test could not mutate pre-visibility validation")
+    elif not _legacy_feedback_consumption_errors(module, no_hidden_validation, native_text):
+        errors.append("self-test: hidden/empty legacy declarations could bypass validation")
 
 
 def _projection_checks(module, errors: list[str]) -> None:
@@ -376,13 +599,7 @@ def _renderer_layout_item_errors(source: str, form_section: str, child_sequence:
             f"({LAYOUT_CONTAINER_ITEM_MARKER}); a framed section card carries inline-size "
             "containment and collapses to 0 width inside the declared flex container"
         )
-    missing = [marker for marker in FORM_SECTION_FRAMELESS_REQUIRED if marker not in form_section]
-    if missing:
-        errors.append(
-            "FormSection must implement the declared layout item frame "
-            f"(missing {missing}): without it the declared child keeps the card grid track "
-            "and the inline-size containment that collapsed it"
-        )
+    errors.extend(_frameless_rule_errors(form_section))
     return errors
 
 
@@ -419,7 +636,14 @@ def _self_test(source: str, vocabulary: frozenset, errors: list[str]) -> None:
             "self-test: a declared layout item that keeps the section frame was not detected"
         )
 
-    framed_section = form_section.replace("container-type: normal;", "container-type: inline-size;", 1)
+    # Mutate the target rule, never the first matching declaration elsewhere.
+    rules = _frameless_rule_matches(form_section)
+    body = rules[0].group("body") if len(rules) == 1 else ""
+    framed_section = re.sub(
+        re.escape(FORM_SECTION_FRAMELESS_SELECTOR) + r"(\s*\{)" + re.escape(body) + r"\}",
+        lambda match: match.group(0).replace("container-type: normal;", "container-type: inline-size;", 1),
+        form_section, count=1,
+    ) if body else form_section
     if framed_section == form_section:
         errors.append("self-test could not mutate the frameless section rule")
     elif not _renderer_layout_item_errors(source, framed_section, child_sequence):
@@ -461,16 +685,20 @@ def main() -> int:
     errors: list[str] = []
     module = _load_projection()
     source = RENDERER_PATH.read_text(encoding="utf-8")
+    native_text = NATIVE_TEXT_PATH.read_text(encoding="utf-8")
     form_section = FORM_SECTION_PATH.read_text(encoding="utf-8")
     child_sequence = CHILD_SEQUENCE_PATH.read_text(encoding="utf-8")
     vocabulary = getattr(module, "FORM_PRESENTATION_LAYOUT_TOKENS", frozenset())
+    legacy_vocabulary = getattr(module, "FORM_PRESENTATION_LEGACY_FEEDBACK_TOKENS", frozenset())
 
     _projection_checks(module, errors)
     _self_test(source, vocabulary, errors)
+    _legacy_consumption_self_test(module, source, native_text, errors)
     errors.extend(_renderer_consumption_errors(source))
     errors.extend(_renderer_vocabulary_errors(source, vocabulary))
     errors.extend(_renderer_layout_wrapper_errors(source))
     errors.extend(_renderer_layout_item_errors(source, form_section, child_sequence))
+    errors.extend(_legacy_feedback_consumption_errors(module, source, native_text))
     errors.extend(_declared_layout_span_errors(module))
 
     if errors:
@@ -480,7 +708,8 @@ def main() -> int:
         return 2
     print(
         "[form_container_presentation_consumption_guard] PASS "
-        f"vocabulary={len(vocabulary)} tokens"
+        f"layout_vocabulary={len(vocabulary)} legacy_feedback={len(legacy_vocabulary)} "
+        "vue_reject_or_explicit_component=true qweb_oca_ownership=verified"
     )
     return 0
 

@@ -693,6 +693,7 @@ import { useRecordContractSemantics } from './contractForm/useRecordContractSema
 import { useRecordFormLayout } from './contractForm/useRecordFormLayout';
 import { useRecordFormFieldSchemas } from './contractForm/useRecordFormFieldSchemas';
 import { useRecordFormState } from './contractForm/useRecordFormState';
+import { useDraftFeedbackEvaluation } from './contractForm/useDraftFeedbackEvaluation';
 import {
   collectCanonicalFieldOccurrences, collectLayoutFieldOccurrences, createFormOccurrenceDecision,
 } from './contractForm/fieldOccurrenceWritability';
@@ -818,6 +819,8 @@ const {
 const originalValues = ref<Record<string, unknown>>({});
 const recordVersionToken = ref('');
 const formData = reactive<Record<string, unknown>>({});
+const feedbackDependencyPresence = ref<Set<string>>(new Set());
+let feedbackEvaluationRuntime: ReturnType<typeof useDraftFeedbackEvaluation> | undefined;
 const canonicalFormRenderState = computed(() => resolveCanonicalFormRenderState(
   v2ContractStore.value,
   v2ContractDecodeError.value,
@@ -825,6 +828,7 @@ const canonicalFormRenderState = computed(() => resolveCanonicalFormRenderState(
   formData,
   validationFieldErrors.value,
   { model: model.value, recordId: recordId.value },
+  feedbackEvaluationRuntime?.states.value,
 ));
 const canonicalProductFloorplan = computed(() => canonicalFormRenderState.value.model
   ? composeCanonicalFormFloorplan(canonicalFormRenderState.value.model)
@@ -1124,6 +1128,19 @@ const recordId = computed(() => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 });
 const recordIdDisplay = computed(() => (recordId.value ? String(recordId.value) : 'new'));
+feedbackEvaluationRuntime = useDraftFeedbackEvaluation({
+  store: v2ContractStore,
+  model: () => model.value,
+  recordId: () => recordId.value,
+  formData,
+  presence: feedbackDependencyPresence,
+  contextIdentity: () => [
+    String(session.user?.id || 0),
+    String(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0),
+  ].join('|'),
+  context: () => buildFormRequestContext(route.query as Record<string, unknown>),
+  active: () => isComponentActive.value && isFormPageRouteOwner(route.name),
+});
 const recordContentLayoutMode = computed(() => showCurrentFormFieldConfigScope.value ? 'data-grid' : resolveContentLayoutMode({ contractContentLayout: contractContentLayoutMode(contract.value), pageKind: recordId.value ? (route.name === 'model-form' ? 'edit' : 'detail') : 'create' }));
 const showHud = computed(() => isHudEnabled(route));
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));
@@ -1884,6 +1901,8 @@ recordFormStateRuntime = useRecordFormState({
   isWritableFieldVisible,
   canonicalFieldWritable,
   fieldOccurrenceDecision,
+  feedbackPresence: feedbackDependencyPresence,
+  onFeedbackDraftChanged: (name) => feedbackEvaluationRuntime?.onDraftChanged(name),
 });
 const {
   addRelationId, collectWritableValues, commitMany2oneInline, comparableFieldValue, isFieldWritable,
@@ -1909,7 +1928,7 @@ const {
   contractReadiness, coreFieldNames, createContractV2Store,
   decodeContractV2Snapshot, dirtyFieldSet, fieldType,
   formData, formDataFieldNames,
-  formRouteIdentity, hydrateSelectedRelationOptions, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows,
+  formRouteIdentity, feedbackDependencyPresence, hydrateSelectedRelationOptions, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows,
   initOne2manyRows, isComponentActive, layoutNodes,
   loadActionContractV2, loadError, loadModelContractV2,
   loadNativeChatterTimeline, menuId,
@@ -1941,7 +1960,7 @@ const {
   onSelectedFormSettingsFieldLabelChange, contractInlineFieldOrderIndex, onContractInlineFieldOrderMove, onContractInlineFieldOrderDragStart, onContractInlineFieldOrderDragOver,
   onContractInlineFieldOrderDragLeave, onContractInlineFieldOrderDrop, onContractInlineFieldOrderGroupDrop, onContractInlineFieldOrderDragEnd, lowCodeApplyBaseParams,
   contractFieldSequence, fieldGroupTitleForDraft, routeQueryText, lowCodeReturnQuery, previewLowCodeConfiguredPage,
-  previewCurrentFormConfiguration, returnToBusinessConfigDesigner, applyProjectionRefreshPolicy, saveRecord,
+  previewCurrentFormConfiguration, returnToBusinessConfigDesigner, applyProjectionRefreshPolicy, saveRecord: saveRecordRuntime,
 } = useRecordFormActions({
   ApiError, BUSINESS_CONFIG_ACTION_KEYS, BUSINESS_CONFIG_MODES,
   BUSINESS_CONFIG_ROUTE_FLAGS, RECORD_CONTEXT_CHANGED_EVENT, actionId,
@@ -1987,6 +2006,14 @@ const {
   validateBeforeSaveRecord, validationErrors, validationFieldErrors,
   writeContractFormRecord,
 });
+async function saveRecord(...args: Parameters<typeof saveRecordRuntime>) {
+  feedbackEvaluationRuntime?.invalidate();
+  try {
+    return await saveRecordRuntime(...args);
+  } finally {
+    feedbackEvaluationRuntime?.reset();
+  }
+}
 const unsavedFormGuard = useUnsavedFormGuard({ dirty: () => hasChanges.value, busy,
   consumeAuthorizedNavigation: () => session.consumeActivityPageNavigationAuthorization(),
   confirmLeave: async () => intentConfirmationRef.value?.confirm({

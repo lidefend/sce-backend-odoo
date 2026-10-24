@@ -82,10 +82,28 @@ for (const mutation of [null, b=>delete b.schema, b=>b.expected_sha='b'.repeat(4
         result = subprocess.run(['node', '-e', program, body], cwd=ROOT, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         wrapper = (ROOT / 'scripts/dev/frontend_acceptance_runtime.sh').read_text()
-        self.assertIn('RELATION_RESOLUTION_KEY=project RELATION_IDENTITY_SOURCE=resolution', wrapper)
+        self.assertIn('RELATION_RESOLUTION_KEY="${RELATION_RESOLUTION_KEY:-project}"', wrapper)
+        self.assertIn('RELATION_FIELD="${RELATION_FIELD:-}"', wrapper)
+        self.assertIn('RELATION_IDENTITY_SOURCE=resolution', wrapper)
         relation = wrapper.split('      standard-relation-roundtrip-browser)')[1].split('      standard-list-surface-browser)')[0]
-        self.assertIn('SC_ACCEPTANCE_LOGIN=fixture_role_pm', relation)
-        self.assertIn('E2E_LOGIN=fixture_role_pm', relation)
+        self.assertIn('SC_ACCEPTANCE_LOGIN="${SC_ACCEPTANCE_RELATION_LOGIN:-fixture_role_config_admin}"', relation)
+        self.assertIn('E2E_LOGIN="${SC_ACCEPTANCE_RELATION_LOGIN:-fixture_role_config_admin}"', relation)
+
+    def test_relation_probe_records_contract_render_differences(self):
+        source = (ROOT / 'scripts/verify/record_relation_roundtrip_acceptance.js').read_text()
+        self.assertIn('contract_render_comparison', source)
+        self.assertIn('contract_render_comparison_summary', source)
+        self.assertIn('OPENABLE_EMPTY_VALUE_HAS_NO_TARGET', source)
+        self.assertIn('CONTRACT_LABEL_RENDER_DIFF', source)
+        self.assertIn('CONTRACT_READONLY_MISMATCH', source)
+        self.assertIn('CONTRACT_VISIBILITY_MISMATCH', source)
+        self.assertIn('RELATION_TARGET_ACTION_MISMATCH', source)
+        self.assertIn("previousCell?.tagName === 'TD'", source)
+        self.assertIn('const controlFieldSet = new Set(', source)
+        self.assertNotIn(
+            "has_value: !['', '-'].includes(String(row.textContent || '')",
+            source,
+        )
 
     def test_execution_detection_excludes_static_and_package_operations(self):
         name = 'scripts/ops/production_acceptance_harness.py'

@@ -205,6 +205,7 @@ class TestRelationEntryOverrideFailClosed(TransactionCase):
 
         self.assertIsNone(entry["action_id"])
         self.assertIsNone(entry["menu_id"])
+        self.assertFalse(entry["can_open"])
         self.assertEqual(entry["reason_code"], "NO_VISIBLE_ACTION")
 
     def test_published_visible_action_menu_pair_is_declared(self):

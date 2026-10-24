@@ -1,0 +1,40 @@
+schema_version: 1
+goal:
+  id: FE-DELIVERY-TEST-COVERAGE-FIX-01
+  status: active
+  title: Close Quick test coverage dispositions for PR 721
+  formal_product_layer: P4
+  layer_target:
+    - test coverage governance
+  module: repository verification harness
+  standard_vs_user_specific: verification bookkeeping; no product semantics
+  objective: Register the seven newly detected test groups with reviewed dispositions and refresh the tracked coverage snapshot using the formal generator.
+  why_here: scripts/verify/test_coverage_registry.yaml owns dispositions and its audit tool owns the snapshot.
+  why_not_elsewhere:
+    - Product code and assertions must not change.
+    - Quick must not skip or downgrade the coverage check.
+    - Runtime acceptance evidence must not be rewritten.
+  scope:
+    - .agent/
+    - docs/audit/test_coverage_registry/
+    - docs/ops/iterations/
+    - scripts/verify/test_coverage_registry.yaml
+  owned_paths:
+    - .agent/active-runs.json
+    - .agent/goals/FE-DELIVERY-TEST-COVERAGE-FIX-01.yaml
+    - .agent/runs/FE-DELIVERY-TEST-COVERAGE-FIX-01/run.json
+    - docs/audit/test_coverage_registry/test_coverage_registry.json
+    - docs/ops/iterations/fe_delivery_test_coverage_fix_01.md
+    - scripts/verify/test_coverage_registry.yaml
+  exclusions:
+    - product code and test assertions
+    - merge gate policy changes
+    - runtime evidence rewrites
+    - push, PR creation, merge or deployment
+    - cleanup of worktrees or historical evidence
+  acceptance:
+    - seven groups have reviewed dispositions
+    - snapshot is generated only by the formal exporter
+    - audit and targeted tests pass with non-zero tests
+    - no product file changes
+    - a new candidate commit is created without push

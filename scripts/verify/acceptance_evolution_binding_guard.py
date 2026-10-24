@@ -159,6 +159,46 @@ def load_registry(path: Path) -> dict:
                         raise BindingError(
                             f"suite {suite_id!r} min_counts[{key!r}] must be a non-negative integer"
                         )
+        make_inputs = suite.get("make_inputs", [])
+        if not isinstance(make_inputs, list):
+            raise BindingError(f"suite {suite_id!r} make_inputs must be an array")
+        seen_make_inputs: set[tuple[str, str, str]] = set()
+        for item in make_inputs:
+            if not isinstance(item, dict) or set(item) != {"path", "targets", "variables"}:
+                raise BindingError(
+                    f"suite {suite_id!r} make_inputs entries require path, targets and variables"
+                )
+            path = item["path"]
+            targets = item["targets"]
+            variables = item["variables"]
+            if (
+                not isinstance(path, str)
+                or not path
+                or Path(path).is_absolute()
+                or ".." in Path(path).parts
+                or not (path == "Makefile" or path.startswith("make/"))
+            ):
+                raise BindingError(f"suite {suite_id!r} make input path is invalid: {path!r}")
+            if not isinstance(targets, list) or not isinstance(variables, list):
+                raise BindingError(
+                    f"suite {suite_id!r} make input targets/variables must be arrays"
+                )
+            if not targets and not variables:
+                raise BindingError(f"suite {suite_id!r} has an empty make input selector")
+            for target in targets:
+                if not isinstance(target, str) or not re.fullmatch(r"[A-Za-z0-9_.%/-]+", target):
+                    raise BindingError(f"suite {suite_id!r} make target is invalid: {target!r}")
+                key = (path, "target", target)
+                if key in seen_make_inputs:
+                    raise BindingError(f"suite {suite_id!r} repeats make target {path}:{target}")
+                seen_make_inputs.add(key)
+            for variable in variables:
+                if not isinstance(variable, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", variable):
+                    raise BindingError(f"suite {suite_id!r} make variable is invalid: {variable!r}")
+                key = (path, "variable", variable)
+                if key in seen_make_inputs:
+                    raise BindingError(f"suite {suite_id!r} repeats make variable {path}:{variable}")
+                seen_make_inputs.add(key)
     for rule in rules:
         if not isinstance(rule, dict):
             raise BindingError("every rule must be an object")
@@ -241,16 +281,11 @@ def changed_files(base: str, head: str) -> list[str]:
     return sorted({line.strip() for line in result.stdout.splitlines() if line.strip()})
 
 
-# These files define the meaning of every evidence suite.  A change here is
-# therefore an input change for all suites, not just for governance_static.
-GLOBAL_SUITE_INPUTS = (
-    "config/acceptance/evolution_binding.v1.json",
-    "scripts/verify/acceptance_evolution_binding_guard.py",
-    "scripts/ops/acceptance_evolution_record.py",
-    "Makefile",
-    "make/**",
-    "scripts/ci/**",
-)
+# The registry's suite descriptor and explicit inputs are the authority.  Do
+# not make every suite depend on every Makefile or CI helper: that turns a
+# Quick-only change into three false runtime invalidations.  Make entrypoints
+# are fingerprinted at target/variable granularity below.
+GLOBAL_SUITE_INPUTS: tuple[str, ...] = ()
 
 
 def carry_forward_policy(registry: dict) -> dict:
@@ -267,15 +302,29 @@ def suite_input_sha256(registry: dict, suite_id: str, revision: str) -> str:
     """Hash only the committed inputs that can change this suite's verdict."""
 
     material: list[str] = []
+    suite = registry["suites"][suite_id]
+    make_input_paths = {item["path"] for item in suite.get("make_inputs") or []}
+    strict_selectors = revision == str(_git("rev-parse", "HEAD"))
     for line in _git("ls-tree", "-r", "--full-tree", revision).splitlines():
         _, _, path = line.partition("\t")
+        if path in make_input_paths:
+            continue
         if path and suite_owns_path(registry, suite_id, path):
             material.append(line)
+    for item in suite.get("make_inputs") or []:
+        text = str(_git("show", f"{revision}:{item['path']}"))
+        for target in item["targets"]:
+            material.append(
+                f"make-target\t{item['path']}\t{target}\n"
+                f"{_make_target_material(text, target, item['path'], missing_is_error=strict_selectors)}"
+            )
+        for variable in item["variables"]:
+            material.append(
+                f"make-variable\t{item['path']}\t{variable}\n"
+                f"{_make_variable_material(text, variable, item['path'], missing_is_error=strict_selectors)}"
+            )
     descriptor = json.dumps(
-        {
-            "entrypoints": registry["suites"][suite_id].get("entrypoints") or [],
-            "evidence": registry["suites"][suite_id].get("evidence"),
-        },
+        suite,
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
@@ -286,13 +335,71 @@ def suite_input_sha256(registry: dict, suite_id: str, revision: str) -> str:
     return digest.hexdigest()
 
 
+def _make_target_material(
+    text: str, target: str, path: str, *, missing_is_error: bool = True
+) -> str:
+    lines = text.splitlines(keepends=True)
+    blocks: list[str] = []
+    for index, line in enumerate(lines):
+        if line[:1].isspace() or line.lstrip().startswith("#") or ":" not in line:
+            continue
+        left, _ = line.split(":", 1)
+        if target not in left.split():
+            continue
+        block = [line]
+        continuation = line.rstrip("\n").endswith("\\")
+        cursor = index + 1
+        while cursor < len(lines):
+            current = lines[cursor]
+            if not continuation and not current.startswith("\t"):
+                break
+            block.append(current)
+            continuation = current.rstrip("\n").endswith("\\")
+            cursor += 1
+        blocks.append("".join(block))
+    if not blocks:
+        if missing_is_error:
+            raise BindingError(f"make target is missing: {path}:{target}")
+        return f"<missing-target {path}:{target}>\n"
+    return "".join(blocks)
+
+
+def _make_variable_material(
+    text: str, variable: str, path: str, *, missing_is_error: bool = True
+) -> str:
+    lines = text.splitlines(keepends=True)
+    blocks: list[str] = []
+    pattern = re.compile(
+        rf"^(?:export\s+|override\s+)*{re.escape(variable)}\s*(?::=|\?=|\+=|=)"
+    )
+    for index, line in enumerate(lines):
+        if not pattern.match(line):
+            continue
+        block = [line]
+        continuation = line.rstrip("\n").endswith("\\")
+        cursor = index + 1
+        while continuation and cursor < len(lines):
+            current = lines[cursor]
+            block.append(current)
+            continuation = current.rstrip("\n").endswith("\\")
+            cursor += 1
+        blocks.append("".join(block))
+    if not blocks:
+        if missing_is_error:
+            raise BindingError(f"make variable is missing: {path}:{variable}")
+        return f"<missing-variable {path}:{variable}>\n"
+    return "".join(blocks)
+
+
 def suite_owns_path(registry: dict, suite_id: str, path: str) -> bool:
     """Use the same first-match ownership for planning and invalidation.
 
     Global mechanism inputs and explicit suite dependencies remain unconditional;
     a later broad rule must not recapture an earlier exact governance rule.
     """
-    explicit = (*GLOBAL_SUITE_INPUTS, *(registry['suites'][suite_id].get('inputs') or []))
+    suite = registry["suites"][suite_id]
+    make_paths = tuple(item["path"] for item in suite.get("make_inputs") or [])
+    explicit = (*GLOBAL_SUITE_INPUTS, *make_paths, *(suite.get("inputs") or []))
     if any(path_matches(pattern, path) for pattern in explicit):
         return True
     rule = next((item for item in registry['rules']
@@ -536,7 +643,51 @@ def _adapter_relation_roundtrip(data: dict, head: str, contract: dict | None = N
     )
     declared_entries = int(data.get("declared_entry_count") or 0)
     openable = data.get("declared_openable") or []
+    controls = data.get("controls") or []
+    attempts = data.get("attempts") or []
+    contract_openable_fields = data.get("contract_openable_fields") or []
+    visible_openable_fields = data.get("visible_openable_fields") or []
+    populated_openable_fields = data.get("populated_openable_fields") or []
+    empty_value_openable_fields = data.get("empty_value_openable_fields") or []
+    not_visible_openable_fields = data.get("not_visible_openable_fields") or []
+    visible_control_fields = data.get("visible_relation_control_fields") or []
+    contract_render_comparison = data.get("contract_render_comparison")
+    comparison_summary = data.get("contract_render_comparison_summary")
     _require(isinstance(openable, list), "relation roundtrip declared_openable must be an array")
+    _require(isinstance(controls, list), "relation roundtrip controls must be an array")
+    _require(isinstance(attempts, list), "relation roundtrip attempts must be an array")
+    _require(
+        isinstance(contract_render_comparison, list) and contract_render_comparison,
+        "relation roundtrip contract/render comparison is missing",
+    )
+    _require(
+        isinstance(comparison_summary, dict),
+        "relation roundtrip contract/render comparison summary is missing",
+    )
+    _require(
+        isinstance(contract_openable_fields, list) and contract_openable_fields,
+        "relation roundtrip contract openable fields are missing",
+    )
+    _require(
+        isinstance(visible_control_fields, list) and visible_control_fields,
+        "relation roundtrip visible control fields are missing",
+    )
+    _require(
+        isinstance(visible_openable_fields, list) and visible_openable_fields,
+        "relation roundtrip visible openable fields are missing",
+    )
+    _require(
+        isinstance(populated_openable_fields, list) and populated_openable_fields,
+        "relation roundtrip populated openable fields are missing",
+    )
+    _require(
+        isinstance(empty_value_openable_fields, list),
+        "relation roundtrip empty-value openable fields must be an array",
+    )
+    _require(
+        isinstance(not_visible_openable_fields, list),
+        "relation roundtrip not-visible openable fields must be an array",
+    )
     _require(
         declared_entries >= _min_count(contract, "declared_entry_count"),
         f"relation roundtrip declared entries={declared_entries} is below the declared minimum",
@@ -544,6 +695,154 @@ def _adapter_relation_roundtrip(data: dict, head: str, contract: dict | None = N
     _require(
         len(openable) >= _min_count(contract, "declared_openable"),
         f"relation roundtrip openable entries={len(openable)} is below the declared minimum",
+    )
+    openable_fields = [str(row.get("field") or "") for row in openable if isinstance(row, dict)]
+    control_fields = [str(row.get("field") or "") for row in controls if isinstance(row, dict)]
+    attempted_fields = [str(row.get("field") or "") for row in attempts if isinstance(row, dict)]
+    _require(len(openable_fields) == len(openable), "relation openable entry is invalid")
+    _require(len(control_fields) == len(controls), "relation control entry is invalid")
+    _require(len(attempted_fields) == len(attempts), "relation attempt is invalid")
+    _require(
+        openable_fields == populated_openable_fields == visible_control_fields,
+        "relation contract, public controls and openable evidence diverge",
+    )
+    _require(
+        set(populated_openable_fields).isdisjoint(empty_value_openable_fields)
+        and set(populated_openable_fields) | set(empty_value_openable_fields)
+        == set(visible_openable_fields)
+        and set(visible_openable_fields).isdisjoint(not_visible_openable_fields)
+        and set(visible_openable_fields) | set(not_visible_openable_fields)
+        == set(contract_openable_fields),
+        "relation populated, empty and non-visible fields do not partition the contract",
+    )
+    _require(
+        len(contract_openable_fields) >= _min_count(contract, "contract_openable_entries"),
+        "relation roundtrip contract openable surface is below the declared minimum",
+    )
+    _require(
+        len(visible_openable_fields) >= _min_count(contract, "visible_openable_entries"),
+        "relation roundtrip visible openable surface is below the declared minimum",
+    )
+    _require(
+        attempted_fields == openable_fields,
+        "relation probe did not attempt every contract-openable field",
+    )
+    comparison_rows: dict[str, dict] = {}
+    blocking_differences: list[str] = []
+    allowed_non_blocking = set(
+        (contract or {}).get("allowed_non_blocking_difference_kinds") or []
+    )
+    for row in contract_render_comparison:
+        _require(isinstance(row, dict), "relation contract/render comparison row is invalid")
+        field = str(row.get("field") or "")
+        _require(bool(field), "relation contract/render comparison row has no field")
+        _require(field not in comparison_rows, f"duplicate relation comparison field {field}")
+        declared_surface = row.get("contract")
+        rendered_surface = row.get("rendered")
+        differences = row.get("differences")
+        _require(isinstance(declared_surface, dict), f"{field}: contract surface is missing")
+        _require(isinstance(rendered_surface, dict), f"{field}: rendered surface is missing")
+        _require(isinstance(differences, list), f"{field}: difference list is missing")
+        _require(
+            declared_surface.get("can_read") is True and declared_surface.get("can_open") is True,
+            f"{field}: comparison contract does not declare readable/openable relation semantics",
+        )
+        _require(
+            isinstance(rendered_surface.get("visible"), bool),
+            f"{field}: rendered visibility is not recorded",
+        )
+        _require(
+            isinstance(rendered_surface.get("has_value"), bool),
+            f"{field}: rendered value presence is not recorded",
+        )
+        _require(
+            isinstance(rendered_surface.get("has_open_control"), bool),
+            f"{field}: rendered open-control presence is not recorded",
+        )
+        for difference in differences:
+            _require(isinstance(difference, dict), f"{field}: difference row is invalid")
+            kind = str(difference.get("kind") or "")
+            blocking = difference.get("blocking")
+            reason = str(difference.get("reason") or "").strip()
+            _require(bool(kind), f"{field}: difference kind is missing")
+            _require(isinstance(blocking, bool), f"{field}: difference blocking flag is missing")
+            _require(bool(reason), f"{field}: difference reason is missing")
+            if blocking:
+                blocking_differences.append(f"{field}:{kind}")
+            else:
+                _require(
+                    kind in allowed_non_blocking,
+                    f"{field}: non-blocking difference kind {kind} is not declared in policy",
+                )
+        comparison_rows[field] = row
+    _require(
+        set(comparison_rows) == set(contract_openable_fields),
+        "relation contract/render comparison does not cover the exact contract-openable fields",
+    )
+    rendered_visible_fields = sorted(
+        field
+        for field, row in comparison_rows.items()
+        if row["rendered"].get("visible") is True
+    )
+    rendered_empty_fields = sorted(
+        field
+        for field, row in comparison_rows.items()
+        if row["rendered"].get("visible") is True
+        and row["rendered"].get("has_value") is False
+    )
+    _require(
+        rendered_visible_fields == sorted(visible_openable_fields),
+        "relation comparison visible fields do not match the declared visible set",
+    )
+    _require(
+        rendered_empty_fields == sorted(empty_value_openable_fields),
+        "relation comparison empty-value fields do not match the declared empty set",
+    )
+    expected_difference_count = sum(
+        len(row["differences"]) for row in comparison_rows.values()
+    )
+    expected_non_blocking_count = sum(
+        1
+        for row in comparison_rows.values()
+        for difference in row["differences"]
+        if difference.get("blocking") is False
+    )
+    expected_fields_with_differences = sum(
+        1 for row in comparison_rows.values() if row["differences"]
+    )
+    _require(
+        comparison_summary.get("complete") is True
+        and int(comparison_summary.get("contract_field_count") or 0)
+        == len(contract_openable_fields)
+        and int(comparison_summary.get("compared_field_count") or 0)
+        == len(comparison_rows)
+        and int(comparison_summary.get("fields_with_differences") or 0)
+        == expected_fields_with_differences
+        and int(comparison_summary.get("difference_count") or 0)
+        == expected_difference_count
+        and int(comparison_summary.get("blocking_count") or 0)
+        == len(blocking_differences)
+        and int(comparison_summary.get("non_blocking_count") or 0)
+        == expected_non_blocking_count,
+        "relation contract/render comparison summary is inconsistent",
+    )
+    _require(
+        not blocking_differences,
+        f"relation contract/render comparison has blocking differences: {blocking_differences}",
+    )
+    for row in openable:
+        declared = row.get("declared") or {}
+        _require(
+            declared.get("can_read") is True and declared.get("can_open") is True,
+            "relation openable entry is not declared readable/openable",
+        )
+        _require(
+            int(declared.get("action_id") or 0) > 0 and int(declared.get("menu_id") or 0) > 0,
+            "relation openable entry lacks action/menu authority",
+        )
+    _require(
+        any(row.get("outcome") == "opened" for row in attempts),
+        "relation probe did not open a declared relation",
     )
     roundtrip = data.get("roundtrip")
     _require(isinstance(roundtrip, dict) and roundtrip.get("field"), "relation roundtrip has no verified field")
@@ -566,6 +865,14 @@ def _adapter_relation_roundtrip(data: dict, head: str, contract: dict | None = N
         "counts": {
             "declared_entries": declared_entries,
             "openable_entries": len(openable),
+            "contract_openable_entries": len(contract_openable_fields),
+            "visible_openable_entries": len(visible_openable_fields),
+            "contract_render_comparison_entries": len(contract_render_comparison),
+            "contract_render_differences": expected_difference_count,
+            "contract_render_blocking_differences": len(blocking_differences),
+            "opened_entries": sum(
+                1 for row in attempts if row.get("outcome") == "opened"
+            ),
         }
     }
 

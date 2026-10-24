@@ -227,6 +227,14 @@
       "layer": "P0",
       "carriesProductSemantics": false,
       "rationale": "已声明 native field.help 的固定按需帮助映射：官方 Popover 由可聚焦按钮 click/键盘激活，在 edit 与 readonly 同 occurrence 显示原文；不是业务条件或可配置触发规则。"
+    },
+    {
+      "symbol": "FEEDBACK_EVALUATION_DEBOUNCE_MS",
+      "file": "frontend/apps/web/src/pages/contractForm/useDraftFeedbackEvaluation.ts",
+      "class": "transport_scheduling",
+      "layer": "P0",
+      "carriesProductSemantics": false,
+      "rationale": "草稿依赖连续输入时的请求合并间隔，只控制传输调度；依赖集合、值、权限和可见性仍由后端 describe/evaluate 与前端 ticket 校验决定。"
     }
   ],
   "openContractDefects": [],

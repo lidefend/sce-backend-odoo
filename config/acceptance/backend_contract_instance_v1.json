@@ -36,7 +36,10 @@
       "action_rule.v2",
       "relation_entry.v2",
       "status_contract.v2",
-      "form_layout.children_owner.v1"
+      "form_layout.children_owner.v1",
+      "form.feedback.message.v1",
+      "form.feedback.draft.v1",
+      "form.navigation.anchor.v1"
     ]
   },
   "schema_asset": "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",

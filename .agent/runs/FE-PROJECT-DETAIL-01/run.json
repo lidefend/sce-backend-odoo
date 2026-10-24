@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "8ff4cad7f3eb38152e74ec9222297bd692612c07",
+  "scope": [
+    "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    "scripts/verify/frontend_project_detail_summary_browser.mjs",
+    "make/frontend.mk",
+    ".agent/active-runs.json",
+    ".agent/goals/FE-PROJECT-DETAIL-01.yaml",
+    ".agent/runs/FE-PROJECT-DETAIL-01/run.json",
+    "docs/ops/iterations/fe_project_detail_01.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "layout": {
+      "target": "verify.frontend.form_canvas_layout.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "scripts/verify/frontend_form_canvas_layout_contract_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "geometry": {
+      "target": "verify.frontend.project_detail_summary.browser",
+      "inputs": [
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "scripts/verify/frontend_project_detail_summary_browser.mjs",
+        "scripts/verify/playwright_runtime.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "Existing form_container_presentation guard fails identically on starting HEAD (three findings); not changed in this batch.",
+    "Candidate stylesheet preview only; deployed-bundle acceptance not performed (deployment excluded)."
+  ],
+  "next_exact_step": "Await manual review; separately resolve baseline presentation guard before candidate integration/served-build acceptance.",
+  "id": "FE-PROJECT-DETAIL-01",
+  "branch": "feature/project-detail-productization-01",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-PROJECT-DETAIL-01.yaml",
+  "record": "docs/ops/iterations/fe_project_detail_01.md"
+}

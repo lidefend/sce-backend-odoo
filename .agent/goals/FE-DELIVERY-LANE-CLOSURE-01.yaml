@@ -1,0 +1,53 @@
+schema_version: 1
+goal:
+  id: FE-DELIVERY-LANE-CLOSURE-01
+  status: verification_pending
+  title: Classify and close verification lane gaps
+  formal_product_layer: P4
+  layer_target: verification lane responsibility
+  module: repository verification harness
+  standard_vs_user_specific: verification governance; no product semantics
+  objective: Give all 14 unregistered targets an explicit execution lane and restore Quick without rewiring runtime acceptance into ordinary Quick.
+  why_here: Make gates and the lane audit own verification responsibility.
+  why_not_elsewhere:
+    - Product code and assertions must not change.
+    - Runtime/deployment checks must not be forced into Quick.
+    - Baseline may not be widened.
+  scope: [.agent/, docs/, make/, scripts/]
+  owned_paths:
+    - .agent/active-runs.json
+    - .agent/goals/FE-DELIVERY-LANE-CLOSURE-01.yaml
+    - .agent/runs/FE-DELIVERY-LANE-CLOSURE-01/run.json
+    - docs/ops/iterations/fe_delivery_lane_closure_01.md
+    - make/contract.mk
+    - make/ci.mk
+    - make/dev.mk
+    - make/frontend.mk
+    - docs/engineering_convergence/complexity_budget_report.md
+    - docs/engineering_convergence/split_plan_queue.md
+    - scripts/audit/verification_lane_coverage.py
+    - config/acceptance/evolution_binding.v1.json
+    - config/acceptance/backend_contract_instance_daily_v1.json
+    - config/acceptance/backend_contract_instance_v1.json
+    - addons/smart_core/app_config_engine/services/assemblers/page_assembler.py
+    - addons/smart_core/tests/test_runtime_view_contract_fail_closed.py
+    - make/frontend.mk
+    - scripts/dev/frontend_acceptance_runtime.sh
+    - scripts/verify/record_relation_roundtrip_acceptance.js
+    - scripts/verify/test_frontend_probe_toolchain_guard.py
+    - scripts/dev/frontend_acceptance_runtime_profile.py
+    - scripts/dev/frontend_standard_preview.py
+    - scripts/ops/acceptance_evolution_record.py
+    - scripts/verify/acceptance_evolution_binding_guard.py
+    - scripts/verify/test_frontend_acceptance_runtime_profile.py
+    - scripts/verify/test_acceptance_evolution_binding_guard.py
+    - scripts/verify/test_frontend_standard_preview.py
+    - scripts/verify/test_dev_acceptance_release_identity.py
+    - scripts/verify/test_frontend_probe_toolchain_guard.py
+  exclusions: [product code, test assertions, baseline widening, push, merge, deployment]
+  acceptance:
+    - all 14 targets have a named lane
+    - deterministic tests are reachable by candidate gates
+    - runtime/deployment tests are reachable only through explicit bundles
+    - lane audit passes without baseline widening
+    - full Quick passes on the final clean candidate

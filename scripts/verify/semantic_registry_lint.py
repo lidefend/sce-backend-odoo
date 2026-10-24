@@ -238,6 +238,8 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
             errors.append(f"semantic.yaml: semantic '{key}' declares no component")
         elif component not in components:
             errors.append(f"semantic.yaml: semantic '{key}' points at unregistered component '{component}'")
+        elif components[component].get("kind", "field") != "field":
+            errors.append(f"semantic.yaml: field semantic '{key}' points at node component '{component}'")
 
     renderer_set = {str(name) for name in renderers}
     sentinel = str(component_doc.get("type_directed_renderer") or "")
@@ -247,6 +249,8 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
         errors.append(f"component.yaml: type_directed_renderer '{sentinel}' is not a registered renderer")
 
     for key, entry in sorted(components.items()):
+        if (entry or {}).get("kind") == "node":
+            continue
         renderer = str((entry or {}).get("renderer") or "")
         if renderer not in renderer_set:
             errors.append(f"component.yaml: component '{key}' declares unregistered renderer '{renderer}'")
@@ -287,7 +291,7 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
             errors.append(f"{source}: references undeclared semantic '{semantic}'")
 
     generated_keys = sorted(set(generated_registry_keys(root)))
-    backend_keys = sorted(components)
+    backend_keys = sorted(key for key, entry in components.items() if entry.get("kind", "field") == "field")
     if not generated_keys:
         errors.append(
             f"{carrier.FRONTEND_REL.as_posix()}: no component row found; the cross-side "

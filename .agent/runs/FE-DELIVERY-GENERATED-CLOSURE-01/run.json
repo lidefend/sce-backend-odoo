@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "id": "FE-DELIVERY-GENERATED-CLOSURE-01",
+  "branch": "feature/project-detail-productization-01",
+  "baseline_sha": "bba4108b5101b758488fa49a2044115641512090",
+  "status": "active",
+  "goal": ".agent/goals/FE-DELIVERY-GENERATED-CLOSURE-01.yaml",
+  "record": "docs/ops/iterations/fe_delivery_generated_closure_01.md",
+  "scope": [".agent/", "AGENTS.md", "config/", "docs/", "make/", "scripts/"],
+  "owned_paths": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-DELIVERY-GENERATED-CLOSURE-01.yaml",
+    ".agent/runs/FE-DELIVERY-GENERATED-CLOSURE-01/run.json",
+    "docs/ops/iterations/fe_delivery_generated_closure_01.md",
+    "docs/engineering_convergence/",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "contracts/generated/contract_structure_fingerprint.json"
+  ],
+  "owner_approvals": [
+    {
+      "stage": "generated_evidence_closure",
+      "status": "approved",
+      "approved_by": "Owner",
+      "approved_at": "2026-10-24T00:00:00+08:00",
+      "scope": "Refresh all affected generated evidence, prove stable preflight, and create one final local candidate commit. No push or merge."
+    }
+  ],
+  "previous_active_run": ".agent/runs/FE-DELIVERY-TEST-COVERAGE-FIX-01/run.json",
+  "entry_evidence": {
+    "status": ".runtime/agent-runs/FE-DELIVERY-GENERATED-CLOSURE-01/entry-status.txt",
+    "tracked_diff": ".runtime/agent-runs/FE-DELIVERY-GENERATED-CLOSURE-01/entry-tracked.diff",
+    "preserved_hashes": ".runtime/agent-runs/FE-DELIVERY-GENERATED-CLOSURE-01/entry-files.sha256",
+    "previous_active_pointer": ".runtime/agent-runs/FE-DELIVERY-GENERATED-CLOSURE-01/previous-active-runs.json",
+    "previous_run": ".runtime/agent-runs/FE-DELIVERY-GENERATED-CLOSURE-01/previous-run.json",
+    "status_sha256": "dd7bf564963930ba0f36e97c7a0e4691672313aaa4575b73803661c0677792bf",
+    "tracked_diff_sha256": "ecfa121c9a62312c50e15c6b65de08bf825ecc30c583888bb2cf5b0283407251",
+    "preserved_manifest_sha256": "18faaa3c30d8d2ae9d370a977e8e5cb7cfbd741932548b63c18c67a1cc0c9d26"
+  },
+  "environment": {
+    "kind": "offline",
+    "candidate_sha": "bba4108b5101b758488fa49a2044115641512090",
+    "candidate_dirty": true,
+    "production_changes": false
+  },
+  "checks": {
+    "generated_evidence_preflight": {
+      "target": "ci.generated_evidence.preflight",
+      "inputs": [
+        "docs/engineering_convergence/",
+        "docs/audit/test_coverage_registry/test_coverage_registry.json",
+        "contracts/generated/contract_structure_fingerprint.json",
+        "scripts/ci/generate_test_inventory.py",
+        "scripts/ci/summarize_test_inventory.py",
+        "scripts/ci/generate_e2e_journey_matrix.py",
+        "scripts/ci/generate_module_dependency_map.py",
+        "scripts/ci/generate_complexity_budget_report.py",
+        "scripts/ci/generate_split_plan_queue.py",
+        "scripts/ci/generate_github_remote_execution_plan.py",
+        "scripts/ci/generate_contract_structure_fingerprint.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "verification_results": [],
+  "blockers": ["Generated evidence preflight is currently stale at bba4108b."],
+  "next_exact_step": "Create a clean bba4108b clone, run refresh.generated_reports and the full generated-evidence preflight there.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

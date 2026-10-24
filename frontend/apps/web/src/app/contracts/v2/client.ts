@@ -4,6 +4,7 @@ import { currentContextEpoch } from '../../contextEpoch';
 import { useSessionStore } from '../../../stores/session';
 import { decodeContractV2Snapshot } from './schema';
 import { createContractV2Store } from './store';
+import { CONTRACT_V2_CLIENT_CAPABILITIES } from './clientCapabilities';
 import type { ContractV2Dictionary, ContractV2NormalizedStore, ContractV2RuntimeContract, ContractV2Snapshot } from './types';
 
 export interface ContractV2LoadOptions {
@@ -109,14 +110,7 @@ function applyCommonOptions(params: ContractV2Dictionary, options: ContractV2Loa
   params.delivery_profile = 'full';
   params.client_type = 'web_pc';
   params.accepted_contract_versions = ['2.0.x', '2.1.x', '2.2.x'];
-  params.client_contract_capabilities = [
-    'container_tree.v2',
-    'data_source.v2',
-    'action_rule.v2',
-    'relation_entry.v2',
-    'status_contract.v2',
-    'form_layout.children_owner.v1',
-  ];
+  params.client_contract_capabilities = [...CONTRACT_V2_CLIENT_CAPABILITIES];
   return params;
 }
 

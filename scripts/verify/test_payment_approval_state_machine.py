@@ -15,6 +15,31 @@ POLICY = ROOT / 'addons/smart_construction_core/models/support/approval_policy.p
 STATE = ROOT / 'addons/smart_construction_core/models/support/state_machine.py'
 
 
+def load_contract_fields(path, xmlid):
+    record = ET.parse(path).find(".//record[@id='%s']" % xmlid)
+    if record is None:
+        raise AssertionError('%s not found in %s' % (xmlid, path))
+    carrier = record.find("field[@name='contract_json']")
+    if carrier is None or 'eval' not in carrier.attrib:
+        raise AssertionError('%s has no contract_json carrier' % xmlid)
+    payload = ast.literal_eval(carrier.attrib['eval'])
+    return {
+        row['name']: row
+        for row in payload['view_orchestration']['views']['form'].get('fields', [])
+    }
+
+
+def native_form_field(path, xmlid, name):
+    tree = ET.parse(path)
+    record = tree.find(".//record[@id='%s']" % xmlid)
+    if record is None:
+        raise AssertionError('%s not found in %s' % (xmlid, path))
+    field = record.find(".//form//field[@name='%s']" % name)
+    if field is None:
+        raise AssertionError('%s not found in %s' % (name, xmlid))
+    return field
+
+
 def guard(*args, **kwargs):
     raise ValueError(args[0])
 
@@ -59,6 +84,9 @@ class Reviews(list):
             for key, value in values.items():
                 setattr(row, key, value)
 
+    def unlink(self):
+        self.clear()
+
 
 class Record:
     _name = 'payment.request'
@@ -100,6 +128,9 @@ class Record:
         return self.write(values)
 
     def ensure_one(self):
+        pass
+
+    def invalidate_recordset(self, fields=None):
         pass
 
     def with_company(self, company):
@@ -220,6 +251,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
     def test_shared_route_refuses_failed_native_restart(self):
         rec = self.record(required=False, reviews=['old'], status='rejected')
         rec.restart_validation = lambda: None
+        rec.review_ids.unlink = lambda: None
         with self.assertRaisesRegex(ValueError, '未能重置'):
             rec.policy._start_submission_review(rec)
 
@@ -397,7 +429,9 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
 
     def test_project_approval_does_not_start_lifecycle(self):
         path = MODEL.parent / 'project_initiation_approval.py'
-        names = {'action_sc_submit', '_check_initiation_ready', '_complete_initiation_approval', 'action_on_tier_approved', '_assert_initiation_approved', 'action_sc_start'}
+        names = {'action_sc_submit', '_has_initiation_submit_access', '_check_initiation_ready',
+                 '_complete_initiation_approval', 'action_on_tier_approved',
+                 '_assert_initiation_approved', 'action_sc_start'}
         methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
         namespace = {'UserError': ValueError, '_INITIATION_APPROVAL_TOKEN': object()}
         exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
@@ -2254,14 +2288,17 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(field.attrib.get('readonly'), '1')
 
     def test_subcontract_request_input_policy_preserves_calculated_facts(self):
-        path = ROOT / 'addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml'
-        record = ET.parse(path).find(".//record[@id='business_config_contract_sc_subcontract_request_p1_form_business_facts_v1']")
-        payload = ast.literal_eval(record.find("field[@name='contract_json']").attrib['eval'])
-        fields = {row['name']: row for row in payload['view_orchestration']['views']['form']['fields']}
+        path = ROOT / 'addons/smart_construction_core/data/subcontract_request_form_productization_contract.xml'
+        input_fields = load_contract_fields(
+            path, 'business_config_contract_subcontract_request_productized_form_v1'
+        )
+        confirmed_fields = load_contract_fields(
+            path, 'business_config_contract_subcontract_request_user_confirmed_productized_form_v1'
+        )
         for name in ('project_id', 'request_date', 'subcontract_scope', 'suggested_subcontractor_id', 'note', 'attachment_ids'):
-            self.assertNotIn('readonly', fields[name])
+            self.assertNotIn('readonly', input_fields[name])
         for name in ('state', 'name', 'subcontract_type_text', 'quantity_total', 'price_unit', 'amount_total', 'monthly_amount_total', 'applicant_id', 'create_date'):
-            self.assertIs(fields[name]['readonly'], True)
+            self.assertIs(confirmed_fields[name]['readonly'], True)
 
     def test_subcontract_submitted_and_approved_facts_are_frozen(self):
         path = MODEL.with_name('subcontract_management.py')
@@ -2791,30 +2828,42 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(rec.state, 'confirmed')
 
     def test_rental_settlement_creation_policy_keeps_required_inputs_editable(self):
-        path = ROOT / 'addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml'
-        record = ET.parse(path).find(".//record[@id='business_config_contract_sc_material_rental_settlement_p1_form_business_facts_v1']")
-        contract = ast.literal_eval(record.find("field[@name='contract_json']").get('eval'))
-        fields = {field['name']: field for field in contract['view_orchestration']['views']['form']['fields']}
+        path = ROOT / 'addons/smart_construction_core/views/core/material_rental_views.xml'
         for field in ('project_id', 'supplier_id'):
-            self.assertNotIn('readonly', fields[field])
-        for field in ('state', 'name', 'message_attachment_count', 'rental_settlement_source_created_by_display', 'source_created_at'):
-            self.assertTrue(fields[field]['readonly'])
+            self.assertNotIn('readonly', native_form_field(
+                path, 'view_sc_material_rental_settlement_form', field
+            ).attrib)
+        self.assertEqual(native_form_field(
+            path, 'view_sc_material_rental_settlement_form', 'state'
+        ).attrib.get('widget'), 'statusbar')
+        for field in ('name', 'rent_amount', 'damage_amount', 'amount_total',
+                      'payment_paid_amount', 'payment_remaining_amount'):
+            self.assertEqual(native_form_field(
+                path, 'view_sc_material_rental_settlement_form', field
+            ).attrib.get('readonly'), '1')
 
     def test_rental_order_input_policy_separates_execution_and_calculated_facts(self):
-        path = ROOT / 'addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml'
-        record = ET.parse(path).find(".//record[@id='business_config_contract_sc_material_rental_order_p1_form_business_facts_v1']")
-        contract = ast.literal_eval(record.find("field[@name='contract_json']").attrib['eval'])
-        fields = {row['name']: row for row in contract['view_orchestration']['views']['form']['fields']}
-        for name in ('project_id', 'supplier_id', 'contract_id', 'rental_date', 'planned_return_date', 'use_unit_name', 'deposit_amount', 'compensation_fee', 'repair_fee', 'transport_fee', 'deposit_deduction', 'attachment_ids', 'note', 'owner_id'):
-            self.assertNotIn('readonly', fields[name], name)
-        for name in ('state', 'name', 'actual_return_date', 'material_summary', 'specification_summary', 'quantity_total', 'amount_total', 'settlement_amount', 'create_date'):
-            self.assertIs(fields[name]['readonly'], True, name)
+        path = ROOT / 'addons/smart_construction_core/views/core/material_rental_views.xml'
+        for name in ('project_id', 'supplier_id', 'contract_id', 'rental_date',
+                     'planned_return_date', 'use_unit_name', 'deposit_amount',
+                     'compensation_fee', 'repair_fee', 'transport_fee',
+                     'deposit_deduction', 'attachment_ids', 'note', 'owner_id'):
+            self.assertNotIn('readonly', native_form_field(
+                path, 'view_sc_material_rental_order_form', name
+            ).attrib, name)
+        self.assertEqual(native_form_field(
+            path, 'view_sc_material_rental_order_form', 'state'
+        ).attrib.get('widget'), 'statusbar')
+        for name in ('name', 'amount_total', 'settlement_amount'):
+            self.assertEqual(native_form_field(
+                path, 'view_sc_material_rental_order_form', name
+            ).attrib.get('readonly'), '1', name)
 
     def test_labor_settlement_inputs_remain_editable_in_published_contract(self):
-        path = ROOT / 'addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml'
-        record = ET.parse(path).find(".//record[@id='business_config_contract_sc_labor_settlement_p1_form_business_facts_v1']")
-        contract = ast.literal_eval(record.find("field[@name='contract_json']").attrib['eval'])
-        fields = {row['name']: row for row in contract['view_orchestration']['views']['form']['fields']}
+        path = ROOT / 'addons/smart_construction_core/data/labor_request_settlement_form_productization_contract.xml'
+        fields = load_contract_fields(
+            path, 'business_config_contract_labor_settlement_productized_form_v1'
+        )
         for name in ('project_id', 'contractor_id', 'settlement_date', 'note'):
             self.assertNotIn('readonly', fields[name], name)
         for name in ('payment_paid_amount', 'payment_unpaid_amount', 'payment_requested_amount', 'payment_unrequested_amount', 'source_created_at'):
@@ -3066,6 +3115,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         ):
             for required in (False, True):
                 rec = self.record(state=state, reviews=reviews, status=status, required=required)
+                rec._name = 'construction.contract'
                 rec.policy._assert_submission_approved = lambda record, states: PRODUCTION['_assert_submission_approved'](rec.policy, record, states)
                 rec._post_contract_state_message = lambda message: rec.messages.append(message)
                 if allowed:
@@ -3556,20 +3606,35 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertTrue(ns['write'](rows, {'state': 'confirmed'}))
 
     def test_diary_business_overlay_preserves_native_editability(self):
-        import xml.etree.ElementTree as ET
         root = MODEL.parents[2]
-        data = ET.parse(root / 'data/p1_daily_business_form_orchestration_contract_data.xml')
-        record = data.find(".//record[@id='business_config_contract_sc_construction_diary_p1_form_business_facts_v1']")
+        data = ET.parse(root / 'data/construction_plan_form_productization_contract.xml')
+        record = data.find(".//record[@id='business_config_contract_construction_diary_productized_form_v1']")
         config = ast.literal_eval(record.find("field[@name='contract_json']").attrib['eval'])
-        fields_by_name = {item['name']: item for item in config['view_orchestration']['views']['form']['fields']}
-        for name in ('project_id', 'date_diary', 'title', 'description', 'manpower_count', 'weather', 'attachment_ids'):
-            self.assertNotIn('readonly', fields_by_name[name], name)
-        for name in ('state', 'name', 'create_date'):
-            self.assertTrue(fields_by_name[name]['readonly'])
-        native = ET.parse(root / 'views/core/construction_diary_views.xml')
-        for name in ('project_id', 'title', 'description'):
-            field = native.find(".//record[@id='view_sc_construction_diary_form']//field[@name='%s']" % name)
-            self.assertEqual(field.attrib['readonly'], "state == 'legacy_confirmed'")
+        form = config['view_orchestration']['views']['form']
+        self.assertEqual(form['composition_mode'], 'native_semantic_surface')
+        self.assertNotIn('fields', form)
+        self.assertNotIn('sections', form)
+        for name in ('project_id', 'date_diary', 'title', 'description', 'manpower_count', 'weather'):
+            self.assertEqual(native_form_field(
+                root / 'views/core/construction_diary_views.xml',
+                'view_sc_construction_diary_form',
+                name,
+            ).attrib.get('readonly'), "state == 'legacy_confirmed'", name)
+        self.assertNotIn('readonly', native_form_field(
+            root / 'views/core/construction_diary_views.xml',
+            'view_sc_construction_diary_form',
+            'attachment_ids',
+        ).attrib)
+        self.assertEqual(native_form_field(
+            root / 'views/core/construction_diary_views.xml',
+            'view_sc_construction_diary_form',
+            'state',
+        ).attrib.get('widget'), 'statusbar')
+        self.assertEqual(native_form_field(
+            root / 'views/core/construction_diary_views.xml',
+            'view_sc_construction_diary_form',
+            'name',
+        ).attrib.get('readonly'), '1')
 
     def test_diary_configuration_and_real_approval_precede_completion(self):
         path = MODEL.parent / 'construction_diary.py'
@@ -3875,6 +3940,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 seen.append((model, company.id))
                 return submitted if required else approved
             rec.policy.next_state_after_submit = next_state
+            rec.policy.sudo = lambda: rec.policy
             producer = self.producer()
             producer.env = rec.env
             self.assertEqual(producer._next_state_hint(rec, 'submit'), expected)

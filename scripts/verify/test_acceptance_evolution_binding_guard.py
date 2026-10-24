@@ -134,6 +134,51 @@ def _presentation(head: str = HEAD, *, passed: bool = True) -> dict:
 
 
 def _relation(head: str = HEAD) -> dict:
+    fields = ["user_id", "manager_id", "partner_id"]
+    declared = {"can_read": True, "can_open": True, "action_id": 807, "menu_id": 430}
+    comparison = [
+        {
+            "field": field,
+            "contract": {
+                "can_read": True,
+                "can_open": True,
+                "visible": True,
+                "readonly": True,
+                "required": False,
+                "label": field,
+            },
+            "rendered": {
+                "visible": True,
+                "readonly": True,
+                "required": False,
+                "has_value": True,
+                "has_open_control": True,
+                "label": field,
+            },
+            "differences": [],
+        }
+        for field in fields
+    ]
+    comparison.append({
+        "field": "owner_id",
+        "contract": {
+            "can_read": True,
+            "can_open": True,
+            "visible": False,
+            "readonly": True,
+            "required": False,
+            "label": "owner_id",
+        },
+        "rendered": {
+            "visible": False,
+            "readonly": None,
+            "required": None,
+            "has_value": False,
+            "has_open_control": False,
+            "label": "",
+        },
+        "differences": [],
+    })
     return {
         "schema": "record-relation-roundtrip-acceptance.v1",
         "status": "pass",
@@ -143,7 +188,29 @@ def _relation(head: str = HEAD) -> dict:
         "console_errors": [],
         "denied_requests": [],
         "declared_entry_count": 13,
-        "declared_openable": [{}, {}, {}, {}],
+        "declared_openable": [
+            {"field": field, "declared": dict(declared)} for field in fields
+        ],
+        "controls": [{"field": field, "label": field} for field in fields],
+        "attempts": [
+            {"field": field, "outcome": "opened"} for field in fields
+        ],
+        "contract_openable_fields": [*fields, "owner_id"],
+        "visible_openable_fields": fields,
+        "populated_openable_fields": fields,
+        "empty_value_openable_fields": [],
+        "not_visible_openable_fields": ["owner_id"],
+        "visible_relation_control_fields": fields,
+        "contract_render_comparison": comparison,
+        "contract_render_comparison_summary": {
+            "complete": True,
+            "contract_field_count": 4,
+            "compared_field_count": 4,
+            "fields_with_differences": 0,
+            "difference_count": 0,
+            "blocking_count": 0,
+            "non_blocking_count": 0,
+        },
         "roundtrip": {
             "field": "user_id",
             "restored": {
@@ -175,6 +242,32 @@ class TestGlobAndPlan(unittest.TestCase):
         self.assertEqual(len(plan["required_evidence_suites"]), 4)
         with self.assertRaises(guard.BindingError):
             guard.plan_for_stage(self.registry, plan, "skip")
+
+    def test_runtime_suite_inputs_are_target_scoped_not_repository_wide(self):
+        self.assertEqual(guard.GLOBAL_SUITE_INPUTS, ())
+        for suite_id in ("frontend_presentation", "list_surface_structure", "relation_roundtrip"):
+            suite = self.registry["suites"][suite_id]
+            self.assertTrue(suite["make_inputs"], suite_id)
+            self.assertNotIn("make/**", suite["inputs"], suite_id)
+            self.assertNotIn("make/ci.mk", {item["path"] for item in suite["make_inputs"]})
+
+    def test_make_target_material_ignores_other_rules_but_tracks_the_selected_rule(self):
+        original = (
+            "target-one:\n"
+            "\t@echo one\n"
+            "\n"
+            "target-two:\n"
+            "\t@echo two\n"
+        )
+        changed_other = original.replace("@echo one", "@echo changed")
+        changed_target = original.replace("@echo two", "@echo changed")
+        selected = guard._make_target_material(original, "target-two", "Makefile")
+        self.assertEqual(selected, guard._make_target_material(changed_other, "target-two", "Makefile"))
+        self.assertNotEqual(selected, guard._make_target_material(changed_target, "target-two", "Makefile"))
+        self.assertEqual(
+            guard._make_variable_material("UNRELATED := 1\n", "UNRELATED", "Makefile"),
+            "UNRELATED := 1\n",
+        )
 
     def test_glob_semantics(self):
         self.assertTrue(guard.path_matches("addons/**", "addons/a.py"))
@@ -289,9 +382,9 @@ class TestGlobAndPlan(unittest.TestCase):
             self.assertEqual(set(plan['required_suites']),
                              {'governance_static', 'daily_runtime_entry', 'path_namespace_identity'})
 
-    def test_global_and_explicit_dependencies_override_first_match(self):
-        self.assertTrue(guard.suite_owns_path(self.registry, 'daily_runtime_entry',
-                                            'config/acceptance/evolution_binding.v1.json'))
+    def test_explicit_dependencies_override_first_match(self):
+        self.assertFalse(guard.suite_owns_path(self.registry, 'daily_runtime_entry',
+                                             'config/acceptance/evolution_binding.v1.json'))
         self.assertFalse(guard.suite_owns_path(self.registry, 'daily_runtime_entry',
                                              'scripts/ops/evidence_scope.py'))
         registry = json.loads(json.dumps(self.registry))
@@ -437,8 +530,18 @@ class TestAdapters(unittest.TestCase):
             guard._adapter_list_surface(broken, HEAD)
 
     def test_relation_roundtrip_adapter(self):
-        result = guard._adapter_relation_roundtrip(_relation(), HEAD)
-        self.assertEqual(result["counts"]["openable_entries"], 4)
+        relation_contract = {
+            "allowed_non_blocking_difference_kinds": [
+                "CONTRACT_LABEL_RENDER_DIFF",
+                "CONTRACT_READONLY_MISMATCH",
+                "CONTRACT_REQUIRED_MISMATCH",
+                "CONTRACT_VISIBILITY_MISMATCH",
+                "OPENABLE_EMPTY_VALUE_HAS_NO_TARGET",
+            ]
+        }
+        result = guard._adapter_relation_roundtrip(_relation(), HEAD, relation_contract)
+        self.assertEqual(result["counts"]["openable_entries"], 3)
+        self.assertEqual(result["counts"]["opened_entries"], 3)
         broken = _relation()
         broken["failures"] = ["x"]
         with self.assertRaises(guard.BindingError):
@@ -455,6 +558,64 @@ class TestAdapters(unittest.TestCase):
         broken["console_errors"] = ["boom"]
         with self.assertRaises(guard.BindingError):
             guard._adapter_relation_roundtrip(broken, HEAD)
+        broken = _relation()
+        broken["visible_relation_control_fields"] = ["user_id", "manager_id"]
+        with self.assertRaisesRegex(guard.BindingError, "diverge"):
+            guard._adapter_relation_roundtrip(broken, HEAD)
+        broken = _relation()
+        broken["attempts"].pop()
+        with self.assertRaisesRegex(guard.BindingError, "every contract-openable"):
+            guard._adapter_relation_roundtrip(broken, HEAD)
+        broken = _relation()
+        broken["declared_openable"][0]["declared"]["action_id"] = None
+        with self.assertRaisesRegex(guard.BindingError, "action/menu"):
+            guard._adapter_relation_roundtrip(broken, HEAD)
+        broken = _relation()
+        broken["not_visible_openable_fields"] = []
+        with self.assertRaisesRegex(guard.BindingError, "partition"):
+            guard._adapter_relation_roundtrip(broken, HEAD)
+        broken = _relation()
+        del broken["contract_render_comparison"]
+        with self.assertRaisesRegex(guard.BindingError, "comparison is missing"):
+            guard._adapter_relation_roundtrip(broken, HEAD, relation_contract)
+        broken = _relation()
+        broken["contract_render_comparison"][0]["differences"] = [{
+            "kind": "CONTRACT_LABEL_RENDER_DIFF",
+            "blocking": False,
+            "reason": "label copy differs",
+            "contract": "负责人",
+            "rendered": "项目经理",
+        }]
+        broken["contract_render_comparison_summary"]["difference_count"] = 1
+        broken["contract_render_comparison_summary"]["non_blocking_count"] = 1
+        broken["contract_render_comparison_summary"]["fields_with_differences"] = 1
+        guard._adapter_relation_roundtrip(broken, HEAD, relation_contract)
+        broken = _relation()
+        broken["contract_render_comparison"][0]["differences"] = [{
+            "kind": "VALUE_WITHOUT_OPEN_CONTROL",
+            "blocking": True,
+            "reason": "a populated relation has no open control",
+            "contract": True,
+            "rendered": False,
+        }]
+        broken["contract_render_comparison_summary"]["difference_count"] = 1
+        broken["contract_render_comparison_summary"]["blocking_count"] = 1
+        broken["contract_render_comparison_summary"]["fields_with_differences"] = 1
+        with self.assertRaisesRegex(guard.BindingError, "blocking differences"):
+            guard._adapter_relation_roundtrip(broken, HEAD, relation_contract)
+        broken = _relation()
+        broken["contract_render_comparison"][0]["differences"] = [{
+            "kind": "UNREVIEWED_DIFFERENCE",
+            "blocking": False,
+            "reason": "unclassified",
+            "contract": True,
+            "rendered": False,
+        }]
+        broken["contract_render_comparison_summary"]["difference_count"] = 1
+        broken["contract_render_comparison_summary"]["non_blocking_count"] = 1
+        broken["contract_render_comparison_summary"]["fields_with_differences"] = 1
+        with self.assertRaisesRegex(guard.BindingError, "not declared in policy"):
+            guard._adapter_relation_roundtrip(broken, HEAD, relation_contract)
 
 
 class TestManifest(unittest.TestCase):
@@ -646,6 +807,69 @@ class TestCarryForwardPolicy(unittest.TestCase):
         self.assertNotEqual(guard.suite_input_sha256(self.registry, 'daily_runtime_entry', head),
                             guard.suite_input_sha256(self.registry, 'daily_runtime_entry', runtime))
 
+    def test_unrelated_make_change_preserves_runtime_fingerprint(self):
+        registry = {
+            "suites": {
+                "runtime_probe": {
+                    "description": "runtime probe",
+                    "entrypoints": ["make verify.runtime.probe"],
+                    "evidence": None,
+                    "stages": ["merge"],
+                    "inputs": [],
+                    "make_inputs": [
+                        {
+                            "path": "make/runtime.mk",
+                            "targets": ["verify.runtime.probe"],
+                            "variables": ["RUNTIME_PROBE_MODE"],
+                        }
+                    ],
+                }
+            },
+            "rules": [],
+        }
+        self._write(
+            "make/runtime.mk",
+            "RUNTIME_PROBE_MODE ?= readonly\n"
+            "verify.runtime.probe:\n"
+            "\t@echo runtime\n"
+            "verify.runtime.other:\n"
+            "\t@echo other\n",
+        )
+        self._write("make/ci.mk", "ci-unrelated:\n\t@echo ci\n")
+        base = self._commit("runtime probe baseline")
+        self._write("make/ci.mk", "ci-unrelated:\n\t@echo changed-ci\n")
+        ci_only = self._commit("unrelated CI orchestration")
+        self.assertEqual(
+            guard.suite_input_sha256(registry, "runtime_probe", base),
+            guard.suite_input_sha256(registry, "runtime_probe", ci_only),
+        )
+        self._write(
+            "make/runtime.mk",
+            "RUNTIME_PROBE_MODE ?= readonly\n"
+            "verify.runtime.probe:\n"
+            "\t@echo runtime\n"
+            "verify.runtime.other:\n"
+            "\t@echo changed-other\n",
+        )
+        other_target = self._commit("unrelated target")
+        self.assertEqual(
+            guard.suite_input_sha256(registry, "runtime_probe", ci_only),
+            guard.suite_input_sha256(registry, "runtime_probe", other_target),
+        )
+        self._write(
+            "make/runtime.mk",
+            "RUNTIME_PROBE_MODE ?= write\n"
+            "verify.runtime.probe:\n"
+            "\t@echo runtime-changed\n"
+            "verify.runtime.other:\n"
+            "\t@echo changed-other\n",
+        )
+        changed = self._commit("owned target")
+        self.assertNotEqual(
+            guard.suite_input_sha256(registry, "runtime_probe", other_target),
+            guard.suite_input_sha256(registry, "runtime_probe", changed),
+        )
+
     def test_unchanged_suite_inputs_can_be_carried_across_head(self):
         base = self._git("rev-parse", "HEAD")
         with tempfile.TemporaryDirectory() as raw:
@@ -662,6 +886,47 @@ class TestCarryForwardPolicy(unittest.TestCase):
             )
             self.assertEqual(result["status"], "PASS")
             self.assertEqual(result["suites"]["daily_runtime_entry"]["bound_head"], base)
+
+    def test_reviewed_input_policy_migration_reanchors_identical_suite_inputs(self):
+        head = self._git("rev-parse", "HEAD")
+        with tempfile.TemporaryDirectory() as raw:
+            directory = Path(raw)
+            evidence = self._write_json(directory / "entry.json", _entry_verify(head))
+            now = (
+                datetime.datetime.now(datetime.timezone.utc)
+                .replace(microsecond=0)
+                .isoformat()
+                .replace("+00:00", "Z")
+            )
+            current_input = guard.suite_input_sha256(
+                self.registry, "daily_runtime_entry", head
+            )
+            previous = {
+                "schema": guard.EVIDENCE_SCHEMA,
+                "head_sha": head,
+                "base_sha": head,
+                "recorded_at": now,
+                "suites": {
+                    "daily_runtime_entry": {
+                        "status": "pass",
+                        "evidence": [
+                            {
+                                "path": str(evidence),
+                                "sha256": hashlib.sha256(evidence.read_bytes()).hexdigest(),
+                            }
+                        ],
+                        "bound_head": head,
+                        "input_sha256": "f" * 64,
+                        "verified_at": now,
+                    }
+                },
+            }
+            candidate = recorder._reuse_suite_record(
+                self.registry, previous, "daily_runtime_entry", head
+            )
+            self.assertIsNotNone(candidate)
+            self.assertEqual(candidate["input_sha256"], current_input)
+            self.assertEqual(candidate["input_policy_reanchored_from"], "f" * 64)
 
     def test_changed_suite_inputs_refuse_carried_evidence(self):
         base = self._git("rev-parse", "HEAD")

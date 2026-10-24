@@ -1,3 +1,4 @@
+import { projectNodeComponents } from '../../presentation/nodeComponentPresentation';
 import { normalizeActionSemantics } from '@sc/schema';
 import type {
   ContractV2ActionContract,
@@ -2566,6 +2567,7 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const workflowContract = optionalRecord(root, 'workflowContract', '$', issues);
   validateFormOccurrenceAuthority(layoutContract, statusContract, issues);
   validateDeliveryIdentity(pageInfo, runtimeContract, meta, issues);
+  if (!issues.length) projectNodeComponents({layoutContract, statusContract, dataContract});
   if (issues.length) {
     throw new ContractV2DecodeError(issues);
   }

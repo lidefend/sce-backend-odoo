@@ -67,6 +67,28 @@ class PreviewIdentityTest(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 preview.validate_listener(self.env, command, owner)
 
+    def test_exact_checkout_uses_primary_workspace_preview_root(self):
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp)
+            authority = workspace / 'sce-backend-odoo'
+            (authority / '.git').mkdir(parents=True)
+            with patch.dict(
+                os.environ,
+                {
+                    'SC_PR_MERGE_EXACT_CHECKOUT': '1',
+                    'SC_PR_MERGE_AUTHORITY_ROOT': str(authority),
+                },
+                clear=False,
+            ):
+                self.assertEqual(preview._preview_workspace_root(), workspace)
+                with patch.dict(
+                    os.environ,
+                    {'SC_PR_MERGE_AUTHORITY_ROOT': '.'},
+                    clear=False,
+                ):
+                    with self.assertRaisesRegex(RuntimeError, 'must be absolute'):
+                        preview._preview_workspace_root()
+
 
 class ObservedBuildIdentityTest(unittest.TestCase):
     def test_observation_preserves_artifact_checks_but_does_not_claim_current_source(self):

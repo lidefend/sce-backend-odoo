@@ -5,7 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 from scripts.ops.agent_run_context import (RunError, begin, record, resolve_run, summary,
-                                           resume_prompt, delta_paths, dependency_state)
+                                           resume_prompt, delta_paths, dependency_state,
+                                           DELIVERY_STAGES, DELIVERY_GATE_FIELDS)
 
 
 class RunContextTest(unittest.TestCase):
@@ -102,6 +103,126 @@ class RunContextTest(unittest.TestCase):
         self.run['environment'] = 'offline'; self.save()
         self.assertIn('reconcile', resume_prompt(self.root))
         with self.assertRaises(RunError): self.receipt()
+
+    def delivery_lifecycle(self, passed=(), active='stage_0_scope_frozen'):
+        stages = {
+            stage: ('passed' if stage in passed else 'not_started')
+            for stage in DELIVERY_STAGES
+        }
+        if active != 'complete':
+            stages[active] = 'in_progress'
+        gates = {field: None for field in DELIVERY_GATE_FIELDS}
+        gates.update(commit_approved=False, owner_merge_approved=False, deployment_approved=False)
+        return {'schema_version': 1, 'current_stage': active, 'stages': stages, 'gates': gates}
+
+    def test_candidate_evidence_requires_delivery_lifecycle(self):
+        self.run['candidate_evidence'] = True; self.save()
+        with self.assertRaisesRegex(RunError, 'candidate evidence requires delivery_lifecycle'):
+            resolve_run(self.root)
+
+    def test_summary_reports_only_a_declared_lifecycle_candidate(self):
+        lifecycle = self.delivery_lifecycle(
+            passed=('stage_0_scope_frozen', 'stage_1_baseline_gates',
+                    'stage_2_candidate_manifest'),
+            active='stage_3_candidate_commit',
+        )
+        lifecycle['stages']['stage_3_candidate_commit'] = 'blocked'
+        self.run['candidate_evidence'] = True
+        self.run['delivery_lifecycle'] = lifecycle
+        self.save()
+        self.assertTrue(summary(self.root)['candidate_evidence'])
+
+    def test_delivery_lifecycle_validates_order_and_exact_stage_set(self):
+        self.run['delivery_lifecycle'] = self.delivery_lifecycle(
+            passed=('stage_0_scope_frozen', 'stage_1_baseline_gates'),
+            active='stage_2_candidate_manifest',
+        )
+        self.save()
+        self.assertEqual(resolve_run(self.root)[1]['status'], 'active')
+        lifecycle = self.run['delivery_lifecycle']
+        lifecycle['stages']['stage_4_pr_validation'] = 'passed'
+        self.save()
+        with self.assertRaisesRegex(RunError, 'cannot be passed after'):
+            resolve_run(self.root)
+        lifecycle['stages']['stage_4_pr_validation'] = 'not_started'
+        del lifecycle['stages']['stage_9_deploy_r7']
+        self.save()
+        with self.assertRaisesRegex(RunError, 'complete ordered stage ladder'):
+            resolve_run(self.root)
+
+    def test_delivery_lifecycle_cannot_have_two_active_stages(self):
+        self.run['delivery_lifecycle'] = self.delivery_lifecycle()
+        self.run['delivery_lifecycle']['stages']['stage_1_baseline_gates'] = 'blocked'
+        self.save()
+        with self.assertRaisesRegex(RunError, 'at most one'):
+            resolve_run(self.root)
+
+    def test_candidate_commit_requires_owner_approval_and_exact_ancestor(self):
+        lifecycle = self.delivery_lifecycle(
+            passed=('stage_0_scope_frozen', 'stage_1_baseline_gates',
+                    'stage_2_candidate_manifest', 'stage_3_candidate_commit'),
+            active='stage_4_pr_validation',
+        )
+        self.run['delivery_lifecycle'] = lifecycle
+        self.save()
+        with self.assertRaisesRegex(RunError, 'explicit commit approval'):
+            resolve_run(self.root)
+        lifecycle['gates']['commit_approved'] = True
+        lifecycle['gates']['candidate_commit'] = self.base
+        self.save()
+        self.assertEqual(resolve_run(self.root)[1]['status'], 'active')
+
+    def test_formal_build_must_bind_the_candidate_commit(self):
+        lifecycle = self.delivery_lifecycle(
+            passed=('stage_0_scope_frozen', 'stage_1_baseline_gates',
+                    'stage_2_candidate_manifest', 'stage_3_candidate_commit',
+                    'stage_4_pr_validation'),
+            active='stage_5_formal_build',
+        )
+        lifecycle['gates'].update(
+            commit_approved=True,
+            candidate_commit=self.base,
+            pr_head_sha=self.base,
+            build_source_sha='f' * 40,
+            candidate_frontend_sha256='e' * 64,
+        )
+        self.run['delivery_lifecycle'] = lifecycle
+        self.save()
+        with self.assertRaisesRegex(RunError, 'formal build source'):
+            resolve_run(self.root)
+        lifecycle['gates']['build_source_sha'] = self.base
+        lifecycle['stages']['stage_5_formal_build'] = 'passed'
+        lifecycle['stages']['stage_6_rollback_rehearsal'] = 'in_progress'
+        lifecycle['current_stage'] = 'stage_6_rollback_rehearsal'
+        self.save()
+        self.assertEqual(resolve_run(self.root)[1]['status'], 'active')
+
+    def test_rollback_pair_and_merge_approval_are_recorded_explicitly(self):
+        lifecycle = self.delivery_lifecycle(
+            passed=DELIVERY_STAGES[:7],
+            active='stage_7_merge_approval',
+        )
+        lifecycle['gates'].update(
+            commit_approved=True,
+            candidate_commit=self.base,
+            pr_head_sha=self.base,
+            build_source_sha=self.base,
+            candidate_frontend_sha256='9' * 64,
+        )
+        self.run['delivery_lifecycle'] = lifecycle
+        self.save()
+        with self.assertRaisesRegex(RunError, 'rollback_source_sha'):
+            resolve_run(self.root)
+        lifecycle['gates'].update(
+            rollback_source_sha='8' * 40,
+            rollback_artifact_sha256='7' * 64,
+        )
+        lifecycle['stages']['stage_7_merge_approval'] = 'passed'
+        lifecycle['stages']['stage_8_post_merge_validation'] = 'in_progress'
+        lifecycle['current_stage'] = 'stage_8_post_merge_validation'
+        self.save()
+        with self.assertRaisesRegex(RunError, 'explicit Owner approval'):
+            resolve_run(self.root)
 
     def test_missing_declared_dependency_cannot_issue_reusable_pass(self):
         self.run['checks']['unit']['inputs'].append('missing.py'); self.save()
