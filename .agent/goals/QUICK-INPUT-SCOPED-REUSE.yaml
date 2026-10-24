@@ -1,0 +1,8 @@
+schema_version: 1
+goal:
+  id: QUICK-INPUT-SCOPED-REUSE
+  title: Quick 输入范围复用（只重跑受影响 target）
+  status: planned
+  formal_product_layer: P4
+  layer_target: local_quick_evidence carry-forward
+  exclusions: [product_code, permissions, merge, deployment, browser_acceptance]

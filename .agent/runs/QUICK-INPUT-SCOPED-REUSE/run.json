@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "QUICK-INPUT-SCOPED-REUSE",
+  "branch": "fix/quick-input-scoped-reuse",
+  "baseline_sha": "141825f2b8593ed81926ca5d0237b05bc4371c58",
+  "status": "planned",
+  "goal": ".agent/goals/QUICK-INPUT-SCOPED-REUSE.yaml",
+  "record": "docs/ops/iterations/quick_input_scoped_reuse.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/QUICK-INPUT-SCOPED-REUSE.yaml",
+    ".agent/runs/QUICK-INPUT-SCOPED-REUSE/run.json",
+    "docs/ops/iterations/quick_input_scoped_reuse.md",
+    "scripts/ops/local_quick_evidence.py",
+    "scripts/ops/test_local_quick_evidence.py",
+    "scripts/ops/quick_input_scope.py",
+    "scripts/ops/test_quick_input_scope.py",
+    "scripts/ci/trusted_scan_scope.py",
+    "scripts/audit/verification_lane_coverage.py",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
+    "make/ci.mk",
+    "make/codex.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "focused": {
+      "target": "verify.quick.input_scope.unit",
+      "inputs": [
+        "scripts/ops/quick_input_scope.py",
+        "scripts/ops/test_quick_input_scope.py",
+        "scripts/audit/verification_lane_coverage.py",
+        "make/ci.mk",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "First increment landed: quick_input_scope.py inventories the 128-target Quick DAG (98 with declared inputs, 30 fail-closed RUN) and computes per-target fingerprint + RUN/REUSE decisions; wired verify.quick.input_scope.unit to both local Quick and remote professional gate. Next: integrate affected_targets into local_quick_evidence.py so the Quick actually skips reusable targets."
+}

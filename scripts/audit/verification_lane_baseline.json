@@ -53,7 +53,7 @@
       "defect": "New hard-checked register: a make target whose recipe calls a path that is absent from the tree cannot run. 226 targets qualify (187 references to scripts/migration/*, which .gitignore line 116 keeps out of the clean product repository as customer migration collateral, plus relocated or never-added verify/root scripts). Each is registered with an owner, a reason and a review date; 0 may be unregistered."
     }
   ],
-  "max_targets_zero_reference": 642,
+  "max_targets_zero_reference": 641,
   "max_scripts_unreferenced_anywhere": 104,
   "max_targets_missing_asset_unregistered": 0,
   "max_stale_missing_asset_dispositions": 0,
@@ -68,9 +68,9 @@
   "max_unregistered_remote_only_scripts": 0,
   "max_stale_local_only_exemptions": 0,
   "max_stale_remote_only_exemptions": 0,
-  "recorded_targets_defined": 2271,
+  "recorded_targets_defined": 2272,
   "recorded_targets_unreached_from_anchor": 2069,
-  "recorded_anchor_union_targets": 208,
+  "recorded_anchor_union_targets": 209,
   "max_registrations_missing_owner": 0,
   "max_registrations_missing_basis": 0,
   "max_expired_registrations": 0,
@@ -142,7 +142,6 @@
       "daily.personnel_views",
       "daily.runtime.database.duty.apply",
       "daily.runtime.database.duty.initialize",
-      "daily.runtime.database.duty.plan",
       "daily.runtime.database.duty.recreate",
       "daily.runtime.database.duty.seed",
       "daily.runtime.duty.database_registration.remote_readback",
