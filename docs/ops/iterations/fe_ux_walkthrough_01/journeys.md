@@ -10,7 +10,8 @@
 
 - 时间：2026-10-24，北京时间约 18:56–19:09；原始观察时间为 UTC。
 - daily：`http://1.95.85.92:18081/t/demo`，业务库 `sc_demo`。`sc_platform_control` 双 duty 身份采用已有证据，没有重复整轮执行或声称完成该库业务角色走查。
-- 已核验部署源版本：`96c860d0fb041c556b687afaad6dc689528785e5`；页面版本 `1.0.0-rc.20`。前端 SHA256：`33a88db417ed29b0b5e54a1becfa5e17cbe45ec14c9d246c0f11fab5ebd024bb`。
+- 历史运行观测（非当前发布声明）：observed_at=2026-10-24; source_sha=96c860d0fb041c556b687afaad6dc689528785e5; page_version=`1.0.0-rc.20`。
+- 上述历史运行的前端 SHA256：`33a88db417ed29b0b5e54a1becfa5e17cbe45ec14c9d246c0f11fab5ebd024bb`。
 - 本地 HEAD：`55896e6edcd5a5ef078406d31d5c109388dff39f`。相关产品目录与服务源版本无差异；不将此视为运行 XML/契约逐项验证。
 - 采用既有浏览器入口与受管 Playwright 依赖；`make fe.install.cached` 离线恢复通过，未修改验收工具。主要观察桌面 1440×960，本轮无新移动端矩阵。
 - [复用双 duty 身份证据](../../../../.runtime/final-acceptance/daily-deployed/entry-verify-tool-closure.json)、[复用角色身份](../../../../.runtime/final-acceptance/fe-daily-closeout/role-http-observation.json)、[本轮入口检查](../../../../.runtime/fe-ux-walkthrough-01/role-entry/backend/user_entry_delivery_browser_acceptance.json)、[逐页观察与请求事件](../../../../.runtime/fe-ux-walkthrough-01/observations.json)、[会话记录](../../../../.runtime/fe-ux-walkthrough-01/session-summary.json)。

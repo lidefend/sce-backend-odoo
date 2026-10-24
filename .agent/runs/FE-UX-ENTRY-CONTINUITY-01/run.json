@@ -34,7 +34,10 @@
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/engineering_convergence/github_remote_execution_plan.md",
     "docs/engineering_convergence/github_remote_execute.sh",
-    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "scripts/verify/product_release_version_guard.py",
+    "scripts/release/test_product_release.py",
+    "addons/smart_core/tests/test_workspace_home_provider_shapes.py"
   ],
   "preserved_preexisting": [
     ".agent/goals/FE-UX-WALKTHROUGH-01.yaml",
@@ -47,7 +50,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Owner review of locally frozen candidate and reconciled runtime evidence; independent review and required CI remain before publication. Do not push/update PR/merge/deploy without separate approval.",
+  "next_exact_step": "Complete closeout static validation, freeze once, run exact-head Quick and the two governed acceptance suites; preserve BLOCKED if required evidence cannot be obtained. No remote writes.",
   "observations": {
     "responsibility": {
       "UX-01": "P1 factual risk record declaration + P0 home projection preserves declared target",
@@ -91,6 +94,15 @@
       "status": "PASS",
       "evidence": ".runtime/fe-ux-entry-continuity-01/freeze-prepare-reconciled.log"
     },
-    "preserved_walkthrough_commit": "2ac16cd94 (six pre-existing walkthrough documents tracked without content changes)"
+    "preserved_walkthrough_commit": "2ac16cd94 (six pre-existing walkthrough documents tracked without content changes)",
+    "closeout": {
+      "id": "FE-UX-ENTRY-CONTINUITY-CLOSEOUT-01",
+      "protected_candidate": "4287100dc71c8cd892d25db3bd94eb2914a423e5",
+      "layer": "P4 standard product delivery evidence; no product semantics changes",
+      "scope": "historical version declaration guard and obsolete provider shape assertion; missing formal acceptance evidence",
+      "evidence_root": ".runtime/fe-ux-entry-continuity-closeout-01/",
+      "provider_shapes": "Independent parent/frozen comparison: same original 2 tests / 1 failure; explicit empty top-level ops contract; test only correction, 2 tests PASS",
+      "merge_prepare": "Requested target absent; pr.merge.prep writes remote status and is outside authorization"
+    }
   }
 }

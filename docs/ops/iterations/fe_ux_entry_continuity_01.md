@@ -202,3 +202,11 @@ Owner 指示继续查找后，定位到 2026-10-19 08:47 原始本地执行记�
 完整 clean HEAD、tracked/untracked 指纹及交接状态写入 [本地冻结回执](../../../.runtime/fe-ux-entry-continuity-01/local-freeze-receipt.json) 和 [完整工作树指纹](../../../.runtime/fe-ux-entry-continuity-01/local-frozen-fingerprint.json)，以回执实际 SHA 为准，不将旧验证基线 SHA 当作冻结 SHA。忽略的 `.env.dev` 不在提交内容中，原始截图与网络证据继续存于既有运行目录。
 
 当前交接只到本地候选冻结及定向运行证据。未执行远端 CI、独立审查或对外发布，未声称具备正式合并/发布资格；Owner审阅后继续既有流程。未经单独批准不推送、更新PR、合并或部署。Daily 用户验收仍须在获准部署后执行。
+
+## FE-UX-ENTRY-CONTINUITY-CLOSEOUT-01
+
+原冻结候选 `4287100dc71c8cd892d25db3bd94eb2914a423e5` 及其失败回执保留。本批仅处理 P4 版本观测分类、失效测试预期与正式证据，不重开三个 UX 问题。
+
+版本守卫仅识别登记报告中绑定观测日期及源 SHA 的完整历史观测行；同文件中的当前发布声明、额外版本字面量及不匹配来源仍拒绝。历史页面版本与前端摘要保留。provider-shapes 经独立比较父提交与原候选，均为 2 tests / 1 failure；修正为顶层 ops 精确空结构、合成摘要禁止标志及单个 ops block 结构断言，2 tests PASS，不改生产逻辑。
+
+两项正式验收绑定独立受管 `sc_frontend_acceptance`，不能用 `sc_dev_demo` 定向旅程替代。最终结果与冻结身份记录在 `.runtime/fe-ux-entry-continuity-closeout-01/`，本文不预先宣布通过。仓库没有 `pr.merge.prepare`；`pr.merge.prep` 含远端状态写入，未获授权，不代执行。provider 原失败及正式门禁失败日志均保留。
