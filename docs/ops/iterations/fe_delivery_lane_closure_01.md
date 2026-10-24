@@ -61,3 +61,9 @@ The recorder permits a reviewed fingerprint-policy migration only when the
 suite inputs computed at the old and new heads are identical; evidence bytes are
 still revalidated and the previous digest is retained for audit. Unrelated Make
 or CI changes must no longer invalidate runtime evidence.
+
+The exact checkout also now consumes the same primary-worktree `.env.dev`
+authority exception already used by Quick, instead of requiring a copy of
+credentials inside each checkout. Because the shared acceptance profile
+resolver is an input to the list and relation suites, those two suites must run
+at the final policy head; presentation evidence remains reusable.

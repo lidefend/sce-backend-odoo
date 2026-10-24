@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -15,6 +16,32 @@ SAFE_TOKEN = re.compile(r"^[A-Za-z0-9_./:@^$-]+$")
 
 
 def _primary_worktree() -> Path:
+    exact_checkout = os.environ.get("SC_PR_MERGE_EXACT_CHECKOUT") == "1"
+    if exact_checkout:
+        raw_root = os.environ.get("SC_PR_MERGE_AUTHORITY_ROOT", "").strip()
+        if not raw_root:
+            raise ValueError("exact checkout acceptance authority root is missing")
+        authority = Path(raw_root)
+        if not authority.is_absolute():
+            raise ValueError("exact checkout acceptance authority root must be absolute")
+        authority = authority.resolve()
+        if authority.is_symlink() or not authority.is_dir():
+            raise ValueError("exact checkout acceptance authority root is invalid")
+        top = subprocess.run(
+            ["git", "-C", str(authority), "rev-parse", "--show-toplevel"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        common = subprocess.run(
+            ["git", "-C", str(authority), "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        if Path(top).resolve() != authority or Path(common).resolve().name != ".git":
+            raise ValueError("exact checkout acceptance authority root is not a primary worktree")
+        return authority
     common = subprocess.run(
         ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
         cwd=ROOT,
