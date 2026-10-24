@@ -93,6 +93,8 @@ LANES: dict[str, list[str]] = {
     "remote.standard_backend": ["test.unit", "test.contract", "test.e2e.preflight"],
     "remote.frontend.standard": ["verify.frontend.pr.unit"],
     "remote.frontend.full": ["verify.frontend.release.audit"],
+    "runtime.feedback.acceptance": ["acceptance.feedback.runtime.bundle"],
+    "deployment.postverify": ["acceptance.deployment.postverify.bundle"],
 }
 REMOTE_PREFIX = "remote."
 LOCAL_PREFIX = "local."

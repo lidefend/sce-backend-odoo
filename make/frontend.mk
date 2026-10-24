@@ -1221,6 +1221,7 @@ endef
 SC_ACCEPTANCE_CONTRACT_RECEIPT ?= artifacts/backend/dev_acceptance_release_probe.json
 SC_ACCEPTANCE_CONTRACT_DECLARATION ?= config/acceptance/backend_contract_instance_v1.json
 SC_ACCEPTANCE_REQUIRED_SHA ?= $(if $(ACCEPTANCE_TARGET_SHA),$(ACCEPTANCE_TARGET_SHA),$(shell git rev-parse HEAD))
+SC_ACCEPTANCE_RELATION_LOGIN ?= fixture_role_pm
 verify.frontend.list_surface_search_contract.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_list_surface_search_contract
 	@node scripts/verify/acceptance_contract_receipt_test.mjs
@@ -1229,7 +1230,7 @@ acceptance.runtime.contract_receipt: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-contract-prerequisite
 
 verify.frontend.relation_roundtrip.browser: guard.prod.forbid
-	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-relation-roundtrip-browser
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" SC_ACCEPTANCE_RELATION_LOGIN="$(SC_ACCEPTANCE_RELATION_LOGIN)" RELATION_RESOLUTION_KEY="$(or $(RELATION_RESOLUTION_KEY),project)" RELATION_FIELD="$(RELATION_FIELD)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-relation-roundtrip-browser
 
 verify.frontend.list_surface_structure.browser: guard.prod.forbid verify.frontend.list_surface_search_contract.unit
 	$(foreach key,$(SC_LIST_PREVIEW_URL_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),http://127.0.0.1:5180))
@@ -1490,3 +1491,9 @@ verify.frontend.company_project_refund.feedback.rt.browser: guard.prod.forbid
 	  FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:18081/t/demo}" \
 	  E2E_LOGIN="$${E2E_LOGIN:-wutao}" E2E_PASSWORD="$${E2E_PASSWORD:-123456}" \
 	  node frontend/apps/web/scripts/feedback_evaluation_rt_browser_test.mjs
+
+# Deterministic frontend node/feedback presentation checks belong to both
+# candidate frontend lanes and the local exact-head Quick dependency graph.
+verify.frontend.pr.unit: verify.frontend.feedback_evaluation.unit verify.frontend.node_component.unit verify.frontend.project_detail_summary.browser
+verify.frontend.release.unit: verify.frontend.feedback_evaluation.unit verify.frontend.node_component.unit verify.frontend.project_detail_summary.browser
+verify.contract_form_runtime_state.behavior: verify.frontend.feedback_evaluation.unit verify.frontend.node_component.unit verify.frontend.project_detail_summary.browser
