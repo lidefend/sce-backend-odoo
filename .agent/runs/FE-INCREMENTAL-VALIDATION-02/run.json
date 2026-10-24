@@ -1,0 +1,292 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "1ddade160d7759ebb2fcda03c162d42593461e45",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-INCREMENTAL-VALIDATION-01.yaml",
+    ".agent/goals/FE-INCREMENTAL-VALIDATION-02.yaml",
+    ".agent/runs/FE-INCREMENTAL-VALIDATION-01/run.json",
+    ".agent/runs/FE-INCREMENTAL-VALIDATION-02/run.json",
+    ".github/workflows/backend_test_suite.yml",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/fe_incremental_validation_01.md",
+    "docs/ops/iterations/fe_incremental_validation_02.md",
+    "make/ci.mk",
+    "make/dev.mk",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/backend_test_receipt.py",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/test_backend_suite_plan.py",
+    "scripts/ci/test_backend_test_receipt.py",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/test/test.sh",
+    "scripts/verify/backend_contract_fact_readback_probe.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_backend_contract_fact_readback_probe.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/ci/select_authoritative_workflow_run.py",
+    "scripts/ci/test_select_authoritative_workflow_run.py",
+    ".github/workflows/professional_quality_gate.yml",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/audit/verification_lane_exemptions.json",
+    "scripts/verify/registry.yaml"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "focused": {
+      "target": "verify.ci.workflow.contract",
+      "kind": "offline",
+      "inputs": [
+        ".github/workflows/backend_test_suite.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        "addons/smart_core/core/contract_lifecycle.py",
+        "config/ci/risk_tiering_v1.json",
+        "make/ci.mk",
+        "make/codex.mk",
+        "make/dev.mk",
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/backend_test_receipt.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/orm_result_guard.sh",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        "scripts/ci/test_backend_test_receipt.py",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/test/test.sh",
+        "scripts/verify/backend_contract_fact_readback_probe.py",
+        "scripts/verify/test_backend_contract_fact_readback_probe.py",
+        "scripts/ops/evidence_scope.py",
+        "scripts/ci/select_authoritative_workflow_run.py",
+        "scripts/ci/test_select_authoritative_workflow_run.py"
+      ]
+    },
+    "receipt": {
+      "target": "verify.ci.workflow.contract",
+      "kind": "offline",
+      "inputs": [
+        ".github/workflows/backend_test_suite.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        "addons/smart_core/core/contract_lifecycle.py",
+        "config/ci/risk_tiering_v1.json",
+        "make/ci.mk",
+        "make/codex.mk",
+        "make/dev.mk",
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/backend_test_receipt.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/orm_result_guard.sh",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        "scripts/ci/test_backend_test_receipt.py",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/test/test.sh",
+        "scripts/verify/backend_contract_fact_readback_probe.py",
+        "scripts/verify/test_backend_contract_fact_readback_probe.py",
+        "scripts/ops/evidence_scope.py",
+        "scripts/ci/select_authoritative_workflow_run.py",
+        "scripts/ci/test_select_authoritative_workflow_run.py"
+      ]
+    },
+    "local_routing": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/frontend_style_system_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "make_scope": {
+      "target": "verify.ci.orm_selection.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "config/ci/risk_tiering_v1.json",
+        "make/codex.mk",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/frontend_release_gate.yml",
+        ".github/workflows/backend_test_suite.yml"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Finalize clean candidate; managed non-force push PR 723; required remote CI, exact-head Quick and pr.merge.prepare; merge under latest Owner authorization and read back main. No deployment. New-format full baseline is expected from subsequent scheduled run, not fabricated today.",
+  "id": "FE-INCREMENTAL-VALIDATION-02",
+  "branch": "fix/fe-incremental-validation-01",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-INCREMENTAL-VALIDATION-02.yaml",
+  "record": "docs/ops/iterations/fe_incremental_validation_02.md",
+  "results": {
+    "mapping_regression": "88 checks passed through verify.ci.workflow.contract; 24 impact-plan tests including real JSON readers, deletion/rename, unknown fallback and scope negatives",
+    "mapping_scope": "Only statically provable test Path reads, not full product/runtime contract dependency closure",
+    "receipt_design": "docs/ops/iterations/fe_incremental_validation_02.md",
+    "runtime_contract_authority": "Actual published/effective contract plus role/config/readback required; source or default JSON equality alone cannot authorize REUSE",
+    "remote_writes": "none",
+    "backend_module_reexecution": 0,
+    "test_reuse_savings_seconds": 0,
+    "independent_review": "Latest scope binding/retry failure latch/platform archive negatives/timing reviewed, findings closed. Collection only; no reuse or remote readiness claim.",
+    "execution_observation": "Implemented local collection/integrity verifier/workflow artifact wiring; reuse_ready always false; 106 focused checks passed including 18 receipt tests",
+    "guard_registry": "24 tests and registry audit passed without registry changes",
+    "prior_focused_receipt": "Historical 88-check receipt stale after changed inputs; superseded by current receipt check (same Make target, full union dependencies, 106 passed).",
+    "fact_binding": "Existing lifecycle payload consistency implemented and tested; authoritative same-runtime structural/business fact/query readback remains missing.",
+    "origin_verifier": "114 focused tests passed; actual historical run metadata GET succeeded; new artifact positive not run; run/artifact origin distinct from unverified artifact-attempt attribution.",
+    "readback_tool_tests": "121 focused checks passed including 7 capture/permission/target tests; registry 24 + audit passed",
+    "value_parity": "126 focused checks passed; actual local read-only record payment.request(3): 18 direct scalar fields equal across source/projection/facts, 0 mismatches, 77 explicitly uncovered. Full parity/reuse false.",
+    "ci_input_inventory": "132 focused checks passed; existing suite plan adds optional exact-tree known-input inventory and artifact retention without altering selection/shards.",
+    "pr722_readiness": "14 original targets preserved, 1875 known files; known inputs equal to previous459 for all14; 13 targets have unresolved reads in declared closure; reusable0, no tests dispatched.",
+    "collection_candidate": "139 focused checks passed; exact scope-plan binding, per-attempt redacted failure retention, non-overridable evidence failure, integer pipeline timing excludes archive overhead.",
+    "local_iteration": "ci.local.iteration PASS L1 only, candidate-iteration-final.log; not Quick or frozen delivery evidence.",
+    "freeze_preparation": "ci.delivery.freeze.prepare PASS; freeze-prepare.log. Four generated reports refreshed by existing entry; no product/test implementation changes. Final clean commit and Quick pending.",
+    "first_frozen_candidate": "34843e21a2bae09c1a1a78a6b583a4b30d2da204 tree0d5483be9dade4972e38f0965d515edf1f1a5eff independently reviewed; Quick FAIL GA020 direct PIPESTATUS capture requirement. Original frozen-quick.log/identity preserved; no receipt issued.",
+    "ga020_recovery": "PASS make verify.github_actions.security verify.ci.workflow.contract (18 security + 139 workflow tests); ga020-targeted.log. Same-statement process/tee capture independently reviewed; security guard unchanged.",
+    "full_quick_cancelled": "9ceac3b22 full Quick cancelled after owner scope correction; no receipt/pass. Original final-quick.log and final-identity.json retained. Premature final-delivery lane selection is not a backend product failure.",
+    "local_routing": "PASS 39 pure-Python planner tests in 0.640s; routing-recovery-test.log and governed receipt. Per-path fallback preserves mixed frontend impact; pure backend selects tools only. Independent code review no blocking finding.",
+    "remote_classification_limit": "Bounded backend-only Make recipe classification implemented locally; only exact Git proof removes make/ci.mk frontend-full trigger. Wider changes remain full. Not published or executed remotely.",
+    "routing_failed_fixture": "routing-final-test.log retained: test used a registered UI path as unknown. Incorrect initial passed record corrected to failed through existing entry (routing-correction-record.log); fixture path fixed, fresh run passed. No assertion weakened.",
+    "scope_closeout": "Local routing batch closed only. No remote classifier policy change: full PR inherits frontend decision-authority/entry changes from 1ddade160; current collection delta is not the complete PR scope. No full Quick/frontend product execution.",
+    "make_recipe_scope": "PASS verify.ci.orm_selection.unit:34 classifier +17 workflow tests; make-scope-bytes-tests.log. Exact SHA/merge-base ordinary blob comparison only erases literal Python lines inside unchanged backend target; other bytes unchanged. HIGH_RISK/professional full retained. Independent S2 newline normalization finding fixed using strict byte decode and CRLF/CR negatives; review closed.",
+    "job_observation": {
+      "status": "passed_scoped_tests_and_live_readonly_collection",
+      "evidence": ".runtime/fe-incremental-validation-02/job-observation-validation.json",
+      "formal_quick_receipt": false
+    },
+    "workflow_identity_observation": {
+      "status": "passed_scoped_tests_and_legacy_integrity",
+      "evidence": ".runtime/fe-incremental-validation-02/workflow-identity-validation.json",
+      "test_count": 46,
+      "actual_ci_capture": "not_run_unpublished",
+      "quick_receipt": false
+    },
+    "collector_checkpoint": {
+      "status": "local_checkpoint_prepared_not_delivery_freeze",
+      "scope": "four reviewed collector/test/run/iteration files",
+      "test_evidence": ".runtime/fe-incremental-validation-02/workflow-identity-validation.json",
+      "next_identity_evidence": ".runtime/fe-incremental-validation-02/collector-checkpoint.json"
+    },
+    "collector_environment_boundary": {
+      "status": "archived_diagnostic_not_delivery_code",
+      "evidence": ".runtime/fe-incremental-validation-02/collector-entrypoint-validation.json",
+      "test_count": 38,
+      "archive": ".runtime/fe-incremental-validation-02/collector-entrypoint-archive.json"
+    },
+    "closeout": {
+      "verdict": "BLOCKED",
+      "independent_review": "collection implementation accepted; historical Quick/reuse evidence insufficient",
+      "collection_local": "PASS",
+      "incremental_reuse_goal": "NOT_ACHIEVED",
+      "quick": "BLOCKED",
+      "backend_reuse": "BLOCKED",
+      "actual_test_reuse_savings_seconds": 0,
+      "diagnostic_code": "archived_and_withdrawn_from_candidate",
+      "final_package": ".runtime/fe-incremental-validation-02/closeout-package.json"
+    },
+    "remote_target_history": {
+      "status": "passed_shadow_comparison_only",
+      "evidence": ".runtime/fe-incremental-validation-02/remote-target-history-validation.json",
+      "test_count": 24
+    },
+    "scope_correction": {
+      "authority": "Owner clarified remote subsequent runs reuse earlier successful validation; not local Quick consumption; not main-only",
+      "local_quick_baseline_proposal": "withdrawn",
+      "prior_closeout": "historical_local_lane_only_not_current_remote_reuse_objective"
+    },
+    "remote_history_closeout": {
+      "status": "scoped_implementation_reviewed; overall_reuse_not_achieved",
+      "evidence": ".runtime/fe-incremental-validation-02/remote-history-closeout.json",
+      "test_count": 89,
+      "live_origins_verified": 14,
+      "scheduled_full_backend_tests": 672,
+      "scheduled_frontend_pages_passed": 32,
+      "remote_reuse_enabled": false,
+      "actual_test_reuse_savings_seconds": 0
+    },
+    "pip_download_cache": {
+      "status": "implemented_and_scoped_checks_pass; remote_cache_hit_not_verified",
+      "evidence": ".runtime/fe-incremental-validation-02/pip-cache-closeout.json",
+      "test_count": 30,
+      "uid_lifecycle": "PASS",
+      "test_reuse_enabled": false,
+      "independent_review": "PASS; cross-UID S2 closed; actual remote cache hit not verified"
+    },
+    "today_closeout": {
+      "local_changes": "reviewed scoped changes saved as local checkpoint; not delivery freeze",
+      "incremental_validation_goal": "NOT_ACHIEVED",
+      "remote_reuse_savings_seconds": 0,
+      "pip_cache_savings_seconds": null,
+      "preserved_remote_head": "e28b59911ea2fb66f1f9cdad54754e72ef0486c2",
+      "no_frontend_or_orm_rerun": true,
+      "superseded_by": "isolated_mechanism_closeout"
+    },
+    "isolated_mechanism_closeout": {
+      "status": "local_mechanism_and_fault_tests_passed; remote_integration_in_progress",
+      "evidence": ".runtime/fe-incremental-validation-02/isolated-mechanism-closeout.json",
+      "tool_tests": 120,
+      "actual_isolated_tests": 71,
+      "skipped": 0,
+      "original_test_ids_match": true,
+      "orm_reuse_enabled": false,
+      "remote_baseline": "expected first scheduled full run after merge"
+    },
+    "authorization": {
+      "remote_push": true,
+      "pr_update": true,
+      "protected_merge": true,
+      "deployment": false,
+      "source": "Owner: 把今天的改动都收口进入主线，结束今天的工作了"
+    },
+    "lane_closeout": {
+      "failure_head": "786cc606af9ade97634ab77f0eb07b5e28300444",
+      "plan": "retire unused one-off Make wrapper; remove two stale registrations; baseline and assertions unchanged",
+      "probe_script_and_original_evidence": "preserved"
+    }
+  },
+  "runtime_diagnostics": {
+    "purpose": "collector mechanism only; excluded from reusable offline check receipts",
+    "environment": "sc-local-dev/sc_dev_demo",
+    "entry": "local.dev.runtime.contract_fact_readback.probe",
+    "result": "passed",
+    "count": 1,
+    "identity": ".runtime/fe-incremental-validation-02/readback-identity.json",
+    "readback": ".runtime/fe-incremental-validation-02/readback-runtime.json",
+    "prior_failed_logs": [
+      ".runtime/fe-incremental-validation-02/readback-runtime.log",
+      ".runtime/fe-incremental-validation-02/readback-runtime-reviewed.log"
+    ],
+    "reuse_ready": false,
+    "latest_value_parity": {
+      "entry": "local.dev.runtime.contract_fact_readback.probe",
+      "result": "passed_for_declared_scalar_subset",
+      "readback": ".runtime/fe-incremental-validation-02/parity-runtime.json",
+      "identity": ".runtime/fe-incremental-validation-02/parity-identity.json",
+      "checked_fields": 18,
+      "mismatch_fields": 0,
+      "uncovered_fields": 77,
+      "reuse_ready": false
+    }
+  },
+  "review_package": {
+    "artifact": ".runtime/fe-incremental-validation-02/candidate-review.json",
+    "stage": "uncommitted_review_candidate",
+    "frozen": false,
+    "remote_updates_authorized": false
+  }
+}

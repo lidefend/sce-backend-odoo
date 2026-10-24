@@ -17,6 +17,26 @@ DERIVED_VERSION_OBSERVATIONS = {
     ),
 }
 
+# Historical runtime observations are evidence, not release declarations.
+# Only this registered report and a complete provenance-bearing line qualify;
+# all other occurrences (including elsewhere in the same report) remain checked.
+HISTORICAL_VERSION_REPORT = Path("docs/ops/iterations/fe_ux_walkthrough_01/journeys.md")
+HISTORICAL_VERSION_LINE = re.compile(
+    r"- 历史运行观测（非当前发布声明）：observed_at=2026-10-24; "
+    r"source_sha=96c860d0fb041c556b687afaad6dc689528785e5; "
+    r"page_version=`1\.0\.0-rc\.20`。"
+)
+
+
+def has_release_version_duplicate(relative: Path, content: str, version: str) -> bool:
+    token = version_token_pattern(version)
+    for line in content.splitlines():
+        if relative == HISTORICAL_VERSION_REPORT and HISTORICAL_VERSION_LINE.fullmatch(line):
+            continue
+        if token.search(line):
+            return True
+    return False
+
 
 def load(name: str, path: Path):
     spec = importlib.util.spec_from_file_location(name, path)
@@ -103,7 +123,7 @@ def main() -> int:
             content = path.read_text(encoding="utf-8")
         except (OSError, UnicodeError):
             continue
-        if version_token.search(content):
+        if has_release_version_duplicate(path.relative_to(ROOT), content, version):
             duplicates.append(str(path.relative_to(ROOT)))
     if duplicates:
         errors.append(f"product version duplicated outside VERSION: {duplicates}")

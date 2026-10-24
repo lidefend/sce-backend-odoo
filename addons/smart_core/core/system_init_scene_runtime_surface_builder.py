@@ -210,6 +210,16 @@ class SystemInitSceneRuntimeSurfaceBuilder:
             if isinstance(data.get("nav_meta"), dict):
                 data["nav_meta"]["scene_ready_mode"] = "registry"
         else:
+            # A route hydration requests one effective scene, not every page's
+            # full asset graph. Keep the remaining authorized registry entries
+            # so the SPA can still discover and hydrate subsequent routes.
+            registry_rows = []
+            if requested_scene_key:
+                registry_rows = _build_scene_ready_registry_contract(scene_ready_input)["scenes"]
+                scene_ready_input = [
+                    row for row in scene_ready_input
+                    if str(row.get("code") or row.get("key") or "").strip() == requested_scene_key
+                ]
             bind_result = surface_ctx.bind_scene_assets_fn(
                 env,
                 scenes=scene_ready_input,
@@ -233,9 +243,18 @@ class SystemInitSceneRuntimeSurfaceBuilder:
                     "company_id": env.company.id if env.company else None,
                 },
             )
+            if requested_scene_key:
+                ready = data["scene_ready_contract"]
+                detailed = ready.get("scenes") or []
+                ready["scenes"] = detailed + [
+                    row for row in registry_rows
+                    if row.get("scene", {}).get("key") != requested_scene_key
+                ]
+                ready.setdefault("meta", {})["scene_count"] = len(ready["scenes"])
+                ready["active_scene_key"] = requested_scene_key
             default_route = data.get("default_route") if isinstance(data.get("default_route"), dict) else {}
             active_scene_key = str(
-                default_route.get("scene_key") or role_surface.get("landing_scene_key") or ""
+                requested_scene_key or default_route.get("scene_key") or role_surface.get("landing_scene_key") or ""
             ).strip()
             data = apply_system_init_scene_runtime_semantic_bridge(data, active_scene_key=active_scene_key)
 

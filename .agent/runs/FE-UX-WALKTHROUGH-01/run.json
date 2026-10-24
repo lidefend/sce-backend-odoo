@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "id": "FE-UX-WALKTHROUGH-01",
+  "branch": "fix/daily-acceptance-tool-closure-20261024",
+  "status": "completed",
+  "baseline_sha": "55896e6edcd5a5ef078406d31d5c109388dff39f",
+  "goal": ".agent/goals/FE-UX-WALKTHROUGH-01.yaml",
+  "record": "docs/ops/iterations/fe_ux_walkthrough_01/journeys.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-UX-WALKTHROUGH-01.yaml",
+    ".agent/runs/FE-UX-WALKTHROUGH-01/run.json",
+    "docs/ops/iterations/fe_ux_walkthrough_01/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing daily demo /t/demo sc_demo and platform-control sc_platform_control; reuse recorded 96c860d0fb041c556b687afaad6dc689528785e5 identity and prior dual-duty evidence. Read-only browser observations."
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Walkthrough complete. Stop. Next implementation requires a separate task for FE-UX-ENTRY-CONTINUITY-01; no product code, deployment or business-data changes in this run.",
+  "observations": {
+    "reused_dual_duty": ".runtime/final-acceptance/daily-deployed/entry-verify-tool-closure.json",
+    "reused_roles": ".runtime/final-acceptance/fe-daily-closeout/role-http-observation.json",
+    "role_entry": {
+      "status": "passed",
+      "cases": 5,
+      "evidence": ".runtime/fe-ux-walkthrough-01/role-entry/backend/user_entry_delivery_browser_acceptance.json",
+      "limits": "Four accounts and one my-work route. Not all role matrix, business handling or UX acceptance."
+    },
+    "manual_browser": ".runtime/fe-ux-walkthrough-01/observations.json",
+    "dependency_restore": {
+      "status": "passed",
+      "command": "make fe.install.cached",
+      "mode": "offline frozen ignore-scripts"
+    },
+    "deliverables": [
+      "docs/ops/iterations/fe_ux_walkthrough_01/journeys.md",
+      "docs/ops/iterations/fe_ux_walkthrough_01/evidence.md",
+      "docs/ops/iterations/fe_ux_walkthrough_01/priorities.md",
+      "docs/ops/iterations/fe_ux_walkthrough_01/next-topic.md"
+    ],
+    "walkthrough": {
+      "status": "completed",
+      "roles": 5,
+      "page_observations": 62,
+      "issues": 8,
+      "product_acceptance": "not_passed_overall",
+      "business_write_actions": 0
+    }
+  }
+}

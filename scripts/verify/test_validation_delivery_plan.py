@@ -89,6 +89,24 @@ class DeliveryStageTests(unittest.TestCase):
 
 
 class PrIdentityTests(unittest.TestCase):
+    def test_prepare_plan_only_composes_existing_readonly_gates(self):
+        environment = {k: v for k, v in os.environ.items()
+                       if k not in {'MAKEFLAGS', 'MFLAGS', 'MAKEOVERRIDES', 'MAKEFILES', 'PROD_DANGER'}}
+        environment['ENV'] = 'dev'
+        result = subprocess.run(
+            ['make', '--no-print-directory', '-n', 'pr.merge.prepare', 'PR=7',
+             'EXPECTED_HEAD=' + 'a' * 40], cwd=delivery.ROOT, env=environment,
+            text=True, capture_output=True, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        commands = [line for line in result.stdout.splitlines() if line.startswith('python3 ')]
+        self.assertEqual(len(commands), 3, result.stdout)
+        self.assertIn('validation_delivery_plan.py --pr "7"', commands[0])
+        self.assertIn('--require-ready', commands[0])
+        self.assertIn('local_quick_evidence.py verify --expected-head "' + 'a' * 40 + '"', commands[1])
+        self.assertIn('integration_cycle.py merge-readiness --pr "7"', commands[2])
+        for forbidden in ('gh api', 'gh pr merge', 'pr.merge.prep', '--allow-no-quick', '--apply'):
+            self.assertNotIn(forbidden, result.stdout)
+
     def test_governance_suite_executes_delivery_tests(self):
         text = (delivery.ROOT / 'make/ci.mk').read_text()
         start = text.index('verify.contract.architecture.suite:')

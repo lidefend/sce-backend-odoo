@@ -103,7 +103,21 @@ class TestWorkspaceHomeProviderShapes(unittest.TestCase):
         self.assertIn("progress", metrics[0])
 
         ops = payload.get("ops") or {}
-        self.assertTrue(str(ops.get("summary") or "").strip())
+        # The legacy top-level slot is deliberately empty: startup projection
+        # must not present synthetic operations as authoritative business facts.
+        self.assertEqual(ops, {
+            "bars": {}, "kpi": {}, "summary": "", "tone": "",
+            "progress": "", "data_state": "",
+        })
+        self.assertFalse(payload["diagnostics"]["strict_fact_surface"]["synthetic_ops_visible"])
+        ops_blocks = [row for row in payload["blocks"] if row.get("key") == "workspace.ops"]
+        self.assertEqual(len(ops_blocks), 1)
+        self.assertEqual(ops_blocks[0]["type"], "ops")
+        self.assertIsInstance(ops_blocks[0]["data"]["bars"], dict)
+        self.assertEqual(set(ops_blocks[0]["data"]["bars"]), {"contract", "output"})
+        self.assertEqual(set(ops_blocks[0]["data"]["kpi"]), {"cost_rate", "payment_rate"})
+        for values in ops_blocks[0]["data"].values():
+            self.assertTrue(all(isinstance(value, int) for value in values.values()))
 
         risk = payload.get("risk") or {}
         actions = risk.get("actions") or []

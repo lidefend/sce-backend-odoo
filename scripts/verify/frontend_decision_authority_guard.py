@@ -15,7 +15,8 @@ It fails when:
 * a ledger row cites an evidence file that no longer exists;
 * the committed ledger
   (``docs/frontend_productization/decision-authority-inventory-v1.json``) is out
-  of sync with the live scan in either direction.
+  semantically out of sync with the live scan in either direction. Valid row
+  line-number drift is advisory only; diagnostics report current locations.
 
 It is read-only: it never edits product code or the ledger.
 """
@@ -50,6 +51,8 @@ def main() -> int:
         f"unclassified={summary['unclassified']}"
     )
     print(f"[frontend.decision_authority.guard] ledger: {INVENTORY_PATH}")
+    for advisory in result["advisories"]:
+        print(f"[INFO] {advisory}")
 
     for failure in result["failures"]:
         print(f"[FAIL] {failure}")

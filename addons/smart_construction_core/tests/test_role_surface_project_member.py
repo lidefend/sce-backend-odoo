@@ -74,6 +74,48 @@ class TestProjectMemberRoleSurface(TransactionCase):
         })
         return f"smart_construction_core.{name}"
 
+    def test_project_contract_entry_keeps_project_domain_and_acl(self):
+        from odoo.exceptions import AccessError
+        project = self.env["project.project"].create({"name": "Entry continuity project", "code": "ENTRY-CONTINUITY"})
+        action_id = self.env["ir.actions.act_window"].create({
+            "name": "Scoped contract read", "res_model": "construction.contract", "view_mode": "tree,form",
+            "domain": "[('state', '=', 'draft')]", "context": "{'search_default_group_by_project': 1}",
+        }).id
+        entry = {"model": "construction.contract", "allowed_operation": "read", "action_id": action_id}
+        authority_path = "odoo.addons.smart_construction_core.models.core.project_project_financial.build_runtime_route_authority"
+        with mock.patch(authority_path, return_value={"contextual_actions": [entry]}):
+            action = project.action_open_project_contracts()
+            self.assertEqual(action["res_model"], "construction.contract")
+            from odoo.osv import expression
+            self.assertEqual(expression.normalize_domain(action["domain"]),
+                             expression.normalize_domain([('state', '=', 'draft'), ('project_id', '=', project.id)]))
+            self.assertEqual(action["context"]["default_project_id"], project.id)
+            self.assertEqual(action["context"]["search_default_group_by_project"], 1)
+            project._compute_project_contract_entry_available()
+            self.assertTrue(project.sc_project_contract_entry_available)
+        for authority in ({}, {"primary_actions": [dict(entry, model="construction.contract.income")]},
+                          {"contextual_actions": [dict(entry, context_requirements={"required_query": ["contract_id"]})]}):
+            with mock.patch(authority_path, return_value=authority):
+                self.assertIsNone(project._project_contract_entry())
+                project._compute_project_contract_entry_available()
+                self.assertFalse(project.sc_project_contract_entry_available)
+                with self.assertRaises(AccessError):
+                    project.action_open_project_contracts()
+        # Backend remains the authority even when a caller invokes the method directly.
+        denied = self.env["res.users"].create({"name": "Entry no contract access", "login": "entry_no_contract_access",
+            "groups_id": [(6, 0, [self.env.ref("base.group_user").id])]})
+        with self.assertRaises(AccessError):
+            project.with_user(denied).action_open_project_contracts()
+
+    def test_risk_card_targets_the_readable_source_record(self):
+        from odoo.addons.smart_construction_core.core_extension_system_init_rows import build_risk_action_rows
+        project = self.env["project.project"].create({"name": "Entry risk project", "code": "ENTRY-RISK"})
+        risk = self.env["project.risk.action"].create({"name": "Entry risk", "project_id": project.id, "state": "open"})
+        row = next(row for row in build_risk_action_rows(self.env) if row.get("risk_action_id") == risk.id)
+        self.assertEqual(row["path"], f"/r/project.risk.action/{risk.id}")
+        self.assertEqual(row["model"], "project.risk.action")
+        self.assertEqual(row["record_id"], risk.id)
+
     def test_role_matrix_uses_authoritative_groups(self):
         resolver = self._resolver()
         matrix = {

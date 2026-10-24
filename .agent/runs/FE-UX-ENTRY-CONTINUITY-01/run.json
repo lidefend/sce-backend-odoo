@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "id": "FE-UX-ENTRY-CONTINUITY-01",
+  "branch": "fix/fe-ux-entry-continuity-01",
+  "status": "verification_pending",
+  "baseline_sha": "55896e6edcd5a5ef078406d31d5c109388dff39f",
+  "goal": ".agent/goals/FE-UX-ENTRY-CONTINUITY-01.yaml",
+  "record": "docs/ops/iterations/fe_ux_entry_continuity_01.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-UX-ENTRY-CONTINUITY-01.yaml",
+    ".agent/runs/FE-UX-ENTRY-CONTINUITY-01/run.json",
+    "docs/ops/iterations/fe_ux_entry_continuity_01.md",
+    ".agent/goals/FE-UX-WALKTHROUGH-01.yaml",
+    ".agent/runs/FE-UX-WALKTHROUGH-01/",
+    "docs/ops/iterations/fe_ux_walkthrough_01/",
+    "addons/smart_construction_core/core_extension_system_init_rows.py",
+    "addons/smart_construction_core/models/core/project_project_financial.py",
+    "addons/smart_construction_core/views/core/project_overview_views.xml",
+    "addons/smart_construction_core/services/payment_request_work_item_service.py",
+    "addons/smart_construction_core/tests/test_payment_request_work_item_service.py",
+    "addons/smart_construction_core/tests/test_role_surface_project_member.py",
+    "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
+    "addons/smart_core/tests/test_system_init_scene_runtime_surface_builder.py",
+    "frontend/apps/web/src/views/SceneView.vue",
+    "frontend/apps/web/src/app/sceneHydration.ts",
+    "frontend/apps/web/scripts/scene_entry_contract_test.ts",
+    "docs/architecture/frontend_contract_basis_ledger.json",
+    "frontend/apps/web/src/api/intents.ts",
+    "addons/smart_construction_core/views/core/project_project_financial_views.xml",
+    "addons/smart_core/core/workspace_home_contract_builder.py",
+    "addons/smart_core/tests/test_workspace_home_contract_builder_semantics.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/github_remote_execution_plan.md",
+    "docs/engineering_convergence/github_remote_execute.sh",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "scripts/verify/product_release_version_guard.py",
+    "scripts/release/test_product_release.py",
+    "addons/smart_core/tests/test_workspace_home_provider_shapes.py",
+    "scripts/verify/registry.yaml",
+    "make/codex.mk",
+    "scripts/verify/test_validation_delivery_plan.py",
+    "docs/frontend_productization/decision-authority-inventory-v1.json"
+  ],
+  "preserved_preexisting": [
+    ".agent/goals/FE-UX-WALKTHROUGH-01.yaml",
+    ".agent/runs/FE-UX-WALKTHROUGH-01/",
+    "docs/ops/iterations/fe_ux_walkthrough_01/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Read-only declared daily demo sc_demo; no daily writes. Isolated candidate uses existing local.dev only after diagnosis."
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Verify minimal CI-generated-evidence correction, update same PR through non-force governed push, bind new remote CI and read-only prepare; do not merge/deploy.",
+  "observations": {
+    "responsibility": {
+      "UX-01": "P1 factual risk record declaration + P0 home projection preserves declared target",
+      "UX-02": "P1 unpublished project-contract entry availability; no authority expansion",
+      "UX-03": "P0 targeted scene hydration/lifecycle and P1 published payment shortcut"
+    },
+    "validation": {
+      "L1": "PASS ci.local.iteration",
+      "scene_entry": "PASS 80 TS assertions, 29 mocked SFC checks, 29 Python tests",
+      "intent_identity_coalescing": "PASS",
+      "strict_typecheck_and_scoped_lint": "PASS",
+      "model_declaration": "PASS 6 tests, zero duplicates",
+      "ORM_browser": "ORM 15 PASS; scoped current-published browser journeys UX-01/02/03 PASS with documented coverage limits"
+    },
+    "evidence_root": ".runtime/fe-ux-entry-continuity-01/",
+    "delivery": "Local commit/freeze receipt: .runtime/fe-ux-entry-continuity-01/local-freeze-receipt.json; no push/PR update/merge/deploy; independent review and remote CI not claimed",
+    "runtime_followup": {
+      "id": "FE-UX-ENTRY-CONTINUITY-01-RT",
+      "layer": "P4 environment recovery and scoped runtime verification only",
+      "recovery": ".runtime/fe-ux-entry-continuity-01/rt-environment-recovery.json",
+      "product_changes_allowed": "only if actual scoped runtime defect is proven",
+      "local_dev_ready": "PASS",
+      "local_dev_health": "PASS local.dev.health and local.dev.entry_identity.verify; current readback in rt-state-reconciliation-health.log",
+      "configuration_recovery": "PASS archived file provenance/hash/uid/mode; later demo-password preparation recorded",
+      "ORM": "PASS 15 tests, 0 failures, 0 errors",
+      "frontend_build": "PASS; runtime mount recreated via local.dev.up",
+      "result": ".runtime/fe-ux-entry-continuity-01/rt-final-results.json",
+      "product_code_changes": "Only P0 risk projection after actual browser FAIL; no unrelated changes",
+      "entry_authority_recovered": "Original successful local.dev config write 2026-10-19 found; values restored without using daily configuration",
+      "UX-01": "PASS after evidence-bound P0 projection correction",
+      "generated_evidence": "PASS ci.generated_evidence.preflight; only derived inventory refresh",
+      "environment": "RESTORED and PASS local.dev health/entry identity",
+      "UX-02": "PASS applicable current publication behavior; enabled all-contract project button branch ORM only",
+      "UX-03": "PASS normal/slow/timeout/failure/denied/retry/return",
+      "candidate_identity": ".runtime/fe-ux-entry-continuity-01/rt-reviewed-candidate-identity.json",
+      "baseline_failure": "provider_shapes ops.summary assertion reproduces on HEAD; disclosed and excluded from scoped repair",
+      "module_upgrade": "PASS original tool session 39942 exit0; both modules installed, both effective native views contain availability field and guarded navigation method",
+      "state_reconciliation": ".runtime/fe-ux-entry-continuity-01/rt-state-reconciliation.json"
+    },
+    "freeze_prepare": {
+      "status": "PASS",
+      "evidence": ".runtime/fe-ux-entry-continuity-01/freeze-prepare-reconciled.log"
+    },
+    "preserved_walkthrough_commit": "2ac16cd94 (six pre-existing walkthrough documents tracked without content changes)",
+    "closeout": {
+      "id": "FE-UX-ENTRY-CONTINUITY-CLOSEOUT-01",
+      "protected_candidate": "4287100dc71c8cd892d25db3bd94eb2914a423e5",
+      "layer": "P4 standard product delivery evidence; no product semantics changes",
+      "scope": "historical version declaration guard and obsolete provider shape assertion; missing formal acceptance evidence",
+      "evidence_root": ".runtime/fe-ux-entry-continuity-closeout-01/",
+      "provider_shapes": "Independent parent/frozen comparison: same original 2 tests / 1 failure; explicit empty top-level ops contract; test only correction, 2 tests PASS",
+      "merge_prepare": "Requested target absent; pr.merge.prep writes remote status and is outside authorization"
+    },
+    "final_gates": {
+      "protected_candidate": "6b03528d9e9dd428925ca7d06e96559c740692d3",
+      "layer": "P4 standard delivery entry and registry only",
+      "scope": "one stale orphan entry; read-only prepare mapping over existing identity/evidence/Quick/PR-readiness checks",
+      "evidence_root": ".runtime/fe-ux-entry-continuity-final-gates-01/",
+      "runtime_policy": "reuse accepted list/relation evidence only through controller; no UX reruns",
+      "remote_writes": "not authorized"
+    },
+    "remote_integration": {
+      "task": "FE-UX-ENTRY-CONTINUITY-REMOTE-INTEGRATION-01",
+      "authorized": "non-force push and PR/CI/read-only preparation; no merge or deploy",
+      "PR": 722,
+      "initial_head": "459e4f133056fadbefd46451ae9190a9f91e314d",
+      "CI_failure": "frontend decision authority committed inventory stale; four SceneView line-location groups only, no classification/semantic/count changes",
+      "remediation": "existing governed inventory export and targeted tests; retain original remote failure logs",
+      "evidence_root": ".runtime/fe-ux-entry-continuity-remote-integration-01/"
+    }
+  }
+}

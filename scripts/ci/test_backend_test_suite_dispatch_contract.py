@@ -1,4 +1,7 @@
 import re
+import os
+import subprocess
+import tempfile
 from pathlib import Path
 import unittest
 import yaml
@@ -40,6 +43,74 @@ class BackendTestSuiteDispatchContractTest(unittest.TestCase):
         self.assertIn('FRONTEND_DIST_DIR=', build['run'])
         for name in ('Build images and start database', 'Run backend test suite per module'):
             self.assertNotIn('if', steps[name])
+
+    def test_pip_download_cache_reaches_test_container_without_caching_results(self):
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+        suite = workflow['jobs']['backend_suite']
+        steps = {s['name']: s for s in suite['steps']}
+        cache = steps['Restore backend test pip downloads']['with']
+        for name in ('Prepare isolated pip download cache','Run backend test suite per module','Return pip cache ownership to runner'):
+            self.assertEqual(steps[name]['env']['SC_TEST_PIP_CACHE_HOST'], cache['path'])
+        # GitHub evaluates job env before a runner exists; YAML parsing alone
+        # cannot detect this server-side expression error.
+        for job in workflow['jobs'].values():
+            for value in job.get('env', {}).values():
+                self.assertNotRegex(str(value), r'\$\{\{[^}]*\brunner\.')
+        for dependency in ('Dockerfile', 'requirements-odoo.txt', 'config/requirements-test.txt'):
+            self.assertIn(dependency, cache['key'])
+        script = (ROOT / 'scripts/test/test.sh').read_text()
+        self.assertIn('"${RECEIPT_ARGS[@]}" "${PIP_CACHE_ARGS[@]}"', script)
+        self.assertIn('pip3 install -q -r ${CONFIG_MOUNT_CONT}/requirements-test.txt', script)
+        self.assertNotIn('if', steps['Run backend test suite per module'])
+        fragment = script.split('PIP_CACHE_ARGS=()', 1)[1].split('RUN_RM=', 1)[0]
+        with tempfile.TemporaryDirectory(prefix='pip cache ') as folder:
+            cases = [(None, 0), (folder, 0), ('relative', 2), ('/', 2),
+                     (folder + ':other', 2), (folder + '/missing', 2), (folder + '\n', 2)]
+            for value, code in cases:
+                with self.subTest(value=value):
+                    env = dict(os.environ)
+                    env.pop('SC_TEST_PIP_CACHE_HOST', None)
+                    if value is not None:
+                        env['SC_TEST_PIP_CACHE_HOST'] = value
+                    result = subprocess.run(['bash', '-eu', '-c',
+                        'PIP_CACHE_ARGS=()\n' + fragment +
+                        'printf "<%s>\\n" "${PIP_CACHE_ARGS[@]}"'],
+                        env=env, text=True, capture_output=True)
+                    self.assertEqual(code, result.returncode, result.stderr)
+                    if value == folder:
+                        self.assertEqual(['<-v>', '<' + folder + ':/tmp/sc-test-pip-cache>',
+                            '<-e>', '<PIP_CACHE_DIR=/tmp/sc-test-pip-cache>'], result.stdout.splitlines())
+                    elif value is None:
+                        self.assertNotIn('/tmp/sc-test-pip-cache', result.stdout)
+
+    def test_pip_cache_ownership_is_restored_even_after_failed_tests(self):
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+        steps = {s['name']: s for s in workflow['jobs']['backend_suite']['steps']}
+        restore = steps['Return pip cache ownership to runner']
+        self.assertEqual('always()', restore['if'])
+        for name in ('Prepare isolated pip download cache', 'Return pip cache ownership to runner'):
+            command = steps[name]['run']
+            self.assertIn('test "${SC_TEST_PIP_CACHE_HOST}" = "${RUNNER_TEMP}/backend-test-pip-cache"', command)
+            self.assertIn('test ! -L "${SC_TEST_PIP_CACHE_HOST}"', command)
+            self.assertIn('sudo chown -R -- "$(id -u):$(id -g)" "${SC_TEST_PIP_CACHE_HOST}"', command)
+        names = list(steps)
+        self.assertLess(names.index('Run backend test suite per module'), names.index('Return pip cache ownership to runner'))
+        self.assertLess(names.index('Return pip cache ownership to runner'), names.index('Cleanup'))
+
+    def test_scheduled_baseline_is_full_and_reuse_is_explicitly_accounted(self):
+        workflow=yaml.safe_load((ROOT/'.github/workflows/backend_test_suite.yml').read_text())
+        suite=workflow['jobs']['backend_suite']
+        self.assertEqual('1',suite['env']['SC_BACKEND_ISOLATED_PYTHON'])
+        step=next(s for s in suite['steps'] if s['name']=='Run backend test suite per module')
+        body=step['run']
+        self.assertIn('if [ "${GITHUB_EVENT_NAME}" != pull_request ]; then',body)
+        self.assertIn('full_args=(--force-full)',body)
+        self.assertIn('isolated-python',body)
+        self.assertIn('"$((attempted + reused))" -ne "${planned_total}"',body)
+        self.assertIn('attempted=$((attempted - 1))',body)
+        self.assertIn('reused=$((reused + 1))',body)
+        self.assertEqual('${{ github.token }}',step['env']['GH_TOKEN'])
+        self.assertEqual('read',workflow['permissions']['actions'])
 
     def test_frontend_fingerprint_uses_dedicated_builder_stage(self):
         workflows = (
@@ -102,12 +173,9 @@ class BackendTestSuiteStepIntegrityTest(unittest.TestCase):
     """
 
     def _step(self) -> str:
-        workflow = (ROOT / ".github/workflows/backend_test_suite.yml").read_text(
-            encoding="utf-8"
-        )
-        return workflow.split(
-            "- name: Run backend test suite per module", 1
-        )[1].split("- name: Dump logs on failure", 1)[0]
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+        return next(step['run'] for step in workflow['jobs']['backend_suite']['steps']
+                    if step['name'] == 'Run backend test suite per module')
 
     def test_step_declares_the_bash_shell_that_enables_errexit(self) -> None:
         workflow = (ROOT / ".github/workflows/backend_test_suite.yml").read_text(
@@ -139,6 +207,69 @@ class BackendTestSuiteStepIntegrityTest(unittest.TestCase):
         self.assertIn('if ! evaluate_orm_outcome "${module_status}" "${module_log}"; then', step)
         self.assertIn('orm_expect_identity="odoo.addons.${module}.tests."', step)
         self.assertIn('orm_expect_database="${attempt_db}"', step)
+
+
+class AttemptArchiveControlFlowTest(unittest.TestCase):
+    def test_real_workflow_loop_preserves_failures_and_retry_history(self):
+        workflow=yaml.safe_load((ROOT/'.github/workflows/backend_test_suite.yml').read_text())
+        step=next(s['run'] for s in workflow['jobs']['backend_suite']['steps'] if s['name']=='Run backend test suite per module')
+        # Only the external executors are stubbed. Execute the actual YAML loop
+        # and real ORM result guard, without Docker, a database or product tests.
+        stubs=r"""
+make() {
+  local db='' arg
+  for arg in "$@"; do case "$arg" in DB_NAME=*) db="${arg#DB_NAME=}";; esac; done
+  if [ "$CASE" = orm_fail ]; then return 1; fi
+  if [[ "$CASE" == retry* ]] && [[ "$db" != *_retry1 ]]; then return 137; fi
+  printf '2026-10-24 00:00:00 INFO %s odoo.addons.example.tests.test_fixture: Starting Fixture.test_one ...\n' "$db"
+  printf "0 failed, 0 error(s) of 1 tests when loading database '%s'\n" "$db"
+}
+python3() {
+  if [ "$1" = -m ]; then
+    if [ "$CASE" = python_fail ]; then return 1; fi
+    printf 'Ran 1 test in 0.001s\n\nOK\n'; return 0
+  fi
+  if [ "$1" = -c ]; then
+    if [ "$CASE" = python_isolated_reuse ]; then printf 'REUSE\n'; else printf 'RUN\n'; fi
+    return 0
+  fi
+  printf '%s\n' "$*" >> "$RUNNER_TEMP/calls"
+  if [ "$2" = isolated-python ]; then
+    if [ "$CASE" = python_isolated_fail ]; then return 1; fi
+    mkdir -p "$RUNNER_TEMP/backend-receipts-fixture-0"
+    printf '{"decision":"fixture"}\n' > "$RUNNER_TEMP/backend-receipts-fixture-0/isolated-decision-smart_construction_scene.json"
+    return 0
+  fi
+  if [ "$CASE" = archive_fail ] && [ "$2" = archive-attempt ]; then return 1; fi
+  return 0
+}
+tee() { command tee "$@"; if [ "$CASE" = log_fail ] || { [ "$CASE" = retry_log_fail ] && [[ "$1" == *attempt1.log ]]; }; then return 7; fi; }
+"""
+        for case,expected,archives,records in [('pass',0,1,1),('retry',0,2,1),('orm_fail',1,1,0),
+                ('log_fail',1,1,0),('python_fail',1,1,0),('python_pass',0,1,1),('archive_fail',1,1,0),('retry_log_fail',1,2,0),
+                ('python_isolated_run',0,0,0),('python_isolated_reuse',0,0,0),('python_isolated_fail',1,0,0)]:
+            with self.subTest(case=case),tempfile.TemporaryDirectory() as tmp:
+                folder=Path(tmp);(folder/'backend-plan.json').write_text('{}')
+                environment={**os.environ,'CASE':case,'RUNNER_TEMP':tmp,'GITHUB_RUN_ID':'fixture',
+                    'GITHUB_ENV':str(folder/'env'),'GITHUB_STEP_SUMMARY':str(folder/'summary'),
+                    'HEAD_SHA':'a'*40,'IMPACT_BASE':'b'*40,'SHARD_INDEX':'0','DB_NAME':'fixture_db',
+                    'ENV_FILE':str(folder/'managed.env'),'TEST_TAGS_INPUT':'','GITHUB_EVENT_NAME':'pull_request',
+                    'SC_BACKEND_ISOLATED_PYTHON':'1' if case.startswith('python_isolated') else '0',
+                    'MODULES':'' if case.startswith('python') else 'example',
+                    'PYTHON_MODULES':'smart_construction_scene' if case.startswith('python') else ''}
+                result=subprocess.run(['bash','-e','-c',stubs+step],cwd=ROOT,env=environment,capture_output=True,text=True)
+                self.assertEqual(expected,result.returncode,result.stdout+result.stderr)
+                calls=(folder/'calls').read_text().splitlines()
+                self.assertEqual(archives,sum(' archive-attempt ' in line for line in calls))
+                self.assertEqual(records,sum(' record ' in line for line in calls))
+                if case in ('log_fail', 'retry_log_fail'):
+                    attempts=[line for line in calls if ' archive-attempt ' in line]
+                    self.assertIn('--log-status 7', attempts[0])
+                    self.assertIn('--status 137' if case=='retry_log_fail' else '--status 0', attempts[0])
+                if case=='retry':
+                    attempts=[line for line in calls if ' archive-attempt ' in line]
+                    self.assertIn('--attempt 1',attempts[0]);self.assertIn('--status 137',attempts[0])
+                    self.assertIn('--attempt 2',attempts[1]);self.assertIn('--status 0',attempts[1])
 
 
 if __name__ == "__main__":

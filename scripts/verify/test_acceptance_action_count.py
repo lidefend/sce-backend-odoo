@@ -116,14 +116,51 @@ class LockedRoleSurfaceTests(unittest.TestCase):
         daily = json.loads(
             (ROOT / "config/frontend/acceptance_environments_v1.json").read_text(encoding="utf-8")
         )["profiles"]["daily"]
-        # Counts follow the locked role surface, not a release constant: each
-        # role's authoritative_navigation.json identity list gained the declared
-        # action-less role-home scene entry, so the locked count moves with it.
-        self.assertEqual(resolve_action_count(daily, ROOT, principal_role="finance"), 46)
-        self.assertEqual(resolve_action_count(daily, ROOT, principal_role="pm"), 25)
-        self.assertEqual(resolve_action_count(daily, ROOT, principal_role="owner"), 6)
-        self.assertEqual(resolve_action_count(daily, ROOT, principal_role="project_member"), 11)
-        self.assertGreaterEqual(resolve_action_count(daily, ROOT, principal_role="business_config_admin"), 1)
+        # Counts follow the locked role surface, not constants copied into this
+        # test.  Every declared locked role must equal its manifest's complete
+        # identity list and declared count, so a retired or newly released entry
+        # changes the owner data without leaving a second hand-maintained value.
+        surfaces = daily["navigation_policy"]["action_count_authority"]["role_surfaces"]
+        locked_roles = [
+            role
+            for role, surface in surfaces.items()
+            if surface.get("kind") == "locked_role_navigation_manifest"
+        ]
+        self.assertTrue(locked_roles)
+        for role in locked_roles:
+            with self.subTest(role=role):
+                surface = surfaces[role]
+                manifest = json.loads((ROOT / surface["path"]).read_text(encoding="utf-8"))
+                row = manifest[surface["roles_field"]][surface.get("manifest_role", role)]
+                identities = {
+                    str(item).split("|", 1)[0].strip()
+                    for item in row[surface["identity_field"]]
+                    if str(item).strip()
+                }
+                self.assertGreater(len(identities), 0)
+                self.assertEqual(row[surface["count_field"]], len(identities))
+                self.assertEqual(
+                    resolve_action_count(daily, ROOT, principal_role=role),
+                    len(identities),
+                )
+
+    def test_retired_historical_payment_entry_stays_out_of_finance_navigation(self):
+        menu = (
+            ROOT
+            / "addons/smart_construction_core/views/menu_product_finance_wave1.xml"
+        ).read_text(encoding="utf-8")
+        manifest = json.loads(
+            (ROOT / "config/frontend/authoritative_navigation.json").read_text(encoding="utf-8")
+        )
+        self.assertIn(
+            '<record id="menu_sc_historical_payment_fact" model="ir.ui.menu">'
+            '<field name="active">False</field></record>',
+            menu,
+        )
+        self.assertNotIn(
+            "smart_construction_core.menu_sc_historical_payment_fact|",
+            "\n".join(manifest["roles"]["finance"]["leaf_keys"]),
+        )
 
     def test_roles_with_different_surfaces_disagree(self):
         daily = json.loads(

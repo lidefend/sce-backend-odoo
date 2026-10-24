@@ -1939,11 +1939,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.frontend.decision_authority.guard": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.frontend.delivery_hardening.inventory": {
       "disposition": "candidate",
       "owner": "platform-team",

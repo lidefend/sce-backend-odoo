@@ -235,6 +235,14 @@
       "layer": "P0",
       "carriesProductSemantics": false,
       "rationale": "草稿依赖连续输入时的请求合并间隔，只控制传输调度；依赖集合、值、权限和可见性仍由后端 describe/evaluate 与前端 ticket 校验决定。"
+    },
+    {
+      "symbol": "SCENE_HYDRATION_DEADLINE_MS",
+      "file": "frontend/apps/web/src/app/sceneHydration.ts",
+      "class": "transport_deadline",
+      "layer": "P0",
+      "carriesProductSemantics": false,
+      "rationale": "显式场景补载的客户端传输截止时间；超时中止等待并进入已有错误恢复契约，不改变权限、业务状态或可见集合，不代表业务SLA。"
     }
   ],
   "openContractDefects": [],

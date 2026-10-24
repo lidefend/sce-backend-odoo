@@ -77,7 +77,7 @@ REQUIRED_TOKENS = {
         "verify.daily_dev.customer_addons.runtime:",
         "verify.daily_dev.acceptance.env.guard:",
         "python3 scripts/verify/daily_dev_acceptance_env_guard.py",
-        "release.daily_dev.acceptance.publish: guard.prod.forbid verify.daily_dev.acceptance.env.guard env.matrix.check verify.daily_dev.runtime_repo.clean verify.daily_dev.product_menu_release_gate.guard release.dev.acceptance.publish",
+        "release.daily_dev.acceptance.publish: guard.prod.forbid verify.daily_dev.acceptance.env.guard env.matrix.check verify.daily_dev.runtime_repo.clean verify.daily_dev.product_menu_release_gate.guard daily.runtime.entry.verify verify.daily_dev.acceptance.formal_surface verify.daily_dev.acceptance.release",
         "bash scripts/ops/daily_dev_runtime_repo_guard.sh",
         "daily.runtime.candidate.bundle_sync:",
         "scripts/ops/daily_candidate_bundle_sync.py",

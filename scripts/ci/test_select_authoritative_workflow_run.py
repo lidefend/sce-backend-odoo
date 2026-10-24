@@ -4,9 +4,9 @@ from __future__ import annotations
 import unittest
 
 try:
-    from scripts.ci.select_authoritative_workflow_run import select_latest_run
+    from scripts.ci.select_authoritative_workflow_run import select_latest_run, select_successful_history
 except ModuleNotFoundError:  # direct `python scripts/ci/...` execution
-    from select_authoritative_workflow_run import select_latest_run
+    from select_authoritative_workflow_run import select_latest_run, select_successful_history
 
 
 REPOSITORY = "lidefend/sce-backend-odoo"
@@ -79,6 +79,45 @@ class AuthoritativeWorkflowRunTests(unittest.TestCase):
         )
         self.assertEqual(selected["status"], "in_progress")
         self.assertIsNone(selected["conclusion"])
+
+
+class SuccessfulHistoryTests(unittest.TestCase):
+    def row(self, number, **overrides):
+        return run(number, status='completed', conclusion='success',
+                   head_repository={'full_name':REPOSITORY}, run_attempt=1, **overrides)
+
+    def select(self, rows, event='schedule', head=None):
+        return select_successful_history({'workflow_runs':rows},repository=REPOSITORY,
+            workflow_path=WORKFLOW,event=event,head_sha=head)
+
+    def test_schedule_history_spans_multiple_candidate_heads(self):
+        rows=[self.row(1,event='schedule'),self.row(2,event='schedule',head_sha='b'*40)]
+        self.assertEqual([2,1],[r['id'] for r in self.select(rows)])
+        self.assertEqual([1],[r['id'] for r in self.select(rows,head=HEAD)])
+
+    def test_pr_and_branch_history_do_not_require_main(self):
+        for event in ('pull_request','push','workflow_dispatch'):
+            self.assertEqual(1,len(self.select([self.row(1,event=event)],event=event)))
+
+    def test_failures_incomplete_foreign_and_wrong_producers_excluded(self):
+        good=self.row(1,event='schedule')
+        for change in ({'conclusion':'failure'},{'status':'in_progress'},
+                       {'head_repository':{'full_name':'other/repo'}},{'path':'other.yml'},
+                       {'event':'pull_request'},{'id':True},{'run_attempt':None},{'head_sha':'main'}):
+            with self.subTest(change=change):
+                self.assertEqual([],self.select([{**good,**change}]))
+
+    def test_same_candidate_attempts_are_not_collapsed(self):
+        a=self.row(1,event='schedule');b={**a,'run_attempt':2}
+        self.assertEqual([2,1],[r['run_attempt'] for r in self.select([a,b,a])])
+
+    def test_conflicting_identity_is_rejected(self):
+        a=self.row(1,event='schedule')
+        with self.assertRaises(ValueError):self.select([a,{**a,'head_sha':'b'*40}])
+
+    def test_invalid_filter_refused(self):
+        with self.assertRaises(ValueError):self.select([],event='pull_request_target')
+        with self.assertRaises(ValueError):self.select([],head='main')
 
 
 if __name__ == "__main__":

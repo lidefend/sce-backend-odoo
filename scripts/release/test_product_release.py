@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -251,6 +252,28 @@ class ProductReleaseTests(unittest.TestCase):
         self.assertGreater(
             release.compare_versions("1.10.0", "1.2.0"), 0
         )
+
+    def test_historical_observation_is_not_a_release_declaration(self):
+        report = (ROOT / version_guard.HISTORICAL_VERSION_REPORT).read_text()
+        version = re.search(r"page_version=`([^`]+)`", report).group(1)
+        line = ("- 历史运行观测（非当前发布声明）：observed_at=2026-10-24; "
+                "source_sha=96c860d0fb041c556b687afaad6dc689528785e5; "
+                f"page_version=`{version}`。")
+        path = version_guard.HISTORICAL_VERSION_REPORT
+        self.assertTrue(version_guard.has_release_version_duplicate(
+            path, line.replace(version, "99.0.0"), "99.0.0"))
+        self.assertFalse(version_guard.has_release_version_duplicate(path, line, version))
+        # A current declaration in that report is still a conflict.
+        self.assertTrue(version_guard.has_release_version_duplicate(
+            path, line + f"\n当前发布版本：{version}", version))
+        for invalid in (line.replace("2026-10-24", "2026-10-25"),
+                        line.replace("96c860d0", "00000000"),
+                        line + f" 当前版本 {version}",
+                        f"历史版本 {version}"):
+            with self.subTest(invalid=invalid):
+                self.assertTrue(version_guard.has_release_version_duplicate(path, invalid, version))
+        self.assertTrue(version_guard.has_release_version_duplicate(
+            Path("docs/current-release.md"), line, version))
 
     def write_derived_version_snapshot(self, root: Path, payload: dict) -> None:
         relative = next(iter(version_guard.DERIVED_VERSION_OBSERVATIONS))

@@ -771,6 +771,8 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # github-actions security sweep.
 .PHONY: verify.ci.workflow.contract
 verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit
+	@python3 -m unittest scripts.verify.test_backend_contract_fact_readback_probe
+	@python3 scripts/ci/test_backend_test_receipt.py
 	@python3 scripts/ci/test_backend_impact_plan.py
 	@python3 scripts/ci/test_backend_suite_plan.py
 	@python3 -m py_compile scripts/ci/test_backend_test_suite_dispatch_contract.py
@@ -828,7 +830,7 @@ verify.contract_form_split_evidence: guard.prod.forbid
 refresh.contract_form_split_evidence: guard.prod.forbid
 	@python3 scripts/ci/verify_contract_form_split_evidence.py --write
 
-ci.generated_evidence.preflight: guard.prod.forbid ci.generated_reports.guard verify.frontend.component_driver_takeover.unit verify.contract_form_split_evidence
+ci.generated_evidence.preflight: guard.prod.forbid verify.frontend.decision_authority.guard ci.generated_reports.guard verify.frontend.component_driver_takeover.unit verify.contract_form_split_evidence
 	@echo "[ci.generated_evidence.preflight] PASS all content-bound generated evidence is current"
 
 ci.delivery.freeze.prepare: guard.prod.forbid verify.g1.acceptance.baseline contract.semantic.registry.generate verify.frontend.contract_basis.enforce verify.agent.ledger.unit verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit verify.daily.runtime.release_orchestration.unit

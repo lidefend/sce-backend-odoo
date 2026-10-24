@@ -103,7 +103,9 @@
                                             <div class="text-muted" invisible="sc_overview_contract_count == 0">
                                                 已有 <field name="sc_overview_contract_count" readonly="1" nolabel="1"/> 份合同
                                             </div>
-                                            <button type="action" name="%(smart_construction_core.action_construction_contract_my)d" string="查看合同" class="btn btn-link px-0" />
+                                            <field name="sc_project_contract_entry_available" invisible="1"/>
+                                            <button type="object" name="action_open_project_contracts" string="查看合同" groups="smart_construction_core.group_sc_cap_contract_read" invisible="not sc_project_contract_entry_available" class="btn btn-link px-0" />
+                                            <div class="text-muted" invisible="sc_project_contract_entry_available">当前账号的发布范围未提供项目合同列表入口</div>
                                         </div>
                                     </div>
                                 </div>

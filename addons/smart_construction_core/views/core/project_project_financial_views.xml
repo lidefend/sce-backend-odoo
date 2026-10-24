@@ -15,7 +15,9 @@
                             class="oe_stat_button"
                             groups="smart_construction_core.group_sc_cap_cost_user,smart_construction_core.group_sc_cap_cost_manager"
                             icon="fa-calculator"/>
+                    <field name="sc_project_contract_entry_available" invisible="1"/>
                     <button name="action_open_project_contracts"
+                            invisible="not sc_project_contract_entry_available"
                             type="object"
                             string="合同"
                             class="oe_stat_button"

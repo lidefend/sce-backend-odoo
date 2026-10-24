@@ -24,6 +24,61 @@ from scripts.verify.frontend_style_system_guard import (
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
+    def test_backend_collection_inputs_select_only_offline_workflow_checks(self) -> None:
+        for path in (
+            "scripts/ci/backend_impact_plan.py",
+            "scripts/ci/test_backend_impact_plan.py",
+            "scripts/ci/backend_suite_plan.py",
+            "scripts/ci/test_backend_suite_plan.py",
+            "scripts/ci/backend_test_receipt.py",
+            "scripts/ci/test_backend_test_receipt.py",
+            "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+            "scripts/verify/backend_contract_fact_readback_probe.py",
+            "scripts/verify/test_backend_contract_fact_readback_probe.py",
+            "scripts/test/test.sh",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), ["verify.ci.workflow.contract"])
+
+    def test_backend_workflow_selects_security_before_final_delivery(self) -> None:
+        self.assertEqual(select_targets([".github/workflows/backend_test_suite.yml"]), [
+            "verify.ci.workflow.contract", "verify.github_actions.security",
+        ])
+
+    def test_backend_security_guard_selects_its_own_tests(self) -> None:
+        for path in ("scripts/verify/github_actions_security_guard.py",
+                     "scripts/verify/test_github_actions_security_guard.py"):
+            self.assertEqual(select_targets([path]), ["verify.github_actions.security"])
+
+    def test_unknown_backend_tool_stays_unmapped(self) -> None:
+        output = io.StringIO()
+        with redirect_stdout(output):
+            print_plan(["scripts/ci/unknown_backend_collector.py"])
+        payload = json.loads(output.getvalue().split("] ", 1)[1])
+        self.assertTrue(payload["manualNonZeroL2Required"])
+        self.assertEqual(payload["targets"], [])
+        self.assertFalse(payload["candidateEvidence"])
+        self.assertFalse(payload["testsRun"])
+
+    def test_backend_mapping_does_not_mask_unknown_frontend_input(self) -> None:
+        paths = ["scripts/ci/backend_test_receipt.py",
+                 "frontend/apps/web/src/newFeature.ts"]
+        expected = sorted(["verify.ci.workflow.contract", FALLBACK_TARGET])
+        self.assertEqual(select_targets(paths), expected)
+        self.assertEqual(select_targets(list(reversed(paths))), expected)
+
+    def test_mixed_known_frontend_and_backend_keeps_both_scopes(self) -> None:
+        frontend = "frontend/apps/web/src/views/LoginView.vue"
+        backend = "scripts/ci/backend_test_receipt.py"
+        self.assertEqual(select_targets([frontend, backend]),
+                         sorted(set(select_targets([frontend]) + select_targets([backend]))))
+
+    def test_known_frontend_mapping_does_not_mask_another_unknown_path(self) -> None:
+        known = "frontend/apps/web/src/views/LoginView.vue"
+        self.assertIn(FALLBACK_TARGET, select_targets([
+            known, "frontend/apps/web/src/newFeature.ts",
+        ]))
+
     def test_auth_entry_changes_select_only_auth_surface_checks(self) -> None:
         targets = select_targets(["frontend/apps/web/src/views/LoginView.vue"])
         self.assertEqual(

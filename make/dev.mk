@@ -987,12 +987,15 @@ ACCEPTANCE_CONTRACT_RESOLVER_KEY ?= FRONTEND_DELIVERY_HARDENING_TARGETS_JSON
 # authorized 2026-10-04) so the readonly probe can produce an exact-instance
 # backend contract receipt from the runtime it measures. This is a separate
 # declared scope; the isolated sc_frontend_acceptance guard is unchanged.
-DAILY_DEV_ACCEPTANCE_DB ?= sc_demo
+DAILY_DEV_ACCEPTANCE_DB ?= $(shell python3 -c 'import json; entry=json.load(open("config/ops/daily_runtime_entry.v1.json")); duties=json.load(open("config/ops/daily_runtime_database_duties.v1.json"))["duties"]; serving=entry["public_entry"]["serving_duty"]; print(next(row["database"] for row in duties if row["duty"] == serving))')
 DAILY_ACCEPTANCE_CONTRACT_DECLARATION ?= config/acceptance/backend_contract_instance_daily_v1.json
 ACCEPTANCE_CONTRACT_PASSWORD ?= $(SC_ACCEPTANCE_FIXTURE_PASSWORD)
 ACCEPTANCE_PROBE_CONTRACT_ONLY ?= 0
 DAILY_ACCEPTANCE_REQUIRE_CONTRACT ?= 1
 DAILY_ACCEPTANCE_FIXTURE_CONFIRM ?= ENSURE_DAILY_DEV_ACCEPTANCE_FIXTURE
+DAILY_ACCEPTANCE_EXPECTED_SHA ?= $(or $(ACCEPTANCE_TARGET_SHA),$(shell git rev-parse HEAD))
+DAILY_ACCEPTANCE_BUSINESS_DUTY ?= $(shell python3 -c 'import json; print(json.load(open("config/ops/daily_runtime_entry.v1.json"))["public_entry"]["serving_duty"])')
+DAILY_ACCEPTANCE_MIGRATION_ARTIFACT_ROOT ?= /mnt/artifacts/backend
 # The accepted navigation action count is only determinate once a concrete role
 # is locked.  The daily lane declares its principal role and resolves the count
 # for that role from the versioned contract surface (never pinned here), so a
@@ -1123,12 +1126,54 @@ verify.dev.acceptance.contract: guard.prod.forbid
 release.dev.acceptance.publish: guard.prod.forbid check-compose-project check-compose-env verify.frontend.build verify.user_confirmed.formal_surface.locked verify.dev.acceptance.release
 	@echo "[release.dev.acceptance.publish] PASS base_url=$(ACCEPTANCE_BASE_URL) db=$(DB_NAME) artifact=$(ACCEPTANCE_PROBE_OUTPUT)"
 
+.PHONY: verify.daily_dev.acceptance.formal_surface verify.daily_dev.acceptance.release
+# The daily host serves two duties in separate compose projects.  These entries
+# keep the local single-stack release target intact for its own profile, while
+# binding the daily checks to the declared serving duty and the shared entry
+# declaration.  No local frontend build or local compose service is involved.
+.PHONY: verify.daily_dev.acceptance.formal_surface.unit
+verify.daily_dev.acceptance.formal_surface.unit: guard.prod.forbid
+	@python3 -m py_compile \
+	  scripts/verify/formal_action_runtime_drift_audit.py \
+	  scripts/verify/test_formal_action_runtime_drift_audit.py \
+	  scripts/verify/user_formal_field_module_boundary_audit.py
+	@python3 scripts/verify/test_formal_action_runtime_drift_audit.py
+
+verify.daily_dev.acceptance.formal_surface: guard.prod.forbid verify.daily.runtime.entry verify.formal_product_field_purity verify.formal_surface.transition_field_audit verify.formal_entry_metadata.source_contract verify.daily_dev.acceptance.formal_surface.unit
+	@python3 -m py_compile \
+	  scripts/ops/daily_runtime_duty_odoo_shell.py \
+	  scripts/verify/user_formal_field_module_boundary_audit.py
+	@python3 scripts/ops/daily_runtime_duty_odoo_shell.py \
+	  --duty "$(DAILY_ACCEPTANCE_BUSINESS_DUTY)" \
+	  --env MIGRATION_ARTIFACT_ROOT="$(DAILY_ACCEPTANCE_MIGRATION_ARTIFACT_ROOT)" \
+	  < scripts/verify/user_formal_field_module_boundary_audit.py
+
+verify.daily_dev.acceptance.release: guard.prod.forbid
+	@SC_ACCEPTANCE_EXPECTED_SHA="$(DAILY_ACCEPTANCE_EXPECTED_SHA)" \
+	  DB_NAME="$(DAILY_DEV_ACCEPTANCE_DB)" \
+	  ACCEPTANCE_BACKUP_DIR="$(ACCEPTANCE_BACKUP_DIR)" \
+	  ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" \
+	  ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" \
+	  ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" \
+	  ACCEPTANCE_NAV_MIN_ACTIONS="$(ACCEPTANCE_NAV_MIN_ACTIONS)" \
+	  ACCEPTANCE_NAV_MAX_ACTIONS="$(ACCEPTANCE_NAV_MAX_ACTIONS)" \
+	  ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(ACCEPTANCE_NAV_FORBIDDEN_LABELS)" \
+	  ACCEPTANCE_NAV_REQUIRED_PATHS="$(ACCEPTANCE_NAV_REQUIRED_PATHS)" \
+	  ACCEPTANCE_NAV_REQUIRED_ACTIONS="$(ACCEPTANCE_NAV_REQUIRED_ACTIONS)" \
+	  ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" \
+	  python3 scripts/ops/dev_acceptance_release_probe.py
+	@if [ "$(ACCEPTANCE_PROBE_CONTRACT_ONLY)" != "1" ]; then \
+	  ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" \
+	  python3 scripts/verify/dev_acceptance_release_probe_schema_guard.py; \
+	fi
+
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_MIN_ACTIONS := $(DAILY_ACCEPTANCE_NAV_MIN_ACTIONS)
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_MAX_ACTIONS := $(DAILY_ACCEPTANCE_NAV_MAX_ACTIONS)
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_PRINCIPAL_ROLE := $(DAILY_ACCEPTANCE_NAV_PRINCIPAL_ROLE)
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_FORBIDDEN_LABELS := $(DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS)
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_REQUIRED_PATHS := $(DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS)
-release.daily_dev.acceptance.publish: guard.prod.forbid verify.daily_dev.acceptance.env.guard env.matrix.check verify.daily_dev.runtime_repo.clean verify.daily_dev.product_menu_release_gate.guard release.dev.acceptance.publish
+release.daily_dev.acceptance.publish: DAILY_RUNTIME_EXPECTED_SHA := $(DAILY_ACCEPTANCE_EXPECTED_SHA)
+release.daily_dev.acceptance.publish: guard.prod.forbid verify.daily_dev.acceptance.env.guard env.matrix.check verify.daily_dev.runtime_repo.clean verify.daily_dev.product_menu_release_gate.guard daily.runtime.entry.verify verify.daily_dev.acceptance.formal_surface verify.daily_dev.acceptance.release
 	@echo "[release.daily_dev.acceptance.publish] PASS base_url=$(ACCEPTANCE_BASE_URL) db=$(DB_NAME) head=$$(git rev-parse --short HEAD)"
 
 DAILY_PRODUCT_NAVIGATION_DUTY ?= demo

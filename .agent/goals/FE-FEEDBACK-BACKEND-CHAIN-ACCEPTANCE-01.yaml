@@ -1,0 +1,40 @@
+schema_version: 1
+goal:
+  id: FE-FEEDBACK-BACKEND-CHAIN-ACCEPTANCE-01
+  status: planned
+  title: Verify the real backend feedback chain on approved existing data
+  formal_product_layer: P1 construction-industry standard product
+  layer_target: smart_construction_core draft-feedback backend plus P4 acceptance harness
+  modules_or_tools:
+    - addons/smart_construction_core/tests/test_feedback_evaluation_rt_http.py
+    - frontend/apps/web/scripts/feedback_evaluation_rt_browser_test.mjs
+  objective: >-
+    Exercise the real backend feedback evaluation path, contract response and
+    browser consumption in one minimal closed chain using an approved existing
+    business record or separately authorized acceptance data.
+  standard_vs_user_specific: >-
+    Industry-standard feedback behavior and its acceptance mechanism.
+  why_here: >-
+    The frontend state machine is already covered; the remaining unproven link
+    is backend calculation and response consumed by the deployed browser.
+  why_not_elsewhere: >-
+    Seeding a business record solely to close this evidence gap would alter the
+    demo baseline and the observed product state.
+  blast_radius: >-
+    One approved feedback-bearing record, its contract response and browser
+    feedback rendering only.
+  exclusions:
+    - no production feedback declaration
+    - no unauthorized fixture or business-record creation
+    - no broad re-run of unrelated role or navigation journeys
+  acceptance:
+    - backend feedback evaluation returns the declared contract response
+    - browser displays and updates that response from the real backend
+    - no business write occurs unless separately authorized
+    - evidence binds revision, frontend fingerprint, database and principal
+  rollback: >-
+    Read-only acceptance requires no rollback; any separately authorized test
+    write must declare its owned record and restoration proof before execution.
+  next_exact_step: >-
+    Locate an approved existing feedback-bearing record or wait for separately
+    authorized disposable acceptance data; do not create demo business rows.

@@ -1,0 +1,8 @@
+schema_version: 1
+goal:
+  id: FE-INCREMENTAL-VALIDATION-01
+  title: 稳定基线上的精准增量验证
+  status: active
+  formal_product_layer: P4
+  layer_target: existing CI dependency planning and evidence_scope
+  exclusions: [product_logic, assertion_relaxation, push, merge, deployment, redundant_backend_execution]

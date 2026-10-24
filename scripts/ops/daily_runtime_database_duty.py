@@ -335,7 +335,13 @@ def validate_entry(entry, declaration):
     platform duty does not run, is the fork this declaration exists to prevent.
     """
     failures = []
-    duties = {str(duty.get("duty") or ""): duty for duty in declaration.get("duties") or []}
+    declared_duties = [
+        duty for duty in declaration.get("duties") or [] if isinstance(duty, dict)
+    ]
+    duty_names = [str(duty.get("duty") or "") for duty in declared_duties]
+    for name in sorted({value for value in duty_names if duty_names.count(value) > 1}):
+        failures.append("duty %s is declared more than once" % (name or "<unset>",))
+    duties = {str(duty.get("duty") or ""): duty for duty in declared_duties}
     if str(entry.get("host") or "") != str(declaration.get("host") or ""):
         failures.append("entry.host must equal the duty declaration host")
 

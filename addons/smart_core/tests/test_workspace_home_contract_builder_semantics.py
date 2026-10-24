@@ -36,6 +36,18 @@ target = _load_module(
 
 
 class TestWorkspaceHomeContractBuilderSemantics(unittest.TestCase):
+    def test_home_projection_preserves_explicit_risk_record_target(self):
+        payload = target.build_workspace_home_contract({
+            "capabilities": [], "scenes": [],
+            "risk_actions": [{"id": "risk-action-2", "title": "风险处置",
+                "status": "urgent", "source_detail": "factual_record",
+                "path": "/r/project.risk.action/2"}],
+        })
+        actions = payload["risk"]["actions"]
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0]["path"], "/r/project.risk.action/2")
+        self.assertEqual(actions[0]["route"], "/r/project.risk.action/2")
+
     def test_workspace_home_builder_declares_startup_projection_source(self):
         source = target.source_authority_contract()
 

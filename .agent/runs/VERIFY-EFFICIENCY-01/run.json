@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "88b4c1609eb2802f95a0b367a44efffd985db173",
+  "scope": [
+    "scripts/verify/frontend_decision_authority.py",
+    "scripts/verify/frontend_decision_authority_guard.py",
+    "scripts/verify/test_frontend_decision_authority_guard.py",
+    "make/ci.mk",
+    ".agent/active-runs.json",
+    ".agent/goals/VERIFY-EFFICIENCY-01.yaml",
+    ".agent/runs/VERIFY-EFFICIENCY-01/run.json",
+    "docs/ops/iterations/verify_efficiency_01.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "focused": {
+      "target": "verify.frontend.decision_authority.unit",
+      "inputs": [
+        "scripts/verify/frontend_decision_authority.py",
+        "scripts/verify/frontend_decision_authority_guard.py",
+        "scripts/verify/test_frontend_decision_authority_guard.py",
+        "make/ci.mk",
+        "frontend/apps/web/src",
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "docs/contract/exports/intent_catalog.json",
+        "make/frontend.mk",
+        "addons/smart_core/handlers/menu_configuration.py",
+        "Makefile",
+        "addons/smart_core/core/system_init_payload_builder.py",
+        "addons/smart_core/core/view_contract_presence.py",
+        "addons/smart_core/delivery/release_audit_trail_service.py",
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_core/docs/Contract-2.0-Spec.md",
+        "addons/smart_core/governance/scene_normalizer.py",
+        "addons/smart_core/handlers/chatter_activity_update.py",
+        "addons/smart_core/handlers/release_operator.py",
+        "addons/smart_core/handlers/search_favorite_set.py",
+        "addons/smart_core/model/ui_business_config_change_set.py",
+        "addons/smart_core/models/auth_credential_policy.py",
+        "addons/smart_core/models/release_management.py",
+        "addons/smart_core/models/ui_base_contract_asset.py",
+        "addons/smart_core/utils/contract_governance_capabilities.py",
+        "config/product_configuration_capability_v1.json",
+        "frontend/apps/web/src/pages/contractForm/types.ts",
+        "frontend/apps/web/src/stores/session.ts"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Local implementation and independent review complete. Preserve product PR 722; new tooling branch is not approved for remote publication. Prepare its delivery candidate only in a separately selected delivery step.",
+  "id": "VERIFY-EFFICIENCY-01",
+  "branch": "fix/verification-efficiency-01",
+  "status": "verification_pending",
+  "goal": ".agent/goals/VERIFY-EFFICIENCY-01.yaml",
+  "record": "docs/ops/iterations/verify_efficiency_01.md",
+  "results": {
+    "focused": "21 tests passed; .runtime/verify-efficiency-01/focused-final.log",
+    "registry": "24 tests and registry audit passed; .runtime/verify-efficiency-01/registry.log",
+    "historical_replay": ".runtime/verify-efficiency-01/historical-replay.json",
+    "independent_review": "No blocking findings in four implementation files; current HEAD plus declared diff",
+    "iteration": "lightweight iteration exit 0; advisory delivery planner lists product-runtime evidence absent, not product acceptance for this P4 task",
+    "not_run": [
+      "browser journeys (no runtime changes)",
+      "new final candidate Quick (development patch, not frozen delivery)",
+      "remote publication/merge/deploy (not authorized for this task)"
+    ]
+  }
+}

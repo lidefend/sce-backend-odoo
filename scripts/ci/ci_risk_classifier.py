@@ -7,6 +7,7 @@ import argparse
 import fnmatch
 import json
 import os
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -86,12 +87,70 @@ def _normalize_paths(paths: Iterable[str]) -> tuple[str, ...]:
     return tuple(sorted(normalized))
 
 
+def backend_recipe_only(before: str, after: str) -> bool:
+    """Recognize only literal Python recipe edits in the existing backend lock.
+
+    Not a Make evaluator: retain every other byte, including the target's
+    prerequisites, shared variables, directives, comments and echo commands.
+    Dynamic expansion, shell composition and recipe continuations cannot be
+    erased by this proof. The backend professional lane still runs this lock.
+    """
+    header = 'verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit\n'
+    command = re.compile(
+        r'\t@python3 (?:scripts/(?:ci|verify)/[A-Za-z0-9_]+\.py'
+        r'|-m unittest scripts\.(?:ci|verify)\.[A-Za-z0-9_]+'
+        r'|-m py_compile scripts/(?:ci|verify)/[A-Za-z0-9_]+\.py)\n'
+    )
+
+    def retained(text: str) -> str | None:
+        lines = text.splitlines(keepends=True)
+        if lines.count(header) != 1:
+            return None
+        result = []
+        inside = False
+        for line in lines:
+            if line == header:
+                inside = True
+            elif inside and not line.startswith('\t'):
+                inside = False
+            if not (inside and command.fullmatch(line)):
+                result.append(line)
+        return ''.join(result)
+
+    old, new = retained(before), retained(after)
+    return before != after and old is not None and old == new
+
+
+def git_backend_recipe_only(base: str, head: str) -> bool:
+    """Use the same merge base as changed_paths; never inspect dirty files."""
+    if not all(re.fullmatch(r'[0-9a-f]{40}', sha) for sha in (base, head)):
+        return False
+    def git(*args: str) -> str:
+        # Decode bytes explicitly: text=True would normalize CRLF/CR and hide
+        # changes outside the owned recipe from the equality proof.
+        return subprocess.run(['git', *args], cwd=ROOT, check=True,
+                              capture_output=True, timeout=15).stdout.decode('utf-8')
+    try:
+        ancestor = git('merge-base', base, head).strip()
+        texts = []
+        for sha in (ancestor, head):
+            entry = git('ls-tree', sha, '--', 'make/ci.mk')
+            if not re.fullmatch(r'100644 blob [0-9a-f]{40}\tmake/ci\.mk\n', entry):
+                return False
+            texts.append(git('show', f'{sha}:make/ci.mk'))
+        return backend_recipe_only(*texts)
+    except (OSError, subprocess.SubprocessError, UnicodeError):
+        return False
+
+
 def classify(
     paths: Iterable[str],
     *,
     event_name: str,
     ref: str = "",
     policy: dict | None = None,
+    base: str = '',
+    head: str = '',
 ) -> Classification:
     policy = policy or load_policy()
     orm_paths = policy.get("orm_runtime_paths")
@@ -126,6 +185,9 @@ def classify(
         if _matches(path, policy["standard_backend_paths"]) and path not in frontend_owned
     )
     frontend_full = tuple(path for path in changed if _matches(path, policy["frontend_full_paths"]))
+    recipe_scoped = 'make/ci.mk' in frontend_full and git_backend_recipe_only(base, head)
+    if recipe_scoped:
+        frontend_full = tuple(path for path in frontend_full if path != 'make/ci.mk')
     fast = tuple(path for path in changed if _matches(path, policy["fast_paths"]))
     known = set(high) | set(frontend) | set(backend) | set(fast)
     unknown = tuple(path for path in changed if path not in known)
@@ -143,6 +205,8 @@ def classify(
             reasons.append("invalid_path")
         if unknown:
             reasons.append("unknown_path_fail_closed")
+        if recipe_scoped:
+            reasons.append('make_ci_backend_recipe_only_exact_git_scope')
         return Classification(
             "HIGH_RISK",
             changed,
@@ -193,7 +257,9 @@ def main() -> int:
     paths = tuple(args.paths or ())
     if not paths and args.event != "workflow_dispatch":
         paths = changed_paths(args.base or "", args.head or "")
-    result = classify(paths, event_name=args.event, ref=args.ref)
+    result = classify(paths, event_name=args.event, ref=args.ref,
+                      base=(args.base or '') if not args.paths else '',
+                      head=(args.head or '') if not args.paths else '')
     outputs = result.outputs()
     report = {
         "schema_version": "ci-risk-classification/v1",

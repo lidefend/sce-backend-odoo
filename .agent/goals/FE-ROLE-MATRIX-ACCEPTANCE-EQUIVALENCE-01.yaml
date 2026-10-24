@@ -1,0 +1,42 @@
+schema_version: 1
+goal:
+  id: FE-ROLE-MATRIX-ACCEPTANCE-EQUIVALENCE-01
+  status: planned
+  title: Reconcile demo role principals with the locked acceptance role matrix
+  formal_product_layer: P4 ops delivery tool
+  layer_target: daily role-surface acceptance
+  modules_or_tools:
+    - config/frontend/authoritative_navigation.json
+    - config/frontend/role_surface_exposure_declarations_v1.json
+    - scripts/verify/system_permission_runtime_observation.py
+  objective: >-
+    Declare whether the live demo role-group principals are intentionally
+    equivalent to the locked acceptance-fixture role matrix. If equivalence is
+    required, cover only the differing roles and preserve exact runtime evidence;
+    do not create accounts or rewrite role configuration merely to force counts
+    to match.
+  standard_vs_user_specific: >-
+    Acceptance mechanism only; it does not change the role definitions or
+    product semantics under test.
+  why_here: >-
+    The remaining gap is a population/equivalence problem between two declared
+    principal sets, not evidence that the page or permission implementation is
+    wrong.
+  why_not_elsewhere: >-
+    Matching fixture counts by changing runtime groups, menus or users would
+    mutate the product scope being measured.
+  blast_radius: >-
+    Role-matrix comparison and role-specific acceptance evidence only.
+  exclusions:
+    - no account creation or role reassignment
+    - no menu or permission semantic changes
+    - no deployment
+  acceptance:
+    - each locked role has an explicit principal-equivalence decision
+    - only justified missing role journeys are executed
+    - evidence binds the actual daily revision and frontend fingerprint
+  rollback: >-
+    No product state changes are required by this acceptance-only goal.
+  next_exact_step: >-
+    Wait until a full role-matrix acceptance claim is requested, then compare
+    the declared fixture principals with the actual daily demo principals.
