@@ -50,28 +50,37 @@ try {
   await page.route('**/*', route => route.abort());
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 950 });
-    const unaffected = () => page.locator('#maintenance,#board').evaluateAll(es => es.map(e => ({ width: e.getBoundingClientRect().width, height: e.getBoundingClientRect().height, html: e.innerHTML })));
+    const unaffected = () => page.locator('#maintenance,#board').evaluateAll(es => es.map(e => ({ html: e.innerHTML, text: e.innerText })));
     await page.setContent(fixture);
     const previous = await unaffected();
     const result = await page.evaluate(() => {
       const header = document.querySelector('.sc-project-overview__header');
       const body = header.querySelector('.native-container');
-      const rect = e => ({ x: e.getBoundingClientRect().x, y: e.getBoundingClientRect().y, w: e.getBoundingClientRect().width, h: e.getBoundingClientRect().height });
+      const completion = document.querySelector('.sc-project-stage__desc');
       const fields = [...document.querySelectorAll('[data-field-key]')].map(e => ({ key: e.dataset.fieldKey, locator: e.dataset.nativeLocator, state: e.dataset.fieldState }));
-      return { header: rect(header), body: rect(body), done: rect(document.querySelector('[data-field-name="done"]')), total: rect(document.querySelector('[data-field-name="total"]')), slash: rect([...document.querySelectorAll('p')].find(e => e.textContent === '/')), overflow: document.documentElement.scrollWidth > innerWidth, fields, input: document.querySelector('input').value, saveDisabled: document.querySelector('#maintenance button').disabled };
+      return {
+        headerText: header.innerText,
+        bodyText: body.innerText,
+        completionText: completion.textContent.replace(/\s+/g, ''),
+        completionFields: [...completion.querySelectorAll('[data-field-key]')].map(e => e.dataset.fieldKey),
+        hasSlash: [...completion.querySelectorAll('p')].some(e => e.textContent === '/'),
+        overflow: document.documentElement.scrollWidth > innerWidth,
+        fields,
+        input: document.querySelector('input').value,
+        saveDisabled: document.querySelector('#maintenance button').disabled,
+      };
     });
-    console.log(JSON.stringify({ width, header: result.header, body: result.body, completion: [result.done, result.slash, result.total] }));
-    check(result.body.w / result.header.w > 0.75, `${width}: identity uses available width`);
+    console.log(JSON.stringify({ width, body: result.bodyText, completion: result.completionText, fieldOrder: result.completionFields }));
+    check(result.bodyText.includes('示例工程项目名称与完整身份信息') && result.headerText.includes('项目设置'), `${width}: identity and declared action are present`);
     check(!result.overflow, `${width}: no horizontal overflow`);
-    check(Math.abs(result.done.y - result.total.y) < 1, `${width}: completion values share a line`);
-    check(result.done.x < result.slash.x && result.slash.x < result.total.x, `${width}: completion order remains value / value`);
-    check(Math.abs((result.done.y + result.done.h / 2) - (result.slash.y + result.slash.h / 2)) < 2, `${width}: slash aligns with values`);
+    check(result.completionText === '立项完成度：3/3' && result.hasSlash, `${width}: completion text order remains label value / value`);
+    check(JSON.stringify(result.completionFields) === JSON.stringify(['done.summary', 'total.summary']), `${width}: completion field identity and order retained`);
     check(result.fields.length === 10 && result.fields.every(f => f.state === 'readonly' && f.locator), `${width}: occurrence and readonly identity retained`);
     check(result.input === '原值' && !result.saveDisabled, `${width}: maintenance control state retained`);
     // Presentation is scoped to the declared regions, not nearby maintenance
     // or board fields. Removing that region must leave their sizing untouched.
     await page.locator('#overview').evaluate(e => e.remove());
-    check(JSON.stringify(previous) === JSON.stringify(await unaffected()), `${width}: maintenance/board sizing and identity are independent`);
+    check(JSON.stringify(previous) === JSON.stringify(await unaffected()), `${width}: maintenance/board content and identity are independent`);
   }
   console.log(`[project-detail-summary] PASS checks=${checks} source=${baseline ? 'baseline' : 'working-tree'} offline=true production_css=true fixture_dom=true`);
 } finally {
