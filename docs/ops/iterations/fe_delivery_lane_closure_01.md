@@ -105,3 +105,22 @@ must map back to a contract-openable entry, every populated field must be
 attempted, and every attempt must use the declared action/menu pair. This
 replaces the previous accidental fixed count of four with exact set
 reconciliation across contract, rendered surface and executed behavior.
+
+The probe now records a field-by-field `contract_render_comparison` instead of
+asking later readers to infer differences from separate field lists. For every
+contract-openable relation it records the declared label, visibility, readonly,
+required and relation-target semantics beside the final rendered label, value,
+control kind, field state and open-control presence. It also records the model,
+action id and menu id actually used when the relation opens.
+
+Blocking differences fail the receipt: visibility, readonly or required state
+mismatch, a populated relation without an open control, or a target
+model/action/menu that differs from the declaration. Presentation-only
+differences are still recorded but do not block the batch, currently the
+declared-label/render-label difference and the legitimate case where a
+contract-openable relation has no value and therefore no current-record target.
+The binding policy must name every allowed non-blocking difference kind; an
+unclassified difference is rejected. The comparison summary is cross-checked
+against the field rows, visible/empty sets and blocking/non-blocking counts, so
+the probe cannot make the gate green by recording a different story from the
+data it actually observed.

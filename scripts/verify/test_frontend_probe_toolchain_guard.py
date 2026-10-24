@@ -89,6 +89,18 @@ for (const mutation of [null, b=>delete b.schema, b=>b.expected_sha='b'.repeat(4
         self.assertIn('SC_ACCEPTANCE_LOGIN="${SC_ACCEPTANCE_RELATION_LOGIN:-fixture_role_config_admin}"', relation)
         self.assertIn('E2E_LOGIN="${SC_ACCEPTANCE_RELATION_LOGIN:-fixture_role_config_admin}"', relation)
 
+    def test_relation_probe_records_contract_render_differences(self):
+        source = (ROOT / 'scripts/verify/record_relation_roundtrip_acceptance.js').read_text()
+        self.assertIn('contract_render_comparison', source)
+        self.assertIn('contract_render_comparison_summary', source)
+        self.assertIn('OPENABLE_EMPTY_VALUE_HAS_NO_TARGET', source)
+        self.assertIn('CONTRACT_LABEL_RENDER_DIFF', source)
+        self.assertIn('RELATION_TARGET_ACTION_MISMATCH', source)
+        self.assertNotIn(
+            "has_value: !['', '-'].includes(String(row.textContent || '')",
+            source,
+        )
+
     def test_execution_detection_excludes_static_and_package_operations(self):
         name = 'scripts/ops/production_acceptance_harness.py'
         for command in [f'python3 -m py_compile {name}', f'scp {name} host:/tmp/',

@@ -138,38 +138,34 @@ function sourceUrl() {
   return `${FRONTEND_URL}/r/${MODEL}/${RECORD_ID}?action_id=${ACTION_ID}${menu}`;
 }
 
-function declaredEntriesFrom(contract) {
-  const out = {};
-  const walk = (node) => {
-    if (Array.isArray(node)) {
-      node.forEach(walk);
-      return;
-    }
-    if (!node || typeof node !== 'object') return;
-    const entry = node.relation_entry || node.relationEntry;
-    const name = String(node.name || node.fieldName || node.field_name || '').trim();
-    if (entry && typeof entry === 'object' && name && !out[name]) {
-      out[name] = {
-        model: String(entry.model || '').trim(),
-        action_id: entry.action_id ?? null,
-        menu_id: entry.menu_id ?? null,
-        entry_intent: String(entry.entry_intent || ''),
-        can_read: entry.can_read ?? null,
-        can_open: entry.can_open ?? null,
-        model_write_authority: entry.model_write_authority ?? null,
-      };
-    }
-    Object.values(node).forEach(walk);
-  };
-  walk(contract);
-  return out;
+function cleanText(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
-function layoutRelationEntriesFrom(contract) {
+function firstBoolean(...values) {
+  return values.find((value) => typeof value === 'boolean') ?? null;
+}
+
+function relationEntryPayload(entry) {
+  return {
+    model: cleanText(entry.model),
+    action_id: entry.action_id ?? null,
+    menu_id: entry.menu_id ?? null,
+    entry_intent: cleanText(entry.entry_intent),
+    can_read: entry.can_read ?? null,
+    can_open: entry.can_open ?? null,
+    model_write_authority: entry.model_write_authority ?? null,
+    reason_code: cleanText(entry.reason_code),
+  };
+}
+
+function declaredEntriesFrom(contract) {
   const out = {};
-  const layout = contract && typeof contract === 'object'
-    ? (contract.layoutContract || contract.layout || null)
-    : null;
+  const statusByWidget = new Map(
+    ((contract?.statusContract?.widgetStatus) || [])
+      .filter((row) => row && typeof row === 'object' && row.widgetId)
+      .map((row) => [String(row.widgetId), row]),
+  );
   const walk = (node) => {
     if (Array.isArray(node)) {
       node.forEach(walk);
@@ -180,20 +176,37 @@ function layoutRelationEntriesFrom(contract) {
     const entry = fieldInfo.relation_entry || node.relation_entry || node.relationEntry;
     const name = String(node.name || node.fieldName || node.field_name || '').trim();
     if (entry && typeof entry === 'object' && name && !out[name]) {
+      const widgetId = cleanText(node.widgetId);
+      const status = statusByWidget.get(widgetId) || {};
       out[name] = {
-        model: String(entry.model || '').trim(),
-        action_id: entry.action_id ?? null,
-        menu_id: entry.menu_id ?? null,
-        entry_intent: String(entry.entry_intent || ''),
-        can_read: entry.can_read ?? null,
-        can_open: entry.can_open ?? null,
-        model_write_authority: entry.model_write_authority ?? null,
+        ...relationEntryPayload(entry),
+        widget_id: widgetId || null,
+        field_type: cleanText(fieldInfo.type || fieldInfo.ttype || node.fieldType),
+        label: cleanText(node.displayLabel || node.label || node.string || node.title || fieldInfo.label || fieldInfo.string),
+        label_hidden: firstBoolean(node.nolabel, node.hideLabel),
+        visible: firstBoolean(
+          status.visible,
+          node.modifiers?.visible,
+          node.visible,
+          typeof node.invisible === 'boolean' ? !node.invisible : null,
+        ),
+        readonly: firstBoolean(status.readonly, node.modifiers?.readonly, node.readonly),
+        required: firstBoolean(status.required, node.modifiers?.required, node.required),
+        auth: cleanText(status.auth || node.auth),
+        render_reason_code: cleanText(status.reasonCode || node.reasonCode),
       };
     }
     Object.values(node).forEach(walk);
   };
-  walk(layout);
+  walk(contract);
   return out;
+}
+
+function layoutRelationEntriesFrom(contract) {
+  const layout = contract && typeof contract === 'object'
+    ? (contract.layoutContract || contract.layout || null)
+    : null;
+  return layout ? declaredEntriesFrom({ ...layout, statusContract: contract.statusContract }) : {};
 }
 
 async function login(page) {
@@ -254,31 +267,54 @@ async function waitForRelationControls(page, timeoutMs = 60000) {
   }
 }
 
-async function visibleRelationFieldStates(page) {
+async function visibleFieldStates(page) {
   return page.evaluate(() => {
+    const clean = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+    const isVisible = (node) => {
+      if (!node) return false;
+      const rect = node.getBoundingClientRect();
+      const style = window.getComputedStyle(node);
+      return rect.width > 1 && rect.height > 1
+        && style.display !== 'none' && style.visibility !== 'hidden';
+    };
     const rows = [...document.querySelectorAll('[data-field-name]')];
-    const seen = new Set();
-    const out = [];
+    const byField = new Map();
     rows.forEach((row) => {
       const name = row.getAttribute('data-field-name');
-      if (!name || seen.has(name)) return;
+      if (!name || !isVisible(row)) return;
       const control = row.querySelector('[data-appearance="readonly-relation"]');
       const editable = row.querySelector('.many2one-relation-control');
       const selected = control || editable;
-      if (!selected) return;
-      const rect = selected.getBoundingClientRect();
-      const style = window.getComputedStyle(selected);
-      if (rect.width <= 1 || rect.height <= 1 || style.display === 'none' || style.visibility === 'hidden') return;
-      seen.add(name);
-      out.push({
+      const labelNode = row.querySelector('.field-label-row label, label');
+      const valueNode = row.querySelector(
+        '.readonly-relation-label, .readonly-value, .many2one-relation-control input, .many2one-relation-control textarea, .many2one-relation-control select',
+      );
+      const input = row.querySelector('.many2one-relation-control input, .many2one-relation-control textarea, .many2one-relation-control select');
+      const valueText = input ? clean(input.value) : clean(valueNode?.textContent);
+      const next = {
         field: name,
-        label: String((control || row).textContent || '').replace(/\s+/g, ' ').trim(),
-        control_kind: control ? 'readonly_relation' : 'editable_many2one',
-        has_control: true,
-        has_value: !['', '-'].includes(String(row.textContent || '').replace(/\s+/g, ' ').trim()),
-      });
+        visible: true,
+        label: clean(labelNode?.textContent),
+        label_hidden: !labelNode,
+        value_text: valueText,
+        has_value: !['', '-'].includes(valueText),
+        control_kind: control ? 'readonly_relation' : editable ? 'editable_many2one' : 'readonly_value',
+        has_control: Boolean(selected && isVisible(selected)),
+        readonly: Boolean(control)
+          || row.getAttribute('data-field-state') === 'readonly'
+          || Boolean(input?.readOnly || input?.disabled),
+        required: Boolean(row.querySelector('.field-state--required'))
+          || String(row.getAttribute('data-field-state') || '') === 'required',
+        field_state: clean(row.getAttribute('data-field-state')),
+        field_auth: clean(row.getAttribute('data-field-auth')),
+        widget_type: clean(row.getAttribute('data-widget-type')),
+      };
+      const previous = byField.get(name);
+      if (!previous || (!previous.has_control && next.has_control) || (!previous.has_value && next.has_value)) {
+        byField.set(name, next);
+      }
     });
-    return out;
+    return [...byField.values()].sort((left, right) => left.field.localeCompare(right.field));
   });
 }
 
@@ -434,7 +470,7 @@ async function runProbe(acceptance, environment) {
     const declared = Object.keys(layoutDeclared).length ? layoutDeclared : broadDeclared;
     result.declared_entry_count = Object.keys(declared).length;
     result.declared_relation_entries = declared;
-    const fieldStates = await visibleRelationFieldStates(page);
+    const fieldStates = await visibleFieldStates(page);
     const controls = fieldStates.filter((row) => row.has_control);
     const visibleFields = [...new Set([
       ...(await visibleFieldNames(page)),
@@ -446,10 +482,15 @@ async function runProbe(acceptance, environment) {
     const contractOpenableFields = contractOpenable.map((row) => row.field);
     const visibleOpenableFields = contractOpenableFields.filter((field) => visibleFields.includes(field));
     const notVisibleOpenableFields = contractOpenableFields.filter((field) => !visibleFields.includes(field));
-    const emptyValueOpenableFields = visibleOpenableFields.filter((field) => {
-      const state = fieldStates.find((row) => row.field === field);
-      return !state?.has_value;
-    });
+    const missingVisibleState = visibleOpenableFields.filter(
+      (field) => !fieldStates.some((row) => row.field === field),
+    );
+    if (missingVisibleState.length) {
+      throw new Error(`visible openable relations have no rendered field state: ${missingVisibleState.join(',')}`);
+    }
+    const emptyValueOpenableFields = visibleOpenableFields.filter(
+      (field) => !fieldStates.find((row) => row.field === field)?.has_value,
+    );
     const populatedOpenableFields = visibleOpenableFields.filter(
       (field) => !emptyValueOpenableFields.includes(field),
     );
@@ -465,6 +506,126 @@ async function runProbe(acceptance, environment) {
     if (missingControls.length) throw new Error(`declared openable relations have no public control: ${missingControls.join(',')}`);
     if (undeclaredControls.length) throw new Error(`public relation controls are not declared openable: ${undeclaredControls.join(',')}`);
     if (invalidOpeners.length) throw new Error(`declared openable relations lack action/menu authority: ${invalidOpeners.join(',')}`);
+    const comparisonByField = new Map(contractOpenable.map(({ field, declared: entry }) => {
+      const rendered = fieldStates.find((row) => row.field === field) || {
+        field,
+        visible: false,
+        label: '',
+        label_hidden: null,
+        value_text: '',
+        has_value: false,
+        control_kind: null,
+        has_control: false,
+        readonly: null,
+        required: null,
+        field_state: '',
+        field_auth: '',
+        widget_type: '',
+      };
+      const contractSurface = {
+        label: entry.label || '',
+        label_hidden: entry.label_hidden,
+        visible: entry.visible,
+        readonly: entry.readonly,
+        required: entry.required,
+        field_type: entry.field_type || '',
+        relation_model: entry.model,
+        can_read: entry.can_read,
+        can_open: entry.can_open,
+        action_id: entry.action_id,
+        menu_id: entry.menu_id,
+        reason_code: entry.reason_code || '',
+      };
+      const renderedSurface = {
+        label: rendered.label,
+        label_hidden: rendered.label_hidden,
+        visible: rendered.visible,
+        readonly: rendered.readonly,
+        required: rendered.required,
+        field_type: rendered.widget_type,
+        has_value: rendered.has_value,
+        value_text: rendered.value_text,
+        has_open_control: rendered.has_control,
+        control_kind: rendered.control_kind,
+        field_state: rendered.field_state,
+        field_auth: rendered.field_auth,
+      };
+      const differences = [];
+      const recordDifference = (kind, blocking, reason, contractValue, renderedValue) => {
+        differences.push({
+          kind,
+          blocking,
+          contract: contractValue,
+          rendered: renderedValue,
+          reason,
+        });
+      };
+      if (typeof contractSurface.visible === 'boolean' && contractSurface.visible !== renderedSurface.visible) {
+        recordDifference(
+          'CONTRACT_VISIBILITY_MISMATCH',
+          true,
+          'Declared field visibility differs from the final rendered field presence.',
+          contractSurface.visible,
+          renderedSurface.visible,
+        );
+      }
+      if (typeof contractSurface.readonly === 'boolean'
+        && renderedSurface.visible
+        && contractSurface.readonly !== renderedSurface.readonly) {
+        recordDifference(
+          'CONTRACT_READONLY_MISMATCH',
+          true,
+          'Declared readonly state differs from the final rendered control state.',
+          contractSurface.readonly,
+          renderedSurface.readonly,
+        );
+      }
+      if (typeof contractSurface.required === 'boolean'
+        && renderedSurface.visible
+        && contractSurface.required !== renderedSurface.required) {
+        recordDifference(
+          'CONTRACT_REQUIRED_MISMATCH',
+          true,
+          'Declared required state differs from the final rendered required marker.',
+          contractSurface.required,
+          renderedSurface.required,
+        );
+      }
+      if (contractSurface.label && renderedSurface.visible
+        && contractSurface.label_hidden !== true && renderedSurface.label !== contractSurface.label) {
+        recordDifference(
+          'CONTRACT_LABEL_RENDER_DIFF',
+          false,
+          'The declared field label and the final user-facing label differ; keep this visible for presentation iteration.',
+          contractSurface.label,
+          renderedSurface.label,
+        );
+      }
+      if (contractSurface.can_open === true && !renderedSurface.has_value && !renderedSurface.has_open_control) {
+        recordDifference(
+          'OPENABLE_EMPTY_VALUE_HAS_NO_TARGET',
+          false,
+          'The relation is openable in the contract, but this record has no related value and therefore no current-record target to open.',
+          true,
+          false,
+        );
+      }
+      if (contractSurface.can_open === true && renderedSurface.has_value && !renderedSurface.has_open_control) {
+        recordDifference(
+          'VALUE_WITHOUT_OPEN_CONTROL',
+          true,
+          'A populated openable relation did not render an open control.',
+          true,
+          false,
+        );
+      }
+      return [field, {
+        field,
+        contract: contractSurface,
+        rendered: renderedSurface,
+        differences,
+      }];
+    }));
     const ordered = PINNED_FIELD
       ? [PINNED_FIELD, ...populatedOpenableFields]
       : populatedOpenableFields;
@@ -478,6 +639,7 @@ async function runProbe(acceptance, environment) {
     result.empty_value_openable_fields = emptyValueOpenableFields;
     result.not_visible_openable_fields = notVisibleOpenableFields;
     result.visible_relation_control_fields = controlFields;
+    result.contract_render_comparison = [...comparisonByField.values()];
     result.declared_openable = targets.map((field) => ({
       field,
       label: controls.find((row) => row.field === field)?.label || '',
@@ -496,6 +658,50 @@ async function runProbe(acceptance, environment) {
         attempt.failure = `declared openable entry produced no record navigation (${attempt.outcome})`;
       }
       if (attempt.outcome === 'opened') {
+        const targetPath = relativePathname(new URL(attempt.pathname, FRONTEND_URL).pathname);
+        const targetMatch = targetPath.match(/^\/(?:r|f)\/([^/]+)\/\d+$/);
+        const targetSearch = new URLSearchParams(attempt.search || '');
+        attempt.observed_relation = {
+          model: targetMatch?.[1] || '',
+          action_id: Number(targetSearch.get('action_id') || 0) || null,
+          menu_id: Number(targetSearch.get('menu_id') || 0) || null,
+        };
+        const comparison = comparisonByField.get(field);
+        const recordBehaviorDifference = (kind, contractValue, renderedValue, reason) => {
+          if (!comparison) return;
+          comparison.differences.push({
+            kind,
+            blocking: true,
+            contract: contractValue,
+            rendered: renderedValue,
+            reason,
+          });
+        };
+        if (attempt.observed_relation.model !== declaredEntry.model) {
+          recordBehaviorDifference(
+            'RELATION_TARGET_MODEL_MISMATCH',
+            declaredEntry.model,
+            attempt.observed_relation.model,
+            'The opened relation target model differs from the contract declaration.',
+          );
+          attempt.failure = `target model mismatch: ${attempt.observed_relation.model} != ${declaredEntry.model}`;
+        } else if (attempt.observed_relation.action_id !== Number(declaredEntry.action_id)) {
+          recordBehaviorDifference(
+            'RELATION_TARGET_ACTION_MISMATCH',
+            declaredEntry.action_id,
+            attempt.observed_relation.action_id,
+            'The opened relation used a different action id from the contract declaration.',
+          );
+          attempt.failure = `target action mismatch: ${attempt.observed_relation.action_id} != ${declaredEntry.action_id}`;
+        } else if (attempt.observed_relation.menu_id !== Number(declaredEntry.menu_id)) {
+          recordBehaviorDifference(
+            'RELATION_TARGET_MENU_MISMATCH',
+            declaredEntry.menu_id,
+            attempt.observed_relation.menu_id,
+            'The opened relation used a different menu id from the contract declaration.',
+          );
+          attempt.failure = `target menu mismatch: ${attempt.observed_relation.menu_id} != ${declaredEntry.menu_id}`;
+        }
         if (attempt.return_contract.return_model !== MODEL) attempt.failure = `return_model mismatch: ${attempt.return_contract.return_model}`;
         else if (attempt.return_contract.return_field !== field) attempt.failure = `return_field mismatch: ${attempt.return_contract.return_field}`;
         else if (attempt.return_contract.return_record_id !== String(RECORD_ID)) attempt.failure = `return_record_id mismatch: ${attempt.return_contract.return_record_id}`;
@@ -530,6 +736,26 @@ async function runProbe(acceptance, environment) {
     if (result.denied_requests.length) result.failures.push({ field: '-', reason: `denied requests during round trip: ${JSON.stringify(result.denied_requests)}` });
     if (result.console_errors.length) result.failures.push({ field: '-', reason: `console errors: ${JSON.stringify(result.console_errors.slice(0, 3))}` });
     if (!result.roundtrip) result.failures.push({ field: '-', reason: 'no declared relation entry completed a verified open-and-return round trip' });
+    const comparisonRows = [...comparisonByField.values()];
+    const blockingDifferences = comparisonRows.flatMap((row) => row.differences.filter((item) => item.blocking));
+    result.contract_render_comparison_summary = {
+      complete: comparisonRows.length === contractOpenableFields.length,
+      contract_field_count: contractOpenableFields.length,
+      compared_field_count: comparisonRows.length,
+      fields_with_differences: comparisonRows.filter((row) => row.differences.length).length,
+      difference_count: comparisonRows.reduce((count, row) => count + row.differences.length, 0),
+      blocking_count: blockingDifferences.length,
+      non_blocking_count: comparisonRows.reduce(
+        (count, row) => count + row.differences.filter((item) => !item.blocking).length,
+        0,
+      ),
+    };
+    if (blockingDifferences.length) {
+      result.failures.push({
+        field: '-',
+        reason: `blocking contract/render differences: ${blockingDifferences.map((item) => item.kind).join(',')}`,
+      });
+    }
     result.status = result.failures.length ? 'fail' : 'pass';
   } catch (err) {
     if (page) {
@@ -549,6 +775,7 @@ async function runProbe(acceptance, environment) {
     declared_entry_count: result.declared_entry_count,
     attempts: result.attempts.map((row) => ({ field: row.field, outcome: row.outcome, reason: row.reason, failure: row.failure })),
     roundtrip: result.roundtrip ? { field: result.roundtrip.field, restored: result.roundtrip.restored } : null,
+    contract_render_comparison_summary: result.contract_render_comparison_summary,
     denied_requests: result.denied_requests.length,
     console_errors: result.console_errors.length,
     error: result.error,

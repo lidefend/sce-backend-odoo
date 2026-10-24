@@ -136,6 +136,49 @@ def _presentation(head: str = HEAD, *, passed: bool = True) -> dict:
 def _relation(head: str = HEAD) -> dict:
     fields = ["user_id", "manager_id", "partner_id"]
     declared = {"can_read": True, "can_open": True, "action_id": 807, "menu_id": 430}
+    comparison = [
+        {
+            "field": field,
+            "contract": {
+                "can_read": True,
+                "can_open": True,
+                "visible": True,
+                "readonly": True,
+                "required": False,
+                "label": field,
+            },
+            "rendered": {
+                "visible": True,
+                "readonly": True,
+                "required": False,
+                "has_value": True,
+                "has_open_control": True,
+                "label": field,
+            },
+            "differences": [],
+        }
+        for field in fields
+    ]
+    comparison.append({
+        "field": "owner_id",
+        "contract": {
+            "can_read": True,
+            "can_open": True,
+            "visible": False,
+            "readonly": True,
+            "required": False,
+            "label": "owner_id",
+        },
+        "rendered": {
+            "visible": False,
+            "readonly": None,
+            "required": None,
+            "has_value": False,
+            "has_open_control": False,
+            "label": "",
+        },
+        "differences": [],
+    })
     return {
         "schema": "record-relation-roundtrip-acceptance.v1",
         "status": "pass",
@@ -158,6 +201,16 @@ def _relation(head: str = HEAD) -> dict:
         "empty_value_openable_fields": [],
         "not_visible_openable_fields": ["owner_id"],
         "visible_relation_control_fields": fields,
+        "contract_render_comparison": comparison,
+        "contract_render_comparison_summary": {
+            "complete": True,
+            "contract_field_count": 4,
+            "compared_field_count": 4,
+            "fields_with_differences": 0,
+            "difference_count": 0,
+            "blocking_count": 0,
+            "non_blocking_count": 0,
+        },
         "roundtrip": {
             "field": "user_id",
             "restored": {
@@ -477,7 +530,13 @@ class TestAdapters(unittest.TestCase):
             guard._adapter_list_surface(broken, HEAD)
 
     def test_relation_roundtrip_adapter(self):
-        result = guard._adapter_relation_roundtrip(_relation(), HEAD)
+        relation_contract = {
+            "allowed_non_blocking_difference_kinds": [
+                "CONTRACT_LABEL_RENDER_DIFF",
+                "OPENABLE_EMPTY_VALUE_HAS_NO_TARGET",
+            ]
+        }
+        result = guard._adapter_relation_roundtrip(_relation(), HEAD, relation_contract)
         self.assertEqual(result["counts"]["openable_entries"], 3)
         self.assertEqual(result["counts"]["opened_entries"], 3)
         broken = _relation()
@@ -512,6 +571,48 @@ class TestAdapters(unittest.TestCase):
         broken["not_visible_openable_fields"] = []
         with self.assertRaisesRegex(guard.BindingError, "partition"):
             guard._adapter_relation_roundtrip(broken, HEAD)
+        broken = _relation()
+        del broken["contract_render_comparison"]
+        with self.assertRaisesRegex(guard.BindingError, "comparison is missing"):
+            guard._adapter_relation_roundtrip(broken, HEAD, relation_contract)
+        broken = _relation()
+        broken["contract_render_comparison"][0]["differences"] = [{
+            "kind": "CONTRACT_LABEL_RENDER_DIFF",
+            "blocking": False,
+            "reason": "label copy differs",
+            "contract": "负责人",
+            "rendered": "项目经理",
+        }]
+        broken["contract_render_comparison_summary"]["difference_count"] = 1
+        broken["contract_render_comparison_summary"]["non_blocking_count"] = 1
+        broken["contract_render_comparison_summary"]["fields_with_differences"] = 1
+        guard._adapter_relation_roundtrip(broken, HEAD, relation_contract)
+        broken = _relation()
+        broken["contract_render_comparison"][0]["differences"] = [{
+            "kind": "CONTRACT_VISIBILITY_MISMATCH",
+            "blocking": True,
+            "reason": "declared visible but rendered hidden",
+            "contract": True,
+            "rendered": False,
+        }]
+        broken["contract_render_comparison_summary"]["difference_count"] = 1
+        broken["contract_render_comparison_summary"]["blocking_count"] = 1
+        broken["contract_render_comparison_summary"]["fields_with_differences"] = 1
+        with self.assertRaisesRegex(guard.BindingError, "blocking differences"):
+            guard._adapter_relation_roundtrip(broken, HEAD, relation_contract)
+        broken = _relation()
+        broken["contract_render_comparison"][0]["differences"] = [{
+            "kind": "UNREVIEWED_DIFFERENCE",
+            "blocking": False,
+            "reason": "unclassified",
+            "contract": True,
+            "rendered": False,
+        }]
+        broken["contract_render_comparison_summary"]["difference_count"] = 1
+        broken["contract_render_comparison_summary"]["non_blocking_count"] = 1
+        broken["contract_render_comparison_summary"]["fields_with_differences"] = 1
+        with self.assertRaisesRegex(guard.BindingError, "not declared in policy"):
+            guard._adapter_relation_roundtrip(broken, HEAD, relation_contract)
 
 
 class TestManifest(unittest.TestCase):

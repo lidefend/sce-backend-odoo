@@ -651,9 +651,19 @@ def _adapter_relation_roundtrip(data: dict, head: str, contract: dict | None = N
     empty_value_openable_fields = data.get("empty_value_openable_fields") or []
     not_visible_openable_fields = data.get("not_visible_openable_fields") or []
     visible_control_fields = data.get("visible_relation_control_fields") or []
+    contract_render_comparison = data.get("contract_render_comparison")
+    comparison_summary = data.get("contract_render_comparison_summary")
     _require(isinstance(openable, list), "relation roundtrip declared_openable must be an array")
     _require(isinstance(controls, list), "relation roundtrip controls must be an array")
     _require(isinstance(attempts, list), "relation roundtrip attempts must be an array")
+    _require(
+        isinstance(contract_render_comparison, list) and contract_render_comparison,
+        "relation roundtrip contract/render comparison is missing",
+    )
+    _require(
+        isinstance(comparison_summary, dict),
+        "relation roundtrip contract/render comparison summary is missing",
+    )
     _require(
         isinstance(contract_openable_fields, list) and contract_openable_fields,
         "relation roundtrip contract openable fields are missing",
@@ -717,6 +727,109 @@ def _adapter_relation_roundtrip(data: dict, head: str, contract: dict | None = N
         attempted_fields == openable_fields,
         "relation probe did not attempt every contract-openable field",
     )
+    comparison_rows: dict[str, dict] = {}
+    blocking_differences: list[str] = []
+    allowed_non_blocking = set(
+        (contract or {}).get("allowed_non_blocking_difference_kinds") or []
+    )
+    for row in contract_render_comparison:
+        _require(isinstance(row, dict), "relation contract/render comparison row is invalid")
+        field = str(row.get("field") or "")
+        _require(bool(field), "relation contract/render comparison row has no field")
+        _require(field not in comparison_rows, f"duplicate relation comparison field {field}")
+        declared_surface = row.get("contract")
+        rendered_surface = row.get("rendered")
+        differences = row.get("differences")
+        _require(isinstance(declared_surface, dict), f"{field}: contract surface is missing")
+        _require(isinstance(rendered_surface, dict), f"{field}: rendered surface is missing")
+        _require(isinstance(differences, list), f"{field}: difference list is missing")
+        _require(
+            declared_surface.get("can_read") is True and declared_surface.get("can_open") is True,
+            f"{field}: comparison contract does not declare readable/openable relation semantics",
+        )
+        _require(
+            isinstance(rendered_surface.get("visible"), bool),
+            f"{field}: rendered visibility is not recorded",
+        )
+        _require(
+            isinstance(rendered_surface.get("has_value"), bool),
+            f"{field}: rendered value presence is not recorded",
+        )
+        _require(
+            isinstance(rendered_surface.get("has_open_control"), bool),
+            f"{field}: rendered open-control presence is not recorded",
+        )
+        for difference in differences:
+            _require(isinstance(difference, dict), f"{field}: difference row is invalid")
+            kind = str(difference.get("kind") or "")
+            blocking = difference.get("blocking")
+            reason = str(difference.get("reason") or "").strip()
+            _require(bool(kind), f"{field}: difference kind is missing")
+            _require(isinstance(blocking, bool), f"{field}: difference blocking flag is missing")
+            _require(bool(reason), f"{field}: difference reason is missing")
+            if blocking:
+                blocking_differences.append(f"{field}:{kind}")
+            else:
+                _require(
+                    kind in allowed_non_blocking,
+                    f"{field}: non-blocking difference kind {kind} is not declared in policy",
+                )
+        comparison_rows[field] = row
+    _require(
+        set(comparison_rows) == set(contract_openable_fields),
+        "relation contract/render comparison does not cover the exact contract-openable fields",
+    )
+    rendered_visible_fields = sorted(
+        field
+        for field, row in comparison_rows.items()
+        if row["rendered"].get("visible") is True
+    )
+    rendered_empty_fields = sorted(
+        field
+        for field, row in comparison_rows.items()
+        if row["rendered"].get("visible") is True
+        and row["rendered"].get("has_value") is False
+    )
+    _require(
+        rendered_visible_fields == sorted(visible_openable_fields),
+        "relation comparison visible fields do not match the declared visible set",
+    )
+    _require(
+        rendered_empty_fields == sorted(empty_value_openable_fields),
+        "relation comparison empty-value fields do not match the declared empty set",
+    )
+    expected_difference_count = sum(
+        len(row["differences"]) for row in comparison_rows.values()
+    )
+    expected_non_blocking_count = sum(
+        1
+        for row in comparison_rows.values()
+        for difference in row["differences"]
+        if difference.get("blocking") is False
+    )
+    expected_fields_with_differences = sum(
+        1 for row in comparison_rows.values() if row["differences"]
+    )
+    _require(
+        comparison_summary.get("complete") is True
+        and int(comparison_summary.get("contract_field_count") or 0)
+        == len(contract_openable_fields)
+        and int(comparison_summary.get("compared_field_count") or 0)
+        == len(comparison_rows)
+        and int(comparison_summary.get("fields_with_differences") or 0)
+        == expected_fields_with_differences
+        and int(comparison_summary.get("difference_count") or 0)
+        == expected_difference_count
+        and int(comparison_summary.get("blocking_count") or 0)
+        == len(blocking_differences)
+        and int(comparison_summary.get("non_blocking_count") or 0)
+        == expected_non_blocking_count,
+        "relation contract/render comparison summary is inconsistent",
+    )
+    _require(
+        not blocking_differences,
+        f"relation contract/render comparison has blocking differences: {blocking_differences}",
+    )
     for row in openable:
         declared = row.get("declared") or {}
         _require(
@@ -754,6 +867,9 @@ def _adapter_relation_roundtrip(data: dict, head: str, contract: dict | None = N
             "openable_entries": len(openable),
             "contract_openable_entries": len(contract_openable_fields),
             "visible_openable_entries": len(visible_openable_fields),
+            "contract_render_comparison_entries": len(contract_render_comparison),
+            "contract_render_differences": expected_difference_count,
+            "contract_render_blocking_differences": len(blocking_differences),
             "opened_entries": sum(
                 1 for row in attempts if row.get("outcome") == "opened"
             ),
