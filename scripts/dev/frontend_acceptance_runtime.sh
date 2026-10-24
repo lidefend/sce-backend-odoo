@@ -434,8 +434,8 @@ PYRESOLUTION
           FRONTEND_URL=http://127.0.0.1:5180 ACCEPTANCE_BASE_URL=http://127.0.0.1:5180 BASE_URL=http://127.0.0.1:5180 \
           SC_ACCEPTANCE_DATABASE=sc_frontend_acceptance DB_NAME=sc_frontend_acceptance E2E_DB=sc_frontend_acceptance DB=sc_frontend_acceptance \
           SC_ACCEPTANCE_EXPECTED_SHA="$(git -C "$ROOT_DIR" rev-parse HEAD)" SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_MANAGE_SERVICE=false \
-          SC_ACCEPTANCE_TARGET_MODE=managed SC_ACCEPTANCE_LOGIN=fixture_role_pm SC_ACCEPTANCE_ROLE= E2E_LOGIN=fixture_role_pm \
-          ACCEPTANCE_RECORD_RESOLUTION=artifacts/backend/acceptance_record_identity.json RELATION_RESOLUTION_KEY=project RELATION_IDENTITY_SOURCE=resolution \
+          SC_ACCEPTANCE_TARGET_MODE=managed SC_ACCEPTANCE_LOGIN="${SC_ACCEPTANCE_RELATION_LOGIN:-fixture_role_config_admin}" SC_ACCEPTANCE_ROLE= E2E_LOGIN="${SC_ACCEPTANCE_RELATION_LOGIN:-fixture_role_config_admin}" \
+          ACCEPTANCE_RECORD_RESOLUTION=artifacts/backend/acceptance_record_identity.json RELATION_RESOLUTION_KEY="${RELATION_RESOLUTION_KEY:-project}" RELATION_FIELD="${RELATION_FIELD:-}" RELATION_IDENTITY_SOURCE=resolution \
           node "$ROOT_DIR/scripts/verify/record_relation_roundtrip_acceptance.js"
         ;;
       standard-list-surface-browser)

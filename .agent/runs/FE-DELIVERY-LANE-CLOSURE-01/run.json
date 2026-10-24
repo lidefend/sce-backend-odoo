@@ -22,6 +22,11 @@
     "config/acceptance/evolution_binding.v1.json",
     "config/acceptance/backend_contract_instance_daily_v1.json",
     "config/acceptance/backend_contract_instance_v1.json",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/tests/test_runtime_view_contract_fail_closed.py",
+    "make/frontend.mk",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/verify/test_frontend_probe_toolchain_guard.py",
     "scripts/dev/frontend_acceptance_runtime_profile.py",
     "scripts/dev/frontend_standard_preview.py",
     "scripts/ops/acceptance_evolution_record.py",
@@ -29,7 +34,8 @@
     "scripts/verify/test_frontend_acceptance_runtime_profile.py",
     "scripts/verify/test_acceptance_evolution_binding_guard.py",
     "scripts/verify/test_frontend_standard_preview.py",
-    "scripts/verify/test_dev_acceptance_release_identity.py"
+    "scripts/verify/test_dev_acceptance_release_identity.py",
+    "scripts/verify/test_frontend_probe_toolchain_guard.py"
   ],
   "owner_approvals": [{"stage": "lane_closure", "status": "approved", "approved_by": "Owner", "approved_at": "2026-10-24T00:00:00+08:00", "scope": "Classify all 14 targets, wire deterministic and explicit runtime lanes, validate, and form a local candidate."}],
   "previous_active_run": ".agent/runs/FE-DELIVERY-PR-FIX-02/run.json",

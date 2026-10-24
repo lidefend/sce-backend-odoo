@@ -82,10 +82,12 @@ for (const mutation of [null, b=>delete b.schema, b=>b.expected_sha='b'.repeat(4
         result = subprocess.run(['node', '-e', program, body], cwd=ROOT, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         wrapper = (ROOT / 'scripts/dev/frontend_acceptance_runtime.sh').read_text()
-        self.assertIn('RELATION_RESOLUTION_KEY=project RELATION_IDENTITY_SOURCE=resolution', wrapper)
+        self.assertIn('RELATION_RESOLUTION_KEY="${RELATION_RESOLUTION_KEY:-project}"', wrapper)
+        self.assertIn('RELATION_FIELD="${RELATION_FIELD:-}"', wrapper)
+        self.assertIn('RELATION_IDENTITY_SOURCE=resolution', wrapper)
         relation = wrapper.split('      standard-relation-roundtrip-browser)')[1].split('      standard-list-surface-browser)')[0]
-        self.assertIn('SC_ACCEPTANCE_LOGIN=fixture_role_pm', relation)
-        self.assertIn('E2E_LOGIN=fixture_role_pm', relation)
+        self.assertIn('SC_ACCEPTANCE_LOGIN="${SC_ACCEPTANCE_RELATION_LOGIN:-fixture_role_config_admin}"', relation)
+        self.assertIn('E2E_LOGIN="${SC_ACCEPTANCE_RELATION_LOGIN:-fixture_role_config_admin}"', relation)
 
     def test_execution_detection_excludes_static_and_package_operations(self):
         name = 'scripts/ops/production_acceptance_harness.py'

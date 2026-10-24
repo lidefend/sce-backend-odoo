@@ -1221,7 +1221,7 @@ endef
 SC_ACCEPTANCE_CONTRACT_RECEIPT ?= artifacts/backend/dev_acceptance_release_probe.json
 SC_ACCEPTANCE_CONTRACT_DECLARATION ?= config/acceptance/backend_contract_instance_v1.json
 SC_ACCEPTANCE_REQUIRED_SHA ?= $(if $(ACCEPTANCE_TARGET_SHA),$(ACCEPTANCE_TARGET_SHA),$(shell git rev-parse HEAD))
-SC_ACCEPTANCE_RELATION_LOGIN ?= fixture_role_pm
+SC_ACCEPTANCE_RELATION_LOGIN ?= fixture_role_config_admin
 verify.frontend.list_surface_search_contract.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_list_surface_search_contract
 	@node scripts/verify/acceptance_contract_receipt_test.mjs

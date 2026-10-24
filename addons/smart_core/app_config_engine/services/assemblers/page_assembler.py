@@ -4271,7 +4271,11 @@ class PageAssembler:
         for relation in relation_models:
             act = action_by_model.get(relation)
             if not act:
-                entry_map[relation] = _open_entry(relation, reason_code="NO_VISIBLE_ACTION")
+                entry_map[relation] = _open_entry(
+                    relation,
+                    can_open=False,
+                    reason_code="NO_VISIBLE_ACTION",
+                )
                 continue
             candidate_menu_id = int(menu_by_action.get(act.id) or 0)
             if (candidate_menu_id, int(act.id)) in published_pairs:

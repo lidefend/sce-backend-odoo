@@ -80,3 +80,17 @@ declarations still declared only six. The list probe correctly rejected the
 request conflict. Both declarations now consume the canonical
 `CONTRACT_V2_CLIENT_CAPABILITIES` shape, with a regression test preventing the
 declaration from drifting from the client again.
+
+The faithful relation probe then exposed a P0 contract contradiction:
+`_build_relation_entry_map` marked a relation `can_open=true` even when no
+published visible action/menu pair existed, leaving `action_id` and `menu_id`
+null. The contract now emits `can_open=false` with
+`NO_VISIBLE_ACTION`; the focused Odoo regression executed 12 tests with zero
+failures. The browser probe was not weakened or redirected.
+
+The browser wrapper also hard-coded `fixture_role_pm` and `project`, ignoring the
+Make-level relation actor and resolution inputs. That made the probe execute a
+different scenario from the one declared by the lane. The wrapper now consumes
+`SC_ACCEPTANCE_RELATION_LOGIN`, `RELATION_RESOLUTION_KEY` and `RELATION_FIELD`
+verbatim, with `fixture_role_config_admin` as the default authorized actor. The
+probe assertions remain unchanged.
