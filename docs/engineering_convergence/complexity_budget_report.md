@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4912`
+- Scanned files: `4916`
 - Files requiring split plan: `71`
 - Files above warning threshold: `142`
 
@@ -192,6 +192,7 @@ Generated from repository source files. This report is informational during the 
 | 849 | Python source | `scripts/verify/test_system_performance_baseline.py` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
+| 843 | Python source | `scripts/verify/frontend_decision_authority.py` |
 | 843 | Python source | `scripts/verify/test_scene_r3_action_target_scene_resolution.py` |
 | 842 | Python source | `scripts/verify/guard_registry_audit.py` |
 | 841 | Python source | `scripts/verify/test_sc_data_scope_rule_coverage_guard.py` |
@@ -203,7 +204,6 @@ Generated from repository source files. This report is informational during the 
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
 | 815 | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
-| 815 | Python source | `scripts/verify/frontend_decision_authority.py` |
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
 | 810 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
@@ -215,9 +215,9 @@ Generated from repository source files. This report is informational during the 
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
 | 801 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |
 | 491 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
+| 479 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 434 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
-| 414 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 385 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 381 | Shell script | `scripts/demo/verify.sh` |
 | 364 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |

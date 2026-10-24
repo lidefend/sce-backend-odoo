@@ -1,4 +1,7 @@
 import re
+import os
+import subprocess
+import tempfile
 from pathlib import Path
 import unittest
 import yaml
@@ -139,6 +142,53 @@ class BackendTestSuiteStepIntegrityTest(unittest.TestCase):
         self.assertIn('if ! evaluate_orm_outcome "${module_status}" "${module_log}"; then', step)
         self.assertIn('orm_expect_identity="odoo.addons.${module}.tests."', step)
         self.assertIn('orm_expect_database="${attempt_db}"', step)
+
+
+class AttemptArchiveControlFlowTest(unittest.TestCase):
+    def test_real_workflow_loop_preserves_failures_and_retry_history(self):
+        workflow=yaml.safe_load((ROOT/'.github/workflows/backend_test_suite.yml').read_text())
+        step=next(s['run'] for s in workflow['jobs']['backend_suite']['steps'] if s['name']=='Run backend test suite per module')
+        # Only the external executors are stubbed. Execute the actual YAML loop
+        # and real ORM result guard, without Docker, a database or product tests.
+        stubs=r"""
+make() {
+  local db='' arg
+  for arg in "$@"; do case "$arg" in DB_NAME=*) db="${arg#DB_NAME=}";; esac; done
+  if [ "$CASE" = orm_fail ]; then return 1; fi
+  if [[ "$CASE" == retry* ]] && [[ "$db" != *_retry1 ]]; then return 137; fi
+  printf '2026-10-24 00:00:00 INFO %s odoo.addons.example.tests.test_fixture: Starting Fixture.test_one ...\n' "$db"
+  printf "0 failed, 0 error(s) of 1 tests when loading database '%s'\n" "$db"
+}
+python3() {
+  if [ "$1" = -m ]; then
+    if [ "$CASE" = python_fail ]; then return 1; fi
+    printf 'Ran 1 test in 0.001s\n\nOK\n'; return 0
+  fi
+  printf '%s\n' "$*" >> "$RUNNER_TEMP/calls"
+  if [ "$CASE" = archive_fail ] && [ "$2" = archive-attempt ]; then return 1; fi
+  return 0
+}
+tee() { command tee "$@"; if [ "$CASE" = log_fail ] || { [ "$CASE" = retry_log_fail ] && [[ "$1" == *attempt1.log ]]; }; then return 7; fi; }
+"""
+        for case,expected,archives,records in [('pass',0,1,1),('retry',0,2,1),('orm_fail',1,1,0),
+                ('log_fail',1,1,0),('python_fail',1,1,0),('python_pass',0,1,1),('archive_fail',1,1,0),('retry_log_fail',1,2,0)]:
+            with self.subTest(case=case),tempfile.TemporaryDirectory() as tmp:
+                folder=Path(tmp);(folder/'backend-plan.json').write_text('{}')
+                environment={**os.environ,'CASE':case,'RUNNER_TEMP':tmp,'GITHUB_RUN_ID':'fixture',
+                    'GITHUB_ENV':str(folder/'env'),'GITHUB_STEP_SUMMARY':str(folder/'summary'),
+                    'HEAD_SHA':'a'*40,'IMPACT_BASE':'b'*40,'SHARD_INDEX':'0','DB_NAME':'fixture_db',
+                    'ENV_FILE':str(folder/'managed.env'),'TEST_TAGS_INPUT':'',
+                    'MODULES':'' if case.startswith('python') else 'example',
+                    'PYTHON_MODULES':'smart_construction_scene' if case.startswith('python') else ''}
+                result=subprocess.run(['bash','-e','-c',stubs+step],cwd=ROOT,env=environment,capture_output=True,text=True)
+                self.assertEqual(expected,result.returncode,result.stdout+result.stderr)
+                calls=(folder/'calls').read_text().splitlines()
+                self.assertEqual(archives,sum(' archive-attempt ' in line for line in calls))
+                self.assertEqual(records,sum(' record ' in line for line in calls))
+                if case=='retry':
+                    attempts=[line for line in calls if ' archive-attempt ' in line]
+                    self.assertIn('--attempt 1',attempts[0]);self.assertIn('--status 137',attempts[0])
+                    self.assertIn('--attempt 2',attempts[1]);self.assertIn('--status 0',attempts[1])
 
 
 if __name__ == "__main__":

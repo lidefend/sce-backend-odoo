@@ -771,6 +771,8 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # github-actions security sweep.
 .PHONY: verify.ci.workflow.contract
 verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit
+	@python3 -m unittest scripts.verify.test_backend_contract_fact_readback_probe
+	@python3 scripts/ci/test_backend_test_receipt.py
 	@python3 scripts/ci/test_backend_impact_plan.py
 	@python3 scripts/ci/test_backend_suite_plan.py
 	@python3 -m py_compile scripts/ci/test_backend_test_suite_dispatch_contract.py

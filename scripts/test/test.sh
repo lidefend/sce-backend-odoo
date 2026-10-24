@@ -12,6 +12,14 @@ guard_prod_forbid
 log "dev test (upgrade + tests) DB=${DB_NAME} tags=${TEST_TAGS}"
 TEST_TAGS_FINAL="$(normalize_test_tags "${MODULE}" "${TEST_TAGS}")"
 
+# Opt-in evidence capture in the existing test container after dependency install.
+# No extra database or test execution, and no environment/credential dump.
+RECEIPT_ARGS=()
+if [[ "${SC_BACKEND_RECEIPT_CAPTURE:-0}" == "1" ]]; then
+  RECEIPT_ARGS=(-e SC_BACKEND_RECEIPT_CAPTURE=1
+    -v "${ROOT_DIR}/scripts/ci/backend_test_receipt.py:/tmp/sc-test-tools/scripts/ci/backend_test_receipt.py:ro")
+fi
+
 RUN_RM="${RUN_RM:---rm}"
 RUN_NAME=()
 if [[ "${KEEP_TEST_CONTAINER:-0}" == "1" ]]; then
@@ -24,10 +32,14 @@ fi
 
 # shellcheck disable=SC2086
 compose ${COMPOSE_FILES} run --no-deps ${RUN_RM} -T "${RUN_NAME[@]}" \
+  "${RECEIPT_ARGS[@]}" \
   -v "${DOCS_MOUNT_HOST}:${DOCS_MOUNT_CONT}:ro" \
   -v "${CONFIG_MOUNT_HOST}:${CONFIG_MOUNT_CONT}:ro" \
   --entrypoint bash odoo -lc "
     pip3 install -q -r ${CONFIG_MOUNT_CONT}/requirements-test.txt
+    if [ \"\${SC_BACKEND_RECEIPT_CAPTURE:-0}\" = 1 ]; then
+      python3 /tmp/sc-test-tools/scripts/ci/backend_test_receipt.py environment || exit \$?
+    fi
     exec /usr/bin/odoo \
       --db_host=db --db_port=5432 --db_user=${DB_USER} --db_password=${DB_PASSWORD} \
       -d ${DB_NAME} \

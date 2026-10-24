@@ -76,7 +76,7 @@ jobs:
           python3 scripts/ci/backend_suite_plan.py --base "${IMPACT_BASE}" \
             --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" \
             --output "${RUNNER_TEMP}/backend-plan.json" --github-output "${GITHUB_OUTPUT}"
-          cat "${RUNNER_TEMP}/backend-plan.json" >> "${GITHUB_STEP_SUMMARY}"
+          python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json")); p.pop("input_inventory",None); print(json.dumps(p,indent=2))' >> "${GITHUB_STEP_SUMMARY}"
 
   backend_suite:
     needs: plan
@@ -98,6 +98,7 @@ jobs:
       TEST_TAGS_INPUT: ${{ github.event.inputs.test_tags }}
       SHARD_INDEX: ${{ matrix.index }}
       MODULE_OVERRIDE: ${{ github.event.inputs.modules }}
+      SC_BACKEND_RECEIPT_CAPTURE: '1'
 
     defaults:
       run:
@@ -136,9 +137,9 @@ jobs:
           # Recompute the partition from exact trees; a matrix value cannot
           # supply or silently shrink the module list.
           candidates="$(python3 scripts/ci/backend_suite_plan.py --base "${IMPACT_BASE}" \
-            --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" --shard "${SHARD_INDEX}" \
+            --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" --shard "${SHARD_INDEX}" --input-inventory \
             --output "${RUNNER_TEMP}/backend-plan.json")"
-          cat "${RUNNER_TEMP}/backend-plan.json" >> "${GITHUB_STEP_SUMMARY}"
+          python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json")); p.pop("input_inventory",None); print(json.dumps(p,indent=2))' >> "${GITHUB_STEP_SUMMARY}"
           for module in ${candidates}; do
             test_dir=""
             for root in addons demo_addons; do
@@ -301,6 +302,12 @@ jobs:
           attempted=0
           planned_odoo="$(printf '%s\n' ${MODULES} | wc -w | tr -d ' ')"
           planned_python="$(printf '%s\n' ${PYTHON_MODULES} | wc -w | tr -d ' ')"
+          receipt_dir="${RUNNER_TEMP}/backend-receipts-${GITHUB_RUN_ID}-${SHARD_INDEX}"
+          mkdir -p "${receipt_dir}"
+          echo "BACKEND_RECEIPT_DIR=${receipt_dir}" >> "${GITHUB_ENV}"
+          python3 scripts/ci/backend_test_receipt.py context --output "${receipt_dir}/runtime-context.json" || exit 1
+          cp "${RUNNER_TEMP}/backend-plan.json" "${receipt_dir}/scope-plan.json" || exit 1
+          receipt_base="${IMPACT_BASE}"
           for module in ${MODULES}; do
             attempted=$((attempted + 1))
             echo "===== backend suite: ${module} ====="
@@ -332,7 +339,9 @@ jobs:
                 "${demo_password}" >> "${demo_env}"
               module_env_file="${demo_env}"
             fi
+            module_duration=0
             module_status=1
+            module_evidence_failed=0
             module_log=""
             for module_attempt in 1 2; do
               attempt_db="${module_db}"
@@ -347,6 +356,7 @@ jobs:
                 fi
               fi
               module_log="${RUNNER_TEMP}/backend-suite-odoo-${module}-${GITHUB_RUN_ID}-attempt${module_attempt}.log"
+              attempt_started=${SECONDS}
               if [ -n "${attempt_env_file}" ]; then
                 ENV_FILE="${attempt_env_file}" make test MODULE="${module}" \
                   TEST_TAGS="${module_test_tags}" DB_NAME="${attempt_db}" 2>&1 | tee "${module_log}"
@@ -354,7 +364,22 @@ jobs:
                 make test MODULE="${module}" TEST_TAGS="${module_test_tags}" \
                   DB_NAME="${attempt_db}" 2>&1 | tee "${module_log}"
               fi
-              module_status="${PIPESTATUS[0]}"
+              pipeline_status=("${PIPESTATUS[@]}")
+              module_duration=$((module_duration + SECONDS - attempt_started))
+              module_status="${pipeline_status[0]}"
+              module_log_status="${pipeline_status[1]}"
+              if [ "${module_log_status}" -ne 0 ]; then
+                module_evidence_failed=1
+                failed=1
+              fi
+              if ! python3 scripts/ci/backend_test_receipt.py archive-attempt \
+                  --module "${module}" --attempt "${module_attempt}" --head "${HEAD_SHA}" \
+                  --status "${module_status}" --log-status "${module_log_status}" --database "${attempt_db}" \
+                  --log "${module_log}" --secrets-file "${attempt_env_file:-${ENV_FILE}}" --output "${receipt_dir}"; then
+                echo "::error::attempt diagnostic collection failed for ${module}"
+                module_evidence_failed=1
+                failed=1
+              fi
               if [[ ! "${module_status}" =~ ^(137|139)$ ]] || [ "${module_attempt}" -eq 2 ]; then
                 break
               fi
@@ -364,6 +389,16 @@ jobs:
             orm_expect_database="${attempt_db}"
             if ! evaluate_orm_outcome "${module_status}" "${module_log}"; then
               echo "::error::backend suite failed execution/count/identity guard for module ${module}"
+              failed=1
+            elif [ "${module_evidence_failed}" -ne 0 ]; then
+              echo "::error::backend suite attempt evidence incomplete for module ${module}"
+              failed=1
+            elif ! python3 scripts/ci/backend_test_receipt.py record \
+                --module "${module}" --kind orm --head "${HEAD_SHA}" --base "${receipt_base}" \
+                --secrets-file "${attempt_env_file:-${ENV_FILE}}" --selection="${module_test_tags}" --duration-seconds "${module_duration}" \
+                --database "${attempt_db}" --status "${module_status}" --log "${module_log}" \
+                --context "${receipt_dir}/runtime-context.json" --scope-plan "${receipt_dir}/scope-plan.json" --output "${receipt_dir}"; then
+              echo "::error::backend execution evidence collection failed for ${module}"
               failed=1
             fi
           done
@@ -379,11 +414,32 @@ jobs:
             done
             test -n "${test_dir}" || { echo "::error::missing Python test directory for ${module}"; failed=1; continue; }
             python_log="${RUNNER_TEMP}/backend-suite-python-${module}-${GITHUB_RUN_ID}.log"
-            if ! python3 -m unittest discover -s "${test_dir}" -p 'test*.py' 2>&1 | tee "${python_log}"; then
+            python_started=${SECONDS}
+            python3 -m unittest discover -s "${test_dir}" -p 'test*.py' 2>&1 | tee "${python_log}"
+            pipeline_status=("${PIPESTATUS[@]}")
+            python_duration=$((SECONDS - python_started))
+            python_status="${pipeline_status[0]}"
+            python_log_status="${pipeline_status[1]}"
+            python_evidence_failed=0
+            if ! python3 scripts/ci/backend_test_receipt.py archive-attempt \
+                --module "${module}" --attempt 1 --head "${HEAD_SHA}" \
+                --status "${python_status}" --log-status "${python_log_status}" \
+                --log "${python_log}" --secrets-file "${ENV_FILE}" --output "${receipt_dir}"; then
+              echo "::error::attempt diagnostic collection failed for ${module}"
+              python_evidence_failed=1
+              failed=1
+            fi
+            if [ "${python_status}" -ne 0 ] || [ "${python_log_status}" -ne 0 ] || [ "${python_evidence_failed}" -ne 0 ]; then
               echo "::error::backend Python unit suite failed for module ${module}"
               failed=1
             elif ! grep -Eq 'Ran [1-9][0-9]* test[s]?[[:space:]]' "${python_log}"; then
               echo "::error::backend Python unit suite collected zero tests for module ${module}"
+              failed=1
+            elif ! python3 scripts/ci/backend_test_receipt.py record \
+                --module "${module}" --kind python --head "${HEAD_SHA}" --base "${receipt_base}" \
+                --secrets-file "${ENV_FILE}" --duration-seconds "${python_duration}" --status 0 --log "${python_log}" \
+                --context "${receipt_dir}/runtime-context.json" --scope-plan "${receipt_dir}/scope-plan.json" --output "${receipt_dir}"; then
+              echo "::error::backend execution evidence collection failed for ${module}"
               failed=1
             fi
           done
@@ -399,6 +455,15 @@ jobs:
           echo "backend suite executed ${attempted} of ${planned_total} planned module run(s); failed=${failed}"
           printf 'shard=%s executed=%s planned=%s failed=%s\n' "${SHARD_INDEX}" "${attempted}" "${planned_total}" "${failed}" >> "${GITHUB_STEP_SUMMARY}"
           test "${failed}" -eq 0
+
+      - name: Preserve per-target execution observations
+        if: always() && env.BACKEND_RECEIPT_DIR != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: backend-execution-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.index }}
+          path: ${{ env.BACKEND_RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Dump logs on failure
         if: failure()

@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "1ddade160d7759ebb2fcda03c162d42593461e45",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-INCREMENTAL-VALIDATION-01.yaml",
+    ".agent/runs/FE-INCREMENTAL-VALIDATION-01/run.json",
+    "docs/ops/iterations/fe_incremental_validation_01.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {},
+  "blockers": [
+    "Historical backend runs lack immutable database image and post-install test-package identity; existing cache does not contain test receipts.",
+    "Existing module impact map excludes actual docs dependencies; zero selected modules is not a complete equivalence proof."
+  ],
+  "next_exact_step": "Use Stage 0/1 evidence and cache analysis to prepare the smallest correction to existing dependency mapping and runtime receipt capture; no historical test replay or remote write. Only then implement evidence_scope-backed candidate decisions.",
+  "id": "FE-INCREMENTAL-VALIDATION-01",
+  "branch": "fix/fe-incremental-validation-01",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-INCREMENTAL-VALIDATION-01.yaml",
+  "record": "docs/ops/iterations/fe_incremental_validation_01.md",
+  "results": {
+    "stage0": "baseline evidence collected and hashed; two runs each 14 modules / 673 tests",
+    "stage1": "14 target dependency map / 433 test-source files; identified docs dependency false negative and missing environment identity",
+    "cache_audit": "43 cache records; frontend BuildKit hits; host pip cache path absent; no backend test-result receipt cache",
+    "evidence_index": ".runtime/fe-incremental-validation-01/evidence-manifest.json",
+    "current_reuse_count": 0,
+    "actual_saved_seconds": 0,
+    "stages_2_4": "not_started; reuse prerequisites incomplete"
+  }
+}

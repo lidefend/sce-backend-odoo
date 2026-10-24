@@ -51,6 +51,115 @@ class ImpactSelectionTest(unittest.TestCase):
         self.assertEqual(plan['modules'], [])
         self.assertEqual(plan['mode'], 'incremental')
 
+    def test_real_scene_json_readers_trigger_only_their_consumer(self):
+        path = 'addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py'
+        reads, _ = planner.test_file_reads((planner.ROOT / path).read_text(), path)
+        expected = [
+            'docs/product/delivery/v1/construction_pm_v1_scene_surface_policy.json',
+            'docs/product/delivery/v1/delivery_menu_tree_source_v1.json',
+            'docs/product/delivery/v1/module_scene_capability_source_v1.json',
+        ]
+        graph = {'scene': {**module(), 'file_inputs': reads}, 'unrelated': module()}
+        for filename in expected:
+            with self.subTest(filename=filename):
+                self.assertIn(filename, reads)
+                self.assertEqual(['scene'], planner.select([filename], graph, graph)['modules'])
+        self.assertEqual([], planner.select(['docs/product/delivery/v1/unread.json'], graph, graph)['modules'])
+
+    def test_old_file_reader_survives_removal_and_rename(self):
+        before = {'industry': {**module(), 'file_inputs': ['docs/old.json']},
+                  'bundle': module(['industry']), 'unrelated': module()}
+        after = {**before, 'industry': {**module(), 'file_inputs': ['config/new.json']}}
+        for path in ['docs/old.json', 'config/new.json']:
+            with self.subTest(path=path):
+                self.assertIn('industry', planner.select([path], before, after)['modules'])
+        self.assertEqual(['industry'], planner.select(['docs/old.json'], before, after)['modules'])
+        self.assertEqual(['bundle', 'industry'], planner.select(['addons/industry/models/a.py'], before, after)['modules'])
+
+    def test_concrete_fixture_reads_are_extracted_without_running_test(self):
+        source = '''from pathlib import Path
+ROOT = Path(__file__).resolve().parents[3]
+raise RuntimeError("must not execute")
+def test_fixture():
+    fixture = ROOT / "config" / "fixture.json"
+    fixture.read_bytes()
+'''
+        reads, unknown = planner.test_file_reads(source, 'addons/sample/tests/test_a.py')
+        self.assertEqual(['config/fixture.json'], reads)
+        self.assertEqual([], unknown)
+
+    def test_dynamic_and_shadowed_reads_are_visible_not_guessed(self):
+        source = '''from pathlib import Path
+ROOT = Path(__file__).resolve().parents[3]
+def dynamic(name):
+    (ROOT / "docs" / name).read_text()
+def shadowed(ROOT):
+    (ROOT / "docs" / "a.json").read_text()
+'''
+        reads, unknown = planner.test_file_reads(source, 'addons/sample/tests/test_a.py')
+        self.assertEqual([], reads)
+        self.assertEqual([4, 6], unknown)
+
+    def test_known_reader_cannot_weaken_unknown_impact_fallback(self):
+        graph = {'one': {**module(), 'file_inputs': ['config/flags.json']},
+                 'two': {**module(), 'unresolved_file_reads': ['tests/test_a.py:4']}}
+        result = planner.select(['config/flags.json'], graph, graph)
+        self.assertEqual('full', result['mode'])
+        self.assertEqual(['one', 'two'], result['modules'])
+
+    def test_method_does_not_inherit_class_local_path(self):
+        source = '''from pathlib import Path
+ROOT = Path(__file__).resolve().parents[3]
+class Tests:
+    ROOT = ROOT / "wrong"
+    def test_input(self):
+        (ROOT / "docs" / "actual.json").read_text()
+'''
+        reads, unknown = planner.test_file_reads(source, 'addons/sample/tests/test_a.py')
+        self.assertEqual(['docs/actual.json'], reads)
+        self.assertEqual([], unknown)
+
+    def test_unsupported_binding_forms_invalidate_outer_values(self):
+        for statement in ['ROOT /= "child.json"',
+                          'ROOT: Path = Path(__file__).resolve().parent',
+                          'for ROOT in values: pass',
+                          'with manager() as ROOT: pass']:
+            with self.subTest(statement=statement):
+                source = ('from pathlib import Path\nROOT = Path(__file__).resolve().parents[3]\n'
+                          'def test_a():\n    '+statement+'\n    ROOT.read_text()\n')
+                reads, unknown = planner.test_file_reads(source, 'addons/sample/tests/test_a.py')
+                self.assertEqual([], reads)
+                self.assertTrue(unknown)
+
+    def test_lambda_reads_are_unresolved_and_defaults_use_outer_scope(self):
+        source = '''from pathlib import Path
+ROOT = Path(__file__).resolve().parents[3]
+reader = lambda ROOT: (ROOT / "docs" / "lambda.json").read_text()
+def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
+    pass
+'''
+        reads, unknown = planner.test_file_reads(source, 'addons/sample/tests/test_a.py')
+        self.assertEqual(['docs/default.json'], reads)
+        self.assertEqual([3], unknown)
+
+    def test_exact_tree_snapshot_keeps_deleted_input_dependency(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def git(*args):
+                return subprocess.check_output(['git', *args], cwd=root, text=True).strip()
+            git('init', '-q'); git('config', 'user.name', 'Fixture'); git('config', 'user.email', 'fixture@example.invalid')
+            target = root / 'addons/scene/tests/test_a.py'
+            target.parent.mkdir(parents=True)
+            target.write_text('from pathlib import Path\nROOT = Path(__file__).resolve().parents[3]\ndef test_a():\n    (ROOT / "docs" / "input.json").read_text ()\n')
+            (target.parent.parent / '__manifest__.py').write_text("{'depends': []}")
+            (root / 'docs').mkdir(); (root / 'docs/input.json').write_text('{}')
+            git('add', '.'); git('commit', '-qm', 'base'); base = git('rev-parse', 'HEAD')
+            git('rm', 'docs/input.json'); git('commit', '-qm', 'remove input'); head = git('rev-parse', 'HEAD')
+            with patch.object(planner, 'ROOT', root):
+                before, after = planner.snapshot(base), planner.snapshot(head)
+                self.assertEqual(['docs/input.json'], after['scene']['file_inputs'])
+                self.assertEqual(['scene'], planner.select(['docs/input.json'], before, after)['modules'])
+
     def test_empty_diff_is_not_green_skip(self):
         self.assertEqual(planner.select([], self.graph, self.graph)['mode'], 'full')
 

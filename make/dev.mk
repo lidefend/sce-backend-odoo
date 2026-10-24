@@ -1686,3 +1686,11 @@ acceptance.feedback.runtime.bundle: guard.prod.forbid
 
 acceptance.deployment.postverify.bundle: guard.prod.forbid
 	@$(MAKE) --no-print-directory verify.daily.runtime.entry.identity.readonly
+
+# One read-only contract/source-fact observation in the existing local profile.
+# This tests the collector, never substitutes local data for CI input identity.
+.PHONY: local.dev.runtime.contract_fact_readback.probe
+local.dev.runtime.contract_fact_readback.probe: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/verify/backend_contract_fact_readback_probe.py

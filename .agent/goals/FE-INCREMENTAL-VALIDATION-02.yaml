@@ -1,0 +1,7 @@
+schema_version: 1
+goal:
+  id: FE-INCREMENTAL-VALIDATION-02
+  title: 测试读取依赖映射与后端执行观察回执
+  status: verification_pending
+  formal_product_layer: P4
+  exclusions: [product_logic, remote_writes, test_skip, cache_execution]
