@@ -1,0 +1,8 @@
+schema_version: 1
+goal:
+  id: P4-TOOLING-NON-RUNTIME-CLASSIFICATION
+  title: P4 工具归类为非 Odoo 运行时
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: backend impact classification
+  exclusions: [product_code, permissions, merge, deployment, browser_acceptance]

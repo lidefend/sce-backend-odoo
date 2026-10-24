@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "id": "P4-TOOLING-NON-RUNTIME-CLASSIFICATION",
+  "branch": "fix/p4-tooling-non-runtime-classification",
+  "baseline_sha": "f9c9bb20d9a423c2ff86a09d9564feb04bb46c0d",
+  "status": "verification_pending",
+  "goal": ".agent/goals/P4-TOOLING-NON-RUNTIME-CLASSIFICATION.yaml",
+  "record": "docs/ops/iterations/p4_tooling_non_runtime_classification.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P4-TOOLING-NON-RUNTIME-CLASSIFICATION.yaml",
+    ".agent/runs/P4-TOOLING-NON-RUNTIME-CLASSIFICATION/run.json",
+    "docs/ops/iterations/p4_tooling_non_runtime_classification.md",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/test_backend_impact_plan.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "focused": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/test_backend_impact_plan.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Land scripts/ops/** and scripts/ci/** as NON_RUNTIME so P4 tooling no longer triggers the full per-module ORM suite."
+}

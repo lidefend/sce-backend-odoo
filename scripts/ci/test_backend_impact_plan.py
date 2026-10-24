@@ -67,6 +67,15 @@ class ImpactSelectionTest(unittest.TestCase):
         self.assertEqual(plan['modules'], [])
         self.assertEqual(plan['mode'], 'incremental')
 
+    def test_p4_tooling_scripts_are_not_orm_runtime(self):
+        for path in ('scripts/ops/branch_cleanup_safe.sh',
+                     'scripts/ops/agent_run_context.py',
+                     'scripts/ci/generate_test_inventory.py'):
+            with self.subTest(path=path):
+                plan = planner.select([path], self.graph, self.graph)
+                self.assertEqual([], plan['modules'])
+                self.assertEqual('NOT_APPLICABLE', plan['scope_status'])
+
     def test_real_scene_json_readers_trigger_only_their_consumer(self):
         path = 'addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py'
         reads, _ = planner.test_file_reads((planner.ROOT / path).read_text(), path)
