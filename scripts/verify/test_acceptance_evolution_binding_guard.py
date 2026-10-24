@@ -152,7 +152,11 @@ def _relation(head: str = HEAD) -> dict:
         "attempts": [
             {"field": field, "outcome": "opened"} for field in fields
         ],
-        "contract_openable_fields": fields,
+        "contract_openable_fields": [*fields, "owner_id"],
+        "visible_openable_fields": fields,
+        "populated_openable_fields": fields,
+        "empty_value_openable_fields": [],
+        "not_visible_openable_fields": ["owner_id"],
         "visible_relation_control_fields": fields,
         "roundtrip": {
             "field": "user_id",
@@ -503,6 +507,10 @@ class TestAdapters(unittest.TestCase):
         broken = _relation()
         broken["declared_openable"][0]["declared"]["action_id"] = None
         with self.assertRaisesRegex(guard.BindingError, "action/menu"):
+            guard._adapter_relation_roundtrip(broken, HEAD)
+        broken = _relation()
+        broken["not_visible_openable_fields"] = []
+        with self.assertRaisesRegex(guard.BindingError, "partition"):
             guard._adapter_relation_roundtrip(broken, HEAD)
 
 

@@ -95,12 +95,13 @@ different scenario from the one declared by the lane. The wrapper now consumes
 verbatim, with `fixture_role_config_admin` as the default authorized actor. The
 probe assertions remain unchanged.
 
-The relation probe now derives its expected set from `layoutContract`: every
-layout relation with `can_read=true && can_open=true` must have a public open
-control with a published action/menu pair, every public relation control must
-map back to such a declared entry, and every declared field must be attempted.
-The evidence records the contract fields, visible fields, attempts and opened
-counts separately, so a change in the declared surface cannot silently reduce
-the executed set. The fact-layer minimum is three after the P0 `can_open=false`
-correction for the unpublished company relation, not the previous accidental
-four.
+The relation probe now compares three separate facts: seven contract-openable
+entries, six currently visible form fields, and three populated fields with a
+public control that can execute a roundtrip. The remaining three visible
+openable fields have empty values and correctly render no open-current-record
+control; one additional openable field is not visible in this render profile.
+Those non-blocking differences are recorded explicitly. Every public control
+must map back to a contract-openable entry, every populated field must be
+attempted, and every attempt must use the declared action/menu pair. This
+replaces the previous accidental fixed count of four with exact set
+reconciliation across contract, rendered surface and executed behavior.

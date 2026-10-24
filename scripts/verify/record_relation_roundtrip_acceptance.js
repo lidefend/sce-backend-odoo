@@ -241,9 +241,11 @@ async function waitForRelationControls(page, timeoutMs = 60000) {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     const ready = await page.evaluate(() => (
-      [...document.querySelectorAll('[data-appearance="readonly-relation"]')].some((node) => {
+      [...document.querySelectorAll('[data-appearance="readonly-relation"], .many2one-relation-control')].some((node) => {
         const rect = node.getBoundingClientRect();
-        return rect.width > 1 && rect.height > 1;
+        const style = window.getComputedStyle(node);
+        return rect.width > 1 && rect.height > 1
+          && style.display !== 'none' && style.visibility !== 'hidden';
       })
     )).catch(() => false);
     if (ready) return true;
@@ -252,7 +254,7 @@ async function waitForRelationControls(page, timeoutMs = 60000) {
   }
 }
 
-async function visibleRelationControls(page) {
+async function visibleRelationFieldStates(page) {
   return page.evaluate(() => {
     const rows = [...document.querySelectorAll('[data-field-name]')];
     const seen = new Set();
@@ -261,20 +263,58 @@ async function visibleRelationControls(page) {
       const name = row.getAttribute('data-field-name');
       if (!name || seen.has(name)) return;
       const control = row.querySelector('[data-appearance="readonly-relation"]');
-      if (!control) return;
-      const rect = control.getBoundingClientRect();
-      if (rect.width <= 1 || rect.height <= 1) return;
+      const editable = row.querySelector('.many2one-relation-control');
+      const selected = control || editable;
+      if (!selected) return;
+      const rect = selected.getBoundingClientRect();
+      const style = window.getComputedStyle(selected);
+      if (rect.width <= 1 || rect.height <= 1 || style.display === 'none' || style.visibility === 'hidden') return;
       seen.add(name);
-      out.push({ field: name, label: String(control.textContent || '').replace(/\s+/g, ' ').trim() });
+      out.push({
+        field: name,
+        label: String((control || row).textContent || '').replace(/\s+/g, ' ').trim(),
+        control_kind: control ? 'readonly_relation' : 'editable_many2one',
+        has_control: true,
+        has_value: !['', '-'].includes(String(row.textContent || '').replace(/\s+/g, ' ').trim()),
+      });
     });
     return out;
   });
 }
 
+async function visibleFieldNames(page) {
+  return page.evaluate(() => [...new Set(
+    [...document.querySelectorAll('[data-field-name]')]
+      .filter((node) => {
+        const rect = node.getBoundingClientRect();
+        const style = window.getComputedStyle(node);
+        return rect.width > 1 && rect.height > 1
+          && style.display !== 'none' && style.visibility !== 'hidden';
+      })
+      .map((node) => String(node.getAttribute('data-field-name') || '').trim())
+      .filter(Boolean),
+  )].sort());
+}
+
 async function clickAndClassify(page, field, sourcePath) {
-  const locator = page.locator(`[data-field-name="${field}"] [data-appearance="readonly-relation"]`).first();
-  if (!await locator.count()) return { field, outcome: 'control_missing' };
-  await locator.click({ timeout: 10000 });
+  const readonly = page.locator(`[data-field-name="${field}"] [data-appearance="readonly-relation"]`).first();
+  if (await readonly.count()) {
+    await readonly.click({ timeout: 10000 });
+  } else {
+    const editable = page.locator(`[data-field-name="${field}"] .many2one-relation-control`).first();
+    if (!await editable.count()) return { field, outcome: 'control_missing' };
+    await editable.click({ timeout: 10000 });
+    const openActions = page.locator('.many2one-action--record');
+    let opened = false;
+    for (let index = 0; index < await openActions.count(); index += 1) {
+      const action = openActions.nth(index);
+      if (!await action.isVisible().catch(() => false)) continue;
+      await action.click();
+      opened = true;
+      break;
+    }
+    if (!opened) return { field, outcome: 'open_action_missing' };
+  }
   const deadline = Date.now() + 25000;
   const sourceRelativePath = relativePathname(sourcePath);
   for (;;) {
@@ -394,13 +434,27 @@ async function runProbe(acceptance, environment) {
     const declared = Object.keys(layoutDeclared).length ? layoutDeclared : broadDeclared;
     result.declared_entry_count = Object.keys(declared).length;
     result.declared_relation_entries = declared;
-    const controls = await visibleRelationControls(page);
+    const fieldStates = await visibleRelationFieldStates(page);
+    const controls = fieldStates.filter((row) => row.has_control);
+    const visibleFields = [...new Set([
+      ...(await visibleFieldNames(page)),
+      ...fieldStates.map((row) => row.field),
+    ])].sort();
     const contractOpenable = Object.entries(declared)
       .filter(([, entry]) => entry && entry.can_read === true && entry.can_open === true)
       .map(([field, entry]) => ({ field, declared: entry }));
     const contractOpenableFields = contractOpenable.map((row) => row.field);
+    const visibleOpenableFields = contractOpenableFields.filter((field) => visibleFields.includes(field));
+    const notVisibleOpenableFields = contractOpenableFields.filter((field) => !visibleFields.includes(field));
+    const emptyValueOpenableFields = visibleOpenableFields.filter((field) => {
+      const state = fieldStates.find((row) => row.field === field);
+      return !state?.has_value;
+    });
+    const populatedOpenableFields = visibleOpenableFields.filter(
+      (field) => !emptyValueOpenableFields.includes(field),
+    );
     const controlFields = controls.map((row) => row.field);
-    const missingControls = contractOpenableFields.filter((field) => !controlFields.includes(field));
+    const missingControls = populatedOpenableFields.filter((field) => !controlFields.includes(field));
     const undeclaredControls = controlFields.filter((field) => {
       const entry = declared[field];
       return !entry || entry.can_read !== true || entry.can_open !== true;
@@ -412,12 +466,17 @@ async function runProbe(acceptance, environment) {
     if (undeclaredControls.length) throw new Error(`public relation controls are not declared openable: ${undeclaredControls.join(',')}`);
     if (invalidOpeners.length) throw new Error(`declared openable relations lack action/menu authority: ${invalidOpeners.join(',')}`);
     const ordered = PINNED_FIELD
-      ? [PINNED_FIELD, ...contractOpenableFields]
-      : contractOpenableFields;
+      ? [PINNED_FIELD, ...populatedOpenableFields]
+      : populatedOpenableFields;
     const targets = [...new Set(ordered)];
     if (!targets.length) throw new Error('no visible declared relation-open control found on the source record');
     result.controls = controls;
+    result.visible_relation_field_states = fieldStates;
     result.contract_openable_fields = contractOpenableFields;
+    result.visible_openable_fields = visibleOpenableFields;
+    result.populated_openable_fields = populatedOpenableFields;
+    result.empty_value_openable_fields = emptyValueOpenableFields;
+    result.not_visible_openable_fields = notVisibleOpenableFields;
     result.visible_relation_control_fields = controlFields;
     result.declared_openable = targets.map((field) => ({
       field,

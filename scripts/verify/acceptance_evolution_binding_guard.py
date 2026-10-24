@@ -646,6 +646,10 @@ def _adapter_relation_roundtrip(data: dict, head: str, contract: dict | None = N
     controls = data.get("controls") or []
     attempts = data.get("attempts") or []
     contract_openable_fields = data.get("contract_openable_fields") or []
+    visible_openable_fields = data.get("visible_openable_fields") or []
+    populated_openable_fields = data.get("populated_openable_fields") or []
+    empty_value_openable_fields = data.get("empty_value_openable_fields") or []
+    not_visible_openable_fields = data.get("not_visible_openable_fields") or []
     visible_control_fields = data.get("visible_relation_control_fields") or []
     _require(isinstance(openable, list), "relation roundtrip declared_openable must be an array")
     _require(isinstance(controls, list), "relation roundtrip controls must be an array")
@@ -657,6 +661,22 @@ def _adapter_relation_roundtrip(data: dict, head: str, contract: dict | None = N
     _require(
         isinstance(visible_control_fields, list) and visible_control_fields,
         "relation roundtrip visible control fields are missing",
+    )
+    _require(
+        isinstance(visible_openable_fields, list) and visible_openable_fields,
+        "relation roundtrip visible openable fields are missing",
+    )
+    _require(
+        isinstance(populated_openable_fields, list) and populated_openable_fields,
+        "relation roundtrip populated openable fields are missing",
+    )
+    _require(
+        isinstance(empty_value_openable_fields, list),
+        "relation roundtrip empty-value openable fields must be an array",
+    )
+    _require(
+        isinstance(not_visible_openable_fields, list),
+        "relation roundtrip not-visible openable fields must be an array",
     )
     _require(
         declared_entries >= _min_count(contract, "declared_entry_count"),
@@ -673,8 +693,25 @@ def _adapter_relation_roundtrip(data: dict, head: str, contract: dict | None = N
     _require(len(control_fields) == len(controls), "relation control entry is invalid")
     _require(len(attempted_fields) == len(attempts), "relation attempt is invalid")
     _require(
-        openable_fields == contract_openable_fields == visible_control_fields,
+        openable_fields == populated_openable_fields == visible_control_fields,
         "relation contract, public controls and openable evidence diverge",
+    )
+    _require(
+        set(populated_openable_fields).isdisjoint(empty_value_openable_fields)
+        and set(populated_openable_fields) | set(empty_value_openable_fields)
+        == set(visible_openable_fields)
+        and set(visible_openable_fields).isdisjoint(not_visible_openable_fields)
+        and set(visible_openable_fields) | set(not_visible_openable_fields)
+        == set(contract_openable_fields),
+        "relation populated, empty and non-visible fields do not partition the contract",
+    )
+    _require(
+        len(contract_openable_fields) >= _min_count(contract, "contract_openable_entries"),
+        "relation roundtrip contract openable surface is below the declared minimum",
+    )
+    _require(
+        len(visible_openable_fields) >= _min_count(contract, "visible_openable_entries"),
+        "relation roundtrip visible openable surface is below the declared minimum",
     )
     _require(
         attempted_fields == openable_fields,
@@ -715,6 +752,8 @@ def _adapter_relation_roundtrip(data: dict, head: str, contract: dict | None = N
         "counts": {
             "declared_entries": declared_entries,
             "openable_entries": len(openable),
+            "contract_openable_entries": len(contract_openable_fields),
+            "visible_openable_entries": len(visible_openable_fields),
             "opened_entries": sum(
                 1 for row in attempts if row.get("outcome") == "opened"
             ),

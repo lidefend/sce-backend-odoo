@@ -280,8 +280,10 @@
       "evidence": {
         "adapter": "relation_roundtrip",
         "min_counts": {
+          "contract_openable_entries": 7,
           "declared_entry_count": 13,
-          "declared_openable": 3
+          "declared_openable": 3,
+          "visible_openable_entries": 6
         }
       },
       "stages": [
