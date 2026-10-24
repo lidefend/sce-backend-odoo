@@ -88,12 +88,16 @@
 - `make verify.daily_dev.product_menu_release_gate.guard`: PASS with
   `construction.standard` 91 pages and `construction.preview` 131 pages.
 - The official complexity report and split-plan generators were run twice; the
-  second generation was byte-identical. `ci.generated_evidence.preflight`
-  passed every generated-report guard through the tracked-report checks, then
-  stopped at `verify.frontend.component_driver_takeover.unit` because the clean
-  local workspace has no `frontend/packages/ui/node_modules`. This is an
-  environment precondition, not a report staleness failure; browser evidence
-  below ran on the daily host where managed dependencies exist.
+  second generation was byte-identical.
+- `make fe.install.cached`: PASS, lockfile
+  `0d3d8c93500e64b12a8d572bfe87e68aa359de632c63b31185870bc81ac1f6f2`,
+  639 packages reused, 0 downloaded, frozen lockfile and ignored install scripts.
+- `make verify.frontend.component_driver_takeover.unit`: PASS, 13 tests,
+  required 33, missing 0, unassessed required takeovers 0.
+- `make ci.generated_evidence.preflight`: PASS with all 1,590-entry inventory,
+  E2E matrix, module dependency, complexity, split-plan, GitHub execution plan,
+  contract fingerprint, tracked generated reports and component evidence
+  current.
 
 ## Live deployment identity
 
@@ -127,6 +131,17 @@ No additional product defect was proven by these journeys. The remaining
 acceptance boundaries are the distinct demo-role versus fixture-role principal
 populations and the unexercised live backend feedback path noted above.
 
+## Owner disposition
+
+- Tool fixes: closed as passed.
+- Daily user acceptance: conditionally passed for the tested project, role,
+  feedback-client and relation journeys.
+- Overall frontend productization delivery: not claimed.
+- Role-population equivalence: tracked separately by
+  `FE-ROLE-MATRIX-ACCEPTANCE-EQUIVALENCE-01`.
+- Real backend feedback chain: tracked separately by
+  `FE-FEEDBACK-BACKEND-CHAIN-ACCEPTANCE-01`.
+
 ## External state
 
 The official fingerprint helper restored the missing ignored
@@ -134,3 +149,29 @@ The official fingerprint helper restored the missing ignored
 artifact; the computed value exactly matched both runtime instances
 (`33a88d…`). No frontend build, service restart, module upgrade, database
 restore, push, PR, merge, deployment or production operation was performed.
+
+## Local workspace retirement
+
+- Git registered worktrees after retirement: only
+  `/home/lidefend/workspace/sce-backend-odoo`; `git worktree prune --dry-run`
+  reports no stale registrations.
+- Retired archive staging root:
+  `/home/lidefend/workspace/.workspace-closeout-archive/20261024-main-96c860d0/task-staging`.
+  It contained 33 top-level temporary directories, 23 exact-candidate
+  ownership markers and 1,838,348 files, totalling 20,968,751,360 bytes.
+- The original live staging paths were absent, no process referenced them, and
+  the candidate histories remain recoverable from `local-branches.bundle`
+  (`f4963949…`). Readable runtime/governance evidence and the archive checksum
+  inventory were retained outside `task-staging`.
+- Retirement evidence:
+  `/home/lidefend/workspace/.workspace-closeout-archive/20261024-main-96c860d0/task-staging-retirement-20261024/`.
+- The archive size dropped from approximately 29G to 3.9G. A stale
+  `sce-backend-odoo-local-env-user-permission-20261019` skeleton containing only
+  empty root-owned directories and no `.git` was also removed.
+- The eight dated frontend prototype directories under
+  `/home/lidefend/workspace/2026-08-05-21-27-25` were preserved as
+  `legacy-planning/frontend-architecture-plan-20260805.tar.gz` in the same
+  closeout archive. The archive contains all 112 source files and verifies with
+  SHA-256 `94a7fc214b124cd9344d873032a1dcec673dbbd270d2505f0434260c2a887bb8`;
+  the uncompressed duplicate was then removed and `LOCAL_DIRECTORY_INVENTORY.md`
+  now records the package as archived rather than active.

@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-DAILY-ACCEPTANCE-TOOL-CLOSURE-01
   title: Repair the finance navigation-count and daily multi-duty acceptance tools
-  status: active
+  status: completed
   formal_product_layer: P4 ops delivery tool
   layer_target: daily acceptance navigation and multi-duty orchestration
   modules_or_tools:
@@ -52,5 +52,5 @@ goal:
     Revert this topic commit; no data, runtime configuration or deployed source
     was changed by the tool repair.
   next_exact_step: >-
-    Review and commit the completed P4 tool corrections and the daily
-    user-journey evidence; stop without pushing or mutating the deployed runtime.
+    Closed. The two tool defects are fixed. Full frontend product delivery is
+    not claimed; the two acceptance boundaries are tracked by separate goals.

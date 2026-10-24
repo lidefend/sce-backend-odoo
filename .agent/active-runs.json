@@ -12,7 +12,6 @@
     "fix/baseline-docs-links-20261020": ".agent/runs/BASELINE-DOCS-LINKS-20261020/run.json",
     "fix/ci-backend-sharding-cache-20261017": ".agent/runs/CI-REMOTE-EFFICIENCY-20261017/run.json",
     "fix/daily-acceptance-demo-profile-20261019": ".agent/runs/ACCEPTANCE-EVIDENCE-LAYER-REUSE-20261019/run.json",
-    "fix/daily-acceptance-tool-closure-20261024": ".agent/runs/FE-DAILY-ACCEPTANCE-TOOL-CLOSURE-01/run.json",
     "fix/daily-entry-cookie-session-scope-20261019": ".agent/runs/DAILY-ENTRY-COOKIE-SESSION-SCOPE-20261019/run.json",
     "fix/daily-permission-truth-20261022": ".agent/runs/DAILY-PERMISSION-TRUTH-CLOSURE-20261022/run.json",
     "fix/daily-runtime-first-deploy-20261022": ".agent/runs/DAILY-RUNTIME-FIRST-DEPLOY-20261022/run.json",
