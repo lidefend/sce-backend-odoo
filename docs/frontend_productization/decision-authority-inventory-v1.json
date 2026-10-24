@@ -103,7 +103,7 @@
       "literal": "ui.contract.v2",
       "path": "frontend/apps/web/src/app/contracts/v2/client.ts",
       "lines": [
-        125
+        119
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -598,7 +598,7 @@
       "literal": "allow",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1491
+        1492
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -611,7 +611,7 @@
       "literal": "coming_soon",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1491
+        1492
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -624,7 +624,7 @@
       "literal": "deny",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1491
+        1492
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -637,7 +637,7 @@
       "literal": "pending",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1491
+        1492
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -815,6 +815,20 @@
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
         94
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|ready|frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "ready",
+      "path": "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
+      "lines": [
+        137
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1644,21 +1658,21 @@
     }
   ],
   "summary": {
-    "totalFindings": 152,
-    "distinctDecisions": 110,
+    "totalFindings": 153,
+    "distinctDecisions": 111,
     "byRule": {
       "R2_intent_literal": 19,
       "R3_router_literal_destination": 17,
-      "R4_business_state_literal": 116
+      "R4_business_state_literal": 117
     },
     "byClassification": {
       "contract-derived": 62,
-      "excluded-render-interaction": 90
+      "excluded-render-interaction": 91
     },
     "unclassified": 0,
     "contractDerived": 62,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
-    "excludedRenderInteraction": 90
+    "excludedRenderInteraction": 91
   }
 }
