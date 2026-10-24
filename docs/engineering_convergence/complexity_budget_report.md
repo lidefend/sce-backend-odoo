@@ -208,9 +208,9 @@ Generated from repository source files. This report is informational during the 
 | 810 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
+| 807 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
 | 806 | Python source | `addons/smart_construction_core/models/core/funding_baseline.py` |
 | 803 | Python source | `scripts/verify/frontend_product_page_header_guard.py` |
-| 803 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
 | 802 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
 | 801 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |

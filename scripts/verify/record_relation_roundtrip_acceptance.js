@@ -288,9 +288,13 @@ async function visibleFieldStates(page) {
       const control = row.querySelector('[data-appearance="readonly-relation"]');
       const editable = row.querySelector('.many2one-relation-control');
       const selected = control || editable;
-      const descriptionsRow = row.closest('tr');
+      const contentCell = row.closest('td');
+      const previousCell = contentCell?.previousElementSibling;
+      const descriptionsLabel = previousCell?.matches('.t-descriptions__label')
+        ? previousCell
+        : null;
       const labelNode = row.querySelector('.field-label-row label, label')
-        || descriptionsRow?.querySelector('.t-descriptions__label, th, dt');
+        || descriptionsLabel;
       const valueNode = row.querySelector(
         '.readonly-relation-label, .readonly-value, .many2one-relation-control input, .many2one-relation-control textarea, .many2one-relation-control select',
       );
