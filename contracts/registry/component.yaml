@@ -13,6 +13,7 @@ registry: component
 
 # 未逐项覆盖时生效的默认值。
 defaults:
+  field_contract_version: "1.0"
   presentation_modes: [task, workspace]
   render_profiles: [create, edit, readonly]
   readiness: ready
@@ -30,6 +31,8 @@ renderers:
   - PaymentSettlementDetailCollectionControl
 
 components:
+  sc.feedback.message: {kind: node, version: "1.0.0"}
+  sc.navigation.anchor: {kind: node, version: "1.0.0"}
   sc.input.text: {semantic: text, field_types: [char], renderer: FormSectionField}
   sc.input.binary: {semantic: binary, field_types: [binary], renderer: FormSectionField}
   sc.input.textarea: {semantic: long_text, field_types: [text, html], renderer: FormSectionField}

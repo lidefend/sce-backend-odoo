@@ -243,6 +243,7 @@ export function canonicalNodeHasPresentableContent(
   relationProjection?: CanonicalRelationVisibilityProjection,
 ): boolean {
   if (!node.visible) return false;
+  if (node.nativePresentation.nodeComponent) return true;
   if (visibleCanonicalFields(node).some((field) => canonicalFieldHasPresentableValue(field, relationProjection))) return true;
   if (node.text.trim() || node.action || node.nativeWidget) return true;
   if (['chatter', 'activity', 'attachment'].includes(node.kind.toLowerCase())) return true;

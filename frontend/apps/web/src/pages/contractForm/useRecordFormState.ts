@@ -45,19 +45,24 @@ export function useRecordFormState(context: {
   canonicalFieldWritable?:(name:string)=>boolean|undefined;
   fieldOccurrenceDecision?:(name:string,occurrenceKey:string)=>FieldOccurrenceDecision;
   pendingInlineCreateFields?: Ref<string[]>;
+  feedbackPresence?: Ref<Set<string>>;
+  onFeedbackDraftChanged?:(name:string)=>void;
 }) {
   const inputFieldValue=(name:string)=>{const raw=context.formData[name];return raw===false||raw===null||raw===undefined?'':String(raw);};
   const comparableFieldValue=(name:string,value:unknown)=>{const type=fieldType(context.formFields.value[name]);
     if(type==='many2many')return JSON.stringify(normalizeRelationIds(value).sort((a,b)=>a-b));
     if(type==='one2many')return JSON.stringify(context.one2manyFieldRows(name).map(row=>({id:row.id||0,isNew:row.isNew,removed:row.removed,dirty:row.dirty,dirtyFields:row.dirtyFields||[],values:row.values||{}})));
     return normalizeComparable(value);};
+  const noteFeedbackDraftChange=(name:string)=>{const key=String(name||'').trim();if(!key)return;
+    if(context.feedbackPresence&&!context.feedbackPresence.value.has(key)){const next=new Set(context.feedbackPresence.value);next.add(key);context.feedbackPresence.value=next;}
+    context.onFeedbackDraftChanged?.(key);};
   // A keyed edit is judged by its own occurrence. An identity the contract
   // cannot resolve is refused outright: searching for a writable same-name
   // position is the exact bypass this guard exists to close.
   const isFieldWritable=(name:string,occurrenceKey?:string)=>{const key=String(occurrenceKey??'').trim();if(key)return context.fieldOccurrenceDecision?.(name,key)==='writable';const canonical=context.canonicalFieldWritable?.(name);if(typeof canonical==='boolean')return canonical;const node=context.layoutNodes.value.find(item=>item.kind==='field'&&item.name===name);if(node)return !node.readonly;return Boolean(context.nativeStatusbar.value.field===name&&!context.nativeStatusbar.value.readonly);};
   const normalizeFieldValue=(name:string,value:unknown)=>normalizeContractFieldValue({name,value,descriptor:context.formFields.value[name],originalValue:context.originalValues.value[name],buildOne2manyValue:context.buildOne2manyCommandValue});
   let onchangeTimer:ReturnType<typeof setTimeout>|null=context.getOnchangeTimer();
-  const markFieldChanged=(name:string)=>{const key=String(name||'').trim();if(!key||context.applyingOnchangePatch.value)return;delete context.validationFieldErrors.value[key];if(!Object.keys(context.validationFieldErrors.value).length)context.validationErrors.value=[];context.dirtyFieldSet.add(key);
+  const markFieldChanged=(name:string)=>{const key=String(name||'').trim();if(!key||context.applyingOnchangePatch.value)return;noteFeedbackDraftChange(key);delete context.validationFieldErrors.value[key];if(!Object.keys(context.validationFieldErrors.value).length)context.validationErrors.value=[];context.dirtyFieldSet.add(key);
     if(!fieldRequiresServerOnchange(context.contractV2ActionRules.value,key))return;context.changedFieldSet.add(key);if(onchangeTimer)clearTimeout(onchangeTimer);
     onchangeTimer=setTimeout(()=>void runOnchangeRoundtrip(),300);context.setOnchangeTimer(onchangeTimer);};
   // A value setter can receive a value identical to the delivered record baseline
@@ -68,7 +73,9 @@ export function useRecordFormState(context: {
   // markFieldChanged directly.
   const syncFieldDirty=(name:string)=>{const key=String(name||'').trim();if(!key||context.applyingOnchangePatch.value)return;
     if(comparableFieldValue(key,context.formData[key])!==comparableFieldValue(key,context.originalValues.value[key])){markFieldChanged(key);return;}
-    context.dirtyFieldSet.delete(key);if(context.changedFieldSet.delete(key)&&!context.changedFieldSet.size&&onchangeTimer){clearTimeout(onchangeTimer);onchangeTimer=null;context.setOnchangeTimer(null);}};
+    const wasDirty=context.dirtyFieldSet.delete(key);const wasChanged=context.changedFieldSet.delete(key);
+    if(wasDirty||wasChanged)noteFeedbackDraftChange(key);
+    if(wasChanged&&!context.changedFieldSet.size&&onchangeTimer){clearTimeout(onchangeTimer);onchangeTimer=null;context.setOnchangeTimer(null);}};
   const persistNativeFavoriteField=async(name:string,checked:boolean,previous:unknown)=>{try{await writeContractFormRecord({model:context.model.value,ids:[context.recordId.value],vals:{[name]:checked},context:{}});context.originalValues.value={...context.originalValues.value,[name]:checked};context.changedFieldSet.delete(name);context.dirtyFieldSet.delete(name);}catch{context.formData[name]=previous;context.submissionFeedback.value={kind:'error',message:'保存失败，请稍后重试。'};}};
   const setBooleanField=(name:string,checked:boolean,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;const previous=context.formData[name];context.formData[name]=checked;if(context.isNativeFavoriteField(name)&&context.recordId.value&&context.rights.value.write){void persistNativeFavoriteField(name,checked,previous);return;}syncFieldDirty(name);};
   const setMany2oneField=(name:string,descriptor:FieldDescriptor|undefined,value:string,occurrenceKey?:string)=>{const normalized=String(value||'').trim();if(normalized===MANY2ONE_OPEN_RECORD_OPTION){void context.openRelationRecordForm(name,descriptor);return;}if(!isFieldWritable(name,occurrenceKey))return;if(!normalized){forgetPendingInlineCreate(name);context.formData[name]=false;context.relationKeywords[name]='';context.clearDynamicRelationDependents(name);syncFieldDirty(name);return;}
@@ -178,7 +185,7 @@ export function useRecordFormState(context: {
       // patches, modifier overlay and warnings all describe an obsolete draft.
       if(plan.dropped)return;
       context.onchangeWarnings.value=warnings;context.onchangeLinePatches.value=linePatches;if(Object.keys(modifiersPatch).length)context.onchangeModifiersPatch.value={...context.onchangeModifiersPatch.value,...modifiersPatch};
-      if(Object.keys(plan.patch).length){context.applyingOnchangePatch.value=true;Object.entries(plan.patch).forEach(([name,value])=>{if(!(name in context.formFields.value))return;const node=context.layoutNodes.value.find(item=>item.kind==='field'&&item.name===name);const normalized=normalizeOnchangeFieldPatch({descriptor:context.formFields.value[name],readonly:Boolean(node?.readonly||context.formFields.value[name]?.readonly),value});if(normalized.kind==='x2many'){context.formData[name]=normalized.value;if(normalized.fieldType==='one2many')context.initOne2manyRows(name,context.formData[name]);}else if(normalized.kind==='many2one'){context.upsertRelationOption(name,normalized.option);context.formData[name]=normalized.value;context.relationKeywords[name]=normalized.keyword||'';}else context.formData[name]=normalized.value;});context.applyingOnchangePatch.value=false;}
+      if(Object.keys(plan.patch).length){const feedbackChanged:string[]=[];context.applyingOnchangePatch.value=true;Object.entries(plan.patch).forEach(([name,value])=>{if(!(name in context.formFields.value))return;const node=context.layoutNodes.value.find(item=>item.kind==='field'&&item.name===name);const normalized=normalizeOnchangeFieldPatch({descriptor:context.formFields.value[name],readonly:Boolean(node?.readonly||context.formFields.value[name]?.readonly),value});if(normalized.kind==='x2many'){context.formData[name]=normalized.value;if(normalized.fieldType==='one2many')context.initOne2manyRows(name,context.formData[name]);}else if(normalized.kind==='many2one'){context.upsertRelationOption(name,normalized.option);context.formData[name]=normalized.value;context.relationKeywords[name]=normalized.keyword||'';}else context.formData[name]=normalized.value;feedbackChanged.push(name);});context.applyingOnchangePatch.value=false;feedbackChanged.forEach(noteFeedbackDraftChange);}
       if(linePatches.length){context.applyingOnchangePatch.value=true;context.applyOnchangeLinePatches(linePatches);context.applyingOnchangePatch.value=false;}}catch{/* Onchange preserves current values when the optional roundtrip fails. */}}
   const collectWritableValues=()=>{const values=context.layoutNodes.value.filter(node=>node.kind==='field'&&!node.readonly&&context.isWritableFieldVisible(node.name)).reduce<Record<string,unknown>>((output,node)=>{const value=normalizeFieldValue(node.name,context.formData[node.name]);const type=fieldType(node.descriptor);if((type==='many2many'||type==='one2many')&&Array.isArray(value)&&!value.length)return output;if(!shouldWriteFieldValue({recordId:context.recordId.value,dirty:context.dirtyFieldSet.has(node.name),value,descriptor:node.descriptor}))return output;output[node.name]=value;return output;},{});
     // Native forms legitimately use invisible companion fields (for example a

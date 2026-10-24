@@ -1,3 +1,4 @@
+import { contractGapError } from '../../app/contract/contractGap';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import type {
   CanonicalFormAction,
@@ -14,6 +15,8 @@ import {
 } from './nativeSectionNavigation';
 
 export type CanonicalNativeLayoutNode = {
+  containerId?: string;
+  componentKey?: string;
   type: string;
   containerType: string;
   name: string;
@@ -120,6 +123,9 @@ function fieldNode(
   sectionTarget?: WorkspaceSectionNavigationItem,
   resolveCanonicalField?: (fieldCode: string) => CanonicalFormField | undefined,
 ): CanonicalNativeLayoutNode {
+  if (sourceNode?.nativePresentation.feedbackContentOwned && field.errorText) throw contractGapError({
+    kind: 'contract_defect', missing: 'exclusive feedback source ownership',
+    requiredDeclarationLayer: 'P0: error presentation ownership'}, 'Field error already owns feedback source');
   const node: CanonicalNativeLayoutNode = {
     ...(sourceNode?.nativePresentation || {}),
     type: 'field',

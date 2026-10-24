@@ -137,6 +137,22 @@ local.dev.test: guard.prod.forbid local.dev.ready local.dev.demo_credentials.pre
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 MODULE="$(MODULE)" TEST_TAGS="$(TEST_TAGS)" test.safe
 
+.PHONY: verify.company_project_refund.feedback.orm verify.company_project_refund.feedback.http verify.company_project_refund.feedback.http.evidence verify.company_project_refund.feedback.restore
+verify.company_project_refund.feedback.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.dev.test \
+	  MODULE=smart_construction_core TEST_TAGS=company_project_refund_feedback_orm
+
+verify.company_project_refund.feedback.http: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.dev.test \
+	  MODULE=smart_construction_core TEST_TAGS=company_project_refund_feedback_http
+
+verify.company_project_refund.feedback.http.evidence: guard.prod.forbid
+	@PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify/company_project_refund_feedback_http.py
+
+verify.company_project_refund.feedback.restore: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.dev.test \
+	  MODULE=smart_construction_core TEST_TAGS=company_project_refund_feedback_restore
+
 .PHONY: local.dev.form_lowcode.browser
 local.dev.form_lowcode.browser: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
@@ -1598,3 +1614,17 @@ verify.local.dev.capability.browser: guard.prod.forbid local.dev.ready
 verify.local.dev.capability.readback: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/local_dev_capability_browser.sh --readback
+
+.PHONY: verify.native_advisory_draft.orm
+verify.native_advisory_draft.orm:
+	@$(MAKE) --no-print-directory local.dev.test MODULE=smart_construction_core TEST_TAGS=native_advisory_draft
+
+.PHONY: verify.feedback_evaluation.rt.http.orm verify.feedback_evaluation.rt.restore verify.feedback_evaluation.rt.http
+verify.feedback_evaluation.rt.http.orm:
+	@$(MAKE) --no-print-directory local.dev.test MODULE=smart_construction_core TEST_TAGS=feedback_evaluation_rt_http
+
+verify.feedback_evaluation.rt.restore:
+	@$(MAKE) --no-print-directory local.dev.test MODULE=smart_construction_core TEST_TAGS=feedback_evaluation_rt_restore
+
+verify.feedback_evaluation.rt.http:
+	@PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify/feedback_evaluation_rt_http.py

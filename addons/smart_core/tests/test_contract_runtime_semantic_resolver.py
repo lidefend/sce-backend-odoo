@@ -277,11 +277,9 @@ class ComponentRegistryTest(unittest.TestCase):
         )
         self.assertEqual("1.0", resolver.COMPONENT_CONTRACT_VERSION)
 
-    def test_undeclared_key_is_reported_and_not_published(self) -> None:
-        with self.assertLogs("core.contract_runtime.semantic_resolver", level="ERROR") as logs:
-            published = resolver.component_registry(["sc.input.absent", "sc.value.money"])
-        self.assertEqual({"sc.value.money": {"version": resolver.COMPONENT_CONTRACT_VERSION}}, published)
-        self.assertTrue(any("contract_component_undeclared" in line for line in logs.output))
+    def test_undeclared_key_rejects_the_whole_registration(self) -> None:
+        with self.assertRaisesRegex(ValueError, "COMPONENT_UNREGISTERED"):
+            resolver.component_registry(["sc.input.absent", "sc.value.money"])
 
     def test_a_non_sequence_declares_nothing(self) -> None:
         self.assertEqual({}, resolver.component_registry(None))

@@ -93,7 +93,37 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-21-native-authority-preview"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-company-refund-feedback-v1"
+
+
+def _node_validation_snapshot_ready(source):
+    snapshot = source.get("_assembled_v2") if isinstance(source, dict) else None
+    return (isinstance(snapshot, dict)
+            and isinstance(snapshot.get("node_validation_contract"), dict)
+            and isinstance(snapshot.get("node_validation_native_tree"), list))
+
+
+def _node_snapshot_requires_assembly(source):
+    if not _node_validation_snapshot_ready(source):
+        return False
+    from odoo.addons.smart_core.core.node_component_validation import has_components
+    snapshot = source["_assembled_v2"]
+    return has_components(snapshot["node_validation_contract"]) or has_components(snapshot["contract"])
+
+
+def _source_view_id(source):
+    """Read the already-resolved native form view identity for create validation."""
+    if not isinstance(source, dict):
+        return 0
+    identity = source.get("projection_identity") if isinstance(source.get("projection_identity"), dict) else {}
+    for value in (source.get("view_id"), source.get("viewId"), identity.get("source_view_id")):
+        try:
+            view_id = int(value or 0)
+        except (TypeError, ValueError):
+            continue
+        if view_id > 0:
+            return view_id
+    return 0
 
 # The assembled entry carries the semantic digests its own seal produced, keyed
 # by the entry identity the hit path already validates (cache_version,
@@ -568,7 +598,11 @@ class UiContractV2Handler(BaseIntentHandler):
 
     def handle(self, payload: Optional[Dict[str, Any]] = None, ctx: Optional[Dict[str, Any]] = None):
         try:
-            return self._handle_contract(payload, ctx)
+            result = self._handle_contract(payload, ctx)
+            if result.ok:
+                from ..core.node_component_capabilities import validate_component_capabilities
+                validate_component_capabilities(result.data, self._params(payload))
+            return result
         except FormConfigurationError as exc:
             _logger.warning("ui.contract.v2 configuration rejected: %s", exc)
             result = self._err(409, "页面配置无法应用，请联系配置管理员处理")
@@ -774,13 +808,13 @@ class UiContractV2Handler(BaseIntentHandler):
             cached_source = None
             projection_cache_status = "miss"
             projection_cache_reason = "native_form_source_type_mismatch"
-        if shared_source and cached_source is not None and not assembled_snapshot_gate_matches(
+        if shared_source and cached_source is not None and (not _node_validation_snapshot_ready(cached_source) or _node_snapshot_requires_assembly(cached_source) or not assembled_snapshot_gate_matches(
             cached_source,
             cache_version=ASSEMBLED_CONTRACT_CACHE_VERSION,
             client_type=client_type,
             delivery_profile=delivery_profile,
             limit_params=limit_params,
-        ):
+        )):
             # Fail-safe, not a normal branch: the shared read may only be
             # consumed by the assembled branch (same gate tuple). If that ever
             # drifts, replace it with the fully isolated read instead of handing
@@ -889,12 +923,36 @@ class UiContractV2Handler(BaseIntentHandler):
             or trace_id
             or f"ui.contract.v2.{model or 'unknown'}.{view_type or 'form'}"
         )
+        draft_feedback_proof = None
+
+        def controlled_draft_proof(source):
+            if (runtime_record_id or str(view_type or "").strip().lower() != "form"
+                    or not cache_model):
+                return None
+            source_view_id = _source_view_id(source)
+            if not source_view_id:
+                return None
+            try:
+                model = self.env[cache_model]
+            except KeyError:
+                return None
+            from ..core.draft_feedback import ControlledDraftProof
+            return ControlledDraftProof(model, source_view_id)
 
         assembled_cached = (
             cached_source.get("_assembled_v2")
             if not runtime_record_id and isinstance(cached_source, dict)
             else None
         )
+        if isinstance(assembled_cached, dict) and _node_validation_snapshot_ready(cached_source):
+            from odoo.addons.smart_core.core.node_component_validation import validate_final_nodes
+            cached_ui_data = cached_source.get("ui_data") if isinstance(cached_source, dict) else None
+            cached_draft_proof = controlled_draft_proof(cached_ui_data)
+            validate_final_nodes(self.env, assembled_cached["node_validation_contract"],
+                                 assembled_cached["node_validation_native_tree"], apply_visibility=False,
+                                 draft_feedback=cached_draft_proof)
+            from ..core.node_component_capabilities import validate_component_capabilities
+            validate_component_capabilities(assembled_cached["node_validation_contract"], params)
         # The gate tuple is read through the same helper the shared accessor and
         # the post-lookup guard use, so this branch and ``get_assembled`` cannot
         # drift apart: drift would let a by-reference source graph reach the
@@ -902,6 +960,8 @@ class UiContractV2Handler(BaseIntentHandler):
         if (
             isinstance(assembled_cached, dict)
             and not is_create_request
+            and _node_validation_snapshot_ready(cached_source)
+            and not _node_snapshot_requires_assembly(cached_source)
             and assembled_snapshot_gate_matches(
                 cached_source,
                 cache_version=ASSEMBLED_CONTRACT_CACHE_VERSION,
@@ -1115,8 +1175,11 @@ class UiContractV2Handler(BaseIntentHandler):
         action_entitlements_at = time.monotonic()
         if native_form_source:
             self._refresh_native_form_projection(source_contract)
+        draft_feedback_proof = controlled_draft_proof(source_contract)
         contract_v2 = assemble_unified_page_contract_v2(
             source_contract,
+            node_actor_env=self.env,
+            draft_feedback=draft_feedback_proof,
             source_type=runtime_source_type,
             client_type=client_type,
             request_id=str(request_id),
@@ -1124,6 +1187,7 @@ class UiContractV2Handler(BaseIntentHandler):
             stage_timings=assembler_stages,
         )
         post_assembler_at = time.monotonic()
+        node_validation_native_tree = deepcopy(contract_v2.get("layoutContract", {}).get("containerTree", []))
         self._apply_field_policies_to_v2_status(contract_v2, source_contract)
         self._ensure_native_layout_widget_status_visible(contract_v2)
         self._apply_legacy_visible_list_layout(contract_v2, source_contract)
@@ -1197,6 +1261,16 @@ class UiContractV2Handler(BaseIntentHandler):
             return fact_model.browse(fact_id).read([field_name])[0][field_name]
         project_native_action_guidance(contract_v2, read_action_fact)
         modifier_status_at = time.monotonic()
+        from odoo.addons.smart_core.core.node_component_validation import validate_final_nodes, validate_delivered_references
+        node_validation_contract = deepcopy(contract_v2)
+        validate_final_nodes(
+            self.env,
+            contract_v2,
+            node_validation_native_tree,
+            draft_feedback=draft_feedback_proof,
+        )
+        from ..core.node_component_capabilities import validate_component_capabilities
+        validate_component_capabilities(contract_v2, params)
         contract_v2 = trim_unified_page_contract_v2(
             contract_v2,
             client_type=client_type,
@@ -1204,6 +1278,7 @@ class UiContractV2Handler(BaseIntentHandler):
             **limit_params,
         )
         contract_trimmed_at = time.monotonic()
+        validate_delivered_references(contract_v2)
         # Filled from the seal result below. The stored entry references this
         # exact dict, so the next hit carries the digests this request paid for
         # without a second walk over the payload.
@@ -1232,6 +1307,8 @@ class UiContractV2Handler(BaseIntentHandler):
                         "delivery_profile": delivery_profile,
                         "limit_params": deepcopy(limit_params),
                         "contract": deepcopy(contract_v2),
+                        "node_validation_contract": node_validation_contract,
+                        "node_validation_native_tree": node_validation_native_tree,
                         "source_contract": deepcopy(source_contract, source_snapshot_memo),
                         ASSEMBLED_SEMANTIC_DIGESTS_KEY: assembled_digest_slot,
                     },
@@ -3667,17 +3744,23 @@ class UiContractV2Handler(BaseIntentHandler):
         request_id = str(params.get("request_id") or params.get("requestId") or trace_id or f"ui.contract.v2.scene.{scene_key}")
         contract_v2 = assemble_unified_page_contract_v2(
             {"scene_contract": source_contract},
+            node_actor_env=self.env,
             source_type="scene_contract",
             client_type=client_type,
             request_id=request_id,
             trace_id=trace_id,
         )
+        from odoo.addons.smart_core.core.node_component_validation import validate_final_nodes, validate_delivered_references
+        validate_final_nodes(self.env, contract_v2, deepcopy(contract_v2.get("layoutContract", {}).get("containerTree", [])))
+        from ..core.node_component_capabilities import validate_component_capabilities
+        validate_component_capabilities(contract_v2, params)
         contract_v2 = trim_unified_page_contract_v2(
             contract_v2,
             client_type=client_type,
             delivery_profile=delivery_profile,
             **limit_params,
         )
+        validate_delivered_references(contract_v2)
         contract_v2 = _authority.seal_runtime_contract(
             self, contract_v2, source_contract, "scene_contract", request_id, trace_id, client_type
         )

@@ -6,6 +6,7 @@ import type {
   CanonicalFormRenderModel,
 } from '../../app/presentation/canonicalFormRenderModel';
 import { presentContractV2Form } from '../../app/presentation/contractFormPresenter';
+import type { FeedbackEvaluationOverride } from '../../app/presentation/nodeComponentPresentation';
 import { errorOwnsField, type BusinessFieldError } from '../../app/businessValidationError';
 
 export type CanonicalValidationErrorScope = {
@@ -102,6 +103,7 @@ export function resolveCanonicalFormRenderState(
   runtimeValues?: ContractV2Dictionary,
   validationFieldErrors: Record<string, BusinessFieldError> = {},
   errorScope: CanonicalValidationErrorScope = {},
+  feedbackEvaluations?: ReadonlyMap<string, FeedbackEvaluationOverride>,
 ) {
   if (decodeError) return { model: null, error: decodeError };
   if (!store) return { model: null, error: 'NORMALIZED_FORM_CONTRACT_MISSING' };
@@ -110,6 +112,7 @@ export function resolveCanonicalFormRenderState(
       model: applyCanonicalFormValidation(
         presentContractV2Form(store, mode, runtimeValues, {
           recordPersisted: Number(errorScope?.recordId || 0) > 0,
+          feedbackEvaluations,
         }),
         validationFieldErrors,
         errorScope,

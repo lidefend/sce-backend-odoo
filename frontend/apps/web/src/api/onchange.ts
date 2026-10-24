@@ -1,4 +1,5 @@
 import { intentRequest } from './intents';
+import type { FeedbackDescribeRequest, FeedbackEvaluateRequest } from '../app/contracts/onchangeFeedbackEvaluation';
 
 export type OnchangeLinePatch = {
   field: string;
@@ -19,6 +20,7 @@ export type OnchangeResponse = {
   line_patches?: OnchangeLinePatch[];
   warnings?: Array<{ title?: string; message?: string; reason_code?: string }>;
   applied_fields?: string[];
+  feedback_evaluation?: unknown;
 };
 
 export async function triggerOnchange(params: {
@@ -27,6 +29,8 @@ export async function triggerOnchange(params: {
   values: Record<string, unknown>;
   changed_fields: string[];
   context?: Record<string, unknown>;
+  feedback_evaluation?: FeedbackDescribeRequest | FeedbackEvaluateRequest;
+  client_contract_capabilities?: string[];
 }) {
   return intentRequest<OnchangeResponse>({
     intent: 'api.onchange',
@@ -36,6 +40,10 @@ export async function triggerOnchange(params: {
       values: params.values,
       changed_fields: params.changed_fields,
       context: params.context || {},
+      ...(params.feedback_evaluation ? { feedback_evaluation: params.feedback_evaluation } : {}),
+      ...(params.client_contract_capabilities
+        ? { client_contract_capabilities: params.client_contract_capabilities }
+        : {}),
     },
   });
 }

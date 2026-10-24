@@ -224,9 +224,14 @@ const emptyFloorplan: CanonicalFormFloorplan = {
   relationNodes: [], subordinateNodes: [], blockedActions: [], directActions: [], overflowActions: [],
   effectivePrimaryKey: '', decisionMode: false,
 };
+function containsExplicitNode(nodes: CanonicalFormNode[]): boolean {
+  return nodes.some((node) => Boolean(node.nativePresentation.nodeComponent) || containsExplicitNode(node.children));
+}
 const preserveAuthoritativeBusinessSections = computed(() => Boolean(
   props.renderModel
-  && (props.renderModel.identity.bodyStructureAuthority === 'containerTree' || shouldPreserveAuthoritativeBusinessSections(
+  && (props.renderModel.identity.bodyStructureAuthority === 'containerTree'
+    || containsExplicitNode([...props.renderModel.zones.primary, ...props.renderModel.zones.subordinate])
+    || shouldPreserveAuthoritativeBusinessSections(
     props.renderModel.identity.presentationMode,
     [...props.renderModel.zones.primary, ...props.renderModel.zones.subordinate],
   )),

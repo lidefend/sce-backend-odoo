@@ -23,6 +23,33 @@ class RunError(ValueError):
 
 MAKE_TARGET_RE = re.compile(r'^([A-Za-z0-9][A-Za-z0-9_.-]*)\s*:(?!=)')
 PHONY_RE = re.compile(r'^\s*\.PHONY\s*:(.*)$')
+DELIVERY_STAGES = (
+    'stage_0_scope_frozen',
+    'stage_1_baseline_gates',
+    'stage_2_candidate_manifest',
+    'stage_3_candidate_commit',
+    'stage_4_pr_validation',
+    'stage_5_formal_build',
+    'stage_6_rollback_rehearsal',
+    'stage_7_merge_approval',
+    'stage_8_post_merge_validation',
+    'stage_9_deploy_r7',
+)
+DELIVERY_STAGE_STATES = frozenset({'not_started', 'in_progress', 'blocked', 'passed'})
+DELIVERY_GATE_FIELDS = frozenset({
+    'commit_approved',
+    'candidate_commit',
+    'pr_head_sha',
+    'build_source_sha',
+    'candidate_frontend_sha256',
+    'rollback_source_sha',
+    'rollback_artifact_sha256',
+    'owner_merge_approved',
+    'merged_main_sha',
+    'deployment_approved',
+    'deployed_source_sha',
+    'deployment_target',
+})
 
 
 def defined_make_targets(root: Path) -> set[str]:
@@ -135,7 +162,98 @@ def resolve_run(root: Path) -> tuple[str, dict] | None:
     check_order(run['checks'])
     if run.get('status') not in ('planned', 'active', 'blocked', 'verification_pending', 'completed', 'superseded'):
         raise RunError('invalid run status')
+    validate_delivery_lifecycle(root, run)
     return relative, run
+
+
+def validate_delivery_lifecycle(root: Path, run: dict) -> None:
+    """Reject candidate-delivery runs that skip a stage or supporting identity.
+
+    The lifecycle is optional for ordinary development runs. Once a run freezes
+    candidate evidence, however, it must declare the complete stage ladder. This
+    validates recorded identities and Owner approvals; it does not pretend that
+    a local assertion proves an external CI, merge or deployment outcome.
+    """
+    lifecycle = run.get('delivery_lifecycle')
+    if lifecycle is None:
+        if run.get('candidate_evidence') is True:
+            raise RunError('candidate evidence requires delivery_lifecycle')
+        return
+    if not isinstance(lifecycle, dict) or lifecycle.get('schema_version') != 1:
+        raise RunError('delivery_lifecycle must be an object with schema_version=1')
+    stages = lifecycle.get('stages')
+    gates = lifecycle.get('gates')
+    current = lifecycle.get('current_stage')
+    if not isinstance(stages, dict) or tuple(stages) != DELIVERY_STAGES:
+        raise RunError('delivery_lifecycle.stages must declare the complete ordered stage ladder')
+    if not isinstance(gates, dict) or set(gates) != DELIVERY_GATE_FIELDS:
+        raise RunError('delivery_lifecycle.gates must declare the exact supporting identity set')
+    bad_states = {
+        stage: value for stage, value in stages.items()
+        if value not in DELIVERY_STAGE_STATES
+    }
+    if bad_states:
+        raise RunError(f'invalid delivery stage states: {bad_states}')
+    non_passed = [stage for stage in DELIVERY_STAGES if stages[stage] != 'passed']
+    active = [stage for stage in DELIVERY_STAGES if stages[stage] in ('in_progress', 'blocked')]
+    if len(active) > 1:
+        raise RunError('delivery_lifecycle may have at most one in-progress or blocked stage')
+    expected_current = non_passed[0] if non_passed else 'complete'
+    if current != expected_current:
+        raise RunError(
+            f'delivery_lifecycle.current_stage must be {expected_current!r}, got {current!r}'
+        )
+    first_incomplete = non_passed[0] if non_passed else None
+    later_stages = (
+        DELIVERY_STAGES[DELIVERY_STAGES.index(first_incomplete) + 1:]
+        if first_incomplete else ()
+    )
+    if any(stages[stage] == 'passed' for stage in later_stages):
+        raise RunError('delivery stages cannot be passed after an earlier incomplete stage')
+
+    def require_sha(field: str) -> str:
+        value = gates.get(field)
+        if not isinstance(value, str) or not re.fullmatch(r'[0-9a-f]{40}', value):
+            raise RunError(f'delivery_lifecycle.gates.{field} must be a full commit SHA')
+        return value
+
+    def require_fingerprint(field: str) -> str:
+        value = gates.get(field)
+        if not isinstance(value, str) or not re.fullmatch(r'[0-9a-f]{64}', value):
+            raise RunError(f'delivery_lifecycle.gates.{field} must be a SHA-256 fingerprint')
+        return value
+
+    if stages['stage_3_candidate_commit'] == 'passed':
+        if gates['commit_approved'] is not True:
+            raise RunError('candidate commit stage requires explicit commit approval')
+        candidate = require_sha('candidate_commit')
+        git(root, 'merge-base', '--is-ancestor', candidate, 'HEAD')
+    if stages['stage_4_pr_validation'] == 'passed' or gates['pr_head_sha'] is not None:
+        require_sha('candidate_commit')
+        if gates['pr_head_sha'] != gates['candidate_commit']:
+            raise RunError('PR validation must bind the exact approved candidate commit')
+    if (stages['stage_5_formal_build'] == 'passed'
+            or gates['build_source_sha'] is not None
+            or gates['candidate_frontend_sha256'] is not None):
+        require_sha('candidate_commit')
+        if gates['build_source_sha'] != gates['candidate_commit']:
+            raise RunError('formal build source must equal the approved candidate commit')
+        require_fingerprint('candidate_frontend_sha256')
+    if (stages['stage_6_rollback_rehearsal'] == 'passed'
+            or gates['rollback_source_sha'] is not None
+            or gates['rollback_artifact_sha256'] is not None):
+        require_sha('rollback_source_sha')
+        require_fingerprint('rollback_artifact_sha256')
+    if stages['stage_7_merge_approval'] == 'passed' and gates['owner_merge_approved'] is not True:
+        raise RunError('merge approval stage requires explicit Owner approval')
+    if stages['stage_8_post_merge_validation'] == 'passed':
+        require_sha('merged_main_sha')
+    if stages['stage_9_deploy_r7'] == 'passed':
+        if gates['deployment_approved'] is not True:
+            raise RunError('deployment stage requires explicit Owner approval')
+        require_sha('deployed_source_sha')
+        if not isinstance(gates['deployment_target'], str) or not gates['deployment_target'].strip():
+            raise RunError('deployment stage requires a declared target')
 
 
 def check_order(checks: dict) -> list[str]:
@@ -345,7 +463,8 @@ def summary(root: Path) -> dict:
             'baseline_sha': run['baseline_sha'], 'run_status': run['status'], 'record': run['record'],
             'changed_paths': paths, 'outside_scope': outside, 'checks': checks,
             'blockers': run.get('blockers', []), 'next_exact_step': run['next_exact_step'],
-            'write_replay_authorized': False, 'candidate_evidence': False}
+            'write_replay_authorized': False,
+            'candidate_evidence': run.get('candidate_evidence', False)}
 
 
 def resume_prompt(root: Path) -> str:

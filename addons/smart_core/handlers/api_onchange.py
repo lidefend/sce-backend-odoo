@@ -23,6 +23,12 @@ except ImportError:  # pragma: no cover - compatibility for lightweight boundary
     def record_in_business_scope(env_model, record_id, params=None, context=None):
         return record_in_project_scope(env_model, record_id, selected_record_context_id_from_context(params, context))
 from ..core.request_params import parse_bool, parse_positive_int
+from ..core.draft_feedback import (
+    CAPABILITY as FEEDBACK_DRAFT_CAPABILITY,
+    DraftFeedbackError,
+    decode_request as decode_feedback_request,
+    evaluate as evaluate_feedback,
+)
 from ..core.unified_page_contract_v2_assembler import assemble_unified_page_patch_v2
 from ..core.unified_page_contract_lite_preview import with_lite_preview_if_requested
 from ..utils.reason_codes import normalize_onchange_reason_code
@@ -36,6 +42,7 @@ class ApiOnchangeHandler(BaseIntentHandler):
     ACL_MODE = "explicit_check"
     SOURCE_KIND = "odoo_onchange_proxy"
     SOURCE_AUTHORITIES = ("odoo.onchange", "ir.model.fields")
+    FEEDBACK_MESSAGE_CAPABILITY = "form.feedback.message.v1"
 
     def _with_v2_patch_if_requested(self, response: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
         if not isinstance(response, dict) or not isinstance(params, dict):
@@ -65,6 +72,87 @@ class ApiOnchangeHandler(BaseIntentHandler):
 
     def _err(self, code: int, message: str):
         return {"ok": False, "error": {"code": code, "message": message}, "code": code}
+
+    def _feedback_err(self, exc: DraftFeedbackError):
+        return {
+            "ok": False,
+            "code": exc.http_status,
+            "error": {
+                "code": exc.http_status,
+                "reason_code": exc.code,
+                "message": "草稿反馈暂时不可用",
+                "details": exc.public_details(),
+            },
+        }
+
+    def _feedback_record_id(self, params: Dict[str, Any]):
+        for key in ("id", "res_id", "record_id"):
+            raw = params.get(key)
+            if raw in (None, False, ""):
+                continue
+            try:
+                record_id = int(raw)
+            except Exception as exc:
+                raise DraftFeedbackError("FEEDBACK_CONFIG_INVALID", f"feedback_evaluation.{key}") from exc
+            if record_id <= 0:
+                raise DraftFeedbackError("FEEDBACK_CONFIG_INVALID", f"feedback_evaluation.{key}")
+            return record_id
+        return 0
+
+    def _handle_feedback_evaluation(self, env_model, params: Dict[str, Any]):
+        block = params.get("feedback_evaluation")
+        request = decode_feedback_request(block)
+        request_id = request["request_id"]
+        values = params.get("values")
+        changed_fields = params.get("changed_fields")
+        if type(values) is not dict or values:
+            raise DraftFeedbackError("FEEDBACK_CONFIG_INVALID", "values", request_id)
+        if type(changed_fields) is not list or changed_fields:
+            raise DraftFeedbackError("FEEDBACK_CONFIG_INVALID", "changed_fields", request_id)
+        include_v2 = parse_bool(params.get("include_v2_patch"), False) or parse_bool(
+            params.get("includeV2Patch"), False,
+        )
+        contract_version = str(
+            params.get("contract_version") or params.get("contractVersion") or ""
+        ).strip()
+        lite_requested = (
+            params.get("contractMode") == "lite_preview"
+            or params.get("entryPoint") == "api_onchange"
+            or params.get("contractVersion") == "2.0.0"
+        )
+        if include_v2 or contract_version.startswith("2.") or lite_requested:
+            raise DraftFeedbackError("FEEDBACK_CONFIG_INVALID", "feedback_evaluation.mode", request_id)
+        capabilities = params.get("client_contract_capabilities")
+        if (type(capabilities) is not list
+                or any(type(value) is not str for value in capabilities)
+                or self.FEEDBACK_MESSAGE_CAPABILITY not in capabilities
+                or FEEDBACK_DRAFT_CAPABILITY not in capabilities):
+            raise DraftFeedbackError(
+                "COMPONENT_CAPABILITY_REQUIRED",
+                "feedback_evaluation.capability",
+                request_id,
+            )
+        record_id = self._feedback_record_id(params)
+        origin = env_model.browse(record_id) if record_id else None
+        result = evaluate_feedback(env_model, block, origin=origin)
+        return {
+            "ok": True,
+            "data": {
+                "schema_version": "v1",
+                "patch": {},
+                "modifiers_patch": {},
+                "line_patches": [],
+                "warnings": [],
+                "applied_fields": [],
+                "feedback_evaluation": result,
+            },
+            "meta": {
+                "model": str(getattr(env_model, "_name", "") or params.get("model") or ""),
+                "intent": self.INTENT_TYPE,
+                "version": self.VERSION,
+                "feedback_evaluation_version": request["version"],
+            },
+        }
 
     def _source_authority_contract(self, model: str) -> Dict[str, Any]:
         return {
@@ -443,6 +531,12 @@ class ApiOnchangeHandler(BaseIntentHandler):
             env_model.check_access_rights("read")
         except AccessError:
             return self._err(403, "permission denied")
+
+        if "feedback_evaluation" in params:
+            try:
+                return self._handle_feedback_evaluation(env_model, params)
+            except DraftFeedbackError as exc:
+                return self._feedback_err(exc)
 
         values = self._normalize_values(env_model, params.get("values") if isinstance(params.get("values"), dict) else {})
         changed_fields = self._normalize_changed_fields(env_model, params.get("changed_fields") or params.get("changed"))

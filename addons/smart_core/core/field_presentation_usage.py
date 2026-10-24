@@ -1,5 +1,20 @@
 """Native field usage authority shared by metadata, configuration and projection."""
 from .form_configuration_compiler import FormConfigurationError
+from contextlib import contextmanager
+from contextvars import ContextVar
+
+
+_feedback_occurrences = ContextVar("checked_form_feedback_occurrences", default=frozenset())
+
+
+@contextmanager
+def _feedback_assembly_scope(occurrences):
+    """Private provisional scope; assembler must validate before returning."""
+    token = _feedback_occurrences.set(frozenset(occurrences))
+    try:
+        yield
+    finally:
+        _feedback_occurrences.reset(token)
 
 
 def field_presentation_usage(value=None):
@@ -11,9 +26,15 @@ def field_presentation_usage(value=None):
     return value
 
 
-def assert_field_body_usage(metadata, target, *, hidden=False):
+def assert_field_body_usage(metadata, target, *, hidden=False, occurrence=None):
     usage = field_presentation_usage(metadata.get("sc_ui_usage"))
     if usage == "interaction" and not hidden:
+        source = occurrence if isinstance(occurrence, dict) else metadata
+        identity = (metadata.get("name") or source.get("name"),
+                    source.get("native_locator") or source.get("nativeLocator"),
+                    source.get("occurrence_index", source.get("occurrenceIndex")))
+        if identity in _feedback_occurrences.get():
+            return
         raise FormConfigurationError("INTERACTION_FIELD_BODY_FORBIDDEN", target)
 
 

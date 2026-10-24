@@ -2,15 +2,35 @@
 <template>
   <div class="native-form-tree" data-semantic-component="NativeFormTreeRenderer" :data-state="visibleNodes.length ? 'ready' : 'empty'">
     <template v-for="(node, index) in visibleNodes" :key="nodeKey(node, index)">
+      <div v-if="node.nodeComponent?.kind === 'feedback'" class="native-explicit-feedback"
+        :data-purpose="node.nodeComponent.purpose"
+        :data-contract-container-id="node.containerId" tabindex="-1">
+        <TDesignAlert v-if="node.nodeComponent.purpose !== 'explanation'"
+          :theme="node.nodeComponent.purpose === 'error' ? 'error' : node.nodeComponent.purpose === 'warning' ? 'warning' : 'info'"
+          :role="node.nodeComponent.role" :aria-live="node.nodeComponent.purpose === 'error' ? 'assertive' : 'polite'">{{ node.nodeComponent.content }}</TDesignAlert>
+        <p v-else>{{ node.nodeComponent.content }}</p>
+        <NativeFormTreeRenderer :nodes="node.children || []" :field-schemas-for-nodes="fieldSchemasForNodes"
+          :is-node-visible="isNodeVisible" :native-action-handler="nativeActionHandler"
+          :native-action-state-resolver="nativeActionStateResolver" :relation-adapter="relationAdapter"
+          :field-actions="fieldActions" :columns="nodeColumns(node)"
+          :authoritative-business-section-mode="authoritativeBusinessSectionMode"
+          :prefer-readonly-facts="preferReadonlyFacts" @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)" @native-action="emit('native-action', $event)" />
+      </div>
+      <ScButton v-else-if="node.nodeComponent?.kind === 'anchor'" type="button" variant="ghost"
+        :data-contract-container-id="node.containerId"
+        @click="navigateExplicit(node, $event)">{{ node.nodeComponent.content }}</ScButton>
       <component
         :is="isDetailCard(node) ? ScCard : 'section'"
-        v-if="isContainerNode(node)"
+        v-else-if="isContainerNode(node)"
         :bordered="isDetailCard(node) ? false : undefined"
         :title="isDetailCard(node) && !isCollapsibleContainer(node) ? (semanticSectionTitle(node) || containerTitle(node) || undefined) : undefined"
         :body-class-name="isDetailCard(node) ? 'native-detail-card-body' : undefined"
         :data-detail-card="isDetailCard(node) ? 'native-section' : undefined"
         :class="containerClass(node)"
         :style="layoutItemStyle(node)"
+        :data-contract-container-id="node.containerId"
+        tabindex="-1"
         :data-group-title="containerPolicyTitle(node, index)"
         :data-section-navigation-role="nativeSectionNavigationRole(node)"
         :data-collapsed="isContainerCollapsed(node, index) ? 'true' : 'false'"
@@ -73,7 +93,7 @@
             @update:model-value="activePageIndex = Number($event)"
           >
             <template #panel="{ item }">
-          <div v-if="Number(item.value) === activePageIndex" class="native-tab-panel">
+          <div v-if="Number(item.value) === activePageIndex" class="native-tab-panel" :data-contract-container-id="notebookPages(node)[activePageIndex]?.containerId" tabindex="-1">
             <NativeFormTreeRenderer
               :nodes="notebookPageChildren(node, activePageIndex)"
               :field-schemas-for-nodes="fieldSchemasForNodes"
@@ -401,6 +421,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { navigateToDeclaredNode, type NodeComponentPresentation } from '../../app/presentation/nodeComponentPresentation';
+import { contractGapError } from '../../app/contract/contractGap';
 import FormSection from './FormSection.vue';
 import { declaredLayoutChildSegments, isDeclaredLayoutContainerToken, nativeChildSegments } from './nativeChildSequence';
 import { layoutGridUnits, declaredLayoutSpan, requireDeclaredLayoutColumns, containedFieldLayout } from './layoutSpan';
@@ -408,13 +430,14 @@ import NativeSmartAction from './NativeSmartAction.vue';
 import ScCard from '../design-system/ScCard.vue';
 import { useOptionalStandardDetailComposition } from '../../pages/contractForm/standardDetailCompositionRuntime';
 import ScButton from '../design-system/ScButton.vue';
+import { TDesignAlert } from '../design-system/tdesignPrimitiveBridge';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScTabs, { type ScTabItem } from '../design-system/ScTabs.vue';
 import { canonicalFormActionIconClass } from '../../pages/contractForm/canonicalFormActionIcon';
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
-import { resolveNativeTextPresentation } from './nativeTextPresentation';
+import { assertNativePresentationConsumption, resolveNativeTextPresentation } from './nativeTextPresentation';
 import { isLayoutOnlyGroupContainer } from '../../pages/contractForm/nativeLayoutUtils';
 import { collectNativeBusinessSections, nativeBusinessSectionIdentity, resolveNativeSectionHeading } from '../../pages/contractForm/nativeBusinessSection';
 import type {
@@ -428,6 +451,11 @@ import type { RelationFieldAdapter } from './relationField.types';
 defineOptions({ name: 'NativeFormTreeRenderer' });
 
 export type NativeFormLayoutNode = {
+  containerId?: string;
+  componentKey?: string;
+  componentConfig?: Record<string, unknown>;
+  nodeComponent?: NodeComponentPresentation;
+  feedbackContentOwned?: boolean;
   type?: string;
   containerType?: string;
   name?: string;
@@ -554,11 +582,39 @@ const emit = defineEmits<{
   (event: 'native-action', payload: Record<string, unknown>): void;
 }>();
 
+function navigateExplicit(node: NativeFormLayoutNode, event: Event) {
+  const root = (event.currentTarget as HTMLElement).closest<HTMLElement>('[data-native-contract-structure]');
+  if (!root || !node.nodeComponent?.targetContainerId) throw contractGapError({kind: 'contract_defect',
+    missing: 'current form navigation root', requiredDeclarationLayer: 'P0: node navigation'}, 'Navigation root missing');
+  navigateToDeclaredNode(root, node.nodeComponent.targetContainerId);
+}
+
 const activePageIndex = ref(0);
 const collapsedContainers = ref<Record<string, boolean>>({});
-const visibleNodes = computed(() => (props.nodes || []).filter((node) => isNodeRenderable(node)));
+
+function validateNativePresentationDeclarations(nodes: NativeFormLayoutNode[], seen = new Set<object>()) {
+  for (const node of nodes || []) {
+    if (!node || seen.has(node)) continue;
+    seen.add(node);
+    assertNativePresentationConsumption(node);
+    validateNativePresentationDeclarations(rawChildren(node), seen);
+  }
+}
+
+const visibleNodes = computed(() => {
+  const nodes = props.nodes || [];
+  validateNativePresentationDeclarations(nodes);
+  return nodes.filter((node) => isNodeRenderable(node));
+});
 
 function isNodeRenderable(node: NativeFormLayoutNode): boolean {
+  if (node?.feedbackContentOwned) return false;
+  if (node?.componentKey?.startsWith('sc.feedback.') || node?.componentKey?.startsWith('sc.navigation.')) {
+    if (!node.nodeComponent) throw contractGapError({kind: 'contract_defect', missing: 'validated node presentation',
+      requiredDeclarationLayer: 'P0: node component projection'}, 'Node component projection missing');
+    return node.nodeComponent.visible && props.isNodeVisible(node);
+  }
+
   if (!node) return false;
   if (!props.isNodeVisible(node)) return false;
   const type = nodeType(node);

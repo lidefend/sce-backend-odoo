@@ -23,7 +23,34 @@ verify.contract.lint:
 	@$(MAKE) --no-print-directory contract.registry.export
 
 # 契约运行时语义/组件词表：声明权威唯一性 + 前后端键集合双向相等。
+.PHONY: verify.native_advisory.unit
+verify.native_advisory.unit:
+	@PYTHONDONTWRITEBYTECODE=1 python3 addons/smart_core/tests/test_native_advisory.py
+	@PYTHONDONTWRITEBYTECODE=1 python3 addons/smart_core/tests/test_native_view_parser_surfaces.py
+
+.PHONY: verify.record_error_proof.unit
+.PHONY: verify.node_component_capabilities.unit
+verify.node_component_capabilities.unit:
+	@PYTHONDONTWRITEBYTECODE=1 python3 addons/smart_core/tests/test_node_component_capabilities.py
+
+.PHONY: verify.node_component_validation.unit
+verify.node_component_validation.unit:
+	@PYTHONDONTWRITEBYTECODE=1 python3 addons/smart_core/tests/test_node_component_validation.py
+	@PYTHONDONTWRITEBYTECODE=1 python3 addons/smart_core/tests/test_ui_contract_v2_boundaries.py
+	@PYTHONDONTWRITEBYTECODE=1 python3 addons/smart_core/tests/test_load_contract_response_cache.py
+
+.PHONY: verify.onchange.feedback_evaluation.unit
+verify.onchange.feedback_evaluation.unit:
+	@python3 -m json.tool docs/architecture/onchange_feedback_evaluation_v1.schema.json >/dev/null
+	@PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify/test_onchange_feedback_evaluation_schema.py
+	@PYTHONDONTWRITEBYTECODE=1 python3 addons/smart_core/tests/test_api_onchange_record_id_boundaries.py
+
+verify.record_error_proof.unit:
+	@PYTHONDONTWRITEBYTECODE=1 python3 addons/smart_core/tests/test_record_error_proof.py
+	@PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=addons/smart_core/tests python3 -m unittest test_view_orchestrator.TestNativeFieldPresentationUsage test_unified_page_contract_v2_mobile_compact.TestUnifiedPageContractV2MobileCompact.test_native_guidance_fact_is_exact_read_and_tightening_only test_unified_page_contract_v2_mobile_compact.TestUnifiedPageContractV2MobileCompact.test_native_guidance_rejects_bad_declarations_and_facts
+
 verify.semantic.registry.lint:
+	@python3 scripts/verify/test_node_component_registry.py
 	@python3 -m py_compile scripts/verify/semantic_registry_lint.py scripts/verify/test_semantic_registry_lint.py scripts/verify/test_construction_semantic_declarations.py scripts/contract/generate_semantic_registry.py addons/smart_core/core/contract_runtime/semantic_resolver.py addons/smart_core/tests/test_contract_runtime_semantic_resolver.py
 	@python3 scripts/verify/semantic_registry_lint.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_semantic_registry_lint.py
@@ -258,3 +285,17 @@ contract.structure.fingerprint: guard.prod.forbid
 .PHONY: verify.native_form.declarations.unit
 verify.native_form.declarations.unit:
 	@python3 scripts/verify/test_native_form_declarations.py
+
+.PHONY: verify.company_project_refund.feedback.config_preview
+verify.company_project_refund.feedback.config_preview: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.dev.test \
+	  MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestContextWorkspaceNativeLowcode.test_one_workbench_closes_the_authorized_form_configuration_loop'
+	@$(MAKE) --no-print-directory local.dev.test \
+	  MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestContextWorkspaceNativeLowcode.test_the_configuration_path_refuses_to_relax_a_workbench_constraint'
+
+.PHONY: verify.daily.runtime.entry.identity.readonly
+verify.daily.runtime.entry.identity.readonly: guard.prod.forbid
+	@test "$(DAILY_RUNTIME_EXPECTED_SHA)" != "" || { echo "DAILY_RUNTIME_EXPECTED_SHA is required" >&2; exit 2; }
+	@$(MAKE) --no-print-directory daily.runtime.entry.verify \
+	  DAILY_RUNTIME_EXPECTED_SHA="$(DAILY_RUNTIME_EXPECTED_SHA)" \
+	  DAILY_RUNTIME_ENTRY_VERIFY_REPORT="$(DAILY_RUNTIME_ENTRY_VERIFY_REPORT)"

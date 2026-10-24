@@ -166,6 +166,13 @@ class LoadContractResponseCache:
             assembled = response["_assembled_v2"]
             self._entries.move_to_end(cache_key)
             digests = assembled.get(digests_key)
+            node_validation = {}
+            if "node_validation_contract" in assembled:
+                # Validation tightens status before trimming. Give the request
+                # its own pre-trim graph just as we do for the sealed contract.
+                node_validation["node_validation_contract"] = _DEEPCOPY(assembled["node_validation_contract"])
+                # Provenance is read-only; no authorization decision is cached.
+                node_validation["node_validation_native_tree"] = assembled.get("node_validation_native_tree")
             return {
                 "source_type": response.get("source_type"),
                 # Shared by reference: read-only on the assembled hit path.
@@ -181,6 +188,7 @@ class LoadContractResponseCache:
                     "contract": _DEEPCOPY(assembled["contract"]),
                     "source_contract": assembled["source_contract"],
                     digests_key: dict(digests) if isinstance(digests, dict) else digests,
+                    **node_validation,
                 },
             }
 

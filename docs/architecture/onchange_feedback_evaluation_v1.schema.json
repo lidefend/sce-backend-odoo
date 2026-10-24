@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sce.local/contracts/onchange_feedback_evaluation_v1.schema.json",
+  "title": "api.onchange controlled draft feedback v1",
+  "oneOf": [
+    {"$ref": "#/$defs/DescribeRequest"},
+    {"$ref": "#/$defs/EvaluateRequest"},
+    {"$ref": "#/$defs/DescribeSuccess"},
+    {"$ref": "#/$defs/EvaluateSuccess"},
+    {"$ref": "#/$defs/Failure"}
+  ],
+  "$defs": {
+    "RequestId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "ContainerId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "Dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "type"],
+      "properties": {
+        "field": {"type": "string", "minLength": 1},
+        "type": {"enum": ["date", "text", "many2one_presence"]}
+      }
+    },
+    "InputMissing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "present"],
+      "properties": {
+        "field": {"type": "string", "minLength": 1},
+        "present": {"const": false}
+      }
+    },
+    "InputPresent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "present", "value"],
+      "properties": {
+        "field": {"type": "string", "minLength": 1},
+        "present": {"const": true},
+        "value": {
+          "oneOf": [
+            {"type": "string"},
+            {"const": false},
+            {"const": true}
+          ]
+        }
+      }
+    },
+    "DescribeRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "operation", "request_id", "view_id", "container_id"],
+      "properties": {
+        "version": {"const": "1.0.0"},
+        "operation": {"const": "describe"},
+        "request_id": {"$ref": "#/$defs/RequestId"},
+        "view_id": {"type": "integer", "minimum": 1},
+        "container_id": {"$ref": "#/$defs/ContainerId"}
+      }
+    },
+    "EvaluateRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "operation", "request_id", "view_id", "container_id", "binding_etag", "inputs"],
+      "properties": {
+        "version": {"const": "1.0.0"},
+        "operation": {"const": "evaluate"},
+        "request_id": {"$ref": "#/$defs/RequestId"},
+        "view_id": {"type": "integer", "minimum": 1},
+        "container_id": {"$ref": "#/$defs/ContainerId"},
+        "binding_etag": {"$ref": "#/$defs/Sha256"},
+        "inputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              {"$ref": "#/$defs/InputMissing"},
+              {"$ref": "#/$defs/InputPresent"}
+            ]
+          }
+        }
+      }
+    },
+    "Binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "etag",
+        "model",
+        "view_id",
+        "container_id",
+        "source_container_id",
+        "native_locator",
+        "occurrence_index",
+        "component_key",
+        "component_version",
+        "purpose",
+        "dependencies",
+        "visibility_owner"
+      ],
+      "properties": {
+        "etag": {"$ref": "#/$defs/Sha256"},
+        "model": {"type": "string", "minLength": 1},
+        "view_id": {"type": "integer", "minimum": 1},
+        "container_id": {"$ref": "#/$defs/ContainerId"},
+        "source_container_id": {"type": "string", "minLength": 1},
+        "native_locator": {"type": "string", "minLength": 1},
+        "occurrence_index": {"type": "integer", "minimum": 1},
+        "component_key": {"const": "sc.feedback.message"},
+        "component_version": {"const": "1.0.0"},
+        "purpose": {"const": "advisory"},
+        "dependencies": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/Dependency"}
+        },
+        "visibility_owner": {"const": "feedback_evaluation"}
+      }
+    },
+    "DescribeSuccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "request_id", "status", "binding"],
+      "properties": {
+        "version": {"const": "1.0.0"},
+        "request_id": {"$ref": "#/$defs/RequestId"},
+        "status": {"const": "described"},
+        "binding": {"$ref": "#/$defs/Binding"}
+      }
+    },
+    "EvaluateResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["content", "visible"],
+      "properties": {
+        "content": {"type": "string"},
+        "visible": {"type": "boolean"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"visible": {"const": false}}},
+          "then": {"properties": {"content": {"const": ""}}}
+        },
+        {
+          "if": {"properties": {"visible": {"const": true}}},
+          "then": {"properties": {"content": {"type": "string", "minLength": 1}}}
+        }
+      ]
+    },
+    "EvaluateSuccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "request_id", "status", "binding_etag", "container_id", "result"],
+      "properties": {
+        "version": {"const": "1.0.0"},
+        "request_id": {"$ref": "#/$defs/RequestId"},
+        "status": {"const": "ready"},
+        "binding_etag": {"$ref": "#/$defs/Sha256"},
+        "container_id": {"$ref": "#/$defs/ContainerId"},
+        "result": {"$ref": "#/$defs/EvaluateResult"}
+      }
+    },
+    "Failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "status", "diagnostic"],
+      "properties": {
+        "version": {"const": "1.0.0"},
+        "request_id": {"$ref": "#/$defs/RequestId"},
+        "status": {"const": "failed"},
+        "diagnostic": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "path"],
+          "properties": {
+            "code": {
+              "enum": [
+                "FEEDBACK_CONFIG_INVALID",
+                "FEEDBACK_INPUT_INVALID",
+                "FEEDBACK_SOURCE_INVALID",
+                "FEEDBACK_SOURCE_FORBIDDEN",
+                "FEEDBACK_CONDITION_INVALID",
+                "FEEDBACK_BINDING_STALE",
+                "FEEDBACK_EVALUATION_FAILED",
+                "COMPONENT_CAPABILITY_REQUIRED"
+              ]
+            },
+            "path": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    }
+  }
+}

@@ -166,7 +166,9 @@ class _ChangeSetBase(BaseIntentHandler):
             if sealed != item.draft_payload:
                 item.sudo().write({"draft_payload": sealed})
 
-    def _compile_form_item(self, item, preview_token=None, *, rollback=False):
+    def _compile_form_item(
+        self, item, preview_token=None, *, rollback=False, client_contract_capabilities=None,
+    ):
         """Verify the actual final contract, never equate storage with runtime."""
         spec = (((item.draft_payload or {}).get("view_orchestration") or {}).get("views") or {}).get("form") or {}
         if item.config_type != "form" or not spec.get("node_patches"):
@@ -179,6 +181,8 @@ class _ChangeSetBase(BaseIntentHandler):
             raise ValidationError("结构配置必须绑定正式action和view。")
         params = {"op": "model", "model": item.model, "action_id": item.action_id,
                   "view_id": item.view_id, "view_type": "form", "render_profile": "create"}
+        if client_contract_capabilities is not None:
+            params["client_contract_capabilities"] = client_contract_capabilities
         if preview_token:
             params.update(preview_token=preview_token, preview_role_key=owner_role)
         result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle(params)
@@ -420,7 +424,13 @@ class BusinessConfigChangeSetPreviewHandler(BusinessConfigChangeSetValidateHandl
         record.write({"state": "ready", "failure_message": False})
         token = record.with_env(self.env).issue_preview_token()
         try:
-            final_contracts = [self._compile_form_item(item, token) for item in record.item_ids]
+            final_contracts = [
+                self._compile_form_item(
+                    item, token,
+                    client_contract_capabilities=params.get("client_contract_capabilities"),
+                )
+                for item in record.item_ids
+            ]
         except (ValueError, ValidationError, AccessError) as exc:
             record.write({"state": "failed", "failure_message": str(exc)})
             return self._err(422, "FINAL_CONTRACT_VALIDATION_FAILED", "预览契约校验失败。", {"message": str(exc)})
@@ -620,7 +630,10 @@ class BusinessConfigChangeSetPublishHandler(_ChangeSetBase):
                     published_content_verified = self._verify_runtime_item(item)
                     if not published_content_verified:
                         raise ValidationError("发布后运行态投影验证失败：%s" % item.target_key)
-                    final_contract = self._compile_form_item(item)
+                    final_contract = self._compile_form_item(
+                        item,
+                        client_contract_capabilities=params.get("client_contract_capabilities"),
+                    )
                     post_publish_hash = self._current_hash(item)
                     verification = {"published_content_verified": True, "final_contract_verification": final_contract,
                                     "page_behavior_verification": "not_run", "runtime_verified": final_contract["status"] == "passed"}
@@ -712,7 +725,14 @@ class BusinessConfigChangeSetRollbackHandler(_ChangeSetBase):
                     policy.write(row.get("values") or {})
                 elif policy and not row.get("exists"):
                     policy.unlink()
-            final_contracts = [self._compile_form_item(item, rollback=True) for item in record.item_ids]
+            final_contracts = [
+                self._compile_form_item(
+                    item,
+                    rollback=True,
+                    client_contract_capabilities=params.get("client_contract_capabilities"),
+                )
+                for item in record.item_ids
+            ]
             rollback_batch = self.env[CHANGE_SET_MODEL].sudo().create({
                 "name": "回滚：%s" % record.name,
                 "user_id": self.env.user.id,

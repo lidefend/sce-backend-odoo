@@ -1,5 +1,6 @@
 import { intentRequest } from './intents';
 import { APPROVAL_POLICY_INTENTS, BUSINESS_CONFIG_INTENTS } from '../app/businessConfigBoundaries';
+import { CONTRACT_V2_CLIENT_CAPABILITIES } from '../app/contracts/v2/clientCapabilities';
 
 export type BusinessConfigChangeSetState = 'draft' | 'validating' | 'ready' | 'publishing' | 'published' | 'failed' | 'discarded' | 'superseded';
 
@@ -99,15 +100,24 @@ export function validateBusinessConfigChangeSet(params: { change_set_token: stri
 }
 
 export function previewBusinessConfigChangeSet(params: { change_set_token: string; role_key?: string; device?: string }) {
-  return intentRequest<BusinessConfigChangeSet>({ intent: BUSINESS_CONFIG_INTENTS.changeSetPreview, params });
+  return intentRequest<BusinessConfigChangeSet>({
+    intent: BUSINESS_CONFIG_INTENTS.changeSetPreview,
+    params: { ...params, client_contract_capabilities: [...CONTRACT_V2_CLIENT_CAPABILITIES] },
+  });
 }
 
 export function publishBusinessConfigChangeSet(params: { change_set_token: string; role_key?: string; request_id: string }) {
-  return intentRequest<BusinessConfigChangeSet>({ intent: BUSINESS_CONFIG_INTENTS.changeSetPublish, params });
+  return intentRequest<BusinessConfigChangeSet>({
+    intent: BUSINESS_CONFIG_INTENTS.changeSetPublish,
+    params: { ...params, client_contract_capabilities: [...CONTRACT_V2_CLIENT_CAPABILITIES] },
+  });
 }
 
 export function rollbackBusinessConfigChangeSet(params: { change_set_token: string; role_key?: string; request_id: string }) {
-  return intentRequest<BusinessConfigChangeSet>({ intent: BUSINESS_CONFIG_INTENTS.changeSetRollback, params });
+  return intentRequest<BusinessConfigChangeSet>({
+    intent: BUSINESS_CONFIG_INTENTS.changeSetRollback,
+    params: { ...params, client_contract_capabilities: [...CONTRACT_V2_CLIENT_CAPABILITIES] },
+  });
 }
 
 export function discardBusinessConfigChangeSet(params: { change_set_token: string; role_key?: string }) {

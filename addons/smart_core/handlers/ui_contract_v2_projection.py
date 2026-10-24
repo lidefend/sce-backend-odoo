@@ -34,10 +34,18 @@ FORM_PRESENTATION_LAYOUT_TOKENS = frozenset({
     "h-100", "w-100", "w-md-50", "w-lg-25",
     # typography
     "h3", "small", "fw-bold", "text-muted", "text-danger", "text-warning",
-    # surfaces / feedback
+    # surfaces
     "card", "card-body", "content-group",
+})
+# Legacy Bootstrap feedback tokens remain recognized so a native form cannot
+# hide them by projection.  They are not layout vocabulary: the renderer must
+# reject them unless a formal node component owns purpose, source and condition.
+FORM_PRESENTATION_LEGACY_FEEDBACK_TOKENS = frozenset({
     "alert", "alert-info", "alert-danger", "alert-warning", "alert-link",
 })
+FORM_PRESENTATION_DECLARED_TOKENS = (
+    FORM_PRESENTATION_LAYOUT_TOKENS | FORM_PRESENTATION_LEGACY_FEEDBACK_TOKENS
+)
 # Grid *placement* classes (``col-12``/``col-md-6``/``col-lg-3``) are the arch's
 # width declaration.  The projection folds every declared width into the single
 # 24-unit ``span`` facet and drops the class itself with the rest of the native
@@ -182,7 +190,7 @@ def declared_presentation_tokens(node: dict[str, Any], container_id: str) -> lis
     for token in _declared_node_classes(node):
         if not (
             token.startswith(FORM_PRESENTATION_PRODUCT_PREFIX)
-            or token in FORM_PRESENTATION_LAYOUT_TOKENS
+            or token in FORM_PRESENTATION_DECLARED_TOKENS
         ):
             continue
         if token not in tokens:

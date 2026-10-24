@@ -78,3 +78,36 @@ SEMANTIC_COMPONENTS = {
     'tag_collection': 'sc.select.tags',
     'text': 'sc.input.text',
 }
+
+# Backend registration identity only; no client support is implied.
+FIELD_CONTRACT_VERSION = '1.0'
+COMPONENT_REGISTRATIONS = {
+    'sc.auth.challenge_status': {'kind': 'field', 'version': '1.0'},
+    'sc.auth.credential_entry': {'kind': 'field', 'version': '1.0'},
+    'sc.auth.one_time_secret': {'kind': 'field', 'version': '1.0'},
+    'sc.auth.secret_confirmation': {'kind': 'field', 'version': '1.0'},
+    'sc.auth.support_action': {'kind': 'field', 'version': '1.0'},
+    'sc.button.action': {'kind': 'field', 'version': '1.0'},
+    'sc.display.status': {'kind': 'field', 'version': '1.0'},
+    'sc.display.text': {'kind': 'field', 'version': '1.0'},
+    'sc.feedback.message': {'kind': 'node', 'version': '1.0.0'},
+    'sc.input.binary': {'kind': 'field', 'version': '1.0'},
+    'sc.input.boolean': {'kind': 'field', 'version': '1.0'},
+    'sc.input.date': {'kind': 'field', 'version': '1.0'},
+    'sc.input.datetime': {'kind': 'field', 'version': '1.0'},
+    'sc.input.number': {'kind': 'field', 'version': '1.0'},
+    'sc.input.text': {'kind': 'field', 'version': '1.0'},
+    'sc.input.textarea': {'kind': 'field', 'version': '1.0'},
+    'sc.navigation.anchor': {'kind': 'node', 'version': '1.0.0'},
+    'sc.payment.settlement_detail_collection': {'kind': 'field', 'version': '1.0'},
+    'sc.relation.many2many': {'kind': 'field', 'version': '1.0'},
+    'sc.relation.many2one': {'kind': 'field', 'version': '1.0'},
+    'sc.relation.table': {'kind': 'field', 'version': '1.0'},
+    'sc.select.remote': {'kind': 'field', 'version': '1.0'},
+    'sc.select.tags': {'kind': 'field', 'version': '1.0'},
+    'sc.table.data': {'kind': 'field', 'version': '1.0'},
+    'sc.tree.data': {'kind': 'field', 'version': '1.0'},
+    'sc.value.duration': {'kind': 'field', 'version': '1.0'},
+    'sc.value.money': {'kind': 'field', 'version': '1.0'},
+    'sc.value.percentage': {'kind': 'field', 'version': '1.0'},
+}

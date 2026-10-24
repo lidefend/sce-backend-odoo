@@ -1448,3 +1448,45 @@ verify.daily_dev.menu_config_entry.readonly.browser: guard.prod.forbid verify.da
 	    --tool menu-config-entry-audit \
 	    --run-id "$$RUN_ID")}"; \
 	  SC_ACCEPTANCE_RUN_ID="$$RUN_ID" SC_ACCEPTANCE_DAILY_CREDENTIAL_CONFIRMATION="$$CONFIRM" SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_API_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" SC_ACCEPTANCE_REQUIRE_CONTRACT="$(SC_ACCEPTANCE_REQUIRE_CONTRACT)" SC_ACCEPTANCE_CONTRACT_RECEIPT="$(if $(filter command line environment override,$(origin SC_ACCEPTANCE_REQUIRE_CONTRACT)),$(SC_ACCEPTANCE_CONTRACT_RECEIPT),)" SC_ACCEPTANCE_CONTRACT_DECLARATION="$(SC_ACCEPTANCE_CONTRACT_DECLARATION)" LIST_SURFACE_VIEWPORTS=1440,390 node scripts/verify/daily_menu_config_entry_browser.mjs
+
+.PHONY: verify.frontend.node_component.unit verify.frontend.node_component.component
+verify.frontend.node_component.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/node_component_consumption_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/fe-gate-03a-nodes.mjs >/dev/null
+	@node /tmp/fe-gate-03a-nodes.mjs
+verify.frontend.node_component.component: guard.prod.forbid
+	@node frontend/apps/web/scripts/node_component_consumption_component_test.mjs
+
+.PHONY: verify.frontend.feedback_evaluation.unit
+verify.frontend.feedback_evaluation.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild \
+	  frontend/apps/web/scripts/feedback_evaluation_protocol_test.ts \
+	  --bundle --platform=node --format=esm --define:import.meta.env='{}' \
+	  --outfile=/tmp/r6-3-feedback-protocol.mjs >/dev/null
+	@node /tmp/r6-3-feedback-protocol.mjs
+
+.PHONY: verify.frontend.feedback_evaluation.rt.browser
+verify.frontend.feedback_evaluation.rt.browser: guard.prod.forbid
+	@test -s .runtime/agent-runs/FE-GATE-03B1-R6-3-RT/http-evidence.json || \
+	  { echo "real HTTP evidence is required before browser ticket verification" >&2; exit 2; }
+	@mkdir -p .runtime/agent-runs/FE-GATE-03B1-R6-3-RT
+	@frontend/apps/web/node_modules/.bin/esbuild \
+	  frontend/apps/web/scripts/feedback_evaluation_rt_harness.ts \
+	  --bundle --platform=browser --format=iife --define:import.meta.env='{}' \
+	  --outfile=.runtime/agent-runs/FE-GATE-03B1-R6-3-RT/feedback-evaluation-rt-harness.js >/dev/null
+	@FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:18081/t/demo}" \
+	  E2E_LOGIN="$${E2E_LOGIN:-wutao}" E2E_PASSWORD="$${E2E_PASSWORD:-123456}" \
+	  node frontend/apps/web/scripts/feedback_evaluation_rt_browser_test.mjs
+
+.PHONY: verify.frontend.company_project_refund.feedback.rt.browser
+verify.frontend.company_project_refund.feedback.rt.browser: guard.prod.forbid
+	@test -s .runtime/agent-runs/FE-GATE-04B/http-evidence.json || \
+	  { echo "company project refund HTTP evidence is required" >&2; exit 2; }
+	@mkdir -p .runtime/agent-runs/FE-GATE-04B
+	@frontend/apps/web/node_modules/.bin/esbuild \
+	  frontend/apps/web/scripts/feedback_evaluation_rt_harness.ts \
+	  --bundle --platform=browser --format=iife --define:import.meta.env='{}' \
+	  --outfile=.runtime/agent-runs/FE-GATE-04B/feedback-evaluation-rt-harness.js >/dev/null
+	@FEEDBACK_RT_CASE=company_project_refund FEEDBACK_RT_RUN=FE-GATE-04B \
+	  FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:18081/t/demo}" \
+	  E2E_LOGIN="$${E2E_LOGIN:-wutao}" E2E_PASSWORD="$${E2E_PASSWORD:-123456}" \
+	  node frontend/apps/web/scripts/feedback_evaluation_rt_browser_test.mjs

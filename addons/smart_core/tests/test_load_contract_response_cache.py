@@ -108,6 +108,8 @@ class TestLoadContractResponseCache(unittest.TestCase):
             "limit_params": {"limit": 20}, "contract_v2": contract_v2,
             "source_contract": source_contract, "deepcopy": copy.deepcopy,
             "source_snapshot_memo": {}, "assembled_digest_slot": {},
+            "node_validation_contract": copy.deepcopy(contract_v2),
+            "node_validation_native_tree": [{"containerId": "native-proof"}],
             "ASSEMBLED_SEMANTIC_DIGESTS_KEY": "assembled_semantic_digests",
         }
         with patch.object(TARGET.copy, "deepcopy", wraps=copy.deepcopy) as copied:
@@ -122,6 +124,13 @@ class TestLoadContractResponseCache(unittest.TestCase):
         self.assertEqual(self.cache.get("page", "source"), expected)
 
         snapshot = self.cache._entries["page"][2]
+        validated_hit = self.cache.get_assembled("page", "source", cache_version="test", client_type="web",
+            delivery_profile="full", limit_params={"limit": 20}, digests_key="assembled_semantic_digests")
+        self.assertIsNot(validated_hit["_assembled_v2"]["node_validation_contract"],
+                         snapshot["_assembled_v2"]["node_validation_contract"])
+        validated_hit["_assembled_v2"]["node_validation_contract"]["columns"].append("request-only")
+        self.assertNotIn("request-only", snapshot["_assembled_v2"]["node_validation_contract"]["columns"])
+        self.assertEqual(validated_hit["_assembled_v2"]["node_validation_native_tree"], [{"containerId": "native-proof"}])
         # the source group keeps the live sharing inside the entry
         self.assertIs(
             snapshot["ui_data"]["ui_contract"]["columns"],

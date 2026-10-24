@@ -1252,6 +1252,11 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         ("action_sc_product_current_account_v1",
          "view_sc_current_account_workspace_form", "sc.current.account.workspace"),
     )
+    CONTRACT_CLIENT_CAPABILITIES = (
+        "form.feedback.message.v1",
+        "form.feedback.draft.v1",
+        "form.navigation.anchor.v1",
+    )
 
     def config_admin_env(self, action_key=None):
         """Return the principal the shipped configuration path authorizes.
@@ -1295,7 +1300,9 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         result = UiContractV2Handler(env, su_env=env["ir.model"].sudo().env).handle({
             "op": "model", "model": action.res_model, "action_id": action.id,
             "view_id": self.view_ref_id(view_key), "view_type": "form",
-            "render_profile": "create", **extra,
+            "render_profile": "create",
+            "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES),
+            **extra,
         })
         result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
         self.assertTrue(result.get("ok", True), result.get("error") or result)
@@ -1376,7 +1383,9 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         self.assertTrue(result["ok"], result)
         return change_set
 
-    def preview_form_configuration(self, env, change_set, *, expect_ok=True):
+    def preview_form_configuration(
+        self, env, change_set, *, expect_ok=True, client_capabilities=None,
+    ):
         from odoo.addons.smart_core.handlers.business_config_change_set import (
             BusinessConfigChangeSetValidateHandler,
             BusinessConfigChangeSetPreviewHandler,
@@ -1384,8 +1393,15 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         validated = BusinessConfigChangeSetValidateHandler(env).handle(
             payload={"params": {"change_set_token": change_set["token"]}})
         self.assertTrue(validated["ok"], validated)
+        capabilities = (
+            list(self.CONTRACT_CLIENT_CAPABILITIES)
+            if client_capabilities is None else list(client_capabilities)
+        )
         previewed = BusinessConfigChangeSetPreviewHandler(env).handle(
-            payload={"params": {"change_set_token": change_set["token"]}})
+            payload={"params": {
+                "change_set_token": change_set["token"],
+                "client_contract_capabilities": capabilities,
+            }})
         if not expect_ok:
             return validated, previewed
         self.assertTrue(previewed["ok"], previewed)
@@ -1443,6 +1459,10 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         change_set = self.stage_form_configuration(
             env, action_key, view_key, patches,
             diff_summary="标签、显隐与顺序按受管配置生效")
+        _rejected_validation, rejected_preview = self.preview_form_configuration(
+            env, change_set, expect_ok=False, client_capabilities=[])
+        self.assertIn("COMPONENT_CAPABILITY_REQUIRED", str(rejected_preview),
+                      "preview must fail closed when the client cannot consume the candidate component")
         _validated, previewed = self.preview_form_configuration(env, change_set)
         token = previewed["data"]["preview"]["token"]
         self.assertTrue(token)
@@ -1473,6 +1493,7 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         published = BusinessConfigChangeSetPublishHandler(env).handle(payload={"params": {
             "change_set_token": change_set["token"],
             "request_id": "g08-c-closure-%s" % change_set["id"],
+            "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES),
         }})
         self.assertTrue(published["ok"], published)
         publish_result = published["data"]["publish_result"]
@@ -1493,6 +1514,7 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         rolled_back = BusinessConfigChangeSetRollbackHandler(env).handle(payload={"params": {
             "change_set_token": change_set["token"],
             "request_id": "g08-c-rollback-%s" % change_set["id"],
+            "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES),
         }})
         self.assertTrue(rolled_back["ok"], rolled_back)
         self.assertEqual(self.contract_identity(self.entry_contract(self.env, action_key, view_key)),

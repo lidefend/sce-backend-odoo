@@ -43,6 +43,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     formData,
     formDataFieldNames,
     formRouteIdentity,
+    feedbackDependencyPresence,
     hydrateSelectedRelationOptions,
     prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows,
     initOne2manyRows,
@@ -304,6 +305,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     });
     relationOptions.value = {};
     clearOne2manyRows();
+    if (feedbackDependencyPresence) feedbackDependencyPresence.value = new Set();
     onchangeModifiersPatch.value = {};
     onchangeWarnings.value = [];
     onchangeLinePatches.value = [];
@@ -338,8 +340,10 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         })),
         fetchDefaults: defaultContractFormRecord,
       });
+      const presentFields = new Set<string>();
       fieldNames.forEach((name) => {
         const descriptor = formFields()[name];
+        if (Object.prototype.hasOwnProperty.call(defaults, name)) presentFields.add(name);
         applyIncomingFormFieldValue({
           fieldName: name,
           descriptor,
@@ -347,6 +351,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
           target: hydrationTarget,
         });
       });
+      if (feedbackDependencyPresence) feedbackDependencyPresence.value = presentFields;
       Object.entries(
         resolveCreateRouteRelationLabels(
           v2ContractStore.value,
@@ -394,9 +399,13 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         (row as Record<string, unknown>)[versionPolicy.tokenField] || '',
       ).trim();
     }
+    const presentFields = new Set<string>();
     fieldNames.forEach((name) => {
       if (name === versionPolicy?.tokenField && !formFields()[name]) return;
-      const incoming = Object.prototype.hasOwnProperty.call(row, name)
+      const rowHasField = Object.prototype.hasOwnProperty.call(row, name);
+      const contractHasField = Object.prototype.hasOwnProperty.call(contractMainData, name);
+      if (rowHasField || contractHasField) presentFields.add(name);
+      const incoming = rowHasField
         ? (row as Record<string, unknown>)[name]
         : (contractMainData[name] ?? '');
       applyIncomingFormFieldValue({
@@ -406,6 +415,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         target: hydrationTarget,
       });
     });
+    if (feedbackDependencyPresence) feedbackDependencyPresence.value = presentFields;
     originalValues.value = snapshotOriginalFormValues(fieldNames, formData);
     nativeLayoutVisibilityRevision.value += 1;
   }

@@ -1038,7 +1038,7 @@ class TestSingleStructureResolution(unittest.TestCase):
         orchestrator = _load_orchestrator()
         data = Path(__file__).resolve().parents[2] / "smart_construction_core/data"
         configs = []
-        for filename in ("p1_daily_business_form_orchestration_contract_data.xml", "view_orchestration_contract_generated_data.xml",
+        for filename in ("view_orchestration_contract_generated_data.xml",
                          "view_orchestration_form_section_contract_data.xml", "payment_request_form_productization_contract.xml"):
             for record in ET.parse(data / filename).getroot().iter("record"):
                 if record.get("model") != "ui.business.config.contract":
@@ -1051,11 +1051,12 @@ class TestSingleStructureResolution(unittest.TestCase):
                 if fields.get("status") is not None and fields["status"].text != "published":
                     continue
                 payload = ast.literal_eval(fields["contract_json"].get("eval"))
-                if not ((payload.get("view_orchestration") or {}).get("views") or {}).get("form"):
+                form_view = ((payload.get("view_orchestration") or {}).get("views") or {}).get("form")
+                if not isinstance(form_view, dict):
                     continue
                 configs.append(SimpleNamespace(id=len(configs)+1, name=record.get("id"), version_no=1, contract_json=payload))
         self.assertEqual({config.name for config in configs}, {
-            "business_config_contract_payment_request_p1_form_business_facts_v1",
+            "business_config_contract_payment_request_form_sections_v1",
             "business_config_contract_payment_request_pay_productized_form_v1",
             "business_config_contract_payment_request_receive_productized_form_v1",
         })
