@@ -2169,6 +2169,10 @@ verify.backend.contract_lifecycle.runtime: guard.prod.forbid check-compose-proje
 	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/backend_contract_lifecycle_runtime_probe.json artifacts/backend/backend_contract_lifecycle_runtime_probe.json >/dev/null
 	@python3 scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py $(if $(ACCEPTANCE_TARGET_SHA),--expected-revision $(ACCEPTANCE_TARGET_SHA),)
 
+.PHONY: verify.backend.contract_fact_readback.runtime
+verify.backend.contract_fact_readback.runtime: guard.prod.forbid check-compose-project check-compose-env
+	@$(RUN_ENV) DB_NAME=$(DB_NAME) CANDIDATE_DB_NAME=$(DB_NAME) CANDIDATE_GIT_HEAD=$(shell git rev-parse HEAD) CANDIDATE_GIT_TREE=$(shell git rev-parse HEAD^{tree}) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/backend_contract_fact_readback_probe.py
+
 .PHONY: verify.backend.contract_lifecycle.runtime.schema.guard
 verify.backend.contract_lifecycle.runtime.schema.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py

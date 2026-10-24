@@ -2844,7 +2844,8 @@
       "owner": "platform-team",
       "evidence": [
         ".github/workflows/merge_policy_gate.yml",
-        ".github/workflows/public_guard.yml"
+        ".github/workflows/public_guard.yml",
+        "make/ci.mk"
       ]
     },
     {

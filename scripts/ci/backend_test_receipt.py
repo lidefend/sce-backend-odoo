@@ -193,7 +193,8 @@ def workflow_definition_observation(environment: dict | None = None) -> dict:
 
 def record(root: Path, *, module: str, kind: str, head: str, base: str,
            database: str, status: int, log: Path, context_file: Path, output: Path,
-           now: datetime | None = None, selection: str = '', duration_seconds: float | None = None, secrets_file: Path | None = None, scope_plan: Path | None = None) -> dict:
+           now: datetime | None = None, selection: str = '', duration_seconds: float | None = None, secrets_file: Path | None = None, scope_plan: Path | None = None,
+           readback: dict | Path | None = None) -> dict:
     if kind not in ('orm', 'python'):
         raise ValueError('unknown executor kind')
     if kind == 'orm' and (not selection or not database):
@@ -246,6 +247,8 @@ def record(root: Path, *, module: str, kind: str, head: str, base: str,
     (target / 'execution.log').write_text(text, encoding='utf-8')
     (target / 'runtime.json').write_bytes(canonical(runtime))
     (target / 'python.json').write_bytes(canonical(python))
+    readback_blockers, readback_closure = readback_closure_blockers(readback, head=head)
+    blockers = ['platform_source_not_authenticated', 'target_dependency_closure_not_certified'] + readback_blockers
     receipt = {
         'schema': SCHEMA, 'module': module, 'kind': kind, 'source_head': head,
         'source_tree': tree, 'integration_base': base, 'database': database, 'scope_plan':scope,
@@ -263,9 +266,10 @@ def record(root: Path, *, module: str, kind: str, head: str, base: str,
         'workflow_definition': workflow_definition,
         'files': {name: digest((target / name).read_bytes()) for name in ('execution.log', 'runtime.json', 'python.json')},
         'reuse_ready': False,
-        'blockers': ['platform_source_not_authenticated', 'runtime_contract_readback_missing', 'fact_scope_readback_missing',
-                     'target_dependency_closure_not_certified'],
+        'blockers': blockers,
     }
+    if readback_closure is not None:
+        receipt['readback_closure'] = readback_closure
     isolated = [json.loads(line[len(ISOLATED_MARKER):]) for line in text.splitlines() if line.startswith(ISOLATED_MARKER)]
     if isolated:
         if len(isolated) != 1 or kind != 'python' or module != ISOLATED_MODULE:
@@ -352,6 +356,113 @@ def contract_source_binding(contract: dict, source_payload: dict) -> dict:
             'reuse_ready': False,
             'blockers': ['runtime_contract_readback_missing', 'fact_scope_readback_missing',
                          'target_dependency_closure_not_certified']}
+
+
+def reuse_closure(*, platform_source_authenticated: bool = False,
+                  artifact_attempt_attested: bool = False,
+                  execution_definition_attested: bool = False,
+                  runtime_contract_readback: bool = False,
+                  fact_scope_readback: bool = False,
+                  target_dependency_closure: bool = False) -> dict:
+    """Single source of truth for the ORM reuse closure dimensions.
+
+    Reuse is authorized only when every dimension is independently certified.
+    No dimension may be inferred from another: an identical source tree does
+    not close the runtime contract readback, and a green full run does not
+    close the fact readback. The returned blockers keep the existing receipt
+    vocabulary so consumers stay stable.
+    """
+    dimensions = {
+        'platform_source_authenticated': (platform_source_authenticated,
+                                          'platform_source_not_authenticated'),
+        'artifact_attempt_attested': (artifact_attempt_attested,
+                                      'artifact_attempt_not_attested'),
+        'execution_definition_attested': (execution_definition_attested,
+                                          'execution_definition_not_attested'),
+        'runtime_contract_readback': (runtime_contract_readback,
+                                      'runtime_contract_readback_missing'),
+        'fact_scope_readback': (fact_scope_readback,
+                                'fact_scope_readback_missing'),
+        'target_dependency_closure': (target_dependency_closure,
+                                      'target_dependency_closure_not_certified'),
+    }
+    blockers = [label for closed, label in dimensions.values() if not closed]
+    return {'reuse_ready': not blockers,
+            'dimensions': {name: bool(closed) for name, (closed, _) in dimensions.items()},
+            'blockers': blockers}
+
+
+def readback_witness_closure(witness: dict) -> dict:
+    """Map a runtime readback report to the contract and fact closure.
+
+    The runtime-sealed contract and the business facts are the only product
+    authority. A report closes `runtime_contract_readback` only when it carries
+    a verified source->contract binding, and closes `fact_scope_readback` only
+    under full three-way scalar parity (no mismatches and no uncovered fields).
+    Uncovered relation/derived/context-dependent fields always keep the fact
+    scope open; a static JSON snapshot never stands in for either dimension.
+    """
+    if not isinstance(witness, dict) or witness.get('schema') != 'backend-contract-fact-readback/v1':
+        raise ValueError('runtime readback witness required')
+    observation = witness.get('observation')
+    if (not isinstance(observation, dict) or not observation.get('source_sha256')
+            or not observation.get('contract_sha256')):
+        raise ValueError('readback source/contract binding missing')
+    parity = observation.get('value_parity')
+    if (not isinstance(parity, dict) or not isinstance(parity.get('checked_fields'), list)
+            or not parity['checked_fields']):
+        raise ValueError('readback value parity missing')
+    mismatches = list(parity.get('mismatch_fields') or [])
+    uncovered = dict(parity.get('uncovered_fields') or {})
+    full = bool(parity.get('full_projection_parity', not mismatches and not uncovered))
+    return {'runtime_contract_readback': not mismatches,
+            'fact_scope_readback': full and not mismatches,
+            'projection_value_coverage_incomplete': not full,
+            'checked_fields': list(parity['checked_fields']),
+            'uncovered_fields': uncovered,
+            'mismatch_fields': mismatches}
+
+
+def readback_closure_blockers(readback, *, head: str) -> tuple[list[str], dict | None]:
+    """Bind a runtime readback witness to an exact head and return its blockers.
+
+    Only a witness whose source head equals the receipt head and whose value
+    parity is full closes the contract/fact dimensions. An absent witness keeps
+    both blockers open; a mismatched head is refused; uncovered fields keep the
+    fact scope open. Closure is never fabricated.
+    """
+    if readback is None:
+        return ['runtime_contract_readback_missing', 'fact_scope_readback_missing'], None
+    if not isinstance(readback, dict):
+        readback = json.loads(readback.read_text() if hasattr(readback, 'read_text') else readback)
+    if readback.get('source_head') != head:
+        raise ValueError('readback witness source head does not match receipt head')
+    closure = readback_witness_closure(readback)
+    blockers = []
+    if not closure['runtime_contract_readback']:
+        blockers.append('runtime_contract_readback_missing')
+    if not closure['fact_scope_readback']:
+        blockers.append('fact_scope_readback_missing')
+        if closure['projection_value_coverage_incomplete']:
+            blockers.append('projection_value_coverage_incomplete')
+    return blockers, closure
+
+
+def receipt_reuse_authorized(receipt: dict) -> tuple[bool, list[str]]:
+    """Whether an authenticated receipt authorizes reuse for its target.
+
+    Authorization is never inferred, and a producer's ``reuse_ready`` flag is
+    never trusted on its own. Only an independently attested authority
+    authorizes reuse: today that is the isolated pure-Python profile's verified
+    workflow-execution authority. Every other target stays blocked until the
+    contract/fact readback and dependency closure are independently verified,
+    not merely claimed in the receipt.
+    """
+    if not isinstance(receipt, dict):
+        return False, ['receipt_missing']
+    if receipt.get('isolated_execution_authority') == 'verified_workflow_execution':
+        return True, []
+    return False, list(receipt.get('blockers') or ['reuse_closure_not_independently_attested'])
 
 
 REPOSITORY = 'lidefend/sce-backend-odoo'
@@ -630,6 +741,45 @@ def isolated_snapshot(root: Path, head: str, destination: Path, image_id: str) -
     return {'fingerprint': digest(canonical(recipe)), 'recipe': recipe, 'executor': executor}
 
 
+def attest_execution_definition(run: dict, definition: dict, authority_blobs: dict, fetch) -> None:
+    """Bind workflow bytes to platform provenance, separately from test checkout.
+
+    Reusable PR workflows are executed from a platform-reported merge revision.
+    Never equate that revision with the tested source SHA or trust a producer's
+    workflow SHA without the platform's referenced_workflows observation.
+    """
+    workflow = '.github/workflows/backend_test_suite.yml'
+    if run.get('event') in ('schedule', 'workflow_dispatch') and run.get('path') == workflow:
+        if definition.get('sha') != run.get('head_sha') or definition.get('path') != workflow:
+            raise ValueError('root execution definition does not match platform revision')
+        return
+    if run.get('event') != 'pull_request' or run.get('path') != '.github/workflows/professional_quality_gate.yml':
+        raise ValueError('unsupported execution definition provenance')
+    references = run.get('referenced_workflows') or []
+    matches = [ref for ref in references
+               if ref.get('path') == REPOSITORY + '/' + workflow + '@' + str(ref.get('sha'))]
+    if len(matches) != 1:
+        raise ValueError('reusable workflow platform revision missing or ambiguous')
+    revision = matches[0].get('sha', '')
+    if (not re.fullmatch('[0-9a-f]{40}', revision)
+            or definition.get('sha') != revision
+            or definition.get('path') not in (run['path'], workflow)):
+        raise ValueError('observed workflow does not match platform reusable revision')
+    commit = json.loads(fetch('git/commits/' + revision))
+    if commit.get('sha') != revision or run['head_sha'] not in [x.get('sha') for x in commit.get('parents', [])]:
+        raise ValueError('workflow merge revision does not contain tested head as parent')
+    tree_sha = (commit.get('tree') or {}).get('sha')
+    tree = json.loads(fetch('git/trees/' + str(tree_sha) + '?recursive=1'))
+    if tree.get('sha') != tree_sha or tree.get('truncated') is not False:
+        raise ValueError('workflow revision tree incomplete')
+    files = {x['path']: x for x in tree['tree']}
+    for path in (workflow, run['path']):
+        item = files.get(path, {})
+        if (path not in authority_blobs or item.get('type') != 'blob'
+                or item.get('mode') != '100644' or item.get('sha') != authority_blobs[path]):
+            raise ValueError('executed workflow bytes differ from verified source definition')
+
+
 def isolated_history(fingerprint: str, *, recipe: dict, fetch=None) -> tuple[dict | None, list]:
     """Only completed real executions seed reuse; reused decisions never renew TTL."""
     fetch = fetch or functools.lru_cache(maxsize=64)(github_bytes)
@@ -639,7 +789,7 @@ def isolated_history(fingerprint: str, *, recipe: dict, fetch=None) -> tuple[dic
         if (run.get('id') == int(os.environ.get('GITHUB_RUN_ID', '0'))
                 or run.get('path') not in ('.github/workflows/backend_test_suite.yml',
                                            '.github/workflows/professional_quality_gate.yml')
-                or run.get('event') not in ('schedule', 'workflow_dispatch')
+                or run.get('event') not in ('schedule', 'workflow_dispatch', 'pull_request')
                 or run.get('repository', {}).get('id') != REPOSITORY_ID
                 or run.get('head_repository', {}).get('id') != REPOSITORY_ID):
             continue
@@ -680,12 +830,8 @@ def isolated_history(fingerprint: str, *, recipe: dict, fetch=None) -> tuple[dic
                     for path, oid in recipe['authority_blobs'].items():
                         if blobs.get(path, {}).get('sha') != oid or blobs[path]['type'] != 'blob':
                             raise ValueError('historical executor/decision definition differs')
-                    workflow_path = '.github/workflows/backend_test_suite.yml'
-                    if run['path'] != workflow_path:
-                        raise ValueError('full baseline workflow identity differs')
                     definition = verified.get('workflow_definition') or {}
-                    if definition.get('sha') != run['head_sha'] or definition.get('path') != workflow_path:
-                        raise ValueError('root execution definition does not match platform full-run revision')
+                    attest_execution_definition(run, definition, recipe['authority_blobs'], fetch)
                     # Do not trust producer field names alone: match the execution
                     # marker against the authenticated log. Only an original
                     # attempt is eligible; attempt-number names alone are insufficient.
@@ -697,12 +843,60 @@ def isolated_history(fingerprint: str, *, recipe: dict, fetch=None) -> tuple[dic
                     if markers != [proof]:
                         raise ValueError('isolated execution log binding mismatch')
                     return {**verified, 'locator': locator,
-                            'isolated_execution_authority':'verified_root_full_workflow'}, rejected
+                            'isolated_execution_authority':'verified_workflow_execution'}, rejected
                 except (ValueError, KeyError, TypeError, AttributeError, zipfile.BadZipFile, OSError, subprocess.SubprocessError) as exc:
                     rejected.append({'run_id':run['id'], 'artifact_id':artifact['id'], 'reason':str(exc)})
         except (ValueError, KeyError, TypeError, AttributeError, zipfile.BadZipFile, OSError, subprocess.SubprocessError) as exc:
             rejected.append({'run_id':run.get('id'), 'reason':str(exc)})
     return None, rejected
+
+
+def discover_receipt_locators(*, head: str, modules: list[str],
+                              fetch=None, max_runs: int = 30) -> list[dict]:
+    """Discover exact remote artifact locators for the current modules.
+
+    Bounded by a TTL and a run limit and never returns producer verdicts: the
+    returned locators are untrusted addresses consumed by verify_github_origin.
+    A failed or empty API response yields an empty list, which forces RUN and
+    never fabricates REUSE. Non-ancestor or mismatched locators are rejected
+    later by select_historical_receipts, not trusted here.
+    """
+    if (not re.fullmatch('[0-9a-f]{40}', head) or not isinstance(modules, list)
+            or not modules or any(not re.fullmatch('[A-Za-z_][A-Za-z0-9_]*', name) for name in modules)):
+        return []
+    fetch = fetch or functools.lru_cache(maxsize=64)(github_bytes)
+    locators = []
+    try:
+        payload = json.loads(fetch(f'actions/runs?status=success&per_page={max_runs}'))
+    except (ValueError, KeyError, TypeError, OSError, subprocess.SubprocessError):
+        return []
+    for run in payload.get('workflow_runs', []):
+        if (run.get('run_attempt') != 1
+                or run.get('repository', {}).get('id') != REPOSITORY_ID
+                or run.get('head_repository', {}).get('id') != REPOSITORY_ID
+                or run.get('event') not in ('pull_request', 'workflow_dispatch', 'schedule')
+                or run.get('path') not in ('.github/workflows/backend_test_suite.yml',
+                                           '.github/workflows/professional_quality_gate.yml')):
+            continue
+        try:
+            started = datetime.fromisoformat(run['run_started_at'].replace('Z', '+00:00'))
+        except (KeyError, AttributeError, ValueError):
+            continue
+        if datetime.now(timezone.utc) - started >= MAX_AGE:
+            continue
+        try:
+            artifacts = json.loads(fetch(f"actions/runs/{run['id']}/artifacts?per_page=100"))
+        except (ValueError, KeyError, TypeError, OSError, subprocess.SubprocessError):
+            continue
+        for artifact in artifacts.get('artifacts', []):
+            match = re.fullmatch(r'backend-execution-(\d+)-1-(\d+)', artifact.get('name', ''))
+            if (not match or int(match[1]) != run['id'] or artifact.get('expired') is not False):
+                continue
+            for module in modules:
+                locators.append({'head': run['head_sha'], 'module': module,
+                                 'run_id': run['id'], 'attempt': 1,
+                                 'artifact_id': artifact['id'], 'shard': int(match[2])})
+    return locators
 
 
 def isolated_decision(fingerprint: str, previous: dict | None, *, force_full: bool) -> dict:
@@ -715,7 +909,7 @@ def isolated_decision(fingerprint: str, previous: dict | None, *, force_full: bo
     if previous and not force_full:
         validate_isolated_result(previous['isolated_python'], previous['test_count'])
         if (previous.get('platform_origin') != 'verified' or previous.get('integrity') != 'verified'
-                or previous.get('isolated_execution_authority') != 'verified_root_full_workflow'):
+                or previous.get('isolated_execution_authority') != 'verified_workflow_execution'):
             raise ValueError('history was not authenticated')
         ledger['units'][ISOLATED_MODULE] = {'status':'passed',
             'fingerprint':previous['isolated_python']['fingerprint']}
@@ -830,6 +1024,7 @@ def main() -> None:
     parser.add_argument('--receipt-sha256')
     parser.add_argument('--secrets-file', type=Path)
     parser.add_argument('--scope-plan', type=Path)
+    parser.add_argument('--readback', type=Path)
     parser.add_argument('--log-status', type=int, default=0)
     parser.add_argument('--contract', type=Path)
     parser.add_argument('--source-payload', type=Path)
@@ -852,7 +1047,8 @@ def main() -> None:
         result = record(ROOT, module=args.module, kind=args.kind, head=args.head, base=args.base,
                         database=args.database, status=args.status, log=args.log,
                         context_file=args.context, output=args.output, selection=args.selection,
-                        duration_seconds=args.duration_seconds, secrets_file=args.secrets_file, scope_plan=args.scope_plan)
+                        duration_seconds=args.duration_seconds, secrets_file=args.secrets_file,
+                        scope_plan=args.scope_plan, readback=args.readback)
         print(json.dumps({'module': result['module'], 'test_count': result['test_count'],
                           'receipt_sha256': result['receipt_sha256'], 'reuse_ready': False}))
     elif args.mode == 'archive-attempt':

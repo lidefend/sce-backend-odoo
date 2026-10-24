@@ -1,0 +1,7 @@
+schema_version: 1
+goal:
+  id: FE-INCREMENTAL-VALIDATION-03
+  title: Stable-baseline scope-first incremental validation
+  status: verification_pending
+  formal_product_layer: P4
+  exclusions: [product_logic, deployment, unverified_test_skip]

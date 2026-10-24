@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `4916`
 - Files requiring split plan: `71`
-- Files above warning threshold: `143`
+- Files above warning threshold: `144`
 
 ## Split Plan Required
 
@@ -147,6 +147,7 @@ Generated from repository source files. This report is informational during the 
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
 | 1088 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1087 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
+| 1072 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1066 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
@@ -171,6 +172,7 @@ Generated from repository source files. This report is informational during the 
 | 932 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 914 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
+| 909 | Python source | `scripts/ci/test_backend_test_receipt.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
 | 900 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
@@ -182,7 +184,6 @@ Generated from repository source files. This report is informational during the 
 | 885 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 877 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
-| 876 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 872 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
 | 868 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 862 | Python source | `addons/smart_core/handlers/ui_contract.py` |
@@ -215,10 +216,10 @@ Generated from repository source files. This report is informational during the 
 | 802 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
 | 801 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |
-| 546 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
+| 576 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 491 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
-| 435 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
+| 457 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 385 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 381 | Shell script | `scripts/demo/verify.sh` |
 | 364 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |

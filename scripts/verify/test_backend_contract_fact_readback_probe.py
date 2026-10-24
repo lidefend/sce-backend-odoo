@@ -129,5 +129,22 @@ class ReadbackTest(unittest.TestCase):
         result=probe.value_parity(lifecycle.canonical_json,metadata,source,dict(source),facts)
         self.assertEqual('passed',result['status'])
 
+    def test_candidate_head_identity_binds_exact_head_and_tree(self):
+        self.assertEqual({'source_head':None,'source_tree':None},
+                         probe.candidate_head_identity({}))
+        identity=probe.candidate_head_identity({'CANDIDATE_GIT_HEAD':'a'*40,'CANDIDATE_GIT_TREE':'b'*40})
+        self.assertEqual({'source_head':'a'*40,'source_tree':'b'*40},identity)
+        for env in ({'CANDIDATE_GIT_HEAD':'short'},{'CANDIDATE_GIT_TREE':'not-hex'}):
+            with self.subTest(env=env):
+                with self.assertRaises(ValueError):
+                    probe.candidate_head_identity(env)
+
+    def test_candidate_database_resolves_env_over_default(self):
+        self.assertEqual(probe.DATABASE,probe.candidate_database({}))
+        self.assertEqual(probe.DATABASE,probe.candidate_database({'CANDIDATE_DB_NAME':''}))
+        self.assertEqual('sc_demo_suite_ci',probe.candidate_database({'CANDIDATE_DB_NAME':'sc_demo_suite_ci'}))
+        with self.assertRaises(ValueError):
+            probe.candidate_database({'CANDIDATE_DB_NAME':'not valid!'})
+
 
 if __name__ == '__main__':unittest.main()

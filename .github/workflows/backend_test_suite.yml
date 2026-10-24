@@ -58,6 +58,8 @@ jobs:
     outputs:
       matrix: ${{ steps.scope.outputs.matrix }}
       head: ${{ steps.scope.outputs.head }}
+      required: ${{ steps.scope.outputs.required }}
+      reuse_authority: ${{ steps.scope.outputs.reuse_authority }}
     steps:
       - name: Checkout exact candidate for scope planning
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -71,16 +73,24 @@ jobs:
           IMPACT_BASE: ${{ inputs.base_sha }}
           HEAD_SHA: ${{ inputs.head_sha || github.sha }}
           MODULE_OVERRIDE: ${{ github.event.inputs.modules }}
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
+          discover_args=""
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            discover_args="--discover-receipts"
+          fi
           python3 scripts/ci/backend_suite_plan.py --base "${IMPACT_BASE}" \
             --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" \
-            --output "${RUNNER_TEMP}/backend-plan.json" --github-output "${GITHUB_OUTPUT}"
+            --output "${RUNNER_TEMP}/backend-plan.json" --github-output "${GITHUB_OUTPUT}" \
+            ${discover_args}
           python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json")); p.pop("input_inventory",None); print(json.dumps(p,indent=2))' >> "${GITHUB_STEP_SUMMARY}"
 
   backend_suite:
     needs: plan
+    if: needs.plan.outputs.required == 'true'
     strategy:
       fail-fast: false
       max-parallel: 4
@@ -544,3 +554,23 @@ jobs:
           docker compose down -v --remove-orphans || true
           docker buildx rm "${CI_PROJECT_NAME}-builder" || true
           bash scripts/ci/self_hosted_runner_cleanup.sh
+
+  verify_coverage:
+    needs: [plan, backend_suite]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Enforce complete backend coverage
+        env:
+          REQUIRED: ${{ needs.plan.outputs.required }}
+          SUITE_RESULT: ${{ needs.backend_suite.result }}
+          REUSE_AUTHORITY: ${{ needs.plan.outputs.reuse_authority }}
+        run: |
+          set -euo pipefail
+          if [ "${REQUIRED}" = "true" ]; then
+            test "${SUITE_RESULT}" = success
+          else
+            test "${SUITE_RESULT}" = skipped
+            test "${REUSE_AUTHORITY}" = true || test "${REUSE_AUTHORITY}" = false
+          fi

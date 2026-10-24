@@ -1407,6 +1407,11 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/BACKEND-CONTRACT-L4-CLOSURE/run.json。登记待接线或退役，B3 按族处理。"
     },
+    "verify.backend.contract_fact_readback.runtime": {
+      "disposition": "history_probe_runbook",
+      "owner": "platform-team",
+      "reason": "受管运行时 readback 入口（CANDIDATE_GIT_HEAD/TREE/DB_NAME），为 ORM 复用闭合作证；运行时诊断，非必需门禁。"
+    },
     "verify.backend.contract_lifecycle.runtime.schema.guard": {
       "disposition": "candidate",
       "owner": "platform-team",

@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Behavior tests for exact-tree backend scope, including destructive changes."""
 import os
+import sys
 import textwrap
+import io
+import contextlib
 import subprocess
 import tempfile
 import unittest
@@ -37,6 +40,19 @@ class ImpactSelectionTest(unittest.TestCase):
     def test_removed_module_selects_surviving_consumers(self):
         after = {k: v for k, v in self.graph.items() if k != 'industry'}
         self.assertEqual(planner.select(['addons/industry/models/a.py'], self.graph, after)['modules'], ['bundle'])
+
+    def test_control_plane_selects_owning_checks_not_orm(self):
+        for path, target in planner.CONTROL_PLANE.items():
+            with self.subTest(path=path):
+                plan = planner.select([path], self.graph, self.graph)
+                self.assertEqual([], plan['modules'])
+                self.assertEqual([target], plan['tool_checks'])
+                self.assertEqual('NOT_APPLICABLE', plan['scope_status'])
+
+    def test_control_plane_file_read_by_test_still_selects_reader(self):
+        path = 'scripts/ci/backend_suite_plan.py'
+        graph = {**self.graph, 'reader': {**module(), 'file_inputs': [path]}}
+        self.assertEqual(['reader'], planner.select([path],graph,graph)['modules'])
 
     def test_shared_runner_forces_full(self):
         plan = planner.select(['scripts/ci/orm_result_guard.sh'], self.graph, self.graph)
@@ -160,8 +176,10 @@ def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
                 self.assertEqual(['docs/input.json'], after['scene']['file_inputs'])
                 self.assertEqual(['scene'], planner.select(['docs/input.json'], before, after)['modules'])
 
-    def test_empty_diff_is_not_green_skip(self):
-        self.assertEqual(planner.select([], self.graph, self.graph)['mode'], 'full')
+    def test_exact_empty_diff_requires_no_backend_work(self):
+        plan = planner.select([], self.graph, self.graph)
+        self.assertEqual([], plan['modules'])
+        self.assertEqual('NOT_APPLICABLE', plan['scope_status'])
 
     def test_scheduled_full_cannot_be_narrowed_by_paths(self):
         self.assertEqual(planner.select(['docs/a.md'], self.graph, self.graph, full=True)['modules'], sorted(self.graph))
@@ -220,6 +238,51 @@ def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
                     'AUTHORIZATION_RESULT': auth, 'IMPACT_REQUIRED': required,
                     'IMPACT_RESULT': result, 'EVENT_NAME': 'pull_request'})
                 self.assertEqual(outcome.returncode, expected)
+
+    def test_control_plane_tool_checks_are_enforced_by_final_gate(self):
+        text = (planner.ROOT / '.github/workflows/professional_quality_gate.yml').read_text()
+        block = text.split('- name: Enforce control-plane tool check execution', 1)[1].split('- name:', 1)[0]
+        script = textwrap.dedent(block.split('run: |', 1)[1])
+        for checks, ran, expected in (
+            ('', '', 0),
+            ('verify.ci.workflow.contract', 'true', 0),
+            ('verify.ci.workflow.contract verify.verification.lane_coverage', 'true', 0),
+            ('verify.ci.workflow.contract', '', 1),
+            ('verify.ci.workflow.contract', 'false', 1),
+            ('verify.ci.workflow.contract', 'skipped', 1),
+        ):
+            with self.subTest(checks=checks, ran=ran):
+                outcome = subprocess.run(['bash', '-c', script], env={**os.environ,
+                    'TOOL_CHECKS': checks, 'TOOL_CHECKS_RAN': ran})
+                self.assertEqual(outcome.returncode, expected)
+
+    def test_github_output_emits_tool_checks_and_scope_status(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def git(*args):
+                return subprocess.check_output(['git', *args], cwd=root, text=True).strip()
+            git('init', '-q'); git('config', 'user.name', 'Fixture'); git('config', 'user.email', 'fixture@example.invalid')
+            module = root / 'addons' / 'sample'
+            (module / 'tests').mkdir(parents=True)
+            (module / '__manifest__.py').write_text("{'depends': []}")
+            (module / 'tests' / 'test_a.py').write_text('# fixture\n')
+            control = root / 'scripts' / 'ci'
+            control.mkdir(parents=True)
+            (control / 'backend_impact_plan.py').write_text('# control plane\n')
+            git('add', '.'); git('commit', '-qm', 'base'); base = git('rev-parse', 'HEAD')
+            (control / 'backend_impact_plan.py').write_text('# control plane changed\n')
+            git('commit', '-aqm', 'control-plane change'); head = git('rev-parse', 'HEAD')
+            out = root / 'out.json'; gho = root / 'github-output.txt'
+            with patch.object(planner, 'ROOT', root):
+                with patch.object(sys, 'argv', ['backend_impact_plan.py', '--base', base,
+                                                '--head', head, '--output', str(out),
+                                                '--github-output', str(gho)]):
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        planner.main()
+            emitted = gho.read_text()
+            self.assertIn('required=false', emitted)
+            self.assertIn('tool_checks=verify.ci.workflow.contract', emitted)
+            self.assertIn('scope_status=NOT_APPLICABLE', emitted)
 
     def test_required_check_depends_on_runtime_and_rejects_failure(self):
         text = (planner.ROOT / '.github/workflows/professional_quality_gate.yml').read_text()

@@ -14,6 +14,42 @@ from unittest.mock import patch
 import backend_test_receipt as receipt
 
 
+class WorkflowDefinitionAttestationTest(unittest.TestCase):
+    def fixture(self):
+        head, merge, tree = 'a'*40, 'b'*40, 'c'*40
+        workflow = '.github/workflows/backend_test_suite.yml'
+        caller = '.github/workflows/professional_quality_gate.yml'
+        blobs = {workflow:'d'*40, caller:'e'*40}
+        run = {'event':'pull_request','path':caller,'head_sha':head,
+               'referenced_workflows':[{'path':receipt.REPOSITORY+'/'+workflow+'@'+merge,'sha':merge}]}
+        definition = {'sha':merge,'path':caller}
+        responses = {'git/commits/'+merge:{'sha':merge,'tree':{'sha':tree},'parents':[{'sha':head}]},
+                     'git/trees/'+tree+'?recursive=1':{'sha':tree,'truncated':False,
+                         'tree':[{'path':p,'sha':oid,'mode':'100644','type':'blob'} for p,oid in blobs.items()]}}
+        return run, definition, blobs, responses
+
+    def test_pr_reusable_definition_is_eligible_when_platform_and_bytes_agree(self):
+        run, definition, blobs, responses = self.fixture()
+        receipt.attest_execution_definition(run,definition,blobs,lambda p:json.dumps(responses[p]).encode())
+
+    def test_producer_sha_without_platform_binding_is_rejected(self):
+        run, definition, blobs, responses = self.fixture()
+        run['referenced_workflows'] = []
+        with self.assertRaisesRegex(ValueError,'missing or ambiguous'):
+            receipt.attest_execution_definition(run,definition,blobs,lambda p:json.dumps(responses[p]).encode())
+
+    def test_changed_workflow_merge_parent_or_incomplete_tree_is_rejected(self):
+        for mutation in ('bytes','parent','truncated','observed_sha'):
+            with self.subTest(mutation=mutation):
+                run, definition, blobs, responses = self.fixture()
+                if mutation == 'bytes': blobs[run['path']] = 'f'*40
+                if mutation == 'parent': responses['git/commits/'+'b'*40]['parents'] = []
+                if mutation == 'truncated': responses['git/trees/'+'c'*40+'?recursive=1']['truncated'] = True
+                if mutation == 'observed_sha': definition['sha'] = 'a'*40
+                with self.assertRaises(ValueError):
+                    receipt.attest_execution_definition(run,definition,blobs,lambda p:json.dumps(responses[p]).encode())
+
+
 class JobObservationTest(unittest.TestCase):
     def setUp(self):
         self.head = 'a' * 40
@@ -146,7 +182,7 @@ class IsolatedPythonDecisionTest(unittest.TestCase):
     def previous(self, fingerprint='a'*64):
         return {'isolated_python':self.proof(fingerprint),'test_count':1,
                 'platform_origin':'verified','integrity':'verified',
-                'isolated_execution_authority':'verified_root_full_workflow',
+                'isolated_execution_authority':'verified_workflow_execution',
                 'locator':{'run_id':10,'artifact_id':20},'receipt_sha256':'b'*64,
                 'actual_duration_seconds':5.0}
 
@@ -242,7 +278,7 @@ class IsolatedPythonDecisionTest(unittest.TestCase):
             with patch.object(receipt,'verify_github_origin',return_value=value),patch.dict(os.environ,{'GITHUB_RUN_ID':'99'}):
                 return receipt.isolated_history(fingerprint,recipe=recipe,fetch=fetch)
         selected,rejected=select()
-        self.assertEqual('verified_root_full_workflow',selected['isolated_execution_authority'])
+        self.assertEqual('verified_workflow_execution',selected['isolated_execution_authority'])
         self.assertEqual([],rejected)
         run['event']='pull_request'
         self.assertIsNone(select()[0])  # merge-ref workflow identity is not inferred from head
@@ -730,6 +766,143 @@ class ExecutionReceiptTest(unittest.TestCase):
         with patch.object(receipt,'command',side_effect=fake):value=receipt.context()
         self.assertNotIn('do-not-retain',json.dumps(value))
         self.assertIn('odoo_image_id',value)
+
+
+class ReuseClosureModelTest(unittest.TestCase):
+    def test_reuse_requires_every_dimension_independently(self):
+        closed = receipt.reuse_closure()
+        self.assertFalse(closed['reuse_ready'])
+        self.assertEqual({
+            'platform_source_not_authenticated',
+            'artifact_attempt_not_attested',
+            'execution_definition_not_attested',
+            'runtime_contract_readback_missing',
+            'fact_scope_readback_missing',
+            'target_dependency_closure_not_certified',
+        }, set(closed['blockers']))
+        # An identical source tree and authenticated platform never close the
+        # dynamic contract or fact dimensions on their own.
+        partial = receipt.reuse_closure(platform_source_authenticated=True,
+                                        artifact_attempt_attested=True,
+                                        execution_definition_attested=True,
+                                        target_dependency_closure=True)
+        self.assertFalse(partial['reuse_ready'])
+        self.assertEqual({'runtime_contract_readback_missing', 'fact_scope_readback_missing'},
+                         set(partial['blockers']))
+        full = receipt.reuse_closure(platform_source_authenticated=True,
+                                     artifact_attempt_attested=True,
+                                     execution_definition_attested=True,
+                                     runtime_contract_readback=True,
+                                     fact_scope_readback=True,
+                                     target_dependency_closure=True)
+        self.assertTrue(full['reuse_ready'])
+        self.assertEqual([], full['blockers'])
+
+    def _witness(self, uncovered=None, full=None):
+        parity = {'checked_fields': ['amount', 'state'], 'mismatch_fields': [],
+                  'uncovered_fields': uncovered if uncovered is not None else {}}
+        if full is not None:
+            parity['full_projection_parity'] = full
+        return {'schema': 'backend-contract-fact-readback/v1',
+                'observation': {'source_sha256': 'a' * 64, 'contract_sha256': 'b' * 64,
+                                'value_parity': parity}}
+
+    def test_readback_witness_uncovered_fields_keep_fact_scope_open(self):
+        witness = self._witness(uncovered={'partner': 'relation_or_non_scalar_projection'})
+        closure = receipt.readback_witness_closure(witness)
+        self.assertTrue(closure['runtime_contract_readback'])
+        self.assertFalse(closure['fact_scope_readback'])
+        self.assertTrue(closure['projection_value_coverage_incomplete'])
+
+    def test_readback_witness_full_parity_closes_both_dimensions(self):
+        closure = receipt.readback_witness_closure(self._witness(full=True))
+        self.assertTrue(closure['runtime_contract_readback'])
+        self.assertTrue(closure['fact_scope_readback'])
+        self.assertFalse(closure['projection_value_coverage_incomplete'])
+
+    def test_readback_witness_rejects_static_or_incomplete_authority(self):
+        for bad in ({}, {'schema': 'not-readback'},
+                    {'schema': 'backend-contract-fact-readback/v1', 'observation': {}},
+                    {'schema': 'backend-contract-fact-readback/v1',
+                     'observation': {'source_sha256': 'a' * 64, 'contract_sha256': 'b' * 64,
+                                     'value_parity': {'checked_fields': [], 'mismatch_fields': [],
+                                                      'uncovered_fields': {}}}}):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ValueError):
+                    receipt.readback_witness_closure(bad)
+
+    def test_receipt_reuse_requires_independent_authority_not_claim(self):
+        self.assertFalse(receipt.receipt_reuse_authorized(None)[0])
+        isolated = {'isolated_execution_authority': 'verified_workflow_execution',
+                    'platform_origin': 'verified', 'integrity': 'verified',
+                    'reuse_ready': False, 'blockers': ['unused']}
+        self.assertEqual((True, []), receipt.receipt_reuse_authorized(isolated))
+        # A producer's reuse_ready=True is never trusted without independent attestation.
+        claimed = {'platform_origin': 'verified', 'integrity': 'verified',
+                   'reuse_ready': True, 'blockers': []}
+        authorized, blockers = receipt.receipt_reuse_authorized(claimed)
+        self.assertFalse(authorized)
+        self.assertEqual(['reuse_closure_not_independently_attested'], blockers)
+        open_closure = {'platform_origin': 'verified', 'integrity': 'verified',
+                        'reuse_ready': False, 'blockers': ['runtime_contract_readback_missing']}
+        authorized, blockers = receipt.receipt_reuse_authorized(open_closure)
+        self.assertFalse(authorized)
+        self.assertEqual(['runtime_contract_readback_missing'], blockers)
+
+    def test_readback_closure_blockers_bind_exact_head_and_parity(self):
+        missing, closure = receipt.readback_closure_blockers(None, head='a' * 40)
+        self.assertEqual(['runtime_contract_readback_missing', 'fact_scope_readback_missing'], missing)
+        self.assertIsNone(closure)
+        witness = {'schema': 'backend-contract-fact-readback/v1', 'source_head': 'a' * 40,
+                   'observation': {'source_sha256': 'c' * 64, 'contract_sha256': 'd' * 64,
+                                   'value_parity': {'checked_fields': ['amount'], 'mismatch_fields': [],
+                                                    'uncovered_fields': {}, 'full_projection_parity': True}}}
+        blockers, closure = receipt.readback_closure_blockers(witness, head='a' * 40)
+        self.assertEqual([], blockers)
+        self.assertTrue(closure['fact_scope_readback'])
+        uncovered = {'schema': 'backend-contract-fact-readback/v1', 'source_head': 'a' * 40,
+                     'observation': {'source_sha256': 'c' * 64, 'contract_sha256': 'd' * 64,
+                                     'value_parity': {'checked_fields': ['amount'], 'mismatch_fields': [],
+                                                      'uncovered_fields': {'partner': 'relation_or_non_scalar_projection'}}}}
+        blockers, closure = receipt.readback_closure_blockers(uncovered, head='a' * 40)
+        self.assertEqual(['fact_scope_readback_missing', 'projection_value_coverage_incomplete'], blockers)
+        with self.assertRaisesRegex(ValueError, 'source head'):
+            receipt.readback_closure_blockers(witness, head='b' * 40)
+
+    def test_discover_receipt_locators_returns_only_valid_attempt_one_locators(self):
+        runs={'workflow_runs':[
+            {'id':10,'run_attempt':1,'head_sha':'a'*40,
+             'repository':{'id':receipt.REPOSITORY_ID},'head_repository':{'id':receipt.REPOSITORY_ID},
+             'event':'pull_request','path':'.github/workflows/backend_test_suite.yml',
+             'run_started_at':datetime.now(timezone.utc).isoformat()},
+            {'id':11,'run_attempt':2,'head_sha':'b'*40,
+             'repository':{'id':receipt.REPOSITORY_ID},'head_repository':{'id':receipt.REPOSITORY_ID},
+             'event':'pull_request','path':'.github/workflows/backend_test_suite.yml',
+             'run_started_at':datetime.now(timezone.utc).isoformat()},
+            {'id':12,'run_attempt':1,'head_sha':'c'*40,
+             'repository':{'id':1},'head_repository':{'id':receipt.REPOSITORY_ID},
+             'event':'pull_request','path':'.github/workflows/backend_test_suite.yml',
+             'run_started_at':datetime.now(timezone.utc).isoformat()},
+        ]}
+        artifacts={'artifacts':[
+            {'id':100,'name':'backend-execution-10-1-0','expired':False},
+            {'id':101,'name':'backend-execution-10-1-1','expired':False},
+            {'id':102,'name':'other','expired':False},
+        ]}
+        data={'actions/runs?status=success&per_page=30':runs,
+              'actions/runs/10/artifacts?per_page=100':artifacts}
+        def fetch(path):
+            return json.dumps(data[path]).encode()
+        locators=receipt.discover_receipt_locators(head='d'*40,modules=['core','scene'],fetch=fetch)
+        self.assertEqual(4,len(locators))
+        self.assertTrue(all(loc['run_id']==10 for loc in locators))
+        self.assertEqual({100,101},{loc['artifact_id'] for loc in locators})
+        self.assertEqual({'core','scene'},{loc['module'] for loc in locators})
+
+    def test_discover_receipt_locators_degrades_to_empty_on_api_failure(self):
+        def fetch(path):
+            raise OSError('network down')
+        self.assertEqual([],receipt.discover_receipt_locators(head='d'*40,modules=['core'],fetch=fetch))
 
 
 if __name__ == '__main__':
