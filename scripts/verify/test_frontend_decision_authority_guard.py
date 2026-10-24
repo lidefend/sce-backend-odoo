@@ -32,6 +32,76 @@ def _injecting_read_text(rel_path: str, needle: str, replacement: str):
 
 
 class FrontendDecisionAuthorityGuardTests(unittest.TestCase):
+    def _compare_ledger(self, inventory, read_text=None):
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp) / "inventory.json"
+            content = json.dumps(inventory)
+            ledger.write_text(content, encoding="utf-8")
+            with mock.patch.object(authority, "INVENTORY_PATH", ledger):
+                result = authority.reconcile(read_text=read_text, compare_committed=True)
+            self.assertEqual(content, ledger.read_text(encoding="utf-8"))
+        return result
+
+    def test_line_only_drift_is_advisory_and_reports_current_locations(self):
+        inventory = authority.build_inventory()
+        current = inventory["decisions"][0]["lines"][:]
+        inventory["decisions"][0]["lines"] = [line + 10 for line in current]
+        result = self._compare_ledger(inventory)
+        self.assertEqual([], result["failures"])
+        self.assertEqual(1, len(result["advisories"]))
+        self.assertIn(f"current={current}", result["advisories"][0])
+
+    def test_blank_line_shift_does_not_require_export(self):
+        inventory = authority.build_inventory()
+        def read_text(path):
+            value = _real_read_text(path)
+            return "\n\n" + value if path == WORKBENCH else value
+        result = self._compare_ledger(inventory, read_text)
+        self.assertEqual([], result["failures"])
+        self.assertTrue(result["advisories"])
+
+    def test_every_non_locator_row_field_remains_strict(self):
+        original = authority.build_inventory()
+        for field in original["decisions"][0]:
+            if field == "lines":
+                continue
+            with self.subTest(field=field):
+                inventory = json.loads(json.dumps(original))
+                inventory["decisions"][0][field] = "semantic-drift"
+                inventory["decisions"][0]["lines"] = [123]
+                result = self._compare_ledger(inventory)
+                self.assertTrue(any("out of sync" in x for x in result["failures"]))
+
+    def test_missing_and_invalid_line_locators_are_rejected(self):
+        original = authority.build_inventory()
+        for lines in (None, [], [0], [-1], [True], ["12"], "12"):
+            with self.subTest(lines=lines):
+                inventory = json.loads(json.dumps(original))
+                if lines is None:
+                    del inventory["decisions"][0]["lines"]
+                else:
+                    inventory["decisions"][0]["lines"] = lines
+                self.assertTrue(self._compare_ledger(inventory)["failures"])
+
+    def test_summary_scope_and_row_membership_remain_strict(self):
+        original = authority.build_inventory()
+        for field in ("summary", "decisionScopes", "decisions"):
+            with self.subTest(field=field):
+                inventory = json.loads(json.dumps(original))
+                inventory[field] = {} if field == "summary" else []
+                self.assertTrue(self._compare_ledger(inventory)["failures"])
+
+    def test_semantic_guard_runs_before_expensive_generated_checks(self):
+        import subprocess
+        result = subprocess.run(
+            ["make", "--no-print-directory", "-n", "ci.generated_evidence.preflight"],
+            cwd=ROOT, capture_output=True, text=True, check=True,
+        )
+        commands = result.stdout
+        self.assertLess(commands.index("frontend_decision_authority_guard.py"),
+                        commands.index("scripts/ci/generate_test_inventory.py"))
+        self.assertNotIn("frontend_decision_authority.py --export", commands)
+
     def test_baseline_is_clean_and_non_trivial(self):
         """Negative-case precondition: the un-injected baseline must pass."""
         result = authority.reconcile()

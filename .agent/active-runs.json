@@ -32,6 +32,7 @@
     "fix/project-form-header-density-20261023": ".agent/runs/PROJECT-FORM-HEADER-DENSITY-20261023/run.json",
     "fix/product-menu-config-entry-20261019": ".agent/runs/PRODUCT-MENU-CONFIG-ENTRY-20261019/run.json",
     "feature/project-detail-productization-01": ".agent/runs/FE-DELIVERY-LANE-CLOSURE-01/run.json",
-    "fix/fe-ux-entry-continuity-01": ".agent/runs/FE-UX-ENTRY-CONTINUITY-01/run.json"
+    "fix/fe-ux-entry-continuity-01": ".agent/runs/FE-UX-ENTRY-CONTINUITY-01/run.json",
+    "fix/verification-efficiency-01": ".agent/runs/VERIFY-EFFICIENCY-01/run.json"
   }
 }

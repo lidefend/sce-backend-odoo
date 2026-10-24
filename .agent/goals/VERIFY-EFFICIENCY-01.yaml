@@ -1,0 +1,8 @@
+schema_version: 1
+goal:
+  id: VERIFY-EFFICIENCY-01
+  title: 行号漂移提示与语义漂移前置检查
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: decision authority validation tools
+  exclusions: [product_code, permissions, remote_writes, merge, deployment, browser_acceptance]

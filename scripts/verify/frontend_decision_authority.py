@@ -23,8 +23,9 @@ decidable when it is turned into a finite, reviewable check:
 The ledger is regenerated from this module (single source of truth) and
 committed as ``docs/frontend_productization/decision-authority-inventory-v1.json``
 so a reviewer can read it in a diff.  ``frontend_decision_authority_guard.py``
-fails closed when the live scan and the committed ledger disagree in either
-direction, when an invariant rule is violated, or when a ``contract-derived``
+fails closed when the live scan and the committed ledger disagree semantically
+in either direction (row line-number drift is advisory), when an invariant rule
+is violated, or when a ``contract-derived``
 claim is not backed by the published contract export.
 
 This module is provenance/verification only.  It never edits product code.
@@ -713,9 +714,21 @@ def load_intent_catalog(path: Path = INTENT_CATALOG_PATH) -> set[str]:
     return out
 
 
+def ledger_semantics(inventory: dict) -> dict:
+    """Exclude only row locator values; retain presence and all semantic fields."""
+    return {
+        **inventory,
+        "decisions": [
+            {key: None if key == "lines" else value for key, value in row.items()}
+            for row in inventory.get("decisions", [])
+        ],
+    }
+
+
 def reconcile(read_text=None, root: Path = ROOT, compare_committed: bool = False) -> dict:
     inventory = build_inventory(read_text=read_text, root=root)
     failures: list[str] = []
+    advisories: list[str] = []
 
     for row in inventory["decisions"]:
         if row["classification"] == UNCLASSIFIED:
@@ -777,13 +790,26 @@ def reconcile(read_text=None, root: Path = ROOT, compare_committed: bool = False
             )
         else:
             committed = json.loads(INVENTORY_PATH.read_text(encoding="utf-8"))
-            if committed != inventory:
+            for row in committed.get("decisions", []):
+                lines = row.get("lines")
+                if not isinstance(lines, list) or not lines or any(
+                    type(line) is not int or line <= 0 for line in lines
+                ):
+                    failures.append("committed decision-authority ledger has invalid line locators")
+            if ledger_semantics(committed) != ledger_semantics(inventory):
                 failures.append(
                     "committed decision-authority ledger is out of sync with the "
                     "live scan; re-export it and review the diff"
                 )
+            elif not failures:
+                for old, live in zip(committed["decisions"], inventory["decisions"]):
+                    if old["lines"] != live["lines"]:
+                        advisories.append(
+                            f"locator-only drift {live['decisionKey']} at {live['path']}: "
+                            f"recorded={old['lines']} current={live['lines']}; no re-export required"
+                        )
 
-    return {"inventory": inventory, "failures": failures}
+    return {"inventory": inventory, "failures": failures, "advisories": advisories}
 
 
 def export(path: Path = INVENTORY_PATH) -> None:
@@ -806,6 +832,8 @@ def main(argv=None) -> int:
     result = reconcile(compare_committed=True)
     summary = result["inventory"]["summary"]
     print(json.dumps(summary, ensure_ascii=False, indent=2))
+    for advisory in result["advisories"]:
+        print(f"[INFO] {advisory}")
     for failure in result["failures"]:
         print(f"[FAIL] {failure}")
     return 1 if result["failures"] else 0
