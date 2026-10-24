@@ -150,9 +150,7 @@ FRONTEND_INCREMENTAL_TEST_TARGET = "verify.frontend.dev.incremental.unit"
 FRONTEND_INCREMENTAL_TEST_COMMAND = "python3 -m unittest scripts.verify.test_frontend_dev_incremental"
 FREEZE_PREPARE_TARGET = "ci.delivery.freeze.prepare"
 FREEZE_PREPARE_REQUIRED_ORDER = (
-    "refresh.generated_reports",
-    "refresh.frontend.component_driver_takeover.inventory",
-    "refresh.contract_form_split_evidence",
+    "refresh.generated_evidence",
     "ci.generated_evidence.preflight",
 )
 PR_PUSH_TEST_TARGET = "verify.pr.push.unit"
