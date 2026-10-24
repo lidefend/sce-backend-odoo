@@ -40,7 +40,8 @@
     "addons/smart_core/tests/test_workspace_home_provider_shapes.py",
     "scripts/verify/registry.yaml",
     "make/codex.mk",
-    "scripts/verify/test_validation_delivery_plan.py"
+    "scripts/verify/test_validation_delivery_plan.py",
+    "docs/frontend_productization/decision-authority-inventory-v1.json"
   ],
   "preserved_preexisting": [
     ".agent/goals/FE-UX-WALKTHROUGH-01.yaml",
@@ -53,7 +54,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Freeze one minimal governance candidate, run governed clean isolated Quick, carry forward unchanged runtime evidence through controller, execute read-only prepare; stop for Owner without remote writes.",
+  "next_exact_step": "Verify minimal CI-generated-evidence correction, update same PR through non-force governed push, bind new remote CI and read-only prepare; do not merge/deploy.",
   "observations": {
     "responsibility": {
       "UX-01": "P1 factual risk record declaration + P0 home projection preserves declared target",
@@ -114,6 +115,15 @@
       "evidence_root": ".runtime/fe-ux-entry-continuity-final-gates-01/",
       "runtime_policy": "reuse accepted list/relation evidence only through controller; no UX reruns",
       "remote_writes": "not authorized"
+    },
+    "remote_integration": {
+      "task": "FE-UX-ENTRY-CONTINUITY-REMOTE-INTEGRATION-01",
+      "authorized": "non-force push and PR/CI/read-only preparation; no merge or deploy",
+      "PR": 722,
+      "initial_head": "459e4f133056fadbefd46451ae9190a9f91e314d",
+      "CI_failure": "frontend decision authority committed inventory stale; four SceneView line-location groups only, no classification/semantic/count changes",
+      "remediation": "existing governed inventory export and targeted tests; retain original remote failure logs",
+      "evidence_root": ".runtime/fe-ux-entry-continuity-remote-integration-01/"
     }
   }
 }
