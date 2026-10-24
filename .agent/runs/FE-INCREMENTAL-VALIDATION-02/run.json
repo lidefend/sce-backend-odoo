@@ -32,7 +32,9 @@
     "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/ci/select_authoritative_workflow_run.py",
     "scripts/ci/test_select_authoritative_workflow_run.py",
-    ".github/workflows/professional_quality_gate.yml"
+    ".github/workflows/professional_quality_gate.yml",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/audit/verification_lane_exemptions.json"
   ],
   "environment": {
     "kind": "offline",
@@ -249,6 +251,11 @@
       "protected_merge": true,
       "deployment": false,
       "source": "Owner: 把今天的改动都收口进入主线，结束今天的工作了"
+    },
+    "lane_closeout": {
+      "failure_head": "786cc606af9ade97634ab77f0eb07b5e28300444",
+      "plan": "retire unused one-off Make wrapper; remove two stale registrations; baseline and assertions unchanged",
+      "probe_script_and_original_evidence": "preserved"
     }
   },
   "runtime_diagnostics": {

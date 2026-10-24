@@ -251,12 +251,6 @@
       "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement."
     },
     {
-      "script": "scripts/verify/frontend_decision_authority_guard.py",
-      "lane_owner": "remote",
-      "reason_code": "frontend_lane_toolchain",
-      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement."
-    },
-    {
       "script": "scripts/verify/frontend_delivery_hardening_browser.mjs",
       "lane_owner": "remote",
       "reason_code": "frontend_lane_toolchain",

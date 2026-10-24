@@ -344,3 +344,5 @@ P4 在既有 backend_test_receipt 和 evidence_scope 内接通真实消费。首
 主线收口顺序：最终候选→受管非强制推送 PR #723→必要 CI 与精确候选 Quick/合并准入→受保护合并→回读 main。现有主线定时任务只有在合并后才能运行新生产器；明天核对首份基线及随后命中，再报告实际收益。今天不部署、不重做 UX，不启动资金台账，不宣称全部 14 个目标已经能复用。
 
 远端首次候选 21c404eae 在 workflow 编译阶段失败（backend run 40106164709 / professional run 40106170377，尚无 job 执行）：job.env 不允许 runner.temp 上下文。已将同一缓存路径移入 Prepare/Run/Return 三个步骤的 env，补充 job.env 上下文限制及路径一致性断言；不修改测试语义或门禁。旧候选 Quick 因输入即将改变而停止，无 PASS 回执，日志保留。新候选重新执行必要准入。
+
+精确候选 Quick 进一步发现既有车道登记冲突：一次性事实回读 Make 薄包装为新增零引用入口，而已进入 Quick 的 frontend decision-authority guard 仍登记为死入口/remote-only。收口退役这个无人消费的独立薄包装，保留采集脚本、单测和全部旧运行证据；删除两条已失效登记。没有把运行数据库探针接入 Quick 来制造引用，没有提高 verification_lane_baseline 或放宽断言。原入口执行报告保持历史含义，不作为当前 CLI 承诺。
