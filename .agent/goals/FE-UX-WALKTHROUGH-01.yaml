@@ -1,0 +1,9 @@
+schema_version: 1
+goal:
+  id: FE-UX-WALKTHROUGH-01
+  title: 建筑企业管理系统用户视角系统性走查
+  status: completed
+  formal_product_layer: P4
+  layer_target: read-only product observation and planning
+  objective: Observe five role journeys on deployed daily, collect evidence, prioritize user obstacles and propose one primary and one alternative topic.
+  exclusions: [product_code, deployment, permission_changes, bulk_data_writes, new_fixture_records, acceptance_tool_changes]
