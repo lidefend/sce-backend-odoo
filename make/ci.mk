@@ -848,7 +848,7 @@ verify.menu_config_tree_editor.behavior: guard.prod.forbid
 # HEAD 车道，绝不放进 verify.contract.architecture.suite：远端后端 full 车道不
 # 安装前端依赖，放进去只会得到 "node_modules/.bin/tsc: No such file or directory"
 # 而不是真实门禁结论。
-verify.contract_form_runtime_state.behavior: guard.prod.forbid
+verify.contract_form_runtime_state.behavior: guard.prod.forbid verify.frontend.feedback_evaluation.unit verify.frontend.node_component.unit verify.frontend.project_detail_summary.browser
 	@scripts/verify/contract_form_runtime_state_behavior_guard.sh
 
 # 同类边界第四实例（2026-10-12）：这三个 node smoke 脚本用
@@ -1098,7 +1098,7 @@ verify.contract.list_preference.single_application: guard.prod.forbid
 	@python3 scripts/verify/list_preference_single_application_guard.py --output artifacts/backend/list_preference_single_application_guard.json
 
 .PHONY: verify.contract.architecture.suite
-verify.contract.architecture.suite: \
+verify.contract.architecture.suite: verify.native_advisory.unit verify.node_component_capabilities.unit verify.node_component_validation.unit verify.onchange.feedback_evaluation.unit verify.record_error_proof.unit \
 	verify.workspace.branch.sync-github.unit \
 	guard.prod.forbid \
 	verify.system.permission_role.assignment.unit \

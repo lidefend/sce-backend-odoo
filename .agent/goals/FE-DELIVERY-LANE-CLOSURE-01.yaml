@@ -20,8 +20,11 @@ goal:
     - .agent/runs/FE-DELIVERY-LANE-CLOSURE-01/run.json
     - docs/ops/iterations/fe_delivery_lane_closure_01.md
     - make/contract.mk
+    - make/ci.mk
     - make/dev.mk
     - make/frontend.mk
+    - docs/engineering_convergence/complexity_budget_report.md
+    - docs/engineering_convergence/split_plan_queue.md
     - scripts/audit/verification_lane_coverage.py
   exclusions: [product code, test assertions, baseline widening, push, merge, deployment]
   acceptance:

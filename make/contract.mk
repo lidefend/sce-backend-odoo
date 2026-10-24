@@ -299,6 +299,3 @@ verify.daily.runtime.entry.identity.readonly: guard.prod.forbid
 	@$(MAKE) --no-print-directory daily.runtime.entry.verify \
 	  DAILY_RUNTIME_EXPECTED_SHA="$(DAILY_RUNTIME_EXPECTED_SHA)" \
 	  DAILY_RUNTIME_ENTRY_VERIFY_REPORT="$(DAILY_RUNTIME_ENTRY_VERIFY_REPORT)"
-
-# Offline contract units are mandatory for both remote backend and local Quick.
-verify.contract.architecture.suite: verify.native_advisory.unit verify.node_component_capabilities.unit verify.node_component_validation.unit verify.onchange.feedback_evaluation.unit verify.record_error_proof.unit

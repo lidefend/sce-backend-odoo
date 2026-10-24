@@ -13,4 +13,17 @@ browser ticket lanes. Deployment post-check: daily runtime entry identity.
 
 ## Execution record
 
-Pending wiring and audit.
+The eight deterministic targets are wired into the existing contract and form
+runtime graph. The five feedback runtime entries and the daily post-deployment
+identity entry have explicit bundle lanes. No Quick/runtime coupling was added.
+
+Results:
+
+- lane audit: PASS, zero-reference targets 642 (baseline 643), unregistered 0;
+- lane audit unit: 73 tests PASS;
+- backend offline units: PASS;
+- frontend node/feedback/summary units: PASS;
+- runtime/deployment bundle plans: verified with `make -n`;
+- guard registry: PASS after prerequisites were merged into the original target
+  declarations instead of duplicate rules;
+- repeated generated-report refresh: stable.

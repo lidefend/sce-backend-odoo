@@ -1477,7 +1477,6 @@ verify.frontend.feedback_evaluation.rt.browser: guard.prod.forbid
 	@FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:18081/t/demo}" \
 	  E2E_LOGIN="$${E2E_LOGIN:-wutao}" E2E_PASSWORD="$${E2E_PASSWORD:-123456}" \
 	  node frontend/apps/web/scripts/feedback_evaluation_rt_browser_test.mjs
-
 .PHONY: verify.frontend.company_project_refund.feedback.rt.browser
 verify.frontend.company_project_refund.feedback.rt.browser: guard.prod.forbid
 	@test -s .runtime/agent-runs/FE-GATE-04B/http-evidence.json || \
@@ -1491,9 +1490,3 @@ verify.frontend.company_project_refund.feedback.rt.browser: guard.prod.forbid
 	  FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:18081/t/demo}" \
 	  E2E_LOGIN="$${E2E_LOGIN:-wutao}" E2E_PASSWORD="$${E2E_PASSWORD:-123456}" \
 	  node frontend/apps/web/scripts/feedback_evaluation_rt_browser_test.mjs
-
-# Deterministic frontend node/feedback presentation checks belong to both
-# candidate frontend lanes and the local exact-head Quick dependency graph.
-verify.frontend.pr.unit: verify.frontend.feedback_evaluation.unit verify.frontend.node_component.unit verify.frontend.project_detail_summary.browser
-verify.frontend.release.unit: verify.frontend.feedback_evaluation.unit verify.frontend.node_component.unit verify.frontend.project_detail_summary.browser
-verify.contract_form_runtime_state.behavior: verify.frontend.feedback_evaluation.unit verify.frontend.node_component.unit verify.frontend.project_detail_summary.browser
