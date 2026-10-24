@@ -504,7 +504,8 @@ async function runProbe(acceptance, environment) {
     const populatedOpenableFields = visibleOpenableFields.filter(
       (field) => !emptyValueOpenableFields.includes(field),
     );
-    const controlFields = controls.map((row) => row.field);
+    const controlFieldSet = new Set(controls.map((row) => row.field));
+    const controlFields = contractOpenableFields.filter((field) => controlFieldSet.has(field));
     const missingControls = populatedOpenableFields.filter((field) => !controlFields.includes(field));
     const undeclaredControls = controlFields.filter((field) => {
       const entry = declared[field];

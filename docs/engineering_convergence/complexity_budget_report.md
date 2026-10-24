@@ -207,8 +207,8 @@ Generated from repository source files. This report is informational during the 
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
 | 810 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
+| 808 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
-| 807 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
 | 806 | Python source | `addons/smart_construction_core/models/core/funding_baseline.py` |
 | 803 | Python source | `scripts/verify/frontend_product_page_header_guard.py` |
 | 802 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
