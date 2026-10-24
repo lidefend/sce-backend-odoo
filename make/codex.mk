@@ -1487,6 +1487,11 @@ verify.daily.runtime.release_orchestration.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/daily_runtime_release_orchestration.py scripts/ops/test_daily_runtime_release_orchestration.py
 	@python3 -m unittest scripts.ops.test_daily_runtime_release_orchestration
 
+.PHONY: verify.quick.input_scope.unit
+verify.quick.input_scope.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/quick_input_scope.py scripts/ops/test_quick_input_scope.py
+	@python3 scripts/ops/test_quick_input_scope.py
+
 daily.runtime.main.release: guard.prod.forbid verify.daily.runtime.release_orchestration.unit
 	@CONFIRM_DAILY_RUNTIME_RELEASE="$${CONFIRM_DAILY_RUNTIME_RELEASE:-}" python3 scripts/ops/daily_runtime_release_orchestration.py --mode main $(DAILY_RUNTIME_RELEASE_ARGS) $(if $(filter 1,$(DAILY_RUNTIME_RELEASE_PLAN)),--plan,)
 

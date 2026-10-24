@@ -41,6 +41,7 @@ CONTROL_PLANE = {
     'scripts/ops/daily_runtime_bundle_sync.py': 'verify.daily.runtime.main.bundle_sync',
     'scripts/ops/daily_candidate_bundle_sync.py': 'verify.daily.runtime.candidate.bundle_sync',
     'scripts/ops/daily_runtime_published_face_converge.py': 'verify.daily.runtime.published_face.converge',
+    'scripts/ops/quick_input_scope.py': 'verify.quick.input_scope.unit',
     'scripts/audit/verification_lane_dispositions.json': 'verify.verification.lane_coverage',
     'scripts/audit/verification_lane_exemptions.json': 'verify.verification.lane_coverage',
 }
