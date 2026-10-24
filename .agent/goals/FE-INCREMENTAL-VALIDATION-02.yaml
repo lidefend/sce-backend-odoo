@@ -4,5 +4,8 @@ goal:
   title: 测试读取依赖映射与后端执行观察回执
   status: verification_pending
   formal_product_layer: P4
-  exclusions: [product_logic, remote_writes, unproven_test_skip, cached_database_or_test_verdict]
+  exclusions: [product_logic, deployment, unproven_test_skip, cached_database]
   dependency_cache_scope: existing_backend_runner_pip_downloads_only
+  closed_reuse_profile: backend-isolated-python/v1
+  baseline_policy: scheduled_full_and_governed_branch_full_runs
+  publication_authority: owner_approved_push_and_protected_merge_2026_10_24

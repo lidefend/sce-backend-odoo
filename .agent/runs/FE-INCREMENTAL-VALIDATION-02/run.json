@@ -31,7 +31,8 @@
     "scripts/verify/test_backend_contract_fact_readback_probe.py",
     "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/ci/select_authoritative_workflow_run.py",
-    "scripts/ci/test_select_authoritative_workflow_run.py"
+    "scripts/ci/test_select_authoritative_workflow_run.py",
+    ".github/workflows/professional_quality_gate.yml"
   ],
   "environment": {
     "kind": "offline",
@@ -124,11 +125,8 @@
       ]
     }
   },
-  "blockers": [
-    "Remote workflow has not enabled REUSE; authenticated history alone does not prove full target input/environment equivalence.",
-    "Legacy scheduled backend full runs retain official logs but no per-target v1 artifacts; importing their evidence requires verified execution scope, not manual green conversion."
-  ],
-  "next_exact_step": "Use the existing evidence_scope authority to bind target execution inputs/environment to authenticated historical receipts, then integrate remote consumption. Scheduled full baselines and PR/branch history are both sources. Do not rerun unchanged UX/frontend or return to local Quick; do not claim savings before actual remote reuse.",
+  "blockers": [],
+  "next_exact_step": "Finalize clean candidate; managed non-force push PR 723; required remote CI, exact-head Quick and pr.merge.prepare; merge under latest Owner authorization and read back main. No deployment. New-format full baseline is expected from subsequent scheduled run, not fabricated today.",
   "id": "FE-INCREMENTAL-VALIDATION-02",
   "branch": "fix/fe-incremental-validation-01",
   "status": "verification_pending",
@@ -232,7 +230,25 @@
       "remote_reuse_savings_seconds": 0,
       "pip_cache_savings_seconds": null,
       "preserved_remote_head": "e28b59911ea2fb66f1f9cdad54754e72ef0486c2",
-      "no_frontend_or_orm_rerun": true
+      "no_frontend_or_orm_rerun": true,
+      "superseded_by": "isolated_mechanism_closeout"
+    },
+    "isolated_mechanism_closeout": {
+      "status": "local_mechanism_and_fault_tests_passed; remote_integration_in_progress",
+      "evidence": ".runtime/fe-incremental-validation-02/isolated-mechanism-closeout.json",
+      "tool_tests": 120,
+      "actual_isolated_tests": 71,
+      "skipped": 0,
+      "original_test_ids_match": true,
+      "orm_reuse_enabled": false,
+      "remote_baseline": "expected first scheduled full run after merge"
+    },
+    "authorization": {
+      "remote_push": true,
+      "pr_update": true,
+      "protected_merge": true,
+      "deployment": false,
+      "source": "Owner: 把今天的改动都收口进入主线，结束今天的工作了"
     }
   },
   "runtime_diagnostics": {

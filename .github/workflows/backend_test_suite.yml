@@ -38,6 +38,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: backend-test-suite-${{ github.ref }}
@@ -99,6 +100,7 @@ jobs:
       SHARD_INDEX: ${{ matrix.index }}
       MODULE_OVERRIDE: ${{ github.event.inputs.modules }}
       SC_BACKEND_RECEIPT_CAPTURE: '1'
+      SC_BACKEND_ISOLATED_PYTHON: '1'
       SC_TEST_PIP_CACHE_HOST: ${{ runner.temp }}/backend-test-pip-cache
 
     defaults:
@@ -310,6 +312,8 @@ jobs:
           exit 1
 
       - name: Run backend test suite per module
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           source scripts/ci/orm_result_guard.sh
           set -uo pipefail
@@ -323,6 +327,7 @@ jobs:
           set +e
           failed=0
           attempted=0
+          reused=0
           planned_odoo="$(printf '%s\n' ${MODULES} | wc -w | tr -d ' ')"
           planned_python="$(printf '%s\n' ${PYTHON_MODULES} | wc -w | tr -d ' ')"
           receipt_dir="${RUNNER_TEMP}/backend-receipts-${GITHUB_RUN_ID}-${SHARD_INDEX}"
@@ -427,6 +432,30 @@ jobs:
           for module in ${PYTHON_MODULES}; do
             attempted=$((attempted + 1))
             echo "===== backend Python unit suite: ${module} ====="
+            if [ "${SC_BACKEND_ISOLATED_PYTHON:-0}" = 1 ] && [ "${module}" = smart_construction_scene ]; then
+              full_args=()
+              if [ "${GITHUB_EVENT_NAME}" != pull_request ]; then
+                full_args=(--force-full)
+              fi
+              if ! python3 scripts/ci/backend_test_receipt.py isolated-python \
+                  --head "${HEAD_SHA}" --base "${receipt_base}" --output "${receipt_dir}" \
+                  --context "${receipt_dir}/runtime-context.json" --scope-plan "${receipt_dir}/scope-plan.json" \
+                  "${full_args[@]}"; then
+                failed=1
+                continue
+              fi
+              decision_file="${receipt_dir}/isolated-decision-${module}.json"
+              if ! decision="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["source_head"]==sys.argv[2] and d["decision"] in ("RUN","REUSE"); print(d["decision"])' "${decision_file}" "${HEAD_SHA}")"; then
+                failed=1
+                continue
+              fi
+              if [ "${decision}" = REUSE ]; then
+                attempted=$((attempted - 1))
+                reused=$((reused + 1))
+              fi
+              cat "${decision_file}" >> "${GITHUB_STEP_SUMMARY}"
+              continue
+            fi
             test_dir=""
             for root in addons demo_addons; do
               if [ -d "${root}/${module}/tests" ]; then
@@ -470,12 +499,12 @@ jobs:
           # `failed`; an early abort (image/docker/db failure) then fails the
           # step instead of skipping the remaining modules invisibly.
           planned_total=$((planned_odoo + planned_python))
-          if [ "${attempted}" -ne "${planned_total}" ]; then
-            echo "::error::backend suite execution truncated: attempted ${attempted} of ${planned_total} planned module run(s)"
+          if [ "$((attempted + reused))" -ne "${planned_total}" ]; then
+            echo "::error::backend suite execution truncated: executed ${attempted} + reused ${reused} of ${planned_total} planned module run(s)"
             failed=1
           fi
-          echo "backend suite executed ${attempted} of ${planned_total} planned module run(s); failed=${failed}"
-          printf 'shard=%s executed=%s planned=%s failed=%s\n' "${SHARD_INDEX}" "${attempted}" "${planned_total}" "${failed}" >> "${GITHUB_STEP_SUMMARY}"
+          echo "backend suite executed ${attempted} + reused ${reused} of ${planned_total} planned module run(s); failed=${failed}"
+          printf 'shard=%s executed=%s reused=%s planned=%s failed=%s\n' "${SHARD_INDEX}" "${attempted}" "${reused}" "${planned_total}" "${failed}" >> "${GITHUB_STEP_SUMMARY}"
           test "${failed}" -eq 0
 
       - name: Return pip cache ownership to runner

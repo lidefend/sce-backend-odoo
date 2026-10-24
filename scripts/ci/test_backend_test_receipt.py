@@ -138,6 +138,161 @@ class WorkflowDefinitionObservationTest(unittest.TestCase):
                 self.observe(values)
 
 
+class IsolatedPythonDecisionTest(unittest.TestCase):
+    def proof(self, fingerprint='a'*64):
+        return {'schema':'backend-isolated-python/v1','module':receipt.ISOLATED_MODULE,
+                'fingerprint':fingerprint,'test_ids':['test_case.C.test_one'],'skipped':0}
+
+    def previous(self, fingerprint='a'*64):
+        return {'isolated_python':self.proof(fingerprint),'test_count':1,
+                'platform_origin':'verified','integrity':'verified',
+                'isolated_execution_authority':'verified_root_full_workflow',
+                'locator':{'run_id':10,'artifact_id':20},'receipt_sha256':'b'*64,
+                'actual_duration_seconds':5.0}
+
+    def test_first_run_and_daily_full_never_skip(self):
+        self.assertEqual('RUN',receipt.isolated_decision('a'*64,None,force_full=False)['decision'])
+        self.assertEqual('RUN',receipt.isolated_decision('a'*64,self.previous(),force_full=True)['decision'])
+
+    def test_equal_authenticated_inputs_reuse_and_bind_old_receipt(self):
+        result=receipt.isolated_decision('a'*64,self.previous(),force_full=False)
+        self.assertEqual('REUSE',result['decision'])
+        self.assertEqual(10,result['previous_receipt']['run_id'])
+        self.assertEqual(5.0,result['estimated_saved_time'])
+        self.assertIsNone(result['actual_saved_time'])
+
+    def test_changed_input_runs(self):
+        self.assertEqual('RUN',receipt.isolated_decision('c'*64,self.previous(),force_full=False)['decision'])
+
+    def test_unverified_history_cannot_become_passed_ledger(self):
+        for field in ('platform_origin','integrity','isolated_execution_authority'):
+            value=self.previous();value[field]='observed'
+            with self.subTest(field=field),self.assertRaises(ValueError):
+                receipt.isolated_decision('a'*64,value,force_full=False)
+
+    def test_skips_zero_duplicate_and_foreign_scope_are_rejected(self):
+        for field,value in [('skipped',1),('test_ids',[]),('test_ids',['x','x']),
+                            ('test_ids',[42]),('module','smart_core'),('fingerprint','')]:
+            proof=self.proof();proof[field]=value
+            with self.subTest(field=field,value=value),self.assertRaises(ValueError):
+                receipt.validate_isolated_result(proof,1)
+
+    def test_reuse_consumes_receipt_without_executing_or_issuing_new_success(self):
+        head='a'*40
+        def command(*args,**kwargs):
+            if args[:3]==('git','rev-parse','HEAD'):return head
+            if args[:2]==('git','status'):return ''
+            if args[:2]==('git','show'):return 'ARG ODOO_BASE_IMAGE=odoo:17.0@sha256:'+'b'*64
+            if args[:3]==('docker','image','inspect'):return 'sha256:'+'c'*64
+            if args[:2]==('git','rev-parse'):return 'd'*40
+            raise AssertionError(args)
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);output=root/'out'
+            with patch.object(receipt,'command',side_effect=command), \
+                    patch.object(receipt,'isolated_snapshot',return_value={'fingerprint':'a'*64,'recipe':{}}), \
+                    patch.object(receipt,'isolated_history',return_value=(self.previous(),[])), \
+                    patch.object(receipt,'execute_isolated_container') as execute, \
+                    patch.object(receipt,'record') as record:
+                result=receipt.run_isolated_python(root=root,head=head,base='',output=output,
+                    context_file=root/'unused',scope_plan=root/'unused',force_full=False)
+            self.assertEqual('REUSE',result['decision']);execute.assert_not_called();record.assert_not_called()
+            saved=json.loads((output/('isolated-decision-'+receipt.ISOLATED_MODULE+'.json')).read_text())
+            self.assertEqual(head,saved['source_head']);self.assertEqual(10,saved['previous_receipt']['run_id'])
+            self.assertFalse((output/receipt.ISOLATED_MODULE/'receipt.json').exists())
+
+    def test_container_timeout_preserves_output_and_cleans_only_owned_container(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log=Path(tmp)/'run.log'
+            def run(args,**kwargs):
+                if args[1]=='run':raise subprocess.TimeoutExpired(args,1,output=b'partial output')
+                return subprocess.CompletedProcess(args,0,'')
+            with patch.object(receipt.subprocess,'run',side_effect=run) as calls:
+                result=receipt.execute_isolated_container(['docker','run','--rm','image'],log,timeout=1)
+            self.assertEqual(124,result.returncode)
+            self.assertIn('partial output',log.read_text())
+            command=calls.call_args_list[0].args[0];name=command[command.index('--name')+1]
+            self.assertTrue(name.startswith('sc-isolated-python-'))
+            self.assertEqual(['docker','rm','-f',name],calls.call_args_list[-1].args[0])
+
+    def test_legacy_receipt_does_not_create_isolated_baseline(self):
+        with self.assertRaises(ValueError):receipt.validate_isolated_result(None,71)
+
+    def test_history_requires_root_full_workflow_and_exact_visible_inputs(self):
+        head='a'*40; tree_sha='b'*40; fingerprint='a'*64
+        workflow='.github/workflows/backend_test_suite.yml'
+        recipe={'source_files':{'addons/example/test.py':{'git_blob':'c'*40,'mode':0o644}},
+                'authority_blobs':{workflow:'d'*40,'scripts/ci/backend_test_receipt.py':'e'*40}}
+        proof=self.proof()
+        value={**self.previous(),'source_tree':tree_sha,'workflow_definition':{'sha':head,'path':workflow}}
+        run={'id':10,'run_attempt':1,'event':'schedule','path':workflow,'head_sha':head,
+             'repository':{'id':receipt.REPOSITORY_ID},'head_repository':{'id':receipt.REPOSITORY_ID},
+             'run_started_at':datetime.now(timezone.utc).isoformat()}
+        rows=[{'path':path,'type':'blob','mode':'100644','sha':oid} for path,oid in
+              [('addons/example/test.py','c'*40),*recipe['authority_blobs'].items()]]
+        stream=io.BytesIO()
+        with zipfile.ZipFile(stream,'w') as archive:
+            archive.writestr(receipt.ISOLATED_MODULE+'/execution.log',receipt.ISOLATED_MARKER+json.dumps(proof)+'\n')
+        data={'actions/runs?status=success&per_page=30':{'workflow_runs':[run]},
+              'actions/runs/10/artifacts?per_page=100':{'artifacts':[{'id':20,'name':'backend-execution-10-1-0'}]},
+              'git/trees/'+tree_sha+'?recursive=1':{'sha':tree_sha,'truncated':False,'tree':rows},
+              'actions/artifacts/20/zip':stream.getvalue()}
+        def fetch(path):
+            item=data[path];return item if isinstance(item,bytes) else json.dumps(item).encode()
+        def select():
+            with patch.object(receipt,'verify_github_origin',return_value=value),patch.dict(os.environ,{'GITHUB_RUN_ID':'99'}):
+                return receipt.isolated_history(fingerprint,recipe=recipe,fetch=fetch)
+        selected,rejected=select()
+        self.assertEqual('verified_root_full_workflow',selected['isolated_execution_authority'])
+        self.assertEqual([],rejected)
+        run['event']='pull_request'
+        self.assertIsNone(select()[0])  # merge-ref workflow identity is not inferred from head
+        run['event']='schedule';run['run_attempt']=2
+        self.assertIsNone(select()[0])
+        run['run_attempt']=1
+        data['git/trees/'+tree_sha+'?recursive=1']['truncated']=True
+        self.assertIsNone(select()[0]);self.assertTrue(select()[1])
+        data['git/trees/'+tree_sha+'?recursive=1']['truncated']=False
+        rows[0]['sha']='f'*40
+        self.assertIsNone(select()[0])
+        rows[0]['sha']='c'*40;value['workflow_definition']['sha']='f'*40
+        self.assertIsNone(select()[0])
+
+    def test_snapshot_hashes_actual_git_bytes_not_dirty_files(self):
+        import backend_impact_plan as impact
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)/'repo';root.mkdir()
+            def git(*args):return subprocess.check_output(['git',*args],cwd=root,text=True).strip()
+            git('init','-q');git('config','user.name','Fixture');git('config','user.email','fixture@example.invalid')
+            paths={'addons/example/test.py':'one','demo_addons/example/data.xml':'<data/>',
+                   'docs/input.json':'{}','docs/unrelated.md':'notes',
+                   'scripts/ci/backend_test_receipt.py':'executor',
+                   'scripts/ci/backend_impact_plan.py':'mapper','scripts/ops/evidence_scope.py':'authority',
+                   '.github/workflows/backend_test_suite.yml':'suite',
+                   '.github/workflows/professional_quality_gate.yml':'caller'}
+            for path,value in paths.items():
+                file=root/path;file.parent.mkdir(parents=True,exist_ok=True);file.write_text(value)
+            git('add','.');git('commit','-qm','fixture');head=git('rev-parse','HEAD')
+            graph={receipt.ISOLATED_MODULE:{'file_inputs':['docs/input.json'],'unresolved_file_reads':[]}}
+            def snapshot(sha,name):
+                dest=Path(tmp)/name;dest.mkdir()
+                with patch.object(impact,'snapshot',return_value=graph):
+                    return receipt.isolated_snapshot(root,sha,dest,'sha256:'+'f'*64)
+            first=snapshot(head,'first')
+            (root/'addons/example/test.py').write_text('dirty')
+            self.assertEqual(first['fingerprint'],snapshot(head,'dirty')['fingerprint'])
+            git('checkout','--','addons/example/test.py')
+            (root/'docs/unrelated.md').write_text('new bookkeeping')
+            git('add','.');git('commit','-qm','bookkeeping')
+            self.assertEqual(first['fingerprint'],snapshot(git('rev-parse','HEAD'),'notes')['fingerprint'])
+            (root/'docs/input.json').write_text('{"changed":true}')
+            git('add','.');git('commit','-qm','input')
+            self.assertNotEqual(first['fingerprint'],snapshot(git('rev-parse','HEAD'),'input')['fingerprint'])
+            (root/'addons/example/link').symlink_to('/etc/passwd')
+            git('add','.');git('commit','-qm','link')
+            with self.assertRaisesRegex(ValueError,'links/special'):
+                snapshot(git('rev-parse','HEAD'),'links')
+
+
 class ExecutionReceiptTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

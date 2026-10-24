@@ -326,3 +326,19 @@ P4 最小修复仅接通 backend_test_suite 宿主缓存与临时测试容器：
 本地两次 pip 安装实验在第一次即因 /usr/bin/python3 没有 pip 而失败；没有临时安装工具或修改环境来绕过，原日志保留。远端容器缓存命中及耗时尚未实测，缓存节省记 unknown，不计入测试复用。该修复不能冒充后端测试复用能力。证据见 .runtime/fe-incremental-validation-02/pip-cache-closeout.json。
 
 今日代码保存为本地 checkpoint，非正式交付冻结；远端仍为 e28b59911，未推送、合并或部署。历史来源发现/认证和依赖下载消费已实现；整体精准增量目标仍 NOT_ACHIEVED，实际测试复用为 0。独立复核确认现有模块依赖映射没有可直接据此开放 REUSE 的完整闭包，不能因为同 tree、同 SHA 或过去 CI 绿色就忽略未捕获运行输入。下一步必须闭合一个实际目标的执行来源、测试选择及环境/fixture 输入后再启用复用；不再增加只观察、不消费的框架。
+
+## 今日最终机制：全量生产基线，后续远端消费（待主线集成）
+
+本节替代此前“只有影子选择/不能执行复用”的当前状态，旧记录和失败日志保持历史含义。Owner 已批准今天改动受管推送、更新 PR 并合入主线；未授权部署。首次新格式基线交由后续定时全量任务生成，不倒填旧回执，不为建立基线重跑今天的完整业务验收。
+
+P4 在既有 backend_test_receipt 和 evidence_scope 内接通真实消费。首批闭合目标为 smart_construction_scene 的 71 项纯 Python 场景测试。使用 Dockerfile 已登记、带不可变 digest 的 Odoo 基础镜像，避免每次候选镜像的 SOURCE_SHA 标签导致环境永远失效。容器无网络、根只读、65534 用户、显式清空并固定环境、临时 tmpfs；只读挂载精确 Git archive 的 addons/demo 源码和该测试实际读取的 JSON，不挂 Git 历史、数据库、宿主凭据或 Docker socket。指纹覆盖实际文件字节/mode、镜像 ID、执行器、依赖发现器、证据引擎及 workflow 定义。这里验证静态配置和纯 Python 行为，不宣称覆盖运行数据库、权限或动态业务事实。13 个 ORM 目标保留实跑，未扩大复用范围。
+
+定时及手工完整运行强制 RUN；PR 后续运行查询同仓历史成功 artifact，逐项认证来源、有效期、归档摘要、执行日志与完整 Git tree。首批基线只接受 root backend_test_suite 的 schedule/dispatch attempt1，手工分支完整运行不限定 main；PR merge-ref 的实际执行定义、后续 attempt 的归属无法完整证明时，不作为复用来源。没有匹配证据则 RUN，输入未知或执行失败不得变绿。历史成功必须具有完整新格式隔离 profile；旧绿色结果和旧观察回执不能自授 REUSE。
+
+消费由已有 evidence_scope 决定，命中时不启动测试、不重新签发一次执行成功，仅生成绑定当前 SHA、输入指纹、旧 run/artifact/receipt 的决定。REUSE 不延长旧成功时效。workflow 以 executed+reused 核对全部计划目标，失败仍失败，定时全量不受缓存命中影响。原始运行耗时与估算节省分开保存；实际远端节省目前仍为 0，不能把估算或下载缓存收益当作实测。
+
+验证：57 项回执/消费/故障测试、32 项选择器回归、13 项 workflow 执行路径测试、18 项安全测试，共 120 项工具测试通过，安全 guard 通过。真实受限容器运行 71 项、0 skip，71 个 test IDs 与原宿主入口仅发现得到的集合逐一一致；没有重复执行宿主测试。源码及日志摘要见 .runtime/fe-incremental-validation-02/isolated-mechanism-closeout.json。该迁移诊断不是远端基线。
+
+独立复核关闭三项问题：挂载路径保持脚本原三层结构；复用必须具有已认证的 root 完整 workflow 来源；超时用唯一 run/attempt/shard 标识加随机后缀定向清理容器并保留原始输出。原失败记录保留。新增真实 YAML 分支测试覆盖 RUN、REUSE、失败与计数；另验证相同输入真实跳过执行且不生成假成功、输入变化、强制全量、坏证据、缺失/截断 source tree、workflow 不匹配和超时。
+
+主线收口顺序：最终候选→受管非强制推送 PR #723→必要 CI 与精确候选 Quick/合并准入→受保护合并→回读 main。现有主线定时任务只有在合并后才能运行新生产器；明天核对首份基线及随后命中，再报告实际收益。今天不部署、不重做 UX，不启动资金台账，不宣称全部 14 个目标已经能复用。

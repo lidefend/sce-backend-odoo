@@ -91,6 +91,21 @@ class BackendTestSuiteDispatchContractTest(unittest.TestCase):
         self.assertLess(names.index('Run backend test suite per module'), names.index('Return pip cache ownership to runner'))
         self.assertLess(names.index('Return pip cache ownership to runner'), names.index('Cleanup'))
 
+    def test_scheduled_baseline_is_full_and_reuse_is_explicitly_accounted(self):
+        workflow=yaml.safe_load((ROOT/'.github/workflows/backend_test_suite.yml').read_text())
+        suite=workflow['jobs']['backend_suite']
+        self.assertEqual('1',suite['env']['SC_BACKEND_ISOLATED_PYTHON'])
+        step=next(s for s in suite['steps'] if s['name']=='Run backend test suite per module')
+        body=step['run']
+        self.assertIn('if [ "${GITHUB_EVENT_NAME}" != pull_request ]; then',body)
+        self.assertIn('full_args=(--force-full)',body)
+        self.assertIn('isolated-python',body)
+        self.assertIn('"$((attempted + reused))" -ne "${planned_total}"',body)
+        self.assertIn('attempted=$((attempted - 1))',body)
+        self.assertIn('reused=$((reused + 1))',body)
+        self.assertEqual('${{ github.token }}',step['env']['GH_TOKEN'])
+        self.assertEqual('read',workflow['permissions']['actions'])
+
     def test_frontend_fingerprint_uses_dedicated_builder_stage(self):
         workflows = (
             ROOT / '.github/workflows/backend_test_suite.yml',
@@ -208,20 +223,32 @@ python3() {
     if [ "$CASE" = python_fail ]; then return 1; fi
     printf 'Ran 1 test in 0.001s\n\nOK\n'; return 0
   fi
+  if [ "$1" = -c ]; then
+    if [ "$CASE" = python_isolated_reuse ]; then printf 'REUSE\n'; else printf 'RUN\n'; fi
+    return 0
+  fi
   printf '%s\n' "$*" >> "$RUNNER_TEMP/calls"
+  if [ "$2" = isolated-python ]; then
+    if [ "$CASE" = python_isolated_fail ]; then return 1; fi
+    mkdir -p "$RUNNER_TEMP/backend-receipts-fixture-0"
+    printf '{"decision":"fixture"}\n' > "$RUNNER_TEMP/backend-receipts-fixture-0/isolated-decision-smart_construction_scene.json"
+    return 0
+  fi
   if [ "$CASE" = archive_fail ] && [ "$2" = archive-attempt ]; then return 1; fi
   return 0
 }
 tee() { command tee "$@"; if [ "$CASE" = log_fail ] || { [ "$CASE" = retry_log_fail ] && [[ "$1" == *attempt1.log ]]; }; then return 7; fi; }
 """
         for case,expected,archives,records in [('pass',0,1,1),('retry',0,2,1),('orm_fail',1,1,0),
-                ('log_fail',1,1,0),('python_fail',1,1,0),('python_pass',0,1,1),('archive_fail',1,1,0),('retry_log_fail',1,2,0)]:
+                ('log_fail',1,1,0),('python_fail',1,1,0),('python_pass',0,1,1),('archive_fail',1,1,0),('retry_log_fail',1,2,0),
+                ('python_isolated_run',0,0,0),('python_isolated_reuse',0,0,0),('python_isolated_fail',1,0,0)]:
             with self.subTest(case=case),tempfile.TemporaryDirectory() as tmp:
                 folder=Path(tmp);(folder/'backend-plan.json').write_text('{}')
                 environment={**os.environ,'CASE':case,'RUNNER_TEMP':tmp,'GITHUB_RUN_ID':'fixture',
                     'GITHUB_ENV':str(folder/'env'),'GITHUB_STEP_SUMMARY':str(folder/'summary'),
                     'HEAD_SHA':'a'*40,'IMPACT_BASE':'b'*40,'SHARD_INDEX':'0','DB_NAME':'fixture_db',
-                    'ENV_FILE':str(folder/'managed.env'),'TEST_TAGS_INPUT':'',
+                    'ENV_FILE':str(folder/'managed.env'),'TEST_TAGS_INPUT':'','GITHUB_EVENT_NAME':'pull_request',
+                    'SC_BACKEND_ISOLATED_PYTHON':'1' if case.startswith('python_isolated') else '0',
                     'MODULES':'' if case.startswith('python') else 'example',
                     'PYTHON_MODULES':'smart_construction_scene' if case.startswith('python') else ''}
                 result=subprocess.run(['bash','-e','-c',stubs+step],cwd=ROOT,env=environment,capture_output=True,text=True)

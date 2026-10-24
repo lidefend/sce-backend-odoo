@@ -23,12 +23,19 @@ import subprocess
 import sys
 import stat
 import tempfile
+import tarfile
+import time
+import functools
+import uuid
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = 'backend-test-execution/v1'
 ENV_MARKER = 'SC_BACKEND_TEST_ENVIRONMENT='
 MAX_AGE = timedelta(hours=24)
+ISOLATED_MODULE = 'smart_construction_scene'
+ISOLATED_MARKER = 'SC_BACKEND_ISOLATED_PYTHON='
+
 
 
 def digest(data: bytes) -> str:
@@ -103,7 +110,10 @@ def parse_result(kind: str, module: str, database: str, status: int, log: Path) 
         skipped = re.findall(r'^OK \(.*?skipped=(\d+).*?\)$', text, re.M)
         if skipped and int(skipped[0]) >= count:
             raise ValueError('all tests skipped')
-        environment = python_environment()
+        markers = [json.loads(line[len(ENV_MARKER):]) for line in text.splitlines() if line.startswith(ENV_MARKER)]
+        if len(markers) > 1:
+            raise ValueError('ambiguous Python environment')
+        environment = markers[0] if markers else python_environment()
     if not count or not isinstance(environment, dict) or not environment.get('python') or not environment.get('packages'):
         raise ValueError('incomplete Python environment or zero tests')
     return count, environment
@@ -215,9 +225,13 @@ def record(root: Path, *, module: str, kind: str, head: str, base: str,
     skipped_matches = re.findall(r'^OK \(.*?skipped=(\d+).*?\)$', log.read_text(), re.M) if kind == 'python' else []
     skipped_count = int(skipped_matches[0]) if skipped_matches else 0
     runtime = json.loads(context_file.read_text())
-    if set(runtime.get('services', {})) != {'db', 'redis'}:
+    isolated_log = kind == 'python' and any(x.startswith(ISOLATED_MARKER) for x in log.read_text().splitlines())
+    if isolated_log:
+        if set(runtime) != {'services', 'isolated_image_id'} or runtime['services'] != {} or not re.fullmatch(r'sha256:[0-9a-f]{64}', str(runtime['isolated_image_id'])):
+            raise ValueError('isolated runtime identity missing')
+    elif set(runtime.get('services', {})) != {'db', 'redis'}:
         raise ValueError('runtime service identity missing')
-    image_ids = [runtime.get('odoo_image_id')] + [runtime['services'][s].get('image_id') for s in ('db', 'redis')]
+    image_ids = [runtime['isolated_image_id']] if isolated_log else [runtime.get('odoo_image_id')] + [runtime['services'][s].get('image_id') for s in ('db', 'redis')]
     if any(not re.fullmatch(r'sha256:[0-9a-f]{64}', str(value)) for value in image_ids):
         raise ValueError('content-bound runtime image identity missing')
     workflow_definition = workflow_definition_observation()
@@ -252,6 +266,12 @@ def record(root: Path, *, module: str, kind: str, head: str, base: str,
         'blockers': ['platform_source_not_authenticated', 'runtime_contract_readback_missing', 'fact_scope_readback_missing',
                      'target_dependency_closure_not_certified'],
     }
+    isolated = [json.loads(line[len(ISOLATED_MARKER):]) for line in text.splitlines() if line.startswith(ISOLATED_MARKER)]
+    if isolated:
+        if len(isolated) != 1 or kind != 'python' or module != ISOLATED_MODULE:
+            raise ValueError('invalid isolated execution marker')
+        validate_isolated_result(isolated[0], count)
+        receipt['isolated_python'] = isolated[0]
     (target / 'receipt.json').write_bytes(canonical(receipt))
     return {**receipt, 'receipt_sha256': digest(canonical(receipt))}
 
@@ -342,7 +362,9 @@ ARCHIVE_LIMIT = 64 * 1024 * 1024
 def github_bytes(endpoint: str) -> bytes:
     # Fixed host, read-only GET, managed credential configuration. No URL from
     # an artifact or receipt is ever followed by this code.
-    env = dict(os.environ, GH_CONFIG_DIR='/home/lidefend/.config/gh-new-account')
+    env = dict(os.environ)
+    if not env.get('GH_TOKEN') and not env.get('GITHUB_TOKEN'):
+        env['GH_CONFIG_DIR'] = '/home/lidefend/.config/gh-new-account'
     with tempfile.TemporaryFile() as out:
         subprocess.run(['gh', 'api', '--hostname', 'github.com', '--method', 'GET',
                         'repos/' + REPOSITORY + '/' + endpoint], stdout=out,
@@ -454,6 +476,8 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
             'scope_plan': receipt.get('scope_plan'), 'test_count': receipt['test_count'],
             'issued_at': receipt['issued_at'], 'expires_at': receipt['expires_at'],
             'actual_duration_seconds': receipt.get('actual_duration_seconds'),
+            'isolated_python': receipt.get('isolated_python'), 'source_tree': receipt['source_tree'],
+            'workflow_definition': receipt.get('workflow_definition'),
             'blockers': ['artifact_attempt_not_attested', 'execution_definition_not_attested', 'runtime_contract_readback_missing', 'fact_scope_readback_missing',
                          'target_dependency_closure_not_certified']}
 
@@ -529,9 +553,269 @@ def observe_github_job(*, run_id: int, attempt: int, job_id: int,
     }
 
 
+
+# The first closed execution profile uses immutable container bytes and an
+# explicit read-only source view. ORM observations remain non-reusable: this
+# profile proves no database, role or live-contract behavior.
+ISOLATED_RUNNER = r"""
+import importlib.util,json,sys,unittest
+spec=importlib.util.spec_from_file_location('capture','/tools/scripts/ci/backend_test_receipt.py')
+capture=importlib.util.module_from_spec(spec);spec.loader.exec_module(capture)
+print(capture.ENV_MARKER+json.dumps(capture.python_environment()),flush=True)
+suite=unittest.defaultTestLoader.discover('addons/smart_construction_scene/tests',pattern='test*.py')
+def ids(item):
+    if isinstance(item,unittest.TestSuite):
+        return [name for child in item for name in ids(child)]
+    return [item.id()]
+names=sorted(ids(suite))
+result=unittest.TextTestRunner(verbosity=2).run(suite)
+print('SC_BACKEND_TEST_IDS='+json.dumps({'ids':names,'run':result.testsRun,'skipped':len(result.skipped)}),flush=True)
+sys.exit(0 if names and result.wasSuccessful() and not result.skipped and result.testsRun==len(names) else 1)
+"""
+
+
+def validate_isolated_result(value: dict, count: int) -> None:
+    if (not isinstance(value, dict) or value.get('schema') != 'backend-isolated-python/v1'
+            or not re.fullmatch('[0-9a-f]{64}', str(value.get('fingerprint', '')))
+            or value.get('module') != ISOLATED_MODULE or value.get('skipped') != 0
+            or not isinstance(value.get('test_ids'), list) or not value['test_ids']
+            or any(not isinstance(x, str) or not x for x in value['test_ids'])
+            or value['test_ids'] != sorted(set(value['test_ids']))
+            or len(value['test_ids']) != count):
+        raise ValueError('isolated execution scope is incomplete')
+
+
+def isolated_snapshot(root: Path, head: str, destination: Path, image_id: str) -> dict:
+    import backend_impact_plan as impact
+    graph = impact.snapshot(head)
+    target = graph[ISOLATED_MODULE]
+    if target.get('unresolved_file_reads'):
+        raise ValueError('isolated test file inputs unresolved')
+    paths = sorted(set(['addons', 'demo_addons'] + target['file_inputs']))
+    raw = subprocess.check_output(['git', 'archive', '--format=tar', head, '--', *paths], cwd=root)
+    files = {}
+    with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
+        for member in archive:
+            path = PurePosixPath(member.name)
+            if path.is_absolute() or '..' in path.parts or str(path) != member.name.rstrip('/'):
+                raise ValueError('invalid snapshot path')
+            if member.isdir():
+                continue
+            if not member.isfile():
+                raise ValueError('isolated source links/special files are not supported')
+            data = archive.extractfile(member).read()
+            file = destination / str(path)
+            file.parent.mkdir(parents=True, exist_ok=True)
+            mode = 0o755 if member.mode & 0o111 else 0o644
+            file.write_bytes(data); file.chmod(mode)
+            files[str(path)] = {'sha256': digest(data), 'mode': mode,
+                                'git_blob': hashlib.sha1(('blob '+str(len(data))+'\0').encode()+data).hexdigest()}
+    executor = subprocess.check_output(['git', 'show', head + ':scripts/ci/backend_test_receipt.py'], cwd=root)
+    recipe = {'schema': 'backend-isolated-python/v1', 'module': ISOLATED_MODULE,
+              'source_files': files, 'executor_sha256': digest(executor),
+              'image_id': image_id, 'runner_sha256': digest(ISOLATED_RUNNER.encode()),
+              'definitions': {path: digest(subprocess.check_output(['git','show',head+':'+path],cwd=root))
+                  for path in ('scripts/ci/backend_impact_plan.py','scripts/ops/evidence_scope.py',
+                               '.github/workflows/backend_test_suite.yml',
+                               '.github/workflows/professional_quality_gate.yml')},
+              'network': 'none', 'rootfs': 'readonly', 'user': '65534:65534',
+              'cwd': '/workspace', 'environment': ['PATH=/usr/bin:/bin', 'HOME=/tmp',
+              'LANG=C.UTF-8', 'LC_ALL=C.UTF-8', 'TZ=UTC', 'ENV=',
+              'PYTHONHASHSEED=0', 'PYTHONDONTWRITEBYTECODE=1']}
+    if not files or not re.fullmatch('sha256:[0-9a-f]{64}', image_id):
+        raise ValueError('incomplete isolated inputs')
+    definitions = list(recipe['definitions']) + ['scripts/ci/backend_test_receipt.py']
+    authority_blobs = {path: command('git','rev-parse',head+':'+path,cwd=root) for path in definitions}
+    recipe['authority_blobs'] = authority_blobs
+    return {'fingerprint': digest(canonical(recipe)), 'recipe': recipe, 'executor': executor}
+
+
+def isolated_history(fingerprint: str, *, recipe: dict, fetch=None) -> tuple[dict | None, list]:
+    """Only completed real executions seed reuse; reused decisions never renew TTL."""
+    fetch = fetch or functools.lru_cache(maxsize=64)(github_bytes)
+    rejected = []
+    payload = json.loads(fetch('actions/runs?status=success&per_page=30'))
+    for run in payload.get('workflow_runs', []):
+        if (run.get('id') == int(os.environ.get('GITHUB_RUN_ID', '0'))
+                or run.get('path') not in ('.github/workflows/backend_test_suite.yml',
+                                           '.github/workflows/professional_quality_gate.yml')
+                or run.get('event') not in ('schedule', 'workflow_dispatch')
+                or run.get('repository', {}).get('id') != REPOSITORY_ID
+                or run.get('head_repository', {}).get('id') != REPOSITORY_ID):
+            continue
+        try:
+            # An attempt-1 run has no ambiguous artifact attribution to a retry.
+            # Later attempts remain RUN until the platform can attest their upload.
+            if run.get('run_attempt') != 1:
+                continue
+            started = datetime.fromisoformat(run['run_started_at'].replace('Z', '+00:00'))
+            if datetime.now(timezone.utc) - started >= MAX_AGE:
+                continue
+            artifacts = json.loads(fetch(f"actions/runs/{run['id']}/artifacts?per_page=100"))
+            for artifact in artifacts.get('artifacts', []):
+                match = re.fullmatch(r'backend-execution-(\d+)-1-(\d+)', artifact.get('name', ''))
+                if not match or int(match[1]) != run['id']:
+                    continue
+                locator = {'run_id':run['id'], 'attempt':1, 'artifact_id':artifact['id'],
+                           'shard':int(match[2]), 'expected_head':run['head_sha'], 'module':ISOLATED_MODULE}
+                try:
+                    verified = verify_github_origin(**locator, fetch=fetch)
+                    proof = verified.get('isolated_python')
+                    validate_isolated_result(proof, verified['test_count'])
+                    if proof['fingerprint'] != fingerprint:
+                        continue
+                    tree = json.loads(fetch(f"git/trees/{verified['source_tree']}?recursive=1"))
+                    if tree.get('truncated') is not False or tree.get('sha') != verified['source_tree']:
+                        raise ValueError('historical tree is incomplete')
+                    blobs = {x['path']:x for x in tree['tree'] if x['type'] != 'tree'}
+                    expected_files = recipe['source_files']
+                    visible = {path for path in blobs if path.startswith(('addons/','demo_addons/')) or path in expected_files}
+                    if visible != set(expected_files):
+                        raise ValueError('historical source scope differs')
+                    for path, entry in expected_files.items():
+                        old = blobs[path]
+                        if (old['type'] != 'blob' or old['sha'] != entry['git_blob']
+                                or old['mode'] != format(0o100000 | entry['mode'], 'o')):
+                            raise ValueError('historical source bytes differ')
+                    for path, oid in recipe['authority_blobs'].items():
+                        if blobs.get(path, {}).get('sha') != oid or blobs[path]['type'] != 'blob':
+                            raise ValueError('historical executor/decision definition differs')
+                    workflow_path = '.github/workflows/backend_test_suite.yml'
+                    if run['path'] != workflow_path:
+                        raise ValueError('full baseline workflow identity differs')
+                    definition = verified.get('workflow_definition') or {}
+                    if definition.get('sha') != run['head_sha'] or definition.get('path') != workflow_path:
+                        raise ValueError('root execution definition does not match platform full-run revision')
+                    # Do not trust producer field names alone: match the execution
+                    # marker against the authenticated log. Only an original
+                    # attempt is eligible; attempt-number names alone are insufficient.
+                    raw = fetch(f"actions/artifacts/{artifact['id']}/zip")
+                    members = archive_members(raw)
+                    log = members[ISOLATED_MODULE+'/execution.log'].decode()
+                    markers = [json.loads(x[len(ISOLATED_MARKER):]) for x in log.splitlines()
+                               if x.startswith(ISOLATED_MARKER)]
+                    if markers != [proof]:
+                        raise ValueError('isolated execution log binding mismatch')
+                    return {**verified, 'locator': locator,
+                            'isolated_execution_authority':'verified_root_full_workflow'}, rejected
+                except (ValueError, KeyError, TypeError, AttributeError, zipfile.BadZipFile, OSError, subprocess.SubprocessError) as exc:
+                    rejected.append({'run_id':run['id'], 'artifact_id':artifact['id'], 'reason':str(exc)})
+        except (ValueError, KeyError, TypeError, AttributeError, zipfile.BadZipFile, OSError, subprocess.SubprocessError) as exc:
+            rejected.append({'run_id':run.get('id'), 'reason':str(exc)})
+    return None, rejected
+
+
+def isolated_decision(fingerprint: str, previous: dict | None, *, force_full: bool) -> dict:
+    sys.path.insert(0, str(ROOT/'scripts/ops'))
+    import evidence_scope
+    document = {'schema':evidence_scope.UNITS_SCHEMA, 'check':'backend.isolated.python',
+                'identity':{'profile':'backend-isolated-python/v1'},
+                'units':[{'id':ISOLATED_MODULE, 'fingerprint':fingerprint, 'required':True}]}
+    ledger = {'check':document['check'], 'identity':document['identity'], 'units':{}}
+    if previous and not force_full:
+        validate_isolated_result(previous['isolated_python'], previous['test_count'])
+        if (previous.get('platform_origin') != 'verified' or previous.get('integrity') != 'verified'
+                or previous.get('isolated_execution_authority') != 'verified_root_full_workflow'):
+            raise ValueError('history was not authenticated')
+        ledger['units'][ISOLATED_MODULE] = {'status':'passed',
+            'fingerprint':previous['isolated_python']['fingerprint']}
+    plan = evidence_scope.plan_units(document, ledger)
+    reuse = ISOLATED_MODULE in plan['reusable']
+    return {'target':ISOLATED_MODULE, 'decision':'REUSE' if reuse else 'RUN',
+            'reason':'matching_authenticated_isolated_inputs' if reuse else ('scheduled_full' if force_full else 'no_matching_evidence'),
+            'input_fingerprint':fingerprint, 'previous_receipt':previous['locator'] if reuse else None,
+            'previous_receipt_sha256':previous['receipt_sha256'] if reuse else None,
+            'estimated_saved_time':previous.get('actual_duration_seconds') if reuse else 0,
+            'actual_duration':None, 'actual_saved_time':None}
+
+
+
+def execute_isolated_container(args: list[str], log: Path, *, timeout: int = 300):
+    # Unique ownership even in local fault tests; never remove another run's container.
+    owner = '-'.join(str(os.environ.get(key, 'local')) for key in
+                     ('GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT','SHARD_INDEX'))
+    owner = re.sub('[^a-zA-Z0-9_.-]', '-', owner)[:80]
+    name = 'sc-isolated-python-' + owner + '-' + uuid.uuid4().hex[:12]
+    args = args[:2] + ['--name',name] + args[2:]
+    try:
+        try:
+            result = subprocess.run(args,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=timeout)
+            log.write_text(result.stdout or '')
+            return result
+        except subprocess.TimeoutExpired as exc:
+            partial = exc.stdout or b''
+            if isinstance(partial,str):partial=partial.encode()
+            log.write_bytes(partial+b'\n[isolated executor] timeout\n')
+            return subprocess.CompletedProcess(args,124,log.read_text(errors='replace'))
+    finally:
+        subprocess.run(['docker','rm','-f',name],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=30,check=False)
+
+
+def run_isolated_python(*, root: Path, head: str, base: str, output: Path,
+                        context_file: Path, scope_plan: Path, force_full: bool) -> dict:
+    if command('git','rev-parse','HEAD',cwd=root) != head or command('git','status','--porcelain',cwd=root):
+        raise ValueError('isolated executor requires clean exact candidate')
+    dockerfile = command('git','show',head+':Dockerfile',cwd=root)
+    image = re.search(r'^ARG ODOO_BASE_IMAGE=(odoo:[^\s]+@sha256:[0-9a-f]{64})$',dockerfile,re.M)
+    if not image:
+        raise ValueError('immutable registered Python runtime image missing')
+    image = image[1]
+    try:
+        image_id = command('docker','image','inspect','--format','{{.Id}}',image)
+    except subprocess.CalledProcessError:
+        subprocess.run(['docker','pull',image],check=True,timeout=300)
+        image_id = command('docker','image','inspect','--format','{{.Id}}',image)
+    output.mkdir(parents=True,exist_ok=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        home = Path(tmp); snapshot = home/'source';snapshot.mkdir()
+        bound = isolated_snapshot(root,head,snapshot,image_id)
+        previous, rejected = None, []
+        if not force_full:
+            try:
+                previous, rejected = isolated_history(bound['fingerprint'], recipe=bound['recipe'])
+            except (ValueError, KeyError, TypeError, AttributeError, zipfile.BadZipFile, OSError, subprocess.SubprocessError) as exc:
+                rejected = [{'reason': 'history_unavailable: ' + str(exc)}]
+        decision = isolated_decision(bound['fingerprint'],previous,force_full=force_full)
+        decision.update(source_head=head, source_tree=command('git','rev-parse',head+'^{tree}',cwd=root),
+                        rejected_candidates=rejected)
+        path = output/('isolated-decision-'+ISOLATED_MODULE+'.json')
+        if decision['decision'] == 'REUSE':
+            path.write_bytes(canonical(decision));return decision
+        tool = home/'backend_test_receipt.py';tool.write_bytes(bound['executor']);tool.chmod(0o644)
+        home.chmod(0o755)
+        args = ['docker','run','--rm','--network','none','--read-only','--cap-drop','ALL',
+                '--security-opt','no-new-privileges','--user','65534:65534',
+                '--tmpfs','/tmp:rw,nosuid,nodev,size=64m','--workdir','/workspace',
+                '--mount',f'type=bind,src={snapshot},dst=/workspace,readonly',
+                '--mount',f'type=bind,src={tool},dst=/tools/scripts/ci/backend_test_receipt.py,readonly',
+                '--entrypoint','/usr/bin/env',image_id,'-i',*bound['recipe']['environment'],
+                '/usr/bin/python3','-c',ISOLATED_RUNNER]
+        started = time.monotonic()
+        log = output/'isolated-python-execution.log'
+        result = execute_isolated_container(args,log)
+        duration = time.monotonic()-started
+        decision['actual_duration'] = duration
+        if result.returncode:
+            decision.update(decision='BLOCK',reason='isolated_execution_failed',exit_code=result.returncode)
+            path.write_bytes(canonical(decision));raise ValueError('isolated Python execution failed; original log retained')
+        ids = [json.loads(x.split('=',1)[1]) for x in result.stdout.splitlines() if x.startswith('SC_BACKEND_TEST_IDS=')]
+        if len(ids) != 1 or ids[0]['run'] != len(ids[0]['ids']):
+            raise ValueError('isolated test IDs missing')
+        proof = {'schema':'backend-isolated-python/v1','module':ISOLATED_MODULE,
+                 'fingerprint':bound['fingerprint'],'test_ids':ids[0]['ids'],'skipped':ids[0]['skipped']}
+        validate_isolated_result(proof,ids[0]['run'])
+        with log.open('a') as stream:stream.write('\n'+ISOLATED_MARKER+canonical(proof).decode()+'\n')
+        isolated_context = output/'isolated-runtime.json'
+        isolated_context.write_bytes(canonical({'services':{},'isolated_image_id':image_id}))
+        record(root,module=ISOLATED_MODULE,kind='python',head=head,base=base,database='',status=0,
+               log=log,context_file=isolated_context,output=output,duration_seconds=duration,scope_plan=scope_plan)
+        decision.update(test_count=ids[0]['run'],test_ids=ids[0]['ids'],exit_code=0)
+        path.write_bytes(canonical(decision));return decision
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument('mode', choices=('environment', 'context', 'record', 'verify', 'verify-origin', 'verify-contract-source', 'archive-attempt', 'observe-job'))
+    parser.add_argument('mode', choices=('environment', 'context', 'record', 'verify', 'verify-origin', 'verify-contract-source', 'archive-attempt', 'observe-job', 'isolated-python'))
     parser.add_argument('--output', type=Path)
     parser.add_argument('--head')
     parser.add_argument('--base', default='')
@@ -555,8 +839,12 @@ def main() -> None:
     parser.add_argument('--shard', type=int)
     parser.add_argument('--job-id', type=int)
     parser.add_argument('--workflow-path')
+    parser.add_argument('--force-full', action='store_true')
     args = parser.parse_args()
-    if args.mode == 'environment':
+    if args.mode == 'isolated-python':
+        print(json.dumps(run_isolated_python(root=ROOT,head=args.head,base=args.base,output=args.output,
+            context_file=args.context,scope_plan=args.scope_plan,force_full=args.force_full)))
+    elif args.mode == 'environment':
         print(ENV_MARKER + canonical(python_environment()).decode())
     elif args.mode == 'context':
         args.output.write_bytes(canonical(context()))
