@@ -1,8 +1,8 @@
 # FE-INCREMENTAL-VALIDATION-02
 
-> 当前审阅状态：受控 CI **执行观察采集版**已实现，本地 139 项定向检查及独立复核通过。冻结准备 ci.delivery.freeze.prepare 已通过，正从 HEAD 1ddade160 + 未提交差异形成单个本地候选；精确提交与后续门禁结果以 .runtime 回执为准。旧阶段描述按下文时间顺序保留。
-> 只采集、不复用：14 个历史目标均缺可验证的旧执行回执，实际节省仍为 0 秒；本地部分字段事实核验不替代 CI 数据。未推送、更新 PR、合并或部署。
-> 审阅清单：.runtime/fe-incremental-validation-02/candidate-review.json（逐文件摘要与证据索引）；不是 freeze/verify 回执或合并资格。
+> 当前状态：HEAD 9ceac3b22 + 本地规划器映射及记录的未提交差异。采集实现的定向测试有效；完整 Quick 已取消，未签发通过回执。以下冻结描述为历史过程，不代表当前交付资格。
+> 本次收口执行 39 项纯 Python 规划器测试（0.640 秒），独立差异复核通过。未执行前端构建、类型检查、浏览器、后端模块全量或新一轮冻结。
+> 只采集、不复用：实际后端测试减负仍为 0 秒。未推送、更新 PR、合并或部署。
 
 P4 验证工具；基于 fix/fe-incremental-validation-01 @ 1ddade160，保留上一批未提交的调查记录。范围：既有 backend_impact_plan 的实际文件读取映射、定向回归、执行器回执设计。
 
@@ -221,3 +221,25 @@ workflow 在原 Resolve module list 步骤生成详细清单，并将同份 scop
 本轮恢复的受影响集合为 workflow 的执行状态采集、其 shell 回归及 GitHub 安全守卫。此前产品旅程和本地字段回读输入不变，不重跑。新 Quick 仅在定向结果与差异复核通过、生成报告同步和新候选冻结后执行；旧失败候选不能算通过。
 
 定向恢复完成：GitHub 安全守卫及其 18 项测试通过，139 项 workflow 契约测试通过（ga020-targeted.log）；独立复核确认同条赋值保留原始 [137,7] 管道状态，无守卫变更或豁免。
+
+
+## 验证范围纠偏：本地定向规划
+
+P4 / 既有 frontend_dev_incremental 本地规划器 / 通用验证编排。仅补现有路径到既有 Make 检查的映射，不新建注册体系。后端采集器、选择器、执行包装及相应测试选择 verify.ci.workflow.contract；backend_test_suite.yml 同时选择 verify.github_actions.security，使 GA020 在迭代阶段可被选中。名称带 frontend 的规划器及其测试均为 Python 工具，不代表前端产品检查。未知工具路径仍为 unmapped，必须人工确定非零 L2；规划输出保持 recommendation_only、candidateEvidence=false、testsRun=false。
+
+36 项规划器测试通过，日志 routing-targeted.log，现有 agent ledger 已记录；独立两文件差异复核无阻断。139 项工作流与 18 项安全测试输入未变，不重复；未将旧原始日志伪装为新签发的受管回执。取消的 Quick 原日志保留，9ceac3b22 不具备 Quick PASS。
+
+可复现只读计划 local-routing-plan.json：基于 1ddade160 到当前 HEAD + dirty 的本批 26 路径，frontend/addons/demo_addons/customer_addons/contracts 产品源码变化为 0。现有本地映射推荐 baseline policy、workflow contract、planner unit、GitHub security 四个工具目标；计划本身不执行它们。上一候选继承的 1ddade160 不混入本批影响集合，完整集成范围仍须另行核对。
+
+尚未解决的远端粗粒度问题：既有 risk_tiering_v1.json 将 make/ci.mk 整文件列入 frontend_full_paths，所以当前远端分类仍是 frontend_mode=full。该结果必须如实保留；本地映射修复不等于远端已精准分类。后续应证明具体 Make 目标、依赖及共享变量的影响后再调整，不能直接删去该路径或把未知作用当作不影响。本轮没有修改远端策略，不授予远端跳测，不启动新的冻结/Quick 循环。
+
+
+## 本地定向映射收口
+
+39 项纯 Python 定向测试通过（routing-recovery-test.log，0.640 秒），无前端产品执行。补齐逐路径 fallback 后再合并目标，防止一个已知后端或前端路径掩盖同批未知前端输入；纯后端仍只选工具目标。两文件实现独立复核无阻断。
+
+原 routing-final-test.log 的一项失败来自夹具把已登记 frontend/packages/ui 路径当成未知；改用真正未映射的 frontend/apps/web/src/newFeature.ts，保留断言。该失败首次被执行器误登记为通过，已通过既有 begin/record 更正为 failed，保留 routing-correction-record.log；修改夹具后重新 begin、执行成功才 record passed。未修改回执控制器、测试断言或远端门禁。
+
+范围裁决：1ddade160..当前候选的采集增量未改前端产品源；88b4c160..当前候选的完整未发布集成范围另含继承的 frontend_decision_authority 工具及 ci.generated_evidence.preflight 接入。不能以增量无前端产品变化直接推导整个 PR 可跳过所有前端相关验证。make/ci.mk 整文件远端分类仍粗粒度，本地映射收口不代表远端分类已修复；未移除规则、制作跳测凭证或启动远端 CI。
+
+本地映射批次已完成，整体 FE-INCREMENTAL-VALIDATION-02 仍 verification_pending（真实 CI 新回执、动态事实完整闭包及复用收益未完成）。本次只保存本地改动，不重新开启 freeze.prepare/Quick；集成、合并和部署状态均未变化。

@@ -39,6 +39,32 @@ class Rule:
 
 
 RULES = (
+    # Backend collection tooling has its own offline behaviour locks. Keep it
+    # in the existing local planner; this recommendation never authorizes ORM
+    # reuse or changes required remote CI. Workflow security must be selected
+    # here, rather than first discovering routing failures in final Quick.
+    Rule((
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        "scripts/ci/backend_test_receipt.py",
+        "scripts/ci/test_backend_test_receipt.py",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+        "scripts/verify/backend_contract_fact_readback_probe.py",
+        "scripts/verify/test_backend_contract_fact_readback_probe.py",
+        "scripts/test/test.sh",
+        ".github/workflows/backend_test_suite.yml",
+    ), (
+        "verify.ci.workflow.contract",
+    )),
+    Rule((
+        ".github/workflows/backend_test_suite.yml",
+        "scripts/verify/github_actions_security_guard.py",
+        "scripts/verify/test_github_actions_security_guard.py",
+    ), (
+        "verify.github_actions.security",
+    )),
     Rule(("scripts/dev/local_dev_demo_authority_verify.sh",
           "scripts/dev/local_environment_health.sh",
           "scripts/dev/local_environment_readiness.py",
@@ -366,17 +392,19 @@ NON_SOURCE_PATH_PREFIXES = (".agent/", "docs/")
 
 def select_targets(paths: list[str]) -> list[str]:
     selected: set[str] = set()
-    frontend_changed = False
     for path in paths:
         normalized = path.replace("\\", "/")
-        frontend_changed = frontend_changed or normalized.startswith(
-            ("frontend/apps/web/", "frontend/packages/ui/")
-        )
+        path_targets: set[str] = set()
         for rule in RULES:
             if any(fragment in normalized for fragment in rule.fragments):
-                selected.update(rule.targets)
-    if frontend_changed and not selected:
-        selected.add(FALLBACK_TARGET)
+                path_targets.update(rule.targets)
+        # A mapped backend/tool path must not mask an unmapped frontend path
+        # in the same change set. Resolve the fallback per path, then union.
+        if not path_targets and normalized.startswith(
+            ("frontend/apps/web/", "frontend/packages/ui/")
+        ):
+            path_targets.add(FALLBACK_TARGET)
+        selected.update(path_targets)
     targets = sorted(selected)
     if any(part in target for target in targets for part in FORBIDDEN_DEVELOPMENT_TARGET_PARTS):
         raise RuntimeError("development validation selected a candidate-only target")
