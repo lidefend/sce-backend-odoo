@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "id": "FE-DELIVERY-TEST-COVERAGE-FIX-01",
+  "branch": "feature/project-detail-productization-01",
+  "baseline_sha": "aef7ae51c656db05ade90ca1b485dc417c5c571a",
+  "status": "active",
+  "goal": ".agent/goals/FE-DELIVERY-TEST-COVERAGE-FIX-01.yaml",
+  "record": "docs/ops/iterations/fe_delivery_test_coverage_fix_01.md",
+  "scope": [
+    ".agent/",
+    "AGENTS.md",
+    "config/",
+    "docs/",
+    "make/",
+    "scripts/"
+  ],
+  "owned_paths": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-DELIVERY-TEST-COVERAGE-FIX-01.yaml",
+    ".agent/runs/FE-DELIVERY-TEST-COVERAGE-FIX-01/run.json",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/ops/iterations/fe_delivery_test_coverage_fix_01.md",
+    "scripts/verify/test_coverage_registry.yaml"
+  ],
+  "owner_approvals": [
+    {
+      "stage": "test_coverage_fix",
+      "status": "approved",
+      "approved_by": "Owner",
+      "approved_at": "2026-10-24T00:00:00+08:00",
+      "scope": "Fix the seven coverage dispositions, refresh the generated snapshot, create a local candidate commit, and do not push or merge."
+    }
+  ],
+  "previous_active_run": ".agent/runs/FE-DELIVERY-PR-RUNTIME-ACCEPTANCE-01/run.json",
+  "entry_evidence": {
+    "status": ".runtime/agent-runs/FE-DELIVERY-TEST-COVERAGE-FIX-01/entry-status.txt",
+    "tracked_diff": ".runtime/agent-runs/FE-DELIVERY-TEST-COVERAGE-FIX-01/entry-tracked.diff",
+    "preserved_hashes": ".runtime/agent-runs/FE-DELIVERY-TEST-COVERAGE-FIX-01/entry-files.sha256",
+    "previous_active_pointer": ".runtime/agent-runs/FE-DELIVERY-TEST-COVERAGE-FIX-01/previous-active-runs.json",
+    "previous_run": ".runtime/agent-runs/FE-DELIVERY-TEST-COVERAGE-FIX-01/previous-run.json",
+    "status_sha256": "d3eab6fc067cac84ab53572fb2ffeb072acfd0acb23487503bf18f713c25dd19",
+    "tracked_diff_sha256": "21a8f3e2bdf0316fc1dd1fd0ba5b7ddc117304e2461bdc2f16c62ba8505b40fc",
+    "preserved_manifest_sha256": "4281c2d17867e5be5ced8e0c98c6d893011777359cb985b31c067151d8038aa3"
+  },
+  "environment": {
+    "kind": "offline",
+    "candidate_sha": "aef7ae51c656db05ade90ca1b485dc417c5c571a",
+    "candidate_dirty": true,
+    "production_changes": false
+  },
+  "checks": {
+    "coverage_registry_unit": {
+      "target": "verify.test.coverage.registry",
+      "inputs": [
+        "docs/audit/test_coverage_registry/test_coverage_registry.json",
+        "scripts/verify/test_coverage_registry.yaml",
+        "scripts/verify/test_coverage_registry_audit.py",
+        "scripts/verify/test_test_coverage_registry_audit.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "verification_results": [],
+  "blockers": [
+    "Seven test groups require reviewed registry dispositions.",
+    "The tracked coverage snapshot is stale."
+  ],
+  "next_exact_step": "Seed the seven missing entries with the formal tool, review their actual test classes and gates, then export the snapshot.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

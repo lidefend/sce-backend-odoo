@@ -31,6 +31,6 @@
     "fix/platform-admin-surface-closure-20261018": ".agent/runs/PLATFORM-ADMIN-SURFACE-CLOSURE-20261018/run.json",
     "fix/project-form-header-density-20261023": ".agent/runs/PROJECT-FORM-HEADER-DENSITY-20261023/run.json",
     "fix/product-menu-config-entry-20261019": ".agent/runs/PRODUCT-MENU-CONFIG-ENTRY-20261019/run.json",
-    "feature/project-detail-productization-01": ".agent/runs/FE-PROJECT-DETAIL-01/run.json"
+    "feature/project-detail-productization-01": ".agent/runs/FE-DELIVERY-TEST-COVERAGE-FIX-01/run.json"
   }
 }
