@@ -112,6 +112,11 @@
       "owner": "platform-team",
       "reason": "飞书桥运维工具目标。"
     },
+    "agent.hooks.install": {
+      "disposition": "ops_tooling",
+      "owner": "platform-team",
+      "reason": "安装 pre-commit 自动刷新钩子的一次性运维入口。"
+    },
     "architecture.complexity_report": {
       "disposition": "audit_runbook",
       "owner": "platform-team",

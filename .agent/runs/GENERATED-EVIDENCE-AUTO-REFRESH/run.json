@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "GENERATED-EVIDENCE-AUTO-REFRESH",
+  "branch": "fix/generated-evidence-auto-refresh",
+  "baseline_sha": "d8ce44bd9c1ab0eb20fb73f1fd035e48d1914284",
+  "status": "verification_pending",
+  "goal": ".agent/goals/GENERATED-EVIDENCE-AUTO-REFRESH.yaml",
+  "record": "docs/ops/iterations/generated_evidence_auto_refresh.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/GENERATED-EVIDENCE-AUTO-REFRESH.yaml",
+    ".agent/runs/GENERATED-EVIDENCE-AUTO-REFRESH/run.json",
+    "docs/ops/iterations/generated_evidence_auto_refresh.md",
+    "make/ci.mk",
+    "make/codex.mk",
+    "scripts/ops/pre-commit_refresh_generated.sh",
+    "scripts/verify/baseline_iteration_execution_policy_guard.py",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "focused": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        "make/ci.mk",
+        "make/codex.mk",
+        "scripts/ops/pre-commit_refresh_generated.sh",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Land the refresh.generated_evidence bundle, the pre-commit auto-refresh hook and agent.hooks.install; keep the Quick/push preflight as the drift defense."
+}

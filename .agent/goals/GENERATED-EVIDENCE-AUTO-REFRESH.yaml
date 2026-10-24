@@ -1,0 +1,8 @@
+schema_version: 1
+goal:
+  id: GENERATED-EVIDENCE-AUTO-REFRESH
+  title: 派生物自动刷新（提交前钩子）
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: generated evidence refresh flow
+  exclusions: [product_code, permissions, merge, deployment, browser_acceptance]

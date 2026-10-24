@@ -1492,6 +1492,13 @@ verify.quick.input_scope.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/quick_input_scope.py scripts/ops/test_quick_input_scope.py
 	@python3 scripts/ops/test_quick_input_scope.py
 
+.PHONY: agent.hooks.install
+agent.hooks.install: guard.prod.forbid
+	@hook_dir="$$(git rev-parse --git-path hooks)"; \
+	cp scripts/ops/pre-commit_refresh_generated.sh "$$hook_dir/pre-commit"; \
+	chmod +x "$$hook_dir/pre-commit"
+	@echo "[agent.hooks.install] pre-commit auto-refresh hook installed"
+
 daily.runtime.main.release: guard.prod.forbid verify.daily.runtime.release_orchestration.unit
 	@CONFIRM_DAILY_RUNTIME_RELEASE="$${CONFIRM_DAILY_RUNTIME_RELEASE:-}" python3 scripts/ops/daily_runtime_release_orchestration.py --mode main $(DAILY_RUNTIME_RELEASE_ARGS) $(if $(filter 1,$(DAILY_RUNTIME_RELEASE_PLAN)),--plan,)
 

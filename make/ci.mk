@@ -836,9 +836,7 @@ ci.generated_evidence.preflight: guard.prod.forbid verify.frontend.decision_auth
 
 ci.delivery.freeze.prepare: guard.prod.forbid verify.g1.acceptance.baseline contract.semantic.registry.generate verify.frontend.contract_basis.enforce verify.agent.ledger.unit verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit verify.daily.runtime.release_orchestration.unit
 	@$(MAKE) --no-print-directory ci.delivery.plan
-	@$(MAKE) --no-print-directory refresh.generated_reports
-	@$(MAKE) --no-print-directory refresh.frontend.component_driver_takeover.inventory
-	@$(MAKE) --no-print-directory refresh.contract_form_split_evidence
+	@$(MAKE) --no-print-directory refresh.generated_evidence
 	@$(MAKE) --no-print-directory ci.generated_evidence.preflight
 	@echo "[ci.delivery.freeze.prepare] PASS candidate=unfrozen next=review_generated_changes_commit_freeze_then_run_quick_once"
 
@@ -878,6 +876,13 @@ refresh.generated_reports: guard.prod.forbid
 	@python3 scripts/ci/generate_contract_structure_fingerprint.py --write
 	@python3 scripts/verify/test_coverage_registry_audit.py --export
 	@echo "[OK] tracked generated reports refreshed; review and commit any changes before push"
+
+# The single refresh-only surface. Auto-refresh before commit; the Quick and
+# push preflight stay read-only and fail only when the generators drift or a
+# derived file was edited by hand.
+.PHONY: refresh.generated_evidence
+refresh.generated_evidence: guard.prod.forbid refresh.generated_reports refresh.frontend.component_driver_takeover.inventory refresh.contract_form_split_evidence contract.semantic.registry.generate
+	@echo "[refresh.generated_evidence] derived artifacts refreshed; stage and commit before push"
 
 verify.tenant.data_responsibility_boundary: guard.prod.forbid
 	@python3 scripts/verify/tenant_data_responsibility_boundary.py

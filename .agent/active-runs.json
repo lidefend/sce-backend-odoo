@@ -36,6 +36,7 @@
     "fix/verification-efficiency-01": ".agent/runs/VERIFY-EFFICIENCY-01/run.json",
     "fix/fe-incremental-validation-01": ".agent/runs/FE-INCREMENTAL-VALIDATION-02/run.json",
     "fix/daily-release-orchestration-digest-derivation": ".agent/runs/DAILY-RELEASE-ORCHESTRATION-DIGEST-DERIVATION/run.json",
-    "fix/quick-input-scoped-reuse": ".agent/runs/QUICK-INPUT-SCOPED-REUSE/run.json"
+    "fix/quick-input-scoped-reuse": ".agent/runs/QUICK-INPUT-SCOPED-REUSE/run.json",
+    "fix/generated-evidence-auto-refresh": ".agent/runs/GENERATED-EVIDENCE-AUTO-REFRESH/run.json"
   }
 }
