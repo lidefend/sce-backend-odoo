@@ -116,7 +116,7 @@ def build_plan(base: str, head: str, override: str = '', *, include_inputs: bool
             if not modules or any(name not in selected['modules'] for name in modules):
                 raise ValueError('override contains a module without runnable tests')
             selected.update(modules=modules, mode='explicit_override', reasons=['owner_dispatch_override'])
-    plan = {**selected, 'base': base, 'head': head, 'shards': partition(selected['modules'])}
+    plan = {**selected, 'base': base, 'head': head, 'shards': partition(selected['modules']) if selected['modules'] else []}
     if include_inputs:
         plan['input_inventory'] = target_input_inventory(head,after,plan['modules'])
     return plan
@@ -230,7 +230,11 @@ def select_historical_receipts(plan: dict, locators: list[dict]) -> dict:
     for key in sorted(unique):
         item = unique[key]
         try:
-            impact.git('merge-base', '--is-ancestor', item['head'], head)
+            # Reuse is decided by verifiable input equivalence, not Git ancestry.
+            # A sibling branch with identical content-addressed inputs is a valid
+            # reuse source; verify_github_origin binds the platform run/source
+            # tree and receipt_reuse_authorized then requires independent closure
+            # attestation, so ancestry adds no safety and only blocks reuse.
             verified = execution_receipt.verify_github_origin(
                 run_id=item['run_id'], attempt=item['attempt'], artifact_id=item['artifact_id'],
                 shard=item['shard'], expected_head=item['head'], module=item['module'], now=now, fetch=fetch)
@@ -261,29 +265,77 @@ def select_historical_receipts(plan: dict, locators: list[dict]) -> dict:
                     'identity': {'scope': 'known_source_inputs_only'},
                     'units': [{'id': name, 'fingerprint': fingerprint, 'required': True}]}
         ledger = {'check': document['check'], 'identity': document['identity'], 'units': {}}
+        reuse_authorized, reuse_authorized_blockers = False, []
         if selected:
+            reuse_authorized, reuse_authorized_blockers = execution_receipt.receipt_reuse_authorized(selected[1])
             ledger['units'][name] = {'fingerprint': selected[1]['scope_plan']['known_inputs_sha256'],
-                                    'status': 'observed'}
+                                    'status': 'passed' if reuse_authorized else 'observed'}
         verdict = evidence_scope.plan_units(document, ledger)
         must_run = name in verdict['affected']
+        reusable = name in verdict['reusable']
         failures = [row for row in rejected if row['locator']['module'] == name]
-        decision = 'RUN' if must_run else 'BLOCK'
-        if not selected and failures:
+        if reusable:
+            decision = 'REUSE'
+        elif not selected and failures:
+            decision = 'BLOCK'
+        elif must_run:
+            decision = 'RUN'
+        else:
             decision = 'BLOCK'
         decisions.append({'target': name, 'decision': decision,
             'reason': ('history_authentication_failed' if failures else 'no_successful_history') if not selected
-                      else ('known_inputs_changed' if must_run else 'authenticated_result_missing_reuse_proofs'),
+                      else ('authenticated_reuse_ready_inputs_match' if reusable
+                            else ('known_inputs_changed' if must_run
+                                  else 'authenticated_result_missing_reuse_proofs')),
+            'reuse_authorized': reuse_authorized,
+            'reuse_authorized_blockers': reuse_authorized_blockers,
             'input_fingerprint': fingerprint,
             'previous_receipt': {'locator': selected[0], 'sha256': selected[1]['receipt_sha256']} if selected else None,
             'verified_successful_candidates': len(candidates), 'rejected_candidates': failures,
             'required_evidence': sorted(set(target['blockers'] + (selected[1]['blockers'] if selected else []))),
             'previous_actual_duration': selected[1]['actual_duration_seconds'] if selected else None,
-            'actual_duration': None, 'estimated_saved_time': 0})
+            'actual_duration': None,
+            'estimated_saved_time': selected[1]['actual_duration_seconds'] if reusable else 0})
     return {'schema': 'backend-remote-receipt-selection/v1', 'mode': 'shadow_only',
             'head': head, 'integration_base': plan['base'], 'decisions': decisions,
             'counts': {key: sum(row['decision'] == key for row in decisions) for key in ('RUN', 'REUSE', 'BLOCK')},
             'locators_checked': len(unique), 'rejected': rejected,
-            'execution_selection_changed': False, 'reuse_authority': False}
+            'execution_selection_changed': False,
+            'reuse_authority': any(row['decision'] == 'REUSE' for row in decisions)}
+
+
+def apply_reuse_decision(plan: dict, decisions: list[dict]) -> dict:
+    """Partition only RUN targets; REUSE/BLOCK are carried, never executed.
+
+    A scope that is entirely REUSE or BLOCK yields zero shards, so no test
+    shard, Docker build or database is created. Coverage must account for every
+    selected module exactly once; a partial or ambiguous decision is refused.
+    """
+    if not isinstance(plan, dict) or not isinstance(plan.get('modules'), list):
+        raise ValueError('plan with selected modules required')
+    if not isinstance(decisions, list) or not decisions:
+        raise ValueError('non-empty reuse decision list required')
+    by_target: dict[str, str] = {}
+    for row in decisions:
+        target, decision = row.get('target'), row.get('decision')
+        if (not isinstance(target, str) or target not in plan['modules']
+                or decision not in ('RUN', 'REUSE', 'BLOCK') or target in by_target):
+            raise ValueError('decision outside selected scope, invalid or duplicated')
+        by_target[target] = decision
+    if set(by_target) != set(plan['modules']):
+        raise ValueError('reuse decision does not cover the selected scope')
+    block = sorted(target for target, decision in by_target.items() if decision == 'BLOCK')
+    if block:
+        raise ValueError('blocked targets must not be passed to execution: ' + ', '.join(block))
+    run = sorted(target for target, decision in by_target.items() if decision == 'RUN')
+    reuse = sorted(target for target, decision in by_target.items() if decision == 'REUSE')
+    result = dict(plan)
+    result['shards'] = partition(run) if run else []
+    result['reuse_decision'] = {'schema': 'backend-reuse-decision/v1',
+                                'run': run, 'reuse': reuse, 'block': block,
+                                'execution_required': bool(run),
+                                'decisions': decisions}
+    return result
 
 
 def main() -> None:
@@ -297,12 +349,28 @@ def main() -> None:
     parser.add_argument('--input-inventory', action='store_true')
     parser.add_argument('--previous-candidate', action='append', help='Repeat for exact historical candidates, including same-SHA retry; source comparison only')
     parser.add_argument('--receipt-history', type=Path, help='JSON list of exact remote artifact locators; authenticate and select per target without skipping CI')
+    parser.add_argument('--discover-receipts', action='store_true', help='Discover recent successful remote receipts and apply authenticated reuse before partition')
     args = parser.parse_args()
     plan = build_plan(args.base, args.head, args.modules, include_inputs=args.input_inventory)
     if args.previous_candidate:
         plan['candidate_comparison'] = compare_candidate_history(plan, args.previous_candidate)
-    if args.receipt_history:
-        plan['receipt_history'] = select_historical_receipts(plan, json.loads(args.receipt_history.read_text()))
+    if args.discover_receipts or args.receipt_history:
+        locators = (json.loads(args.receipt_history.read_text()) if args.receipt_history
+                    else execution_receipt.discover_receipt_locators(head=plan['head'], modules=plan['modules']))
+        result = select_historical_receipts(plan, locators)
+        if args.discover_receipts:
+            # Auto-discovery is an optimization, not a correctness gate: a
+            # discovered but non-reusable receipt falls back to RUN (fresh
+            # execution). Only an explicit caller-supplied locator that fails
+            # authentication stays BLOCK as a fail-closed signal.
+            decisions = [dict(row, decision='RUN') if row['decision'] == 'BLOCK' else row
+                         for row in result['decisions']]
+            result = {**result, 'decisions': decisions,
+                      'counts': {key: sum(row['decision'] == key for row in decisions)
+                                 for key in ('RUN', 'REUSE', 'BLOCK')},
+                      'reuse_authority': any(row['decision'] == 'REUSE' for row in decisions)}
+        plan = apply_reuse_decision(plan, result['decisions'])
+        plan['receipt_history'] = result
     args.output.write_text(json.dumps(plan, indent=2) + '\n')
     if args.shard is not None:
         if not 0 <= args.shard < len(plan['shards']):
@@ -315,6 +383,8 @@ def main() -> None:
         with args.github_output.open('a') as output:
             output.write('matrix=' + json.dumps(matrix, separators=(',', ':')) + '\n')
             output.write('head=' + plan['head'] + '\n')
+            output.write('required=' + str(bool(plan['shards'])).lower() + '\n')
+            output.write('reuse_authority=' + str(bool(plan.get('reuse_decision', {}).get('reuse'))).lower() + '\n')
 
 
 if __name__ == '__main__':

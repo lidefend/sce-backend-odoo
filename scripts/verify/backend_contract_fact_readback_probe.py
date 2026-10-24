@@ -9,12 +9,45 @@ from contextlib import contextmanager
 from copy import deepcopy
 import inspect
 import hashlib
+import os
+import re
 from pathlib import Path
 import json
 
 DATABASE = 'sc_dev_demo'
 ROLE_XMLID = 'smart_construction_demo.user_demo_role_finance'
 ACTION_XMLID = 'smart_construction_core.action_payment_request_pay'
+
+
+def candidate_head_identity(environment=None):
+    """Bind the readback report to an exact candidate head and tree.
+
+    The runtime-sealed contract and facts only authorize reuse for the exact
+    source they were read back from. When the probe is invoked without these
+    two environment values it reports both as null and remains non-reusable.
+    """
+    environment = os.environ if environment is None else environment
+    source_head = str(environment.get('CANDIDATE_GIT_HEAD') or '')
+    source_tree = str(environment.get('CANDIDATE_GIT_TREE') or '')
+    if source_head and not re.fullmatch('[0-9a-f]{40}', source_head):
+        raise ValueError('candidate git head must be exact 40-hex when provided')
+    if source_tree and not re.fullmatch('[0-9a-f]{40}', source_tree):
+        raise ValueError('candidate git tree must be exact 40-hex when provided')
+    return {'source_head': source_head or None, 'source_tree': source_tree or None}
+
+
+def candidate_database(environment=None):
+    """Resolve the registered database the probe must read back against.
+
+    The local.dev default keeps the historical diagnostic entry working; a CI
+    invocation passes CANDIDATE_DB_NAME so the same probe can bind the CI demo
+    module fresh database instead of hard-coding sc_dev_demo.
+    """
+    environment = os.environ if environment is None else environment
+    value = str(environment.get('CANDIDATE_DB_NAME') or DATABASE)
+    if not value or not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', value):
+        raise ValueError('registered database name required')
+    return value
 
 
 @contextmanager
@@ -111,7 +144,9 @@ def probe(env):
     from odoo.addons.smart_core.handlers import ui_contract_v2_authority as authority
     from odoo.addons.smart_core.security import intent_permission as ip
 
-    if env.cr.dbname != DATABASE:
+    identity = candidate_head_identity()
+    database = candidate_database()
+    if env.cr.dbname != database:
         raise ValueError('registered local.dev database required')
     env.cr.rollback()
     env.invalidate_all(flush=False)
@@ -203,7 +238,8 @@ def probe(env):
         domain = [('model_id.model','=',model)]
         access = env['ir.model.access'].search(domain).read(['group_id','perm_read','active'])
         rules = env['ir.rule'].search(domain).read(['groups','domain_force','perm_read','active'])
-        return {'schema':'backend-contract-fact-readback/v1','database':DATABASE,
+        return {'schema':'backend-contract-fact-readback/v1','database':database,
+                **identity,
                 'environment_purpose':'local collector diagnostic, not CI test receipt',
                 'loaded_sources':{module.__name__:hashlib.sha256(Path(module.__file__).read_bytes()).hexdigest()
                                   for module in (lifecycle,authority)},

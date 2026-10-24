@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "id": "FE-INCREMENTAL-VALIDATION-03",
+  "branch": "fix/ci-incremental-scheduling-20261025",
+  "baseline_sha": "2694b00718297d03e491f9801e154b7fe7473876",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-INCREMENTAL-VALIDATION-03.yaml",
+    ".agent/runs/FE-INCREMENTAL-VALIDATION-03/run.json",
+    "docs/ops/iterations/fe_incremental_validation_03.md",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/backend_test_receipt.py",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/test_backend_suite_plan.py",
+    "scripts/ci/test_backend_test_receipt.py",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/verify/backend_contract_fact_readback_probe.py",
+    "scripts/verify/test_backend_contract_fact_readback_probe.py",
+    ".github/workflows/backend_test_suite.yml",
+    ".github/workflows/professional_quality_gate.yml",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/test/test.sh",
+    "config/requirements-test.txt",
+    "make/ci.mk",
+    "make/dev_test.mk",
+    "scripts/ops/odoo_shell_exec.sh",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/verify/registry.yaml"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing CI tools; no persistent runtime mutations"
+  },
+  "checks": {
+    "focused": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/backend_test_receipt.py",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        "scripts/ci/test_backend_test_receipt.py",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+        "scripts/verify/backend_contract_fact_readback_probe.py",
+        "scripts/verify/test_backend_contract_fact_readback_probe.py",
+        ".github/workflows/backend_test_suite.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/test/test.sh",
+        "config/requirements-test.txt",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "ORM reuse input/environment/contract/fact closure incomplete",
+    "Pre-provisioning authenticated reuse and workflow regressions incomplete"
+  ],
+  "next_exact_step": "Owner authorized push. Freeze the clean candidate, run the exact-head Quick once, then make pr.push (governed safe push) and let the required remote CI run. Do not merge or deploy until remote checks pass and the owner re-authorizes the protected merge.",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-INCREMENTAL-VALIDATION-03.yaml",
+  "record": "docs/ops/iterations/fe_incremental_validation_03.md",
+  "phase1_scope_first_scheduling": {
+    "status": "closed",
+    "dynamic_contract_boundary": "Runtime-declared contract and fact readback are the only product-semantic authority. P4 tool gates never claim product contract integrity.",
+    "tool_checks_target_semantics": {
+      "verify.ci.workflow.contract": "P4 CI scheduler/selector/receipt tool logic unit tests only; not product contract verification",
+      "verify.verification.lane_coverage": "P4 verification-surface debt ratchet only; not product contract verification"
+    },
+    "control_plane_corrections": [
+      "added scripts/ci/backend_test_receipt.py -> verify.ci.workflow.contract (its test lives there)",
+      "fixed scripts/ci/select_authoritative_workflow_run.py by adding test_select_authoritative_workflow_run.py to verify.ci.workflow.contract"
+    ],
+    "validation": {
+      "verify.ci.workflow.contract": "PASS 207 tests",
+      "verify.github_actions.security": "PASS 18 tests",
+      "verify.baseline.iteration.execution.policy": "PASS 16 tests",
+      "ci.local.iteration": "PASS L1",
+      "git_diff_check": "PASS"
+    },
+    "evidence": ".runtime/fe-incremental-validation-02/phase1-workflow-contract.log"
+  },
+  "phase2_reuse_closure_model": {
+    "status": "model_landed_and_tested",
+    "dynamic_contract_authority": "runtime-sealed contract + business-fact readback only; static JSON snapshots and whole-tree hashes never close runtime_contract_readback or fact_scope_readback",
+    "implementation": [
+      "reuse_closure(): five independently-certified dimensions -> reuse_ready only when all close",
+      "readback_witness_closure(): maps a readback report to contract/fact dimensions; uncovered_fields keep fact scope open"
+    ],
+    "test_count": "test_backend_test_receipt.py 64 PASS (4 new closure-model tests)",
+    "not_yet_wired": [
+      "readback probe records no CI source_head (head binding gap)",
+      "probe runs only in local.dev (not_ci_execution), not the CI per-module fresh database",
+      "query_dependency_closure_incomplete and related_model_permission_closure_incomplete not yet certified per module"
+    ]
+  },
+  "phase3_safe_reuse_decision": {
+    "status": "landed_and_tested",
+    "safety_boundary": "receipt_reuse_authorized trusts only independently attested authority (isolated verified_workflow_execution); a producer's reuse_ready=true is never trusted alone",
+    "implementation": [
+      "receipt_reuse_authorized(receipt): isolated authority only authorizes reuse; everything else blocked until independently verified closure",
+      "select_historical_receipts: RUN/REUSE/BLOCK via evidence_scope; auth-failure stays fail-closed BLOCK; reuse_authority=any(REUSE)"
+    ],
+    "test_count": "test_backend_test_receipt.py 65 PASS, test_backend_suite_plan.py 33 PASS",
+    "still_shadow_only": "decision is computed but not yet wired into the workflow plan phase before partition"
+  },
+  "phase4_decision_before_allocation": {
+    "status": "landed_and_tested",
+    "implementation": [
+      "apply_reuse_decision(plan, decisions): partition only RUN set; REUSE/BLOCK carried, never executed",
+      "all-REUSE or all-BLOCK yields shards=[] (no test shard, Docker build or database)",
+      "coverage integrity: every selected module must be covered exactly once by RUN/REUSE/BLOCK",
+      "main() wires --receipt-history decisions through apply_reuse_decision; required reflects the RUN set"
+    ],
+    "test_count": "test_backend_suite_plan.py 36 PASS (3 new apply_reuse_decision tests)",
+    "not_yet_wired": "workflow plan job history discovery+authentication and final-gate REUSE+RUN coverage verification"
+  },
+  "phase4_workflow_wiring": {
+    "status": "landed_and_tested",
+    "implementation": [
+      "discover_receipt_locators(): bounded TTL-filtered discovery of attempt-1 remote artifact locators; API failure degrades to empty (RUN)",
+      "backend_suite_plan.py --discover-receipts: auto-discovery maps BLOCK to RUN (optimization miss, not correctness signal)",
+      "backend_test_suite.yml plan job: GH_TOKEN + --discover-receipts only on pull_request; schedule/dispatch stay full",
+      "verify_coverage job: required=true -> suite success; required=false -> skipped with reuse_authority bool",
+      "select_historical_receipts: ancestry check removed, reuse is fingerprint-equivalence + independent authority",
+      "apply_reuse_decision: BLOCK rejected (fail-closed); partition only RUN"
+    ],
+    "test_count": "dispatch_contract 15, suite_plan 37, receipt 68"
+  },
+  "phase2_readback_identity_and_binding": {
+    "status": "landed_and_tested",
+    "implementation": [
+      "backend_contract_fact_readback_probe.candidate_head_identity(): binds report to exact CANDIDATE_GIT_HEAD/CANDIDATE_GIT_TREE",
+      "backend_contract_fact_readback_probe.candidate_database(): resolves CANDIDATE_DB_NAME over sc_dev_demo default for the CI demo module fresh database",
+      "backend_test_receipt.readback_closure_blockers(): head-exact witness with full parity closes contract/fact blockers; uncovered keeps fact scope open",
+      "record()/main(): --readback witness binds into the receipt; reuse_ready stays false until platform+dependency closure",
+      "make/dev_test.mk verify.backend.contract_fact_readback.runtime: governed runtime entry with CANDIDATE_GIT_HEAD/TREE/DB_NAME",
+      "scripts/ops/odoo_shell_exec.sh: whitelist forwards CANDIDATE_GIT_TREE and CANDIDATE_DB_NAME",
+      "scripts/audit/verification_lane_dispositions.json + baseline: new target registered; surface shrank 643 -> 642"
+    ],
+    "test_count": "readback_probe 14, receipt 68",
+    "runtime_prerequisite": "a governed make/workflow entry must run the probe in the CI per-module fresh database with the demo fixtures; query/related-permission closure per module remains"
+  },
+  "handoff": {
+    "requested_by": "Owner 2026-10-25",
+    "implementation_complete": false,
+    "committed": false,
+    "pushed": false,
+    "targeted_tests": {
+      "receipt": 60,
+      "impact": 28,
+      "plan": 32,
+      "dispatch_contract": 14,
+      "workflow_contract_aggregate": 207
+    },
+    "test_evidence_root": ".runtime/fe-incremental-validation-02",
+    "new_executor_record": "docs/ops/iterations/fe_incremental_validation_03.md"
+  }
+}

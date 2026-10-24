@@ -18,12 +18,25 @@ ROOT = Path(__file__).resolve().parents[2]
 ROOTS = ('addons', 'demo_addons')
 GLOBAL = ('Dockerfile*', 'docker-compose*', 'requirements*', 'odoo.conf',
           'config/odoo*', 'scripts/test/**', 'scripts/ci/orm_result_guard.sh',
-          'scripts/ci/backend_impact_plan.py', '.github/workflows/backend_test_suite.yml',
+          '.github/workflows/backend_test_suite.yml',
           '.github/workflows/professional_quality_gate.yml', 'make/ci.mk',
           'make/dev_test.mk', 'Makefile')
 NON_RUNTIME = ('docs/**', '.agent/**', 'frontend/**', '*.md',
                'scripts/verify/**', 'scripts/ci/test_*.py',
                'scripts/ci/personal_data_false_positives.json')
+
+# Existing CI control-plane inputs are not Odoo runtime inputs. Changes still
+# require their owning tool gate, and concrete test-file consumers take priority.
+# Do not exempt scripts/**: runner and unknown paths retain conservative scope.
+CONTROL_PLANE = {
+    'scripts/ci/backend_impact_plan.py': 'verify.ci.workflow.contract',
+    'scripts/ci/backend_suite_plan.py': 'verify.ci.workflow.contract',
+    'scripts/ci/backend_test_receipt.py': 'verify.ci.workflow.contract',
+    'scripts/ci/ci_risk_classifier.py': 'verify.ci.workflow.contract',
+    'scripts/ci/select_authoritative_workflow_run.py': 'verify.ci.workflow.contract',
+    'scripts/audit/verification_lane_dispositions.json': 'verify.verification.lane_coverage',
+    'scripts/audit/verification_lane_exemptions.json': 'verify.verification.lane_coverage',
+}
 
 
 def git(*args: str) -> str:
@@ -207,7 +220,7 @@ def select(paths: list[str], before: dict, after: dict, *, full: bool = False) -
     for tree in (before, after):
         for name, data in tree.items():
             graph.setdefault(name, set()).update(data['depends'])
-    seeds, reasons, test_readers = set(), [], set()
+    seeds, reasons, test_readers, tool_checks = set(), [], set(), set()
     file_consumers = {}
     for tree in (before, after):
         for name, data in tree.items():
@@ -225,12 +238,12 @@ def select(paths: list[str], before: dict, after: dict, *, full: bool = False) -
                 seeds.add(parts[1])
             else:
                 reasons.append('unknown_module:' + path)
+        elif path in CONTROL_PLANE:
+            tool_checks.add(CONTROL_PLANE[path])
         elif any(fnmatch.fnmatchcase(path, pattern) for pattern in GLOBAL):
             reasons.append('shared_runtime:' + path)
         elif not any(fnmatch.fnmatchcase(path, pattern) for pattern in NON_RUNTIME):
             reasons.append('unknown_impact:' + path)
-    if not paths and not full:
-        reasons.append('empty_diff_requires_full')
     affected = set(seeds)
     while True:
         consumers = {name for name, deps in graph.items() if deps & affected}
@@ -260,7 +273,8 @@ def select(paths: list[str], before: dict, after: dict, *, full: bool = False) -
             'unresolved_test_file_reads': sorted({site for tree in (before, after)
                                                 for data in tree.values()
                                                 for site in data.get('unresolved_file_reads', [])}),
-            'changed_paths': sorted(paths)}
+            'changed_paths': sorted(paths), 'tool_checks': sorted(tool_checks),
+            'scope_status': 'required' if selected else 'NOT_APPLICABLE'}
 
 
 def main() -> None:
@@ -285,6 +299,8 @@ def main() -> None:
         with args.github_output.open('a') as stream:
             stream.write('modules=' + ' '.join(plan['modules']) + '\n')
             stream.write('required=' + str(bool(plan['modules'])).lower() + '\n')
+            stream.write('tool_checks=' + ' '.join(plan['tool_checks']) + '\n')
+            stream.write('scope_status=' + plan['scope_status'] + '\n')
 
 
 if __name__ == '__main__':

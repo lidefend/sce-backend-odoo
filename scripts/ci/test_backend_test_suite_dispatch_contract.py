@@ -11,6 +11,51 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class BackendTestSuiteDispatchContractTest(unittest.TestCase):
+    def test_control_plane_tool_checks_are_wired_through_the_final_gate(self):
+        workflow = yaml.safe_load((ROOT / '.github/workflows/professional_quality_gate.yml').read_text())
+        authorization = workflow['jobs']['professional_authorization']
+        self.assertEqual(authorization['outputs']['tool_checks'],
+                         '${{ steps.backend_impact.outputs.tool_checks }}')
+        checks = workflow['jobs']['professional_quality_checks']
+        self.assertEqual(checks['outputs']['tool_checks_ran'],
+                         '${{ steps.tool_checks.outputs.ran }}')
+        self.assertEqual(checks['env']['TOOL_CHECKS'],
+                         '${{ needs.professional_authorization.outputs.tool_checks }}')
+        step = next(s for s in checks['steps'] if s.get('id') == 'tool_checks')
+        self.assertEqual(step['if'], "env.TOOL_CHECKS != ''")
+        self.assertIn('make ${TOOL_CHECKS}', step['run'])
+        self.assertIn('echo "ran=true" >> "${GITHUB_OUTPUT}"', step['run'])
+        gate = workflow['jobs']['professional_quality_gate']
+        enforce = next(s for s in gate['steps'] if s['name'] == 'Enforce control-plane tool check execution')
+        self.assertEqual(enforce['env']['TOOL_CHECKS'],
+                         '${{ needs.professional_authorization.outputs.tool_checks }}')
+        self.assertEqual(enforce['env']['TOOL_CHECKS_RAN'],
+                         '${{ needs.professional_quality_checks.outputs.tool_checks_ran }}')
+        self.assertIn('if [ -n "${TOOL_CHECKS}" ]; then', enforce['run'])
+        self.assertIn('test "${TOOL_CHECKS_RAN}" = true', enforce['run'])
+
+    def test_verify_coverage_enforces_run_success_and_reuse_authority(self):
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+        plan = workflow['jobs']['plan']
+        self.assertEqual('${{ steps.scope.outputs.reuse_authority }}', plan['outputs']['reuse_authority'])
+        verify = workflow['jobs']['verify_coverage']
+        self.assertEqual(['plan', 'backend_suite'], verify['needs'])
+        self.assertIn('always() && !cancelled()', verify['if'])
+        script = next(s['run'] for s in verify['steps'] if s['name'] == 'Enforce complete backend coverage')
+        for required, suite, reuse, expected in (
+            ('true', 'success', '', 0),
+            ('true', 'failure', '', 1),
+            ('true', 'skipped', '', 1),
+            ('false', 'skipped', 'false', 0),
+            ('false', 'skipped', 'true', 0),
+            ('false', 'success', 'false', 1),
+        ):
+            with self.subTest(required=required, suite=suite, reuse=reuse):
+                outcome = subprocess.run(['bash', '-c', script], env={**os.environ,
+                    'REQUIRED': required, 'SUITE_RESULT': suite, 'REUSE_AUTHORITY': reuse},
+                    capture_output=True, text=True)
+                self.assertEqual(expected, outcome.returncode)
+
     def test_matrix_cannot_hide_failed_or_cancelled_shards(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
         plan = workflow['jobs']['plan']

@@ -49,10 +49,10 @@ entries:
 - script: backend_contract_fact_readback_probe.py
   status: active
   owner: platform-team
-  date: '2026-10-24'
-  wire_or_retire: file-consumed
-  reason: read-only collector consumed by test_backend_contract_fact_readback_probe.py;
-    one-off Make wrapper retired, no required gate consumes this probe
+  date: '2026-10-25'
+  reason: governed runtime readback entry verify.backend.contract_fact_readback.runtime;
+    head/tree/db identity bound and the report is bound into ORM receipts via
+    record --readback + readback_closure_blockers for reuse closure
 - script: backend_contract_lifecycle_migration_rehearsal_prepare.py
   status: orphan
   owner: platform-team

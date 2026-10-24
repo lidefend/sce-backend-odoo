@@ -308,6 +308,17 @@ class HistoricalReceiptSelectionTest(unittest.TestCase):
         result=self.select([self.locator('core',1)])
         self.assertEqual('BLOCK',result['decisions'][0]['decision'])
         self.assertEqual('history_authentication_failed',result['decisions'][0]['reason'])
+
+    def test_isolated_authority_matching_receipt_selects_reuse(self):
+        self.results={1:self.result('core',isolated_execution_authority='verified_workflow_execution')}
+        result=self.select([self.locator('core',1)])
+        row=result['decisions'][0]
+        self.assertEqual('REUSE',row['decision'])
+        self.assertTrue(row['reuse_authorized'])
+        self.assertEqual('authenticated_reuse_ready_inputs_match',row['reason'])
+        self.assertEqual(12,row['estimated_saved_time'])
+        self.assertTrue(result['reuse_authority'])
+        self.assertEqual({'RUN':1,'REUSE':1,'BLOCK':0},result['counts'])
         self.assertEqual('RUN',result['decisions'][1]['decision'])
 
     def test_locator_cannot_supply_verdict_or_escape_target(self):
@@ -321,6 +332,34 @@ class HistoricalReceiptSelectionTest(unittest.TestCase):
         self.assertFalse(result['reuse_authority'])
         self.assertEqual('BLOCK',result['decisions'][0]['decision'])
         self.assertEqual(0,result['decisions'][0]['estimated_saved_time'])
+
+    def test_apply_reuse_decision_partitions_only_run_and_validates_coverage(self):
+        decisions=[{'target':'core','decision':'REUSE'},{'target':'scene','decision':'RUN'}]
+        result=planner.apply_reuse_decision(self.plan,decisions)
+        self.assertEqual(['scene'],[m for shard in result['shards'] for m in shard['modules']])
+        self.assertEqual(['scene'],result['reuse_decision']['run'])
+        self.assertEqual(['core'],result['reuse_decision']['reuse'])
+        self.assertTrue(result['reuse_decision']['execution_required'])
+
+    def test_apply_reuse_decision_all_reuse_has_zero_shards(self):
+        decisions=[{'target':'core','decision':'REUSE'},{'target':'scene','decision':'REUSE'}]
+        result=planner.apply_reuse_decision(self.plan,decisions)
+        self.assertEqual([],result['shards'])
+        self.assertFalse(result['reuse_decision']['execution_required'])
+
+    def test_apply_reuse_decision_refuses_blocked_targets(self):
+        decisions=[{'target':'core','decision':'BLOCK'},{'target':'scene','decision':'RUN'}]
+        with self.assertRaisesRegex(ValueError,'blocked targets'):
+            planner.apply_reuse_decision(self.plan,decisions)
+
+    def test_apply_reuse_decision_refuses_incomplete_or_invalid_scope(self):
+        for decisions in ([], [{'target':'core','decision':'REUSE'}],
+                [{'target':'core','decision':'REUSE'},{'target':'core','decision':'RUN'}],
+                [{'target':'core','decision':'RUN'},{'target':'other','decision':'RUN'}],
+                [{'target':'core','decision':'MAYBE'},{'target':'scene','decision':'RUN'}]):
+            with self.subTest(decisions=decisions):
+                with self.assertRaises(ValueError):
+                    planner.apply_reuse_decision(self.plan,decisions)
 
     def test_empty_history_requires_execution_not_zero_test_pass(self):
         self.assertEqual({'RUN':2,'REUSE':0,'BLOCK':0},self.select([])['counts'])
