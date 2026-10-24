@@ -14,6 +14,8 @@
     "docs/ops/iterations/daily_release_orchestration_digest_derivation.md",
     "scripts/ops/daily_runtime_release_orchestration.py",
     "scripts/ops/test_daily_runtime_release_orchestration.py",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/test_backend_impact_plan.py",
     "scripts/audit/verification_lane_dispositions.json"
   ],
   "environment": {
