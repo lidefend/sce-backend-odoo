@@ -22,9 +22,7 @@ GLOBAL = ('Dockerfile*', 'docker-compose*', 'requirements*', 'odoo.conf',
           '.github/workflows/professional_quality_gate.yml', 'make/ci.mk',
           'make/dev_test.mk', 'Makefile')
 NON_RUNTIME = ('docs/**', '.agent/**', 'frontend/**', '*.md',
-               'scripts/verify/**', 'scripts/ci/test_*.py',
-               'scripts/ops/test_*.py',
-               'scripts/ci/personal_data_false_positives.json')
+               'scripts/verify/**', 'scripts/ci/**', 'scripts/ops/**')
 
 # Existing CI control-plane inputs are not Odoo runtime inputs. Changes still
 # require their owning tool gate, and concrete test-file consumers take priority.
