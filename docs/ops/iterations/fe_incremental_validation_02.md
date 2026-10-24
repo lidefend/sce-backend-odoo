@@ -290,3 +290,27 @@ CLI 显式 --path 不启用 Git 证明；缺失对象、非完整 SHA、symlink�
 Quick 仍 BLOCKED：41 个顶层目标中 12 个静态可达不是完整执行证明；其余 29 个不能据此直接判为必须重跑。现有控制器仅接受同候选分片组合或纯 bookkeeping 的完整回执沿用，不能把普通 PR 绿色检查拼成 Quick PASS。后端 REUSE 仍 BLOCKED：历史回执缺失被认证的执行定义、artifact attempt、动态契约/事实范围与完整依赖闭包，新采集字段不能倒填这些事实。
 
 最终本地身份、差异清单、原始证据哈希、远端只读回查、准入阻断及回滚范围统一写入 `.runtime/fe-incremental-validation-02/closeout-package.json`。本地 checkpoint 不是正式冻结候选；未运行 freeze.prepare/完整 Quick/前端或 ORM 验收，未推送、更新 PR、合并或部署。下一步只允许基于具体缺口定义最小补证范围后重新进入执行，不能继续堆叠观测代码，也不能默认全跑 14 模块或放宽门禁。
+
+## Owner 纠偏：远端后续运行复用历史验证，不限 main
+
+上节 BLOCKED 为此前本地 Quick 方向的历史裁决，不作为当前远端增量工作的停止条件。Owner 明确目标是远端后续运行按目标复用前次有效结果，增量来源包括 PR、分支、候选及同候选重试；撤回一次性本地 Quick 请求。集成基线仍描述完整交付范围，不能代替逐目标的历史证据选择。
+
+在既有 `backend_suite_plan.py` 增加可重复 `--previous-candidate` 的审核模式：每个目标分别优先查找已知源码输入匹配的历史候选，再按 Git 距离和 SHA 确定顺序。支持当前 SHA 用于重试比较；无法证明关系的非祖先候选明确拒绝，尚不支持跨 rebase 的历史等价证明。保留原 modules/shards 和远端执行选择，不新增注册系统；输入差异裁决调用已有 `evidence_scope`，历史 inventory 仅为 observed，不冒充成功回执。
+
+24 项定向测试通过（0.010 秒），覆盖不同目标选不同候选、同 SHA、顺序及重复项、删除/模式变化、缺少目标和库存自称 passed 不得复用；独立复核无阻断。真实对照 integration base 96c860d0、当前 063fd46c、历史 e28b59911/88b4c160：14 个目标均选 e28 输入作比较，仅已知共享输入 `scripts/ci/backend_test_receipt.py` 改变，因此 shadow 计划为 RUN 14、REUSE 0、BLOCK 0；没有执行该计划。结果绑定在 `.runtime/fe-incremental-validation-02/remote-target-history-validation.json`。
+
+这是历史输入比较，不是历史成功回执选择或远端复用完成：previous_receipt 为空、环境与成功范围未认证，workflow 尚未接入，实际节省仍为 0。下一步接入逐目标真实 run/attempt 回执的选择和认证，再由既有证据引擎裁决；不回到本地 Quick 主线、不以 shadow RUN 自动启动全量测试。本轮未推送、合并或部署。
+
+## 远端历史证据发现与认证收口（审核模式，尚未启用复用）
+
+本次范围属于 P4 既有 CI 工具：历史运行发现、逐目标成功回执来源核验及审核选择；没有修改产品、workflow 或必需检查。复用仍由既有 evidence_scope 裁决，不另建测试注册或缓存系统。支持分别发现 schedule、PR、push 和手工运行，不限定 main；精确 Git 祖先约束仍存在，跨 rebase 未覆盖。
+
+实际核查纠正此前证据判断：定时验证并非没有可用历史记录。8ff4cad7f3eb38152e74ec9222297bd692612c07 的后端定时 run 40034423582 有正式日志：13 个 ORM 模块 601 项及 smart_construction_scene 71 项，共 14 模块 672 项；专业质量 run 40027635534 的全量 shards 实际通过。前端 run 40027784970 的 artifact 12534522803 摘要与平台一致，绑定 SHA/tree/run/attempt，页面验收 32/32。三类最近各五份成功运行已保存索引。后端与专业质量没有同名回执 artifact，不等于没有执行证据；旧日志尚未转成可被现有逐目标回执消费者认证的复用证明。
+
+新 --receipt-history 只接受定位字段，核验平台归档来源后按目标优先选已知输入匹配的成功记录，再按时间与身份稳定排序。最新坏回执被拒绝时继续寻找旧有效记录；捕获结构错误并保留拒因，不能由候选异常中断全部选择。32 项规划器、47 项回执和 10 项历史发现测试通过，共 89 项；真实 validator 反例覆盖摘要正确但 issued_at 缺失或类型错误。独立复核关闭最后 S2，无剩余已报范围内阻断。
+
+真实只读重放退出码 0：e28b59911 的 14 份来源全部核验成功，无拒绝；目标为 063fd46c 的审核计划 RUN 14、REUSE 0、BLOCK 0，原因是共享已知输入改变。没有执行这些 RUN。规划器源码另以工作树文件哈希绑定，不能把所比较提交当作工具源码身份。来源认证也不等于 artifact attempt、完整依赖闭包、动态契约事实及执行环境均已证明。
+
+证据集中在 .runtime/fe-incremental-validation-02/remote-history-closeout.json，保存源码、日志、原始平台数据与归档摘要。当前实现仍是 shadow：未接入远端执行选择，实际测试复用节省 0 秒。此前本地 Quick 裁决保留为历史记录，不作为当前增量目标。没有重新执行前端、ORM、UX 或完整 Quick，没有推送、合并、部署。
+
+本子范围完成审阅，整体 FE-INCREMENTAL-VALIDATION-02 仍 verification_pending。剩余工作限定为既有证据引擎上的输入/环境等价证明与远端消费，不能把本次来源选择完成称作减负完成，也不能用人工声明将旧全量成功变成新候选通过。

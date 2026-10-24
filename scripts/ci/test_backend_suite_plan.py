@@ -132,5 +132,199 @@ class InputInventoryTest(unittest.TestCase):
         self.assertFalse(result['reuse_authority'])
 
 
+class CandidateComparisonTest(unittest.TestCase):
+    def setUp(self):
+        self.base, self.previous, self.head = 'a'*40, 'b'*40, 'c'*40
+        self.plan = {'base': self.base, 'head': self.head, 'modules': ['core', 'scene'],
+                     'shards': planner.partition(['core', 'scene'])}
+        self.graph = {name: {'prefix': 'addons/'+name+'/', 'depends':set(), 'file_inputs':[]}
+                      for name in self.plan['modules']}
+        self.entries = {'addons/'+name+'/tests/test_one.py':
+                        {'mode':'100644','kind':'blob','oid':'d'*40} for name in self.graph}
+        self.before = planner.inventory_from_tree(self.graph, self.plan['modules'], self.entries)
+        self.after = copy.deepcopy(self.before)
+
+    def compare(self):
+        with patch.object(planner.impact, 'git', side_effect=lambda *args: '1' if args[0]=='rev-list' else '') as git, \
+             patch.object(planner.impact, 'snapshot', return_value=self.graph), \
+             patch.object(planner, 'target_input_inventory', side_effect=[self.after, self.before]):
+            result = planner.compare_previous_candidate(self.plan, self.previous)
+        git.assert_any_call('merge-base', '--is-ancestor', self.previous, self.head)
+        return result
+
+    def test_distinct_baselines_and_no_ci_selection_mutation(self):
+        original = copy.deepcopy(self.plan)
+        result = self.compare()
+        self.assertEqual(self.plan, original)
+        self.assertEqual(self.base, result['integration_base'])
+        self.assertEqual(self.previous, result['incremental_base'])
+        self.assertFalse(result['execution_selection_changed'])
+        self.assertEqual({'RUN':0,'REUSE':0,'BLOCK':2}, result['counts'])
+
+    def test_changed_inputs_require_only_matching_target(self):
+        entries = copy.deepcopy(self.entries)
+        path = 'addons/scene/tests/test_one.py'; entries[path]['oid']='e'*40
+        self.after = planner.inventory_from_tree(self.graph, self.plan['modules'], entries)
+        result = self.compare()
+        self.assertEqual({'RUN':1,'REUSE':0,'BLOCK':1}, result['counts'])
+        row = next(row for row in result['decisions'] if row['target']=='scene')
+        self.assertEqual([path], row['changed_known_inputs'])
+        self.assertEqual('known_inputs_changed', row['reason'])
+
+    def test_deleted_input_and_file_mode_are_not_equal(self):
+        for mode in ('100755', None):
+            entries = copy.deepcopy(self.entries); path='addons/core/tests/test_one.py'
+            if mode: entries[path]['mode']=mode
+            else: del entries[path]
+            self.after=planner.inventory_from_tree(self.graph,self.plan['modules'],entries)
+            with self.subTest(mode=mode):
+                row=self.compare()['decisions'][0]
+                self.assertEqual('RUN',row['decision'])
+                self.assertEqual([path],row['changed_known_inputs'])
+
+    def test_absent_previous_target_requires_run(self):
+        del self.before['targets']['scene']
+        row=self.compare()['decisions'][1]
+        self.assertEqual('RUN',row['decision'])
+        self.assertEqual('no_previous_target',row['reason'])
+
+    def test_inventory_cannot_self_authorize_success_or_reuse(self):
+        for target in self.before['targets'].values():
+            target.update(status='passed',reuse_ready=True,dependency_closure_complete=True)
+        result=self.compare()
+        self.assertEqual(0,result['counts']['REUSE'])
+        self.assertFalse(result['reuse_authority'])
+        self.assertTrue(all(row['previous_receipt'] is None for row in result['decisions']))
+
+    def test_non_exact_or_non_ancestor_candidate_refused(self):
+        with self.assertRaises(ValueError):
+            planner.compare_previous_candidate(self.plan, 'HEAD~1')
+        import subprocess
+        with patch.object(planner.impact,'git',side_effect=subprocess.CalledProcessError(1,['git'])):
+            with self.assertRaises(subprocess.CalledProcessError):
+                planner.compare_previous_candidate(self.plan,self.previous)
+
+    def compare_history(self, history, inventories, distances):
+        def git(*args):
+            if args[0]=='rev-list':
+                return str(distances[args[-1].split('..')[0]])
+            return ''
+        def inventory(sha, graph, modules):
+            return self.after if sha==self.head else inventories[sha]
+        with patch.object(planner.impact,'git',side_effect=git), \
+             patch.object(planner.impact,'snapshot',return_value=self.graph), \
+             patch.object(planner,'target_input_inventory',side_effect=inventory):
+            return planner.compare_candidate_history(self.plan,history)
+
+    def test_targets_can_select_different_historical_candidates(self):
+        older='e'*40
+        recent_entries=copy.deepcopy(self.entries)
+        recent_entries['addons/scene/tests/test_one.py']['oid']='f'*40
+        older_entries=copy.deepcopy(self.entries)
+        older_entries['addons/core/tests/test_one.py']['oid']='f'*40
+        histories={self.previous:planner.inventory_from_tree(self.graph,self.plan['modules'],recent_entries),
+                   older:planner.inventory_from_tree(self.graph,self.plan['modules'],older_entries)}
+        result=self.compare_history([self.previous,older],histories,{self.previous:1,older:3})
+        self.assertEqual([self.previous,older],[r['input_comparison_candidate'] for r in result['decisions']])
+        self.assertEqual({'RUN':0,'REUSE':0,'BLOCK':2},result['counts'])
+        self.assertEqual(self.base,result['integration_base'])
+
+    def test_history_order_and_duplicates_do_not_affect_selection(self):
+        older='e'*40
+        histories={self.previous:self.before,older:self.before}
+        distances={self.previous:1,older:3}
+        a=self.compare_history([older,self.previous,older],histories,distances)
+        b=self.compare_history([self.previous,older],histories,distances)
+        self.assertEqual(a,b)
+        self.assertEqual([self.previous,self.previous],[r['input_comparison_candidate'] for r in a['decisions']])
+
+    def test_same_candidate_retry_does_not_fabricate_success(self):
+        result=self.compare_history([self.head],{}, {self.head:0})
+        self.assertTrue(all(row['same_candidate_retry'] for row in result['decisions']))
+        self.assertEqual({'RUN':0,'REUSE':0,'BLOCK':2},result['counts'])
+        self.assertFalse(result['previous_candidate_execution_verified'])
+        self.assertTrue(all(row['previous_receipt'] is None for row in result['decisions']))
+
+    def test_empty_history_is_not_a_successful_empty_plan(self):
+        with self.assertRaises(ValueError):
+            planner.compare_candidate_history(self.plan,[])
+
+
+class HistoricalReceiptSelectionTest(unittest.TestCase):
+    def setUp(self):
+        self.head='c'*40;self.old='b'*40
+        self.plan={'head':self.head,'base':'a'*40,'modules':['core','scene']}
+        self.inventory={'targets':{name:{'known_inputs_sha256':fingerprint,'blockers':['scope_not_certified']}
+            for name,fingerprint in [('core','d'*64),('scene','e'*64)]}}
+        self.results={}
+
+    def locator(self,module,artifact,**overrides):
+        return dict({'module':module,'head':self.old,'run_id':10,'attempt':1,'artifact_id':artifact,'shard':0},**overrides)
+
+    def result(self,module,**overrides):
+        return dict({'module':module,'source_head':self.old,'integrity':'verified','platform_origin':'verified',
+            'scope_plan':{'target':module,'known_inputs_sha256':self.inventory['targets'][module]['known_inputs_sha256']},
+            'issued_at':'2026-10-24T10:00:00+00:00','receipt_sha256':'f'*64,
+            'actual_duration_seconds':12,'blockers':['environment_not_attested'],'reuse_ready':False},**overrides)
+
+    def select(self,locators):
+        def verify(**kwargs):
+            value=self.results[kwargs['artifact_id']]
+            if isinstance(value,Exception):raise value
+            return value
+        with patch.object(planner.impact,'git',return_value=''), \
+             patch.object(planner.impact,'snapshot',return_value={}), \
+             patch.object(planner,'target_input_inventory',return_value=self.inventory), \
+             patch.object(planner.execution_receipt,'verify_github_origin',side_effect=verify):
+            return planner.select_historical_receipts(self.plan,locators)
+
+    def test_each_target_uses_its_authenticated_history(self):
+        self.results={1:self.result('core'),2:self.result('scene',source_head=self.head)}
+        rows=[self.locator('core',1),self.locator('scene',2,head=self.head,attempt=2)]
+        original=copy.deepcopy(self.plan);result=self.select(rows)
+        self.assertEqual(original,self.plan)
+        self.assertEqual({'RUN':0,'REUSE':0,'BLOCK':2},result['counts'])
+        self.assertEqual([1,2],[r['previous_receipt']['locator']['artifact_id'] for r in result['decisions']])
+
+    def test_failed_or_expired_latest_does_not_hide_older_success(self):
+        self.results={1:self.result('core'),2:ValueError('expired or failed attempt')}
+        result=self.select([self.locator('core',2,attempt=2),self.locator('core',1)])
+        row=result['decisions'][0]
+        self.assertEqual(1,row['previous_receipt']['locator']['artifact_id'])
+        self.assertEqual(1,len(row['rejected_candidates']))
+
+    def test_matching_input_beats_newer_incompatible_result(self):
+        self.results={1:self.result('core'),2:self.result('core',issued_at='2026-10-24T11:00:00+00:00',
+            scope_plan={'target':'core','known_inputs_sha256':'0'*64})}
+        result=self.select([self.locator('core',2),self.locator('core',1)])
+        self.assertEqual(1,result['decisions'][0]['previous_receipt']['locator']['artifact_id'])
+
+    def test_changed_inputs_require_run(self):
+        self.results={1:self.result('core',scope_plan={'target':'core','known_inputs_sha256':'0'*64})}
+        self.assertEqual('RUN',self.select([self.locator('core',1)])['decisions'][0]['decision'])
+
+    def test_all_rejected_history_blocks_instead_of_green(self):
+        self.results={1:ValueError('foreign repository')}
+        result=self.select([self.locator('core',1)])
+        self.assertEqual('BLOCK',result['decisions'][0]['decision'])
+        self.assertEqual('history_authentication_failed',result['decisions'][0]['reason'])
+        self.assertEqual('RUN',result['decisions'][1]['decision'])
+
+    def test_locator_cannot_supply_verdict_or_escape_target(self):
+        for change in ({'reuse_ready':True},{'head':'main'},{'module':'other'},{'attempt':True}):
+            with self.subTest(change=change),self.assertRaises(ValueError):
+                self.select([{**self.locator('core',1),**change}])
+
+    def test_source_authentication_does_not_authorize_reuse(self):
+        self.results={1:self.result('core',reuse_ready=True,blockers=[])}
+        result=self.select([self.locator('core',1)])
+        self.assertFalse(result['reuse_authority'])
+        self.assertEqual('BLOCK',result['decisions'][0]['decision'])
+        self.assertEqual(0,result['decisions'][0]['estimated_saved_time'])
+
+    def test_empty_history_requires_execution_not_zero_test_pass(self):
+        self.assertEqual({'RUN':2,'REUSE':0,'BLOCK':0},self.select([])['counts'])
+
+
 if __name__ == '__main__':
     unittest.main()

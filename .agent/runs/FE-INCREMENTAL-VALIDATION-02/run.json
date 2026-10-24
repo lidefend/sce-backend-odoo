@@ -29,7 +29,9 @@
     "scripts/verify/backend_contract_fact_readback_probe.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_backend_contract_fact_readback_probe.py",
-    "scripts/verify/test_frontend_dev_incremental.py"
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/ci/select_authoritative_workflow_run.py",
+    "scripts/ci/test_select_authoritative_workflow_run.py"
   ],
   "environment": {
     "kind": "offline",
@@ -60,7 +62,10 @@
         "scripts/ci/test_ci_risk_workflow_contract.py",
         "scripts/test/test.sh",
         "scripts/verify/backend_contract_fact_readback_probe.py",
-        "scripts/verify/test_backend_contract_fact_readback_probe.py"
+        "scripts/verify/test_backend_contract_fact_readback_probe.py",
+        "scripts/ops/evidence_scope.py",
+        "scripts/ci/select_authoritative_workflow_run.py",
+        "scripts/ci/test_select_authoritative_workflow_run.py"
       ]
     },
     "receipt": {
@@ -87,7 +92,10 @@
         "scripts/ci/test_ci_risk_workflow_contract.py",
         "scripts/test/test.sh",
         "scripts/verify/backend_contract_fact_readback_probe.py",
-        "scripts/verify/test_backend_contract_fact_readback_probe.py"
+        "scripts/verify/test_backend_contract_fact_readback_probe.py",
+        "scripts/ops/evidence_scope.py",
+        "scripts/ci/select_authoritative_workflow_run.py",
+        "scripts/ci/test_select_authoritative_workflow_run.py"
       ]
     },
     "local_routing": {
@@ -117,10 +125,10 @@
     }
   },
   "blockers": [
-    "Quick controller lacks valid exact-head receipt; remote selected steps are not equivalent to all Quick targets.",
-    "Historical backend receipts lack attested execution definition/attempt and certified dynamic contract, fact scope and dependency closure; these cannot be reconstructed by setting metadata fields."
+    "Remote workflow has not enabled REUSE; authenticated history alone does not prove full target input/environment equivalence.",
+    "Legacy scheduled backend full runs retain official logs but no per-target v1 artifacts; importing their evidence requires verified execution scope, not manual green conversion."
   ],
-  "next_exact_step": "Review BLOCKED closeout package. Do not publish, merge, deploy or rerun full suites to hide missing proof. Reopen execution only for a concretely defined missing-evidence scope; preserve current collection changes and historical evidence. Overall incremental validation objective remains verification_pending.",
+  "next_exact_step": "Use the existing evidence_scope authority to bind target execution inputs/environment to authenticated historical receipts, then integrate remote consumption. Scheduled full baselines and PR/branch history are both sources. Do not rerun unchanged UX/frontend or return to local Quick; do not claim savings before actual remote reuse.",
   "id": "FE-INCREMENTAL-VALIDATION-02",
   "branch": "fix/fe-incremental-validation-01",
   "status": "verification_pending",
@@ -189,6 +197,26 @@
       "actual_test_reuse_savings_seconds": 0,
       "diagnostic_code": "archived_and_withdrawn_from_candidate",
       "final_package": ".runtime/fe-incremental-validation-02/closeout-package.json"
+    },
+    "remote_target_history": {
+      "status": "passed_shadow_comparison_only",
+      "evidence": ".runtime/fe-incremental-validation-02/remote-target-history-validation.json",
+      "test_count": 24
+    },
+    "scope_correction": {
+      "authority": "Owner clarified remote subsequent runs reuse earlier successful validation; not local Quick consumption; not main-only",
+      "local_quick_baseline_proposal": "withdrawn",
+      "prior_closeout": "historical_local_lane_only_not_current_remote_reuse_objective"
+    },
+    "remote_history_closeout": {
+      "status": "scoped_implementation_reviewed; overall_reuse_not_achieved",
+      "evidence": ".runtime/fe-incremental-validation-02/remote-history-closeout.json",
+      "test_count": 89,
+      "live_origins_verified": 14,
+      "scheduled_full_backend_tests": 672,
+      "scheduled_frontend_pages_passed": 32,
+      "remote_reuse_enabled": false,
+      "actual_test_reuse_savings_seconds": 0
     }
   },
   "runtime_diagnostics": {

@@ -379,7 +379,7 @@ def archive_members(data: bytes) -> dict[str, bytes]:
 
 def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
                          shard: int, expected_head: str, module: str,
-                         now: datetime | None = None) -> dict:
+                         now: datetime | None = None, fetch=None) -> dict:
     # This authenticates platform origin, not the correctness of candidate-
     # supplied test code. Trusted execution-definition approval remains separate.
     if (any(type(v) is not int or v <= 0 for v in (run_id, attempt, artifact_id))
@@ -387,8 +387,9 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
             or not re.fullmatch('[0-9a-f]{40}', expected_head)
             or not re.fullmatch('[a-zA-Z_][a-zA-Z0-9_]*', module)):
         raise ValueError('invalid exact platform identity')
+    fetch = github_bytes if fetch is None else fetch
     run_path = f'actions/runs/{run_id}/attempts/{attempt}'
-    run = json.loads(github_bytes(run_path))
+    run = json.loads(fetch(run_path))
     expected_repository = {'id': REPOSITORY_ID, 'full_name': REPOSITORY}
     for field in ('repository', 'head_repository'):
         if any(run.get(field, {}).get(k) != v for k, v in expected_repository.items()):
@@ -400,7 +401,7 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
             or run.get('path') not in ('.github/workflows/professional_quality_gate.yml',
                                       '.github/workflows/backend_test_suite.yml')):
         raise ValueError('run identity or successful execution mismatch')
-    artifact = json.loads(github_bytes(f'actions/artifacts/{artifact_id}'))
+    artifact = json.loads(fetch(f'actions/artifacts/{artifact_id}'))
     origin = artifact.get('workflow_run') or {}
     # Artifact names/receipt attempt fields are producer assertions. The API
     # binds only run ID/head; never promote the name to attempt authentication.
@@ -414,7 +415,7 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
     archive_digest = artifact.get('digest', '')
     if not re.fullmatch('sha256:[0-9a-f]{64}', archive_digest):
         raise ValueError('platform archive digest missing')
-    raw = github_bytes(f'actions/artifacts/{artifact_id}/zip')
+    raw = fetch(f'actions/artifacts/{artifact_id}/zip')
     if 'sha256:' + digest(raw) != archive_digest:
         raise ValueError('platform archive digest mismatch')
     files = archive_members(raw)
@@ -429,7 +430,7 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
             or provenance.get('GITHUB_RUN_ATTEMPT') != str(attempt)
             or provenance.get('GITHUB_JOB') != 'backend_suite'):
         raise ValueError('receipt origin mismatch')
-    commit = json.loads(github_bytes(f'git/commits/{expected_head}'))
+    commit = json.loads(fetch(f'git/commits/{expected_head}'))
     if commit.get('sha') != expected_head or receipt.get('source_tree') != (commit.get('tree') or {}).get('sha'):
         raise ValueError('source tree mismatch')
     with tempfile.TemporaryDirectory() as tmp:
@@ -450,6 +451,9 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
             'archive_sha256': archive_digest.removeprefix('sha256:'),
             'receipt_sha256': digest(files[module+'/receipt.json']),
             'workflow_path': run['path'],
+            'scope_plan': receipt.get('scope_plan'), 'test_count': receipt['test_count'],
+            'issued_at': receipt['issued_at'], 'expires_at': receipt['expires_at'],
+            'actual_duration_seconds': receipt.get('actual_duration_seconds'),
             'blockers': ['artifact_attempt_not_attested', 'execution_definition_not_attested', 'runtime_contract_readback_missing', 'fact_scope_readback_missing',
                          'target_dependency_closure_not_certified']}
 

@@ -439,6 +439,46 @@ class ExecutionReceiptTest(unittest.TestCase):
         self.assertNotIn('attempt', result)
         self.assertIn('fact_scope_readback_missing',result['blockers'])
 
+    def test_malformed_authenticated_newer_receipt_falls_back_to_valid_history(self):
+        import backend_suite_plan as planner
+        original = self.platform_fixture(scoped=True)
+        files = receipt.archive_members(original['actions/artifacts/20/zip'])
+        valid = json.loads(files['example/receipt.json'])
+        target = {'known_inputs_sha256':valid['scope_plan']['known_inputs_sha256'],
+                  'blockers':['dependency_closure_not_certified']}
+        plan = {'head':self.head,'base':self.head,'modules':['example']}
+        for invalid in ('missing',123):
+            changed = copy.deepcopy(original)
+            changed['actions/runs/11/attempts/2'] = dict(original['actions/runs/10/attempts/2'],id=11)
+            broken = copy.deepcopy(valid); broken['provenance']['GITHUB_RUN_ID']='11'
+            if invalid == 'missing': del broken['issued_at']
+            else: broken['issued_at']=invalid
+            stream=io.BytesIO()
+            with zipfile.ZipFile(stream,'w') as archive:
+                for path,data in files.items():
+                    archive.writestr(path,receipt.canonical(broken) if path=='example/receipt.json' else data)
+            changed['actions/artifacts/21/zip']=stream.getvalue()
+            metadata=copy.deepcopy(original['actions/artifacts/20'])
+            metadata.update(id=21,name='backend-execution-11-2-0',digest='sha256:'+receipt.digest(stream.getvalue()))
+            metadata['workflow_run']['id']=11;changed['actions/artifacts/21']=metadata
+            def api(path):
+                value=changed[path]
+                return value if isinstance(value,bytes) else json.dumps(value).encode()
+            locators=[dict(head=self.head,module='example',run_id=run,attempt=2,artifact_id=artifact,shard=0)
+                      for run,artifact in ((11,21),(10,20))]
+            with self.subTest(invalid=invalid), patch.object(receipt,'github_bytes',side_effect=api), \
+                 patch.object(planner.impact,'git',return_value=''), \
+                 patch.object(planner.impact,'snapshot',return_value={}), \
+                 patch.object(planner,'target_input_inventory',return_value={'targets':{'example':target}}), \
+                 patch.object(planner,'datetime',wraps=datetime) as clock:
+                clock.now.return_value=self.now
+                result=planner.select_historical_receipts(plan,locators)
+                row=result['decisions'][0]
+                self.assertEqual(20,row['previous_receipt']['locator']['artifact_id'])
+                self.assertEqual(1,len(row['rejected_candidates']))
+                self.assertEqual('BLOCK',row['decision'])
+                self.assertFalse(result['reuse_authority'])
+
     def test_platform_archive_must_include_receipt_bound_plan(self):
         responses=self.platform_fixture(scoped=True)
         self.assertEqual('verified',self.origin(responses)['platform_origin'])
