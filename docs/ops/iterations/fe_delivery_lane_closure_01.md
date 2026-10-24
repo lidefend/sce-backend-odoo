@@ -27,3 +27,8 @@ Results:
 - guard registry: PASS after prerequisites were merged into the original target
   declarations instead of duplicate rules;
 - repeated generated-report refresh: stable.
+
+The first pushed CI run found one routing error: the offline summary Playwright
+probe was briefly included in the remote frontend lane, which does not install a
+browser binary. It is now exact-head Quick-only and remains covered as
+`local_only`; all three candidate runtime/deployment lanes remain separate.

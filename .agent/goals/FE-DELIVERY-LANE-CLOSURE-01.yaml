@@ -1,7 +1,7 @@
 schema_version: 1
 goal:
   id: FE-DELIVERY-LANE-CLOSURE-01
-  status: active
+  status: verification_pending
   title: Classify and close verification lane gaps
   formal_product_layer: P4
   layer_target: verification lane responsibility

@@ -3,7 +3,7 @@
   "id": "FE-DELIVERY-LANE-CLOSURE-01",
   "branch": "feature/project-detail-productization-01",
   "baseline_sha": "fa48fdd625dcd3eb68471ac9b52b61021f37c4df",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-DELIVERY-LANE-CLOSURE-01.yaml",
   "record": "docs/ops/iterations/fe_delivery_lane_closure_01.md",
   "scope": [".agent/", "AGENTS.md", "config/", "docs/", "make/", "scripts/"],
@@ -33,8 +33,8 @@
   "environment": {"kind": "offline", "candidate_sha": "fa48fdd625dcd3eb68471ac9b52b61021f37c4df", "candidate_dirty": true, "production_changes": false},
   "checks": {},
   "verification_results": [],
-  "blockers": ["14 targets are unregistered in the verification lane audit."],
-  "next_exact_step": "Wire deterministic targets to existing contract/frontend lanes and runtime targets to explicit bundles, then re-measure.",
+  "blockers": ["Final Quick and CI must be rerun after the remote-only browser routing correction."],
+  "next_exact_step": "Commit the browser routing correction, push it, and rerun exact-head CI.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
