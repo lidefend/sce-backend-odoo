@@ -73,3 +73,10 @@ workspace when an exact checkout runs it. The exact checkout still supplies the
 source tree, while the process identity, rollback copy and `.env.dev` authority
 remain anchored to the primary worktree instead of being copied into the
 candidate.
+
+The first final-head list run then found a real declaration drift: the web
+client negotiated nine contract capabilities, while both acceptance instance
+declarations still declared only six. The list probe correctly rejected the
+request conflict. Both declarations now consume the canonical
+`CONTRACT_V2_CLIENT_CAPABILITIES` shape, with a regression test preventing the
+declaration from drifting from the client again.

@@ -160,9 +160,9 @@ Generated from repository source files. This report is informational during the 
 | 992 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 976 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
+| 972 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
 | 962 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
-| 955 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
 | 933 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |

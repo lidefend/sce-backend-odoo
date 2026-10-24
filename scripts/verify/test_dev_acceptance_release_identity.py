@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import unittest
@@ -518,6 +519,22 @@ class ParamsContextBindingTest(unittest.TestCase):
                 self.assertEqual(resolved, runtime_context)
                 params = MODULE.build_contract_request_params(shipped["request"], {"model": "payment.request", "record_id": 1}, resolved)
                 self.assertEqual(params["context"], runtime_context)
+
+    def test_shipped_declarations_consume_the_canonical_client_capabilities(self):
+        client_source = (
+            ROOT / "frontend/apps/web/src/app/contracts/v2/clientCapabilities.ts"
+        ).read_text(encoding="utf-8")
+        match = re.search(
+            r"CONTRACT_V2_CLIENT_CAPABILITIES\s*=\s*\[(.*?)\]\s*as const",
+            client_source,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(match)
+        expected = re.findall(r"'([^']+)'", match.group(1))
+        self.assertEqual(len(expected), 9)
+        for name in ("backend_contract_instance_v1.json", "backend_contract_instance_daily_v1.json"):
+            shipped = json.loads((ROOT / "config/acceptance" / name).read_text(encoding="utf-8"))
+            self.assertEqual(shipped["request"]["client_contract_capabilities"], expected, name)
 
     def test_declaration_without_the_binding_keeps_the_declared_shape(self):
         # No binding declared: the runtime-declared record context is not injected,
