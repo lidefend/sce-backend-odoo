@@ -16,11 +16,13 @@ from typing import Callable, Sequence
 
 ROOT = Path(__file__).resolve().parents[2]
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
+FULL_DIGEST = re.compile(r"^[0-9a-f]{64}$")
 ALLOWED_BRANCH = re.compile(r"^(feature|fix|refactor|audit|release|codex)/.+$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 CONFIRMATION = "PUBLISH_EXACT_DAILY_RUNTIME_VERSION"
 ENTRY_DECLARATION = Path("config/ops/daily_runtime_entry.v1.json")
 DEFAULT_REPORT_ROOT = ".runtime/final-acceptance/daily-deployed/release"
+DUTY_PLAN_REPORT = ".runtime/final-acceptance/daily-deployed/database-duty-plan.json"
 # Makefile exports every variable when an operator env file is present. That
 # freezes recursively expanded argument builders at the parent make's values,
 # so a child make can see a non-empty input while still receiving an empty
@@ -290,6 +292,54 @@ def plan_steps(
     return steps
 
 
+def derive_digests(repository: Path, args: argparse.Namespace, identity: Identity) -> tuple[str, str]:
+    """Derive the reviewed declaration and entry digests from the governed plan.
+
+    The declaration digest is over the template merged with the remote managed
+    instances, so it can never be computed by hand. Run the read-only duty plan
+    first, read both digests from its report, and require any operator-supplied
+    value to agree. This also validates the declaration/entry/identity before
+    any remote mutation happens.
+    """
+    plan_report = repository / DUTY_PLAN_REPORT
+    command = [
+        "make",
+        "--no-print-directory",
+        "daily.runtime.database.duty.plan",
+        "DAILY_RUNTIME_SSH_HOST=" + args.ssh_host,
+        "DAILY_RUNTIME_EXPECTED_SHA=" + identity.expected_sha,
+        "DAILY_RUNTIME_DATABASE_DUTY_SELECTION=demo platform_control",
+        "DAILY_RUNTIME_DATABASE_DUTY_PLAN_REPORT=" + str(plan_report),
+    ]
+    result = subprocess.run(
+        command,
+        cwd=repository,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode:
+        raise ReleaseError("governed duty plan failed; cannot derive digests: " + result.stderr.strip()[-600:])
+    try:
+        payload = json.loads(plan_report.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ReleaseError(f"duty plan report is unreadable: {exc}") from exc
+    declaration_digest = str(payload.get("declaration_digest") or "")
+    entry_digest = str(payload.get("entry_digest") or "")
+    if not FULL_DIGEST.fullmatch(declaration_digest) or not FULL_DIGEST.fullmatch(entry_digest):
+        raise ReleaseError("duty plan report lacks valid declaration/entry digests")
+    return declaration_digest, entry_digest
+
+
+def resume_steps(steps: Sequence[Step], resume_from: str) -> list[Step]:
+    """Skip every step before the named key; a miss is a fail-closed refusal."""
+    keys = [step.key for step in steps]
+    if resume_from not in keys:
+        raise ReleaseError(f"resume-from {resume_from!r} is not a release step: {keys}")
+    return [step for step in steps if keys.index(step.key) >= keys.index(resume_from)]
+
+
 Runner = Callable[[Sequence[str], Path, dict[str, str]], tuple[int, str, str]]
 
 
@@ -355,12 +405,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expected-candidate-sha", default="")
     parser.add_argument("--source-branch", default="")
     parser.add_argument("--ssh-host", default="sc-root")
-    parser.add_argument("--declaration-digest", required=True)
-    parser.add_argument("--entry-digest", required=True)
+    parser.add_argument("--declaration-digest", default="")
+    parser.add_argument("--entry-digest", default="")
     parser.add_argument("--published-face-login", default="demo_full")
     parser.add_argument("--report-root", default=DEFAULT_REPORT_ROOT)
     parser.add_argument("--report", type=Path)
     parser.add_argument("--plan", action="store_true")
+    parser.add_argument("--resume-from", default="")
     args = parser.parse_args(argv)
     repository = args.repo_root.resolve()
     try:
@@ -375,6 +426,23 @@ def main(argv: list[str] | None = None) -> int:
             for step in steps
         ], indent=2, sort_keys=True))
         return 0
+    # Derive the reviewed digests from the read-only plan before any mutation.
+    # This both removes the error-prone manual digest and validates the
+    # declaration/entry/identity before the first remote write.
+    try:
+        declaration_digest, entry_digest = derive_digests(repository, args, identity)
+        if args.declaration_digest and args.declaration_digest != declaration_digest:
+            raise ReleaseError("operator declaration digest disagrees with the governed plan")
+        if args.entry_digest and args.entry_digest != entry_digest:
+            raise ReleaseError("operator entry digest disagrees with the governed plan")
+        args.declaration_digest = declaration_digest
+        args.entry_digest = entry_digest
+        steps = plan_steps(repository, args, identity)
+        if args.resume_from:
+            steps = resume_steps(steps, args.resume_from)
+    except ReleaseError as exc:
+        print(f"[daily.runtime.release] BLOCKED {exc}")
+        return 2
     if os.environ.get("CONFIRM_DAILY_RUNTIME_RELEASE") != CONFIRMATION:
         print(f"[daily.runtime.release] BLOCKED {CONFIRMATION} confirmation is required")
         return 2
