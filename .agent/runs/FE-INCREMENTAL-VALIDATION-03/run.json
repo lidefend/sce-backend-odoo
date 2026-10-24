@@ -62,10 +62,20 @@
     "ORM reuse input/environment/contract/fact closure incomplete",
     "Pre-provisioning authenticated reuse and workflow regressions incomplete"
   ],
-  "next_exact_step": "Owner authorized push. Freeze the clean candidate, run the exact-head Quick once, then make pr.push (governed safe push) and let the required remote CI run. Do not merge or deploy until remote checks pass and the owner re-authorizes the protected merge.",
-  "status": "verification_pending",
+  "next_exact_step": "Completed: PR #724 squash-merged as 3a5cf15bebc4fcb1bd660bf8eca0053a50d50d66 (candidate tree 92ccd322 equals merged tree; all required remote checks green at head 29d588f02). Deployment and product delivery not authorized. Runtime-only follow-up (readback probe in CI demo fresh database, per-module query/related-permission closure, scenarios 9/10) is a separate batch.",
+  "status": "completed",
   "goal": ".agent/goals/FE-INCREMENTAL-VALIDATION-03.yaml",
   "record": "docs/ops/iterations/fe_incremental_validation_03.md",
+  "integrated_sha": "3a5cf15bebc4fcb1bd660bf8eca0053a50d50d66",
+  "merge_target": "main",
+  "pull_request": "https://github.com/lidefend/sce-backend-odoo/pull/724",
+  "completion": {
+    "batch": "passed: stage model, scope-first scheduling, safe-reuse decision, decision-before-allocation, workflow discovery + verify_coverage, readback identity/witness binding and governed runtime entry; verify.ci.workflow.contract 223 tests, guard registry audit PASS, lane coverage surface 643 -> 642, ci.local.iteration L1 PASS, ci.local.quick PASS",
+    "mainline": "merged_to_main: PR #724 squash-merged as 3a5cf15bebc4fcb1bd660bf8eca0053a50d50d66; candidate tree equals merged tree; required remote checks green at head 29d588f02",
+    "deployment": "not_authorized: P4 verification tooling; no version release or deployment requested",
+    "product_delivery": "not_applicable: P4 delivery tooling, not a product feature",
+    "followup_runtime_only": "readback probe execution in CI demo fresh database, per-module query/related-permission closure, scenarios 9/10 and first real remote CI reuse observation"
+  },
   "phase1_scope_first_scheduling": {
     "status": "closed",
     "dynamic_contract_boundary": "Runtime-declared contract and fact readback are the only product-semantic authority. P4 tool gates never claim product contract integrity.",
@@ -149,9 +159,10 @@
   },
   "handoff": {
     "requested_by": "Owner 2026-10-25",
-    "implementation_complete": false,
-    "committed": false,
-    "pushed": false,
+    "implementation_complete": true,
+    "committed": true,
+    "pushed": true,
+    "merged": true,
     "targeted_tests": {
       "receipt": 60,
       "impact": 28,

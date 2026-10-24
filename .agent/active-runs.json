@@ -34,7 +34,6 @@
     "feature/project-detail-productization-01": ".agent/runs/FE-DELIVERY-LANE-CLOSURE-01/run.json",
     "fix/fe-ux-entry-continuity-01": ".agent/runs/FE-UX-ENTRY-CONTINUITY-01/run.json",
     "fix/verification-efficiency-01": ".agent/runs/VERIFY-EFFICIENCY-01/run.json",
-    "fix/fe-incremental-validation-01": ".agent/runs/FE-INCREMENTAL-VALIDATION-02/run.json",
-    "fix/ci-incremental-scheduling-20261025": ".agent/runs/FE-INCREMENTAL-VALIDATION-03/run.json"
+    "fix/fe-incremental-validation-01": ".agent/runs/FE-INCREMENTAL-VALIDATION-02/run.json"
   }
 }
