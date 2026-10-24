@@ -185,6 +185,10 @@ tee() { command tee "$@"; if [ "$CASE" = log_fail ] || { [ "$CASE" = retry_log_f
                 calls=(folder/'calls').read_text().splitlines()
                 self.assertEqual(archives,sum(' archive-attempt ' in line for line in calls))
                 self.assertEqual(records,sum(' record ' in line for line in calls))
+                if case in ('log_fail', 'retry_log_fail'):
+                    attempts=[line for line in calls if ' archive-attempt ' in line]
+                    self.assertIn('--log-status 7', attempts[0])
+                    self.assertIn('--status 137' if case=='retry_log_fail' else '--status 0', attempts[0])
                 if case=='retry':
                     attempts=[line for line in calls if ' archive-attempt ' in line]
                     self.assertIn('--attempt 1',attempts[0]);self.assertIn('--status 137',attempts[0])

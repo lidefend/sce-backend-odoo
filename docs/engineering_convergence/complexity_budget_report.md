@@ -215,7 +215,7 @@ Generated from repository source files. This report is informational during the 
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
 | 801 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |
 | 491 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
-| 479 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
+| 478 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 434 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 385 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |

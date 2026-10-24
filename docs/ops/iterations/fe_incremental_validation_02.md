@@ -212,3 +212,12 @@ workflow 在原 Resolve module list 步骤生成详细清单，并将同份 scop
 既有 ci.delivery.freeze.prepare 完整通过（freeze-prepare.log）；仅刷新四份派生报告：测试覆盖登记、测试清单、清单摘要、复杂度报告。没有提高 baseline、删除历史证据或修改生成器。清单大量行变化来自顺序 ID 重排，需按实际路径核对新增测试资产。139 项定向测试输入未变化，不重复执行；旧 candidate-review.json 保留为冻结前审阅记录。
 
 本次冻结限定采集版，不宣称测试复用、动态事实完整覆盖或远端成功。后续 clean HEAD 的 Quick、独立复核及完整身份放在 .runtime/fe-incremental-validation-02 中，避免为写入自身 SHA 再次修改候选。受控远端执行仍待单独授权；当前不推送、不更新 PR、不合并、不部署。
+
+
+## 首次冻结后的 GA020 定向恢复
+
+34843e21a（tree 0d5483be9dade4972e38f0965d515edf1f1a5eff）独立审查通过，但完整 Quick 失败且未签发回执，原始 frozen-quick.log 保留。GA020 要求直接捕获 module_status="${PIPESTATUS[0]}"；采集版先保存整个数组，与既有静态要求不一致。修复仅将测试退出码和完整管道状态放在同一条赋值中同时捕获，既有安全守卫不变；真实工作流 shell 回归进一步检查首轮测试码 0/137 与 tee 失败码 7，确保失败重试不能覆盖证据失败。
+
+本轮恢复的受影响集合为 workflow 的执行状态采集、其 shell 回归及 GitHub 安全守卫。此前产品旅程和本地字段回读输入不变，不重跑。新 Quick 仅在定向结果与差异复核通过、生成报告同步和新候选冻结后执行；旧失败候选不能算通过。
+
+定向恢复完成：GitHub 安全守卫及其 18 项测试通过，139 项 workflow 契约测试通过（ga020-targeted.log）；独立复核确认同条赋值保留原始 [137,7] 管道状态，无守卫变更或豁免。

@@ -364,9 +364,8 @@ jobs:
                 make test MODULE="${module}" TEST_TAGS="${module_test_tags}" \
                   DB_NAME="${attempt_db}" 2>&1 | tee "${module_log}"
               fi
-              pipeline_status=("${PIPESTATUS[@]}")
+              module_status="${PIPESTATUS[0]}" pipeline_status=("${PIPESTATUS[@]}")
               module_duration=$((module_duration + SECONDS - attempt_started))
-              module_status="${pipeline_status[0]}"
               module_log_status="${pipeline_status[1]}"
               if [ "${module_log_status}" -ne 0 ]; then
                 module_evidence_failed=1

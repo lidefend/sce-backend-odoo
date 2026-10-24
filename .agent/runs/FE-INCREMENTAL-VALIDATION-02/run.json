@@ -88,7 +88,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Review generated evidence, commit one collection-only candidate, run exact-head Quick once; no remote writes. Post-freeze receipts remain in .runtime.",
+  "next_exact_step": "Complete GA020 targeted verification/review, regenerate affected reports, freeze corrected candidate then exact-head Quick. No remote updates.",
   "id": "FE-INCREMENTAL-VALIDATION-02",
   "branch": "fix/fe-incremental-validation-01",
   "status": "verification_pending",
@@ -114,7 +114,9 @@
     "pr722_readiness": "14 original targets preserved, 1875 known files; known inputs equal to previous459 for all14; 13 targets have unresolved reads in declared closure; reusable0, no tests dispatched.",
     "collection_candidate": "139 focused checks passed; exact scope-plan binding, per-attempt redacted failure retention, non-overridable evidence failure, integer pipeline timing excludes archive overhead.",
     "local_iteration": "ci.local.iteration PASS L1 only, candidate-iteration-final.log; not Quick or frozen delivery evidence.",
-    "freeze_preparation": "ci.delivery.freeze.prepare PASS; freeze-prepare.log. Four generated reports refreshed by existing entry; no product/test implementation changes. Final clean commit and Quick pending."
+    "freeze_preparation": "ci.delivery.freeze.prepare PASS; freeze-prepare.log. Four generated reports refreshed by existing entry; no product/test implementation changes. Final clean commit and Quick pending.",
+    "first_frozen_candidate": "34843e21a2bae09c1a1a78a6b583a4b30d2da204 tree0d5483be9dade4972e38f0965d515edf1f1a5eff independently reviewed; Quick FAIL GA020 direct PIPESTATUS capture requirement. Original frozen-quick.log/identity preserved; no receipt issued.",
+    "ga020_recovery": "PASS make verify.github_actions.security verify.ci.workflow.contract (18 security + 139 workflow tests); ga020-targeted.log. Same-statement process/tee capture independently reviewed; security guard unchanged."
   },
   "runtime_diagnostics": {
     "purpose": "collector mechanism only; excluded from reusable offline check receipts",
