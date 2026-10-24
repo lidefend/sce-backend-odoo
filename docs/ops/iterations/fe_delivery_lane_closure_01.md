@@ -22,13 +22,18 @@ Results:
 - lane audit: PASS, zero-reference targets 642 (baseline 643), unregistered 0;
 - lane audit unit: 73 tests PASS;
 - backend offline units: PASS;
-- frontend node/feedback/summary units: PASS;
+- frontend node/feedback/summary units: PASS, including 28 summary browser checks;
+- Playwright vendor coupling guard: PASS, 7 tests;
+- CI workflow contract: PASS, 79 tests;
 - runtime/deployment bundle plans: verified with `make -n`;
 - guard registry: PASS after prerequisites were merged into the original target
   declarations instead of duplicate rules;
 - repeated generated-report refresh: stable.
 
-The first pushed CI run found one routing error: the offline summary Playwright
-probe was briefly included in the remote frontend lane, which does not install a
-browser binary. It is now exact-head Quick-only and remains covered as
-`local_only`; all three candidate runtime/deployment lanes remain separate.
+The pushed CI run `40069199108` exposed an environment routing defect: the
+summary Playwright probe ran in the `standard` frontend lane, but that lane only
+restored and installed Chromium for `full`. The probe remains part of the shared
+`verify.contract_form_runtime_state.behavior` target, so both exact-head Quick
+and the remote frontend lane exercise it. Standard and full frontend lanes now
+restore the lockfile-keyed Playwright cache and install Chromium when the cache
+misses; the `skip` lane remains unchanged.

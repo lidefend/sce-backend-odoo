@@ -31,10 +31,71 @@
     "preserved_manifest_sha256": "d3e6ee7a0a0a1cb4c828022e16e03af432fbdbb1b7f527e8bb26c077fc91f649"
   },
   "environment": {"kind": "offline", "candidate_sha": "fa48fdd625dcd3eb68471ac9b52b61021f37c4df", "candidate_dirty": true, "production_changes": false},
-  "checks": {},
-  "verification_results": [],
-  "blockers": ["Final Quick and CI must be rerun after the remote-only browser routing correction."],
-  "next_exact_step": "Commit the browser routing correction, push it, and rerun exact-head CI.",
+  "checks": {
+    "summary_browser": {
+      "command": "make verify.frontend.project_detail_summary.browser",
+      "status": "passed",
+      "test_count": 28,
+      "identity": "clean candidate clone with the browser routing correction"
+    },
+    "playwright_vendor_coupling": {
+      "command": "make verify.frontend.playwright_vendor_coupling.guard",
+      "status": "passed",
+      "test_count": 7
+    },
+    "lane_coverage": {
+      "command": "make audit.verification.lane_coverage.check",
+      "status": "passed",
+      "identity": "clean candidate clone"
+    },
+    "workflow_contract": {
+      "command": "make verify.ci.workflow.contract",
+      "status": "passed",
+      "test_count": 79
+    },
+    "generated_evidence": {
+      "command": "make ci.generated_evidence.preflight",
+      "status": "passed",
+      "identity": "clean candidate clone"
+    }
+  },
+  "verification_results": [
+    {
+      "layer": "L1",
+      "command": "make audit.verification.lane_coverage.check",
+      "status": "passed",
+      "failure_owner": null
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.ci.workflow.contract",
+      "status": "passed",
+      "test_count": 79,
+      "failure_owner": null
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.frontend.project_detail_summary.browser",
+      "status": "passed",
+      "test_count": 28,
+      "failure_owner": null
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.frontend.playwright_vendor_coupling.guard",
+      "status": "passed",
+      "test_count": 7,
+      "failure_owner": null
+    },
+    {
+      "layer": "L5",
+      "command": "make ci.generated_evidence.preflight",
+      "status": "passed",
+      "failure_owner": null
+    }
+  ],
+  "blockers": ["Candidate freeze/verify, exact-head Quick and remote CI must bind the new browser-routing commit."],
+  "next_exact_step": "Commit the two-file browser routing correction, freeze and verify the new candidate, then update PR #721 through make pr.push.exact.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
