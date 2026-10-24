@@ -1,0 +1,56 @@
+schema_version: 1
+goal:
+  id: FE-DAILY-ACCEPTANCE-TOOL-CLOSURE-01
+  title: Repair the finance navigation-count and daily multi-duty acceptance tools
+  status: active
+  formal_product_layer: P4 ops delivery tool
+  layer_target: daily acceptance navigation and multi-duty orchestration
+  modules_or_tools:
+    - config/acceptance/daily_demo_credential.v1.json
+    - scripts/verify/test_acceptance_action_count.py
+    - make/dev.mk
+    - make/guards.mk
+    - scripts/ops/daily_runtime_database_duty.py
+    - scripts/ops/test_daily_runtime_entry.py
+    - scripts/verify/formal_action_runtime_drift_audit.py
+    - scripts/verify/test_dev_acceptance_release_identity.py
+  objective: >-
+    Remove stale hand-maintained role counts from the acceptance tool, derive
+    each locked role count from the formal navigation manifest, and replace the
+    daily publication wrapper's local single-stack dependency with a read-only,
+    duty-aware acceptance path over the declared demo and platform_control
+    duties. Preserve fail-closed checks for missing, duplicate, mismatched or
+    cross-bound duties.
+  standard_vs_user_specific: >-
+    Operations delivery mechanism for the registered daily runtime; it carries
+    no product, tenant or permission semantics.
+  why_here: >-
+    Both failures are validation-tool defects: one pins obsolete manifest data
+    in a test, and the other binds a daily-host acceptance lane to a local
+    single-compose topology that does not describe the two-duty runtime.
+  why_not_elsewhere: >-
+    Product code, contracts, menus, permissions, module versions and runtime
+    configuration are already deployed and are not the failing owners. Changing
+    them to make these tools pass would hide the validation defects.
+  blast_radius: >-
+    Role-scoped navigation unit expectations, the daily acceptance publication
+    prerequisite graph, and offline tests for those two mechanisms only.
+  exclusions:
+    - no product source or contract changes
+    - no module upgrade or frontend rebuild
+    - no deployment, push, PR, merge or production access
+    - no relaxation of runtime acceptance, quick, or topology guards
+    - no cleanup of existing worktrees, staging or failure evidence
+  acceptance:
+    - finance, pm, owner and project_member expectations derive from the shipped manifest
+    - daily acceptance publication no longer invokes release.dev.acceptance.publish
+    - daily business audits execute through the declared demo duty
+    - both demo and platform_control identities are verified from the declaration
+    - missing, duplicate, cross-bound or wrong-service duties fail closed
+    - affected tools have non-zero regression tests
+  rollback: >-
+    Revert this topic commit; no data, runtime configuration or deployed source
+    was changed by the tool repair.
+  next_exact_step: >-
+    Review and commit the completed P4 tool corrections and the daily
+    user-journey evidence; stop without pushing or mutating the deployed runtime.

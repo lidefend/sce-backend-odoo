@@ -69,6 +69,24 @@ class DailyRuntimeEntryTest(unittest.TestCase):
         entry_doc["routes"][1]["duty"] = "tenant_unknown"
         self.assertTrue(entry.validate_entry(entry_doc, declaration))
 
+    def test_a_missing_platform_duty_is_refused(self):
+        entry_doc, declaration = shipped()
+        declaration["duties"] = [
+            duty for duty in declaration["duties"] if duty["duty"] != "platform_control"
+        ]
+        failures = entry.validate_entry(entry_doc, declaration)
+        self.assertTrue(any("undeclared duty platform_control" in item for item in failures), failures)
+
+    def test_a_duplicate_duty_declaration_is_refused(self):
+        entry_doc, declaration = shipped()
+        duplicate = copy.deepcopy(next(
+            duty for duty in declaration["duties"] if duty["duty"] == "demo"
+        ))
+        duplicate["database"] = "sc_demo_duplicate"
+        declaration["duties"].append(duplicate)
+        failures = entry.validate_entry(entry_doc, declaration)
+        self.assertTrue(any("duty demo is declared more than once" in item for item in failures), failures)
+
     def test_a_non_ipv4_bind_host_is_refused(self):
         entry_doc, declaration = shipped()
         entry_doc["exposure"][1]["bind_host"] = "localhost"

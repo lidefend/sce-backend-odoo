@@ -219,7 +219,6 @@ EXPECTED_ACTION_CONTRACTS = {
             "payee_unit_display",
             "payment_basis_type",
             "payee_account_completeness",
-            "legal_next_action_display",
             "request_amount_display",
             "actual_payee_unit_display",
             "payer_unit_display",

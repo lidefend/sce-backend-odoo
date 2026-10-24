@@ -21,7 +21,7 @@ Generated from repository source files. This report is informational during the 
 | 4634 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4564 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
 | 4169 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
-| 3741 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
+| 3747 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3737 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3719 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3688 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
@@ -156,13 +156,13 @@ Generated from repository source files. This report is informational during the 
 | 1016 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 1001 | Python source | `scripts/verify/local_dev_project_create_contract_action_scope.py` |
+| 1001 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 996 | Python source | `scripts/ops/daily_runtime_legacy_stack_retire.py` |
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 992 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 988 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 976 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
-| 972 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
 | 962 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
@@ -244,7 +244,7 @@ Generated from repository source files. This report is informational during the 
 | 4634 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4564 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
 | 4169 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
-| 3741 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
+| 3747 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3737 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3719 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3688 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |

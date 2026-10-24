@@ -958,13 +958,42 @@ class DailyAcceptanceLaneSelfConsistencyTest(unittest.TestCase):
     def test_topology_guard_token_matches_the_shipped_prerequisite_list(self):
         source = (ROOT / 'make/dev.mk').read_text()
         header = source.split('release.daily_dev.acceptance.publish: guard.prod.forbid')[1].split('\n')[0]
-        self.assertIn('verify.daily_dev.product_menu_release_gate.guard', header)
+        self.assertIn('daily.runtime.entry.verify', header)
+        self.assertIn('verify.daily_dev.acceptance.formal_surface', header)
+        self.assertIn('verify.daily_dev.acceptance.release', header)
+        self.assertNotIn('release.dev.acceptance.publish', header)
+        self.assertNotIn('verify.frontend.build', header)
         topology = (ROOT / 'scripts/verify/environment_topology_guard.py').read_text()
         self.assertIn(
             'release.daily_dev.acceptance.publish: guard.prod.forbid verify.daily_dev.acceptance.env.guard '
             'env.matrix.check verify.daily_dev.runtime_repo.clean verify.daily_dev.product_menu_release_gate.guard '
-            'release.dev.acceptance.publish',
+            'daily.runtime.entry.verify verify.daily_dev.acceptance.formal_surface '
+            'verify.daily_dev.acceptance.release',
             topology,
+        )
+
+    def test_daily_formal_surface_uses_the_declared_serving_duty(self):
+        source = (ROOT / 'make/dev.mk').read_text()
+        target = source.split('verify.daily_dev.acceptance.formal_surface:', 1)[1].split(
+            'verify.daily_dev.acceptance.release:', 1
+        )[0]
+        self.assertIn('scripts/ops/daily_runtime_duty_odoo_shell.py', target)
+        self.assertIn('--duty "$(DAILY_ACCEPTANCE_BUSINESS_DUTY)"', target)
+        self.assertNotIn('odoo_shell_exec.sh', target)
+        self.assertNotIn('check-compose-project', target)
+        self.assertNotIn('verify.frontend.build', target)
+        self.assertNotIn('formal_entry_metadata_audit.py', target)
+        self.assertNotIn('engineering_progress_income_visible_contract_audit.py', target)
+
+    def test_daily_business_duty_and_database_come_from_the_entry_declaration(self):
+        source = (ROOT / 'make/dev.mk').read_text()
+        self.assertIn(
+            '"config/ops/daily_runtime_entry.v1.json"',
+            source.split('DAILY_ACCEPTANCE_BUSINESS_DUTY ?=', 1)[1].split('\n', 1)[0],
+        )
+        self.assertIn(
+            '"config/ops/daily_runtime_database_duties.v1.json"',
+            source.split('DAILY_DEV_ACCEPTANCE_DB ?=', 1)[1].split('\n', 1)[0],
         )
 
 

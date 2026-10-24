@@ -73,11 +73,17 @@ class FixedDemoCredentialTest(unittest.TestCase):
         with self.assertRaises(self.helper.ConfirmationError):
             self.build(login="admin")
         with self.assertRaises(self.helper.ConfirmationError):
-            self.build(tool="relation-roundtrip")
+            self.build(tool="unlisted-readonly-tool")
         with self.assertRaises(self.helper.ConfirmationError):
             self.build(password="another-password")
         with self.assertRaises(self.helper.ConfirmationError):
             self.build(expected_sha="")
+
+    def test_relation_roundtrip_is_explicitly_read_only(self):
+        confirmation = self.build(tool="relation-roundtrip", login="demo_full")
+        self.assertEqual(confirmation["operation"], "readonly")
+        self.assertEqual(confirmation["tool"], "relation-roundtrip")
+        self.assertEqual(confirmation["database"], "sc_demo")
 
     def test_cli_emits_json_only_for_the_declared_credential(self):
         environment = dict(os.environ)
