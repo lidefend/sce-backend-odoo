@@ -101,7 +101,6 @@ jobs:
       MODULE_OVERRIDE: ${{ github.event.inputs.modules }}
       SC_BACKEND_RECEIPT_CAPTURE: '1'
       SC_BACKEND_ISOLATED_PYTHON: '1'
-      SC_TEST_PIP_CACHE_HOST: ${{ runner.temp }}/backend-test-pip-cache
 
     defaults:
       run:
@@ -282,6 +281,8 @@ jobs:
             backend-test-pip-v1-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Prepare isolated pip download cache
+        env:
+          SC_TEST_PIP_CACHE_HOST: ${{ runner.temp }}/backend-test-pip-cache
         run: |
           set -euo pipefail
           test "${SC_TEST_PIP_CACHE_HOST}" = "${RUNNER_TEMP}/backend-test-pip-cache"
@@ -314,6 +315,7 @@ jobs:
       - name: Run backend test suite per module
         env:
           GH_TOKEN: ${{ github.token }}
+          SC_TEST_PIP_CACHE_HOST: ${{ runner.temp }}/backend-test-pip-cache
         run: |
           source scripts/ci/orm_result_guard.sh
           set -uo pipefail
@@ -509,6 +511,8 @@ jobs:
 
       - name: Return pip cache ownership to runner
         if: always()
+        env:
+          SC_TEST_PIP_CACHE_HOST: ${{ runner.temp }}/backend-test-pip-cache
         run: |
           set -euo pipefail
           test "${SC_TEST_PIP_CACHE_HOST}" = "${RUNNER_TEMP}/backend-test-pip-cache"

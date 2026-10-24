@@ -49,7 +49,13 @@ class BackendTestSuiteDispatchContractTest(unittest.TestCase):
         suite = workflow['jobs']['backend_suite']
         steps = {s['name']: s for s in suite['steps']}
         cache = steps['Restore backend test pip downloads']['with']
-        self.assertEqual(suite['env']['SC_TEST_PIP_CACHE_HOST'], cache['path'])
+        for name in ('Prepare isolated pip download cache','Run backend test suite per module','Return pip cache ownership to runner'):
+            self.assertEqual(steps[name]['env']['SC_TEST_PIP_CACHE_HOST'], cache['path'])
+        # GitHub evaluates job env before a runner exists; YAML parsing alone
+        # cannot detect this server-side expression error.
+        for job in workflow['jobs'].values():
+            for value in job.get('env', {}).values():
+                self.assertNotRegex(str(value), r'\$\{\{[^}]*\brunner\.')
         for dependency in ('Dockerfile', 'requirements-odoo.txt', 'config/requirements-test.txt'):
             self.assertIn(dependency, cache['key'])
         script = (ROOT / 'scripts/test/test.sh').read_text()

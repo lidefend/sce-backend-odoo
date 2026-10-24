@@ -342,3 +342,5 @@ P4 在既有 backend_test_receipt 和 evidence_scope 内接通真实消费。首
 独立复核关闭三项问题：挂载路径保持脚本原三层结构；复用必须具有已认证的 root 完整 workflow 来源；超时用唯一 run/attempt/shard 标识加随机后缀定向清理容器并保留原始输出。原失败记录保留。新增真实 YAML 分支测试覆盖 RUN、REUSE、失败与计数；另验证相同输入真实跳过执行且不生成假成功、输入变化、强制全量、坏证据、缺失/截断 source tree、workflow 不匹配和超时。
 
 主线收口顺序：最终候选→受管非强制推送 PR #723→必要 CI 与精确候选 Quick/合并准入→受保护合并→回读 main。现有主线定时任务只有在合并后才能运行新生产器；明天核对首份基线及随后命中，再报告实际收益。今天不部署、不重做 UX，不启动资金台账，不宣称全部 14 个目标已经能复用。
+
+远端首次候选 21c404eae 在 workflow 编译阶段失败（backend run 40106164709 / professional run 40106170377，尚无 job 执行）：job.env 不允许 runner.temp 上下文。已将同一缓存路径移入 Prepare/Run/Return 三个步骤的 env，补充 job.env 上下文限制及路径一致性断言；不修改测试语义或门禁。旧候选 Quick 因输入即将改变而停止，无 PASS 回执，日志保留。新候选重新执行必要准入。
