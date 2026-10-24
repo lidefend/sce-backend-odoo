@@ -327,11 +327,6 @@
       "owner": "platform-team",
       "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
     },
-    "daily.runtime.database.duty.plan": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
-    },
     "daily.runtime.database.duty.recreate": {
       "disposition": "ops_tooling",
       "owner": "platform-team",
@@ -1402,15 +1397,15 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/releases/backend_contract_closure_batch_P_tasklist_v1.md。登记待接线或退役，B3 按族处理。"
     },
-    "verify.backend.contract_lifecycle.runtime": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/BACKEND-CONTRACT-L4-CLOSURE/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.backend.contract_fact_readback.runtime": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "受管运行时 readback 入口（CANDIDATE_GIT_HEAD/TREE/DB_NAME），为 ORM 复用闭合作证；运行时诊断，非必需门禁。"
+    },
+    "verify.backend.contract_lifecycle.runtime": {
+      "disposition": "history_probe_runbook",
+      "owner": "platform-team",
+      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/BACKEND-CONTRACT-L4-CLOSURE/run.json。登记待接线或退役，B3 按族处理。"
     },
     "verify.backend.contract_lifecycle.runtime.schema.guard": {
       "disposition": "candidate",

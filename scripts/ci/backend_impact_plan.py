@@ -23,6 +23,7 @@ GLOBAL = ('Dockerfile*', 'docker-compose*', 'requirements*', 'odoo.conf',
           'make/dev_test.mk', 'Makefile')
 NON_RUNTIME = ('docs/**', '.agent/**', 'frontend/**', '*.md',
                'scripts/verify/**', 'scripts/ci/test_*.py',
+               'scripts/ops/test_*.py',
                'scripts/ci/personal_data_false_positives.json')
 
 # Existing CI control-plane inputs are not Odoo runtime inputs. Changes still
@@ -34,6 +35,12 @@ CONTROL_PLANE = {
     'scripts/ci/backend_test_receipt.py': 'verify.ci.workflow.contract',
     'scripts/ci/ci_risk_classifier.py': 'verify.ci.workflow.contract',
     'scripts/ci/select_authoritative_workflow_run.py': 'verify.ci.workflow.contract',
+    'scripts/ops/daily_runtime_release_orchestration.py': 'verify.daily.runtime.release_orchestration.unit',
+    'scripts/ops/daily_runtime_database_duty.py': 'verify.daily.runtime.database.duty',
+    'scripts/ops/daily_runtime_source_revision_align.py': 'verify.daily.runtime.source_revision.align',
+    'scripts/ops/daily_runtime_bundle_sync.py': 'verify.daily.runtime.main.bundle_sync',
+    'scripts/ops/daily_candidate_bundle_sync.py': 'verify.daily.runtime.candidate.bundle_sync',
+    'scripts/ops/daily_runtime_published_face_converge.py': 'verify.daily.runtime.published_face.converge',
     'scripts/audit/verification_lane_dispositions.json': 'verify.verification.lane_coverage',
     'scripts/audit/verification_lane_exemptions.json': 'verify.verification.lane_coverage',
 }

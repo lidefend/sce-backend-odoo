@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-RELEASE-ORCHESTRATION-DIGEST-DERIVATION",
+  "branch": "fix/daily-release-orchestration-digest-derivation",
+  "baseline_sha": "7b3ef20437f700ae4b07dccd6e568ccdde16d671",
+  "status": "verification_pending",
+  "goal": ".agent/goals/DAILY-RELEASE-ORCHESTRATION-DIGEST-DERIVATION.yaml",
+  "record": "docs/ops/iterations/daily_release_orchestration_digest_derivation.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-INCREMENTAL-VALIDATION-03.yaml",
+    ".agent/goals/DAILY-RELEASE-ORCHESTRATION-DIGEST-DERIVATION.yaml",
+    ".agent/runs/DAILY-RELEASE-ORCHESTRATION-DIGEST-DERIVATION/run.json",
+    "docs/ops/iterations/daily_release_orchestration_digest_derivation.md",
+    "scripts/ops/daily_runtime_release_orchestration.py",
+    "scripts/ops/test_daily_runtime_release_orchestration.py",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/audit/verification_lane_dispositions.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "focused": {
+      "target": "verify.daily.runtime.release_orchestration.unit",
+      "inputs": [
+        "scripts/ops/daily_runtime_release_orchestration.py",
+        "scripts/ops/test_daily_runtime_release_orchestration.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Land and test the digest derivation (derive_digests via governed duty.plan), validate-before-mutation ordering and --resume-from; then freeze, push, PR and merge."
+}

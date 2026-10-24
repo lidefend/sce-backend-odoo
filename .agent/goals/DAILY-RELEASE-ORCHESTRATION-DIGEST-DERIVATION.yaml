@@ -1,0 +1,8 @@
+schema_version: 1
+goal:
+  id: DAILY-RELEASE-ORCHESTRATION-DIGEST-DERIVATION
+  title: daily 发布编排 digest 派生与先校验后写入
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: daily runtime release orchestration
+  exclusions: [product_code, permissions, merge, deployment, browser_acceptance]

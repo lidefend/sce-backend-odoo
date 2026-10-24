@@ -192,10 +192,46 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
         with mock.patch.object(
             orchestration, "validate_identity", return_value=identity()
         ), mock.patch.object(
+            orchestration, "derive_digests", return_value=("d" * 64, "e" * 64)
+        ) as derive_digests, mock.patch.object(
             orchestration, "execute", return_value={"status": "PASS"}
         ) as execute, mock.patch.dict(os.environ, {}, clear=True), contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(orchestration.main(argv), 2)
             execute.assert_not_called()
+
+    def test_derive_digests_reads_the_governed_plan_and_refuses_manual_mismatch(self):
+        plan_report = ROOT / ".runtime" / "test-duty-plan.json"
+        plan_report.parent.mkdir(parents=True, exist_ok=True)
+        plan_report.write_text(
+            '{"declaration_digest":"' + "a" * 64 + '","entry_digest":"' + "b" * 64 + '"}'
+        )
+        with mock.patch.object(orchestration, "DUTY_PLAN_REPORT", ".runtime/test-duty-plan.json"):
+            with mock.patch.object(orchestration.subprocess, "run", return_value=type(
+                "Result", (), {"returncode": 0, "stdout": "", "stderr": ""}
+            )()):
+                declaration_digest, entry_digest = orchestration.derive_digests(
+                    ROOT, arguments(), identity()
+                )
+        self.assertEqual("a" * 64, declaration_digest)
+        self.assertEqual("b" * 64, entry_digest)
+        plan_report.unlink()
+
+    def test_derive_digests_fails_closed_when_plan_fails(self):
+        with mock.patch.object(orchestration.subprocess, "run", return_value=type(
+            "Result", (), {"returncode": 2, "stdout": "", "stderr": "plan refused"}
+        )()):
+            with self.assertRaises(orchestration.ReleaseError):
+                orchestration.derive_digests(ROOT, arguments(), identity())
+
+    def test_resume_steps_skips_prefix_and_refuses_unknown_key(self):
+        steps = orchestration.plan_steps(ROOT, arguments(), identity())
+        resumed = orchestration.resume_steps(steps, "duty-refresh")
+        self.assertEqual(
+            ["duty-refresh", "align-demo", "align-platform", "published-face", "entry-verify"],
+            [step.key for step in resumed],
+        )
+        with self.assertRaises(orchestration.ReleaseError):
+            orchestration.resume_steps(steps, "not-a-step")
 
 
 if __name__ == "__main__":
