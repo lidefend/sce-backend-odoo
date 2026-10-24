@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import unittest
+import subprocess
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 from types import SimpleNamespace
 
@@ -261,6 +264,87 @@ class CIRiskClassifierTests(unittest.TestCase):
 
     def test_path_escape_fails_closed(self) -> None:
         self.assertEqual(self.lane("../security.xml"), "HIGH_RISK")
+
+
+class BackendRecipeScopeTests(unittest.TestCase):
+    before = ('SHARED := unchanged\n'
+              'verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit\n'
+              '\t@python3 scripts/ci/test_a.py\n'
+              '\t@echo "PASS"\n\n'
+              'frontend.other:\n\t@echo "frontend"\n')
+    after = before.replace('\t@python3 scripts/ci/test_a.py\n',
+                           '\t@python3 scripts/ci/test_a.py\n'
+                           '\t@python3 -m unittest scripts.verify.test_backend_probe\n')
+
+    def test_literal_backend_recipe_change_is_recognized(self):
+        self.assertTrue(ci_risk_classifier.backend_recipe_only(self.before, self.after))
+        self.assertTrue(ci_risk_classifier.backend_recipe_only(self.after, self.before))
+        self.assertFalse(ci_risk_classifier.backend_recipe_only(self.before, self.before))
+
+    def test_other_bytes_and_dynamic_commands_remain_conservative(self):
+        for changed in (
+            self.after.replace('unchanged', 'changed'),
+            self.after.replace('guard.prod.forbid ', ''),
+            self.after.replace('echo "frontend"', 'echo "changed"'),
+            self.after + 'include extra.mk\n',
+            self.after + '\t$(eval SHARED := changed)\n',
+            self.after.replace('scripts.verify.test_backend_probe', '$(PROBE)'),
+            self.after.replace('scripts.verify.test_backend_probe', 'scripts.verify.test_backend_probe; false'),
+            self.after.replace('scripts.verify.test_backend_probe\n', 'scripts.verify.test_backend_probe\\\n\tmore\n'),
+            self.after.replace('scripts.verify.test_backend_probe', 'scripts.verify.test_backend_probe # extra'),
+            self.after.replace('\t@echo "PASS"', '\t@echo "different"'),
+        ):
+            with self.subTest(changed=changed):
+                self.assertFalse(ci_risk_classifier.backend_recipe_only(self.before, changed))
+
+    def test_path_only_and_missing_identity_keep_full(self):
+        self.assertEqual(classify(['make/ci.mk'], event_name='pull_request').frontend_mode, 'full')
+        self.assertFalse(ci_risk_classifier.git_backend_recipe_only('main', 'HEAD'))
+        with patch.object(ci_risk_classifier.subprocess, 'run', side_effect=subprocess.TimeoutExpired('git', 15)):
+            self.assertFalse(ci_risk_classifier.git_backend_recipe_only('a'*40, 'b'*40))
+
+    def test_exact_git_scope_preserves_other_triggers_and_ignores_dirty_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def git(*args):
+                return subprocess.check_output(['git', '-c', 'core.hooksPath=/dev/null',
+                    '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                    '-c', 'commit.gpgsign=false', '-c', 'core.autocrlf=false', *args], cwd=root, stderr=subprocess.DEVNULL,
+                    text=True).strip()
+            git('init', '-q'); (root/'make').mkdir()
+            path = root/'make/ci.mk'; path.write_text(self.before)
+            git('add', '.'); git('commit', '-qm', 'base'); base = git('rev-parse', 'HEAD')
+            path.write_text(self.after)
+            git('add', '.'); git('commit', '-qm', 'backend recipe'); head = git('rev-parse', 'HEAD')
+            path.write_text('uncommitted unrelated content\n')
+            with patch.object(ci_risk_classifier, 'ROOT', root):
+                result = classify(['make/ci.mk'], event_name='pull_request', base=base, head=head)
+                self.assertEqual(result.frontend_mode, 'skip')
+                self.assertEqual(result.professional_mode, 'full')
+                self.assertEqual(result.lane, 'HIGH_RISK')
+                self.assertIn('make_ci_backend_recipe_only_exact_git_scope', result.reasons)
+                for extra, expected in [('frontend/pnpm-lock.yaml', 'full'),
+                                        ('frontend/apps/web/src/new.ts', 'standard')]:
+                    self.assertEqual(classify(['make/ci.mk', extra], event_name='pull_request',
+                        base=base, head=head).frontend_mode, expected)
+                self.assertEqual(classify(['make/ci.mk'], event_name='workflow_dispatch',
+                    base=base, head=head).frontend_mode, 'full')
+                for newline in ('\r\n', '\r'):
+                    path.write_bytes(self.after.replace('unchanged\n', 'unchanged'+newline).encode())
+                    git('add', '.'); git('commit', '-qm', 'retained newline bytes change')
+                    self.assertFalse(ci_risk_classifier.git_backend_recipe_only(base, git('rev-parse', 'HEAD')))
+                path.write_text(self.after.replace('unchanged', 'changed'))
+                git('add', '.'); git('commit', '-qm', 'global change'); global_head = git('rev-parse', 'HEAD')
+                self.assertEqual(classify(['make/ci.mk'], event_name='pull_request',
+                    base=base, head=global_head).frontend_mode, 'full')
+                # Diverged target branch: scope is merge-base..head, not base..head.
+                git('checkout', '-q', base)
+                path.write_text(self.before.replace('unchanged', 'other branch'))
+                git('add', '.'); git('commit', '-qm', 'base advances'); advanced = git('rev-parse', 'HEAD')
+                self.assertTrue(ci_risk_classifier.git_backend_recipe_only(advanced, head))
+                git('checkout', '-q', head); path.unlink(); path.symlink_to('other.mk')
+                git('add', '.'); git('commit', '-qm', 'symlink'); link_head = git('rev-parse', 'HEAD')
+                self.assertFalse(ci_risk_classifier.git_backend_recipe_only(base, link_head))
 
 
 if __name__ == "__main__":

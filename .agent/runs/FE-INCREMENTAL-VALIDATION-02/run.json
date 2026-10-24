@@ -19,10 +19,12 @@
     "scripts/ci/backend_impact_plan.py",
     "scripts/ci/backend_suite_plan.py",
     "scripts/ci/backend_test_receipt.py",
+    "scripts/ci/ci_risk_classifier.py",
     "scripts/ci/test_backend_impact_plan.py",
     "scripts/ci/test_backend_suite_plan.py",
     "scripts/ci/test_backend_test_receipt.py",
     "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/ci/test_ci_risk_classifier.py",
     "scripts/test/test.sh",
     "scripts/verify/backend_contract_fact_readback_probe.py",
     "scripts/verify/frontend_dev_incremental.py",
@@ -98,10 +100,24 @@
         "scripts/verify/frontend_style_system_guard.py",
         "make/frontend.mk"
       ]
+    },
+    "make_scope": {
+      "target": "verify.ci.orm_selection.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "config/ci/risk_tiering_v1.json",
+        "make/codex.mk",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/frontend_release_gate.yml",
+        ".github/workflows/backend_test_suite.yml"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Local routing implementation complete; retain no-remote-write boundary. Any remote integration must review full PR delta and exact base separately; do not equate local collection-only impact with remote skip eligibility.",
+  "next_exact_step": "Local checkpoint and exact-SHA comparison; remote publication/CI require separate authorization. Do not run full Quick or frontend product checks to validate this classifier. Backend test receipt reuse remains disabled.",
   "id": "FE-INCREMENTAL-VALIDATION-02",
   "branch": "fix/fe-incremental-validation-01",
   "status": "verification_pending",
@@ -132,9 +148,10 @@
     "ga020_recovery": "PASS make verify.github_actions.security verify.ci.workflow.contract (18 security + 139 workflow tests); ga020-targeted.log. Same-statement process/tee capture independently reviewed; security guard unchanged.",
     "full_quick_cancelled": "9ceac3b22 full Quick cancelled after owner scope correction; no receipt/pass. Original final-quick.log and final-identity.json retained. Premature final-delivery lane selection is not a backend product failure.",
     "local_routing": "PASS 39 pure-Python planner tests in 0.640s; routing-recovery-test.log and governed receipt. Per-path fallback preserves mixed frontend impact; pure backend selects tools only. Independent code review no blocking finding.",
-    "remote_classification_limit": "Read-only plan still reports frontend_mode=full because risk_tiering_v1.json lists all make/ci.mk as frontend_full_paths. Local mapping does not change remote admission. No remote policy modifications or skip authorization.",
+    "remote_classification_limit": "Bounded backend-only Make recipe classification implemented locally; only exact Git proof removes make/ci.mk frontend-full trigger. Wider changes remain full. Not published or executed remotely.",
     "routing_failed_fixture": "routing-final-test.log retained: test used a registered UI path as unknown. Incorrect initial passed record corrected to failed through existing entry (routing-correction-record.log); fixture path fixed, fresh run passed. No assertion weakened.",
-    "scope_closeout": "Local routing batch closed only. No remote classifier policy change: full PR inherits frontend decision-authority/entry changes from 1ddade160; current collection delta is not the complete PR scope. No full Quick/frontend product execution."
+    "scope_closeout": "Local routing batch closed only. No remote classifier policy change: full PR inherits frontend decision-authority/entry changes from 1ddade160; current collection delta is not the complete PR scope. No full Quick/frontend product execution.",
+    "make_recipe_scope": "PASS verify.ci.orm_selection.unit:34 classifier +17 workflow tests; make-scope-bytes-tests.log. Exact SHA/merge-base ordinary blob comparison only erases literal Python lines inside unchanged backend target; other bytes unchanged. HIGH_RISK/professional full retained. Independent S2 newline normalization finding fixed using strict byte decode and CRLF/CR negatives; review closed."
   },
   "runtime_diagnostics": {
     "purpose": "collector mechanism only; excluded from reusable offline check receipts",

@@ -243,3 +243,16 @@ P4 / 既有 frontend_dev_incremental 本地规划器 / 通用验证编排。仅�
 范围裁决：1ddade160..当前候选的采集增量未改前端产品源；88b4c160..当前候选的完整未发布集成范围另含继承的 frontend_decision_authority 工具及 ci.generated_evidence.preflight 接入。不能以增量无前端产品变化直接推导整个 PR 可跳过所有前端相关验证。make/ci.mk 整文件远端分类仍粗粒度，本地映射收口不代表远端分类已修复；未移除规则、制作跳测凭证或启动远端 CI。
 
 本地映射批次已完成，整体 FE-INCREMENTAL-VALIDATION-02 仍 verification_pending（真实 CI 新回执、动态事实完整闭包及复用收益未完成）。本次只保存本地改动，不重新开启 freeze.prepare/Quick；集成、合并和部署状态均未变化。
+
+
+## 远端分类输入的最小 Make 目标范围证明（仅本地实现）
+
+P4 / ci_risk_classifier / 既有风险分类器。保留 frontend_full_paths 中的 make/ci.mk，只有精确 40 位 base/head、与路径差异相同的 merge-base..head、两端均为普通 100644 blob 时读取内容。仅允许 verify.ci.workflow.contract 原声明下的单行、无变量/重定向/管道/续行的 Python 脚本或 unittest/py_compile 命令变化；目标头、依赖、共享变量、其他目标、echo、注释等其余内容必须完全相同。不是通用 Make 解析器，不可证明时保留 full。
+
+CLI 显式 --path 不启用 Git 证明；缺失对象、非完整 SHA、symlink、超时、非法 UTF-8 均保守。HIGH_RISK/professional full 不变，既有后端车道仍执行 workflow contract；其他前端路径独立决定 standard/full，workflow_dispatch/release 仍为 full。没有替换后端回执裁决，也没有授权跳过 673 项测试。
+
+独立复核发现 text=True 会规范化 Git blob 换行，使字节证明不严格；已改为 bytes 严格 UTF-8 decode，真实 Git 反例覆盖保留区 CRLF 与裸 CR。verify.ci.orm_selection.unit 最终 34+17=51 项通过（make-scope-bytes-tests.log，0.181+0.366 秒测试运行时间），定向复核无剩余阻断。Git fixture 同时覆盖 dirty 文件不参与证明、分叉基线用 merge-base、普通文件变 symlink、其他 frontend 路径保留及动态命令拒绝。旧测试日志及审查发现保留。
+
+实际已存在提交的只读对照：相对 1ddade160 的采集增量 frontend_mode full→skip；相对 88b4c160 的完整未发布变更仍 full→full，继承的交付入口改动没有被排除。两者 professional_mode 均 full。最终精确版本对照写入 .runtime/fe-incremental-validation-02/make-scope-final-comparison.json；分析不执行测试，不是远端 CI 成功或实测耗时收益。
+
+本轮未修改风险政策 JSON、workflow 必需检查或产品源码；未跑完整 Quick、前端构建/类型检查/浏览器、14 模块全量。只形成可审阅本地 checkpoint；未推送、合并或部署。真实远端回执、动态事实完整依赖及后端测试复用收益仍 verification_pending，节省仍记 0 秒。
