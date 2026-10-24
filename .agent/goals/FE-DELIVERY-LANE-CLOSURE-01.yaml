@@ -28,10 +28,12 @@ goal:
     - scripts/audit/verification_lane_coverage.py
     - config/acceptance/evolution_binding.v1.json
     - scripts/dev/frontend_acceptance_runtime_profile.py
+    - scripts/dev/frontend_standard_preview.py
     - scripts/ops/acceptance_evolution_record.py
     - scripts/verify/acceptance_evolution_binding_guard.py
     - scripts/verify/test_frontend_acceptance_runtime_profile.py
     - scripts/verify/test_acceptance_evolution_binding_guard.py
+    - scripts/verify/test_frontend_standard_preview.py
   exclusions: [product code, test assertions, baseline widening, push, merge, deployment]
   acceptance:
     - all 14 targets have a named lane

@@ -67,3 +67,9 @@ authority exception already used by Quick, instead of requiring a copy of
 credentials inside each checkout. Because the shared acceptance profile
 resolver is an input to the list and relation suites, those two suites must run
 at the final policy head; presentation evidence remains reusable.
+
+The standard 5180 preview likewise keeps its build output in the primary
+workspace when an exact checkout runs it. The exact checkout still supplies the
+source tree, while the process identity, rollback copy and `.env.dev` authority
+remain anchored to the primary worktree instead of being copied into the
+candidate.

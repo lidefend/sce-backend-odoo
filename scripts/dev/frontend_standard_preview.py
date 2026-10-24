@@ -14,9 +14,27 @@ import tempfile
 import shutil
 
 ROOT = Path(__file__).resolve().parents[2]
-OUTPUT = ROOT.parent / 'sce-offrepo/artifacts/config05-20260929'
+
+
+def _preview_workspace_root() -> Path:
+    if os.environ.get("SC_PR_MERGE_EXACT_CHECKOUT") != "1":
+        return ROOT.parent
+    raw_root = os.environ.get("SC_PR_MERGE_AUTHORITY_ROOT", "").strip()
+    if not raw_root:
+        raise RuntimeError("exact checkout preview authority root is missing")
+    authority = Path(raw_root)
+    if not authority.is_absolute():
+        raise RuntimeError("exact checkout preview authority root must be absolute")
+    authority = authority.resolve()
+    if authority.is_symlink() or not authority.is_dir() or not (authority / ".git").is_dir():
+        raise RuntimeError("exact checkout preview authority root is invalid")
+    return authority.parent
+
+
+_PREVIEW_ROOT = _preview_workspace_root()
+OUTPUT = _PREVIEW_ROOT / 'sce-offrepo/artifacts/config05-20260929'
 DIST = OUTPUT / 'dist'
-PREVIOUS = ROOT.parent / 'sce-offrepo/artifacts/config04-20260929-r2/dist'
+PREVIOUS = _PREVIEW_ROOT / 'sce-offrepo/artifacts/config04-20260929-r2/dist'
 INPUTS = ['frontend', ':!frontend/apps/web/scripts']
 
 
