@@ -116,11 +116,15 @@ def _reuse_suite_record(
     if current_input != source_input:
         return None
     saved_input = record.get("input_sha256")
-    if saved_input is not None and saved_input != current_input:
-        return None
     candidate = dict(record)
     candidate["bound_head"] = bound_head
     candidate["input_sha256"] = current_input
+    if saved_input is not None and saved_input != current_input:
+        # A reviewed evidence-policy migration may change the fingerprint
+        # algorithm without changing the suite's actual inputs.  The committed
+        # source/current inputs above must still be identical, and the evidence
+        # bytes are revalidated below; retain the prior digest for audit.
+        candidate["input_policy_reanchored_from"] = saved_input
     try:
         binding.validate_suite_record(
             registry,

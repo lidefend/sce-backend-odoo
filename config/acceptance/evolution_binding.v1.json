@@ -40,6 +40,40 @@
       "entrypoints": [
         "make verify.frontend.presentation.browser"
       ],
+      "inputs": [
+        "Makefile",
+        "config/acceptance/daily_demo_credential.v1.json",
+        "config/acceptance/frontend_presentation_targets.v1.json",
+        "config/acceptance/isolated_entry_identity.v1.env",
+        "config/frontend/**",
+        "scripts/verify/daily_demo_credential_confirmation.py",
+        "scripts/verify/frontend_product_page_header_browser.mjs",
+        "scripts/verify/lib/frontend_acceptance_environment.mjs",
+        "scripts/verify/playwright_runtime.mjs",
+        "scripts/verify/test_daily_demo_credential_confirmation.py",
+        "make/frontend_professional_extensions.mk"
+      ],
+      "make_inputs": [
+        {
+          "path": "make/frontend.mk",
+          "targets": [
+            "verify.daily.demo_credential.confirmation",
+            "verify.frontend.presentation.browser"
+          ],
+          "variables": [
+            "FRONTEND_PRESENTATION_LOGIN",
+            "FRONTEND_PRESENTATION_OUTPUT",
+            "FRONTEND_PRESENTATION_TARGETS_FILE"
+          ]
+        },
+        {
+          "path": "make/guards.mk",
+          "targets": [
+            "guard.prod.forbid"
+          ],
+          "variables": []
+        }
+      ],
       "evidence": {
         "adapter": "presentation_header",
         "min_counts": {
@@ -136,6 +170,53 @@
       "entrypoints": [
         "node scripts/verify/frontend_list_surface_structure_browser.mjs"
       ],
+      "inputs": [
+        "Makefile",
+        "config/acceptance/**",
+        "config/frontend/**",
+        "scripts/common/frontend_acceptance*",
+        "scripts/dev/frontend_acceptance*",
+        "scripts/dev/frontend_standard_preview.py",
+        "scripts/verify/frontend_authenticated_intent.mjs",
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/lib/acceptance_contract_receipt.mjs",
+        "scripts/verify/lib/frontend_acceptance*",
+        "scripts/verify/playwright_runtime.mjs",
+        "scripts/verify/released_navigation_target.mjs",
+        "make/frontend_professional_extensions.mk"
+      ],
+      "make_inputs": [
+        {
+          "path": "make/frontend.mk",
+          "targets": [
+            "verify.frontend.list_surface_search_contract.unit",
+            "verify.frontend.list_surface_structure.browser"
+          ],
+          "variables": [
+            "SC_ACCEPTANCE_CONTRACT_DECLARATION",
+            "SC_ACCEPTANCE_CONTRACT_RECEIPT",
+            "SC_ACCEPTANCE_REQUIRED_SHA",
+            "SC_LIST_PREVIEW_DB_KEYS",
+            "SC_LIST_PREVIEW_URL_KEYS"
+          ]
+        },
+        {
+          "path": "make/dev.mk",
+          "targets": [],
+          "variables": [
+            "ACCEPTANCE_BASE_URL",
+            "FRONTEND_ACCEPTANCE_DB",
+            "SC_ACCEPTANCE_RUNTIME_PROFILE"
+          ]
+        },
+        {
+          "path": "make/guards.mk",
+          "targets": [
+            "guard.prod.forbid"
+          ],
+          "variables": []
+        }
+      ],
       "evidence": {
         "adapter": "list_surface",
         "min_counts": {
@@ -153,6 +234,48 @@
       "description": "关系字段回环、入口与操作恢复浏览器验收",
       "entrypoints": [
         "node scripts/verify/record_relation_roundtrip_acceptance.js"
+      ],
+      "inputs": [
+        "Makefile",
+        "config/acceptance/**",
+        "config/frontend/**",
+        "scripts/common/frontend_acceptance*",
+        "scripts/dev/frontend_acceptance*",
+        "scripts/dev/frontend_standard_preview.py",
+        "scripts/verify/frontend_authenticated_intent.mjs",
+        "scripts/verify/lib/frontend_acceptance*",
+        "scripts/verify/playwright_runtime.mjs",
+        "scripts/verify/record_relation_roundtrip_acceptance.js",
+        "scripts/verify/released_navigation_target.mjs",
+        "make/frontend_professional_extensions.mk"
+      ],
+      "make_inputs": [
+        {
+          "path": "make/frontend.mk",
+          "targets": [
+            "verify.frontend.relation_roundtrip.browser"
+          ],
+          "variables": [
+            "RELATION_FIELD",
+            "RELATION_RESOLUTION_KEY",
+            "SC_ACCEPTANCE_RELATION_LOGIN"
+          ]
+        },
+        {
+          "path": "make/dev.mk",
+          "targets": [],
+          "variables": [
+            "ACCEPTANCE_RECORD_RESOLUTION",
+            "SC_ACCEPTANCE_RUNTIME_PROFILE"
+          ]
+        },
+        {
+          "path": "make/guards.mk",
+          "targets": [
+            "guard.prod.forbid"
+          ],
+          "variables": []
+        }
       ],
       "evidence": {
         "adapter": "relation_roundtrip",

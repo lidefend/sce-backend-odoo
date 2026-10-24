@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `4911`
 - Files requiring split plan: `71`
-- Files above warning threshold: `140`
+- Files above warning threshold: `141`
 
 ## Split Plan Required
 
@@ -165,6 +165,7 @@ Generated from repository source files. This report is informational during the 
 | 955 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
+| 933 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 932 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
@@ -186,6 +187,7 @@ Generated from repository source files. This report is informational during the 
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 854 | Python source | `scripts/ops/test_daily_runtime_duty_operator_grant.py` |
+| 853 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |
 | 849 | Python source | `scripts/verify/test_system_performance_baseline.py` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
@@ -200,7 +202,6 @@ Generated from repository source files. This report is informational during the 
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 827 | Python source | `addons/smart_construction_core/core_extension_system_init_rows.py` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
-| 826 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
 | 815 | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
 | 815 | Python source | `scripts/verify/frontend_decision_authority.py` |
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |

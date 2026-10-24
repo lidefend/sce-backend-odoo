@@ -176,6 +176,32 @@ class TestGlobAndPlan(unittest.TestCase):
         with self.assertRaises(guard.BindingError):
             guard.plan_for_stage(self.registry, plan, "skip")
 
+    def test_runtime_suite_inputs_are_target_scoped_not_repository_wide(self):
+        self.assertEqual(guard.GLOBAL_SUITE_INPUTS, ())
+        for suite_id in ("frontend_presentation", "list_surface_structure", "relation_roundtrip"):
+            suite = self.registry["suites"][suite_id]
+            self.assertTrue(suite["make_inputs"], suite_id)
+            self.assertNotIn("make/**", suite["inputs"], suite_id)
+            self.assertNotIn("make/ci.mk", {item["path"] for item in suite["make_inputs"]})
+
+    def test_make_target_material_ignores_other_rules_but_tracks_the_selected_rule(self):
+        original = (
+            "target-one:\n"
+            "\t@echo one\n"
+            "\n"
+            "target-two:\n"
+            "\t@echo two\n"
+        )
+        changed_other = original.replace("@echo one", "@echo changed")
+        changed_target = original.replace("@echo two", "@echo changed")
+        selected = guard._make_target_material(original, "target-two", "Makefile")
+        self.assertEqual(selected, guard._make_target_material(changed_other, "target-two", "Makefile"))
+        self.assertNotEqual(selected, guard._make_target_material(changed_target, "target-two", "Makefile"))
+        self.assertEqual(
+            guard._make_variable_material("UNRELATED := 1\n", "UNRELATED", "Makefile"),
+            "UNRELATED := 1\n",
+        )
+
     def test_glob_semantics(self):
         self.assertTrue(guard.path_matches("addons/**", "addons/a.py"))
         self.assertTrue(guard.path_matches("addons/**", "addons/a/b.py"))
@@ -289,9 +315,9 @@ class TestGlobAndPlan(unittest.TestCase):
             self.assertEqual(set(plan['required_suites']),
                              {'governance_static', 'daily_runtime_entry', 'path_namespace_identity'})
 
-    def test_global_and_explicit_dependencies_override_first_match(self):
-        self.assertTrue(guard.suite_owns_path(self.registry, 'daily_runtime_entry',
-                                            'config/acceptance/evolution_binding.v1.json'))
+    def test_explicit_dependencies_override_first_match(self):
+        self.assertFalse(guard.suite_owns_path(self.registry, 'daily_runtime_entry',
+                                             'config/acceptance/evolution_binding.v1.json'))
         self.assertFalse(guard.suite_owns_path(self.registry, 'daily_runtime_entry',
                                              'scripts/ops/evidence_scope.py'))
         registry = json.loads(json.dumps(self.registry))
@@ -646,6 +672,69 @@ class TestCarryForwardPolicy(unittest.TestCase):
         self.assertNotEqual(guard.suite_input_sha256(self.registry, 'daily_runtime_entry', head),
                             guard.suite_input_sha256(self.registry, 'daily_runtime_entry', runtime))
 
+    def test_unrelated_make_change_preserves_runtime_fingerprint(self):
+        registry = {
+            "suites": {
+                "runtime_probe": {
+                    "description": "runtime probe",
+                    "entrypoints": ["make verify.runtime.probe"],
+                    "evidence": None,
+                    "stages": ["merge"],
+                    "inputs": [],
+                    "make_inputs": [
+                        {
+                            "path": "make/runtime.mk",
+                            "targets": ["verify.runtime.probe"],
+                            "variables": ["RUNTIME_PROBE_MODE"],
+                        }
+                    ],
+                }
+            },
+            "rules": [],
+        }
+        self._write(
+            "make/runtime.mk",
+            "RUNTIME_PROBE_MODE ?= readonly\n"
+            "verify.runtime.probe:\n"
+            "\t@echo runtime\n"
+            "verify.runtime.other:\n"
+            "\t@echo other\n",
+        )
+        self._write("make/ci.mk", "ci-unrelated:\n\t@echo ci\n")
+        base = self._commit("runtime probe baseline")
+        self._write("make/ci.mk", "ci-unrelated:\n\t@echo changed-ci\n")
+        ci_only = self._commit("unrelated CI orchestration")
+        self.assertEqual(
+            guard.suite_input_sha256(registry, "runtime_probe", base),
+            guard.suite_input_sha256(registry, "runtime_probe", ci_only),
+        )
+        self._write(
+            "make/runtime.mk",
+            "RUNTIME_PROBE_MODE ?= readonly\n"
+            "verify.runtime.probe:\n"
+            "\t@echo runtime\n"
+            "verify.runtime.other:\n"
+            "\t@echo changed-other\n",
+        )
+        other_target = self._commit("unrelated target")
+        self.assertEqual(
+            guard.suite_input_sha256(registry, "runtime_probe", ci_only),
+            guard.suite_input_sha256(registry, "runtime_probe", other_target),
+        )
+        self._write(
+            "make/runtime.mk",
+            "RUNTIME_PROBE_MODE ?= write\n"
+            "verify.runtime.probe:\n"
+            "\t@echo runtime-changed\n"
+            "verify.runtime.other:\n"
+            "\t@echo changed-other\n",
+        )
+        changed = self._commit("owned target")
+        self.assertNotEqual(
+            guard.suite_input_sha256(registry, "runtime_probe", other_target),
+            guard.suite_input_sha256(registry, "runtime_probe", changed),
+        )
+
     def test_unchanged_suite_inputs_can_be_carried_across_head(self):
         base = self._git("rev-parse", "HEAD")
         with tempfile.TemporaryDirectory() as raw:
@@ -662,6 +751,47 @@ class TestCarryForwardPolicy(unittest.TestCase):
             )
             self.assertEqual(result["status"], "PASS")
             self.assertEqual(result["suites"]["daily_runtime_entry"]["bound_head"], base)
+
+    def test_reviewed_input_policy_migration_reanchors_identical_suite_inputs(self):
+        head = self._git("rev-parse", "HEAD")
+        with tempfile.TemporaryDirectory() as raw:
+            directory = Path(raw)
+            evidence = self._write_json(directory / "entry.json", _entry_verify(head))
+            now = (
+                datetime.datetime.now(datetime.timezone.utc)
+                .replace(microsecond=0)
+                .isoformat()
+                .replace("+00:00", "Z")
+            )
+            current_input = guard.suite_input_sha256(
+                self.registry, "daily_runtime_entry", head
+            )
+            previous = {
+                "schema": guard.EVIDENCE_SCHEMA,
+                "head_sha": head,
+                "base_sha": head,
+                "recorded_at": now,
+                "suites": {
+                    "daily_runtime_entry": {
+                        "status": "pass",
+                        "evidence": [
+                            {
+                                "path": str(evidence),
+                                "sha256": hashlib.sha256(evidence.read_bytes()).hexdigest(),
+                            }
+                        ],
+                        "bound_head": head,
+                        "input_sha256": "f" * 64,
+                        "verified_at": now,
+                    }
+                },
+            }
+            candidate = recorder._reuse_suite_record(
+                self.registry, previous, "daily_runtime_entry", head
+            )
+            self.assertIsNotNone(candidate)
+            self.assertEqual(candidate["input_sha256"], current_input)
+            self.assertEqual(candidate["input_policy_reanchored_from"], "f" * 64)
 
     def test_changed_suite_inputs_refuse_carried_evidence(self):
         base = self._git("rev-parse", "HEAD")

@@ -37,3 +37,27 @@ restored and installed Chromium for `full`. The probe remains part of the shared
 and the remote frontend lane exercise it. Standard and full frontend lanes now
 restore the lockfile-keyed Playwright cache and install Chromium when the cache
 misses; the `skip` lane remains unchanged.
+
+## Evidence input policy correction
+
+The exact-head merge gate then exposed a second systemic issue: the acceptance
+policy treated every `make/**` and `scripts/ci/**` change as an input to every
+runtime suite. A Quick-only edit in `make/ci.mk` therefore invalidated the
+presentation, list and relation runtime receipts even though their executable
+surfaces were unchanged.
+
+The registry now declares suite-local file inputs plus exact Make targets and
+variables. The fingerprint contains only those target/variable stanzas, while a
+missing configured target or variable at the evaluated head remains fail-closed.
+For the current transition:
+
+- `frontend_presentation` input identity is unchanged from `aef7ae51…`;
+- `list_surface_structure` input identity is unchanged from `aef7ae51…`;
+- `relation_roundtrip` changes because its Make entrypoint now passes the
+  governed relation login and resolution variables, so it must run at the new
+  head.
+
+The recorder permits a reviewed fingerprint-policy migration only when the
+suite inputs computed at the old and new heads are identical; evidence bytes are
+still revalidated and the previous digest is retained for audit. Unrelated Make
+or CI changes must no longer invalidate runtime evidence.

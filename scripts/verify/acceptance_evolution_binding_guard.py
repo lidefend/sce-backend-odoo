@@ -159,6 +159,46 @@ def load_registry(path: Path) -> dict:
                         raise BindingError(
                             f"suite {suite_id!r} min_counts[{key!r}] must be a non-negative integer"
                         )
+        make_inputs = suite.get("make_inputs", [])
+        if not isinstance(make_inputs, list):
+            raise BindingError(f"suite {suite_id!r} make_inputs must be an array")
+        seen_make_inputs: set[tuple[str, str, str]] = set()
+        for item in make_inputs:
+            if not isinstance(item, dict) or set(item) != {"path", "targets", "variables"}:
+                raise BindingError(
+                    f"suite {suite_id!r} make_inputs entries require path, targets and variables"
+                )
+            path = item["path"]
+            targets = item["targets"]
+            variables = item["variables"]
+            if (
+                not isinstance(path, str)
+                or not path
+                or Path(path).is_absolute()
+                or ".." in Path(path).parts
+                or not (path == "Makefile" or path.startswith("make/"))
+            ):
+                raise BindingError(f"suite {suite_id!r} make input path is invalid: {path!r}")
+            if not isinstance(targets, list) or not isinstance(variables, list):
+                raise BindingError(
+                    f"suite {suite_id!r} make input targets/variables must be arrays"
+                )
+            if not targets and not variables:
+                raise BindingError(f"suite {suite_id!r} has an empty make input selector")
+            for target in targets:
+                if not isinstance(target, str) or not re.fullmatch(r"[A-Za-z0-9_.%/-]+", target):
+                    raise BindingError(f"suite {suite_id!r} make target is invalid: {target!r}")
+                key = (path, "target", target)
+                if key in seen_make_inputs:
+                    raise BindingError(f"suite {suite_id!r} repeats make target {path}:{target}")
+                seen_make_inputs.add(key)
+            for variable in variables:
+                if not isinstance(variable, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", variable):
+                    raise BindingError(f"suite {suite_id!r} make variable is invalid: {variable!r}")
+                key = (path, "variable", variable)
+                if key in seen_make_inputs:
+                    raise BindingError(f"suite {suite_id!r} repeats make variable {path}:{variable}")
+                seen_make_inputs.add(key)
     for rule in rules:
         if not isinstance(rule, dict):
             raise BindingError("every rule must be an object")
@@ -241,16 +281,11 @@ def changed_files(base: str, head: str) -> list[str]:
     return sorted({line.strip() for line in result.stdout.splitlines() if line.strip()})
 
 
-# These files define the meaning of every evidence suite.  A change here is
-# therefore an input change for all suites, not just for governance_static.
-GLOBAL_SUITE_INPUTS = (
-    "config/acceptance/evolution_binding.v1.json",
-    "scripts/verify/acceptance_evolution_binding_guard.py",
-    "scripts/ops/acceptance_evolution_record.py",
-    "Makefile",
-    "make/**",
-    "scripts/ci/**",
-)
+# The registry's suite descriptor and explicit inputs are the authority.  Do
+# not make every suite depend on every Makefile or CI helper: that turns a
+# Quick-only change into three false runtime invalidations.  Make entrypoints
+# are fingerprinted at target/variable granularity below.
+GLOBAL_SUITE_INPUTS: tuple[str, ...] = ()
 
 
 def carry_forward_policy(registry: dict) -> dict:
@@ -267,15 +302,29 @@ def suite_input_sha256(registry: dict, suite_id: str, revision: str) -> str:
     """Hash only the committed inputs that can change this suite's verdict."""
 
     material: list[str] = []
+    suite = registry["suites"][suite_id]
+    make_input_paths = {item["path"] for item in suite.get("make_inputs") or []}
+    strict_selectors = revision == str(_git("rev-parse", "HEAD"))
     for line in _git("ls-tree", "-r", "--full-tree", revision).splitlines():
         _, _, path = line.partition("\t")
+        if path in make_input_paths:
+            continue
         if path and suite_owns_path(registry, suite_id, path):
             material.append(line)
+    for item in suite.get("make_inputs") or []:
+        text = str(_git("show", f"{revision}:{item['path']}"))
+        for target in item["targets"]:
+            material.append(
+                f"make-target\t{item['path']}\t{target}\n"
+                f"{_make_target_material(text, target, item['path'], missing_is_error=strict_selectors)}"
+            )
+        for variable in item["variables"]:
+            material.append(
+                f"make-variable\t{item['path']}\t{variable}\n"
+                f"{_make_variable_material(text, variable, item['path'], missing_is_error=strict_selectors)}"
+            )
     descriptor = json.dumps(
-        {
-            "entrypoints": registry["suites"][suite_id].get("entrypoints") or [],
-            "evidence": registry["suites"][suite_id].get("evidence"),
-        },
+        suite,
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
@@ -286,13 +335,71 @@ def suite_input_sha256(registry: dict, suite_id: str, revision: str) -> str:
     return digest.hexdigest()
 
 
+def _make_target_material(
+    text: str, target: str, path: str, *, missing_is_error: bool = True
+) -> str:
+    lines = text.splitlines(keepends=True)
+    blocks: list[str] = []
+    for index, line in enumerate(lines):
+        if line[:1].isspace() or line.lstrip().startswith("#") or ":" not in line:
+            continue
+        left, _ = line.split(":", 1)
+        if target not in left.split():
+            continue
+        block = [line]
+        continuation = line.rstrip("\n").endswith("\\")
+        cursor = index + 1
+        while cursor < len(lines):
+            current = lines[cursor]
+            if not continuation and not current.startswith("\t"):
+                break
+            block.append(current)
+            continuation = current.rstrip("\n").endswith("\\")
+            cursor += 1
+        blocks.append("".join(block))
+    if not blocks:
+        if missing_is_error:
+            raise BindingError(f"make target is missing: {path}:{target}")
+        return f"<missing-target {path}:{target}>\n"
+    return "".join(blocks)
+
+
+def _make_variable_material(
+    text: str, variable: str, path: str, *, missing_is_error: bool = True
+) -> str:
+    lines = text.splitlines(keepends=True)
+    blocks: list[str] = []
+    pattern = re.compile(
+        rf"^(?:export\s+|override\s+)*{re.escape(variable)}\s*(?::=|\?=|\+=|=)"
+    )
+    for index, line in enumerate(lines):
+        if not pattern.match(line):
+            continue
+        block = [line]
+        continuation = line.rstrip("\n").endswith("\\")
+        cursor = index + 1
+        while continuation and cursor < len(lines):
+            current = lines[cursor]
+            block.append(current)
+            continuation = current.rstrip("\n").endswith("\\")
+            cursor += 1
+        blocks.append("".join(block))
+    if not blocks:
+        if missing_is_error:
+            raise BindingError(f"make variable is missing: {path}:{variable}")
+        return f"<missing-variable {path}:{variable}>\n"
+    return "".join(blocks)
+
+
 def suite_owns_path(registry: dict, suite_id: str, path: str) -> bool:
     """Use the same first-match ownership for planning and invalidation.
 
     Global mechanism inputs and explicit suite dependencies remain unconditional;
     a later broad rule must not recapture an earlier exact governance rule.
     """
-    explicit = (*GLOBAL_SUITE_INPUTS, *(registry['suites'][suite_id].get('inputs') or []))
+    suite = registry["suites"][suite_id]
+    make_paths = tuple(item["path"] for item in suite.get("make_inputs") or [])
+    explicit = (*GLOBAL_SUITE_INPUTS, *make_paths, *(suite.get("inputs") or []))
     if any(path_matches(pattern, path) for pattern in explicit):
         return True
     rule = next((item for item in registry['rules']
