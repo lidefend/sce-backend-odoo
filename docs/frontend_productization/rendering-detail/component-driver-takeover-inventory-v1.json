@@ -97,8 +97,13 @@
     },
     {
       "adapterKeys": [
+        "ScButton",
         "ScErrorState",
-        "ScInlineState"
+        "ScIcon",
+        "ScIconButton",
+        "ScInlineState",
+        "ScInput",
+        "ScTabs"
       ],
       "adapterSources": [
         {
@@ -112,13 +117,23 @@
             "ScInlineState"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScInlineState.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScButton",
+            "ScIcon",
+            "ScIconButton",
+            "ScInput",
+            "ScTabs"
+          ],
+          "source": "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
         }
       ],
       "bridgeExports": [
         "TDesignAlert"
       ],
       "officialComponent": "alert",
-      "productionConsumerCount": 77,
+      "productionConsumerCount": 664,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -238,7 +253,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 451,
+      "productionConsumerCount": 452,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -345,7 +360,7 @@
         "TDesignCollapsePanel"
       ],
       "officialComponent": "collapse",
-      "productionConsumerCount": 443,
+      "productionConsumerCount": 444,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1189,7 +1204,7 @@
         "TDesignTabs"
       ],
       "officialComponent": "tabs",
-      "productionConsumerCount": 526,
+      "productionConsumerCount": 527,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1383,7 +1398,7 @@
         "TDesignUpload"
       ],
       "officialComponent": "upload",
-      "productionConsumerCount": 436,
+      "productionConsumerCount": 437,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1400,7 +1415,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "1655920dc9af865a8eaec0508aa1e251240a6d34e77102c5d3a73f94425537b0",
+  "inputDigest": "5efcfb8d5b809d2930e1c7fa7140fc11250e2b8b35ca989f73322f179c176d5a",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0-P4 frontend production sources except the design-system adapter layer",
