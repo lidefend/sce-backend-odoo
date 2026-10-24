@@ -108,3 +108,31 @@ equal(resolveSceneRuntimeDiagnostic({ bridge_aligned: true, semantic_bridge_alig
 equal(resolveSceneRuntimeDiagnostic({ missing_required_count: 1, active_transition_count: 2, bridge_aligned: false }, defaultCopy), '待补充事项：1；可办理步骤：2；当前场景语义尚未完全对齐。');
 equal(resolveSceneRuntimeDiagnostic({ active_transition_count: 1 }, () => 'Declared transition'), 'Declared transition：1');
 console.log(`[scene_runtime_diagnostic_test] PASS diagnostic_cases=12 total_cases=${cases}`);
+
+
+// Request lifecycle: a stalled or failed hydration cannot leave the scene waiting.
+import { awaitSceneHydration } from '../src/app/sceneHydration';
+const parent = new AbortController();
+assert.equal(await awaitSceneHydration(async () => 'ready', parent.signal, 50), 'ready'); cases += 1;
+const failure = new Error('backend rejected scene');
+await assert.rejects(awaitSceneHydration(async () => { throw failure; }, parent.signal, 50),
+  (error: unknown) => error === failure); cases += 1;
+let transportSignal: AbortSignal | undefined;
+await assert.rejects(awaitSceneHydration((signal) => {
+  transportSignal = signal;
+  return new Promise(() => {});
+}, parent.signal, 5), (error: unknown) => error instanceof DOMException && error.name === 'TimeoutError'); cases += 1;
+assert.equal(transportSignal?.aborted, true); cases += 1;
+const cancelled = new AbortController();
+const cancellation = awaitSceneHydration(() => new Promise(() => {}), cancelled.signal, 100);
+cancelled.abort(new DOMException('Context changed', 'AbortError'));
+await assert.rejects(cancellation, (error: unknown) => error instanceof DOMException && error.name === 'AbortError'); cases += 1;
+let calledAfterAbort = false;
+await assert.rejects(awaitSceneHydration(async () => { calledAfterAbort = true; }, cancelled.signal, 100)); cases += 1;
+assert.equal(calledAfterAbort, false); cases += 1;
+// A late response cannot change the settled failure, and a fresh retry can succeed.
+let finishLate: (value: string) => void = () => {};
+const late = awaitSceneHydration(() => new Promise<string>((resolve) => { finishLate = resolve; }), parent.signal, 5);
+await assert.rejects(late); finishLate('obsolete'); cases += 1;
+assert.equal(await awaitSceneHydration(async () => 'retry-ready', parent.signal, 50), 'retry-ready'); cases += 1;
+console.log(`[scene_entry_hydration_test] PASS cases=${cases}`);

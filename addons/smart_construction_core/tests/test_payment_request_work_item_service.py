@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import base64
+from unittest.mock import patch
 from types import SimpleNamespace
 
 from odoo.tests.common import tagged
@@ -231,8 +232,8 @@ class TestPaymentRequestWorkItemService(BusinessTransactionCase):
         )
         self.assertIn("WORK-ITEM-DRAFT-001", draft["search_text"])
         self.assertEqual(workspace["presentation"]["default_sort"], "updated_desc")
-        self.assertEqual(workspace["presentation"]["quick_links"][0]["label"], "付款申请")
-        self.assertEqual(workspace["presentation"]["quick_links"][0]["route"], "/s/finance.payment_requests")
+        expected_link = PaymentRequestWorkItemService(self.env(user=self.finance))._list_target()
+        self.assertEqual(workspace["presentation"]["quick_links"], [expected_link] if expected_link else [])
         action = self.env.ref("smart_construction_core.action_payment_request_user_payment_apply")
         menu = self.env.ref("smart_construction_core.menu_sc_user_payment_apply")
         self.assertEqual(draft["target"]["action_ref"], action.get_external_id()[action.id])
@@ -243,6 +244,23 @@ class TestPaymentRequestWorkItemService(BusinessTransactionCase):
             "/r/payment.request/%s?action_id=%s&menu_id=%s" % (self.draft.id, action.id, menu.id),
         )
         self.assertNotIn("model", draft["record"])
+
+    def test_payment_shortcut_uses_only_published_unscoped_read_route(self):
+        service = PaymentRequestWorkItemService(self.env(user=self.executive))
+        authority_path = "odoo.addons.smart_construction_core.services.payment_request_work_item_service.build_runtime_route_authority"
+        with patch(authority_path, return_value={"primary_actions": []}):
+            self.assertIsNone(service._list_target())
+        candidate = {"model": "payment.request", "allowed_operation": "read",
+                     "route": "/a/123?menu_id=456", "context_requirements": {}}
+        with patch(authority_path, return_value={"primary_actions": [candidate]}):
+            self.assertEqual(service._list_target()["route"], candidate["route"])
+        for denied in (
+            dict(candidate, allowed_operation="none"),
+            dict(candidate, model="construction.contract"),
+            dict(candidate, context_requirements={"required_query": ["project_id"]}),
+        ):
+            with patch(authority_path, return_value={"primary_actions": [denied]}):
+                self.assertIsNone(service._list_target())
 
     def test_executive_only_gets_submitted_approval_item(self):
         workspace = self._workspace(self.executive)

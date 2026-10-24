@@ -128,7 +128,7 @@ function throwEnvelopeError(
   });
 }
 
-export async function intentRequest<T>(payload: IntentPayload) {
+export async function intentRequest<T>(payload: IntentPayload, options: { signal?: AbortSignal } = {}) {
   const traceId = generateTraceId();
   const session = useSessionStore();
   const effectivePayload = withCurrentRecordContext(session, payload);
@@ -139,6 +139,7 @@ export async function intentRequest<T>(payload: IntentPayload) {
       method: 'POST',
       headers: buildHeaders(effectivePayload.intent, traceId),
       body: JSON.stringify(effectivePayload),
+      signal: options.signal,
     });
     const resolvedTrace = response.traceId || traceId;
     session.recordIntentTrace({

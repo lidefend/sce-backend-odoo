@@ -57,6 +57,7 @@
       :retryable="error?.retryable"
       :hint="errorCopy.hint"
       :suggested-action="error?.suggestedAction"
+      :on-retry="resolveScene"
       variant="error"
       :style="pageSectionStyle('status_error')"
     />
@@ -182,6 +183,9 @@ import { ErrorCodes } from '../app/error_codes';
 import { resolveErrorCopy, useStatus } from '../composables/useStatus';
 import { trackSceneOpen } from '../api/usage';
 import { intentRequest } from '../api/intents';
+import { ApiError } from '../api/client';
+import { currentContextSignal, currentContextEpoch } from '../app/contextEpoch';
+import { awaitSceneHydration } from '../app/sceneHydration';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { readWorkspaceContext } from '../app/workspaceContext';
 import { buildCanonicalSceneRouteTarget, normalizeLegacyWorkbenchPath, resolveSceneDefaultOrder } from '../app/routeQuery';
@@ -227,7 +231,9 @@ const forbiddenCopy = ref({
 const validationHint = ref('');
 const embeddedActionId = ref(0);
 const embeddedRecordActionId = ref(0);
-const sceneReadyHydrateRequested = ref(false);
+let hydratedSceneScope = '';
+const sceneHydrations = new Map<string, Promise<boolean>>();
+let sceneResolution = 0;
 // An embedded action already owns the complete list canvas and its controls.
 // Scene chrome must therefore stay neutral for every business collection;
 // key-based exceptions make otherwise identical lists drift across modules.
@@ -507,12 +513,13 @@ function openHandlingEntry(item: HandlingEntryItem) {
 
 async function hydrateSceneReadyForCurrentScene(sceneKey: string) {
   const key = String(sceneKey || '').trim();
-  if (!key || sceneReadyHydrateRequested.value) {
-    return false;
-  }
-  sceneReadyHydrateRequested.value = true;
-  try {
-    const result = await intentRequest<Record<string, unknown>>({
+  const epoch = currentContextEpoch();
+  const scopeKey = `${epoch}:${key}`;
+  if (!key || hydratedSceneScope === scopeKey) return false;
+  const pending = sceneHydrations.get(scopeKey);
+  if (pending) return pending;
+  const hydration = (async () => {
+    const result = await awaitSceneHydration((signal) => intentRequest<Record<string, unknown>>({
       intent: 'system.init',
       params: {
         scene: 'web',
@@ -523,20 +530,26 @@ async function hydrateSceneReadyForCurrentScene(sceneKey: string) {
         scene_key: key,
       },
       meta: { startup_chain_bypass: true },
-    });
+    }, { signal }), currentContextSignal());
+    if (currentContextEpoch() !== epoch || currentSceneKey.value !== key || !ownsSceneRoute(route.name)) return false;
     const contract = result.scene_ready_contract;
     if (contract && typeof contract === 'object' && Array.isArray((contract as Record<string, unknown>).scenes)) {
       const readyContract = contract as Record<string, unknown>;
       session.sceneReadyContract = readyContract as never;
       setSceneRegistryFromSceneReadyContract(readyContract as never);
+      // A targeted response retains other scenes as registry entries, so only
+      // this last detailed scene can be reused without another hydration.
+      hydratedSceneScope = scopeKey;
       return true;
     }
-  } catch (err) {
-    // Ignore hydration failures here; the existing fallback rendering can continue.
-    // eslint-disable-next-line no-console
-    console.warn('[scene-view] scene-ready hydration failed', err);
+    throw new Error('Scene hydration response has no scene contract');
+  })();
+  sceneHydrations.set(scopeKey, hydration);
+  try {
+    return await hydration;
+  } finally {
+    sceneHydrations.delete(scopeKey);
   }
-  return false;
 }
 
 
@@ -933,6 +946,10 @@ async function resolveScene() {
   // The scene runtime only acts for the scene route it owns; a cached view must not
   // dispatch a foreign route's business `entry_intent` value as a scene intent.
   if (!ownsSceneRoute(route.name)) return;
+  const resolution = ++sceneResolution;
+  const epoch = currentContextEpoch();
+  const ownsResolution = () => resolution === sceneResolution
+    && epoch === currentContextEpoch() && ownsSceneRoute(route.name);
   try {
     status.value = 'loading';
     clearError();
@@ -944,6 +961,7 @@ async function resolveScene() {
     let resolvedScene = getSceneByKey(sceneKey) || fallbackSceneFromSceneReady(sceneKey);
     if (!resolvedScene && sceneKey) {
       await hydrateSceneReadyForCurrentScene(sceneKey);
+      if (!ownsResolution()) return;
       resolvedScene = getSceneByKey(sceneKey) || fallbackSceneFromSceneReady(sceneKey);
     }
     if (!resolvedScene) {
@@ -955,7 +973,9 @@ async function resolveScene() {
     scene.value = resolvedScene;
     if (!sceneBlocks.value.length || !hasHandlingEntryCatalog(scene.value)) {
       await hydrateSceneReadyForCurrentScene(sceneKey);
+      if (!ownsResolution()) return;
       scene.value = getSceneByKey(sceneKey) || resolvedScene;
+      resolvedScene = scene.value;
     }
     if (sceneContractEntryIntent.value) {
       status.value = 'idle';
@@ -1275,8 +1295,13 @@ async function resolveScene() {
     errorCopy.value = resolveErrorCopy(error.value, pageText('error_fallback', '场景加载失败'));
     status.value = 'error';
   } catch (err) {
+    if (!ownsResolution()) return;
+    const failure = err instanceof DOMException && err.name === 'TimeoutError'
+      ? new ApiError(err.message, 0, undefined, {
+        reasonCode: 'TIMEOUT', kind: 'network', errorCategory: 'network', retryable: true,
+      }) : err;
     setError(
-      err instanceof Error ? err : new Error(pageText('error_scene_resolve_failed', 'scene resolve failed')),
+      failure instanceof Error ? failure : new Error(pageText('error_scene_resolve_failed', 'scene resolve failed')),
       pageText('error_scene_resolve_failed', 'scene resolve failed'),
     );
     errorCopy.value = resolveErrorCopy(error.value, pageText('error_fallback', '场景加载失败'));

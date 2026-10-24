@@ -225,6 +225,11 @@ def build_risk_action_rows(env) -> List[Dict[str, Any]]:
                     "status": status,
                     "count": 1,
                     "risk_action_id": int(row.get("id") or 0),
+                    # The card describes this factual risk, not a finance drilldown.
+                    # The existing readonly record entry enforces the caller's ACL/rules.
+                    "model": "project.risk.action",
+                    "record_id": int(row.get("id") or 0),
+                    "path": f"/r/project.risk.action/{int(row.get('id') or 0)}",
                     "source_detail": "factual_record",
                 }
             )

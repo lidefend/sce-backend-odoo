@@ -1,0 +1,8 @@
+schema_version: 1
+goal:
+  id: FE-UX-ENTRY-CONTINUITY-01
+  title: 角色入口到业务对象的可靠导航
+  status: verification_pending
+  formal_product_layer: P1_with_P0_runtime_collaboration
+  layer_target: risk action, project contracts, executive payment scene
+  exclusions: [permission_expansion, navigation_bypass, demo_bulk_changes, treasury, homepage_redesign, push, merge, deployment]

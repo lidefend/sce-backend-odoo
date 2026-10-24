@@ -1174,7 +1174,7 @@ def _to_business_action(
         or row.get("scene")
         or _route_scene_by_source(source_key, keyword_overrides=keyword_overrides)
     )
-    route = _to_text(row.get("route")) or f"/s/{scene_key}"
+    route = _to_text(row.get("route") or row.get("path")) or f"/s/{scene_key}"
     status_text = _to_text(row.get("status") or row.get("state") or row.get("level") or row.get("severity")).lower()
     urgent_keywords = _provider_token_set(
         "build_urgent_keywords",
@@ -1817,8 +1817,11 @@ def _build_risk_actions(
                 keyword_overrides=keyword_overrides,
             ):
                 continue
-            action["scene_key"] = _workspace_scene("risk_center")
-            action["route"] = f"/s/{action['scene_key']}"
+            # A factual row may declare a record target. Risk classification
+            # must not replace that target with an unrelated scene action.
+            if not _to_text(row.get("route") or row.get("path")):
+                action["scene_key"] = _workspace_scene("risk_center")
+                action["route"] = f"/s/{action['scene_key']}"
             action["source"] = "business"
             action["status"] = "urgent"
             action["tone"] = "danger"

@@ -175,6 +175,25 @@ class TestSystemInitSceneRuntimeSurfaceBuilder(unittest.TestCase):
 
         self.assertEqual([row.get("code") for row in captured["scenes"]], ["workspace.home", "projects.list"])
 
+    def test_requested_scene_only_binds_its_assets_and_preserves_registry(self):
+        delivery = [{"code": key, "target": {"route": f"/s/{key}"}}
+                    for key in ("first.scene", "second.scene")]
+        bound = []
+        original = builder.SystemInitSceneRuntimeSurfaceBuilder.apply
+        # Observe the existing context callback, not a synthetic payload size.
+        def capture(*, surface_ctx):
+            bind = surface_ctx.bind_scene_assets_fn
+            def bind_selected(env, **kwargs):
+                bound.extend(row["code"] for row in kwargs["scenes"])
+                return bind(env, **kwargs)
+            surface_ctx.bind_scene_assets_fn = bind_selected
+            return original(surface_ctx=surface_ctx)
+        from unittest.mock import patch
+        with patch.object(builder.SystemInitSceneRuntimeSurfaceBuilder, "apply", side_effect=capture):
+            keys = self._requested_contract("second.scene", delivery=delivery, deep=[])
+        self.assertEqual(bound, ["second.scene"])
+        self.assertEqual(keys, {"first.scene", "second.scene"})
+
     def test_scene_nav_contract_kept_as_auxiliary_contract(self):
         legacy_nav = [
             {

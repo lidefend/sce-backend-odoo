@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from odoo.exceptions import AccessError
+from odoo.addons.smart_core.delivery.runtime_route_authority import build_runtime_route_authority
 
 from odoo.addons.smart_construction_core.handlers.payment_request_available_actions import (
     PaymentRequestAvailableActionsHandler,
@@ -153,11 +154,25 @@ class PaymentRequestWorkItemService:
         }
 
     def _list_target(self):
+        authority = build_runtime_route_authority(self.env)
+        entries = [
+            row
+            for bucket in ("primary_actions", "role_home_actions", "contextual_actions")
+            for row in authority.get(bucket) or []
+            if isinstance(row, dict)
+            and row.get("model") == self.MODEL
+            and row.get("allowed_operation") == "read"
+            and not (row.get("context_requirements") or {}).get("required_query")
+            and row.get("route")
+        ]
+        if not entries:
+            return None
+        target = next((row for row in entries if row.get("action_xmlid") == self.ACTION_XMLID), entries[0])
         return {
             "key": "payment_request_list",
             "label": "付款申请",
-            "detail": "查看全部付款申请",
-            "route": "/s/finance.payment_requests",
+            "detail": "查看授权范围内的付款申请",
+            "route": target["route"],
         }
 
     def _presentation(self, *, include_quick_links):
