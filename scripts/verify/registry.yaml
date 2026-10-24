@@ -1274,11 +1274,10 @@ entries:
   date: '2026-09-16'
   reason: 'Governed unittest module invocation in: verify.form_structure_authority_unification.unit'
 - script: test_formal_action_runtime_drift_audit.py
-  status: orphan
+  status: active
   owner: platform-team
-  date: '2026-08-11'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
+  date: '2026-10-24'
+  reason: 'Executed by verify.daily_dev.acceptance.formal_surface.unit in make/dev.mk; reconciles the historical orphan registration'
 - script: test_formal_entry_metadata_audit.py
   status: orphan
   owner: platform-team

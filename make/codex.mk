@@ -457,6 +457,14 @@ DELIVERY_MERGE_PREFLIGHT_REPORT ?= .runtime/validation-delivery/merge-preflight.
 pr.merge.preflight: guard.prod.forbid
 	@python3 scripts/ops/validation_delivery_plan.py --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" --output "$(DELIVERY_MERGE_PREFLIGHT_REPORT)" --require-ready
 
+# Read-only preparation: existing evidence/identity, exact-head Quick and live
+# PR readiness checks. Never route this name to pr.merge.prep (remote POST).
+# `make -n pr.merge.prepare ...` displays the entire plan without executing it.
+.PHONY: pr.merge.prepare
+pr.merge.prepare: pr.merge.preflight
+	@python3 scripts/ops/local_quick_evidence.py verify --expected-head "$(EXPECTED_HEAD)"
+	@python3 scripts/ops/integration_cycle.py merge-readiness --pr "$(PR)"
+
 # Recipe order is intentional: make -j must not start Quick before readiness.
 pr.merge: guard.prod.forbid pr.merge.preflight
 	@$(MAKE) --no-print-directory pr.merge.local_quick_gate

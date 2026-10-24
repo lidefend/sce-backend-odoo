@@ -210,3 +210,9 @@ Owner 指示继续查找后，定位到 2026-10-19 08:47 原始本地执行记�
 版本守卫仅识别登记报告中绑定观测日期及源 SHA 的完整历史观测行；同文件中的当前发布声明、额外版本字面量及不匹配来源仍拒绝。历史页面版本与前端摘要保留。provider-shapes 经独立比较父提交与原候选，均为 2 tests / 1 failure；修正为顶层 ops 精确空结构、合成摘要禁止标志及单个 ops block 结构断言，2 tests PASS，不改生产逻辑。
 
 两项正式验收绑定独立受管 `sc_frontend_acceptance`，不能用 `sc_dev_demo` 定向旅程替代。最终结果与冻结身份记录在 `.runtime/fe-ux-entry-continuity-closeout-01/`，本文不预先宣布通过。仓库没有 `pr.merge.prepare`；`pr.merge.prep` 含远端状态写入，未获授权，不代执行。provider 原失败及正式门禁失败日志均保留。
+
+## Final required gate reconciliation
+
+保护前候选 `6b03528d9e9dd428925ca7d06e96559c740692d3` 及两项正式运行回执。仅将已被 `verify.daily_dev.acceptance.formal_surface.unit` 执行的测试从 registry 历史 orphan 状态对齐为 active，不修改断言、不 seed 整表。
+
+`pr.merge.prepare` 为只读准备入口：依次复用现有 `pr.merge.preflight`（实际 PR head/base 与运行证据）、精确 HEAD Quick 回执验证、`integration_cycle.py merge-readiness`（PR/CI 状态）。`make -n pr.merge.prepare PR=<number> EXPECTED_HEAD=<sha>` 只展示执行计划。它不调用会 POST 远端状态的 `pr.merge.prep`，不执行 merge，不允许缺 Quick。准备结果不是远端写入授权；未发布的本地候选没有匹配 PR 时必须阻塞。最终身份与实测结果见 `.runtime/fe-ux-entry-continuity-final-gates-01/`。

@@ -37,7 +37,10 @@
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "scripts/verify/product_release_version_guard.py",
     "scripts/release/test_product_release.py",
-    "addons/smart_core/tests/test_workspace_home_provider_shapes.py"
+    "addons/smart_core/tests/test_workspace_home_provider_shapes.py",
+    "scripts/verify/registry.yaml",
+    "make/codex.mk",
+    "scripts/verify/test_validation_delivery_plan.py"
   ],
   "preserved_preexisting": [
     ".agent/goals/FE-UX-WALKTHROUGH-01.yaml",
@@ -50,7 +53,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Complete closeout static validation, freeze once, run exact-head Quick and the two governed acceptance suites; preserve BLOCKED if required evidence cannot be obtained. No remote writes.",
+  "next_exact_step": "Freeze one minimal governance candidate, run governed clean isolated Quick, carry forward unchanged runtime evidence through controller, execute read-only prepare; stop for Owner without remote writes.",
   "observations": {
     "responsibility": {
       "UX-01": "P1 factual risk record declaration + P0 home projection preserves declared target",
@@ -103,6 +106,14 @@
       "evidence_root": ".runtime/fe-ux-entry-continuity-closeout-01/",
       "provider_shapes": "Independent parent/frozen comparison: same original 2 tests / 1 failure; explicit empty top-level ops contract; test only correction, 2 tests PASS",
       "merge_prepare": "Requested target absent; pr.merge.prep writes remote status and is outside authorization"
+    },
+    "final_gates": {
+      "protected_candidate": "6b03528d9e9dd428925ca7d06e96559c740692d3",
+      "layer": "P4 standard delivery entry and registry only",
+      "scope": "one stale orphan entry; read-only prepare mapping over existing identity/evidence/Quick/PR-readiness checks",
+      "evidence_root": ".runtime/fe-ux-entry-continuity-final-gates-01/",
+      "runtime_policy": "reuse accepted list/relation evidence only through controller; no UX reruns",
+      "remote_writes": "not authorized"
     }
   }
 }
