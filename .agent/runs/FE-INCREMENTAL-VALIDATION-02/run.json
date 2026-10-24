@@ -34,7 +34,8 @@
     "scripts/ci/test_select_authoritative_workflow_run.py",
     ".github/workflows/professional_quality_gate.yml",
     "scripts/audit/verification_lane_dispositions.json",
-    "scripts/audit/verification_lane_exemptions.json"
+    "scripts/audit/verification_lane_exemptions.json",
+    "scripts/verify/registry.yaml"
   ],
   "environment": {
     "kind": "offline",

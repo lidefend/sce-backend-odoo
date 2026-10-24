@@ -46,6 +46,13 @@ entries:
   date: '2026-07-20'
   reason: one-shot view-style lint superseded by unified page contract guards; zero
     references repo-wide (R7 first retirement batch)
+- script: backend_contract_fact_readback_probe.py
+  status: active
+  owner: platform-team
+  date: '2026-10-24'
+  wire_or_retire: file-consumed
+  reason: read-only collector consumed by test_backend_contract_fact_readback_probe.py;
+    one-off Make wrapper retired, no required gate consumes this probe
 - script: backend_contract_lifecycle_migration_rehearsal_prepare.py
   status: orphan
   owner: platform-team

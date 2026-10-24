@@ -58,7 +58,7 @@ Generated from repository source files. This report is informational during the 
 | 1844 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1818 | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1804 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1775 | YAML workflow | `scripts/verify/registry.yaml` |
+| 1782 | YAML workflow | `scripts/verify/registry.yaml` |
 | 1751 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1747 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1738 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
@@ -282,7 +282,7 @@ Generated from repository source files. This report is informational during the 
 | 1844 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1818 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1804 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1775 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
+| 1782 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 1751 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1747 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1738 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
