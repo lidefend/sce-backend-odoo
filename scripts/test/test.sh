@@ -20,6 +20,23 @@ if [[ "${SC_BACKEND_RECEIPT_CAPTURE:-0}" == "1" ]]; then
     -v "${ROOT_DIR}/scripts/ci/backend_test_receipt.py:/tmp/sc-test-tools/scripts/ci/backend_test_receipt.py:ro")
 fi
 
+# Optional runner-owned download/wheel cache. This never contains a database
+# or a test verdict: pip still resolves and installs the requested dependencies.
+PIP_CACHE_ARGS=()
+if [[ -n "${SC_TEST_PIP_CACHE_HOST:-}" ]]; then
+  case "${SC_TEST_PIP_CACHE_HOST}" in
+    /*) ;;
+    *) echo "SC_TEST_PIP_CACHE_HOST must be absolute" >&2; exit 2 ;;
+  esac
+  if [[ "${SC_TEST_PIP_CACHE_HOST}" == / || "${SC_TEST_PIP_CACHE_HOST}" == *:* ||
+        "${SC_TEST_PIP_CACHE_HOST}" == *$'\n'* || ! -d "${SC_TEST_PIP_CACHE_HOST}" ]]; then
+    echo "invalid or absent runner pip cache directory" >&2
+    exit 2
+  fi
+  PIP_CACHE_ARGS=(-v "${SC_TEST_PIP_CACHE_HOST}:/tmp/sc-test-pip-cache"
+    -e PIP_CACHE_DIR=/tmp/sc-test-pip-cache)
+fi
+
 RUN_RM="${RUN_RM:---rm}"
 RUN_NAME=()
 if [[ "${KEEP_TEST_CONTAINER:-0}" == "1" ]]; then
@@ -32,7 +49,7 @@ fi
 
 # shellcheck disable=SC2086
 compose ${COMPOSE_FILES} run --no-deps ${RUN_RM} -T "${RUN_NAME[@]}" \
-  "${RECEIPT_ARGS[@]}" \
+  "${RECEIPT_ARGS[@]}" "${PIP_CACHE_ARGS[@]}" \
   -v "${DOCS_MOUNT_HOST}:${DOCS_MOUNT_CONT}:ro" \
   -v "${CONFIG_MOUNT_HOST}:${CONFIG_MOUNT_CONT}:ro" \
   --entrypoint bash odoo -lc "

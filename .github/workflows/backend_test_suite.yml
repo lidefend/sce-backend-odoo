@@ -99,6 +99,7 @@ jobs:
       SHARD_INDEX: ${{ matrix.index }}
       MODULE_OVERRIDE: ${{ github.event.inputs.modules }}
       SC_BACKEND_RECEIPT_CAPTURE: '1'
+      SC_TEST_PIP_CACHE_HOST: ${{ runner.temp }}/backend-test-pip-cache
 
     defaults:
       run:
@@ -267,6 +268,28 @@ jobs:
           echo "FRONTEND_BUILD_SHA256=${calculated_hash}" >> "${GITHUB_ENV}"
           echo "FRONTEND_DIST_DIR=${dist_dir}" >> "${GITHUB_ENV}"
           echo "SOURCE_SHA=${HEAD_SHA}" >> "${GITHUB_ENV}"
+
+      # Dependency downloads only; no test result or database is cached.
+      - name: Restore backend test pip downloads
+        id: test_pip
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ runner.temp }}/backend-test-pip-cache
+          key: backend-test-pip-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Dockerfile', 'requirements-odoo.txt', 'config/requirements-test.txt') }}
+          restore-keys: |
+            backend-test-pip-v1-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Prepare isolated pip download cache
+        run: |
+          set -euo pipefail
+          test "${SC_TEST_PIP_CACHE_HOST}" = "${RUNNER_TEMP}/backend-test-pip-cache"
+          test ! -L "${SC_TEST_PIP_CACHE_HOST}"
+          mkdir -p "${SC_TEST_PIP_CACHE_HOST}"
+          sudo chown -R -- "$(id -u):$(id -g)" "${SC_TEST_PIP_CACHE_HOST}"
+          # Ephemeral runner directory only. Container Odoo and host cache action
+          # use different UIDs; no credentials or service data belong here.
+          chmod -R a+rwX "${SC_TEST_PIP_CACHE_HOST}"
+          printf 'pip download cache exact-key-hit=%s; test results are never cached\n' '${{ steps.test_pip.outputs.cache-hit }}' >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Build images and start database
         run: |
@@ -454,6 +477,18 @@ jobs:
           echo "backend suite executed ${attempted} of ${planned_total} planned module run(s); failed=${failed}"
           printf 'shard=%s executed=%s planned=%s failed=%s\n' "${SHARD_INDEX}" "${attempted}" "${planned_total}" "${failed}" >> "${GITHUB_STEP_SUMMARY}"
           test "${failed}" -eq 0
+
+      - name: Return pip cache ownership to runner
+        if: always()
+        run: |
+          set -euo pipefail
+          test "${SC_TEST_PIP_CACHE_HOST}" = "${RUNNER_TEMP}/backend-test-pip-cache"
+          test ! -L "${SC_TEST_PIP_CACHE_HOST}"
+          if [ -d "${SC_TEST_PIP_CACHE_HOST}" ]; then
+            # Runs before actions/cache's post-job save, including test failures.
+            # Odoo may have created entries under its own container UID.
+            sudo chown -R -- "$(id -u):$(id -g)" "${SC_TEST_PIP_CACHE_HOST}"
+          fi
 
       - name: Preserve per-target execution observations
         if: always() && env.BACKEND_RECEIPT_DIR != ''

@@ -44,6 +44,53 @@ class BackendTestSuiteDispatchContractTest(unittest.TestCase):
         for name in ('Build images and start database', 'Run backend test suite per module'):
             self.assertNotIn('if', steps[name])
 
+    def test_pip_download_cache_reaches_test_container_without_caching_results(self):
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+        suite = workflow['jobs']['backend_suite']
+        steps = {s['name']: s for s in suite['steps']}
+        cache = steps['Restore backend test pip downloads']['with']
+        self.assertEqual(suite['env']['SC_TEST_PIP_CACHE_HOST'], cache['path'])
+        for dependency in ('Dockerfile', 'requirements-odoo.txt', 'config/requirements-test.txt'):
+            self.assertIn(dependency, cache['key'])
+        script = (ROOT / 'scripts/test/test.sh').read_text()
+        self.assertIn('"${RECEIPT_ARGS[@]}" "${PIP_CACHE_ARGS[@]}"', script)
+        self.assertIn('pip3 install -q -r ${CONFIG_MOUNT_CONT}/requirements-test.txt', script)
+        self.assertNotIn('if', steps['Run backend test suite per module'])
+        fragment = script.split('PIP_CACHE_ARGS=()', 1)[1].split('RUN_RM=', 1)[0]
+        with tempfile.TemporaryDirectory(prefix='pip cache ') as folder:
+            cases = [(None, 0), (folder, 0), ('relative', 2), ('/', 2),
+                     (folder + ':other', 2), (folder + '/missing', 2), (folder + '\n', 2)]
+            for value, code in cases:
+                with self.subTest(value=value):
+                    env = dict(os.environ)
+                    env.pop('SC_TEST_PIP_CACHE_HOST', None)
+                    if value is not None:
+                        env['SC_TEST_PIP_CACHE_HOST'] = value
+                    result = subprocess.run(['bash', '-eu', '-c',
+                        'PIP_CACHE_ARGS=()\n' + fragment +
+                        'printf "<%s>\\n" "${PIP_CACHE_ARGS[@]}"'],
+                        env=env, text=True, capture_output=True)
+                    self.assertEqual(code, result.returncode, result.stderr)
+                    if value == folder:
+                        self.assertEqual(['<-v>', '<' + folder + ':/tmp/sc-test-pip-cache>',
+                            '<-e>', '<PIP_CACHE_DIR=/tmp/sc-test-pip-cache>'], result.stdout.splitlines())
+                    elif value is None:
+                        self.assertNotIn('/tmp/sc-test-pip-cache', result.stdout)
+
+    def test_pip_cache_ownership_is_restored_even_after_failed_tests(self):
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+        steps = {s['name']: s for s in workflow['jobs']['backend_suite']['steps']}
+        restore = steps['Return pip cache ownership to runner']
+        self.assertEqual('always()', restore['if'])
+        for name in ('Prepare isolated pip download cache', 'Return pip cache ownership to runner'):
+            command = steps[name]['run']
+            self.assertIn('test "${SC_TEST_PIP_CACHE_HOST}" = "${RUNNER_TEMP}/backend-test-pip-cache"', command)
+            self.assertIn('test ! -L "${SC_TEST_PIP_CACHE_HOST}"', command)
+            self.assertIn('sudo chown -R -- "$(id -u):$(id -g)" "${SC_TEST_PIP_CACHE_HOST}"', command)
+        names = list(steps)
+        self.assertLess(names.index('Run backend test suite per module'), names.index('Return pip cache ownership to runner'))
+        self.assertLess(names.index('Return pip cache ownership to runner'), names.index('Cleanup'))
+
     def test_frontend_fingerprint_uses_dedicated_builder_stage(self):
         workflows = (
             ROOT / '.github/workflows/backend_test_suite.yml',
@@ -105,12 +152,9 @@ class BackendTestSuiteStepIntegrityTest(unittest.TestCase):
     """
 
     def _step(self) -> str:
-        workflow = (ROOT / ".github/workflows/backend_test_suite.yml").read_text(
-            encoding="utf-8"
-        )
-        return workflow.split(
-            "- name: Run backend test suite per module", 1
-        )[1].split("- name: Dump logs on failure", 1)[0]
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+        return next(step['run'] for step in workflow['jobs']['backend_suite']['steps']
+                    if step['name'] == 'Run backend test suite per module')
 
     def test_step_declares_the_bash_shell_that_enables_errexit(self) -> None:
         workflow = (ROOT / ".github/workflows/backend_test_suite.yml").read_text(

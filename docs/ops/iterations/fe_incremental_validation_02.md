@@ -314,3 +314,15 @@ Quick 仍 BLOCKED：41 个顶层目标中 12 个静态可达不是完整执行�
 证据集中在 .runtime/fe-incremental-validation-02/remote-history-closeout.json，保存源码、日志、原始平台数据与归档摘要。当前实现仍是 shadow：未接入远端执行选择，实际测试复用节省 0 秒。此前本地 Quick 裁决保留为历史记录，不作为当前增量目标。没有重新执行前端、ORM、UX 或完整 Quick，没有推送、合并、部署。
 
 本子范围完成审阅，整体 FE-INCREMENTAL-VALIDATION-02 仍 verification_pending。剩余工作限定为既有证据引擎上的输入/环境等价证明与远端消费，不能把本次来源选择完成称作减负完成，也不能用人工声明将旧全量成功变成新候选通过。
+
+## 今日收口补充：依赖下载缓存实际消费链
+
+P4 最小修复仅接通 backend_test_suite 宿主缓存与临时测试容器：固定 runner.temp 路径，绑定 OS/architecture、Dockerfile、两份 requirements 的缓存 key，通过既有 scripts/test/test.sh 可选数组参数挂载并设置容器 PIP_CACHE_DIR。未配置时原行为不变。每次仍安装依赖、执行测试；没有缓存 venv、数据库或成功判定，也没有改变 requirements 或测试断言。
+
+独立复核指出跨 UID 缓存残留会使宿主 chmod 失败，已补齐固定路径和 symlink 检查、准备前归还 owner、测试后 always 归还 owner。真实本地文件系统验证使用隔离证据目录中的 UID101 文件，分别验证准备、再次模拟容器写入、归还 UID1000 和宿主删除，全部通过；没有操作服务或数据库。
+
+12 项 dispatch/执行完整性测试、18 项 workflow 安全测试与安全 guard 通过；bash 语法及 diff 检查通过。新增独立 step 暴露旧测试按文本区间截取过宽，已改为按 YAML 名称准确选中测试执行 step，保留原 errexit/非零/完整执行断言；原失败日志保留。只验证受影响的执行工具，没有重跑前端、673 项后端或 UX。
+
+本地两次 pip 安装实验在第一次即因 /usr/bin/python3 没有 pip 而失败；没有临时安装工具或修改环境来绕过，原日志保留。远端容器缓存命中及耗时尚未实测，缓存节省记 unknown，不计入测试复用。该修复不能冒充后端测试复用能力。证据见 .runtime/fe-incremental-validation-02/pip-cache-closeout.json。
+
+今日代码保存为本地 checkpoint，非正式交付冻结；远端仍为 e28b59911，未推送、合并或部署。历史来源发现/认证和依赖下载消费已实现；整体精准增量目标仍 NOT_ACHIEVED，实际测试复用为 0。独立复核确认现有模块依赖映射没有可直接据此开放 REUSE 的完整闭包，不能因为同 tree、同 SHA 或过去 CI 绿色就忽略未捕获运行输入。下一步必须闭合一个实际目标的执行来源、测试选择及环境/fixture 输入后再启用复用；不再增加只观察、不消费的框架。
