@@ -64,7 +64,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Commit P0 then P4; serve clean candidate and run fixed176/703/702 create authority browser.",
+  "next_exact_step": "Fix FG09 certificate list native declaration and FG08 generic analytical field/selection labels; FG15 mixed native notices remains separate. Retain pending business chains and demo rebuild.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -421,6 +421,17 @@
       "L1": "sixth-l1-final.log",
       "L2": "sixth-projection-final.log:132 projection tests,23 runtime tests,assembler4sources/runtime6score; sixth-orm-final.log:1 ORM test4 native branches,0failed/0error; sixth-observer.log:7 guard tests",
       "invalidated": "Initial tree-source failure fixed by exporting native capabilities. Latest ORM includes actual parser→app.view.config→action→assembler. No frontend source edits; reuse prior frontend type/basis checks, browser observes existing consumer."
+    },
+    "sixth_final": {
+      "status": "passed_scoped_local_entry_consistency",
+      "candidate": "39ab0318e65741c09f7fb497cdfb8a2fa77ffb8b",
+      "product_commit": "205881c301f1db15f42885a0a8b2b7a53b33b325",
+      "browser": "menu176/703 create denied in list and form; menu702 allowed list→new form. Three cases, four screenshots, zero errors/blocked; no business writes.",
+      "artifact": ".runtime/product-user-gap-closeout-20261026/create-authority-browser/39ab0318e65741c09f7fb497cdfb8a2fa77ffb8b/report.json",
+      "review": "review_quick_closeout final P0/P4 development review passed; manual screenshots tax report and tax create inspected",
+      "limits": "No direct business-write API rejection proof, no save/submit chain. Direct forbidden new URL still uses existing diagnostic page. Tax report technical labels added to FG08. No upgrade, demo reset, remote checks, mainline merge or daily deploy.",
+      "counts": "13 original groups locally partially repaired; FG05/08/09/15 unresolved; 23 demo groups unreconstructed",
+      "reuse": "Front-end production inputs unchanged from fifth; prior type/style/basis valid. Final docs do not invalidate scoped code/ORM/browser results."
     }
   }
 }

@@ -230,3 +230,43 @@ FG01/02/03本地已验证上述修复范围；不据此证明所有语言、所�
 不得以scalar提示替代全部内容或绕过原生提示守卫；仍需独立完整声明及消费方案。
 下一步优先诊断FG17入口能力一致性，并继续FG15及其余业务链。
 未执行Quick、远端CI、受保护合并、日常部署；主线仍bdef29e11，不能宣称整体基线或交付完成。
+
+
+## 第六批：新建入口与目标权限一致性
+
+FG17定位为P0声明传递/投影问题：原生列表解析已产出capabilities，
+app.view.config的tree API导出却丢失该字段；v2集合页又把模型ACL直接作为创建能力，
+未合并原生form/tree禁建声明与入口create/no_create限制。
+P0提交205881c30原样导出tree capabilities，并在集合创建裁决中取权限与声明的交集。
+保留其他操作权、现有表单拒绝、模型ACL和记录规则；无前端模型特判，无P1业务权限放宽。
+更新assembled cache版本/pin；源缓存已有addon内容指纹，防止沿用旧源声明。
+
+L1通过；132项投影测试、23项运行协议测试及assembler/runtime守卫通过。
+原生ORM为1个测试、4个分支：允许、form禁建、tree禁建、action context禁建，最终全通过。
+测试走原生view/action→parser→app.view.config→assembler，事务回滚，不留新夹具。
+先前ORM暴露head.view_type来源、tree capabilities导出两个问题，均修复后定向重跑；
+独立复核发现的_field_rows附带变更已撤销。原始失败sixth-orm.log、sixth-orm-02.log、
+sixth-orm-diagnostic.log保留，最终结果为sixth-orm-final.log，未放宽断言。
+投影最终日志sixth-projection-final.log；P4守卫7项通过，开发独立复核无阻断发现。
+
+P4提交39ab0318e65741c09f7fb497cdfb8a2fa77ffb8b复用固定local.dev观察器，
+以demo_full/company1仅检查三个受影响入口：
+- menu176日记账项目：集合create=false，无可执行新建；直接新建契约仍以FORM_CREATE_NOT_ALLOWED拒绝。
+- menu703税务报表：集合create=false，无可执行新建；入口只读限制在新建契约中保持拒绝。
+- menu702税务申报：集合create=true，新建按钮可用，点击后表单出现申报期字段，create=true。
+
+真实浏览器三用例通过，4张桌面截图，0脚本异常、0被拦截请求；核图税报无新建、税务申报表单正常。
+本地候选为39ab0318e65741c09f7fb497cdfb8a2fa77ffb8b，证据在
+`.runtime/product-user-gap-closeout-20261026/create-authority-browser/39ab0318e65741c09f7fb497cdfb8a2fa77ffb8b/report.json`，
+命令`make verify.local.dev.create_authority`，环境身份门禁与候选健康检查通过。
+无保存、派发、导入或直接业务写接口测试；不据此证明业务保存、申报闭环或所有角色权限验收。
+手工访问被禁止的新建地址仍沿用既有诊断页；本批修复列表误导入口，没有声称诊断页工程文案已优化。
+税报截图同时确认与FG08同类的技术字段/枚举展示问题，登记为同类受影响页面，仍未修复。
+
+本批无XML/数据库结构变更，不需升级/重建；仅重启并构建既有本地候选。
+P0回退205881c30应与缓存身份一起回退，P4观察器单独回退；没有本批业务数据恢复需求。
+前端产品输入未改，沿用第五批类型/样式/契约守卫，真实浏览器验证当前消费者。
+最终文档变化不使上述证据失效。累计13组有局部修复，FG05/08/09/15四组仍未修复；
+FG17本轮只完成上述入口一致性范围，其他业务链/角色/直写权限仍须后续验收。
+23组Demo数据缺口未重建。下一步处理FG09证书列表声明和FG08通用报表标签，FG15混合告警继续独立收口。
+没有Quick、远端CI、受保护合并或日常部署，主线仍bdef29e11，整体交付基线未重新宣布成立。

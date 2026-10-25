@@ -106,6 +106,8 @@
 
 ### FG-08：劳务分包透视报表直接显示技术字段和枚举
 
+- 扩展观察：第六批39ab0318e的税务报表menu703也呈现技术字段名和draft枚举，归入本组通用报表可读性问题；证据create-authority-browser/39ab0318e65741c09f7fb497cdfb8a2fa77ffb8b/703-list.png，尚未修复。
+
 - 优先级 B2；demo_full → 报表中心 → 劳务分包报表（menu 704），存在 3 个数据分组。
 - 实际表头为 project_id、fact_type、partner_id、labor_amount 等技术名，业务类型显示
   labor_usage、subcontract_settlement、subcontract_register；桌面列又截断为 project…、fact_ty… 等。
@@ -180,6 +182,8 @@ sc.hr.payroll.document，点击新建也出现相同错误终态。两者分别�
   条件和边界，未授权角色仍拒绝。不能以修改既有规则或直接后台写入代替前台新建验收。
 
 ### FG-17：两个启用的新建入口跳转到“缺少能力权限”诊断页
+
+- 迭代进展：本地39ab0318e已修复列表误导入口：menu176/703声明create=false且无可执行新建，直接新建契约保持拒绝；menu702允许新建对照正常打开。132+23项定向测试、1项ORM四分支和三个真实入口通过。未验证直接写API/保存业务链，手工禁用地址仍沿用既有诊断页；未部署。
 
 - 优先级 B2；日记账项目（menu176，account.move.line）和税务报表（menu703，sc.tax.filing）。
 - demo_full 在列表看到启用的新建按钮，点击后先进入对应 `/f/<model>/new`，最终跳到
