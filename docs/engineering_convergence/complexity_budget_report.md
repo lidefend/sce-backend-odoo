@@ -5,8 +5,8 @@ Generated from repository source files. This report is informational during the 
 ## Summary
 
 - Scanned files: `4934`
-- Files requiring split plan: `71`
-- Files above warning threshold: `144`
+- Files requiring split plan: `72`
+- Files above warning threshold: `143`
 
 ## Split Plan Required
 
@@ -81,6 +81,7 @@ Generated from repository source files. This report is informational during the 
 | 1522 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 734 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
+| 601 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 
@@ -216,7 +217,6 @@ Generated from repository source files. This report is informational during the 
 | 802 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
 | 801 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |
-| 598 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 491 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 457 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |

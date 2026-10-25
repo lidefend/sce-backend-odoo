@@ -16,7 +16,7 @@ odoo.shell.exec: check-compose-project check-compose-env
 # files and database identity; CANDIDATE_* are make command-line variables that
 # the shell-exec allowlist forwards into the Odoo shell carrier.
 daily.runtime.contract_fact.readback: guard.prod.forbid check-compose-project check-compose-env
-	@$(RUN_ENV) DB_NAME="$(DB_NAME)" bash scripts/ops/odoo_shell_exec.sh < scripts/verify/backend_contract_fact_readback_probe.py
+	@ODOO_SHELL_RUN_ISOLATED=1 $(RUN_ENV) DB_NAME="$(DB_NAME)" bash scripts/ops/odoo_shell_exec.sh < scripts/verify/backend_contract_fact_readback_probe.py
 
 runtime.language.ensure: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/ops/ensure_runtime_language_baseline.py
