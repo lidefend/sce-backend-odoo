@@ -114,6 +114,36 @@ class ProgramTests(unittest.TestCase):
         self.assertIn(module.LANDED_PREFIX.encode(), program)
 
 
+class DemoAuthorityTests(unittest.TestCase):
+    def test_only_bound_demo_selects_demo_authority(self):
+        self.assertEqual(module.resolver_environment(BINDING)["SC_ACCEPTANCE_RECORD_AUTHORITY"], "daily_demo")
+        self.assertNotIn("SC_ACCEPTANCE_RECORD_AUTHORITY", module.resolver_environment({"duty": "platform_control"}))
+        self.assertNotIn("SC_ACCEPTANCE_RECORD_AUTHORITY", module.resolver_environment({"database": "sc_demo"}))
+
+    def test_demo_resolution_never_loads_fixture_records(self):
+        import ast
+        from types import SimpleNamespace
+        source = ast.parse(module.RESOLVER.read_text())
+        func = next(n for n in source.body if isinstance(n, ast.FunctionDef) and n.name == "resolve_targets")
+        company = SimpleNamespace(id=1)
+        project = SimpleNamespace(_name="project.project", project_code="DEMO-PJ-001", company_id=company)
+        calls = []
+        def ref(xmlid):
+            calls.append(xmlid)
+            return {"smart_construction_demo.sc_demo_project_001": project, "base.main_company": company}[xmlid]
+        def target(menu, record, **kwargs):
+            self.assertEqual(record, "smart_construction_demo.sc_demo_project_001")
+            self.assertEqual(kwargs["declared_action_xmlid"], "declared-action")
+            return {"company_id": kwargs["expect"]["company_id"](project)}
+        ns = {"env": SimpleNamespace(ref=ref), "target": target, "PROJECT_MENU_XMLID": "declared-menu", "PROJECT_ACTION_XMLID": "declared-action"}
+        exec(compile(ast.Module(body=[func], type_ignores=[]), str(module.RESOLVER), "exec"), ns)
+        self.assertEqual(ns["resolve_targets"]("daily_demo"), {"project": {"company_id": 1}, "companies": {"a": 1}})
+        self.assertFalse(any("fixture" in x for x in calls))
+        project.project_code = "OTHER"
+        with self.assertRaises(AssertionError): ns["resolve_targets"]("daily_demo")
+        with self.assertRaises(AssertionError): ns["resolve_targets"]("unknown")
+
+
 class PayloadTests(unittest.TestCase):
     def test_accepts_the_declared_payload(self):
         self.assertEqual(module.parse_payload(payload_output().decode()), PAYLOAD)

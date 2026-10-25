@@ -126,11 +126,18 @@ def carrier_program() -> bytes:
     ).encode("utf-8")
 
 
+def resolver_environment(binding):
+    values = dict(RESOLVER_ENV)
+    if binding.get("duty") == "demo":
+        values["SC_ACCEPTANCE_RECORD_AUTHORITY"] = "daily_demo"
+    return values
+
+
 def remote_shell(ssh_host, binding, *, stdin_path):
     """Run the resolver inside the *bound duty's own* application container."""
     return ssh(
         ssh_host,
-        duty_identity.odoo_shell_command(binding, program_path=stdin_path, env=RESOLVER_ENV),
+        duty_identity.odoo_shell_command(binding, program_path=stdin_path, env=resolver_environment(binding)),
     )
 
 

@@ -1,12 +1,13 @@
 // Request containment for one explicitly authorized UI journey, not product ACL.
-export function permitsContractWrite(body, { enabled, key, recordId }) {
-  if (!enabled) return false;
+export function permitsContractWrite(body, { enabled, key, recordId, readOnly = false }) {
+  if (!enabled && !readOnly) return false;
   const request = body?.params?.intent ? body.params : body;
   const p = request?.params || {};
   if (p.model !== 'sc.general.contract') return false;
   // Native onchange works on virtual records; timeline is read-only. Both are
   // limited to this document (or its uniquely named unsaved create values).
   if (['chatter.timeline', 'chatter.followers.list'].includes(request.intent)) return recordId > 0 && Number(p.res_id) === recordId;
+  if (readOnly) return false;
   if (request.intent === 'api.onchange') return recordId > 0
     ? Number(p.res_id) === recordId
     : !p.res_id && p.values?.contract_name === key;
@@ -23,4 +24,11 @@ export function permitsContractWrite(body, { enabled, key, recordId }) {
   }
   return request.intent === 'execute_button' && recordId > 0 && Number(p.res_id) === recordId &&
     p.button?.name === 'action_confirm' && p.button?.type === 'object';
+}
+
+export function isExactSignedReadback({ pathname, basePath, recordId, key, name, amount, state }) {
+  const money = String(amount).replace(/[¥￥,\s]/g, '');
+  return recordId === 6 && pathname === `${basePath}/f/sc.general.contract/${recordId}` &&
+    name === key && key === 'DEMO-DELIVERY-20261025-UI01' &&
+    /^\d+(?:\.\d{1,2})?$/.test(money) && Number(money) === 12600 && state === 'signed';
 }

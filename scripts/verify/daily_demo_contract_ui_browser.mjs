@@ -6,11 +6,12 @@ import { launchChromium } from './playwright_runtime.mjs';
 import { matrixLoginUrl } from './business_entry_matrix_model.mjs';
 import { captureReleasedNavigation } from './released_navigation_target.mjs';
 import { permitsInventoryRequest } from '../../frontend/apps/web/scripts/bootstrap_inventory_policy.mjs';
-import { permitsContractWrite } from './daily_demo_contract_ui_policy.mjs';
+import { permitsContractWrite, isExactSignedReadback } from './daily_demo_contract_ui_policy.mjs';
 
 const base = (process.env.ACCEPTANCE_BASE_URL || '').replace(/\/$/, '');
 const output = process.env.SC_ACCEPTANCE_OUTPUT_DIR;
 const resume = process.env.SC_DEMO_UI_MODE === 'resume';
+const finalReadback = process.env.SC_DEMO_UI_MODE === 'final_readback';
 const execute = resume || process.env.SC_DEMO_UI_MODE === 'execute';
 const key = process.env.SC_DEMO_CONTRACT_KEY;
 let recordId = 0;
@@ -20,6 +21,14 @@ if (resume) {
   assert.equal(checkpoint.key, key);
   recordId = Number(checkpoint.recordId);
   assert(recordId > 0);
+}
+if (finalReadback) {
+  const signed = JSON.parse(fs.readFileSync(process.env.SC_DEMO_API_SIGN_RECEIPT, 'utf8'));
+  assert.equal(signed.status, 'API_SIGN_EXECUTED');
+  assert.equal(signed.business_key, key);
+  assert.equal(signed.record_id, 6);
+  assert.equal(signed.completed_api_actions[0].readback.state, 'signed');
+  recordId = signed.record_id;
 }
 if (execute) {
   assert.equal(process.env.SC_DEMO_WRITE_CONFIRM, 'CREATE_AND_SUBMIT_DEMO_ACCEPTANCE_CONTRACT');
@@ -51,7 +60,7 @@ await page.route('**/api/**', async route => {
   const pathname = new URL(req.url()).pathname.replace(prefix, '');
   if (!permitsInventoryRequest(req.method(), pathname, body, true) &&
       !(req.method() === 'POST' && pathname === '/api/v1/intent' &&
-        permitsContractWrite(body, { enabled: execute, key, recordId }))) {
+        permitsContractWrite(body, { enabled: execute, key, recordId, readOnly: finalReadback }))) {
     report.blocked.push({ method: req.method(), pathname, intent: body?.intent, params: body?.params });
     return route.abort();
   }
@@ -68,7 +77,49 @@ try {
   report.startup = navigation.payload();
   assert.equal(report.startup.user?.company_id, 1);
   assert.notEqual(report.startup.user?.id, 1);
-  if (resume) {
+  if (finalReadback) {
+    report.record_id = recordId;
+    report.business_key = key;
+    report.reused_api_sign_receipt = process.env.SC_DEMO_API_SIGN_RECEIPT;
+    await page.goto(`${base}/a/${target.action_id}?menu_id=${target.menu_id}`, { waitUntil: 'networkidle' });
+    await page.locator('button[data-semantic-cell-kind="primary"]').first().waitFor();
+    await page.locator('input[placeholder*="搜索关键字"]:visible').first().fill(key);
+    await page.getByRole('button', { name: /^搜索$/ }).first().click();
+    await page.waitForFunction(() => document.querySelectorAll('button[data-semantic-cell-kind="primary"]').length === 1);
+    const link = page.locator('button[data-semantic-cell-kind="primary"]');
+    await link.waitFor();
+    assert.equal(await link.count(), 1);
+    await link.click();
+    for (const stage of ['open', 'reload']) {
+      if (stage === 'reload') await page.reload({ waitUntil: 'networkidle' });
+      const form = page.locator('[data-semantic-component="ContractFormPage"][data-form-model="sc.general.contract"][data-form-record="6"]').filter({ visible: true });
+      await form.waitFor();
+      assert.equal(await form.count(), 1);
+      const status = form.locator('[data-professional-workflow-component="statusbar"][data-workflow-current="signed"]');
+      await status.waitFor();
+      const fieldText = async name => {
+        const field = form.locator(`[data-field-name="${name}"] .readonly-value`).filter({ visible: true });
+        await field.waitFor();
+        assert.equal(await field.count(), 1);
+        return (await field.innerText()).trim();
+      };
+      const money = form.locator('[data-field-name="amount_total"] [data-money-display]').filter({ visible: true });
+      await money.waitFor();
+      assert.equal(await money.count(), 1);
+      const amount = (await money.evaluate(n => [...n.childNodes].filter(c => c.nodeType === Node.TEXT_NODE).map(c => c.textContent).join(''))).trim();
+      assert.equal(amount, await money.getAttribute('data-money-display'));
+      const observed = { pathname: new URL(page.url()).pathname, basePath: new URL(base).pathname,
+        recordId: Number(await form.getAttribute('data-form-record')), key,
+        name: await fieldText('contract_name'), amount,
+        state: await status.getAttribute('data-workflow-current'), stateLabel: await status.innerText() };
+      assert(isExactSignedReadback(observed), JSON.stringify(observed));
+      report.observations.push({ stage: `signed_${stage}`, ...observed });
+      await page.screenshot({ path: path.join(output, `signed-${stage}.png`), fullPage: true });
+    }
+    assert.equal(report.blocked.length, 0, JSON.stringify(report.blocked));
+    assert.equal(report.errors.length, 0, JSON.stringify(report.errors));
+    report.status = 'UI_SIGNED_RECORD_OPEN_RELOAD_PASS';
+  } else if (resume) {
     assert.deepEqual(target, checkpoint.target);
     report.record_id = recordId;
     report.business_key = key;
@@ -158,6 +209,7 @@ try {
 } catch (error) {
   report.status = 'FAIL';
   report.errors.push(error.message);
+  report.visible_dom = await page.locator('[data-semantic-component="ContractFormPage"]').filter({ visible: true }).evaluateAll(nodes => nodes.map(n => n.outerHTML)).catch(() => []);
   await page.screenshot({ path: path.join(output, 'failure.png'), fullPage: true }).catch(() => {});
 } finally {
   fs.writeFileSync(path.join(output, 'report.json'), JSON.stringify(report, null, 2) + '\n');

@@ -32,9 +32,61 @@ def validate_finance_resume(prior, reviews):
         raise ValueError("Review target differs")
 
 
-def approval_button(contract):
+def released_contract_entry(data):
+    pending = list(data.get("navigation", {}).get("nav", []))
+    matches = []
+    while pending:
+        node = pending.pop()
+        meta = node.get("meta") or {}
+        if (node.get("menu_xmlid") or node.get("xmlid") or meta.get("menu_xmlid")) == "smart_construction_core.menu_sc_p1_daily_contract":
+            action = node.get("action_id") or node.get("actionId") or node.get("action") or meta.get("action_id") or meta.get("actionId")
+            menu = node.get("menu_id") or node.get("menuId") or meta.get("menu_id") or meta.get("menuId")
+            if type(action) is not int or type(menu) is not int or min(action, menu) <= 0:
+                raise ValueError("Released contract entry identity invalid")
+            matches.append({"action_id": action, "menu_id": menu})
+        pending.extend(node.get("children") or [])
+    if len(matches) != 1:
+        raise ValueError("Unique released contract entry required")
+    return matches[0]
+
+
+def validate_sign_entry_resume(failed):
+    steps = failed.get("steps") or []
+    last = steps[-1] if steps else {}
+    if (failed.get("status") != "BLOCKED_NOT_ACCEPTED" or failed.get("record_id") != RECORD
+            or failed.get("business_key") != KEY or failed.get("completed_api_actions")
+            or last.get("actor") != "demo_full" or last.get("intent") != "execute_button"
+            or last.get("http_status") != 403
+            or last.get("response", {}).get("error", {}).get("message") != "ACTION_CONTRACT_AUTHORITY_MISSING"
+            or failed.get("pending_mutation", {}).get("button", {}).get("name") != "action_signed"):
+        raise ValueError("Only the confirmed missing-entry rejection may resume")
+
+
+def validate_sign_checkpoint(prior, record, reviews):
+    if (prior.get("status") != "API_APPROVAL_EXECUTED_FINAL_SIGN_PENDING"
+            or prior.get("record_id") != RECORD or prior.get("business_key") != KEY
+            or prior.get("pending_mutation") or prior.get("failure")
+            or prior.get("reused_reviews") != [688, 689]):
+        raise ValueError("Completed approval receipt required")
+    actions = prior.get("completed_api_actions", [])
+    if [(a.get("actor"), a.get("origin", {}).get("id")) for a in actions] != [
+            ("fin_mgr", 690), ("demo_role_executive", 691)]:
+        raise ValueError("Final approval provenance differs")
+    if (record.get("id") != RECORD or record.get("state") != "confirmed"
+            or record.get("validation_status") != "validated"):
+        raise ValueError("Confirmed validated contract required; do not replay signing")
+    if len(reviews) != 4 or {r.get("id"): r.get("status") for r in reviews} != {
+            i: "approved" for i in (688, 689, 690, 691)}:
+        raise ValueError("All four exact approvals required")
+    if any(r.get("model") != MODEL or r.get("res_id") != RECORD for r in reviews):
+        raise ValueError("Review target differs")
+
+
+def approval_button(contract, action_name="validate_tier"):
+    if action_name not in ("validate_tier", "action_signed"):
+        raise ValueError("Unsupported acceptance action")
     rows = [r for r in contract.get("actionContract", {}).get("actionRuleList", [])
-            if r.get("button", {}).get("name") == "validate_tier"]
+            if r.get("button", {}).get("name") == action_name]
     if len(rows) != 1:
         raise ValueError("Approval authority must be unique")
     row = rows[0]
@@ -69,11 +121,17 @@ def main():
         raise RuntimeError("Exact existing demo document required")
     output = ROOT / ".runtime/final-acceptance/user-delivery-baseline/contract-api-approval.json"
     mode = os.environ.get("SC_DEMO_API_MODE", "initial")
-    if mode not in ("initial", "resume_finance"):
+    if mode not in ("initial", "resume_finance", "sign", "sign_entry_resume"):
         raise RuntimeError("Unknown API acceptance mode")
     prior = json.loads(output.read_text()) if mode == "resume_finance" else None
     if prior is not None:
         output = output.with_name("contract-api-approval-resume.json")
+    if mode in ("sign", "sign_entry_resume"):
+        prior = json.loads(output.with_name("contract-api-approval-resume.json").read_text())
+        output = output.with_name("contract-api-sign.json")
+        if mode == "sign_entry_resume":
+            validate_sign_entry_resume(json.loads(output.read_text()))
+            output = output.with_name("contract-api-sign-entry-resume.json")
     if output.exists():
         raise RuntimeError("Prior attempt exists; inspect checkpoint instead of replay")
     password = json.loads((ROOT / "config/acceptance/daily_demo_credential.v1.json").read_text())["password"]
@@ -115,6 +173,29 @@ def main():
     try:
         reader = session(current_actor, 40)
         initial = readback(reader)
+        if mode in ("sign", "sign_entry_resume"):
+            live = call(reader, "api.data", {"op": "read", "model": "tier.review",
+                "ids": initial["review_ids"], "fields": ["id", "status", "model", "res_id"], "context": CONTEXT})
+            validate_sign_checkpoint(prior, initial, live["records"])
+            entry = released_contract_entry(call(reader, "system.init", {}))
+            report["released_entry"] = entry
+            contract = call(reader, "ui.contract.v2", {"op": "model", "model": MODEL, **entry,
+                "view_type": "form", "record_id": RECORD, "render_profile": "readonly",
+                "delivery_profile": "full", "client_type": "web_pc", "accepted_contract_versions": ["2.0.x"],
+                "client_contract_capabilities": ["container_tree.v2", "data_source.v2", "action_rule.v2", "relation_entry.v2", "status_contract.v2"]})
+            button = approval_button(contract, "action_signed")
+            report["pending_mutation"] = {"actor": current_actor, "button": button}
+            save()
+            call(reader, "execute_button", {"model": MODEL, "res_id": RECORD, "button": button, "context": CONTEXT}, entry)
+            observed = readback(reader)
+            if observed["state"] != "signed" or observed["validation_status"] != "validated":
+                raise RuntimeError("Signed validated state did not persist")
+            report["completed_api_actions"] = [{"actor": current_actor, "action": "action_signed", "readback": observed}]
+            report.pop("pending_mutation")
+            report["status"] = "API_SIGN_EXECUTED"
+            save()
+            print(json.dumps({"status": report["status"], "record_id": RECORD}))
+            return 0
         if initial["state"] != "draft" or initial["validation_status"] != "pending":
             raise RuntimeError("Existing pending document required")
         actors = [("ct1", 14), ("sc_demo_operation", 6), ("fin_mgr", 13), ("demo_role_executive", 49)]
