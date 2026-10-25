@@ -86,6 +86,28 @@ class ScHrPayrollDocument(models.Model):
     amount = fields.Monetary(string="金额", currency_field="currency_id", tracking=True)
     certificate_fee = fields.Monetary(string="证书费用", currency_field="currency_id")
     occurrence_date = fields.Date(string="发生日期", index=True)
+    payroll_display_period = fields.Char(
+        string="薪酬期间/发生日期", compute="_compute_payroll_display", readonly=True,
+        help="工资显示年度和月份；补助、奖金显示发生日期。未填期间不显示零年月。",
+    )
+    payroll_display_amount = fields.Monetary(
+        string="薪酬金额", currency_field="currency_id", compute="_compute_payroll_display", readonly=True,
+        help="工资取实发工资；补助、奖金取事项金额。仅展示，不改变核算或发放依据。",
+    )
+
+    @api.depends("fact_type", "period_year", "period_month", "net_salary", "occurrence_date", "amount")
+    def _compute_payroll_display(self):
+        for record in self:
+            record.payroll_display_period = False
+            record.payroll_display_amount = 0.0
+            if record.fact_type == "salary_registration":
+                if record.period_year and record.period_month:
+                    record.payroll_display_period = "%04d-%02d" % (record.period_year, record.period_month)
+                record.payroll_display_amount = record.net_salary
+            elif record.fact_type in ("subsidy", "bonus"):
+                record.payroll_display_period = fields.Date.to_string(record.occurrence_date) if record.occurrence_date else False
+                record.payroll_display_amount = record.amount
+
     attachment_ids = fields.Many2many(
         "ir.attachment",
         "sc_hr_payroll_document_attachment_rel",
