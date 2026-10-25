@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: TEST-BASELINE-CLOSURE-20261026
   title: Establish an evidence-backed reproducible test baseline
-  status: active
+  status: completed
   formal_product_layer: P4
   layer_target: governed test execution, reproducibility and evidence authority
   objective: Close baseline runtime and reproducibility gaps with real execution, conservative reuse and exact-head mainline validation.

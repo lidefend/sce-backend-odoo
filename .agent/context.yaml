@@ -4,6 +4,10 @@ project:
   name: sce-backend-odoo
   repository_type: odoo_vue_monorepo
   baseline_iteration_policy: v1
+  iteration_phase: stable_baseline_incremental
+  collaboration_protocol: docs/ops/codex_delivery_collaboration_protocol_v1.md
+  test_baseline_anchor_sha: 5b58d6a1b2ac759c2f1c1cac26e820236fd74f9f
+  test_baseline_scope: declared_manifest_and_two_orm_groups
 
 authority:
   precedence:

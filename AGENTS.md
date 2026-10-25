@@ -60,6 +60,14 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
 - Always follow `docs/ops/codex_workspace_execution_rules.md` before any write action.
 - Mandatory preflight before edits: `pwd` + `git rev-parse --show-toplevel` + `git branch --show-current` + `git status --short`.
 
+## Stable Baseline Incremental Collaboration (2026-10-26, Hard Lock)
+
+- The established test-baseline anchor is PR735, main `5b58d6a1b2ac759c2f1c1cac26e820236fd74f9f`; its proof is limited to the declared manifest and ORM scope, not all repository tests or product acceptance.
+- Before planning subsequent iterations, read and apply `docs/ops/codex_delivery_collaboration_protocol_v1.md`: it governs code evolution, risk-selected tests, evidence invalidation/collection, protected integration, rollback and handoff on this baseline.
+- Use the current run as the single result index. The protocol replaces its historical separate context-switch-log workflow; do not resume completed baseline work or build parallel evidence ledgers.
+- Preserve baseline assertions and ownership boundaries. New behavior needs affected tests and actual collection; changing the baseline requires an explicit scope delta, reviewed evidence and protected integration. Never remove failures, weaken gates or infer ORM reuse to keep a green baseline.
+- Platform-specific GitHub/Gitee gate requirements above remain intact. This protocol adds no deployment authorization and does not claim all collaboration judgments are machine-enforced.
+
 ## Baseline Iteration Phase (Hard Lock)
 `BASELINE_ITERATION_EXECUTION_POLICY=v1`
 - This repository is in baseline-backed iteration. Before any mutation, inventory and reuse the registered worktree, Make targets, runtime profile, database, ports, volumes, fixtures, and evidence tools described in `docs/ops/codex_workspace_execution_rules.md`.
