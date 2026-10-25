@@ -175,10 +175,31 @@
                 </tree>
             </field>
         </record>
+        <record id="view_sc_certificate_registration_tree" model="ir.ui.view">
+            <field name="name">sc.document.admin.document.certificate.tree</field>
+            <field name="model">sc.document.admin.document</field>
+            <field name="priority">90</field>
+            <field name="arch" type="xml">
+                <tree string="证书管理" default_order="valid_until asc, id desc">
+                    <field name="certificate_name" />
+                    <field name="certificate_no" />
+                    <field name="holder_name" />
+                    <field name="valid_until" />
+                    <field name="state" />
+                    <field name="document_no" optional="show" />
+                    <field name="project_id" optional="show" />
+                    <field name="issue_authority" optional="hide" />
+                    <field name="issue_date" optional="hide" />
+                    <field name="business_date" optional="hide" />
+                </tree>
+            </field>
+        </record>
         <record id="action_sc_certificate_registration" model="ir.actions.act_window">
             <field name="name">证照登记</field>
             <field name="res_model">sc.document.admin.document</field>
             <field name="view_mode">tree,form</field>
+            <field name="view_id" ref="smart_construction_core.view_sc_certificate_registration_tree" />
+            <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_certificate_registration_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_document_admin_document_form')})]" />
             <field name="search_view_id" ref="smart_construction_core.view_sc_document_admin_document_search" />
             <field name="domain">[('fact_type', '=', 'certificate_registration')]</field>
             <field name="context">{'default_fact_type': 'certificate_registration', 'search_default_certificate_registration': 1}</field>
