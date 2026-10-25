@@ -1,0 +1,24 @@
+{
+  "check": "ci.local.quick.run",
+  "identity": {},
+  "suites": [
+    {
+      "id": "verify.test.determinism",
+      "command": ["make", "verify.test.determinism"],
+      "inputs": [
+        "scripts/verify/determinism_probe.py",
+        "scripts/verify/test_determinism_probe.py",
+        "make/guards.mk"
+      ]
+    },
+    {
+      "id": "verify.test.isolation",
+      "command": ["make", "verify.test.isolation"],
+      "inputs": [
+        "scripts/verify/isolation_probe.py",
+        "scripts/verify/test_isolation_probe.py",
+        "make/guards.mk"
+      ]
+    }
+  ]
+}
