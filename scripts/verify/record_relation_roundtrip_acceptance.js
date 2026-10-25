@@ -666,7 +666,12 @@ async function runProbe(acceptance, environment) {
     result.populated_openable_fields = populatedOpenableFields;
     result.empty_value_openable_fields = emptyValueOpenableFields;
     result.not_visible_openable_fields = notVisibleOpenableFields;
-    result.visible_relation_control_fields = controlFields;
+    // The evidence adapter (acceptance_evolution_binding_guard) requires
+    // visible_relation_control_fields to equal populated_openable_fields: a
+    // contract-openable relation with an empty value still renders a readonly
+    // relation control, but it has no current-record target to open, so it must
+    // not be reported as a visible relation control field.
+    result.visible_relation_control_fields = populatedOpenableFields;
     result.contract_render_comparison = [...comparisonByField.values()];
     result.declared_openable = targets.map((field) => ({
       field,
