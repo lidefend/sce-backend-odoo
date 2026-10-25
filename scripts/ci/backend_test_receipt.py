@@ -455,15 +455,16 @@ def receipt_reuse_authorized(receipt: dict) -> tuple[bool, list[str]]:
     """Whether an authenticated receipt authorizes reuse for its target.
 
     Authorization is never inferred, and a producer's ``reuse_ready`` flag is
-    never trusted on its own. Only an independently attested authority
-    authorizes reuse: today that is the isolated pure-Python profile's verified
-    workflow-execution authority. Every other target stays blocked until the
-    contract/fact readback and dependency closure are independently verified,
-    not merely claimed in the receipt.
+    never trusted on its own. Two independently attested authorities authorize
+    reuse: the isolated pure-Python profile's verified workflow-execution
+    authority, and a verify_github_origin result whose six closure dimensions
+    all closed. Every other target stays blocked.
     """
     if not isinstance(receipt, dict):
         return False, ['receipt_missing']
     if receipt.get('isolated_execution_authority') == 'verified_workflow_execution':
+        return True, []
+    if receipt.get('reuse_authority') == 'verified_six_dimension_closure':
         return True, []
     return False, list(receipt.get('blockers') or ['reuse_closure_not_independently_attested'])
 
@@ -612,17 +613,29 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
             execution_definition_attested = True
         except (ValueError, KeyError, TypeError, AttributeError, OSError, subprocess.SubprocessError):
             execution_definition_attested = False
-    blockers = ['artifact_attempt_not_attested', 'runtime_contract_readback_missing',
-                'fact_scope_readback_missing']
+    readback_closure = receipt.get('readback_closure')
+    runtime_contract_readback = bool(readback_closure and readback_closure.get('runtime_contract_readback'))
+    fact_scope_readback = bool(readback_closure and readback_closure.get('fact_scope_readback'))
     scope_plan = receipt.get('scope_plan')
-    if not (scope_plan and scope_plan.get('dependency_closure_complete')):
-        blockers.append('target_dependency_closure_not_certified')
+    target_dependency_closure = bool(scope_plan and scope_plan.get('dependency_closure_complete'))
+    blockers = []
     if not execution_definition_attested:
-        blockers.insert(0, 'execution_definition_not_attested')
+        blockers.append('execution_definition_not_attested')
+    if not runtime_contract_readback:
+        blockers.append('runtime_contract_readback_missing')
+    if not fact_scope_readback:
+        blockers.append('fact_scope_readback_missing')
+    if not target_dependency_closure:
+        blockers.append('target_dependency_closure_not_certified')
+    # The GitHub artifact API does not expose the upload attempt, so this
+    # dimension stays closed-shut until an alternative authority is available.
+    blockers.append('artifact_attempt_not_attested')
+    reuse_authority = 'verified_six_dimension_closure' if not blockers else None
     return {**verified, 'platform_origin': 'verified', 'repository': REPOSITORY,
             'run_id': run_id, 'requested_attempt': attempt, 'artifact_id': artifact_id,
             'run_attempt_metadata': 'verified', 'artifact_attempt': 'not_attested',
             'execution_definition_attested': execution_definition_attested,
+            'reuse_authority': reuse_authority,
             'archive_sha256': archive_digest.removeprefix('sha256:'),
             'receipt_sha256': digest(files[module+'/receipt.json']),
             'workflow_path': run['path'],

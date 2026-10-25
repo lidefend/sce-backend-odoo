@@ -892,6 +892,17 @@ class ReuseClosureModelTest(unittest.TestCase):
         self.assertFalse(authorized)
         self.assertEqual(['runtime_contract_readback_missing'], blockers)
 
+    def test_receipt_reuse_authorizes_verified_six_dimension_closure(self):
+        verified = {'platform_origin': 'verified', 'integrity': 'verified',
+                    'reuse_authority': 'verified_six_dimension_closure', 'blockers': []}
+        self.assertEqual((True, []), receipt.receipt_reuse_authorized(verified))
+        open_closure = {'platform_origin': 'verified', 'integrity': 'verified',
+                        'reuse_authority': None,
+                        'blockers': ['artifact_attempt_not_attested']}
+        authorized, blockers = receipt.receipt_reuse_authorized(open_closure)
+        self.assertFalse(authorized)
+        self.assertEqual(['artifact_attempt_not_attested'], blockers)
+
     def test_readback_closure_blockers_bind_exact_head_and_parity(self):
         missing, closure = receipt.readback_closure_blockers(None, head='a' * 40)
         self.assertEqual(['runtime_contract_readback_missing', 'fact_scope_readback_missing'], missing)
