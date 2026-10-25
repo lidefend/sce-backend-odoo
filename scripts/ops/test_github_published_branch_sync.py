@@ -86,6 +86,9 @@ class GithubSyncTests(unittest.TestCase):
         self.assertEqual(out(self.root, 'show', '-s', '--format=%P', 'HEAD'), self.head+' '+self.main)
         self.assertEqual(json.loads((self.root / INDEX).read_text()), index(base='base', ours='ours', theirs='theirs'))
         self.assertTrue(result['generated_reports_refresh_required'])
+        self.assertEqual(set(result['resolved_conflicts']), REPORTS | {INDEX})
+        for report in REPORTS:
+            self.assertEqual((self.root / report).read_text(), 'ours\n')
         self.assertEqual(out(self.root, 'ls-remote', 'origin', 'refs/heads/fix/test').split()[0], self.head)
         self.assertEqual(out(self.root, 'status', '--porcelain'), '')
 

@@ -16,6 +16,7 @@ from . import test_native_tree_presentation_semantic
 from . import test_release_gate_category_options
 from . import test_usage_backend
 from . import test_business_config_change_set
+from . import test_lowcode_config_contract_write_authority
 from . import test_runtime_view_contract_fail_closed
 from . import test_admin_vis_p3_project_record_rule_orm
 from . import test_chatter_timeline_authorization_orm
@@ -58,4 +59,3 @@ from . import test_dictionary_scope_delivery
 from . import test_platform_database_governance_orm
 from . import test_tenant_payload_operator_lifecycle
 from . import test_platform_maintenance_access_http
-from . import test_lowcode_config_contract_write_authority

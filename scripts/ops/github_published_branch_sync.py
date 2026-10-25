@@ -10,7 +10,8 @@ from gitee_published_branch_sync import git, out, sync, CONFIRM
 URLS = {'https://github.com/lidefend/sce-backend-odoo.git', 'git@github.com:lidefend/sce-backend-odoo.git'}
 INDEX = '.agent/active-runs.json'
 REPORTS = {'docs/engineering_convergence/complexity_budget_report.md',
-           'docs/engineering_convergence/test_inventory.csv'}
+           'docs/engineering_convergence/test_inventory.csv',
+           'docs/engineering_convergence/test_inventory_summary.md'}
 
 
 def merge_index(base, ours, theirs):

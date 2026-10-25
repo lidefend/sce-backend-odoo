@@ -45,9 +45,30 @@
   后端 / 静态测试套件，Quick 只跑受影响集合。
 - L3.2 契约快照显式 diff 确认，不再靠提交钩子自动刷新后静默入库。
 
+#### L3.1 具体机制（待实现）
+
+Quick 的套件清单是 `make/ci.mk` 里 `ci.local.quick.run` 的 prerequisites，由
+`local_quick_evidence.py` 的 sharded lane 复现。把每个套件声明成一个
+`evidence_scope.units.v1` unit：
+
+1. 套件清单：新增 `scripts/ops/quick_suite_manifest.json`，每一项是
+   `{suite: "<target>", command: [...], inputs: [<path/glob>...]}`。inputs 用
+   显式路径，不允许目录级通配。
+2. 指纹：`sha256(command + 排序后的每个 input 文件内容)`。命令本身也是输入
+   （同一 target 换配方即失效），避免“改了脚本却复用旧结果”。
+3. 计划：`local_quick_evidence.py` 生成 units 文档，交给 `evidence_scope.py`
+   对账；指纹未变且 ledger 记录为成功的套件 REUSE，其余 RUN。
+4. 台账：`.runtime/evidence-scope/` 记录每套件的指纹与 outcome；只允许
+   `passed/checked/declared/reused` 被沿用，失败套件永不静默复用。
+5. 冻结 identity 绑定：unit 指纹之外，套件的受管运行身份（`sc_test` 库、
+   环境、候选顺序）也进 `identity`，身份变则全部失效。
+
+目标是：只加测试文件 / 只删脚本 / 只改文档时，Quick 不再重跑整个矩阵，
+只跑声明输入真正变化的套件。
+
 ## 4. 实施顺序
 
-1. L1.2（台账稳定 ID，本轮先做，纯 P4、可立即验证）。
+1. L1.2（台账稳定 ID，已落地）。
 2. L1.1（ORM 测试数据库身份，受管 profile，需单独授权确认）。
 3. L2.1 + L2.2 + L2.3（可复现性门禁）。
 4. L1.3 与 L3.1 + L3.2 同步推进（fixture 化是增量复用的前提）。

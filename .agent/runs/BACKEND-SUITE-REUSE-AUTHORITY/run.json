@@ -25,7 +25,20 @@
     "scripts/ops/odoo_shell_exec.sh",
     "make/runtime_ops.mk",
     ".github/workflows/backend_test_suite.yml",
-    ".github/workflows/professional_quality_gate.yml"
+    ".github/workflows/professional_quality_gate.yml",
+    "addons/smart_core/tests/__init__.py",
+    "addons/smart_core/tests/test_api_data_write_id_boundaries.py",
+    "addons/smart_core/tests/test_lowcode_config_contract_write_authority.py",
+    "docs/architecture/contract_assertion_inventory_v1.md",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_baseline_reproducibility_design_v1.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "scripts/ci/generate_test_inventory.py",
+    "scripts/ops/github_published_branch_sync.py",
+    "docs/ops/codex_execution_allowlist.md",
+    "scripts/ops/test_github_published_branch_sync.py"
   ],
   "environment": {
     "kind": "offline",
@@ -49,5 +62,35 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Closed loop verified end-to-end in CI. Witness attaches with runtime_contract_readback=True (24 fields, 0 mismatches). Remaining: artifact_attempt authority (GitHub API limitation), fact_scope_readback relation/missing-value extension, demo-module dependency closure."
+  "next_exact_step": "Resume corrected scope, prepare conflict-compatible metadata/test registration, use governed published GitHub sync with exact live source/main identities.",
+  "observations": {
+    "conflict_closeout": {
+      "initial_local_head": "af95e73170c30c16f43a6b0a53ddcc2ab4d349b7",
+      "published_head": "2500d48bafe606b2c10763aa634e01d1ea941a20",
+      "target_main": "b69f01fac19ab8c889baa540f44b25e34f7ee994",
+      "layer": "P4 branch integration and evidence; P0 test registration only, no test/business semantics changes",
+      "preexisting": "clean; preserve unpublished af95 inventory foundation commit and all prior PR changes",
+      "conflicts": [
+        ".agent/active-runs.json",
+        "addons/smart_core/tests/__init__.py",
+        "docs/engineering_convergence/complexity_budget_report.md",
+        "docs/engineering_convergence/test_baseline_reproducibility_design_v1.md",
+        "docs/engineering_convergence/test_inventory.csv",
+        "docs/engineering_convergence/test_inventory_summary.md"
+      ],
+      "plan": "Move existing test import away from shared append point; retain main design doc. Extend existing governed generated-report set by exactly inventory_summary.md because active pre-commit regeneration prevents preparatory adoption. Existing sync test fixture iterates all registered reports. Preserve bundle/abort/exact identities, then regenerate final derived evidence.",
+      "exclusions": [
+        "product semantics",
+        "database or deployment",
+        "new worktree",
+        "history rewriting"
+      ],
+      "validation_plan": "L0 identity + complete status; L1 diff/import/declaration and iteration; L2 existing workflow/probe tests; L3/L4 not applicable to conflict-only edits; exact-head Quick/review/current CI before completion.",
+      "validation": {
+        "sync_unit": "passed:53 tests; .runtime/pr732-conflict-closeout/sync-unit-final.log",
+        "iteration": "passed: .runtime/pr732-conflict-closeout/iteration-prepare.log",
+        "independent_plan_review": "Preservation plan accepted; exact generated summary allowance and successful-merge byte assertions added."
+      }
+    }
+  }
 }

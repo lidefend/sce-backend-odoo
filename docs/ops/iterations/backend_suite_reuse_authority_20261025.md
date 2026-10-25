@@ -279,3 +279,19 @@ artifact API does not expose the upload attempt, so Docker Odoo receipts stay
 RUN. fact_scope_readback and target_dependency_closure stay open for the demo
 receipt as expected (uncovered fields and unresolved inputs). Whole-product
 acceptance remains separate and untouched.
+
+## PR732 conflict closeout (2026-10-26)
+
+Owner requested conflict resolution. Preserve local unpublished `af95e73170c30c16f43a6b0a53ddcc2ab4d349b7`
+and published `2500d48bafe606b2c10763aa634e01d1ea941a20`; target main is
+`b69f01fac19ab8c889baa540f44b25e34f7ee994`. No product or database changes.
+
+Six conflicts are execution index, test registration, design document, complexity,
+asset inventory and its summary. Move the existing low-code import away from the
+shared EOF append point, preserving discovery. Main's design is the newer superset.
+The active pre-commit regenerates reports, so hand-copying main's summary is not
+a stable preparation. Extend only the existing summary path in the governed
+report resolver; keep recovery bundle, exact refs and all other conflict rejection.
+53 sync tests and iteration pass; successful-merge tests assert exact conflict set
+and report bytes. Independent plan review confirmed preservation. Full merge
+result, generated-evidence refresh, frozen review and current-head gates follow.
