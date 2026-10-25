@@ -93,11 +93,11 @@ export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (
     return row.value;
   }
   if (kind === 'not') {
-    if (!Object.prototype.hasOwnProperty.call(row, 'expr') || row.expr == null) return modifierGap('not.expr');
+    if (!Object.prototype.hasOwnProperty.call(row, 'expr') || row.expr == null || row.expr === '') return modifierGap('not.expr');
     return !evaluateNativeModifierValue(row.expr, resolveFieldValue);
   }
   if (kind === 'all' || kind === 'any') {
-    if (!Array.isArray(row.exprs) || !row.exprs.length || row.exprs.some((expr) => expr == null)) return modifierGap(`${kind}.exprs`);
+    if (!Array.isArray(row.exprs) || !row.exprs.length || row.exprs.some((expr) => expr == null || expr === '')) return modifierGap(`${kind}.exprs`);
     // Resolve every declared branch before reducing: short-circuiting must not hide a contract defect.
     const verdicts = row.exprs.map((expr) => evaluateNativeModifierValue(expr, resolveFieldValue));
     return kind === 'all' ? verdicts.every(Boolean) : verdicts.some(Boolean);

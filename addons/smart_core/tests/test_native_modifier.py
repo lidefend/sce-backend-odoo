@@ -98,6 +98,8 @@ def differential_cases():
         (MODULE.normalize_native_modifier("state == 'draft' or context.get('x')"), {"state": "draft"}),
         ({"kind": "not", "expr": {"kind": "unknown"}}, {}),
         ({"kind": "static", "value": "false"}, {}),
+        ({"kind": "not", "expr": ""}, {}),
+        ({"kind": "any", "exprs": [True, ""]}, {}),
         ({"kind": "any", "exprs": [True, {"kind": "field_truthy", "field": "missing"}]}, {}),
         ({"kind": "all", "exprs": [False, {"kind": "unknown"}]}, {}),
         ({"kind": "field_compare", "field": "state", "operator": "==", "value_field": "missing"}, {"state": "draft"}),
