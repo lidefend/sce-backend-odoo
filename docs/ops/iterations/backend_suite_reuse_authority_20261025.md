@@ -186,3 +186,56 @@ gate; it mixes correctness, hygiene and boundary.
 
 Next: decide, from this map, which gaps to close first (platform-kernel
 contract consistency proof), before modifying any gate.
+
+## Platform-kernel contract consistency proof: plan + test skeleton
+
+### Existing foundation
+
+- `scripts/verify/backend_contract_fact_readback_probe.py` already captures, in
+  one READ ONLY snapshot, the native source facts and the final
+  `ui.contract.v2` contract for a registered actor/action/record, verifies the
+  source/contract lifecycle binding, and emits `backend-contract-fact-readback/v1`.
+  It is currently a local diagnostic with blockers:
+  not_ci_execution, query_dependency_closure_incomplete,
+  related_model_permission_closure_incomplete, platform_execution_not_attested,
+  and projection_value_coverage_incomplete (relations/derived fields uncovered).
+- `backend_test_receipt.readback_closure_blockers` / `readback_witness_closure`
+  already map that witness onto runtime_contract_readback (no mismatches) and
+  fact_scope_readback (full projection parity).
+
+### Minimal closed loop
+
+1. Wire the readback probe into the Docker Odoo backend suite so each receipt
+   carries the witness for one representative model/action per module. First
+   increment only attaches the witness; it does not yet authorize reuse.
+2. Extend value parity from direct scalars to declared relation projections:
+   a relation field is comparable only when its target model and permission
+   projection are declared; otherwise it stays uncovered (fail closed).
+3. Close the dependency closure (deferred Stage 2 import/SQL work) so
+   query_dependency_closure_incomplete and
+   related_model_permission_closure_incomplete can resolve.
+4. Attest platform execution (workflow definition + artifact attempt) so
+   platform_execution_not_attested can resolve.
+5. Only when all six reuse_closure dimensions close does
+   receipt_reuse_authorized authorize REUSE; otherwise RUN or BLOCK.
+
+### Test skeleton (unit, pure functions first)
+
+- backend_test_receipt: readback_witness_closure returns
+  runtime_contract_readback=True only when mismatch_fields is empty; returns
+  fact_scope_readback=True only when full_projection_parity and no mismatches;
+  projection_value_coverage_incomplete set otherwise.
+- backend_contract_fact_readback_probe.value_parity: direct scalar fields with
+  equal source/projection/fact values are checked; relation, derived, related,
+  translate and company_dependent fields are uncovered; a mismatched scalar is
+  a mismatch field; a missing field is uncovered.
+- backend_test_receipt.record: when a readback witness is supplied it is bound
+  to the receipt head and carried into the receipt; a witness whose source_head
+  differs from the receipt head is refused.
+- backend_suite_plan.select_historical_receipts: a Docker receipt with a valid
+  readback witness, authenticated platform origin, attested execution
+  definition and complete dependency closure resolves to REUSE; any missing
+  dimension stays RUN or BLOCK.
+
+Implementation order follows the loop: wire probe -> extend parity -> close
+closure -> attest execution -> authorize reuse.
