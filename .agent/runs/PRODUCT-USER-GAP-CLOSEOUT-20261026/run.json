@@ -21,7 +21,8 @@
     "make/dev.mk",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/test_inventory.csv",
-    "docs/engineering_convergence/test_inventory_summary.md"
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -29,7 +30,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Bind existing local.dev backend and candidate frontend to first P1 fix commit; run two-workspace no-save browser observer. Other FG gaps remain open.",
+  "next_exact_step": "Validate explicit empty defaults via targeted ORM then two-workspace browser rerun; leave other audited gaps open.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -87,13 +88,24 @@
         "log": ".runtime/product-user-gap-closeout-20261026/workspace-feedback-orm-03.log"
       },
       "browser": {
-        "status": "not_run"
+        "status": "failed",
+        "candidate": "4c0c39fddc01b4810ef1820a7457e468600509d1",
+        "reason": "team form loads, describe succeeds, missing declared draft defaults prevent evaluation",
+        "report": ".runtime/product-user-gap-closeout-20261026/workspace-browser/4c0c39fddc01b4810ef1820a7457e468600509d1/report.json"
       },
       "independent_development_review": {
         "status": "passed",
         "scope": "initial P1 diff; not frozen integration review",
         "followup": "added each-dependency regression"
+      },
+      "workspace_default_orm": {
+        "status": "passed",
+        "tests": 4,
+        "log": ".runtime/product-user-gap-closeout-20261026/workspace-feedback-orm-05.log",
+        "prior_failure": "Odoo Text normalizes explicit false default to None; corrected assertion to native representation without relaxing key presence"
       }
-    }
+    },
+    "workspace_default_presence": "Browser reached team workspace; native default_get omitted undeclared empty note, causing FEEDBACK_INPUT_INVALID before evaluate. Explicit P1 default=False for note on both workspaces and optional partner on current account; preserve missing vs empty and frontend fail closed.",
+    "tool_entry_correction": "Use existing nginx 18081/t/demo, confirmed static mount current worktree dist-dev; 5176 preview lacks namespaced proxy. No product auth workaround."
   }
 }

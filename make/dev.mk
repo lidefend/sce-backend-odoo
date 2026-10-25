@@ -1703,3 +1703,8 @@ local.test.baseline: guard.prod.forbid
 verify.local.dev.workspace.feedback: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.workspace.feedback.orm
+verify.local.dev.workspace.feedback.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.dev.test MODULE=smart_construction_core \
+	  TEST_TAGS=workspace_processing_feedback,company_project_refund_feedback_orm

@@ -111,3 +111,18 @@ class TestWorkspaceProcessingFeedback(TransactionCase):
                             "content": "；".join(messages[:index] + messages[index + 1:]),
                             "visible": True,
                         })
+
+    def test_new_form_defaults_explicitly_cover_feedback_dependencies(self):
+        for name, stem, _message, _has_partner in self.CASES:
+            with self.subTest(model=name):
+                model = self.model(name)
+                request, binding = self.binding(model, stem)
+                fields = [dep["field"] for dep in binding["dependencies"]]
+                defaults = model.default_get(fields)
+                self.assertEqual(set(defaults), set(fields))
+                # Odoo Text converts its explicit false default to None; the
+                # key must remain present so draft feedback sees known empty.
+                self.assertIsNone(defaults["note"])
+                self.assertTrue(defaults["business_date"])
+                if "partner_id" in defaults:
+                    self.assertIs(defaults["partner_id"], False)

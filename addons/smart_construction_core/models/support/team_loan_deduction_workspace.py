@@ -32,7 +32,7 @@ class ScTeamLoanDeductionWorkspace(models.TransientModel):
     project_id = fields.Many2one("project.project", string="项目", required=True)
     partner_id = fields.Many2one("res.partner", string="班组/承包人", required=True)
     business_date = fields.Date("办理日期", default=fields.Date.context_today, help='建议补充办理日期')
-    note = fields.Text("办理说明", help='建议补充办理说明')
+    note = fields.Text("办理说明", default=False, help='建议补充办理说明')
     processing_advisory = fields.Char("办理提示", compute="_compute_processing_advisory", sc_ui_usage="interaction",
         sc_feedback_usage=_PROCESSING_ADVISORY_FEEDBACK,
     )

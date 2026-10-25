@@ -4,8 +4,8 @@
   "counts": {
     "odoo_tags": 201,
     "gated": 5,
-    "on_demand": 48,
-    "unwired": 148,
+    "on_demand": 49,
+    "unwired": 147,
     "odoo_tag_declarations": 420,
     "gated_declarations": 97,
     "uncovered_declarations": 323,
@@ -747,7 +747,8 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "make:verify.company_project_refund.feedback.orm :: company_project_refund_feedback_orm"
+        "make:verify.company_project_refund.feedback.orm :: company_project_refund_feedback_orm",
+        "make:verify.local.dev.workspace.feedback.orm :: workspace_processing_feedback,company_project_refund_feedback_orm"
       ],
       "disposition": "class-selected"
     },
@@ -2687,14 +2688,16 @@
     },
     {
       "group": "workspace_processing_feedback",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_workspace_processing_feedback.py"
       ],
       "owner": "construction-product",
-      "evidence": []
+      "evidence": [
+        "make:verify.local.dev.workspace.feedback.orm :: workspace_processing_feedback,company_project_refund_feedback_orm"
+      ]
     }
   ],
   "ci_unit_scripts": [
