@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1607`
+- Total assets: `1608`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `221`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1161`
+- PR dedupe candidates: `1162`
 
 ## By Layer
 
@@ -18,7 +18,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | governance | 611 |
 | contract | 408 |
-| unit | 303 |
+| unit | 304 |
 | odoo_integration | 144 |
 | security | 50 |
 | e2e | 49 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1380 |
+| pr_candidate | 1381 |
 | integration_candidate | 171 |
 | release_candidate | 47 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1161 |
+| deduplicate_before_required | 1162 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 170 |
 | keep_release_only | 47 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1382 |
+| <5m | 1383 |
 | 10-30m | 172 |
 | 30-60m | 49 |
 | unknown | 3 |
@@ -154,7 +154,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | architecture owner | 611 |
 | platform owner | 408 |
-| test owner | 304 |
+| test owner | 305 |
 | backend owner | 144 |
 | security owner | 50 |
 | qa owner | 49 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1395 |
+| scripts/verify | 1396 |
 | scripts/ops | 109 |
 | frontend/apps/web/scripts | 45 |
 | scripts/ci | 32 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-a67db45b | contract | `scripts/ops/test_repair_unbound_structural_form_contract.py` | platform owner |
 | T-ASSET-9a6b60bc | contract | `scripts/ops/validate_contract_business_categories.sh` | platform owner |
 | T-ASSET-a545a5fb | unit | `scripts/verify/acceptance_action_count.py` | test owner |
-| ... | ... | 1081 more | ... |
+| ... | ... | 1082 more | ... |
 
 ## Dedupe Hotspots
 
