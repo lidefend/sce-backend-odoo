@@ -171,3 +171,31 @@ This closes the bounded cross-channel contract6 lifecycle: original UI create/ed
 Owner explicitly authorizes protected PR merge; use existing squash method and exact reviewed head. Product acceptance remains separate. P4 merge evidence needs the existing natural Demo project, because the old managed identity resolver assumes isolated FE fixtures prohibited on daily Demo. Extend only the current resolver: an explicitly bound demo duty selects the standard sc_demo_project_001 XMLID and DEMO-PJ-001/company identity; other carriers keep fixture semantics. No record writes, fixture installation, product behavior or threshold change. Existing list/relation browser engines and evidence adapters remain authoritative.
 
 Merge increment readiness:30 resolver tests and actual demo-duty readonly resolution PASS (project2/company1). Independent review reports no S0–S2 across the sign/UI/resolver increment; previous UI assertion S2 remains closed. Freeze preparation PASS. Existing contract lifecycle evidence binds deployed6f994bc75 and remains reusable because this increment changes only P4 tools, not product/runtime declarations. Missing merge-specific list/relation suites will run on the final aligned candidate, with no replay of terminal contract writes.
+
+### Merge blocker: Demo project manager (2026-10-25)
+
+Frozen 38b14c5dc list surface passed 8 records/108 assertions/5 negative fixtures.
+Relation report failed with HTTP404. Bounded manager_id diagnostic identified
+chatter.timeline on res.users/1 (OdooBot), not missing finance ACL or failed navigation.
+Demo showroom creation omitted manager_id and later only filled an empty manager,
+retaining the system actor supplied by project creation. P4 Demo seed now explicitly
+binds its declared pm1 and corrects only empty/root managers; other managers remain.
+No P0/P1 product permission, company scope or frontend rule is changed.
+
+The existing demo duty, UUID c7ffe700-ce02-11f1-9a86-a213133df790 and paired backup
+sc_demo-20261025T012344Z-b64644be were verified before bounded repair. Registered
+`daily.demo.project_manager.repair` changed only project2.manager_id from1 to8,
+as non-sudo actor40, with locked exact checkpoint and independent committed readback.
+The entry is operator-only, has a dedicated confirmation, and refuses replay.
+Original failure and repair evidence are under the existing result index:
+manager-diagnostic.log, manager-repair.json, manager-repaired-diagnostic.log.
+The repaired single-field diagnostic has zero failures/HTTP errors/console errors
+and complete return restoration. It deliberately remains diagnostic_only, not a
+formal pass. Six focused tests cover checkpoint drift/replay/type rejection and
+both seed branches preserving existing business managers.
+
+Impact: manager relation target changed; formal relation suite must pass after
+freeze. Budget list/browser/product inputs and completed contract6 lifecycle are
+unchanged. Preserve their original evidence; do not replay approval/signature.
+The extra operator repair target has one explicit reviewed lane disposition;
+no unattended CI database mutation is introduced. Whole delivery remains pending.

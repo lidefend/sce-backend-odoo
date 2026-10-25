@@ -342,6 +342,11 @@
       "owner": "construction-product",
       "reason": "Operator-authorized reversible preservation of unreferenced demo filestore objects, with exact manifest and identity checks; must not execute as unattended CI."
     },
+    "daily.demo.project_manager.repair": {
+      "disposition": "demo_runbook",
+      "owner": "construction-product",
+      "reason": "Owner-authorized exact Demo project2 manager1->pm1 repair, guarded by paired recovery, duty UUID, row lock and no-replay checkpoint; never unattended CI."
+    },
     "daily.personnel_views": {
       "disposition": "ops_runbook",
       "owner": "platform-team",

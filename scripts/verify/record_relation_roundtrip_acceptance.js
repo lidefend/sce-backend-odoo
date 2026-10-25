@@ -45,6 +45,7 @@ const RESOLUTION_KEY = String(process.env.RELATION_RESOLUTION_KEY || 'project').
 // back to a stale id.
 const IDENTITY_SOURCE = String(process.env.RELATION_IDENTITY_SOURCE || 'resolution').trim();
 const PINNED_FIELD = String(process.env.RELATION_FIELD || '').trim();
+const DIAGNOSTIC_ONLY = process.env.RELATION_DIAGNOSTIC_ONLY === '1';
 let outDir;
 
 let MODEL = '';
@@ -440,6 +441,8 @@ async function runProbe(acceptance, environment) {
     status: 'fail',
     artifacts: outDir,
     denied_requests: [],
+    failed_requests: [],
+    diagnostic_only: DIAGNOSTIC_ONLY,
     console_errors: [],
     declared_openable: [],
     attempts: [],
@@ -454,6 +457,18 @@ async function runProbe(acceptance, environment) {
     page.on('pageerror', (err) => result.console_errors.push(err.message));
     page.on('response', (response) => {
       if ([401, 403].includes(response.status())) result.denied_requests.push({ status: response.status(), url: response.url() });
+      if (response.status() >= 400) {
+        let body = {};
+        try { body = response.request().postDataJSON() || {}; } catch { /* non-JSON resource */ }
+        const params = body.params || {};
+        // Diagnostic metadata only: never retain login payloads, headers or tokens.
+        result.failed_requests.push({
+          status: response.status(), pathname: new URL(response.url()).pathname,
+          intent: body.intent || null, operation: params.op || null,
+          model: params.model || null, record_id: params.record_id || params.res_id || params.id || null,
+          ids: Array.isArray(params.ids) ? params.ids : null,
+        });
+      }
     });
     let contractPayload = null;
     page.on('response', (response) => {
@@ -638,7 +653,8 @@ async function runProbe(acceptance, environment) {
         differences,
       }];
     }));
-    const ordered = PINNED_FIELD
+    if (DIAGNOSTIC_ONLY && !PINNED_FIELD) throw new Error('bounded diagnostic requires RELATION_FIELD');
+    const ordered = DIAGNOSTIC_ONLY ? [PINNED_FIELD] : PINNED_FIELD
       ? [PINNED_FIELD, ...populatedOpenableFields]
       : populatedOpenableFields;
     const targets = [...new Set(ordered)];
@@ -768,7 +784,7 @@ async function runProbe(acceptance, environment) {
         reason: `blocking contract/render differences: ${blockingDifferences.map((item) => item.kind).join(',')}`,
       });
     }
-    result.status = result.failures.length ? 'fail' : 'pass';
+    result.status = DIAGNOSTIC_ONLY ? 'diagnostic_only' : result.failures.length ? 'fail' : 'pass';
   } catch (err) {
     if (page) {
       result.failure_path = new URL(page.url()).pathname;

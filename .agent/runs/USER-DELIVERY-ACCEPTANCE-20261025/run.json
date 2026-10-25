@@ -53,11 +53,16 @@
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/ops/daily_runtime_record_identity_resolve.py",
     "scripts/ops/test_daily_runtime_record_identity_resolve.py",
-    "scripts/verify/frontend_delivery_hardening_runtime_ids.py"
+    "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+    "scripts/verify/record_relation_roundtrip_acceptance.js",
+    "scripts/verify/daily_demo_project_manager_repair.py",
+    "scripts/verify/test_daily_demo_project_manager_repair.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_demo_showroom.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_20_projects_demo.py"
   ],
   "environment": {
     "kind": "runtime",
-    "authority": "Daily Demo duty sc-demo-dev/sc_demo deployed candidate6f994bc7528259ca2180439dfdbf3d3cebebc9d1, UUID unchanged; governed declared module upgrade and recovery point passed. Existing user-authorized API/UI lifecycle evidence retained; terminal contract6 signed, no replay."
+    "authority": "Daily Demo duty sc-demo-dev/sc_demo deployed38b14c5dc; UUID unchanged. Bounded manager2->pm1 repair completed; contract6 signed, no replay."
   },
   "checks": {
     "inventory_policy": {
@@ -84,7 +89,7 @@
     "9 observed business models lack rows; complete scenario coverage pending.",
     "Cross-company negative writes and remaining delivery gates not yet executed."
   ],
-  "next_exact_step": "Commit/freeze P4 final increment, exact-head Quick and review/archive. Governed candidate source/runtime alignment, then only required list-surface and relation-roundtrip evidence; publish new PR731 head and exact-head CI, verify protected squash merge and read back main.",
+  "next_exact_step": "Freeze converged Demo manager/tool increment; exact Quick, review/archive and publish. Carry unchanged list evidence using recorded suite inputs, deploy candidate and run required relation suite, then protected squash merge PR731 after current gates.",
   "observations": {
     "result_index": ".runtime/final-acceptance/user-delivery-baseline/execution.json",
     "identity_correction": "Demo duty forbids isolated fixture accounts and allows preview. Reuse demo_full login/home evidence; no account reset or edition change.",
@@ -122,6 +127,7 @@
     "api_signature": "FormalHTTP signing passed with actual demo_full released menu/action authority; contract6 signed/validated, amount12600. Initial missing-entry403 retained, corrected attempt uses separately bound evidence, no uncertain replay.",
     "ui_terminal_check": "PASS contract-ui-signed-money/report.json: exact visible contract6 form/path, name, money12600 and signed state after open+reload;0errors0blocked. Prior selector failures and independent S2 correction retained. 17 API tests,16 authority tests,34 UI containment/exact-readback assertions passed.",
     "mainline": "PR731 open; published6f994bc75 Quick/source review/archive pass and remote checks all SUCCESS or SKIPPED at last readback. Required merge runtime evidence still missing; not merged. P4 sign/UI increment remains explicit dirty, not yet published.",
-    "merge_increment_review": "Independent dirty-delta review: no S0-S2; prior UI false-positive finding closed.30 resolver tests plus actual demo-bound read-only resolve pass; prior17 API/16 authority/34 UI checks valid for unchanged sources; freeze.prepare passes."
+    "merge_increment_review": "Independent dirty-delta review: no S0-S2; prior UI false-positive finding closed.30 resolver tests plus actual demo-bound read-only resolve pass; prior17 API/16 authority/34 UI checks valid for unchanged sources; freeze.prepare passes.",
+    "manager_repair": "manager-repair.json PASS non-sudo actor40 project2 manager1->8; repaired bounded diagnostic has no failures. 6 focused tests pass. Source root-cause correction limited to Demo seed."
   }
 }

@@ -214,12 +214,13 @@ def run(env):
                     "project_code": spec.get("code") or spec["name"],
                     "company_id": seed_company_id,
                     "user_id": pm_person.id if pm_person else False,
+                    "manager_id": pm_person.id if pm_person else False,
                 }
             )
             created = True
         elif pm_person and not project.user_id:
             project.write({"user_id": pm_person.id})
-        if pm_person and not project.manager_id:
+        if pm_person and (not project.manager_id or project.manager_id == env.ref("base.user_root")):
             project.write({"manager_id": pm_person.id})
         prepare_project(env, project)
         _ensure_boq(env, project, idx)

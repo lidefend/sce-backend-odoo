@@ -53,6 +53,18 @@ daily.demo.contract.write_acceptance: daily.demo.write.recovery_gate
 	  < scripts/verify/daily_demo_contract_write_acceptance.py
 
 .PHONY: verify.daily.demo.business_readiness.unit audit.daily.demo.business_readiness
+.PHONY: verify.daily.demo.project_manager.repair.unit daily.demo.project_manager.repair
+verify.daily.demo.project_manager.repair.unit:
+	@python3 -m unittest scripts.verify.test_daily_demo_project_manager_repair
+
+# Reuse the same paired-backup/UUID/revision gate as this batch's contract writes.
+# Its legacy confirmation remains required in addition to this exact repair token.
+daily.demo.project_manager.repair: verify.daily.demo.project_manager.repair.unit daily.demo.write.recovery_gate
+	@test "$${SC_DEMO_MANAGER_REPAIR_CONFIRM:-}" = BIND_DEMO_PJ_001_MANAGER_TO_PM1
+	@ssh sc-root \
+	  'python3 /opt/projects/repos/sce-product-odoo/scripts/ops/daily_runtime_duty_odoo_shell.py --duty demo --database sc_demo --env SC_DEMO_MANAGER_REPAIR_CONFIRM=BIND_DEMO_PJ_001_MANAGER_TO_PM1' \
+	  < scripts/verify/daily_demo_project_manager_repair.py
+
 verify.daily.demo.business_readiness.unit:
 	@python3 -m unittest scripts.verify.test_daily_demo_business_readiness
 

@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1605`
+- Total assets: `1606`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `221`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1159`
+- PR dedupe candidates: `1160`
 
 ## By Layer
 
@@ -18,7 +18,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | governance | 611 |
 | contract | 408 |
-| unit | 301 |
+| unit | 302 |
 | odoo_integration | 144 |
 | security | 50 |
 | e2e | 49 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1378 |
+| pr_candidate | 1379 |
 | integration_candidate | 171 |
 | release_candidate | 47 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1159 |
+| deduplicate_before_required | 1160 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 170 |
 | keep_release_only | 47 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1380 |
+| <5m | 1381 |
 | 10-30m | 172 |
 | 30-60m | 49 |
 | unknown | 3 |
@@ -154,7 +154,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | architecture owner | 611 |
 | platform owner | 408 |
-| test owner | 302 |
+| test owner | 303 |
 | backend owner | 144 |
 | security owner | 50 |
 | qa owner | 49 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1393 |
+| scripts/verify | 1394 |
 | scripts/ops | 109 |
 | frontend/apps/web/scripts | 45 |
 | scripts/ci | 32 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-189 | contract | `scripts/ops/test_repair_unbound_structural_form_contract.py` | platform owner |
 | T-ASSET-197 | contract | `scripts/ops/validate_contract_business_categories.sh` | platform owner |
 | T-ASSET-208 | unit | `scripts/verify/acceptance_action_count.py` | test owner |
-| ... | ... | 1079 more | ... |
+| ... | ... | 1080 more | ... |
 
 ## Dedupe Hotspots
 
@@ -292,6 +292,7 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/contract_governance_form` | 5 |
 | `scripts/verify/backend_contract_lifecycle` | 4 |
 | `scripts/verify/daily_demo_contract` | 4 |
+| `scripts/verify/test_daily_demo` | 4 |
 | `scripts/verify/test_gitee_formal` | 4 |
 | `scripts/verify/test_native_view` | 4 |
 | `scripts/verify/test_product_view` | 4 |
@@ -300,7 +301,6 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/frontend_page_identity` | 3 |
 | `scripts/verify/test_backend_contract` | 3 |
 | `scripts/verify/test_contract_slo` | 3 |
-| `scripts/verify/test_daily_demo` | 3 |
 | `scripts/verify/test_frontend_acceptance` | 3 |
 | `scripts/verify/test_frontend_contract` | 3 |
 | `scripts/verify/test_gitee_ci` | 3 |
@@ -327,6 +327,7 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/contract_governance_form` | 5 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/backend_contract_lifecycle` | 4 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/daily_demo_contract` | 4 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
+| `scripts/verify/test_daily_demo` | 4 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_gitee_formal` | 4 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_native_view` | 4 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_product_view` | 4 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
@@ -335,7 +336,6 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/frontend_page_identity` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_backend_contract` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_contract_slo` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
-| `scripts/verify/test_daily_demo` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_frontend_acceptance` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_frontend_contract` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_gitee_ci` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |

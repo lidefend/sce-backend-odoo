@@ -53,7 +53,7 @@
       "defect": "New hard-checked register: a make target whose recipe calls a path that is absent from the tree cannot run. 226 targets qualify (187 references to scripts/migration/*, which .gitignore line 116 keeps out of the clean product repository as customer migration collateral, plus relocated or never-added verify/root scripts). Each is registered with an owner, a reason and a review date; 0 may be unregistered."
     }
   ],
-  "max_targets_zero_reference": 648,
+  "max_targets_zero_reference": 649,
   "max_scripts_unreferenced_anywhere": 104,
   "max_targets_missing_asset_unregistered": 0,
   "max_stale_missing_asset_dispositions": 0,
@@ -145,6 +145,7 @@
       "daily.demo.contract.api_acceptance",
       "daily.demo.contract.write_acceptance",
       "daily.demo.filestore.preserve",
+      "daily.demo.project_manager.repair",
       "daily.personnel_views",
       "daily.runtime.database.duty.apply",
       "daily.runtime.database.duty.initialize",
