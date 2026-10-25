@@ -510,6 +510,28 @@ def archive_members(data: bytes) -> dict[str, bytes]:
     return files
 
 
+WORKFLOW_PATHS = frozenset({
+    '.github/workflows/backend_test_suite.yml',
+    '.github/workflows/professional_quality_gate.yml',
+})
+
+
+def workflow_authority_blobs(source_tree: str, fetch) -> dict[str, str]:
+    """Workflow files at the candidate source tree are the verified definition."""
+    tree = json.loads(fetch(f'git/trees/{source_tree}?recursive=1'))
+    if tree.get('sha') != source_tree or tree.get('truncated') is not False:
+        raise ValueError('source tree incomplete for workflow authority')
+    blobs = {}
+    for item in tree.get('tree', []):
+        if item.get('path') in WORKFLOW_PATHS:
+            if item.get('type') != 'blob' or item.get('mode') != '100644':
+                raise ValueError('workflow authority entry is not a regular blob')
+            blobs[item['path']] = item['sha']
+    if set(blobs) != WORKFLOW_PATHS:
+        raise ValueError('workflow authority blobs incomplete')
+    return blobs
+
+
 def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
                          shard: int, expected_head: str, module: str,
                          now: datetime | None = None, fetch=None) -> dict:
@@ -578,9 +600,23 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
             scope_path.write_bytes(files['scope-plan.json'])
         verified = verify(folder, expected_head=expected_head,
                           expected_digest=digest(files[module+'/receipt.json']), now=now,scope_plan=scope_path)
+    execution_definition_attested = False
+    if isinstance(receipt.get('workflow_definition'), dict):
+        try:
+            attest_execution_definition(
+                run, receipt['workflow_definition'],
+                workflow_authority_blobs(receipt['source_tree'], fetch), fetch)
+            execution_definition_attested = True
+        except (ValueError, KeyError, TypeError, AttributeError, OSError, subprocess.SubprocessError):
+            execution_definition_attested = False
+    blockers = ['artifact_attempt_not_attested', 'runtime_contract_readback_missing',
+                'fact_scope_readback_missing', 'target_dependency_closure_not_certified']
+    if not execution_definition_attested:
+        blockers.insert(0, 'execution_definition_not_attested')
     return {**verified, 'platform_origin': 'verified', 'repository': REPOSITORY,
             'run_id': run_id, 'requested_attempt': attempt, 'artifact_id': artifact_id,
             'run_attempt_metadata': 'verified', 'artifact_attempt': 'not_attested',
+            'execution_definition_attested': execution_definition_attested,
             'archive_sha256': archive_digest.removeprefix('sha256:'),
             'receipt_sha256': digest(files[module+'/receipt.json']),
             'workflow_path': run['path'],
@@ -589,8 +625,7 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
             'actual_duration_seconds': receipt.get('actual_duration_seconds'),
             'isolated_python': receipt.get('isolated_python'), 'source_tree': receipt['source_tree'],
             'workflow_definition': receipt.get('workflow_definition'),
-            'blockers': ['artifact_attempt_not_attested', 'execution_definition_not_attested', 'runtime_contract_readback_missing', 'fact_scope_readback_missing',
-                         'target_dependency_closure_not_certified']}
+            'blockers': blockers}
 
 
 def observe_github_job(*, run_id: int, attempt: int, job_id: int,

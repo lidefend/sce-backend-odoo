@@ -138,6 +138,7 @@ Generated from repository source files. This report is informational during the 
 | 1128 | Python source | `addons/smart_core/handlers/ui_contract_v2_projection.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
 | 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
+| 1107 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1096 | JavaScript source | `scripts/verify/local_dev_project_create_contract_driver_probe.mjs` |
 | 1095 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
 | 1095 | JavaScript source | `scripts/verify/pfl035_payment_request_runtime_acceptance.mjs` |
@@ -147,7 +148,6 @@ Generated from repository source files. This report is informational during the 
 | 1091 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
 | 1087 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
-| 1072 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1066 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
@@ -168,11 +168,11 @@ Generated from repository source files. This report is informational during the 
 | 962 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
+| 942 | Python source | `scripts/ci/test_backend_test_receipt.py` |
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 932 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 914 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
-| 909 | Python source | `scripts/ci/test_backend_test_receipt.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
 | 900 | Python source | `scripts/audit/test_verification_lane_coverage.py` |

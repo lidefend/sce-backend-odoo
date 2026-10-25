@@ -49,6 +49,27 @@ class WorkflowDefinitionAttestationTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     receipt.attest_execution_definition(run,definition,blobs,lambda p:json.dumps(responses[p]).encode())
 
+    def test_workflow_authority_blobs_resolve_exact_blobs_and_reject_incomplete(self):
+        tree = 'c'*40
+        workflow = '.github/workflows/backend_test_suite.yml'
+        caller = '.github/workflows/professional_quality_gate.yml'
+        responses = {'git/trees/'+tree+'?recursive=1': {'sha':tree,'truncated':False,'tree':[
+            {'path':workflow,'sha':'d'*40,'mode':'100644','type':'blob'},
+            {'path':caller,'sha':'e'*40,'mode':'100644','type':'blob'}]}}
+        blobs = receipt.workflow_authority_blobs(tree, lambda p: json.dumps(responses[p]).encode())
+        self.assertEqual({'d'*40,'e'*40}, set(blobs.values()))
+        for mutation in ('missing','truncated','non_blob'):
+            with self.subTest(mutation=mutation):
+                broken = copy.deepcopy(responses)
+                if mutation == 'missing':
+                    broken['git/trees/'+tree+'?recursive=1']['tree'].pop()
+                elif mutation == 'truncated':
+                    broken['git/trees/'+tree+'?recursive=1']['truncated'] = True
+                else:
+                    broken['git/trees/'+tree+'?recursive=1']['tree'][0]['type'] = 'tree'
+                with self.assertRaises(ValueError):
+                    receipt.workflow_authority_blobs(tree, lambda p: json.dumps(broken[p]).encode())
+
 
 class JobObservationTest(unittest.TestCase):
     def setUp(self):
@@ -629,6 +650,18 @@ class ExecutionReceiptTest(unittest.TestCase):
         self.assertEqual(2, result['requested_attempt'])
         self.assertNotIn('attempt', result)
         self.assertIn('fact_scope_readback_missing',result['blockers'])
+
+    def test_execution_definition_attested_drops_only_that_blocker(self):
+        responses = self.platform_fixture()
+        with patch.object(receipt, 'workflow_authority_blobs', return_value={'w':'e'*40}), \
+             patch.object(receipt, 'attest_execution_definition'):
+            result = self.origin(responses)
+        self.assertTrue(result['execution_definition_attested'])
+        self.assertNotIn('execution_definition_not_attested', result['blockers'])
+        self.assertIn('artifact_attempt_not_attested', result['blockers'])
+        self.assertIn('runtime_contract_readback_missing', result['blockers'])
+        self.assertIn('fact_scope_readback_missing', result['blockers'])
+        self.assertIn('target_dependency_closure_not_certified', result['blockers'])
 
     def test_malformed_authenticated_newer_receipt_falls_back_to_valid_history(self):
         import backend_suite_plan as planner
