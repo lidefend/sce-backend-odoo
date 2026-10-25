@@ -10,9 +10,13 @@
     "scripts/ci/backend_suite_plan.py",
     "scripts/ci/backend_test_receipt.py",
     "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/test_backend_impact_plan.py",
     "scripts/ci/test_backend_suite_plan.py",
     "scripts/ci/test_backend_test_receipt.py",
     "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/verify/backend_contract_fact_readback_probe.py",
+    "scripts/verify/test_backend_contract_fact_readback_probe.py",
+    "scripts/ops/odoo_shell_exec.sh",
     ".github/workflows/backend_test_suite.yml",
     ".github/workflows/professional_quality_gate.yml"
   ],
@@ -21,23 +25,22 @@
     "authority": "existing local CI tools and unit tests; no database or service access"
   },
   "checks": {
-    "ci_receipt_unit": {
-      "target": "scripts/ci/test_backend_test_receipt.py",
+    "ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
       "inputs": [
-        "scripts/ci/backend_test_receipt.py",
-        "scripts/ci/test_backend_test_receipt.py"
-      ],
-      "kind": "offline"
-    },
-    "ci_suite_plan_unit": {
-      "target": "scripts/ci/test_backend_suite_plan.py",
-      "inputs": [
+        "scripts/ci/backend_impact_plan.py",
         "scripts/ci/backend_suite_plan.py",
-        "scripts/ci/test_backend_suite_plan.py"
+        "scripts/ci/backend_test_receipt.py",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        "scripts/ci/test_backend_test_receipt.py",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+        "scripts/verify/backend_contract_fact_readback_probe.py",
+        "scripts/verify/test_backend_contract_fact_readback_probe.py"
       ],
       "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Stage 1 evidence-model audit: trusted vs missing dimensions"
+  "next_exact_step": "Closed loop done (probe wiring, relation parity, dependency closure, execution attestation, six-dimension admission). Remaining: artifact_attempt authority path and CI validation of the workflow wiring."
 }
