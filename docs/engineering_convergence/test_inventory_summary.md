@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1606`
+- Total assets: `1608`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `221`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1160`
+- PR dedupe candidates: `1162`
 
 ## By Layer
 
@@ -18,7 +18,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | governance | 611 |
 | contract | 408 |
-| unit | 302 |
+| unit | 304 |
 | odoo_integration | 144 |
 | security | 50 |
 | e2e | 49 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1379 |
+| pr_candidate | 1381 |
 | integration_candidate | 171 |
 | release_candidate | 47 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1160 |
+| deduplicate_before_required | 1162 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 170 |
 | keep_release_only | 47 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1381 |
+| <5m | 1383 |
 | 10-30m | 172 |
 | 30-60m | 49 |
 | unknown | 3 |
@@ -154,7 +154,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | architecture owner | 611 |
 | platform owner | 408 |
-| test owner | 303 |
+| test owner | 305 |
 | backend owner | 144 |
 | security owner | 50 |
 | qa owner | 49 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1394 |
+| scripts/verify | 1396 |
 | scripts/ops | 109 |
 | frontend/apps/web/scripts | 45 |
 | scripts/ci | 32 |
@@ -179,104 +179,104 @@ Generated from `test_inventory.csv`.
 
 | ID | Layer | Entrypoint | Reason |
 | --- | --- | --- | --- |
-| T-ASSET-088 | unit | `scripts/diag/fe_smoke.sh` | status=review |
-| T-ASSET-089 | unit | `scripts/diag/test-default-menu.py` | status=review |
-| T-ASSET-090 | unit | `scripts/diag/test-frontend-changes.sh` | status=review |
-| T-ASSET-091 | unit | `scripts/diag/test-menu-issue.sh` | status=review |
+| T-ASSET-54c78be1 | unit | `scripts/diag/fe_smoke.sh` | status=review |
+| T-ASSET-54d71152 | unit | `scripts/diag/test-default-menu.py` | status=review |
+| T-ASSET-c174a850 | unit | `scripts/diag/test-frontend-changes.sh` | status=review |
+| T-ASSET-5c6d7f00 | unit | `scripts/diag/test-menu-issue.sh` | status=review |
 
 ## Unknown Runtime Assets
 
 | ID | Layer | Entrypoint |
 | --- | --- | --- |
-| T-ASSET-088 | unit | `scripts/diag/fe_smoke.sh` |
-| T-ASSET-090 | unit | `scripts/diag/test-frontend-changes.sh` |
-| T-ASSET-091 | unit | `scripts/diag/test-menu-issue.sh` |
+| T-ASSET-54c78be1 | unit | `scripts/diag/fe_smoke.sh` |
+| T-ASSET-c174a850 | unit | `scripts/diag/test-frontend-changes.sh` |
+| T-ASSET-5c6d7f00 | unit | `scripts/diag/test-menu-issue.sh` |
 
 ## PR Dedupe Candidate Sample
 
 | ID | Layer | Entrypoint | Owner |
 | --- | --- | --- | --- |
-| T-ASSET-001 | frontend_acceptance | `frontend/apps/web/scripts/bootstrap_inventory_policy_test.mjs` | frontend owner |
-| T-ASSET-002 | frontend_acceptance | `frontend/apps/web/scripts/business_config_approval_target_test.mjs` | frontend owner |
-| T-ASSET-003 | frontend_acceptance | `frontend/apps/web/scripts/business_config_draft_scope_race_test.mjs` | frontend owner |
-| T-ASSET-004 | frontend_acceptance | `frontend/apps/web/scripts/business_form_all_category_direct_acceptance.mjs` | frontend owner |
-| T-ASSET-005 | frontend_acceptance | `frontend/apps/web/scripts/business_form_frontend_full_walk_acceptance.mjs` | frontend owner |
-| T-ASSET-011 | frontend_acceptance | `frontend/apps/web/scripts/designer_draft_ownership_test.mjs` | frontend owner |
-| T-ASSET-012 | frontend_acceptance | `frontend/apps/web/scripts/designer_popup_readiness_test.mjs` | frontend owner |
-| T-ASSET-014 | frontend_acceptance | `frontend/apps/web/scripts/field_configuration_component_test.mjs` | frontend owner |
-| T-ASSET-015 | frontend_acceptance | `frontend/apps/web/scripts/frontend_core_journeys_audit.mjs` | frontend owner |
-| T-ASSET-016 | frontend_acceptance | `frontend/apps/web/scripts/frontend_product_baseline_guard.mjs` | frontend owner |
-| T-ASSET-017 | frontend_acceptance | `frontend/apps/web/scripts/frontend_product_maturity_audit.mjs` | frontend owner |
-| T-ASSET-018 | security | `frontend/apps/web/scripts/frontend_role_journey_audit.mjs` | security owner |
-| T-ASSET-019 | frontend_acceptance | `frontend/apps/web/scripts/handling_entry_catalog_smoke.mjs` | frontend owner |
-| T-ASSET-020 | contract | `frontend/apps/web/scripts/list_selection_contract_smoke.mjs` | platform owner |
-| T-ASSET-021 | frontend_acceptance | `frontend/apps/web/scripts/list_surface_component_test.mjs` | frontend owner |
-| T-ASSET-022 | frontend_acceptance | `frontend/apps/web/scripts/low_code_business_config_acceptance.mjs` | frontend owner |
-| T-ASSET-023 | frontend_acceptance | `frontend/apps/web/scripts/low_code_change_set_acceptance.mjs` | frontend owner |
-| T-ASSET-024 | frontend_acceptance | `frontend/apps/web/scripts/low_code_form_group_matrix_acceptance.mjs` | frontend owner |
-| T-ASSET-027 | frontend_acceptance | `frontend/apps/web/scripts/low_code_global_stability_acceptance.mjs` | frontend owner |
-| T-ASSET-028 | frontend_acceptance | `frontend/apps/web/scripts/low_code_menu_navigation_alignment_acceptance.mjs` | frontend owner |
-| T-ASSET-029 | frontend_acceptance | `frontend/apps/web/scripts/low_code_safe_open_acceptance.mjs` | frontend owner |
-| T-ASSET-030 | frontend_acceptance | `frontend/apps/web/scripts/low_code_workbench_fault_acceptance.mjs` | frontend owner |
-| T-ASSET-031 | frontend_acceptance | `frontend/apps/web/scripts/low_code_workbench_product_acceptance.mjs` | frontend owner |
-| T-ASSET-032 | frontend_acceptance | `frontend/apps/web/scripts/native_attachment_partial_failure_test.mjs` | frontend owner |
-| T-ASSET-033 | frontend_acceptance | `frontend/apps/web/scripts/node_component_consumption_component_test.mjs` | frontend owner |
-| T-ASSET-034 | frontend_acceptance | `frontend/apps/web/scripts/onchange_roundtrip_race_test.mjs` | frontend owner |
-| T-ASSET-035 | frontend_acceptance | `frontend/apps/web/scripts/product_navigation_boundary_acceptance.mjs` | frontend owner |
-| T-ASSET-036 | frontend_acceptance | `frontend/apps/web/scripts/product_page_structure_guard.mjs` | frontend owner |
-| T-ASSET-037 | security | `frontend/apps/web/scripts/public_auth_bootstrap_test.mjs` | security owner |
-| T-ASSET-038 | frontend_acceptance | `frontend/apps/web/scripts/readonly_block_component_test.mjs` | frontend owner |
-| T-ASSET-039 | frontend_acceptance | `frontend/apps/web/scripts/standard_list_lowcode_loop_test.mjs` | frontend owner |
-| T-ASSET-040 | frontend_acceptance | `frontend/apps/web/scripts/standard_project_save_scope_test.mjs` | frontend owner |
-| T-ASSET-044 | frontend_acceptance | `frontend/apps/web/scripts/user_template_coverage_acceptance.mjs` | frontend owner |
-| T-ASSET-045 | frontend_acceptance | `frontend/apps/web/scripts/user_visible_surface_visual_coverage_summary_guard.mjs` | frontend owner |
-| T-ASSET-046 | governance | `scripts/audit/boundary_audit_smart_core.py` | architecture owner |
-| T-ASSET-047 | governance | `scripts/audit/scene_config_audit.js` | architecture owner |
-| T-ASSET-050 | unit | `scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py` | test owner |
-| T-ASSET-051 | unit | `scripts/audit/test_generate_frontend_official_design_alignment_inventory.py` | test owner |
-| T-ASSET-052 | unit | `scripts/audit/test_generate_frontend_professionalization_baseline.py` | test owner |
-| T-ASSET-053 | unit | `scripts/audit/test_generate_frontend_rendering_detail_inventory.py` | test owner |
-| T-ASSET-054 | unit | `scripts/audit/test_generate_frontend_visual_projection_inventory.py` | test owner |
-| T-ASSET-055 | unit | `scripts/audit/test_verification_lane_coverage.py` | test owner |
-| T-ASSET-056 | governance | `scripts/ci/assert_audit_tp08.py` | architecture owner |
-| T-ASSET-057 | unit | `scripts/ci/backend_test_receipt.py` | test owner |
-| T-ASSET-058 | contract | `scripts/ci/enforce_contract_structure_lock.py` | platform owner |
-| T-ASSET-060 | governance | `scripts/ci/frontend_professional_extension_guard.py` | architecture owner |
-| T-ASSET-061 | governance | `scripts/ci/gate_audit.sh` | architecture owner |
-| T-ASSET-062 | governance | `scripts/ci/gate_audit_tp08.sh` | architecture owner |
-| T-ASSET-063 | contract | `scripts/ci/generate_contract_structure_fingerprint.py` | platform owner |
-| T-ASSET-064 | unit | `scripts/ci/generate_e2e_journey_matrix.py` | test owner |
-| T-ASSET-065 | unit | `scripts/ci/generate_test_inventory.py` | test owner |
-| T-ASSET-066 | unit | `scripts/ci/gitee_ci_acceptance.py` | test owner |
-| T-ASSET-067 | unit | `scripts/ci/gitee_ci_acceptance_check.py` | test owner |
-| T-ASSET-069 | unit | `scripts/ci/summarize_test_inventory.py` | test owner |
-| T-ASSET-070 | unit | `scripts/ci/test_backend_impact_plan.py` | test owner |
-| T-ASSET-071 | unit | `scripts/ci/test_backend_suite_plan.py` | test owner |
-| T-ASSET-072 | unit | `scripts/ci/test_backend_test_receipt.py` | test owner |
-| T-ASSET-073 | contract | `scripts/ci/test_backend_test_suite_dispatch_contract.py` | platform owner |
-| T-ASSET-074 | unit | `scripts/ci/test_ci_risk_classifier.py` | test owner |
-| T-ASSET-075 | contract | `scripts/ci/test_ci_risk_workflow_contract.py` | platform owner |
-| T-ASSET-076 | governance | `scripts/ci/test_frontend_professional_extension_guard.py` | architecture owner |
-| T-ASSET-077 | unit | `scripts/ci/test_lane_telemetry.py` | test owner |
-| T-ASSET-078 | unit | `scripts/ci/test_merge_policy_gate.py` | test owner |
-| T-ASSET-079 | unit | `scripts/ci/test_node_syntax_check.py` | test owner |
-| T-ASSET-080 | unit | `scripts/ci/test_parallel_scan.py` | test owner |
-| T-ASSET-081 | unit | `scripts/ci/test_personal_data_scan.py` | test owner |
-| T-ASSET-082 | unit | `scripts/ci/test_release_candidate_gate.py` | test owner |
-| T-ASSET-083 | unit | `scripts/ci/test_secret_scan.py` | test owner |
-| T-ASSET-084 | security | `scripts/ci/test_select_authoritative_workflow_run.py` | security owner |
-| T-ASSET-085 | unit | `scripts/ci/test_trusted_scan_group.py` | test owner |
-| T-ASSET-086 | unit | `scripts/ci/test_trusted_scan_scope.py` | test owner |
-| T-ASSET-087 | contract | `scripts/ci/verify_contract_form_split_evidence.py` | platform owner |
-| T-ASSET-101 | contract | `scripts/ops/contract_product_acceptance_policy_restore.py` | platform owner |
-| T-ASSET-110 | contract | `scripts/ops/formal_list_surface_test_contract_cleanup.py` | platform owner |
-| T-ASSET-111 | contract | `scripts/ops/operation_strategy_contract_surface_backfill.py` | platform owner |
-| T-ASSET-121 | contract | `scripts/ops/repair_unbound_structural_form_contract.py` | platform owner |
-| T-ASSET-122 | contract | `scripts/ops/settlement_contract_surface_backfill.py` | platform owner |
-| T-ASSET-189 | contract | `scripts/ops/test_repair_unbound_structural_form_contract.py` | platform owner |
-| T-ASSET-197 | contract | `scripts/ops/validate_contract_business_categories.sh` | platform owner |
-| T-ASSET-208 | unit | `scripts/verify/acceptance_action_count.py` | test owner |
-| ... | ... | 1080 more | ... |
+| T-ASSET-9b0df816 | frontend_acceptance | `frontend/apps/web/scripts/bootstrap_inventory_policy_test.mjs` | frontend owner |
+| T-ASSET-0775b9c5 | frontend_acceptance | `frontend/apps/web/scripts/business_config_approval_target_test.mjs` | frontend owner |
+| T-ASSET-22671f34 | frontend_acceptance | `frontend/apps/web/scripts/business_config_draft_scope_race_test.mjs` | frontend owner |
+| T-ASSET-45afe216 | frontend_acceptance | `frontend/apps/web/scripts/business_form_all_category_direct_acceptance.mjs` | frontend owner |
+| T-ASSET-9a9e78e4 | frontend_acceptance | `frontend/apps/web/scripts/business_form_frontend_full_walk_acceptance.mjs` | frontend owner |
+| T-ASSET-82495e35 | frontend_acceptance | `frontend/apps/web/scripts/designer_draft_ownership_test.mjs` | frontend owner |
+| T-ASSET-dd6c390a | frontend_acceptance | `frontend/apps/web/scripts/designer_popup_readiness_test.mjs` | frontend owner |
+| T-ASSET-cd9f3642 | frontend_acceptance | `frontend/apps/web/scripts/field_configuration_component_test.mjs` | frontend owner |
+| T-ASSET-7dad7b75 | frontend_acceptance | `frontend/apps/web/scripts/frontend_core_journeys_audit.mjs` | frontend owner |
+| T-ASSET-3069491e | frontend_acceptance | `frontend/apps/web/scripts/frontend_product_baseline_guard.mjs` | frontend owner |
+| T-ASSET-eabbe08b | frontend_acceptance | `frontend/apps/web/scripts/frontend_product_maturity_audit.mjs` | frontend owner |
+| T-ASSET-da43b053 | security | `frontend/apps/web/scripts/frontend_role_journey_audit.mjs` | security owner |
+| T-ASSET-0d3124c5 | frontend_acceptance | `frontend/apps/web/scripts/handling_entry_catalog_smoke.mjs` | frontend owner |
+| T-ASSET-df4ac839 | contract | `frontend/apps/web/scripts/list_selection_contract_smoke.mjs` | platform owner |
+| T-ASSET-ad47d598 | frontend_acceptance | `frontend/apps/web/scripts/list_surface_component_test.mjs` | frontend owner |
+| T-ASSET-14218ba4 | frontend_acceptance | `frontend/apps/web/scripts/low_code_business_config_acceptance.mjs` | frontend owner |
+| T-ASSET-c3b3712e | frontend_acceptance | `frontend/apps/web/scripts/low_code_change_set_acceptance.mjs` | frontend owner |
+| T-ASSET-77f48a3d | frontend_acceptance | `frontend/apps/web/scripts/low_code_form_group_matrix_acceptance.mjs` | frontend owner |
+| T-ASSET-bb44facb | frontend_acceptance | `frontend/apps/web/scripts/low_code_global_stability_acceptance.mjs` | frontend owner |
+| T-ASSET-a0d00b5e | frontend_acceptance | `frontend/apps/web/scripts/low_code_menu_navigation_alignment_acceptance.mjs` | frontend owner |
+| T-ASSET-140558e9 | frontend_acceptance | `frontend/apps/web/scripts/low_code_safe_open_acceptance.mjs` | frontend owner |
+| T-ASSET-434bff97 | frontend_acceptance | `frontend/apps/web/scripts/low_code_workbench_fault_acceptance.mjs` | frontend owner |
+| T-ASSET-cb6e1d4e | frontend_acceptance | `frontend/apps/web/scripts/low_code_workbench_product_acceptance.mjs` | frontend owner |
+| T-ASSET-5512810b | frontend_acceptance | `frontend/apps/web/scripts/native_attachment_partial_failure_test.mjs` | frontend owner |
+| T-ASSET-1d7ccca7 | frontend_acceptance | `frontend/apps/web/scripts/node_component_consumption_component_test.mjs` | frontend owner |
+| T-ASSET-68bbc50c | frontend_acceptance | `frontend/apps/web/scripts/onchange_roundtrip_race_test.mjs` | frontend owner |
+| T-ASSET-d399ae8e | frontend_acceptance | `frontend/apps/web/scripts/product_navigation_boundary_acceptance.mjs` | frontend owner |
+| T-ASSET-4e842a94 | frontend_acceptance | `frontend/apps/web/scripts/product_page_structure_guard.mjs` | frontend owner |
+| T-ASSET-fade93bd | security | `frontend/apps/web/scripts/public_auth_bootstrap_test.mjs` | security owner |
+| T-ASSET-73b78feb | frontend_acceptance | `frontend/apps/web/scripts/readonly_block_component_test.mjs` | frontend owner |
+| T-ASSET-d6b3571c | frontend_acceptance | `frontend/apps/web/scripts/standard_list_lowcode_loop_test.mjs` | frontend owner |
+| T-ASSET-e3e6a20e | frontend_acceptance | `frontend/apps/web/scripts/standard_project_save_scope_test.mjs` | frontend owner |
+| T-ASSET-2ee377b3 | frontend_acceptance | `frontend/apps/web/scripts/user_template_coverage_acceptance.mjs` | frontend owner |
+| T-ASSET-beea2cfb | frontend_acceptance | `frontend/apps/web/scripts/user_visible_surface_visual_coverage_summary_guard.mjs` | frontend owner |
+| T-ASSET-d3b121fb | governance | `scripts/audit/boundary_audit_smart_core.py` | architecture owner |
+| T-ASSET-3953a76f | governance | `scripts/audit/scene_config_audit.js` | architecture owner |
+| T-ASSET-fcc65a7c | unit | `scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py` | test owner |
+| T-ASSET-d1103341 | unit | `scripts/audit/test_generate_frontend_official_design_alignment_inventory.py` | test owner |
+| T-ASSET-00c29c9c | unit | `scripts/audit/test_generate_frontend_professionalization_baseline.py` | test owner |
+| T-ASSET-733f2d2d | unit | `scripts/audit/test_generate_frontend_rendering_detail_inventory.py` | test owner |
+| T-ASSET-768b0a5d | unit | `scripts/audit/test_generate_frontend_visual_projection_inventory.py` | test owner |
+| T-ASSET-73b723f2 | unit | `scripts/audit/test_verification_lane_coverage.py` | test owner |
+| T-ASSET-1ba143bf | governance | `scripts/ci/assert_audit_tp08.py` | architecture owner |
+| T-ASSET-c0d084cf | unit | `scripts/ci/backend_test_receipt.py` | test owner |
+| T-ASSET-c7dce78f | contract | `scripts/ci/enforce_contract_structure_lock.py` | platform owner |
+| T-ASSET-0998f4e2 | governance | `scripts/ci/frontend_professional_extension_guard.py` | architecture owner |
+| T-ASSET-8aca182b | governance | `scripts/ci/gate_audit.sh` | architecture owner |
+| T-ASSET-198f94bf | governance | `scripts/ci/gate_audit_tp08.sh` | architecture owner |
+| T-ASSET-7deba7cf | contract | `scripts/ci/generate_contract_structure_fingerprint.py` | platform owner |
+| T-ASSET-a39a5fd5 | unit | `scripts/ci/generate_e2e_journey_matrix.py` | test owner |
+| T-ASSET-57f07a83 | unit | `scripts/ci/generate_test_inventory.py` | test owner |
+| T-ASSET-ef22b02b | unit | `scripts/ci/gitee_ci_acceptance.py` | test owner |
+| T-ASSET-1215d178 | unit | `scripts/ci/gitee_ci_acceptance_check.py` | test owner |
+| T-ASSET-ac0ebfd4 | unit | `scripts/ci/summarize_test_inventory.py` | test owner |
+| T-ASSET-197bfe6a | unit | `scripts/ci/test_backend_impact_plan.py` | test owner |
+| T-ASSET-ed18de8c | unit | `scripts/ci/test_backend_suite_plan.py` | test owner |
+| T-ASSET-33ece664 | unit | `scripts/ci/test_backend_test_receipt.py` | test owner |
+| T-ASSET-0a7689dc | contract | `scripts/ci/test_backend_test_suite_dispatch_contract.py` | platform owner |
+| T-ASSET-a827439b | unit | `scripts/ci/test_ci_risk_classifier.py` | test owner |
+| T-ASSET-a49b9b15 | contract | `scripts/ci/test_ci_risk_workflow_contract.py` | platform owner |
+| T-ASSET-896df66d | governance | `scripts/ci/test_frontend_professional_extension_guard.py` | architecture owner |
+| T-ASSET-4aeb0d9d | unit | `scripts/ci/test_lane_telemetry.py` | test owner |
+| T-ASSET-d1231964 | unit | `scripts/ci/test_merge_policy_gate.py` | test owner |
+| T-ASSET-1f405243 | unit | `scripts/ci/test_node_syntax_check.py` | test owner |
+| T-ASSET-75503495 | unit | `scripts/ci/test_parallel_scan.py` | test owner |
+| T-ASSET-5667b2a2 | unit | `scripts/ci/test_personal_data_scan.py` | test owner |
+| T-ASSET-10d5f8e2 | unit | `scripts/ci/test_release_candidate_gate.py` | test owner |
+| T-ASSET-ccec5b8a | unit | `scripts/ci/test_secret_scan.py` | test owner |
+| T-ASSET-09519198 | security | `scripts/ci/test_select_authoritative_workflow_run.py` | security owner |
+| T-ASSET-283f7618 | unit | `scripts/ci/test_trusted_scan_group.py` | test owner |
+| T-ASSET-0b3a1e93 | unit | `scripts/ci/test_trusted_scan_scope.py` | test owner |
+| T-ASSET-8e19db96 | contract | `scripts/ci/verify_contract_form_split_evidence.py` | platform owner |
+| T-ASSET-7cd524e7 | contract | `scripts/ops/contract_product_acceptance_policy_restore.py` | platform owner |
+| T-ASSET-03995c68 | contract | `scripts/ops/formal_list_surface_test_contract_cleanup.py` | platform owner |
+| T-ASSET-800856cc | contract | `scripts/ops/operation_strategy_contract_surface_backfill.py` | platform owner |
+| T-ASSET-e9de3f62 | contract | `scripts/ops/repair_unbound_structural_form_contract.py` | platform owner |
+| T-ASSET-95bca637 | contract | `scripts/ops/settlement_contract_surface_backfill.py` | platform owner |
+| T-ASSET-a67db45b | contract | `scripts/ops/test_repair_unbound_structural_form_contract.py` | platform owner |
+| T-ASSET-9a6b60bc | contract | `scripts/ops/validate_contract_business_categories.sh` | platform owner |
+| T-ASSET-a545a5fb | unit | `scripts/verify/acceptance_action_count.py` | test owner |
+| ... | ... | 1082 more | ... |
 
 ## Dedupe Hotspots
 

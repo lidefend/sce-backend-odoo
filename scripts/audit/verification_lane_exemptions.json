@@ -127,6 +127,12 @@
       "lane_owner": "local.quick",
       "reason_code": "local_quick_only_unit",
       "reason": "带记录表单探针的单元测试，随其 local-only 探针由本地 lane 消费。"
+    },
+    {
+      "script": "scripts/verify/determinism_probe.py",
+      "lane_owner": "local.quick",
+      "reason_code": "local_quick_only_unit",
+      "reason": "Determinism probe gate; local-quick-only verification unit, no remote lane runs it."
     }
   ],
   "remote_only": [
