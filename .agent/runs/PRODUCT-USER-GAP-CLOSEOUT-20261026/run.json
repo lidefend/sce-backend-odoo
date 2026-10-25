@@ -33,7 +33,9 @@
     "addons/smart_construction_core/models/core/equipment_management.py",
     "addons/smart_construction_core/models/core/subcontract_management.py",
     "addons/smart_construction_core/models/core/hr_payroll_document.py",
-    "addons/smart_construction_core/tests/test_cost_processing_feedback.py"
+    "addons/smart_construction_core/tests/test_cost_processing_feedback.py",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -41,7 +43,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Freeze scoped local candidate, refresh registered local.dev source/build, run cost3 and workspace2 draft-only browser observers; preserve previous audit conclusions until target deployment.",
+  "next_exact_step": "Continue FG04 quality acceptance, FG10 labor cost, FG13 payroll document: review selection/numeric/presence dependencies and extend typed P0 protocol only as needed; then explicit P1 native bindings/defaults and affected ORM/browser. FG15/16 static warnings remain separate.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -123,13 +125,13 @@
     "workspace_default_presence": "Browser reached team workspace; native default_get omitted undeclared empty note, causing FEEDBACK_INPUT_INVALID before evaluate. Explicit P1 default=False for note on both workspaces and optional partner on current account; preserve missing vs empty and frontend fail closed.",
     "tool_entry_correction": "Use existing nginx 18081/t/demo, confirmed static mount current worktree dist-dev; 5176 preview lacks namespaced proxy. No product auth workaround.",
     "status_dimensions": {
-      "batch": "first two workspace render/feedback fixes verified locally; full business handling remains untested",
+      "batch": "five audited model entry/feedback gaps locally repaired across two increments; complete business chains remain unaccepted",
       "mainline": "not_integrated",
       "daily_deployment": "unchanged bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
       "overall_delivery": "not_accepted",
       "demo_rebuild": "not_started"
     },
-    "local_runtime_candidate": "342c8b8c67d0f747438fbdd932434dfb095c9d4d",
+    "local_runtime_candidate": "d2aa8cc09e90dd42d195be60cf1585a8b59d1b49",
     "second_fix_ownership": {
       "P0": "smart_core draft_feedback + generic frontend decoder/consumer: char and many2many_presence explicitly typed inputs; relation presence only, no identifiers/content read",
       "P1": "smart_construction_core equipment usage, subcontract register, salary payment native binding/review/defaults",
@@ -145,18 +147,18 @@
       "Validation": "L1 schema/frontend protocol; L2 nonzero real ORM including no related read/write and invalid inputs; L3 registered local.dev source refresh, no schema upgrade as fields only metadata/defaults; L4 three create surfaces plus existing workspace regressions; L5 integration pending until batch convergence"
     },
     "second_validation": {
-      "candidate_stage": "HEAD c9787b3e4 plus declared dirty P0/P1/P4 scope",
+      "candidate_stage": "Product P0 8778ea4e01ac152c26f5442b00f1b5f6e3c8a738 + P1 174c0a7140dc25846670b90734aedfa22ca1a55a; observer final d2aa8cc09e90dd42d195be60cf1585a8b59d1b49",
       "L1": {
         "status": "passed",
-        "log": ".runtime/product-user-gap-closeout-20261026/cost-iteration-01.log"
+        "log": ".runtime/product-user-gap-closeout-20261026/cost-iteration-02.log"
       },
       "protocol": {
         "status": "passed",
         "logs": [
           "cost-feedback-unit-01.log",
-          "cost-feedback-unit-02.log"
-        ],
-        "limit": "final extra assertion run in progress"
+          "cost-feedback-unit-02.log",
+          "cost-feedback-unit-03.log"
+        ]
       },
       "typecheck": {
         "status": "passed",
@@ -173,8 +175,18 @@
         "log": ".runtime/product-user-gap-closeout-20261026/cost-feedback-orm-03.log"
       },
       "first_ORM_failure": "New test assumptions corrected: native empty relation is SET command; Odoo17 uses fetch, not _read; config vs typed input errors distinguished. Product default consumption supports only complete SET snapshots, never partial commands.",
-      "review": "independent developer review passed; final integration review pending",
-      "browser": "not_run"
+      "review": "independent batch read-only review passed with explicit per-case evidence boundary; final integration review pending",
+      "browser": {
+        "status": "passed_for_declared_cases",
+        "equipment": {
+          "report": ".runtime/product-user-gap-closeout-20261026/cost-browser/174c0a7140dc25846670b90734aedfa22ca1a55a/report.json",
+          "selection": "cases[0] only; whole attempt failed on later subcontract tool selector"
+        },
+        "subcontract_and_salary": ".runtime/product-user-gap-closeout-20261026/cost-browser/d2aa8cc09e90dd42d195be60cf1585a8b59d1b49/report.json",
+        "workspace_regression": ".runtime/product-user-gap-closeout-20261026/workspace-browser/8d1b63a132bef6e9adc7bb53a7412591a04a8669/report.json",
+        "impact": ".runtime/product-user-gap-closeout-20261026/cost-probe-impact.json",
+        "limits": "draft only; no saves, attachments uploaded, approvals or monetary actions"
+      }
     }
   }
 }
