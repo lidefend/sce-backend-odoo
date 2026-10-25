@@ -49,5 +49,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Closed loop done (probe wiring, relation parity, dependency closure, execution attestation, six-dimension admission). Remaining: artifact_attempt authority path and CI validation of the workflow wiring."
+  "next_exact_step": "Closed loop verified end-to-end in CI. Witness attaches with runtime_contract_readback=True (24 fields, 0 mismatches). Remaining: artifact_attempt authority (GitHub API limitation), fact_scope_readback relation/missing-value extension, demo-module dependency closure."
 }

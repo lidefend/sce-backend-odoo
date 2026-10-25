@@ -256,7 +256,26 @@ closure -> attest execution -> authorize reuse.
   when none remain; receipt_reuse_authorized accepts that stamp alongside the
   isolated execution authority.
 
+## Verified end-to-end (2026-10-25)
+
+The readback witness now attaches in CI. The smart_construction_demo receipt
+carries `readback_closure` with `runtime_contract_readback=True`: 24 comparable
+scalar fields (amount, currency_id, date_request, state, and 20 others) have
+zero mismatches across source, projection and readback. The witness also marks
+derived/context-dependent fields, undeclared relation projections and
+missing-value fields as uncovered, so `fact_scope_readback` stays False and
+`projection_value_coverage_incomplete` remains - the intended fail-closed
+result until relation parity and missing-value handling are extended.
+
+Two CI-only defects were found and fixed during the end-to-end run:
+- the probe invoked odoo_shell_exec.sh outside RUN_ENV and outside the CI
+  one-off compose carrier; a dedicated scripts/ci/run_contract_fact_readback.sh
+  now mirrors test.sh (compose run --rm, explicit DB and addons-path, no -c).
+- discover_receipt_locators could exceed the 256-locator selection cap once
+  enough successful runs accumulated; it now stops at MAX_LOCATORS.
+
 Remaining: artifact_attempt_attested has no trusted source because the GitHub
 artifact API does not expose the upload attempt, so Docker Odoo receipts stay
-RUN until an alternative authority is available. The workflow wiring still
-needs a real CI run to be exercised end to end.
+RUN. fact_scope_readback and target_dependency_closure stay open for the demo
+receipt as expected (uncovered fields and unresolved inputs). Whole-product
+acceptance remains separate and untouched.
