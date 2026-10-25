@@ -64,9 +64,23 @@ try {
     await note.waitFor({state: 'visible', timeout: 45000});
     await page.getByText('建议补充办理说明', {exact: false}).last().waitFor({state: 'visible'});
     item.before = await page.locator('body').innerText();
+    const refreshed = page.waitForResponse(async response => {
+      let body; try { body = response.request().postDataJSON(); } catch { return false; }
+      const request = body?.params?.intent ? body.params : body;
+      if (request?.intent !== 'api.onchange' || request.params?.model !== model ||
+          request.params?.feedback_evaluation?.operation !== 'evaluate') return false;
+      const payload = await response.json();
+      const result = payload.data?.feedback_evaluation;
+      return payload.ok === true && result?.status === 'ready' &&
+        !result.result.content.includes('建议补充办理说明');
+    });
     await note.fill('本次仅验证草稿提示，未保存或办理业务');
     await note.blur();
+    await refreshed;
     await page.waitForFunction(() => !document.body.innerText.includes('建议补充办理说明'));
+    if (model === 'sc.current.account.workspace') {
+      await page.getByText('办理承包人借还款前请选择承包人/往来单位', {exact: false}).last().waitFor({state: 'visible'});
+    }
     item.after = await page.locator('body').innerText();
     item.actions = await page.getByRole('button').allTextContents();
     assert(!/页面加载失败|ContractGapError/.test(item.after));
