@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "BACKEND-SUITE-REUSE-AUTHORITY",
+  "branch": "codex/backend-suite-reuse-authority",
+  "baseline_sha": "a5c6994fe9214944967c86c6da3f78900b2a418d",
+  "status": "active",
+  "goal": ".agent/goals/BACKEND-SUITE-REUSE-AUTHORITY.yaml",
+  "record": "docs/ops/iterations/backend_suite_reuse_authority_20261025.md",
+  "scope": [
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/backend_test_receipt.py",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/test_backend_suite_plan.py",
+    "scripts/ci/test_backend_test_receipt.py",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    ".github/workflows/backend_test_suite.yml",
+    ".github/workflows/professional_quality_gate.yml"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local CI tools and unit tests; no database or service access"
+  },
+  "checks": {
+    "ci_receipt_unit": {
+      "target": "scripts/ci/test_backend_test_receipt.py",
+      "inputs": [
+        "scripts/ci/backend_test_receipt.py",
+        "scripts/ci/test_backend_test_receipt.py"
+      ],
+      "kind": "offline"
+    },
+    "ci_suite_plan_unit": {
+      "target": "scripts/ci/test_backend_suite_plan.py",
+      "inputs": [
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/test_backend_suite_plan.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Stage 1 evidence-model audit: trusted vs missing dimensions"
+}
