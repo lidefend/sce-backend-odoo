@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4957`
+- Scanned files: `4958`
 - Files requiring split plan: `72`
 - Files above warning threshold: `143`
 
@@ -139,6 +139,7 @@ Generated from repository source files. This report is informational during the 
 | 1129 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1128 | Python source | `addons/smart_core/handlers/ui_contract_v2_projection.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
+| 1117 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 1096 | JavaScript source | `scripts/verify/local_dev_project_create_contract_driver_probe.mjs` |
 | 1095 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
@@ -146,7 +147,6 @@ Generated from repository source files. This report is informational during the 
 | 1094 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
-| 1091 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
 | 1087 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
 | 1066 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |

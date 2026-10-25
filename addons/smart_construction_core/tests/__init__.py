@@ -150,3 +150,4 @@ from . import test_general_contract_finance_review
 from . import test_workspace_processing_feedback
 from . import test_cost_processing_feedback
 from . import test_conditioned_processing_feedback
+from . import test_approval_policy_feedback

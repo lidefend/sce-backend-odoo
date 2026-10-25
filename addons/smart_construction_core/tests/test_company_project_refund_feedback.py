@@ -30,6 +30,7 @@ ADVISORY_MODELS = (
     "sc.subcontract.register",
     "sc.labor.usage",
     "sc.quality.acceptance",
+    "sc.approval.policy",
     OTHER_MODEL,
 )
 
@@ -215,7 +216,7 @@ class TestCompanyProjectRefundFeedback(CompanyRefundFeedbackAssertions, Transact
         self.assertEqual(enabled, [
             MODEL, "sc.current.account.workspace", "sc.team.loan.deduction.workspace",
             "sc.equipment.usage", "sc.hr.payroll.document", "sc.hr.salary.payment", "sc.subcontract.register",
-            "sc.labor.usage", "sc.quality.acceptance",
+            "sc.labor.usage", "sc.quality.acceptance", "sc.approval.policy",
         ])
 
     def test_create_ui_contract_uses_request_local_feedback_proof(self):
