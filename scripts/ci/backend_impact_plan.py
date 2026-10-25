@@ -306,7 +306,7 @@ def snapshot(revision: str) -> dict:
         raise ValueError('cannot resolve Python import sites')
     local_tops = set(modules)
     for line in imports.stdout.splitlines():
-        path, lineno, _rest, source_line = line.split(':', 3)
+        _rev, path, lineno, source_line = line.split(':', 3)
         parts = path.split('/')
         if len(parts) < 3 or parts[1] not in modules:
             continue
@@ -324,11 +324,14 @@ def snapshot(revision: str) -> dict:
         cwd=ROOT, text=True, capture_output=True)
     if sql_files.returncode not in (0, 1):
         raise ValueError('cannot resolve SQL execute sites')
-    for path in sql_files.stdout.splitlines():
+    for line in sql_files.stdout.splitlines():
+        if ':' not in line:
+            continue
+        _rev, path = line.split(':', 1)
         parts = path.split('/')
         if len(parts) < 3 or parts[1] not in modules:
             continue
-        resolved, unresolved = sql_execute_sites(git('show', f'{revision}:{path}'), path)
+        resolved, unresolved = sql_execute_sites(git('show', line), path)
         modules[parts[1]].setdefault('sql_reads', set()).update(resolved)
         modules[parts[1]].setdefault('unresolved_sql', set()).update(unresolved)
     for data in modules.values():

@@ -185,6 +185,27 @@ def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
                 self.assertEqual(['docs/input.json'], after['scene']['file_inputs'])
                 self.assertEqual(['scene'], planner.select(['docs/input.json'], before, after)['modules'])
 
+    def test_snapshot_extracts_external_imports_and_sql_sites(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def git(*args):
+                return subprocess.check_output(['git', *args], cwd=root, text=True).strip()
+            git('init', '-q'); git('config', 'user.name', 'Fixture'); git('config', 'user.email', 'fixture@example.invalid')
+            module = root / 'addons/core'
+            (module / 'models').mkdir(parents=True)
+            (module / '__manifest__.py').write_text("{'depends': []}")
+            (module / 'models/m.py').write_text(
+                'import xlrd\nfrom odoo import models\n\n\nclass M(models.Model):\n'
+                '    _name = "test.m"\n\n    def f(self):\n'
+                '        self._cr.execute("SELECT 1")\n        self._cr.execute(self.sql)\n')
+            git('add', '.'); git('commit', '-qm', 'base'); head = git('rev-parse', 'HEAD')
+            with patch.object(planner, 'ROOT', root):
+                graph = planner.snapshot(head)
+            core = graph['core']
+            self.assertEqual(['xlrd'], core['external_imports'])
+            self.assertEqual(1, len(core['sql_reads']))
+            self.assertEqual(['addons/core/models/m.py:10'], core['unresolved_sql'])
+
     def test_exact_empty_diff_requires_no_backend_work(self):
         plan = planner.select([], self.graph, self.graph)
         self.assertEqual([], plan['modules'])
