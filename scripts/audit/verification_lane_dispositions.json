@@ -3279,6 +3279,16 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/config_center_entry_defect_20260916.md。登记待接线或退役，B3 按族处理。"
+    },
+    "local.test.down": {
+      "disposition": "ops_tooling",
+      "owner": "platform-team",
+      "reason": "Disposable local.test profile teardown; verification tooling, not a product gate."
+    },
+    "local.test.test": {
+      "disposition": "ops_tooling",
+      "owner": "platform-team",
+      "reason": "Deterministic disposable ORM test entry (sc_test, no demo); verification tooling, not a product gate."
     }
   },
   "scripts": {
