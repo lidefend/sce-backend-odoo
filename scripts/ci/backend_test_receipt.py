@@ -149,7 +149,8 @@ def scope_reference(raw: bytes, *, head: str, base: str, module: str) -> dict:
     if not base and plan.get('mode') not in ('full','explicit_override'):
         raise ValueError('missing integration base without explicit full scope')
     return {'sha256':digest(raw),'target':module,'known_inputs_sha256':target['known_inputs_sha256'],
-            'integration_base':base,'selection_mode':plan['mode'],'dependency_closure_complete':False}
+            'integration_base':base,'selection_mode':plan['mode'],
+            'dependency_closure_complete':bool(target.get('dependency_closure_complete'))}
 
 
 def archive_attempt(*, output: Path, module: str, attempt: int, head: str,
@@ -248,7 +249,9 @@ def record(root: Path, *, module: str, kind: str, head: str, base: str,
     (target / 'runtime.json').write_bytes(canonical(runtime))
     (target / 'python.json').write_bytes(canonical(python))
     readback_blockers, readback_closure = readback_closure_blockers(readback, head=head)
-    blockers = ['platform_source_not_authenticated', 'target_dependency_closure_not_certified'] + readback_blockers
+    blockers = ['platform_source_not_authenticated'] + readback_blockers
+    if not (scope and scope.get('dependency_closure_complete')):
+        blockers.append('target_dependency_closure_not_certified')
     receipt = {
         'schema': SCHEMA, 'module': module, 'kind': kind, 'source_head': head,
         'source_tree': tree, 'integration_base': base, 'database': database, 'scope_plan':scope,
@@ -610,7 +613,10 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
         except (ValueError, KeyError, TypeError, AttributeError, OSError, subprocess.SubprocessError):
             execution_definition_attested = False
     blockers = ['artifact_attempt_not_attested', 'runtime_contract_readback_missing',
-                'fact_scope_readback_missing', 'target_dependency_closure_not_certified']
+                'fact_scope_readback_missing']
+    scope_plan = receipt.get('scope_plan')
+    if not (scope_plan and scope_plan.get('dependency_closure_complete')):
+        blockers.append('target_dependency_closure_not_certified')
     if not execution_definition_attested:
         blockers.insert(0, 'execution_definition_not_attested')
     return {**verified, 'platform_origin': 'verified', 'repository': REPOSITORY,

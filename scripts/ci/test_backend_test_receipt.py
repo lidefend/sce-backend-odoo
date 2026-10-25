@@ -588,6 +588,16 @@ class ExecutionReceiptTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'missing integration base'):
             self.record(base='')
 
+    def test_complete_dependency_closure_drops_its_blocker(self):
+        plan = self.scope_fixture()
+        payload = json.loads(plan.read_text())
+        payload['input_inventory']['targets']['example']['dependency_closure_complete'] = True
+        plan.write_bytes(receipt.canonical(payload))
+        result = self.record(scope_plan=plan)
+        self.assertTrue(result['scope_plan']['dependency_closure_complete'])
+        self.assertNotIn('target_dependency_closure_not_certified', result['blockers'])
+        self.assertIn('platform_source_not_authenticated', result['blockers'])
+
     def test_failed_retry_logs_are_distinct_and_redacted(self):
         env=self.home/'managed.env';env.write_text('SC_DEMO_USER_PASSWORD=fixture-attempt-secret\n')
         self.log.write_text('fixture-attempt-secret failed before completion\n')
