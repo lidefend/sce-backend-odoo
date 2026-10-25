@@ -6,12 +6,12 @@ import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap
 // The existing nginx owns the namespace stamp; the preview server does not.
 const base = 'http://127.0.0.1:18081/t/demo';
 const scope = process.env.SC_FEEDBACK_SCOPE || 'workspace';
-assert(['workspace', 'cost', 'conditioned', 'approval', 'usability'].includes(scope));
+assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority'].includes(scope));
 const root = `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}`;
 fs.mkdirSync(root, {recursive: true});
 const actor = scope === 'usability' ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
 assert(['demo_full', 'demo_role_pm', 'demo_role_finance', 'demo_role_project_read'].includes(actor));
-const availableCases = scope === 'usability' ? [] : scope === 'workspace' ? [
+const availableCases = ['usability', 'create-authority'].includes(scope) ? [] : scope === 'workspace' ? [
   {model: 'sc.team.loan.deduction.workspace', field: 'note', hint: '建议补充办理说明'},
   {model: 'sc.current.account.workspace', field: 'note', hint: '建议补充办理说明', retained: '办理承包人借还款前请选择承包人/往来单位'},
 ] : scope === 'cost' ? [
@@ -84,6 +84,54 @@ try {
   function walk(nodes) { for (const node of nodes) { if (node.children?.length) walk(node.children); else leaves.push(node); } }
   walk(init.navigation.nav);
   report.actor = {uid: init.user?.id, login: actor, company: init.user?.company_id};
+  if (scope === 'create-authority') {
+    for (const plan of [
+      {model: 'account.move.line', menu: '176', allowed: false},
+      {model: 'sc.tax.filing', menu: '703', allowed: false},
+      {model: 'sc.tax.filing', menu: '702', allowed: true},
+    ]) {
+      const node = leaves.find(n => n.meta?.model === plan.model && new URL(n.meta.route, base).searchParams.get('menu_id') === plan.menu);
+      assert(node?.meta?.route?.startsWith('/'), 'declared entry missing');
+      const responseFor = operation => page.waitForResponse(response => {
+        let body; try { body = response.request().postDataJSON(); } catch { return false; }
+        const request = body?.params?.intent ? body.params : body;
+        return request?.intent === 'ui.contract.v2' && request.params?.op === operation &&
+          String(request.params.menu_id) === plan.menu;
+      }, {timeout: 45000});
+      const collectionResponse = responseFor('action_open');
+      await page.goto(base + node.meta.route, {waitUntil: 'domcontentloaded'});
+      const collectionPayload = await (await collectionResponse).json();
+      assert.equal(collectionPayload.ok, true);
+      const collectionStatus = collectionPayload.data.statusContract.globalStatus;
+      assert.equal(collectionStatus.effectiveRecordCapabilities.create, plan.allowed);
+      await page.waitForFunction(() => ['ok', 'empty'].includes(document.querySelector('[data-semantic-component="ActionView"]')?.getAttribute('data-collection-state')));
+      const surface = page.locator('[data-semantic-component="ActionView"]');
+      assert.equal(await surface.getAttribute('data-can-create'), String(plan.allowed));
+      const create = page.getByRole('button', {name: /^(新建|新增|创建)$/});
+      if (plan.allowed) { assert.equal(await create.count(), 1); assert(await create.isEnabled()); }
+      else for (const button of await create.all()) assert(!await button.isEnabled(), 'forbidden create offered');
+      const item = {...plan, collectionStatus, route: node.meta.route}; report.cases.push(item);
+      await page.screenshot({path: `${root}/${plan.menu}-list.png`});
+      const formResponse = responseFor('model');
+      if (plan.allowed) await create.click();
+      else await page.goto(base + '/f/' + plan.model + '/new?menu_id=' + plan.menu, {waitUntil: 'domcontentloaded'});
+      const formPayload = await (await formResponse).json();
+      assert.equal(formPayload.ok, true);
+      item.formStatus = formPayload.data.statusContract.globalStatus;
+      assert.equal(item.formStatus.effectiveRecordCapabilities.create, plan.allowed);
+      if (!plan.allowed) {
+        assert.equal(item.formStatus.pageVisible, false);
+        assert.equal(item.formStatus.reasonCode, 'FORM_CREATE_NOT_ALLOWED');
+      } else {
+        await page.locator('[data-field-name="period_start"]').first().waitFor({state: 'visible', timeout: 45000});
+        assert(new URL(page.url()).pathname.endsWith('/f/sc.tax.filing/new'));
+        assert(!(await page.locator('body').innerText()).includes('页面加载失败'));
+        await page.screenshot({path: `${root}/${plan.menu}-create.png`});
+      }
+      item.passed = true;
+    }
+    assert.equal(report.blocked.length, 0);
+  }
   if (scope === 'usability') {
     await page.goto(base + '/s/workspace.home', {waitUntil: 'domcontentloaded'});
     const capability = page.locator('[data-login-home-block="capability_map"]');

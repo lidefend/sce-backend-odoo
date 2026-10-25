@@ -50,7 +50,13 @@
     "addons/smart_construction_core/core_extension_system_init_rows.py",
     "addons/smart_construction_core/tests/test_role_surface_project_member.py",
     "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
-    "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigContextBar.vue"
+    "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigContextBar.vue",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+    "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "addons/smart_core/app_config_engine/models/app_view_config.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -58,7 +64,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Diagnose FG17 create capability/entry consistency; design explicit mixed native notices for FG15. Retain five unresolved function groups and demo-data rebuild as separate scope.",
+  "next_exact_step": "Commit P0 then P4; serve clean candidate and run fixed176/703/702 create authority browser.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -400,6 +406,21 @@
       ],
       "independent_review": "review_quick_closeout: no S0-S2; P4 revised observer accepted; sample requirements met; header screenshots manually reviewed",
       "remaining": "FG05/08/09/15/17 unresolved; 9 business entry groups need chains; 23 demo gaps not rebuilt; no mainline/deployment/full acceptance"
+    },
+    "sixth_ownership": {
+      "identity": "8de9d35ad48b27d6d1d327f70d1367e5c0c048ac clean",
+      "P0": "smart_core collection create capability intersects model permission, native collection/form can_create declarations and authoritative entry create/no_create context. Standard platform projection; no model-specific frontend exception or ACL grant.",
+      "P4": "existing observer fixed menus176/703 plus positive tax-filing entry; no business writes. Cache version refresh prevents stale assembled verdict.",
+      "risk": "Permission presentation narrowing, medium. ORM/native-source and unit negative/positive cases; affected real lists and denied create contract; preserve create form rejection.",
+      "validation": "L0 done; L1 then targeted L2 projection+native ORM; existing local.dev restart and bounded browser. No XML/schema change so no upgrade/rebuild. No full matrix or delivery gates during iteration."
+    },
+    "sixth_corrections": "Initial assembler guard required cache hash refresh, version already bumped. Native ORM exposed head.view_type-only source not narrowed; added authoritative head fallback. Independent review caught unintended field_rows expansion from text replacement; removed it entirely, scope remains create authority only. Original failures retained; rerun affected projection and ORM.",
+    "sixth_native_source_gap": "ORM diagnostic proves parser has tree capabilities but app.view.config.get_contract_api drops them. P0 scope extended to export existing native tree capability facts unchanged; source cache code fingerprint already covers addon content. No new native policy/default. Rerun source ORM + projection tests.",
+    "sixth_tests": {
+      "stage": "8de9d35ad + sixth owned dirty scope",
+      "L1": "sixth-l1-final.log",
+      "L2": "sixth-projection-final.log:132 projection tests,23 runtime tests,assembler4sources/runtime6score; sixth-orm-final.log:1 ORM test4 native branches,0failed/0error; sixth-observer.log:7 guard tests",
+      "invalidated": "Initial tree-source failure fixed by exporting native capabilities. Latest ORM includes actual parser→app.view.config→action→assembler. No frontend source edits; reuse prior frontend type/basis checks, browser observes existing consumer."
     }
   }
 }
