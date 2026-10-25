@@ -2734,6 +2734,38 @@ assert.equal(
   'container visibility must constrain descendant fields',
 );
 
+
+const conditionalContainer = snapshot();
+conditionalContainer.layoutContract.containerTree[0].modifiers = {
+  invisible: {kind: 'field_compare', field: 'draft_category', operator: '!=', value: 'fund'},
+};
+conditionalContainer.statusContract.containerStatus = [{
+  containerId: 'section.identity', visible: false, disabled: false, reasonCode: 'NATIVE_MODIFIER_INVISIBLE',
+}];
+const conditionalStore = createContractV2Store(conditionalContainer);
+for (const [category, expected] of [['salary', false], ['fund', true], ['salary', false]] as const) {
+  const presented = presentContractV2Form(conditionalStore, 'create', {draft_category: category});
+  assert.equal(collectFields(presented.zones.primary).find(field => field.fieldCode === 'name')?.visible, expected);
+  const bridge = buildCanonicalNativeFormBridge(presented);
+  assert.equal(bridge.nodeVisible(bridge.primaryNodes[0]), expected, 'actual canonical bridge tracks the draft group');
+}
+for (const denial of ['authority', 'disabled', 'static', 'missing', 'unresolved', 'widget'] as const) {
+  const blocked = structuredClone(conditionalContainer);
+  const status = blocked.statusContract.containerStatus[0];
+  if (denial === 'authority') status.reasonCode = 'POLICY_HIDDEN';
+  if (denial === 'disabled') status.disabled = true;
+  if (denial === 'static') blocked.layoutContract.containerTree[0].visible = false;
+  if (denial === 'unresolved') {status.reasonCode = 'NATIVE_MODIFIER_UNRESOLVED'; status.disabled = true;}
+  if (denial === 'widget') {
+    const field = blocked.statusContract.widgetStatus.find(row => row.widgetId === 'field.name')!;
+    field.visible = false; field.auth = 'none';
+  }
+  const presented = presentContractV2Form(createContractV2Store(blocked), 'create',
+    denial === 'missing' ? {} : {draft_category: 'fund'},
+  );
+  assert.equal(collectFields(presented.zones.primary).find(field => field.fieldCode === 'name')?.visible, false, denial);
+}
+
 const disabledContainer = snapshot();
 disabledContainer.statusContract.containerStatus = [{ containerId: 'section.identity', visible: true, disabled: true }];
 const disabledContainerField = collectFields(

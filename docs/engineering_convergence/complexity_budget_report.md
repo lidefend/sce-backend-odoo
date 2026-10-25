@@ -213,10 +213,10 @@ Generated from repository source files. This report is informational during the 
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
 | 806 | Python source | `addons/smart_construction_core/models/core/funding_baseline.py` |
+| 806 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |
 | 803 | Python source | `scripts/verify/frontend_product_page_header_guard.py` |
 | 802 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
-| 801 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |
 | 491 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 457 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |

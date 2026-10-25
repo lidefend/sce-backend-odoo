@@ -142,3 +142,18 @@ export function resolveStateDerivedStatus(
   if (!STATE_DERIVED_STATUS_REASONS.has(text(status?.reasonCode))) return false;
   return declaredModifierDependenciesResolved(declaredVisibilityModifier(action), values);
 }
+
+
+// A structural node's resolved native predicate is fetch-time draft state.
+// Do not release widget/button authority, disabled or unresolved verdicts.
+export function resolveNativeContainerStateDerivedStatus(
+  nodeType: string,
+  modifier: unknown,
+  status: {visible?: boolean; disabled?: boolean; reasonCode?: string} | undefined,
+  values: ContractV2Dictionary,
+): boolean {
+  return Boolean(nodeType && !['field', 'button'].includes(nodeType)
+    && status?.visible === false && status.disabled === false
+    && status.reasonCode === 'NATIVE_MODIFIER_INVISIBLE'
+    && declaredModifierDependenciesResolved(modifier, values));
+}

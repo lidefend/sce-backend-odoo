@@ -3,7 +3,7 @@ import { computed, watch, type ComputedRef, type Ref } from 'vue';
 import type { ContractV2NormalizedStore } from '../../app/contracts/v2';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import { buildRuntimeFieldStates } from '../../app/modifierEngine';
-import { declaredModifierDependenciesResolved } from '../../app/presentation/actionRuleDerivation';
+import { resolveNativeContainerStateDerivedStatus } from '../../app/presentation/actionRuleDerivation';
 import { resolveOccurrenceAuthVerdict } from '../../app/contract/contractAuthLevel';
 import {
   collectContractV2FieldStatusByCode, resolveContractV2ContainerTree, resolveContractV2FormFieldMap, resolveContractV2MainData, resolveContractV2WorkflowContract,
@@ -134,12 +134,11 @@ export function useRecordFormLayout(context: {
     const blocked = authority.blocked;
     // Only a structural container's resolved native predicate is draft state.
     // Widget auth, disabled/unknown verdicts and static visibility stay binding.
-    const liveContainerVisibility = Boolean(containerStatus
-      && containerStatus.visible === false && containerStatus.disabled === false
-      && reasonCode === 'NATIVE_MODIFIER_INVISIBLE'
-      && declaredModifierDependenciesResolved(nativeModifierValue(liveSource, 'invisible'), {
-        ...resolveContractV2MainData(store), ...context.formData,
-      }));
+    const liveContainerVisibility = resolveNativeContainerStateDerivedStatus(
+      String(source.type || source.containerType || '').trim().toLowerCase(),
+      nativeModifierValue(liveSource, 'invisible'), containerStatus,
+      { ...resolveContractV2MainData(store), ...context.formData },
+    );
     const invisible = blocked ? true : Boolean(live.invisible
       || (status.visible === false && !liveContainerVisibility));
     return { invisible, visible:!invisible,

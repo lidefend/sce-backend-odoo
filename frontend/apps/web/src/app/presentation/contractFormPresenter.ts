@@ -6,6 +6,7 @@ import {
   actionRequiresPersistedRecord,
   declaredVisibilityModifier,
   resolveStateDerivedStatus,
+  resolveNativeContainerStateDerivedStatus,
 } from './actionRuleDerivation';
 import type {
   CanonicalFormAction,
@@ -403,8 +404,12 @@ function presentNode(
   const layoutInvisible = explicitFeedback ? false : evaluateNativeModifierValue(containerModifierValue(container, 'invisible'), resolveFieldValue);
   const layoutReadonly = evaluateNativeModifierValue(containerModifierValue(container, 'readonly'), resolveFieldValue);
   const layoutRequired = evaluateNativeModifierValue(containerModifierValue(container, 'required'), resolveFieldValue);
+  const liveContainerVisibility = resolveNativeContainerStateDerivedStatus(
+    text(container.type || container.containerType).toLowerCase(),
+    containerModifierValue(container, 'invisible'), status, currentValues,
+  );
   const visible = ancestorVisible && container.visible !== false && !layoutInvisible
-    && bool(status?.visible, true) && bool(selectorStatus?.visible, true);
+    && (bool(status?.visible, true) || liveContainerVisibility) && bool(selectorStatus?.visible, true);
   const disabled = ancestorDisabled || bool(status?.disabled, false) || selectorStatus?.disabled === true;
   const readonly = ancestorReadonly || layoutReadonly || selectorStatus?.readonly === true;
   const widgets = (store.widgetsByOwnerContainerId.get(container.containerId) || []).map((widget) => (

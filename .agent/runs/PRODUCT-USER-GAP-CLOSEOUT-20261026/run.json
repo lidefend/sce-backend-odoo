@@ -40,7 +40,10 @@
     "addons/smart_construction_core/models/core/labor_product_extension.py",
     "addons/smart_construction_core/tests/test_conditioned_processing_feedback.py",
     "frontend/apps/web/src/pages/contractForm/useRecordFormLayout.ts",
-    "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts"
+    "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
+    "frontend/apps/web/src/app/presentation/actionRuleDerivation.ts",
+    "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts"
   ],
   "environment": {
     "kind": "runtime",
@@ -219,7 +222,8 @@
       "failure": "706 selected provident feedback ready but conditional container remained hidden; first 3 cases pass only, entire browser failed",
       "owner": "P0 generic native container modifier consumption; no model special case, no widget auth override",
       "scope": "Re-evaluate only declared NATIVE_MODIFIER_INVISIBLE structural container status with disabled=false and complete live dependency snapshot; preserve all authority/static denies",
-      "validation": "real store/layout reactive positive and authority/missing negative cases, strict type/basis, affected browser only; preserve first 3 cases if unchanged"
+      "validation": "real store/layout reactive positive and authority/missing negative cases, strict type/basis, affected browser only; preserve first 3 cases if unchanged",
+      "canonical_followup": "e9 browser still fails706: actual canonical presenter independently folds fetch-time containerStatus. Share same narrow predicate across canonical and legacy consumers; add canonical presenter+bridge positive/deny tests. Do not widen reason/auth policy."
     }
   }
 }

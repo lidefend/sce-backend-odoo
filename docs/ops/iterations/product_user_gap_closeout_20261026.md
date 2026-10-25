@@ -114,3 +114,10 @@ P0 followup只让结构容器在精确NATIVE_MODIFIER_INVISIBLE、disabled=false
 消费当前草稿条件；字段auth、静态visible=false、权限/未知原因与缺失依赖保持原约束。
 真实store/layout测试覆盖切换双向显隐、渲染树更新及五类拒绝；严格类型/契约边界通过。
 新fixture首次缺少显式列数、随后空组被正常剪枝，补齐实际字段后通过，未削弱产品守卫。
+
+e9候选复查仍在706失败：旧layout桥单测通过不等于正式canonical消费已修复。
+进一步定位到contractFormPresenter的独立容器状态合并；现将窄判定提为共享函数，
+两条消费路径一致。补充实际canonical presenter→native bridge切换与六类拒绝断言，
+canonical完整定向套件、旧layout套件、严格类型、契约边界及L1通过，独立差量复核通过。
+第三次前的候选身份门禁曾因后端revision未同步拒绝，已通过受管local.dev.up对齐，
+未绕过门禁。所有失败日志保留；等待新候选实际页面结果。
