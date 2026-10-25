@@ -7,6 +7,11 @@
   "goal": ".agent/goals/BACKEND-SUITE-REUSE-AUTHORITY.yaml",
   "record": "docs/ops/iterations/backend_suite_reuse_authority_20261025.md",
   "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BACKEND-SUITE-REUSE-AUTHORITY.yaml",
+    ".agent/runs/BACKEND-SUITE-REUSE-AUTHORITY/run.json",
+    "docs/ops/iterations/backend_suite_reuse_authority_20261025.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
     "scripts/ci/backend_suite_plan.py",
     "scripts/ci/backend_test_receipt.py",
     "scripts/ci/backend_impact_plan.py",
