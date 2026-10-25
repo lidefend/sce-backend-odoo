@@ -51,7 +51,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Fix narrow structural container stale visibility and prove boundary before retrying affected payroll browser entries.",
+  "next_exact_step": "Diagnose and repair FG15 journal and FG16 approval-policy native static alerts via declared generic consumers; then FG17 create capability consistency. Keep business-chain acceptance separate and defer Demo rebuild until product fixes stabilize.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -210,12 +210,37 @@
       "Compatibility": "new input kinds require coordinated backend/frontend; old consumers fail closed"
     },
     "third_fix_validation": {
-      "stage": "development; P0 25d7d1866afa446570dab28e05d2856c5d2ab45b plus declared P1/P4 dirty scope",
+      "stage": "local affected-entry validation complete; runtime clean candidate b144fac690270caebf0c40fa191d0c993d8f6544",
       "orm": "third-orm-02.log: 25 tests, 0 failures/errors; first attempt one mock failure retained",
       "static": "third-unit-01.log, third-frontend-unit.log, third-typecheck-basis.log, third-iteration.log passed",
-      "review": "review_quick_closeout development review: no confirmed S0-S2; stale etag suggestion implemented and ORM passed",
-      "browser": "not_run",
-      "compatibility": "selection and number_nonzero require coordinated consumer/backend release; nonzero means truthiness only, not valid amount or period"
+      "review": "three implementation stages and P4 scope independently reviewed by review_quick_closeout; no confirmed blocking findings",
+      "browser": {
+        "status": "passed",
+        "report": ".runtime/product-user-gap-closeout-20261026/conditioned-browser/b144fac690270caebf0c40fa191d0c993d8f6544/report.json",
+        "cases": 5,
+        "screenshots": 10,
+        "errors": 0,
+        "blocked_requests": 0,
+        "writes": "no save, dispatch or attachment upload"
+      },
+      "compatibility": "selection and number_nonzero require coordinated consumer/backend release; nonzero means truthiness only, not valid amount or period",
+      "additional_checks": "third-canonical-checks-02.log: full canonical presenter suite + real store/layout reactive suite, strict typecheck and contract basis passed; third-canonical-iteration.log L1 passed",
+      "preserved_failures": [
+        "third-orm-01.log",
+        "third-container-checks.log",
+        "third-container-checks-02.log",
+        "third-canonical-checks.log",
+        "third-browser-01.log",
+        "third-browser-02.log",
+        "third-browser-03.log"
+      ],
+      "evidence_reuse": "Final frontend-only changes do not invalidate 25 backend ORM tests. New canonical container change justified repeating five affected entries; old6 feedback type branches unchanged, existing18 ORM regression included. No whole menu matrix replay.",
+      "limitations": [
+        "Payroll entries explicitly choose salary/provident type; default types and all branches not UI-accepted",
+        "No business save/approval/payment/readback acceptance",
+        "Representative mobile screenshots only, not all responsive behavior",
+        "No new exact-head Quick, remote CI, merge, daily deployment or Demo rebuild"
+      ]
     },
     "third_conditional_region_followup": {
       "identity": "65db6f6d39a3e3f04fad5bdefd578fe791ae90bb + declared followup dirty scope",
@@ -223,7 +248,40 @@
       "owner": "P0 generic native container modifier consumption; no model special case, no widget auth override",
       "scope": "Re-evaluate only declared NATIVE_MODIFIER_INVISIBLE structural container status with disabled=false and complete live dependency snapshot; preserve all authority/static denies",
       "validation": "real store/layout reactive positive and authority/missing negative cases, strict type/basis, affected browser only; preserve first 3 cases if unchanged",
-      "canonical_followup": "e9 browser still fails706: actual canonical presenter independently folds fetch-time containerStatus. Share same narrow predicate across canonical and legacy consumers; add canonical presenter+bridge positive/deny tests. Do not widen reason/auth policy."
+      "canonical_followup": "e9 browser still fails706: actual canonical presenter independently folds fetch-time containerStatus. Share same narrow predicate across canonical and legacy consumers; add canonical presenter+bridge positive/deny tests. Do not widen reason/auth policy.",
+      "resolution": "Shared exact-reason predicate in canonical presenter and legacy layout; b144 five-entry browser PASS including706 visible editable provident region. Static/selector/widget authority remains enforced."
+    },
+    "third_local_outcome": {
+      "partial_repairs": [
+        "FG04",
+        "FG10",
+        "FG13"
+      ],
+      "all_locally_repaired_entry_feedback_groups": [
+        "FG04",
+        "FG06",
+        "FG07",
+        "FG10",
+        "FG11",
+        "FG12",
+        "FG13",
+        "FG14"
+      ],
+      "remaining_original_groups_unrepaired": [
+        "FG01",
+        "FG02",
+        "FG03",
+        "FG05",
+        "FG08",
+        "FG09",
+        "FG15",
+        "FG16",
+        "FG17"
+      ],
+      "business_chain_acceptance": "pending for all locally repaired groups",
+      "mainline": "unchanged bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
+      "daily_deployment": "unchanged; local.dev only",
+      "demo_data": "23 registered gaps remain for later rebuild/acceptance"
     }
   }
 }
