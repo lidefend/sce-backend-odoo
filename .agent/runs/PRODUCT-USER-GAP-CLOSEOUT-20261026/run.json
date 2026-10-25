@@ -46,7 +46,11 @@
     "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
     "addons/smart_construction_core/models/support/approval_policy.py",
     "addons/smart_construction_core/views/support/approval_policy_views.xml",
-    "addons/smart_construction_core/tests/test_approval_policy_feedback.py"
+    "addons/smart_construction_core/tests/test_approval_policy_feedback.py",
+    "addons/smart_construction_core/core_extension_system_init_rows.py",
+    "addons/smart_construction_core/tests/test_role_surface_project_member.py",
+    "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
+    "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigContextBar.vue"
   ],
   "environment": {
     "kind": "runtime",
@@ -54,7 +58,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "FG15: classify account.move mixed native alerts by static text, field source, conditional links/actions; implement explicit owner declarations and supported generic consumers without dropping warnings or permissions. FG17 remains separate entry/create capability consistency. No full acceptance claimed.",
+  "next_exact_step": "Commit P4 observer then serve exact local candidate; run four fixed actors usability read-only and inspect config screenshots.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -345,6 +349,33 @@
       ],
       "mainline_and_daily_deployment": "unchanged bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
       "demo_data": "23 gaps remain for later rebuild and acceptance"
+    },
+    "fifth_ownership": {
+      "identity": "b1bf1b2bdb402a194c5a5aa229eb2ad0b13145dd; clean",
+      "diagnosis": "FG15 13 mixed native alerts plus nested links; generic scalar feedback cannot preserve all content/actions. Not fixed; no removal or blanket CSS bypass. Next rich-notice work requires explicit source/condition/action contracts.",
+      "P1": "FG01 risk descriptions consume native translated selection labels; machine priority and record targets unchanged",
+      "P0": "FG02 home capability empty-state wording only, preserve all authority/error states; FG03 configuration context header narrow-screen layout only, not global list headers",
+      "P4": "existing fixed local.dev observer gains read-only usability scope for home/config; existing credentials and request denial policy",
+      "validation": "L1 then risk ORM and existing header/style/type/basis checks; no CSS/text mirror tests; affected real home/config desktop/mobile and ordinary-role empty state. No DB upgrade needed for Python/copy/CSS."
+    },
+    "fifth_validation_tool_correction": "Initial L2 blocked by inline geometry guard. Removed geometry probe; assert declared one-column versus desktop grid presentation and manually inspect screenshots for readability/overlap. Guard/baseline unchanged; rerun affected L2. Second L2 attempt exposed preexisting vendor selector in observer. Replace with public exact option label, no baseline increase. Earlier form reports remain historical at original observer versions; no claim of rerun with new selector.",
+    "fifth_orm": {
+      "status": "passed",
+      "layer": "L2",
+      "head": "b1bf1b2bdb402a194c5a5aa229eb2ad0b13145dd",
+      "dirty_scope": "fifth_ownership",
+      "tests": 3,
+      "artifact": ".runtime/product-user-gap-closeout-20261026/fifth-orm.log",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestProjectMemberRoleSurface.test_risk_card_targets_the_readable_source_record,/smart_construction_core:TestProjectMemberRoleSurface.test_risk_card_uses_native_state_labels_and_preserves_targets,/smart_construction_core:TestProjectMemberRoleSurface.test_risk_card_rejects_undeclared_state_label"
+    },
+    "fifth_frontend": {
+      "status": "passed",
+      "layer": "L2",
+      "stage": "b1bf1b2bdb402a194c5a5aa229eb2ad0b13145dd + fifth owned dirty scope",
+      "command": "make verify.frontend.product_page_header.unit verify.frontend.style_system.guard verify.frontend.typecheck.strict verify.frontend.contract_basis.enforce",
+      "artifact": ".runtime/product-user-gap-closeout-20261026/fifth-frontend-03.log",
+      "coverage": "75 header guard tests, 28 model cases, 4 adapter entries; mounted header 34 checks; style/type/basis passed",
+      "reuse": "Commit identity changes do not alter tested product inputs. Subsequent observer sample assertions affect browser only; syntax checked."
     }
   }
 }

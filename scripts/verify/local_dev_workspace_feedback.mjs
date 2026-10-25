@@ -6,10 +6,12 @@ import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap
 // The existing nginx owns the namespace stamp; the preview server does not.
 const base = 'http://127.0.0.1:18081/t/demo';
 const scope = process.env.SC_FEEDBACK_SCOPE || 'workspace';
-assert(['workspace', 'cost', 'conditioned', 'approval'].includes(scope));
+assert(['workspace', 'cost', 'conditioned', 'approval', 'usability'].includes(scope));
 const root = `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}`;
 fs.mkdirSync(root, {recursive: true});
-const availableCases = scope === 'workspace' ? [
+const actor = scope === 'usability' ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
+assert(['demo_full', 'demo_role_pm', 'demo_role_finance', 'demo_role_project_read'].includes(actor));
+const availableCases = scope === 'usability' ? [] : scope === 'workspace' ? [
   {model: 'sc.team.loan.deduction.workspace', field: 'note', hint: '建议补充办理说明'},
   {model: 'sc.current.account.workspace', field: 'note', hint: '建议补充办理说明', retained: '办理承包人借还款前请选择承包人/往来单位'},
 ] : scope === 'cost' ? [
@@ -67,7 +69,7 @@ try {
     } catch {}
   });
   await page.goto(base + '/login', {waitUntil: 'domcontentloaded'});
-  await page.locator('#login-username').fill('demo_full');
+  await page.locator('#login-username').fill(actor);
   await page.locator('#login-password').fill(process.env.E2E_PASSWORD);
   const database = page.getByLabel(/数据库/);
   assert(await database.count() <= 1, 'database selector must be unique');
@@ -81,7 +83,47 @@ try {
   const leaves = [];
   function walk(nodes) { for (const node of nodes) { if (node.children?.length) walk(node.children); else leaves.push(node); } }
   walk(init.navigation.nav);
-  report.actor = {uid: init.user?.id, login: 'demo_full', company: init.user?.company_id};
+  report.actor = {uid: init.user?.id, login: actor, company: init.user?.company_id};
+  if (scope === 'usability') {
+    await page.goto(base + '/s/workspace.home', {waitUntil: 'domcontentloaded'});
+    const capability = page.locator('[data-login-home-block="capability_map"]');
+    await capability.waitFor({state: 'visible', timeout: 45000});
+    await page.waitForFunction(() => ['ready', 'empty'].includes(document.querySelector('[data-login-home-block="capability_map"]')?.getAttribute('data-state')));
+    assert((await capability.innerText()).includes('工作入口'));
+    const state = await capability.getAttribute('data-state');
+    if (actor !== 'demo_full') assert.equal(state, 'empty', 'ordinary-role empty-state sample missing');
+    if (state === 'empty') assert((await capability.innerText()).includes('暂无首页快捷入口。请从导航菜单选择业务；如需调整权限，请联系管理员。'));
+    const risks = await page.locator('[data-login-home-block="risks"]').innerText();
+    if (actor === 'demo_full') assert(/风险状态[：:]/.test(risks), 'actual risk state sample missing');
+    assert(!/风险状态[：:]\s*(open|claimed|escalated)\b/.test(risks));
+    report.cases.push({key: 'home', state, risks, text: await capability.innerText(), passed: true});
+    await page.screenshot({path: `${root}/${actor}-home-desktop.png`});
+    await page.setViewportSize({width: 390, height: 844});
+    await page.screenshot({path: `${root}/${actor}-home-mobile.png`});
+    if (actor === 'demo_full') {
+      const node = leaves.find(n => n.meta?.route && new URL(n.meta.route, base).searchParams.get('menu_id') === '431');
+      assert(node?.meta?.route?.startsWith('/'), 'config navigation declaration missing');
+      await page.goto(base + node.meta.route, {waitUntil: 'domcontentloaded'});
+      const header = page.locator('.business-config-context .product-page-header');
+      await header.waitFor({state: 'visible', timeout: 45000});
+      for (const width of [390, 1440]) {
+        await page.setViewportSize({width, height: width === 390 ? 844 : 960});
+        const layout = await header.evaluate(el => ({
+          columns: getComputedStyle(el).gridTemplateColumns,
+          identityColumn: getComputedStyle(el.querySelector('.product-page-header__identity')).gridColumn,
+          actionsColumn: getComputedStyle(el.querySelector('.product-page-header__actions')).gridColumn,
+        }));
+        if (width === 390) {
+          assert.equal(layout.columns.split(' ').length, 1, 'mobile header must use one column');
+          assert.equal(layout.identityColumn, '1 / -1');
+          assert.equal(layout.actionsColumn, '1 / -1');
+        } else assert(layout.columns.split(' ').length > 1, 'desktop header must retain multiple columns');
+        report.cases.push({key: 'config-' + width, route: node.meta.route, layout, passed: true});
+        await page.screenshot({path: `${root}/${actor}-config-${width}.png`});
+      }
+    }
+    assert.equal(report.blocked.length, 0, 'read-only observer blocked requests');
+  }
   for (const plan of cases) {
     const {model} = plan;
     const node = leaves.find(n => n.meta?.model === model && (!plan.menu ||
@@ -109,7 +151,7 @@ try {
       const select = page.locator(`[data-field-name="${plan.approval ? 'target_model' : 'fact_type'}"] [data-semantic-component="ScSelect"]`);
       await select.waitFor({state: 'visible', timeout: 45000});
       await select.click();
-      await page.locator('.t-select-option').filter({hasText: plan.selection}).click();
+      await page.getByText(plan.selection, {exact: true}).last().click();
     }
     if (plan.tab) await page.locator(`[data-section-tab="${plan.tab}"]`).click();
     const note = page.locator(`[data-field-name="${plan.field}"]`).locator('textarea:visible, input:not([type="hidden"]):visible').first();
@@ -156,6 +198,6 @@ try {
 } finally {
   report.lastPage = page ? {url: page.url(), text: await page.locator('body').innerText().catch(() => '')} : null;
   await browser.close();
-  fs.writeFileSync(`${root}/report.json`, JSON.stringify(report, null, 2));
+  fs.writeFileSync(`${root}/${scope === 'usability' ? actor + '-' : ''}report.json`, JSON.stringify(report, null, 2));
 }
-console.log(`feedback browser: PASS (${cases.length} ${scope} forms, no save/dispatch)`);
+console.log(`browser: PASS (${report.cases.length} ${scope} cases, no save/dispatch)`);

@@ -1737,3 +1737,8 @@ verify.local.dev.approval.feedback.orm: guard.prod.forbid
 verify.local.dev.approval.feedback: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  SC_FEEDBACK_SCOPE=approval bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.usability
+verify.local.dev.usability: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_SCOPE=usability SC_FEEDBACK_ACTOR="$(or $(SC_FEEDBACK_ACTOR),demo_full)" bash scripts/verify/local_dev_workspace_feedback.sh
