@@ -1,6 +1,27 @@
 DAILY_CONTINUITY_CONTRACT ?= scripts/ops/daily_candidate_data_continuity_contract_v1.json
 DAILY_CONTINUITY_BACKUP_DIR ?=
 DAILY_CONTINUITY_EVIDENCE ?= /tmp/daily-candidate-data-continuity.json
+DAILY_DEMO_PRESERVE_PHASE ?= plan
+DAILY_DEMO_PRESERVE_UUID ?=
+DAILY_DEMO_PRESERVE_INVENTORY ?=
+
+.PHONY: verify.daily.demo.filestore_preserve daily.demo.filestore.preserve
+verify.daily.demo.filestore_preserve: guard.prod.forbid
+	@python3 -m unittest scripts.ops.test_daily_demo_filestore_preserve
+
+# P4 reversible preservation; only the registered demo application is stopped.
+# Existing immutable resolver supplies every runtime/storage identity.
+daily.demo.filestore.preserve: guard.prod.forbid verify.daily.demo.filestore_preserve
+	@test "$(DAILY_CANDIDATE_SSH_HOST)" = sc-root
+	@[[ "$(DAILY_CONTINUITY_TOOL_SHA)" =~ ^[0-9a-f]{40}$$ ]] && [[ "$(DAILY_RUNTIME_EXPECTED_SHA)" =~ ^[0-9a-f]{40}$$ ]]
+	@[[ "$(DAILY_DEMO_PRESERVE_UUID)" =~ ^[0-9a-f-]{36}$$ ]]
+	@test "$(DAILY_DEMO_PRESERVE_PHASE)" = plan -o "$(DAILY_DEMO_PRESERVE_PHASE)" = apply
+	@if test "$(DAILY_DEMO_PRESERVE_PHASE)" = apply; then \
+	  test "$${CONFIRM_DEMO_FILESTORE_PRESERVE:-}" = PRESERVE_EXACT_UNREFERENCED_DEMO_FILES && \
+	  [[ "$(DAILY_DEMO_PRESERVE_INVENTORY)" =~ ^[0-9a-f]{64}$$ ]]; fi
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+	  'CONFIRM_DEMO_FILESTORE_PRESERVE=$(if $(filter apply,$(DAILY_DEMO_PRESERVE_PHASE)),PRESERVE_EXACT_UNREFERENCED_DEMO_FILES,) python3 -B - "$(DAILY_DEMO_PRESERVE_PHASE)" --tool-sha "$(DAILY_CONTINUITY_TOOL_SHA)" --expected-source "$(DAILY_RUNTIME_EXPECTED_SHA)" --expected-uuid "$(DAILY_DEMO_PRESERVE_UUID)" --expected-inventory "$(DAILY_DEMO_PRESERVE_INVENTORY)"' \
+	  < scripts/ops/daily_demo_filestore_preserve.py
 DAILY_CANDIDATE_SSH_HOST ?=
 DAILY_CONTINUITY_TOOL_SHA ?= $(shell git rev-parse HEAD)
 DAILY_CONTINUITY_REMOTE_ROOT ?= /opt/sce/deployment-tools/$(DAILY_CONTINUITY_TOOL_SHA)

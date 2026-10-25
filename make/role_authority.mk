@@ -1,4 +1,20 @@
 # P4 offline role declaration inventory; never an authorization/runtime gate.
+.PHONY: verify.general_contract.review_authority.unit
+verify.general_contract.review_authority.unit:
+	@python3 -m unittest scripts.verify.test_general_contract_review_authority
+
+.PHONY: verify.daily.demo.contract.api.unit daily.demo.contract.api_acceptance
+verify.daily.demo.contract.api.unit:
+	@python3 -m unittest scripts.verify.test_daily_demo_contract_api_acceptance
+daily.demo.contract.api_acceptance: verify.daily.demo.contract.api.unit daily.demo.write.recovery_gate
+	@SC_DEMO_CONTRACT_KEY=$(SC_DEMO_CONTRACT_KEY) SC_DEMO_CONTRACT_RECORD_ID=$(SC_DEMO_CONTRACT_RECORD_ID) python3 -m scripts.verify.daily_demo_contract_api_acceptance
+
+.PHONY: verify.daily.demo.contract.ui
+verify.daily.demo.contract.ui: guard.prod.forbid $(if $(filter execute resume,$(SC_DEMO_UI_MODE)),daily.demo.write.recovery_gate,)
+	@node --check scripts/verify/daily_demo_contract_ui_browser.mjs
+	@node scripts/verify/daily_demo_contract_ui_policy.test.mjs
+	@node scripts/verify/daily_demo_contract_ui_browser.mjs
+
 .PHONY: verify.system.permission_role.inventory.unit audit.system.permission_role.inventory
 verify.system.permission_role.inventory.unit:
 	@python3 -m unittest scripts/verify/test_system_permission_role_inventory.py
@@ -17,6 +33,39 @@ verify.system.permission_role.runtime_probe.unit:
 	@python3 -m unittest scripts/verify/test_system_permission_runtime_observation.py
 
 # Existing daily demo duty and owner SSH identity; no deployment or credential write.
+.PHONY: daily.demo.contract.write_acceptance daily.demo.write.recovery_gate
+SC_DEMO_CONTRACT_PHASE ?= create
+SC_DEMO_CONTRACT_RECORD_ID ?= 0
+daily.demo.write.recovery_gate: guard.prod.forbid
+	@test "$${SC_DEMO_WRITE_CONFIRM:-}" = CREATE_AND_SUBMIT_DEMO_ACCEPTANCE_CONTRACT
+	@[[ "$(DAILY_CONTINUITY_TOOL_SHA)" =~ ^[0-9a-f]{40}$$ ]] && [[ "$(DAILY_RUNTIME_EXPECTED_SHA)" =~ ^[0-9a-f]{40}$$ ]]
+	@[[ "$(DAILY_DEMO_PRESERVE_UUID)" =~ ^[0-9a-f-]{36}$$ ]] && [[ "$(SC_DEMO_CONTRACT_KEY)" =~ ^DEMO-DELIVERY-[A-Z0-9-]+$$ ]]
+	@[[ "$(SC_DEMO_BACKUP_SET)" =~ ^sc_demo-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$ ]]
+	@[[ "$(SC_DEMO_CONTRACT_PHASE)" =~ ^(create|approve|reject|cross_company|readback)$$ ]] && [[ "$(SC_DEMO_CONTRACT_RECORD_ID)" =~ ^[0-9]+$$ ]]
+	@ssh sc-root 'python3 -B -c '\''import sys,json; from pathlib import Path; root=Path("/opt/sce/deployment-tools/$(DAILY_CONTINUITY_TOOL_SHA)"); sys.path.insert(0,str(root/"scripts/ops")); import daily_candidate_data_continuity as c; contract=c._load_contract(root/"scripts/ops/daily_candidate_data_continuity_contract_v1.json"); runtime=c._assert_runtime(contract); assert runtime["source_revision"]=="$(DAILY_RUNTIME_EXPECTED_SHA)"; manifest=c.validate_backup(contract,Path(contract["backup_root"])/"$(SC_DEMO_BACKUP_SET)",strict_permissions=True); receipt=json.load(open("/tmp/daily-duty-recovery-restore.json")); assert receipt["backup_set_id"]==manifest["backup_set_id"] and receipt["isolated_restore_pass"] and receipt["temporary_resources_removed"]; assert manifest["sentinels_before"]["database_uuid"]=="$(DAILY_DEMO_PRESERVE_UUID)"; assert c._sentinels(contract)["database_uuid"]=="$(DAILY_DEMO_PRESERVE_UUID)"; print("recovery preflight PASS")'\'''
+daily.demo.contract.write_acceptance: daily.demo.write.recovery_gate
+	@ssh sc-root \
+	  'python3 /opt/projects/repos/sce-product-odoo/scripts/ops/daily_runtime_duty_odoo_shell.py --duty demo --database sc_demo --env SC_DEMO_WRITE_CONFIRM=CREATE_AND_SUBMIT_DEMO_ACCEPTANCE_CONTRACT --env SC_DEMO_EXPECTED_UUID=$(DAILY_DEMO_PRESERVE_UUID) --env SC_DEMO_CONTRACT_KEY=$(SC_DEMO_CONTRACT_KEY) --env SC_DEMO_CONTRACT_PHASE=$(SC_DEMO_CONTRACT_PHASE) --env SC_DEMO_CONTRACT_RECORD_ID=$(SC_DEMO_CONTRACT_RECORD_ID)' \
+	  < scripts/verify/daily_demo_contract_write_acceptance.py
+
+.PHONY: verify.daily.demo.business_readiness.unit audit.daily.demo.business_readiness
+verify.daily.demo.business_readiness.unit:
+	@python3 -m unittest scripts.verify.test_daily_demo_business_readiness
+
+# Reuse the declared demo shell; no fixture setup and database-enforced read-only.
+audit.daily.demo.business_readiness: guard.prod.forbid verify.daily.demo.business_readiness.unit
+	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" && [[ "$(DAILY_RUNTIME_EXPECTED_SHA)" =~ ^[0-9a-f]{40}$$ ]]
+	@ssh -o BatchMode=yes -o ConnectTimeout=10 sc-root \
+	  'test "$$(git -C /opt/projects/repos/sce-product-odoo rev-parse HEAD)" = "$(DAILY_RUNTIME_EXPECTED_SHA)" && python3 /opt/projects/repos/sce-product-odoo/scripts/ops/daily_runtime_duty_odoo_shell.py --duty demo --database sc_demo' \
+	  < scripts/verify/daily_demo_business_readiness.py
+
+.PHONY: audit.daily.demo.data_inventory
+audit.daily.demo.data_inventory: guard.prod.forbid verify.daily.demo.business_readiness.unit
+	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" && [[ "$(DAILY_RUNTIME_EXPECTED_SHA)" =~ ^[0-9a-f]{40}$$ ]]
+	@ssh -o BatchMode=yes -o ConnectTimeout=10 sc-root \
+	  'test "$$(git -C /opt/projects/repos/sce-product-odoo rev-parse HEAD)" = "$(DAILY_RUNTIME_EXPECTED_SHA)" && python3 /opt/projects/repos/sce-product-odoo/scripts/ops/daily_runtime_duty_odoo_shell.py --duty demo --database sc_demo --env DAILY_DEMO_OBSERVATION=inventory' \
+	  < scripts/verify/daily_demo_business_readiness.py
+
 audit.system.permission_role.demo_observation: guard.prod.forbid
 	@ssh -o BatchMode=yes -o ConnectTimeout=10 sc-root \
 	  'python3 /opt/projects/repos/sce-product-odoo/scripts/ops/daily_runtime_duty_odoo_shell.py --duty demo --database sc_demo' \

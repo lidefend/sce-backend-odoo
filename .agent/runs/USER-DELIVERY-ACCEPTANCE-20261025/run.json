@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "id": "USER-DELIVERY-ACCEPTANCE-20261025",
+  "branch": "fix/user-delivery-acceptance-20261025",
+  "baseline_sha": "6d6fecbd2f6d710c4c7e2b0d738838125aaccd28",
+  "status": "verification_pending",
+  "goal": ".agent/goals/USER-DELIVERY-ACCEPTANCE-20261025.yaml",
+  "record": "docs/ops/iterations/user_delivery_acceptance_20261025.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/USER-DELIVERY-ACCEPTANCE-20261025.yaml",
+    ".agent/runs/USER-DELIVERY-ACCEPTANCE-20261025/run.json",
+    "docs/ops/iterations/user_delivery_acceptance_20261025.md",
+    "frontend/apps/web/scripts/bootstrap_inventory_policy.mjs",
+    "frontend/apps/web/scripts/bootstrap_inventory_policy_test.mjs",
+    "scripts/verify/business_entry_matrix_model.mjs",
+    "scripts/verify/business_entry_matrix_browser.mjs",
+    "scripts/verify/business_entry_negative_closures.mjs",
+    "scripts/verify/business_entry_matrix_reuse_identity.test.mjs",
+    "config/acceptance/business_entry_matrix_daily_overlay.v1.json",
+    "make/role_authority.mk",
+    "scripts/verify/daily_demo_business_readiness.py",
+    "scripts/verify/test_daily_demo_business_readiness.py",
+    "scripts/ops/daily_demo_filestore_preserve.py",
+    "scripts/ops/test_daily_demo_filestore_preserve.py",
+    "make/daily_candidate.mk",
+    "scripts/verify/daily_demo_contract_write_acceptance.py",
+    "scripts/verify/daily_demo_contract_ui_browser.mjs",
+    "scripts/verify/daily_demo_contract_ui_policy.mjs",
+    "scripts/verify/daily_demo_contract_ui_policy.test.mjs",
+    "scripts/verify/daily_demo_contract_api_acceptance.py",
+    "scripts/verify/test_daily_demo_contract_api_acceptance.py",
+    "addons/smart_construction_core/models/core/general_contract.py",
+    "addons/smart_construction_core/security/ir.model.access.csv",
+    "addons/smart_construction_core/security/sc_record_rules.xml",
+    "addons/smart_construction_core/services/review_work_item_service.py",
+    "addons/smart_construction_core/tests/test_general_contract_finance_review.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "scripts/verify/test_general_contract_review_authority.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_usage_foundation_approval.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/e2e_journey_matrix.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing daily demo duty sc_demo/namespace demo at deployed 7b3ef20437f700ae4b07dccd6e568ccdde16d671; user authorized full acceptance. Readonly role/entry probes run. Mutating lanes gated by exact managed record identity and recovery; prohibited fixture installation is not authorized or performed."
+  },
+  "checks": {
+    "inventory_policy": {
+      "target": "verify.frontend.bootstrap_inventory.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/bootstrap_inventory_policy.mjs",
+        "frontend/apps/web/scripts/bootstrap_inventory_policy_test.mjs"
+      ],
+      "kind": "offline"
+    },
+    "entry_scope": {
+      "target": "verify.frontend.business_entry.evidence_scope.unit",
+      "inputs": [
+        "scripts/verify/business_entry_matrix_model.mjs",
+        "scripts/verify/business_entry_matrix_browser.mjs",
+        "scripts/verify/business_entry_negative_closures.mjs",
+        "scripts/verify/business_entry_matrix_reuse_identity.test.mjs",
+        "config/acceptance/business_entry_matrix_daily_overlay.v1.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "Confirmed P1 delivery blocker: assigned finance reviewer13 lacks sc.general.contract read ACL; API403 and official work item absent at active review690.",
+    "9 observed business models lack rows; complete scenario coverage pending.",
+    "Cross-company negative writes and remaining delivery gates not yet executed."
+  ],
+  "next_exact_step": "冻结并复核当前P1权限补丁与P4验收工具候选；同步当前Gitee主线后发布PR，远端必需检查通过后受保护合并，再受管更新日常demo并从财务级恢复API验收。",
+  "observations": {
+    "result_index": ".runtime/final-acceptance/user-delivery-baseline/execution.json",
+    "identity_correction": "Demo duty forbids isolated fixture accounts and allows preview. Reuse demo_full login/home evidence; no account reset or edition change.",
+    "L1": "ci.local.iteration passed",
+    "L2": "11 inventory policy tests passed; original log .runtime/final-acceptance/user-delivery-baseline/inventory-policy-unit.log. agent.run.record refused because no pre-run begin receipt existed; no local dependency receipt claimed and no test rerun merely for bookkeeping.",
+    "runtime": "Menu panel read/reload passed after exact catalog read policy correction; project budget 6 list rows, 8 record checks, 108 assertions, 5 negative fixtures detected, zero runtime errors. Original role-home evidence reused.",
+    "delivery": "No commit/push/deployment. Reversible demo filestore preservation, paired backup and isolated restore completed; two new demo business contracts retained (signed/cancel), no changes to existing seed records.",
+    "full_acceptance": "15 backend contract write/approval/rejection/cancellation steps passed with non-sudo actors; UI and remaining whole-product gates pending.",
+    "matrix_partial": "32/90 observed:11 empty,20 record readbacks,1 no record; graceful interrupt after user questioned data readiness. Negative-role stage not reached. Partial ledger quarantined as unaccepted; summary preserved for exact-bound resume.",
+    "demo_backlog": ".runtime/final-acceptance/user-delivery-baseline/demo-data-backlog.json",
+    "owner_acceptance_standard": "User requires complete product delivery/use standard; demo is carrier only. No downgrade to readonly, demo showcase or empty-state coverage. See existing baseline acceptance_standard.",
+    "facts": "fact-inventory.json: 24 hard prerequisites and existing golden-chain readback pass; readonly does not satisfy user delivery.",
+    "acceptance_sequence": "Owner-directed API business lifecycle first, UI user-path acceptance last. ORM-only evidence is not API acceptance.",
+    "api_preflight": "contract-api-preflight.json: five existing actors authenticated on /t/demo; contract6 read succeeded for four actors; fin_mgr read returned403. Formal work-item path still needs verification; no API mutation performed.",
+    "ui_write": "UI01 record6: UI create/edit and resumed submit persisted; independent readback amount12600,pending reviews688-691. Original tool failure and resume reports retained; not full UI acceptance.",
+    "api_approval": "Two formal HTTP execute_button approvals succeeded using actor-specific fresh work-item/contract authority; independent API tier.review readback proves688/689 approved,690 pending,691 waiting. See contract-api-approval.json and contract-api-review-readback.json.",
+    "api_tool": "P4 bounded Make runner reuses recovery gate and declared HTTP client; refuses replay if attempt evidence exists; no credential, ACL, product or deployment changes.",
+    "finance_fix_boundary": "P1 standard general-contract finance reviewer read-only ACL + assigned-record rule; explicit model review ACL-mode declaration consumed by existing work-item authorization. No frontend, user/group assignment, P0 or deployed runtime mutation.",
+    "demo_vs_product_root_cause": "Owner suggested demo configuration gap. Verified standard USER_VISIBLE_APPROVAL_TEMPLATES.general_contract_approval explicitly assigns finance_manager; demo seat fin_mgr belongs to that group and review690. Product access declaration mismatch remains; demo readiness check also lacked account/model access validation. Neither inferred from seed XML alone.",
+    "finance_fix_validation": {
+      "unit": "16 passed",
+      "orm": "5 post-tests passed,0 failures,0 errors; candidate declarations loaded in rollback-only transactions",
+      "orm_log": ".runtime/final-acceptance/user-delivery-baseline/finance-review-orm-final.log",
+      "runtime_status": "daily server unchanged; live financial tier remains blocked",
+      "demo_readiness": "new declared actor/model-read check added, not yet run against updated daily demo"
+    },
+    "publication": "Product patch committed as ad1eb261f; generated evidence refreshed by required pre-commit hook. P4 candidate pending commit; no push/deployment yet.",
+    "resume_tool": "9 API authority/resume tests and 19 browser containment assertions passed. Finance resume verifies exact prior checkpoint plus live688/689 approved,690 pending,691 waiting; refuses uncertain prior mutations or replay."
+  }
+}

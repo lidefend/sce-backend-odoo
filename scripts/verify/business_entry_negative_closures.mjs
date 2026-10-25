@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { matrixLoginUrl } from './business_entry_matrix_model.mjs';
 // Bounded read-only diagnostic: log in as each declared denied-role candidate on
 // the registered acceptance runtime and record its capability closure plus the
 // number of released navigation targets it actually received.
@@ -61,7 +62,7 @@ async function observe(browser, role, served) {
     } catch { /* identity stays null and the snapshot fails closed downstream */ }
   });
   try {
-    await page.goto(`${BASE}/login?db=${DB}`, { waitUntil: 'networkidle' });
+    await page.goto(matrixLoginUrl(BASE), { waitUntil: 'networkidle' });
     const inputs = page.locator('input');
     await inputs.nth(0).fill(role);
     await inputs.nth(1).fill(PASSWORD);

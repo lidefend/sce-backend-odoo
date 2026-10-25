@@ -1,0 +1,63 @@
+{
+  "schema": "business_entry_matrix_overlay.v1",
+  "notes": [
+    "Daily demo variant of the existing matrix overlay. Same entry behavior; existing demo principals from smart_construction_demo/data/demo/role_matrix_demo_users.xml. Actual closures and navigation are read at runtime; no implied authorization from names."
+  ],
+  "defaults": {
+    "detail": true,
+    "expect_write": null
+  },
+  "denied_role_candidates": [
+    "demo_role_project_read",
+    "demo_role_executive",
+    "demo_role_pm",
+    "demo_role_finance"
+  ],
+  "entries": {
+    "smart_construction_core.menu_sc_operating_metrics_project": {
+      "presentation": "table"
+    },
+    "smart_construction_core.menu_sc_project_kanban": {
+      "presentation": "kanban"
+    },
+    "smart_construction_core.menu_sc_workbench_my_todo_fact": {
+      "presentation": "table"
+    },
+    "smart_construction_core.menu_sc_product_message_notification_v1": {
+      "presentation": "table"
+    },
+    "smart_construction_core.menu_sc_product_team_loan_deduction_v1": {
+      "presentation": "form"
+    },
+    "smart_construction_core.menu_sc_product_current_account_v1": {
+      "presentation": "form"
+    },
+    "smart_construction_core.menu_sc_product_company_project_refund_v1": {
+      "presentation": "form"
+    },
+    "smart_construction_core.menu_sc_product_system_parameter_v1": {
+      "presentation": "form"
+    },
+    "smart_construction_core.menu_sc_p1_income_contract": {
+      "presentation": "hierarchical"
+    },
+    "smart_construction_core.menu_sc_p1_expense_contract": {
+      "presentation": "hierarchical"
+    },
+    "smart_construction_core.menu_sc_p1_income_settlement": {
+      "presentation": "hierarchical"
+    },
+    "smart_construction_core.menu_sc_p1_expense_settlement": {
+      "presentation": "hierarchical"
+    },
+    "smart_construction_core.menu_sc_payment_execution": {
+      "presentation": "hierarchical"
+    },
+    "smart_construction_core.menu_sc_product_tax_report_v1": {
+      "presentation": "aggregate"
+    },
+    "smart_construction_core.menu_sc_product_labor_subcontract_report_v1": {
+      "presentation": "aggregate"
+    }
+  }
+}

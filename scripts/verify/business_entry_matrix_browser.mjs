@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { matrixLoginUrl } from './business_entry_matrix_model.mjs';
 // Declaration-driven product-surface acceptance for the formal business entry
 // matrix (docs/product/frontend_business_entry_acceptance_v1.csv).
 //
@@ -194,7 +195,7 @@ async function servedRevision() {
 }
 
 async function login(page) {
-  await page.goto(`${BASE}/login?db=${DB}`, { waitUntil: 'networkidle' });
+  await page.goto(matrixLoginUrl(BASE), { waitUntil: 'networkidle' });
   const inputs = page.locator('input');
   await inputs.nth(0).fill(LOGIN);
   await inputs.nth(1).fill(PASSWORD);
@@ -887,7 +888,7 @@ async function deniedRoleNavigation(deniedRole) {
   const state = { user: null, nav: null, contracts: [] };
   attachCapture(page, state);
   try {
-    await page.goto(`${BASE}/login?db=${DB}`, { waitUntil: 'networkidle' });
+    await page.goto(matrixLoginUrl(BASE), { waitUntil: 'networkidle' });
     const inputs = page.locator('input');
     await inputs.nth(0).fill(deniedRole);
     await inputs.nth(1).fill(PASSWORD);

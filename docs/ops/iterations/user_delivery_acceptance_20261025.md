@@ -1,0 +1,128 @@
+# Daily user acceptance continuation
+
+Formal Product Layer: P4. Module: existing browser inventory request policy. Standard tooling; no P0–P3 behavior changes.
+
+Baseline: 6d6fecbd2f6d710c4c7e2b0d738838125aaccd28. Runtime: 7b3ef20437f700ae4b07dccd6e568ccdde16d671. Existing evidence index: `.runtime/final-acceptance/user-delivery-baseline/execution.json`.
+
+The demo duty explicitly excludes deterministic fixture accounts and permits standard/preview release snapshots. The initial fixture-account/standard-only acceptance assumptions were incorrect; retain their failed observations as historical evidence, not a reason to mutate the runtime. The observed demo_full actor consumes the preview release. Standard-surface coverage remains a separately identified subset, not an automatic full acceptance claim.
+
+The menu panel opens and refreshes, but the readonly probe blocks the declared `product.configuration.capability.catalog` read. Add only that exact intent to the existing policy; preserve method, endpoint, unknown-intent and business-write denial. Verify with the existing policy unit target and the affected browser lane.
+
+User acceptance remains pending until required business and permission responsibilities have evidence. No final Quick/publication cycle for this diagnostic correction.
+
+## Bounded result
+
+L1 iteration and 11 inventory policy tests pass. Exact catalog-read permission resolves the tool failure; the existing daily menu browser passes five read/navigation checks under demo_full. Project-budget desktop/mobile readonly acceptance passes six list states, eight record checks, 108 assertions and five negative fixtures with zero runtime errors. Role-home evidence is reused. All runtime observations bind deployed 7b3ef204 and company 1/business_full.
+
+The source candidate is not frozen or published. No product, credential or business-data mutation occurred. Full user acceptance remains pending: other roles/companies, forbidden writes, business write lifecycles, and the other entry responsibilities require compatible demo evidence. Legacy matrix namespace/fixture assumptions remain a P4 gap. Keep the one runtime result index authoritative; do not relabel partial readonly observations as full acceptance.
+
+## Full acceptance execution
+
+User requested the full acceptance run. The existing matrix now preserves the namespace login path without a client database query. A daily overlay keeps the same entry expectations and selects formal demo principals from the existing demo-role source; runtime role-closure and navigation readback still determine negative eligibility. Evidence-scope unit target passes 69 Python tests plus 57 reuse, 16 observation binding and 6 namespace cases. Five role-entry journeys pass. The old isolated-fixture overlay remains available unchanged.
+
+The governed daily record resolver fails on missing `smart_construction_acceptance_fixture.fe_project_a`. Demo duty explicitly forbids that fixture carrier, so project-lifecycle/payment/contract write lanes are prerequisite-blocked, not passed and not executed against guessed records. No fixture installation, business-data write or credential mutation occurred. Per-entry matrix results are recorded incrementally in the existing runtime evidence index.
+
+## Daily demo as business-acceptance carrier
+
+Owner direction: execute acceptance against the existing daily demo data and use its findings to drive the next demo-data increment. Keep the current deployed revision and primary actor/company explicit. The standard 91-responsibility subset remains separate from the preview edition's 131 visible declarations.
+
+The living backlog is `.runtime/final-acceptance/user-delivery-baseline/demo-data-backlog.json`, linked from the existing baseline and execution index. The partial matrix observed 32 of 90 action entries: 11 empty states, 20 record readbacks and one non-record observation. Empty under one actor does not prove global data absence. The remaining 58 entries are unobserved, not accepted. Five role-entry scenarios passed; ownership checks covered 176 declared models, which does not prove transaction-chain completeness.
+
+Preparation order reuses `docs/demo/demo_baseline_readiness_v1.md`: G0–G4 foundational readiness, existing golden business chain, evidenced supporting scenarios, then generated messages/metrics and reconciled reports. Preserve actual demo seed/scenario authority; create draft facts and use formal business actions for transitions, never direct terminal-state or report seeding. Separate seed-owned identities from user-created records and require an exact write carrier plus restoration/readback provisions before mutation.
+
+Classify findings as missing data, missing links/states, role/company scope mismatch, tool defect, or product defect. Every proposed supplementation item names its affected entry, model, evidence, diagnostic work and expected business scenario. Reuse unchanged observations and recheck only affected inputs. Full user acceptance stays pending until business actions, approvals, denial boundaries and authoritative readback are demonstrated.
+
+## Owner acceptance standard: product delivery and actual use
+
+The daily demo is the execution carrier only. Acceptance must satisfy the repository's complete product-delivery requirements: exact delivered identity, realistic linked business data, all 91 standard-entry responsibilities, role/company isolation including backend denial, supported business/approval lifecycles, cross-document reconciliation, error recovery, usability/performance, operational readiness, and user handoff. The current preview deployment can provide scoped observations of standard entries, not independent proof of the standard edition's release boundary.
+
+The existing baseline's `acceptance_standard` holds the mandatory gate register and source authorities. Required report files are indexed but not accepted merely because they exist. Missing data, missing tools, unexecuted writes and pending user confirmation remain non-passes. A read-only or otherwise inapplicable action requires an explicit product-contract basis; demo emptiness is not such a basis. Findings continue to drive the demo-data backlog and the owning product/tool layer. No regression or new runtime execution was needed solely to record this standard.
+
+## Recovery readiness execution
+
+The existing immutable P4 duty recovery tool at main `6d6fecbd2f6d710c4c7e2b0d738838125aaccd28` was executed from the already-clean linked worktree, using the existing **demo** continuity contract explicitly (the default tenant contract is inapplicable). The target remains duty demo / cluster sc-demo-dev / database sc_demo / volume sc_demo_db_data. This installed only the immutable operations tool; no product deployment or business-data mutation occurred.
+
+Baseline capture failed closed on 185 unreferenced filestore files without collection markers. Read-only diagnostic reuse of the same tool confirms all 443 referenced attachment bodies exist and match their checksums; no missing bodies or mismatches. The 185 unexplained files total 56,880 bytes and each name matches its content digest, but that does not establish ownership or authorize deletion. Paired backup and isolated restore were not run because the prerequisite failed. The full file inventory and exact runtime identity are retained in the living execution index.
+
+Operational recovery remains a product-delivery blocker. Next: establish provenance and preserve/reconcile the unexplained files through a duty-bound operation, then rerun only recovery baseline, paired backup validation and isolated restoration. Do not fabricate collection markers, delete files, relax assertions or rebuild over an unverified recovery point. Existing readonly acceptance remains reusable; write/approval acceptance is pending.
+
+## Rebuild identity reconciliation
+
+Owner reports demo was just rebuilt. Prior data-dependent evidence is historical pending target reconciliation. Fresh readback at 2026-10-25 09:15 Asia/Shanghai against registered sc-root / demo / sc-demo-dev / sc_demo still finds 185 unreferenced files and 443 intact referenced bodies. Database UUID is `c7ffe700-ce02-11f1-9a86-a213133df790`. The fresh observation does not establish that this is the rebuilt carrier intended by the owner. Exact target/rebuild record clarification is pending; no data mutation or further rebuild was attempted. Code-only unchanged tests remain reusable. Evidence: `execution.json#rebuild_reconciliation`.
+
+Platform-duty clarification resolved: the owner refers to the daily server platform-duty rebuild. Fresh server-side declaration plus managed-instance resolution confirms independent platform-control, demo and customer-development clusters/storage, with the protected pre-governance source distinct. Local and deployed duty declaration hashes match. The governed public-entry verification passes (32 tool tests and live routing checks), binding `/t/demo` to the rebuilt demo duty. The fresh unreferenced-file observation is therefore on this demo duty, not the protected historical carrier; it does not by itself imply that the platform rebuild failed. Identity evidence is linked in `execution.json#rebuild_reconciliation`.
+
+## Current fact inventory and first delivery gate
+
+Formal Product Layer=P4; Layer Target=existing daily demo observation wrappers; Module=`scripts/verify/daily_demo_business_readiness.py` and `make/role_authority.mk`. This is an acceptance adapter for the already-declared P1/demo tests, not a new product rule. It uses the registered duty shell, exact deployed source SHA, existing demo account, database-enforced read-only transactions, commit refusal and unconditional rollback. It invokes no TransactionCase setup or seed, and never assigns roles or changes credentials. Blast radius is diagnostic reads in demo only; no P0–P3 changes, product deployment or new environment. Seven adapter tests include failure propagation, wrong-database rejection and rollback/commit protection; L1 iteration and diff checks pass.
+
+The authoritative current fact index is `.runtime/final-acceptance/user-delivery-baseline/fact-inventory.json`. The deployed revision stays `7b3ef20437f700ae4b07dccd6e568ccdde16d671`; tool HEAD is `6d6fecbd2f6d710c4c7e2b0d738838125aaccd28` plus explicitly dirty acceptance changes. Git object comparison confirms equality of addons, demo_addons, customer_addons, frontend/apps/web, contracts, duty declaration and entry declaration between the two commits. This justifies reusing unchanged product-source evidence; it does not relabel the deployed SHA or certify the new dirty tools as deployed.
+
+Observed results:
+
+- Current platform-separated public entry: 66 live checks pass; protected historic carrier is distinct.
+- G0–G4: all 24 declared hard prerequisites pass, with 28 presence observations overall.
+- Existing golden chain: settlement/contract/purchase links, posted payment ledger 120,000, paid execution, receipt/treasury 1,200,000, confirmed reconciliation, draft request 5,000,000 and existing role visibility pass the source-owned assertions. This proves existing data coherence, not that a user has just performed those actions.
+- Empty surfaces: 9 distinct models have zero rows globally (metrics, tender opportunity/document, quality acceptance, variation, labor worker/deduction, material return, salary payment). Variation appears in two entries. Notifications instead have 238 global rows and 34 visible to demo_full; their prior empty browser result needs route/filter investigation and does not justify blind seeding.
+- Attachments: all 443 referenced bodies are intact. The 185 unreferenced files comprise 179 SVG, 5 other-format and 1 text files, dated October 16–22. Format and date do not establish provenance or authorize deletion. Current recovery gate remains failed; no accepted paired backup or restore drill was produced.
+
+**First delivery status: BLOCKED_BEFORE_FULL_ACCEPTANCE. Baseline stability has not yet been accepted.** Creating, editing, submitting, approving, rejecting/returning/cancelling where supported, independent persisted readback, denied writes, cross-company restrictions, and post-write reconciliation are mandatory. They remain NOT_RUN, not PASS. The owner explicitly reiterated that read-only delivery is unacceptable. No user sign-off is inferred.
+
+The next operation is a governed, reversible preservation/reconciliation of the unreferenced files, followed by paired backup and isolated restore validation. Then bind real demo draft carriers to the existing business-write lanes (never install isolated FE fixtures in demo), perform business/approval/denial journeys, supply the evidenced missing scenarios through formal transitions, and finish the remaining entry/performance/recovery/handoff gates. Do not repeatedly rerun the entire matrix or Quick while these prerequisites remain unresolved.
+
+Batch: facts and adapter checks completed, wider acceptance verification pending. Mainline: existing main unchanged; these adapter changes uncommitted. Deployment: unchanged. User delivery: not passed, write/approval coverage outstanding.
+
+## Reversible filestore preservation (P4)
+
+Scope: existing demo continuity infrastructure, exact duty/container/volume resolved by immutable tool `6d6fecbd2f6d710c4c7e2b0d738838125aaccd28`, deployed source `7b3ef20437f700ae4b07dccd6e568ccdde16d671`, database UUID `c7ffe700-ce02-11f1-9a86-a213133df790`. Plan selects 185 unreferenced content-addressed bodies with inventory SHA256 `ca3d696d4ab9caaba2f439f782977f00f4387f0731112d679c3ef94b170aca79`. Layer Target=ops preservation/recovery, Module=existing continuity Make infrastructure plus bounded preservation adapter; no product semantics, database record changes, GC-marker fabrication or backup-gate relaxation.
+
+Apply temporarily stops only the resolved demo Odoo container, rechecks database sentinels/references, moves the exact hashed files within the same declared Odoo volume into a preservation directory with manifest, and restarts that same container. All content is retained; failures reverse completed moves. Existing live files and preserved hashes are verified after restart. A manifest collision refuses retries, and an exclusive preservation lock prevents overlapping operations. Platform control, customer duty and historical source are excluded. Restore procedure is carried in the manifest. Eight filesystem boundary tests pass, including partial failure rollback, symlink/traversal refusal, content drift and restore collision protection. This preservation operation itself is not a paired backup or an isolated restore pass.
+
+Recovery prerequisite now passed: exact 185-file preservation completed, original 443 referenced bodies intact, unknown inventory zero. Paired backup `sc_demo-20261025T012344Z-b64644be` and isolated restoration both pass (database, filestore, content and sentinel comparisons); temporary drill resources removed.
+
+Next authorized P4 business exercise creates one normal demo `sc.general.contract` with unique business key `DEMO-DELIVERY-20261025-GC01`, under existing demo_full (non-sudo) using the existing S87 project/partner anchors. It does not create XMLIDs, users or fixture-module data. It edits amount, commits each legitimate operation, reads in a separate cursor under the same actor, attempts a rollback-contained write as existing demo_role_project_read, and calls the formal submission action. Existing seed records remain untouched; the new contract is retained for UI and approval follow-up. The Make gate revalidates the paired backup, restored backup-set ID and database generation before writes. Backend proof remains separate from UI/complete approval acceptance.
+
+## Persisted business write and approval results
+
+Recovery is no longer blocked: preservation and paired/isolated restoration passed. Original failure evidence remains historical. Current results are in `execution.json#recovery_readiness` and `#business_write_acceptance`.
+
+Two new normal demo contracts were created; no existing seed record or authorization configuration was changed:
+
+| Business key | Record | Persisted final state | Amount | Executed proof |
+| --- | --- | --- | --- | --- |
+| DEMO-DELIVERY-20261025-GC01 | 4 / GC2600001 | signed | 12,100 | create, edit, independent transaction readback, denied write, formal submit, four actual approval tiers, formal signing |
+| DEMO-DELIVERY-20261025-GC02 | 5 / GC2600002 | cancel | 12,100 | create, edit, independent transaction readback, denied write, formal submit, reviewer rejection, formal cancellation |
+
+The 15 reported steps use non-sudo actor environments. Creation/edit/submission use demo_full uid 40; denied writes use demo_role_project_read uid 41 and receive AccessError with no persisted negative payload. The approval chain follows the existing demo seat map and the actual pending review group: uids 14, 6, 13, 49. Every transition calls the public business action; no direct state writes or bypass contexts are introduced. The final approved document progresses through four persisted review decisions to confirmed, then signed. The rejected document preserves its rejection observation before the formal cancellation resets the review collection.
+
+These are backend user-authority results, not proof of UI creation/edit/approval. The existing browser matrix is scoped to the affected daily-contract entry to check its current rendered surface after the writes. Initial local invocations hit an incorrect Make target name, a missing closure-path input and the CSV's historical-passed selection filter before browser execution; their logs are retained. Corrected execution explicitly reuses the existing demo closure evidence and includes this one affected historical entry. No whole-matrix replay was launched.
+
+Current overall status: IN_PROGRESS_NOT_ACCEPTED. Remaining scope includes actual UI handling, other business models/approval paths, cross-company negative writes, the nine observed missing-data models, performance and full handoff. Existing recovery and completed contract operations must be reused, not replayed on the terminal records.
+
+Affected daily-contract browser follow-up PASS: five rows rendered, search/detail readback opened the newly cancelled record 5, no console errors or reported problems; demo_role_finance navigation denial covered this entry with zero leakage. The UI declares create/write capabilities, but capability presence is not UI write acceptance. No full matrix was rerun. Final local iteration and diff checks pass; source remains dirty/unpublished.
+
+## API-first acceptance sequencing correction
+
+Owner directs formal API business lifecycle acceptance before final UI user-path acceptance. Preserve previous ORM evidence without counting it as API acceptance. Reuse UI-created contract 6 / DEMO-DELIVERY-20261025-UI01: create/edit and resumed submission persisted, independent readback amount 12,600 and pending reviews 688–691. Original failed browser guard report and successful resume observations remain separate; no recreation or repeat submission is needed.
+
+Formal HTTP preflight against /t/demo authenticated all five declared actors. Four actors read contract 6 successfully; fin_mgr received HTTP 403 PERMISSION_DENIED on direct api.data read. Evidence: contract-api-preflight.json. This is an unresolved acceptance finding, not yet classified as a product defect: the formal work-item origin and role ACL must be examined before requiring direct menu access for a reviewer. No API business mutation occurred in this preflight. Next: resolve the supported approval entry, exercise real API transitions/readbacks and permission boundaries, then resume targeted UI acceptance. Overall remains IN_PROGRESS_NOT_ACCEPTED; deployment and existing product declarations unchanged.
+
+## API approval execution and confirmed P1 delivery blocker
+
+P4 tooling boundary: existing HTTP client and recovery-gated Make entry only; target is existing contract6/UI01 in company1. No product policy, credential, fixture or deployment changes. The runner gets each actor’s current official work item and fresh native action authority; it makes no retry and refuses a second attempt when its evidence file already exists. Five focused authority tests pass. Recovery preflight passed.
+
+Two real HTTP execute_button approvals completed: ct1/review688 and sc_demo_operation/review689. A separate api.data read of tier.review proves both are approved, finance review690 is pending and management review691 is waiting. The configured finance reviewer uid13 is assigned to690, but lacks contract model read ACL; both direct read and ui.contract.v2 return403 and the formal workspace omits the contract. The runner correctly stops before a finance mutation. This confirms DELIVERY-API-GC-FINANCE-001, a P1 approval-seat/access-declaration mismatch, not a UI tool issue. Source: contract-api-finance-finding.json and its linked raw evidence.
+
+Repair must cover read access, official work-item projection, action entitlement and execution while preserving unassigned-record and cross-company boundaries. Do not substitute a broad-capability account or ORM call. Contract6 is retained at the exact failed tier; prior approvals must not be replayed. API approval remains partial; whole delivery remains not accepted.
+
+## Owner-directed Demo configuration cross-check and bounded candidate repair
+
+The owner questioned whether Demo configuration is incomplete. The initial approval_policy_seed.xml alone suggests single contract-manager approval, but the effective standard USER_VISIBLE_APPROVAL_TEMPLATES in models/support/approval_policy.py explicitly upgrades general_contract_approval to contract/operation/finance/executive. The standard guard and Demo seat map agree. fin_mgr is an active assigned finance reviewer. Thus this observed missing model read is not established merely by a Demo-only workflow; the standard declaration and role access disagree. Demo readiness also had a separate coverage gap: it counted group members without checking the declared actor’s model read ACL.
+
+Candidate repair belongs to P1 smart_construction_core: finance-manager read-only ACL for general contracts, assigned-review record rule intersecting existing company ceilings, and explicit general-contract review access-mode declaration consumed only after fresh work-item identity/state/company checks. The existing P0 mechanism already supports a read record ACL for a mutating review intent. No generic contract editing, frontend workaround, group membership change or runtime override. Demo F4 readiness now reports and rejects missing/inactive/wrong-group/no-model-read declared actors; this is not itself full API acceptance.
+
+Sixteen focused source/authority tests passed. Governed local.dev.test runs candidate declarations in rollback-only transactions on existing sc-local-dev/sc_dev_demo; no module upgrade or daily server change. Original runtime failures were test errors (native validation denies a pending document edit before ACL; pending fixtures cannot be moved between companies; Odoo assertRaises does not accept an exception tuple). Corrected tests preserve denial assertions. Fresh-contract execute_button regression is in progress; no deployment or completed user acceptance claimed.
+
+Candidate runtime result: five post-install database tests PASS, zero failures/errors (finance-review-orm-final.log), including fresh ui.contract.v2 authority and execute_button handler approval with read-only contract ACL, actual approval persistence, unassigned read denial, cross-company assigned read denial and edit denial. This is a rollback-only local candidate regression, not daily-server HTTP acceptance. Sixteen focused authority/source checks also pass. Demo readiness additions remain pending execution against the updated target. Daily server unchanged; contract6 remains at review690.
+
+Publication preparation: P1 source/regression commit ad1eb261f includes the required pre-commit generated evidence refresh. P4 tooling adds a bounded resume_finance mode: it consumes the original blocked receipt, validates both completed actors/reviews and the exact live review statuses, and writes a separate report. Nine authority/resume tests pass. Browser guard now admits only the current contract’s read-only followers list; nineteen containment assertions pass, without replaying any UI writes. Current Gitee main has advanced to8ff4cad7f3eb38152e74ec9222297bd692612c07; synchronize through the governed unpublished-branch entry before publication. Independent review is in progress. No deployed repair claimed.
