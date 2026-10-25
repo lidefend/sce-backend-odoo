@@ -686,6 +686,9 @@ verify.frontend.list_optional_columns.unit: guard.prod.forbid
 	@node --experimental-strip-types scripts/verify/frontend_list_optional_columns_contract_test.ts
 
 verify.frontend.collection_view_semantics.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_native_modifier.py
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_modifier_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-modifier-test.mjs >/dev/null
+	@node /tmp/native-modifier-test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/record_entry_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/record-entry-contract-test.mjs >/dev/null
 	@node /tmp/record-entry-contract-test.mjs
 	@python3 addons/smart_core/tests/test_navigation_entry_target.py

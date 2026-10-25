@@ -72,7 +72,12 @@
     "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
     "docs/ops/iterations/demo_data_gaps_20261026.md",
     "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
-    "addons/smart_construction_core/tests/test_system_permission_accounting.py"
+    "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+    "addons/smart_core/utils/native_modifier.py",
+    "addons/smart_core/tests/test_native_modifier.py",
+    "frontend/apps/web/src/app/modifierEngine.ts",
+    "frontend/apps/web/scripts/native_modifier_test.ts",
+    "make/frontend.mk"
   ],
   "environment": {
     "kind": "runtime",
@@ -80,7 +85,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Implement P0 native-expression total compilation and explicit unsupported verdict; align native truth/field dependency semantics with cross-runtime differential tests, then governed rich notice and conditional fragment contracts before retrying FG15.",
+  "next_exact_step": "Implement bounded context/parent dependency binding and cross-runtime comparison semantics; verify actual contract error-state consumption before rich notice/conditional navigation and FG15 acceptance.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -596,6 +601,126 @@
         "tenth-projection.log"
       ],
       "review": "Independent parser and coverage/docs review passed; final39parser+1ORM rerun after staticlabel restrictions;132projection+23runtime reused because their inputfiles do not import the changed parser, passed original tenth-projection.log. Final L1 tenth-l1-final.log."
+    },
+    "eleventh_kernel": {
+      "identity": "b48aab84631787302af9ae5a4cbe316af8c1ec8d + declared dirty scope",
+      "formal_product_layer": "P0",
+      "layer_target": "smart_core native modifier compiler and generic frontend consumer",
+      "standard_vs_user_specific": "platform mechanism",
+      "why_here": "Native boolean expressions must retain every branch and use consistent truth semantics.",
+      "why_not_elsewhere": "No accounting/model-specific frontend compensation or P1/P2 business rules.",
+      "blast_radius": "All native modifier AST consumers; normalized parser and canonical form/action tests affected.",
+      "P4": "Existing Make test entry extended for compiler/consumer regression cases.",
+      "risk": "high: visibility/readonly conditions; implementation validation only until runtime verification",
+      "validation": {
+        "L0": "passed clean identity and existing run resume",
+        "L1": "required ci.local.iteration",
+        "L2": "required parser, modifier, canonical presenter and assembler/runtime tests",
+        "L3_L4": "Scoped local.dev.test real journal parser ORM regression on registered sc-local-dev/sc_dev_demo, rollback-managed test only; no module upgrade, served candidate switch, fixture rebuild or browser acceptance.",
+        "L5": "independent review required; no publication/freeze claim"
+      },
+      "exclusions": [
+        "rich notice and conditional anchors",
+        "context/parent dependency transport",
+        "accounting workflows",
+        "demo rebuild",
+        "mainline integration/deployment"
+      ],
+      "first_failure": {
+        "layer": "L1",
+        "classification": "product_defect",
+        "log": ".runtime/product-user-gap-closeout-20261026/eleventh-l1.log",
+        "reason": "diff whitespace failure",
+        "recovery": "removed trailing whitespace before rerun"
+      },
+      "l2_initial_failure": {
+        "log": ".runtime/product-user-gap-closeout-20261026/eleventh-l2.log",
+        "classification": "validation_tool_defect",
+        "reason": "canonical action fixture omitted declared blocked dependency; old negative test asserted silent adapter loss",
+        "recovery": "explicit blocked=false fixture; missing-dependency assertion requires ContractGapError, preserving positive behavior tests"
+      },
+      "l2_followup_failure": {
+        "log": ".runtime/product-user-gap-closeout-20261026/eleventh-l2-followup.log",
+        "classification": "validation_tool_defect",
+        "reason": "container negative case expected hidden field for missing dependency",
+        "recovery": "require explicit ContractGapError; retain all policy/static/widget denial assertions"
+      },
+      "l2_third_failure": {
+        "log": ".runtime/product-user-gap-closeout-20261026/eleventh-l2-final.log",
+        "classification": "validation_tool_defect",
+        "reason": "missing project_id negative case still expected empty action bar",
+        "recovery": "requires ContractGapError; retains resolved/empty value and policy denial checks"
+      },
+      "l2_independent_failures": {
+        "logs": [
+          ".runtime/product-user-gap-closeout-20261026/eleventh-presenter.log",
+          ".runtime/product-user-gap-closeout-20261026/eleventh-projection.log"
+        ],
+        "classification": [
+          "validation_tool_defect",
+          "product_defect"
+        ],
+        "recovery": [
+          "Restored adapter-list denial assertion: dependency precheck intentionally blocks before evaluator; renderer still throws explicitly.",
+          "Preserved boolean-only static AST schema; compiler folds constant literals to native bool rather than broadening static consumer contract."
+        ]
+      },
+      "results": {
+        "L1": {
+          "status": "passed",
+          "entry": "make ci.local.iteration",
+          "log": "eleventh-l1-operands.log"
+        },
+        "L2": {
+          "status": "passed",
+          "entry": "make verify.frontend.collection_view_semantics.unit verify.frontend.canonical_form_presenter.unit verify.unified_page_contract.v2.assembler verify.unified_page_contract.v2.runtime",
+          "log": "eleventh-l2-reviewed.log",
+          "counts": {
+            "compiler": 7,
+            "cross_runtime": 61,
+            "native_parser": 39,
+            "assembler": 23,
+            "runtime": 132
+          },
+          "canonical": "all existing assertions plus explicit missing-dependency errors passed",
+          "final_frontend_log": "eleventh-frontend-complete.log"
+        },
+        "frontend_guards": {
+          "status": "passed",
+          "entry": "make verify.frontend.contract_basis.enforce verify.frontend.typecheck.strict",
+          "log": "eleventh-frontend-complete.log"
+        },
+        "ORM": {
+          "status": "passed",
+          "count": 1,
+          "entry": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestSystemPermissionAccounting.test_native_journal_notice_parser_preserves_inline_contract",
+          "log": "eleventh-orm-complete.log",
+          "limits": "real native journal parser regression, no browser/transaction workflow acceptance"
+        },
+        "independent_review": {
+          "status": "passed",
+          "reviewer": "/root/review_quick_closeout",
+          "scope": "final source/test diff including call-rooted attributes and empty composite operands",
+          "limits": "no S0-S2 found; runtime impact pending"
+        }
+      },
+      "status": "source_validation_passed_runtime_acceptance_pending",
+      "remaining": [
+        "comparison coercion and relational encoding",
+        "context/parent binding transport",
+        "actual contract error-state consumption",
+        "rich notices/conditional navigation",
+        "accounting widgets and end-to-end workflows"
+      ],
+      "evidence_reuse": "Earlier unrelated product pages unchanged and not rerun; modifier-dependent runtime pages need verification before candidate deployment; ORM does not replace browser acceptance.",
+      "final_inspection": "Rejected call-rooted attribute paths on both truthy and comparison RHS; cannot emit empty field identity. Added negative compiler cases. Rerun affected compiler/parser/ORM; frontend and assembler code inputs unchanged, reuse their passed checks.",
+      "empty_operand_followup": "Reject empty string inside composite AST while retaining optional absent top-level modifier; differential cases added. Backend product code unchanged after ORM; frontend checks rerun.",
+      "product_commits": [
+        "3ac785fd097f75a0cf0a26e543a26efb05328678",
+        "80971054924137098008850a0e8995d6db53d159"
+      ],
+      "final_identity": "80971054924137098008850a0e8995d6db53d159 + P4 Make/cache pin and documentation only",
+      "generated_diff_review": "Only assembler line counts and frontend production source input digest changed; no product declarations generated differently."
     }
   }
 }

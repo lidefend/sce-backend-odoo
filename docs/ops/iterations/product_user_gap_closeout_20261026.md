@@ -492,3 +492,55 @@ FG15依然未关闭，富组件尚未实现，因此本批不重跑已知会失�
 无模块升级、会计保存/过账、Demo重建、Quick、远端CI、主线合并或日常部署。
 本地受管候选仍870a36bd2；本批仅源码/定向ORM阶段，主线/日常仍bdef29e11。
 累计仍16组原始功能问题局部修复、23组原始Demo缺口未重建；平台研究不会把数量刷成全绿。
+
+
+## 第十一批：原生条件编译完整性与跨端真假语义（2026-10-26）
+
+本批承接内核覆盖研究，P0归属`smart_core`条件编译/装配和通用前端消费者；P4仅扩展现有
+`verify.frontend.collection_view_semantics.unit`测试入口，不新增环境或业务默认值。
+阶段身份为`b48aab84631787302af9ae5a4cbe316af8c1ec8d`加本批声明dirty范围，非冻结交付。
+
+### 已实现
+
+- Python布尔表达式遇到未知分支、动态比较字面或非法语法，整条输出`unsupported`，保留原文，
+  不再过滤分支；domain不完整、未知token/operator同样整体拒绝。支持prefix嵌套与隐式AND，
+  补齐有符号数字比较字面、数字0、属性路径标识。属性路径标识不代表父记录传输已实现。
+- 编译器把静态常量折叠为布尔值，保持原有`static.value`布尔协议；前后端拒绝字符串static。
+- 前端原生AST求值器对不支持表达式、非法结构/operator和缺失字段依赖抛`ContractGapError`；
+  所有布尔分支先求值，再归约，避免短路掩盖契约缺陷。可选modifier未声明仍代表没有该约束。
+- 空数组/空对象的真假采用原生Python口径；后端保留未知为None，不能经NOT或已知分支变成
+  已确定的真/假。动作适配器的既有依赖预检仍可提前拒绝，不宣称每条消费路径都抛错。
+- 装配缓存版本升为`ui-contract-v2-native-modifier-totality-v1`并重新绑定输入摘要。
+
+### 验证与失败保留
+
+日志均在`.runtime/product-user-gap-closeout-20261026/`，原始失败不覆盖：
+
+- `eleventh-l1.log`：首次diff空白失败；去掉空白后L1通过，见`eleventh-l1-operands.log`。
+- `eleventh-l2-reviewed.log`与最终`eleventh-frontend-complete.log`：7项编译器测试、61项跨端检查（Python固定表达式/真实后端求值器/
+  前端求值器，包括嵌套domain、空集合、未知分支、缺依赖和静态常量）、39项原生解析器测试、
+  canonical presenter现有断言及装配23/运行时132项全部通过。
+- 保留`eleventh-l2.log`、`eleventh-l2-followup.log`、`eleventh-l2-final.log`、
+  `eleventh-presenter.log`、`eleventh-projection.log`：发现旧fixture未声明blocked、缺依赖负例
+  仍断言静默隐藏、以及初版错误放宽static协议。补显式输入/异常断言并修复static类型；
+  权限拒绝、正常显隐和动作适配器预检断言保留，没有删除失败或降低门禁。
+- `eleventh-frontend-complete.log`：contract basis与strict typecheck通过。
+- `eleventh-orm-complete.log`：现有`local.dev.test`入口，在注册`sc-local-dev/sc_dev_demo`内以普通会计
+  用户的真实原生日记账视图执行指定回滚管理ORM用例，1项通过，0失败/0错误。
+  只证明inline契约回归，不证明浏览器或会计办理完成。
+- 独立只读复核最终差量通过，无确认S0–S2；严格求值可能暴露旧契约缺口，仍属发布风险。
+
+### 尚未完成与下一步
+
+这批证明限定表达式样本的一致性，不是完整Python/Odoo表达式等价。比较类型转换、关系ID编码、
+like语义、context.get/parent依赖传输仍未完整对齐；未知能力当前显式拒绝，不能计作能力实现。
+下一步先补上下文/父记录的有限声明与依赖运输、比较语义及真实契约消费错误态验证，
+然后补富提示/条件导航与会计专用组件，再验收FG15完整业务链。
+
+未切换本地服务候选（仍为870a36bd2），未升级模块、重建Demo、推送、集成或部署；
+主线/日常开发服务器仍为bdef29e11。FG15未关闭，累计仍为16组局部修复。
+本批是内核源码验证完成，运行影响及批次产品验收待完成；不宣称稳定交付基线或全部能力覆盖。
+P0源码提交`3ac785fd0`、`809710549`；生成报告仅行数及前端输入摘要更新，已检查。
+最后补拒绝函数调用派生空字段与复合AST空字符串操作数；受影响解析器/前端重跑通过。
+ORM最终日志对应未再变化的后端源码；末次前端补丁不影响该ORM输入。
+回退本批源码恢复b48aab846；没有本批业务数据变更需要回退。
