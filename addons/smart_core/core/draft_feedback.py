@@ -28,7 +28,7 @@ PURPOSE = "advisory"
 VISIBILITY_OWNER = native_advisory.DRAFT_FEEDBACK_VISIBILITY_OWNER
 RELATION_PRESENCE = "many2one_presence"
 RELATION_INPUT_TYPES = {RELATION_PRESENCE: "many2one", "many2many_presence": "many2many"}
-SCALAR_INPUT_TYPES = frozenset({"date", "text", "char"})
+SCALAR_INPUT_TYPES = frozenset({"date", "text", "char", "selection", "number_nonzero"})
 SUPPORTED_INPUT_TYPES = SCALAR_INPUT_TYPES | set(RELATION_INPUT_TYPES)
 REQUEST_ID_RE = re.compile(r"[A-Za-z0-9_-]{1,128}\Z")
 SHA256_RE = re.compile(r"[0-9a-f]{64}\Z")
@@ -182,17 +182,25 @@ def reviewed_content_field(model, field):
     dependencies, context_dependencies = field.get_depends(model)
     if context_dependencies or tuple(dependencies) != tuple(names):
         fail("FEEDBACK_SOURCE_INVALID", "feedback_evaluation.binding.inputs")
+    selection_options = {}
     for name, expected_type in expected_types.items():
         dependency = model._fields.get(name)
         actual_type = RELATION_INPUT_TYPES.get(expected_type, expected_type)
-        if (dependency is None or dependency.type != actual_type or dependency.compute
+        allowed_types = {"integer", "float", "monetary"} if expected_type == "number_nonzero" else {actual_type}
+        if (dependency is None or dependency.type not in allowed_types or dependency.compute
                 or dependency.related or dependency.inverse):
             fail("FEEDBACK_SOURCE_INVALID", f"feedback_evaluation.binding.inputs.{name}")
+        if expected_type == "selection":
+            options = [key for key, _label in dependency._description_selection(model.env)]
+            if not options or any(type(key) is not str or not key for key in options) or len(set(options)) != len(options):
+                fail("FEEDBACK_SOURCE_INVALID", f"feedback_evaluation.binding.inputs.{name}")
+            selection_options[name] = options
     return {
         "compute": field.compute,
         "implementation_sha256": _method_source_sha256(method),
         "inputs": [{"field": name, "type": expected_types[name]} for name in names],
-        "review_sha256": _sha256(review),
+        "review_sha256": _sha256({"review": review, "selection_options": selection_options}) if selection_options else _sha256(review),
+        "selection_options": selection_options,
     }
 
 
@@ -362,7 +370,7 @@ def _check_source_authorization(model, field, origin):
         raise DraftFeedbackError("FEEDBACK_SOURCE_FORBIDDEN", "feedback_evaluation.source") from exc
 
 
-def _decoded_inputs(inputs, dependencies, request_id):
+def _decoded_inputs(inputs, dependencies, request_id, selection_options=None):
     expected = {item["field"]: item["type"] for item in dependencies}
     if len(inputs) != len(expected):
         fail("FEEDBACK_INPUT_INVALID", "feedback_evaluation.inputs", request_id)
@@ -387,6 +395,11 @@ def _decoded_inputs(inputs, dependencies, request_id):
             fail("FEEDBACK_INPUT_INVALID", path + ".value", request_id)
         if expected[name] in RELATION_INPUT_TYPES and type(value) is not bool:
             fail("FEEDBACK_INPUT_INVALID", path + ".value", request_id)
+        if expected[name] == "number_nonzero" and type(value) is not bool:
+            fail("FEEDBACK_INPUT_INVALID", path + ".value", request_id)
+        if expected[name] == "selection" and value is not False:
+            if type(value) is not str or value not in (selection_options or {}).get(name, ()):
+                fail("FEEDBACK_INPUT_INVALID", path + ".value", request_id)
         values[name] = value
     if set(values) != set(expected):
         fail("FEEDBACK_INPUT_INVALID", "feedback_evaluation.inputs", request_id)
@@ -421,6 +434,10 @@ def _evaluate_native(model, field, review, values, condition, request_id):
                 native_values[name] = model.env[dependency.comodel_name].new({}) if value else False
             elif expected == "date":
                 native_values[name] = date.fromisoformat(value) if value is not False else False
+            elif expected == "number_nonzero":
+                # Reviewed computes may inspect truthiness only, never magnitude
+                # or sign. Actual amounts/period numbers never cross this wire.
+                native_values[name] = 1 if value else 0
             else:
                 native_values[name] = value
         draft = model.new(native_values)
@@ -434,9 +451,12 @@ def _evaluate_native(model, field, review, values, condition, request_id):
             elif expected in RELATION_INPUT_TYPES:
                 expected_value = values[name]
                 normalized = bool(actual)
+            elif expected == "number_nonzero":
+                expected_value = values[name]
+                normalized = bool(actual)
             else:
                 expected_value = values[name]
-            if expected not in RELATION_INPUT_TYPES:
+            if expected not in RELATION_INPUT_TYPES and expected != "number_nonzero":
                 normalized = False if actual in (None, False) else actual
             if expected in {"text", "char"}:
                 normalized = normalized or ""
@@ -489,7 +509,7 @@ def evaluate(model, block, *, origin=None):
         }
     if request["binding_etag"] != binding["etag"]:
         fail("FEEDBACK_BINDING_STALE", "feedback_evaluation.binding_etag", request_id)
-    values = _decoded_inputs(request["inputs"], review["inputs"], request_id)
+    values = _decoded_inputs(request["inputs"], review["inputs"], request_id, review["selection_options"])
     result = _evaluate_native(model, field, review, values, binding["condition"], request_id)
     return {
         "version": VERSION,

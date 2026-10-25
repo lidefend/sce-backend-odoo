@@ -31,7 +31,7 @@
       "required": ["field", "type"],
       "properties": {
         "field": {"type": "string", "minLength": 1},
-        "type": {"enum": ["date", "text", "char", "many2one_presence", "many2many_presence"]}
+        "type": {"enum": ["date", "text", "char", "many2one_presence", "many2many_presence", "selection", "number_nonzero"]}
       }
     },
     "InputMissing": {

@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 202,
+    "odoo_tags": 203,
     "gated": 5,
-    "on_demand": 50,
+    "on_demand": 51,
     "unwired": 147,
-    "odoo_tag_declarations": 421,
+    "odoo_tag_declarations": 422,
     "gated_declarations": 97,
-    "uncovered_declarations": 324,
+    "uncovered_declarations": 325,
     "ci_unit_scripts": 17,
     "ci_unit_scripts_wired": 17,
     "ci_unit_scripts_unwired": 0
@@ -748,8 +748,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.company_project_refund.feedback.orm :: company_project_refund_feedback_orm",
-        "make:verify.local.dev.cost.feedback.orm :: cost_processing_feedback,workspace_processing_feedback,company_project_refund_fe",
-        "make:verify.local.dev.workspace.feedback.orm :: workspace_processing_feedback,company_project_refund_feedback_orm"
+        "make:verify.local.dev.conditioned.feedback.orm :: conditioned_processing_feedback,cost_processing_feedback,workspace_processing_fe",
+        "make:verify.local.dev.cost.feedback.orm :: cost_processing_feedback,workspace_processing_feedback,company_project_refund_fe"
       ],
       "disposition": "class-selected"
     },
@@ -778,6 +778,19 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "conditioned_processing_feedback",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_conditioned_processing_feedback.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.local.dev.conditioned.feedback.orm :: conditioned_processing_feedback,cost_processing_feedback,workspace_processing_fe"
+      ]
     },
     {
       "group": "contract_assembly_determinism",
@@ -874,6 +887,7 @@
       ],
       "owner": "construction-product",
       "evidence": [
+        "make:verify.local.dev.conditioned.feedback.orm :: conditioned_processing_feedback,cost_processing_feedback,workspace_processing_fe",
         "make:verify.local.dev.cost.feedback.orm :: cost_processing_feedback,workspace_processing_feedback,company_project_refund_fe"
       ]
     },
@@ -2710,6 +2724,7 @@
       ],
       "owner": "construction-product",
       "evidence": [
+        "make:verify.local.dev.conditioned.feedback.orm :: conditioned_processing_feedback,cost_processing_feedback,workspace_processing_fe",
         "make:verify.local.dev.cost.feedback.orm :: cost_processing_feedback,workspace_processing_feedback,company_project_refund_fe",
         "make:verify.local.dev.workspace.feedback.orm :: workspace_processing_feedback,company_project_refund_feedback_orm"
       ]

@@ -155,6 +155,16 @@ export function useDraftFeedbackEvaluation(options: {
   const dependencyInputs = (binding: FeedbackBinding): FeedbackInput[] => binding.dependencies.map((dependency) => {
     if (!options.presence.value.has(dependency.field)) return { field: dependency.field, present: false };
     const raw = options.formData[dependency.field];
+    if (dependency.type === 'number_nonzero') {
+      if (raw === false || raw === null || raw === '') return { field: dependency.field, present: true, value: false };
+      if (typeof raw !== 'number' || !Number.isFinite(raw)) return { field: dependency.field, present: false };
+      return { field: dependency.field, present: true, value: raw !== 0 };
+    }
+    if (dependency.type === 'selection') {
+      if (raw === false || raw === null || raw === '') return { field: dependency.field, present: true, value: false };
+      if (typeof raw !== 'string') return { field: dependency.field, present: false };
+      return { field: dependency.field, present: true, value: raw };
+    }
     if (dependency.type === 'many2one_presence') {
       return { field: dependency.field, present: true, value: relationPresent(raw) };
     }

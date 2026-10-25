@@ -377,9 +377,86 @@ async function checkRelationPresenceDoesNotLeakIdentity(many = false) {
   scope.stop();
 }
 
+
+async function checkConditionalInputProjection() {
+  const typedBinding = {...binding, dependencies: [
+    {field: 'amount', type: 'number_nonzero'}, {field: 'kind', type: 'selection'},
+  ]};
+  const store = ref({snapshot: {
+    ...snapshot(), meta: {lifecycle: {integrity: {contractSha256: 'conditional'}}},
+  }}) as any;
+  const formData = {amount: 54321.75 as any, kind: 'salary_registration' as any};
+  const presence = ref(new Set(['amount', 'kind']));
+  const evaluations: any[] = [];
+  const scope = effectScope();
+  const runtime = scope.run(() => useDraftFeedbackEvaluation({
+    store, model: () => 'demo.feedback', recordId: () => null, formData, presence,
+    contextIdentity: () => 'user|company', context: () => ({}), active: () => true,
+    transport: (async (params: any) => {
+      const request = params.feedback_evaluation;
+      if (request.operation === 'describe') return {feedback_evaluation: {
+        version: FEEDBACK_EVALUATION_VERSION, request_id: request.request_id,
+        status: 'described', binding: typedBinding,
+      }};
+      evaluations.push(structuredClone(request));
+      return {feedback_evaluation: {
+        version: FEEDBACK_EVALUATION_VERSION, request_id: request.request_id,
+        status: 'ready', binding_etag: request.binding_etag,
+        container_id: request.container_id, result: {content: '', visible: false},
+      }};
+    }) as any,
+  }))!;
+  try {
+    await sleep(330);
+    assert.equal(evaluations.length, 1);
+    assert.deepEqual(evaluations[0].inputs, [
+      {field: 'amount', present: true, value: true},
+      {field: 'kind', present: true, value: 'salary_registration'},
+    ]);
+    assert.doesNotMatch(JSON.stringify(evaluations[0]), /54321/);
+    for (const [raw, expected] of [[0, false], [-17.25, true], [null, false], ['', false]]) {
+      const before = evaluations.length;
+      formData.amount = raw;
+      runtime.onDraftChanged('amount');
+      await sleep(330);
+      assert.equal(evaluations.length, before + 1);
+      assert.equal(evaluations.at(-1).inputs[0].value, expected);
+    }
+    for (const invalid of [NaN, Infinity, '1000', true, undefined]) {
+      const before = evaluations.length;
+      formData.amount = invalid;
+      runtime.onDraftChanged('amount');
+      await sleep(330);
+      assert.equal(evaluations.length, before);
+      assert.equal(runtime.states.value.get('feedback')?.status, 'unavailable');
+    }
+    formData.amount = 0;
+    for (const [raw, expected] of [['provident_fund_registration', 'provident_fund_registration'],
+                                  [false, false], [null, false], ['', false]]) {
+      const before = evaluations.length;
+      formData.kind = raw;
+      runtime.onDraftChanged('kind');
+      await sleep(330);
+      assert.equal(evaluations.length, before + 1);
+      assert.equal(evaluations.at(-1).inputs[1].value, expected);
+    }
+    for (const invalid of [true, 1, {}, undefined]) {
+      const before = evaluations.length;
+      formData.kind = invalid;
+      runtime.onDraftChanged('kind');
+      await sleep(330);
+      assert.equal(evaluations.length, before);
+      assert.equal(runtime.states.value.get('feedback')?.status, 'unavailable');
+    }
+  } finally {
+    scope.stop();
+  }
+}
+
 checkDecoder();
 checkAtomicPresentation();
 await checkStaleEvaluationIsDropped();
 await checkRelationPresenceDoesNotLeakIdentity();
 await checkRelationPresenceDoesNotLeakIdentity(true);
+await checkConditionalInputProjection();
 console.log('feedback_evaluation_protocol_test: PASS');

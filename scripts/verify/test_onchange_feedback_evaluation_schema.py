@@ -146,7 +146,7 @@ def main():
             },
         },
     ]
-    for kind in ("char", "many2many_presence"):
+    for kind in ("char", "many2many_presence", "selection", "number_nonzero"):
         accepted = {**valid[5], "binding": {**RELATION_BINDING,
             "dependencies": [{"field": "value", "type": kind}]}}
         assert not list(validator.iter_errors(accepted)), kind
