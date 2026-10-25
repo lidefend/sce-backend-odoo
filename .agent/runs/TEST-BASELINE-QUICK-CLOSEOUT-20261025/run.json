@@ -35,7 +35,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Run one exact-head Quick after this commit; obtain independent review before governed publication, then require new-head remote CI and explicit GitHub merge authorization.",
+  "next_exact_step": "Freeze corrected dependency scopes; reconcile independent review identity, obtain new exact-head Quick, archive, publish through Make, verify new remote CI, then protected squash merge PR734.",
   "observations": {
     "boundary": "P4 standard verification tooling; no P0-P3 semantics. Existing worktree clean at takeover; no preexisting changes.",
     "validation_plan": "L0 identity checked; L1/L2 focused probe and Quick regression tests then ci.local.iteration. L3/L4 not applicable: offline tooling only. L5 pending convergence.",
@@ -51,10 +51,12 @@
       "lane_coverage": "passed after wiring existing orphan test to existing target; original failure retained in lane-coverage.log",
       "freeze_prepare": "passed: .runtime/test-baseline-closeout/freeze-prepare.log; only generated complexity line-count update",
       "quick_governance": "passed: 63 Quick regression + 23 branch governance tests; .runtime/test-baseline-closeout/quick-governance.log",
-      "registries_final": "passed: 24 guard + 18 coverage tests and both audits after final Make wiring; .runtime/test-baseline-closeout/registries-final.log"
+      "registries_final": "passed: 24 guard + 18 coverage tests and both audits after final Make wiring; .runtime/test-baseline-closeout/registries-final.log",
+      "s1_fix": "passed: 12 input scope + 4 helper + 14 execution tests; .runtime/test-baseline-closeout/review-s1-fix.log"
     },
-    "impact_analysis": "Probe tests rerun after zero-count rejection. Planner tests derive reusable/affected units from committed manifest + declared directory/file blob sets + execution identity. Quick execution tests rerun after binding ledger to actual planned execution list. No browser or database inputs changed.",
-    "independent_review": "not_run; required before publication/merge, not claimed by author self-review",
-    "remote": "PR734 required checks passed for adf37ca0f only; current dirty delta not published. PR732 remains separately conflicting."
+    "impact_analysis": "Probe tests rerun after zero-count rejection. Planner tests derive reusable/affected units from committed manifest + declared directory/file blob sets + execution identity. Quick execution tests rerun after binding ledger to actual planned execution list. No browser or database inputs changed. Review S1 changes only committed dependency declaration and its tests. Probe implementation/Make/legacy Quick execution code unchanged; prior focused results reused for those inputs. Final Quick must bind new frozen candidate; source fdc2538b1 receipt remains historical.",
+    "independent_review": "Original fdc2538b1 S1 dependency omission fixed; independent narrow delta review finds no new S0-S2 and confirms closure. Frozen SHA identity reconciliation pending.",
+    "remote": "PR734 required checks passed for adf37ca0f only; current dirty delta not published. PR732 remains separately conflicting.",
+    "authorization": "Owner directed executor to decide review/merge details and deliver final result; independent review and squash merge after current gates authorized."
   }
 }

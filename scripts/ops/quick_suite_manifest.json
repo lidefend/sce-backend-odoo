@@ -13,7 +13,9 @@
         "make/",
         "scripts/",
         "frontend/apps/web/scripts/",
-        "docs/engineering_convergence/test_inventory.csv"
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json"
       ]
     },
     {
@@ -27,7 +29,9 @@
         "make/",
         "scripts/",
         "frontend/apps/web/scripts/",
-        "docs/engineering_convergence/test_inventory.csv"
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json"
       ]
     }
   ]

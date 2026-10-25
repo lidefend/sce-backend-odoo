@@ -58,7 +58,8 @@ def committed_fingerprints(root: Path, head: str, rows: list[str]) -> dict[str, 
             selected.update(matches)
         # Mandatory authority cannot be removed by narrowing a declaration.
         for path in ("Makefile", "make/", "scripts/", "frontend/apps/web/scripts/",
-                     "docs/engineering_convergence/test_inventory.csv"):
+                     "docs/engineering_convergence/test_inventory.csv",
+                     ".github/workflows/", "frontend/apps/web/package.json"):
             if path not in inputs:
                 raise ValueError(f"suite missing execution authority: {path}")
         result[name] = hashlib.sha256(json.dumps(

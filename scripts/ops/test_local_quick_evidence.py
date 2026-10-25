@@ -59,6 +59,8 @@ class IncrementalEvidenceTests(unittest.TestCase):
         declaration = json.loads((ROOT / 'scripts/ops/quick_suite_manifest.json').read_text())
         self.fixture.commit_change('scripts/ops/quick_suite_manifest.json', json.dumps(declaration))
         self.fixture.commit_change('frontend/apps/web/scripts/check.js', 'fixture')
+        self.fixture.commit_change('frontend/apps/web/package.json', '{}')
+        self.fixture.commit_change('.github/workflows/check.yml', 'fixture')
         self.fixture.commit_change('docs/engineering_convergence/test_inventory.csv', 'fixture')
         source = self.fixture.commit_change('make/ci.mk', 'ci.local.quick.run: ' + ' '.join(manifest) + '\n\t@git diff --check\n')
         with mock.patch.object(evidence, 'is_linked_worktree', return_value=False):

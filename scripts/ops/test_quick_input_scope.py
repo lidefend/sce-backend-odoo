@@ -23,6 +23,7 @@ class CommittedSuiteTest(unittest.TestCase):
         self.git("config", "user.name", "Test")
         self.manifest = json.loads((scope.ROOT / suites.MANIFEST).read_text())
         for name in ("Makefile", "make/check.mk", "scripts/probe.py",
+                     ".github/workflows/check.yml", "frontend/apps/web/package.json",
                      "frontend/apps/web/scripts/check.js",
                      "docs/engineering_convergence/test_inventory.csv"):
             self.write(name, "initial")
@@ -65,6 +66,19 @@ class CommittedSuiteTest(unittest.TestCase):
         before = self.units(self.base)
         self.write("scripts/probe.py", "dirty")
         self.assertEqual(before, self.units(self.base))
+
+    def test_workflow_and_package_inputs_invalidate_both_probes(self):
+        targets = sorted(suites.REVIEWED_SUITES)
+        source = scope.execution_units(self.root, self.base, targets)
+        for path in (".github/workflows/check.yml", "frontend/apps/web/package.json"):
+            with self.subTest(path=path):
+                self.write(path, "changed anchor authority")
+                current = scope.execution_units(self.root, self.commit(), targets)
+                plan = scope.plan_execution(current, source)
+                self.assertEqual([], plan["reusable"])
+                self.assertEqual(targets, plan["affected"])
+                self.write(path, "initial")
+                self.commit()
 
     def test_unsafe_or_incomplete_declarations_fail_closed(self):
         for path in ("../outside", "/outside", "missing"):
