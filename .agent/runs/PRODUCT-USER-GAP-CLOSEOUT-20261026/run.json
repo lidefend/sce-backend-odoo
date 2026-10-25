@@ -58,7 +58,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Commit P4 observer then serve exact local candidate; run four fixed actors usability read-only and inspect config screenshots.",
+  "next_exact_step": "Diagnose FG17 create capability/entry consistency; design explicit mixed native notices for FG15. Retain five unresolved function groups and demo-data rebuild as separate scope.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -384,6 +384,22 @@
       "home": "full ready contains 已升级/已认领; other three empty with user copy; 0 errors/blocked",
       "config": "390 title readable and actions below, desktop horizontal; screenshots taken while scanLoading. Add wait for enabled 选择业务页面 and rerun full actor only. Three ordinary-role reports remain valid; product inputs unchanged.",
       "artifact": ".runtime/product-user-gap-closeout-20261026/usability-browser/b606eef05324de68c32556c446e38af92a919608"
+    },
+    "fifth_final": {
+      "status": "passed_scoped_local_product_review",
+      "candidate": "3894dda3586abc3167a364d4ac487d7dc3a0575f",
+      "tests": "ORM3; header75/28/4 plus mounted34; vendor guard7; style/type/basis/L1 passed",
+      "browser": "final demo_full home + 390/1440 config 3cases; three ordinary-role home cases reused from b606eef05324de68c32556c446e38af92a919608. All zero errors/blocked. Config selection ready, manual screenshot inspection passed; remaining capability async load not accepted.",
+      "reuse": "Only observer config readiness and records changed from b606 to3894; P0/P1 and ordinary-role observer/environment unchanged. L2 remains valid.",
+      "artifacts": [
+        ".runtime/product-user-gap-closeout-20261026/fifth-orm.log",
+        ".runtime/product-user-gap-closeout-20261026/fifth-frontend-03.log",
+        ".runtime/product-user-gap-closeout-20261026/fifth-observer-final.log",
+        ".runtime/product-user-gap-closeout-20261026/fifth-final-browser.log",
+        ".runtime/product-user-gap-closeout-20261026/usability-browser/3894dda3586abc3167a364d4ac487d7dc3a0575f/demo_full-report.json"
+      ],
+      "independent_review": "review_quick_closeout: no S0-S2; P4 revised observer accepted; sample requirements met; header screenshots manually reviewed",
+      "remaining": "FG05/08/09/15/17 unresolved; 9 business entry groups need chains; 23 demo gaps not rebuilt; no mainline/deployment/full acceptance"
     }
   }
 }
