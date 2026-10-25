@@ -279,6 +279,11 @@ test.coverage.registry.seed: guard.prod.forbid
 	@python3 scripts/verify/test_coverage_registry_audit.py --seed
 	@$(MAKE) --no-print-directory verify.test.coverage.registry
 
+.PHONY: verify.test.determinism
+verify.test.determinism: guard.prod.forbid
+	@python3 scripts/verify/determinism_probe.py --runs 3 -- python3 scripts/ci/generate_test_inventory.py --check
+	@python3 scripts/verify/determinism_probe.py --runs 3 -- python3 -m unittest scripts.verify.test_determinism_probe scripts.verify.test_guard_registry_audit
+
 # ------- G1 acceptance baseline (custom-frontend-integration) -------
 .PHONY: verify.g1.acceptance.baseline
 verify.g1.acceptance.baseline: guard.prod.forbid
