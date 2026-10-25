@@ -137,6 +137,16 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/architecture/boundary_guardrails.md。登记待接线或退役，B3 按族处理。"
     },
+    "audit.daily.demo.business_readiness": {
+      "disposition": "demo_runbook",
+      "owner": "construction-product",
+      "reason": "Read-only observation of declared daily Demo business readiness; requires the exact deployed SHA and existing duty. Operator acceptance entry, not an unattended CI gate."
+    },
+    "audit.daily.demo.data_inventory": {
+      "disposition": "demo_runbook",
+      "owner": "construction-product",
+      "reason": "Read-only daily Demo model-data inventory for product acceptance backlog; requires exact deployed SHA and existing duty. No fixture creation."
+    },
     "audit.frontend.industry_agnostic": {
       "disposition": "candidate",
       "owner": "platform-team",
@@ -316,6 +326,21 @@
       "disposition": "release_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/daily_candidate_data_sentinel_runbook_v1.md。登记待接线或退役，B3 按族处理。"
+    },
+    "daily.demo.contract.api_acceptance": {
+      "disposition": "demo_runbook",
+      "owner": "construction-product",
+      "reason": "Operator-authorized real HTTP contract approval on the exact retained demo record, guarded by recovery and checkpoint/no-replay checks. Must never run as an unattended CI dependency."
+    },
+    "daily.demo.contract.write_acceptance": {
+      "disposition": "demo_runbook",
+      "owner": "construction-product",
+      "reason": "Operator-authorized bounded demo contract ORM lifecycle with recovery, UUID and record identity gates. Historical ORM evidence is distinct from API acceptance; never unattended CI."
+    },
+    "daily.demo.filestore.preserve": {
+      "disposition": "demo_runbook",
+      "owner": "construction-product",
+      "reason": "Operator-authorized reversible preservation of unreferenced demo filestore objects, with exact manifest and identity checks; must not execute as unattended CI."
     },
     "daily.personnel_views": {
       "disposition": "ops_runbook",
@@ -1596,6 +1621,11 @@
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/product/formal_field_stabilization_plan_v1.md。登记待接线或退役，B3 按族处理。"
+    },
+    "verify.daily.demo.contract.ui": {
+      "disposition": "demo_runbook",
+      "owner": "construction-product",
+      "reason": "Operator-triggered current-record browser acceptance; write modes require recovery and explicit scope, readonly mode is observation. Must not run automatically against shared demo data."
     },
     "verify.daily.duty.database_registration": {
       "disposition": "local_diagnostic",
@@ -3922,6 +3952,13 @@
       ],
       "owner": "platform-team",
       "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
+    },
+    "daily.demo.write.recovery_gate": {
+      "missing_asset": [
+        "scripts/ops/daily_candidate_data_continuity_contract_v1.js"
+      ],
+      "owner": "platform-team",
+      "reason": "Static asset matcher truncates the .json suffix to .js in the quoted remote recipe. The actual recipe reads the .json contract under the exact immutable /opt/sce/deployment-tools/<SHA> root, verified by the existing recovery receipt. No missing local executable is suppressed; re-review if the recovery recipe changes."
     }
   },
   "review_policy": {

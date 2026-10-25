@@ -47,7 +47,10 @@
     "scripts/ci/secret_scan.py",
     "scripts/ci/test_secret_scan.py",
     "scripts/ci/trusted_scan_scope.py",
-    "config/security/secret_scan_false_positives.v1.json"
+    "config/security/secret_scan_false_positives.v1.json",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -79,14 +82,14 @@
     "9 observed business models lack rows; complete scenario coverage pending.",
     "Cross-company negative writes and remaining delivery gates not yet executed."
   ],
-  "next_exact_step": "沿已验证GitHub origin/main=6d6fecbd基线冻结候选并独立复核，完成精确HEAD Quick后经make pr.push/pr.create发布；必需远端检查和受保护合并后受管更新日常demo，从财务级恢复HTTP验收。Gitee镜像落后28提交，不使用该通道。",
+  "next_exact_step": "Complete affected P4 registry and remaining architecture checks, freeze reviewed candidate and exact-head Quick; publish via GitHub governed lane, then validate candidate on existing daily Demo with required module upgrade and resume finance API tier.",
   "observations": {
     "result_index": ".runtime/final-acceptance/user-delivery-baseline/execution.json",
     "identity_correction": "Demo duty forbids isolated fixture accounts and allows preview. Reuse demo_full login/home evidence; no account reset or edition change.",
     "L1": "ci.local.iteration passed",
     "L2": "11 inventory policy tests passed; original log .runtime/final-acceptance/user-delivery-baseline/inventory-policy-unit.log. agent.run.record refused because no pre-run begin receipt existed; no local dependency receipt claimed and no test rerun merely for bookkeeping.",
     "runtime": "Menu panel read/reload passed after exact catalog read policy correction; project budget 6 list rows, 8 record checks, 108 assertions, 5 negative fixtures detected, zero runtime errors. Original role-home evidence reused.",
-    "delivery": "No commit/push/deployment. Reversible demo filestore preservation, paired backup and isolated restore completed; two new demo business contracts retained (signed/cancel), no changes to existing seed records.",
+    "delivery": "P1/P4 committed locally; no push, merge or deployment yet. Preserve recovery artifacts and business mutation checkpoints.",
     "full_acceptance": "15 backend contract write/approval/rejection/cancellation steps passed with non-sudo actors; UI and remaining whole-product gates pending.",
     "matrix_partial": "32/90 observed:11 empty,20 record readbacks,1 no record; graceful interrupt after user questioned data readiness. Negative-role stage not reached. Partial ledger quarantined as unaccepted; summary preserved for exact-bound resume.",
     "demo_backlog": ".runtime/final-acceptance/user-delivery-baseline/demo-data-backlog.json",
@@ -110,6 +113,8 @@
     "resume_tool": "9 API authority/resume tests and 19 browser containment assertions passed. Finance resume verifies exact prior checkpoint plus live688/689 approved,690 pending,691 waiting; refuses uncertain prior mutations or replay.",
     "independent_review": "Pre-freeze independent review found no confirmed S0-S2 findings; exact frozen identity reconciliation pending.",
     "quick_blocker": "Frozen bdd398808 Quick failed on an exact synthetic embedded-credential URL negative fixture, current and immutable history blob86409737bdb355bab1047e961958645c518c3f81. No real credential; P4 exact rule/path/blob/fingerprint false-positive declaration required. Prior Quick is failed, not reused as passing.",
-    "scan_false_positive_validation": "20 secret scanner tests and37 trusted-scope tests passed. Independent S2 finding on invalid-UTF8 normalization fixed by single raw byte read; full main-path regression passes. Reviewer confirms S2 closed with no new S0-S2 findings. Product source unchanged."
+    "scan_false_positive_validation": "20 secret scanner tests and37 trusted-scope tests passed. Independent S2 finding on invalid-UTF8 normalization fixed by single raw byte read; full main-path regression passes. Reviewer confirms S2 closed with no new S0-S2 findings. Product source unchanged.",
+    "quick_wiring_recovery": "bad6c1a4 Quick failed at guard registry after scans/build passed. Explicit Python script path plus repository PYTHONPATH passes 24 registry tests and audit. Remaining cheap architecture preflight found missing finance ORM tag selection; register named wrapper to existing local.dev.test and on-demand coverage. Existing five ORM results reused: module/test/config/runtime inputs unchanged.",
+    "registration_validation": "24 guard registry tests/audit passed; 18 test coverage registry tests/audit passed; 73 lane coverage tests/audit passed; remaining architecture suite including405 Node syntax checks passed; freeze.prepare passed. Independent dirty-delta review found no S0-S2; exact frozen reconciliation pending. New baseline allowance is limited to six reviewed operator-only Demo entry identities."
   }
 }

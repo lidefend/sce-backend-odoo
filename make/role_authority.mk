@@ -3,11 +3,15 @@
 verify.general_contract.review_authority.unit:
 	@python3 -m unittest scripts.verify.test_general_contract_review_authority
 
+.PHONY: verify.local.dev.general_contract.finance_review.orm
+verify.local.dev.general_contract.finance_review.orm:
+	@$(MAKE) local.dev.test MODULE=smart_construction_core TEST_TAGS=general_contract_finance_review
+
 .PHONY: verify.daily.demo.contract.api.unit daily.demo.contract.api_acceptance
-verify.daily.demo.contract.api.unit:
+verify.daily.demo.contract.api.unit: verify.general_contract.review_authority.unit
 	@python3 -m unittest scripts.verify.test_daily_demo_contract_api_acceptance
 daily.demo.contract.api_acceptance: verify.daily.demo.contract.api.unit daily.demo.write.recovery_gate
-	@SC_DEMO_CONTRACT_KEY=$(SC_DEMO_CONTRACT_KEY) SC_DEMO_CONTRACT_RECORD_ID=$(SC_DEMO_CONTRACT_RECORD_ID) python3 -m scripts.verify.daily_demo_contract_api_acceptance
+	@SC_DEMO_CONTRACT_KEY=$(SC_DEMO_CONTRACT_KEY) SC_DEMO_CONTRACT_RECORD_ID=$(SC_DEMO_CONTRACT_RECORD_ID) PYTHONPATH="$(CURDIR)$${PYTHONPATH:+:$$PYTHONPATH}" python3 scripts/verify/daily_demo_contract_api_acceptance.py
 
 .PHONY: verify.daily.demo.contract.ui
 verify.daily.demo.contract.ui: guard.prod.forbid $(if $(filter execute resume,$(SC_DEMO_UI_MODE)),daily.demo.write.recovery_gate,)
