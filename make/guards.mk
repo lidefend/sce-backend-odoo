@@ -286,6 +286,7 @@ verify.test.determinism: guard.prod.forbid
 
 .PHONY: verify.test.isolation
 verify.test.isolation: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_isolation_probe
 	@python3 -m scripts.verify.isolation_probe scripts.verify.test_determinism_probe scripts.verify.test_guard_registry_audit scripts.verify.test_test_coverage_registry_audit
 
 # ------- G1 acceptance baseline (custom-frontend-integration) -------
