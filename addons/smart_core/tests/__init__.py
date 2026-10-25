@@ -58,3 +58,4 @@ from . import test_dictionary_scope_delivery
 from . import test_platform_database_governance_orm
 from . import test_tenant_payload_operator_lifecycle
 from . import test_platform_maintenance_access_http
+from . import test_lowcode_config_contract_write_authority

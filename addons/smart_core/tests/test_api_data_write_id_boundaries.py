@@ -228,12 +228,14 @@ class TestApiDataWriteIdBoundaries(unittest.TestCase):
                 _FakePolicy("res.partner", "x_safe_note"),
                 _FakePolicy("res.partner", "x_not_manual"),
                 _FakePolicy("res.partner", "x_many_tags"),
+                _FakePolicy("res.partner", "x_locked_note"),
                 _FakePolicy("res.partner", "phone"),
             ],
             fields=[
                 _FakeField("res.partner", "x_safe_note"),
                 _FakeField("res.partner", "x_not_manual", state="base"),
                 _FakeField("res.partner", "x_many_tags", ttype="many2many"),
+                _FakeField("res.partner", "x_locked_note", readonly=True),
                 _FakeField("res.partner", "phone"),
             ],
         )
@@ -241,6 +243,9 @@ class TestApiDataWriteIdBoundaries(unittest.TestCase):
 
         allowed = handler._allowed_models()
 
+        # A readonly custom field must not enter the write allowlist: the same
+        # ``readonly`` authority that the contract projects also excludes the
+        # field from the platform write proxy.
         self.assertEqual(allowed["res.partner"], {"name", "x_safe_note"})
 
     def test_custom_field_policy_search_is_scoped_to_active_company(self):
