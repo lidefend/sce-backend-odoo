@@ -106,6 +106,9 @@ try {
       await page.goto(base + node.meta.route, {waitUntil: 'domcontentloaded'});
       const header = page.locator('.business-config-context .product-page-header');
       await header.waitFor({state: 'visible', timeout: 45000});
+      const choosePage = page.getByRole('button', {name: '选择业务页面', exact: true}).first();
+      await choosePage.waitFor({state: 'visible', timeout: 45000});
+      assert(await choosePage.isEnabled(), 'page selection unavailable after loading');
       for (const width of [390, 1440]) {
         await page.setViewportSize({width, height: width === 390 ? 844 : 960});
         const layout = await header.evaluate(el => ({

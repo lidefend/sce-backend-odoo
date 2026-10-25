@@ -376,6 +376,14 @@
       "artifact": ".runtime/product-user-gap-closeout-20261026/fifth-frontend-03.log",
       "coverage": "75 header guard tests, 28 model cases, 4 adapter entries; mounted header 34 checks; style/type/basis passed",
       "reuse": "Commit identity changes do not alter tested product inputs. Subsequent observer sample assertions affect browser only; syntax checked."
+    },
+    "fifth_first_browser": {
+      "head": "b606eef05324de68c32556c446e38af92a919608",
+      "status": "passed_home_config_initial_layout_only",
+      "actors": 4,
+      "home": "full ready contains 已升级/已认领; other three empty with user copy; 0 errors/blocked",
+      "config": "390 title readable and actions below, desktop horizontal; screenshots taken while scanLoading. Add wait for enabled 选择业务页面 and rerun full actor only. Three ordinary-role reports remain valid; product inputs unchanged.",
+      "artifact": ".runtime/product-user-gap-closeout-20261026/usability-browser/b606eef05324de68c32556c446e38af92a919608"
     }
   }
 }
