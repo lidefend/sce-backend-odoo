@@ -439,7 +439,7 @@ jobs:
                   CANDIDATE_ROLE_XMLID="smart_construction_demo.user_demo_role_finance" \
                   CANDIDATE_ACTION_XMLID="smart_construction_core.action_payment_request_pay" \
                   ENV_FILE="${attempt_env_file:-${ENV_FILE}}" DB_NAME="${attempt_db}" \
-                  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/backend_contract_fact_readback_probe.py 2>/dev/null \
+                  make daily.runtime.contract_fact.readback 2>/dev/null \
                   | grep '^BACKEND_CONTRACT_FACT_READBACK=' | tail -1)"; then
                 witness_json="${witness_line#BACKEND_CONTRACT_FACT_READBACK=}"
                 if printf '%s' "${witness_json}" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("schema")=="backend-contract-fact-readback/v1" and d.get("source_head")==sys.argv[1], "witness identity mismatch"' "${HEAD_SHA}"; then

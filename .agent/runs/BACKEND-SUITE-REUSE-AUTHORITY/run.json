@@ -22,6 +22,7 @@
     "scripts/verify/backend_contract_fact_readback_probe.py",
     "scripts/verify/test_backend_contract_fact_readback_probe.py",
     "scripts/ops/odoo_shell_exec.sh",
+    "make/runtime_ops.mk",
     ".github/workflows/backend_test_suite.yml",
     ".github/workflows/professional_quality_gate.yml"
   ],
