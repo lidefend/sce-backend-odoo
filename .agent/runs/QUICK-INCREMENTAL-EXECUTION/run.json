@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "QUICK-INCREMENTAL-EXECUTION",
   "branch": "fix/quick-incremental-execution",
-  "baseline_sha": "1d58ebf228b786e62752d5341a63de1126e8cfe0",
+  "baseline_sha": "0efb7533120580fe180bc20ee6f952332cea1bf3",
   "status": "verification_pending",
   "goal": ".agent/goals/QUICK-INCREMENTAL-EXECUTION.yaml",
   "record": "docs/ops/iterations/quick_incremental_execution.md",
@@ -33,7 +33,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Normalize squash dependency PR #729 via governed sync-main, verify patch identity, refreeze and bind final review/Quick before publication.",
+  "next_exact_step": "Freeze normalized candidate, obtain exact-head Quick and final identity review, archive evidence and publish through make pr.push.",
   "observations": {
     "candidate": "1d58ebf228b786e62752d5341a63de1126e8cfe0 plus declared dirty scope",
     "L1": "ci.local.iteration passed; iteration.log",
@@ -41,6 +41,7 @@
     "scope_limit": "Only verify.quick.evidence.unit and verify.quick.input_scope.unit have complete reviewed scopes; unknown targets always execute. No blanket 128-target reuse claim.",
     "generated_evidence": "Governed freeze preparation refreshed complexity and test inventory; inventory row IDs shift deterministically due to one added test file.",
     "external_state": "No push, PR, merge, deployment or database write in this continuation.",
-    "independent_review": "31f840e3a: no S0-S2 findings; evidence .runtime/quick-incremental-execution/independent-review-31f840e3a.md"
+    "independent_review": "31f840e3a: no S0-S2 findings; evidence .runtime/quick-incremental-execution/independent-review-31f840e3a.md",
+    "normalization": "Governed sync-main with merged dependency PR #729 passed; source tree identical before/after replay. Old source and recovery bundle retained."
   }
 }

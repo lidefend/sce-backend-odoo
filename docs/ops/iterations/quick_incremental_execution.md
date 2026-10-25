@@ -29,3 +29,9 @@ L1 ci.local.iteration passed. Initial scoped tests: 6 input-scope + 12 receipt t
 - Governed generated test inventory adds one file; subsequent stable sequential row IDs shift. No manual inventory edits.
 
 Implementation and scoped tests complete; exact-head Quick and independent review remain final gates. No external publication or product deployment has occurred.
+
+## Independent review and squash-history normalization
+
+Candidate 31f840e3aadc4ecb681df6730916976fb6d2789d passed full Quick and independent read-only review with no S0–S2 findings. Publication preflight found the prior squash history left a conflict in the run index. A new delivery branch `fix/quick-incremental-execution` preserves the original source branch and uses the existing `workspace.branch.sync-main` dependency mode, bound to merged PR #729 and main 0efb7533120580fe180bc20ee6f952332cea1bf3. The governed tool verified a recovery bundle, responsibility patch identity and a byte-identical tree before/after replay; no product/tool implementation changed.
+
+The run baseline is now the actual main ancestor. Unchanged scoped tests and review findings are retained with their original logs. Final Quick and final review identity are bound to the normalized candidate before publication; original receipts are not copied or relabelled. See `.runtime/quick-incremental-execution/sync-main.log` and final handoff for actual outcomes.
