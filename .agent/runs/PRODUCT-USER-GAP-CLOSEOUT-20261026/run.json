@@ -74,7 +74,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Fix FG08 generic pivot field/selection labels; keep FG05 mixed payroll fields and FG15 rich native accounting notices pending. Complete business chains and demo rebuild separately.",
+  "next_exact_step": "Fix FG05 salary/subsidy/bonus mixed list native declaration; retain FG15 rich accounting notices and FG08 aggregation/format/multi-measure limitations, then business-chain acceptance and demo rebuild.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -508,6 +508,22 @@
       "artifact": ".runtime/product-user-gap-closeout-20261026/analysis-browser/bdfb1bd144972fcb393533d07dadb81dd62d55e5/report.json",
       "result": "703pivot1row/1group;704pivot3rows/3groups;704graph3groups firstmeasure;1440/390,6screenshots,0errors/blocked. Native Chinese labels and loaded totals match.",
       "manual_followup": "Screenshots still truncate long native labels/values in pivot columns. P0 AnalysisPage generic ellipsis disabled to wrap all content. P4 fixed view subset; rerun only703pivot/704pivot1440/390. Graph DOM unaffected so reuse original evidence. No numeric formatter/aggregation semantic change."
+    },
+    "eighth_final": {
+      "status": "passed_scoped_local_analysis_labels",
+      "candidate": "40805e49f9fb463ce132435a374a1e04ffdac1a4",
+      "product_commits": [
+        "dd54fed46",
+        "fe3cdbb56"
+      ],
+      "tests": "L1 eighth-l1-scoped.log/eighth-wrap-l1.log; frontend renderer/collection/37parser/9coverage/typecheck/basis passed;132projection+23runtime;1 ORM test4branches; style/observer7 passed; independent P0/P4 review passed",
+      "browser": "703pivot1record/1group;704pivot3records/3groups;1440/390 native labels and every loaded amount matched;0errors/blocked;4finalscreenshots. 704graph3groups/firstmeasure and2screenshots reused from bdfb1bd144972fcb393533d07dadb81dd62d55e5: only pivot ellipsis and fixed observer subset changed. Original snapshot labels passed but visual truncation remained, so original pivot is not final readability evidence.",
+      "artifact": ".runtime/product-user-gap-closeout-20261026/analysis-browser/40805e49f9fb463ce132435a374a1e04ffdac1a4/report.json",
+      "manual": "Desktop complete native column names, long project/partner/date values wrap; mobile long values wrap with horizontal table navigation retained. No claim all columns fit screen or full mobile usability acceptance.",
+      "limits": "FG08 partial: currency/number formatting, interval aggregation, full-scope pagination and multi-measure graph remain. Current sample loaded=reported total, not proof of arbitrary full business totals. No new data, module upgrade, demo rebuild, Quick/remoteCI/mainline merge/daily deploy.",
+      "counts": "15 original groups partially repaired; FG05/FG15 untouched;23 demo gaps unreconstructed. Mainline/daily remains bdef29e11.",
+      "rollback": "This increment changes no persisted business/XML data: return frontend+backend to73af2acd7 via governed local.dev candidate lifecycle; preserve seventh upgraded DB.",
+      "reuse": "Final docs do not invalidate product/runtime evidence. Generated complexity line counts and frontend inventory digest inspected after hooks."
     }
   }
 }
