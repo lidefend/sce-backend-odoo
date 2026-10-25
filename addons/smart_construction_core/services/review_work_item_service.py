@@ -26,7 +26,11 @@ def authorize_review_origin(env, origin, *, model, record_id, method_name=None):
     if "review_ids" not in record._fields or review.id not in record.review_ids.ids or not record.can_review:
         return False
     company = record.company_id if "company_id" in record._fields else record.project_id.company_id if "project_id" in record._fields else env.company
-    return bool(company == env.company and record_in_business_scope(env[model], record_id, {}, env.context)[0])
+    if not (company == env.company and record_in_business_scope(env[model], record_id, {}, env.context)[0]):
+        return False
+    if getattr(record, "_sc_tier_review_record_access_mode", "write") == "read":
+        return {"allowed": True, "record_access_mode": "read"}
+    return True
 
 
 class CurrentWorkItemService:

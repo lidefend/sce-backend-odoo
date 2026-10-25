@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 197,
+    "odoo_tags": 198,
     "gated": 3,
     "on_demand": 47,
-    "unwired": 147,
-    "odoo_tag_declarations": 416,
+    "unwired": 148,
+    "odoo_tag_declarations": 417,
     "gated_declarations": 95,
-    "uncovered_declarations": 321,
+    "uncovered_declarations": 322,
     "ci_unit_scripts": 17,
     "ci_unit_scripts_wired": 17,
     "ci_unit_scripts_unwired": 0
@@ -1205,6 +1205,17 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "general_contract_finance_review",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_general_contract_finance_review.py"
+      ],
+      "owner": "construction-product",
+      "evidence": []
     },
     {
       "group": "group_authority_reconciliation",
