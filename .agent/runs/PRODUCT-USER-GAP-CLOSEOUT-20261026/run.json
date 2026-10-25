@@ -69,7 +69,8 @@
     "frontend/apps/web/src/pages/AnalysisPage.vue",
     "addons/smart_construction_core/views/core/hr_payroll_document_views.xml",
     "addons/smart_construction_core/views/menu_product_administration_wave1.xml",
-    "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py"
+    "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+    "docs/ops/iterations/demo_data_gaps_20261026.md"
   ],
   "environment": {
     "kind": "runtime",
@@ -77,7 +78,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Fix FG05 salary/subsidy/bonus mixed list native declaration; retain FG15 rich accounting notices and FG08 aggregation/format/multi-measure limitations, then business-chain acceptance and demo rebuild.",
+  "next_exact_step": "Diagnose and fix FG15 native journal-entry new-form failure through generic contract declaration/consumption; preserve accounting constraints. Continue business-chain acceptance, FG08 remaining analysis semantics and demo reconstruction separately.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -548,6 +549,23 @@
       "artifact": ".runtime/product-user-gap-closeout-20261026/payroll-browser/a9c049a7f87429bbbd263f3af3cbf2815efdc50a/report.json",
       "result": "673native columns/source comparisons/desktoppassed. Bonus3500/date2025-05-20 andsalary16200/period2025-05 correct; mobile default3 facts money,type,employee hidperiod behinddisclosure. Noerrors/blocked. Subsidy absent inloadedDemo.695/706notreached.",
       "correction": "P1 dedicated tree reorder period/amount beforeemployee; preserve defaultnativecardmechanism. Nativecontracttest assert order; rerun1affectedORM, reuse3factcompute/domain tests. Samebatch pre-upgrade snapshot20261025T233220Z remains fullrollbackanchor; no businesswrite betweenupgrades. Re-upgrade existingmodule, browser673bothviewports and pending695/706."
+    },
+    "ninth_final": {
+      "status": "passed_scoped_local_mixed_payroll_display",
+      "candidate": "870a36bd26e12dac7c0073b4a63c73e2804bfc1d",
+      "product_commits": [
+        "60f98a123",
+        "870a36bd2"
+      ],
+      "tests": "ninth-l1/ninth-mobile-l1 PASS; ninth-orm3tests0failed/error; afteronlyXMLcolumnorderchanged nativecollection1test rerunpassed ninth-mobile-orm. Reuse unchanged compute/domain tests. observer7passed; independent P1/P4reviewpassed; frontendproductunchanged reuse eighth type/style/basis.",
+      "browser": "6732records source-read vscomputedvslist exact; bonus3500/2025-05-20, salary16200/2025-05, CNY.1440/390 type,amount,period matched; phoneperiodnowprimary.6951record/7060records mixeddisplaycolumnnotleaked.3cases4screenshots0errors/blocked.",
+      "artifact": ".runtime/product-user-gap-closeout-20261026/payroll-browser/870a36bd26e12dac7c0073b4a63c73e2804bfc1d/report.json",
+      "manual": "673desktop+mobile inspected; bonus CNY symbol¥ and2decimals visible. Salarybelowfold DOMassertions passed, screenshotnotfullpage. Existing longdocumentnumber/projectdesktoptruncation retained.",
+      "upgrade": "ninth-upgrade.log and ninth-mobile-upgrade.log passed same local.dev namespace authority. Snapshot20261025T233220Z DB+filestorehashreadback passed; restoreentirebatch requires prebatchdf7eaa452 plus snapshot, notsourceonly. No businesswrites/demo rebuild.",
+      "limits": "Subsidy absent incurrentloadedDemo; automated3facttests are not3typebrowserproof. No create/save/payment chain, multi-currency, missingdraftperiodvisual, computedfieldsort/filter/aggregate or complete sibling functional acceptance.695/706 only isolation checks.",
+      "counts": "16originalfunctiongroups partiallyrepaired; FG15untouched; FG08remaining aggregation/format/multimeasure preserved.23originaldemogapsunreconstructed + localpayrollsubsidycoverageobservation.",
+      "deployment": "Localcandidateonly. NoQuick/remoteCI/mainline merge/dailydeploy;mainline/dailybdef29e11 unchanged.",
+      "reuse": "Final docs donotinvalidate product/runtime. Prior a9c browserfailed preserved, notcounted finalmobileacceptance."
     }
   }
 }
