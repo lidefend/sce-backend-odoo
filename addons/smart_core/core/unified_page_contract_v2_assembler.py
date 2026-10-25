@@ -1290,13 +1290,11 @@ def _assemble_ui_contract(
     ).lower()
     if effective_render_profile in {"create", "edit", "readonly"}:
         contract["statusContract"]["globalStatus"]["effectiveRenderProfile"] = effective_render_profile
-    effective_record_capabilities = _dict(form_capabilities.get("effectiveRecordCapabilities"))
-    if not effective_record_capabilities:
-        effective_record_capabilities = _ui_contract_permission_rights(_dict(source), _dict(ui))
-        if effective_record_capabilities:
-            contract["statusContract"]["globalStatus"]["effectiveRecordCapabilities"] = deepcopy(
-                effective_record_capabilities
-            )
+    effective_record_capabilities = _ui_contract_permission_rights(_dict(source), _dict(ui))
+    if effective_record_capabilities:
+        contract["statusContract"]["globalStatus"]["effectiveRecordCapabilities"] = deepcopy(
+            effective_record_capabilities
+        )
     if effective_render_profile == "create" and effective_record_capabilities.get("create") is not True:
         contract["statusContract"]["globalStatus"]["pageVisible"] = False
         contract["statusContract"]["globalStatus"]["pageAuth"] = "none"
@@ -3323,8 +3321,6 @@ def _ui_source_context(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, 
 def _ui_contract_permission_rights(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, Any]:
     form_capabilities = _dict(_dict(_dict(ui.get("views")).get("form")).get("capabilities"))
     effective_record_capabilities = _dict(form_capabilities.get("effectiveRecordCapabilities"))
-    if effective_record_capabilities:
-        return effective_record_capabilities
     permission_sources = [
         _dict(_dict(ui.get("head")).get("permissions")),
         _dict(_dict(source.get("head")).get("permissions")),
@@ -3332,11 +3328,30 @@ def _ui_contract_permission_rights(source: dict[str, Any], ui: dict[str, Any]) -
         _dict(source.get("permissions")),
         _dict(source.get("permission_surface")),
     ]
-    rights: dict[str, Any] = {}
-    for row in permission_sources:
-        resolved = resolve_permission_rights(row)
-        if resolved:
-            return resolved
+    rights: dict[str, Any] = dict(effective_record_capabilities)
+    if not rights:
+        for row in permission_sources:
+            resolved = resolve_permission_rights(row)
+            if resolved:
+                rights = dict(resolved)
+                break
+    view_type = _text(ui.get("view_type") or source.get("view_type") or _dict(ui.get("head")).get("view_type")).split(",")[0].strip()
+    if rights and view_type in {"tree", "list", "kanban", "pivot", "graph", "calendar", "gantt", "activity"}:
+        # A model ACL is necessary but not sufficient for a collection's
+        # create entry. Consume the same native view/entry restrictions that
+        # the target form enforces; never grant rights from presentation.
+        context = _dict(_ui_source_context(source, ui).get("context"))
+        allowed = rights.get("create") is True
+        if "create" in context:
+            allowed = allowed and _modifier_true(context["create"])
+        if _modifier_true(context.get("no_create")):
+            allowed = False
+        views = _dict(ui.get("views"))
+        for kind in {view_type, "tree" if view_type == "list" else view_type, "form"}:
+            capabilities = _dict(_dict(views.get(kind)).get("capabilities"))
+            if "can_create" in capabilities:
+                allowed = allowed and _modifier_true(capabilities["can_create"])
+        rights["create"] = allowed
     return rights
 
 

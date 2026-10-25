@@ -3364,6 +3364,54 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(status["effectiveRenderProfile"], "readonly")
         self.assertNotIn("formCapabilities", full["dataContract"]["dataMeta"])
 
+    def test_collection_create_intersects_entry_and_native_views(self):
+        for view_type in ("tree", "list", "kanban", "pivot", "graph"):
+            for context, form_create, list_create, model_create, expected in (
+                ({}, True, True, True, True),
+                ({"create": False}, True, True, True, False),
+                ({"create": "false"}, True, True, True, False),
+                ({"create": True, "no_create": True}, True, True, True, False),
+                ({}, False, True, True, False),
+                ({}, True, False, True, False),
+                ({}, True, True, False, False),
+            ):
+                with self.subTest(view_type=view_type, context=context, form=form_create, collection=list_create, acl=model_create):
+                    source = {
+                        "model": "res.partner", "view_type": view_type, "context": context,
+                        "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
+                        "head": {"permissions": {"read": True, "write": True, "create": model_create, "unlink": True}},
+                        "views": {
+                            view_type: {"capabilities": {"can_create": list_create}, "columns": ["name"]},
+                            "form": {"capabilities": {"can_create": form_create}},
+                        },
+                    }
+                    original = deepcopy(source)
+                    full = assembler.assemble_unified_page_contract_v2(source, source_type="ui.contract", client_type="web_pc", request_id="test.collection.create")
+                    rights = full["statusContract"]["globalStatus"]["effectiveRecordCapabilities"]
+                    self.assertIs(rights["create"], expected)
+                    self.assertIs(rights["read"], True)
+                    self.assertIs(rights["write"], True)
+                    self.assertEqual(source, original)
+
+    def test_collection_create_preserves_effective_verdict_and_tree_alias(self):
+        source = {
+            "model": "res.partner", "view_type": "list", "context": {"create": True},
+            "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
+            "views": {
+                "tree": {"capabilities": {"can_create": False}, "columns": ["name"]},
+                "form": {"capabilities": {"can_create": True, "effectiveRecordCapabilities": {
+                    "read": True, "create": True, "write": False, "unlink": False, "duplicate": False,
+                }}},
+            },
+        }
+        for tree_create, context in ((False, {"create": True}), (True, {"no_create": True})):
+            source["views"]["tree"]["capabilities"]["can_create"] = tree_create
+            source["context"] = context
+            full = assembler.assemble_unified_page_contract_v2(source, source_type="ui.contract", client_type="web_pc", request_id="test.collection.effective")
+            self.assertEqual(full["statusContract"]["globalStatus"]["effectiveRecordCapabilities"], {
+                "read": True, "create": False, "write": False, "unlink": False, "duplicate": False,
+            })
+
     def test_denied_create_is_explicitly_rejected_instead_of_rendered_readonly(self):
         denied = {"read": True, "write": False, "create": False, "unlink": False, "duplicate": False}
         source = {

@@ -573,6 +573,7 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
             block['page_size'] = vp.get('page_size', 50)
             block['row_classes'] = vp.get('row_classes', [])
             block['collection_presentation'] = vp.get('collection_presentation', {})
+            block['capabilities'] = vp.get('capabilities', {})
         elif vt == 'form':
             block['layout'] = vp.get('layout', [{
                 'type': 'sheet',
