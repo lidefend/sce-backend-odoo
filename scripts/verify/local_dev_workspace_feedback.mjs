@@ -78,7 +78,7 @@ try {
     const item = {model, route: node.meta.route}; report.cases.push(item);
     await page.goto(base + node.meta.route, {waitUntil: 'domcontentloaded'});
     if (plan.create) await page.getByRole('button', {name: /^(新建|新增|创建)$/}).first().click();
-    if (plan.tab) await page.getByRole('tab', {name: plan.tab, exact: true}).click();
+    if (plan.tab) await page.locator(`[data-section-tab="${plan.tab}"]`).click();
     const note = page.locator(`[data-field-name="${plan.field}"]`).locator('textarea, input:not([type="hidden"])').first();
     await note.waitFor({state: 'visible', timeout: 45000});
     await page.getByText(plan.hint, {exact: false}).last().waitFor({state: 'visible'});
