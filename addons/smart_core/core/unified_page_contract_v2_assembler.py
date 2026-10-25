@@ -4318,22 +4318,24 @@ def _evaluate_action_modifier(value: Any, record: dict[str, Any], *, strict: boo
     if isinstance(value, bool):
         return value
     if value is None or value == "":
-        return None if strict else False
+        return None
     if value in (0, "0", "false", "False"):
         return False
     if value in (1, "1", "true", "True"):
         return True
     if not isinstance(value, dict):
-        return None if strict else False
+        return None
     kind = _text(value.get("kind"))
     if kind == "static":
         static_value = value.get("value")
-        return static_value if isinstance(static_value, bool) else (None if strict else False)
+        return static_value if isinstance(static_value, bool) else None
     if kind == "not":
         resolved = _evaluate_action_modifier(value.get("expr"), record, strict=strict)
         return None if resolved is None else not resolved
     if kind in {"all", "any"}:
         values = [_evaluate_action_modifier(item, record, strict=strict) for item in _list(value.get("exprs"))]
+        if any(item is None for item in values):
+            return None
         if kind == "all":
             if False in values:
                 return False
@@ -4343,20 +4345,22 @@ def _evaluate_action_modifier(value: Any, record: dict[str, Any], *, strict: boo
         return False if values and all(item is False for item in values) else None
     field = _text(value.get("field"))
     if not field or field not in record:
-        return None if strict else False
+        return None
     if kind == "field_truthy":
         return bool(record.get(field))
     if kind == "field_compare":
         value_field = _text(value.get("value_field"))
         if value_field:
             if value_field not in record:
-                return None if strict else False
+                return None
             expected = record.get(value_field)
         else:
+            if "value" not in value:
+                return None
             expected = value.get("value")
         compared = _compare_action_value(record.get(field), _text(value.get("operator")), expected)
-        return compared if strict or compared is not None else False
-    return None if strict else False
+        return compared
+    return None
 
 
 def _enforce_single_effective_primary_action(contract: dict[str, Any]) -> None:

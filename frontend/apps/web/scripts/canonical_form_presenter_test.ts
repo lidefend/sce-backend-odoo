@@ -1679,6 +1679,7 @@ assert.deepEqual(
   'an explicitly hidden action definition must not be revived by a visible button status',
 );
 const conditionalActionSnapshot = snapshot();
+conditionalActionSnapshot.dataContract.mainData.blocked = false;
 conditionalActionSnapshot.actionContract.actionRuleList[0].invisible = {
   kind: 'field_compare', field: 'state', operator: '=', value: 'approved',
 };
@@ -2760,9 +2761,11 @@ for (const denial of ['authority', 'disabled', 'static', 'missing', 'unresolved'
     const field = blocked.statusContract.widgetStatus.find(row => row.widgetId === 'field.name')!;
     field.visible = false; field.auth = 'none';
   }
-  const presented = presentContractV2Form(createContractV2Store(blocked), 'create',
-    denial === 'missing' ? {} : {draft_category: 'fund'},
-  );
+  if (denial === 'missing') {
+    assert.throws(() => presentContractV2Form(createContractV2Store(blocked), 'create', {}), { name: 'ContractGapError' });
+    continue;
+  }
+  const presented = presentContractV2Form(createContractV2Store(blocked), 'create', {draft_category: 'fund'});
   assert.equal(collectFields(presented.zones.primary).find(field => field.fieldCode === 'name')?.visible, false, denial);
 }
 
@@ -3826,9 +3829,9 @@ assert.equal(
   'a state-derived status reason must not leak onto a recomputed visible button',
 );
 
-assert.deepEqual(
-  presentStateDependentNativeHeader({}).actionBar.map((action) => action.key), [],
-  'an unresolvable declared dependency must still fail closed, never guess visibility',
+assert.throws(
+  () => presentStateDependentNativeHeader({}), { name: 'ContractGapError' },
+  'an unresolvable declared dependency must expose the contract defect',
 );
 
 assert.deepEqual(
