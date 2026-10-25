@@ -66,7 +66,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Declare certificate-specific native list and bind certificate action; verify source→contract and shared entry isolation.",
+  "next_exact_step": "Fix FG08 generic pivot field/selection labels; keep FG05 mixed payroll fields and FG15 rich native accounting notices pending. Complete business chains and demo rebuild separately.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -461,6 +461,17 @@
       "status": "failed_observer_dependent_read",
       "result": "Certificate four fields and timeline HTTP200/ok true passed; subsequent chatter.followers.list was blocked.",
       "correction": "Inspected useNativeChatterRuntime loadTimeline→loadFollowers chain and ChatterFollowersListHandler(read-only). Allow both reads only for fixed model+observed certificate ID, await both HTTP200/ok. Follow/update/post/delete remain denied. Only356 rerun; keep originals failed."
+    },
+    "seventh_final": {
+      "status": "passed_scoped_local_certificate_display",
+      "candidate": "d095e061a9efdd6ed81e36f748cc28ac1e6a1bff",
+      "product_commit": "dfdf41622",
+      "tests": "2 ORM passed; L1/observer7/syntax/diff passed; developer independent review passed",
+      "browser": "356 actual existing record four nonempty values matched desktop1440/mobile390/detail; timeline+followers HTTP200 ok; zero errors/blocked,3screenshots. Policy708 independent column assertion+empty list screenshot reused from276bf275897d4335c0e53fbf94348e4fd95c64b8; original overall failed status preserved.",
+      "artifact": ".runtime/product-user-gap-closeout-20261026/certificate-browser/d095e061a9efdd6ed81e36f748cc28ac1e6a1bff/report.json",
+      "upgrade": "seventh-upgrade.log passed local.dev module upgrade + environment/entry authority. Snapshot20261025T225820Z hashes verified. Restore requires pre-upgrade code and DB/filestore backup.",
+      "reuse": "Only P4 certificate detail read policy/await changed since original276; P1 and database unchanged. ORM and708 column evidence reused; frontend production code unchanged. Final docs no product impact.",
+      "limits": "Desktop long text truncation retained. No search, save, approval, expiry notification, multi-role or complete business-chain acceptance. 14 original groups partially repaired; FG05/08/15 unresolved;23 demo gaps not rebuilt. No mainline merge or daily deploy."
     }
   }
 }

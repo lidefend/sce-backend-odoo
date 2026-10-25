@@ -270,3 +270,48 @@ P0回退205881c30应与缓存身份一起回退，P4观察器单独回退；没�
 FG17本轮只完成上述入口一致性范围，其他业务链/角色/直写权限仍须后续验收。
 23组Demo数据缺口未重建。下一步处理FG09证书列表声明和FG08通用报表标签，FG15混合告警继续独立收口。
 没有Quick、远端CI、受保护合并或日常部署，主线仍bdef29e11，整体交付基线未重新宣布成立。
+
+
+## 第七批：证书列表真实信息呈现
+
+P1提交dfdf41622为证书动作声明专用原生tree并显式绑定tree/form：证照名称、编号、
+持有人、有效期置于首列，保留状态、登记编号、项目及发证信息。priority90避免抢占
+同模型默认视图；既有共享form/search、证书domain/default_fact_type、groups和ACL不变。
+修复归属行业入口声明，不向前端增加模型特判，也未补造Demo证书数据。
+
+2项定向ORM通过：真实v2契约包含证书字段且排除资料/制度专用字段，制度入口保持自己的列；
+共享借阅/资料表单、分类和ACL既有断言保持通过。测试在事务中导入XML并回滚。
+L1、观察器守卫7项、语法/diff与开发独立复核通过；P0/前端产品代码未改，复用上批类型/样式/契约检查。
+日志seventh-orm.log、seventh-l1-final.log、seventh-observer-final-02.log。
+
+XML需要升级，先由local.dev.snapshot生成
+`artifacts/local-dev/snapshots/20261025T225820Z`数据库与filestore备份；已读取文件并核对
+manifest SHA256，见seventh-backup-readback.json。备份对应升级前DB、代码2ad75738f，
+当时工作区有已声明XML修改，不能把快照说成含新视图。随后执行
+`make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core`，
+模块加载、demo入口sc_dev_demo/ns_000000000002及环境权威校验均通过，无Demo重建。
+恢复本批须结合原快照与升级前代码；仅revert XML不能保证数据库action/view绑定恢复。
+
+P4只读观察绑定menu356、708和当前用户可读真实记录，不执行保存/派发/关注/留言/删除。
+初次276bf275897d4335c0e53fbf94348e4fd95c64b8中证书桌面/手机/详情四字段匹配，
+制度708列隔离通过（真实0条），但详情时间线读取被观察器拦截，整体报告failed。
+第二次5acfcc1b1375581856918de1a002bff3c5b860ca时间线HTTP200/ok通过，其后关注者读取
+又被拦截，报告仍failed。检查实际loadTimeline→loadFollowers调用链及两个只读handler后，
+将两种读取限定为certificate模式、固定模型和从本次列表提取的记录ID，并等待两者HTTP200/ok；
+其他写请求仍禁止。两个失败报告全部保留，不改记为整轮通过。
+
+最终候选d095e061a9efdd6ed81e36f748cc28ac1e6a1bff只重跑受影响menu356：
+已有安全生产许可证的名称、编号、持有人、有效期四项在1440/390列表及只读详情逐项匹配；
+两项协作读取均HTTP200/ok=true，0脚本异常、0被拦截请求，3张截图。
+人工核图：手机卡片直接显示四项完整信息；桌面已有对应列，长编号/单位沿用现有截断样式，
+详情显示完整值。不是“全部桌面文本无截断”的验收。
+制度708复用276候选中的独立列断言与截图，允许空列表，不把Demo空数据误判为字段修复失败。
+三候选之间仅P4读取白名单/等待条件及记录改变，产品、XML、数据库和708断言未变；
+不因候选身份变化复跑不受影响页面。最终文档不使上述证据失效。
+证据根`.runtime/product-user-gap-closeout-20261026/certificate-browser/`，各报告归各自完整SHA。
+
+本批完成FG09上述信息展示范围，未证明搜索筛选、多角色权限、证书新建/办理/到期提醒全链。
+累计14组原始问题有局部修复；FG05薪酬混合列表、FG08透视标签、FG15混合会计告警三组仍未修复。
+23组Demo数据缺口仍未重建，制度空数据仍保留在数据缺口中。
+本地运行d095e061a；未执行Quick、远端CI、受保护合并或日常服务器部署，主线仍bdef29e11。
+下一步处理FG08通用透视字段与selection标签，继续保留FG05/FG15及业务链验收边界。
