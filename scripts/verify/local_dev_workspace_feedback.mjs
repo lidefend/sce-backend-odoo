@@ -6,12 +6,12 @@ import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap
 // The existing nginx owns the namespace stamp; the preview server does not.
 const base = 'http://127.0.0.1:18081/t/demo';
 const scope = process.env.SC_FEEDBACK_SCOPE || 'workspace';
-assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority', 'certificate'].includes(scope));
+assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority', 'certificate', 'analysis'].includes(scope));
 const root = `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}`;
 fs.mkdirSync(root, {recursive: true});
 const actor = scope === 'usability' ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
 assert(['demo_full', 'demo_role_pm', 'demo_role_finance', 'demo_role_project_read'].includes(actor));
-const availableCases = ['usability', 'create-authority', 'certificate'].includes(scope) ? [] : scope === 'workspace' ? [
+const availableCases = ['usability', 'create-authority', 'certificate', 'analysis'].includes(scope) ? [] : scope === 'workspace' ? [
   {model: 'sc.team.loan.deduction.workspace', field: 'note', hint: '建议补充办理说明'},
   {model: 'sc.current.account.workspace', field: 'note', hint: '建议补充办理说明', retained: '办理承包人借还款前请选择承包人/往来单位'},
 ] : scope === 'cost' ? [
@@ -89,6 +89,86 @@ try {
   function walk(nodes) { for (const node of nodes) { if (node.children?.length) walk(node.children); else leaves.push(node); } }
   walk(init.navigation.nav);
   report.actor = {uid: init.user?.id, login: actor, company: init.user?.company_id};
+  if (scope === 'analysis') {
+    for (const plan of [
+      {menu: '703', model: 'sc.tax.filing', view: 'pivot'},
+      {menu: '704', model: 'sc.labor.subcontract.report', view: 'pivot'},
+      {menu: '704', model: 'sc.labor.subcontract.report', view: 'graph'},
+    ]) {
+      const node = leaves.find(n => n.meta?.model === plan.model && new URL(n.meta.route, base).searchParams.get('menu_id') === plan.menu);
+      assert(node?.meta?.route?.startsWith('/'), 'analysis entry missing');
+      const responseFor = (intent, operation) => page.waitForResponse(response => {
+        let body; try { body = response.request().postDataJSON(); } catch { return false; }
+        const request = body?.params?.intent ? body.params : body;
+        return request?.intent === intent && request.params?.op === operation &&
+          (intent === 'ui.contract.v2' ? String(request.params.menu_id) === plan.menu : request.params.model === plan.model);
+      }, {timeout: 45000});
+      const contractResponse = responseFor('ui.contract.v2', 'action_open');
+      const dataResponse = responseFor('api.data', 'list');
+      const url = new URL(base + node.meta.route);
+      url.searchParams.set('view_mode', plan.view);
+      await page.goto(url.href, {waitUntil: 'domcontentloaded'});
+      const contract = await (await contractResponse).json();
+      const data = await (await dataResponse).json();
+      assert.equal(contract.ok, true); assert.equal(data.ok, true);
+      const profile = contract.data.layoutContract[plan.view + 'Profile'];
+      assert(profile?.dimensions?.length && profile?.measures?.length, 'analysis declaration absent');
+      const records = data.data.records;
+      assert(records?.length, 'demo analysis sample absent');
+      const groups = new Map();
+      for (const record of records) {
+        const raw = profile.dimensions.map(field => Array.isArray(record[field.name]) ? record[field.name][0] : record[field.name] ?? null);
+        const key = JSON.stringify(raw);
+        const labels = profile.dimensions.map(field => {
+          const value = record[field.name];
+          if (value === false || value == null || value === '') return '--';
+          if (field.fieldType === 'selection') {
+            const choice = field.selection.find(pair => pair[0] === value);
+            assert(choice?.[1] && choice[1] !== value, 'untranslated selection declaration');
+            return choice[1];
+          }
+          return Array.isArray(value) ? String(value[1]) : String(value);
+        });
+        const group = groups.get(key) || {labels, totals: profile.measures.map(() => 0)};
+        profile.measures.forEach((field, index) => { group.totals[index] += Number(record[field.name] || 0); });
+        groups.set(key, group);
+      }
+      const expected = [...groups.values()];
+      const surface = page.locator(`[data-analysis-view="${plan.view}"][data-analysis-state="ready"]`);
+      await surface.waitFor({state: 'visible', timeout: 45000});
+      const item = {...plan, route: url.href, fields: profile, loadedRecords: records.length,
+        reportedTotal: data.data.total, expected, viewports: [], passed: false};
+      report.cases.push(item);
+      for (const width of [1440, 390]) {
+        await page.setViewportSize({width, height: width === 390 ? 844 : 960});
+        if (plan.view === 'pivot') {
+          const headers = await surface.getByRole('columnheader').allTextContents();
+          for (const field of [...profile.dimensions, ...profile.measures]) {
+            assert(field.label && field.label !== field.name, 'technical analysis label');
+            assert(headers.some(header => header.trim() === field.label), 'native header not rendered: ' + field.label);
+          }
+          const rows = await surface.getByRole('row').all();
+          const actual = [];
+          for (const row of rows) {
+            const cells = await row.getByRole('cell').allTextContents();
+            if (cells.length) actual.push(cells.map(cell => cell.trim()));
+          }
+          assert.deepEqual(actual, expected.map(group => [...group.labels, ...group.totals.map(String)]), 'analysis labels/group totals differ from loaded API records');
+        } else {
+          const rows = surface.getByRole('article');
+          assert.equal(await rows.count(), expected.length);
+          for (let index = 0; index < expected.length; index++) {
+            const paragraphs = await rows.nth(index).getByRole('paragraph').allTextContents();
+            assert.deepEqual(paragraphs.map(value => value.trim()), [expected[index].labels.join(' / '), String(expected[index].totals[0])]);
+          }
+        }
+        await page.screenshot({path: `${root}/${plan.menu}-${plan.view}-${width}.png`});
+        item.viewports.push(width);
+      }
+      item.passed = true;
+    }
+    assert.equal(report.blocked.length, 0);
+  }
   if (scope === 'certificate') {
     const model = 'sc.document.admin.document';
     const fields = ['certificate_name', 'certificate_no', 'holder_name', 'valid_until'];

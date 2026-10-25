@@ -58,7 +58,14 @@
     "scripts/verify/unified_page_contract_v2_assembler_guard.py",
     "addons/smart_core/app_config_engine/models/app_view_config.py",
     "addons/smart_construction_core/views/core/document_admin_document_views.xml",
-    "addons/smart_construction_core/tests/test_policy_document_capability.py"
+    "addons/smart_construction_core/tests/test_policy_document_capability.py",
+    "addons/smart_construction_core/tests/test_product_reports.py",
+    "addons/smart_core/app_config_engine/services/view_Parser/parsers Kanban Pivot Graph.py",
+    "addons/smart_core/tests/test_native_view_parser_surfaces.py",
+    "docs/architecture/frontend_contract_basis_ledger.json",
+    "frontend/apps/web/scripts/action_surface_renderer_registry_test.ts",
+    "frontend/apps/web/scripts/view_type_render_coverage_probe.ts",
+    "frontend/apps/web/src/app/contracts/actionViewAnalysisContract.ts"
   ],
   "environment": {
     "kind": "runtime",
@@ -472,6 +479,27 @@
       "upgrade": "seventh-upgrade.log passed local.dev module upgrade + environment/entry authority. Snapshot20261025T225820Z hashes verified. Restore requires pre-upgrade code and DB/filestore backup.",
       "reuse": "Only P4 certificate detail read policy/await changed since original276; P1 and database unchanged. ORM and708 column evidence reused; frontend production code unchanged. Final docs no product impact.",
       "limits": "Desktop long text truncation retained. No search, save, approval, expiry notification, multi-role or complete business-chain acceptance. 14 original groups partially repaired; FG05/08/15 unresolved;23 demo gaps not rebuilt. No mainline merge or daily deploy."
+    },
+    "eighth_ownership": {
+      "identity": "73af2acd706e64f9017dca19fb2082e13e4d1091 clean; selected entry-validation worktree, same branch/runtime",
+      "P0": "smart_core native pivot/graph parser publishes field label/type/selection; generic analysis consumer uses declared metadata, fail closed on missing labels/types/selection; raw group identity prevents display collisions. No industry-specific frontend mapping.",
+      "P4": "Parser/consumer/projection tests, contract basis binding and bounded existing observer extension for menus703/704; cache version invalidation.",
+      "scope": "Native analysis parser, analysis consumer/page, existing tests/probe, cache marker/guard, basis ledger, observer and Make/wrapper, single run/docs. P1 business models/XML unchanged.",
+      "validation": "L1 then affected parser/projection/frontend L2; governed same local.dev runtime; desktop/mobile pivot703/704 and graph704 only, read-only demo records; independent review.",
+      "exclusions": "No XML upgrade/demo reset, full matrix, remote publication/mainline/daily deployment. Date interval/backend aggregation and full business-chain completeness remain separate gaps."
+    },
+    "eighth_l1_initial": {
+      "status": "failed",
+      "owner": "baseline_evidence_defect",
+      "reason": "New file scope described in observations but omitted from formal run scope. Added exact seven owned paths; no product change or gate bypass."
+    },
+    "eighth_prebrowser": {
+      "status": "passed_L1_L2",
+      "identity": "73af2acd706e64f9017dca19fb2082e13e4d1091 + eighth declared dirty scope",
+      "tests": "eighth-l1-scoped.log PASS; eighth-frontend.log renderer/collection tests,37 native parser,9 coverage tests,typecheck,basis15bindings PASS; eighth-projection.log132projection+23runtime PASS; eighth-orm.log1real ORM test4 native action/view branches,0failed/0error",
+      "review": "review_quick_closeout independent P0 development review no blocker; require actual group labels/counts/totals inbrowser",
+      "limits": "Existing interval and aggregation behavior unchanged; only loaded records totals verified. No numeric formatting product change in this increment. No XML upgrade needed.",
+      "next": "Commit product/P4 candidate; runtime source identity refresh and bounded analysis observer703pivot/704pivot/704graph desktop/mobile."
     }
   }
 }

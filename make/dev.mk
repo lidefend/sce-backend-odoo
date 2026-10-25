@@ -1752,3 +1752,8 @@ verify.local.dev.create_authority: guard.prod.forbid local.dev.ready local.dev.e
 verify.local.dev.certificate: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  SC_FEEDBACK_SCOPE=certificate SC_CERTIFICATE_MENUS="$(or $(SC_CERTIFICATE_MENUS),356,708)" bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.analysis
+verify.local.dev.analysis: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_SCOPE=analysis bash scripts/verify/local_dev_workspace_feedback.sh
