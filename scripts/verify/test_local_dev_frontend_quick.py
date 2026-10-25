@@ -51,6 +51,29 @@ class LocalDevFrontendQuickTest(unittest.TestCase):
 
         return output
 
+    def test_incremental_subset_keeps_authority_and_serial_preflight(self):
+        _temporary, primary, linked, authority = self._authority_fixture()
+        calls = []
+        def runner(command, **kwargs):
+            calls.append((command, kwargs))
+            return subprocess.CompletedProcess(command, 0)
+        with mock.patch.object(QUICK, "resolve_authority_env", return_value=authority):
+            self.assertEqual(0, QUICK.run_gate(linked, runner, require_ready=False,
+                             targets=["guard.prod.forbid", "ci.generated_evidence.preflight"]))
+        command, kwargs = calls[0]
+        self.assertIn("--jobs=1", command)
+        self.assertIn(f"LOCAL_DEV_ENV_FILE={authority}", command)
+        self.assertEqual(["guard.prod.forbid", "ci.generated_evidence.preflight"], command[-2:])
+
+    def test_incremental_cli_rejects_target_injection_and_missing_guards(self):
+        import sys
+        for targets in (["ENV=prod"], ["verify.quick.evidence.unit"],
+                        ["guard.prod.forbid", "ci.generated_evidence.preflight", "unknown"]):
+            with self.subTest(targets=targets), mock.patch.object(sys, "argv", ["quick", "--quick-targets", *targets]), \
+                 mock.patch.object(QUICK, "run_gate") as run:
+                self.assertEqual(2, QUICK.main())
+                run.assert_not_called()
+
     def test_linked_worktree_resolves_only_primary_authority(self):
         _temporary, primary, linked, authority = self._authority_fixture()
         with mock.patch.object(QUICK, "_git_output", self._git_identity(primary, linked)), mock.patch.dict(
@@ -230,7 +253,9 @@ class LocalDevFrontendQuickTest(unittest.TestCase):
             quick_dependencies.index("ci.generated_evidence.preflight"),
             quick_dependencies.index("verify.contract.page_v1_zero_residue.guard"),
         )
-        self.assertIn(".NOTPARALLEL: ci.local.quick.run ci.generated_evidence.preflight", ci_make)
+        serial_targets = {target for line in ci_make.splitlines()
+                          if line.startswith(".NOTPARALLEL:") for target in line.split()[1:]}
+        self.assertTrue({"ci.local.quick.run", "ci.generated_evidence.preflight"} <= serial_targets)
         preflight_dependencies = ci_make.split("ci.generated_evidence.preflight:", 1)[1].split("\n", 1)[0]
         for dependency in (
             "ci.generated_reports.guard",

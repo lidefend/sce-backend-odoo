@@ -184,6 +184,7 @@ def _write_receipt_after_success(root: Path, expected_head: str, coverage: dict)
         # above is already written and verifiable, so a prune failure must not
         # turn a passing Quick into a failing one. It is reported, not swallowed.
         print(f"[local_quick_evidence] WARN receipt retention failed: {exc}")
+    _save_target_scope(root, expected_head, path)
     return path
 
 
@@ -250,6 +251,7 @@ def prune_receipts(root: Path, keep: int = RECEIPT_RETENTION, current_head: str 
         if stem in retained:
             continue
         path.unlink()
+        path.with_suffix(".scope.json").unlink(missing_ok=True)
         shard = shard_root(root, stem)
         if shard.is_dir() and not shard.is_symlink():
             shutil.rmtree(shard)
@@ -342,6 +344,76 @@ def quick_runner_command(root: Path) -> list[str]:
     )
 
 
+def _scope_module():
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import quick_input_scope
+    return quick_input_scope
+
+
+def _save_target_scope(root: Path, head: str, receipt: Path) -> None:
+    """Optional optimization metadata; never substitutes for a Quick receipt."""
+    try:
+        scope = _scope_module()
+        document = scope.execution_units(root, head, required_targets(root))
+        atomic_json(receipt.with_suffix(".scope.json"), {
+            "receipt_sha256": hashlib.sha256(receipt.read_bytes()).hexdigest(),
+            "document": document,
+        })
+    except (EvidenceError, OSError, ValueError, subprocess.CalledProcessError) as exc:
+        print(f"[local_quick_evidence] target reuse unavailable: {exc}")
+
+
+def _incremental_plan(root: Path, head: str) -> tuple[list[str], list[str], str] | None:
+    scope = _scope_module()
+    folder = evidence_path(root, head).parent
+    if not folder.is_dir():
+        return None
+    if not any(folder.glob("*.scope.json")):
+        return None
+    try:
+        manifest = required_targets(root)
+    except EvidenceError:
+        return None
+    current = scope.execution_units(root, head, manifest)
+    candidates = sorted((p for p in folder.glob("*.json") if FULL_SHA.fullmatch(p.stem)),
+                        key=lambda p: p.stat().st_mtime, reverse=True)
+    for candidate in candidates:
+        try:
+            sidecar = candidate.with_suffix(".scope.json")
+            if candidate.is_symlink() or sidecar.is_symlink() or not sidecar.is_file():
+                continue
+            payload = json.loads(candidate.read_text())
+            if not isinstance(payload, dict):
+                continue
+            source = payload.get("head", "")
+            if source != candidate.stem or source == head or not _ancestor(root, source, head):
+                continue
+            expected = {"schema_version": SCHEMA_VERSION, "suite": SUITE,
+                        "producer": PRODUCER, "head": source,
+                        "tree": git(root, "rev-parse", f"{source}^{{tree}}"),
+                        "coverage": payload.get("coverage")}
+            if payload != expected or not scans.valid_coverage(root, payload.get("coverage"), source):
+                continue
+            saved = json.loads(sidecar.read_text())
+            if saved.get("receipt_sha256") != hashlib.sha256(candidate.read_bytes()).hexdigest():
+                continue
+            # Recompute source inputs, including historical Make blobs; current
+            # environment must equal the environment actually recorded at execution.
+            source_units = scope.execution_units(root, source, manifest)
+            if saved.get("document") != source_units:
+                continue
+            plan = scope.plan_execution(current, source_units)
+            if not plan["reusable"]:
+                continue
+            run = [target for target in manifest if target in plan["affected"]]
+            reuse = [target for target in manifest if target in plan["reusable"]]
+            return run, reuse, source
+        except (OSError, ValueError, TypeError, AttributeError, EvidenceError,
+                subprocess.CalledProcessError):
+            continue
+    return None
+
+
 def _require_clean_start(root: Path, purpose: str) -> str:
     if git(root, "status", "--porcelain=v1", "--untracked-files=all"):
         raise EvidenceError(
@@ -394,6 +466,14 @@ def run_quick(root: Path, runner=subprocess.run, diagnostic: bool = False) -> Pa
         if completed.returncode: raise QuickRunFailed(completed.returncode)
         return None
     root, tree = require_exact_clean_head(root, start_head)
+    plan = _incremental_plan(root, start_head)
+    if plan is not None:
+        run_targets, reuse_targets, base_head = plan
+        assert_quick_recipe_covered(root)
+        print(f"[local_quick_evidence] incremental base={base_head} run={run_targets} reuse={reuse_targets}")
+        command = ( ["python3", "scripts/dev/local_dev_frontend_quick.py", "--quick-targets", *run_targets]
+                    if is_linked_worktree(root)
+                    else ["make", "--no-print-directory", "--jobs=1", *run_targets] )
     coverage = scans.coverage_snapshot(root)
     with tempfile.TemporaryDirectory(prefix="sce-quick-scan-proof-") as temporary:
         folder = Path(temporary)
@@ -432,6 +512,7 @@ def run_quick(root: Path, runner=subprocess.run, diagnostic: bool = False) -> Pa
             if scans.coverage_snapshot(root) != coverage:
                 raise EvidenceError("reference snapshot changed again during bounded scan refresh")
             _require_scan_proofs(root, folder, start_head, tree, coverage)
+        git(root, "diff", "--check")
         return _write_receipt_after_success(root, start_head, coverage)
 
 
@@ -640,7 +721,8 @@ def run_shard(
         raise EvidenceError("sharded quick evidence is only supported in the primary worktree")
     start_head = _require_clean_start(root, "shard evidence")
     root, tree = require_exact_clean_head(root, start_head)
-    manifest = required_targets(root)
+    plan = _incremental_plan(root, start_head)
+    manifest = plan[0] if plan is not None else required_targets(root)
     targets = manifest[index::shards]
     if not targets:
         raise EvidenceError("this shard covers no required target")
@@ -851,9 +933,12 @@ def compose(root: Path, shards: int, expected_head: str) -> Path:
     """Compose passed shards of one identical candidate into the standard exact-head receipt."""
     shards, _ = _checked_shard_layout(shards, 0)
     root, tree = require_exact_clean_head(root, expected_head)
-    manifest = required_targets(root)
+    declared = required_targets(root)
+    plan = _incremental_plan(root, expected_head)
+    manifest = plan[0] if plan is not None else declared
+    reused = plan[1] if plan is not None else []
     assert_quick_recipe_covered(root)
-    covered: list[str] = []
+    covered: list[str] = list(reused)
     parts: list[dict] = []
     coverage = scans.coverage_snapshot(root)
     for index in range(shards):
@@ -870,7 +955,7 @@ def compose(root: Path, shards: int, expected_head: str) -> Path:
     # Strided parts concatenate to a permutation of the manifest, so order is
     # bound by the per-part target check above; here the union must still cover
     # the declared list exactly, with no missing, extra or duplicated target.
-    if sorted(covered) != sorted(manifest):
+    if sorted(covered) != sorted(declared):
         raise EvidenceError("the shard union does not cover the declared quick target list exactly")
     folder = shard_root(root, expected_head) / "scan-proofs"
     for kind in scans.AUTHORITY:
@@ -905,7 +990,9 @@ def compose(root: Path, shards: int, expected_head: str) -> Path:
         "tree": tree,
         "shards": shards,
         "parts": parts,
-        "manifest_sha256": hashlib.sha256(json.dumps(manifest).encode("utf-8")).hexdigest(),
+        "manifest_sha256": hashlib.sha256(json.dumps(declared).encode("utf-8")).hexdigest(),
+        "reused_targets": reused,
+        "reuse_source": plan[2] if plan is not None else None,
         "coverage_sha256": hashlib.sha256(json.dumps(coverage, sort_keys=True).encode("utf-8")).hexdigest(),
         "receipt": receipt.relative_to(root).as_posix() if receipt.is_relative_to(root) else str(receipt),
     })
@@ -973,7 +1060,13 @@ def run_default(root: Path, shards: int | None = None, diagnostic: bool = False,
     try:
         if is_linked_worktree(root):
             return run_quick(root, runner=runner)
+        head = _require_clean_start(root, "the incremental quick lane")
+        plan = _incremental_plan(root, head)
         shards = DEFAULT_SHARDS if shards is None else shards
+        if plan is not None:
+            _checked_shard_layout(shards, 0)
+            shards = min(shards, len(plan[0]))
+            print(f"[local_quick_evidence] incremental shards base={plan[2]} run={plan[0]} reuse={plan[1]}")
         _checked_shard_layout(shards, 0)
         _require_clean_start(root, "the sharded quick lane")
         head = git(root, "rev-parse", "HEAD")

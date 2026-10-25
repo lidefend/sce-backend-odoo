@@ -1,0 +1,8 @@
+schema_version: 1
+goal:
+  id: QUICK-INCREMENTAL-EXECUTION
+  title: Quick incremental execution with verified evidence
+  status: active
+  formal_product_layer: P4
+  layer_target: local Quick evidence and bounded input declarations
+  exclusions: [product_semantics, database_writes, deployment]

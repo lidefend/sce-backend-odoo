@@ -1492,6 +1492,11 @@ verify.quick.input_scope.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/quick_input_scope.py scripts/ops/test_quick_input_scope.py
 	@python3 scripts/ops/test_quick_input_scope.py
 
+.PHONY: verify.quick.evidence.unit
+verify.quick.evidence.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/local_quick_evidence.py scripts/ops/test_local_quick_evidence.py
+	@python3 scripts/ops/test_local_quick_evidence.py
+
 .PHONY: agent.hooks.install
 agent.hooks.install: guard.prod.forbid
 	@hook_dir="$$(git rev-parse --git-path hooks)"; \
