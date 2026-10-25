@@ -15,6 +15,7 @@
     "scripts/ci/backend_suite_plan.py",
     "scripts/ci/backend_test_receipt.py",
     "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/run_contract_fact_readback.sh",
     "scripts/ci/test_backend_impact_plan.py",
     "scripts/ci/test_backend_suite_plan.py",
     "scripts/ci/test_backend_test_receipt.py",
