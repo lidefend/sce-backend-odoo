@@ -41,8 +41,11 @@ try {
   await page.goto(base + '/login', {waitUntil: 'domcontentloaded'});
   await page.locator('#login-username').fill('demo_full');
   await page.locator('#login-password').fill(process.env.E2E_PASSWORD);
-  const database = page.locator('#login-db');
-  if (await database.count()) await database.fill('sc_dev_demo');
+  const database = page.getByLabel(/数据库/);
+  assert(await database.count() <= 1, 'database selector must be unique');
+  if (await database.count() && await database.isVisible() && await database.isEnabled()) {
+    await database.fill('sc_dev_demo');
+  }
   await page.getByRole('button', {name: /^登录$/}).click();
   await page.waitForURL(url => !url.pathname.includes('/login'), {timeout: 45000});
   await page.waitForTimeout(1200);
