@@ -17,7 +17,7 @@ from odoo.addons.smart_core.tests.test_intent_smoke import setup_test_entry_name
 MODEL = "sc.company.project.refund.workspace"
 FIELD = "processing_advisory"
 VIEW = "smart_construction_core.view_sc_company_project_refund_workspace_form"
-OTHER_MODEL = "sc.quality.acceptance"
+OTHER_MODEL = "sc.labor.worker"
 LOCATOR = "/form[1]/sheet[1]/div[1]/field[1]"
 EVIDENCE_PREFIX = "LOCAL_DEV_COMPANY_PROJECT_REFUND_FEEDBACK_JSON="
 ADVISORY_MODELS = (
@@ -30,6 +30,7 @@ ADVISORY_MODELS = (
     "sc.subcontract.register",
     "sc.labor.usage",
     "sc.quality.acceptance",
+    OTHER_MODEL,
 )
 
 
@@ -213,7 +214,8 @@ class TestCompanyProjectRefundFeedback(CompanyRefundFeedbackAssertions, Transact
                 enabled.append(model_name)
         self.assertEqual(enabled, [
             MODEL, "sc.current.account.workspace", "sc.team.loan.deduction.workspace",
-            "sc.equipment.usage", "sc.hr.salary.payment", "sc.subcontract.register",
+            "sc.equipment.usage", "sc.hr.payroll.document", "sc.hr.salary.payment", "sc.subcontract.register",
+            "sc.labor.usage", "sc.quality.acceptance",
         ])
 
     def test_create_ui_contract_uses_request_local_feedback_proof(self):

@@ -31,11 +31,12 @@ class ScQualityAcceptance(models.Model):
         tracking=True,
     )
     acceptance_date = fields.Date("验收日期", default=fields.Date.context_today, tracking=True)
-    location = fields.Char("验收部位")
-    standard = fields.Text("验收依据/标准")
+    location = fields.Char("验收部位", default=False)
+    standard = fields.Text("验收依据/标准", default=False)
     responsible_id = fields.Many2one("res.users", string="责任人", default=lambda self: self.env.user)
     participant_ids = fields.Many2many(
-        "res.users", "sc_quality_acceptance_user_rel", "acceptance_id", "user_id", string="验收人员"
+        "res.users", "sc_quality_acceptance_user_rel", "acceptance_id", "user_id", string="验收人员",
+        default=False,
     )
     result = fields.Selection(
         [
@@ -49,8 +50,8 @@ class ScQualityAcceptance(models.Model):
         required=True,
         tracking=True,
     )
-    conclusion = fields.Text("验收意见")
-    rectification_deadline = fields.Date("整改期限")
+    conclusion = fields.Text("验收意见", default=False)
+    rectification_deadline = fields.Date("整改期限", default=False)
     issue_ids = fields.Many2many(
         "sc.quality.issue",
         "sc_quality_acceptance_issue_rel",
@@ -64,6 +65,7 @@ class ScQualityAcceptance(models.Model):
         "acceptance_id",
         "attachment_id",
         string="验收资料",
+        default=False,
     )
     state = fields.Selection(
         [("draft", "草稿"), ("confirmed", "已确认"), ("cancelled", "已取消")],
@@ -71,7 +73,17 @@ class ScQualityAcceptance(models.Model):
         required=True,
         tracking=True,
     )
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
+    processing_advisory = fields.Char(
+        "办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction",
+        sc_feedback_usage={
+            "purpose": "advisory",
+            "occurrences": [{
+                "view_xmlid": "smart_construction_core.view_sc_quality_acceptance_form",
+                "native_locator": "/form[1]/sheet[1]/div[1]/field[1]",
+                "occurrence_index": 1,
+            }],
+        },
+    )
 
     @api.depends(
         "acceptance_date",
@@ -103,6 +115,20 @@ class ScQualityAcceptance(models.Model):
             record.processing_advisory = (
                 "；".join(suggestions) if suggestions else ""
             )
+
+    _compute_processing_advisory._sc_feedback_evaluation_review = {
+        "purpose": "advisory",
+        "inputs": [
+            {"field": "acceptance_date", "type": "date"},
+            {"field": "location", "type": "char"},
+            {"field": "standard", "type": "text"},
+            {"field": "participant_ids", "type": "many2many_presence"},
+            {"field": "conclusion", "type": "text"},
+            {"field": "attachment_ids", "type": "many2many_presence"},
+            {"field": "result", "type": "selection"},
+            {"field": "rectification_deadline", "type": "date"},
+        ],
+    }
 
     def _check_operator(self):
         if self.env.su or self.env.user.has_group(

@@ -5,7 +5,24 @@ from odoo import api, fields, models
 class ScLaborUsageProductAdvisory(models.Model):
     _inherit = "sc.labor.usage"
 
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
+    contractor_id = fields.Many2one(default=False)
+    work_type = fields.Char(default=False)
+    construction_part = fields.Char(default=False)
+    foreman_name = fields.Char(default=False)
+    price_unit = fields.Monetary(default=False)
+    attachment_ids = fields.Many2many(default=False)
+
+    processing_advisory = fields.Char(
+        "办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction",
+        sc_feedback_usage={
+            "purpose": "advisory",
+            "occurrences": [{
+                "view_xmlid": "smart_construction_core.view_sc_labor_usage_form",
+                "native_locator": "/form[1]/sheet[1]/div[1]/field[1]",
+                "occurrence_index": 1,
+            }],
+        },
+    )
 
     @api.depends(
         "contractor_id",
@@ -33,3 +50,15 @@ class ScLaborUsageProductAdvisory(models.Model):
             usage.processing_advisory = (
                 "；".join(suggestions) if suggestions else ""
             )
+
+    _compute_processing_advisory._sc_feedback_evaluation_review = {
+        "purpose": "advisory",
+        "inputs": [
+            {"field": "contractor_id", "type": "many2one_presence"},
+            {"field": "work_type", "type": "char"},
+            {"field": "construction_part", "type": "char"},
+            {"field": "foreman_name", "type": "char"},
+            {"field": "price_unit", "type": "number_nonzero"},
+            {"field": "attachment_ids", "type": "many2many_presence"},
+        ],
+    }
