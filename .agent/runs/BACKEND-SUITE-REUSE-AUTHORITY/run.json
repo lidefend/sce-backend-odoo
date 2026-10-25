@@ -63,7 +63,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Freeze generated evidence and final conflict-resolution commit; exact-head Quick and independent delta identity review; archive and governed push PR732, read back conflict status and current CI. No deployment.",
+  "next_exact_step": "Finish whole-PR independent review; fix workflow regular-file mode attestation; run affected L1/L2; freeze once, exact-head Quick, review/archive/push, current required CI, governed merge and main sync.",
   "observations": {
     "conflict_closeout": {
       "initial_local_head": "af95e73170c30c16f43a6b0a53ddcc2ab4d349b7",
@@ -102,6 +102,20 @@
       "independent_review": "Actual conflict delta and exact union preservation reviewed: no introduced S0-S2; 15 original source blobs and 23 main-only files preserved. Review excludes unrelated original PR semantics.",
       "evidence_reuse": "Sync tool/test/helper/recipe inputs unchanged by main merge; retain 53-test sync result. Source/workflow tests executed after merge. Registry changes invalidate only coverage snapshot/registry guards, rerun after export. New final Quick/current CI still required.",
       "remaining_debt": "Original lowcode_contract_write_authority tag remains unwired, now explicitly dispositioned; no ORM execution claimed. Backend receipt unresolved authority dimensions continue RUN/BLOCK."
+    },
+    "mainline_integration": {
+      "authorization": "Owner requested mainline integration after conflict publication",
+      "previous_head": "45b165057bb3e6fdbc9cfd22384422545d03f44c",
+      "ci_failure": "GitHub checkout HTTP403 on shard0 before tests; other shards passed; logs in .runtime/pr732-conflict-closeout/ci-failure.log",
+      "review_finding": "S2 workflow attestation rejects real regular executable blob100755; fix both checks while preserving blob identity and symlink/gitlink rejection",
+      "layer": "P4 scripts/ci receipt authority, no P0-P3/runtime mutations",
+      "validation_plan": "L0 identity; L1 iteration; L2 workflow contract including receipt regression; no L3/L4 runtime change; L5 new exact-head Quick/full review/CI required. Unchanged source-preservation and sync tests reused.",
+      "validation": {
+        "workflow_contract": "passed:243 tests; .runtime/pr732-conflict-closeout/workflow-contract-mode-fix.log",
+        "iteration": "passed L1; .runtime/pr732-conflict-closeout/iteration-mode-fix.log",
+        "full_review": "Original45b full semantic review found only workflow mode S2; fixed in working tree. New frozen delta review pending.",
+        "nonblocking_limits": "Dynamic dependency completeness not proven; ORM artifact_attempt stays blocking; lowcode unwired debt remains explicit."
+      }
     }
   }
 }

@@ -70,6 +70,30 @@ class WorkflowDefinitionAttestationTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     receipt.workflow_authority_blobs(tree, lambda p: json.dumps(broken[p]).encode())
 
+    def test_regular_workflow_modes_are_accepted_by_both_authorities(self):
+        for mode in ('100644', '100755'):
+            with self.subTest(mode=mode):
+                run, definition, blobs, responses = self.fixture()
+                tree = 'c' * 40
+                responses['git/trees/' + tree + '?recursive=1']['tree'][0]['mode'] = mode
+                fetch = lambda path: json.dumps(responses[path]).encode()
+                self.assertEqual(blobs, receipt.workflow_authority_blobs(tree, fetch))
+                receipt.attest_execution_definition(run, definition, blobs, fetch)
+
+    def test_nonregular_workflow_entries_are_rejected_by_both_authorities(self):
+        for mode, kind in (('120000', 'blob'), ('160000', 'commit'),
+                           ('040000', 'tree'), ('100644', 'tree')):
+            with self.subTest(mode=mode, kind=kind):
+                run, definition, blobs, responses = self.fixture()
+                tree = 'c' * 40
+                responses['git/trees/' + tree + '?recursive=1']['tree'][0].update(
+                    mode=mode, type=kind)
+                fetch = lambda path: json.dumps(responses[path]).encode()
+                with self.assertRaises(ValueError):
+                    receipt.workflow_authority_blobs(tree, fetch)
+                with self.assertRaises(ValueError):
+                    receipt.attest_execution_definition(run, definition, blobs, fetch)
+
 
 class JobObservationTest(unittest.TestCase):
     def setUp(self):

@@ -307,3 +307,8 @@ records wire-pending debt and export reconciles its snapshot. No tests or gates
 were removed; ORM coverage is not claimed. Registry and lane checks now pass.
 Logs, failed attempts and preservation report stay under the same runtime folder.
 Final frozen Quick, publication and remote readback are the remaining steps.
+
+
+### Mainline integration follow-up (2026-10-26)
+
+Owner requested PR732 integration. Candidate `45b165057bb3e6fdbc9cfd22384422545d03f44c` passed exact-head Quick; remote shard0 failed before tests with GitHub checkout HTTP403, while shards1–3 passed. Original logs remain under `.runtime/pr732-conflict-closeout/`. Whole-PR independent review found S2: source/executed workflow attestation rejects the real ordinary executable Git blob mode100755. P4 correction accepts regular blob100644/100755 in both checks, while continuing to reject symlink/gitlink/non-blob entries and mismatched content. Regression tests exercise both authority paths. No product/database changes; no claim of ORM receipt reuse while artifact attempt remains unattested. A new candidate invalidates dependent receipt/workflow checks and final gates; preserve unrelated sync/preservation evidence and run L1 iteration plus L2 workflow-contract before one final freeze/Quick.

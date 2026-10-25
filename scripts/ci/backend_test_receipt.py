@@ -529,7 +529,7 @@ def workflow_authority_blobs(source_tree: str, fetch) -> dict[str, str]:
     blobs = {}
     for item in tree.get('tree', []):
         if item.get('path') in WORKFLOW_PATHS:
-            if item.get('type') != 'blob' or item.get('mode') != '100644':
+            if item.get('type') != 'blob' or item.get('mode') not in ('100644', '100755'):
                 raise ValueError('workflow authority entry is not a regular blob')
             blobs[item['path']] = item['sha']
     if set(blobs) != WORKFLOW_PATHS:
@@ -831,7 +831,7 @@ def attest_execution_definition(run: dict, definition: dict, authority_blobs: di
     for path in (workflow, run['path']):
         item = files.get(path, {})
         if (path not in authority_blobs or item.get('type') != 'blob'
-                or item.get('mode') != '100644' or item.get('sha') != authority_blobs[path]):
+                or item.get('mode') not in ('100644', '100755') or item.get('sha') != authority_blobs[path]):
             raise ValueError('executed workflow bytes differ from verified source definition')
 
 
