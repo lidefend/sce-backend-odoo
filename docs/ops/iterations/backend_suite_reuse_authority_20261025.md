@@ -239,3 +239,24 @@ contract consistency proof), before modifying any gate.
 
 Implementation order follows the loop: wire probe -> extend parity -> close
 closure -> attest execution -> authorize reuse.
+
+## Implementation status (2026-10-25)
+
+- Probe wiring: readback witness attached for smart_construction_demo; role and
+  action parameterized through CANDIDATE_ROLE_XMLID / CANDIDATE_ACTION_XMLID.
+- Relation parity: value_parity compares a relation field only when its
+  comodel_name and declared model + can_read projection are both present.
+- Dependency closure: external imports and literal SQL execute sites are
+  extracted, unresolved sites fail closed, and dependency_closure_complete is a
+  real verdict propagated into receipts.
+- Execution attestation: attest_execution_definition is wired into
+  verify_github_origin from the candidate source tree.
+- Admission: verify_github_origin derives every blocker from the authenticated
+  receipt state and stamps reuse_authority=verified_six_dimension_closure only
+  when none remain; receipt_reuse_authorized accepts that stamp alongside the
+  isolated execution authority.
+
+Remaining: artifact_attempt_attested has no trusted source because the GitHub
+artifact API does not expose the upload attempt, so Docker Odoo receipts stay
+RUN until an alternative authority is available. The workflow wiring still
+needs a real CI run to be exercised end to end.
