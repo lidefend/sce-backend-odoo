@@ -426,6 +426,28 @@ jobs:
             done
             orm_expect_identity="odoo.addons.${module}.tests."
             orm_expect_database="${attempt_db}"
+            readback_args=""
+            if [ "${module}" = "smart_construction_demo" ]; then
+              # Attach the platform-kernel contract/fact readback witness for the
+              # one module whose demo role, action and records exist in CI. The
+              # probe is read-only and fail-closed: a missing record, mismatched
+              # head or any probe failure leaves readback_args empty, so the
+              # receipt is recorded without a witness and reuse stays denied.
+              witness_file="${receipt_dir}/contract-fact-readback-${module}.json"
+              if witness_line="$(CANDIDATE_DB_NAME="${attempt_db}" CANDIDATE_GIT_HEAD="${HEAD_SHA}" \
+                  CANDIDATE_GIT_TREE="$(git rev-parse "${HEAD_SHA}^{tree}")" \
+                  CANDIDATE_ROLE_XMLID="smart_construction_demo.user_demo_role_finance" \
+                  CANDIDATE_ACTION_XMLID="smart_construction_core.action_payment_request_pay" \
+                  ENV_FILE="${attempt_env_file:-${ENV_FILE}}" DB_NAME="${attempt_db}" \
+                  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/backend_contract_fact_readback_probe.py 2>/dev/null \
+                  | grep '^BACKEND_CONTRACT_FACT_READBACK=' | tail -1)"; then
+                witness_json="${witness_line#BACKEND_CONTRACT_FACT_READBACK=}"
+                if printf '%s' "${witness_json}" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("schema")=="backend-contract-fact-readback/v1" and d.get("source_head")==sys.argv[1], "witness identity mismatch"' "${HEAD_SHA}"; then
+                  printf '%s\n' "${witness_json}" > "${witness_file}"
+                  readback_args="--readback ${witness_file}"
+                fi
+              fi
+            fi
             if ! evaluate_orm_outcome "${module_status}" "${module_log}"; then
               echo "::error::backend suite failed execution/count/identity guard for module ${module}"
               failed=1
@@ -436,7 +458,7 @@ jobs:
                 --module "${module}" --kind orm --head "${HEAD_SHA}" --base "${receipt_base}" \
                 --secrets-file "${attempt_env_file:-${ENV_FILE}}" --selection="${module_test_tags}" --duration-seconds "${module_duration}" \
                 --database "${attempt_db}" --status "${module_status}" --log "${module_log}" \
-                --context "${receipt_dir}/runtime-context.json" --scope-plan "${receipt_dir}/scope-plan.json" --output "${receipt_dir}"; then
+                --context "${receipt_dir}/runtime-context.json" --scope-plan "${receipt_dir}/scope-plan.json" --output "${receipt_dir}" ${readback_args}; then
               echo "::error::backend execution evidence collection failed for ${module}"
               failed=1
             fi
