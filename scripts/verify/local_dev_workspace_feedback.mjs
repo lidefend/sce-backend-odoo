@@ -3,8 +3,9 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {launchChromium} from './playwright_runtime.mjs';
 import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap_inventory_policy.mjs';
-const base = 'http://127.0.0.1:5176';
-const root = '.runtime/product-user-gap-closeout-20261026/workspace-browser';
+// The existing nginx owns the namespace stamp; the preview server does not.
+const base = 'http://127.0.0.1:18081/t/demo';
+const root = `.runtime/product-user-gap-closeout-20261026/workspace-browser/${process.env.CANDIDATE_GIT_HEAD}`;
 fs.mkdirSync(root, {recursive: true});
 const models = ['sc.team.loan.deduction.workspace', 'sc.current.account.workspace'];
 const report = {head: process.env.CANDIDATE_GIT_HEAD, cases: [], blocked: [], errors: [], feedback: [], passed: false};
@@ -20,7 +21,7 @@ try {
     const req = route.request();
     let body; try { body = req.postDataJSON(); } catch {}
     const request = body?.params?.intent ? body.params : body;
-    const pathname = new URL(req.url()).pathname;
+    const pathname = new URL(req.url()).pathname.replace(/^\/t\/demo/, '');
     const draft = req.method() === 'POST' && pathname === '/api/v1/intent' &&
       request?.intent === 'api.onchange' && models.includes(request.params?.model);
     if (!draft && !permitsInventoryRequest(req.method(), pathname, body, false)) {
