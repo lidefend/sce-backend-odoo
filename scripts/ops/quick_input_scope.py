@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Content-addressed input scope for the ci.local.quick target DAG.
 
-The Quick lane is a monolithic exact-head gate today: a change to any script it
-verifies re-runs all 128 targets. This module maps each Quick target to its
-declared input files (referenced scripts plus recipe flag paths) and computes a
-per-target fingerprint, so a future reuse engine can re-run only affected
-targets. It performs no execution and no writes.
+Script-reference discovery is an advisory inventory. Execution reuse is limited
+to reviewed complete offline scopes, bound to committed inputs and execution
+identity. Undeclared targets always run at a new head. The shared evidence_scope
+engine owns RUN/REUSE decisions; this adapter performs no execution or writes.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -68,36 +68,66 @@ def target_inputs() -> dict[str, list[str]]:
     return result
 
 
-def target_fingerprint(head: str, target: str, inputs: dict[str, list[str]] | None = None) -> str:
-    """Hash the target's input blobs at an exact head, recipe included."""
-    _, recipes, _, _ = _parse()
-    inputs = inputs if inputs is not None else target_inputs()
-    recipe = "\n".join(recipes.get(target, ()))
-    material = {"recipe_sha256": hashlib.sha256(recipe.encode()).hexdigest(), "files": {}}
-    for path in inputs.get(target, ()):
-        entry = git(ROOT, "ls-tree", head, "--", path).strip()
-        if not entry:
-            continue
-        material["files"][path] = entry
-    payload = json.dumps(material, sort_keys=True, separators=(",", ":")).encode()
-    return hashlib.sha256(payload).hexdigest()
+# Only these offline Python tests have reviewed complete scopes. Script-reference
+# discovery above remains an inventory, never authority to skip a target.
+BOUNDED_TARGETS = frozenset({"verify.quick.evidence.unit", "verify.quick.input_scope.unit"})
+BOUNDED_PREFIXES = ("scripts/", "make/")
+BOUNDED_FILES = frozenset({"Makefile", "scripts/dev/local_dev_frontend_quick.py"})
+
+
+def _fingerprint_rows(rows: list[str], target: str, head: str) -> str:
+    if target not in BOUNDED_TARGETS:
+        # No complete dependency declaration: never carry a target to a new head.
+        return hashlib.sha256(f"undeclared:{target}:{head}".encode()).hexdigest()
+    files = {}
+    names = []
+    for row in rows:
+        path = row.partition("\t")[2]
+        names.append(path)
+        if path.startswith(BOUNDED_PREFIXES) or path in BOUNDED_FILES:
+            files[path] = row
+    # The inventory tests inspect path existence. Names (including additions and
+    # deletions), all Make definitions and imported Python helpers are inputs.
+    return hashlib.sha256(json.dumps({"files": files, "names": names},
+                                     sort_keys=True).encode()).hexdigest()
+
+
+def target_fingerprint(head: str, target: str, inputs=None, *, root: Path = ROOT) -> str:
+    """Use committed blobs, including historical recipes and helper dependencies."""
+    rows = git(root, "ls-tree", "-r", "--full-tree", head).splitlines()
+    return _fingerprint_rows(rows, target, head)
+
+
+def execution_identity() -> dict:
+    # Do not persist environment values (they can contain credentials). Bind
+    # their digest, Python runtime, and executable instead. Make's process-local
+    # recursion counters and working-directory aliases are not test inputs.
+    ignored = {"PWD", "OLDPWD", "SHLVL", "_", "MAKELEVEL", "MAKEFLAGS", "MFLAGS",
+               "MAKEOVERRIDES", "SC_QUICK_SCAN_COVERAGE_DIR"}
+    environment = {key: value for key, value in os.environ.items() if key not in ignored}
+    return {"python": sys.version, "executable": str(Path(sys.executable).resolve()),
+            "executable_sha256": hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
+            "environment_sha256": hashlib.sha256(json.dumps(environment, sort_keys=True).encode()).hexdigest()}
+
+
+def execution_units(root: Path, head: str, targets: list[str]) -> dict:
+    rows = git(root, "ls-tree", "-r", "--full-tree", head).splitlines()
+    return {"schema": "evidence_scope.units.v1", "check": "ci.local.quick",
+            "identity": execution_identity(),
+            "units": [{"id": target, "fingerprint": _fingerprint_rows(rows, target, head),
+                       "required": True} for target in targets]}
+
+
+def plan_execution(current: dict, source: dict) -> dict:
+    import evidence_scope
+    ledger = {"check": current["check"], "identity": source["identity"],
+              "units": {unit["id"]: {"fingerprint": unit["fingerprint"], "status": "passed"}
+                        for unit in source["units"]}}
+    return evidence_scope.plan_units(current, ledger)
 
 
 def affected_targets(base: str, head: str) -> dict[str, str]:
-    """Decide RUN vs REUSE per Quick target between two exact commits.
-
-    A target is affected (RUN) only when its input fingerprint differs; targets
-    with no declared inputs fail closed to RUN.
-    """
-    inputs = target_inputs()
-    decisions = {}
-    for target in quick_targets():
-        old = target_fingerprint(base, target, inputs)
-        new = target_fingerprint(head, target, inputs)
-        if not inputs.get(target):
-            decisions[target] = "RUN"
-        elif old != new:
-            decisions[target] = "RUN"
-        else:
-            decisions[target] = "REUSE"
-    return decisions
+    """Advisory plan; execution additionally requires a verified source receipt."""
+    targets = quick_targets()
+    plan = plan_execution(execution_units(ROOT, head, targets), execution_units(ROOT, base, targets))
+    return {target: "REUSE" if target in plan["reusable"] else "RUN" for target in targets}

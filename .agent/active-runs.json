@@ -38,6 +38,6 @@
     "fix/daily-release-orchestration-digest-derivation": ".agent/runs/DAILY-RELEASE-ORCHESTRATION-DIGEST-DERIVATION/run.json",
     "fix/quick-input-scoped-reuse": ".agent/runs/QUICK-INPUT-SCOPED-REUSE/run.json",
     "fix/generated-evidence-auto-refresh": ".agent/runs/GENERATED-EVIDENCE-AUTO-REFRESH/run.json",
-    "fix/p4-tooling-non-runtime-classification": ".agent/runs/P4-TOOLING-NON-RUNTIME-CLASSIFICATION/run.json"
+    "fix/p4-tooling-non-runtime-classification": ".agent/runs/QUICK-INCREMENTAL-EXECUTION/run.json"
   }
 }

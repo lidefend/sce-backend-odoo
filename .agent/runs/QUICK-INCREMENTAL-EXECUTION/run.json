@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "QUICK-INCREMENTAL-EXECUTION",
+  "branch": "fix/p4-tooling-non-runtime-classification",
+  "baseline_sha": "1d58ebf228b786e62752d5341a63de1126e8cfe0",
+  "status": "verification_pending",
+  "goal": ".agent/goals/QUICK-INCREMENTAL-EXECUTION.yaml",
+  "record": "docs/ops/iterations/quick_incremental_execution.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/QUICK-INCREMENTAL-EXECUTION.yaml",
+    ".agent/runs/QUICK-INCREMENTAL-EXECUTION/run.json",
+    "docs/ops/iterations/quick_incremental_execution.md",
+    "scripts/ops/local_quick_evidence.py",
+    "scripts/ops/test_local_quick_evidence.py",
+    "scripts/ops/quick_input_scope.py",
+    "scripts/ops/test_quick_input_scope.py",
+    "make/ci.mk",
+    "make/codex.mk",
+    "scripts/dev/local_dev_frontend_quick.py",
+    "scripts/verify/test_local_dev_frontend_quick.py",
+    "scripts/verify/test_local_quick_evidence.py",
+    "scripts/verify/registry.yaml",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
+  ],
+  "preserved_preexisting": [],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing governed Quick entry; no product runtime writes"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Refresh affected generated evidence, freeze clean candidate, run exact-head Quick, then independent review before publication.",
+  "observations": {
+    "candidate": "1d58ebf228b786e62752d5341a63de1126e8cfe0 plus declared dirty scope",
+    "L1": "ci.local.iteration passed; iteration.log",
+    "L2": "input-scope 6, incremental receipt 13, existing receipt 63, governance 23, wrapper 15 tests; logs under .runtime/quick-incremental-execution",
+    "scope_limit": "Only verify.quick.evidence.unit and verify.quick.input_scope.unit have complete reviewed scopes; unknown targets always execute. No blanket 128-target reuse claim.",
+    "generated_evidence": "Governed freeze preparation refreshed complexity and test inventory; inventory row IDs shift deterministically due to one added test file.",
+    "external_state": "No push, PR, merge, deployment or database write in this continuation."
+  }
+}

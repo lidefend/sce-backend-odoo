@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4919`
+- Scanned files: `4920`
 - Files requiring split plan: `71`
 - Files above warning threshold: `144`
 
@@ -123,6 +123,7 @@ Generated from repository source files. This report is informational during the 
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1199 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
+| 1181 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1157 | Python source | `scripts/verify/fact_source_coverage_guard.py` |
@@ -145,7 +146,6 @@ Generated from repository source files. This report is informational during the 
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1091 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
-| 1088 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1087 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
 | 1072 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1066 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |

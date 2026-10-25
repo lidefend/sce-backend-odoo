@@ -125,6 +125,7 @@ def run_gate(
     *,
     target: str = "verify.frontend.quick.gate",
     require_ready: bool = True,
+    targets: list[str] | None = None,
 ) -> int:
     repo_root = repo_root.resolve()
     authority = resolve_authority_env(repo_root)
@@ -151,10 +152,11 @@ def run_gate(
         [
             "make",
             "--no-print-directory",
+            *(["--jobs=1"] if targets is not None else []),
             "ENV=dev",
             f"ENV_FILE={authority}",
             f"LOCAL_DEV_ENV_FILE={authority}",
-            target,
+            *(targets if targets is not None else [target]),
         ],
         cwd=repo_root,
         env=environment,
@@ -165,13 +167,24 @@ def run_gate(
 
 
 def main() -> int:
-    if len(sys.argv) > 2 or (len(sys.argv) == 2 and sys.argv[1] != "--full-ci-local-quick"):
-        print("usage: local_dev_frontend_quick.py [--full-ci-local-quick]", file=sys.stderr)
-        return 2
     try:
-        if len(sys.argv) == 2:
+        if len(sys.argv) > 2 and sys.argv[1] == "--quick-targets":
+            sys.path.insert(0, str(ROOT / "scripts" / "ops"))
+            import local_quick_evidence as evidence
+            evidence.require_safe_make_environment()
+            targets = sys.argv[2:]
+            manifest = evidence.required_targets(ROOT)
+            if (len(set(targets)) != len(targets) or not set(targets) <= set(manifest)
+                    or targets != [item for item in manifest if item in targets]
+                    or not {"guard.prod.forbid", "ci.generated_evidence.preflight"} <= set(targets)):
+                raise LocalDevAuthorityError("invalid Quick target subset")
+            return run_gate(targets=targets, require_ready=False)
+        if len(sys.argv) == 2 and sys.argv[1] == "--full-ci-local-quick":
             return run_gate(target="ci.local.quick.run", require_ready=False)
-        return run_gate()
+        if len(sys.argv) == 1:
+            return run_gate()
+        print("usage: local_dev_frontend_quick.py [--full-ci-local-quick | --quick-targets TARGET ...]", file=sys.stderr)
+        return 2
     except (LocalDevAuthorityError, subprocess.CalledProcessError) as exc:
         print(f"[local.dev.frontend.quick] DENY {exc}", file=sys.stderr)
         return 2
