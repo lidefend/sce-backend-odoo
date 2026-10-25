@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "id": "BACKEND-SUITE-REUSE-AUTHORITY",
+  "branch": "codex/backend-suite-reuse-authority",
+  "baseline_sha": "b69f01fac19ab8c889baa540f44b25e34f7ee994",
+  "status": "verification_pending",
+  "goal": ".agent/goals/BACKEND-SUITE-REUSE-AUTHORITY.yaml",
+  "record": "docs/ops/iterations/backend_suite_reuse_authority_20261025.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BACKEND-SUITE-REUSE-AUTHORITY.yaml",
+    ".agent/runs/BACKEND-SUITE-REUSE-AUTHORITY/run.json",
+    "docs/ops/iterations/backend_suite_reuse_authority_20261025.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/backend_test_receipt.py",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/run_contract_fact_readback.sh",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/test_backend_suite_plan.py",
+    "scripts/ci/test_backend_test_receipt.py",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/verify/backend_contract_fact_readback_probe.py",
+    "scripts/verify/test_backend_contract_fact_readback_probe.py",
+    "scripts/ops/odoo_shell_exec.sh",
+    "make/runtime_ops.mk",
+    ".github/workflows/backend_test_suite.yml",
+    ".github/workflows/professional_quality_gate.yml",
+    "addons/smart_core/tests/__init__.py",
+    "addons/smart_core/tests/test_api_data_write_id_boundaries.py",
+    "addons/smart_core/tests/test_lowcode_config_contract_write_authority.py",
+    "docs/architecture/contract_assertion_inventory_v1.md",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_baseline_reproducibility_design_v1.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "scripts/ci/generate_test_inventory.py",
+    "scripts/ops/github_published_branch_sync.py",
+    "docs/ops/codex_execution_allowlist.md",
+    "scripts/ops/test_github_published_branch_sync.py",
+    "scripts/verify/test_coverage_registry.yaml"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local CI tools and unit tests; no database or service access"
+  },
+  "checks": {
+    "ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/backend_test_receipt.py",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        "scripts/ci/test_backend_test_receipt.py",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+        "scripts/verify/backend_contract_fact_readback_probe.py",
+        "scripts/verify/test_backend_contract_fact_readback_probe.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Finish whole-PR independent review; fix workflow regular-file mode attestation; run affected L1/L2; freeze once, exact-head Quick, review/archive/push, current required CI, governed merge and main sync.",
+  "observations": {
+    "conflict_closeout": {
+      "initial_local_head": "af95e73170c30c16f43a6b0a53ddcc2ab4d349b7",
+      "published_head": "2500d48bafe606b2c10763aa634e01d1ea941a20",
+      "target_main": "b69f01fac19ab8c889baa540f44b25e34f7ee994",
+      "layer": "P4 branch integration and evidence; P0 test registration only, no test/business semantics changes",
+      "preexisting": "clean; preserve unpublished af95 inventory foundation commit and all prior PR changes",
+      "conflicts": [
+        ".agent/active-runs.json",
+        "addons/smart_core/tests/__init__.py",
+        "docs/engineering_convergence/complexity_budget_report.md",
+        "docs/engineering_convergence/test_baseline_reproducibility_design_v1.md",
+        "docs/engineering_convergence/test_inventory.csv",
+        "docs/engineering_convergence/test_inventory_summary.md"
+      ],
+      "plan": "Move existing test import away from shared append point; retain main design doc. Extend existing governed generated-report set by exactly inventory_summary.md because active pre-commit regeneration prevents preparatory adoption. Existing sync test fixture iterates all registered reports. Preserve bundle/abort/exact identities, then regenerate final derived evidence.",
+      "exclusions": [
+        "product semantics",
+        "database or deployment",
+        "new worktree",
+        "history rewriting"
+      ],
+      "validation_plan": "L0 identity + complete status; L1 diff/import/declaration and iteration; L2 existing workflow/probe tests; L3/L4 not applicable to conflict-only edits; exact-head Quick/review/current CI before completion.",
+      "validation": {
+        "sync_unit": "passed:53 tests; .runtime/pr732-conflict-closeout/sync-unit-final.log",
+        "iteration": "passed: .runtime/pr732-conflict-closeout/iteration-prepare.log",
+        "independent_plan_review": "Preservation plan accepted; exact generated summary allowance and successful-merge byte assertions added.",
+        "workflow_contract": "passed:241 tests in merged tree; .runtime/pr732-conflict-closeout/workflow-contract.log",
+        "merged_iteration": "passed: .runtime/pr732-conflict-closeout/iteration-merged.log",
+        "registries": "guard passed; coverage disposition + exported snapshot reconciled, coverage/lane checks passed: .runtime/pr732-conflict-closeout/registries-reconciled.log"
+      },
+      "previous_baseline": "a5c6994fe9214944967c86c6da3f78900b2a418d",
+      "sync": "passed: .runtime/pr732-conflict-closeout/sync-apply.log; recovery bundle verified; append-only merge; no publication yet",
+      "preservation": "passed: .runtime/pr732-conflict-closeout/preservation.json; all unchanged-owning-source blobs preserved and imports are exact union",
+      "coverage_blocker": "Existing lowcode_contract_write_authority tag lacks disposition. Preserve test; register exact unwired/wire-pending debt using governed seed. Original failure .runtime/pr732-conflict-closeout/registries.log. No ORM pass claimed.",
+      "independent_review": "Actual conflict delta and exact union preservation reviewed: no introduced S0-S2; 15 original source blobs and 23 main-only files preserved. Review excludes unrelated original PR semantics.",
+      "evidence_reuse": "Sync tool/test/helper/recipe inputs unchanged by main merge; retain 53-test sync result. Source/workflow tests executed after merge. Registry changes invalidate only coverage snapshot/registry guards, rerun after export. New final Quick/current CI still required.",
+      "remaining_debt": "Original lowcode_contract_write_authority tag remains unwired, now explicitly dispositioned; no ORM execution claimed. Backend receipt unresolved authority dimensions continue RUN/BLOCK."
+    },
+    "mainline_integration": {
+      "authorization": "Owner requested mainline integration after conflict publication",
+      "previous_head": "45b165057bb3e6fdbc9cfd22384422545d03f44c",
+      "ci_failure": "GitHub checkout HTTP403 on shard0 before tests; other shards passed; logs in .runtime/pr732-conflict-closeout/ci-failure.log",
+      "review_finding": "S2 workflow attestation rejects real regular executable blob100755; fix both checks while preserving blob identity and symlink/gitlink rejection",
+      "layer": "P4 scripts/ci receipt authority, no P0-P3/runtime mutations",
+      "validation_plan": "L0 identity; L1 iteration; L2 workflow contract including receipt regression; no L3/L4 runtime change; L5 new exact-head Quick/full review/CI required. Unchanged source-preservation and sync tests reused.",
+      "validation": {
+        "workflow_contract": "passed:243 tests; .runtime/pr732-conflict-closeout/workflow-contract-mode-fix.log",
+        "iteration": "passed L1; .runtime/pr732-conflict-closeout/iteration-mode-fix.log",
+        "full_review": "Original45b full semantic review found only workflow mode S2; fixed in working tree. New frozen delta review pending.",
+        "nonblocking_limits": "Dynamic dependency completeness not proven; ORM artifact_attempt stays blocking; lowcode unwired debt remains explicit."
+      }
+    }
+  }
+}

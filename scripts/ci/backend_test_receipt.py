@@ -149,7 +149,8 @@ def scope_reference(raw: bytes, *, head: str, base: str, module: str) -> dict:
     if not base and plan.get('mode') not in ('full','explicit_override'):
         raise ValueError('missing integration base without explicit full scope')
     return {'sha256':digest(raw),'target':module,'known_inputs_sha256':target['known_inputs_sha256'],
-            'integration_base':base,'selection_mode':plan['mode'],'dependency_closure_complete':False}
+            'integration_base':base,'selection_mode':plan['mode'],
+            'dependency_closure_complete':bool(target.get('dependency_closure_complete'))}
 
 
 def archive_attempt(*, output: Path, module: str, attempt: int, head: str,
@@ -248,7 +249,9 @@ def record(root: Path, *, module: str, kind: str, head: str, base: str,
     (target / 'runtime.json').write_bytes(canonical(runtime))
     (target / 'python.json').write_bytes(canonical(python))
     readback_blockers, readback_closure = readback_closure_blockers(readback, head=head)
-    blockers = ['platform_source_not_authenticated', 'target_dependency_closure_not_certified'] + readback_blockers
+    blockers = ['platform_source_not_authenticated'] + readback_blockers
+    if not (scope and scope.get('dependency_closure_complete')):
+        blockers.append('target_dependency_closure_not_certified')
     receipt = {
         'schema': SCHEMA, 'module': module, 'kind': kind, 'source_head': head,
         'source_tree': tree, 'integration_base': base, 'database': database, 'scope_plan':scope,
@@ -452,15 +455,16 @@ def receipt_reuse_authorized(receipt: dict) -> tuple[bool, list[str]]:
     """Whether an authenticated receipt authorizes reuse for its target.
 
     Authorization is never inferred, and a producer's ``reuse_ready`` flag is
-    never trusted on its own. Only an independently attested authority
-    authorizes reuse: today that is the isolated pure-Python profile's verified
-    workflow-execution authority. Every other target stays blocked until the
-    contract/fact readback and dependency closure are independently verified,
-    not merely claimed in the receipt.
+    never trusted on its own. Two independently attested authorities authorize
+    reuse: the isolated pure-Python profile's verified workflow-execution
+    authority, and a verify_github_origin result whose six closure dimensions
+    all closed. Every other target stays blocked.
     """
     if not isinstance(receipt, dict):
         return False, ['receipt_missing']
     if receipt.get('isolated_execution_authority') == 'verified_workflow_execution':
+        return True, []
+    if receipt.get('reuse_authority') == 'verified_six_dimension_closure':
         return True, []
     return False, list(receipt.get('blockers') or ['reuse_closure_not_independently_attested'])
 
@@ -468,6 +472,7 @@ def receipt_reuse_authorized(receipt: dict) -> tuple[bool, list[str]]:
 REPOSITORY = 'lidefend/sce-backend-odoo'
 REPOSITORY_ID = 1307419149
 ARCHIVE_LIMIT = 64 * 1024 * 1024
+MAX_LOCATORS = 256
 
 
 def github_bytes(endpoint: str) -> bytes:
@@ -508,6 +513,28 @@ def archive_members(data: bytes) -> dict[str, bytes]:
             if not item.is_dir():
                 files[name] = archive.read(item)
     return files
+
+
+WORKFLOW_PATHS = frozenset({
+    '.github/workflows/backend_test_suite.yml',
+    '.github/workflows/professional_quality_gate.yml',
+})
+
+
+def workflow_authority_blobs(source_tree: str, fetch) -> dict[str, str]:
+    """Workflow files at the candidate source tree are the verified definition."""
+    tree = json.loads(fetch(f'git/trees/{source_tree}?recursive=1'))
+    if tree.get('sha') != source_tree or tree.get('truncated') is not False:
+        raise ValueError('source tree incomplete for workflow authority')
+    blobs = {}
+    for item in tree.get('tree', []):
+        if item.get('path') in WORKFLOW_PATHS:
+            if item.get('type') != 'blob' or item.get('mode') not in ('100644', '100755'):
+                raise ValueError('workflow authority entry is not a regular blob')
+            blobs[item['path']] = item['sha']
+    if set(blobs) != WORKFLOW_PATHS:
+        raise ValueError('workflow authority blobs incomplete')
+    return blobs
 
 
 def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
@@ -578,9 +605,38 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
             scope_path.write_bytes(files['scope-plan.json'])
         verified = verify(folder, expected_head=expected_head,
                           expected_digest=digest(files[module+'/receipt.json']), now=now,scope_plan=scope_path)
+    execution_definition_attested = False
+    if isinstance(receipt.get('workflow_definition'), dict):
+        try:
+            attest_execution_definition(
+                run, receipt['workflow_definition'],
+                workflow_authority_blobs(receipt['source_tree'], fetch), fetch)
+            execution_definition_attested = True
+        except (ValueError, KeyError, TypeError, AttributeError, OSError, subprocess.SubprocessError):
+            execution_definition_attested = False
+    readback_closure = receipt.get('readback_closure')
+    runtime_contract_readback = bool(readback_closure and readback_closure.get('runtime_contract_readback'))
+    fact_scope_readback = bool(readback_closure and readback_closure.get('fact_scope_readback'))
+    scope_plan = receipt.get('scope_plan')
+    target_dependency_closure = bool(scope_plan and scope_plan.get('dependency_closure_complete'))
+    blockers = []
+    if not execution_definition_attested:
+        blockers.append('execution_definition_not_attested')
+    if not runtime_contract_readback:
+        blockers.append('runtime_contract_readback_missing')
+    if not fact_scope_readback:
+        blockers.append('fact_scope_readback_missing')
+    if not target_dependency_closure:
+        blockers.append('target_dependency_closure_not_certified')
+    # The GitHub artifact API does not expose the upload attempt, so this
+    # dimension stays closed-shut until an alternative authority is available.
+    blockers.append('artifact_attempt_not_attested')
+    reuse_authority = 'verified_six_dimension_closure' if not blockers else None
     return {**verified, 'platform_origin': 'verified', 'repository': REPOSITORY,
             'run_id': run_id, 'requested_attempt': attempt, 'artifact_id': artifact_id,
             'run_attempt_metadata': 'verified', 'artifact_attempt': 'not_attested',
+            'execution_definition_attested': execution_definition_attested,
+            'reuse_authority': reuse_authority,
             'archive_sha256': archive_digest.removeprefix('sha256:'),
             'receipt_sha256': digest(files[module+'/receipt.json']),
             'workflow_path': run['path'],
@@ -589,8 +645,7 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
             'actual_duration_seconds': receipt.get('actual_duration_seconds'),
             'isolated_python': receipt.get('isolated_python'), 'source_tree': receipt['source_tree'],
             'workflow_definition': receipt.get('workflow_definition'),
-            'blockers': ['artifact_attempt_not_attested', 'execution_definition_not_attested', 'runtime_contract_readback_missing', 'fact_scope_readback_missing',
-                         'target_dependency_closure_not_certified']}
+            'blockers': blockers}
 
 
 def observe_github_job(*, run_id: int, attempt: int, job_id: int,
@@ -776,7 +831,7 @@ def attest_execution_definition(run: dict, definition: dict, authority_blobs: di
     for path in (workflow, run['path']):
         item = files.get(path, {})
         if (path not in authority_blobs or item.get('type') != 'blob'
-                or item.get('mode') != '100644' or item.get('sha') != authority_blobs[path]):
+                or item.get('mode') not in ('100644', '100755') or item.get('sha') != authority_blobs[path]):
             raise ValueError('executed workflow bytes differ from verified source definition')
 
 
@@ -896,6 +951,8 @@ def discover_receipt_locators(*, head: str, modules: list[str],
                 locators.append({'head': run['head_sha'], 'module': module,
                                  'run_id': run['id'], 'attempt': 1,
                                  'artifact_id': artifact['id'], 'shard': int(match[2])})
+                if len(locators) >= MAX_LOCATORS:
+                    return locators
     return locators
 
 

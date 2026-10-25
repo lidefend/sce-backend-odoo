@@ -50,6 +50,24 @@ def candidate_database(environment=None):
     return value
 
 
+def candidate_role_xmlid(environment=None):
+    """Resolve the registered principal whose permission projection is read back."""
+    environment = os.environ if environment is None else environment
+    value = str(environment.get('CANDIDATE_ROLE_XMLID') or ROLE_XMLID)
+    if not value or not re.fullmatch(r'[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*', value):
+        raise ValueError('registered role XMLID required')
+    return value
+
+
+def candidate_action_xmlid(environment=None):
+    """Resolve the registered window action whose contract is read back."""
+    environment = os.environ if environment is None else environment
+    value = str(environment.get('CANDIDATE_ACTION_XMLID') or ACTION_XMLID)
+    if not value or not re.fullmatch(r'[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*', value):
+        raise ValueError('registered action XMLID required')
+    return value
+
+
 @contextmanager
 def observe_delivery(authority, observer):
     original = authority.seal_runtime_contract
@@ -103,12 +121,14 @@ def assert_target(source, contract, model, record_id):
 # Comparison scope only, not product semantics. Relations and context-dependent
 # transformations require their own declared projection proof before reuse.
 DIRECT_SCALAR_TYPES = frozenset({'boolean','integer','float','monetary','char','text','selection','date','datetime'})
+RELATION_TYPES = frozenset({'many2one','one2many','many2many'})
 
 
-def value_parity(canonical_json, metadata, source_record, main_data, facts):
+def value_parity(canonical_json, metadata, source_record, main_data, facts, relation_declarations=None):
     checked = []; uncovered = {}; mismatches = []
     if not all(isinstance(value,dict) for value in (metadata,source_record,main_data,facts)):
         raise ValueError('explicit source, projection and fact mappings required')
+    declarations = relation_declarations or {}
     for name in sorted(set(main_data) | set(source_record)):
         if name == 'id':
             continue  # identity has its separate strict check, not a value test
@@ -118,6 +138,20 @@ def value_parity(canonical_json, metadata, source_record, main_data, facts):
         elif (not field.get('store') or field.get('compute') or field.get('related')
               or field.get('translate') or field.get('company_dependent')):
             uncovered[name] = 'derived_or_context_dependent_field'
+        elif field.get('type') in RELATION_TYPES:
+            declared = declarations.get(name)
+            if not (field.get('comodel_name') and isinstance(declared, dict)
+                    and declared.get('model') == field.get('comodel_name')
+                    and declared.get('can_read') is True):
+                uncovered[name] = ('relation_target_not_declared' if not field.get('comodel_name')
+                                   else 'relation_permission_projection_not_declared')
+            elif name not in source_record or name not in main_data or name not in facts:
+                uncovered[name] = 'missing_value_in_source_projection_or_readback'
+            else:
+                checked.append(name)
+                values = [canonical_json(row[name]) for row in (source_record,main_data,facts)]
+                if values[0] != values[1] or values[1] != values[2]:
+                    mismatches.append(name)
         elif field.get('type') not in DIRECT_SCALAR_TYPES:
             uncovered[name] = 'relation_or_non_scalar_projection'
         elif name not in source_record or name not in main_data or name not in facts:
@@ -135,6 +169,37 @@ def value_parity(canonical_json, metadata, source_record, main_data, facts):
             'status':'failed' if mismatches else 'passed', 'full_projection_parity':not uncovered and not mismatches}
 
 
+def declared_relation_projections(contract):
+    """Extract declared relation projections from a ui.contract.v2 contract.
+
+    Mirrors the browser relation probe: walk the contract for nodes carrying a
+    relation_entry with a target model and a read permission. A relation field
+    is comparable only when it is declared here; everything else stays uncovered.
+    """
+    out = {}
+
+    def walk(node):
+        if isinstance(node, list):
+            for item in node:
+                walk(item)
+            return
+        if not isinstance(node, dict):
+            return
+        field_info = node.get('fieldInfo') if isinstance(node.get('fieldInfo'), dict) else {}
+        entry = field_info.get('relation_entry') or node.get('relation_entry') or node.get('relationEntry')
+        name = str(node.get('name') or node.get('fieldName') or node.get('field_name') or '').strip()
+        if isinstance(entry, dict) and name and name not in out:
+            model = str(entry.get('model') or '').strip()
+            can_read = entry.get('can_read')
+            if isinstance(can_read, bool):
+                out[name] = {'model': model, 'can_read': can_read}
+        for value in node.values():
+            walk(value)
+
+    walk(contract)
+    return out
+
+
 def probe(env):
     from types import SimpleNamespace
     from odoo import api
@@ -146,6 +211,8 @@ def probe(env):
 
     identity = candidate_head_identity()
     database = candidate_database()
+    role_xmlid = candidate_role_xmlid()
+    action_xmlid = candidate_action_xmlid()
     if env.cr.dbname != database:
         raise ValueError('registered local.dev database required')
     env.cr.rollback()
@@ -163,14 +230,14 @@ def probe(env):
 
     env.cr.commit = refuse_commit
     try:
-        user = env.ref(ROLE_XMLID)
+        user = env.ref(role_xmlid)
         if not user.active or user.share:
             raise ValueError('registered principal unavailable')
         company = user.company_id.id
         actor = api.Environment(env.cr, user.id, {'allowed_company_ids':[company], 'lang':'zh_CN'})
         if actor.su:
             raise ValueError('elevated actor forbidden')
-        action = actor.ref(ACTION_XMLID)
+        action = actor.ref(action_xmlid)
         if action._name != 'ir.actions.act_window' or not action.res_model:
             raise ValueError('registered window action required')
         model = action.res_model
@@ -205,9 +272,11 @@ def probe(env):
             facts = fact_record.read(names)
             metadata = {name:{'type':field.type,'store':bool(field.store),'compute':bool(field.compute),
                               'related':bool(field.related),'translate':bool(getattr(field,'translate',False)),
-                              'company_dependent':bool(getattr(field,'company_dependent',False))}
+                              'company_dependent':bool(getattr(field,'company_dependent',False)),
+                              'comodel_name':str(getattr(field,'comodel_name','') or '')}
                         for name,field in fact_record._fields.items() if name in main or name in (source.get('record') or {})}
-            parity = value_parity(lifecycle.canonical_json,metadata,source.get('record'),main,facts[0])
+            parity = value_parity(lifecycle.canonical_json,metadata,source.get('record'),main,facts[0],
+                                  declared_relation_projections(result))
             if parity['mismatch_fields']:
                 raise ValueError('source/projection/fact value mismatch fields: ' + ','.join(parity['mismatch_fields']))
             item.update(model=model, record_ids=record.ids, read_fields=names, value_parity=parity,
@@ -243,12 +312,12 @@ def probe(env):
                 'environment_purpose':'local collector diagnostic, not CI test receipt',
                 'loaded_sources':{module.__name__:hashlib.sha256(Path(module.__file__).read_bytes()).hexdigest()
                                   for module in (lifecycle,authority)},
-                'actor':{'uid':actor.uid,'role_xmlid':ROLE_XMLID,'company_id':company,
+                'actor':{'uid':actor.uid,'role_xmlid':role_xmlid,'company_id':company,
                          'groups_sha256':lifecycle.payload_sha256(sorted(actor.user.groups_id.ids)),
                          'context_sha256':lifecycle.payload_sha256(dict(actor.context))},
                 'transaction':{'read_only':True,'isolation':isolation,'snapshot':snapshot},
                 'request':{'intent':'ui.contract.v2',**params},'observation':item,
-                'native_action':{'xmlid':ACTION_XMLID,'id':action.id,'model':model,
+                'native_action':{'xmlid':action_xmlid,'id':action.id,'model':model,
                     'domain_sha256':lifecycle.payload_sha256(action_domain),
                     'context_sha256':lifecycle.payload_sha256(action.context)},
                 'policy_declarations_sha256':lifecycle.payload_sha256({'access':access,'rules':rules}),

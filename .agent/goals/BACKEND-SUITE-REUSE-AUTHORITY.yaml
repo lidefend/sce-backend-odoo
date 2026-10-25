@@ -1,0 +1,40 @@
+schema_version: 1
+goal:
+  id: BACKEND-SUITE-REUSE-AUTHORITY
+  title: Establish authoritative remote backend-suite evidence reuse
+  status: active
+  formal_product_layer: P4
+  supporting_layers: []
+  layer_target: CI backend-suite receipt reuse authority (scripts/ci + workflows)
+  module:
+    - scripts/ci
+    - .github/workflows
+    - make
+  baseline:
+    branch: codex/backend-suite-reuse-authority
+    full_sha: a5c6994fe9214944967c86c6da3f78900b2a418d
+    source: main
+  objective: >-
+    Establish an authoritative mechanism that proves a historical successful
+    backend result still applies to the current candidate, and authorize REUSE
+    only when every required dimension is independently attested. The goal is
+    evidence-grounded reuse, not a preset REUSE ratio.
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_tool
+    why_here: >-
+      The work is CI evidence tooling only; product and runtime behavior are
+      unchanged.
+    why_not_elsewhere:
+      - no_product_code_change
+      - no_database_or_compose_change
+      - no_demo_seed_change
+    blast_radius:
+      - CI backend-suite plan and execution selection
+      - receipt capture and verification
+  constraints:
+    - fail_closed_reuse_authority
+    - no_product_semantic_change
+    - keep_RUN_or_BLOCK_for_unattested_targets
+  next_exact_step: >-
+    Stage 1 evidence-model audit: map receipt, workflow identity, runtime
+    witness and dependency closure to trusted vs missing sources.

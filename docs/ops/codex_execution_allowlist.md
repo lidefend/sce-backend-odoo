@@ -1058,8 +1058,8 @@ The entry binds PR, branch, local HEAD, published source and live main; canonica
 origin only, clean worktree, verified recovery bundle, append-only merge, no push.
 Apply requires `GITHUB_SYNC_CONFIRM=APPEND_EXACT_MAIN_TO_PUBLISHED_CANDIDATE`.
 Only `.agent/active-runs.json` supports three-way key merge (competing assignments
-abort); only `complexity_budget_report.md` and `test_inventory.csv` under
-`docs/engineering_convergence/` may retain candidate content temporarily during
+abort); only `complexity_budget_report.md`, `test_inventory.csv`, and
+`test_inventory_summary.md` under `docs/engineering_convergence/` may retain candidate content temporarily during
 conflict resolution. Run `make ci.delivery.freeze.prepare` to regenerate reports
 before freezing or publishing. Every other conflict aborts to the original HEAD.
 `make verify.workspace.branch.sync-github.unit` tests identity, conflicts and recovery.

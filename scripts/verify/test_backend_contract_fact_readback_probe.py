@@ -129,6 +129,42 @@ class ReadbackTest(unittest.TestCase):
         result=probe.value_parity(lifecycle.canonical_json,metadata,source,dict(source),facts)
         self.assertEqual('passed',result['status'])
 
+    def test_declared_relation_projection_is_comparable(self):
+        metadata={'partner':{'type':'many2one','store':True,'comodel_name':'res.partner'}}
+        declarations={'partner':{'model':'res.partner','can_read':True}}
+        values={'id':7,'partner':[3,'Partner']}
+        result=probe.value_parity(lifecycle.canonical_json,metadata,values,dict(values),dict(values),declarations)
+        self.assertEqual(['partner'],result['checked_fields'])
+        self.assertTrue(result['full_projection_parity'])
+
+    def test_undeclared_or_unreadable_relation_stays_uncovered(self):
+        metadata={'name':{'type':'char','store':True},
+                  'partner':{'type':'many2one','store':True,'comodel_name':'res.partner'},
+                  'orphan':{'type':'many2one','store':True,'comodel_name':''}}
+        values={'id':7,'name':'x','partner':[3,'Partner'],'orphan':[4,'X']}
+        result=probe.value_parity(lifecycle.canonical_json,metadata,values,dict(values),dict(values),{})
+        self.assertEqual(['name'],result['checked_fields'])
+        self.assertEqual('relation_permission_projection_not_declared',result['uncovered_fields']['partner'])
+        self.assertEqual('relation_target_not_declared',result['uncovered_fields']['orphan'])
+        self.assertFalse(result['full_projection_parity'])
+
+    def test_declared_relation_mismatch_is_reported(self):
+        metadata={'partner':{'type':'many2one','store':True,'comodel_name':'res.partner'}}
+        declarations={'partner':{'model':'res.partner','can_read':True}}
+        rows=[{'id':7,'partner':[3,'Partner']},{'id':7,'partner':[4,'Other']},{'id':7,'partner':[3,'Partner']}]
+        result=probe.value_parity(lifecycle.canonical_json,metadata,*rows,declarations)
+        self.assertEqual(['partner'],result['mismatch_fields'])
+
+    def test_declared_relation_projections_walk_contract(self):
+        contract={'dataContract':{'mainData':{'nodes':[
+            {'name':'partner_id','fieldInfo':{'relation_entry':{'model':'res.partner','can_read':True}}},
+            {'name':'manager_id','relation_entry':{'model':'res.users','can_read':False}},
+            {'name':'plain','fieldInfo':{}},
+        ]}}}
+        result=probe.declared_relation_projections(contract)
+        self.assertEqual({'partner_id':{'model':'res.partner','can_read':True},
+                          'manager_id':{'model':'res.users','can_read':False}},result)
+
     def test_candidate_head_identity_binds_exact_head_and_tree(self):
         self.assertEqual({'source_head':None,'source_tree':None},
                          probe.candidate_head_identity({}))
@@ -145,6 +181,21 @@ class ReadbackTest(unittest.TestCase):
         self.assertEqual('sc_demo_suite_ci',probe.candidate_database({'CANDIDATE_DB_NAME':'sc_demo_suite_ci'}))
         with self.assertRaises(ValueError):
             probe.candidate_database({'CANDIDATE_DB_NAME':'not valid!'})
+
+    def test_candidate_role_xmlid_resolves_env_over_default(self):
+        self.assertEqual(probe.ROLE_XMLID,probe.candidate_role_xmlid({}))
+        self.assertEqual('smart_construction_core.user_demo_role_finance',
+                         probe.candidate_role_xmlid({'CANDIDATE_ROLE_XMLID':'smart_construction_core.user_demo_role_finance'}))
+        for bad in ({'CANDIDATE_ROLE_XMLID':'no_dot'},{'CANDIDATE_ROLE_XMLID':'Bad.Case'}):
+            with self.subTest(env=bad), self.assertRaises(ValueError):
+                probe.candidate_role_xmlid(bad)
+
+    def test_candidate_action_xmlid_resolves_env_over_default(self):
+        self.assertEqual(probe.ACTION_XMLID,probe.candidate_action_xmlid({}))
+        self.assertEqual('smart_construction_core.action_payment_request_pay',
+                         probe.candidate_action_xmlid({'CANDIDATE_ACTION_XMLID':'smart_construction_core.action_payment_request_pay'}))
+        with self.assertRaises(ValueError):
+            probe.candidate_action_xmlid({'CANDIDATE_ACTION_XMLID':'bad action xmlid'})
 
 
 if __name__ == '__main__':unittest.main()

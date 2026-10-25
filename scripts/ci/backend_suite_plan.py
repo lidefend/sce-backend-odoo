@@ -63,19 +63,38 @@ def inventory_from_tree(graph: dict, modules: list[str], entries: dict) -> dict:
         reads = {path for m in closure for path in graph[m].get('file_inputs', [])}
         paths = sorted(shared | {path for path in entries if path.startswith(prefixes)} | (reads & entries.keys()))
         unresolved = sorted({site for m in closure for site in graph[m].get('unresolved_file_reads', [])})
+        unresolved_imports = sorted({site for m in closure for site in graph[m].get('unresolved_imports', [])})
+        unresolved_sql = sorted({site for m in closure for site in graph[m].get('unresolved_sql', [])})
         missing = sorted(reads - entries.keys())
         special = [path for path in paths if entries[path]['mode'] not in ('100644','100755') or entries[path]['kind'] != 'blob']
+        external_imports = sorted({pkg for m in closure for pkg in graph[m].get('external_imports', [])})
+        sql_reads = sorted({digest for m in closure for digest in graph[m].get('sql_reads', [])})
+        dependency_blockers = []
+        if unresolved:
+            dependency_blockers.append('unresolved_file_reads')
+        if unresolved_imports:
+            dependency_blockers.append('unresolved_python_imports')
+        if unresolved_sql:
+            dependency_blockers.append('unresolved_sql_execute_sites')
+        if missing:
+            dependency_blockers.append('missing_file_inputs')
+        if special:
+            dependency_blockers.append('special_git_entries')
+        closure_complete = not dependency_blockers
         identity = {'files':{path:entries[path] for path in paths}, 'declared_modules':sorted(closure),
-                    'external_modules':sorted(external), 'unresolved_file_reads':unresolved,
+                    'external_modules':sorted(external), 'external_imports':external_imports,
+                    'sql_reads':sql_reads, 'unresolved_file_reads':unresolved,
+                    'unresolved_imports':unresolved_imports, 'unresolved_sql':unresolved_sql,
                     'missing_file_inputs':missing, 'special_git_entries':special}
         targets[name] = {'target':name,'declared_module_closure':sorted(closure),
             'input_paths':paths,'direct_test_file_inputs':sorted(graph[name].get('file_inputs', [])),
             'known_inputs_sha256':hashlib.sha256(json.dumps(identity,sort_keys=True,separators=(',',':')).encode()).hexdigest(),
-            'external_modules':sorted(external),'unresolved_file_reads':unresolved,
+            'external_modules':sorted(external),'external_imports':external_imports,
+            'sql_reads':sql_reads,'unresolved_file_reads':unresolved,
+            'unresolved_imports':unresolved_imports,'unresolved_sql':unresolved_sql,
             'missing_file_inputs':missing,'special_git_entries':special,
-            'dependency_closure_complete':False,'reuse_ready':False,
-            'blockers':['dynamic_import_and_read_closure_unproven','runtime_environment_identity_required',
-                        'runtime_contract_and_fact_scope_not_bound','verified_execution_receipt_required']}
+            'dependency_closure_complete':closure_complete,'reuse_ready':False,
+            'blockers':dependency_blockers}
         used.update(paths)
     return {'schema':'backend-known-input-inventory/v1','targets':targets,
             'files':{path:entries[path] for path in sorted(used)},'reuse_authority':False}

@@ -49,6 +49,51 @@ class WorkflowDefinitionAttestationTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     receipt.attest_execution_definition(run,definition,blobs,lambda p:json.dumps(responses[p]).encode())
 
+    def test_workflow_authority_blobs_resolve_exact_blobs_and_reject_incomplete(self):
+        tree = 'c'*40
+        workflow = '.github/workflows/backend_test_suite.yml'
+        caller = '.github/workflows/professional_quality_gate.yml'
+        responses = {'git/trees/'+tree+'?recursive=1': {'sha':tree,'truncated':False,'tree':[
+            {'path':workflow,'sha':'d'*40,'mode':'100644','type':'blob'},
+            {'path':caller,'sha':'e'*40,'mode':'100644','type':'blob'}]}}
+        blobs = receipt.workflow_authority_blobs(tree, lambda p: json.dumps(responses[p]).encode())
+        self.assertEqual({'d'*40,'e'*40}, set(blobs.values()))
+        for mutation in ('missing','truncated','non_blob'):
+            with self.subTest(mutation=mutation):
+                broken = copy.deepcopy(responses)
+                if mutation == 'missing':
+                    broken['git/trees/'+tree+'?recursive=1']['tree'].pop()
+                elif mutation == 'truncated':
+                    broken['git/trees/'+tree+'?recursive=1']['truncated'] = True
+                else:
+                    broken['git/trees/'+tree+'?recursive=1']['tree'][0]['type'] = 'tree'
+                with self.assertRaises(ValueError):
+                    receipt.workflow_authority_blobs(tree, lambda p: json.dumps(broken[p]).encode())
+
+    def test_regular_workflow_modes_are_accepted_by_both_authorities(self):
+        for mode in ('100644', '100755'):
+            with self.subTest(mode=mode):
+                run, definition, blobs, responses = self.fixture()
+                tree = 'c' * 40
+                responses['git/trees/' + tree + '?recursive=1']['tree'][0]['mode'] = mode
+                fetch = lambda path: json.dumps(responses[path]).encode()
+                self.assertEqual(blobs, receipt.workflow_authority_blobs(tree, fetch))
+                receipt.attest_execution_definition(run, definition, blobs, fetch)
+
+    def test_nonregular_workflow_entries_are_rejected_by_both_authorities(self):
+        for mode, kind in (('120000', 'blob'), ('160000', 'commit'),
+                           ('040000', 'tree'), ('100644', 'tree')):
+            with self.subTest(mode=mode, kind=kind):
+                run, definition, blobs, responses = self.fixture()
+                tree = 'c' * 40
+                responses['git/trees/' + tree + '?recursive=1']['tree'][0].update(
+                    mode=mode, type=kind)
+                fetch = lambda path: json.dumps(responses[path]).encode()
+                with self.assertRaises(ValueError):
+                    receipt.workflow_authority_blobs(tree, fetch)
+                with self.assertRaises(ValueError):
+                    receipt.attest_execution_definition(run, definition, blobs, fetch)
+
 
 class JobObservationTest(unittest.TestCase):
     def setUp(self):
@@ -567,6 +612,16 @@ class ExecutionReceiptTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'missing integration base'):
             self.record(base='')
 
+    def test_complete_dependency_closure_drops_its_blocker(self):
+        plan = self.scope_fixture()
+        payload = json.loads(plan.read_text())
+        payload['input_inventory']['targets']['example']['dependency_closure_complete'] = True
+        plan.write_bytes(receipt.canonical(payload))
+        result = self.record(scope_plan=plan)
+        self.assertTrue(result['scope_plan']['dependency_closure_complete'])
+        self.assertNotIn('target_dependency_closure_not_certified', result['blockers'])
+        self.assertIn('platform_source_not_authenticated', result['blockers'])
+
     def test_failed_retry_logs_are_distinct_and_redacted(self):
         env=self.home/'managed.env';env.write_text('SC_DEMO_USER_PASSWORD=fixture-attempt-secret\n')
         self.log.write_text('fixture-attempt-secret failed before completion\n')
@@ -629,6 +684,18 @@ class ExecutionReceiptTest(unittest.TestCase):
         self.assertEqual(2, result['requested_attempt'])
         self.assertNotIn('attempt', result)
         self.assertIn('fact_scope_readback_missing',result['blockers'])
+
+    def test_execution_definition_attested_drops_only_that_blocker(self):
+        responses = self.platform_fixture()
+        with patch.object(receipt, 'workflow_authority_blobs', return_value={'w':'e'*40}), \
+             patch.object(receipt, 'attest_execution_definition'):
+            result = self.origin(responses)
+        self.assertTrue(result['execution_definition_attested'])
+        self.assertNotIn('execution_definition_not_attested', result['blockers'])
+        self.assertIn('artifact_attempt_not_attested', result['blockers'])
+        self.assertIn('runtime_contract_readback_missing', result['blockers'])
+        self.assertIn('fact_scope_readback_missing', result['blockers'])
+        self.assertIn('target_dependency_closure_not_certified', result['blockers'])
 
     def test_malformed_authenticated_newer_receipt_falls_back_to_valid_history(self):
         import backend_suite_plan as planner
@@ -849,6 +916,17 @@ class ReuseClosureModelTest(unittest.TestCase):
         self.assertFalse(authorized)
         self.assertEqual(['runtime_contract_readback_missing'], blockers)
 
+    def test_receipt_reuse_authorizes_verified_six_dimension_closure(self):
+        verified = {'platform_origin': 'verified', 'integrity': 'verified',
+                    'reuse_authority': 'verified_six_dimension_closure', 'blockers': []}
+        self.assertEqual((True, []), receipt.receipt_reuse_authorized(verified))
+        open_closure = {'platform_origin': 'verified', 'integrity': 'verified',
+                        'reuse_authority': None,
+                        'blockers': ['artifact_attempt_not_attested']}
+        authorized, blockers = receipt.receipt_reuse_authorized(open_closure)
+        self.assertFalse(authorized)
+        self.assertEqual(['artifact_attempt_not_attested'], blockers)
+
     def test_readback_closure_blockers_bind_exact_head_and_parity(self):
         missing, closure = receipt.readback_closure_blockers(None, head='a' * 40)
         self.assertEqual(['runtime_contract_readback_missing', 'fact_scope_readback_missing'], missing)
@@ -903,6 +981,24 @@ class ReuseClosureModelTest(unittest.TestCase):
         def fetch(path):
             raise OSError('network down')
         self.assertEqual([],receipt.discover_receipt_locators(head='d'*40,modules=['core'],fetch=fetch))
+
+    def test_discover_receipt_locators_is_bounded(self):
+        runs={'workflow_runs':[{
+            'id':100+index,'run_attempt':1,'head_sha':'a'*40,
+            'repository':{'id':receipt.REPOSITORY_ID},'head_repository':{'id':receipt.REPOSITORY_ID},
+            'event':'pull_request','path':'.github/workflows/backend_test_suite.yml',
+            'run_started_at':datetime.now(timezone.utc).isoformat(),
+        } for index in range(10)]}
+        data={'actions/runs?status=success&per_page=30':runs}
+        for index in range(10):
+            data[f'actions/runs/{100+index}/artifacts?per_page=100']={'artifacts':[
+                {'id':1000+index*10+shard,'name':f'backend-execution-{100+index}-1-{shard}','expired':False}
+                for shard in range(4)
+            ]}
+        def fetch(path):
+            return json.dumps(data[path]).encode()
+        locators=receipt.discover_receipt_locators(head='d'*40,modules=['m%d' % i for i in range(10)],fetch=fetch)
+        self.assertEqual(receipt.MAX_LOCATORS,len(locators))
 
 
 if __name__ == '__main__':

@@ -9,13 +9,16 @@ from __future__ import annotations
 import argparse
 import ast
 import fnmatch
+import hashlib
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[2]
 ROOTS = ('addons', 'demo_addons')
+STDLIB = frozenset(sys.stdlib_module_names)
 GLOBAL = ('Dockerfile*', 'docker-compose*', 'requirements*', 'odoo.conf',
           'config/odoo*', 'scripts/test/**', 'scripts/ci/orm_result_guard.sh',
           '.github/workflows/backend_test_suite.yml',
@@ -43,6 +46,82 @@ CONTROL_PLANE = {
     'scripts/audit/verification_lane_dispositions.json': 'verify.verification.lane_coverage',
     'scripts/audit/verification_lane_exemptions.json': 'verify.verification.lane_coverage',
 }
+
+
+def classify_import_top(top: str, local_modules: set[str]) -> str:
+    """Classify a top-level import name; an unknown name is external, never internal."""
+    if top == 'odoo':
+        return 'odoo'
+    if top in STDLIB:
+        return 'stdlib'
+    if top in local_modules:
+        return 'local_module'
+    return 'external'
+
+
+def import_tops_from_line(line: str) -> tuple[list[str], bool]:
+    """Extract top-level import names from one source line: (tops, ambiguous).
+
+    Relative imports are internal. A line that looks like an import but cannot
+    be fully parsed is flagged ambiguous so the caller can fail closed instead
+    of silently missing an external dependency.
+    """
+    stripped = line.strip()
+    if stripped.startswith('from .'):
+        return [], False
+    if stripped == 'import':
+        return [], True
+    if stripped.startswith('import '):
+        rest = stripped[len('import '):].split('#', 1)[0].strip()
+        if not rest:
+            return [], True
+        tops: list[str] = []
+        ambiguous = False
+        for part in rest.split(','):
+            part = part.strip()
+            if not part:
+                ambiguous = True
+                continue
+            name = part.split(' as ', 1)[0].strip()
+            if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_.]*', name):
+                ambiguous = True
+                continue
+            tops.append(name.split('.')[0])
+        return tops, ambiguous
+    if stripped == 'from':
+        return [], True
+    if stripped.startswith('from '):
+        rest = stripped[len('from '):].split(' import', 1)[0].strip()
+        if not rest or not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_.]*', rest):
+            return [], True
+        return [rest.split('.')[0]], False
+    return [], False
+
+def _is_cr_receiver(node) -> bool:
+    if isinstance(node, ast.Name):
+        return node.id in ('cr', '_cr')
+    if isinstance(node, ast.Attribute):
+        return node.attr in ('cr', '_cr')
+    return False
+
+
+def sql_execute_sites(source: str, path: str) -> tuple[list[str], list[str]]:
+    """Literal SQL execute sites resolve; every other SQL form stays unresolved."""
+    tree = ast.parse(source, filename=path)
+    resolved: set[str] = set()
+    unresolved: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not node.args:
+            continue
+        func = node.func
+        if not isinstance(func, ast.Attribute) or func.attr != 'execute' or not _is_cr_receiver(func.value):
+            continue
+        argument = node.args[0]
+        if isinstance(argument, ast.Constant) and isinstance(argument.value, str):
+            resolved.add(hashlib.sha256(argument.value.encode('utf-8')).hexdigest())
+        else:
+            unresolved.add(f'{path}:{node.lineno}')
+    return sorted(resolved), sorted(unresolved)
 
 
 def git(*args: str) -> str:
@@ -217,6 +296,49 @@ def snapshot(revision: str) -> dict:
             unresolved.extend(f'{path}:{line}' for line in lines)
         data['file_inputs'] = sorted(reads)
         data['unresolved_file_reads'] = unresolved
+    # External package imports: classify every top-level import in module files.
+    imports = subprocess.run(
+        ['git', 'grep', '-I', '-n', '-E',
+         r'^[[:space:]]*(import[[:space:]]+[A-Za-z_]|from[[:space:]]+[A-Za-z_][A-Za-z0-9_.]*[[:space:]]+import)',
+         revision, '--', 'addons/**/*.py', 'demo_addons/**/*.py'],
+        cwd=ROOT, text=True, capture_output=True)
+    if imports.returncode not in (0, 1):
+        raise ValueError('cannot resolve Python import sites')
+    local_tops = set(modules)
+    for line in imports.stdout.splitlines():
+        _rev, path, lineno, source_line = line.split(':', 3)
+        parts = path.split('/')
+        if len(parts) < 3 or parts[1] not in modules:
+            continue
+        tops, ambiguous = import_tops_from_line(source_line)
+        if ambiguous:
+            modules[parts[1]].setdefault('unresolved_imports', set()).add(f'{path}:{lineno}')
+            continue
+        for top in tops:
+            if classify_import_top(top, local_tops) == 'external':
+                modules[parts[1]].setdefault('external_imports', set()).add(top)
+    # SQL execute sites: literal SQL resolves; dynamic SQL stays unresolved.
+    sql_files = subprocess.run(
+        ['git', 'grep', '-I', '-l', '-E', r'(cr|_cr)[[:space:]]*\.execute\(',
+         revision, '--', 'addons/**/*.py', 'demo_addons/**/*.py'],
+        cwd=ROOT, text=True, capture_output=True)
+    if sql_files.returncode not in (0, 1):
+        raise ValueError('cannot resolve SQL execute sites')
+    for line in sql_files.stdout.splitlines():
+        if ':' not in line:
+            continue
+        _rev, path = line.split(':', 1)
+        parts = path.split('/')
+        if len(parts) < 3 or parts[1] not in modules:
+            continue
+        resolved, unresolved = sql_execute_sites(git('show', line), path)
+        modules[parts[1]].setdefault('sql_reads', set()).update(resolved)
+        modules[parts[1]].setdefault('unresolved_sql', set()).update(unresolved)
+    for data in modules.values():
+        data['external_imports'] = sorted(data.get('external_imports', ()))
+        data['sql_reads'] = sorted(data.get('sql_reads', ()))
+        data['unresolved_sql'] = sorted(data.get('unresolved_sql', ()))
+        data['unresolved_imports'] = sorted(data.get('unresolved_imports', ()))
     return modules
 
 

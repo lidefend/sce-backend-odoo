@@ -185,6 +185,27 @@ def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
                 self.assertEqual(['docs/input.json'], after['scene']['file_inputs'])
                 self.assertEqual(['scene'], planner.select(['docs/input.json'], before, after)['modules'])
 
+    def test_snapshot_extracts_external_imports_and_sql_sites(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def git(*args):
+                return subprocess.check_output(['git', *args], cwd=root, text=True).strip()
+            git('init', '-q'); git('config', 'user.name', 'Fixture'); git('config', 'user.email', 'fixture@example.invalid')
+            module = root / 'addons/core'
+            (module / 'models').mkdir(parents=True)
+            (module / '__manifest__.py').write_text("{'depends': []}")
+            (module / 'models/m.py').write_text(
+                'import xlrd\nfrom odoo import models\n\n\nclass M(models.Model):\n'
+                '    _name = "test.m"\n\n    def f(self):\n'
+                '        self._cr.execute("SELECT 1")\n        self._cr.execute(self.sql)\n')
+            git('add', '.'); git('commit', '-qm', 'base'); head = git('rev-parse', 'HEAD')
+            with patch.object(planner, 'ROOT', root):
+                graph = planner.snapshot(head)
+            core = graph['core']
+            self.assertEqual(['xlrd'], core['external_imports'])
+            self.assertEqual(1, len(core['sql_reads']))
+            self.assertEqual(['addons/core/models/m.py:10'], core['unresolved_sql'])
+
     def test_exact_empty_diff_requires_no_backend_work(self):
         plan = planner.select([], self.graph, self.graph)
         self.assertEqual([], plan['modules'])
@@ -310,6 +331,30 @@ def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
         self.assertIn('module_test_tags="sc_smoke/${module},sc_gate/${module}"', suite)
         self.assertIn('if ! evaluate_orm_outcome', suite)
         self.assertIn('cron: "37 19 * * *"', suite)
+
+
+class ImportAndSqlClosureTest(unittest.TestCase):
+    def test_import_classification_is_fail_open_to_external(self):
+        local = {'smart_core', 'scene'}
+        self.assertEqual('odoo', planner.classify_import_top('odoo', local))
+        self.assertEqual('stdlib', planner.classify_import_top('json', local))
+        self.assertEqual('local_module', planner.classify_import_top('scene', local))
+        self.assertEqual('external', planner.classify_import_top('xlrd', local))
+
+    def test_import_tops_from_line(self):
+        self.assertEqual((['os'], False), planner.import_tops_from_line('import os'))
+        self.assertEqual((['os', 'sys'], False), planner.import_tops_from_line('import os, sys'))
+        self.assertEqual((['xlrd'], False), planner.import_tops_from_line('import xlrd as xl'))
+        self.assertEqual((['odoo'], False), planner.import_tops_from_line('from odoo import models'))
+        self.assertEqual((['xlrd'], False), planner.import_tops_from_line('from xlrd import open_workbook'))
+        self.assertEqual(([], False), planner.import_tops_from_line('from . import test_a'))
+        self.assertEqual(([], True), planner.import_tops_from_line('import '))
+
+    def test_sql_execute_sites_resolve_literal_and_keep_dynamic_unresolved(self):
+        source = 'cr.execute("SELECT 1")\nself._cr.execute(sql)\nself.env["x"].execute("SELECT 2")\n'
+        resolved, unresolved = planner.sql_execute_sites(source, 'a.py')
+        self.assertEqual(1, len(resolved))
+        self.assertEqual(['a.py:2'], unresolved)
 
 
 if __name__ == '__main__':
