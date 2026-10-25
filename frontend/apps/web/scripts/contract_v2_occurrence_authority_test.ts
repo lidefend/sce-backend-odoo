@@ -17,7 +17,7 @@
  * index or a button verdict read as field authority each change an expectation.
  */
 import assert from 'node:assert/strict';
-import { computed, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { createContractV2Store } from '../src/app/contracts/v2/store';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import { useRecordFormLayout } from '../src/pages/contractForm/useRecordFormLayout';
@@ -72,7 +72,7 @@ const snapshot = {
     // declared stage fields and the declared stage actions, in declared order.
     containerTree: [{
       containerId: 'container.native.0', containerType: 'container', type: 'container',
-      title: '', span: 24, styleToken: 'd-flex flex-wrap gap-2', children: [
+      title: '', span: 24, columns: 2, styleToken: 'd-flex flex-wrap gap-2', children: [
         buttonNode('action_sc_submit', VISIBLE_BUTTON_IDENTITY, 5),
         buttonNode('action_sc_start', HIDDEN_BUTTON_IDENTITY, 4),
         fieldNode('sc_approval_state', 'field.sc_approval_state.occ.1', 1),
@@ -143,6 +143,35 @@ const snapshot = {
   },
 };
 
+
+// A structural group's fetch-time predicate must follow the same live draft
+// used by the controls. Neither static hiding nor authority may be released.
+for (const [id, reason, disabled, staticHidden, dependency] of [
+  ['dynamic', 'NATIVE_MODIFIER_INVISIBLE', false, false, 'category'],
+  ['authority', 'POLICY_HIDDEN', false, false, 'category'],
+  ['disabled', 'NATIVE_MODIFIER_INVISIBLE', true, false, 'category'],
+  ['static', 'NATIVE_MODIFIER_INVISIBLE', false, true, 'category'],
+  ['missing', 'NATIVE_MODIFIER_INVISIBLE', false, false, 'absent_category'],
+  ['unresolved', 'NATIVE_MODIFIER_UNRESOLVED', true, false, 'category'],
+] as const) {
+  snapshot.layoutContract.containerTree[0].children.push({
+    containerId: id, containerType: 'group', type: 'group', title: id,
+    nativeLocator: '/form[1]/sheet[1]/group[' + id + ']', occurrenceIndex: 1,
+    visible: !staticHidden, span: 24, columns: 2,
+    children: id === 'dynamic' ? [fieldNode('group_content', 'field.group_content.occ.1', 1)] : [], widgetList: [],
+    modifiers: {invisible: {kind: 'field_compare', field: dependency, operator: '!=', value: 'fund'}},
+  } as never);
+  snapshot.statusContract.containerStatus.push({
+    containerId: id, visible: false, disabled, reasonCode: reason,
+  });
+}
+snapshot.statusContract.widgetStatus.push({
+  widgetId: 'field.group_content.occ.1', visible: true, readonly: true, required: false, disabled: false, auth: 'read',
+});
+const draft = reactive<Record<string, unknown>>({
+  lifecycle_state: 'draft', sc_approval_state: 'draft', validation_status: 'no', category: 'salary',
+});
+
 const store = createContractV2Store(decodeContractV2Snapshot(snapshot));
 
 assert.equal(
@@ -169,7 +198,7 @@ const layout = useRecordFormLayout({
   v2ContractStore: storeRef,
   contractVisibleFields: computed(() => [] as string[]),
   onchangeModifiersPatch: ref<Record<string, Record<string, unknown>>>({}),
-  formData: { lifecycle_state: 'draft', sc_approval_state: 'draft', validation_status: 'no' },
+  formData: draft,
   isQuickIntakeMode: computed(() => false),
   contractFieldLabel: (name: string) => name,
   fieldSemanticMeta: () => ({}),
@@ -249,4 +278,18 @@ assert.equal(unknown.reasonCode, 'V2_OCCURRENCE_STATUS_MISSING', 'and it must sa
 const plainField = layout.runtimeOccurrenceState({ type: 'field', name: 'partner_id' } as never);
 assert.equal(plainField.invisible, false, 'a non-occurrence node keeps the field-name runtime state path');
 
-console.log('[contract_v2_occurrence_authority_test] PASS declared authority consumption cases=14');
+
+const dynamic = nodeByContainerId('dynamic') as never;
+assert.equal(layout.isNativeLayoutNodeVisible(dynamic), false);
+draft.category = 'fund';
+assert.equal(layout.runtimeOccurrenceState(dynamic).invisible, false);
+assert.equal(layout.isNativeLayoutNodeVisible(dynamic), true);
+assert(layout.baseNativeFormLayoutNodes.value.some(node =>
+  JSON.stringify(node).includes('"containerId":"dynamic"')), 'live group reaches the rendered tree');
+for (const id of ['authority', 'disabled', 'static', 'missing', 'unresolved']) {
+  assert.equal(layout.isNativeLayoutNodeVisible(nodeByContainerId(id) as never), false, id);
+}
+draft.category = 'salary';
+assert.equal(layout.isNativeLayoutNodeVisible(dynamic), false, 'switching back hides the group');
+assert(!JSON.stringify(layout.baseNativeFormLayoutNodes.value).includes('"containerId":"dynamic"'));
+console.log('[contract_v2_occurrence_authority_test] PASS declared authority and reactive container cases');

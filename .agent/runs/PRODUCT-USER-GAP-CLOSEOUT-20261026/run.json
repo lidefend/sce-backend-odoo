@@ -38,7 +38,9 @@
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "addons/smart_construction_core/models/support/quality_acceptance.py",
     "addons/smart_construction_core/models/core/labor_product_extension.py",
-    "addons/smart_construction_core/tests/test_conditioned_processing_feedback.py"
+    "addons/smart_construction_core/tests/test_conditioned_processing_feedback.py",
+    "frontend/apps/web/src/pages/contractForm/useRecordFormLayout.ts",
+    "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts"
   ],
   "environment": {
     "kind": "runtime",
@@ -46,7 +48,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Commit three P1 declarations and fixed five-entry P4 observer; refresh existing local.dev candidate and execute affected browser checks.",
+  "next_exact_step": "Fix narrow structural container stale visibility and prove boundary before retrying affected payroll browser entries.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -211,6 +213,13 @@
       "review": "review_quick_closeout development review: no confirmed S0-S2; stale etag suggestion implemented and ORM passed",
       "browser": "not_run",
       "compatibility": "selection and number_nonzero require coordinated consumer/backend release; nonzero means truthiness only, not valid amount or period"
+    },
+    "third_conditional_region_followup": {
+      "identity": "65db6f6d39a3e3f04fad5bdefd578fe791ae90bb + declared followup dirty scope",
+      "failure": "706 selected provident feedback ready but conditional container remained hidden; first 3 cases pass only, entire browser failed",
+      "owner": "P0 generic native container modifier consumption; no model special case, no widget auth override",
+      "scope": "Re-evaluate only declared NATIVE_MODIFIER_INVISIBLE structural container status with disabled=false and complete live dependency snapshot; preserve all authority/static denies",
+      "validation": "real store/layout reactive positive and authority/missing negative cases, strict type/basis, affected browser only; preserve first 3 cases if unchanged"
     }
   }
 }
