@@ -30,3 +30,28 @@ class TestProductReports(TransactionCase):
         self.assertEqual(tax_action.res_model, "sc.tax.filing")
         self.assertEqual(self.env.ref("smart_construction_core.business_config_contract_labor_subcontract_report_list_v1").action_id, labor_action)
         self.assertEqual(self.env.ref("smart_construction_core.business_config_contract_tax_report_list_v1").action_id, tax_action)
+
+    def test_analysis_contract_projects_native_labels_and_selection(self):
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+        env = self.env(context=dict(self.env.context, lang="zh_CN"))
+        for action_key in ("action_sc_product_labor_subcontract_report_v1", "action_sc_product_tax_report_v1"):
+            action = env.ref("smart_construction_core." + action_key)
+            metadata = env[action.res_model].fields_get()
+            for view_type in ("pivot", "graph"):
+                with self.subTest(action=action_key, view_type=view_type):
+                    response = UiContractV2Handler(env, su_env=env["ir.model"].sudo().env).handle({
+                        "op": "action_open", "action_id": action.id, "view_type": view_type,
+                        "contract_surface": "user",
+                    })
+                    response = response.to_legacy_dict() if hasattr(response, "to_legacy_dict") else response
+                    self.assertTrue(response.get("ok"), response)
+                    profile = response["data"]["layoutContract"][view_type + "Profile"]
+                    self.assertTrue(profile["dimensions"])
+                    self.assertTrue(profile["measures"])
+                    for field in profile["dimensions"] + profile["measures"]:
+                        native = metadata[field["name"]]
+                        self.assertEqual(field["label"], native["string"])
+                        self.assertEqual(field["fieldType"], native["type"])
+                        if native["type"] == "selection":
+                            self.assertEqual([list(pair) for pair in field["selection"]],
+                                             [list(pair) for pair in native["selection"]])

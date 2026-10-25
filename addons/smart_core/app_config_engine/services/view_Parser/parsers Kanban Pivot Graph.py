@@ -110,6 +110,19 @@ class _KanbanPivotGraphParserMixin:
             _logger.exception("parse kanban view failed")
         return out
 
+    @staticmethod
+    def _analysis_field_metadata(node, fields_info):
+        name = node.get('name')
+        native = (fields_info or {}).get(name) or {}
+        result = {
+            "name": name,
+            "label": node.get('string') or native.get('string'),
+            "fieldType": native.get('type'),
+        }
+        if native.get('type') == 'selection':
+            result["selection"] = native.get('selection')
+        return result
+
     # ---------------- pivot 解析 ----------------
     def _parse_pivot_view(self, arch, fields_info, root=None):
         measures, dimensions = [], []
@@ -120,25 +133,21 @@ class _KanbanPivotGraphParserMixin:
                 for fld in root.xpath('.//field[@name]'):
                     name = fld.get('name')
                     ftype = fld.get('type')
-                    label = fld.get('string') or name
                     if ftype == 'measure':
                         measures.append({
-                            "name": name,
-                            "label": label,
+                            **self._analysis_field_metadata(fld, fields_info),
                             "aggregate": fld.get('aggregate') or None
                         })
                     else:
                         dim_type = ftype if ftype in ('row', 'col') else None
                         dimensions.append({
-                            "name": name,
-                            "label": label,
+                            **self._analysis_field_metadata(fld, fields_info),
                             "axis": dim_type,
                             "interval": fld.get('interval') or None
                         })
                 for ms in root.xpath('.//measure[@name]'):
                     measures.append({
-                        "name": ms.get('name'),
-                        "label": ms.get('string') or ms.get('name'),
+                        **self._analysis_field_metadata(ms, fields_info),
                         "aggregate": ms.get('aggregate') or None
                     })
         except Exception:
@@ -157,26 +166,21 @@ class _KanbanPivotGraphParserMixin:
                 for fld in root.xpath('.//field[@name]'):
                     name = fld.get('name')
                     ftype = fld.get('type')
-                    label = fld.get('string') or name
                     if (ftype == 'measure'):
                         measures.append({
-                            "name": name,
-                            "label": label,
+                            **self._analysis_field_metadata(fld, fields_info),
                             "aggregate": fld.get('aggregate') or None,
                             "format": fld.get('format') or None
                         })
                     elif ftype in (None, 'row', 'x'):
                         dimensions.append({
-                            "name": name,
-                            "label": label,
+                            **self._analysis_field_metadata(fld, fields_info),
                             "interval": fld.get('interval') or None
                         })
                 for ms in root.xpath('.//measure[@name]'):
                     name = ms.get('name')
-                    label = ms.get('string') or name
                     measures.append({
-                        "name": name,
-                        "label": label,
+                        **self._analysis_field_metadata(ms, fields_info),
                         "aggregate": ms.get('aggregate') or None,
                         "format": ms.get('format') or None
                     })

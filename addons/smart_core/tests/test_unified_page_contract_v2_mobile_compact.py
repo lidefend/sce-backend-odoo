@@ -4543,13 +4543,13 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
     def test_analysis_projection_requires_authoritative_named_semantics(self):
         for view_type, native_analysis in (
             ("pivot", {
-                "measures": [{"name": "amount", "label": "Amount"}],
-                "dimensions": [{"name": "date", "label": "Date", "axis": "col"}],
+                "measures": [{"name": "amount", "label": "Amount", "fieldType": "monetary"}],
+                "dimensions": [{"name": "date", "label": "Date", "fieldType": "date", "axis": "col"}],
                 "defaults": {"expanded": False},
             }),
             ("graph", {
-                "measures": [{"name": "amount", "label": "Amount"}],
-                "dimensions": [{"name": "project_id", "label": "Project"}],
+                "measures": [{"name": "amount", "label": "Amount", "fieldType": "monetary"}],
+                "dimensions": [{"name": "state", "label": "状态", "fieldType": "selection", "selection": [["draft", "草稿"]]}],
                 "type_default": "line",
             }),
         ):

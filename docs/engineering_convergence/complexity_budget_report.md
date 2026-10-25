@@ -168,10 +168,10 @@ Generated from repository source files. This report is informational during the 
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
 | 962 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
+| 954 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
-| 932 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 914 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
 | 910 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |

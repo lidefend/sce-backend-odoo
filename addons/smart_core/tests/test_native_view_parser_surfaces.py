@@ -247,6 +247,28 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.tree_form_parser = _TreeFormParserProbe()
         self.base_parser = _BaseParserProbe()
 
+    def test_analysis_fields_use_native_metadata_and_xml_label_precedence(self):
+        metadata = {
+            "state": {"string": "状态", "type": "selection", "selection": [("draft", "草稿")]},
+            "amount": {"string": "金额", "type": "monetary"},
+        }
+        for view_type in ("pivot", "graph"):
+            with self.subTest(view_type=view_type):
+                result = getattr(self.kanban_parser, "_parse_" + view_type + "_view")(
+                    '<%s><field name="state"/><field name="amount" type="measure"/>'
+                    '<measure name="amount" string="自定义金额"/></%s>' % (view_type, view_type), metadata)
+                dimension = result["dimensions"][0]
+                self.assertEqual(dimension["label"], "状态")
+                self.assertEqual(dimension["fieldType"], "selection")
+                self.assertEqual(dimension["selection"], metadata["state"]["selection"])
+                self.assertEqual(result["measures"][0]["label"], "金额")
+                self.assertEqual(result["measures"][0]["fieldType"], "monetary")
+                self.assertEqual(result["measures"][1]["label"], "自定义金额")
+                missing = getattr(self.kanban_parser, "_parse_" + view_type + "_view")(
+                    '<%s><field name="unknown"/></%s>' % (view_type, view_type), {})
+                self.assertIsNone(missing["dimensions"][0]["label"])
+                self.assertIsNone(missing["dimensions"][0]["fieldType"])
+
     def test_calendar_parser_preserves_native_slots_and_fields(self):
         result = self.parser._parse_calendar_view(
             """
