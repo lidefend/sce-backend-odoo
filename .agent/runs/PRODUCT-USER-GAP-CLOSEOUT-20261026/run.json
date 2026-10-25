@@ -22,7 +22,8 @@
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
-    "docs/audit/test_coverage_registry/test_coverage_registry.json"
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/ops/iterations/system_function_gaps_20261026.md"
   ],
   "environment": {
     "kind": "runtime",
@@ -30,7 +31,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Validate explicit empty defaults via targeted ORM then two-workspace browser rerun; leave other audited gaps open.",
+  "next_exact_step": "Continue FG04/10/11/12/13/14 complex advisory forms: review computed dependencies, extend generic input types only where required, then explicit P1 bindings; separately resolve FG15/16 native static warnings. FG06/07 still need business-dispatch/readback before delivery closure.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -69,8 +70,7 @@
     "validation_results": {
       "iteration_L1": {
         "status": "passed",
-        "log": ".runtime/product-user-gap-closeout-20261026/iteration.log",
-        "limit": "before P4 observer addition"
+        "log": ".runtime/product-user-gap-closeout-20261026/iteration-04.log"
       },
       "feedback_unit": {
         "status": "passed",
@@ -88,15 +88,20 @@
         "log": ".runtime/product-user-gap-closeout-20261026/workspace-feedback-orm-03.log"
       },
       "browser": {
-        "status": "failed",
-        "candidate": "4c0c39fddc01b4810ef1820a7457e468600509d1",
-        "reason": "team form loads, describe succeeds, missing declared draft defaults prevent evaluation",
-        "report": ".runtime/product-user-gap-closeout-20261026/workspace-browser/4c0c39fddc01b4810ef1820a7457e468600509d1/report.json"
+        "status": "passed",
+        "candidate": "342c8b8c67d0f747438fbdd932434dfb095c9d4d",
+        "models": [
+          "sc.team.loan.deduction.workspace",
+          "sc.current.account.workspace"
+        ],
+        "report": ".runtime/product-user-gap-closeout-20261026/workspace-browser/342c8b8c67d0f747438fbdd932434dfb095c9d4d/report.json",
+        "limits": "draft-only; no save or business dispatch; not complete business chain acceptance"
       },
       "independent_development_review": {
         "status": "passed",
-        "scope": "initial P1 diff; not frozen integration review",
-        "followup": "added each-dependency regression"
+        "candidate": "342c8b8c67d0f747438fbdd932434dfb095c9d4d",
+        "reviewer": "/root/review_quick_closeout",
+        "limits": "development scoped review, not integration frozen approval"
       },
       "workspace_default_orm": {
         "status": "passed",
@@ -106,6 +111,14 @@
       }
     },
     "workspace_default_presence": "Browser reached team workspace; native default_get omitted undeclared empty note, causing FEEDBACK_INPUT_INVALID before evaluate. Explicit P1 default=False for note on both workspaces and optional partner on current account; preserve missing vs empty and frontend fail closed.",
-    "tool_entry_correction": "Use existing nginx 18081/t/demo, confirmed static mount current worktree dist-dev; 5176 preview lacks namespaced proxy. No product auth workaround."
+    "tool_entry_correction": "Use existing nginx 18081/t/demo, confirmed static mount current worktree dist-dev; 5176 preview lacks namespaced proxy. No product auth workaround.",
+    "status_dimensions": {
+      "batch": "first two workspace render/feedback fixes verified locally; full business handling remains untested",
+      "mainline": "not_integrated",
+      "daily_deployment": "unchanged bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
+      "overall_delivery": "not_accepted",
+      "demo_rebuild": "not_started"
+    },
+    "local_runtime_candidate": "342c8b8c67d0f747438fbdd932434dfb095c9d4d"
   }
 }
