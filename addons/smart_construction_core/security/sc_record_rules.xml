@@ -3308,5 +3308,19 @@
              security/sc_data_scope_ceiling_generated.xml; see
              scripts/verify/sc_data_scope_ceiling_generate.py. -->
 
+        <!-- Review assignment grants reading, never contract CRUD. The global
+             company ceiling still intersects this group rule. Use review_ids
+             (model-qualified by tier.validation), not its current-review-only
+             reviewer_ids search, so completed decisions remain auditable. -->
+        <record id="rule_sc_general_contract_finance_assigned_review" model="ir.rule">
+            <field name="name">SC Finance - assigned general contract review</field>
+            <field name="model_id" ref="model_sc_general_contract"/>
+            <field name="domain_force">[('review_ids.reviewer_ids', 'in', [user.id])]</field>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_manager'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
 </data>
 </odoo>

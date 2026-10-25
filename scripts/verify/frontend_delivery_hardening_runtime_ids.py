@@ -1,6 +1,7 @@
 """Resolve stable FE-B06 browser targets without hard-coded database ids."""
 
 import json
+import os
 
 
 def target(menu_xmlid, record_xmlid, *, declared_action_xmlid="", expect=None):
@@ -66,71 +67,88 @@ LIFECYCLE_COMPANY_XMLID = "smart_construction_acceptance_fixture.fe_company_a"
 # (menu_sc_project_project / action_sc_project_list). The duplicate
 # 项目信息编辑 entry was retired and its master-data composition was carried
 # into that entry's record form.
-payload = {
-    "project": target(
-        PROJECT_MENU_XMLID,
-        "smart_construction_acceptance_fixture.fe_project_a",
-        declared_action_xmlid=PROJECT_ACTION_XMLID,
-    ),
-    "contract": target(
-        CONTRACT_MENU_XMLID,
-        "smart_construction_acceptance_fixture.fe_general_contract_a",
-        declared_action_xmlid=CONTRACT_ACTION_XMLID,
-    ),
-    "general_contract_carrier": target(
-        CONTRACT_MENU_XMLID,
-        "smart_construction_acceptance_fixture.fe_general_contract_carrier",
-        declared_action_xmlid=CONTRACT_ACTION_XMLID,
-        expect={
-            "company_id": lambda record: int(record.company_id.id),
-            "company_xmlid": "smart_construction_acceptance_fixture.fe_company_a",
-            "declared_start_state": {"state": "draft"},
-        },
-    ),
-    "settlement": target(
-        SETTLEMENT_MENU_XMLID,
-        "smart_construction_acceptance_fixture.fe_settlement_a",
-        declared_action_xmlid=SETTLEMENT_ACTION_XMLID,
-    ),
-    "payment_request": target(
-        PAYMENT_REQUEST_MENU_XMLID,
-        "smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a",
-        declared_action_xmlid=PAYMENT_REQUEST_ACTION_XMLID,
-    ),
-    "payment_request_company_b": target(
-        PAYMENT_REQUEST_MENU_XMLID,
-        "smart_construction_acceptance_fixture.fe_request_c_001",
-        declared_action_xmlid=PAYMENT_REQUEST_ACTION_XMLID,
-    ),
-    "payment_execution": target(
-        PAYMENT_EXECUTION_MENU_XMLID,
-        "smart_construction_acceptance_fixture.fe_execution_a",
-        declared_action_xmlid=PAYMENT_EXECUTION_ACTION_XMLID,
-    ),
-    "journey_request": target(
-        PAYMENT_REQUEST_MENU_XMLID,
-        "smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a",
-        declared_action_xmlid=PAYMENT_REQUEST_ACTION_XMLID,
-    ),
-    "work_settlement": target(
-        SETTLEMENT_MENU_XMLID,
-        "smart_construction_acceptance_fixture.fe_b05_work_settlement_a",
-        declared_action_xmlid=SETTLEMENT_ACTION_XMLID,
-    ),
-    "lifecycle_project": target(
-        LIFECYCLE_MENU_XMLID,
-        LIFECYCLE_RECORD_XMLID,
-        declared_action_xmlid=LIFECYCLE_ACTION_XMLID,
-        expect={
-            "record_code": lambda record: str(record.code or "").strip(),
-            "company_id": lambda record: int(record.company_id.id),
-            "company_xmlid": LIFECYCLE_COMPANY_XMLID,
-            "declared_start_state": {"lifecycle_state": "draft", "sc_approval_state": "draft"},
-        },
-    ),
-}
-payload["companies"] = {
-    "a": int(env.ref("smart_construction_acceptance_fixture.fe_company_a").id),
-    "b": int(env.ref("smart_construction_acceptance_fixture.fe_company_b").id),
-}
+def resolve_targets(authority):
+    if authority == "daily_demo":
+        project = env.ref("smart_construction_demo.sc_demo_project_001")
+        if (project._name != "project.project" or project.project_code != "DEMO-PJ-001"
+                or project.company_id != env.ref("base.main_company")):
+            raise AssertionError("Declared Demo project identity differs")
+        return {
+            "project": target(PROJECT_MENU_XMLID, "smart_construction_demo.sc_demo_project_001",
+                declared_action_xmlid=PROJECT_ACTION_XMLID,
+                expect={"company_id": lambda record: int(record.company_id.id)}),
+            "companies": {"a": int(project.company_id.id)},
+        }
+    if authority != "fixture":
+        raise AssertionError("Unknown acceptance record authority")
+    payload = {
+        "project": target(
+            PROJECT_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_project_a",
+            declared_action_xmlid=PROJECT_ACTION_XMLID,
+        ),
+        "contract": target(
+            CONTRACT_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_general_contract_a",
+            declared_action_xmlid=CONTRACT_ACTION_XMLID,
+        ),
+        "general_contract_carrier": target(
+            CONTRACT_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_general_contract_carrier",
+            declared_action_xmlid=CONTRACT_ACTION_XMLID,
+            expect={
+                "company_id": lambda record: int(record.company_id.id),
+                "company_xmlid": "smart_construction_acceptance_fixture.fe_company_a",
+                "declared_start_state": {"state": "draft"},
+            },
+        ),
+        "settlement": target(
+            SETTLEMENT_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_settlement_a",
+            declared_action_xmlid=SETTLEMENT_ACTION_XMLID,
+        ),
+        "payment_request": target(
+            PAYMENT_REQUEST_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a",
+            declared_action_xmlid=PAYMENT_REQUEST_ACTION_XMLID,
+        ),
+        "payment_request_company_b": target(
+            PAYMENT_REQUEST_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_request_c_001",
+            declared_action_xmlid=PAYMENT_REQUEST_ACTION_XMLID,
+        ),
+        "payment_execution": target(
+            PAYMENT_EXECUTION_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_execution_a",
+            declared_action_xmlid=PAYMENT_EXECUTION_ACTION_XMLID,
+        ),
+        "journey_request": target(
+            PAYMENT_REQUEST_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a",
+            declared_action_xmlid=PAYMENT_REQUEST_ACTION_XMLID,
+        ),
+        "work_settlement": target(
+            SETTLEMENT_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_b05_work_settlement_a",
+            declared_action_xmlid=SETTLEMENT_ACTION_XMLID,
+        ),
+        "lifecycle_project": target(
+            LIFECYCLE_MENU_XMLID,
+            LIFECYCLE_RECORD_XMLID,
+            declared_action_xmlid=LIFECYCLE_ACTION_XMLID,
+            expect={
+                "record_code": lambda record: str(record.code or "").strip(),
+                "company_id": lambda record: int(record.company_id.id),
+                "company_xmlid": LIFECYCLE_COMPANY_XMLID,
+                "declared_start_state": {"lifecycle_state": "draft", "sc_approval_state": "draft"},
+            },
+        ),
+    }
+    payload["companies"] = {
+        "a": int(env.ref("smart_construction_acceptance_fixture.fe_company_a").id),
+        "b": int(env.ref("smart_construction_acceptance_fixture.fe_company_b").id),
+    }
+    return payload
+
+payload = resolve_targets(os.environ.get("SC_ACCEPTANCE_RECORD_AUTHORITY", "fixture"))
 print("FRONTEND_DELIVERY_HARDENING_TARGETS_JSON=" + json.dumps(payload, ensure_ascii=True, separators=(",", ":")))

@@ -649,7 +649,7 @@ def run(env):
             vals["owner_id"] = owner.id
         if pm_person:
             vals["user_id"] = pm_person.id
-        if pm_person and not project.manager_id:
+        if pm_person and (not project.manager_id or project.manager_id == env.ref("base.user_root")):
             vals["manager_id"] = pm_person.id
         if cost_person and not project.cost_manager_id:
             vals["cost_manager_id"] = cost_person.id

@@ -48,3 +48,16 @@ test('menu versions read never authorizes rollback', () => {
   for (const key of ['allow_bootstrap','allowBootstrap','bootstrap']) assert.equal(allow('POST','/api/v1/intent',{intent:'ui.menu_config.versions',params:{[key]:true}}),false);
   for (const intent of ['ui.menu_config.rollback','ui.menu_config.menu.create','ui.menu_config.menu.delete']) assert.equal(allow('POST','/api/v1/intent',{intent}),false);
 });
+
+test('capability catalog read does not permit sibling mutations or alternate transports', () => {
+  const intent = 'product.configuration.capability.catalog';
+  for (const body of [{ intent }, { params: { intent } }]) {
+    assert.equal(allow('POST', '/api/v1/intent', body), true);
+    assert.equal(allow('GET', '/api/v1/intent', body), false);
+    assert.equal(allow('POST', '/api/write', body), false);
+  }
+  for (const intent of ['product.configuration.capability.write', 'product.configuration.capability.catalog.update', 'ui.menu_config.save']) {
+    assert.equal(allow('POST', '/api/v1/intent', { intent }), false);
+    assert.equal(allow('POST', '/api/v1/intent', { params: { intent } }), false);
+  }
+});

@@ -18,7 +18,8 @@ from pathlib import Path
 from typing import Iterable
 
 AUTHORITY = {
-    'secrets': ('scripts/ci/secret_scan.py', 'config/security/legacy_credential_fingerprints.json'),
+    'secrets': ('scripts/ci/secret_scan.py', 'config/security/legacy_credential_fingerprints.json',
+                'config/security/secret_scan_false_positives.v1.json'),
     'personal': ('scripts/ci/personal_data_scan.py', 'scripts/ci/personal_data_false_positives.json'),
     'history': ('scripts/verify/repository_clean_history_guard.py',
                 'config/security/repository_clean_history_policy.v1.json',

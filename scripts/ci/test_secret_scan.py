@@ -43,7 +43,7 @@ class SecretScanTest(unittest.TestCase):
         fixture_path = secret_scan.ROOT / "fictional-security-fixture.md"
         with (
             mock.patch.object(secret_scan, "worktree_files", return_value=[fixture_path]),
-            mock.patch.object(secret_scan, "read_text", return_value=f"{self.online_password_name}={secret}"),
+            mock.patch.object(Path, "read_bytes", return_value=f"{self.online_password_name}={secret}".encode()),
             contextlib.redirect_stderr(stderr),
         ):
             self.assertEqual(secret_scan.main([]), 1)
@@ -269,6 +269,52 @@ class HistoryScanTest(unittest.TestCase):
                     with self.assertRaises(parallel_scan.ObjectReadError):
                         secret_scan.history_findings()
 
+
+
+class SyntheticUrlExceptionTests(unittest.TestCase):
+    def setUp(self):
+        self.relative = "scripts/verify/business_entry_matrix_reuse_identity.test.mjs"
+        self.data = (secret_scan.ROOT / self.relative).read_bytes()
+        self.finding = secret_scan.Finding("url_embedded_credentials", secret_scan.fingerprint("user:" + "secret"))
+
+    def test_exact_reviewed_fixture_only(self):
+        self.assertTrue(secret_scan.is_false_positive(self.relative, self.data, self.finding))
+
+    def test_changed_bytes_are_not_exempt(self):
+        self.assertFalse(secret_scan.is_false_positive(self.relative, self.data + b"\n", self.finding))
+
+    def test_worktree_non_utf8_drift_is_not_normalized_into_exception(self):
+        for data, expected in ((self.data, 0), (self.data + b"\xff", 1)):
+            with self.subTest(expected=expected), mock.patch.object(secret_scan, "worktree_files", return_value=[secret_scan.ROOT / self.relative]), \
+                    mock.patch.object(Path, "read_bytes", return_value=data), \
+                    contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(secret_scan.main([]), expected)
+
+    def test_same_content_different_path_not_exempt(self):
+        self.assertFalse(secret_scan.is_false_positive("another-test.mjs", self.data, self.finding))
+
+    def test_other_rule_and_fingerprint_not_exempt(self):
+        for finding in (secret_scan.Finding("github_pat", self.finding.fingerprint),
+                        secret_scan.Finding(self.finding.rule, "a" * 12)):
+            self.assertFalse(secret_scan.is_false_positive(self.relative, self.data, finding))
+
+    def test_registry_rejects_unbounded_and_unexplained_exceptions(self):
+        entry = json.loads(secret_scan.FALSE_POSITIVE_FILE.read_text())["entries"][0]
+        for patch in ({"path": "scripts/*"}, {"path": "../outside"}, {"path": "/absolute"},
+                      {"blob_id": "HEAD"}, {"finding_fingerprint": ""}, {"reason": ""},
+                      {"classification": "real_secret"}, {"rule_id": "github_pat"}):
+            with self.subTest(patch=patch), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "exceptions.json"
+                path.write_text(json.dumps({"schema_version": 1, "entries": [{**entry, **patch}]}))
+                with self.assertRaises(ValueError):
+                    secret_scan.load_false_positives(path)
+
+    def test_history_uses_actual_blob_bytes_and_exact_path(self):
+        reader = mock.Mock()
+        reader.read.return_value = self.data
+        with mock.patch.object(secret_scan, "_HISTORY_READER", reader):
+            self.assertEqual(secret_scan._history_scan_blobs([("86409737bdb355bab1047e961958645c518c3f81", [self.relative])]), [[]])
+            self.assertTrue(secret_scan._history_scan_blobs([("86409737bdb355bab1047e961958645c518c3f81", ["another-test.mjs"])])[0])
 
 
 if __name__ == "__main__":

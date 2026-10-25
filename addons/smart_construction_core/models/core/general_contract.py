@@ -14,6 +14,9 @@ class ScGeneralContract(models.Model):
     _state_to = ["confirmed"]
     _cancel_state = "cancel"
     _order = "contract_date desc, id desc"
+    # Assigned reviewers decide tier.review; they need not edit the contract.
+    # Consumed only after fresh work-item assignment/state/company validation.
+    _sc_tier_review_record_access_mode = "read"
 
     name = fields.Char(string="登记单号", required=True, default="新建", copy=False)
     source_origin = fields.Selection(

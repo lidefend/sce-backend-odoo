@@ -1,0 +1,10 @@
+schema_version: 1
+goal:
+  id: USER-DELIVERY-ACCEPTANCE-20261025
+  title: Execute product-delivery-standard acceptance using daily demo business data
+  status: active
+  formal_product_layer: P4
+  layer_target: governed acceptance tooling, demo scenario binding and evidence
+  exclusions: [unrelated_product_changes, credential_changes, unrequested_deployment, unregistered_fixtures]
+  acceptance_standard: product_delivery_use
+  business_write_boundary: only_exact_governed_demo_scenario_with_authority_readback_and_recovery

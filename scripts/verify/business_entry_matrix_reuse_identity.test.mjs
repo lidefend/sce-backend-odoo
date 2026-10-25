@@ -32,6 +32,7 @@
 import assert from 'node:assert/strict';
 
 import {
+  matrixLoginUrl,
   ACTING_CLOSURE_KEY,
   SURFACE_SCOPE_DECLARED,
   SURFACE_SCOPE_WHOLE,
@@ -300,3 +301,10 @@ for (const patch of [{ database: 'other' }, { base_url: 'http://other.invalid' }
   assert.throws(() => validateClosureEnvironment({ base_url: BASE, database: DATABASE, ...patch }, { baseUrl: BASE, database: DATABASE })); importCases += 1;
 }
 console.log(`[business-entry-observation-binding] PASS ${importCases} cases`);
+
+check(matrixLoginUrl('http://example.invalid:18081/t/demo/'), 'http://example.invalid:18081/t/demo/login', 'namespace retained without database query');
+check(matrixLoginUrl('http://example.invalid:18081'), 'http://example.invalid:18081/login', 'isolated root entry supported');
+for (const base of ['http://example.invalid/t/demo?db=sc_demo', 'http://user:secret@example.invalid', 'http://example.invalid/#x', 'file:///tmp/demo']) {
+  assert.throws(() => matrixLoginUrl(base), /base URL/);
+}
+console.log('matrix namespace cases: 6 passed');

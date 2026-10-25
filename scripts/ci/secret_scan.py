@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import functools
 import json
 import re
 import subprocess
@@ -22,6 +23,7 @@ import trusted_scan_scope
 
 ROOT = Path(__file__).resolve().parents[2]
 LEGACY_CATALOG = ROOT / "config/security/legacy_credential_fingerprints.json"
+FALSE_POSITIVE_FILE = ROOT / "config/security/secret_scan_false_positives.v1.json"
 SCANNED_SUFFIXES = {
     ".cjs", ".conf", ".css", ".csv", ".env", ".html", ".ini", ".js",
     ".json", ".lock", ".md", ".mjs", ".properties", ".py", ".scss",
@@ -101,6 +103,35 @@ def is_placeholder(value: str) -> bool:
 
 def fingerprint(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:12]
+
+
+@functools.lru_cache(maxsize=4)
+def load_false_positives(path: Path = FALSE_POSITIVE_FILE) -> frozenset:
+    # Deliberately limited to reviewed synthetic URL rejection tests. Token,
+    # private-key and legacy-credential findings have no exception mechanism.
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("schema_version") != 1 or not isinstance(payload.get("entries"), list):
+        raise ValueError("invalid secret false-positive registry")
+    result = set()
+    for entry in payload["entries"]:
+        relative = entry.get("path", "")
+        blob = entry.get("blob_id", "")
+        finding = entry.get("finding_fingerprint", "")
+        if (entry.get("rule_id") != "url_embedded_credentials"
+                or entry.get("classification") != "synthetic_negative_test"
+                or not str(entry.get("reason", "")).strip()
+                or not relative or Path(relative).is_absolute() or ".." in Path(relative).parts
+                or any(c in relative for c in "*?[]\\")
+                or not re.fullmatch(r"[0-9a-f]{40}", blob)
+                or not re.fullmatch(r"[0-9a-f]{12}", finding)):
+            raise ValueError("secret false-positive requires exact rule/path/blob/finding and synthetic reason")
+        result.add((entry["rule_id"], relative, blob, finding))
+    return frozenset(result)
+
+
+def is_false_positive(relative: str, data: bytes, finding: Finding) -> bool:
+    blob = hashlib.sha1(b"blob " + str(len(data)).encode("ascii") + b"\0" + data).hexdigest()
+    return (finding.rule, relative, blob, finding.fingerprint) in load_false_positives()
 
 
 def scan_line(line: str) -> list[Finding]:
@@ -252,7 +283,8 @@ def _history_scan_blobs(blobs: list[tuple[str, list[str]]]) -> list[list[str]]:
             for relative in sorted(set(paths)):
                 for line_no, line in enumerate(text.splitlines(), start=1):
                     for finding in scan_line(line):
-                        findings.append(f"{relative}@{blob_id[:12]}:{line_no}: {finding.rule}")
+                        if not is_false_positive(relative, data, finding):
+                            findings.append(f"{relative}@{blob_id[:12]}:{line_no}: {finding.rule}")
         results.append(findings)
     return results
 
@@ -433,18 +465,28 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(f"[legacy_credential_guard] PASS files={file_count} pr_bodies={pr_count} values_recorded=false")
         return 0
+    try:
+        load_false_positives()
+    except (OSError, ValueError, TypeError) as exc:
+        print(f"[secret_scan] FAIL invalid exception authority: {type(exc).__name__}", file=sys.stderr)
+        return 2
     scope = trusted_scan_scope.select_scope(ROOT, "secrets") if args.auto_trusted_base else trusted_scan_scope.Scope(None, "explicit_full")
     scope.report("secrets")
     findings: list[str] = []
     if args.scope in {"worktree", "all"}:
         for path in (worktree_files(scope.base) if scope.base else worktree_files()):
-            text = read_text(path)
-            if text is None:
+            try:
+                raw_data = path.read_bytes()
+            except OSError:
                 continue
+            if b"\0" in raw_data:
+                continue
+            text = raw_data.decode("utf-8", errors="ignore")
             rel = path.relative_to(ROOT)
             for line_no, line in enumerate(text.splitlines(), start=1):
                 for finding in scan_line(line):
-                    findings.append(f"{rel}:{line_no}: {finding.rule}")
+                    if not is_false_positive(str(rel), raw_data, finding):
+                        findings.append(f"{rel}:{line_no}: {finding.rule}")
     if args.scope in {"history", "all"}:
         findings.extend(history_findings(scope.base) if scope.base else history_findings())
     findings = sorted(set(findings))

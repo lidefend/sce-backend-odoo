@@ -501,3 +501,13 @@ export function validateObservationBinding(summary, plan, current) {
   }
   return observed;
 }
+
+// A namespace path owns database selection; never add client database hints.
+export function matrixLoginUrl(baseUrl) {
+  const url = new URL(baseUrl);
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
+    throw new Error('matrix base URL must have only an HTTP origin and optional namespace path');
+  }
+  url.pathname = url.pathname.replace(/\/+$/, '') + '/login';
+  return url.toString();
+}
