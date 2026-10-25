@@ -2,8 +2,8 @@
   "schema_version": 1,
   "id": "BACKEND-SUITE-REUSE-AUTHORITY",
   "branch": "codex/backend-suite-reuse-authority",
-  "baseline_sha": "a5c6994fe9214944967c86c6da3f78900b2a418d",
-  "status": "active",
+  "baseline_sha": "b69f01fac19ab8c889baa540f44b25e34f7ee994",
+  "status": "verification_pending",
   "goal": ".agent/goals/BACKEND-SUITE-REUSE-AUTHORITY.yaml",
   "record": "docs/ops/iterations/backend_suite_reuse_authority_20261025.md",
   "scope": [
@@ -38,7 +38,8 @@
     "scripts/ci/generate_test_inventory.py",
     "scripts/ops/github_published_branch_sync.py",
     "docs/ops/codex_execution_allowlist.md",
-    "scripts/ops/test_github_published_branch_sync.py"
+    "scripts/ops/test_github_published_branch_sync.py",
+    "scripts/verify/test_coverage_registry.yaml"
   ],
   "environment": {
     "kind": "offline",
@@ -62,7 +63,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Resume corrected scope, prepare conflict-compatible metadata/test registration, use governed published GitHub sync with exact live source/main identities.",
+  "next_exact_step": "Freeze generated evidence and final conflict-resolution commit; exact-head Quick and independent delta identity review; archive and governed push PR732, read back conflict status and current CI. No deployment.",
   "observations": {
     "conflict_closeout": {
       "initial_local_head": "af95e73170c30c16f43a6b0a53ddcc2ab4d349b7",
@@ -89,8 +90,18 @@
       "validation": {
         "sync_unit": "passed:53 tests; .runtime/pr732-conflict-closeout/sync-unit-final.log",
         "iteration": "passed: .runtime/pr732-conflict-closeout/iteration-prepare.log",
-        "independent_plan_review": "Preservation plan accepted; exact generated summary allowance and successful-merge byte assertions added."
-      }
+        "independent_plan_review": "Preservation plan accepted; exact generated summary allowance and successful-merge byte assertions added.",
+        "workflow_contract": "passed:241 tests in merged tree; .runtime/pr732-conflict-closeout/workflow-contract.log",
+        "merged_iteration": "passed: .runtime/pr732-conflict-closeout/iteration-merged.log",
+        "registries": "guard passed; coverage disposition + exported snapshot reconciled, coverage/lane checks passed: .runtime/pr732-conflict-closeout/registries-reconciled.log"
+      },
+      "previous_baseline": "a5c6994fe9214944967c86c6da3f78900b2a418d",
+      "sync": "passed: .runtime/pr732-conflict-closeout/sync-apply.log; recovery bundle verified; append-only merge; no publication yet",
+      "preservation": "passed: .runtime/pr732-conflict-closeout/preservation.json; all unchanged-owning-source blobs preserved and imports are exact union",
+      "coverage_blocker": "Existing lowcode_contract_write_authority tag lacks disposition. Preserve test; register exact unwired/wire-pending debt using governed seed. Original failure .runtime/pr732-conflict-closeout/registries.log. No ORM pass claimed.",
+      "independent_review": "Actual conflict delta and exact union preservation reviewed: no introduced S0-S2; 15 original source blobs and 23 main-only files preserved. Review excludes unrelated original PR semantics.",
+      "evidence_reuse": "Sync tool/test/helper/recipe inputs unchanged by main merge; retain 53-test sync result. Source/workflow tests executed after merge. Registry changes invalidate only coverage snapshot/registry guards, rerun after export. New final Quick/current CI still required.",
+      "remaining_debt": "Original lowcode_contract_write_authority tag remains unwired, now explicitly dispositioned; no ORM execution claimed. Backend receipt unresolved authority dimensions continue RUN/BLOCK."
     }
   }
 }

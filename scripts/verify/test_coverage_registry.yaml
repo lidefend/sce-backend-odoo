@@ -615,6 +615,14 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: lowcode_contract_write_authority
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
 - group: material_supplier_return
   kind: odoo_tag
   status: unwired

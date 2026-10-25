@@ -1329,7 +1329,8 @@
         "addons/smart_core/tests/test_lowcode_config_contract_write_authority.py"
       ],
       "owner": "platform-team",
-      "evidence": []
+      "evidence": [],
+      "disposition": "wire-pending"
     },
     {
       "group": "material_supplier_return",

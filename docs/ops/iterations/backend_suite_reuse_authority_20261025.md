@@ -295,3 +295,15 @@ report resolver; keep recovery bundle, exact refs and all other conflict rejecti
 53 sync tests and iteration pass; successful-merge tests assert exact conflict set
 and report bytes. Independent plan review confirmed preservation. Full merge
 result, generated-evidence refresh, frozen review and current-head gates follow.
+
+Governed sync completed at `56d38e24b56f5b45bb868d9cd8de2a8e92c7feb7` with
+parents `1b0fcfb92cbc987c7346737b1b79cad5da30ea2b` and the pinned main. Recovery
+bundle and hash are in `.runtime/pr732-conflict-closeout/sync-apply.log`.
+Independent review verified 15 original source blobs, 23 main-only files, exact
+53-test import union, 41-branch execution-index union and 1610-asset row union.
+Merged workflow/probe tests: 241 passed. Original PR's undocumented unwired
+`lowcode_contract_write_authority` tag triggered coverage guard; governed seed
+records wire-pending debt and export reconciles its snapshot. No tests or gates
+were removed; ORM coverage is not claimed. Registry and lane checks now pass.
+Logs, failed attempts and preservation report stay under the same runtime folder.
+Final frozen Quick, publication and remote readback are the remaining steps.
