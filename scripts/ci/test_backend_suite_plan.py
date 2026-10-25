@@ -89,7 +89,25 @@ class InputInventoryTest(unittest.TestCase):
         self.assertNotIn('docs/narrative.md',result['files'])
         self.assertNotIn('docs/policy.json',result['targets']['other']['input_paths'])
         self.assertEqual(['base'],target['external_modules'])
-        self.assertFalse(target['dependency_closure_complete']);self.assertFalse(target['reuse_ready'])
+        self.assertTrue(target['dependency_closure_complete']);self.assertFalse(target['reuse_ready'])
+
+    def test_external_imports_and_sql_reads_are_bound_to_inputs(self):
+        graph=copy.deepcopy(self.graph)
+        graph['scene'].update(external_imports=['xlrd'], sql_reads=['deadbeef'])
+        result=self.inventory(graph=graph)['targets']['scene']
+        self.assertEqual(['xlrd'],result['external_imports'])
+        self.assertEqual(['deadbeef'],result['sql_reads'])
+        self.assertTrue(result['dependency_closure_complete'])
+
+    def test_unresolved_import_or_sql_blocks_closure(self):
+        for key,blocker in [('unresolved_imports','unresolved_python_imports'),
+                            ('unresolved_sql','unresolved_sql_execute_sites')]:
+            with self.subTest(key=key):
+                graph=copy.deepcopy(self.graph)
+                graph['scene'][key]=['addons/scene/models/a.py:9']
+                result=self.inventory(graph=graph)['targets']['scene']
+                self.assertFalse(result['dependency_closure_complete'])
+                self.assertIn(blocker,result['blockers'])
 
     def test_known_input_changes_only_change_matching_inventory(self):
         before=self.inventory()['targets']

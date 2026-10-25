@@ -312,5 +312,29 @@ def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
         self.assertIn('cron: "37 19 * * *"', suite)
 
 
+class ImportAndSqlClosureTest(unittest.TestCase):
+    def test_import_classification_is_fail_open_to_external(self):
+        local = {'smart_core', 'scene'}
+        self.assertEqual('odoo', planner.classify_import_top('odoo', local))
+        self.assertEqual('stdlib', planner.classify_import_top('json', local))
+        self.assertEqual('local_module', planner.classify_import_top('scene', local))
+        self.assertEqual('external', planner.classify_import_top('xlrd', local))
+
+    def test_import_tops_from_line(self):
+        self.assertEqual((['os'], False), planner.import_tops_from_line('import os'))
+        self.assertEqual((['os', 'sys'], False), planner.import_tops_from_line('import os, sys'))
+        self.assertEqual((['xlrd'], False), planner.import_tops_from_line('import xlrd as xl'))
+        self.assertEqual((['odoo'], False), planner.import_tops_from_line('from odoo import models'))
+        self.assertEqual((['xlrd'], False), planner.import_tops_from_line('from xlrd import open_workbook'))
+        self.assertEqual(([], False), planner.import_tops_from_line('from . import test_a'))
+        self.assertEqual(([], True), planner.import_tops_from_line('import '))
+
+    def test_sql_execute_sites_resolve_literal_and_keep_dynamic_unresolved(self):
+        source = 'cr.execute("SELECT 1")\nself._cr.execute(sql)\nself.env["x"].execute("SELECT 2")\n'
+        resolved, unresolved = planner.sql_execute_sites(source, 'a.py')
+        self.assertEqual(1, len(resolved))
+        self.assertEqual(['a.py:2'], unresolved)
+
+
 if __name__ == '__main__':
     unittest.main()
