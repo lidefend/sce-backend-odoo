@@ -1,4 +1,13 @@
 # P4 offline role declaration inventory; never an authorization/runtime gate.
+.PHONY: verify.daily.demo.walkthrough.policy daily.demo.walkthrough.ui
+verify.daily.demo.walkthrough.policy: guard.prod.forbid
+	@node --check scripts/verify/daily_demo_walkthrough_ui.mjs
+	@node --check scripts/verify/daily_demo_walkthrough_contract_flow.mjs
+	@node scripts/verify/daily_demo_walkthrough_policy.test.mjs
+daily.demo.walkthrough.ui: verify.daily.demo.walkthrough.policy daily.demo.write.recovery_gate
+	@test "$${SC_DEMO_WALK_CONFIRM:-}" = EXECUTE_RECORDED_DEMO_JOURNEY
+	@node scripts/verify/daily_demo_walkthrough_ui.mjs
+
 .PHONY: verify.general_contract.review_authority.unit
 verify.general_contract.review_authority.unit:
 	@python3 -m unittest scripts.verify.test_general_contract_review_authority
@@ -153,3 +162,9 @@ local.contract-lifecycle.system_permission.concurrency: guard.prod.forbid local.
 	@SC_CONFIRM_PERMISSION_CONCURRENCY="$(SC_CONFIRM_PERMISSION_CONCURRENCY)" \
 	  SC_ACCEPTANCE_PERMISSION_HASHES="$$(python3 scripts/verify/system_permission_concurrency_probe.py --source-hashes)" \
 	  $(MAKE) --no-print-directory local.contract-lifecycle.odoo-shell < scripts/verify/system_permission_concurrency_probe.py
+
+.PHONY: daily.demo.walkthrough.contract_flow
+daily.demo.walkthrough.contract_flow: verify.daily.demo.walkthrough.policy daily.demo.write.recovery_gate
+	@test "$${SC_DEMO_WALK_CONFIRM:-}" = EXECUTE_RECORDED_DEMO_JOURNEY
+	@node --check scripts/verify/daily_demo_walkthrough_contract_flow.mjs
+	@node scripts/verify/daily_demo_walkthrough_contract_flow.mjs
