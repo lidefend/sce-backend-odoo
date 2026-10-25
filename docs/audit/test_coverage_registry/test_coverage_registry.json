@@ -3,12 +3,12 @@
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
     "odoo_tags": 200,
-    "gated": 3,
+    "gated": 5,
     "on_demand": 48,
-    "unwired": 149,
+    "unwired": 147,
     "odoo_tag_declarations": 419,
-    "gated_declarations": 95,
-    "uncovered_declarations": 324,
+    "gated_declarations": 97,
+    "uncovered_declarations": 322,
     "ci_unit_scripts": 17,
     "ci_unit_scripts_wired": 17,
     "ci_unit_scripts_unwired": 0
@@ -779,15 +779,16 @@
     },
     {
       "group": "contract_assembly_determinism",
-      "status": "unwired",
+      "status": "gated",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_core/tests/test_contract_assembly_determinism.py"
       ],
       "owner": "platform-team",
-      "evidence": [],
-      "disposition": "wire-pending"
+      "evidence": [
+        ".github/workflows/backend_test_suite.yml :: ${module_test_tags},contract_assembly_determinism/${module},lowcode_contract_wri"
+      ]
     },
     {
       "group": "contract_dashboard",
@@ -1322,15 +1323,16 @@
     },
     {
       "group": "lowcode_contract_write_authority",
-      "status": "unwired",
+      "status": "gated",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_core/tests/test_lowcode_config_contract_write_authority.py"
       ],
       "owner": "platform-team",
-      "evidence": [],
-      "disposition": "wire-pending"
+      "evidence": [
+        ".github/workflows/backend_test_suite.yml :: ${module_test_tags},contract_assembly_determinism/${module},lowcode_contract_wri"
+      ]
     },
     {
       "group": "material_supplier_return",

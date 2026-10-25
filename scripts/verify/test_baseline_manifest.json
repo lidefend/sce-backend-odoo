@@ -1,0 +1,33 @@
+{
+  "schema": "test-baseline-surface/v1",
+  "description": "Test baseline execution, selection, receipt, readback and registry mechanisms. Product integration coverage is separately required by current exact-head CI; this manifest is not all repository tests.",
+  "modules": [
+    "scripts.ci.test_backend_impact_plan",
+    "scripts.ci.test_backend_suite_plan",
+    "scripts.ci.test_backend_test_receipt",
+    "scripts.ci.test_backend_test_suite_dispatch_contract",
+    "scripts.verify.test_backend_contract_fact_readback_probe",
+    "scripts.ops.test_github_published_branch_sync",
+    "scripts.verify.test_local_test_runner",
+    "scripts.verify.test_determinism_probe",
+    "scripts.verify.test_isolation_probe",
+    "scripts.verify.test_guard_registry_audit",
+    "scripts.verify.test_test_coverage_registry_audit",
+    "scripts.verify.test_test_baseline_contract"
+  ],
+  "orders": [
+    "forward",
+    "reverse",
+    "random"
+  ],
+  "seed": 20261026,
+  "quarantine": [],
+  "orm": {
+    "module": "smart_core",
+    "tags": "contract_assembly_determinism/smart_core,lowcode_contract_write_authority/smart_core",
+    "files": [
+      "addons/smart_core/tests/test_contract_assembly_determinism.py",
+      "addons/smart_core/tests/test_lowcode_config_contract_write_authority.py"
+    ]
+  }
+}

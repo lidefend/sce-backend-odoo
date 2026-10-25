@@ -62,7 +62,6 @@ LOCAL_CONTRACT_SNAPSHOT_ODOO_PORT ?= 8080
 export LOCAL_CONTRACT_SNAPSHOT_PASSWORD
 
 LOCAL_CLEAN_MODULES ?= sc_norm_engine
-LOCAL_TEST_MODULES ?= smart_construction_seed
 LOCAL_TEST_ENV_FILE ?= /home/lidefend/workspace/sce-backend-odoo/.env.local.test
 LOCAL_ENV_ISOLATE = env \
 	-u DB_NAME -u DB -u BD -u DB_USER -u DB_PASSWORD \
@@ -76,7 +75,7 @@ verify.local.dev.layout_authority.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_local_development_lifecycle.LayoutAuthorityReadonlyProbeTest
 
 verify.local.development_lifecycle.unit: guard.prod.forbid
-	@python3 -m unittest scripts.verify.test_local_development_lifecycle
+	@python3 -m unittest scripts.verify.test_local_development_lifecycle scripts.verify.test_local_test_runner
 
 local.dev.demo_credentials.prepare: guard.prod.forbid
 	@ROOT_DIR="$(ROOT_DIR)" TARGET_ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
@@ -795,25 +794,11 @@ local.clean.upgrade: guard.prod.forbid local.clean.up
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" restart
 
 .PHONY: local.test.prepare local.test.up local.test.down local.test.test
-local.test.prepare: guard.prod.forbid
-	@ROOT_DIR="$(ROOT_DIR)" SOURCE_ENV_FILE="$(LOCAL_DEV_ENV_FILE)" TARGET_ENV_FILE="$(LOCAL_TEST_ENV_FILE)" \
-	  LOCAL_CLEAN_PROJECT_NAME=sc-local-test LOCAL_CLEAN_DB_USER=sc_test_odoo LOCAL_CLEAN_DB_NAME=sc_test \
-	  LOCAL_CLEAN_DB_DATA=sc_local_test_db_data LOCAL_CLEAN_REDIS_DATA=sc_local_test_redis_data \
-	  LOCAL_CLEAN_ODOO_DATA=sc_local_test_odoo_data LOCAL_CLEAN_NGINX_PORT=18084 LOCAL_CLEAN_ODOO_PORT=8073 \
-	  bash scripts/dev/local_clean_env_prepare.sh
+local.test.prepare local.test.up local.test.down: guard.prod.forbid
+	@python3 scripts/dev/local_test_runner.py $(patsubst local.test.%,%,$@) --env-file "$(LOCAL_TEST_ENV_FILE)"
 
-local.test.up: guard.prod.forbid local.test.prepare
-	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_TEST_ENV_FILE)" up
-
-local.test.down: guard.prod.forbid
-	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_TEST_ENV_FILE)" down
-
-local.test.test: guard.prod.forbid local.test.up
-	@test -n "$(MODULE)" || (echo "MODULE is required" >&2; exit 2)
-	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_TEST_ENV_FILE)" \
-	  MODULE="$(LOCAL_TEST_MODULES)" WITHOUT_DEMO=--without-demo=all mod.install
-	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_TEST_ENV_FILE)" \
-	  SC_ENVIRONMENT=test MODULE="$(MODULE)" TEST_TAGS="$(TEST_TAGS)" test.safe
+local.test.test: guard.prod.forbid
+	@python3 scripts/dev/local_test_runner.py test --env-file "$(LOCAL_TEST_ENV_FILE)" --module "$(MODULE)" --tags "$(TEST_TAGS)" --order "$(or $(LOCAL_TEST_ORDER),forward)"
 
 .PHONY: local.clean.contract_projection_cache.probe
 local.clean.contract_projection_cache.probe: guard.prod.forbid local.clean.require_env
@@ -1709,3 +1694,7 @@ acceptance.feedback.runtime.bundle: guard.prod.forbid
 
 acceptance.deployment.postverify.bundle: guard.prod.forbid
 	@$(MAKE) --no-print-directory verify.daily.runtime.entry.identity.readonly
+
+.PHONY: local.test.baseline
+local.test.baseline: guard.prod.forbid
+	@python3 -m scripts.verify.test_baseline_contract --orm --output .runtime/test-baseline/orm

@@ -1780,3 +1780,19 @@ entries:
   date: '2026-08-10'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_local_test_runner.py
+  status: active
+  owner: platform-team
+  date: '2026-10-26'
+  reason: 'Governed execution through verify.local.development_lifecycle.unit; reproducible test baseline authority.'
+- script: test_test_baseline_contract.py
+  status: active
+  owner: platform-team
+  date: '2026-10-26'
+  reason: 'Governed execution through verify.test.baseline; reproducible test baseline authority.'
+- script: test_baseline_contract.py
+  status: active
+  owner: platform-team
+  date: '2026-10-26'
+  reason: 'Governed execution through verify.test.baseline; reproducible test baseline authority.'
+  wire_or_retire: file-consumed

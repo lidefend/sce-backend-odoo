@@ -67,6 +67,15 @@ governed_runtime_profiles:
     compose_project: sc-local-clean
     database: sc_clean
     purpose: disposable_clean_installation
+  local_test:
+    make_prefix: local.test
+    compose_project: sc-local-test
+    database: sc_test
+    purpose: disposable_synthetic_test_database
+    odoo_demo: false
+    fresh_database_each_attempt: true
+    persistent_application_server: false
+
   manual_environment_assembly_forbidden: true
 
 delivery_auth:

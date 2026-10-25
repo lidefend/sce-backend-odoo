@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4943`
+- Scanned files: `4948`
 - Files requiring split plan: `72`
 - Files above warning threshold: `143`
 
@@ -58,7 +58,7 @@ Generated from repository source files. This report is informational during the 
 | 1844 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1818 | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1804 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1782 | YAML workflow | `scripts/verify/registry.yaml` |
+| 1798 | YAML workflow | `scripts/verify/registry.yaml` |
 | 1751 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1747 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1738 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
@@ -71,8 +71,8 @@ Generated from repository source files. This report is informational during the 
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1610 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1600 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
-| 1600 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1590 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
+| 1584 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1573 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1553 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
@@ -81,7 +81,7 @@ Generated from repository source files. This report is informational during the 
 | 1522 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 734 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
-| 601 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
+| 604 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 
@@ -283,7 +283,7 @@ Generated from repository source files. This report is informational during the 
 | 1844 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1818 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1804 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1782 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
+| 1798 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 1751 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1747 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1738 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
@@ -297,8 +297,8 @@ Generated from repository source files. This report is informational during the 
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1610 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1600 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
-| 1600 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1590 | split_plan_required | Python source | `scripts/verify/test_frontend_standard_preview.py` |
+| 1584 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1573 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1553 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |

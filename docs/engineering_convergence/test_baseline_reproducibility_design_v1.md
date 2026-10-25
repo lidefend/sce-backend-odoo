@@ -1,76 +1,38 @@
-# 测试基线可复现性整改设计 v1
+# 测试基线可复现性契约 v1
 
-## 1. 问题（已诊断，证据见 2026-10-25 会话）
+## 成立条件与范围
 
-基线不可复现，根因分四类：
+基线必须绑定同一冻结源码、执行器、测试集合和运行环境，以实际执行证据成立，不能以注册表通过或退出码零代替。最终状态由本地证据、当前候选必需 CI、独立复核及主线合并共同确定；本文不是通过回执。
 
-1. 输入未冻结：206 个 TransactionCase + 8 个 HttpCase 在本地跑持久 demo 库
-   （`sc_dev_demo` + `SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1`），CI 用隔离
-   `sc_suite_ci` + `SC_ENVIRONMENT=test`。两层数据库身份不一致，本地结果不是
-   可复现基线。
-2. 输出非确定：`docs/engineering_convergence/test_inventory.csv` 用位置序号 ID
-   `T-ASSET-{index:03d}`（`scripts/ci/generate_test_inventory.py`）。增删一条资产即
-   整体重排（实测删 2 个脚本产生 1294 插入 / 1519 删除）；且该序号被
-   `scripts/audit/verification_lane_dispositions.json` 与 planning 文档以文本引用，
-   序号漂移会静默指向别的资产。
-3. 无可复现门禁：没有确定性/隔离的机器可检查证明，flaky 无 quarantine。
-4. 全量无借用：`make ci.local.quick` 只给三个受管扫描接了祖先增量，测试矩阵
-   （纯单元 + 静态守卫 + 前端 build/lint/typecheck）每次全跑。
+| 层面 | 机器校验与证据 |
+| --- | --- |
+| 资产身份 | 测试清单采用路径派生稳定 ID，增删资产不重排其他身份 |
+| 离线复现 | `scripts/verify/test_baseline_manifest.json` 的完整模块集合，在三个新进程中正序、逆序、固定随机种子运行；逐测试 ID 与结果相同，非零、无重复、无缺项、无跳过 |
+| ORM 复现 | 声明的契约组装确定性、低代码契约写入权限两组，共 6 个用例；每轮重新创建既有专属 `sc_test`，临时应用数据目录，正序/逆序/固定随机的类内方法顺序，实际日志身份与顺序必须匹配 |
+| 运行身份 | 固定既有 `sc-local-test`、独立数据库角色与卷、精确 filter、源码挂载；隔离环境和 Make 参数穿透；镜像与已安装 Python 包摘要一致 |
+| 结果守卫 | 共用 ORM guard 拒绝零测试、错误数据库/模块、失败和截断结果；超时清理本次精确容器，失败留下失败证据，不重试变绿 |
+| 证据有效性 | 运行前后完整 tracked/untracked 源码内容和权限指纹一致；日志/子报告摘要回查；启动及失败使旧成功回执失效 |
+| flaky | 当前 quarantine 为空；不稳定、skip、expected failure 不计入已通过集合，也不自动排除。增加例外前须独立设计/审查，不得降低必需断言 |
+| 集成 | 最终候选完整 Quick、当前源/目标的四项必需 CI、独立代码复核、外部归档、受保护 PR 合并和 main 回读 |
 
-## 2. 目标：可复现基线契约
+离线范围由 manifest 明确列出，覆盖基线执行、选择、证据来源、回读和注册表机制。ORM 隔离证明是这两组的**类内方法顺序**证明，不扩大为类间、模块间或全仓任意测试的证明。完整产品集成仍由当前候选风险选择的 CI 套件负责。其他历史测试覆盖债务保留在既有覆盖注册表中，不计入上述已证明范围。
 
-同样的输入产出同样的输出，失败可归因到代码 / 环境 / flaky 三类之一。满足这条
-之后，增量复用才有意义。
+## 受管使用
 
-## 3. 系统方案（三层，依赖有序）
+1. `make local.test.prepare`：只读校验既有私有 profile、卷归属及 Compose 源码挂载；不创建第二套凭据。
+2. `make local.test.test MODULE=smart_core TEST_TAGS=<明确选择>`：串行使用专属测试库；每次重建 **仅 sc_test**，安装请求模块并运行测试，至少实际执行一个请求模块用例。
+3. `make local.test.baseline`：运行并验证上述 ORM 三轮；原始日志和回执位于 `.runtime/test-baseline/`。
+4. `make verify.test.baseline`：运行 manifest 离线三序验证，已接入完整 Quick。
+5. `make verify.test.baseline.ready`：只读回查当前源码的完整离线/ORM回执、用例集合、顺序和日志哈希；生成本地验收状态，不授予远端合并或部署资格。
 
-### 地基：输入冻结 + 输出归一化
+`local.test.up/down` 仅启动/停止本 profile 的 db/redis。测试不启动持久 Odoo/nginx，不影响开发、demo、验收或生产数据库。既有 profile 的历史 `SC_ENVIRONMENT=dev` 凭据文件保持只读；实际测试容器强制 `test`、禁止 demo，并从真实环境与测试日志回读。
 
-- L1.1 统一 ORM 测试数据库身份：新增受管 disposable 测试库 profile（对齐 CI 的
-  `sc_suite_ci` / `SC_ENVIRONMENT=test`），本地 ORM 测试不再跑 demo 库。
-- L1.2 台账稳定 ID：`test_inventory.csv` 的 `T-ASSET-*` 从位置序号改为内容派生
-  （路径 SHA），增删资产不再整体重排。
-- L1.3 契约组装内核权威输入 fixture 化：model/view/permission 的确定性输入显式
-  冻结，不与 live 库状态耦合。
+## 复用边界
 
-### 门禁：可复现性证明
+Quick 已登记套件通过既有 `evidence_scope` 与成功祖先回执按输入判断复用；未登记或未知输入继续 RUN。套件命令、Make/workflow定义和相关依赖变化会使证据失效。
 
-- L2.1 确定性探针：同一受管命令跑 N 次，断言 canonical 输出逐字节一致。
-- L2.2 隔离证明：随机顺序执行结果一致。
-- L2.3 flaky quarantine：已隔离 flaky 不进门禁，且计数可见。
+普通 ORM 历史结果复用仍关闭：静态文件扫描的 `static_inputs_resolved` 不等于动态依赖完整，`dependency_closure_complete` 明确保持 false；artifact-attempt、运行时契约和事实来源等缺口不能被包装成可信通过。全量执行可以建立正确的测试基线，不要求为了复用率降低证据标准。
 
-### 增量：受影响集合复用
+## 历史与验收记录
 
-- L3.1 把 `scripts/ops/evidence_scope.py` 的输入指纹 → 受影响集合机制扩展到
-  后端 / 静态测试套件，Quick 只跑受影响集合。
-- L3.2 契约快照显式 diff 确认，不再靠提交钩子自动刷新后静默入库。
-
-#### L3.1 具体机制（待实现）
-
-Quick 的套件清单是 `make/ci.mk` 里 `ci.local.quick.run` 的 prerequisites，由
-`local_quick_evidence.py` 的 sharded lane 复现。把每个套件声明成一个
-`evidence_scope.units.v1` unit：
-
-1. 套件清单：新增 `scripts/ops/quick_suite_manifest.json`，每一项是
-   `{suite: "<target>", command: [...], inputs: [<path/glob>...]}`。inputs 用
-   显式路径，不允许目录级通配。
-2. 指纹：`sha256(command + 排序后的每个 input 文件内容)`。命令本身也是输入
-   （同一 target 换配方即失效），避免“改了脚本却复用旧结果”。
-3. 计划：`local_quick_evidence.py` 生成 units 文档，交给 `evidence_scope.py`
-   对账；指纹未变且 ledger 记录为成功的套件 REUSE，其余 RUN。
-4. 台账：`.runtime/evidence-scope/` 记录每套件的指纹与 outcome；只允许
-   `passed/checked/declared/reused` 被沿用，失败套件永不静默复用。
-5. 冻结 identity 绑定：unit 指纹之外，套件的受管运行身份（`sc_test` 库、
-   环境、候选顺序）也进 `identity`，身份变则全部失效。
-
-目标是：只加测试文件 / 只删脚本 / 只改文档时，Quick 不再重跑整个矩阵，
-只跑声明输入真正变化的套件。
-
-## 4. 实施顺序
-
-1. L1.2（台账稳定 ID，已落地）。
-2. L1.1（ORM 测试数据库身份，受管 profile，需单独授权确认）。
-3. L2.1 + L2.2 + L2.3（可复现性门禁）。
-4. L1.3 与 L3.1 + L3.2 同步推进（fixture 化是增量复用的前提）。
-
-每层一个批次，不跨层，不把“补一个注册表条目”当成整改。
+PR733 提供稳定清单和初始本地 profile；PR734 修正探针并接入 Quick 指纹；PR732 建立后端证据来源边界。2026-10-26 本轮补齐真实隔离执行、非零守卫、三序比较与失败回执失效，并把上述两组 ORM 标签接入远端固定选择。当前执行状态、原始证据、失败归因及最终候选见 `docs/ops/iterations/test_baseline_closure_20261026.md` 与对应 run；冻结后的 CI/合并证据留在原始 runtime 索引及外部归档。

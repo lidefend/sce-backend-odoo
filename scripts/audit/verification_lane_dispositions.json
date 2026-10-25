@@ -3284,11 +3284,6 @@
       "disposition": "ops_tooling",
       "owner": "platform-team",
       "reason": "Disposable local.test profile teardown; verification tooling, not a product gate."
-    },
-    "local.test.test": {
-      "disposition": "ops_tooling",
-      "owner": "platform-team",
-      "reason": "Deterministic disposable ORM test entry (sc_test, no demo); verification tooling, not a product gate."
     }
   },
   "scripts": {

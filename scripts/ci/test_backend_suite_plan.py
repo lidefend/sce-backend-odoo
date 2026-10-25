@@ -89,7 +89,9 @@ class InputInventoryTest(unittest.TestCase):
         self.assertNotIn('docs/narrative.md',result['files'])
         self.assertNotIn('docs/policy.json',result['targets']['other']['input_paths'])
         self.assertEqual(['base'],target['external_modules'])
-        self.assertTrue(target['dependency_closure_complete']);self.assertFalse(target['reuse_ready'])
+        self.assertTrue(target['static_inputs_resolved'])
+        self.assertFalse(target['dependency_closure_complete']);self.assertFalse(target['reuse_ready'])
+        self.assertIn('dynamic_dependency_closure_not_certified', target['blockers'])
 
     def test_external_imports_and_sql_reads_are_bound_to_inputs(self):
         graph=copy.deepcopy(self.graph)
@@ -97,7 +99,8 @@ class InputInventoryTest(unittest.TestCase):
         result=self.inventory(graph=graph)['targets']['scene']
         self.assertEqual(['xlrd'],result['external_imports'])
         self.assertEqual(['deadbeef'],result['sql_reads'])
-        self.assertTrue(result['dependency_closure_complete'])
+        self.assertTrue(result['static_inputs_resolved'])
+        self.assertFalse(result['dependency_closure_complete'])
 
     def test_unresolved_import_or_sql_blocks_closure(self):
         for key,blocker in [('unresolved_imports','unresolved_python_imports'),
