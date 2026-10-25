@@ -1698,3 +1698,8 @@ acceptance.deployment.postverify.bundle: guard.prod.forbid
 .PHONY: local.test.baseline
 local.test.baseline: guard.prod.forbid
 	@python3 -m scripts.verify.test_baseline_contract --orm --output .runtime/test-baseline/orm
+
+.PHONY: verify.local.dev.workspace.feedback
+verify.local.dev.workspace.feedback: guard.prod.forbid local.dev.ready local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/verify/local_dev_workspace_feedback.sh

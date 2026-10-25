@@ -1,0 +1,8 @@
+schema_version: 1
+goal:
+  id: PRODUCT-USER-GAP-CLOSEOUT-20261026
+  title: Resolve audited product usability gaps through baseline-backed increments
+  status: active
+  formal_product_layer: P0_P1
+  layer_target: native product declarations and generic contract consumption
+  objective: Resolve confirmed functional gaps from the complete Demo walkthrough, beginning with blocked business creation surfaces; collect targeted behavior evidence and integrate through protected workflow.

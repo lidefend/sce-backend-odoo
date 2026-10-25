@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "id": "PRODUCT-USER-GAP-CLOSEOUT-20261026",
+  "branch": "fix/demo-product-completion-20261026",
+  "baseline_sha": "e0bd7d35b2d8ffcb1d4bbed1b841b98ba424a274",
+  "status": "active",
+  "goal": ".agent/goals/PRODUCT-USER-GAP-CLOSEOUT-20261026.yaml",
+  "record": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/PRODUCT-USER-GAP-CLOSEOUT-20261026.yaml",
+    ".agent/runs/PRODUCT-USER-GAP-CLOSEOUT-20261026/run.json",
+    "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+    "addons/smart_construction_core/models/support/team_loan_deduction_workspace.py",
+    "addons/smart_construction_core/models/support/current_account_workspace.py",
+    "addons/smart_construction_core/tests/test_company_project_refund_feedback.py",
+    "addons/smart_construction_core/tests/test_workspace_processing_feedback.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "scripts/verify/local_dev_workspace_feedback.mjs",
+    "scripts/verify/local_dev_workspace_feedback.sh",
+    "make/dev.mk",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Reuse registered local.dev/sc-local-dev/sc_dev_demo and existing candidate frontend; daily demo remains immutable prior-observation source until separately governed deployment. No new environment or data reset."
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Bind existing local.dev backend and candidate frontend to first P1 fix commit; run two-workspace no-save browser observer. Other FG gaps remain open.",
+  "observations": {
+    "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
+    "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
+    "inherited_audit_sha": "e0bd7d35b2d8ffcb1d4bbed1b841b98ba424a274",
+    "preexisting_dirty": [],
+    "input_registers": [
+      "docs/ops/iterations/system_function_gaps_20261026.md",
+      "docs/ops/iterations/demo_data_gaps_20261026.md"
+    ],
+    "prior_evidence_root": ".runtime/demo-user-walkthrough-20261026",
+    "iteration_order": [
+      "Blocked new forms and native workspaces; maintain fail-closed declarations and permissions",
+      "List/report semantic clarity and mobile presentation",
+      "Declared capability/navigation consistency and targeted denial evidence"
+    ],
+    "exclusions": [
+      "No Demo data rebuild during product diagnosis",
+      "No schema/permission bypass or frontend model-specific fallback",
+      "No repetition of completed audit transactions or full131 walkthrough without affected-set proof"
+    ],
+    "validation_plan": "L0 identities; cheap captured-contract diagnosis; L1 static + meaningful nonzero unit/contract regressions; L2 owning-layer ORM if backend changes; L3 existing local.dev candidate; L4 affected entries only; GitHub integration requires frozen Quick/independent review/CI.",
+    "first_fix_ownership": {
+      "Formal Product Layer": "P1",
+      "Layer Target": "native advisory declarations",
+      "Module": "smart_construction_core",
+      "Standard vs User-Specific": "industry standard",
+      "Why Here": "existing native compute and native view own processing guidance",
+      "Why Not Elsewhere": "P0 already supports these input types; no frontend fallback or runtime override",
+      "Blast Radius": [
+        "FG06 team loan workspace",
+        "FG07 current account workspace"
+      ],
+      "baseline_delta": "explicit enablement list grows refund -> refund/team/current; preserve undeclared-model refusal and no-write evaluation"
+    },
+    "P4_extension": "Bounded two-workspace no-save browser observer using existing local.dev credential and candidate frontend authority; feedback-evaluation transport only; no business writes or new environment.",
+    "validation_results": {
+      "iteration_L1": {
+        "status": "passed",
+        "log": ".runtime/product-user-gap-closeout-20261026/iteration.log",
+        "limit": "before P4 observer addition"
+      },
+      "feedback_unit": {
+        "status": "passed",
+        "tests": 60,
+        "log": ".runtime/product-user-gap-closeout-20261026/feedback-unit.log"
+      },
+      "workspace_refund_orm": {
+        "status": "passed",
+        "tests": 11,
+        "log": ".runtime/product-user-gap-closeout-20261026/workspace-feedback-orm-02.log"
+      },
+      "workspace_incremental_orm": {
+        "status": "passed",
+        "tests": 3,
+        "log": ".runtime/product-user-gap-closeout-20261026/workspace-feedback-orm-03.log"
+      },
+      "browser": {
+        "status": "not_run"
+      },
+      "independent_development_review": {
+        "status": "passed",
+        "scope": "initial P1 diff; not frozen integration review",
+        "followup": "added each-dependency regression"
+      }
+    }
+  }
+}

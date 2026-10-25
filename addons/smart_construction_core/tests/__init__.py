@@ -146,3 +146,5 @@ from . import test_feedback_evaluation_rt_http
 from . import test_feedback_evaluation_rt_restore
 from . import test_company_project_refund_feedback
 from . import test_general_contract_finance_review
+
+from . import test_workspace_processing_feedback

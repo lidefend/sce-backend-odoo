@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 200,
+    "odoo_tags": 201,
     "gated": 5,
     "on_demand": 48,
-    "unwired": 147,
-    "odoo_tag_declarations": 419,
+    "unwired": 148,
+    "odoo_tag_declarations": 420,
     "gated_declarations": 97,
-    "uncovered_declarations": 322,
+    "uncovered_declarations": 323,
     "ci_unit_scripts": 17,
     "ci_unit_scripts_wired": 17,
     "ci_unit_scripts_unwired": 0
@@ -2684,6 +2684,17 @@
         "make:verify.workflow_contract.backend :: /TestWorkflowContractBackend (class selection)"
       ],
       "disposition": "class-selected"
+    },
+    {
+      "group": "workspace_processing_feedback",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_workspace_processing_feedback.py"
+      ],
+      "owner": "construction-product",
+      "evidence": []
     }
   ],
   "ci_unit_scripts": [
