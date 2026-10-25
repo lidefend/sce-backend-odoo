@@ -434,18 +434,21 @@ jobs:
               # head or any probe failure leaves readback_args empty, so the
               # receipt is recorded without a witness and reuse stays denied.
               witness_file="${receipt_dir}/contract-fact-readback-${module}.json"
-              if witness_line="$(CANDIDATE_DB_NAME="${attempt_db}" CANDIDATE_GIT_HEAD="${HEAD_SHA}" \
+              probe_out="$(CANDIDATE_DB_NAME="${attempt_db}" CANDIDATE_GIT_HEAD="${HEAD_SHA}" \
                   CANDIDATE_GIT_TREE="$(git rev-parse "${HEAD_SHA}^{tree}")" \
                   CANDIDATE_ROLE_XMLID="smart_construction_demo.user_demo_role_finance" \
                   CANDIDATE_ACTION_XMLID="smart_construction_core.action_payment_request_pay" \
                   ENV_FILE="${attempt_env_file:-${ENV_FILE}}" DB_NAME="${attempt_db}" \
-                  make daily.runtime.contract_fact.readback 2>/dev/null \
-                  | grep '^BACKEND_CONTRACT_FACT_READBACK=' | tail -1)"; then
+                  make daily.runtime.contract_fact.readback 2>&1 || true)"
+              witness_line="$(printf '%s' "${probe_out}" | grep '^BACKEND_CONTRACT_FACT_READBACK=' | tail -1)"
+              if [ -n "${witness_line}" ]; then
                 witness_json="${witness_line#BACKEND_CONTRACT_FACT_READBACK=}"
                 if printf '%s' "${witness_json}" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("schema")=="backend-contract-fact-readback/v1" and d.get("source_head")==sys.argv[1], "witness identity mismatch"' "${HEAD_SHA}"; then
                   printf '%s\n' "${witness_json}" > "${witness_file}"
                   readback_args="--readback ${witness_file}"
                 fi
+              else
+                echo "::warning::contract-fact readback probe produced no witness: $(printf '%s' "${probe_out}" | head -8)"
               fi
             fi
             if ! evaluate_orm_outcome "${module_status}" "${module_log}"; then
