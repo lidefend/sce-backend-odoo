@@ -208,9 +208,14 @@ def build_risk_action_rows(env) -> List[Dict[str, Any]]:
         limit=6,
     )
     if actionable_rows:
+        state_labels = dict(env["project.risk.action"].fields_get(
+            ["state"], attributes=["selection"])["state"]["selection"])
         result: List[Dict[str, Any]] = []
         for row in actionable_rows:
             state = as_text(row.get("state")).lower()
+            state_label = as_text(state_labels.get(state))
+            if not state_label:
+                raise ValueError("RISK_STATE_LABEL_MISSING")
             status = "urgent" if state in {"open", "escalated"} else "normal"
             title = as_text(row.get("name")) or "风险事项"
             project_name = ""
@@ -221,7 +226,7 @@ def build_risk_action_rows(env) -> List[Dict[str, Any]]:
                 {
                     "id": f"risk-action-{row.get('id')}",
                     "title": f"风险处置 · {title}",
-                    "description": f"{project_name} 风险状态：{state}" if project_name else f"风险状态：{state}",
+                    "description": f"{project_name} 风险状态：{state_label}" if project_name else f"风险状态：{state_label}",
                     "status": status,
                     "count": 1,
                     "risk_action_id": int(row.get("id") or 0),
