@@ -596,6 +596,7 @@ class TestHrPayrollNativeLowcode(TransactionCase):
             if key == "action_sc_payroll_management":
                 for name in ("document_no", "fact_type", "payroll_display_period", "payroll_display_amount"):
                     self.assertIn(name, columns)
+                self.assertEqual(columns[:4], ["document_no", "fact_type", "payroll_display_period", "payroll_display_amount"])
                 for name in ("period_year", "period_month", "net_salary"):
                     self.assertNotIn(name, columns)
             else:

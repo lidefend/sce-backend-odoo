@@ -85,9 +85,9 @@
         <tree string="工资薪酬" default_order="business_date desc, id desc">
           <field name="document_no"/>
           <field name="fact_type"/>
-          <field name="employee_name"/>
           <field name="payroll_display_period"/>
           <field name="payroll_display_amount"/>
+          <field name="employee_name"/>
           <field name="state"/>
           <field name="project_id" optional="show"/>
           <field name="item_type" optional="show"/>

@@ -541,6 +541,13 @@
       "backup": "artifacts/local-dev/snapshots/20261025T233220Z; DB+filestore readable hashes verified ninth-backup-readback.json; pre-upgrade code df7eaa452 + declared dirty changes, installed DB still previous views",
       "identity": "registered local.dev sc-local-dev/sc_dev_demo, demo/ns_000000000002; no newfixture/data writes",
       "next": "Commit P1/P4; upgrade smart_construction_core via local.dev; exact candidate runtime/browser; previous frontend product unchanged so reuse eighth checks."
+    },
+    "ninth_first_browser": {
+      "candidate": "a9c049a7f87429bbbd263f3af3cbf2815efdc50a",
+      "status": "failed_product_mobile_readability",
+      "artifact": ".runtime/product-user-gap-closeout-20261026/payroll-browser/a9c049a7f87429bbbd263f3af3cbf2815efdc50a/report.json",
+      "result": "673native columns/source comparisons/desktoppassed. Bonus3500/date2025-05-20 andsalary16200/period2025-05 correct; mobile default3 facts money,type,employee hidperiod behinddisclosure. Noerrors/blocked. Subsidy absent inloadedDemo.695/706notreached.",
+      "correction": "P1 dedicated tree reorder period/amount beforeemployee; preserve defaultnativecardmechanism. Nativecontracttest assert order; rerun1affectedORM, reuse3factcompute/domain tests. Samebatch pre-upgrade snapshot20261025T233220Z remains fullrollbackanchor; no businesswrite betweenupgrades. Re-upgrade existingmodule, browser673bothviewports and pending695/706."
     }
   }
 }
