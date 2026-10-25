@@ -90,11 +90,13 @@ try {
   walk(init.navigation.nav);
   report.actor = {uid: init.user?.id, login: actor, company: init.user?.company_id};
   if (scope === 'analysis') {
+    const views = (process.env.SC_ANALYSIS_VIEWS || 'pivot,graph').split(',');
+    assert(views.length && new Set(views).size === views.length && views.every(view => ['pivot', 'graph'].includes(view)));
     for (const plan of [
       {menu: '703', model: 'sc.tax.filing', view: 'pivot'},
       {menu: '704', model: 'sc.labor.subcontract.report', view: 'pivot'},
       {menu: '704', model: 'sc.labor.subcontract.report', view: 'graph'},
-    ]) {
+    ].filter(plan => views.includes(plan.view))) {
       const node = leaves.find(n => n.meta?.model === plan.model && new URL(n.meta.route, base).searchParams.get('menu_id') === plan.menu);
       assert(node?.meta?.route?.startsWith('/'), 'analysis entry missing');
       const responseFor = (intent, operation) => page.waitForResponse(response => {

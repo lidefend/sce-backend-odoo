@@ -65,7 +65,8 @@
     "docs/architecture/frontend_contract_basis_ledger.json",
     "frontend/apps/web/scripts/action_surface_renderer_registry_test.ts",
     "frontend/apps/web/scripts/view_type_render_coverage_probe.ts",
-    "frontend/apps/web/src/app/contracts/actionViewAnalysisContract.ts"
+    "frontend/apps/web/src/app/contracts/actionViewAnalysisContract.ts",
+    "frontend/apps/web/src/pages/AnalysisPage.vue"
   ],
   "environment": {
     "kind": "runtime",
@@ -500,6 +501,13 @@
       "review": "review_quick_closeout independent P0 development review no blocker; require actual group labels/counts/totals inbrowser",
       "limits": "Existing interval and aggregation behavior unchanged; only loaded records totals verified. No numeric formatting product change in this increment. No XML upgrade needed.",
       "next": "Commit product/P4 candidate; runtime source identity refresh and bounded analysis observer703pivot/704pivot/704graph desktop/mobile."
+    },
+    "eighth_first_browser": {
+      "candidate": "bdfb1bd144972fcb393533d07dadb81dd62d55e5",
+      "status": "passed_scoped_labels_and_loaded_totals",
+      "artifact": ".runtime/product-user-gap-closeout-20261026/analysis-browser/bdfb1bd144972fcb393533d07dadb81dd62d55e5/report.json",
+      "result": "703pivot1row/1group;704pivot3rows/3groups;704graph3groups firstmeasure;1440/390,6screenshots,0errors/blocked. Native Chinese labels and loaded totals match.",
+      "manual_followup": "Screenshots still truncate long native labels/values in pivot columns. P0 AnalysisPage generic ellipsis disabled to wrap all content. P4 fixed view subset; rerun only703pivot/704pivot1440/390. Graph DOM unaffected so reuse original evidence. No numeric formatter/aggregation semantic change."
     }
   }
 }
