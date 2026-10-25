@@ -1,0 +1,8 @@
+schema_version: 1
+goal:
+  id: STABLE-BASELINE-COLLABORATION-20261026
+  title: Govern incremental collaboration on the established test baseline
+  status: active
+  formal_product_layer: P4
+  layer_target: repository collaboration and evidence lifecycle
+  objective: Record enforceable collaboration obligations for code evolution, scoped validation, evidence, protected integration and rollback without weakening existing gates.

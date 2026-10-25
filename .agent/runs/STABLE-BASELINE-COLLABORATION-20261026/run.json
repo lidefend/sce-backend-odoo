@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "STABLE-BASELINE-COLLABORATION-20261026",
+  "branch": "codex/stable-baseline-collaboration",
+  "baseline_sha": "5b58d6a1b2ac759c2f1c1cac26e820236fd74f9f",
+  "status": "verification_pending",
+  "goal": ".agent/goals/STABLE-BASELINE-COLLABORATION-20261026.yaml",
+  "record": "docs/ops/iterations/stable_baseline_collaboration_20261026.md",
+  "scope": [
+    "AGENTS.md",
+    ".agent/context.yaml",
+    ".agent/active-runs.json",
+    ".agent/goals/STABLE-BASELINE-COLLABORATION-20261026.yaml",
+    ".agent/runs/STABLE-BASELINE-COLLABORATION-20261026/run.json",
+    "docs/ops/codex_delivery_collaboration_protocol_v1.md",
+    "docs/ops/codex_workspace_execution_rules.md",
+    "docs/ops/iterations/stable_baseline_collaboration_20261026.md",
+    ".agent/goals/TEST-BASELINE-CLOSURE-20261026.yaml",
+    ".agent/runs/TEST-BASELINE-CLOSURE-20261026/run.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing Make governance tools; no database or service writes"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Freeze clean candidate; exact-head Quick, final independent review, external archive, current-head required CI and protected merge/main readback.",
+  "observations": {
+    "layer": "P4 repository collaboration; no P0-P3 semantics",
+    "risk": "documentation/context only",
+    "validation_plan": "L0 identity; L1 governance/agent checks and iteration; L2-L4 product/runtime not applicable: no product/executor/environment change; GitHub L5 exact Quick, review, archive and required CI for integration",
+    "preexisting_dirty": [],
+    "results": {
+      "iteration": "passed L1 .runtime/stable-baseline-collaboration/iteration.log",
+      "agent_resume": "55 tests passed .runtime/stable-baseline-collaboration/agent-checks.log",
+      "agent_ledger": "18 tests and repository guard passed .runtime/stable-baseline-collaboration/agent-ledger-fixed.log",
+      "links_targets": "passed .runtime/stable-baseline-collaboration/links-targets.log",
+      "freeze_prepare": "passed .runtime/stable-baseline-collaboration/freeze-prepare.log",
+      "independent_review": "dirty scope reviewed; no confirmed S0-S2; exact candidate pending",
+      "recovery": "Completed historical run removed from active index after existing ledger guard rejected it; no gate weakened",
+      "product_L2_L4": "not applicable: docs/context only; no executor, dependency, product or environment mutation"
+    }
+  }
+}

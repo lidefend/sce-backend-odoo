@@ -3,7 +3,7 @@
   "id": "TEST-BASELINE-CLOSURE-20261026",
   "branch": "codex/test-baseline-closure",
   "baseline_sha": "b88abfe8f521791ea51f52d8ff4da0236d3a667e",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/TEST-BASELINE-CLOSURE-20261026.yaml",
   "record": "docs/ops/iterations/test_baseline_closure_20261026.md",
   "scope": [
@@ -50,7 +50,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Finish scoped audits and generated evidence, freeze once, exact frozen ORM three-order receipt and Quick/offline receipt, baseline.ready, independent review/archive/current CI/merge.",
+  "next_exact_step": "Historical completed baseline; start subsequent work through its own registered run and collaboration protocol.",
   "observations": {
     "authorization": "Owner requested thorough baseline completion and mainline integration",
     "layer": "P4 test execution/evidence; no product semantics",
@@ -73,6 +73,24 @@
       "audits": "workflow243/security/policy/registry/lane checks passed; .runtime/baseline-final-audits.log and baseline-lane-staged.log",
       "iteration_final": "passed L1; .runtime/baseline-iteration-final.log"
     },
-    "zero_test_negative": "Expected rejection on real Odoo: zero tests with process exit0 denied by shared ORM guard, failed receipt1792957180301743585; no retry-to-green."
+    "zero_test_negative": "Expected rejection on real Odoo: zero tests with process exit0 denied by shared ORM guard, failed receipt1792957180301743585; no retry-to-green.",
+    "final_closure": {
+      "pr": 735,
+      "candidate": "4033a0286493b74df49ff1e2b52bee28d928d3b0",
+      "merged_main": "5b58d6a1b2ac759c2f1c1cac26e820236fd74f9f",
+      "tree": "13b9590c0f9d1fb15d8ec790eeae7915d7910404",
+      "offline_cases_per_order": 266,
+      "orm_cases_per_order": 6,
+      "orders": 3,
+      "quick": "passed exact candidate",
+      "required_ci": "all four successful on exact candidate",
+      "independent_review": "APPROVE",
+      "main_readback": "clean, synced, identical tree, baseline.ready passed",
+      "archive_topic": "test-baseline-closure-final-20261026",
+      "archive_candidate": "4033a0286493b74df49ff1e2b52bee28d928d3b0",
+      "archive_files": 16,
+      "scope_limit": "Declared manifest and two ORM groups; no deployment or full product acceptance",
+      "source": "Original final archive receipt and .runtime/test-baseline/final/{remote-ci,merged-pr735,main-readback}.json; earlier observations remain stage history"
+    }
   }
 }

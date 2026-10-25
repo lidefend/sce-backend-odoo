@@ -1,57 +1,142 @@
-# Codex Delivery Collaboration Protocol v1
+# 稳定基线增量迭代协作协议 v1
 
-## Purpose
+## 适用范围与权威
 
-Keep iteration speed high and context stable while continuously closing delivery blockers.
+2026-10-26 起，本仓库进入**已验证基线上的增量迭代**。所有执行者（人工、交互代理、CLI、
+控制器及接手代理）遵守本协议。它细化 `AGENTS.md` 的基线迭代执行锁，不改变契约驱动最高
+职责界限、执行白名单、数据库政策、平台分车道规则或现有机器门禁；发生冲突时按
+`.agent/context.yaml` 的权威顺序解析，不能自行选择较宽松规则。
 
-## Collaboration Rules (Persistent)
+本协议替代本文件旧的“独立切换日志 + 按主题全量门禁”流程。当前任务的唯一结果索引为
+`.agent/runs/<goal-id>/run.json`，长篇说明只引用一份批次记录；历史切换日志保留为历史资料，
+不再作为恢复任务的入口。日常迭代不为记录状态另造平行台账或交付包。
 
-- Use autonomous continuation by default; do not pause for routine confirmations.
-- Request confirmation only for risk/destructive/out-of-policy actions.
-- Keep changes scoped and categorized by blocker type.
-- Always include and persist:
-  - `Layer Target`
-  - `Module`
-  - `Reason`
+## 已成立基线与保证边界
 
-## Mainline Delivery Objective (Persistent)
+| 事实 | 锚点 / 证据 |
+| --- | --- |
+| 主线成立提交 | `5b58d6a1b2ac759c2f1c1cac26e820236fd74f9f`，PR735 |
+| 被验证候选 | `4033a0286493b74df49ff1e2b52bee28d928d3b0` |
+| 合并前后同一源码树 | `13b9590c0f9d1fb15d8ec790eeae7915d7910404` |
+| 离线基线 | 当时 manifest 的 266 个用例，正序、逆序、固定随机种子，各新进程执行 |
+| ORM 基线 | 契约组装确定性、低代码契约写入权限两组共 6 个用例，三个新建专属测试库轮次，类内三种方法顺序 |
+| 集成证据 | exact-head Quick、四项必需 CI、独立 APPROVE、受保护合并、main 同树回读及本地基线回查 |
+| 最终归档定位 | workspace archive topic `test-baseline-closure-final-20261026` / candidate `4033a0286493b74df49ff1e2b52bee28d928d3b0`；`archive-receipt.json` 记录 16 个可读文件与摘要 |
 
-- Prioritize product delivery closure over governance expansion.
-- Treat the following as P0 hard gaps and iterate continuously until closed:
-  - frontend delivery chain gate (`lint/typecheck:strict/build`)
-  - scene contract + scene engine runtime closure
-  - truthful capability gap backlog tiers (`Blocker/Pilot Risk/Post-GA`)
-  - auditable one-page delivery evidence board
-- Default execution mode is continuous iteration: complete the next planned step directly unless blocked by policy/env risk.
+这是历史起点，不是所有未来提交的成功凭证，也不是全仓任意测试、类间顺序或产品交付完成的保证。
+当前范围以 `scripts/verify/test_baseline_manifest.json`、覆盖注册表和
+[测试基线可复现性契约](../engineering_convergence/test_baseline_reproducibility_design_v1.md) 为准。
+266/6 是成立时的实测数量，不能作为固定上限或为保持数量删除测试。历史未接入测试债务仍按
+覆盖注册表管理，不计入已证明范围。普通 ORM 历史复用仍关闭，静态依赖可解析不等于动态闭包已证明。
 
-## Context-Switch Stability Rules
+## 代码如何演进
 
-- Maintain a running context-switch log in `docs/ops/iterations/delivery_context_switch_log_v1.md`.
-- On every switch, record:
-  - last completed step,
-  - current blocker key,
-  - active branch/commit,
-  - next exact command/gate.
-- Resume must start from the last `Next Step` line in the log, not from memory.
+1. **从可信主线和当前任务恢复。** 先确认仓库根、分支、完整主线 SHA、dirty 范围、既有工作树
+   与写入者，再解析 `.agent/active-runs.json` 并执行 `make agent.run.resume`。新任务先登记
+   goal/run/批次记录，再恢复；续跑只核对变动输入，不重做全仓或全部环境盘点。
+2. **一次解决一个可独立验收的结果。** 开始前写明目标、验收行为、非目标、影响路径、P0-P4
+   归属、`Layer Target / Module / Reason / Why Not Elsewhere / Blast Radius` 和回退方案。
+   P0 平台机制、P1 行业标准、P2 客户差异、P3 运行配置、P4 交付工具各归其位；前端只消费
+   显式契约，声明缺口回到所有者层修复，禁止前端兜底。
+3. **小步修改，保持原基线可追溯。** 新行为增加可区分正确/错误的用例；缺陷修复补有意义的
+   回归断言；接口、权限、schema 或数据演进说明兼容性、消费者影响及必要迁移。避免把无关
+   重构、历史债务清理与业务改动混在同一批。纯文档等低影响变更不制造镜像实现的测试。
+4. **复用已登记设施。** 一个工作树一个写入者，最多两个活动工作树；按独立产品结果拆分，
+   不按层级机械拆分。共享测试库写入串行。使用现有 Make/profile/凭据权威；业务任务不能
+   创建另一套项目、库、端口、卷、fixture 或测试框架。既有环境上的必要最小 P4 扩展按现有
+   授权实施并验证；新环境或凭据权威单独处理。
+5. **基线演进必须显式。** 新增/改名/删除测试或改变选择器时，同步 manifest、标签、注册表、
+   CI 选择与覆盖说明，证明用例实际收集和执行。只更新确实失效的生成报告；不得删断言、降低
+   阈值、扩大豁免、跳过失败或把旧通过改写成新通过来恢复绿色。基线范围扩大或语义改变应
+   在同一 PR 写明旧/新范围、原因、兼容/回退和实际证据，经复核与集成后才成为后续起点。
 
-## Output Contract Per Iteration
+## 如何选择和执行测试
 
-Each iteration handoff must include:
-- blocker addressed,
-- files changed,
-- commands executed and pass/fail,
-- commit id,
-- next step.
+开始验证前，在当前 run 记录变更输入、风险、最早必跑层、选定入口及各不适用层的理由。
+顺序固定为 L0 → L1 → 必需 L2/L3/L4 → L5；前置失败、未知、过期或身份不匹配时短路。
 
-## Quality Contract
+| 变化类型 | 最低证明与增量选择 |
+| --- | --- |
+| 文档 / 协作元数据 | L0 身份、链接/schema/既有治理守卫及 `make ci.local.iteration`；无产品、执行器或环境变化则说明产品 L2-L4 不适用 |
+| 纯函数 / 工具 | L1 定向单元及负例；修改测试选择、执行器、断言或证据工具时，补受其影响的真实执行链验证，不能只测试报告格式 |
+| 后端模型 / 契约 / 权限 | L2 对应模块及拒绝边界用例，真实非零；按影响执行 L3 受管升级与回读。声明变化须验证消费与实际行为 |
+| 前端消费 / 交互 | 受影响 lint/type/单元与契约检查；选取受影响页面、角色和状态，必要时验证生产构建及 L4 用户旅程 |
+| schema / 数据迁移 / fixture | 先遵循数据库政策确定精确库角色与身份，再验证迁移、权威回读、恢复/清理；不得借测试污染持久开发或客户数据 |
+| 基线执行 / 隔离 / 复用机制 | 对影响面运行负例、非零执行与相关三序验证；改变环境、选择或工具输入使相关旧证据失效 |
 
-- Frontend blocker work must end in `pnpm -C frontend gate` green.
-- Scene/runtime blocker work must end in `make verify.scene.delivery.readiness.role_company_matrix` green.
-- Governance blocker work must update backlog/doc evidence in same iteration.
+受管入口的语义：
 
-## Escalation Conditions
+- `make ci.local.iteration` 只证明轻量 L1，不等于完整测试或合并资格。
+- `make local.test.prepare` 校验既有隔离测试身份；`make local.test.test` 通过明确模块/标签
+  执行测试。它每次仅重建专属 `sc_test`，不是持久 `sc_dev_demo`，使用前遵循数据库政策。
+- `make verify.test.baseline` 执行 manifest 离线三序验证；完整 Quick 已接入它。
+- `make local.test.baseline` 执行声明 ORM 三轮；`make verify.test.baseline.ready` 回查当前
+  源码、原始日志、用例/顺序及摘要，只生成本地验收结论，不授予远端合并或部署资格。
+- `local.dev.*` 用于持久开发、`local.sample.*` 用于样本兼容、`local.clean.*` 用于干净安装；
+  按各自身份调用，不交叉借用凭据/卷。测试结束清理本轮拥有的临时载体，保留其他环境。
 
-Escalate immediately when:
-- gate repeatedly fails due to environment breakage,
-- required credentials/seed data are missing,
-- baseline thresholds conflict with observed stable runtime reality.
+测试结果必须含真实收集数与明确结果。零测试、错误模块/标签、截断日志、运行中、取消、
+skip 或 expected failure 不能伪装成必需断言已通过。当前 quarantine 为空；不稳定用例阻断
+相关结论，先分类为产品、基线证据、环境或验证工具缺陷，再修所有者层，不自动重试到绿。
+基础设施中断后的重跑须记录恢复事实，保留原失败，不覆盖它。
+
+## 如何收集、复用和失效证据
+
+**一个 run 索引，一份批次说明，引用原始结果。** 日常记录 HEAD 与明确 dirty 范围；最终才
+生成 clean 候选、完整 tracked/untracked 内容指纹和外部归档。没有执行的步骤记 `not_run`，
+并写明原因；失败记 `failed`；只有已满足断言的真实执行或受管核验复用才记 `passed`。
+
+每个结果至少记录：命令/Make target、执行时间与耗时、源/当前候选身份、相关输入与工具/
+依赖、适用环境身份、退出状态、用例数/结果、原日志与回执路径、局限及后续动作。记录环境
+身份而非秘密值；凭据、个人数据与未经公开范围检查的日志不得进入 PR 或仓库。
+
+复用只能由已登记机制判定，必须保留来源、依赖集合、原始哈希与影响分析。代码/配置/测试/
+执行器/夹具/依赖或环境变化使依赖它的结果失效，独立未变结果可以继续复用。未知依赖不能
+猜成未受影响；回到真实执行或记阻断。普通 ORM 不因静态扫描完整而启用历史结果复用。
+
+文档变更不自动使页面行为证据失效；部署版本号变化本身也不是行为证据失效依据，但实际
+输入和运行身份必须核对。`baseline.ready` 等要求完整源码相等的硬门禁可能因文档变化拒绝
+旧回执：此时如实记不适用/不满足；确需当前候选的完整基线再执行相关验证，禁止改回执、
+绕过完整指纹或把影响分析当作工具已通过。
+
+最终冻结前集中更新交付文档与生成报告；冻结后 CI、审查、合并及归档回执放在既有 runtime
+证据目录/PR，避免为追加状态不断改变待验 SHA。下一次有实际工作时可根据原始终态证据
+更新历史 run/goal，同时从 active-runs 索引移除已完成分支；保留历史文件，不为历史记录单独开启循环交付。最终归档必须核对文件存在、可读及摘要，
+临时路径存在或一段“PASS”文字不等于证据已保存。
+
+## 如何集成与接续
+
+1. 收敛已知缺陷，完成适用层验证与批次复核；冻结前运行既有生成证据准备入口
+   `make ci.delivery.freeze.prepare`，审查生成差异后提交 clean 候选。
+2. **按平台车道执行，不混用豁免。** GitHub 延续 exact-head `make ci.local.quick`、独立
+   复核、公开范围检查、外部归档，再经 `make pr.push` / `make pr.create` 发布。普通 Gitee
+   按 `AGENTS.md` 的平台规则使用轻量本地验证及远端完整集成，不借该例外跳过 GitHub Quick。
+   入口是否需要确认及精确参数，以白名单和工具校验为准。
+3. 独立复核必须绑定冻结身份与实际 diff，处理阻断发现；作者自检不替代独立复核。对未改动
+   输入复用既有结果，基线/HEAD 漂移后重算受影响范围并取得当前身份所需的复核/门禁。
+4. 必需远端检查为 `public_guard`、`merge_policy_gate`、`professional_quality_gate`、
+   `frontend_release_gate`。核对当前 PR 源 SHA、目标 main、检查完整性与真实结论；旧 SHA、
+   pending、缺失或目标漂移不能合并。只有可信风险分类的显式 skip 可以按现有车道接受。
+5. 通过受保护 Make 合并入口集成，GitHub 使用 `make pr.merge.preflight` / `make pr.merge`
+   并绑定 `PR` 与 `EXPECTED_HEAD`；不直接推 main、不强推、不伪造状态、不关闭保护。
+   在已有授权范围内连续推进，不重复请求例行许可；新权限或破坏性越界按实际要求处理。
+6. 合并后回读 PR 状态、合并提交、实时 main，经 `make main.sync` 同步；核对 clean 状态与
+   候选树/集成差异。squash 同树可记录映射承接证据；树不同必须分析/验证实际差异，不能只
+   因 PR 标记 merged 宣称原证据适用。主线漂移与冲突修复均形成新候选，按变化失效与复验。
+7. 保存最终 CI/复核/合并身份及归档回执。明确报告批次、主线、部署、用户验收四个状态。
+   合并不部署，测试基线成立不代表全部产品验收。回归时先停止扩大交付，保留失败证据，按
+   所有者层修复或通过受保护 PR revert；数据库变更另按已验证恢复方案处理，不能假设代码
+   revert 会恢复数据，也不能改写共享主线历史。
+
+## 接手与完成清单
+
+接手先读当前 run，执行 `make agent.run.resume`，核对身份和发生变化的依赖，继续
+`next_exact_step`。失效/越界时只修对应上下文，不自动重放写操作。
+
+每次交接至少能回答：解决了什么、当前精确候选是什么、哪些文件属于本任务、哪些层实际
+通过/失败/未跑、原始证据在哪里、哪些结果复用了及理由、尚有哪些阻断/风险、如何回退、
+下一步确切动作是什么。未完成的远端检查继续标 pending，不能写成完成。
+
+新增协作约束必须说明由哪个现有工具强制、哪些部分依赖人工/独立复核。本协议中的入口
+恢复、分支、非零测试、证据指纹及受保护合并已有机制；影响面完整性、职责判断和文档叙述
+仍需复核。规则文本通过静态检查不等于所有约束已自动化，也不替代真实测试与运行回读。
