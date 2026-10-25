@@ -70,7 +70,9 @@
     "addons/smart_construction_core/views/core/hr_payroll_document_views.xml",
     "addons/smart_construction_core/views/menu_product_administration_wave1.xml",
     "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
-    "docs/ops/iterations/demo_data_gaps_20261026.md"
+    "docs/ops/iterations/demo_data_gaps_20261026.md",
+    "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+    "addons/smart_construction_core/tests/test_system_permission_accounting.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -78,7 +80,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Diagnose and fix FG15 native journal-entry new-form failure through generic contract declaration/consumption; preserve accounting constraints. Continue business-chain acceptance, FG08 remaining analysis semantics and demo reconstruction separately.",
+  "next_exact_step": "Implement P0 native-expression total compilation and explicit unsupported verdict; align native truth/field dependency semantics with cross-runtime differential tests, then governed rich notice and conditional fragment contracts before retrying FG15.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -566,6 +568,34 @@
       "counts": "16originalfunctiongroups partiallyrepaired; FG15untouched; FG08remaining aggregation/format/multimeasure preserved.23originaldemogapsunreconstructed + localpayrollsubsidycoverageobservation.",
       "deployment": "Localcandidateonly. NoQuick/remoteCI/mainline merge/dailydeploy;mainline/dailybdef29e11 unchanged.",
       "reuse": "Final docs donotinvalidate product/runtime. Prior a9c browserfailed preserved, notcounted finalmobileacceptance."
+    },
+    "tenth_ownership": {
+      "identity": "7052f80c0e13af03ac0ad9332e7241c3e14455de clean; registered entry-validation writer only",
+      "P0": "Native tree/form parsing must preserve inline node occurrence identity and compiled modifiers; native nested static button text must become action label without flattening field/widget content. Required lossless foundation for FG15 explicit rich-notice support.",
+      "why": "Current generic span/a/bold branch omits modifiers/identity, losing auto_post_until condition and fragment source identity; native button with body label loses display text. Platform parsing defect, not industry finance rule.",
+      "scope": "Existing native parser and parser tests, projection tests if necessary, single run/docs. No CSS alert bypass, no scalar feedback admission widening, no invoice warning deletion.",
+      "validation": "L1 then existing native parser and unified projection tests; real ORM compares account.view_move_form native mixed content through parser/contract; independent review. Frontend/runtime product acceptance remains pending until explicit rich components complete.",
+      "remaining": "13richnotices still require explicit P1 binding +P0 richregion/conditional fragment target consumption; retain unresolved FG15. No business write/posting/demo rebuild/upgrade/mainline/deploy authorized by this scoped parser change."
+    },
+    "tenth_scope_steering": {
+      "user": "Research platform kernel coverage of native expression capabilities; treat FG15 as systemic coverage case, not page-specific workaround.",
+      "research": "Inventory existing native reuse spec/registry/runtime consumers and observed evidence across modifiers, mixed content, navigation/actions, relational widgets, analytical view semantics. Same run/result index; append reviewable coverage matrix and delivery order to existing iteration record. No new parallel ledger or user-facing capability claims from static presence.",
+      "first_test": "tenth-parser.log failed1/39: root exclusion relied on Python object identity but testXML wrapper returns a fresh wrapper in iter(). Changed to standard iterator descendants [1:], no behavior/gate weakening; rerun affected parser target."
+    },
+    "tenth_research": {
+      "scope": "User steered to platform kernel native-expression coverage research; existing iteration record hosts capability matrix, not a new competing ledger. Source audit at7052f80c0 plus declared parser dirty scope, historical175snapshot, current ordinary-accounting-user ORM.",
+      "confirmed": "Native modifier producer drops unsupported Boolean children; raw unsupported expression can survive asstring. Consumer []truthiness differs, unknownkind/raw→false andnotunknown→true. Diagnostic-only reproduction stored in tenth-modifier-producer-diagnostic.json and tenth-modifier-consumer-diagnostic.json; not proof current ACL bypass or complete runtime reachability.",
+      "coverage": "accounting-center staticPASS covers3foundationactions, excludes175/account.move; classifierform=structural, not semanticacceptance.13mixedalerts/4fragmentlinks require richcontainer/conditionaltarget support.7nativewidgets inhistoricalentry needper-widgetsemanticvalidation. calendar/gantt/dashboard readablefallback; pivot/graph onlyloadedgrouping/firstmeasure.",
+      "priority": "First lossless AST and native truth/dependency semantics + explicitunsupported; then declaration-backed richnotice+fragmentnavigation preservingchildpermissions; then accounting relational/widget integration and real savedbalancedjournal chain; then fullnativeexpression inventory acrosspublishedentry/role/company/mode.",
+      "code": "Generic inline node identity/modifiers; buttonbodylabel only text+unattributed formatting tags with explicitstring/titleprecedence. Reviewerhidden/style/class edge addressed by rejecting all attributed descendants; dynamicbodyawaitsrichsupport. No existingfailclosedgate weakened.",
+      "remaining": "FG15notfixed, notdeployed, nobrowserretrywhileknownrichcomponentblocker; noaccountingbusinesswrites/moduleupgrade/demo reset.16originalgroupspartial/23originaldemogapsremain.",
+      "artifacts": [
+        "tenth-native-expression-inventory.json",
+        "tenth-parser-reviewed.log",
+        "tenth-orm-reviewed.log",
+        "tenth-projection.log"
+      ],
+      "review": "Independent parser and coverage/docs review passed; final39parser+1ORM rerun after staticlabel restrictions;132projection+23runtime reused because their inputfiles do not import the changed parser, passed original tenth-projection.log. Final L1 tenth-l1-final.log."
     }
   }
 }

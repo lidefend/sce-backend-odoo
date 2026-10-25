@@ -391,3 +391,104 @@ FG05此批完成现有工资/奖金列表展示范围，未完成三类型真实
 累计16组原始功能问题局部修复；FG15日记账新建尚未修复，FG08分析语义及各业务闭环仍待完成。
 未执行Quick、远端CI、合并或日常部署；主线/日常bdef29e11保持。本地运行870a36bd2，最终文档不使产品证据失效。
 下一步处理FG15原生会计新建页，保留凭证约束；后续统一业务链验收与Demo重建。
+
+
+## 第十批：平台内核原生表达能力覆盖研究（2026-10-26）
+
+用户将FG15修复提升为平台内核能力覆盖研究，本批据此调整范围：先区分原生声明的语义、
+解析保真、契约承载、前端消费、交互闭环与证据，再决定通用能力补齐顺序。
+研究身份7052f80c0e13af03ac0ad9332e7241c3e14455de加本批明确parser/test差量；
+复用单一run与原始走查，不建立平行覆盖台账。此为源码/代表样本审计，不是所有Odoo语法、
+全部安装视图或90入口重新执行的覆盖率报告，不能给出全平台百分比。
+
+### 结论与证据口径
+
+平台已有原生视图复用骨架，但尚不能宣称原生表达语义完整覆盖。
+“组件已注册”“表单structural”“数据可读”“浏览器可打开”“业务交互等价”是不同证据等级。
+源码：`scripts/verify/frontend_project_domain_rollout.py::classify_surface`对form直接返回structural；
+`docs/frontend_productization/domain-rollout/accounting-center-coverage-v1.md`的PASS仅覆盖3个foundation
+入口（account.journal、account.analytic.account、account.analytic.distribution.model），不含175/account.move。
+原PASS保留其原范围，不据此称审计伪造；问题在于不能把局部结构报告提升成系统语义交付结论。
+
+原始175契约快照提取出13处混合告警、4个#outstanding链接，原文/条件/节点结构均保留在
+`tenth-native-expression-inventory.json`（含原始artifact摘要，明确历史证据身份）。
+该入口原生widget还包括account-tax-totals-field、payment、section_and_note_one2many、
+res_partner_many2one、many2one_avatar_user、email、statusbar；这里只列需求，不把名称出现当已支持或已缺失。
+当前普通accounting_user真实ORM额外证明本批解析修正，不能代替整个表单可运行。
+
+### 分层能力表
+
+“局部支持”表示已有机制及限定证据，不等于所有组合正确；“待证明”表示还不能下完整支持或缺陷结论。
+
+| 原生能力 | 当前判定 | 断点/已知边界 | 主要声明与消费依据 | 补齐验收 |
+| --- | --- | --- | --- | --- |
+| form/group/notebook/field、重复字段occurrence | 局部支持 | 主结构、字段控件已有；inline分支曾丢身份/条件，本批修正 | native tree/form parser、contractFormPresenter、NativeFormTreeRenderer | 合并继承后的真实arch→每个occurrence→DOM/状态一一对应；重复字段互不串值 |
+| invisible/readonly/required复合条件 | 有机制，但有确认语义缺口 | 生产端可丢未知子表达式；客户端未知返回false、空数组真值存在差异 | utils/native_modifier.py、app/modifierEngine.ts | 完整编译或显式拒绝；同输入跨端差分；缺失依赖不得当False |
+| parent/context及字段间比较 | 部分支持/上下文待证明 | value_field有支持；点路径被当平面key时需要明确上下文绑定；函数调用无完整语义 | native_modifier.py、resolveDeclaredModifierFieldValue、relationDescriptor | 根/子记录/上下文分别声明命名空间、可读依赖、生命周期；禁止任意执行Python/JS |
+| 标量提示与草稿建议 | 有显式限定协议 | sc.feedback.message仅标量源、受限条件/证明；不是富内容容器 | node_component_validation.py、native_advisory.py、nodeComponentPresentation.ts | 保留既有拒绝边界，不扩大到任意混排节点 |
+| 富提示：文字+字段+按钮+嵌套条件 | 未有完整承载/消费 | 13处会计告警不能平铺为字符串；现在明确failclosed | component.yaml、nativeTextPresentation.ts、NativeFormTreeRenderer | 独立声明式region能力，绑定原生来源/用途/条件，按原顺序消费children；后代独立授权 |
+| 片段导航及条件目标 | 静态锚点有限支持 | 现有anchor要求唯一、恒定可见目标；#outstanding指向会计内容，不能直接放行href | sc.navigation.anchor、node_component_validation.py、navigateToDeclaredNode | 精确目标occurrence、目标可见性、tab展开/定位；隐藏/缺失/恶意目标显式拒绝 |
+| object/action/stat按钮 | 通用链存在、组合待验 | 权限/安全/record要求已有；正文label此前丢失，本批仅补纯静态正文 | parser::_button_to_action、actionRuleAuthority、execute_button | 原method/context/confirm/权限不变；禁用与撤权、返回动作、实际结果回读 |
+| x2many编辑与onchange | 通用能力存在，不能推出会计等价 | 普通关系表、虚拟行/命令路径不证明section/note/account行语义 | onchangeNormalization、useRecordFormState、专业关系/明细组件 | 真实子视图章节/备注行、虚拟ID、onchange往返、行ACL、保存命令及会计平衡 |
+| 字段专用widget | 按组件局部支持，其余待证明 | 原生widget到类型控件可能降级；读取数值不能证明payment/tax totals交互 | semantic_resolver、semantic.yaml、component.yaml | 每个widget声明语义、依赖、动作、降级策略；不能用通用输入框冒充完整原生能力 |
+| 独立widget节点 | 有限实现 | NativeFormTreeRenderer独立widget分支显式处理web_ribbon；其他需逐项查承载/消费，不能泛称ready | NativeFormTreeRenderer.vue | 注册每个消费分支或明确unsupported，不静默忽略 |
+| tree/search/kanban | 局部支持 | 列/筛选/分组及卡片投影已有；不等于完整QWeb或任意修饰组合 | native解析器、actionSurfaceRendererRegistry、ListPage | native列序/字段/作用域与筛选分页结果；模板指令需有限协议，不执行任意QWeb/JS |
+| pivot/graph | 可呈现，原生分析语义未齐 | FG08已修标签；按加载记录分组、未消费月interval，graph仅首度量 | actionViewAnalysisContract、AnalysisPage | 服务端全范围聚合、日期桶、多个measure及聚合算子/图型完整消费 |
+| calendar/gantt/dashboard | 当前为可读回退 | registry明确core.readable_records/fallback；不是时间布局/拖拽/依赖支持 | actionSurfaceRendererRegistry、view_type_render_coverage_guard | 独立验证原生布局与交互；回退结果不得计入等价支持 |
+| 权限、状态与配置扩展 | 有机制，必须贯穿上述每项 | 节点可见不等于业务授权；富容器不能豁免后代，配置不能修改来源证明 | backend node验证、字段/动作status、最终handler复核 | 多角色/公司/撤权/readonly/create/edit与最终执行端一致，未知能力拒绝 |
+
+### 已复现的内核语义问题
+
+只读函数诊断（不是受管验收gate，也不证明当前页面已发生越权）：
+
+1. `state == 'draft' or context.get('show_warning')`经native_modifier编译只剩state分支。
+   state=posted、context.show_warning=True时原意为True，丢失分支后的AST结果为False。
+   这是“部分理解却输出合法AST”，比明确unsupported更危险。
+2. 单独的context.get表达式以raw string残留；consumer给False。未知kind给False，外层not可变成True。
+   未知不应被当成已求值的业务布尔值，必须回传明确缺口。
+3. field_truthy的空关系集合[]由JavaScript Boolean得到True，而原生Python空集合为False。
+   这会影响诸如duplicated_ref_ids的条件；仍需实际字段编码与服务端路径差分验证影响面。
+4. parent.state可进入AST，但平面key resolver对嵌套parent对象不解析路径。
+   这是上下文绑定必须明确的证据，不断言所有子表路径都已出现故障。
+
+原始输出：tenth-modifier-producer-diagnostic.json、tenth-modifier-consumer-diagnostic.json。
+后续需将这些例子转为受管回归，覆盖and/or/not组合、未知子表达式、空关系、False/None/0、
+缺失字段、value_field、parent/context依赖及draft/onchange之后的状态。后端业务ACL仍是最终边界，
+本研究不把这些呈现语义诊断扩大为已证实的数据越权。
+
+### 内核实现与协作顺序
+
+1. **先保证表达式完整性。** 明确受支持AST集合与版本；一棵表达式必须整体编译成功，不能过滤未知分支。
+   原生truth/comparison及关系编码需跨端一致；不支持的函数/上下文路径采用有限受管映射或明确unsupported。
+2. **再承载富内容。** 增加独立的声明式富提示组件，P0拥有协议/验证/通用渲染，P1只绑定真实原生视图、
+   locator/occurrence、用途和条件。文本、字段、按钮、子条件保持顺序与身份；无v-html、无模型特判、无CSS自动放行。
+3. **导航和专用控件单独成能力。** 条件锚点需要目标/生命周期协议；会计支付、税额和行编辑各自证明，
+   不因同页使用就全部塞进提示组件，也不能用删节点来恢复页面。
+4. **用原生样本做垂直闭环。** 先普通用户日记账create/readonly/edit及告警双向切换，再科目/行onchange、
+   不平衡拒绝、合法保存、过账及回读；角色/公司/撤权分开验证。页面加载成功只关闭加载阻断。
+5. **扩展覆盖分母。** 从实际发布入口和权限合并后的arch采集表达实例，以模型/action/view/occurrence/
+   角色/公司/模式/配置版本为身份；对每项记录解析、契约、消费、交互、证据级别。
+   复用现有run/registry/Make/证据复用机制，P4报告不能另创产品规则；缺项、降级、未知和未测分列，不能统称PASS。
+
+上述为本次研究形成的实施顺序；当前没有自动全库采样或新覆盖门禁落地，不能将研究表本身当机器验收证明。
+
+### 本批已完成的有限修正与验证
+
+P0通用inline节点补native_locator/occurrence_index及compiled modifiers，保留文本/children顺序；
+按钮无string/title时，只允许纯文本和无属性的span/b/strong/i/em/small提取静态label。
+字段/widget/条件/QWeb/hidden/style/class后代均不被扁平化；有显式string/title仍优先，未执行HTML。
+这两个修正为后续富提示保真提供基础，没有注册新富组件、没有放宽scalar反馈或legacy alert守卫。
+
+L1通过。首轮parser测试1/39失败：测试XML wrapper在iter中重新包装根节点，原实现按对象identity排除根不可靠；
+改为标准迭代的descendants[1:]后通过。独立复核提出hidden/style/class可能影响正文可见性，
+进一步限定无属性格式节点并补拒绝样例；最终39项parser测试通过，投影132项+runtime23项通过。
+真实普通accounting_user的1项ORM读取实际account.view_move_form，验证auto_post_until嵌套span条件、
+4个#outstanding链接身份/文本、2个action_activate_currency按钮的原生label/method保留；0失败/错误。
+日志tenth-parser-reviewed.log、tenth-orm-reviewed.log、tenth-projection.log；失败日志保留。
+最终静态正文限制变更后39项parser＋1项ORM重跑；132项投影＋23项runtime输入未变且不导入该parser，复用原通过结果。
+最终L1见tenth-l1-final.log；独立代码与研究文档复核通过。
+
+FG15依然未关闭，富组件尚未实现，因此本批不重跑已知会失败的页面、不声称日记账能新建。
+无模块升级、会计保存/过账、Demo重建、Quick、远端CI、主线合并或日常部署。
+本地受管候选仍870a36bd2；本批仅源码/定向ORM阶段，主线/日常仍bdef29e11。
+累计仍16组原始功能问题局部修复、23组原始Demo缺口未重建；平台研究不会把数量刷成全绿。
