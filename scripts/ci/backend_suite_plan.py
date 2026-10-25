@@ -93,8 +93,9 @@ def inventory_from_tree(graph: dict, modules: list[str], entries: dict) -> dict:
             'sql_reads':sql_reads,'unresolved_file_reads':unresolved,
             'unresolved_imports':unresolved_imports,'unresolved_sql':unresolved_sql,
             'missing_file_inputs':missing,'special_git_entries':special,
-            'dependency_closure_complete':closure_complete,'reuse_ready':False,
-            'blockers':dependency_blockers}
+            'static_inputs_resolved':closure_complete,
+            'dependency_closure_complete':False,'reuse_ready':False,
+            'blockers':dependency_blockers + ['dynamic_dependency_closure_not_certified']}
         used.update(paths)
     return {'schema':'backend-known-input-inventory/v1','targets':targets,
             'files':{path:entries[path] for path in sorted(used)},'reuse_authority':False}

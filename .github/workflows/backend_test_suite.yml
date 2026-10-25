@@ -360,6 +360,9 @@ jobs:
               # tags also select dependency tests and made wrapper modules run
               # smart_construction_core's suite repeatedly.
               module_test_tags="sc_smoke/${module},sc_gate/${module}"
+              if [ "${module}" = smart_core ]; then
+                module_test_tags="${module_test_tags},contract_assembly_determinism/${module},lowcode_contract_write_authority/${module}"
+              fi
             fi
             module_env_file=""
             if [ "${module}" = "smart_construction_demo" ]; then

@@ -1082,3 +1082,10 @@ operation entry、受管嵌套 Make 和真实 HTTP 登录复用隔离入口声�
 随后 `make verify.frontend.relation_roundtrip.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local`
 在同一预览以财务 fixture 账号验证声明关系打开与返回恢复。两者不创建或重置数据库；
 只创建认证会话和本地证据，禁止生产环境。列表仍用现有受管入口及契约前置。
+
+
+## Reproducible local test baseline
+
+`make local.test.prepare` validates the existing private test profile, exact project, database, filter, volumes and source mounts without starting services. It never generates a replacement credential authority. `local.test.up/down` starts/stops only this profile's db/redis, preserving volumes. `local.test.test MODULE=<one module> TEST_TAGS=<selection>` serializes the existing sc-local-test/sc_test profile, rejects foreign identities and Make overrides, recreates only its disposable synthetic sc_test database, runs installation plus tests in a transient carrier, and requires the existing nonzero ORM result guard. No persistent dev/demo/acceptance/production data is authorized.
+
+`make local.test.baseline` runs the declared two smart_core baseline groups in three fresh databases with forward/reverse/seeded class-local method ordering. `make verify.test.baseline` compares all case outcomes in the offline manifest across three fresh processes; quarantine is explicitly empty and any instability blocks. `make verify.test.baseline.ready` verifies current-source receipts and hashes; it does not itself grant merge/deployment qualification. Required remote gates and independent review remain mandatory. Unknown or uncertified dependencies force RUN; ordinary ORM historical reuse is not enabled by this baseline.

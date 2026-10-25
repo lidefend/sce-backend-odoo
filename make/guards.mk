@@ -348,3 +348,13 @@ acceptance.evolution.verify: guard.prod.forbid acceptance.evolution.record
 verify.boq.dual_role.five_viewport.evidence: guard.prod.forbid
 	@python3 scripts/verify/boq_dual_role_five_viewport_evidence_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_boq_dual_role_five_viewport_evidence_guard.py
+
+.PHONY: verify.test.baseline verify.test.baseline.unit verify.test.baseline.ready
+verify.test.baseline.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_test_baseline_contract
+
+verify.test.baseline: verify.test.baseline.unit
+	@python3 -m scripts.verify.test_baseline_contract
+
+verify.test.baseline.ready: guard.prod.forbid
+	@python3 -m scripts.verify.test_baseline_contract --verify

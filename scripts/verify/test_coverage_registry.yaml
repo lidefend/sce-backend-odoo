@@ -224,14 +224,6 @@ entries:
   reason: Declared 8 times in addons/smart_construction_core/tests/test_contract_center.py; the contract-centre
     flow has no recurring gate.
   review_by: '2026-12-31'
-- group: contract_assembly_determinism
-  kind: odoo_tag
-  status: unwired
-  owner: platform-team
-  dispose: wire-pending
-  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
-    it to a gate or retire the group.
-  review_by: '2026-12-31'
 - group: contract_dashboard
   kind: odoo_tag
   status: unwired
@@ -611,14 +603,6 @@ entries:
   kind: odoo_tag
   status: unwired
   owner: construction-product
-  dispose: wire-pending
-  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
-    it to a gate or retire the group.
-  review_by: '2026-12-31'
-- group: lowcode_contract_write_authority
-  kind: odoo_tag
-  status: unwired
-  owner: platform-team
   dispose: wire-pending
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
