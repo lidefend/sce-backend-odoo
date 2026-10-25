@@ -10,8 +10,9 @@ const models = ['sc.team.loan.deduction.workspace', 'sc.current.account.workspac
 const report = {head: process.env.CANDIDATE_GIT_HEAD, cases: [], blocked: [], errors: [], feedback: [], passed: false};
 assert(/^[a-f0-9]{40}$/.test(report.head || ''));
 const browser = await launchChromium({headless: true});
+let page;
 try {
-  const page = await browser.newPage({viewport: {width: 1440, height: 960}, locale: 'zh-CN'});
+  page = await browser.newPage({viewport: {width: 1440, height: 960}, locale: 'zh-CN'});
   page.setDefaultTimeout(20000);
   let init;
   page.on('pageerror', error => report.errors.push(error.message));
@@ -40,6 +41,8 @@ try {
   await page.goto(base + '/login', {waitUntil: 'domcontentloaded'});
   await page.locator('#login-username').fill('demo_full');
   await page.locator('#login-password').fill(process.env.E2E_PASSWORD);
+  const database = page.locator('#login-db');
+  if (await database.count()) await database.fill('sc_dev_demo');
   await page.getByRole('button', {name: /^登录$/}).click();
   await page.waitForURL(url => !url.pathname.includes('/login'), {timeout: 45000});
   await page.waitForTimeout(1200);
@@ -73,6 +76,7 @@ try {
   for (const model of models) assert(report.feedback.some(r => r.model === model && r.ok), 'feedback transport missing');
   report.passed = true;
 } finally {
+  report.lastPage = page ? {url: page.url(), text: await page.locator('body').innerText().catch(() => '')} : null;
   await browser.close();
   fs.writeFileSync(`${root}/report.json`, JSON.stringify(report, null, 2));
 }
