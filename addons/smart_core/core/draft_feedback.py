@@ -27,8 +27,9 @@ COMPONENT_VERSION = "1.0.0"
 PURPOSE = "advisory"
 VISIBILITY_OWNER = native_advisory.DRAFT_FEEDBACK_VISIBILITY_OWNER
 RELATION_PRESENCE = "many2one_presence"
-SCALAR_INPUT_TYPES = frozenset({"date", "text"})
-SUPPORTED_INPUT_TYPES = SCALAR_INPUT_TYPES | {RELATION_PRESENCE}
+RELATION_INPUT_TYPES = {RELATION_PRESENCE: "many2one", "many2many_presence": "many2many"}
+SCALAR_INPUT_TYPES = frozenset({"date", "text", "char"})
+SUPPORTED_INPUT_TYPES = SCALAR_INPUT_TYPES | set(RELATION_INPUT_TYPES)
 REQUEST_ID_RE = re.compile(r"[A-Za-z0-9_-]{1,128}\Z")
 SHA256_RE = re.compile(r"[0-9a-f]{64}\Z")
 DIAGNOSTIC_STATUS = {
@@ -183,7 +184,7 @@ def reviewed_content_field(model, field):
         fail("FEEDBACK_SOURCE_INVALID", "feedback_evaluation.binding.inputs")
     for name, expected_type in expected_types.items():
         dependency = model._fields.get(name)
-        actual_type = "many2one" if expected_type == RELATION_PRESENCE else expected_type
+        actual_type = RELATION_INPUT_TYPES.get(expected_type, expected_type)
         if (dependency is None or dependency.type != actual_type or dependency.compute
                 or dependency.related or dependency.inverse):
             fail("FEEDBACK_SOURCE_INVALID", f"feedback_evaluation.binding.inputs.{name}")
@@ -382,9 +383,9 @@ def _decoded_inputs(inputs, dependencies, request_id):
                     raise ValueError()
             except ValueError as exc:
                 raise DraftFeedbackError("FEEDBACK_INPUT_INVALID", path + ".value", request_id) from exc
-        if expected[name] == "text" and value is not False and type(value) is not str:
+        if expected[name] in {"text", "char"} and value is not False and type(value) is not str:
             fail("FEEDBACK_INPUT_INVALID", path + ".value", request_id)
-        if expected[name] == RELATION_PRESENCE and type(value) is not bool:
+        if expected[name] in RELATION_INPUT_TYPES and type(value) is not bool:
             fail("FEEDBACK_INPUT_INVALID", path + ".value", request_id)
         values[name] = value
     if set(values) != set(expected):
@@ -413,7 +414,7 @@ def _evaluate_native(model, field, review, values, condition, request_id):
         for item in review["inputs"]:
             name, expected = item["field"], item["type"]
             value = values[name]
-            if expected == RELATION_PRESENCE:
+            if expected in RELATION_INPUT_TYPES:
                 dependency = model._fields[name]
                 # A NewId comodel record carries presence only. It is never read
                 # for id/display_name/attributes and never persisted.
@@ -430,14 +431,14 @@ def _evaluate_native(model, field, review, values, condition, request_id):
             actual = draft[name]
             if expected == "date":
                 expected_value = date.fromisoformat(values[name]) if values[name] is not False else False
-            elif expected == RELATION_PRESENCE:
+            elif expected in RELATION_INPUT_TYPES:
                 expected_value = values[name]
                 normalized = bool(actual)
             else:
                 expected_value = values[name]
-            if expected != RELATION_PRESENCE:
+            if expected not in RELATION_INPUT_TYPES:
                 normalized = False if actual in (None, False) else actual
-            if expected == "text":
+            if expected in {"text", "char"}:
                 normalized = normalized or ""
                 expected_value = expected_value or ""
             if normalized != expected_value:

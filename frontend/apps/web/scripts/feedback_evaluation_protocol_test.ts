@@ -287,7 +287,7 @@ function relationSnapshot() {
   };
 }
 
-async function checkRelationPresenceDoesNotLeakIdentity() {
+async function checkRelationPresenceDoesNotLeakIdentity(many = false) {
   const store = ref({
     snapshot: {
       ...relationSnapshot(),
@@ -296,7 +296,7 @@ async function checkRelationPresenceDoesNotLeakIdentity() {
   }) as any;
   const presence = ref(new Set(['partner_id', 'business_date', 'note']));
   const formData = {
-    partner_id: [731, 'Sensitive Partner'],
+    partner_id: (many ? [731, 732] : [731, 'Sensitive Partner']) as any,
     business_date: false,
     note: '',
   };
@@ -309,7 +309,10 @@ async function checkRelationPresenceDoesNotLeakIdentity() {
           version: FEEDBACK_EVALUATION_VERSION,
           request_id: request.request_id,
           status: 'described',
-          binding: relationBinding,
+          binding: {...relationBinding, dependencies: [
+            {field: 'partner_id', type: many ? 'many2many_presence' : 'many2one_presence'},
+            ...relationBinding.dependencies.slice(1),
+          ]},
         },
       });
     }
@@ -352,6 +355,25 @@ async function checkRelationPresenceDoesNotLeakIdentity() {
   assert.equal(evaluations.length, 2);
   const cleared = evaluations[1].inputs.find((row: any) => row.field === 'partner_id');
   assert.deepEqual(cleared, { field: 'partner_id', present: true, value: false });
+  if (many) {
+    formData.partner_id = [[6, 0, []]];
+    runtime.onDraftChanged('partner_id');
+    await sleep(330);
+    assert.equal(evaluations.length, 3, 'empty SET must trigger a new evaluation');
+    assert.equal(evaluations.at(-1).inputs[0].value, false);
+    formData.partner_id = [[6, 0, [731, 732]]];
+    runtime.onDraftChanged('partner_id');
+    await sleep(330);
+    assert.equal(evaluations.length, 4, 'nonempty SET must trigger a new evaluation');
+    assert.equal(evaluations.at(-1).inputs[0].value, true);
+    assert.doesNotMatch(JSON.stringify(evaluations.at(-1)), /731|732/);
+    const validCount = evaluations.length;
+    formData.partner_id = [[4, 731, 0]];
+    runtime.onDraftChanged('partner_id');
+    await sleep(330);
+    assert.equal(evaluations.length, validCount, 'partial commands must not be treated as presence');
+    assert.equal(runtime.states.value.get('refund-feedback')?.status, 'unavailable');
+  }
   scope.stop();
 }
 
@@ -359,4 +381,5 @@ checkDecoder();
 checkAtomicPresentation();
 await checkStaleEvaluationIsDropped();
 await checkRelationPresenceDoesNotLeakIdentity();
+await checkRelationPresenceDoesNotLeakIdentity(true);
 console.log('feedback_evaluation_protocol_test: PASS');

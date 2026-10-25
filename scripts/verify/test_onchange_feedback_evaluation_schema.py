@@ -140,12 +140,16 @@ def main():
             "binding": {
                 **RELATION_BINDING,
                 "dependencies": [
-                    {"field": "partner_id", "type": "many2many_presence"},
+                    {"field": "partner_id", "type": "one2many_presence"},
                     *RELATION_BINDING["dependencies"][1:],
                 ],
             },
         },
     ]
+    for kind in ("char", "many2many_presence"):
+        accepted = {**valid[5], "binding": {**RELATION_BINDING,
+            "dependencies": [{"field": "value", "type": kind}]}}
+        assert not list(validator.iter_errors(accepted)), kind
     for index, payload in enumerate(invalid):
         assert list(validator.iter_errors(payload)), f"invalid case {index} accepted"
     for status in (400, 403, 409, 422, 500):

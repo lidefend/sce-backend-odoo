@@ -4,7 +4,7 @@ export const FEEDBACK_MESSAGE_CAPABILITY = 'form.feedback.message.v1' as const;
 
 export type FeedbackDependency = {
   field: string;
-  type: 'date' | 'text' | 'many2one_presence';
+  type: 'date' | 'text' | 'char' | 'many2one_presence' | 'many2many_presence';
 };
 
 export type FeedbackBinding = {
@@ -111,7 +111,7 @@ function decodeDependencies(value: unknown): FeedbackDependency[] {
     const field = text(row.field, `feedback_evaluation.binding.dependencies[${index}].field`);
     const type = row.type;
     if (seen.has(field)
-      || (type !== 'date' && type !== 'text' && type !== 'many2one_presence')) {
+      || (type !== 'date' && type !== 'text' && type !== 'char' && type !== 'many2one_presence' && type !== 'many2many_presence')) {
       invalid(`feedback_evaluation.binding.dependencies[${index}]`);
     }
     seen.add(field);

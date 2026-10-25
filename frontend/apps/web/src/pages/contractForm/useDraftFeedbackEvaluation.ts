@@ -158,6 +158,18 @@ export function useDraftFeedbackEvaluation(options: {
     if (dependency.type === 'many2one_presence') {
       return { field: dependency.field, present: true, value: relationPresent(raw) };
     }
+    if (dependency.type === 'many2many_presence') {
+      if (raw === false || raw === null) return { field: dependency.field, present: true, value: false };
+      // Native default_get uses a single SET command for a complete snapshot.
+      // Partial commands cannot establish presence without an original record.
+      const command = Array.isArray(raw) && raw.length === 1 ? raw[0] : null;
+      const ids = Array.isArray(command) && command.length === 3
+        && command[0] === 6 && command[1] === 0 ? command[2] : raw;
+      if (!Array.isArray(ids) || !ids.every((id) => positiveInteger(id) > 0)) {
+        return { field: dependency.field, present: false };
+      }
+      return { field: dependency.field, present: true, value: ids.length > 0 };
+    }
     if (dependency.type === 'date') {
       const value = raw === false || raw === null || raw === undefined || raw === '' ? false : String(raw);
       return { field: dependency.field, present: true, value };

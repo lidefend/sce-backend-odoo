@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4955`
+- Scanned files: `4956`
 - Files requiring split plan: `72`
 - Files above warning threshold: `143`
 
@@ -43,8 +43,8 @@ Generated from repository source files. This report is informational during the 
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2184 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2121 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
+| 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2090 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
-| 2072 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2056 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2003 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
@@ -174,11 +174,11 @@ Generated from repository source files. This report is informational during the 
 | 932 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 914 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
+| 910 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
 | 900 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |
-| 888 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 888 | Python source | `scripts/verify/test_local_quick_evidence.py` |
 | 887 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
@@ -268,8 +268,8 @@ Generated from repository source files. This report is informational during the 
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2184 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2121 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
+| 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2090 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
-| 2072 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2056 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2003 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
