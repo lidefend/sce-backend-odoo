@@ -121,12 +121,14 @@ def assert_target(source, contract, model, record_id):
 # Comparison scope only, not product semantics. Relations and context-dependent
 # transformations require their own declared projection proof before reuse.
 DIRECT_SCALAR_TYPES = frozenset({'boolean','integer','float','monetary','char','text','selection','date','datetime'})
+RELATION_TYPES = frozenset({'many2one','one2many','many2many'})
 
 
-def value_parity(canonical_json, metadata, source_record, main_data, facts):
+def value_parity(canonical_json, metadata, source_record, main_data, facts, relation_declarations=None):
     checked = []; uncovered = {}; mismatches = []
     if not all(isinstance(value,dict) for value in (metadata,source_record,main_data,facts)):
         raise ValueError('explicit source, projection and fact mappings required')
+    declarations = relation_declarations or {}
     for name in sorted(set(main_data) | set(source_record)):
         if name == 'id':
             continue  # identity has its separate strict check, not a value test
@@ -136,6 +138,20 @@ def value_parity(canonical_json, metadata, source_record, main_data, facts):
         elif (not field.get('store') or field.get('compute') or field.get('related')
               or field.get('translate') or field.get('company_dependent')):
             uncovered[name] = 'derived_or_context_dependent_field'
+        elif field.get('type') in RELATION_TYPES:
+            declared = declarations.get(name)
+            if not (field.get('comodel_name') and isinstance(declared, dict)
+                    and declared.get('model') == field.get('comodel_name')
+                    and declared.get('can_read') is True):
+                uncovered[name] = ('relation_target_not_declared' if not field.get('comodel_name')
+                                   else 'relation_permission_projection_not_declared')
+            elif name not in source_record or name not in main_data or name not in facts:
+                uncovered[name] = 'missing_value_in_source_projection_or_readback'
+            else:
+                checked.append(name)
+                values = [canonical_json(row[name]) for row in (source_record,main_data,facts)]
+                if values[0] != values[1] or values[1] != values[2]:
+                    mismatches.append(name)
         elif field.get('type') not in DIRECT_SCALAR_TYPES:
             uncovered[name] = 'relation_or_non_scalar_projection'
         elif name not in source_record or name not in main_data or name not in facts:
@@ -225,7 +241,8 @@ def probe(env):
             facts = fact_record.read(names)
             metadata = {name:{'type':field.type,'store':bool(field.store),'compute':bool(field.compute),
                               'related':bool(field.related),'translate':bool(getattr(field,'translate',False)),
-                              'company_dependent':bool(getattr(field,'company_dependent',False))}
+                              'company_dependent':bool(getattr(field,'company_dependent',False)),
+                              'comodel_name':str(getattr(field,'comodel_name','') or '')}
                         for name,field in fact_record._fields.items() if name in main or name in (source.get('record') or {})}
             parity = value_parity(lifecycle.canonical_json,metadata,source.get('record'),main,facts[0])
             if parity['mismatch_fields']:
