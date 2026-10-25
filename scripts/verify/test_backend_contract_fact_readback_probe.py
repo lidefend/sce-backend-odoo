@@ -146,5 +146,20 @@ class ReadbackTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             probe.candidate_database({'CANDIDATE_DB_NAME':'not valid!'})
 
+    def test_candidate_role_xmlid_resolves_env_over_default(self):
+        self.assertEqual(probe.ROLE_XMLID,probe.candidate_role_xmlid({}))
+        self.assertEqual('smart_construction_core.user_demo_role_finance',
+                         probe.candidate_role_xmlid({'CANDIDATE_ROLE_XMLID':'smart_construction_core.user_demo_role_finance'}))
+        for bad in ({'CANDIDATE_ROLE_XMLID':'no_dot'},{'CANDIDATE_ROLE_XMLID':'Bad.Case'}):
+            with self.subTest(env=bad), self.assertRaises(ValueError):
+                probe.candidate_role_xmlid(bad)
+
+    def test_candidate_action_xmlid_resolves_env_over_default(self):
+        self.assertEqual(probe.ACTION_XMLID,probe.candidate_action_xmlid({}))
+        self.assertEqual('smart_construction_core.action_payment_request_pay',
+                         probe.candidate_action_xmlid({'CANDIDATE_ACTION_XMLID':'smart_construction_core.action_payment_request_pay'}))
+        with self.assertRaises(ValueError):
+            probe.candidate_action_xmlid({'CANDIDATE_ACTION_XMLID':'bad action xmlid'})
+
 
 if __name__ == '__main__':unittest.main()
