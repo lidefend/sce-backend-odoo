@@ -1,0 +1,38 @@
+{
+  "check": "ci.local.quick.run",
+  "identity": {},
+  "suites": [
+    {
+      "id": "verify.test.determinism",
+      "command": [
+        "make",
+        "verify.test.determinism"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json"
+      ]
+    },
+    {
+      "id": "verify.test.isolation",
+      "command": [
+        "make",
+        "verify.test.isolation"
+      ],
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/",
+        "frontend/apps/web/scripts/",
+        "docs/engineering_convergence/test_inventory.csv",
+        ".github/workflows/",
+        "frontend/apps/web/package.json"
+      ]
+    }
+  ]
+}

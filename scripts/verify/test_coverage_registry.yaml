@@ -178,11 +178,11 @@ entries:
   status: unwired
   owner: construction-product
   dispose: class-selected
-  gate: 'make:verify.company_project_refund.feedback.orm :: company_project_refund_feedback_orm;
-    make:verify.company_project_refund.feedback.http :: company_project_refund_feedback_http'
-  reason: The generic tag is attached to TestCompanyProjectRefundFeedback and
-    TestCompanyProjectRefundFeedbackHttp. Their complete classes are selected through the two specific
-    governed on-demand lanes named above, so no additional generic selector is required.
+  gate: 'make:verify.company_project_refund.feedback.orm :: company_project_refund_feedback_orm; make:verify.company_project_refund.feedback.http
+    :: company_project_refund_feedback_http'
+  reason: The generic tag is attached to TestCompanyProjectRefundFeedback and TestCompanyProjectRefundFeedbackHttp.
+    Their complete classes are selected through the two specific governed on-demand lanes named above,
+    so no additional generic selector is required.
   review_by: '2026-12-31'
 - group: company_project_refund_feedback_http
   kind: odoo_tag
@@ -190,17 +190,16 @@ entries:
   owner: construction-product
   dispose: class-selected
   gate: 'make:verify.company_project_refund.feedback.http :: company_project_refund_feedback_http'
-  reason: Selects TestCompanyProjectRefundFeedbackHttp, covering real HTTP intent calls, feedback
-    visibility/atomic update, late-response protection and controlled failure cases through the
-    owned acceptance runtime.
+  reason: Selects TestCompanyProjectRefundFeedbackHttp, covering real HTTP intent calls, feedback visibility/atomic
+    update, late-response protection and controlled failure cases through the owned acceptance runtime.
 - group: company_project_refund_feedback_orm
   kind: odoo_tag
   status: on-demand
   owner: construction-product
   dispose: class-selected
   gate: 'make:verify.company_project_refund.feedback.orm :: company_project_refund_feedback_orm'
-  reason: Selects TestCompanyProjectRefundFeedback for model/view contract, feedback assembly,
-    permission, rollback and zero-write assertions in the isolated ORM lane.
+  reason: Selects TestCompanyProjectRefundFeedback for model/view contract, feedback assembly, permission,
+    rollback and zero-write assertions in the isolated ORM lane.
 - group: company_project_refund_feedback_restore
   kind: odoo_tag
   status: on-demand
@@ -224,6 +223,14 @@ entries:
   dispose: wire-pending
   reason: Declared 8 times in addons/smart_construction_core/tests/test_contract_center.py; the contract-centre
     flow has no recurring gate.
+  review_by: '2026-12-31'
+- group: contract_assembly_determinism
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
   review_by: '2026-12-31'
 - group: contract_dashboard
   kind: odoo_tag
@@ -499,16 +506,16 @@ entries:
   owner: construction-product
   dispose: class-selected
   gate: 'make:verify.feedback_evaluation.rt.http.orm :: feedback_evaluation_rt_http'
-  reason: Selects TestFeedbackEvaluationRtHttp for authenticated HTTP feedback evaluation, field
-    visibility and user/company authority checks on the isolated acceptance database.
+  reason: Selects TestFeedbackEvaluationRtHttp for authenticated HTTP feedback evaluation, field visibility
+    and user/company authority checks on the isolated acceptance database.
 - group: feedback_evaluation_rt_restore
   kind: odoo_tag
   status: on-demand
   owner: construction-product
   dispose: class-selected
   gate: 'make:verify.feedback_evaluation.rt.restore :: feedback_evaluation_rt_restore'
-  reason: Selects TestFeedbackEvaluationRtRestore, proving the HTTP acceptance fixture changes are
-    restored and do not leak into later runs.
+  reason: Selects TestFeedbackEvaluationRtRestore, proving the HTTP acceptance fixture changes are restored
+    and do not leak into later runs.
 - group: form_structure_surface_capability_orm
   kind: odoo_tag
   status: on-demand
@@ -646,9 +653,8 @@ entries:
   owner: construction-product
   dispose: class-selected
   gate: 'make:verify.native_advisory_draft.orm :: native_advisory_draft'
-  reason: Selects TestNativeAdvisoryDraft for native advisory draft state, feedback payload and
-    contract-consumption behavior; the HTTP and restore groups import this fixture contract rather
-    than duplicating it.
+  reason: Selects TestNativeAdvisoryDraft for native advisory draft state, feedback payload and contract-consumption
+    behavior; the HTTP and restore groups import this fixture contract rather than duplicating it.
 - group: native_alignment
   kind: odoo_tag
   status: unwired

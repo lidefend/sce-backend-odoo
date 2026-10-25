@@ -1491,6 +1491,7 @@ verify.daily.runtime.release_orchestration.unit: guard.prod.forbid
 verify.quick.input_scope.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/quick_input_scope.py scripts/ops/test_quick_input_scope.py
 	@python3 scripts/ops/test_quick_input_scope.py
+	@python3 -m unittest scripts.ops.test_quick_suite_fingerprint
 
 .PHONY: verify.quick.evidence.unit
 verify.quick.evidence.unit: guard.prod.forbid
