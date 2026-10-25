@@ -155,6 +155,16 @@ class ReadbackTest(unittest.TestCase):
         result=probe.value_parity(lifecycle.canonical_json,metadata,*rows,declarations)
         self.assertEqual(['partner'],result['mismatch_fields'])
 
+    def test_declared_relation_projections_walk_contract(self):
+        contract={'dataContract':{'mainData':{'nodes':[
+            {'name':'partner_id','fieldInfo':{'relation_entry':{'model':'res.partner','can_read':True}}},
+            {'name':'manager_id','relation_entry':{'model':'res.users','can_read':False}},
+            {'name':'plain','fieldInfo':{}},
+        ]}}}
+        result=probe.declared_relation_projections(contract)
+        self.assertEqual({'partner_id':{'model':'res.partner','can_read':True},
+                          'manager_id':{'model':'res.users','can_read':False}},result)
+
     def test_candidate_head_identity_binds_exact_head_and_tree(self):
         self.assertEqual({'source_head':None,'source_tree':None},
                          probe.candidate_head_identity({}))

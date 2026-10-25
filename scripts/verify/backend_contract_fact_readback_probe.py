@@ -169,6 +169,37 @@ def value_parity(canonical_json, metadata, source_record, main_data, facts, rela
             'status':'failed' if mismatches else 'passed', 'full_projection_parity':not uncovered and not mismatches}
 
 
+def declared_relation_projections(contract):
+    """Extract declared relation projections from a ui.contract.v2 contract.
+
+    Mirrors the browser relation probe: walk the contract for nodes carrying a
+    relation_entry with a target model and a read permission. A relation field
+    is comparable only when it is declared here; everything else stays uncovered.
+    """
+    out = {}
+
+    def walk(node):
+        if isinstance(node, list):
+            for item in node:
+                walk(item)
+            return
+        if not isinstance(node, dict):
+            return
+        field_info = node.get('fieldInfo') if isinstance(node.get('fieldInfo'), dict) else {}
+        entry = field_info.get('relation_entry') or node.get('relation_entry') or node.get('relationEntry')
+        name = str(node.get('name') or node.get('fieldName') or node.get('field_name') or '').strip()
+        if isinstance(entry, dict) and name and name not in out:
+            model = str(entry.get('model') or '').strip()
+            can_read = entry.get('can_read')
+            if isinstance(can_read, bool):
+                out[name] = {'model': model, 'can_read': can_read}
+        for value in node.values():
+            walk(value)
+
+    walk(contract)
+    return out
+
+
 def probe(env):
     from types import SimpleNamespace
     from odoo import api
@@ -244,7 +275,8 @@ def probe(env):
                               'company_dependent':bool(getattr(field,'company_dependent',False)),
                               'comodel_name':str(getattr(field,'comodel_name','') or '')}
                         for name,field in fact_record._fields.items() if name in main or name in (source.get('record') or {})}
-            parity = value_parity(lifecycle.canonical_json,metadata,source.get('record'),main,facts[0])
+            parity = value_parity(lifecycle.canonical_json,metadata,source.get('record'),main,facts[0],
+                                  declared_relation_projections(result))
             if parity['mismatch_fields']:
                 raise ValueError('source/projection/fact value mismatch fields: ' + ','.join(parity['mismatch_fields']))
             item.update(model=model, record_ids=record.ids, read_fields=names, value_parity=parity,
