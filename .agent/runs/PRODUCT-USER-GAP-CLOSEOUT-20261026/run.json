@@ -455,6 +455,12 @@
       "product": "certificate actual name/number/holder/expiry matched1440/390 and detail; policy708 columns independent with0 records",
       "blocked": "chatter.timeline read for certificate detail; handler inspected read-only, bound exact observed certificate record ID and model for P4 allowance, no post/delete/write requests allowed",
       "revalidation": "Only356 affected by detail timeline allowance; rerun356 via fixed subset. Reuse708 original columns evidence, no overall pass claim for original report. No XML changes after upgrade; ORM stillvalid."
+    },
+    "seventh_second_browser": {
+      "candidate": "5acfcc1b1375581856918de1a002bff3c5b860ca",
+      "status": "failed_observer_dependent_read",
+      "result": "Certificate four fields and timeline HTTP200/ok true passed; subsequent chatter.followers.list was blocked.",
+      "correction": "Inspected useNativeChatterRuntime loadTimeline→loadFollowers chain and ChatterFollowersListHandler(read-only). Allow both reads only for fixed model+observed certificate ID, await both HTTP200/ok. Follow/update/post/delete remain denied. Only356 rerun; keep originals failed."
     }
   }
 }

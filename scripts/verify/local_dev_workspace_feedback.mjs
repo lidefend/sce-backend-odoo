@@ -54,11 +54,11 @@ try {
     const pathname = new URL(req.url()).pathname.replace(/^\/t\/demo/, '');
     const draft = req.method() === 'POST' && pathname === '/api/v1/intent' &&
       request?.intent === 'api.onchange' && models.includes(request.params?.model);
-    const certificateTimeline = scope === 'certificate' && certificateRecordId !== null &&
-      req.method() === 'POST' && pathname === '/api/v1/intent' && request?.intent === 'chatter.timeline' &&
+    const certificateRead = scope === 'certificate' && certificateRecordId !== null &&
+      req.method() === 'POST' && pathname === '/api/v1/intent' && ['chatter.timeline', 'chatter.followers.list'].includes(request?.intent) &&
       request.params?.model === 'sc.document.admin.document' &&
       Number(request.params.res_id ?? request.params.record_id) === certificateRecordId;
-    if (!draft && !certificateTimeline && !permitsInventoryRequest(req.method(), pathname, body, false)) {
+    if (!draft && !certificateRead && !permitsInventoryRequest(req.method(), pathname, body, false)) {
       report.blocked.push({intent: request?.intent || pathname});
       return route.abort();
     }
@@ -132,12 +132,12 @@ try {
         }
         await page.setViewportSize({width: 1440, height: 960});
         certificateRecordId = Number(record.id);
-        const timelineResponse = page.waitForResponse(response => {
+        const collaborationResponses = ['chatter.timeline', 'chatter.followers.list'].map(intent => page.waitForResponse(response => {
           let body; try { body = response.request().postDataJSON(); } catch { return false; }
           const request = body?.params?.intent ? body.params : body;
-          return request?.intent === 'chatter.timeline' && request.params?.model === model &&
+          return request?.intent === intent && request.params?.model === model &&
             Number(request.params.res_id ?? request.params.record_id) === certificateRecordId;
-        }, {timeout: 45000});
+        }, {timeout: 45000}));
         await page.goto(base + '/r/' + model + '/' + record.id + '?menu_id=' + menu, {waitUntil: 'domcontentloaded'});
         await page.locator('[data-field-name="certificate_name"]').first().waitFor({state: 'visible', timeout: 45000});
         for (const field of fields) {
@@ -145,9 +145,13 @@ try {
           const value = await container.evaluate(el => el.textContent + ' ' + Array.from(el.querySelectorAll('input,textarea')).map(input => input.value).join(' '));
           if (record[field]) assert(value.includes(record[field]), 'detail differs from list: ' + field);
         }
-        const timeline = await timelineResponse;
-        item.timeline = {http: timeline.status(), ok: (await timeline.json()).ok};
-        assert.equal(item.timeline.ok, true, 'certificate timeline read failed');
+        item.collaboration = [];
+        for (const response of await Promise.all(collaborationResponses)) {
+          const result = {http: response.status(), ok: (await response.json()).ok};
+          assert.equal(result.http, 200, 'certificate collaboration HTTP failed');
+          assert.equal(result.ok, true, 'certificate collaboration read failed');
+          item.collaboration.push(result);
+        }
         await page.screenshot({path: `${root}/certificate-detail.png`});
       } else {
         assert(columns.includes('document_title') && columns.includes('policy_version'));
