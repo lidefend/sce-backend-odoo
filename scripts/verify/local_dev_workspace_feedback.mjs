@@ -6,12 +6,12 @@ import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap
 // The existing nginx owns the namespace stamp; the preview server does not.
 const base = 'http://127.0.0.1:18081/t/demo';
 const scope = process.env.SC_FEEDBACK_SCOPE || 'workspace';
-assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority'].includes(scope));
+assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority', 'certificate'].includes(scope));
 const root = `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}`;
 fs.mkdirSync(root, {recursive: true});
 const actor = scope === 'usability' ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
 assert(['demo_full', 'demo_role_pm', 'demo_role_finance', 'demo_role_project_read'].includes(actor));
-const availableCases = ['usability', 'create-authority'].includes(scope) ? [] : scope === 'workspace' ? [
+const availableCases = ['usability', 'create-authority', 'certificate'].includes(scope) ? [] : scope === 'workspace' ? [
   {model: 'sc.team.loan.deduction.workspace', field: 'note', hint: '建议补充办理说明'},
   {model: 'sc.current.account.workspace', field: 'note', hint: '建议补充办理说明', retained: '办理承包人借还款前请选择承包人/往来单位'},
 ] : scope === 'cost' ? [
@@ -84,6 +84,63 @@ try {
   function walk(nodes) { for (const node of nodes) { if (node.children?.length) walk(node.children); else leaves.push(node); } }
   walk(init.navigation.nav);
   report.actor = {uid: init.user?.id, login: actor, company: init.user?.company_id};
+  if (scope === 'certificate') {
+    const model = 'sc.document.admin.document';
+    const fields = ['certificate_name', 'certificate_no', 'holder_name', 'valid_until'];
+    for (const menu of ['356', '708']) {
+      const node = leaves.find(n => n.meta?.model === model && new URL(n.meta.route, base).searchParams.get('menu_id') === menu);
+      assert(node?.meta?.route?.startsWith('/'), 'document entry missing');
+      const responseFor = (intent, operation) => page.waitForResponse(response => {
+        let body; try { body = response.request().postDataJSON(); } catch { return false; }
+        const request = body?.params?.intent ? body.params : body;
+        return request?.intent === intent && request.params?.op === operation &&
+          (intent === 'ui.contract.v2' ? String(request.params.menu_id) === menu : request.params.model === model);
+      }, {timeout: 45000});
+      const contractResponse = responseFor('ui.contract.v2', 'action_open');
+      const dataResponse = responseFor('api.data', 'list');
+      await page.goto(base + node.meta.route, {waitUntil: 'domcontentloaded'});
+      const contract = await (await contractResponse).json();
+      const data = await (await dataResponse).json();
+      assert.equal(contract.ok, true); assert.equal(data.ok, true);
+      const profile = contract.data.layoutContract.listProfile;
+      const columns = profile.fact_columns || profile.columns;
+      const records = data.data.records;
+      assert(Array.isArray(records), 'document list response missing');
+      await page.waitForFunction(() => ['ok', 'empty'].includes(document.querySelector('[data-semantic-component="ActionView"]')?.getAttribute('data-collection-state')));
+      const item = {menu, route: node.meta.route, columns}; report.cases.push(item);
+      if (menu === '356') {
+        for (const field of fields) assert(columns.includes(field), 'certificate column missing: ' + field);
+        assert(!columns.includes('document_title'));
+        const record = records.find(row => fields.every(field => row[field]));
+        assert(record, 'certificate name/number/holder/expiry data sample missing');
+        item.record = {id: record.id, ...Object.fromEntries(fields.map(field => [field, record[field]]))};
+        for (const width of [1440, 390]) {
+          await page.setViewportSize({width, height: width === 390 ? 844 : 960});
+          const text = await page.locator('[data-semantic-component="ActionView"]').innerText();
+          assert(text.includes(record.certificate_name), 'certificate name not rendered');
+          assert(text.includes(record.certificate_no), 'certificate number not rendered');
+          assert(text.includes(record.valid_until), 'expiry not rendered');
+          if (record.holder_name) assert(text.includes(record.holder_name), 'holder not rendered');
+          await page.screenshot({path: `${root}/certificate-${width}.png`});
+        }
+        await page.setViewportSize({width: 1440, height: 960});
+        await page.goto(base + '/r/' + model + '/' + record.id + '?menu_id=' + menu, {waitUntil: 'domcontentloaded'});
+        await page.locator('[data-field-name="certificate_name"]').first().waitFor({state: 'visible', timeout: 45000});
+        for (const field of fields) {
+          const container = page.locator(`[data-field-name="${field}"]`).first();
+          const value = await container.evaluate(el => el.textContent + ' ' + Array.from(el.querySelectorAll('input,textarea')).map(input => input.value).join(' '));
+          if (record[field]) assert(value.includes(record[field]), 'detail differs from list: ' + field);
+        }
+        await page.screenshot({path: `${root}/certificate-detail.png`});
+      } else {
+        assert(columns.includes('document_title') && columns.includes('policy_version'));
+        for (const field of fields) assert(!columns.includes(field), 'certificate field leaked to policies');
+        await page.screenshot({path: `${root}/policy-list.png`});
+      }
+      item.passed = true;
+    }
+    assert.equal(report.blocked.length, 0);
+  }
   if (scope === 'create-authority') {
     for (const plan of [
       {model: 'account.move.line', menu: '176', allowed: false},

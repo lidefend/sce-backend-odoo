@@ -56,7 +56,9 @@
     "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
     "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
     "scripts/verify/unified_page_contract_v2_assembler_guard.py",
-    "addons/smart_core/app_config_engine/models/app_view_config.py"
+    "addons/smart_core/app_config_engine/models/app_view_config.py",
+    "addons/smart_construction_core/views/core/document_admin_document_views.xml",
+    "addons/smart_construction_core/tests/test_policy_document_capability.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -64,7 +66,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Fix FG09 certificate list native declaration and FG08 generic analytical field/selection labels; FG15 mixed native notices remains separate. Retain pending business chains and demo rebuild.",
+  "next_exact_step": "Declare certificate-specific native list and bind certificate action; verify source→contract and shared entry isolation.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -432,6 +434,20 @@
       "limits": "No direct business-write API rejection proof, no save/submit chain. Direct forbidden new URL still uses existing diagnostic page. Tax report technical labels added to FG08. No upgrade, demo reset, remote checks, mainline merge or daily deploy.",
       "counts": "13 original groups locally partially repaired; FG05/08/09/15 unresolved; 23 demo groups unreconstructed",
       "reuse": "Front-end production inputs unchanged from fifth; prior type/style/basis valid. Final docs do not invalidate scoped code/ORM/browser results."
+    },
+    "seventh_ownership": {
+      "identity": "2ad75738f0c91db1f3c26d09e3bc204154047b9a clean",
+      "P1": "Industry certificate action-specific native tree: name,number,holder,expiry; explicit action view binding. Existing shared model/search/form/domain/ACL retained. Not frontend inference or demo data fabrication.",
+      "P4": "Extend existing read-only observer for certificate menu356 and policy-document comparison; no business writes. Existing registered local.dev snapshot + module upgrade needed for XML.",
+      "risk": "Medium native view binding; preserve shared document entry isolation. L1 then affected nonzero native contract ORM, snapshot+identity readback+upgrade, desktop/mobile actual-data list/detail checks. No full matrix or demo reset.",
+      "boundary": "Selected worktree only. Reuse sc-local-dev/sc_dev_demo/ns_000000000002 and canonical credentials. No customer or daily-server mutation."
+    },
+    "seventh_preupgrade": {
+      "tests": "L1 passed; 2 ORM native/ACL/shared-form tests passed (seventh-orm.log); observer guard7 passed; no frontend production changes so reuse prior type/style/basis",
+      "backup": "artifacts/local-dev/snapshots/20261025T225820Z; database+filestore readable SHA256 verified in seventh-backup-readback.json",
+      "identity": "sc_dev_demo/demo/ns_000000000002 verified; existing local feature tenant; snapshot code2ad75738f + declared XML dirty scope, DB still pre-upgrade",
+      "review": "review_quick_closeout no product blocking findings. P4 corrected to allow empty policy708, require all four certificate sample values nonempty; no false display claims.",
+      "next": "Commit P1/P4; governed module upgrade with explicit XML upgrade flags, then exact candidate browser; no demo rebuild."
     }
   }
 }
