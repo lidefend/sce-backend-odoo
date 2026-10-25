@@ -230,6 +230,15 @@ class _TreeFormParserMixin:
         label = (btn_node.get('string') or btn_node.get('title') or '').strip()
         if label:
             return label
+        # Native object buttons may declare their translated label in markup.
+        # Dynamic fields/widgets need their own renderer; do not flatten them
+        # into a misleading partial label.
+        descendants = list(btn_node.iter())[1:]
+        static_tags = {'span', 'b', 'strong', 'i', 'em', 'small'}
+        if all(node.tag in static_tags and not node.attrib for node in descendants):
+            label = " ".join("".join(btn_node.itertext()).split())
+            if label:
+                return label
         try:
             if str(name_raw or '').strip().isdigit():
                 action = self.env['ir.actions.actions'].sudo().browse(int(name_raw))
@@ -1197,7 +1206,13 @@ class _TreeFormParserMixin:
             return node
 
         # 其他未知节点：以 container 兜底
-        node = {'type': self._layout_type(tag), 'attributes': _attrs(el)}
+        node = {'type': self._layout_type(tag), 'attributes': _attrs(el),
+                **self._native_element_identity(el)}
+        mods, relation_active_actions = self._native_behavior_from_element(el)
+        if mods:
+            node['modifiers'] = mods
+        if relation_active_actions:
+            node['relation_active_actions'] = relation_active_actions
         text = " ".join((el.text or "").split())
         if text:
             node['text'] = text

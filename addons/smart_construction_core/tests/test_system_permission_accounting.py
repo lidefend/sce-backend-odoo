@@ -106,3 +106,47 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
         self.assertEqual(self.env['account.move'].search_count([
             ('ref', '=', values['ref']), ('company_id', '=', self.env.company.id)]), 1)
         self.assertEqual(move.with_env(self.env).state, 'posted')
+
+    def test_native_journal_notice_parser_preserves_inline_contract(self):
+        from lxml import etree
+        user = self._subject('accounting_user')
+        model = self.env['account.move'].with_user(user).with_context(lang='zh_CN')
+        native = model.get_view(view_id=self.env.ref('account.view_move_form').id, view_type='form')
+        root = etree.fromstring(native['arch'].encode())
+        parser = self.env['app.view.parser'].with_user(user).with_context(lang='zh_CN')
+        result = parser.parse_odoo_view('account.move', 'form', view_data=native)
+        def walk(nodes):
+            for node in nodes:
+                yield node
+                for key in ('children', 'tabs'):
+                    yield from walk(node.get(key, []))
+        nodes = list(walk(result['layout']))
+        spans = root.xpath('.//span[@invisible="not auto_post_until"]')
+        self.assertEqual(len(spans), 1)
+        span = spans[0]
+        locator = root.getroottree().getpath(span)
+        # The parser uses explicit ordinal [1] for every element.
+        identity = parser._native_element_identity(span)
+        projected = [n for n in nodes if n.get('native_locator') == identity['native_locator']]
+        self.assertEqual(len(projected), 1, locator)
+        self.assertEqual(projected[0]['modifiers']['invisible']['expr']['field'], 'auto_post_until')
+        self.assertEqual(projected[0]['text'], ' '.join((span.text or '').split()))
+        self.assertTrue(any(n.get('name') == 'auto_post_until' for n in projected[0]['children']))
+        links = root.xpath('.//a[@href="#outstanding"]')
+        self.assertEqual(len(links), 4)
+        for link in links:
+            identity = parser._native_element_identity(link)
+            rows = [n for n in nodes if n.get('native_locator') == identity['native_locator']]
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]['attributes']['href'], '#outstanding')
+            self.assertEqual(rows[0]['text'], ' '.join((link.text or '').split()))
+        buttons = root.xpath('.//button[@name="action_activate_currency"]')
+        self.assertEqual(len(buttons), 2)
+        for button in buttons:
+            identity = parser._native_element_identity(button)
+            row = next(n for n in nodes if n.get('native_locator') == identity['native_locator'])
+            expected = ' '.join(''.join(button.itertext()).split())
+            self.assertTrue(expected)
+            self.assertEqual(row['label'], expected)
+            self.assertEqual(row['action']['label'], expected)
+            self.assertEqual(row['action']['name'], 'action_activate_currency')

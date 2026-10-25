@@ -26,6 +26,9 @@ class _ElementWrapper:
     def get(self, key, default=None):
         return self._element.get(key, default)
 
+    def itertext(self):
+        return self._element.itertext()
+
     def getparent(self):
         return self._parent
 
@@ -497,6 +500,41 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
             "operator": "==",
             "value": "done",
         })
+
+    def test_inline_nodes_preserve_identity_conditions_and_text_order(self):
+        root = _parse_test_xml('<form><div>开始<span invisible="not until">结束于'
+                               '<b readonly="True">日期</b>（包含）</span>'
+                               '<a href="#outstanding">未结清项</a>尾注</div></form>')
+        div = self.tree_form_parser._node_to_layout_from_dom(list(root)[0], {})
+        span, anchor, tail = div["children"]
+        self.assertEqual(span["native_locator"], "/form[1]/div[1]/span[1]")
+        self.assertEqual(span["occurrence_index"], 1)
+        self.assertEqual(span["modifiers"]["invisible"], {"kind": "not", "expr": {"kind": "field_truthy", "field": "until"}, "raw": "not until"})
+        self.assertEqual(span["text"], "结束于")
+        self.assertEqual(span["children"][0]["text"], "日期")
+        self.assertTrue(span["children"][0]["modifiers"]["readonly"])
+        self.assertEqual(span["children"][1]["text"], "（包含）")
+        self.assertEqual(anchor["native_locator"], "/form[1]/div[1]/a[1]")
+        self.assertEqual(anchor["attributes"]["href"], "#outstanding")
+        self.assertEqual(tail["text"], "尾注")
+
+    def test_native_button_static_body_label_and_explicit_precedence(self):
+        parser = self.tree_form_parser
+        resolve = super(_TreeFormParserProbe, parser)._resolve_action_label
+        for arch, expected in (
+            ('<button name="activate">启用<span>货币</span></button>', '启用货币'),
+            ('<button name="activate" string="显式">正文</button>', '显式'),
+            ('<button name="activate" title="标题">正文</button>', '标题'),
+            ('<button name="activate">金额<field name="amount"/></button>', ''),
+            ('<button name="activate">提示<widget name="dynamic"/></button>', ''),
+            ('<button name="activate">前缀<span invisible="hidden">动态文字</span></button>', ''),
+            ('<button name="activate"><span t-if="value">动态文字</span></button>', ''),
+            ('<button name="activate"><span hidden="hidden">隐藏</span></button>', ''),
+            ('<button name="activate"><span style="display:none">隐藏</span></button>', ''),
+            ('<button name="activate"><span class="d-none">隐藏</span></button>', ''),
+        ):
+            with self.subTest(arch=arch):
+                self.assertEqual(resolve(_parse_test_xml(arch), "activate"), expected)
 
     def test_form_field_keeps_raw_and_normalized_modifier_values(self):
         element = _parse_test_xml(
