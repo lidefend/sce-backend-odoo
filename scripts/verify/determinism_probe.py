@@ -42,6 +42,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
+    if args.runs < 2:
+        parser.error("--runs must be at least 2")
 
     command = [item for item in args.command if item != "--"]
     if not command:
@@ -49,6 +51,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     baseline_code, baseline_out = run(command)
+    if baseline_code:
+        print(f"[determinism-probe] FAIL baseline exit={baseline_code}")
+        return 1
+    if re.search(r"^Ran 0 tests? in ", baseline_out, re.MULTILINE):
+        print("[determinism-probe] FAIL zero tests collected")
+        return 1
     for run_no in range(2, args.runs + 1):
         code, out = run(command)
         if code != baseline_code:

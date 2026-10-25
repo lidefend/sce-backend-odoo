@@ -111,10 +111,12 @@ def execution_identity() -> dict:
 
 
 def execution_units(root: Path, head: str, targets: list[str]) -> dict:
+    import quick_suite_fingerprint
     rows = git(root, "ls-tree", "-r", "--full-tree", head).splitlines()
+    declared = quick_suite_fingerprint.committed_fingerprints(root, head, rows)
     return {"schema": "evidence_scope.units.v1", "check": "ci.local.quick",
             "identity": execution_identity(),
-            "units": [{"id": target, "fingerprint": _fingerprint_rows(rows, target, head),
+            "units": [{"id": target, "fingerprint": declared.get(target) or _fingerprint_rows(rows, target, head),
                        "required": True} for target in targets]}
 
 

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "id": "TEST-BASELINE-QUICK-CLOSEOUT-20261025",
+  "branch": "codex/test-baseline-incremental-reuse",
+  "baseline_sha": "adf37ca0fcb34707fded0a0b04a4ce7bea50278f",
+  "status": "verification_pending",
+  "goal": ".agent/goals/TEST-BASELINE-QUICK-CLOSEOUT-20261025.yaml",
+  "record": "docs/ops/iterations/test_baseline_reproducibility_handoff_20261025.md",
+  "scope": [
+    "scripts/verify/determinism_probe.py",
+    "scripts/verify/isolation_probe.py",
+    "scripts/verify/test_determinism_probe.py",
+    "scripts/verify/test_isolation_probe.py",
+    "scripts/ops/quick_suite_fingerprint.py",
+    "scripts/ops/quick_suite_manifest.json",
+    "scripts/ops/test_quick_suite_fingerprint.py",
+    "scripts/ops/quick_input_scope.py",
+    "scripts/ops/test_quick_input_scope.py",
+    "scripts/ops/local_quick_evidence.py",
+    "scripts/ops/test_local_quick_evidence.py",
+    ".agent/active-runs.json",
+    ".agent/goals/TEST-BASELINE-QUICK-CLOSEOUT-20261025.yaml",
+    ".agent/runs/TEST-BASELINE-QUICK-CLOSEOUT-20261025/run.json",
+    "docs/ops/iterations/test_baseline_reproducibility_handoff_20261025.md",
+    "make/codex.mk",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/engineering_convergence/e2e_journey_matrix.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing Make tools; no runtime or database writes"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Run one exact-head Quick after this commit; obtain independent review before governed publication, then require new-head remote CI and explicit GitHub merge authorization.",
+  "observations": {
+    "boundary": "P4 standard verification tooling; no P0-P3 semantics. Existing worktree clean at takeover; no preexisting changes.",
+    "validation_plan": "L0 identity checked; L1/L2 focused probe and Quick regression tests then ci.local.iteration. L3/L4 not applicable: offline tooling only. L5 pending convergence.",
+    "rollback": "Revert owned changes relative to adf37ca0f; no environment mutations.",
+    "lane_failure": "Lane coverage found existing fingerprint unit script unreferenced. Wire it to existing Quick input-scope target; do not relax baseline.",
+    "validation": {
+      "iteration": "passed: .runtime/test-baseline-closeout/iteration.log",
+      "probes": "passed: .runtime/test-baseline-closeout/probes-nonzero.log; determinism 3 runs per command; isolation nonzero forward/reverse tests",
+      "quick_scope": "passed: 11 committed-input tests + 4 existing helper tests; .runtime/test-baseline-closeout/scope-lane-fixed.log",
+      "quick_execution": "passed: 14 tests; .runtime/test-baseline-closeout/quick-execution-binding.log",
+      "guard_registry": "passed: 24 tests and registry audit; .runtime/test-baseline-closeout/guard-registry.log",
+      "coverage_registry": "passed: .runtime/test-baseline-closeout/coverage-registry.log",
+      "lane_coverage": "passed after wiring existing orphan test to existing target; original failure retained in lane-coverage.log",
+      "freeze_prepare": "passed: .runtime/test-baseline-closeout/freeze-prepare.log; only generated complexity line-count update",
+      "quick_governance": "passed: 63 Quick regression + 23 branch governance tests; .runtime/test-baseline-closeout/quick-governance.log",
+      "registries_final": "passed: 24 guard + 18 coverage tests and both audits after final Make wiring; .runtime/test-baseline-closeout/registries-final.log"
+    },
+    "impact_analysis": "Probe tests rerun after zero-count rejection. Planner tests derive reusable/affected units from committed manifest + declared directory/file blob sets + execution identity. Quick execution tests rerun after binding ledger to actual planned execution list. No browser or database inputs changed.",
+    "independent_review": "not_run; required before publication/merge, not claimed by author self-review",
+    "remote": "PR734 required checks passed for adf37ca0f only; current dirty delta not published. PR732 remains separately conflicting."
+  }
+}

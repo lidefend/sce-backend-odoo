@@ -156,7 +156,8 @@ def evidence_path(root: Path, head: str) -> Path:
     return raw if raw.is_absolute() else root / raw
 
 
-def _write_receipt_after_success(root: Path, expected_head: str, coverage: dict) -> Path:
+def _write_receipt_after_success(root: Path, expected_head: str, coverage: dict,
+                                 executed_targets: list[str] | None = None) -> Path:
     root, tree = require_exact_clean_head(root, expected_head)
     path = evidence_path(root, expected_head)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -184,7 +185,7 @@ def _write_receipt_after_success(root: Path, expected_head: str, coverage: dict)
         # above is already written and verifiable, so a prune failure must not
         # turn a passing Quick into a failing one. It is reported, not swallowed.
         print(f"[local_quick_evidence] WARN receipt retention failed: {exc}")
-    _save_target_scope(root, expected_head, path)
+    _save_target_scope(root, expected_head, path, executed_targets)
     return path
 
 
@@ -350,7 +351,8 @@ def _scope_module():
     return quick_input_scope
 
 
-def _save_target_scope(root: Path, head: str, receipt: Path) -> None:
+def _save_target_scope(root: Path, head: str, receipt: Path,
+                       executed_targets: list[str] | None = None) -> None:
     """Optional optimization metadata; never substitutes for a Quick receipt."""
     try:
         scope = _scope_module()
@@ -359,7 +361,27 @@ def _save_target_scope(root: Path, head: str, receipt: Path) -> None:
             "receipt_sha256": hashlib.sha256(receipt.read_bytes()).hexdigest(),
             "document": document,
         })
-    except (EvidenceError, OSError, ValueError, subprocess.CalledProcessError) as exc:
+        # The ledger is an audit of actual execution, not an alternative to
+        # ancestor receipt/hash/scan validation in the planner.
+        import evidence_scope
+        executed = set(executed_targets if executed_targets is not None else required_targets(root))
+        units = [unit for unit in document["units"] if unit["id"] in executed]
+        if units:
+            path = root / ".runtime/evidence-scope/ci.local.quick.json"
+            ignored = subprocess.run(["git", "-C", str(root), "check-ignore", "-q", str(path)],
+                                     check=False)
+            if ignored.returncode:
+                print("[local_quick_evidence] ledger unavailable: evidence path is not ignored")
+                return
+            ledger = evidence_scope.load_ledger(path, document["check"])
+            ledger = evidence_scope.record_units(document, ledger, {
+                "schema": "evidence_scope.results.v1",
+                "executed_units": units,
+                "planned_affected": [unit["id"] for unit in units],
+                "results": {unit["id"]: "passed" for unit in units},
+            }, source=head)
+            atomic_json(path, ledger)
+    except (RuntimeError, OSError, ValueError, subprocess.CalledProcessError) as exc:
         print(f"[local_quick_evidence] target reuse unavailable: {exc}")
 
 
@@ -513,7 +535,8 @@ def run_quick(root: Path, runner=subprocess.run, diagnostic: bool = False) -> Pa
                 raise EvidenceError("reference snapshot changed again during bounded scan refresh")
             _require_scan_proofs(root, folder, start_head, tree, coverage)
         git(root, "diff", "--check")
-        return _write_receipt_after_success(root, start_head, coverage)
+        return _write_receipt_after_success(root, start_head, coverage,
+                                            plan[0] if plan is not None else None)
 
 
 def _payload_matches(root: Path, head: str, tree: str, payload: dict) -> bool:
@@ -982,7 +1005,7 @@ def compose(root: Path, shards: int, expected_head: str) -> Path:
     # sharded path never executes that recipe, so reproduce its only semantic
     # line here instead of dropping the check from the composed receipt.
     git(root, "diff", "--check")
-    receipt = _write_receipt_after_success(root, expected_head, coverage)
+    receipt = _write_receipt_after_success(root, expected_head, coverage, manifest)
     atomic_json(shard_root(root, expected_head) / "composition.json", {
         "schema_version": COMPOSITION_SCHEMA,
         "suite": SUITE,

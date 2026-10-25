@@ -1,0 +1,8 @@
+schema_version: 1
+goal:
+  id: TEST-BASELINE-QUICK-CLOSEOUT-20261025
+  title: Close test baseline probe correctness and Quick suite reuse
+  status: active
+  formal_product_layer: P4
+  layer_target: existing Quick planner and offline verification probes
+  exclusions: [product_semantics, database_writes, deployment, unrelated_PR_732]
