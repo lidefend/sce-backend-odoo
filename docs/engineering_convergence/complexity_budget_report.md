@@ -136,8 +136,8 @@ Generated from repository source files. This report is informational during the 
 | 1133 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
 | 1131 | Python source | `scripts/release/test_release_publication.py` |
 | 1130 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
+| 1129 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1128 | Python source | `addons/smart_core/handlers/ui_contract_v2_projection.py` |
-| 1126 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
 | 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 1096 | JavaScript source | `scripts/verify/local_dev_project_create_contract_driver_probe.mjs` |
@@ -163,10 +163,10 @@ Generated from repository source files. This report is informational during the 
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 992 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 988 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
+| 981 | Python source | `scripts/ci/test_backend_test_receipt.py` |
 | 976 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
-| 963 | Python source | `scripts/ci/test_backend_test_receipt.py` |
 | 962 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |

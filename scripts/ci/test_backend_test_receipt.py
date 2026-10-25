@@ -958,6 +958,24 @@ class ReuseClosureModelTest(unittest.TestCase):
             raise OSError('network down')
         self.assertEqual([],receipt.discover_receipt_locators(head='d'*40,modules=['core'],fetch=fetch))
 
+    def test_discover_receipt_locators_is_bounded(self):
+        runs={'workflow_runs':[{
+            'id':100+index,'run_attempt':1,'head_sha':'a'*40,
+            'repository':{'id':receipt.REPOSITORY_ID},'head_repository':{'id':receipt.REPOSITORY_ID},
+            'event':'pull_request','path':'.github/workflows/backend_test_suite.yml',
+            'run_started_at':datetime.now(timezone.utc).isoformat(),
+        } for index in range(10)]}
+        data={'actions/runs?status=success&per_page=30':runs}
+        for index in range(10):
+            data[f'actions/runs/{100+index}/artifacts?per_page=100']={'artifacts':[
+                {'id':1000+index*10+shard,'name':f'backend-execution-{100+index}-1-{shard}','expired':False}
+                for shard in range(4)
+            ]}
+        def fetch(path):
+            return json.dumps(data[path]).encode()
+        locators=receipt.discover_receipt_locators(head='d'*40,modules=['m%d' % i for i in range(10)],fetch=fetch)
+        self.assertEqual(receipt.MAX_LOCATORS,len(locators))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -472,6 +472,7 @@ def receipt_reuse_authorized(receipt: dict) -> tuple[bool, list[str]]:
 REPOSITORY = 'lidefend/sce-backend-odoo'
 REPOSITORY_ID = 1307419149
 ARCHIVE_LIMIT = 64 * 1024 * 1024
+MAX_LOCATORS = 256
 
 
 def github_bytes(endpoint: str) -> bytes:
@@ -950,6 +951,8 @@ def discover_receipt_locators(*, head: str, modules: list[str],
                 locators.append({'head': run['head_sha'], 'module': module,
                                  'run_id': run['id'], 'attempt': 1,
                                  'artifact_id': artifact['id'], 'shard': int(match[2])})
+                if len(locators) >= MAX_LOCATORS:
+                    return locators
     return locators
 
 
