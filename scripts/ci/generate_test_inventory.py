@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import sys
 from pathlib import Path
 
@@ -491,9 +492,15 @@ def iter_assets() -> list[Path]:
     return sorted(set(assets), key=lambda p: p.relative_to(ROOT).as_posix())
 
 
+def stable_asset_id(rel_path: str) -> str:
+    """Content-derived stable id so insert/remove never renumbers the ledger."""
+    digest = hashlib.sha1(rel_path.encode("utf-8")).hexdigest()[:8]
+    return f"T-ASSET-{digest}"
+
+
 def build_rows() -> list[dict[str, str]]:
     rows: list[dict[str, str]] = list(MANUAL_ENTRIES)
-    for index, path in enumerate(iter_assets(), start=1):
+    for path in iter_assets():
         rel = path.relative_to(ROOT).as_posix()
         layer = classify_layer(path)
         runtime = runtime_class(path, layer)
@@ -502,7 +509,7 @@ def build_rows() -> list[dict[str, str]]:
         aggregate_target = aggregate_target_for(path, runtime)
         rows.append(
             {
-                "id": f"T-ASSET-{index:03d}",
+                "id": stable_asset_id(rel),
                 "layer": layer,
                 "entrypoint": rel,
                 "purpose": purpose_for(path, layer),
