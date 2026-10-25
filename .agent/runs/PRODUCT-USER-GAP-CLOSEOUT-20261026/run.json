@@ -54,7 +54,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Snapshot existing local.dev, upgrade smart_construction_core via governed target, refresh exact source candidate and observe two approval-policy create drafts.",
+  "next_exact_step": "FG15: classify account.move mixed native alerts by static text, field source, conditional links/actions; implement explicit owner declarations and supported generic consumers without dropping warnings or permissions. FG17 remains separate entry/create capability consistency. No full acceptance claimed.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -301,8 +301,50 @@
       "L1": "fourth-iteration.log passed; py_compile, node --check and diff --check passed",
       "review": "review_quick_closeout development diff no confirmed S0-S2; report now includes case key/target",
       "reused": "P0/frontend product code unchanged from b144; prior protocol/typecheck/contract-basis evidence unchanged, no full rerun",
-      "runtime": "not_run; snapshot before module upgrade required",
-      "browser": "not_run"
+      "runtime": {
+        "status": "passed",
+        "snapshot": "artifacts/local-dev/snapshots/20261025T223016Z",
+        "backup_readback": ".runtime/product-user-gap-closeout-20261026/fourth-backup-readback.json",
+        "upgrade": "make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core",
+        "upgrade_log": ".runtime/product-user-gap-closeout-20261026/fourth-upgrade-02.log",
+        "identity": "sc-local-dev/sc_dev_demo, alias demo/ns_000000000002; authority passed",
+        "earlier_gate": "fourth-upgrade.log denied missing explicit fast-mode view-upgrade flag; corrected with existing declared view scope, no bypass"
+      },
+      "browser": {
+        "status": "passed",
+        "report": ".runtime/product-user-gap-closeout-20261026/approval-browser/7e1c96e2561cfbb2859a6885f54dba119509c06c/report.json",
+        "cases": [
+          "approval-general: project.project",
+          "approval-payment: payment.request"
+        ],
+        "screenshots": 4,
+        "errors": 0,
+        "blocked": 0,
+        "saved_or_published": false
+      },
+      "candidate": "7e1c96e2561cfbb2859a6885f54dba119509c06c",
+      "limitations": [
+        "Only new form loading, target-dependent advisory and draft-name editing accepted",
+        "No new policy persistence/effect/step-order acceptance or parameter publish",
+        "No integration/daily deployment/Demo rebuild",
+        "Prior page observations remain tied to their earlier candidates; module upgrade does not constitute reacceptance of all surfaces"
+      ]
+    },
+    "fourth_local_outcome": {
+      "partial_repair": "FG16 entry and draft advisory",
+      "total_original_groups_with_local_entry_repairs": 9,
+      "remaining_original_groups_unrepaired": [
+        "FG01",
+        "FG02",
+        "FG03",
+        "FG05",
+        "FG08",
+        "FG09",
+        "FG15",
+        "FG17"
+      ],
+      "mainline_and_daily_deployment": "unchanged bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
+      "demo_data": "23 gaps remain for later rebuild and acceptance"
     }
   }
 }

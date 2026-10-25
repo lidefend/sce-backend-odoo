@@ -166,3 +166,24 @@ L1、语法/diff检查、开发独立复核通过。P0/前端产品代码未变�
 local.dev.upgrade MODULE=smart_construction_core；升级后验证既有环境权威和精确候选。
 恢复需要原快照及本批前代码e984cd72a，不能仅代码revert假定数据库视图已回退。
 尚未执行升级与页面检查，不宣称审批规则前台可用或规则发布闭环完成。
+
+### 第四批最终本地结果
+
+候选 `7e1c96e2561cfbb2859a6885f54dba119509c06c`（P1提交969b40ce3）：
+menu424新建页普通项目与付款两个场景均通过，说明内容/显隐正确，名称可填写；
+4张桌面/手机截图，0脚本异常、0被拦截请求，未保存或派发动作。
+证据：`.runtime/product-user-gap-closeout-20261026/approval-browser/7e1c96e2561cfbb2859a6885f54dba119509c06c/report.json`，
+已核图付款桌面及普通项目手机。场景key/target在报告中区分，不把同菜单两个场景说成两个入口。
+
+受管数据库/附件快照 `artifacts/local-dev/snapshots/20261025T223016Z` 已分别校验SHA256，
+readback在fourth-backup-readback.json。首次升级被fast模式门禁拒绝，按实际XML变更补充
+CODEX_NEED_UPGRADE=1、CODEX_MODULES=smart_construction_core后升级成功；未关闭门禁。
+fourth-upgrade-02.log记录模块加载和环境权威通过，demo入口保持sc_dev_demo/ns_000000000002。
+没有重建Demo。升级恢复须结合该快照与本批前e984cd72a代码，不能只revert视图源码。
+
+29项ORM通过，L1/语法检查及开发独立复核通过；P0/前端产品代码未变，复用先前类型/契约检查，
+既有页面证据仍归属各自原候选，不因本次模块升级宣布所有页面重新验收。
+本批仅FG16入口和草稿交互局部通过；规则保存/生效/步骤顺序及付款参数发布仍未验收。
+累计9组原始问题已有局部入口修复，另外8组未修复；23组Demo缺口未重建。
+FG15混合会计告警仍需独立声明及消费方案，FG17能力入口一致性仍待处理。
+本次没有Quick、远端CI、受保护合并或日常部署；主线仍bdef29e11。
