@@ -365,17 +365,17 @@ class ScEquipmentUsage(models.Model):
     company_id = fields.Many2one(
         related="project_id.company_id", store=True, readonly=True, string="所属公司"
     )
-    request_id = fields.Many2one("sc.equipment.request", string="来源设备申请", index=True, help='建议关联来源设备申请')
+    request_id = fields.Many2one("sc.equipment.request", string="来源设备申请", index=True, help='建议关联来源设备申请', default=False)
     usage_date = fields.Date(string="使用日期", required=True, default=fields.Date.context_today, index=True, tracking=True)
     equipment_name = fields.Char(string="设备名称", required=True, index=True, tracking=True)
-    equipment_code = fields.Char(string="设备编号", index=True, help='建议补充设备编号')
-    specification = fields.Char(string="规格型号", help='建议补充规格型号')
+    equipment_code = fields.Char(string="设备编号", index=True, help='建议补充设备编号', default=False)
+    specification = fields.Char(string="规格型号", help='建议补充规格型号', default=False)
     uom_text = fields.Char(string="计量单位", default="台时")
     usage_location = fields.Char(string="使用地点", required=True, index=True)
     operator_name = fields.Char(string="操作人员", required=True, index=True)
     usage_qty = fields.Float(string="使用台数", required=True, default=1)
     usage_hours = fields.Float(string="使用台时", required=True)
-    supplier_id = fields.Many2one("res.partner", string="供应单位", index=True, help='建议补充供应单位')
+    supplier_id = fields.Many2one("res.partner", string="供应单位", index=True, help='建议补充供应单位', default=False)
     currency_id = fields.Many2one(
         "res.currency",
         string="币种",
@@ -405,9 +405,20 @@ class ScEquipmentUsage(models.Model):
         "attachment_id",
         string="附件",
         help='建议上传台班依据',
+        default=False,
     )
     note = fields.Text(string="使用说明")
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
+    processing_advisory = fields.Char(
+        "办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction",
+        sc_feedback_usage={
+            "purpose": "advisory",
+            "occurrences": [{
+                "view_xmlid": "smart_construction_core.view_sc_equipment_usage_form",
+                "native_locator": "/form[1]/sheet[1]/div[1]/field[1]",
+                "occurrence_index": 1,
+            }],
+        },
+    )
     legacy_fact_model = fields.Char(string="来源通用模型", index=True)
     legacy_fact_id = fields.Integer(string="来源通用记录ID", index=True)
     legacy_fact_type = fields.Char(string="来源业务类型", index=True)
@@ -542,6 +553,17 @@ class ScEquipmentUsage(models.Model):
             record.processing_advisory = (
                 "；".join(suggestions) if suggestions else ""
             )
+
+    _compute_processing_advisory._sc_feedback_evaluation_review = {
+        "purpose": "advisory",
+        "inputs": [
+            {"field": "request_id", "type": "many2one_presence"},
+            {"field": "supplier_id", "type": "many2one_presence"},
+            {"field": "equipment_code", "type": "char"},
+            {"field": "specification", "type": "char"},
+            {"field": "attachment_ids", "type": "many2many_presence"},
+        ],
+    }
 
     def _equipment_cost_code(self):
         return self.env["project.cost.code"]._get_or_create_standard_code(

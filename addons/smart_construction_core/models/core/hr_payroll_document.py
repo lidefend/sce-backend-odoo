@@ -506,7 +506,7 @@ class ScHrSalaryPayment(models.Model):
         default="bank",
         required=True,
     )
-    payment_reference = fields.Char("支付凭证号", index=True, help='建议补充支付凭证号')
+    payment_reference = fields.Char("支付凭证号", index=True, help='建议补充支付凭证号', default=False)
     responsible_id = fields.Many2one(
         "res.users", string="经办人", default=lambda self: self.env.user, index=True
     )
@@ -524,9 +524,20 @@ class ScHrSalaryPayment(models.Model):
         "attachment_id",
         string="附件",
         help='建议上传发放依据',
+        default=False,
     )
-    note = fields.Text("发放说明", help='建议补充发放说明')
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
+    note = fields.Text("发放说明", help='建议补充发放说明', default=False)
+    processing_advisory = fields.Char(
+        "办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction",
+        sc_feedback_usage={
+            "purpose": "advisory",
+            "occurrences": [{
+                "view_xmlid": "smart_construction_core.view_sc_hr_salary_payment_form",
+                "native_locator": "/form[1]/sheet[1]/div[1]/field[1]",
+                "occurrence_index": 1,
+            }],
+        },
+    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -578,6 +589,15 @@ class ScHrSalaryPayment(models.Model):
             record.processing_advisory = (
                 "；".join(suggestions) if suggestions else ""
             )
+
+    _compute_processing_advisory._sc_feedback_evaluation_review = {
+        "purpose": "advisory",
+        "inputs": [
+            {"field": "payment_reference", "type": "char"},
+            {"field": "attachment_ids", "type": "many2many_presence"},
+            {"field": "note", "type": "text"},
+        ],
+    }
 
     def _check_project_manager(self):
         if self.env.su or self.env.user.has_group(

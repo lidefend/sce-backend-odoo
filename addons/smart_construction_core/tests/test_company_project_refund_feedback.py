@@ -213,6 +213,7 @@ class TestCompanyProjectRefundFeedback(CompanyRefundFeedbackAssertions, Transact
                 enabled.append(model_name)
         self.assertEqual(enabled, [
             MODEL, "sc.current.account.workspace", "sc.team.loan.deduction.workspace",
+            "sc.equipment.usage", "sc.hr.salary.payment", "sc.subcontract.register",
         ])
 
     def test_create_ui_contract_uses_request_local_feedback_proof(self):

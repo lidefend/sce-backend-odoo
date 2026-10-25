@@ -1708,3 +1708,12 @@ verify.local.dev.workspace.feedback: guard.prod.forbid local.dev.ready local.dev
 verify.local.dev.workspace.feedback.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.dev.test MODULE=smart_construction_core \
 	  TEST_TAGS=workspace_processing_feedback,company_project_refund_feedback_orm
+
+.PHONY: verify.local.dev.cost.feedback verify.local.dev.cost.feedback.orm
+verify.local.dev.cost.feedback: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_SCOPE=cost bash scripts/verify/local_dev_workspace_feedback.sh
+
+verify.local.dev.cost.feedback.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.dev.test MODULE=smart_construction_core \
+	  TEST_TAGS=cost_processing_feedback,workspace_processing_feedback,company_project_refund_feedback_orm

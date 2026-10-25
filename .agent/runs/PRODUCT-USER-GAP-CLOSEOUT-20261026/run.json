@@ -23,7 +23,17 @@
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
-    "docs/ops/iterations/system_function_gaps_20261026.md"
+    "docs/ops/iterations/system_function_gaps_20261026.md",
+    "addons/smart_core/core/draft_feedback.py",
+    "frontend/apps/web/src/app/contracts/onchangeFeedbackEvaluation.ts",
+    "frontend/apps/web/src/pages/contractForm/useDraftFeedbackEvaluation.ts",
+    "frontend/apps/web/scripts/feedback_evaluation_protocol_test.ts",
+    "docs/architecture/onchange_feedback_evaluation_v1.schema.json",
+    "scripts/verify/test_onchange_feedback_evaluation_schema.py",
+    "addons/smart_construction_core/models/core/equipment_management.py",
+    "addons/smart_construction_core/models/core/subcontract_management.py",
+    "addons/smart_construction_core/models/core/hr_payroll_document.py",
+    "addons/smart_construction_core/tests/test_cost_processing_feedback.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -31,7 +41,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Continue FG04/10/11/12/13/14 complex advisory forms: review computed dependencies, extend generic input types only where required, then explicit P1 bindings; separately resolve FG15/16 native static warnings. FG06/07 still need business-dispatch/readback before delivery closure.",
+  "next_exact_step": "Freeze scoped local candidate, refresh registered local.dev source/build, run cost3 and workspace2 draft-only browser observers; preserve previous audit conclusions until target deployment.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -119,6 +129,52 @@
       "overall_delivery": "not_accepted",
       "demo_rebuild": "not_started"
     },
-    "local_runtime_candidate": "342c8b8c67d0f747438fbdd932434dfb095c9d4d"
+    "local_runtime_candidate": "342c8b8c67d0f747438fbdd932434dfb095c9d4d",
+    "second_fix_ownership": {
+      "P0": "smart_core draft_feedback + generic frontend decoder/consumer: char and many2many_presence explicitly typed inputs; relation presence only, no identifiers/content read",
+      "P1": "smart_construction_core equipment usage, subcontract register, salary payment native binding/review/defaults",
+      "P4": "extend bounded existing browser observer and ORM Make entry for three new declared models",
+      "Why Here": "generic transport stays P0; business compute/defaults/source occurrence stays P1; no frontend business fallback",
+      "Blast Radius": [
+        "FG11",
+        "FG12",
+        "FG14",
+        "existing draft feedback consumers regression"
+      ],
+      "Risk": "contract additive input variants; old consumer rejects unknown variant, coordinated frontend/backend candidate required",
+      "Validation": "L1 schema/frontend protocol; L2 nonzero real ORM including no related read/write and invalid inputs; L3 registered local.dev source refresh, no schema upgrade as fields only metadata/defaults; L4 three create surfaces plus existing workspace regressions; L5 integration pending until batch convergence"
+    },
+    "second_validation": {
+      "candidate_stage": "HEAD c9787b3e4 plus declared dirty P0/P1/P4 scope",
+      "L1": {
+        "status": "passed",
+        "log": ".runtime/product-user-gap-closeout-20261026/cost-iteration-01.log"
+      },
+      "protocol": {
+        "status": "passed",
+        "logs": [
+          "cost-feedback-unit-01.log",
+          "cost-feedback-unit-02.log"
+        ],
+        "limit": "final extra assertion run in progress"
+      },
+      "typecheck": {
+        "status": "passed",
+        "log": "cost-typecheck-02.log"
+      },
+      "contract_basis": {
+        "status": "passed",
+        "log": "cost-contract-basis.log"
+      },
+      "ORM": {
+        "status": "passed",
+        "count": 18,
+        "command": "make verify.local.dev.cost.feedback.orm",
+        "log": ".runtime/product-user-gap-closeout-20261026/cost-feedback-orm-03.log"
+      },
+      "first_ORM_failure": "New test assumptions corrected: native empty relation is SET command; Odoo17 uses fetch, not _read; config vs typed input errors distinguished. Product default consumption supports only complete SET snapshots, never partial commands.",
+      "review": "independent developer review passed; final integration review pending",
+      "browser": "not_run"
+    }
   }
 }

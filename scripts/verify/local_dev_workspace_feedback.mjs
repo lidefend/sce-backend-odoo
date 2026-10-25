@@ -1,13 +1,23 @@
-// P4: two existing workspaces, draft interaction only; never save or dispatch.
+// P4: fixed affected forms, draft interaction only; never save or dispatch.
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {launchChromium} from './playwright_runtime.mjs';
 import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap_inventory_policy.mjs';
 // The existing nginx owns the namespace stamp; the preview server does not.
 const base = 'http://127.0.0.1:18081/t/demo';
-const root = `.runtime/product-user-gap-closeout-20261026/workspace-browser/${process.env.CANDIDATE_GIT_HEAD}`;
+const scope = process.env.SC_FEEDBACK_SCOPE || 'workspace';
+assert(['workspace', 'cost'].includes(scope));
+const root = `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}`;
 fs.mkdirSync(root, {recursive: true});
-const models = ['sc.team.loan.deduction.workspace', 'sc.current.account.workspace'];
+const cases = scope === 'workspace' ? [
+  {model: 'sc.team.loan.deduction.workspace', field: 'note', hint: '建议补充办理说明'},
+  {model: 'sc.current.account.workspace', field: 'note', hint: '建议补充办理说明', retained: '办理承包人借还款前请选择承包人/往来单位'},
+] : [
+  {model: 'sc.equipment.usage', field: 'equipment_code', hint: '建议补充设备编号', retained: '建议上传台班依据', create: true},
+  {model: 'sc.subcontract.register', field: 'management_note', hint: '建议补充管理要求', retained: '建议上传分包成本依据', create: true},
+  {model: 'sc.hr.salary.payment', field: 'note', hint: '建议补充发放说明', retained: '建议上传发放依据', create: true},
+];
+const models = cases.map(item => item.model);
 const report = {head: process.env.CANDIDATE_GIT_HEAD, cases: [], blocked: [], errors: [], feedback: [], passed: false};
 assert(/^[a-f0-9]{40}$/.test(report.head || ''));
 const browser = await launchChromium({headless: true});
@@ -55,14 +65,16 @@ try {
   function walk(nodes) { for (const node of nodes) { if (node.children?.length) walk(node.children); else leaves.push(node); } }
   walk(init.navigation.nav);
   report.actor = {uid: init.user?.id, login: 'demo_full', company: init.user?.company_id};
-  for (const model of models) {
+  for (const plan of cases) {
+    const {model} = plan;
     const node = leaves.find(n => n.meta?.model === model);
     assert(node?.meta?.route?.startsWith('/'), 'workspace navigation declaration missing: ' + model);
     const item = {model, route: node.meta.route}; report.cases.push(item);
     await page.goto(base + node.meta.route, {waitUntil: 'domcontentloaded'});
-    const note = page.locator('[data-field-name="note"] textarea');
+    if (plan.create) await page.getByRole('button', {name: /^(新建|新增|创建)$/}).first().click();
+    const note = page.locator(`[data-field-name="${plan.field}"]`).locator('textarea, input:not([type="hidden"])').first();
     await note.waitFor({state: 'visible', timeout: 45000});
-    await page.getByText('建议补充办理说明', {exact: false}).last().waitFor({state: 'visible'});
+    await page.getByText(plan.hint, {exact: false}).last().waitFor({state: 'visible'});
     item.before = await page.locator('body').innerText();
     const refreshed = page.waitForResponse(async response => {
       let body; try { body = response.request().postDataJSON(); } catch { return false; }
@@ -72,15 +84,13 @@ try {
       const payload = await response.json();
       const result = payload.data?.feedback_evaluation;
       return payload.ok === true && result?.status === 'ready' &&
-        !result.result.content.includes('建议补充办理说明');
+        !result.result.content.includes(plan.hint);
     });
     await note.fill('本次仅验证草稿提示，未保存或办理业务');
     await note.blur();
     await refreshed;
-    await page.waitForFunction(() => !document.body.innerText.includes('建议补充办理说明'));
-    if (model === 'sc.current.account.workspace') {
-      await page.getByText('办理承包人借还款前请选择承包人/往来单位', {exact: false}).last().waitFor({state: 'visible'});
-    }
+    await page.waitForFunction(hint => !document.body.innerText.includes(hint), plan.hint);
+    if (plan.retained) await page.getByText(plan.retained, {exact: false}).last().waitFor({state: 'visible'});
     item.after = await page.locator('body').innerText();
     item.actions = await page.getByRole('button').allTextContents();
     assert(!/页面加载失败|ContractGapError/.test(item.after));
@@ -98,4 +108,4 @@ try {
   await browser.close();
   fs.writeFileSync(`${root}/report.json`, JSON.stringify(report, null, 2));
 }
-console.log('workspace feedback browser: PASS (2 workspaces, no save/dispatch)');
+console.log(`feedback browser: PASS (${cases.length} ${scope} forms, no save/dispatch)`);
