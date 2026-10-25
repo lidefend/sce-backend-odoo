@@ -43,7 +43,11 @@
     "docs/engineering_convergence/e2e_journey_matrix.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/engineering_convergence/test_inventory.csv",
-    "docs/engineering_convergence/test_inventory_summary.md"
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "scripts/ci/secret_scan.py",
+    "scripts/ci/test_secret_scan.py",
+    "scripts/ci/trusted_scan_scope.py",
+    "config/security/secret_scan_false_positives.v1.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -104,6 +108,8 @@
     },
     "publication": "P1 ad1eb261f + P4 1d81d6cc committed. GitHub origin/main remains6d6fecbd; Gitee8ff4cad7 is28 commits behind, not ahead. Readonly sync preview only; no synchronization or remote publication performed.",
     "resume_tool": "9 API authority/resume tests and 19 browser containment assertions passed. Finance resume verifies exact prior checkpoint plus live688/689 approved,690 pending,691 waiting; refuses uncertain prior mutations or replay.",
-    "independent_review": "Pre-freeze independent review found no confirmed S0-S2 findings; exact frozen identity reconciliation pending."
+    "independent_review": "Pre-freeze independent review found no confirmed S0-S2 findings; exact frozen identity reconciliation pending.",
+    "quick_blocker": "Frozen bdd398808 Quick failed on an exact synthetic embedded-credential URL negative fixture, current and immutable history blob86409737bdb355bab1047e961958645c518c3f81. No real credential; P4 exact rule/path/blob/fingerprint false-positive declaration required. Prior Quick is failed, not reused as passing.",
+    "scan_false_positive_validation": "20 secret scanner tests and37 trusted-scope tests passed. Independent S2 finding on invalid-UTF8 normalization fixed by single raw byte read; full main-path regression passes. Reviewer confirms S2 closed with no new S0-S2 findings. Product source unchanged."
   }
 }
