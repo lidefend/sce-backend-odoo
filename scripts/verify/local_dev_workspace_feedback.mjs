@@ -41,6 +41,7 @@ const report = {head: process.env.CANDIDATE_GIT_HEAD, cases: [], blocked: [], er
 assert(/^[a-f0-9]{40}$/.test(report.head || ''));
 const browser = await launchChromium({headless: true});
 let page;
+let certificateRecordId = null;
 try {
   page = await browser.newPage({viewport: {width: 1440, height: 960}, locale: 'zh-CN'});
   page.setDefaultTimeout(20000);
@@ -53,7 +54,11 @@ try {
     const pathname = new URL(req.url()).pathname.replace(/^\/t\/demo/, '');
     const draft = req.method() === 'POST' && pathname === '/api/v1/intent' &&
       request?.intent === 'api.onchange' && models.includes(request.params?.model);
-    if (!draft && !permitsInventoryRequest(req.method(), pathname, body, false)) {
+    const certificateTimeline = scope === 'certificate' && certificateRecordId !== null &&
+      req.method() === 'POST' && pathname === '/api/v1/intent' && request?.intent === 'chatter.timeline' &&
+      request.params?.model === 'sc.document.admin.document' &&
+      Number(request.params.res_id ?? request.params.record_id) === certificateRecordId;
+    if (!draft && !certificateTimeline && !permitsInventoryRequest(req.method(), pathname, body, false)) {
       report.blocked.push({intent: request?.intent || pathname});
       return route.abort();
     }
@@ -87,7 +92,9 @@ try {
   if (scope === 'certificate') {
     const model = 'sc.document.admin.document';
     const fields = ['certificate_name', 'certificate_no', 'holder_name', 'valid_until'];
-    for (const menu of ['356', '708']) {
+    const menus = (process.env.SC_CERTIFICATE_MENUS || '356,708').split(',');
+    assert(menus.length && new Set(menus).size === menus.length && menus.every(menu => ['356', '708'].includes(menu)));
+    for (const menu of menus) {
       const node = leaves.find(n => n.meta?.model === model && new URL(n.meta.route, base).searchParams.get('menu_id') === menu);
       assert(node?.meta?.route?.startsWith('/'), 'document entry missing');
       const responseFor = (intent, operation) => page.waitForResponse(response => {
@@ -124,6 +131,13 @@ try {
           await page.screenshot({path: `${root}/certificate-${width}.png`});
         }
         await page.setViewportSize({width: 1440, height: 960});
+        certificateRecordId = Number(record.id);
+        const timelineResponse = page.waitForResponse(response => {
+          let body; try { body = response.request().postDataJSON(); } catch { return false; }
+          const request = body?.params?.intent ? body.params : body;
+          return request?.intent === 'chatter.timeline' && request.params?.model === model &&
+            Number(request.params.res_id ?? request.params.record_id) === certificateRecordId;
+        }, {timeout: 45000});
         await page.goto(base + '/r/' + model + '/' + record.id + '?menu_id=' + menu, {waitUntil: 'domcontentloaded'});
         await page.locator('[data-field-name="certificate_name"]').first().waitFor({state: 'visible', timeout: 45000});
         for (const field of fields) {
@@ -131,6 +145,9 @@ try {
           const value = await container.evaluate(el => el.textContent + ' ' + Array.from(el.querySelectorAll('input,textarea')).map(input => input.value).join(' '));
           if (record[field]) assert(value.includes(record[field]), 'detail differs from list: ' + field);
         }
+        const timeline = await timelineResponse;
+        item.timeline = {http: timeline.status(), ok: (await timeline.json()).ok};
+        assert.equal(item.timeline.ok, true, 'certificate timeline read failed');
         await page.screenshot({path: `${root}/certificate-detail.png`});
       } else {
         assert(columns.includes('document_title') && columns.includes('policy_version'));

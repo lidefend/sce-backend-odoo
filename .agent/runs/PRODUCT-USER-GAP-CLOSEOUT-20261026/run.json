@@ -448,6 +448,13 @@
       "identity": "sc_dev_demo/demo/ns_000000000002 verified; existing local feature tenant; snapshot code2ad75738f + declared XML dirty scope, DB still pre-upgrade",
       "review": "review_quick_closeout no product blocking findings. P4 corrected to allow empty policy708, require all four certificate sample values nonempty; no false display claims.",
       "next": "Commit P1/P4; governed module upgrade with explicit XML upgrade flags, then exact candidate browser; no demo rebuild."
+    },
+    "seventh_first_browser": {
+      "candidate": "276bf275897d4335c0e53fbf94348e4fd95c64b8",
+      "status": "failed_observer_read_allowlist",
+      "product": "certificate actual name/number/holder/expiry matched1440/390 and detail; policy708 columns independent with0 records",
+      "blocked": "chatter.timeline read for certificate detail; handler inspected read-only, bound exact observed certificate record ID and model for P4 allowance, no post/delete/write requests allowed",
+      "revalidation": "Only356 affected by detail timeline allowance; rerun356 via fixed subset. Reuse708 original columns evidence, no overall pass claim for original report. No XML changes after upgrade; ORM stillvalid."
     }
   }
 }
