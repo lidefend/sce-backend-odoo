@@ -43,7 +43,10 @@
     "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
     "frontend/apps/web/src/app/presentation/actionRuleDerivation.ts",
     "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
-    "frontend/apps/web/scripts/canonical_form_presenter_test.ts"
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+    "addons/smart_construction_core/models/support/approval_policy.py",
+    "addons/smart_construction_core/views/support/approval_policy_views.xml",
+    "addons/smart_construction_core/tests/test_approval_policy_feedback.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -51,7 +54,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Diagnose and repair FG15 journal and FG16 approval-policy native static alerts via declared generic consumers; then FG17 create capability consistency. Keep business-chain acceptance separate and defer Demo rebuild until product fixes stabilize.",
+  "next_exact_step": "Snapshot existing local.dev, upgrade smart_construction_core via governed target, refresh exact source candidate and observe two approval-policy create drafts.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -282,6 +285,24 @@
       "mainline": "unchanged bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
       "daily_deployment": "unchanged; local.dev only",
       "demo_data": "23 registered gaps remain for later rebuild/acceptance"
+    },
+    "fourth_fix_ownership": {
+      "identity": "e984cd72a67a438f6cfa63c52b643ef599bd3567; initially clean",
+      "P1": "approval.policy explicit interaction advisory computed from native target selection; replace its one static legacy alert with reviewed field-backed advisory; same wording/payment condition, no workflow or ACL changes",
+      "P4": "existing local.dev observer and ORM targets, fixed menu424 general/payment draft cases; transaction-local native XML view load for pre-upgrade tests",
+      "P0": "reuse existing selection feedback and native conditional visibility; no new generic allow-all for accounting alerts",
+      "risk": "view change requires governed module upgrade after snapshot and nonzero tests; payment rule direct-write prohibition remains",
+      "excluded": "account.move contains mixed field/action/link native alerts; remains unresolved; no forced generic warning admission, no Demo reset or rule publish",
+      "validation": "L1 then new ORM + existing feedback regression, governed snapshot/upgrade, exact candidate two-case browser; independent review. No full Quick during inner loop"
+    },
+    "fourth_validation": {
+      "orm": "fourth-orm-03.log: 29 post-tests, 0 failures/errors; new4 + existing25",
+      "earlier_failures": "fourth-orm-01 duplicate company/target fixture; fourth-orm-02 unregistered data-space fixture denied; reused registered non-customer test-space helper and explicit fixture audience, no security bypass",
+      "L1": "fourth-iteration.log passed; py_compile, node --check and diff --check passed",
+      "review": "review_quick_closeout development diff no confirmed S0-S2; report now includes case key/target",
+      "reused": "P0/frontend product code unchanged from b144; prior protocol/typecheck/contract-basis evidence unchanged, no full rerun",
+      "runtime": "not_run; snapshot before module upgrade required",
+      "browser": "not_run"
     }
   }
 }

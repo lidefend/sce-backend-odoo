@@ -6,7 +6,7 @@ import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap
 // The existing nginx owns the namespace stamp; the preview server does not.
 const base = 'http://127.0.0.1:18081/t/demo';
 const scope = process.env.SC_FEEDBACK_SCOPE || 'workspace';
-assert(['workspace', 'cost', 'conditioned'].includes(scope));
+assert(['workspace', 'cost', 'conditioned', 'approval'].includes(scope));
 const root = `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}`;
 fs.mkdirSync(root, {recursive: true});
 const availableCases = scope === 'workspace' ? [
@@ -16,12 +16,17 @@ const availableCases = scope === 'workspace' ? [
   {model: 'sc.equipment.usage', field: 'equipment_code', hint: '建议补充设备编号', retained: '建议上传台班依据', create: true},
   {model: 'sc.subcontract.register', field: 'management_note', tab: '管理要求', hint: '建议补充管理要求', retained: '建议上传分包成本依据', create: true},
   {model: 'sc.hr.salary.payment', field: 'note', tab: '发放说明', hint: '建议补充发放说明', retained: '建议上传发放依据', create: true},
-] : [
+] : scope === 'conditioned' ? [
   {model: 'sc.quality.acceptance', field: 'location', hint: '建议补充验收部位', retained: '建议上传验收资料', create: true},
   {model: 'sc.labor.usage', field: 'work_type', hint: '建议补充工种', retained: '建议上传用工依据', create: true},
   {model: 'sc.hr.payroll.document', menu: '695', selection: '工资登记', field: 'payout_unit', hint: '建议补充发放单位', retained: '建议上传薪资核算依据', create: true},
   {model: 'sc.hr.payroll.document', menu: '706', selection: '公积金登记', field: 'payer_unit', hint: '建议补充缴存单位', retained: '建议补充公积金账号', create: true},
   {model: 'sc.hr.payroll.document', menu: '673', selection: '工资登记', field: 'payout_unit', hint: '建议补充发放单位', retained: '建议上传薪资核算依据', create: true},
+] : [
+  {model: 'sc.approval.policy', menu: '424', key: 'approval-general', approval: true, selection: '项目立项',
+    target: 'project.project', expectedVisible: false, field: 'name', create: true},
+  {model: 'sc.approval.policy', menu: '424', key: 'approval-payment', approval: true, selection: '付款/收款申请',
+    target: 'payment.request', expectedVisible: true, field: 'name', create: true},
 ];
 const selected = process.env.SC_FEEDBACK_MODELS?.split(',').filter(Boolean);
 if (selected) {
@@ -82,12 +87,26 @@ try {
     const node = leaves.find(n => n.meta?.model === model && (!plan.menu ||
       new URL(n.meta.route, base).searchParams.get('menu_id') === plan.menu));
     assert(node?.meta?.route?.startsWith('/'), 'workspace navigation declaration missing: ' + model);
-    const key = plan.menu ? model + '-' + plan.menu : model;
-    const item = {model, menu: plan.menu, route: node.meta.route}; report.cases.push(item);
+    const key = plan.key || (plan.menu ? model + '-' + plan.menu : model);
+    const item = {key, model, menu: plan.menu, target: plan.target, route: node.meta.route}; report.cases.push(item);
     await page.goto(base + node.meta.route, {waitUntil: 'domcontentloaded'});
     if (plan.create) await page.getByRole('button', {name: /^(新建|新增|创建)$/}).first().click();
+    const approvalText = '付款申请的启用审批和审批方式请在“系统参数”中发布或回滚。';
+    const approvalReady = plan.approval ? page.waitForResponse(async response => {
+      let body; try { body = response.request().postDataJSON(); } catch { return false; }
+      const request = body?.params?.intent ? body.params : body;
+      const evaluation = request?.params?.feedback_evaluation;
+      if (request?.intent !== 'api.onchange' || request.params.model !== model ||
+          evaluation?.operation !== 'evaluate' ||
+          !evaluation.inputs?.some(row => row.field === 'target_model' && row.value === plan.target)) return false;
+      const payload = await response.json();
+      const result = payload.data?.feedback_evaluation;
+      return payload.ok === true && result?.status === 'ready' &&
+        result.result.visible === plan.expectedVisible &&
+        result.result.content === (plan.expectedVisible ? approvalText : '');
+    }) : null;
     if (plan.selection) {
-      const select = page.locator('[data-field-name="fact_type"] [data-semantic-component="ScSelect"]');
+      const select = page.locator(`[data-field-name="${plan.approval ? 'target_model' : 'fact_type'}"] [data-semantic-component="ScSelect"]`);
       await select.waitFor({state: 'visible', timeout: 45000});
       await select.click();
       await page.locator('.t-select-option').filter({hasText: plan.selection}).click();
@@ -95,6 +114,15 @@ try {
     if (plan.tab) await page.locator(`[data-section-tab="${plan.tab}"]`).click();
     const note = page.locator(`[data-field-name="${plan.field}"]`).locator('textarea:visible, input:not([type="hidden"]):visible').first();
     await note.waitFor({state: 'visible', timeout: 45000});
+    if (plan.approval) {
+      await approvalReady;
+      await page.waitForFunction(({text, visible}) => document.body.innerText.includes(text) === visible,
+        {text: approvalText, visible: plan.expectedVisible});
+      item.before = await page.locator('body').innerText();
+      await note.fill('草稿提示验证，未保存规则');
+      assert.equal(await note.inputValue(), '草稿提示验证，未保存规则');
+      assert.equal((await page.locator('body').innerText()).includes(approvalText), plan.expectedVisible);
+    } else {
     await page.getByText(plan.hint, {exact: false}).last().waitFor({state: 'visible'});
     item.before = await page.locator('body').innerText();
     const refreshed = page.waitForResponse(async response => {
@@ -112,6 +140,7 @@ try {
     await refreshed;
     await page.waitForFunction(hint => !document.body.innerText.includes(hint), plan.hint);
     if (plan.retained) await page.getByText(plan.retained, {exact: false}).last().waitFor({state: 'visible'});
+    }
     item.after = await page.locator('body').innerText();
     item.actions = await page.getByRole('button').allTextContents();
     assert(!/页面加载失败|ContractGapError/.test(item.after));
