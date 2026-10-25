@@ -1757,3 +1757,8 @@ verify.local.dev.certificate: guard.prod.forbid local.dev.ready local.dev.entry_
 verify.local.dev.analysis: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  SC_FEEDBACK_SCOPE=analysis SC_ANALYSIS_VIEWS="$(or $(SC_ANALYSIS_VIEWS),pivot,graph)" bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.payroll
+verify.local.dev.payroll: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_SCOPE=payroll bash scripts/verify/local_dev_workspace_feedback.sh

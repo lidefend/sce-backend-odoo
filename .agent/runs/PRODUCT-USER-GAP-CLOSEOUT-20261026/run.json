@@ -66,7 +66,10 @@
     "frontend/apps/web/scripts/action_surface_renderer_registry_test.ts",
     "frontend/apps/web/scripts/view_type_render_coverage_probe.ts",
     "frontend/apps/web/src/app/contracts/actionViewAnalysisContract.ts",
-    "frontend/apps/web/src/pages/AnalysisPage.vue"
+    "frontend/apps/web/src/pages/AnalysisPage.vue",
+    "addons/smart_construction_core/views/core/hr_payroll_document_views.xml",
+    "addons/smart_construction_core/views/menu_product_administration_wave1.xml",
+    "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -524,6 +527,20 @@
       "counts": "15 original groups partially repaired; FG05/FG15 untouched;23 demo gaps unreconstructed. Mainline/daily remains bdef29e11.",
       "rollback": "This increment changes no persisted business/XML data: return frontend+backend to73af2acd7 via governed local.dev candidate lifecycle; preserve seventh upgraded DB.",
       "reuse": "Final docs do not invalidate product/runtime evidence. Generated complexity line counts and frontend inventory digest inspected after hooks."
+    },
+    "ninth_ownership": {
+      "identity": "df7eaa4528447cd730fac6ebc7e891b8b3245658 clean; selected entry-validation worktree only",
+      "P1": "smart_construction_core hr_payroll_document read-only nonstored display period and amount derived from native fact_type; dedicated mixed salary/subsidy/bonus tree bound only action_sc_payroll_management. Standard industry meaning, no frontend model inference or data repair. Original fields/workflow/domain/ACL unchanged.",
+      "P4": "Extend existing payroll ORM and read-only local observer for673, salary695/social706 isolation; demo data used as-is, no fixture fabrication.",
+      "scope": "Model, core view, administration action binding, existing test suite/observer/Make/run/docs. Medium risk view+computed metadata, local module upgrade required after snapshot.",
+      "validation": "L1; nonzero ORM all3 facts and dependency recompute plus native contract/view isolation; backup readback+upgrade same sc-local-dev/sc_dev_demo/ns_000000000002; frozen desktop/mobile673 and sibling assertions; independent review. Frontend product unchanged, reuse eighth frontend tests.",
+      "exclusions": "No payment calculation or state change, no new business writes, demo rebuild, broad matrix, mainline merge or daily deployment."
+    },
+    "ninth_preupgrade": {
+      "tests": "ninth-l1.log PASS; ninth-orm.log3tests0failed/error, native3entry/3facts; ninth-observer.log7tests; independent P1 no blocker",
+      "backup": "artifacts/local-dev/snapshots/20261025T233220Z; DB+filestore readable hashes verified ninth-backup-readback.json; pre-upgrade code df7eaa452 + declared dirty changes, installed DB still previous views",
+      "identity": "registered local.dev sc-local-dev/sc_dev_demo, demo/ns_000000000002; no newfixture/data writes",
+      "next": "Commit P1/P4; upgrade smart_construction_core via local.dev; exact candidate runtime/browser; previous frontend product unchanged so reuse eighth checks."
     }
   }
 }

@@ -6,12 +6,12 @@ import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap
 // The existing nginx owns the namespace stamp; the preview server does not.
 const base = 'http://127.0.0.1:18081/t/demo';
 const scope = process.env.SC_FEEDBACK_SCOPE || 'workspace';
-assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority', 'certificate', 'analysis'].includes(scope));
+assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority', 'certificate', 'analysis', 'payroll'].includes(scope));
 const root = `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}`;
 fs.mkdirSync(root, {recursive: true});
 const actor = scope === 'usability' ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
 assert(['demo_full', 'demo_role_pm', 'demo_role_finance', 'demo_role_project_read'].includes(actor));
-const availableCases = ['usability', 'create-authority', 'certificate', 'analysis'].includes(scope) ? [] : scope === 'workspace' ? [
+const availableCases = ['usability', 'create-authority', 'certificate', 'analysis', 'payroll'].includes(scope) ? [] : scope === 'workspace' ? [
   {model: 'sc.team.loan.deduction.workspace', field: 'note', hint: '建议补充办理说明'},
   {model: 'sc.current.account.workspace', field: 'note', hint: '建议补充办理说明', retained: '办理承包人借还款前请选择承包人/往来单位'},
 ] : scope === 'cost' ? [
@@ -89,6 +89,84 @@ try {
   function walk(nodes) { for (const node of nodes) { if (node.children?.length) walk(node.children); else leaves.push(node); } }
   walk(init.navigation.nav);
   report.actor = {uid: init.user?.id, login: actor, company: init.user?.company_id};
+  if (scope === 'payroll') {
+    const model = 'sc.hr.payroll.document';
+    for (const menu of ['673', '695', '706']) {
+      const node = leaves.find(n => n.meta?.model === model && new URL(n.meta.route, base).searchParams.get('menu_id') === menu);
+      assert(node?.meta?.route?.startsWith('/'), 'payroll entry missing');
+      const responseFor = (intent, op) => page.waitForResponse(response => {
+        let body; try { body = response.request().postDataJSON(); } catch { return false; }
+        const request = body?.params?.intent ? body.params : body;
+        return request?.intent === intent && request.params?.op === op &&
+          (intent === 'ui.contract.v2' ? String(request.params.menu_id) === menu : request.params.model === model);
+      }, {timeout: 45000});
+      const contractResponse = responseFor('ui.contract.v2', 'action_open');
+      const dataResponse = responseFor('api.data', 'list');
+      await page.goto(base + node.meta.route, {waitUntil: 'domcontentloaded'});
+      const contract = await (await contractResponse).json();
+      const transport = await dataResponse;
+      const data = await transport.json();
+      assert.equal(contract.ok, true); assert.equal(data.ok, true);
+      const profile = contract.data.layoutContract.listProfile;
+      const columns = profile.fact_columns || profile.columns;
+      const records = data.data.records;
+      assert(Array.isArray(records));
+      await page.waitForFunction(() => ['ok', 'empty'].includes(document.querySelector('[data-semantic-component="ActionView"]')?.getAttribute('data-collection-state')));
+      const item = {menu, columns, recordCount: records.length, passed: false}; report.cases.push(item);
+      if (menu === '673') {
+        for (const field of ['fact_type', 'payroll_display_period', 'payroll_display_amount']) assert(columns.includes(field));
+        for (const field of ['period_year', 'period_month', 'net_salary']) assert(!columns.includes(field));
+        assert(records.length, 'mixed payroll demo sample missing');
+        const original = transport.request().postDataJSON();
+        const request = original?.params?.intent ? original.params : original;
+        const sourceRequest = {...request, params: {...request.params, op: 'read', ids: records.map(row => row.id),
+          fields: ['id', 'document_no', 'fact_type', 'period_year', 'period_month', 'net_salary', 'occurrence_date', 'amount', 'currency_id', 'payroll_display_period', 'payroll_display_amount']}};
+        const headers = Object.fromEntries(Object.entries(await transport.request().allHeaders()).filter(([key]) => /^(authorization|content-type)$|^x-/i.test(key)));
+        const source = await page.evaluate(async ({url, headers, body}) => {
+          const response = await fetch(url, {method: 'POST', headers, body: JSON.stringify(body)});
+          return {status: response.status, payload: await response.json()};
+        }, {url: transport.url(), headers, body: original?.params?.intent ? {...original, params: sourceRequest} : sourceRequest});
+        assert.equal(source.status, 200); assert.equal(source.payload.ok, true);
+        const sourceRows = source.payload.data.records;
+        assert.equal(sourceRows.length, records.length);
+        item.facts = sourceRows.map(row => {
+          assert(['salary_registration', 'subsidy', 'bonus'].includes(row.fact_type));
+          const amount = row.fact_type === 'salary_registration' ? row.net_salary : row.amount;
+          const period = row.fact_type === 'salary_registration'
+            ? (row.period_year && row.period_month ? `${String(row.period_year).padStart(4, '0')}-${String(row.period_month).padStart(2, '0')}` : false)
+            : row.occurrence_date;
+          assert.equal(row.payroll_display_amount, amount);
+          assert.equal(row.payroll_display_period, period);
+          const listed = records.find(record => record.id === row.id);
+          assert.equal(listed.payroll_display_amount, amount);
+          assert.equal(listed.payroll_display_period, period);
+          return {id: row.id, documentNo: row.document_no, type: row.fact_type, amount, period, currency: row.currency_id};
+        });
+        item.missingDemoTypes = ['salary_registration', 'subsidy', 'bonus'].filter(type => !item.facts.some(row => row.type === type));
+        assert(item.facts.some(row => row.type === 'bonus' && row.amount > 0), 'original nonzero bonus regression sample required');
+        for (const width of [1440, 390]) {
+          await page.setViewportSize({width, height: width === 390 ? 844 : 960});
+          const body = await page.locator('body').innerText();
+          assert(!body.includes('实发工资') && !body.includes('年度') && !body.includes('月份'), 'salary-only columns leak into mixed overview');
+          for (const fact of item.facts) {
+            const row = page.locator(`[data-record-key="${fact.id}"]`).filter({visible: true});
+            assert.equal(await row.count(), 1, 'visible payroll row/card must be unique');
+            const content = await row.innerText();
+            assert(content.includes({'salary_registration': '工资登记', 'subsidy': '补助', 'bonus': '奖金'}[fact.type]));
+            if (fact.period) assert(content.includes(fact.period), 'period missing from row/card');
+            assert(content.includes(Number(fact.amount).toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2})), 'source amount missing from row/card');
+          }
+          await page.screenshot({path: `${root}/673-${width}.png`});
+        }
+      } else {
+        assert(!columns.includes('payroll_display_amount'), 'mixed display leaked to sibling entry');
+        await page.setViewportSize({width: 1440, height: 960});
+        await page.screenshot({path: `${root}/${menu}-desktop.png`});
+      }
+      item.passed = true;
+    }
+    assert.equal(report.blocked.length, 0);
+  }
   if (scope === 'analysis') {
     const views = (process.env.SC_ANALYSIS_VIEWS || 'pivot,graph').split(',');
     assert(views.length && new Set(views).size === views.length && views.every(view => ['pivot', 'graph'].includes(view)));
