@@ -29,6 +29,8 @@ class IncrementalEvidenceTests(unittest.TestCase):
         self.addCleanup(self.fixture.doCleanups)
         self.addCleanup(self.fixture.tearDown)
         self.root = self.fixture.root
+        with (self.root / '.git/info/exclude').open('a') as handle:
+            handle.write('\n.runtime/\n')
         self.fixture.commit_change('make/ci.mk', 'ci.local.quick.run: ' + ' '.join(MANIFEST) + '\n\t@git diff --check\n\t@echo pass\n')
         self.fixture.commit_change('frontend/existing.ts', 'old\n')
         self.source = evidence.git(self.root, 'rev-parse', 'HEAD')
@@ -51,12 +53,42 @@ class IncrementalEvidenceTests(unittest.TestCase):
         self.assertEqual(MANIFEST[-1:], reuse)
         self.assertEqual(self.source, base)
 
+    def test_declared_suite_reaches_shard_plan_and_preserves_execution_source(self):
+        suite = 'verify.test.determinism'
+        manifest = MANIFEST + [suite]
+        declaration = json.loads((ROOT / 'scripts/ops/quick_suite_manifest.json').read_text())
+        self.fixture.commit_change('scripts/ops/quick_suite_manifest.json', json.dumps(declaration))
+        self.fixture.commit_change('frontend/apps/web/scripts/check.js', 'fixture')
+        self.fixture.commit_change('frontend/apps/web/package.json', '{}')
+        self.fixture.commit_change('.github/workflows/check.yml', 'fixture')
+        self.fixture.commit_change('docs/engineering_convergence/test_inventory.csv', 'fixture')
+        source = self.fixture.commit_change('make/ci.mk', 'ci.local.quick.run: ' + ' '.join(manifest) + '\n\t@git diff --check\n')
+        with mock.patch.object(evidence, 'is_linked_worktree', return_value=False):
+            evidence.run_quick(self.root, runner=self.runner)
+        head = self.fixture.commit_change('docs/notes.md', 'bookkeeping')
+        run, reused, base = evidence._incremental_plan(self.root, head)
+        self.assertIn(suite, reused)
+        self.assertNotIn(suite, run)
+        self.assertEqual(source, base)
+        self.calls.clear()
+        with mock.patch.object(evidence, 'is_linked_worktree', return_value=False), \
+             mock.patch.object(evidence, '_observe_quick'):
+            evidence.run_default(self.root, shards=2, jobs=1, runner=self.runner)
+        self.assertFalse(any(suite in command for command in self.calls))
+        ledger = json.loads((self.root / '.runtime/evidence-scope/ci.local.quick.json').read_text())
+        self.assertEqual(source, ledger['units'][suite]['source'])
+        self.assertEqual(evidence.evidence_path(self.root, head), evidence.verify(self.root, head))
+
     def test_incremental_run_issues_ordinary_verifiable_receipt(self):
         with mock.patch.object(evidence, 'is_linked_worktree', return_value=False):
             path = evidence.run_quick(self.root, runner=self.runner)
         self.assertEqual(['make', '--no-print-directory', '--jobs=1', *MANIFEST[:-1]], self.calls[0])
         self.assertNotIn('targets', json.loads(path.read_text()))
         self.assertEqual(path, evidence.verify(self.root, self.head))
+        ledger = json.loads((self.root / '.runtime/evidence-scope/ci.local.quick.json').read_text())
+        self.assertEqual(self.source, ledger['units'][MANIFEST[-1]]['source'])
+        self.assertEqual(self.head, ledger['units'][MANIFEST[0]]['source'])
+        self.assertCountEqual(MANIFEST[:-1], ledger['runs'][-1]['units'])
 
     def test_linked_execution_uses_registered_authority_wrapper(self):
         with mock.patch.object(evidence, 'is_linked_worktree', return_value=True):

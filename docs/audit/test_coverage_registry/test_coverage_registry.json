@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 199,
+    "odoo_tags": 200,
     "gated": 3,
     "on_demand": 48,
-    "unwired": 148,
-    "odoo_tag_declarations": 418,
+    "unwired": 149,
+    "odoo_tag_declarations": 419,
     "gated_declarations": 95,
-    "uncovered_declarations": 323,
+    "uncovered_declarations": 324,
     "ci_unit_scripts": 17,
     "ci_unit_scripts_wired": 17,
     "ci_unit_scripts_unwired": 0
@@ -774,6 +774,18 @@
         "addons/smart_construction_bundle/tests/test_company_project_refund_workspace.py"
       ],
       "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "contract_assembly_determinism",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_contract_assembly_determinism.py"
+      ],
+      "owner": "platform-team",
       "evidence": [],
       "disposition": "wire-pending"
     },

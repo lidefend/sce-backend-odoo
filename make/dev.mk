@@ -2,7 +2,7 @@
 # ==================== Dev =============================
 # ======================================================
 .PHONY: local.dev.rebuild_realistic local.dev.verify_realistic
-.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick frontend.dev frontend.stop frontend.restart frontend.logs acceptance.runtime.preflight acceptance.runtime.infrastructure.restore frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health backend.acceptance.logs frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev_acceptance.publish release.daily_product_navigation.snapshot release.daily_product_navigation.refresh release.daily_product_navigation.converge local.dev.demo_credentials.prepare local.dev.ready local.dev.up local.dev.down local.dev.restart local.dev.frontend local.dev.frontend.watch local.dev.candidate.frontend.up local.dev.candidate.frontend.down local.dev.candidate.frontend.health local.dev.candidate.frontend.visual-smoke local.dev.logs local.dev.ps local.dev.test local.dev.upgrade local.dev.verify_authority local.dev.sync_demo local.dev.demo_users.sync local.dev.reset_payment_request_fixture local.dev.demo.settlement_snapshot.repair local.dev.snapshot local.dev.contract_snapshot local.dev.project_create_contract_action_scope local.dev.project_profile_write_fixture local.dev.project_profile_write_browser local.dev.personnel_authorization_fixture local.dev.personnel_authorization_browser local.dev.tender_award_fixture local.dev.tender_award_browser verify.local.dev.tender_award.unit verify.local.dev.tender_award.journey local.dev.rebuild_demo local.dev.verify_demo local.dev.health verify.local.dev.frontend.quick.unit verify.local.dev.frontend.quick.gate verify.local.dev.payment_request.native_parity.readonly verify.local.dev.payment_request.floorplan.readonly verify.local.dev.payment_request.floorplan.submit verify.local.dev.payment_request.full_chain verify.local.dev.payment_request.settlement_component.journey verify.local.dev.payment_request.attachment_m2m.journey local.sample.require_env local.sample.ready local.sample.prepare local.sample.up local.sample.down local.sample.logs local.sample.snapshot local.sample.restore local.sample.discard local.sample.health local.clean.require_env local.clean.prepare local.clean.up local.clean.down local.clean.restart local.clean.logs local.clean.frontend local.env.status verify.local.development_lifecycle.unit verify.local.dev.project_create_contract_action_scope verify.local.dev.form_structure_surface_capability.orm verify.local.dev.canonical_navigation_projection.orm verify.local.dev.platform_database_governance.orm local.dev.data_space.enroll_identities verify.local.dev.data_space_identity_enrollment.orm verify.local.dev.data_space_uncached_membership.orm
+.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick frontend.dev frontend.stop frontend.restart frontend.logs acceptance.runtime.preflight acceptance.runtime.infrastructure.restore frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health backend.acceptance.logs frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev_acceptance.publish release.daily_product_navigation.snapshot release.daily_product_navigation.refresh release.daily_product_navigation.converge local.dev.demo_credentials.prepare local.dev.ready local.dev.up local.dev.down local.dev.restart local.dev.frontend local.dev.frontend.watch local.dev.candidate.frontend.up local.dev.candidate.frontend.down local.dev.candidate.frontend.health local.dev.candidate.frontend.visual-smoke local.dev.logs local.dev.ps local.dev.test local.dev.upgrade local.dev.verify_authority local.dev.sync_demo local.dev.demo_users.sync local.dev.reset_payment_request_fixture local.dev.demo.settlement_snapshot.repair local.dev.snapshot local.dev.contract_snapshot local.dev.project_create_contract_action_scope local.dev.project_profile_write_fixture local.dev.project_profile_write_browser local.dev.personnel_authorization_fixture local.dev.personnel_authorization_browser local.dev.tender_award_fixture local.dev.tender_award_browser verify.local.dev.tender_award.unit verify.local.dev.tender_award.journey local.dev.rebuild_demo local.dev.verify_demo local.dev.health verify.local.dev.frontend.quick.unit verify.local.dev.frontend.quick.gate verify.local.dev.payment_request.native_parity.readonly verify.local.dev.payment_request.floorplan.readonly verify.local.dev.payment_request.floorplan.submit verify.local.dev.payment_request.full_chain verify.local.dev.payment_request.settlement_component.journey verify.local.dev.payment_request.attachment_m2m.journey local.sample.require_env local.sample.ready local.sample.prepare local.sample.up local.sample.down local.sample.logs local.sample.snapshot local.sample.restore local.sample.discard local.sample.health local.clean.require_env local.clean.prepare local.clean.up local.clean.down local.clean.restart local.clean.logs local.clean.frontend local.test.prepare local.test.up local.test.down local.test.test local.env.status verify.local.development_lifecycle.unit verify.local.dev.project_create_contract_action_scope verify.local.dev.form_structure_surface_capability.orm verify.local.dev.canonical_navigation_projection.orm verify.local.dev.platform_database_governance.orm local.dev.data_space.enroll_identities verify.local.dev.data_space_identity_enrollment.orm verify.local.dev.data_space_uncached_membership.orm
 up: check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/dev/up.sh
 down: check-compose-project check-compose-env
@@ -62,6 +62,8 @@ LOCAL_CONTRACT_SNAPSHOT_ODOO_PORT ?= 8080
 export LOCAL_CONTRACT_SNAPSHOT_PASSWORD
 
 LOCAL_CLEAN_MODULES ?= sc_norm_engine
+LOCAL_TEST_MODULES ?= smart_construction_seed
+LOCAL_TEST_ENV_FILE ?= /home/lidefend/workspace/sce-backend-odoo/.env.local.test
 LOCAL_ENV_ISOLATE = env \
 	-u DB_NAME -u DB -u BD -u DB_USER -u DB_PASSWORD \
 	-u DB_DATA -u REDIS_DATA -u ODOO_DATA -u ODOO_DB -u ODOO_DBFILTER \
@@ -791,6 +793,27 @@ local.clean.upgrade: guard.prod.forbid local.clean.up
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" \
 	  CODEX_MODE=fast CODEX_NEED_UPGRADE=1 MODULE="$(MODULE)" mod.upgrade
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" restart
+
+.PHONY: local.test.prepare local.test.up local.test.down local.test.test
+local.test.prepare: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" SOURCE_ENV_FILE="$(LOCAL_DEV_ENV_FILE)" TARGET_ENV_FILE="$(LOCAL_TEST_ENV_FILE)" \
+	  LOCAL_CLEAN_PROJECT_NAME=sc-local-test LOCAL_CLEAN_DB_USER=sc_test_odoo LOCAL_CLEAN_DB_NAME=sc_test \
+	  LOCAL_CLEAN_DB_DATA=sc_local_test_db_data LOCAL_CLEAN_REDIS_DATA=sc_local_test_redis_data \
+	  LOCAL_CLEAN_ODOO_DATA=sc_local_test_odoo_data LOCAL_CLEAN_NGINX_PORT=18084 LOCAL_CLEAN_ODOO_PORT=8073 \
+	  bash scripts/dev/local_clean_env_prepare.sh
+
+local.test.up: guard.prod.forbid local.test.prepare
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_TEST_ENV_FILE)" up
+
+local.test.down: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_TEST_ENV_FILE)" down
+
+local.test.test: guard.prod.forbid local.test.up
+	@test -n "$(MODULE)" || (echo "MODULE is required" >&2; exit 2)
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_TEST_ENV_FILE)" \
+	  MODULE="$(LOCAL_TEST_MODULES)" WITHOUT_DEMO=--without-demo=all mod.install
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_TEST_ENV_FILE)" \
+	  SC_ENVIRONMENT=test MODULE="$(MODULE)" TEST_TAGS="$(TEST_TAGS)" test.safe
 
 .PHONY: local.clean.contract_projection_cache.probe
 local.clean.contract_projection_cache.probe: guard.prod.forbid local.clean.require_env
