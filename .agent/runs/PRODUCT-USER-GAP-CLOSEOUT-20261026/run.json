@@ -1336,6 +1336,12 @@
       "finding": "journal_id and date are required on account.move but have no model default (journal_default=None) and default_get returns only move_type/state; the account.move form hides journal_id (invisible=1) and date, so the balanced two-line draft save fails 表单校验未能完成",
       "layer": "P1 account form declaration / P0 native default projection: required hidden fields must carry a default or a visible editable surface",
       "note": "this is a separate, bounded issue from the core FG15 page-open; the save path and server validation are wired correctly"
+    },
+    "fg15_save_computed_fields": {
+      "status": "root_cause: computed required fields not hydrated on create",
+      "finding": "journal_id (_compute_journal_id) and date (_compute_date) are stored computed required fields with no default; default_get returns only move_type/state, so a new draft never hydrates journal_id/date and save is rejected",
+      "fix": "P0 create-default hydration must trigger an onchange roundtrip for default-set fields (move_type) so the native onchange recomputes journal_id/date before save; this is the empty changed_fields initialization gap",
+      "layer": "P0 smart_core api_onchange / frontend createDefaults hydration"
     }
   }
 }
