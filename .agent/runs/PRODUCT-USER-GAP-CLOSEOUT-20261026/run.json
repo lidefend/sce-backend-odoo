@@ -145,11 +145,10 @@
   },
   "checks": {},
   "blockers": [
-    "FG15: native child amount onchange and saved feedback fixes pass targeted tests and rollback ORM; browser save/reload/readback on refreshed candidate remains not_run",
-    "P4: HTTP account.move unlink denied403; previous exact ORM recovery is not reusable cleanup. No fresh journal creates until validated cleanup preflight/path.",
-    "FG15: posting and ordinary-role/company matrix not run"
+    "FG15: ordinary-role/company permission matrix and posting lifecycle not run; demo_full unposted draft success does not prove these surfaces.",
+    "FG15: unsupported child warning/modifier/line patches and residual native groups declarations still explicitly refused; broader native capability coverage remains open."
   ],
-  "next_exact_step": "P4 extend existing governed journal probe/recovery with exact run-owned ref/object identity, ordinary-creator ACL preflight, bounded cleanup and independent absence readback; test policy before new persistent create. Then refresh clean candidate through local.dev and run only journal save/reload/amount readback/cleanup. No full matrix, mainline or deployment claim.",
+  "next_exact_step": "Continue FG15 on existing local.dev: derive affected ordinary finance/read-only role and company cases from declared permissions, first inspect entry/read/edit denial without persistence; add only scoped governed probes where missing. Posting requires its own exact object and restoration plan before runtime mutation. Reuse d4da473f2 journal draft save/readback/cleanup evidence; no broad matrix or demo rebuild just to change identity. Mainline/remote CI/daily deployment remain pending.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1596,11 +1595,12 @@
       "reason": "Parent line_ids onchange does not identify which child field changed; native child balance/currency derivation must execute in ORM with authorized parent/subview context. No frontend accounting formula.",
       "scope": "First rollback native debit/credit ORM test to prove semantics, then bounded child field onchange transport and stale/save guards; feedback source issue separately within same result.",
       "validation": "L1 then targeted nonzero backend/frontend, exact ordinary-user rollback ORM; no fresh browser creates until cleanup preflight repaired, no module upgrade or new environment needed.",
-      "status": "targeted_and_rollback_orm_passed_browser_pending",
+      "status": "targeted_rollback_orm_and_demo_full_browser_passed",
       "tests": "native-child-change-backend-reviewed.log 28 PASS; native-child-change-front-reviewed2.log create defaults55 plus runtime race/scope/dirty/write cases, strict+basis PASS; native-child-change-loader-tests.log real loader/refusal and backend28 PASS; native-child-change-handler-orm.log exact1 PASS.",
       "result": "Native child debit100/credit100 derive balances +/-100 and amount_currency +/-100; actual ORM save preserves totals100/100. Existing child edit produces120 without persistence; foreign parent rejected. No frontend accounting formulas.",
       "review": "review_takeover three S2 closed: scope drift blocking, existing hydrated fields filtered, union pending changes. No remaining blocker in scoped change.",
-      "limits": "Child warning/modifier/line patches explicitly rejected. Browser runtime remains previous c0624c553; no fresh create this turn."
+      "limits": "Child warning/modifier/line patches explicitly rejected. Browser runtime remains previous c0624c553; no fresh create this turn.",
+      "browser": "d4da473f2 journal-ref-browser.log full unposted save/readback/cleanup PASS; actual values preserved100/100; reference evidence under journal_reusable_cleanup."
     },
     "native_saved_feedback": {
       "layer": "P0 smart_core native-view-bound ORM feedback read; generic mechanism, no account model special cases; P1 test carrier only",
@@ -1611,7 +1611,9 @@
       "review": "review_takeover final no discovered S1/S2; residual host/ancestor/source groups explicitly refused and tested; actual ordinary-user ORM success confirmed.",
       "limits": "Residual XML groups require explicit refusal; not full groups-expression support. No browser save/reload acceptance yet. Prior page evidence remains tied to earlier candidates.",
       "reuse": "Child tests unchanged by feedback-only node validation/cache edits; cache version-only handler change does not alter saved-record assembly algorithm, which is revalidated per request. Existing targeted ORM result reused; assembler pin guard separately passed.",
-      "rollback": "Revert native feedback reader and paired cache pin to restore prior explicit rejection; no data migration."
+      "rollback": "Revert native feedback reader and paired cache pin to restore prior explicit rejection; no data migration.",
+      "status": "targeted_rollback_orm_and_demo_full_saved_reload_passed",
+      "browser": "d4da473f2 saved form normal after reload; no409, errors0. Same report as journal_reusable_cleanup."
     },
     "journal_reusable_cleanup": {
       "layer": "P4 existing governed browser/recovery tooling only",
@@ -1619,10 +1621,18 @@
       "reason": "Public unlink403 must not weaken product permissions. Same lease wraps rollback permission preflight, exactly one unique marked browser draft, ordinary-creator ORM cleanup and separate process absence verification.",
       "scope": "Existing journal recovery, feedback wrapper/browser, policy tests and Make targets; fixed actor40/company1/journal3/currency6/accounts49,48 on sc-local-dev/sc_dev_demo/ns_000000000002. No posting or existing-record edit.",
       "validation": "L1 and pure recovery policy tests, independent review, clean candidate runtime refresh then only affected save journey. No module upgrade needed.",
-      "status": "reviewed_targeted_passed_runtime_pending",
-      "tests": "journal-cleanup-reviewed-policy.log 23JS+11Python PASS, including failure lifecycle; journal-cleanup-final-l1.log PASS",
+      "status": "browser_save_readback_cleanup_passed",
+      "tests": "journal-cleanup-reviewed-policy.log / journal-cleanup-env-policy.log / journal-ref-readback-policy.log 23JS+11Python PASS; journal-ref-readback-l1.log PASS.",
       "review": "review_takeover S2 hidden record false absence fixed: immediate browser ID receipt, exact-ref elevated identity-only audit vs ordinary actor search, independent parent/child absence; business reads/unlink never elevated. No remaining S1/S2.",
-      "next": "Commit clean candidate, governed local.dev up and frontend refresh, then verify.local.dev.journal.save with existing explicit confirmation."
+      "next": "Commit clean candidate, governed local.dev up and frontend refresh, then verify.local.dev.journal.save with existing explicit confirmation.",
+      "candidate": "d4da473f2b172b89a7dbdd47cbf41eff23659cc5",
+      "runtime": "journal-ref-browser.log PASS1. Exact report: journal-save-browser/d4da473f2b172b89a7dbdd47cbf41eff23659cc5/P4-JOURNAL-d4da473f2b172b89a7dbdd47cbf41eff23659cc5-a6635d7e4c8a45918671a8cdca686dc5/report.json. Both browserPassed and passed true.",
+      "result": "preflight ordinary creator create/unlink rolled back; browser create200 id24; refreshed visible ref input exact; API readback lines33/34 debit100 credit100 balance+/-100; errors0 blocked0. Cleanup ordinary creator committed deletion24/33/34; independent process exact-ref identity audit + known parent/line exists absent. saved-reloaded.png visually inspected.",
+      "failure_history": "b781 initial preflight did not enter ORM: sourced ENV_FILE overrode canonical path; c129 fixes path with test. c129 then created22 lines29/30 with correct100 amounts and normal saved form, but probe incorrectly searched body.innerText for input ref; exact ORM cleanup and independent absence passed. d4da changes only field-value assertion. Both failed reports/logs preserved.",
+      "authority": "Same registered profile, fixed actor40/demo_full/company1/journal3/currency6/accounts49,48, unique SHA+uuid marker, shared write lease. sudo only exact owned identity/absence audit, never business values/unlink. Public HTTP unlink403 policy unchanged.",
+      "limits": "Only demo_full unposted draft loop; no posting/ordinary-role/cross-company acceptance, no broad matrix, no remote publish/mainline/daily deployment. No module upgrade/demo rebuild.",
+      "reuse": "P0 amount and feedback code unchanged since4fb0fcc19; P4 fixes invalidate only this probe path. Final record-only commit does not invalidate d4da original behavior/evidence; local backend/frontend stay d4da candidate.",
+      "evidence_review": "review_takeover independently inspected final d4da report/preflight/cleanup/verify_absent: no false pass; conclusion restricted to demo_full unposted draft."
     }
   }
 }
