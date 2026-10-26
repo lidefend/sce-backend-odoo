@@ -270,6 +270,7 @@ export function resolveOne2manyRowColumnBehavior(
     if (field === '$native.context') return actual;
     const types = [...new Set(columns.filter(item => item.name === field).map(item => item.ttype))];
     if (types.length > 1) throw contractGapError({ kind: 'contract_defect', missing: `native_modifier.field_type.${field}`, requiredDeclarationLayer: 'P0:smart_core:field_descriptor' }, '原生条件字段类型声明冲突');
+    if (actual === undefined) return types[0] === 'one2many' || types[0] === 'many2many' ? [] : false;
     return nativeModifierRelationValue(actual, types[0]);
   });
   const verdict = (key: 'invisible' | 'readonly' | 'required' | 'column_invisible') => {

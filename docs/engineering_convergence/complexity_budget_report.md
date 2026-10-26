@@ -171,7 +171,7 @@ Generated from repository source files. This report is informational during the 
 | 962 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
-| 942 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
+| 943 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 917 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
