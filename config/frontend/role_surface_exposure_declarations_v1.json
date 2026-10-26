@@ -356,6 +356,38 @@
       "capability_reachable_not_delivered": [],
       "delivered_without_declared_capability": [],
       "delivered_without_declared_capability_reason": ""
+    },
+    "accounting": {
+      "label": "会计账务",
+      "delivery_mode": "declared_whitelist",
+      "identity_groups": [
+        "smart_construction_core.group_sc_role_accounting_read",
+        "smart_construction_core.group_sc_role_accounting_user",
+        "smart_construction_core.group_sc_role_accounting_manager"
+      ],
+      "identity_evidence": "显式会计只读、经办、审批角色组；回滚 ORM 分别验证，专属 demo 浏览器身份尚未验收。",
+      "rationale": "会计职责发布现有六个会计入口及角色首页。继承的项目读取能力不扩张导航；仅显式会计角色触发，财务等角色继承会计读取能力不触发。操作权限继续由原生 ACL 和记录规则约束。",
+      "capability_reachable_not_delivered": [
+        "smart_construction_core.menu_sc_construction_diary",
+        "smart_construction_core.menu_sc_product_equipment_shift_v1",
+        "smart_construction_core.menu_sc_product_labor_cost_v1",
+        "smart_construction_core.menu_sc_product_labor_deduction_v1",
+        "smart_construction_core.menu_sc_product_labor_realname_v1",
+        "smart_construction_core.menu_sc_product_message_notification_v1",
+        "smart_construction_core.menu_sc_product_site_variation_v1",
+        "smart_construction_core.menu_sc_product_subcontract_cost_v1",
+        "smart_construction_core.menu_sc_product_subcontract_variation_v1",
+        "smart_construction_core.menu_sc_product_tender_information_v1",
+        "smart_construction_core.menu_sc_project_documents",
+        "smart_construction_core.menu_sc_project_kanban",
+        "smart_construction_core.menu_sc_project_operation_statistics_report",
+        "smart_construction_core.menu_sc_project_project",
+        "smart_construction_core.menu_sc_project_tender",
+        "smart_construction_core.menu_sc_safety_issue",
+        "smart_construction_core.menu_sc_tender_won"
+      ],
+      "delivered_without_declared_capability": [],
+      "delivered_without_declared_capability_reason": ""
     }
   },
   "capability_reachable_by_no_role": [],

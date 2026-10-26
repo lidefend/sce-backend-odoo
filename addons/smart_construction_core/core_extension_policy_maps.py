@@ -2,6 +2,26 @@
 from __future__ import annotations
 
 ROLE_SURFACE_OVERRIDES = {
+    # Explicit accounting assignment publishes the existing accounting domain.
+    # Never bind accounting_read capability: finance roles inherit it without
+    # being assigned the accounting workspace.
+    "accounting": {
+        "label": "会计账务",
+        "landing_scene_candidates": ["workspace.home"],
+        "menu_xmlids": ["smart_construction_core.menu_sc_accounting_center"],
+        "primary_menu_xmlids": [
+            "account.menu_action_move_journal_line_form",
+            "account.menu_action_account_moves_all",
+            "account.menu_action_account_form",
+            "smart_construction_core.menu_sc_account_journal_foundation",
+            "smart_construction_core.menu_sc_analytic_account_foundation",
+            "smart_construction_core.menu_sc_analytic_distribution_foundation",
+        ],
+        "role_home_menu_xmlids": ["smart_construction_core.menu_sc_workspace_home"],
+        "contextual_menu_xmlids": [],
+        "admin_menu_xmlids": [],
+        "denied_menu_xmlids": [],
+    },
     "experience": {
         "label": "体验用户",
         "exclusive_surface": True,
@@ -791,6 +811,11 @@ ROLE_SURFACE_OVERRIDES = {
 }
 
 ROLE_GROUPS_EXPLICIT = {
+    "accounting": {
+        "smart_construction_core.group_sc_role_accounting_read",
+        "smart_construction_core.group_sc_role_accounting_user",
+        "smart_construction_core.group_sc_role_accounting_manager",
+    },
     "experience": {"smart_construction_core.group_sc_role_experience"},
     "system_admin": {
         "smart_core.group_smart_core_admin",
@@ -840,7 +865,7 @@ ROLE_GROUPS_CAPABILITY_FALLBACK = {
     },
 }
 
-ROLE_PRECEDENCE = ("system_admin", "experience", "business_full", "business_config_admin", "executive", "owner", "pm", "finance", "cost")
+ROLE_PRECEDENCE = ("system_admin", "experience", "business_full", "business_config_admin", "executive", "owner", "pm", "finance", "cost", "accounting")
 
 NAV_MENU_SCENE_MAP = {
     "smart_construction_core.menu_sc_project_initiation": "projects.intake",

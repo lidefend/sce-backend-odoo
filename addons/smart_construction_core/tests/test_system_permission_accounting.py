@@ -474,7 +474,7 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
             published = [row for row in authority.get('primary_actions', [])
                          if row.get('action_id') and row.get('menu_id')
                          and not (row.get('context_requirements') or {}).get('required_query')]
-            self.assertTrue(published, 'role authority must have an independently usable positive route')
+            self.assertTrue(published, (user.login, authority))
             positive = RouteAuthorityValidateHandler(actor_env, su_env=self.env).handle({
                 'action_id':published[0]['action_id'], 'menu_id':published[0]['menu_id']}).to_legacy_dict()
             self.assertTrue(positive['ok'], positive)
@@ -485,3 +485,25 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
                 'action_id':action.id,'menu_id':menu.id}).to_legacy_dict()
             self.assertFalse(result['ok'])
             self.assertEqual(result['error']['reason_code'],'ROUTE_ACTION_NOT_AUTHORIZED')
+
+    def test_explicit_accounting_roles_publish_journal_entry(self):
+        from odoo.addons.smart_construction_core.services.role_catalog_contract import load_role_catalog_contract
+        catalog = load_role_catalog_contract()
+        self.assertEqual(catalog['status'], 'ok', catalog)
+        from odoo.addons.smart_core.delivery.runtime_route_authority import build_runtime_route_authority
+        from odoo.addons.smart_core.handlers.route_authority_validate import RouteAuthorityValidateHandler
+        action = self.env.ref('account.action_move_journal_line')
+        menu = self.env.ref('account.menu_action_move_journal_line_form')
+        for role in ('accounting_read', 'accounting_user', 'accounting_manager'):
+            user = self._subject(role)
+            actor_env = self.env['account.move'].with_user(user).env
+            self.assertTrue(actor_env['account.move'].check_access_rights('read', raise_exception=False))
+            authority = build_runtime_route_authority(actor_env)
+            entries = [row for row in authority.get('primary_actions', [])
+                       if row.get('action_id') == action.id and row.get('menu_id') == menu.id]
+            self.assertEqual(len(entries), 1, (role, authority))
+            result = RouteAuthorityValidateHandler(actor_env, su_env=self.env).handle({
+                'action_id':action.id,'menu_id':menu.id}).to_legacy_dict()
+            self.assertTrue(result['ok'], result)
+            self.assertTrue(result['data']['allowed'])
+            self.assertEqual(actor_env['account.move'].check_access_rights('write', raise_exception=False), role != 'accounting_read')
