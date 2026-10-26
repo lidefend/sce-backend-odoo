@@ -52,6 +52,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     loadActionContractV2,
     loadError,
     loadModelContractV2,
+    markFieldChanged,
     menuId,
     model,
     nativeChatterAutoLoadKey,
@@ -365,6 +366,10 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         upsertRelationOption(name, { id, label });
         relationKeywords[name] = label;
       });
+      // New-record computed defaults (journal/date) are only derived through the
+      // native onchange; mark the default-set fields so the roundtrip recomputes
+      // the dependent fields before the draft is saved.
+      presentFields.forEach((name) => markFieldChanged(name));
       originalValues.value = snapshotOriginalFormValues(fieldNames, formData);
       nativeLayoutVisibilityRevision.value += 1;
       restoreIntakeAutosave();

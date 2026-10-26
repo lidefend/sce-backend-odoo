@@ -1946,6 +1946,7 @@ const {
   formRouteIdentity, feedbackDependencyPresence, hydrateSelectedRelationOptions, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows,
   initOne2manyRows, isComponentActive, layoutNodes,
   loadActionContractV2, loadError, loadModelContractV2,
+  markFieldChanged,
   loadNativeChatterTimeline, menuId,
   model, nativeAttachments,
   nativeChatterActions, nativeChatterAutoLoadKey, nativeLayoutVisibilityRevision,

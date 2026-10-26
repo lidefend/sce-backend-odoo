@@ -493,7 +493,7 @@ class ApiOnchangeHandler(BaseIntentHandler):
 
         values = self._normalize_values(env_model, params.get("values") if isinstance(params.get("values"), dict) else {})
         changed_fields = self._normalize_changed_fields(env_model, params.get("changed_fields") or params.get("changed"))
-        if not changed_fields:
+        if not changed_fields and not values:
             response = {
                 "ok": True,
                 "data": {
