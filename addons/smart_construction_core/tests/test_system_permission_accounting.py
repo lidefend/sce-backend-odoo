@@ -268,7 +268,9 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
             identity = parser._native_element_identity(link)
             rows = [n for n in nodes if n.get('native_locator') == identity['native_locator']]
             self.assertEqual(len(rows), 1)
-            self.assertEqual(rows[0]['attributes']['href'], '#outstanding')
+            self.assertEqual(rows[0]['type'], 'text')
+            self.assertEqual(rows[0]['attributes'], {})
+            self.assertNotIn('action', rows[0])
             self.assertEqual(rows[0]['text'], ' '.join((link.text or '').split()))
         buttons = root.xpath('.//button[@name="action_activate_currency"]')
         self.assertEqual(len(buttons), 2)

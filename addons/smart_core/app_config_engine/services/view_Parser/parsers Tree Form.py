@@ -1072,6 +1072,7 @@ class _TreeFormParserMixin:
                 # never treat the raw fragment as an authorized navigation target.
                 return {
                     'type': 'text',
+                    **self._native_element_identity(el),
                     'text': " ".join((el.text or "").split()),
                     'attributes': {},
                     'children': [],
