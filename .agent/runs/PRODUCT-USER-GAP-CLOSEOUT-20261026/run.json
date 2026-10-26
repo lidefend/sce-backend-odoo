@@ -1274,6 +1274,13 @@
       "why_unavailable": "account_id domain is a dynamic Python expression (parent_of / and / or / +) that analyzeDynamicRelationDomain cannot reduce to simple tuples, so supported=false and the relation renders 可选范围暂不可用",
       "fix_direction": "server-side dynamic domain must be evaluated by Odoo search/name_search, not parsed client-side; either project a query-capable domain carrier or treat unsupported dynamic domains as server-evaluated (not as unreadable)",
       "layer": "P0 smart_core relation descriptor + frontend relationDescriptor domain analysis"
+    },
+    "fg15_dynamic_domain_impl_direction": {
+      "status": "implementation_direction_recorded",
+      "current_behavior": "dynamicRelationDomainFromDescriptor returns [['id','=',-1]] for unsupported dynamic domains, and one2manyUtils marks the relation readonly (可选范围暂不可用)",
+      "fix": "treat an unsupported dynamic domain as server-evaluated, not as unreadable: pass the raw domain expression to the Odoo relation query (evaluated in the record context) instead of locally reducing it; keep fail-closed only for truly malformed domains",
+      "layer": "P0 smart_core relation query handler + frontend relationDescriptor/one2manyUtils",
+      "scope_note": "this is a Stage 3 usability refinement; the core FG15 create-page-open is already resolved"
     }
   }
 }
