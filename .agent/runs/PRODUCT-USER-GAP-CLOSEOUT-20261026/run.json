@@ -129,7 +129,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Close native create/child initialization through authorized onchange semantics; preserve required validation coverage. Verify nonzero targeted tests before governed journal save/readback/exact cleanup; FG15 remains open.",
+  "next_exact_step": "Verify native occurrence required coverage in governed journal draft browser, then capture child create-default/onchange request-response with parent/inverse/context identity; implement native initialization and verify save/readback/exact cleanup. Root initialization await/empty semantics also remain open; no foreground currency inference or validation bypass.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1397,6 +1397,32 @@
         "runtime": "not_run; initialization and registration gaps remain; no DB writes/environment change",
         "handoff_patch": "removed unauthorized frontend currency inference; file equals inherited HEAD",
         "remaining": "Capture child initialization native request/spec/context/inverse parent; repair adopted section registration and root init await/empty semantics before save acceptance"
+      }
+    },
+    "native_required_coverage_scope": {
+      "head": "d9d2e2f9f692735ea487afb2d19854999556bee8",
+      "layer": "P0 generic native occurrence consumption, useRecordFormFieldSchemas -> presentation -> save gate",
+      "reason": "Historical account.move contract auto_post occurrence declares readonly modifier while field descriptor is editable/required; flattened save expectation disagrees with renderer. Share native field-node projection, never derive rule from current value.",
+      "scope": "existing schema/presentation/page/actions and occurrence/save-chain tests",
+      "validation": "L1 then occurrence authority + adopted validation identity + engine + strict typecheck; runtime remains pending",
+      "rollback": "independent revert; no DB changes",
+      "result": {
+        "passed": [
+          "L1 ci.local.iteration",
+          "native occurrence authority suite +7 required-scope boundary cases",
+          "adopted save identity91",
+          "adopted engine74",
+          "strict typecheck",
+          "contract basis15"
+        ],
+        "evidence": [
+          "native-required-l1.log",
+          "native-required-l2.log",
+          "native-required-l2-reviewed.log",
+          "native-required-guards.log"
+        ],
+        "review": "S2 missing descriptor silently empty fixed; final independent review no remaining S0-S2 in bounded diff",
+        "runtime": "not_run; no environment/DB changes; FG15 remains open"
       }
     }
   }

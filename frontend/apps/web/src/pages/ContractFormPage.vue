@@ -1761,7 +1761,7 @@ const {
   nativeFormRootColumns, nativeGroupCount, nativeNotebookPageCount, nativeStatusbar, nativeStatusbarNodeIdentity, nativeVisibleFieldNames,
   nativeVisibleSectionTitles, rawNativeFormLayoutNodes, resolveNativeButtonLabel, runtimeFieldStates, runtimeNativeFormLayoutNodes,
   runtimeState, setStatusbarValue, showNativeDefaultSectionTitle, useNativeFormTree, layoutNodes,
-  nativeFieldSchemasForNodes, collectSceneValidationPrecheckErrors, onTemplateFieldChange, relationFieldAdapter,
+  nativeFieldSchemasForNodes, nativeRequiredEditableFieldNames, collectSceneValidationPrecheckErrors, onTemplateFieldChange, relationFieldAdapter,
 } = useRecordActionPresentation({
   modifierValues: formModifierValues,
   beginActionFeedback: actionFeedback.begin,
@@ -2020,6 +2020,7 @@ const {
   showOne2manyErrors, status, submissionFeedback,
   uploadPendingNativeAttachments, useFormPageLifecycleRuntime, v2ContractStore,
   contractPageType: () => contractPageType.value,
+  nativeRequiredEditableFieldNames,
   validateAdoptedFormSections: () => standardFormComposition.validateAdoptedFields(),
   validateBeforeSaveRecord, validationErrors, validationFieldErrors,
   writeContractFormRecord,

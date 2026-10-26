@@ -221,7 +221,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     markFieldChanged, layoutNodes: () => layoutNodes.value,
   });
 
-  const { layoutNodes, nativeFieldSchemasForNodes } = useRecordFormFieldSchemas({
+  const { layoutNodes, nativeFieldSchemasForNodes, nativeRequiredEditableFieldNames } = useRecordFormFieldSchemas({
     contract, v2ContractStore, nativeFormLayoutNodes, isNativeFieldVisible, isNativeLayoutNodeVisible,
     runtimeState, recordId, rights, contractFieldLabel, isContractFieldOrderEditable, effectiveFieldSize,
     rememberFormConfigFieldLabel, fieldOrderPreviewActive, fieldOrderDraft, formData, isFieldVisible,
@@ -500,6 +500,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     useNativeFormTree,
     layoutNodes,
     nativeFieldSchemasForNodes,
+    nativeRequiredEditableFieldNames,
     collectSceneValidationPrecheckErrors,
     onTemplateFieldChange,
     relationFieldAdapter,

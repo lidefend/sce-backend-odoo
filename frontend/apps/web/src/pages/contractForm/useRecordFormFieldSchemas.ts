@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, prefer-const */
 import { computed, type ComputedRef, type Ref } from 'vue';
+import { contractGapError } from '../../app/contract/contractGap';
 import type { FieldDescriptor } from '@sc/schema';
 import {
   collectContractV2FieldContainerStatusByCode,
@@ -135,5 +136,34 @@ export function useRecordFormFieldSchemas(context: {
     resolveRelationInlineCreateLabel:(_name,descriptor,keyword)=>{const template=context.relationUiLabel(descriptor,'inline_create');const label=String(keyword||'').trim();return template.includes('%s')?template.replace('%s',label):template||label;},
     many2oneCreateToken:'__create__',many2oneSearchToken:'__search_more__',many2oneOpenToken:'__open_record__',
   });
-  return { layoutNodes, nativeFieldSchemasForNodes };
+  // Use the same occurrence projection as the rendered controls. A flattened
+  // descriptor cannot decide whether a particular position is editable.
+  function nativeRequiredEditableFieldNames(): string[] | null {
+    if (!context.nativeFormLayoutNodes.value.length) return null;
+    const names = new Set<string>();
+    const visit = (nodes: NativeFormLayoutNode[]) => {
+      nodes.forEach((node, index) => {
+        if (!context.isNativeLayoutNodeVisible(node)) return;
+        const kind = String(node.type || node.containerType || '').toLowerCase();
+        if (kind === 'field') {
+          const name = String(node.name || '').trim();
+          if (name && !context.isNativeFieldVisible(name, node)) return;
+          const field = nativeLayoutNodeToFieldNode(node, index);
+          if (!field) throw contractGapError({ kind: 'contract_defect',
+            missing: `native_field.${name || '(unnamed)'}.fieldDescriptor`,
+            requiredDeclarationLayer: 'P0:smart_core:page_assembler',
+          }, '原生字段校验声明缺失，无法确认必填校验范围');
+          if (field.required && !field.readonly) names.add(field.name);
+          return; // A relation's subview belongs to child validation.
+        }
+        for (const key of ['children', 'pages', 'tabs', 'nodes', 'items']) {
+          const children = (node as Record<string, unknown>)[key];
+          if (Array.isArray(children)) visit(children as NativeFormLayoutNode[]);
+        }
+      });
+    };
+    visit(context.nativeFormLayoutNodes.value);
+    return [...names];
+  }
+  return { layoutNodes, nativeFieldSchemasForNodes, nativeRequiredEditableFieldNames };
 }

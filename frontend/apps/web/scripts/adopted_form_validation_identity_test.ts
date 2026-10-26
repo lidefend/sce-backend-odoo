@@ -186,7 +186,9 @@ let focusCalls = 0;
 let inlineGate: ReturnType<typeof deferred<string[]>> | null = null;
 let tagCalls = 0;
 const route = reactive({ query: {} as Record<string, string>, params: { model: 'project.project', id: '10' }, path: '/f/project.project/10', name: 'model-form', meta: {} });
+let nativeRequiredFields: string[] | null = null;
 const deps: Record<string, unknown> = {
+  nativeRequiredEditableFieldNames: () => nativeRequiredFields,
   ApiError: TestApiError,
   actionId: ref(673),
   activeContractMode: ref(''),
@@ -327,6 +329,14 @@ check(writes.length, 0, 'missing validation registration never reaches the write
 check(validationErrors.value.includes('表单校验未能完成，请重试。'), true,
   'missing validation remains explicit even when the required value is populated');
 writes.length = 0;
+nativeRequiredFields = [];
+check(await saveRecord(), true, 'native readonly-only positions do not demand an editable validator');
+check(writes.length, 1, 'native empty editable scope allows the normal save chain');
+writes.length = 0;
+nativeRequiredFields = ['name'];
+check(await saveRecord(), false, 'visible editable native required position still blocks when unregistered');
+check(writes.length, 0, 'native required coverage does not bypass write protection');
+nativeRequiredFields = null;
 formData.name = '';
 validationErrors.value = [];
 validationFieldErrors.value = {};
