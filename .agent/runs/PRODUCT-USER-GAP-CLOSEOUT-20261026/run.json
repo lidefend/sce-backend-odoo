@@ -1330,6 +1330,12 @@
       "finding": "single-line account select + debit/credit fill verified; the balanced two-line probe hit a playwright timing issue (second row account dropdown not visible while first dropdown open), no pageerror",
       "verified_so_far": "page opens, line add, debit/credit bind, account query 49 options, account select persists, server rejects debit+credit same line",
       "remaining": "two-line balanced save draft + reload readback (probe timing), balance feedback UI, permission denial"
+    },
+    "fg15_save_root": {
+      "status": "save_requires_hidden_required_fields",
+      "finding": "journal_id and date are required on account.move but have no model default (journal_default=None) and default_get returns only move_type/state; the account.move form hides journal_id (invisible=1) and date, so the balanced two-line draft save fails 表单校验未能完成",
+      "layer": "P1 account form declaration / P0 native default projection: required hidden fields must carry a default or a visible editable surface",
+      "note": "this is a separate, bounded issue from the core FG15 page-open; the save path and server validation are wired correctly"
     }
   }
 }
