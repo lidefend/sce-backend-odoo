@@ -45,6 +45,19 @@ class ProductMenuContractGuardTest(unittest.TestCase):
         contract["centers"][2]["level_two"][3]["name"] = "通用合同"
         self.assertTrue(validate(contract, self.baseline, self.evolution_policy))
 
+    def test_contract_preview_cannot_be_removed_replaced_or_promoted(self) -> None:
+        for mutation in ("remove", "replace", "promote"):
+            with self.subTest(mutation=mutation):
+                contract = copy.deepcopy(self.contract)
+                center = next(row for row in contract["centers"] if row["key"] == "contract")
+                if mutation == "remove":
+                    center["level_two"].pop()
+                elif mutation == "replace":
+                    center["level_two"][-1]["name"] = "未声明入口"
+                else:
+                    center["level_two"][-1].update(delivery="RELEASED_FOUNDATION", release_state="released")
+                self.assertTrue(validate(contract, self.baseline, self.evolution_policy))
+
     def test_seed_customer_cannot_become_primary_goal(self) -> None:
         policy = copy.deepcopy(self.evolution_policy)
         policy["primary_goal"] = "P2_SEED_CUSTOMER_DELIVERY"
