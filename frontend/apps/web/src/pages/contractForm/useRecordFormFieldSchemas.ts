@@ -105,7 +105,7 @@ export function useRecordFormFieldSchemas(context: {
     return buildLegacyLayoutNodes({fields:formFields.value,order:[],containerStatus:collectContractV2FieldContainerStatusByCode(context.v2ContractStore.value),visibleFields:context.contractVisibleFields.value,fallbackFieldNames:[...context.coreFieldNames.value,...context.advancedFieldNames.value],readonly:context.recordId.value?!context.rights.value.write:!context.rights.value.create,resolveFieldLabel:context.contractFieldLabel,evaluatePolicy:(_name,descriptor)=>({visible:true,required:Boolean(descriptor?.required),readonly:Boolean(descriptor?.readonly)}),runtimeState:(name)=>context.runtimeFieldStates.value[name]||{invisible:false,readonly:false,required:false}});
   });
   buildSectionFieldSchemas=createFormSectionFieldSchemaBuilder({
-    resolveFieldType:(descriptor)=>fieldType(descriptor)||'char',resolveRequired:(field)=>Boolean((field as LayoutNode).required),
+    resolveFieldType:(descriptor)=>fieldType(descriptor)||'char',resolveRequired:(field)=>Boolean((field as LayoutNode).required || (field as LayoutNode).descriptor?.required),
     resolveSpan:(field)=>(field as LayoutNode).span,
     resolveRawValue:(name)=>context.formData[name],resolveMany2oneValue:(name)=>{
       // Resolve the many2one input value directly from the reactive formData
