@@ -1245,6 +1245,22 @@
       "status": "line_add_verified",
       "browser_observation": "journal entry create form renders fields name/ref/project_id/line_ids; clicking 添加日记账项目 adds one line row with columns 科目/标签/项目/工程结构/成本科目/分析分配/借项/贷项/操作 and 16 editable inputs; no pageerror/ContractGapError",
       "remaining": "fill account (many2one select), debit/credit monetary binding, balance feedback, save draft + readback, permission denial"
+    },
+    "fg15_stage3_debit_credit": {
+      "status": "line_edit_and_debit_credit_verified",
+      "line_columns": [
+        "account_id(科目)",
+        "name(标签)",
+        "project_id(项目)",
+        "structure(工程结构)",
+        "cost_account(成本科目)",
+        "analytic(分析分配)",
+        "debit(借项)",
+        "credit(贷项)"
+      ],
+      "debit_credit": "借项/贷项 are editable number inputs (default 0); filled 123.45 in both binds correctly",
+      "observation": "科目(account_id) relation input placeholder is 可选范围暂不可用 (relation options not queried in line context); other relation columns similarly show 可选内容暂不可用",
+      "remaining": "account relation query in line context, balance feedback, save draft + readback, permission denial"
     }
   }
 }
