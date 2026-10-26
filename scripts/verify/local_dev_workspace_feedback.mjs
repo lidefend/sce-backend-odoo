@@ -109,7 +109,9 @@ try {
       page.waitForResponse(response => {
         let body; try { body = response.request().postDataJSON(); } catch { return false; }
         const request = body?.params?.intent ? body.params : body;
-        return request?.intent === 'api.onchange' && request.params?.model === model && !request.params?.feedback_evaluation;
+        return request?.intent === 'api.onchange' && request.params?.model === model && !request.params?.feedback_evaluation
+          && !request.params?.res_id && request.params?.changed_fields?.includes('name')
+          && request.params?.values?.name === '原生子表草稿验证（不保存）';
       }, {timeout: 20000}),
       (async () => { await name.fill('原生子表草稿验证（不保存）'); await name.blur(); })(),
     ]);
