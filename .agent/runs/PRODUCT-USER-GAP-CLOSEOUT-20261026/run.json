@@ -1179,6 +1179,18 @@
       "evidence": "data-v2-shadow-store=true, widgets=95, actions=20, field-overlap=77, decode error='-'; canonicalFormRenderState transiently logged NORMALIZED_FORM_CONTRACT_MISSING during initial render, then store became ready.",
       "likely_root": "canonicalActionExecutionError: one or more accounting-specific actions (post/reverse/etc.) have no canonical form action executor adapter, so validateCanonicalFormActionExecutors fails and the form fails closed.",
       "next": "inspect validateCanonicalFormActionExecutors failure detail for account.move actions; register generic accounting action adapters or a governed fallback, then re-probe."
+    },
+    "fg15_root_cause_20261026": {
+      "status": "root_cause_located",
+      "exact_error": "ContractGapError: Legacy Vue alert declaration token:alert at container:container.native.1 has no explicit feedback consumer",
+      "source": "frontend/components/template/nativeTextPresentation.ts assertNativePresentationConsumption",
+      "account_move_alert_nodes": "17 legacy alert <div class=\"alert alert-warning|info\" role=\"alert\"> + 4 <a class=\"alert-link\" href=\"#...\"> anchors",
+      "required_fix_layer": "P0 smart_core view parser/assembler must declare legacy alert div -> sc.feedback.message (purpose/source/condition) and alert-link a -> sc.navigation.anchor target; frontend then consumes the declared component instead of failing closed",
+      "fixed_earlier": [
+        "14e7c7f7b empty relation value",
+        "ef06e0adc context.get no-default"
+      ],
+      "next": "implement the legacy-alert-to-explicit-feedback declaration in the view parser, regenerate carriers, rebuild, and re-probe"
     }
   }
 }
