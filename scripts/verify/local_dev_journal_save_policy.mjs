@@ -61,3 +61,11 @@ export function permitsJournalRoleRead(request, pairs, transport) {
     && Number.isSafeInteger(params.action_id) && Number.isSafeInteger(params.menu_id)
     && pairs.has(`${params.action_id}/${params.menu_id}`);
 }
+
+export function permitsJournalDetailRead(request, recordId, transport) {
+  return Number.isSafeInteger(recordId) && recordId > 0
+    && transport?.method === 'POST' && transport?.path === '/api/v1/intent'
+    && ['chatter.timeline','chatter.followers.list'].includes(request?.intent)
+    && request.params?.model === 'account.move'
+    && (request.params.res_id ?? request.params.record_id) === recordId;
+}

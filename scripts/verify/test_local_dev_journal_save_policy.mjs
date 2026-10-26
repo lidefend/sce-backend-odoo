@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { permitsJournalSaveMutation, permitsJournalRoleRead } from './local_dev_journal_save_policy.mjs';
+import { permitsJournalSaveMutation, permitsJournalRoleRead, permitsJournalDetailRead } from './local_dev_journal_save_policy.mjs';
 const allow = (request,state) => permitsJournalSaveMutation(request,state,{method:'POST',path:'/api/v1/intent'});
 const state = { enabled: true, ready: true, ref: 'P4-JOURNAL-test', companyId: 1, journalId: 3, currencyId: 6,
   accounts: [49, 48], rowKeys: ['r1', 'r2'], createAttempted: false, createdId: null, cleanupVerified: false };
@@ -60,4 +60,17 @@ test('role authority reads stay bound to verified published pairs', () => {
   ]) assert.equal(permitsJournalRoleRead(changed,pairs,transport),false);
   assert.equal(permitsJournalRoleRead(request,new Set(),transport),false);
   assert.equal(permitsJournalRoleRead(request,pairs,{...transport,method:'GET'}),false);
+});
+
+test('saved detail only reads chatter for the selected account move', () => {
+  const request={intent:'chatter.timeline',params:{model:'account.move',res_id:21}};
+  const transport={method:'POST',path:'/api/v1/intent'};
+  assert.equal(permitsJournalDetailRead(request,21,transport),true);
+  for (const changed of [
+    {...request,intent:'chatter.message.post'},
+    {...request,params:{model:'account.move',res_id:22}},
+    {...request,params:{model:'account.move.line',res_id:21}},
+  ]) assert.equal(permitsJournalDetailRead(changed,21,transport),false);
+  assert.equal(permitsJournalDetailRead(request,null,transport),false);
+  assert.equal(permitsJournalDetailRead(request,21,{...transport,method:'GET'}),false);
 });

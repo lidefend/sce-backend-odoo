@@ -168,6 +168,7 @@ Generated from repository source files. This report is informational during the 
 | 976 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
+| 965 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 962 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 952 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
@@ -175,7 +176,6 @@ Generated from repository source files. This report is informational during the 
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 918 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
-| 914 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 910 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |

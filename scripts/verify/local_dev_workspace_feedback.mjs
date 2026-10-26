@@ -1,6 +1,6 @@
 // P4: fixed affected forms. journal-save permits one owned draft and exact cleanup; no posting.
 import fs from 'node:fs';
-import { permitsJournalSaveMutation, permitsJournalRoleRead } from './local_dev_journal_save_policy.mjs';
+import { permitsJournalSaveMutation, permitsJournalRoleRead, permitsJournalDetailRead } from './local_dev_journal_save_policy.mjs';
 import assert from 'node:assert/strict';
 import {launchChromium} from './playwright_runtime.mjs';
 import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap_inventory_policy.mjs';
@@ -45,6 +45,7 @@ assert(/^[a-f0-9]{40}$/.test(report.head || ''));
 const browser = await launchChromium({headless: true});
 let page;
 let certificateRecordId = null;
+let journalDetailId = null;
 const journalRolePairs = new Set(actor === 'sc_demo_accounting_manager' ? [] : ['292/175']);
 const journalSave = { enabled: scope === 'journal-save', ready: false, createAttempted: false, cleanupVerified: false,
   ref: process.env.SC_RUNTIME_JOURNAL_REF, createdId: null, accounts: [], rowKeys: [] };
@@ -88,12 +89,14 @@ try {
       Number(request.params.res_id ?? request.params.record_id) === certificateRecordId;
     const roleAuthorityRead = scope === 'journal-role'
       && permitsJournalRoleRead(request, journalRolePairs, {method:req.method(),path:pathname});
+    const detailRead = scope === 'journal-role' && actor === 'sc_demo_accounting_manager'
+      && permitsJournalDetailRead(request,journalDetailId,{method:req.method(),path:pathname});
     const ownedMutation = permitsJournalSaveMutation(request, journalSave, {method:req.method(),path:pathname});
     const ownedRead = journalSave.enabled && Number.isSafeInteger(journalSave.createdId) && req.method()==='POST' && pathname==='/api/v1/intent'
       && ['chatter.timeline','chatter.followers.list'].includes(request?.intent) && request.params?.model==='account.move'
       && (request.params.res_id ?? request.params.record_id)===journalSave.createdId;
     if (ownedMutation && request.intent === 'api.data') journalSave.createAttempted = true;
-    if (!draft && !roleAuthorityRead && !certificateRead && !ownedMutation && !ownedRead && !permitsInventoryRequest(req.method(), pathname, body, false)) {
+    if (!draft && !roleAuthorityRead && !detailRead && !certificateRead && !ownedMutation && !ownedRead && !permitsInventoryRequest(req.method(), pathname, body, false)) {
       report.blocked.push({intent: request?.intent || pathname, ...(journalSave.enabled && request?.params?.model==='account.move' ? {params:request.params} : {})});
       return route.abort();
     }
@@ -689,6 +692,54 @@ try {
           report.cases.push({model:entry.meta.model,menu,route:entry.meta.route,navigationPublished:true,
             collectionState:await page.locator('[data-semantic-component="ActionView"]').getAttribute('data-collection-state'),passed:true});
           await page.screenshot({path:`${root}/${actor}-${menu}.png`});
+          if (entry.meta.model === 'account.move') {
+            const selected = await journalApi('api.data',{op:'list',model:'account.move',
+              domain:[['state','=','draft'],['move_type','=','entry']],
+              fields:['id','name','ref','state','move_type','company_id','journal_id','line_ids','write_date'],limit:5});
+            assert.equal(selected.status,200); assert.equal(selected.payload.ok,true);
+            const record = selected.payload.data.records.find(row=>row.name && row.name !== '/');
+            assert(record,'demo gap: no named saved draft journal entry');
+            journalDetailId = record.id;
+            assert(Number.isSafeInteger(journalDetailId) && journalDetailId>0);
+            const relationId = value=>Array.isArray(value) ? value[0] : value;
+            assert.equal(relationId(record.company_id),1);
+            assert(record.line_ids.length>0,'demo draft must have journal lines');
+            const waitForm = ()=>page.waitForResponse(response=>{
+              let body; try {body=response.request().postDataJSON();} catch {return false;}
+              const request=body?.params?.intent ? body.params : body;
+              return request?.intent==='ui.contract.v2' && request.params?.op==='model'
+                && request.params?.model==='account.move' && Number(request.params?.record_id)===record.id;
+            });
+            const open = waitForm();
+            await page.locator('[data-semantic-component="ActionView"]').getByRole('button',{name:record.name,exact:true}).click();
+            const validateForm = async pending=>{
+              const response=await pending; assert.equal(response.status(),200);
+              const payload=await response.json(); assert.equal(payload.ok,true);
+              await page.waitForFunction(id=>{
+                const form=document.querySelector('[data-semantic-component="ContractFormPage"]');
+                return form?.getAttribute('data-state')==='ok' && form?.getAttribute('data-form-record')===String(id)
+                  && form?.getAttribute('data-v2-shadow-error')==='-';
+              },record.id);
+              await page.locator('[data-field-name="line_ids"]').first().waitFor({state:'visible'});
+              await page.waitForFunction(expected=>Number(document.querySelector('[data-field-name="line_ids"] [data-row-count]')?.getAttribute('data-row-count'))===expected,record.line_ids.length);
+              return payload.data.statusContract.globalStatus;
+            };
+            const status = await validateForm(open);
+            const reload=waitForm(); await page.reload({waitUntil:'domcontentloaded'});
+            const reloadedStatus=await validateForm(reload);
+            const readback=await journalApi('api.data',{op:'read',model:'account.move',ids:[record.id],
+              fields:['id','name','ref','state','move_type','company_id','journal_id','line_ids','write_date']});
+            assert.equal(readback.payload.ok,true);
+            assert.equal(readback.payload.data.records.length,1);
+            const savedFields=['id','name','ref','state','move_type','company_id','journal_id','line_ids','write_date'];
+            const facts=row=>Object.fromEntries(savedFields.map(key=>[key,row[key]]));
+            assert.deepEqual(facts(readback.payload.data.records[0]),facts(record),'readonly detail must preserve saved record');
+            report.journalDetail={record,status,reloadedStatus,readback:facts(readback.payload.data.records[0]),comparisonPassed:true,
+              visibleLineCount:Number(await page.locator('[data-field-name="line_ids"] [data-row-count]').first().getAttribute('data-row-count')),
+              lineRegionText:await page.locator('[data-field-name="line_ids"]').first().innerText(),route:page.url(),
+              visibleButtons:await page.locator('[data-semantic-component="ContractFormPage"] button:visible').allTextContents(),passed:true};
+            await page.screenshot({path:`${root}/${actor}-saved-draft-detail.png`});
+          }
         }
       } else {
       assert(!leaves.some(n=>n.meta?.model==='account.move' && new URL(n.meta.route,base).searchParams.get('menu_id')==='175'),
