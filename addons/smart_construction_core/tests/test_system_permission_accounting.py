@@ -567,3 +567,37 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
         self.assertFalse(result['ok'])
         self.assertEqual(result['error']['reason_code'], 'ROUTE_ACTION_NOT_AUTHORIZED')
         self.assertTrue(actor_env['account.move'].check_access_rights('read', raise_exception=False))
+
+    def test_journal_number_native_column_label(self):
+        from lxml import etree
+        user = self._subject('accounting_read')
+        model = self.env['account.move'].with_user(user).with_context(lang='zh_CN')
+        action = self.env.ref('account.action_move_journal_line')
+        tree_id = next(view_id for view_id, view_type in action.views if view_type == 'tree')
+        native = model.get_view(view_id=tree_id, view_type='tree')
+        root = etree.fromstring(native['arch'].encode())
+        fields = model.fields_get()
+        name = root.xpath("./field[@name='name']")
+        self.assertEqual(len(name), 1)
+        label = name[0].get('string') or fields['name']['string']
+        self.assertEqual(label, '凭证编号', {'view_id': native['id'], 'field_label': fields['name']['string'],
+                                             'view_label': name[0].get('string')})
+        parser = self.env['app.view.parser'].with_user(user).with_context(lang='zh_CN')
+        parsed = parser._parse_tree_view(native['arch'], fields)
+        column = next(row for row in parsed['columns_schema'] if row['name'] == 'name')
+        self.assertEqual(column['label'], '凭证编号')
+        self.assertEqual(column['type'], 'char')
+
+    def test_journal_number_declared_view_projection(self):
+        from lxml import etree
+        from odoo.modules.module import get_module_resource
+        source = get_module_resource('smart_construction_core', 'views', 'support', 'account_extend_views.xml')
+        definition = etree.parse(source).xpath("//record[@id='view_move_tree_sc_voucher_number']")[0]
+        inherited = definition.xpath("./field[@name='inherit_id']")[0].get('ref')
+        arch = definition.xpath("./field[@name='arch']")[0]
+        self.env['ir.ui.view'].create({
+            'name': 'Synthetic voucher number declaration', 'model': 'account.move',
+            'inherit_id': self.env.ref(inherited).id,
+            'arch_db': '<data>' + ''.join(etree.tostring(node, encoding='unicode') for node in arch) + '</data>',
+        })
+        self.test_journal_number_native_column_label()

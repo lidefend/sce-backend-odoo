@@ -678,6 +678,11 @@ try {
           assert.equal(response.status(),200); const payload = await response.json();
           assert.equal(payload.ok,true);
           await page.waitForFunction(()=>['ok','empty'].includes(document.querySelector('[data-semantic-component="ActionView"]')?.getAttribute('data-collection-state')));
+          if (entry.meta.model === 'account.move') {
+            await page.getByRole('columnheader',{name:'凭证编号',exact:true}).waitFor({state:'visible'});
+            assert.equal(await page.getByRole('columnheader',{name:'数量',exact:true}).count(),0);
+            report.journalNumberLabel = '凭证编号';
+          }
           report.cases.push({model:entry.meta.model,menu,route:entry.meta.route,navigationPublished:true,
             collectionState:await page.locator('[data-semantic-component="ActionView"]').getAttribute('data-collection-state'),passed:true});
           await page.screenshot({path:`${root}/${actor}-${menu}.png`});

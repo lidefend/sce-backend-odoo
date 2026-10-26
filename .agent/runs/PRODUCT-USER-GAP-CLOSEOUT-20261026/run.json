@@ -150,7 +150,8 @@
     "scripts/verify/product_menu_contract_v1_guard.py",
     "scripts/verify/test_product_menu_contract_v1_guard.py",
     "demo_addons/smart_construction_demo/data/demo/sc_demo_users.xml",
-    "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py"
+    "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py",
+    "addons/smart_construction_core/views/support/account_extend_views.xml"
   ],
   "environment": {
     "kind": "runtime",
@@ -1731,6 +1732,16 @@
       "review": "review_takeover verified seed scope, route transport pair restrictions and raw positive report; supports six lists only, not detail/save/post/semantic completeness.",
       "limits": "Only demo accounting_manager browser covered; reader/user positive browser and company switching still pending. No new business write/posting; only one demo user seeded and local runtime refreshed, no mainline integration/daily remote deployment.",
       "new_observation": "Journal list175 visually labels voucher-number values under 数量. Presentation semantic issue pending owning declaration diagnosis; screenshot175 evidence, do not infer passing list rendering means correct label."
+    },
+    "accounting_journal_number_label": {
+      "layer": "P1 smart_construction_core inherited native accounting view declaration",
+      "head": "ac1a7c749 clean start",
+      "reason": "Actual uid7 journal list displays voucher identifier values under 数量. Reproduce native view/parser label before changing the owning declaration. No frontend model special-case or demo migration.",
+      "blast_radius": "Journal entry number column only; targeted actual role/native parser regression, governed module declaration refresh if XML changes, current accounting browser label assertion.",
+      "reproduction": "accounting-number-before-orm.log exact1 FAIL: view781, name field label数量, no view label. Owning native label source confirmed.",
+      "validation": "accounting-number-projection-orm.log exact1 PASS: source XML temporarily inherited in rollback, native view and actual parser column both凭证编号/char. Static L1 +24JS/11Python policy PASS. Installed declaration and browser pending.",
+      "review": "review_takeover approved narrow /tree/field[name=name] inherited label; shared account.view_move_tree consumers affected, quantity/value/permissions unchanged.",
+      "runtime_plan": "Governed local.dev.upgrade MODULE=smart_construction_core required only to load new native view declaration; no demo module upgrade or data rebuild. Then installed ORM and exact candidate browser label check."
     }
   }
 }
