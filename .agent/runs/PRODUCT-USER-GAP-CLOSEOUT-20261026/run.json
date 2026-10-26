@@ -1306,6 +1306,12 @@
       "browser": "clicking the 科目 input in the line row does not surface relation options (optionCount 0); no pageerror",
       "note": "the line-context many2one relation query is not wired to the click/focus trigger; this is a separate relation-query interaction gap beyond the domain-readability fix",
       "remaining": "wire line-context many2one query trigger, balance feedback, save draft + readback, permission denial"
+    },
+    "fg15_account_query_verified": {
+      "status": "account_query_verified",
+      "commit": "c66792b41",
+      "browser": "clicking 科目 in the line row now returns 49 account options (工程收入/应收账款/...); no pageerror",
+      "remaining": "balance feedback, save draft + readback, permission denial"
     }
   }
 }
