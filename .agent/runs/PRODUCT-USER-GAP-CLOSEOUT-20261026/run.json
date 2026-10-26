@@ -1056,6 +1056,17 @@
         "malformed_many2one": "rejected via NativeOnchangeSpecError (fail-closed)"
       },
       "limits": "read-only diagnostic; not full HTTP onchange acceptance, no browser journey, no module upgrade, no deploy/mainline"
+    },
+    "fg15_diagnosis_20261026": {
+      "status": "diagnosed",
+      "kind": "scoped_readonly_odoo_shell_diagnostic",
+      "head": null,
+      "account_move_view_id": 790,
+      "arch_len": 52224,
+      "condition_field_count": 101,
+      "modifier_expr_count": 113,
+      "normalized_unsupported_count": 0,
+      "conclusion": "account.move form's 113 invisible/required/readonly expressions all normalize to the product modifier AST (context.get, in/not in, parent.*, bool, and/or/not, static 0/1). Backend modifier normalization is complete for FG15; the remaining FG15 gap is frontend consumption: rich warnings/alerts, accounting-specific widgets (tax_totals, invoice_outstanding_credits_debits_widget), and parent-prefix resolution in child line conditions. No backend product defect reproduced in this diagnosis."
     }
   }
 }
