@@ -1074,7 +1074,10 @@ class _TreeFormParserMixin:
             if el.get('name'):
                 node['name'] = el.get('name')
             text = " ".join((el.text or "").split())
-            if text:
+            is_legacy_alert = any(
+                token in (el.get('class') or '').split() for token in ('alert', 'alert-info', 'alert-warning', 'alert-danger')
+            ) or (el.get('role') or '').strip().lower() == 'alert'
+            if text and not is_legacy_alert:
                 node['text'] = text
             # 标签/列数等
             if tag in ('group', 'page', 'notebook'):
@@ -1094,6 +1097,20 @@ class _TreeFormParserMixin:
 
             # 递归子节点
             children = []
+            if is_legacy_alert and text:
+                # Legacy native alert text must be a declared content source, not
+                # the host's own text; project it as a real text child with the
+                # host's native identity so the feedback projection can bind it.
+                identity = self._native_element_identity(el)
+                children.append({
+                    'type': 'text',
+                    'text': text,
+                    'attributes': {},
+                    'children': [],
+                    'native_locator': (identity.get('native_locator') or '') + '/text[1]',
+                    'occurrence_index': 1,
+                    'source_authority': {'kind': 'native_view'},
+                })
             for ch in el:
                 cv = self._node_to_layout_from_dom(ch, fields_info, source_nodes)
                 if cv:

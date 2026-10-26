@@ -113,7 +113,8 @@
     "addons/smart_core/core/contract_runtime/semantic_resolver.py",
     "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
     "addons/smart_core/tests/test_contract_runtime_semantic_resolver.py",
-    "contracts/registry/semantic.yaml"
+    "contracts/registry/semantic.yaml",
+    "addons/smart_core/core/node_component_validation.py"
   ],
   "environment": {
     "kind": "runtime",

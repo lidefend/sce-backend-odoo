@@ -82,7 +82,18 @@ def require_nonconstant(value, path):
     # dependency presence proves an arbitrary compound formula nonconstant.
     while isinstance(value, dict) and value.get("kind") == "not":
         value = value["expr"]
-    if not isinstance(value, dict) or value.get("kind") not in {"field_truthy", "field_compare"}:
+    if not isinstance(value, dict):
+        fail("FEEDBACK_CONDITION_INVALID", path)
+    # Compound visibility conditions are valid only when every branch is a
+    # nonconstant leaf; a static branch cannot make the host dynamic.
+    if value.get("kind") in {"all", "any"}:
+        exprs = value.get("exprs")
+        if not isinstance(exprs, list) or not exprs:
+            fail("FEEDBACK_CONDITION_INVALID", path)
+        for expr in exprs:
+            require_nonconstant(expr, path)
+        return
+    if value.get("kind") not in {"field_truthy", "field_compare"}:
         fail("FEEDBACK_CONDITION_INVALID", path)
     if value["kind"] == "field_compare" and ("value_field" in value or value.get("value") in ([], {})):
         fail("FEEDBACK_CONDITION_INVALID", path)

@@ -475,6 +475,20 @@ ATTACHMENT_CONTAINER_KINDS = frozenset({"attachment", "attachments"})
 CONTAINER_GRID_COLUMNS_DEFAULT = 2
 CONTAINER_FIELD_CHILD_KIND = "field"
 CONTAINER_LEAF_KINDS = frozenset({"field", "widget", "button", "label", "text", "i"})
+_LEGACY_NATIVE_ALERT_TOKENS = frozenset({"alert", "alert-info", "alert-warning", "alert-danger"})
+def _normalize_feedback_condition(value: Any) -> Any:
+    """Strip assembler provenance keys the feedback validator does not accept."""
+    if isinstance(value, bool) or value is None:
+        return value
+    if isinstance(value, list):
+        return [_normalize_feedback_condition(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+    return {
+        key: _normalize_feedback_condition(item)
+        for key, item in value.items()
+        if key not in ("semantics", "raw")
+    }
 
 
 def declared_container_columns(node: dict[str, Any]) -> int | None:
@@ -1075,6 +1089,7 @@ def _assemble_ui_contract(
             native_layout_rows,
             fields_by_name,
             layout_type=layout_type,
+            model=model,
             form_subviews=form_subviews,
             component_keys=component_keys,
             container_status=contract["statusContract"]["containerStatus"],
@@ -1983,11 +1998,62 @@ def _direct_field_widgets_from_nodes(
     return widgets
 
 
+def _project_legacy_native_alert(node: dict[str, Any]) -> dict[str, Any] | None:
+    """Project Odoo legacy ``alert`` markup into an explicit feedback node."""
+    if node.get("componentKey"):
+        return None
+    attributes = _dict(node.get("attributes") or node.get("attrs"))
+    classes = {_text(item) for item in _text(attributes.get("class")).split() if item}
+    is_alert = any(item in classes for item in _LEGACY_NATIVE_ALERT_TOKENS)
+    if not is_alert and _text(attributes.get("role")).lower() != "alert":
+        return None
+    # A CSS alert class carries presentation, not business severity; the only
+    # derivable semantics is a generic advisory message.
+    purpose = "advisory"
+    source = None
+    for child in _list(node.get("children")):
+        if not isinstance(child, dict):
+            continue
+        kind = _text(child.get("type") or child.get("kind")).lower()
+        if kind == "field" or (kind in ("text", "div", "span", "label", "p") and _text(child.get("text"))):
+            source = child
+            break
+    if source is None:
+        raise ValueError("legacy native alert has no resolvable content source")
+    source_kind = _text(source.get("type") or source.get("kind")).lower()
+    if source_kind != "field":
+        if source.get("native_locator") and "nativeLocator" not in source:
+            source["nativeLocator"] = source.get("native_locator")
+        if source.get("occurrence_index") and "occurrenceIndex" not in source:
+            source["occurrenceIndex"] = _positive_int(source.get("occurrence_index"), 0)
+    if not _dict(source.get("sourceAuthority")):
+        source["sourceAuthority"] = {
+            "kind": "native_view",
+            "no_business_fact_authority": True,
+        }
+    source_id = _text(source.get("containerId") or source.get("widgetId"))
+    if not source_id:
+        raise ValueError("legacy native alert content source has no identity")
+    modifiers = _dict(node.get("modifiers"))
+    if not isinstance(modifiers.get("invisible"), (dict, bool)):
+        raise ValueError("legacy native alert has no declared visibility condition")
+    if isinstance(modifiers.get("invisible"), dict):
+        modifiers["invisible"] = _normalize_feedback_condition(modifiers["invisible"])
+        node["modifiers"] = modifiers
+    node["componentKey"] = "sc.feedback.message"
+    node["componentConfig"] = {
+        "purpose": purpose,
+        "contentRef": {"containerId": source_id},
+    }
+    return source
+
+
 def _normalize_native_layout_nodes(
     rows: list[dict[str, Any]],
     fields_by_name: dict[str, dict[str, Any]],
     *,
     layout_type: str,
+    model: str = "",
     form_subviews: dict[str, Any] | None = None,
     component_keys: set[str],
     container_status: list[dict[str, Any]],
@@ -2015,6 +2081,7 @@ def _normalize_native_layout_nodes(
             ("container_id", "containerId"),
             ("container_type", "containerType"),
             ("widget_id", "widgetId"),
+            ("source_authority", "sourceAuthority"),
         )
         for alias, canonical in alias_pairs:
             if alias in node and canonical not in node:
@@ -2116,6 +2183,7 @@ def _normalize_native_layout_nodes(
             source_children,
             fields_by_name,
             layout_type=layout_type,
+            model=model,
             form_subviews=form_subviews,
             component_keys=component_keys,
             container_status=container_status,
@@ -2125,6 +2193,7 @@ def _normalize_native_layout_nodes(
             container_ids=used_container_ids,
             root_level=False,
         )
+        _project_legacy_native_alert(node)
         for legacy_key in ("pages", "tabs", "nodes", "items"):
             node.pop(legacy_key, None)
         direct_widgets = _direct_field_widgets_from_nodes(
