@@ -1,3 +1,4 @@
+import { formatDisplayValue } from '../../utils/display';
 import { resolveTypedNativeField } from '../../app/nativeModifierContext';
 import { contractGapError } from '../../app/contract/contractGap';
 import { nativeModifierRelationValue } from '../../app/nativeModifierRelationValue';
@@ -806,6 +807,7 @@ export function one2manyColumnInputType(column: One2ManyColumn): 'text' | 'numbe
 export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknown) {
   const ttype = String(column.ttype || '').trim().toLowerCase();
   if (value === null || value === undefined || (value === false && ttype !== 'boolean')) return '';
+  if (ttype === 'json') return formatDisplayValue(value, { ttype }, { emptyText: '' });
   if (ttype === 'many2one') {
     if (Array.isArray(value)) return value.length > 1 ? String(value[1] ?? '').trim() : '';
     if (typeof value === 'object') {

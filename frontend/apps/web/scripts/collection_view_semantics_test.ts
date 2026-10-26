@@ -572,3 +572,10 @@ assert.throws(() => one2manyColumnsFromSubview({ tree: {
   columns: ['hidden_value'], column_occurrences: [{ name: 'hidden_value', attributes: { force_save: 'maybe' } }],
 } }, () => null), { name: 'ContractGapError' });
 console.log('native hidden force_save declaration and invalid rejection: passed');
+
+// Native JSON cells share the declared readable-value path with root fields.
+const jsonColumn = { name: 'structured_value', label: '结构化值', ttype: 'json', required: false };
+for (const empty of [null, undefined, false, {}, []]) assert.equal(one2manyColumnDisplayValue(jsonColumn, empty), '');
+assert.equal(one2manyColumnDisplayValue(jsonColumn, { amount: 100 }), '{"amount":100}');
+assert.equal(one2manyColumnDisplayValue(jsonColumn, [{ amount: 100 }]), '[{"amount":100}]');
+assert.equal(one2manyColumnDisplayValue(jsonColumn, { zh_CN: '原始结构值' }), '{"zh_CN":"原始结构值"}', 'JSON must not be mistaken for a translated label');
