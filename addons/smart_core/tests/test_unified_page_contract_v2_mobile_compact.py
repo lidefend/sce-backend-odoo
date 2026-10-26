@@ -172,6 +172,8 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         ui = {"views": {"form": {"meta": {"projection_identity": {"source_view_id": 731}}}}}
         self.assertEqual(assembler._ui_source_context({"view_id": 42}, ui)["formViewId"], 731)
         self.assertNotIn("formViewId", assembler._ui_source_context({"view_id": 42}, {}))
+        self.assertEqual(assembler._ui_source_context({"view_ids_by_type": {"form": 732, "list": 42}}, {})["formViewId"], 732)
+        self.assertEqual(assembler._ui_source_context({"view_ids_by_type": {"form": 732}}, ui)["formViewId"], 732)
 
     def test_context_operand_is_bound_for_final_layout_status_without_ast_folding(self):
         modifier = {"kind": "value_truthy", "semantics": "python",

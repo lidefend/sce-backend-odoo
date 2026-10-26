@@ -3362,7 +3362,9 @@ def _ui_source_context(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, 
     if _text(transport.get("domain_raw")):
         out["domainRaw"] = _text(transport.get("domain_raw"))
     form_meta = _dict(_dict(_dict(ui.get("views")).get("form")).get("meta"))
-    form_view_id = _positive_int(_dict(form_meta.get("projection_identity")).get("source_view_id"), 0)
+    form_view_id = _positive_int(_dict(source.get("view_ids_by_type")).get("form"), 0)
+    if not form_view_id:
+        form_view_id = _positive_int(_dict(form_meta.get("projection_identity")).get("source_view_id"), 0)
     if form_view_id:
         out["formViewId"] = form_view_id
     source_meta = _dict(source.get("source_meta"))
