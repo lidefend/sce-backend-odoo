@@ -1162,6 +1162,16 @@
       },
       "note": "child line fields (debit/credit/account_id) resolve via account.move.line comodel metadata, not the parent; diagnostic used parent _fields so type=None is an artifact, not a product defect",
       "remaining": "real browser journey (Stage 3) for page open / line edit / balance / save / readback / permissions"
+    },
+    "fg15_browser_progress_20261026": {
+      "status": "in_progress",
+      "fixed": [
+        "14e7c7f7b nativeModifierRelationValue: empty many2one/x2many (undefined/'') now false/[] instead of ContractGapError",
+        "ef06e0adc resolveNativeOperand: context.get(key) without a default now resolves falsy like Python None"
+      ],
+      "validated": "native_modifier differential 3739 + 2 cases pass; verify.frontend.collection_view_semantics.unit pass",
+      "current_browser_state": "journal entry form still shows generic 加载失败 (data-error-kind=unknown); the two ContractGapErrors are gone and no API request fails (all ok=true), so the remaining failure is a caught JS rendering error not yet surfaced",
+      "next": "instrument the form lifecycle to surface the caught rendering error, then fix and re-probe"
     }
   }
 }
