@@ -1105,6 +1105,33 @@
         ],
         "conclusion": "FG15 journal-entry create failure is frontend widget consumption: account.move declares accounting-specific widgets (account-tax-totals-field, payment, section_and_note_one2many/text, statinfo, autosave_many2many_tags, res_partner_many2one, many2one_barcode, analytic_distribution) with no registered frontend handler, so the form fails closed. Backend modifier AST and field types are already complete. Fix belongs to frontend generic widget adoption/fallback, not smart_core backend."
       }
+    },
+    "fe_accounting_widget_01_stage1": {
+      "status": "stage1_complete",
+      "conclusion": "Declaration chain for account.move journal-entry create is complete through the backend and fails at the frontend semantic/component adoption boundary: the accounting widgets are not declared as dedicated semantics, so they fall through to generic type-directed rendering.",
+      "declaration_chain": {
+        "odoo_native_view": "account.move form view_id=790 arch_len=52224, 101 condition fields, 113 modifier expressions, 16 widget spellings",
+        "modifier_ast": "113/113 expressions normalize; unsupported=0",
+        "field_types": "json/monetary/html/binary/selection/many2one/many2many/one2many/char/text/date/boolean/integer all supported",
+        "component_resolution": "191 fields resolve, 0 errors; all componentKeys in contracts/registry/component.yaml",
+        "frontend_renderers": "6 renderers registered (FormSectionField, ProfessionalBase/BusinessValue/Relation/DetailCollection, PaymentSettlementDetailCollection)"
+      },
+      "accounting_widget_gap": {
+        "widgets_missing_dedicated_semantic": [
+          "account-tax-totals-field",
+          "payment",
+          "section_and_note_one2many",
+          "section_and_note_text",
+          "statinfo",
+          "autosave_many2many_tags",
+          "res_partner_many2one",
+          "many2one_barcode",
+          "analytic_distribution"
+        ],
+        "current_fallback": "resolve to sc.display.text / sc.relation.* / generic type-directed control",
+        "wrong_but_not_hard_fail": "tax_totals and payment binary widgets render as ScFileField upload; statinfo as number input",
+        "fix_owner": "contracts/registry/semantic.yaml + component.yaml + frontend professionalComponentRegistry + a dedicated accounting renderer; no account.move model hardcoding"
+      }
     }
   }
 }
