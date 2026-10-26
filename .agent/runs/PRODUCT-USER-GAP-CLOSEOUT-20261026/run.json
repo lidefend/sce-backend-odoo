@@ -1261,6 +1261,12 @@
       "debit_credit": "借项/贷项 are editable number inputs (default 0); filled 123.45 in both binds correctly",
       "observation": "科目(account_id) relation input placeholder is 可选范围暂不可用 (relation options not queried in line context); other relation columns similarly show 可选内容暂不可用",
       "remaining": "account relation query in line context, balance feedback, save draft + readback, permission denial"
+    },
+    "fg15_account_domain_gap": {
+      "status": "diagnosed_hypothesis",
+      "finding": "account.move.line.account_id domain is the string \"[('deprecated', '=', False), ('account_type', '!=', 'off_balance')]\"; in the line context the relation shows 可选范围暂不可用 (= !domainAnalysis.supported)",
+      "hypothesis": "JSON serialization turns Python False into false; analyzeDynamicRelationDomain's dynamic tuple branch skips only True/False/None (capitalized), so lowercase false is misread as a field dependency and may produce unsupportedRemainder, breaking supported",
+      "next": "inspect the actual domain string delivered in the ui.contract.v2 response for account_id, then fix analyzeDynamicRelationDomain to treat lowercase true/false/none as literals"
     }
   }
 }
