@@ -60,6 +60,11 @@ ORIGIN_PROJECTED = "projected"
 # the status rule would become unreachable.
 SEMANTIC_WIDGET_HINTS = frozenset({
     "monetary", "percentage", "percentpie", "float_time", "statusbar", "badge",
+    # Accounting-only display carriers: these native widgets put a computed
+    # summary into an otherwise editable-typed field (binary/integer). Their
+    # meaning is read-only display, so they must survive canonicalisation or
+    # they would silently render as a file upload / number input.
+    "account-tax-totals-field", "payment", "statinfo",
 })
 
 # Canonical name of the one-time compatibility signal.  Naming it here keeps the

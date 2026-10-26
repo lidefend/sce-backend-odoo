@@ -109,7 +109,11 @@
     "frontend/apps/web/src/api/onchange.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts",
-    "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts"
+    "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
+    "addons/smart_core/core/contract_runtime/semantic_resolver.py",
+    "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+    "addons/smart_core/tests/test_contract_runtime_semantic_resolver.py",
+    "contracts/registry/semantic.yaml"
   ],
   "environment": {
     "kind": "runtime",

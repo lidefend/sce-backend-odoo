@@ -49,6 +49,11 @@ class ComponentKeyBaselineTest(unittest.TestCase):
         ({"type": "float"}, "float_time", "sc.value.duration"),
         ({"type": "selection"}, "statusbar", "sc.display.status"),
         ({"type": "selection"}, "badge", "sc.display.status"),
+        # accounting display carriers resolve to the readable-value component
+        # instead of an editable binary/number control
+        ({"type": "binary"}, "account-tax-totals-field", "sc.display.text"),
+        ({"type": "binary"}, "payment", "sc.display.text"),
+        ({"type": "integer"}, "statinfo", "sc.display.text"),
         # relations
         ({"type": "many2one", "relation": "res.currency"}, "select", "sc.relation.many2one"),
         ({"type": "many2many", "relation": "x.related"}, "table", "sc.relation.many2many"),
@@ -252,6 +257,9 @@ class PaymentEntitySemanticsTest(unittest.TestCase):
         # generic display token would make the rule unreachable.
         self.assertEqual("statusbar", resolver.semantic_widget_type("statusbar", "display"))
         self.assertEqual("monetary", resolver.semantic_widget_type("monetary", "number"))
+        self.assertEqual("account-tax-totals-field", resolver.semantic_widget_type("account-tax-totals-field", "binary"))
+        self.assertEqual("payment", resolver.semantic_widget_type("payment", "binary"))
+        self.assertEqual("statinfo", resolver.semantic_widget_type("statinfo", "number"))
         self.assertEqual("select", resolver.semantic_widget_type("", "select"))
 
     def test_domain_contract_carries_no_hand_written_semantic(self) -> None:
