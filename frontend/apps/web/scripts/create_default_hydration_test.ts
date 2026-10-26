@@ -592,3 +592,29 @@ await siblingInitialization;
 assert.equal(waitingChild.fieldRows('lines').length, 1, 'sibling draft edits invalidate pending new-row initialization');
 assert.equal(waitingChild.fieldRows('lines')[0]!.values.quantity, 9);
 console.log('child initialization rejects sibling draft drift: passed');
+
+// Server defaults and onchange keep labels for display; ORM writes require IDs.
+const relationWriteColumns = [
+  { name: 'name', label: 'Name', ttype: 'char' },
+  { name: 'currency_id', label: 'Currency', ttype: 'many2one', forceSave: true, readonly: true },
+];
+const relationWrite = useOne2manyRuntime({
+ model: () => 'x.parent', recordId: () => 0, originalValues: () => ({ lines: [42] }), parentValues: () => ({}),
+ onchangeLinePatches: () => [], resolveColumns: () => relationWriteColumns, resolvePrimaryColumn: () => 'name',
+ resolveRelationOptions: () => [], markFieldChanged: () => {}, loadDefaults: async () => ({ currency_id: [6, 'CNY'] }),
+});
+await relationWrite.addRow('lines');
+const relationWriteRow=relationWrite.visibleRows('lines').find(row => row.isNew)!;
+assert.deepEqual((relationWrite.buildCommandValue('lines','write')[0]![2] as Record<string,unknown>).currency_id,6);
+assert.deepEqual(relationWriteRow.values.currency_id,[6,'CNY'],'serializing must not mutate the displayed relation');
+assert.deepEqual((relationWrite.buildCommandValue('lines','onchange')[0]![2] as Record<string,unknown>).currency_id,[6,'CNY']);
+relationWrite.initRows('lines',[42]);
+relationWrite.prepareOnchangeRows('lines',[[1,42,{currency_id:[7,'USD']}]])();
+assert.deepEqual(relationWrite.buildCommandValue('lines','write'),[[1,42,{currency_id:7}]]);
+relationWrite.prepareOnchangeRows('lines',[[1,42,{currency_id:false}]])();
+assert.deepEqual(relationWrite.buildCommandValue('lines','write'),[[1,42,{currency_id:false}]]);
+for (const bad of [[6,'CNY','extra'],[0,'None'],[6,{label:'CNY'}],{},'invalid',1.2]) {
+ relationWrite.fieldRows('lines')[0]!.values.currency_id=bad;
+ assert.throws(()=>relationWrite.buildCommandValue('lines','write'),{name:'ContractGapError'});
+}
+console.log('child default/onchange many2one write identity and invalid-carrier refusal: passed');

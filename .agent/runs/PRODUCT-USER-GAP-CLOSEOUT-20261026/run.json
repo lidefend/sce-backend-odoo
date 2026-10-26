@@ -1561,6 +1561,13 @@
       "candidate": "ea780d72addb82d6c5346fb956c738ac1033c23f",
       "result": "L1, real engine87, identity91, strict and primitive/basis/container guards PASS; independent noS1/S2. Browser emits create after prior validation block; strict P4 rejects missing readonly journal and native action context before transport. No persisted write.",
       "next": "P4 permit native readonly journal omission and exact observed action context; preserve actual journal/company/currency readback and cleanup."
+    },
+    "journal_child_write_relation": {
+      "layer": "P0 generic one2many write transport",
+      "head": "f8e113ed9c799c5561efd59a550d00e01a12f001",
+      "reason": "Real create HTTP500 SQL currency_id ARRAY[6,CNY]. Display tuple survives default/onchange, while edited account is already normalized. Normalize declared many2one values at write boundary without changing display/onchange carrier or inventing values.",
+      "evidence": "journal-save-context-browser.log; journal-create-backend-diagnostic.log; cleanup passed no owned draft retained",
+      "validation": "Regression through useOne2manyRuntime; L1/L2 and strict; then bounded journal save. No module upgrade, backend behavior or broad matrix."
     }
   }
 }

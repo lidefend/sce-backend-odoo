@@ -758,7 +758,17 @@ export function buildOne2manyCommandValue(
           return columns.some(column => column.name === key
             && (column.forceSave === true
               || !resolveOne2manyRowColumnBehavior(column, row.values, parentValues, row.modifierPatches || {}, columns).readonly));
-        }).map((key) => [key, row.values?.[key]])),
+        }).map((key) => {
+          const value = row.values?.[key];
+          const column = columns?.find(candidate => candidate.name === key);
+          if (mode !== 'write' || column?.ttype !== 'many2one') return [key, value];
+          // Labels are a read/onchange carrier, never an ORM foreign key.
+          if (value === false || value === null || value === undefined || value === '') return [key, false];
+          const id = Array.isArray(value) && value.length === 2 && typeof value[1] === 'string' ? value[0] : value;
+          if (typeof id === 'number' && Number.isSafeInteger(id) && id > 0) return [key, id];
+          throw contractGapError({ kind: 'contract_defect', missing: `one2many.${key}.write_relation_identity`,
+            requiredDeclarationLayer: 'P0:smart_core:field_descriptor' }, '明细关系值缺少合法记录身份，无法保存');
+        })),
     })),
     mode,
   });
