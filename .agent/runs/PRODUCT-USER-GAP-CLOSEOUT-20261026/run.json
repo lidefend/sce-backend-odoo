@@ -1281,6 +1281,18 @@
       "fix": "treat an unsupported dynamic domain as server-evaluated, not as unreadable: pass the raw domain expression to the Odoo relation query (evaluated in the record context) instead of locally reducing it; keep fail-closed only for truly malformed domains",
       "layer": "P0 smart_core relation query handler + frontend relationDescriptor/one2manyUtils",
       "scope_note": "this is a Stage 3 usability refinement; the core FG15 create-page-open is already resolved"
+    },
+    "fg15_dynamic_domain_code_plan": {
+      "status": "code_plan_recorded",
+      "frontend": [
+        "one2manyUtils.ts: relationReadable = Boolean(relation && relationEntry(descriptor)?.canRead === true) -- drop domainAnalysis.supported gate",
+        "dynamicRelationDomainFromDescriptor: for !analysis.supported, return a server-evaluated marker instead of [['id','=',-1]]",
+        "relationDomainFromDescriptor: when marker, forward the raw domain string and a serverDomain flag to listContractFormRecords"
+      ],
+      "backend": [
+        "listContractFormRecords / relation search intent: accept serverDomain + raw domain expression and evaluate it via Odoo safe_eval in the record context (company_id, parent.company_id) before search"
+      ],
+      "note": "this is the last bounded Stage 3 refinement; core FG15 page-open is resolved"
     }
   }
 }
