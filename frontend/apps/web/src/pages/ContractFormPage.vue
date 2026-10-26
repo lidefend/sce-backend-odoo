@@ -725,7 +725,7 @@ import {
   buildWorkflowTransitions,
   buildRouteContractContext,
   buildContractFormPolicyContext,
-  resolveBusinessCategoryContext,
+  resolveBusinessCategoryContext, resolveContractFormReadContext,
   resolveNativeStructureAuthority,
   resolveRuntimeRoleCode,
   type FormContractReadiness,
@@ -899,6 +899,11 @@ const {
 const onchangeModifiersPatch = ref<Record<string, Record<string, unknown>>>({});
 const onchangeWarnings = ref<Array<{ title?: string; message?: string; reason_code?: string }>>([]);
 const onchangeLinePatches = ref<OnchangeLinePatch[]>([]);
+function one2manyParentDraftRequest() {
+  return { model: model.value, res_id: recordId.value, view_id: route.query.view_id ?? route.query.viewId,
+    values: buildOnchangeRequestPayload({ fields: canonicalFormFields.value, formData,
+      originalValues: originalValues.value, recordId: recordId.value, buildOne2manyValue: buildOne2manyCommandValue }) };
+}
 const {
   defaultsPending: one2manyDefaultsPending,
   projectModifierValues: projectOne2manyModifierValues,
@@ -927,7 +932,9 @@ const {
   parentValues: (fieldName) => bindNativeRowParentContext(
     resolveContractV2ModifierValues(v2ContractStore.value, formData), (effectiveFieldDescriptor(fieldName) as Record<string, unknown> | undefined)?.context,
   ),
-  loadDefaults: (fieldName) => loadOne2manyCreateDefaults(fieldName),
+  loadDefaults: (fieldName) => loadOne2manyCreateDefaults(fieldName, one2manyParentDraftRequest()),
+  createDraftIdentity: (fieldName) => ({ request: one2manyParentDraftRequest(),
+    context: resolveContractFormReadContext(v2ContractStore.value), fieldContext: (effectiveFieldDescriptor(fieldName) as Record<string, unknown> | undefined)?.context }),
   createScope: () => v2ContractStore.value,
   onCreateError: (error) => applyPageStatusEvent({ kind: 'status', transaction: 'runAction', status: 'error', errorMessage: error instanceof Error ? error.message : '明细默认值加载失败' }),
   onchangeLinePatches: () => onchangeLinePatches.value as Array<Record<string, unknown>>,

@@ -181,10 +181,18 @@ const store = ref({
   snapshot: { dataContract: { dataMeta: { sourceContext: { context: { company_id: 8, allowed_company_ids: [8] } } } } },
 });
 class Denied extends Error { status = 403; reasonCode = 'PERMISSION_DENIED'; }
+const childInitializationRequests: any[] = [];
+let childInitializationSideEffects: Record<string, unknown> = {};
+let childInitializationPatch: Record<string, unknown> = { name: 'Native name', internal_note: 'Native computed' };
 const fields = scope.run(() => useRecordRelationshipFields({
   ...guarded, ApiError: Denied, formData, v2ContractStore: store,
+  fetchCreateDefaults: async () => ({ record: { name: 'Default name' } }),
+  initializeChild: async (request: unknown) => { childInitializationRequests.push(request); return { patch: childInitializationPatch, ...childInitializationSideEffects }; },
+  one2manySubviewPolicies: () => ({}), one2manyCanCreateFromPolicies: () => true,
+  relationFieldDescriptors: ref({ 'x.line': { name: { type: 'char' }, internal_note: { type: 'char' } } }),
+
   fieldType: (descriptor: { type: string }) => descriptor.type,
-  relationModel: () => 'x.owner', relationEntry: () => ({ canRead: true }),
+  relationModel: (descriptor: { relation?: string }) => descriptor?.relation || 'x.owner', relationEntry: () => ({ canRead: true }),
   normalizeRelationIds: (value: unknown) => Array.isArray(value) ? value.map(Number) : [],
   relationReadFields: () => ['id', 'display_name'],
   readContractFormRecord: (request: { fields: string[] }) => { requestedReadFields.push(request.fields); const read = deferred<{ records: Array<Record<string, unknown>> }>(); reads.push(read); return read.promise; },
@@ -195,6 +203,23 @@ const fields = scope.run(() => useRecordRelationshipFields({
   nativeFieldSubviewFromTree: () => null, selectOne2manySubview: () => ({ tree: { columns: ['name'] }, form: { layout: [{ type: 'field', name: 'internal_note', fieldInfo: { type: 'char' } }] } }),
   one2manyColumnsFromSubview: () => [{ name: 'name' }], isWritableFieldVisible: () => true,
 }))!;
+const initializedValues = await fields.loadOne2manyCreateDefaults('line_ids', {
+  model: 'x.parent', res_id: null, view_id: 17, values: { owner_id: 2 },
+});
+equal(initializedValues, { name: 'Native name', internal_note: 'Native computed' }, 'loader consumes computed native values before returning');
+equal(childInitializationRequests[0].model, 'x.parent', 'parent model remains request authority');
+equal(childInitializationRequests[0].view_id, 17, 'selected parent view is preserved');
+equal(childInitializationRequests[0].child_initialization,
+  { field: 'line_ids', fields: ['name', 'internal_note'], values: { name: 'Default name' } }, 'only declared child fields and authoritative defaults initialize');
+childInitializationPatch = { unexpected: 'Not declared' };
+await assert.rejects(fields.loadOne2manyCreateDefaults('line_ids', { model: 'x.parent', res_id: null, values: {} }), /返回字段与声明不一致/);
+childInitializationPatch = { name: 'Native name' };
+for (const sideEffects of [{ warnings: [{ message: 'Native warning' }] }, { modifiers_patch: { name: { readonly: true } } }, { line_patches: [{ field: 'nested' }] }]) {
+  childInitializationSideEffects = sideEffects;
+  await assert.rejects(fields.loadOne2manyCreateDefaults('line_ids', { model: 'x.parent', res_id: null, values: {} }), /尚未接入/);
+}
+childInitializationSideEffects = {};
+
 guarded.clearRelationRuntime();
 const labelOld = fields.hydrateSelectedRelationOptions();
 guarded.clearRelationRuntime();

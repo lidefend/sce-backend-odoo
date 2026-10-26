@@ -35,6 +35,7 @@ export function useOne2manyRuntime(params: {
   markFieldChanged: (fieldName: string) => void;
   loadDefaults?: (fieldName: string) => Promise<Record<string, unknown>>;
   createScope?: () => unknown;
+  createDraftIdentity?: (fieldName: string) => unknown;
   onCreateError?: (error: unknown) => void;
 }) {
   const dataColumns = (name: string) => params.resolveDataColumns?.(name) ?? params.resolveColumns(name);
@@ -90,11 +91,16 @@ export function useOne2manyRuntime(params: {
     const scope = params.createScope?.();
     const model = params.model();
     const recordId = params.recordId();
+    const draftIdentity = () => JSON.stringify(params.createDraftIdentity
+      ? params.createDraftIdentity(name) : { parent: params.parentValues(name), rows: rowsByField });
+    let parentSnapshot: string | undefined;
     const ownsRequest = () => requests.isCurrent(name, revision) && params.model() === model
-      && params.recordId() === recordId && params.createScope?.() === scope;
+      && params.recordId() === recordId && params.createScope?.() === scope
+      && (parentSnapshot === undefined || draftIdentity() === parentSnapshot);
     loadingDefaults[name] = true;
     try {
       if (!initialized[name]) initRows(name, params.originalValues()[name]);
+      parentSnapshot = draftIdentity();
       const defaults = params.loadDefaults ? await params.loadDefaults(name) : {};
       if (!ownsRequest()) return;
       appendOne2manyDraftRow({

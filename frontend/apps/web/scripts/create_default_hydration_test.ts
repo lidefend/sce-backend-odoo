@@ -561,3 +561,34 @@ for (const constraint of ['readonly', 'invisible']) {
   assert.throws(() => inheritedChild.effectiveColumn('lines', inheritedRow, invalidAncestorColumn), { name: 'ContractGapError' });
 }
 console.log('form-only ancestor defects cannot hide behind true local constraints: passed');
+
+const parentFrame = { company_id: 1 };
+let finishInitialization!: (value: Record<string, unknown>) => void;
+const waitingChild = useOne2manyRuntime({ model: () => 'x.parent', recordId: () => 0,
+  originalValues: () => ({}), parentValues: () => parentFrame,
+  createDraftIdentity: () => ({ values: { lines: waitingChild.buildCommandValue('lines', 'onchange') }, context: parentFrame }),
+  onchangeLinePatches: () => [], resolveColumns: () => columns, resolvePrimaryColumn: () => 'name',
+  resolveRelationOptions: () => [], markFieldChanged: () => {},
+  loadDefaults: () => new Promise(resolve => { finishInitialization = resolve; }),
+});
+const staleInitialization = waitingChild.addRow('lines');
+assert.equal(waitingChild.defaultsPending.value, true);
+parentFrame.company_id = 2;
+finishInitialization({ state: 'draft', quantity: 1 });
+await staleInitialization;
+assert.equal(waitingChild.fieldRows('lines').length, 0, 'parent draft changes invalidate child initialization');
+assert.equal(waitingChild.defaultsPending.value, false);
+const currentInitialization = waitingChild.addRow('lines');
+finishInitialization({ state: 'draft', quantity: 2 });
+await currentInitialization;
+assert.equal(waitingChild.fieldRows('lines')[0]!.values.quantity, 2, 'current parent initialization appends only after resolution');
+console.log('child initialization waits and rejects parent draft drift: passed');
+
+const siblingInitialization = waitingChild.addRow('lines');
+const sibling = waitingChild.fieldRows('lines')[0]!;
+waitingChild.setRowField('lines', sibling.key, columns[3]!, 9);
+finishInitialization({ state: 'draft', quantity: 3 });
+await siblingInitialization;
+assert.equal(waitingChild.fieldRows('lines').length, 1, 'sibling draft edits invalidate pending new-row initialization');
+assert.equal(waitingChild.fieldRows('lines')[0]!.values.quantity, 9);
+console.log('child initialization rejects sibling draft drift: passed');

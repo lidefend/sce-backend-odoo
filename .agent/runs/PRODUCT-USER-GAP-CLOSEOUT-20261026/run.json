@@ -1454,6 +1454,23 @@
         "served_candidate": "112f80f408a31d412340c834dbc7317187c6e4a9",
         "scope_boundary": "No save/readback/cleanup/required-coverage browser proof, no business writes/reset/mainline/remote deploy"
       }
+    },
+    "native_child_init_scope": {
+      "head": "ee17d0ee542393e8f19f3565d5a463af0e0e6d9f",
+      "layer": "P0 smart_core native onchange child initialization; generic frontend consumption only",
+      "first_step": "Rollback-only existing accounting ORM fixture: authorized parent view sub-spec plus inverse parent draft, native child onchange empty changed_fields, assert noncompany parent currency and no persisted moves.",
+      "environment": "existing sc-local-dev/sc_dev_demo exact filter and registered filestore, local.dev.test transaction fixture; no new environment/reset",
+      "validation": "L1 then exact single ORM test; preserve failure before implementation; extend boundary tests then frontend stale/default tests and browser",
+      "exclusions": "No currency inference/model hardcode in product; no saves/deploy/mainline.",
+      "native_evidence": "child-init-native-orm-corrected.log passes1 ordinary accounting test: journal company currency, invoice parent foreign currency. First2 failures were incorrect journal inheritance assumption, source diagnostic preserved child-init-native-source.log; no assertions removed.",
+      "protocol": "Parent model/view/record stays top-level API authority; child_initialization carries relation field, requested child fields and defaults. Server resolves comodel/inverse from ORM and authorized parent sub-spec, checks read/create access, invokes native child onchange([], spec). Frontend awaits before row append, rejects parent-draft drift.",
+      "pre_runtime_result": {
+        "l1_l2": "child-init-final-checks.log passed: backend26, feedback16/schema31, default55 plus child assertions, lifecycle27 shared-life +7guard, strict and probe syntax",
+        "orm": "child-init-final-orm.log passed1 exact test ordinary accounting role; native and handler journal/invoice currency + existingparent no persistence; transaction fixture rollback",
+        "review": "two S2 fixed: reject unconsumed warnings/modifiers/line patches; exact parent request/context identity includes sibling commands. final independent no remaining S0-S2",
+        "failures": "preserved wrong native journal currency assumption first2 ORM failures/source diagnostic; reviewed-checks descriptor.context typing failure repaired without weakening assertions",
+        "limits": "native field context supplied by existing descriptor/read context; unresolved expressions still refused. Child warning/modifier/line patch initialization currently explicit unsupported error, no silent drop."
+      }
     }
   }
 }

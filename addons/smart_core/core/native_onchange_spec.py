@@ -125,3 +125,39 @@ def normalize_native_onchange_values(model, values):
                     commands.append(command)
             output[name] = commands
     return output
+
+
+def initialize_native_child(parent, parent_values, parent_spec, block, parent_id=0):
+    """Initialize a new child using the authorized parent view and ORM inverse."""
+    if type(block) is not dict or set(block) != {'field', 'fields', 'values'}:
+        raise NativeOnchangeSpecError('invalid child initialization request')
+    name, names, values = block['field'], block['fields'], block['values']
+    if type(name) is not str or type(names) is not list or not names or any(type(n) is not str for n in names):
+        raise NativeOnchangeSpecError('invalid child field selection')
+    field = parent._fields.get(name)
+    if not field or field.type != 'one2many' or name not in parent_spec:
+        raise NativeOnchangeSpecError('child relation absent from authorized parent view')
+    child = parent.env[field.comodel_name]
+    child.check_access_rights('read')
+    child.check_access_rights('create')
+    inverse = field.inverse_name
+    inverse_field = child._fields.get(inverse)
+    if not inverse_field or inverse_field.type != 'many2one' or inverse_field.comodel_name != parent._name:
+        raise NativeOnchangeSpecError('invalid inverse relation')
+    allowed = parent_spec[name].get('fields', {})
+    if len(set(names)) != len(names) or any(n not in allowed or n in ('id', inverse) for n in names):
+        raise NativeOnchangeSpecError('child fields outside authorized subview')
+    if type(values) is not dict or any(n not in names for n in values):
+        raise NativeOnchangeSpecError('child defaults outside requested fields')
+    if any(n not in parent_spec and n != 'id' for n in parent_values):
+        raise NativeOnchangeSpecError('parent draft fields outside authorized view')
+    if 'id' in parent_values and parent_values['id'] not in (False, parent_id):
+        raise NativeOnchangeSpecError('parent identity mismatch')
+    parent.check_field_access_rights('read', list(parent_values))
+    child.check_field_access_rights('read', [*names, inverse])
+    parent_draft = dict(parent_values)
+    parent_draft.pop('id', None)
+    if parent_id:
+        parent_draft['id'] = parent_id
+    child_values = {**values, inverse: parent_draft}
+    return child, child.onchange(child_values, [], {n: allowed[n] for n in names})

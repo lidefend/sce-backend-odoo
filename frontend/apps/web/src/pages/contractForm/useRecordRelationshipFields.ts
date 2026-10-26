@@ -1,3 +1,4 @@
+import { triggerOnchange } from '../../api/onchange';
 import { one2manyDataColumnsFromSubview } from './one2manyUtils';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FieldDescriptor } from '@sc/schema';
@@ -176,7 +177,9 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     return one2manyDraftSummary(one2manyFieldRows(name));
   }
 
-  async function loadOne2manyCreateDefaults(name: string): Promise<Record<string, unknown>> {
+  async function loadOne2manyCreateDefaults(name: string, parent: {
+    model: string; res_id: number | null; view_id?: unknown; values: Record<string, unknown>;
+  }): Promise<Record<string, unknown>> {
     const model = one2manyRelationModel(name);
     if (!model || !one2manyCanCreate(name)) throw new Error('当前明细未开放新增');
     const fields = [...new Set(one2manyDataColumns(name).map((column: One2ManyColumn) => column.name))];
@@ -185,13 +188,26 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     if (fieldContext != null && (typeof fieldContext !== 'object' || Array.isArray(fieldContext))) {
       throw new Error('明细默认值上下文尚未解析');
     }
-    const result = await defaultContractFormRecord({ model, fields,
-      context: { ...resolveContractFormReadContext(v2ContractStore.value), ...(fieldContext as Record<string, unknown> | undefined) },
-    });
+    const context = JSON.parse(JSON.stringify({ ...resolveContractFormReadContext(v2ContractStore.value),
+      ...(fieldContext as Record<string, unknown> | undefined) }));
+    const parentSnapshot = JSON.parse(JSON.stringify(parent));
+    const result = await (dependencies.fetchCreateDefaults || defaultContractFormRecord)({ model, fields, context });
     if (!result?.record || typeof result.record !== 'object' || Array.isArray(result.record)) {
       throw new Error('未能取得明细默认值，请重试');
     }
-    return Object.fromEntries(Object.entries(result.record).filter(([name]) => fields.includes(name)));
+    const defaults = Object.fromEntries(Object.entries(result.record).filter(([name]) => fields.includes(name)));
+    const initialized = await (dependencies.initializeChild || triggerOnchange)({
+      ...parentSnapshot, changed_fields: [], context,
+      child_initialization: { field: name, fields, values: defaults },
+    });
+    if (!initialized?.patch || typeof initialized.patch !== 'object' || Array.isArray(initialized.patch)
+      || Object.keys(initialized.patch).some(field => !fields.includes(field))) {
+      throw new Error('明细初始化返回字段与声明不一致');
+    }
+    if (Object.keys(initialized.modifiers_patch || {}).length || initialized.line_patches?.length || initialized.warnings?.length) {
+      throw new Error('明细初始化包含尚未接入的联动提示或修饰声明');
+    }
+    return { ...defaults, ...initialized.patch };
   }
 
   async function hydrateOne2manyRows(name: string, ownsRequest = captureRelationRequest(`one2many:${name}`)) {

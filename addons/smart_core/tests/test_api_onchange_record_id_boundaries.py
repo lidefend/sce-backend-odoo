@@ -388,6 +388,72 @@ class TestApiOnchangeRecordIdBoundaries(unittest.TestCase):
             native.assert_not_called()
             self.assertEqual(result["error"]["reason_code"], "ONCHANGE_SPEC_INVALID")
 
+    def _child_initialization_case(self):
+        parent = _OnchangeModel()
+        parent._name = 'x.model'
+        child = _LineModel()
+        child._fields = {**child._fields, 'parent_id': _Field('many2one', 'x.model')}
+        parent._fields = {'line_ids': _Field('one2many', 'x.line')}
+        parent._fields['line_ids'].inverse_name = 'parent_id'
+        parent.env = _Env({'x.line': child})
+        params = {'model': 'x.model', 'values': {}, 'changed_fields': [],
+                  'child_initialization': {'field': 'line_ids', 'fields': ['name'], 'values': {'name': ''}}}
+        return parent, child, params
+
+    def test_child_initialization_uses_server_inverse_and_empty_changed_fields(self):
+        parent, child, params = self._child_initialization_case()
+        with patch.object(child, 'onchange', create=True, return_value={'value': {'name': 'Native'}}) as native:
+            result = self.module.ApiOnchangeHandler(env=_Env({'x.model': parent}), params=params).handle()
+        self.assertTrue(result['ok'], result)
+        native.assert_called_once_with({'name': '', 'parent_id': {}}, [], {'name': {}})
+        self.assertEqual(result['data']['patch'], {'name': 'Native'})
+
+    def test_child_initialization_rejects_invalid_scope(self):
+        for block in [
+            {'field': 'missing', 'fields': ['name'], 'values': {}},
+            {'field': 'line_ids', 'fields': ['unknown'], 'values': {}},
+            {'field': 'line_ids', 'fields': ['parent_id'], 'values': {}},
+            {'field': 'line_ids', 'fields': ['name'], 'values': {'parent_id': 9}},
+            {'field': 'line_ids', 'fields': ['name', 'name'], 'values': {}},
+        ]:
+            parent, child, params = self._child_initialization_case()
+            params['child_initialization'] = block
+            with patch.object(child, 'onchange', create=True) as native:
+                result = self.module.ApiOnchangeHandler(env=_Env({'x.model': parent}), params=params).handle()
+            native.assert_not_called()
+            self.assertEqual(result['error']['reason_code'], 'ONCHANGE_SPEC_INVALID', result)
+
+    def test_child_initialization_rejects_parent_identity_and_nonempty_changed_input(self):
+        for override in [{'values': {'id': 9}}, {'changed_fields': ['unknown']}, {'changed_fields': None}]:
+            parent, child, params = self._child_initialization_case()
+            parent._fields['id'] = _Field('integer')
+            params.update(override)
+            with patch.object(child, 'onchange', create=True) as native:
+                result = self.module.ApiOnchangeHandler(env=_Env({'x.model': parent}), params=params).handle()
+            native.assert_not_called()
+            self.assertEqual(result['error']['reason_code'], 'ONCHANGE_SPEC_INVALID', result)
+
+    def test_child_initialization_denied_inverse_field_stops_native_call(self):
+        parent, child, params = self._child_initialization_case()
+        def check(mode, names):
+            if 'parent_id' in names:
+                raise self.module.AccessError('inverse denied')
+            return names
+        with patch.object(child, 'check_field_access_rights', side_effect=check), patch.object(child, 'onchange', create=True) as native:
+            result = self.module.ApiOnchangeHandler(env=_Env({'x.model': parent}), params=params).handle()
+        native.assert_not_called()
+        self.assertEqual(result['error']['reason_code'], 'ONCHANGE_ACCESS_DENIED')
+
+    def test_child_initialization_checks_create_permission(self):
+        parent, child, params = self._child_initialization_case()
+        def check(mode):
+            if mode == 'create':
+                raise self.module.AccessError('denied')
+        with patch.object(child, 'check_access_rights', side_effect=check), patch.object(child, 'onchange', create=True) as native:
+            result = self.module.ApiOnchangeHandler(env=_Env({'x.model': parent}), params=params).handle()
+        native.assert_not_called()
+        self.assertEqual(result['error']['reason_code'], 'ONCHANGE_ACCESS_DENIED')
+
     def test_native_called_once_with_full_view_spec(self):
         model = _ManualOnchangeModel()
         handler = self.module.ApiOnchangeHandler(env=_Env({"x.manual": model}), params={

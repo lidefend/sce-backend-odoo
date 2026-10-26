@@ -180,7 +180,13 @@ try {
     const beforeCount = Number(await counter.getAttribute('data-row-count'));
     assert(Number.isSafeInteger(beforeCount) && beforeCount >= 0);
     await page.screenshot({path: `${root}/before-line.png`});
-    const [lineResponse] = await Promise.all([
+    const [childResponse, lineResponse] = await Promise.all([
+      page.waitForResponse(response => {
+        let body; try { body = response.request().postDataJSON(); } catch { return false; }
+        const request = body?.params?.intent ? body.params : body;
+        return request?.intent === 'api.onchange' && request.params?.model === model && !request.params?.res_id
+          && request.params?.child_initialization?.field === 'line_ids';
+      }),
       page.waitForResponse(response => {
         let body; try { body = response.request().postDataJSON(); } catch { return false; }
         const request = body?.params?.intent ? body.params : body;
@@ -190,8 +196,18 @@ try {
       }),
       collection.getByRole('button', {name: /新增|添加/}).first().click(),
     ]);
+    const childInitialization = await capture(childResponse);
+    report.onchanges.push(childInitialization);
+    assert(childInitialization?.httpStatus === 200 && childInitialization.ok === true, 'native child initialization failed');
+    const currency = childInitialization.data?.patch?.currency_id;
+    assert(Array.isArray(currency) && Number.isSafeInteger(currency[0]) && currency[0] > 0, 'native child currency missing');
     const line = await capture(lineResponse);
     report.onchanges.push(line);
+    const created = line.params.values.line_ids.filter(command => command[0] === 0);
+    assert.equal(created.length, 1, 'fixed journal probe must contain exactly one new row');
+    assert.deepEqual(created[0][2].currency_id, currency, 'next parent request must carry initialized child currency');
+    item.initializedCurrencyId = currency[0];
+    item.virtualKey = created[0][1];
     assert(line?.httpStatus === 200 && line.ok === true, 'new-line onchange failed');
     await page.waitForFunction(({expected}) => Number(document.querySelector('[data-field-name="line_ids"] [data-row-count]')?.getAttribute('data-row-count')) === expected,
       {expected: beforeCount + 1});

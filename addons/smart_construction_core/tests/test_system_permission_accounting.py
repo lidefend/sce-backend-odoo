@@ -280,3 +280,53 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
             self.assertEqual(row['label'], expected)
             self.assertEqual(row['action']['label'], expected)
             self.assertEqual(row['action']['name'], 'action_activate_currency')
+
+    def test_native_child_initialization_uses_parent_draft(self):
+        from odoo.addons.smart_core.core.native_onchange_spec import (
+            build_native_onchange_spec, normalize_native_onchange_values,
+        )
+        from odoo.addons.smart_core.handlers.api_onchange import ApiOnchangeHandler
+        user = self._subject('accounting_user')
+        parent = self.env['account.move'].with_user(user)
+        child = parent.env['account.move.line']
+        self.assertFalse(child.env.su)
+        currency = self.env.ref('base.EUR')
+        if currency == self.env.company.currency_id:
+            currency = self.env.ref('base.USD')
+        currency.active = True
+        self.assertNotEqual(currency, self.env.company.currency_id)
+        self.journal.currency_id = currency
+        specification = build_native_onchange_spec(parent)['line_ids']['fields']
+        before = parent.search_count([])
+        # Native journal entries use company currency unless the line supplies
+        # one; invoices inherit the move currency. Neither rule belongs in JS.
+        for move_type, expected in [('entry', self.env.company.currency_id), ('out_invoice', currency)]:
+            values = {'move_id': {'move_type': move_type, 'journal_id': self.journal.id,
+                                 'company_id': self.env.company.id, 'currency_id': currency.id}}
+            result = child.onchange(values, [], specification)
+            patch = normalize_native_onchange_values(child, result['value'])
+            self.assertEqual(patch['currency_id'][0], expected.id, patch)
+            self.assertEqual(patch['company_id'][0], self.env.company.id, patch)
+            response = ApiOnchangeHandler(parent.env, payload={'params': {
+                'model': 'account.move', 'values': values['move_id'], 'changed_fields': [],
+                'child_initialization': {'field': 'line_ids', 'fields': ['currency_id', 'company_id'], 'values': {}},
+            }}).handle()
+            self.assertTrue(response.get('ok'), response)
+            self.assertEqual(response['data']['patch']['currency_id'][0], expected.id, response)
+            self.assertEqual(response['data']['patch']['company_id'][0], self.env.company.id, response)
+
+        self.assertEqual(parent.search_count([]), before)
+        existing = parent.create({'ref': 'Synthetic child-init origin', 'journal_id': self.journal.id})
+        persisted_currency = existing.currency_id.id
+        result = ApiOnchangeHandler(parent.env, payload={'params': {
+            'model': 'account.move', 'res_id': existing.id,
+            'values': {'ref': 'Unsaved parent edit', 'move_type': 'entry', 'journal_id': self.journal.id,
+                       'company_id': self.env.company.id, 'currency_id': currency.id}, 'changed_fields': [],
+            'child_initialization': {'field': 'line_ids', 'fields': ['currency_id', 'company_id'], 'values': {}},
+        }}).handle()
+        self.assertTrue(result.get('ok'), result)
+        self.assertEqual(result['data']['patch']['company_id'][0], self.env.company.id)
+        existing.invalidate_recordset()
+        self.assertEqual(existing.ref, 'Synthetic child-init origin')
+        self.assertEqual(existing.currency_id.id, persisted_currency)
+        self.assertFalse(existing.line_ids)
