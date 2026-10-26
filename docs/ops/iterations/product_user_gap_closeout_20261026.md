@@ -1764,3 +1764,42 @@ ab502f16e首轮浏览器失败：已过账line_ids正常切换为只读表格，
 不能用会计模型前端特判或原始JSON代替用户语义。FG15保持开放。
 只读角色及UI点击过账未验收；本轮seed原生过账不作为浏览器办理证明。
 没有主线合并或远端日常服务器部署，只有本地候选刷新及上述专用Demo样本新增。
+
+
+## 保存文案与通用结构化值消费收口（2026-10-27）
+
+本轮按层提交：P0 f97b7a208让one2manyColumnDisplayValue复用既有formatDisplayValue的
+JSON只读口径；P1 95a10c764在account.move既有form_governance声明primary_action_label=保存，
+原生视图安全通道保留声明。没有前端会计模型特判、没有权限/过账状态变更。
+通用JSON显示支持空对象/数组与普通JSON对象，语言键不误当多语言标签；不因此声明
+analytic_distribution专用组件已实现。
+
+全量lint发现候选已有10处错误，原日志native-values-lint.log保留。30fd311e4仅清除
+未使用绑定和测试any，LINK数据先复制再移除id，保留输入所有权和失败断言。
+完整lint最终exit0（StatusPanel既有1个warning保留），严格类型exit0；四组受影响既有
+测试通过。native-values-static.log及lint-regressions.log含明细语义、3739例原生表达式
+差分和三组分别8/20/41项定向用例。native-values-orm.log真实20个post-tests，0失败0错误，
+覆盖草稿/已过账最终save action label、只读和跨公司拒绝；stats行的22不是本次执行用例数。
+本轮策略测试25JS+11Python通过，L1通过。P4同步已有journal-save按钮定位，未扩写权限。
+
+744be8dc9首轮浏览器纠正样本判断：已过账55的两条分录实际由原生逻辑自动带入
+analytic_distribution={"1":100}，并不是空对象。错误的“空样本”断言失败保留于
+native-values-browser.log。没有调整Demo绕过失败；最终探针按实际原始值核对既有通用
+JSON显示，报告逐行记录representation=generic_json_text、nativeAnalyticWidgetAccepted=false。
+之前的[object Object]根因确定为消费层对象字符串化，但通用JSON文本不是分析分配用户界面的验收。
+
+最终候选`23e06062e965275da976a965a375dd4d3a90efe8`：
+- native-values-final-browser.log退出0，六列表及两态详情通过；草稿10/已过账55均显示
+  “保存”，posted不出现“过账”；四行科目借贷及原始数据回读一致，errors0/blocked0。
+- native-values-save-browser.log退出0：唯一拥有标识的草稿64、明细59/60经真实浏览器
+  创建/回读/刷新，普通用户ORM清理提交，再由独立进程verify_absent确认不存在；
+  最终report.passed、browserPassed、cleanup.passed/absent均true。原有10/55保留，无过账操作。
+- 证据目录journal-role-browser/23e06062e965275da976a965a375dd4d3a90efe8/，以及
+  journal-save-browser/同SHA/P4-JOURNAL-同SHA-e0aa8f05e36b470fb5349e1d7ac05ab2/。
+  独立代码、只读原始报告及最终保存闭环原始证据复核均通过，verify_absent确认64及59/60不存在。
+
+关闭“已过账仍标保存草稿”的具体文案缺口及通用JSON被显示为[object Object]的消费缺陷。
+FG15仍开放：原生分析分配需按声明提供有权限的账户名称、比例、编辑/只读行为，并保留
+原始值、拒绝无声明兜底；通用JSON文本不算该组件完成。只读会计Demo/页面及UI过账矩阵
+也未完成。没有重建、迁移或模块升级；仅本地候选刷新及受管临时草稿创建后清理。
+未合并主线、未部署远端日常服务器，未宣称完整产品或整批验收完成。

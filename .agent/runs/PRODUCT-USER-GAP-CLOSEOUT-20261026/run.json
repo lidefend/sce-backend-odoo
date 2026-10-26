@@ -166,7 +166,7 @@
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Validate JSON display and journal save declaration, real ORM draft/posted contracts and exact candidate browser; record remaining analytic widget limitations.",
+  "next_exact_step": "Implement native analytic_distribution widget declaration/consumption including authorized account names, percentages and safe editing/readonly behavior; preserve raw JSON values and fail closed on missing declarations. Then seed explicit accounting_read demo and verify state/action matrix. Do not treat generic JSON text as analytic widget completion.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1810,7 +1810,7 @@
         "addons/smart_construction_core/tests/test_system_permission_accounting.py",
         "scripts/verify/local_dev_workspace_feedback.mjs"
       ],
-      "status": "browser_sample_assumption_corrected_pending",
+      "status": "save_label_and_generic_json_display_verified_native_widget_open",
       "validation": "L1+collection_view_semantics PASS (includes3739 native differential cases and8/20/41 test groups); journal policy25JS+11Python PASS; actual accounting class20 post-tests0fail0error; final full frontend lint exit0 with existing StatusPanel warning and strict types exit0; four affected regression targets PASS.",
       "limits": "GenericJSON display consumes existing P0 rule only, not native analytic-widget acceptance. Real sample NONEMPTY. Preserve account IDs/raw values; next native widget needs authorized account names/percentage semantics, not raw JSON acceptance. Browser report explicitly nativeAnalyticWidgetAccepted=false.",
       "lint_blockers": {
@@ -1825,9 +1825,13 @@
         "fix": "replace test any with explicit types/unknown checks; remove unused lifecycle binding; copy then strip persisted LINK id without mutation. Preserve assertions.",
         "validation": "rerun affected existing tests, lint and strict types"
       },
-      "review": "review_takeover no blockers after journal-save selector sync and minimal lint corrections. Original lint failure retained. No permissions relaxed.",
+      "review": "review_takeover source, readonly report and final owned save/cleanup raw report PASS. Independent verify_absent confirms64 and59/60 absent, errors0blocked0. Native analytic widget explicitly unaccepted.",
       "runtime_plan": "Registered sc-local-dev/sc_dev_demo namespace ns_000000000002; read-only draft10/posted55 first, then existing owned single-draft create/readback/cleanup/independent absence via write lease. No posted55 mutation, no migrations.",
-      "failure": "native-values-browser.log at744be8dc9: empty analytic sample assumption failed; actual posted55 both lines auto-populated {\"1\":100}. Label already保存, errors0. GenericJSON text visible; originalfailure preserved."
+      "failure": "native-values-browser.log at744be8dc9: empty analytic sample assumption failed; actual posted55 both lines auto-populated {\"1\":100}. Label already保存, errors0. GenericJSON text visible; originalfailure preserved.",
+      "candidate": "23e06062e965275da976a965a375dd4d3a90efe8",
+      "browser": "native-values-final-browser.log exit0 PASS6 and draft10/posted55 verified. Both save labels保存; account/debit/credit and original line values unchanged; errors0 blocked0. Actual distributions {\"1\":100} shown by existing generic JSON display; structuredValues explicitly nativeAnalyticWidgetAcceptedfalse.",
+      "save_browser": "native-values-save-browser.log exit0 PASS: owned record64 lines59/60 create/readback/reload, ORM cleanup committed, independent verify_absent passedtrue absenttrue. No posting. Original10/55 retained.",
+      "evidence": "journal-role-browser/23e06062e965275da976a965a375dd4d3a90efe8/; journal-save-browser/23e06062e965275da976a965a375dd4d3a90efe8/P4-JOURNAL-23e06062e965275da976a965a375dd4d3a90efe8-e0aa8f05e36b470fb5349e1d7ac05ab2/"
     }
   }
 }
