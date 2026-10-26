@@ -121,7 +121,8 @@
     "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordFormFieldSchemas.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
-    "frontend/apps/web/scripts/adopted_form_validation_identity_test.ts"
+    "frontend/apps/web/scripts/adopted_form_validation_identity_test.ts",
+    "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -129,7 +130,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Implement governed native child initialization through existing onchange/default_get authority: bind parent view relation/comodel/inverse/context and parent draft, validate native behavior in ORM, then await in child add with stale-response protection. Parent onchange alone returns no child computed patch even with correct missingness. Keep FG15/save/readback/cleanup pending; root init await/empty semantics and real adopted coverage remain open.",
+  "next_exact_step": "Validate selected form identity fix through contact and journal draft browser checks; then record evidence. Save/readback/product acceptance remain pending.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",

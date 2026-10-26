@@ -309,6 +309,11 @@ h.context.requestOnchange = async request => { selectedView = request.view_id; r
 h.changedFieldSet.add('name');
 await h.api.runOnchangeRoundtrip();
 assert.equal(selectedView, '17');
+h.context.resolveOnchangeViewId = () => 731;
+h.changedFieldSet.add('name');
+await h.api.runOnchangeRoundtrip();
+assert.equal(selectedView, 731);
+delete h.context.resolveOnchangeViewId;
 delete h.context.route.query.view_id;
 console.log('formstate selected native view transport: passed');
 

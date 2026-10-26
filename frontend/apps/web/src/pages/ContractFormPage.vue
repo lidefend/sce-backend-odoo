@@ -289,6 +289,7 @@
   </LayoutShell>
 </template>
 <script setup lang="ts">
+import { resolveContractV2SourceContext } from '../app/contracts/v2/store';
 import ScInlineState from '../components/design-system/ScInlineState.vue';
 import { showNativeActionNotification } from '../components/design-system/scActionNotification';
 import { useNativeActionFeedback, type ActionFeedbackOwner } from './contractForm/useNativeActionFeedback';
@@ -899,8 +900,11 @@ const {
 const onchangeModifiersPatch = ref<Record<string, Record<string, unknown>>>({});
 const onchangeWarnings = ref<Array<{ title?: string; message?: string; reason_code?: string }>>([]);
 const onchangeLinePatches = ref<OnchangeLinePatch[]>([]);
+function resolveOnchangeViewId() {
+  return resolveContractV2SourceContext(v2ContractStore.value).formViewId ?? route.query.view_id ?? route.query.viewId;
+}
 function one2manyParentDraftRequest() {
-  return { model: model.value, res_id: recordId.value, view_id: route.query.view_id ?? route.query.viewId,
+  return { model: model.value, res_id: recordId.value, view_id: resolveOnchangeViewId(),
     values: buildOnchangeRequestPayload({ fields: canonicalFormFields.value, formData,
       originalValues: originalValues.value, recordId: recordId.value, buildOne2manyValue: buildOne2manyCommandValue }) };
 }
@@ -1910,6 +1914,7 @@ function canonicalFieldWritable(name: string): boolean | undefined {
   return matches.some((field) => !field.readonly && !field.disabled);
 }
 recordFormStateRuntime = useRecordFormState({
+  resolveOnchangeViewId,
   pendingInlineCreateFields,
   formFields: canonicalFormFields, model, recordId, rights, formData, originalValues, submissionFeedback, relationKeywords,
   invalidatedRelationKeywords, clearedDynamicRelationFields, relationQueryTimers, relationOptions,

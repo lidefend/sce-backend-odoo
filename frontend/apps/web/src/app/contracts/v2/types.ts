@@ -472,6 +472,7 @@ export interface ContractV2FieldGroups {
 }
 
 export interface ContractV2SourceContext {
+  formViewId?: number;
   context?: ContractV2Dictionary;
   domain?: unknown[];
   contextRaw?: string;

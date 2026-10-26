@@ -118,6 +118,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "formViewId": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
         "context": { "type": "object" },
         "domain": { "type": "array" },
         "contextRaw": { "type": "string" },

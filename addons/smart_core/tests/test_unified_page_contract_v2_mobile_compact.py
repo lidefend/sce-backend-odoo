@@ -168,6 +168,11 @@ def _native_view_fixture_arch(relative_path: str, record_id: str) -> str:
 
 class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
 
+    def test_source_context_preserves_selected_form_identity(self):
+        ui = {"views": {"form": {"meta": {"projection_identity": {"source_view_id": 731}}}}}
+        self.assertEqual(assembler._ui_source_context({"view_id": 42}, ui)["formViewId"], 731)
+        self.assertNotIn("formViewId", assembler._ui_source_context({"view_id": 42}, {}))
+
     def test_context_operand_is_bound_for_final_layout_status_without_ast_folding(self):
         modifier = {"kind": "value_truthy", "semantics": "python",
                     "value_expr": {"kind": "context_get", "key": "lock", "default": True}}

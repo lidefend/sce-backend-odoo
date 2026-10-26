@@ -395,3 +395,14 @@ assert.throws(() => requiredSchemas.nativeRequiredEditableFieldNames(),
 requiredTree.value = [];
 assert.equal(requiredSchemas.nativeRequiredEditableFieldNames(), null, 'no native tree explicitly selects legacy validation authority');
 console.log('[native-required-coverage] PASS cases=7');
+
+// Selected action form identity survives decoding/normalization; malformed IDs fail closed.
+const { resolveContractV2SourceContext } = await import('../src/app/contracts/v2/store');
+const selectedForm = structuredClone(snapshot);
+selectedForm.dataContract.dataMeta.sourceContext = { formViewId: 731 };
+assert.equal(resolveContractV2SourceContext(createContractV2Store(decodeContractV2Snapshot(selectedForm))).formViewId, 731);
+for (const formViewId of [0, -1, 1.5, '731', null, Number.MAX_SAFE_INTEGER + 1]) {
+  selectedForm.dataContract.dataMeta.sourceContext = { formViewId } as never;
+  assert.throws(() => decodeContractV2Snapshot(selectedForm));
+}
+console.log('[contract_v2_occurrence_authority_test] PASS selected form identity count=7');

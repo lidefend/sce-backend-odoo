@@ -406,6 +406,7 @@ export function resolveContractV2SourceContext(store: ContractV2NormalizedStore 
     ? renderProfileRaw
     : '';
   return {
+    ...(source.formViewId !== undefined ? { formViewId: source.formViewId as number } : {}),
     ...(Object.keys(context).length ? { context } : {}),
     ...(domain.length ? { domain } : {}),
     ...(contextRaw ? { contextRaw } : {}),
