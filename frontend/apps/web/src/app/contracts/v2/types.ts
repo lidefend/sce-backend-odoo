@@ -225,6 +225,7 @@ export interface ContractV2FieldDescriptor {
   relationField?: string;
   selection?: Array<[string, string]>;
   domain?: unknown;
+  domainExpression?: unknown;
   context?: unknown;
   relationEntry?: ContractV2Dictionary;
   widgetOptions?: ContractV2Dictionary;
@@ -294,6 +295,7 @@ export interface ContractV2Container {
   required?: unknown;
   columnInvisible?: unknown;
   domain?: unknown;
+  domainExpression?: unknown;
   context?: unknown;
   options?: unknown;
   visible?: boolean;

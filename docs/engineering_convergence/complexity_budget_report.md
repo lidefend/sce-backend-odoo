@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4965`
+- Scanned files: `4967`
 - Files requiring split plan: `72`
 - Files above warning threshold: `143`
 
@@ -14,9 +14,9 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- |
 | 7088 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 5921 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 5561 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 5565 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
-| 5261 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
+| 5273 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 4991 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4634 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4564 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
@@ -173,8 +173,8 @@ Generated from repository source files. This report is informational during the 
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
 | 942 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
+| 918 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
-| 917 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
 | 910 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
@@ -239,9 +239,9 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- | --- |
 | 7088 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 5921 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 5561 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 5565 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
-| 5261 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
+| 5273 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 4991 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4634 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4564 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |

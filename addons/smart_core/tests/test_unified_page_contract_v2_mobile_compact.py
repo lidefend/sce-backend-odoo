@@ -168,6 +168,18 @@ def _native_view_fixture_arch(relative_path: str, record_id: str) -> str:
 
 class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
 
+    def test_native_relation_domain_wire_and_rejection(self):
+        from odoo.addons.smart_core.core.native_relation_domain import compile_relation_domain
+        fixture = json.loads((REPO_ROOT / "frontend/apps/web/scripts/fixtures/native_relation_domain.json").read_text())
+        self.assertEqual(compile_relation_domain(fixture["raw"]), fixture["expression"])
+        self.assertEqual(compile_relation_domain(fixture["parentRaw"]), fixture["parentExpression"])
+        widget = assembler._field_widget({"name": "account_id", "type": "many2one", "relation": "x.account", "domain": fixture["raw"]}, layout_type="form")
+        self.assertEqual(widget["fieldDescriptor"]["domain_expression"], fixture["expression"])
+        for raw in ["evil()", "record.env", "__import__('os')", "x[0]", "[('id', '=', 1e999)]"]:
+            self.assertEqual(compile_relation_domain(raw)["kind"], "unsupported")
+        self.assertEqual(compile_relation_domain("[('id', '=', -1)]")["tree"]["kind"], "sequence")
+        self.assertEqual(compile_relation_domain("[('id', '=', parent.project_id)]")["dependencies"], ["parent.project_id"])
+
     def test_source_context_preserves_selected_form_identity(self):
         ui = {"views": {"form": {"meta": {"projection_identity": {"source_view_id": 731}}}}}
         self.assertEqual(assembler._ui_source_context({"view_id": 42}, ui)["formViewId"], 731)

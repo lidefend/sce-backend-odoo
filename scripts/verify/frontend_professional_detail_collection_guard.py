@@ -282,7 +282,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection relation failure does not expose retry")
     if "if (!analysis.supported) throw contractGapError(" not in relation_descriptor:
         failures.append("unsupported detail relation domains do not fail closed")
-    if "rowKey: string" not in relation_types or "rowValues[normalized] ?? formData[normalized]" not in relation_runtime:
+    if "rowKey: string" not in relation_types or "rowValues[normalized]" not in relation_runtime:
         failures.append("detail collection relation domain is not bound to the current row and parent form")
     if "one2manyCellError" not in relation_types or 'role="alert"' not in cell_editor:
         failures.append("detail collection cell validation is not associated with its control")

@@ -10,6 +10,7 @@ from typing import Any
 
 _logger = logging.getLogger(__name__)
 
+from .native_relation_domain import compile_relation_domain
 from .native_modifier_comparison import compare_python_modifier
 from .native_modifier_context import evaluate_context_modifier, native_modifier_values, native_field_value
 
@@ -1800,6 +1801,9 @@ def _view_column_schema_by_name(ui: dict[str, Any], view_type: str) -> dict[str,
 
 
 def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
+    field = deepcopy(field)
+    if isinstance(field.get("domain"), str) and field["domain"].strip():
+        field["domain_expression"] = compile_relation_domain(field["domain"])
     assert_field_body_usage(field, str(field.get("name") or "field"), hidden=statically_hidden(field))
     field_name = _stable_id(field.get("name"), "field")
     native_locator = _text(field.get("native_locator"))

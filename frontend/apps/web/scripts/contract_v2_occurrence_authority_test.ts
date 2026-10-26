@@ -406,3 +406,22 @@ for (const formViewId of [0, -1, 1.5, '731', null, Number.MAX_SAFE_INTEGER + 1])
   assert.throws(() => decodeContractV2Snapshot(selectedForm));
 }
 console.log('[contract_v2_occurrence_authority_test] PASS selected form identity count=7');
+
+const domainFixture = (await import('./fixtures/native_relation_domain.json')).default;
+const domainSnapshot = structuredClone(snapshot);
+function attachDomain(nodes: Array<Record<string, unknown>>): boolean {
+  for (const node of nodes) {
+    const widgets = node.widgetList as Array<Record<string, unknown>> | undefined;
+    if (widgets?.length) {
+      Object.assign(widgets[0].fieldDescriptor as object, { domain: domainFixture.raw, domain_expression: domainFixture.expression });
+      return true;
+    }
+    if (Array.isArray(node.children) && attachDomain(node.children)) return true;
+  }
+  return false;
+}
+assert(attachDomain(domainSnapshot.layoutContract.containerTree as unknown as Array<Record<string, unknown>>));
+const { resolveContractV2FormFieldMap } = await import('../src/app/contracts/v2/store');
+const domainFields = resolveContractV2FormFieldMap(createContractV2Store(decodeContractV2Snapshot(domainSnapshot)));
+assert(Object.values(domainFields).some(field => JSON.stringify((field as Record<string, unknown>).domain_expression) === JSON.stringify(domainFixture.expression)));
+console.log('[contract_v2_occurrence_authority_test] compiled domain normalized store PASS');

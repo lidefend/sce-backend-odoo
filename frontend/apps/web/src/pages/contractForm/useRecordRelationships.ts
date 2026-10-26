@@ -577,6 +577,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     queryOne2manyColumnOptions,
   } = createOne2manyColumnOptionsRuntime({
     ...dependencies,
+    parentFieldDescriptor: (name) => effectiveFieldDescriptor(name),
     ensureRelationFieldDescriptors,
     one2manyRelationFieldDescriptor,
   });

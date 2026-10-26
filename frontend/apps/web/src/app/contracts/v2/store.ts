@@ -473,6 +473,7 @@ export function resolveContractV2FieldDescriptorMap(
       ...(selectionPairs(config.selection ?? descriptor.selection)
         ? { selection: selectionPairs(config.selection ?? descriptor.selection) }
         : {}),
+      ...(descriptor.domain_expression !== undefined ? { domainExpression: descriptor.domain_expression } : {}),
       ...(Object.prototype.hasOwnProperty.call(config, 'domain') ? { domain: config.domain }
         : Object.prototype.hasOwnProperty.call(descriptor, 'domain') ? { domain: descriptor.domain } : {}),
       ...(Object.prototype.hasOwnProperty.call(config, 'context') ? { context: config.context }
@@ -508,6 +509,7 @@ export function toContractV2FormFieldDescriptor(row: ContractV2FieldDescriptor):
     ...(row.subview ? { subview: row.subview } : {}),
     ...(row.filename ? { filename: row.filename } : {}),
     ...(row.domain !== undefined ? { domain: row.domain } : {}),
+    ...(row.domainExpression !== undefined ? { domain_expression: row.domainExpression } : {}),
     ...(row.context !== undefined ? { context: row.context } : {}),
   };
 }

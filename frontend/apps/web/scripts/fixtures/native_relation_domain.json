@@ -1,0 +1,326 @@
+{
+  "raw": "(company_id and ['|', ('company_id', '=', False), ('company_id', 'parent_of', [company_id])] or ['|', ('company_id', '=', False), ('company_id', 'parent_of', [''])]) + ([('deprecated', '=', False), ('account_type', '!=', 'off_balance')])",
+  "expression": {
+    "version": 1,
+    "raw": "(company_id and ['|', ('company_id', '=', False), ('company_id', 'parent_of', [company_id])] or ['|', ('company_id', '=', False), ('company_id', 'parent_of', [''])]) + ([('deprecated', '=', False), ('account_type', '!=', 'off_balance')])",
+    "dependencies": [
+      "company_id"
+    ],
+    "tree": {
+      "kind": "concat",
+      "items": [
+        {
+          "kind": "or",
+          "items": [
+            {
+              "kind": "and",
+              "items": [
+                {
+                  "kind": "field",
+                  "name": "company_id"
+                },
+                {
+                  "kind": "sequence",
+                  "items": [
+                    {
+                      "kind": "literal",
+                      "value": "|"
+                    },
+                    {
+                      "kind": "tuple",
+                      "items": [
+                        {
+                          "kind": "literal",
+                          "value": "company_id"
+                        },
+                        {
+                          "kind": "literal",
+                          "value": "="
+                        },
+                        {
+                          "kind": "literal",
+                          "value": false
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "tuple",
+                      "items": [
+                        {
+                          "kind": "literal",
+                          "value": "company_id"
+                        },
+                        {
+                          "kind": "literal",
+                          "value": "parent_of"
+                        },
+                        {
+                          "kind": "sequence",
+                          "items": [
+                            {
+                              "kind": "field",
+                              "name": "company_id"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "sequence",
+              "items": [
+                {
+                  "kind": "literal",
+                  "value": "|"
+                },
+                {
+                  "kind": "tuple",
+                  "items": [
+                    {
+                      "kind": "literal",
+                      "value": "company_id"
+                    },
+                    {
+                      "kind": "literal",
+                      "value": "="
+                    },
+                    {
+                      "kind": "literal",
+                      "value": false
+                    }
+                  ]
+                },
+                {
+                  "kind": "tuple",
+                  "items": [
+                    {
+                      "kind": "literal",
+                      "value": "company_id"
+                    },
+                    {
+                      "kind": "literal",
+                      "value": "parent_of"
+                    },
+                    {
+                      "kind": "sequence",
+                      "items": [
+                        {
+                          "kind": "literal",
+                          "value": ""
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "sequence",
+          "items": [
+            {
+              "kind": "tuple",
+              "items": [
+                {
+                  "kind": "literal",
+                  "value": "deprecated"
+                },
+                {
+                  "kind": "literal",
+                  "value": "="
+                },
+                {
+                  "kind": "literal",
+                  "value": false
+                }
+              ]
+            },
+            {
+              "kind": "tuple",
+              "items": [
+                {
+                  "kind": "literal",
+                  "value": "account_type"
+                },
+                {
+                  "kind": "literal",
+                  "value": "!="
+                },
+                {
+                  "kind": "literal",
+                  "value": "off_balance"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "parentRaw": "(parent.company_id and ['|', ('company_id', '=', False), ('company_id', 'parent_of', [parent.company_id])] or ['|', ('company_id', '=', False), ('company_id', 'parent_of', [''])]) + ([('deprecated', '=', False), ('account_type', '!=', 'off_balance')])",
+  "parentExpression": {
+    "version": 1,
+    "raw": "(parent.company_id and ['|', ('company_id', '=', False), ('company_id', 'parent_of', [parent.company_id])] or ['|', ('company_id', '=', False), ('company_id', 'parent_of', [''])]) + ([('deprecated', '=', False), ('account_type', '!=', 'off_balance')])",
+    "dependencies": [
+      "parent.company_id"
+    ],
+    "tree": {
+      "kind": "concat",
+      "items": [
+        {
+          "kind": "or",
+          "items": [
+            {
+              "kind": "and",
+              "items": [
+                {
+                  "kind": "field",
+                  "name": "parent.company_id"
+                },
+                {
+                  "kind": "sequence",
+                  "items": [
+                    {
+                      "kind": "literal",
+                      "value": "|"
+                    },
+                    {
+                      "kind": "tuple",
+                      "items": [
+                        {
+                          "kind": "literal",
+                          "value": "company_id"
+                        },
+                        {
+                          "kind": "literal",
+                          "value": "="
+                        },
+                        {
+                          "kind": "literal",
+                          "value": false
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "tuple",
+                      "items": [
+                        {
+                          "kind": "literal",
+                          "value": "company_id"
+                        },
+                        {
+                          "kind": "literal",
+                          "value": "parent_of"
+                        },
+                        {
+                          "kind": "sequence",
+                          "items": [
+                            {
+                              "kind": "field",
+                              "name": "parent.company_id"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "sequence",
+              "items": [
+                {
+                  "kind": "literal",
+                  "value": "|"
+                },
+                {
+                  "kind": "tuple",
+                  "items": [
+                    {
+                      "kind": "literal",
+                      "value": "company_id"
+                    },
+                    {
+                      "kind": "literal",
+                      "value": "="
+                    },
+                    {
+                      "kind": "literal",
+                      "value": false
+                    }
+                  ]
+                },
+                {
+                  "kind": "tuple",
+                  "items": [
+                    {
+                      "kind": "literal",
+                      "value": "company_id"
+                    },
+                    {
+                      "kind": "literal",
+                      "value": "parent_of"
+                    },
+                    {
+                      "kind": "sequence",
+                      "items": [
+                        {
+                          "kind": "literal",
+                          "value": ""
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "sequence",
+          "items": [
+            {
+              "kind": "tuple",
+              "items": [
+                {
+                  "kind": "literal",
+                  "value": "deprecated"
+                },
+                {
+                  "kind": "literal",
+                  "value": "="
+                },
+                {
+                  "kind": "literal",
+                  "value": false
+                }
+              ]
+            },
+            {
+              "kind": "tuple",
+              "items": [
+                {
+                  "kind": "literal",
+                  "value": "account_type"
+                },
+                {
+                  "kind": "literal",
+                  "value": "!="
+                },
+                {
+                  "kind": "literal",
+                  "value": "off_balance"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

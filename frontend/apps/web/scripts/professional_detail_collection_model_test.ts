@@ -282,3 +282,63 @@ const queryRuntime = createOne2manyColumnOptionsRuntime({
 await assert.rejects(queryRuntime.queryOne2manyColumnOptions('lines', 'draft-1', { name: 'account_id' }), { name: 'ContractGapError' });
 assert.equal(networkCalls, 0, 'unsupported field domains must not become unfiltered queries');
 console.log('[professional_detail_collection] unsupported domain transport refusal PASS');
+
+const nativeFixture = (await import('./fixtures/native_relation_domain.json')).default;
+const { evaluateRelationDomainExpression } = await import('../src/pages/contractForm/nativeRelationDomain');
+const expectedDomain = (company: number | false) => ['|', ['company_id', '=', false], ['company_id', 'parent_of', [company || '']], ['deprecated', '=', false], ['account_type', '!=', 'off_balance']];
+for (const company of [1, 7, false] as const) {
+  assert.deepEqual(evaluateRelationDomainExpression(nativeFixture.expression, nativeFixture.raw, () => company), expectedDomain(company));
+}
+assert.throws(() => evaluateRelationDomainExpression(nativeFixture.expression, '[]', () => 1), { name: 'ContractGapError' });
+assert.throws(() => evaluateRelationDomainExpression(nativeFixture.expression, nativeFixture.raw, () => undefined), { name: 'ContractGapError' });
+const badTree = structuredClone(nativeFixture.expression);
+(badTree.tree as Record<string, unknown>).kind = 'execute';
+assert.throws(() => evaluateRelationDomainExpression(badTree, nativeFixture.raw, () => 1), { name: 'ContractGapError' });
+assert.deepEqual(analyzeDynamicRelationDomain({ domain: nativeFixture.raw, domain_expression: nativeFixture.expression } as never).dependencies, ['company_id']);
+console.log('[professional_detail_collection] native domain expression PASS cases=7');
+
+const fieldUtils = await import('../src/pages/contractForm/fieldUtils');
+let queriedDomain: unknown;
+let queryCount = 0;
+let inlineValues: Record<string, unknown> = { company_id: [7, 'Synthetic company'] };
+let compiledRaw = nativeFixture.raw;
+let compiledExpression: unknown = nativeFixture.expression;
+const positiveRuntime = createOne2manyColumnOptionsRuntime({
+  ...relationFunctions, ...fieldUtils,
+  relationModelFromDescriptor: relationFunctions.relationModel,
+  ensureRelationFieldDescriptors: async () => {},
+  one2manyRelationFieldDescriptor: (_field: string, column: string) => column === 'company_id'
+    ? { type: 'many2one', relation: 'res.company' }
+    : { type: 'many2one', relation: 'x.account', domain: compiledRaw, domain_expression: compiledExpression,
+      relation_entry: { can_read: true, options_limit: 80, options_search_limit: 20 } },
+  one2manyFieldRows: () => [{ key: 'draft-1', values: inlineValues }],
+  parentFieldDescriptor: () => ({ type: 'many2one', relation: 'res.company' }),
+  formData: { company_id: [1, 'Synthetic parent company'] }, route: { query: {} }, pickContractNavQuery: () => ({}),
+  fetchRelationOptionsFromRuntime: async (request: { fetchOptions: (search: string, limit: number) => Promise<unknown> }) => request.fetchOptions('', 80),
+  listContractFormRecords: async (request: { domain: unknown }) => { queryCount++; queriedDomain = request.domain; return { records: [{ id: 11, display_name: 'Synthetic account' }] }; },
+} as never);
+assert.deepEqual(await positiveRuntime.queryOne2manyColumnOptions('lines', 'draft-1', { name: 'account_id' }), [{ id: 11, label: 'Synthetic account' }]);
+assert.deepEqual(queriedDomain, expectedDomain(7), 'row company must win and tuple label must not enter domain');
+console.log('[professional_detail_collection] compiled domain actual query PASS');
+
+let normalizedMissing = false;
+assert.throws(() => dynamicRelationDomainFromDescriptor({
+  descriptor: { domain: nativeFixture.raw, domain_expression: nativeFixture.expression } as never,
+  resolveDependencyValue: () => undefined,
+  normalizeDependencyValue: () => { normalizedMissing = true; return false; }, currentFieldValue: () => false,
+}), { name: 'ContractGapError' });
+assert.equal(normalizedMissing, false, 'missing raw fact must not normalize to false/empty');
+
+const tupleMixed = { version: 1, raw: 'mixed', dependencies: [], tree: { kind: 'concat', items: [{ kind: 'tuple', items: [] }, { kind: 'sequence', items: [] }] } };
+assert.throws(() => evaluateRelationDomainExpression(tupleMixed, 'mixed', () => false), { name: 'ContractGapError' });
+for (const value of [[undefined], [{}], [Number.POSITIVE_INFINITY]]) {
+  assert.throws(() => evaluateRelationDomainExpression(nativeFixture.expression, nativeFixture.raw, () => value), { name: 'ContractGapError' });
+}
+
+inlineValues = {};
+await assert.rejects(positiveRuntime.queryOne2manyColumnOptions('lines', 'draft-1', { name: 'account_id' }), { name: 'ContractGapError' });
+assert.equal(queryCount, 1, 'missing row company cannot inherit parent or issue another query');
+compiledRaw = nativeFixture.parentRaw; compiledExpression = nativeFixture.parentExpression;
+await positiveRuntime.queryOne2manyColumnOptions('lines', 'draft-1', { name: 'account_id' });
+assert.deepEqual(queriedDomain, expectedDomain(1), 'explicit parent.company_id consumes the parent field type');
+console.log('[professional_detail_collection] row/parent missingness and type PASS');

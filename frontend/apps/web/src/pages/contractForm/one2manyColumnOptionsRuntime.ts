@@ -1,3 +1,4 @@
+import { contractGapError } from '../../app/contract/contractGap';
 import { one2manyRelationDependencyKey } from '../../components/template/one2manyRelationQuery';
 import type { RelationOption } from './types';
 
@@ -15,6 +16,7 @@ export type One2manyColumnOptionsDependencies = {
   fieldType: typeof import('./fieldUtils').fieldType;
   normalizeRelationIds: typeof import('./fieldUtils').normalizeRelationIds;
   formData: Record<string, unknown>;
+  parentFieldDescriptor?: (name: string) => import('@sc/schema').FieldDescriptor | undefined;
   route: Pick<import('vue-router').RouteLocationNormalizedLoaded, 'query'>;
   pickContractNavQuery: typeof import('../../app/navigationContext').pickContractNavQuery;
   listContractFormRecords: typeof import('../../app/runtime/contractFormDataRuntime').listContractFormRecords;
@@ -74,10 +76,15 @@ export function createOne2manyColumnOptionsRuntime(
       resolveDependencyValue: (dependencyName: string) => {
         const normalized = String(dependencyName || '').trim();
         if (normalized.startsWith('parent.')) return formData[normalized.slice('parent.'.length)];
-        return rowValues[normalized] ?? formData[normalized];
+        return rowValues[normalized];
       },
       normalizeDependencyValue: (dependencyName: string, value: unknown) => {
-        const dependency = one2manyRelationFieldDescriptor(fieldName, dependencyName);
+        const dependency = dependencyName.startsWith('parent.')
+          ? dependencies.parentFieldDescriptor?.(dependencyName.slice('parent.'.length))
+          : one2manyRelationFieldDescriptor(fieldName, dependencyName);
+        if (!dependency && Array.isArray(value)) throw contractGapError({ kind: 'contract_defect', missing: `relation.domain_dependency_type.${dependencyName}`,
+          requiredDeclarationLayer: 'P0:smart_core:relation_domain' }, '关系筛选依赖类型未提供，无法加载可选内容');
+        if (fieldType(dependency) === 'many2one' && Array.isArray(value)) return normalizeRelationIds(value)[0] ?? false;
         return ['many2many', 'one2many'].includes(fieldType(dependency))
           ? normalizeRelationIds(value)
           : value;
@@ -125,7 +132,7 @@ export function createOne2manyColumnOptionsRuntime(
       const normalized = String(dependencyName || '').trim();
       return normalized.startsWith('parent.')
         ? formData[normalized.slice('parent.'.length)]
-        : rowValues[normalized] ?? formData[normalized];
+        : rowValues[normalized];
     };
     return one2manyRelationDependencyKey({
       relation,

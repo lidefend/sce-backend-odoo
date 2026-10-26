@@ -1,3 +1,4 @@
+import { evaluateRelationDomainExpression, relationDomainExpression } from './nativeRelationDomain';
 import type { FieldDescriptor } from '@sc/schema';
 import { contractGapError, requireDeclaredNumber } from '../../app/contract/contractGap';
 import { toPositiveInt } from '../../app/contractRuntime';
@@ -280,6 +281,12 @@ function literalRelationDomainValue(match: RegExpExecArray) {
 
 export function analyzeDynamicRelationDomain(descriptor?: FieldDescriptor) {
   const raw = (descriptor as Record<string, unknown> | undefined)?.domain;
+  const expression = (descriptor as Record<string, unknown> | undefined)?.domain_expression;
+  if (expression !== undefined) {
+    if (expression && typeof expression === 'object' && (expression as Record<string, unknown>).kind === 'unsupported') return { supported: false, dependencies: [] as string[] };
+    const parsed = relationDomainExpression(expression, raw);
+    return { supported: true, dependencies: parsed.dependencies };
+  }
   if (raw === undefined || raw === null || raw === '' || raw === false) {
     return { supported: true, dependencies: [] as string[] };
   }
@@ -342,6 +349,14 @@ export function dynamicRelationDomainFromDescriptor(params: {
   currentFieldValue: (fieldName: string) => unknown;
 }) {
   const raw = (params.descriptor as Record<string, unknown> | undefined)?.domain;
+  const expression = (params.descriptor as Record<string, unknown> | undefined)?.domain_expression;
+  if (expression !== undefined) return evaluateRelationDomainExpression(expression, raw,
+    field => {
+      const value = params.resolveDependencyValue(field);
+      if (value === undefined) throw contractGapError({ kind: 'contract_defect', missing: `relation.domain_dependency.${field}`,
+        requiredDeclarationLayer: 'P0:smart_core:relation_domain' }, '关系筛选依赖未提供，无法加载可选内容');
+      return params.normalizeDependencyValue(field, value);
+    });
   const analysis = analyzeDynamicRelationDomain(params.descriptor);
   // A comodel list request cannot reapply its caller field's domain. Refuse
   // unsupported declarations before transport instead of widening the query.

@@ -234,6 +234,10 @@ try {
     const accountResult = await capture(accountResponse);
     item.accountQuery = accountResult;
     assert(accountResult.httpStatus === 200 && accountResult.ok === true, 'account selector query failed');
+    const childCompany = childInitialization.data?.patch?.company_id;
+    assert(Array.isArray(childCompany) && Number.isSafeInteger(childCompany[0]) && childCompany[0] > 0);
+    assert.deepEqual(accountResult.params.domain, ['|', ['company_id', '=', false], ['company_id', 'parent_of', [childCompany[0]]],
+      ['deprecated', '=', false], ['account_type', '!=', 'off_balance']], 'native account restrictions must reach actual query');
     // Inline cells use ScSelect (official TDesign rows), not ScRelationField's ARIA adapter.
     const options = page.locator('li.t-select-option:visible:not(.t-is-disabled)');
     const option = options.first();
