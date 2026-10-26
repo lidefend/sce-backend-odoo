@@ -1351,6 +1351,12 @@
       "backend_verified": "api.onchange with values={move_type:entry} and empty changed_fields returns journal_id=[3,杂项操作], date=2026-10-26",
       "frontend": "markFieldChanged after create-default hydration triggers the onchange roundtrip",
       "remaining_block": "saveRecord still fails 表单校验未能完成 from runAdoptedFormValidation (adopted standard form composition validation covers zero required fields); this is a separate canonical-form validation gap"
+    },
+    "fg15_adopted_validation_gap": {
+      "status": "adopted-form composition validation coverage empty",
+      "finding": "account.move form page is classified as adopted (official-standard-form); runAdoptedFormValidation sees required editable fields but validateAdoptedFields returns zero coveredFieldNames, so saveRecord fails closed with 表单校验未能完成",
+      "layer": "P0 canonical standard-form composition validateAdoptedFields for account.move",
+      "note": "this is the last remaining save blocker and is separate from the core FG15 page-open; journal_id/date hydration is already fixed"
     }
   }
 }
