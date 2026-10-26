@@ -366,7 +366,7 @@ try {
         const request=body?.params?.intent ? body.params : body;
         return request?.intent==='api.data' && request.params?.op==='create' && request.params?.model===model;
       }, {timeout:20000});
-      await page.getByRole('button',{name:/^保存草稿$/}).click();
+      await page.getByRole('button',{name:'保存',exact:true}).click();
       const saved=await createResponse; const savedBody=await saved.json();
       report.saved={httpStatus:saved.status(),ok:savedBody.ok,data:savedBody.data,error:savedBody.error};
       assert.equal(savedBody.ok,true,'draft save failed');
@@ -742,7 +742,7 @@ try {
             const reload=waitForm(); await page.reload({waitUntil:'domcontentloaded'});
             const reloadedStatus=await validateForm(reload);
             const lineRead=await journalApi('api.data',{op:'read',model:'account.move.line',ids:record.line_ids,
-              fields:['id','move_id','account_id','debit','credit','write_date']});
+              fields:['id','move_id','account_id','debit','credit','analytic_distribution','write_date']});
             assert.equal(lineRead.status,200); assert.equal(lineRead.payload.ok,true);
             const lines=lineRead.payload.data.records;
             assert.deepEqual(lines.map(line=>line.id).sort((a,b)=>a-b),[...record.line_ids].sort((a,b)=>a-b));
@@ -777,7 +777,7 @@ try {
               lineComparisons.push({id:line.id,account:line.account_id,debit:line.debit,credit:line.credit,ui:values,passed:true});
             }
             const linesAfter=await journalApi('api.data',{op:'read',model:'account.move.line',ids:record.line_ids,
-              fields:['id','move_id','account_id','debit','credit','write_date']});
+              fields:['id','move_id','account_id','debit','credit','analytic_distribution','write_date']});
             assert.equal(linesAfter.status,200); assert.equal(linesAfter.payload.ok,true);
             assert.deepEqual(linesAfter.payload.data.records,lines,'readonly inspection must preserve journal lines');
             const readback=await journalApi('api.data',{op:'read',model:'account.move',ids:[record.id],
@@ -791,7 +791,18 @@ try {
               visibleLineCount:Number(await page.locator('[data-field-name="line_ids"] [data-row-count]').first().getAttribute('data-row-count')),
               lineRegionText:await page.locator('[data-field-name="line_ids"]').first().innerText(),route:page.url(),
               visibleButtons:await page.locator('[data-semantic-component="ContractFormPage"] button:visible').allTextContents(),passed:true};
+            const form=page.locator('[data-semantic-component="ContractFormPage"]');
+            await form.getByRole('button',{name:'保存',exact:true}).waitFor({state:'visible'});
+            assert.equal(await form.getByRole('button',{name:'保存草稿',exact:true}).count(),0);
             if (journalState === 'posted') {
+              assert.equal(readonlyHeaders.filter(text=>text==='分析分配').length,1);
+              for (const line of lines) {
+                const distribution=line.analytic_distribution;
+                assert(distribution===false || distribution===null || (typeof distribution==='object' && !Array.isArray(distribution) && Object.keys(distribution).length===0),'this empty-value demo assertion needs an unallocated line');
+                const row=readonlyTable.locator('tbody tr').filter({has:page.getByText(line.account_id[1],{exact:true})});
+                assert.equal((await row.locator('td').nth(readonlyHeaders.indexOf('分析分配')).innerText()).trim(),'—');
+              }
+              assert(!(await readonlyTable.innerText()).includes('[object Object]'));
               assert.equal(await page.locator('[data-semantic-component="ContractFormPage"]').getByRole('button',{name:'过账',exact:true}).count(),0,'posted journal must not expose posting again');
             }
             report.journalStates.push({state:journalState,outcome:'verified',...detail});

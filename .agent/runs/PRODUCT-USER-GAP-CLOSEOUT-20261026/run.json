@@ -152,7 +152,9 @@
     "demo_addons/smart_construction_demo/data/demo/sc_demo_users.xml",
     "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py",
     "addons/smart_construction_core/views/support/account_extend_views.xml",
-    "demo_addons/smart_construction_demo/seed/steps/step_formal_product_surfaces.py"
+    "demo_addons/smart_construction_demo/seed/steps/step_formal_product_surfaces.py",
+    "addons/smart_construction_core/services/contract_governance_overrides.py",
+    "frontend/apps/web/scripts/node_component_consumption_test.ts"
   ],
   "environment": {
     "kind": "runtime",
@@ -164,7 +166,7 @@
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Fix native structured analytic_distribution presentation via declared P0 widget/value contract and address posted save wording at owning declaration; then add explicit readonly accounting demo via existing seed and verify state/action matrix. No migration framework.",
+  "next_exact_step": "Validate JSON display and journal save declaration, real ORM draft/posted contracts and exact candidate browser; record remaining analytic widget limitations.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1796,6 +1798,35 @@
       "failure": "ab502f16e accounting-posted-browser.log failed: posted readonly table has no debit input. Screenshot confirms normal readonly renderer. Fix P4 observer to compare readonly cells with unique account-label row binding; retain failed report.",
       "product_gap": "Actual posted readonly analytic_distribution renders [object Object]; separate P0 structured native value/widget presentation gap, not fixed by observer. Posted still shows generic 保存草稿 label; assess declaration/action semantics separately, do not assert full action UX closed.",
       "evidence": "journal-role-browser/13483ecb3188c6f793756175285b511533387214/sc_demo_accounting_manager-report.json and saved-posted-detail.png"
+    },
+    "native_value_save_presentation": {
+      "head": "40645fbb5 plus declared four files",
+      "layer": "P0 generic JSON display consumer consistency; P1 account.move save label via existing governance override",
+      "reason": "Root fields already declare readable JSON values; child formatter must consume same type semantics. Account journal persistence label belongs to industry declaration, not frontend model branches. No native analytic editor claim.",
+      "scope": [
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+        "addons/smart_construction_core/services/contract_governance_overrides.py",
+        "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+        "scripts/verify/local_dev_workspace_feedback.mjs"
+      ],
+      "status": "static_and_orm_passed_browser_pending",
+      "validation": "L1+collection_view_semantics PASS (includes3739 native differential cases and8/20/41 test groups); journal policy25JS+11Python PASS; actual accounting class20 post-tests0fail0error; final full frontend lint exit0 with existing StatusPanel warning and strict types exit0; four affected regression targets PASS.",
+      "limits": "Generic nonempty JSON follows existing readable raw JSON representation; native analytic widget/account label/percentage editing support remains open. No claim of complete analytic distribution UX.",
+      "lint_blockers": {
+        "original": "native-values-lint.log 10 errors in unchanged existing candidate files; no browser run over failure",
+        "scope": [
+          "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
+          "frontend/apps/web/scripts/node_component_consumption_test.ts",
+          "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
+          "frontend/apps/web/src/pages/contractForm/one2manyOnchange.ts",
+          "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts"
+        ],
+        "fix": "replace test any with explicit types/unknown checks; remove unused lifecycle binding; copy then strip persisted LINK id without mutation. Preserve assertions.",
+        "validation": "rerun affected existing tests, lint and strict types"
+      },
+      "review": "review_takeover no blockers after journal-save selector sync and minimal lint corrections. Original lint failure retained. No permissions relaxed.",
+      "runtime_plan": "Registered sc-local-dev/sc_dev_demo namespace ns_000000000002; read-only draft10/posted55 first, then existing owned single-draft create/readback/cleanup/independent absence via write lease. No posted55 mutation, no migrations."
     }
   }
 }
