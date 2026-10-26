@@ -7,14 +7,14 @@ import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap
 // The existing nginx owns the namespace stamp; the preview server does not.
 const base = 'http://127.0.0.1:18081/t/demo';
 const scope = process.env.SC_FEEDBACK_SCOPE || 'workspace';
-assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child', 'journal-draft', 'journal-save'].includes(scope));
+assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child', 'journal-draft', 'journal-save', 'journal-role'].includes(scope));
 const root = scope === 'journal-save' ? process.env.SC_RUNTIME_JOURNAL_EVIDENCE
   : `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}`;
 if (scope === 'journal-save') assert.equal(root, `.runtime/product-user-gap-closeout-20261026/journal-save-browser/${process.env.CANDIDATE_GIT_HEAD}/${process.env.SC_RUNTIME_JOURNAL_REF}`);
 fs.mkdirSync(root, {recursive: true});
-const actor = scope === 'usability' ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
+const actor = ['usability', 'journal-role'].includes(scope) ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
 assert(['demo_full', 'demo_role_pm', 'demo_role_finance', 'demo_role_project_read'].includes(actor));
-const availableCases = ['usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child', 'journal-draft', 'journal-save'].includes(scope) ? [] : scope === 'workspace' ? [
+const availableCases = ['usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child', 'journal-draft', 'journal-save', 'journal-role'].includes(scope) ? [] : scope === 'workspace' ? [
   {model: 'sc.team.loan.deduction.workspace', field: 'note', hint: '建议补充办理说明'},
   {model: 'sc.current.account.workspace', field: 'note', hint: '建议补充办理说明', retained: '办理承包人借还款前请选择承包人/往来单位'},
 ] : scope === 'cost' ? [
@@ -631,12 +631,24 @@ try {
     }
     assert.equal(report.blocked.length, 0);
   }
-  if (scope === 'create-authority') {
-    for (const plan of [
+  if (['create-authority', 'journal-role'].includes(scope)) {
+    if (scope === 'journal-role') {
+      const expectedUid = {demo_role_finance:47,demo_role_project_read:41}[actor];
+      assert(expectedUid, 'undeclared actor');
+      assert.equal(init.user.id,expectedUid,'authenticated actor differs from registered demo identity');
+      assert.equal(init.user.company_id,1,'unexpected actor company');
+      report.actor.identityVerified = true;
+      const candidateIndex = fs.readFileSync('frontend/apps/web/dist-dev/index.html','utf8');
+      const expectedEntries = [...candidateIndex.matchAll(/<script[^>]*src="([^"]*assets\/[^"]+)"/g)].map(match=>new URL(match[1],base).pathname);
+      const servedEntries = await page.locator('script[src]').evaluateAll(nodes=>nodes.map(node=>new URL(node.src).pathname).filter(path=>path.includes('/assets/')));
+      assert(expectedEntries.length && expectedEntries.every(path=>servedEntries.includes(path)),'namespace frontend differs from candidate build');
+      report.frontendEntries = servedEntries;
+    }
+    for (const plan of (scope === 'journal-role' ? [{model:'account.move',menu:'175',allowed:false}] : [
       {model: 'account.move.line', menu: '176', allowed: false},
       {model: 'sc.tax.filing', menu: '703', allowed: false},
       {model: 'sc.tax.filing', menu: '702', allowed: true},
-    ]) {
+    ])) {
       const node = leaves.find(n => n.meta?.model === plan.model && new URL(n.meta.route, base).searchParams.get('menu_id') === plan.menu);
       assert(node?.meta?.route?.startsWith('/'), 'declared entry missing');
       const responseFor = operation => page.waitForResponse(response => {
@@ -646,6 +658,11 @@ try {
           String(request.params.menu_id) === plan.menu;
       }, {timeout: 45000});
       const collectionResponse = responseFor('action_open');
+      const listResponse = scope === 'journal-role' ? page.waitForResponse(response => {
+        let body; try { body=response.request().postDataJSON(); } catch { return false; }
+        const request=body?.params?.intent ? body.params : body;
+        return request?.intent==='api.data' && request.params?.model===plan.model && request.params?.op==='list';
+      }) : null;
       await page.goto(base + node.meta.route, {waitUntil: 'domcontentloaded'});
       const collectionPayload = await (await collectionResponse).json();
       assert.equal(collectionPayload.ok, true);
@@ -658,7 +675,14 @@ try {
       if (plan.allowed) { assert.equal(await create.count(), 1); assert(await create.isEnabled()); }
       else for (const button of await create.all()) assert(!await button.isEnabled(), 'forbidden create offered');
       const item = {...plan, collectionStatus, route: node.meta.route}; report.cases.push(item);
-      await page.screenshot({path: `${root}/${plan.menu}-list.png`});
+      if (listResponse) {
+        const response=await listResponse; const payload=await response.json();
+        assert.equal(response.status(),200); assert.equal(payload.ok,true);
+        assert(Array.isArray(payload.data.records));
+        item.listRead={count:payload.data.records.length,ids:payload.data.records.map(row=>row.id)};
+        assert.equal(collectionStatus.effectiveRecordCapabilities.write,false);
+      }
+      await page.screenshot({path: `${root}/${actor}-${plan.menu}-list.png`});
       const formResponse = responseFor('model');
       if (plan.allowed) await create.click();
       else await page.goto(base + '/f/' + plan.model + '/new?menu_id=' + plan.menu, {waitUntil: 'domcontentloaded'});
@@ -791,7 +815,7 @@ try {
     item.passed = true;
   }
   assert.equal(report.errors.length, 0);
-  if (!['native-child', 'journal-draft', 'journal-save'].includes(scope)) for (const model of models) assert(report.feedback.some(r => r.model === model && r.ok), 'feedback transport missing');
+  if (!['native-child', 'journal-draft', 'journal-save', 'journal-role'].includes(scope)) for (const model of models) assert(report.feedback.some(r => r.model === model && r.ok), 'feedback transport missing');
   report.passed = true;
 } finally {
   if (journalSave.enabled && !report.passed && page) {
@@ -816,7 +840,7 @@ try {
   report.lastPage = page ? {url: page.url(), text: await page.locator('body').innerText().catch(() => '')} : null;
   await browser.close();
   if (journalSave.enabled) { report.browserPassed = report.passed; report.passed = false; }
-  fs.writeFileSync(`${root}/${scope === 'usability' ? actor + '-' : ''}report.json`, JSON.stringify(report, null, 2));
+  fs.writeFileSync(`${root}/${['usability','journal-role'].includes(scope) ? actor + '-' : ''}report.json`, JSON.stringify(report, null, 2));
 }
 assert(journalSave.enabled ? report.browserPassed : report.passed, 'browser acceptance failed; governed wrapper must still clean up');
 console.log(`browser: PASS (${report.cases.length} ${scope} cases${journalSave.enabled ? ', draft save/readback; ORM cleanup pending' : ', no save/dispatch'})`);

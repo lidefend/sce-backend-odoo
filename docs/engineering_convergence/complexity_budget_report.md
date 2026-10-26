@@ -194,6 +194,7 @@ Generated from repository source files. This report is informational during the 
 | 854 | Python source | `scripts/ops/test_daily_runtime_duty_operator_grant.py` |
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |
 | 849 | Python source | `scripts/verify/test_system_performance_baseline.py` |
+| 846 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
 | 843 | Python source | `scripts/verify/frontend_decision_authority.py` |
@@ -207,7 +208,6 @@ Generated from repository source files. This report is informational during the 
 | 829 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
-| 822 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 815 | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
 | 810 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |

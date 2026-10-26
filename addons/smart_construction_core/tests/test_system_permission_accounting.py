@@ -401,3 +401,53 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
         })
         result = result.to_legacy_dict() if hasattr(result, 'to_legacy_dict') else result
         self.assertTrue(result.get('ok', True), result)
+
+    def test_native_saved_journal_reader_contract_and_write_denials(self):
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+        record = self.env['account.move'].create({'journal_id': self.journal.id, 'ref': 'Synthetic reader boundary'})
+        for role in ('accounting_read', 'finance_manager'):
+            user = self._subject(role)
+            actor_record = record.with_user(user)
+            self.assertFalse(actor_record.env.su)
+            result = UiContractV2Handler(actor_record.env, su_env=self.env).handle({
+                'op': 'model', 'model': 'account.move', 'view_id': self.env.ref('account.view_move_form').id,
+                'view_type': 'form', 'render_profile': 'edit', 'record_id': record.id,
+                'client_contract_capabilities': ['form.feedback.message.v1', 'form.navigation.anchor.v1', 'form.feedback.draft.v1'],
+            })
+            result = result.to_legacy_dict() if hasattr(result, 'to_legacy_dict') else result
+            self.assertTrue(result.get('ok', True), result)
+            caps = result['data']['statusContract']['globalStatus']['effectiveRecordCapabilities']
+            self.assertFalse(caps['create'])
+            self.assertFalse(caps['write'])
+            self.assertEqual(actor_record.read(['ref'])[0]['ref'], record.ref)
+            for operation in (lambda: actor_record.write({'ref':'Forbidden reader edit'}),
+                              lambda: actor_record.unlink(), lambda: actor_record.action_post(),
+                              lambda: actor_record.create({'journal_id':self.journal.id, 'ref':'Forbidden reader create'})):
+                with self.assertRaises(AccessError), self.env.cr.savepoint():
+                    operation()
+            self.assertTrue(record.exists())
+            self.assertEqual(record.ref, 'Synthetic reader boundary')
+            self.assertEqual(record.state, 'draft')
+
+    def test_native_saved_journal_cross_company_feedback_denied(self):
+        from odoo.addons.smart_core.core.node_component_validation import read_native_facts
+        from odoo.addons.smart_core.core.form_configuration_compiler import FormConfigurationError
+        other_company = self.env['res.company'].create({'name':'Synthetic foreign journal company'})
+        self.register_business_company(other_company)
+        foreign_journal = self.env['account.journal'].create({
+            'name':'Synthetic foreign journal', 'code':'AUTHX', 'type':'general', 'company_id':other_company.id})
+        foreign = self.env['account.move'].with_context(allowed_company_ids=other_company.ids).create({
+            'journal_id':foreign_journal.id, 'company_id':other_company.id, 'ref':'Synthetic foreign journal'})
+        user = self._subject('accounting_user')
+        actor = foreign.with_user(user).with_context(allowed_company_ids=self.env.company.ids)
+        self.assertFalse(actor.env.su)
+        self.assertFalse(actor.search([('id','=',foreign.id)]))
+        with self.assertRaises(FormConfigurationError) as caught:
+            read_native_facts(actor, {'state', 'payment_state'}, 'layoutContract.feedback')
+        self.assertEqual(caught.exception.code, 'FEEDBACK_SOURCE_FORBIDDEN')
+        with self.assertRaises(AccessError), self.env.cr.savepoint():
+            actor.write({'ref':'Forbidden foreign edit'})
+        with self.assertRaises(AccessError), self.env.cr.savepoint():
+            read_native_facts(actor.with_context(allowed_company_ids=other_company.ids), {'state'}, 'layoutContract.feedback')
+        self.assertEqual(foreign.ref, 'Synthetic foreign journal')
+        self.assertEqual(foreign.state, 'draft')

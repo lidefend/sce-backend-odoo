@@ -1633,6 +1633,16 @@
       "limits": "Only demo_full unposted draft loop; no posting/ordinary-role/cross-company acceptance, no broad matrix, no remote publish/mainline/daily deployment. No module upgrade/demo rebuild.",
       "reuse": "P0 amount and feedback code unchanged since4fb0fcc19; P4 fixes invalidate only this probe path. Final record-only commit does not invalidate d4da original behavior/evidence; local backend/frontend stay d4da candidate.",
       "evidence_review": "review_takeover independently inspected final d4da report/preflight/cleanup/verify_absent: no false pass; conclusion restricted to demo_full unposted draft."
+    },
+    "journal_role_company_closeout": {
+      "layer": "P1 existing permission ORM test carrier, P4 existing bounded demo probe; product changes only if a demonstrated owning-layer defect is found",
+      "head": "d67adfd68 (clean start)",
+      "declaration": "finance_read implies accounting_read; finance_manager chain does not imply accounting_user. Both demo_role_finance and demo_role_project_read declare finance read. Expect accounting read, no create/write/post authority. Accounting_user allowed only own company.",
+      "validation": "L1 then exact rollback ORM reader saved contract and write denials, native feedback foreign-company denial. Reuse established demo_full save evidence; no persistent posting, user/group mutation, module upgrade or data reset.",
+      "status": "orm_passed_browser_pending",
+      "tests": "journal-role-l1.log PASS; journal-role-orm.log exact2 PASS; journal-role-reviewed-tests.log syntax + 23JS/11Python PASS.",
+      "review": "review_takeover: ORM valid; required actual uid/company and namespace asset identity checks added; final no blocking findings.",
+      "affected": "Only two demo actors, menu175 list read/create denial and direct new-page denial; no persistence. Saved existing-record reader contract tested separately in rollback ORM."
     }
   }
 }
