@@ -50,12 +50,13 @@ onBeforeUnmount(() => { generation += 1; });
 
 <style scoped>
 .native-weighted-display { display: block; min-width: 0; max-width: 100%; }
-.native-weighted-trigger {
+.native-weighted-display :deep(.native-weighted-trigger) {
   display: block; width: 100%; min-width: 0; max-width: 100%; padding: 0;
+  border: 0; background: transparent; color: inherit; cursor: pointer;
   overflow: hidden; font: inherit; line-height: inherit; text-align: left;
   text-overflow: ellipsis; white-space: nowrap;
 }
-.native-weighted-trigger :deep(.sc-btn__content) {
+.native-weighted-display :deep(.native-weighted-trigger .sc-btn__content) {
   display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 </style>

@@ -150,7 +150,7 @@ Generated from repository source files. This report is informational during the 
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
 | 1090 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1087 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
-| 1070 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
+| 1078 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |

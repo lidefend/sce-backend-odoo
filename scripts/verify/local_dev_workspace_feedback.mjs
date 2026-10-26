@@ -820,6 +820,14 @@ try {
                 const actual=(await cell.innerText()).trim();
                 assert.equal(actual,expected); assert.equal(await cell.locator('input').count(),0);
                 const expand=cell.getByRole('button',{name:`查看完整内容：${expected}`,exact:true});
+                const compact = await expand.evaluate((button) => {
+                  const content = button.querySelector('.sc-btn__content');
+                  return { whiteSpace: getComputedStyle(button).whiteSpace,
+                    height: button.getBoundingClientRect().height,
+                    contentHeight: content?.getBoundingClientRect().height };
+                });
+                assert(compact.whiteSpace === 'nowrap' && compact.height < 60 && compact.contentHeight < 60,
+                  `native allocation must remain compact: ${JSON.stringify(compact)}`);
                 await expand.click();
                 const full=page.locator('[data-native-weighted-full-value]').filter({hasText:expected});
                 await full.waitFor({state:'visible'}); assert.equal((await full.innerText()).trim(),expected);
@@ -828,7 +836,7 @@ try {
                 await full.waitFor({state:'hidden'});
 
                 (detail.structuredValues ??= []).push({lineId:line.id,raw:distribution,display:actual,
-                  representation:'native_weighted_relation',nativeAnalyticReadonlyAccepted:true,nativeAnalyticEditingAccepted:false});
+                  compact,representation:'native_weighted_relation',nativeAnalyticReadonlyAccepted:true,nativeAnalyticEditingAccepted:false});
               }
               assert(!(await readonlyTable.innerText()).includes('[object Object]'));
               const right=readonlyTable.getByRole('button',{name:'查看右侧列',exact:true});
