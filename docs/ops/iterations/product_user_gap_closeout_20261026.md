@@ -1063,3 +1063,30 @@ validation.length，修正为既有validation.issues.length后重跑，未删除
 本轮无后端产品/模型结构变更，未重复ORM；未做浏览器保存验收、模块升级、部署、主线集成
 或demo重建。隐式子视图、字段context/order及空changed_fields初始化仍未覆盖，FG15不关闭。
 下一步验证受影响真实原生子表页面的新增、联动、保存链路。
+
+## 第二十八增量：真实客户联系人子表草稿前置走查
+
+P4复用既有workspace反馈浏览器入口、凭据和请求拦截器，增加固定res.partner/child_ids场景。
+工具提交为96c087df1、6526274d2、ab0434899、b97639401；无P0产品源码改动。
+首次独立复核发现空联动数组/固定等待可能误报，改为等待本次name输入、新建身份与changed_fields
+对应的实际响应，校验HTTP及ok；新增行要求row-count精确+1，不再仅检查已有输入。保存和业务
+dispatch继续被拦截；本入口不具有保存/清理测试记录的执行能力。
+
+通过受管Make入口将本地sc-local-dev/sc_dev_demo与候选前端切至
+`b976394010599e9a2e9cb7675809fb4de0de1d7e`，保留既有卷/数据库/凭据，无升级或数据重建。
+namespace=ns_000000000002，入口http://127.0.0.1:18081/t/demo；候选前端5176。
+健康检查验证后端源码挂载、SHA、dbfilter和filestore，浏览器进一步核对入口资源
+`/assets/index-vC_g85dF.js`与候选dist-dev一致。此为本地验收候选更新，不是主线合并或日常
+服务器正式发布；后续文档提交不改变已测产品树。
+
+保留首次`twentyeighth-browser.log`及ab0434899报告：探针new URL把/t/demo丢掉，跳回
+无namespace登录页，属于P4路由错误，不是产品失败。修复后
+`twentyeighth-browser-namespace.log`和
+`native-child-browser/b976394010599e9a2e9cb7675809fb4de0de1d7e/report.json`通过。
+使用demo_full（uid40/company1），客户入口/a/891?menu_id=603：根字段联动HTTP200/ok=true，
+添加联系人后child_ids从0行变1行，出现5个编辑输入，blocked=0/errors=0；before/after/final
+截图已查看。静态及请求拦截策略测试见twentyeighth-preflight.log，各次语法检查日志保留。
+
+结论限于真实客户页的一次根字段联动及新增子草稿出现；未验证新增子行字段联动、保存、落库
+回读和清理。无业务记录写入，不能作为保存或全用户交付通过证据；FG15不关闭。
+下一步通过现有受管fixture/浏览器通道绑定可回读、可清理的父子记录，完成保存验收。
