@@ -130,7 +130,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Validate selected form identity fix through contact and journal draft browser checks; then record evidence. Save/readback/product acceptance remain pending.",
+  "next_exact_step": "Continue FG15 save/readback/balance and required-field coverage browser acceptance through governed write probe; resolve native child warnings/modifiers/line patches consumption where declared. Current contact+journal draft passes, no full product/mainline claim.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1472,6 +1472,26 @@
         "failures": "preserved wrong native journal currency assumption first2 ORM failures/source diagnostic; reviewed-checks descriptor.context typing failure repaired without weakening assertions",
         "limits": "native field context supplied by existing descriptor/read context; unresolved expressions still refused. Child warning/modifier/line patch initialization currently explicit unsupported error, no silent drop."
       }
+    },
+    "native_child_init_closeout": {
+      "candidate": "1ab1254aa898b10ff9641f1c91df0cbf0550037e",
+      "implementation": [
+        "23761df7c2020012fb0448118f59de2fc8abf84b",
+        "91fdc83608014a0f32278de50564733e3cb6524c",
+        "88ad866b23b56236ced794ccce6c7a8263a345af",
+        "6b7319ed6ad8104d79b136d4f937f56512dc3181",
+        "1ab1254aa898b10ff9641f1c91df0cbf0550037e"
+      ],
+      "layer": "P0 native child draft initialization and selected form identity; P4 existing browser report only",
+      "runtime": "registered sc-local-dev/sc_dev_demo/ns_000000000002; local candidate served at 1ab1254aa; no save/reset/module upgrade",
+      "tests": "child-init-final-checks.log + child-init-final-orm.log (one actual ORM case); form-marker-tests.log 288 tests; form-identity-frontend.log strict and identity cases; form-identity-final-guards2.log root request and contract guards; form-marker-checks.log L1 and assembler passed",
+      "review": "review_takeover independent no S0-S2; fixed earlier unconsumed patches and stale sibling draft; source-to-marker extra assertion added after runtime without product change",
+      "contact": "form-marker-contact.log PASS; native-child-browser/1ab1254aa898b10ff9641f1c91df0cbf0550037e/report.json; view1595 HTTP200,0->1,5inputs,errors0,blocked0; screenshot inspected",
+      "journal": "form-marker-journal.log PASS; journal-draft-browser/1ab1254aa898b10ff9641f1c91df0cbf0550037e/report.json; view790 HTTP200,0->1,8inputs,currency[6,CNY] retained next parent request,errors0,blocked0",
+      "failed_evidence": "Contact at23761/91fdc/88ad/6b7319 preserved: missing selected form identity; source helper-only tests missed native projection rebuild. Fixed full marker chain with regression. Cache re-pin failures retained.",
+      "limits": "Draft only. FG15 save/readback/balance/posting and role/company acceptance remain open. Child nonempty warnings/modifiers/line_patches explicitly refused pending native support. No remote push/mainline/daily-server deployment.",
+      "rollback": "Revert selected form identity and child initialization commits together in reverse dependency order, preserving draft tests; do not restore frontend currency inference.",
+      "followup_observation": "Journal screenshot account selector initially no options and project unavailable; probe did not query/select. Diagnose relation query/selection before save; do not infer demo-data absence from initial text."
     }
   }
 }

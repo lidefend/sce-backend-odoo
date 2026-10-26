@@ -1299,3 +1299,36 @@ P0 smart_core `handlers/api_onchange.py`：onchange 的 `line_patches[].patch` �
 
 结论：补齐 onchange 子行行补丁的关系传输语义；字段 context/order、空 changed_fields
 初始化、富会计告警及 FG15 仍未闭合，继续逐项增量。
+
+
+## 原生子行初始化与动作专用表单身份收口（2026-10-26）
+
+本轮代码候选 `1ab1254aa898b10ff9641f1c91df0cbf0550037e`，本地候选服务保持该版本。
+归属 P0：smart_core 从已授权父视图解析子关系、字段和 inverse，携带父草稿调用原生 child onchange 初始化；
+前端等待成功后追加行，父草稿、兄弟行或上下文变化时丢弃过期结果。不推断币种、不放宽字段/模型权限。
+P4 仅扩展既有草稿探针的结果采集。当前单写者、既有工作树及 registered local.dev 环境复用。
+
+- 原生 ORM 证据：普通会计角色下一项实际测试通过，journal 行遵循公司币种，invoice 行遵循父单币种；
+  新草稿不持久化，已有父记录不被初始化修改。最初“journal 必继承父币种”的错误假设失败日志保留。
+- 联系人回归揭示专用表单身份丢失。修复链为 PageAssembler `view_ids_by_type.form` → native marker
+  `page.formViewId` → canonical source → V2 `sourceContext.formViewId` → 根/子 onchange。
+  严格解码拒绝非法 ID，后端仍检查视图模型、类型和访问权限；同步契约 schema 与缓存版本/输入摘要。
+- 三个中间候选未修全该链路，浏览器失败记录保留。尤其 source helper 测试不能代替完整 native projection 测试；
+  已补 marker 到最终契约、source 到 marker、实际根请求优先于路由 ID 的回归断言。
+- 最终联系人浏览器通过：视图1595，初始化HTTP200，0→1行，5个可编辑输入项，错误0/拦截0，截图已核。
+- 最终凭证明细浏览器通过：视图790，初始化HTTP200，0→1行，8个输入项，原生返回 `[6,CNY]`，
+  币种进入后续父 onchange 的同一虚拟新增行；错误0/拦截0。
+
+验证索引：`.agent/runs/PRODUCT-USER-GAP-CLOSEOUT-20261026/run.json` 的 `native_child_init_closeout`。
+原始日志统一位于 `.runtime/product-user-gap-closeout-20261026/`：`child-init-final-checks.log`、
+`child-init-final-orm.log`、`form-marker-checks.log`、`form-marker-tests.log`（288项通过）、
+`form-identity-frontend.log`（严格类型检查及身份断言）、`form-identity-final-guards2.log`、
+`form-marker-contact.log`、`form-marker-journal.log`，两份浏览器报告目录均绑定上述候选 SHA。
+独立只读复核无剩余 S0–S2；生成报告变更为受影响代码行数等派生量，已检查。
+
+结论限定为子行初始化和这两个草稿场景通过。子初始化返回非空 warnings/modifiers/line patches 时仍显式拒绝，
+并未声称完整消费；FG15 保存、借贷平衡、回读、过账及角色/公司边界仍待后续验收。
+本轮未保存业务数据、重建 demo、合并主线或部署日常开发服务器。批次保持 active。
+回滚应逆依赖撤销视图身份及子初始化提交，不恢复前端币种推断；证据与失败记录继续保留。
+
+截图附带待核线索：凭证明细科目初始显示“暂无可选内容”，项目等显示“可选内容暂不可用”。本探针未搜索/选择科目，不能据此判断无数据或业务可录入；后续保存验收须先验证关系查询/选择链路，避免将初始化通过扩大为可保存。

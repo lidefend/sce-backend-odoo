@@ -564,6 +564,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         )
         self.assertEqual(data["view_id"], 1503)
         self.assertEqual(data["view_ids_by_type"], {"form": 1503})
+        handler._refresh_native_form_projection(data)
+        self.assertEqual(data["nativeFormProjection"]["page"]["formViewId"], 1503)
 
     def test_native_create_keeps_all_view_fields_without_second_generic_governance(self):
         from unittest.mock import patch
