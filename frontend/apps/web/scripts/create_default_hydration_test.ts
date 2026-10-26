@@ -484,3 +484,75 @@ forceChild.initRows('lines', [42]);
 forceChild.prepareOnchangeRows('lines', [[1, 42, { computed: 'No forced write' }]])();
 assert.deepEqual(forceChild.buildCommandValue('lines', 'write'), []);
 console.log('native hidden force_save write/onchange separation and edit refusal: passed');
+
+const { one2manyDataColumnsFromSubview } = await import('../src/pages/contractForm/one2manyUtils');
+const formOnlySubview = {
+  tree: { columns: ['name'], column_occurrences: [{ name: 'name', field_type: 'char', modifiers: { readonly: true } }] },
+  fields: { unrelated: { type: 'char' } },
+  form: { layout: [{ type: 'group', children: [
+    { type: 'field', name: 'name', fieldInfo: { type: 'char' } },
+    { type: 'field', name: 'internal_note', fieldInfo: { type: 'char' }, attributes: { force_save: '1' }, modifiers: { readonly: true, invisible: true } },
+    { type: 'field', name: 'token', fieldInfo: { type: 'char' }, children: [{ type: 'field', name: 'grandchild', fieldInfo: { type: 'char' } }] },
+  ] }] },
+};
+const displayFields = one2manyColumnsFromSubview(formOnlySubview, () => null);
+const dataFields = one2manyDataColumnsFromSubview(formOnlySubview, () => null);
+assert.deepEqual(displayFields.map(field => field.name), ['name']);
+assert.deepEqual(dataFields.map(field => field.name), ['name', 'internal_note', 'token']);
+assert.equal(dataFields[0]!.readonly, true, 'form occurrence cannot loosen an inline declaration');
+assert.throws(() => one2manyDataColumnsFromSubview({ form: { layout: [{ type: 'field', name: 'missing_type' }] } }, () => null), { name: 'ContractGapError' });
+const formOnlyChild = useOne2manyRuntime({
+  model: () => 'x.parent', recordId: () => 0, originalValues: () => ({}), parentValues: () => ({}),
+  onchangeLinePatches: () => [], resolveColumns: () => displayFields, resolveDataColumns: () => dataFields,
+  resolvePrimaryColumn: () => 'name', resolveRelationOptions: () => [], markFieldChanged: () => {},
+  loadDefaults: async () => ({ internal_note: 'Authoritative default', token: 'Declared token' }),
+});
+await formOnlyChild.addRow('lines');
+const formOnlyRow = formOnlyChild.visibleRows('lines')[0]!;
+assert.equal(formOnlyRow.values.internal_note, 'Authoritative default');
+formOnlyChild.setRowField('lines', formOnlyRow.key, dataFields[2]!, 'Unrendered edit');
+assert.equal(formOnlyRow.values.token, 'Declared token');
+formOnlyChild.prepareOnchangeRows('lines', [[1, formOnlyRow.key, { internal_note: 'Server note', token: 'Server token' }]])();
+assert.deepEqual(formOnlyChild.buildCommandValue('lines', 'write'), [[0, 0, { internal_note: 'Server note', token: 'Server token' }]]);
+assert.equal((formOnlyChild.buildCommandValue('lines', 'onchange')[0]![2] as Record<string, unknown>).internal_note, 'Server note');
+const formOnlyBefore = JSON.stringify(formOnlyChild.fieldRows('lines'));
+assert.throws(() => formOnlyChild.prepareOnchangeRows('lines', [[1, formOnlyRow.key, { unrelated: 'Not declared by a view' }]]), { name: 'ContractGapError' });
+assert.equal(JSON.stringify(formOnlyChild.fieldRows('lines')), formOnlyBefore);
+console.log('explicit child form data fields default/onchange/write with stable display scope: passed');
+
+const inheritedState = { locked: true, hidden: true };
+const inheritedSubview = { tree: { columns: ['name'] }, form: { layout: [
+  { type: 'group', modifiers: { readonly: { kind: 'field_truthy', field: 'parent.locked' } }, children: [
+    { type: 'group', modifiers: { invisible: { kind: 'field_truthy', field: 'parent.hidden' } }, children: [
+      { type: 'field', name: 'companion', fieldInfo: { type: 'char' }, modifiers: { required: true } },
+    ] },
+  ] },
+  { type: 'group', attributes: { readonly: '1' }, children: [
+    { type: 'field', name: 'static_locked', fieldInfo: { type: 'char' } },
+  ] },
+] } };
+const inheritedData = one2manyDataColumnsFromSubview(inheritedSubview, () => null);
+const inheritedChild = useOne2manyRuntime({
+  model: () => 'x.parent', recordId: () => 0, originalValues: () => ({}), parentValues: () => inheritedState,
+  onchangeLinePatches: () => [], resolveColumns: () => inheritedData.slice(0, 1), resolveDataColumns: () => inheritedData,
+  resolvePrimaryColumn: () => 'name', resolveRelationOptions: () => [], markFieldChanged: () => {},
+});
+inheritedChild.initRows('lines', [[0, 0, { name: 'Parent', companion: '', static_locked: 'No write' }]]);
+const inheritedRow = inheritedChild.visibleRows('lines')[0]!;
+assert.equal(inheritedChild.effectiveColumn('lines', inheritedRow, inheritedData[1]!).invisible, true);
+assert.equal(inheritedChild.effectiveColumn('lines', inheritedRow, inheritedData[1]!).readonly, true);
+assert.deepEqual(inheritedChild.buildCommandValue('lines', 'write'), [[0, 0, { name: 'Parent' }]]);
+assert.equal(inheritedChild.collectValidation().issues.length, 0);
+inheritedState.locked = false;
+inheritedState.hidden = false;
+assert.equal(inheritedChild.effectiveColumn('lines', inheritedRow, inheritedData[1]!).readonly, false);
+assert.equal(inheritedChild.collectValidation().issues.length > 0, true);
+assert.deepEqual(inheritedChild.buildCommandValue('lines', 'write'), [[0, 0, { name: 'Parent', companion: '' }]]);
+console.log('form-only ancestor visibility and readonly preserve dynamic native conditions: passed');
+
+for (const constraint of ['readonly', 'invisible']) {
+  const invalidAncestorColumn = { ...inheritedData[1]!, readonly: true, modifiers: { readonly: true, invisible: true },
+    ancestorModifiers: [{ [constraint]: { kind: 'unsupported_native_constraint' } }] };
+  assert.throws(() => inheritedChild.effectiveColumn('lines', inheritedRow, invalidAncestorColumn), { name: 'ContractGapError' });
+}
+console.log('form-only ancestor defects cannot hide behind true local constraints: passed');

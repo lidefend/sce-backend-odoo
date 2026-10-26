@@ -156,6 +156,7 @@ export type One2ManyColumn = {
   nativeLocator?: string;
   occurrenceIndex?: number;
   modifiers?: Record<string, unknown>;
+  ancestorModifiers?: Array<Record<string, unknown>>;
   relationActiveActions?: Record<string, unknown>;
   selection?: Array<[string, string]>;
   relation?: string;

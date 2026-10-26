@@ -537,6 +537,22 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
             with self.subTest(arch=arch):
                 self.assertEqual(resolve(_parse_test_xml(arch), "activate"), expected)
 
+    def test_child_form_only_data_declaration_keeps_type_and_scope(self):
+        self.tree_form_parser._safe_relation_fields_for_subview = lambda _relation: {
+            "name": {"type": "char"}, "internal_note": {"type": "char"},
+        }
+        root = _parse_test_xml('<form><field name="line_ids"><tree><field name="name"/></tree>'
+                               '<form><group><field name="internal_note" invisible="1" readonly="1" force_save="1"/></group></form>'
+                               '</field></form>')
+        entry = self.tree_form_parser._collect_x2many_subviews_from_dom(
+            root, {"line_ids": {"type": "one2many", "relation": "test.line"}},
+        )["line_ids"]
+        node = entry["form"]["layout"][0]["children"][0]
+        self.assertEqual(node["name"], "internal_note")
+        self.assertEqual(node["fieldInfo"]["type"], "char")
+        self.assertEqual(node["attributes"]["force_save"], "1")
+        self.assertNotIn("internal_note", [row.get("name") if isinstance(row, dict) else row for row in entry["tree"]["columns"]])
+
     def test_tree_hidden_force_save_is_declared_without_becoming_editable(self):
         result = self.tree_form_parser._parse_tree_view(
             '<tree><field name="hidden_value" invisible="1" readonly="1" force_save="1"/></tree>',

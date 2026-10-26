@@ -1,3 +1,4 @@
+import { one2manyDataColumnsFromSubview } from './one2manyUtils';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FieldDescriptor } from '@sc/schema';
 import { reactive, watch } from 'vue';
@@ -123,6 +124,12 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     return one2manyColumnsFromSubview(fieldSubview, (column) => one2manyRelationFieldDescriptor(name, column));
   }
 
+  function one2manyDataColumns(name: string): One2ManyColumn[] {
+    const descriptorSubview = (formFields()[name] as Record<string, unknown> | undefined)?.subview;
+    const fieldSubview = selectOne2manySubview(descriptorSubview, nativeFieldSubview(name));
+    return one2manyDataColumnsFromSubview(fieldSubview, (column) => one2manyRelationFieldDescriptor(name, column));
+  }
+
   function one2manyPolicies(name: string) {
     const descriptorSubview = (formFields()[name] as Record<string, unknown> | undefined)?.subview;
     const nativeSubview = nativeFieldSubview(name);
@@ -172,7 +179,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   async function loadOne2manyCreateDefaults(name: string): Promise<Record<string, unknown>> {
     const model = one2manyRelationModel(name);
     if (!model || !one2manyCanCreate(name)) throw new Error('当前明细未开放新增');
-    const fields = [...new Set(one2manyColumns(name).map((column: One2ManyColumn) => column.name))];
+    const fields = [...new Set(one2manyDataColumns(name).map((column: One2ManyColumn) => column.name))];
     if (!fields.length) throw new Error('当前明细缺少字段契约');
     const fieldContext = (effectiveFieldDescriptor(name) as Record<string, unknown> | undefined)?.context;
     if (fieldContext != null && (typeof fieldContext !== 'object' || Array.isArray(fieldContext))) {
@@ -206,7 +213,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
       && JSON.stringify(resolveContractFormReadContext(v2ContractStore.value)) === contextIdentity
       && JSON.stringify(rowIds()) === JSON.stringify(ids);
     if (!rows.length) return;
-    const columns = one2manyColumns(name);
+    const columns = one2manyDataColumns(name);
     if (!columns.length) return;
     // 注意：不请求 'name' —— 部分子模型（如 payment.request.line）无 name 字段，
     // 请求会触发后端 ValueError 导致整行 hydrate 失败（catch 静默吞掉后列值全空）。
@@ -259,5 +266,5 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }
 
 
-  return { loadOne2manyCreateDefaults, relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId, one2manyCreateLabel, one2manyRemovalLabels, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, one2manyCellError };
+  return { loadOne2manyCreateDefaults, relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, nativeFieldSubview, one2manyColumns, one2manyDataColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId, one2manyCreateLabel, one2manyRemovalLabels, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, one2manyCellError };
 }

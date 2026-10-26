@@ -188,6 +188,65 @@ export function one2manyColumnsFromSubview(
   return out;
 }
 
+export function one2manyDataColumnsFromSubview(
+  subview: unknown, resolveDescriptor: (name: string) => FieldDescriptor | null | undefined,
+): One2ManyColumn[] {
+  const columns = one2manyColumnsFromSubview(subview, resolveDescriptor);
+  if (!subview || typeof subview !== 'object' || Array.isArray(subview)) return columns;
+  const source = subview as Record<string, unknown>;
+  const fail = (): never => { throw contractGapError({ kind: 'contract_defect', missing: 'one2many.form_data_fields',
+    requiredDeclarationLayer: 'P0:smart_core:subview' }, '明细表单数据字段声明不完整或无效'); };
+  if (source.form === undefined) return columns;
+  if (!source.form || typeof source.form !== 'object' || Array.isArray(source.form)) return fail();
+  const form = source.form as Record<string, unknown>;
+  if (!Array.isArray(form.layout)) return fail();
+  const treeNames = new Set(columns.map(column => column.name));
+  const walk = (nodes: unknown[], ancestors: Array<Record<string, unknown>> = []) => {
+    for (const node of nodes) {
+      if (!node || typeof node !== 'object' || Array.isArray(node)) return fail();
+      const row = node as Record<string, unknown>;
+      if (row.type === 'field') {
+        const name = typeof row.name === 'string' ? row.name.trim() : '';
+        if (!name) return fail();
+        if (treeNames.has(name)) continue;
+        const info = row.fieldInfo && typeof row.fieldInfo === 'object' && !Array.isArray(row.fieldInfo)
+          ? row.fieldInfo as FieldDescriptor : resolveDescriptor(name);
+        const ttype = fieldType(info);
+        if (!ttype) return fail();
+        const parsed = one2manyColumnsFromSubview({ tree: { columns: [name], column_occurrences: [
+          { ...row, name, field_type: ttype },
+        ] } }, () => info);
+        // Selector availability controls the rendered editor, not a declared
+        // form-only field's server default/onchange persistence semantics.
+        const attributes = (row.attributes || {}) as Record<string, unknown>;
+        const modifiers = (row.modifiers || {}) as Record<string, unknown>;
+        parsed[0]!.readonly = staticNativeBoolean(modifiers.readonly ?? attributes.readonly) ?? Boolean(info?.readonly);
+        if (ancestors.length) parsed[0]!.ancestorModifiers = ancestors;
+        columns.push(...parsed);
+        continue; // A field owns its nested relation; never flatten grandchildren.
+      }
+      if (row.children !== undefined) {
+        if (!Array.isArray(row.children)) return fail();
+        const inherited: Record<string, unknown> = {};
+        if (row.modifiers !== undefined && (!row.modifiers || typeof row.modifiers !== 'object' || Array.isArray(row.modifiers))) return fail();
+        const modifiers = (row.modifiers || {}) as Record<string, unknown>;
+        const attributes = (row.attributes || {}) as Record<string, unknown>;
+        for (const key of ['readonly', 'invisible']) {
+          if (modifiers[key] !== undefined) inherited[key] = modifiers[key];
+          else if (attributes[key] !== undefined) {
+            const value = staticNativeBoolean(attributes[key]);
+            if (value === undefined) return fail();
+            inherited[key] = value;
+          }
+        }
+        walk(row.children, Object.keys(inherited).length ? [...ancestors, inherited] : ancestors);
+      }
+    }
+  };
+  walk(form.layout);
+  return columns;
+}
+
 export function resolveOne2manyRowColumnBehavior(
   column: One2ManyColumn,
   rowValues: Record<string, unknown>,
@@ -214,16 +273,14 @@ export function resolveOne2manyRowColumnBehavior(
     return nativeModifierRelationValue(actual, types[0]);
   });
   const verdict = (key: 'invisible' | 'readonly' | 'required' | 'column_invisible') => {
-    const value = modifiers[key];
-    if (value === undefined) return false;
-    return evaluateModifier(value);
+    const sources = key === 'readonly' || key === 'invisible' ? [modifiers, ...(column.ancestorModifiers || [])] : [modifiers];
+    return sources.map(source => source[key] !== undefined && evaluateModifier(source[key])).some(Boolean);
   };
-  return {
-    invisible: verdict('invisible'),
-    columnInvisible: verdict('column_invisible'),
-    readonly: Boolean(column.readonly || verdict('readonly')),
-    required: Boolean(column.required || verdict('required')),
-  };
+  const invisible = verdict('invisible');
+  const columnInvisible = verdict('column_invisible');
+  const readonly = verdict('readonly');
+  const required = verdict('required');
+  return { invisible, columnInvisible, readonly: Boolean(column.readonly || readonly), required: Boolean(column.required || required) };
 }
 
 export function one2manyRowActionsFromSubview(subview: unknown) {

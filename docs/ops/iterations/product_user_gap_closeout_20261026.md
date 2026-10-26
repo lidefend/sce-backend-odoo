@@ -1036,3 +1036,30 @@ contract basis均通过。`twentysixth-l1-final.log`记录最终轻量静态结�
 本轮只改变前端声明消费和写命令筛选、增加后端解析回归；无后端产品/模型结构变化，未重复
 运行ORM，无浏览器保存验收、模块升级、主线集成、部署或demo重建。FG15仍未关闭；下一步
 处理inline tree外子字段的声明来源及草稿/写入传递，再验证实际页面保存。
+
+## 第二十七增量：显式子表表单字段的数据链路
+
+候选基于`b132b4e6391a3d202ea52e05fa45fb23b8de527d`。P0从已有子视图form.layout
+的直接field声明补充数据字段集合，要求合法类型，保留字段属性、修饰与force_save；只遍历容器
+children，不将field内嵌套关系的后代提升到当前行，不从全模型fields自行补字段。与tree重名时
+保留tree口径，避免表单声明放宽现有行内字段行为。
+
+列表显示列维持原集合，行内setter只允许该集合；数据字段用于default_get字段选择、已有行
+读取/合并、初始化、onchange回放、条件类型、校验及write。表单专用字段的服务端默认/联动值
+可按原生readonly/force_save规则写出；它们不会变成额外列表列或行内编辑入口。未声明字段
+依旧拒绝。关系字段的选择器可用性不替代表单专用数据字段的声明写策略，后端ACL保持权威。
+
+独立复核S2：初版遗漏祖先readonly/invisible。已携带所有容器约束，使用统一原生求值器处理
+静态/动态条件；未编译的动态祖先原文明确拒绝。后续发现OR短路可隐藏非法祖先，修复为先
+求值全部声明再合并，静态readonly/required也不跳过动态校验。复核确认两项关闭，无新增阻断。
+
+最终证据：`twentyseventh-l1-final.log`轻量静态通过；`twentyseventh-l2-strict.log`
+编译器8、跨端3739、parser41、默认值55及新增子表实际runtime用例、关系生命周期回归、
+严格类型检查与contract basis通过。用例证明声明类型与scope、默认/回放/写入、显示集合不变、
+禁止未渲染字段手工编辑、祖先条件动态切换和非法祖先显式失败。实际关系读取入口断言请求包含
+form-only字段。保留初次通过日志与`twentyseventh-l2-reviewed.log`中的测试夹具失败：误读
+validation.length，修正为既有validation.issues.length后重跑，未删除断言。
+
+本轮无后端产品/模型结构变更，未重复ORM；未做浏览器保存验收、模块升级、部署、主线集成
+或demo重建。隐式子视图、字段context/order及空changed_fields初始化仍未覆盖，FG15不关闭。
+下一步验证受影响真实原生子表页面的新增、联动、保存链路。

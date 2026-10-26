@@ -28,6 +28,7 @@ export function useOne2manyRuntime(params: {
   originalValues: () => Record<string, unknown>;
   onchangeLinePatches: () => Array<Record<string, unknown>>;
   resolveColumns: (fieldName: string) => One2ManyColumn[];
+  resolveDataColumns?: (fieldName: string) => One2ManyColumn[];
   resolvePrimaryColumn: (fieldName: string) => string;
   resolveRelationOptions: (fieldName: string) => RelationOption[];
   parentValues: (fieldName: string) => Record<string, unknown>;
@@ -36,6 +37,7 @@ export function useOne2manyRuntime(params: {
   createScope?: () => unknown;
   onCreateError?: (error: unknown) => void;
 }) {
+  const dataColumns = (name: string) => params.resolveDataColumns?.(name) ?? params.resolveColumns(name);
   const rowsByField = reactive<Record<string, One2ManyInlineRow[]>>({});
   const initialized = reactive<Record<string, boolean>>({});
   const requests = createOne2manyRelationRequestAuthority();
@@ -97,7 +99,7 @@ export function useOne2manyRuntime(params: {
       if (!ownsRequest()) return;
       appendOne2manyDraftRow({
         rowsByField, fieldName: name, key: makeOne2manyKey(),
-        primary: params.resolvePrimaryColumn(name), columns: params.resolveColumns(name), defaults,
+        primary: params.resolvePrimaryColumn(name), columns: dataColumns(name), defaults,
       });
       params.markFieldChanged(name);
     } catch (error) {
@@ -108,8 +110,9 @@ export function useOne2manyRuntime(params: {
   }
 
   function setRowField(fieldName: string, rowKey: string, column: One2ManyColumn, value: unknown) {
+    if (!params.resolveColumns(fieldName).some(item => item.name === column.name && item.key === column.key)) return;
     const changed = setOne2manyDraftRowField({
-      rowsByField, fieldName, rowKey, column, columns: params.resolveColumns(fieldName), value, parentValues: modifierParentValues(fieldName),
+      rowsByField, fieldName, rowKey, column, columns: dataColumns(fieldName), value, parentValues: modifierParentValues(fieldName),
     });
     if (changed) params.markFieldChanged(fieldName);
   }
@@ -120,7 +123,7 @@ export function useOne2manyRuntime(params: {
       row.values || {},
       modifierParentValues(fieldName),
       row.modifierPatches || {},
-      params.resolveColumns(fieldName),
+      dataColumns(fieldName),
     );
     return {
       ...column,
@@ -142,7 +145,7 @@ export function useOne2manyRuntime(params: {
   function initRows(name: string, source: unknown) {
     rowsByField[name] = initOne2manyRowsFromRelationSource({
       source,
-      columns: params.resolveColumns(name),
+      columns: dataColumns(name),
       relationOptions: params.resolveRelationOptions(name),
       primary: params.resolvePrimaryColumn(name),
     });
@@ -151,10 +154,10 @@ export function useOne2manyRuntime(params: {
 
   function prepareOnchangeRows(name: string, commands: unknown) {
     const baseline = initialized[name] ? fieldRows(name) : initOne2manyRowsFromRelationSource({
-      source: params.originalValues()[name], columns: params.resolveColumns(name),
+      source: params.originalValues()[name], columns: dataColumns(name),
       relationOptions: params.resolveRelationOptions(name), primary: params.resolvePrimaryColumn(name),
     });
-    const next = replayOne2manyOnchange({ rows: baseline, commands, columns: params.resolveColumns(name),
+    const next = replayOne2manyOnchange({ rows: baseline, commands, columns: dataColumns(name),
       primary: params.resolvePrimaryColumn(name), makeKey: makeOne2manyKey });
     return () => { rowsByField[name] = next; initialized[name] = true; };
   }
@@ -162,13 +165,13 @@ export function useOne2manyRuntime(params: {
   function mergeHydratedRecords(fieldName: string, records: Array<Record<string, unknown>>) {
     mergeOne2manyHydratedRecords({
       rows: ensureRows(fieldName).filter((row) => row.id && !row.isNew),
-      columns: params.resolveColumns(fieldName),
+      columns: dataColumns(fieldName),
       records,
     });
   }
 
   function buildCommandValue(name: string, mode: 'onchange' | 'write') {
-    return buildOne2manyCommandValue(params.originalValues()[name], fieldRows(name), mode, params.resolveColumns(name), modifierParentValues(name));
+    return buildOne2manyCommandValue(params.originalValues()[name], fieldRows(name), mode, dataColumns(name), modifierParentValues(name));
   }
 
   function collectValidation() {
@@ -177,7 +180,7 @@ export function useOne2manyRuntime(params: {
       model: params.model(),
       recordId: params.recordId(),
       resolvePrimaryColumn: params.resolvePrimaryColumn,
-      resolveColumns: params.resolveColumns,
+      resolveColumns: dataColumns,
       resolveParentValues: modifierParentValues,
     });
   }

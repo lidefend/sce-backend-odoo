@@ -168,6 +168,7 @@ equal(guarded.deniedRelationModels.has('x.owner'), false, 'stale 403 cannot deny
 guarded.invalidateRelationRequests();
 equal(guarded.relationOptions.value.owner_id, [{ id: 2, label: 'Current' }], 'deactivation preserves settled labels');
 
+const requestedReadFields: string[][] = [];
 const reads: Array<ReturnType<typeof deferred<{ records: Array<Record<string, unknown>> }>>> = [];
 const formData = reactive({ owner_id: [2] });
 const rows = ref([{ id: 4, isNew: false }]);
@@ -186,12 +187,12 @@ const fields = scope.run(() => useRecordRelationshipFields({
   relationModel: () => 'x.owner', relationEntry: () => ({ canRead: true }),
   normalizeRelationIds: (value: unknown) => Array.isArray(value) ? value.map(Number) : [],
   relationReadFields: () => ['id', 'display_name'],
-  readContractFormRecord: () => { const read = deferred<{ records: Array<Record<string, unknown>> }>(); reads.push(read); return read.promise; },
+  readContractFormRecord: (request: { fields: string[] }) => { requestedReadFields.push(request.fields); const read = deferred<{ records: Array<Record<string, unknown>> }>(); reads.push(read); return read.promise; },
   relationOptionsFromRecords: (records: Array<{ id: number; display_name: string }>) => records.map(row => ({ id: row.id, label: row.display_name })),
   ensureOne2manyRows: () => rows.value, one2manyFieldRows: () => rows.value,
   mergeHydratedOne2manyRecords: (_name: string, records: unknown) => mergedChildren.push(records),
   nativeFormLayoutNodes: ref([]), findNativeFieldNodeInTree: () => null,
-  nativeFieldSubviewFromTree: () => null, selectOne2manySubview: () => ({}),
+  nativeFieldSubviewFromTree: () => null, selectOne2manySubview: () => ({ tree: { columns: ['name'] }, form: { layout: [{ type: 'field', name: 'internal_note', fieldInfo: { type: 'char' } }] } }),
   one2manyColumnsFromSubview: () => [{ name: 'name' }], isWritableFieldVisible: () => true,
 }))!;
 guarded.clearRelationRuntime();
@@ -222,6 +223,7 @@ equal(guarded.relationOptions.value.owner_id, [{ id: 3, label: 'Current owner' }
 
 const childrenOld = fields.hydrateVisibleOne2manyRows();
 const childOldRead = reads.at(-1)!;
+equal(requestedReadFields.at(-1), ['id', 'display_name', 'name', 'internal_note'], 'actual read includes declared form-only field');
 guarded.clearRelationRuntime();
 equal(fields.isOne2manyHydrating('line_ids'), false, 'reset clears cancelled loading');
 const childrenNew = fields.hydrateVisibleOne2manyRows();

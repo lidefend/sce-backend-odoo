@@ -932,6 +932,7 @@ const {
   onCreateError: (error) => applyPageStatusEvent({ kind: 'status', transaction: 'runAction', status: 'error', errorMessage: error instanceof Error ? error.message : '明细默认值加载失败' }),
   onchangeLinePatches: () => onchangeLinePatches.value as Array<Record<string, unknown>>,
   resolveColumns: (fieldName) => one2manyColumns(fieldName),
+  resolveDataColumns: (fieldName) => one2manyDataColumns(fieldName),
   resolvePrimaryColumn: (fieldName) => one2manyPrimaryColumn(fieldName),
   resolveRelationOptions: (fieldName) => relationOptionsForField(fieldName),
   markFieldChanged,
@@ -1690,7 +1691,7 @@ const actionPlaceholderGate = computed(() => resolveFormActionPlaceholderGate({
 const {
   relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions,
   loadOne2manyCreateDefaults, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
-  nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId,
+  nativeFieldSubview, one2manyColumns, one2manyDataColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId,
   one2manyCreateLabel, one2manyRemovalLabels, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows,
   prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, one2manyCellError, one2manyColumnQueryScope, queryOne2manyColumnOptions, setRelationKeyword, filteredRelationOptions, relationModel,
   formUiLabels, formUiLabel, dynamicDomainFromDescriptor, resolveDynamicDomainDependencyValue, clearDynamicRelationDependents,
