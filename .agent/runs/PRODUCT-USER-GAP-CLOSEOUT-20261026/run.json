@@ -1066,7 +1066,45 @@
       "condition_field_count": 101,
       "modifier_expr_count": 113,
       "normalized_unsupported_count": 0,
-      "conclusion": "account.move form's 113 invisible/required/readonly expressions all normalize to the product modifier AST (context.get, in/not in, parent.*, bool, and/or/not, static 0/1). Backend modifier normalization is complete for FG15; the remaining FG15 gap is frontend consumption: rich warnings/alerts, accounting-specific widgets (tax_totals, invoice_outstanding_credits_debits_widget), and parent-prefix resolution in child line conditions. No backend product defect reproduced in this diagnosis."
+      "conclusion": "account.move form's 113 invisible/required/readonly expressions all normalize to the product modifier AST (context.get, in/not in, parent.*, bool, and/or/not, static 0/1). Backend modifier normalization is complete for FG15; the remaining FG15 gap is frontend consumption: rich warnings/alerts, accounting-specific widgets (tax_totals, invoice_outstanding_credits_debits_widget), and parent-prefix resolution in child line conditions. No backend product defect reproduced in this diagnosis.",
+      "widget_diagnosis": {
+        "account_move_widgets": [
+          "account-tax-totals-field",
+          "payment",
+          "section_and_note_one2many",
+          "section_and_note_text",
+          "statinfo",
+          "autosave_many2many_tags",
+          "res_partner_many2one",
+          "many2one_barcode",
+          "analytic_distribution",
+          "many2one_avatar_user",
+          "email",
+          "handle",
+          "many2many_tags",
+          "text",
+          "statusbar"
+        ],
+        "frontend_present_widgets": [
+          "many2one_avatar_user"
+        ],
+        "field_types_supported_in_frontend": [
+          "json",
+          "monetary",
+          "html",
+          "binary",
+          "selection",
+          "many2one",
+          "many2many",
+          "one2many",
+          "char",
+          "text",
+          "date",
+          "boolean",
+          "integer"
+        ],
+        "conclusion": "FG15 journal-entry create failure is frontend widget consumption: account.move declares accounting-specific widgets (account-tax-totals-field, payment, section_and_note_one2many/text, statinfo, autosave_many2many_tags, res_partner_many2one, many2one_barcode, analytic_distribution) with no registered frontend handler, so the form fails closed. Backend modifier AST and field types are already complete. Fix belongs to frontend generic widget adoption/fallback, not smart_core backend."
+      }
     }
   }
 }
