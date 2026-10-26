@@ -75,7 +75,7 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P2 | 1652 | DevOps owner | `scripts/release/release_publication.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1618 | DevOps owner | `scripts/ops/registry_audit_environment.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1610 | Frontend owner | `frontend/apps/web/src/layouts/AppShell.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
-| P2 | 1600 | Frontend owner | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
+| P2 | 1602 | Frontend owner | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
 | P2 | 1590 | DevOps owner | `scripts/verify/test_frontend_standard_preview.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1584 | DevOps owner | `scripts/verify/test_coverage_registry.yaml` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1573 | Construction backend owner | `addons/smart_construction_core/models/core/settlement_order.py` | Extract service methods for cross-model workflow, amount, and policy logic. |

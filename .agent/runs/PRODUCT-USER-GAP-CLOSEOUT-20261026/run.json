@@ -131,7 +131,10 @@
     "frontend/apps/web/src/pages/contractForm/one2manyColumnOptionsRuntime.ts",
     "frontend/apps/web/scripts/fixtures/native_relation_domain.json",
     "scripts/verify/local_dev_journal_save_policy.mjs",
-    "scripts/verify/test_local_dev_journal_save_policy.mjs"
+    "scripts/verify/test_local_dev_journal_save_policy.mjs",
+    "frontend/apps/web/src/components/design-system/ScTabs.vue",
+    "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+    "frontend/apps/web/scripts/adopted_form_engine_decision_test.ts"
   ],
   "environment": {
     "kind": "runtime",
@@ -1547,6 +1550,14 @@
       "candidate": "0167ec4aa4cf3cf3c9d7e91b2a06fedcfff5877f",
       "tests": "journal-save-final-l1.log PASS; journal-save-policy-reviewed.log 22+11 PASS; independent review closed both S2",
       "runtime": "journal-save-browser.log: two lines100/100; save fails frontend validation before create; no blocked requests/errors/persistence. Add bounded P4 failure-state capture to distinguish coverage vs engine failure."
+    },
+    "journal_notebook_validation": {
+      "layer": "P0 generic native notebook renderer, shared ScTabs panel lifecycle passthrough",
+      "head": "24af8b84220f567bde01225e7e2c7a4b12c80e83",
+      "reason": "Native notebook unmounts inactive contract-visible pages while save expects all required native positions. Keep all contract-visible panels mounted in same existing engine; no model-specific rule or weakening coverage guard.",
+      "blast_radius": "Native notebook panels only; ScTabs new optional props preserve other callers defaults. Existing required validation and title handling unchanged.",
+      "validation": "L1 then real TDesign panel/engine tests, adopted save identity and strict checks; affected journal save browser. Prior runtime diagnostic cannot access compiled Vue instances; no write attempted.",
+      "status": "implementation"
     }
   }
 }

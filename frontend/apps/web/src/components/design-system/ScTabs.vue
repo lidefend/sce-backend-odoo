@@ -24,7 +24,7 @@ export interface ScTabItem {
   labelAttributes?: Record<string, string | number | boolean | undefined>;
 }
 
-const props = withDefaults(defineProps<{ modelValue: string | number; items?: ScTabItem[]; size?: ScPrimitiveSize; disabled?: boolean }>(), {
+const props = withDefaults(defineProps<{ modelValue: string | number; items?: ScTabItem[]; size?: ScPrimitiveSize; disabled?: boolean; lazy?: boolean; destroyOnHide?: boolean }>(), {
   items: () => [],
   size: 'medium',
 });
@@ -37,6 +37,8 @@ const tdesignItems = computed(() => props.items.map((item) => ({
   value: item.value,
   label: tabLabel(item),
   disabled: props.disabled || item.disabled,
+  lazy: props.lazy,
+  destroyOnHide: props.destroyOnHide,
   panel: () => slots.panel?.({ item }),
 })));
 function onChange(value: string | number) {
