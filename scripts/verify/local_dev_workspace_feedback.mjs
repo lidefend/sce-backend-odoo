@@ -13,7 +13,7 @@ const root = scope === 'journal-save' ? process.env.SC_RUNTIME_JOURNAL_EVIDENCE
 if (scope === 'journal-save') assert.equal(root, `.runtime/product-user-gap-closeout-20261026/journal-save-browser/${process.env.CANDIDATE_GIT_HEAD}/${process.env.SC_RUNTIME_JOURNAL_REF}`);
 fs.mkdirSync(root, {recursive: true});
 const actor = ['usability', 'journal-role'].includes(scope) ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
-assert(['demo_full', 'demo_role_pm', 'demo_role_finance', 'demo_role_project_read'].includes(actor));
+assert(['demo_full', 'demo_role_pm', 'demo_role_finance', 'demo_role_project_read', 'sc_demo_accounting_manager'].includes(actor));
 const availableCases = ['usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child', 'journal-draft', 'journal-save', 'journal-role'].includes(scope) ? [] : scope === 'workspace' ? [
   {model: 'sc.team.loan.deduction.workspace', field: 'note', hint: '建议补充办理说明'},
   {model: 'sc.current.account.workspace', field: 'note', hint: '建议补充办理说明', retained: '办理承包人借还款前请选择承包人/往来单位'},
@@ -639,7 +639,7 @@ try {
     assert.equal(report.blocked.length, 0);
   }
   if (scope === 'journal-role') {
-      const expectedUid = {demo_role_finance:47,demo_role_project_read:41}[actor];
+      const expectedUid = {demo_role_finance:47,demo_role_project_read:41,sc_demo_accounting_manager:7}[actor];
       assert(expectedUid, 'undeclared actor');
       assert.equal(init.user.id,expectedUid,'authenticated actor differs from registered demo identity');
       assert.equal(init.user.company_id,1,'unexpected actor company');
@@ -649,6 +649,35 @@ try {
       const servedEntries = await page.locator('script[src]').evaluateAll(nodes=>nodes.map(node=>new URL(node.src).pathname).filter(path=>path.includes('/assets/')));
       assert(expectedEntries.length && expectedEntries.every(path=>servedEntries.includes(path)),'namespace frontend differs from candidate build');
       report.frontendEntries = servedEntries;
+      if (actor === 'sc_demo_accounting_manager') {
+        const models = ['account.move','account.move.line','account.account','account.journal',
+          'account.analytic.account','account.analytic.distribution.model'];
+        const entries = leaves.filter(n=>models.includes(n.meta?.model) && n.meta?.route?.startsWith('/a/'));
+        assert.equal(entries.length,6,'accounting must expose exactly six declared entries');
+        assert.deepEqual([...new Set(entries.map(n=>n.meta.model))].sort(),[...models].sort());
+        for (const entry of entries) {
+          const route = new URL(entry.meta.route,base);
+          const menu = route.searchParams.get('menu_id');
+          const action = Number(route.pathname.split('/').at(-1));
+          const allowed = await journalApi('route.authority.validate',{action_id:action,menu_id:Number(menu)});
+          assert.equal(allowed.status,200); assert.equal(allowed.payload.ok,true);
+          assert.equal(allowed.payload.data.allowed,true);
+          const pending = page.waitForResponse(response=>{
+            let body; try {body=response.request().postDataJSON();} catch {return false;}
+            const request=body?.params?.intent ? body.params : body;
+            return request?.intent==='ui.contract.v2' && request.params?.op==='action_open'
+              && String(request.params.menu_id)===menu;
+          });
+          await page.goto(base+entry.meta.route,{waitUntil:'domcontentloaded'});
+          const response = await pending;
+          assert.equal(response.status(),200); const payload = await response.json();
+          assert.equal(payload.ok,true);
+          await page.waitForFunction(()=>['ok','empty'].includes(document.querySelector('[data-semantic-component="ActionView"]')?.getAttribute('data-collection-state')));
+          report.cases.push({model:entry.meta.model,menu,route:entry.meta.route,navigationPublished:true,
+            collectionState:await page.locator('[data-semantic-component="ActionView"]').getAttribute('data-collection-state'),passed:true});
+          await page.screenshot({path:`${root}/${actor}-${menu}.png`});
+        }
+      } else {
       assert(!leaves.some(n=>n.meta?.model==='account.move' && new URL(n.meta.route,base).searchParams.get('menu_id')==='175'),
         'role policy must not publish undeclared journal route');
       const positive = leaves.find(n=>n.meta?.route?.startsWith('/a/') && n.meta?.model !== 'account.move');
@@ -678,6 +707,7 @@ try {
       report.cases.push({model:'account.move',menu:'175',route:'/a/292?menu_id=175',navigationPublished:false,
         authority:{status:denied.status,reason:denied.payload.error.reason_code},pageDenied:true,passed:true});
       await page.screenshot({path:`${root}/${actor}-journal-denied.png`});
+      }
       assert.equal(report.blocked.length,0);
   }
   if (scope === 'create-authority') {

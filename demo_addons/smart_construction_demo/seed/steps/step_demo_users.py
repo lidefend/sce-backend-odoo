@@ -128,3 +128,33 @@ register(
         run=run,
     )
 )
+
+
+def run_accounting_user(env):
+    """Refresh only the accounting demo identity through the normal seed path."""
+    _ensure_user(
+        env,
+        login="sc_demo_accounting_manager",
+        name="吴海燕",
+        groups_xmlids=[
+            "base.group_user",
+            "smart_construction_core.group_sc_role_accounting_manager",
+        ],
+        password=DEMO_USER_PASSWORD,
+        lang=_resolve_lang(env, preferred=os.getenv("SC_DEMO_LANG", "zh_CN")),
+        tz="Asia/Shanghai",
+    )
+    user = env["res.users"].search([("login", "=", "sc_demo_accounting_manager")])
+    role = env.ref("smart_construction_core.group_sc_role_accounting_manager")
+    assert user and user.active and user.company_id == env.ref("base.main_company")
+    assert user.sc_user_role_group_ids == role
+    assert role.id in user._sc_explicit_group_roots(lock=False)
+
+
+register(
+    SeedStep(
+        name="demo_accounting_user",
+        description="Refresh only the accounting manager demo role and canonical demo login.",
+        run=run_accounting_user,
+    )
+)

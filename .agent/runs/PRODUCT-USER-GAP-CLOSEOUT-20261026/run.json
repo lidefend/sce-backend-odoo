@@ -149,7 +149,8 @@
     "docs/audit/scene_role_surface_consistency_report.md",
     "scripts/verify/product_menu_contract_v1_guard.py",
     "scripts/verify/test_product_menu_contract_v1_guard.py",
-    "demo_addons/smart_construction_demo/data/demo/sc_demo_users.xml"
+    "demo_addons/smart_construction_demo/data/demo/sc_demo_users.xml",
+    "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -1706,6 +1707,23 @@
       "identity": "accounting-demo-identities-canonical.log: uid7 active/company1/allowed[1], group authority tracked, no assigned role, resolved restricted/0 primary routes. uid41 active/company1 has unresolved group provenance, resolves project_member/3 routes. uid47 resolves finance/15 routes, provenance unresolved. Readonly audit never changed accounts, credentials or business rows.",
       "limits": "No browser or runtime role mutation. XML is noupdate0, full demo upgrade would touch unrelated demo identities/credentials; do not use it for targeted migration. Explicit/effective XMLID audit is not a complete restoration snapshot. Temporary uid41 switch not executed because provenance unresolved. Prior18 ORM evidence reused for unaffected product inputs.",
       "review": "review_takeover no blockers. Seed role also implies project_read capability; future application is not permission-neutral, though accounting navigation remains six-entry whitelist. Verify explicit assignment and actual routes after governed replay, not XML diff. No runtime identity mutation this turn."
+    },
+    "accounting_demo_role_migration": {
+      "layer": "P4 exact existing demo uid7 role migration through sc_user_role_group_ids; no P0/P1 ACL/navigation changes",
+      "head": "ce4c36645 clean start",
+      "scope": "Existing journal recovery, workspace feedback wrapper, Make and tests. Fixed sc-local-dev/sc_dev_demo uid7/login sc_demo_accounting_manager/company1. Add only explicit accounting_manager role, preserving tracked roots/company/credentials. Source seed role already committed.",
+      "authority": "User continues authorized demo gap remediation. Existing governed write lease, canonical env, no new account/password/database. Preflight rollback plus durable preimage, compare before apply and restore, independent readback.",
+      "limits": "Role includes project read capability; no broad demo upgrade, no uid41/47 mutation, no business posting.",
+      "status": "abandoned_per_user_direction_no_commit",
+      "result": "User directs development demo adjustment, not migration. Uncommitted migration tooling removed. Rollback preflight failed before any commit at overstrict roots equality; transaction ended without persistent account changes. No formal migration will execute."
+    },
+    "accounting_demo_seed_adjustment": {
+      "layer": "P4 existing demo seed registry and _ensure_user helper",
+      "authority": "User explicit: development should directly adjust demo, not migrate data. Run one named seed step only.",
+      "scope": "sc_demo_accounting_manager existing uid7, base user + explicit accounting_manager, main company, canonical managed demo credential; preserve other demo users and business data. Reuse local.dev.demo.seed STEPS=demo_accounting_user; no migration pipeline, broad module upgrade or data rebuild.",
+      "status": "seed_applied_browser_pending",
+      "result": "accounting-demo-seed-apply.log exit0 single step; accounting-demo-seed-readback.log independent process: uid7 resolved accounting, explicit accounting_manager,6 primary routes; uid41 project_member3 and uid47 finance15 unchanged. canonical demo credential aligned by existing helper; no business rows written.",
+      "validation": "accounting-demo-browser-static.log L1 +23JS/11Python PASS; prior real three-role six-entry/mixed ORM evidence reused. New browser case pending."
     }
   }
 }

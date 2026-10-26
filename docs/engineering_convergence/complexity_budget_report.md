@@ -178,6 +178,7 @@ Generated from repository source files. This report is informational during the 
 | 910 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
+| 901 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 900 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |
 | 888 | Python source | `scripts/verify/test_local_quick_evidence.py` |
@@ -187,7 +188,6 @@ Generated from repository source files. This report is informational during the 
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 877 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
 | 872 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
-| 871 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 868 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 862 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
