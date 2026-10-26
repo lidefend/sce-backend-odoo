@@ -1195,3 +1195,19 @@ P0 smart_core `core/native_onchange_spec.py`：x2many字段没有内联 tree/lis
 结论：补齐“隐式子视图”这一动态语义缺口；字段 context/order、空 changed_fields 初始化、
 富会计告警及 FG15 仍未闭合，继续按声明→消费→行为证据逐个增量推进，不提前宣告完整动态语义
 或主线集成。
+
+## 第三十增量：onchange 行补丁的关系值归一化
+
+P0 smart_core `handlers/api_onchange.py`：onchange 的 `line_patches[].patch` 携带与顶层
+`value` 相同的原生 many2one/x2many 传输对象，此前被原样透传，前端会收到不一致的格式。本增量
+按关系 comodel 调用既有 `normalize_native_onchange_values`，统一为公共传输格式；子行关系对象
+非法时 fail-closed 返回 `ONCHANGE_RESPONSE_INVALID`，并复用顶层归一化的异常边界。候选提交
+`203ecdf8d`。
+
+验证：L0 工作区 clean 身份；L1 `py_compile` 与 `make ci.local.iteration` 通过（L1_only，
+无 receipt）；L2 非零边界套件 `test_api_onchange_record_id_boundaries` 21 项全过（19 项既有
++ 2 项新增：公共传输行补丁适配、非法关系拒绝）。未做真实 Odoo 运行时联动、前端/浏览器、
+模块升级、部署或主线集成。
+
+结论：补齐 onchange 子行行补丁的关系传输语义；字段 context/order、空 changed_fields
+初始化、富会计告警及 FG15 仍未闭合，继续逐项增量。
