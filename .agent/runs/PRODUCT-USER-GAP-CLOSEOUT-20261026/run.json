@@ -163,7 +163,7 @@
     "FG15: persistent posting lifecycle not run; requires bounded exact-object recovery plan before writes.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Continue accounting actual record-detail and handling workflow acceptance under the existing demo accounting role. Start read-only saved journal detail/feedback and contract-rendered actions, then identify missing demo scenarios via existing seed steps. Preserve completed journal list label and six-entry evidence; no migration framework for development demo.",
+  "next_exact_step": "Continue accounting detail usability with read-only per-line account/debit/credit UI-to-ORM value comparison and posted-state/readonly role action availability. Use existing demo seed directly for missing demo identities/scenarios, not migration framework. Do not claim visible save/post buttons as executed workflows; keep any actual posting separately scoped.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1758,7 +1758,15 @@
       "layer": "P4 existing read-only journal-role browser probe, P0/P1 only if reproduced owning defect",
       "head": "e5fa85d17 clean start",
       "scope": "Existing uid7/company1 ordinary accounting manager; choose one visible draft journal entry from read API, open from actual list and reload; native form ready, line relation visible, contract success, same record unchanged. No save/post/create/role mutation or demo migration.",
-      "validation": "L1 and focused transport policy tests; independent review; clean candidate runtime then actual browser. Missing demo scenarios recorded separately."
+      "validation": "accounting-detail-action-static.log L1 +25JS/11Python PASS. No product code changes, reuse prior22 ORM and role-denial evidence at original identities. accounting-detail-final-browser.log PASS6 plus saved detail assertions.",
+      "status": "one_saved_draft_detail_read_reload_passed",
+      "candidate": "a107d4d243ac94b593fe6aa08b040232c94c4b56",
+      "result": "uid7/company1: account.move10 MISC/2026/10/0001, state draft/move_typeentry, lines19/20. Actual list button→action form contract200/ok→DOM model/id/stateok/shadowerror- and visibleLineCount2; reload repeats; id/name/ref/state/type/company/journal/line_ids/write_date before/readback identical, comparisonPassedtrue. errors0/blocked0. Screenshot saved-draft-detail visually reviewed.",
+      "evidence": "journal-role-browser/a107d4d243ac94b593fe6aa08b040232c94c4b56/sc_demo_accounting_manager-report.json and sc_demo_accounting_manager-saved-draft-detail.png",
+      "failure": "Initial b248a484f accounting-detail-browser.log failed waiting for opmodel, although actual form rendered. Existing lifecycle uses action_open for saved action+record. Corrected precise view_typeform/action/menu/record binding; original failed report retained, not counted as pass.",
+      "review": "review_takeover final raw-report review PASS: one saved draft opened/reloaded,2 visible lines, selected record fields/write_date unchanged; no broader amount/save/post claim.",
+      "limits": "Only current accounting_manager on one named saved draft entry. Native feedback produces successful contract/DOM but no warning-condition matrix. Visible save/post buttons observed only, never invoked. Amount/account per-cell equality and posted/readonly role detail matrix pending. No demo data edit/seed/upgrade/migration this turn, only governed local runtime refresh and P4 observer.",
+      "reuse": "Prior22 ORM at760572c62 and role negatives at760572c62 remain original evidence because backend/permissions unchanged. Six list/header cases rerun incidentally in same existing probe; no broad repository retest."
     }
   }
 }

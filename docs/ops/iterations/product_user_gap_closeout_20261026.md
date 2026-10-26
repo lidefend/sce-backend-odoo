@@ -1675,3 +1675,36 @@ account.view_move_tree，仅`/tree/field[@name='name']`声明string=凭证编号
 独立复核认可P1范围及修正后的可见表头断言。下一步进入普通会计账号的已保存详情/反馈及办理动作，
 六列表可用不代表详情、保存、过账或跨公司页面已全部验收，FG15整体保持开放。
 本地运行候选286371614；未主线集成、未远端日常服务器部署，未开展Demo迁移或重建。
+
+
+## 已保存凭证详情只读收口（2026-10-27）
+
+从e5fa85d17继续，本轮仅P4扩展现有journal-role探针及读取策略，不改P0/P1产品代码。
+使用现有会计经理uid7/company1，从真实可见列表选择有编号、已保存、带明细的draft entry，
+点击列表进入详情并刷新，再以相同字段回读。全部业务写入保持拦截，chatter只放行选中
+account.move记录的timeline/followers.list读取；新增错误模型/ID/写intent/空ID/GET拒绝测试。
+`accounting-detail-action-static.log` L1、25JS+11Python通过。
+
+最终候选`a107d4d243ac94b593fe6aa08b040232c94c4b56`，
+`accounting-detail-final-browser.log`退出0：原六列表/header检查PASS，并完成单条草稿详情断言。
+选中account.move10，编号MISC/2026/10/0001，state=draft、move_type=entry，明细19/20。
+- 列表按钮真实导航至/f/account.move/10?menu_id=175&action_id=292；
+  action_open/form契约HTTP200/ok，页面model/id匹配、stateok、shadowerror为“-”。
+- 刷新后再次满足相同契约/页面断言，line_ids容器实际data-row-count=2，与记录一致。
+- id/name/ref/state/type/company/journal/line_ids/write_date前后完全一致，
+  修改时间仍2026-10-26 06:46:40，comparisonPassed=true；errors0/blocked0。
+- 保存草稿、过账、明细打开/删除等按钮可见，仅观察，未点击任何业务写入。
+原始report保存before/readback/status/reloadedStatus/visibleLineCount/lineRegionText/visibleButtons，
+路径`.runtime/product-user-gap-closeout-20261026/journal-role-browser/`
+`a107d4d243ac94b593fe6aa08b040232c94c4b56/`；saved-draft-detail截图已目视确认两条科目行。
+金额列需要横向浏览，本次没有对每行科目/借贷显示值做完整自动比对，不能声称明细语义全验收。
+
+首轮b248a484f的accounting-detail-browser.log等待model契约超时；实际页面已打开。
+代码既有useRecordPageLifecycle在action+saved record时使用action_open，探针修正为精确
+view_type=form/action/menu/record匹配。没有修改产品或放宽记录身份来求通过，失败原证据保留。
+独立复核确认上述单条草稿打开、刷新、行数和未修改结论，不覆盖保存或过账。
+此前22 ORM和角色拒绝浏览器继续保留760572c62原身份，不伪写为本轮重跑。
+
+关闭本次单条会计经理已保存草稿详情只读范围，FG15整体保持开放。下一步核对每行科目与借贷
+实际输入值、已过账与只读角色详情的动作可用性；缺Demo身份/场景按既有seed直接调整。
+本轮没有Demo造数、seed、升级、迁移或持久过账，仅刷新本地候选；未主线集成或远端部署。
