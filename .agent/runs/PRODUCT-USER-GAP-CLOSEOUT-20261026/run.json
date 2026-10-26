@@ -163,7 +163,7 @@
     "FG15: persistent posting lifecycle not run; requires bounded exact-object recovery plan before writes.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Run governed exact-candidate journal-role browser for per-line UI/ORM values, independent review, then record actual result.",
+  "next_exact_step": "Inspect posted-entry demo availability and readonly accounting identity/detail action matrix using existing governed browser/seed. Do not count visible buttons as executed save/post workflows; no migration framework.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1771,10 +1771,14 @@
     "accounting_line_values": {
       "layer": "P4 existing readonly browser observer; no product/frontend/data changes",
       "head": "577c41bfe plus scripts/verify/local_dev_workspace_feedback.mjs",
-      "status": "runtime_pending",
+      "status": "two_saved_draft_line_values_passed",
       "validation": "accounting-line-static.log L1 PASS;25 JS+11 Python PASS",
       "scope": "Selected draft10 lines19/20: compare exact IDs, parent, account display label and numeric debit/credit input values to ordinary actor ORM read, then repeat line read including write_date. Existing read-only transport policy unchanged.",
-      "limits": "Not posting or write workflow; posted/readonly roles remain pending."
+      "limits": "One accounting_manager draft10, two lines only. InputValue can read horizontally clipped fields; not proof of amount-column viewport usability or accounting business correctness. No business writes, demo seed/migration, module upgrade, mainline merge or remote deployment.",
+      "candidate": "9542745a63a223d79120923ac6a40b756d4c1b8b",
+      "result": "accounting-line-browser.log exit0 PASS6 plus detail: line19 account49 label601880工程收入 debit100 credit0; line20 account48 label131880应收账款 debit0 credit100. Exact desktop inputs equal ORM labels/numbers; lines before/after including write_date identical; parent unchanged; errors0 blocked0.",
+      "evidence": "journal-role-browser/9542745a63a223d79120923ac6a40b756d4c1b8b/sc_demo_accounting_manager-report.json",
+      "review": "review_takeover source and raw report PASS: exact two line input values/API match, parent unchanged, errors0/blocked0. No save/post or horizontal viewport claim."
     }
   }
 }
