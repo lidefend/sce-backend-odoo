@@ -193,11 +193,13 @@ assert.equal(
 // The store starts empty and is published once the record form is mounted, as
 // the real page does: the layout must consume the contract that arrives.
 const storeRef = ref<typeof store | null>(null);
+let liveModifierValues: (() => Record<string, unknown>) | undefined;
 const layout = useRecordFormLayout({
   v2ContractStore: storeRef,
   contractVisibleFields: computed(() => [] as string[]),
   onchangeModifiersPatch: ref<Record<string, Record<string, unknown>>>({}),
   formData: draft,
+  modifierValues: () => liveModifierValues ? liveModifierValues() : draft,
   isQuickIntakeMode: computed(() => false),
   contractFieldLabel: (name: string) => name,
   fieldSemanticMeta: () => ({}),
@@ -329,3 +331,23 @@ console.log('[contract_v2_occurrence_authority_test] PASS native context binding
 // Restore a valid contract before the reactive scheduler flushes the fixture.
 storeRef.value = store;
 delete draft['$native.context'];
+
+const { useOne2manyRuntime } = await import('../src/pages/contractForm/useOne2manyRuntime');
+const collectionStore = structuredClone(snapshot);
+collectionStore.dataContract.dataMeta.nativeModifierFieldTypes = { line_ids: 'one2many' };
+storeRef.value = createContractV2Store(decodeContractV2Snapshot(collectionStore));
+const collectionRows = useOne2manyRuntime({ model: () => 'x.document', recordId: () => 7,
+  originalValues: () => ({ line_ids: [42] }), parentValues: () => ({}), onchangeLinePatches: () => [],
+  resolveColumns: () => [{ name: 'name', label: 'Name', ttype: 'char' }], resolvePrimaryColumn: () => 'name',
+  resolveRelationOptions: () => [], markFieldChanged: () => {},
+});
+liveModifierValues = () => collectionRows.projectModifierValues({ line_ids: [[0, 0, { name: 'New' }]], '$native.fieldTypes': { line_ids: 'one2many' } });
+collectionRows.initRows('line_ids', [42]);
+assert.equal(layout.evaluateNativeModifierValue({ kind: 'field_truthy', field: 'line_ids' }), true);
+collectionRows.removeRow('line_ids', 'o2m_id_42');
+assert.equal(layout.evaluateNativeModifierValue({ kind: 'field_truthy', field: 'line_ids' }), false);
+collectionRows.restoreRow('line_ids', 'o2m_id_42');
+assert.equal(layout.evaluateNativeModifierValue({ kind: 'field_truthy', field: 'line_ids' }), true);
+liveModifierValues = undefined;
+storeRef.value = store;
+console.log('native layout live collection projection: passed');

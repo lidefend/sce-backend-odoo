@@ -54,7 +54,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
       // contract's modifier dependency closure plus the live form values.
       // Resolving it against live form values alone drops the adapter exactly
       // when the declared state makes the action visible again.
-      values: resolveContractV2ModifierValues(v2ContractStore.value, formData as Record<string, unknown>),
+      values: resolveContractV2ModifierValues(v2ContractStore.value, dependencies.modifierValues?.() ?? formData as Record<string, unknown>),
       resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
         routeAuthorityEntries(session.routeAuthority),
         requested,
@@ -211,7 +211,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     nativeVisibleFieldNames, nativeVisibleSectionTitles, rawNativeFormLayoutNodes, resolveNativeButtonLabel,
     runtimeFieldStates, runtimeNativeFormLayoutNodes, runtimeOccurrenceState, runtimeState, setStatusbarValue, showNativeDefaultSectionTitle, useNativeFormTree,
   } = useRecordFormLayout({
-    v2ContractStore, contractVisibleFields, onchangeModifiersPatch, formData,
+    v2ContractStore, contractVisibleFields, onchangeModifiersPatch, formData, modifierValues: dependencies.modifierValues,
     isQuickIntakeMode, contractFieldLabel, fieldSemanticMeta, showHud, advancedExpanded,
     coreFieldNames, advancedFieldNames, renderProfile, recordId, isContractFieldOrderEditable,
     fieldOrderDraft, fieldOrderPreviewActive, changedFieldGroupDraft, fieldMoveTargetDraft,

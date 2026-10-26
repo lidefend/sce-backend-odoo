@@ -821,6 +821,11 @@ const {
 const originalValues = ref<Record<string, unknown>>({});
 const recordVersionToken = ref('');
 const formData = reactive<Record<string, unknown>>({});
+const nativeRelationProjection = shallowRef<(values: Record<string, unknown>) => Record<string, unknown>>();
+function formModifierValues() {
+  const values = resolveContractV2ModifierValues(v2ContractStore.value, formData);
+  return nativeRelationProjection.value ? nativeRelationProjection.value(values) : values;
+}
 const feedbackDependencyPresence = ref<Set<string>>(new Set());
 let feedbackEvaluationRuntime: ReturnType<typeof useDraftFeedbackEvaluation> | undefined;
 const canonicalFormRenderState = computed(() => resolveCanonicalFormRenderState(
@@ -831,6 +836,7 @@ const canonicalFormRenderState = computed(() => resolveCanonicalFormRenderState(
   validationFieldErrors.value,
   { model: model.value, recordId: recordId.value },
   feedbackEvaluationRuntime?.states.value,
+  formModifierValues(),
 ));
 const canonicalProductFloorplan = computed(() => canonicalFormRenderState.value.model
   ? composeCanonicalFormFloorplan(canonicalFormRenderState.value.model)
@@ -895,6 +901,7 @@ const onchangeWarnings = ref<Array<{ title?: string; message?: string; reason_co
 const onchangeLinePatches = ref<OnchangeLinePatch[]>([]);
 const {
   defaultsPending: one2manyDefaultsPending,
+  projectModifierValues: projectOne2manyModifierValues,
   rowsByField: one2manyRows,
   fieldRows: one2manyFieldRows,
   visibleRows: visibleOne2manyRows,
@@ -929,6 +936,7 @@ const {
   resolveRelationOptions: (fieldName) => relationOptionsForField(fieldName),
   markFieldChanged,
 });
+nativeRelationProjection.value = projectOne2manyModifierValues;
 const changedFieldSet = new Set<string>();
 const dirtyFieldSet = new Set<string>();
 const pendingInlineCreateFields = ref<string[]>([]);
@@ -1754,6 +1762,7 @@ const {
   runtimeState, setStatusbarValue, showNativeDefaultSectionTitle, useNativeFormTree, layoutNodes,
   nativeFieldSchemasForNodes, collectSceneValidationPrecheckErrors, onTemplateFieldChange, relationFieldAdapter,
 } = useRecordActionPresentation({
+  modifierValues: formModifierValues,
   beginActionFeedback: actionFeedback.begin,
   ErrorCodes, actionId, activeChatterLabel,
   activeChatterMode, activityAssigneeId, activityDeadline,

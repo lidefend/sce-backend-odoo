@@ -4226,3 +4226,38 @@ for (const [value, expected] of [[[7, 'A'], true], [8, false], [false, false]] a
   assert.equal(fields.find(field => field.fieldCode === 'name')?.readonly, expected);
 }
 console.log('[canonical_form_presenter] authoritative native relation types PASS');
+
+const { useOne2manyRuntime } = await import('../src/pages/contractForm/useOne2manyRuntime');
+const liveCollectionSnapshot = snapshot();
+liveCollectionSnapshot.dataContract.mainData.line_ids = [42];
+liveCollectionSnapshot.dataContract.dataMeta.nativeModifierFieldTypes = { line_ids: 'one2many' };
+const collectionCondition = { kind: 'field_truthy', field: 'line_ids' };
+liveCollectionSnapshot.layoutContract.containerTree[0].children[0].readonly = collectionCondition;
+liveCollectionSnapshot.actionContract.actionRuleList[0]!.modifiers = { invisible: collectionCondition };
+const liveCollectionStore = createContractV2Store(decodeContractV2Snapshot(liveCollectionSnapshot));
+const collectionDraft = { name: 'Unchanged draft', line_ids: [[0, 0, { name: 'New' }]] };
+const liveRows = useOne2manyRuntime({ model: () => 'x.document', recordId: () => 7,
+  originalValues: () => ({ line_ids: [42] }), parentValues: () => resolveContractV2ModifierValues(liveCollectionStore, collectionDraft),
+  onchangeLinePatches: () => [], resolveColumns: () => [{ name: 'name', label: 'Name', ttype: 'char' }],
+  resolvePrimaryColumn: () => 'name', resolveRelationOptions: () => [], markFieldChanged: () => {},
+});
+const presentLiveRows = () => presentContractV2Form(liveCollectionStore, 'edit', collectionDraft, {
+  recordPersisted: true,
+  modifierValues: liveRows.projectModifierValues(resolveContractV2ModifierValues(liveCollectionStore, collectionDraft)),
+});
+liveRows.initRows('line_ids', [42]);
+assert.equal(presentLiveRows().actionBar.length, 0);
+assert.equal(presentLiveRows().zones.primary[0].children[0].fields.find(field => field.fieldCode === 'name')?.readonly, true);
+liveRows.removeRow('line_ids', 'o2m_id_42');
+assert.equal(presentLiveRows().actionBar.length, 1);
+assert.equal(presentLiveRows().zones.primary[0].children[0].fields.find(field => field.fieldCode === 'name')?.readonly, false);
+await liveRows.addRow('line_ids');
+assert.equal(presentLiveRows().actionBar.length, 1, 'new rows do not invent persisted IDs');
+liveRows.restoreRow('line_ids', 'o2m_id_42');
+assert.equal(presentLiveRows().actionBar.length, 0);
+assert.deepEqual(collectionDraft.line_ids, [[0, 0, { name: 'New' }]], 'evaluation never overwrites raw draft commands');
+assert.equal(presentLiveRows().zones.primary[0].children[0].fields.find(field => field.fieldCode === 'name')?.value, 'Unchanged draft');
+assert.equal((liveRows.buildCommandValue('line_ids', 'write') as unknown[][]).some(command => command[0] === 0), true);
+liveRows.clearRows();
+assert.throws(presentLiveRows, { name: 'ContractGapError' }, 'cleared ownership cannot reuse stale collection IDs');
+console.log('root canonical fields/actions share live collection projection: passed');

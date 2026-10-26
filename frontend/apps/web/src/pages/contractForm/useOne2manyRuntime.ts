@@ -42,13 +42,17 @@ export function useOne2manyRuntime(params: {
   const loadingDefaults = reactive<Record<string, boolean>>({});
   const defaultsPending = computed(() => Object.values(loadingDefaults).some(Boolean));
 
-  function modifierParentValues(fieldName: string) {
-    const values = { ...params.parentValues(fieldName) };
+  function projectModifierValues(source: Record<string, unknown>) {
+    const values = { ...source };
     const types = values['$native.fieldTypes'] as Record<string, unknown> | undefined;
     for (const name of Object.keys(initialized)) {
       if (initialized[name] && types?.[name] === 'one2many') values[name] = one2manyNativeEvaluationIds(fieldRows(name));
     }
     return values;
+  }
+
+  function modifierParentValues(fieldName: string) {
+    return projectModifierValues(params.parentValues(fieldName));
   }
 
   function fieldRows(name: string) {
@@ -222,6 +226,7 @@ export function useOne2manyRuntime(params: {
 
   return {
     defaultsPending,
+    projectModifierValues,
     rowsByField,
     fieldRows,
     visibleRows,

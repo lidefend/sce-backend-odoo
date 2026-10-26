@@ -99,7 +99,9 @@
     "frontend/apps/web/src/pages/contractForm/useRecordFormState.ts",
     "frontend/apps/web/src/app/x2manyCommands.ts",
     "frontend/apps/web/scripts/contract_form_dirty_semantics_test.ts",
-    "scripts/verify/onchange_roundtrip_guard.py"
+    "scripts/verify/onchange_roundtrip_guard.py",
+    "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
+    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderState.ts"
   ],
   "environment": {
     "kind": "runtime",
@@ -107,7 +109,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Connect root/action live relation identity and backend create relation evaluation; then declared virtual-ID onchange targeting and hidden default-field authority before actual native child browser acceptance.",
+  "next_exact_step": "Implement backend create snapshot relation evaluation authority, then virtual-ID onchange targeting and hidden default-field declarations, followed by actual native child browser acceptance.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -975,6 +977,8 @@
     "nineteenth_scope": "P0 onchange child command replay against explicit current rows, staged before mutation; op0-6 persisted identities with new0 preserving existing drafts, delete/unlink transport distinction. Contract errors visible and applying flag finally restored. Risk write-command semantics. HEAD7139989a0625d5fd5cb8213c4547bc200016007c clean. Exclude virtual-ID-target updates, unknown payload fields, root/action projection, backend defaults, deploy. L0/L1 then collection/default-hydration/onchange/x2many guards/typecheck/basis and independent review.",
     "nineteenth_review": "Two S2 findings: set/clear overwrote delete2, and normalization converted malformed one2many payload to empty snapshot. Preserve tombstones/reject resurrection; pass original value to preparation. Add real useRecordFormState request-injected entry regression via existing dirty semantics target; no network/credentials added.",
     "nineteenth_guard_recovery": "Reviewed rerun product hook tests passed; P4 onchange guard rejected obsolete literal direct-call marker after injectable transport seam. Update marker to exact default-preserving request expression; no behavior assertion removed. Preserve nineteenth-l2-reviewed.log.",
-    "nineteenth_result": "L1-final passed; initial collection/compiler8/differential3732/parser39 passed. Reviewed default hydration55+replay and real formstate dirty semantics entry passed. guards-fixed onchange4 race/x2many/strict/basis passed. Two independent S2 findings fixed and re-reviewed closed. Preserve old literal-marker guard failure. Atomic scope command preparation only, not arbitrary line_patch commit exceptions. No browser/ORM/deploy."
+    "nineteenth_result": "L1-final passed; initial collection/compiler8/differential3732/parser39 passed. Reviewed default hydration55+replay and real formstate dirty semantics entry passed. guards-fixed onchange4 race/x2many/strict/basis passed. Two independent S2 findings fixed and re-reviewed closed. Preserve old literal-marker guard failure. Atomic scope command preparation only, not arbitrary line_patch commit exceptions. No browser/ORM/deploy.",
+    "twentieth_scope": "P0 shared initialized-row identity projection for root form containers/actions/native layout and child parent conditions. Keep display/write runtimeValues separate from modifier values. HEAD2e22f93bdc82757a3f0402d0563bb110b6b8422d clean. L0/L1 then canonical/occurrence/create-default/typecheck/basis and independent review. Excludes backend unsaved snapshot, virtual-ID targeting, hidden field declaration, browser/deploy.",
+    "twentieth_result": "twentieth-l1/l2 passed: canonical real child runtime/root action integration, actual native layout hook, default hydration55 and lifecycle regression, strict typecheck/basis. Independent review no S0-S2. Display/write values preserved; root/parent/action adapters share initialized row identity projection. No backend/browser/ORM/deploy changes."
   }
 }
