@@ -190,6 +190,48 @@ class TestApiOnchangeRecordIdBoundaries(unittest.TestCase):
         self.assertEqual(line_patch["row_state"], "create")
         self.assertEqual(line_patch["command_hint"], [0])
 
+    def test_line_patch_relation_values_normalize_to_public_wire(self):
+        model = _OnchangeModel()
+        child = _LineModel()
+        child._fields = {"partner_id": _Field("many2one", "res.partner")}
+        model._fields = {"line_ids": _Field("one2many", "x.line")}
+        model.env = _Env({"x.line": child})
+        handler = self.module.ApiOnchangeHandler(
+            env=_Env({"x.model": model, "x.line": child}),
+            params={"model": "x.model", "changed_fields": ["line_ids"], "values": {"line_ids": []}},
+        )
+
+        with patch.object(model, "onchange", return_value={
+            "line_patches": [
+                {"field": "line_ids", "row_id": 9, "patch": {"partner_id": {"id": 9, "display_name": "Native partner"}}},
+            ],
+        }):
+            result = handler.handle()
+
+        self.assertTrue(result["ok"], result)
+        self.assertEqual(result["data"]["line_patches"][0]["patch"], {"partner_id": [9, "Native partner"]})
+
+    def test_line_patch_invalid_relation_value_rejected(self):
+        model = _OnchangeModel()
+        child = _LineModel()
+        child._fields = {"partner_id": _Field("many2one", "res.partner")}
+        model._fields = {"line_ids": _Field("one2many", "x.line")}
+        model.env = _Env({"x.line": child})
+        handler = self.module.ApiOnchangeHandler(
+            env=_Env({"x.model": model, "x.line": child}),
+            params={"model": "x.model", "changed_fields": ["line_ids"], "values": {"line_ids": []}},
+        )
+
+        with patch.object(model, "onchange", return_value={
+            "line_patches": [
+                {"field": "line_ids", "row_id": 9, "patch": {"partner_id": {"id": True}}},
+            ],
+        }):
+            result = handler.handle()
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error"]["reason_code"], "ONCHANGE_RESPONSE_INVALID")
+
     def test_native_result_preserved_without_manual_reexecution(self):
         env = _Env({"x.manual": _ManualOnchangeModel()})
         handler = self.module.ApiOnchangeHandler(

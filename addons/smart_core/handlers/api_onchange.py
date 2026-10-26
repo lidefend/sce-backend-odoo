@@ -338,19 +338,41 @@ class ApiOnchangeHandler(BaseIntentHandler):
         except Exception:
             return []
 
+    def _relation_model(self, env_model, field_name: str):
+        field_obj = env_model._fields.get(field_name)
+        if not field_obj:
+            return None
+        ftype = str(getattr(field_obj, "type", "") or "").strip().lower()
+        if ftype not in ("one2many", "many2many"):
+            return None
+        relation = str(getattr(field_obj, "comodel_name", "") or "").strip()
+        if not relation or relation not in self.env:
+            return None
+        try:
+            return self.env[relation]
+        except Exception:
+            return None
+
     def _normalize_line_patch_values(self, env_model, field_name: str, patch_raw: Any) -> Dict[str, Any]:
         if not isinstance(patch_raw, dict):
             return {}
-        allowed = set(self._relation_field_names(env_model, field_name))
+        child_model = self._relation_model(env_model, field_name)
+        if child_model is None:
+            return {}
+        allowed = set(getattr(child_model, "_fields", {}).keys())
         if not allowed:
             return {}
-        out: Dict[str, Any] = {}
+        filtered: Dict[str, Any] = {}
         for key, value in patch_raw.items():
             name = str(key or "").strip()
             if not name or name not in allowed:
                 continue
-            out[name] = value
-        return out
+            filtered[name] = value
+        if not filtered:
+            return {}
+        # Child line patches carry the same native relation wire objects as the
+        # top-level value; normalize them so the frontend consumes one format.
+        return normalize_native_onchange_values(child_model, filtered)
 
     def _normalize_line_patch_modifiers(self, env_model, field_name: str, modifiers_raw: Any) -> Dict[str, Dict[str, Any]]:
         if not isinstance(modifiers_raw, dict):
@@ -514,12 +536,12 @@ class ApiOnchangeHandler(BaseIntentHandler):
             return self._onchange_error(500, "ONCHANGE_RESPONSE_INVALID", "字段联动返回格式无效")
         try:
             native_values = normalize_native_onchange_values(env_model, onchange_result.get("value", {}))
+            line_patches = self._normalize_line_patches(env_model, onchange_result.get("line_patches"))
         except NativeOnchangeSpecError:
             return self._onchange_error(500, "ONCHANGE_RESPONSE_INVALID", "字段联动返回格式无效")
         patch = self._normalize_patch(env_model, native_values)
         domain_patch = self._normalize_domain_patch(env_model, onchange_result.get("domain"))
         warnings = self._normalize_warning_list(onchange_result.get("warning"))
-        line_patches = self._normalize_line_patches(env_model, onchange_result.get("line_patches"))
 
         # Prefer backend-supplied modifier patch if exists, then merge domain as supplement.
         modifiers_patch = self._normalize_modifiers_patch(env_model, onchange_result.get("modifiers_patch"))
