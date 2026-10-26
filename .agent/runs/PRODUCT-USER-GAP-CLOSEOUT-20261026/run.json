@@ -137,7 +137,18 @@
     "frontend/apps/web/scripts/adopted_form_engine_decision_test.ts",
     "scripts/verify/local_dev_journal_recovery.py",
     "addons/smart_core/tests/test_node_component_validation.py",
-    "scripts/verify/test_local_dev_journal_recovery.py"
+    "scripts/verify/test_local_dev_journal_recovery.py",
+    "addons/smart_construction_core/core_extension_policy_maps.py",
+    "addons/smart_construction_core/data/product_menu_source.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    "config/product_menu_contract_v1.json",
+    "config/frontend/role_surface_exposure_declarations_v1.json",
+    "docs/audit/scene_role_surface_consistency_report.md",
+    "scripts/verify/product_menu_contract_v1_guard.py",
+    "scripts/verify/test_product_menu_contract_v1_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -149,7 +160,7 @@
     "FG15: persistent posting lifecycle not run; requires bounded exact-object recovery plan before writes.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Audit the dedicated accounting_read/accounting_user role surface and available governed demo identities against formal journal menu declarations; distinguish model ACL, role publication and data coverage. Add owning P1 declaration only if a proven role-surface gap exists, then bounded positive accounting-role browser coverage. Keep posting separate until rollback handler tests and exact restoration scope exist. Reuse passed d4da draft loop and ee49685d4 denial evidence; no broad rerun or demo rebuild solely for identity changes.",
+  "next_exact_step": "Use existing governed demo identity/read-only tooling to resolve dedicated accounting role fixture. Seed sc_demo_accounting_manager binds capability only; do not widen capability fallback or mutate credentials ad hoc. Extend existing governed fixture/probe only with exact scope and restore checks, then refresh clean candidate and validate accounting positive browser plus unchanged finance/project denial. Six-entry workflows and browser multi-company remain pending.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1650,6 +1661,32 @@
       "failure_history": "3e6c9d8b5 journal-finance-browser.log failed wrong menu-publication assumption. c9cda28f8 journal-finance-reviewed-browser.log positive passed then expected wrong HTTP reason; public intent_permission published-menu gate rejects before handler, intent_dispatcher normalizes AccessError toPERMISSION_DENIED. ee49685d4 asserts exact public403/reason/details/cause while ORM retains handler-specific ROUTE_ACTION_NOT_AUTHORIZED. Original logs preserved.",
       "limits": "Only finance/project-reader declared route denial in browser. Ordinary accounting-specific positive browser workflow, browser cross-company context, posting lifecycle and broader native expression capabilities remain pending. Synthetic rollback ORM is separate evidence, not demo browser acceptance.",
       "reuse": "Initial two ORM methods/fixtures unchanged when route-only test appended; product kernel unchanged this turn, so prior native child/feedback/save evidence remains valid at original d4da identity. Final docs-only commit does not invalidate ee49685d4 observations."
+    },
+    "accounting_role_publication": {
+      "layer": "P1 smart_construction_core formal role catalog and role surface; tests reuse accounting permission carrier",
+      "head": "44b47e668 clean start",
+      "reason": "Explicit assignable accounting read/user/manager roles exist but formal role catalog and surface lack accounting identity/publication. Reproduce with actual ordinary-role authority before repair. Do not bind inherited accounting_read capability, which would widen finance/project-reader routes.",
+      "validation": "L1, exact rollback ORM role route positive and existing finance/project denial negatives; source generator/alignment guards, independent review. No demo account mutation/posting or module upgrade assumed.",
+      "reproduction": "accounting-role-before-orm.log exact1 FAIL: accounting_read has model read but journal primary authority missing; existing project-read fallback is not accounting role surface.",
+      "menu_guard": "Historical failure evidence retained in accounting-role-menu-baseline-diagnostic.log; now repaired narrowly by 46fe8df6e, menu guard8 tests PASS.",
+      "native_identity_repair": {
+        "layer": "P0 smart_core generic native parser provenance, not P1 accounting policy",
+        "reason": "Broader 16-test rollback regression exposed pre-existing alert-link plain-text projection discarding native identity (3cd139f89). Preserve origin identity without restoring undeclared href or action. Test must assert actual plain-text behavior, not obsolete clickable href.",
+        "blast_radius": "Native alert-link text projection only; no frontend, ACL, data or navigation change."
+      },
+      "menu_guard_repair": {
+        "layer": "P4 verification of existing P1 contract, no product change",
+        "reason": "9734b5c6a (#712) added preview-only 结算单 to contract center. Old guard still expected seven entries. Keep seven released entries and lock eighth 结算单 to PREVIEW_FOUNDATION/preview; regression rejects removal, unknown entry and promotion.",
+        "scope": "Guard and unit tests only; generated product menu remains unchanged."
+      },
+      "status": "local_code_and_targeted_tests_passed_browser_pending",
+      "candidate": "46fe8df6ed67c400fbbe86a03ef080da47e758d8",
+      "tests": "accounting-role-final-orm.log: 18 actual post-tests, 0 failed/errors, exit0; 16 accounting + 2 experience role contract tests. accounting-role-landing-fixed-guards.log role declaration16/scene guards/L1 PASS. accounting-native-identity-guard.log text21/consumption36/SSR42 and guard PASS. accounting-menu-baseline-repair.log menu8 + L1 PASS.",
+      "review": "review_takeover read-only review: no S1/S2 in explicit role publication; landing correction approved; native identity repair preserves no-navigation; preview guard mutation coverage approved.",
+      "failure_history": "Initial missing role reproduced. First16 ORM:2 failures (missing accounting landing invalidated catalog/project reader; old native alert-link projection lost identity). Added landing and catalog status assertion:15/16 pass. Preserved native identity and corrected obsolete href expectation: final18/18 PASS. Old menu guard failure reproduced at unchanged HEAD; repaired against #712 existing preview authority, not product expansion.",
+      "limits": "Six accounting routes declared; positive ORM proves journal entry only, not six full workflows. No new browser, service refresh, demo user/group edit, upgrade, rebuild, persistent posting, remote CI/integration/deployment. Existing demo accounting manager seed binds capability group only, no validated dedicated accounting role browser identity.",
+      "rollback": "Revert P4 46fe8df6e, P1 449781f02 and P0 c2e00d56f in dependency order through normal reviewed change; no persistent business data to restore.",
+      "generated": "Commit hook refreshed tracked complexity_budget_report and split_plan_queue. Reviewed line-count-only changes, scope registered; no runtime behavior dependency."
     }
   }
 }

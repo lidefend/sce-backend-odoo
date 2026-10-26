@@ -1537,3 +1537,38 @@ sudo只用于本次唯一ref/已知ID的身份及不存在审计，防记录规�
 下一步审计专用accounting_read/accounting_user职责的角色面与可用demo身份，按正式菜单声明定位缺口，
 再做会计角色正向页面验证；过账仍需独立精确对象与恢复方案。FG15整体开放。
 未集成主线、未部署日常服务器；本地服务保留ee49685d4，记录提交不触发无影响重跑。
+
+
+## 专用会计角色发布与回归收口（2026-10-27）
+
+本轮从 `44b47e668` 续跑，代码候选 `46fe8df6e`，原工作区/分支和 local.dev/sc_dev_demo 不变。
+P1 `449781f02`：补齐显式 accounting_read/user/manager 的会计账务身份、六个既有入口、
+标准版/预览版 workspace.home 落地声明及曝光差异登记。不把继承 accounting_read 能力的财务角色
+映射成会计身份；不修改 ACL、记录规则或前端业务判断，正式入口仍91项。
+新增普通角色回归证明三档会计角色的凭证路由允许、只读写权限为false；原财务/项目只读的
+非空正向对照及凭证路由拒绝、跨公司反馈/写拒绝保持通过。六项入口声明不等于六项业务流程验收。
+
+P0 `c2e00d56f`：旧 alert-link 纯文本降级未携带 native locator，补齐来源身份，继续无href、
+无action。真实原生视图测试逐链接核对来源、文本及无导航行为，没有为旧测试恢复未经声明的链接。
+P4 `46fe8df6e`：旧合同中心守卫遗漏 PR712 已加入的预览结算单。先证明 HEAD 同样失败且输入
+未改，再锁定原七项正式入口加末尾结算单预览；删除、替换和伪正式发布的变异全部拒绝。
+
+证据均在原 `.runtime/product-user-gap-closeout-20261026/`：
+- `accounting-role-before-orm.log`：新增会计入口测试修复前失败，保留。
+- `accounting-role-after-orm.log`：16项中2失败；遗漏落地声明使整个catalog不可用，另有旧链接标识问题。
+- `accounting-role-landing-fixed-orm.log`：补齐落地及catalog.status断言后15/16通过，剩旧链接问题。
+- `accounting-role-final-orm.log`：实际18 post-tests，0失败/0错误，退出0；16会计加2体验角色契约。
+  包含回滚事务内过账/撤权，不能描述为持久demo过账验收。
+- `accounting-role-landing-fixed-guards.log`：角色曝光16测试、角色策略/角色面守卫及L1通过。
+- `accounting-native-identity-guard.log`：文本21、节点消费36、真实组件SSR42及容器守卫通过。
+- `accounting-role-menu-baseline-diagnostic.log`：旧菜单问题的HEAD同错证明；
+  `accounting-menu-baseline-repair.log`：修复后菜单8测试及L1通过。
+独立复核 review_takeover 未发现S1/S2，确认身份绑定、落地声明、纯文本不导航和预览状态锁定。
+提交钩子同步两份复杂度派生报告，仅行数变化，已检查并登记范围。
+
+本地代码与定向回归通过，FG15和整批产品验收仍开放。专属会计角色正向浏览器、六入口完整流程、
+浏览器跨公司矩阵、持久过账和更广原生表达仍未验收。本轮没有服务刷新、demo账户/组变更、
+模块升级、数据重建、远端CI、主线集成或日常服务器部署；原服务仍ee49685d4。
+发现种子 `sc_demo_accounting_manager` 仅绑定capability，不能据名称当作显式accounting角色已验证。
+下一步通过既有受管身份/夹具工具解决精确角色样本，再做正向浏览器验证；不得借此扩大能力回退授权。
+回滚按P4、P1、P0依赖逆序执行正常审查变更，无需恢复持久业务数据。
