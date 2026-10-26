@@ -9,6 +9,7 @@ import {
   initOne2manyRowsFromRelationSource,
   mergeOne2manyHydratedRecords,
   one2manyRowHintsFromPatches,
+  one2manyNativeEvaluationIds,
   removeOne2manyDraftRow,
   resolveOne2manyRowColumnBehavior,
   restoreOne2manyDraftRow,
@@ -35,9 +36,19 @@ export function useOne2manyRuntime(params: {
   onCreateError?: (error: unknown) => void;
 }) {
   const rowsByField = reactive<Record<string, One2ManyInlineRow[]>>({});
+  const initialized = reactive<Record<string, boolean>>({});
   const requests = createOne2manyRelationRequestAuthority();
   const loadingDefaults = reactive<Record<string, boolean>>({});
   const defaultsPending = computed(() => Object.values(loadingDefaults).some(Boolean));
+
+  function modifierParentValues(fieldName: string) {
+    const values = { ...params.parentValues(fieldName) };
+    const types = values['$native.fieldTypes'] as Record<string, unknown> | undefined;
+    for (const name of Object.keys(initialized)) {
+      if (initialized[name] && types?.[name] === 'one2many') values[name] = one2manyNativeEvaluationIds(fieldRows(name));
+    }
+    return values;
+  }
 
   function fieldRows(name: string) {
     return Array.isArray(rowsByField[name]) ? rowsByField[name] : [];
@@ -62,12 +73,12 @@ export function useOne2manyRuntime(params: {
       requests.invalidate(key);
       loadingDefaults[key] = false;
       delete rowsByField[key];
+      delete initialized[key];
     });
   }
 
   async function addRow(name: string) {
     if (loadingDefaults[name]) return;
-    ensureRows(name);
     const revision = requests.begin(name);
     const scope = params.createScope?.();
     const model = params.model();
@@ -76,6 +87,7 @@ export function useOne2manyRuntime(params: {
       && params.recordId() === recordId && params.createScope?.() === scope;
     loadingDefaults[name] = true;
     try {
+      if (!initialized[name]) initRows(name, params.originalValues()[name]);
       const defaults = params.loadDefaults ? await params.loadDefaults(name) : {};
       if (!ownsRequest()) return;
       appendOne2manyDraftRow({
@@ -92,7 +104,7 @@ export function useOne2manyRuntime(params: {
 
   function setRowField(fieldName: string, rowKey: string, column: One2ManyColumn, value: unknown) {
     const changed = setOne2manyDraftRowField({
-      rowsByField, fieldName, rowKey, column, columns: params.resolveColumns(fieldName), value, parentValues: params.parentValues(fieldName),
+      rowsByField, fieldName, rowKey, column, columns: params.resolveColumns(fieldName), value, parentValues: modifierParentValues(fieldName),
     });
     if (changed) params.markFieldChanged(fieldName);
   }
@@ -101,7 +113,7 @@ export function useOne2manyRuntime(params: {
     const behavior = resolveOne2manyRowColumnBehavior(
       column,
       row.values || {},
-      params.parentValues(fieldName),
+      modifierParentValues(fieldName),
       row.modifierPatches || {},
       params.resolveColumns(fieldName),
     );
@@ -125,9 +137,11 @@ export function useOne2manyRuntime(params: {
   function initRows(name: string, source: unknown) {
     rowsByField[name] = initOne2manyRowsFromRelationSource({
       source,
+      columns: params.resolveColumns(name),
       relationOptions: params.resolveRelationOptions(name),
       primary: params.resolvePrimaryColumn(name),
     });
+    initialized[name] = true;
   }
 
   function mergeHydratedRecords(fieldName: string, records: Array<Record<string, unknown>>) {
@@ -139,7 +153,7 @@ export function useOne2manyRuntime(params: {
   }
 
   function buildCommandValue(name: string, mode: 'onchange' | 'write') {
-    return buildOne2manyCommandValue(params.originalValues()[name], fieldRows(name), mode, params.resolveColumns(name), params.parentValues(name));
+    return buildOne2manyCommandValue(params.originalValues()[name], fieldRows(name), mode, params.resolveColumns(name), modifierParentValues(name));
   }
 
   function collectValidation() {
@@ -149,7 +163,7 @@ export function useOne2manyRuntime(params: {
       recordId: params.recordId(),
       resolvePrimaryColumn: params.resolvePrimaryColumn,
       resolveColumns: params.resolveColumns,
-      resolveParentValues: params.parentValues,
+      resolveParentValues: modifierParentValues,
     });
   }
 

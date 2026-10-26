@@ -10,7 +10,7 @@ import {
   type BusinessFieldError,
 } from '../../app/businessValidationError';
 import { FIELD_VALUE_FALSE_TEXT, FIELD_VALUE_TRUE_TEXT } from '../../utils/fieldSemantics.ts';
-import { fieldType, fromDatetimeInputValue, normalizeRelationIds, toDateInputValue, toDatetimeInputValue } from './fieldUtils';
+import { fieldType, fromDatetimeInputValue, toDateInputValue, toDatetimeInputValue } from './fieldUtils';
 import type { One2ManyColumn, One2ManyInlineRow } from './types';
 import type { FieldDescriptor } from '@sc/schema';
 import { evaluateNativeModifierValue } from './nativeLayoutUtils';
@@ -387,7 +387,7 @@ export function createOne2manyDraftRow(params: {
     removed: false,
     dirty: true,
     dirtyFields: Object.keys(params.defaults || {}).filter(name => params.columns.some(column => column.name === name)),
-    values: { ...values, [params.primary]: values[params.primary] ?? '' },
+    values: { ...values, [params.primary]: values[params.primary] ?? '', id: false },
   };
 }
 
@@ -508,24 +508,56 @@ export function initOne2manyRowsFromRelationSource(params: {
   source: unknown;
   relationOptions: Array<{ id: number; label: string }>;
   primary: string;
+  columns?: One2ManyColumn[];
 }): One2ManyInlineRow[] {
-  const ids = normalizeRelationIds(params.source);
-  const optionMap = new Map(params.relationOptions.map((item) => [
-    item.id,
-    authoritativeOne2manyRelationLabel(item.label),
-  ]));
-  return ids.map((id) => ({
-    key: `o2m_id_${id}`,
-    id,
-    isNew: false,
-    removed: false,
-    dirty: false,
-    dirtyFields: [],
-    values: {
-      [params.primary]: optionMap.get(id) || '',
-      name: optionMap.get(id) || '',
-    },
-  }));
+  const fail = (): never => { throw contractGapError({ kind: 'contract_defect',
+    missing: 'native_modifier.one2many_initial_snapshot', requiredDeclarationLayer: 'P0:smart_core:relation_defaults' },
+  '明细初始化需要完整身份快照，不能静默丢弃新增行或重放缺少基线的增量命令'); };
+  const source = params.source == null || params.source === false ? [] : params.source;
+  if (!Array.isArray(source)) return fail();
+  const validId = (id: unknown): id is number => typeof id === 'number' && Number.isSafeInteger(id) && id > 0;
+  const optionMap = new Map(params.relationOptions.map(item => [item.id, authoritativeOne2manyRelationLabel(item.label)]));
+  const rows: One2ManyInlineRow[] = [];
+  const ids = new Set<number>();
+  const link = (id: unknown) => {
+    if (!validId(id) || ids.has(id)) return fail();
+    ids.add(id);
+    rows.push({ key: `o2m_id_${id}`, id, isNew: false, removed: false, dirty: false, dirtyFields: [],
+      values: { id, [params.primary]: optionMap.get(id) || '', name: optionMap.get(id) || '' } });
+  };
+  if (source.every(validId)) {
+    source.forEach(link);
+    return rows;
+  }
+  source.forEach((command, index) => {
+    if (!Array.isArray(command)) return fail();
+    const [op, id, payload] = command;
+    if (op === 0 && id === 0 && command.length === 3 && payload && typeof payload === 'object'
+      && !Array.isArray(payload) && params.columns?.length) {
+      if (Object.keys(payload).some(name => name === 'id' || !params.columns!.some(column => column.name === name))) return fail();
+      rows.push(createOne2manyDraftRow({ key: `o2m_default_${index}`, primary: params.primary,
+        columns: params.columns, defaults: payload }));
+    } else if (op === 6 && id === 0 && index === 0 && command.length === 3 && Array.isArray(payload)) {
+      payload.forEach(link);
+    } else if (op === 4 && (command.length === 2 || command.length === 3 && payload === 0)) {
+      link(id);
+    } else return fail();
+  });
+  return rows;
+}
+
+// Odoo's ordinary evalContext contains persisted IDs only, never virtual draft keys.
+export function one2manyNativeEvaluationIds(rows: One2ManyInlineRow[]): number[] {
+  const ids: number[] = [];
+  for (const row of rows) {
+    if (row.removed || row.isNew) continue;
+    if (typeof row.id !== 'number' || !Number.isSafeInteger(row.id) || row.id <= 0 || ids.includes(row.id)) {
+      throw contractGapError({ kind: 'contract_defect', missing: 'native_modifier.one2many_identity',
+        requiredDeclarationLayer: 'P0:smart_core:relation_identity' }, '明细求值身份无效');
+    }
+    ids.push(row.id);
+  }
+  return ids;
 }
 
 /**

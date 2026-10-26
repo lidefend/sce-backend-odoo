@@ -547,3 +547,16 @@ assert.equal(resolveOne2manyRowColumnBehavior({ name: 'note', label: 'Note', mod
 } } }, { '$native.fieldTypes': { partner_id: 'char' } }, {
   partner_id: [7, 'Parent'], '$native.fieldTypes': { partner_id: 'many2one' },
 }).readonly, true);
+
+const initNativeRows = (source: unknown) => initOne2manyRowsFromRelationSource({ source, relationOptions: [],
+  primary: 'name', columns: [{ name: 'name', label: 'Name', ttype: 'char' }] });
+assert.equal(initNativeRows([[0, 0, { name: 'Default' }]])[0]?.values.name, 'Default');
+assert.deepEqual(initNativeRows([[6, 0, [5]], [4, 7], [0, 0, { name: 'New' }]]).map(row => row.id), [5, 7, null]);
+for (const source of [[[1, 5, { name: 'Delta' }]], [[2, 5]], [[3, 5]], [[5, 0]],
+  [[4, 5], [6, 0, [7]]], [[0, 0, []]], [[6, 0, ['5']]], [5, 5], [[4, 5], [4, 5]]]) {
+  assert.throws(() => initNativeRows(source), { name: 'ContractGapError' });
+}
+console.log('native initial snapshot grammar and denial: passed');
+
+assert.throws(() => initNativeRows([[0, 0, { name: 'Known', account_id: 7 }]]), { name: 'ContractGapError' });
+assert.throws(() => initNativeRows([[0, 0, { name: 'Known', id: 7 }]]), { name: 'ContractGapError' });

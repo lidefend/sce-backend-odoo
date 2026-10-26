@@ -297,3 +297,44 @@ assert.deepEqual(typedChild.buildCommandValue('lines', 'write'), [[0, 0, { partn
 typedChild.setRowField('lines', typedRow.key, typedColumns[0]!, 7);
 assert.deepEqual(typedChild.buildCommandValue('lines', 'write'), [[0, 0, { partner_id: 7 }]]);
 console.log('typed child relation draft runtime: passed');
+
+// Native default commands materialize real draft rows; virtual rows are not persisted IDs.
+const defaultLines = [[0, 0, { name: 'Default line', quantity: 2 }]];
+const identityColumns = [
+  { name: 'name', label: 'Name', ttype: 'char' },
+  { name: 'quantity', label: 'Quantity', ttype: 'float' },
+  { name: 'note', label: 'Note', ttype: 'char', modifiers: { readonly: {
+    kind: 'field_compare', semantics: 'python', field: 'parent.lines', operator: '!=', value: [],
+  } } },
+];
+const identityChild = useOne2manyRuntime({
+  model: () => 'x.parent', recordId: () => 0, originalValues: () => ({ lines: defaultLines }),
+  parentValues: () => ({ lines: defaultLines, '$native.fieldTypes': { lines: 'one2many' } }),
+  onchangeLinePatches: () => [], resolveColumns: () => identityColumns,
+  resolvePrimaryColumn: () => 'name', resolveRelationOptions: () => [], markFieldChanged: () => {},
+});
+identityChild.initRows('lines', defaultLines);
+const defaultRow = identityChild.visibleRows('lines')[0]!;
+assert.equal(defaultRow.values.name, 'Default line');
+assert.equal(defaultRow.values.quantity, 2);
+assert.equal(defaultRow.values.id, false);
+assert.equal(defaultRow.isNew, true);
+assert.equal(identityChild.effectiveColumn('lines', defaultRow, identityColumns[2]!).readonly, false);
+assert.deepEqual(identityChild.buildCommandValue('lines', 'write'), [[0, 0, { name: 'Default line', quantity: 2 }]]);
+identityChild.initRows('lines', [[6, 0, [42]], ...defaultLines]);
+const mixed = identityChild.visibleRows('lines');
+assert.equal(mixed.length, 2);
+assert.equal(identityChild.effectiveColumn('lines', mixed[1]!, identityColumns[2]!).readonly, true);
+identityChild.setRowField('lines', mixed[1]!.key, identityColumns[2]!, 'Denied');
+assert.equal(mixed[1]!.values.note, '');
+identityChild.removeRow('lines', mixed[0]!.key);
+assert.equal(identityChild.effectiveColumn('lines', mixed[1]!, identityColumns[2]!).readonly, false);
+identityChild.setRowField('lines', mixed[1]!.key, identityColumns[2]!, 'Allowed');
+assert.equal(mixed[1]!.values.note, 'Allowed');
+identityChild.restoreRow('lines', mixed[0]!.key);
+assert.equal(identityChild.effectiveColumn('lines', mixed[1]!, identityColumns[2]!).readonly, true);
+identityChild.clearRows();
+assert.equal(identityChild.visibleRows('lines').length, 0);
+await identityChild.addRow('lines');
+assert.equal(identityChild.visibleRows('lines').length, 2, 'add hydrates initial defaults before appending');
+console.log('native default rows and parent collection identities: passed');
