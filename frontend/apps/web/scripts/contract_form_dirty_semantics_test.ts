@@ -35,7 +35,7 @@ function harness(options: {
   const context = {
     formFields: computed(() => fields),
     model: computed(() => 'project.project'),
-    recordId: computed(() => 581),
+    recordId: ref(581),
     rights: computed(() => ({ write: true })),
     formData,
     originalValues,
@@ -267,3 +267,38 @@ assert.equal(child.visibleRows('lines').find(row => row.key === targetKey)?.valu
 assert.notEqual(child.visibleRows('lines').find(row => row.key === newRows[0]!.key)?.values.name, 'Targeted virtual row');
 assert.equal(h.context.applyingOnchangePatch.value, false);
 console.log('formstate virtual request/response identity: passed');
+
+const failureDraft = JSON.stringify(h.context.formData);
+const failureRows = JSON.stringify(child.fieldRows('lines'));
+h.context.validationErrors.value = [];
+h.context.requestOnchange = async () => { throw new Error('字段联动失败，请稍后重试'); };
+h.changedFieldSet.add('name');
+await h.api.runOnchangeRoundtrip();
+assert.deepEqual(h.context.validationErrors.value, ['字段联动失败，请稍后重试']);
+assert.equal(JSON.stringify(h.context.formData), failureDraft);
+assert.equal(JSON.stringify(child.fieldRows('lines')), failureRows);
+assert.equal(h.context.applyingOnchangePatch.value, false);
+
+// A failed older request must not replace the current form's error state.
+for (const change of ['record', 'draft', 'sequence']) {
+  h.context.validationErrors.value = [];
+  let rejectRequest!: (reason: Error) => void;
+  h.context.requestOnchange = () => new Promise((_resolve, reject) => { rejectRequest = reject; });
+  h.changedFieldSet.add('name');
+  const pending = h.api.runOnchangeRoundtrip();
+  const previousId = h.context.recordId.value;
+  const previousName = h.context.formData.name;
+  if (change === 'record') h.context.recordId.value = Number(previousId || 0) + 1;
+  if (change === 'draft') h.context.formData.name = 'Newer unsent draft';
+  if (change === 'sequence') {
+    h.context.requestOnchange = async () => ({ patch: {} });
+    h.changedFieldSet.add('name');
+    await h.api.runOnchangeRoundtrip();
+  }
+  rejectRequest(new Error('Stale failure'));
+  await pending;
+  assert.deepEqual(h.context.validationErrors.value, [], change);
+  h.context.recordId.value = previousId;
+  h.context.formData.name = previousName;
+}
+console.log('formstate visible current failure and stale error isolation: passed');

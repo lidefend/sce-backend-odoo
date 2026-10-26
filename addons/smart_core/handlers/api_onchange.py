@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from odoo import fields as odoo_fields
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 
 from ..core.base_handler import BaseIntentHandler
 try:
@@ -72,6 +72,30 @@ class ApiOnchangeHandler(BaseIntentHandler):
 
     def _err(self, code: int, message: str):
         return {"ok": False, "error": {"code": code, "message": message}, "code": code}
+
+    def _onchange_error(self, code: int, reason_code: str, message: str):
+        response = self._err(code, message)
+        response["error"]["reason_code"] = reason_code
+        return response
+
+    def _valid_native_result(self, result: Any) -> bool:
+        if not isinstance(result, dict):
+            return False
+        for key in ("value", "domain", "modifiers_patch"):
+            if key in result and not isinstance(result[key], dict):
+                return False
+        if "line_patches" in result and (
+            not isinstance(result["line_patches"], list)
+            or any(not isinstance(item, dict) for item in result["line_patches"])
+        ):
+            return False
+        if "warning" in result:
+            warning = result["warning"]
+            if not isinstance(warning, dict) and not (
+                isinstance(warning, list) and all(isinstance(item, dict) for item in warning)
+            ):
+                return False
+        return True
 
     def _feedback_err(self, exc: DraftFeedbackError):
         return {
@@ -560,11 +584,15 @@ class ApiOnchangeHandler(BaseIntentHandler):
 
         try:
             onchange_result = env_model.onchange(values, changed_fields, field_onchange)
+        except AccessError:
+            return self._onchange_error(403, "ONCHANGE_ACCESS_DENIED", "无权执行字段联动")
+        except UserError as exc:
+            return self._onchange_error(400, "ONCHANGE_VALIDATION_FAILED", str(exc))
         except Exception:
-            onchange_result = {}
+            return self._onchange_error(500, "ONCHANGE_EXECUTION_FAILED", "字段联动失败，请稍后重试")
 
-        if not isinstance(onchange_result, dict):
-            onchange_result = {}
+        if not self._valid_native_result(onchange_result):
+            return self._onchange_error(500, "ONCHANGE_RESPONSE_INVALID", "字段联动返回格式无效")
         manual_result = self._manual_onchange_result(env_model, values, changed_fields)
         if manual_result:
             merged_result = dict(onchange_result)

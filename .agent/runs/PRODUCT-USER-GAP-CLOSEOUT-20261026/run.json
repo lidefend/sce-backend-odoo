@@ -102,7 +102,9 @@
     "scripts/verify/onchange_roundtrip_guard.py",
     "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
     "frontend/apps/web/src/pages/contractForm/canonicalFormRenderState.ts",
-    "scripts/verify/x2many_command_semantic_guard.py"
+    "scripts/verify/x2many_command_semantic_guard.py",
+    "addons/smart_core/handlers/api_onchange.py",
+    "addons/smart_core/tests/test_api_onchange_record_id_boundaries.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -110,7 +112,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Verify and close backend api_onchange field-spec declaration and native response consumption, including hidden default fields, before actual native child browser acceptance; do not equate RecordSnapshot unit ORM proof with handler end-to-end.",
+  "next_exact_step": "Migrate backend api_onchange from legacy method-name map to authoritative native view field specification, resolve hidden/default child field declarations and successful manual supplement semantics; then validate real handler ORM and native child browser consumption.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -986,6 +988,9 @@
     "twentyfirst_result": "L1/L2 pass; enum-fixed handler154/cache48/orchestrator62/tools5 assembler/compiler8/differential3739/parser39/runtime23/projection133 pass; canonical/strict/basis from unchanged frontend pass. ORM-fixed registered local.dev sc_dev_demo ordinary accounting role nonzero1 pass0fail0errors. IntEnum root cause preserved in original+diagnostic ORM logs; independent review no blockers incl adapter. No module upgrade/demo rebuild/deploy/mainline.",
     "twentysecond_scope": "P0 one2many virtual identity protocol: stable row key in onchange create operand, write remains0; replay known string targets for new rows, create echo merges existing virtual identity, unknown update/delete and collisions fail. Preserve persisted ID condition projection. P1 existing accounting native RecordSnapshot ORM proof. HEAD8ba805dcd3401ccdb5388b2de0d0e315b4d7f68d clean. L0/L1 then default-hydration/dirty semantics/x2many/onchange/typecheck/basis and scoped ORM/review. Excludes field spec handler migration/hidden payload expansion and browser/deploy. Odoo17 web/models/models.py RecordSnapshot.diff is source reference.",
     "twentysecond_guard_recovery": "Initial L2 runtime/hook passed then existing x2many type marker rejected number|string union. P4 update exact marker for native virtual references, preserve all other checks; original twentysecond-l2.log retained. Add affected professional detail collection target for transport builder compatibility.",
-    "twentysecond_result": "L1 iteration and L2 default hydration/runtime virtual identity, actual formstate roundtrip, onchange/race4 passed; obsolete P4 type marker repaired, x2many/professional detail/strict typecheck/basis passed. Independent read-only review no new S0-S2. twentysecond-orm.log registered sc-local-dev/sc_dev_demo ordinary accounting RecordSnapshot scoped1 passed0fail0errors (2026-10-26 01:12 UTC). No module upgrade/demo reset/served candidate switch/deploy/mainline. Handler field specification and hidden defaults remain, FG15 open. Scope/source inputs unchanged since checks; final edits record evidence only."
+    "twentysecond_result": "L1 iteration and L2 default hydration/runtime virtual identity, actual formstate roundtrip, onchange/race4 passed; obsolete P4 type marker repaired, x2many/professional detail/strict typecheck/basis passed. Independent read-only review no new S0-S2. twentysecond-orm.log registered sc-local-dev/sc_dev_demo ordinary accounting RecordSnapshot scoped1 passed0fail0errors (2026-10-26 01:12 UTC). No module upgrade/demo reset/served candidate switch/deploy/mainline. Handler field specification and hidden defaults remain, FG15 open. Scope/source inputs unchanged since checks; final edits record evidence only.",
+    "twentythird_scope": "HEAD4eae8ae22f18399219b5c4cc6b682a56cae74b9d clean. P0 native onchange error boundary: native exceptions/invalid response must not enter manual fallback or success response; frontend surfaces current-request error without overwriting draft or displaying stale failure. Preserve successful legacy supplement pending field-spec migration. L0/L1 iteration, L2 feedback_evaluation boundary + actual formstate + onchange guard + strict/basis; independent review. No ORM algorithm/schema changes, no L3 upgrade or L4 browser/deploy; exact native field-spec and hidden defaults unresolved, avoid falsely claiming entire handler migration.",
+    "twentythird_recovery": "Initial L2 backend10 passed, frontend stale-record test failed because harness recordId computed was read-only, so identity never changed. Change test source to ref, preserve initial log. Independent S2: dict-wrapped malformed native carriers could still become success; validate known top-level result containers before supplement and add negative cases. Product failure + test-fixture failure distinct; no assertions removed.",
+    "twentythird_result": "twentythird-l2-fixed.log PASS: backend boundary10 with nested malformed-carrier subcases, schema, actual formstate current failure plus stale record/draft/sequence cases, onchange race4, strict typecheck and contract basis. Independent reviewer closed S2 after container checks; no new blockers. Preserve initial fixture failure. Native error and carrier boundary only, no deep field semantic proof, no fields_spec migration, successful legacy supplement remains. No runtime, deployment, merge or fixture changes."
   }
 }

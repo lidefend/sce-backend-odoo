@@ -215,8 +215,10 @@ export function useRecordFormState(context: {
       } finally { context.applyingOnchangePatch.value = false; }
       feedbackChanged.forEach(noteFeedbackDraftChange);
     } catch (error) {
-      if (isContractGapError(error)) context.validationErrors.value = [error.message];
-      // Optional transport failures preserve the current draft.
+      if (ticket.sequence !== onchangeSequence || ticket.recordKey !== onchangeRecordKey(context.model.value, context.recordId.value)) return;
+      if (Object.entries(ticket.snapshot).some(([name, value]) => comparableFieldValue(name, context.formData[name]) !== value)) return;
+      context.validationErrors.value = [isContractGapError(error) ? error.message
+        : sanitizeUiErrorMessage(error instanceof Error ? error.message : error, '字段联动失败，请稍后重试')];
     }
   }
 

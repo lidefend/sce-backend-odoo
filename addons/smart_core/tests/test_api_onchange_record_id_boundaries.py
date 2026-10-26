@@ -86,7 +86,7 @@ def _install_module(name, **attrs):
 
 def _load_handler():
     root = Path(__file__).resolve().parents[1]
-    exc_mod = _install_module("odoo.exceptions", AccessError=type("AccessError", (Exception,), {}))
+    exc_mod = _install_module("odoo.exceptions", AccessError=type("AccessError", (Exception,), {}), UserError=type("UserError", (Exception,), {}))
     fields_mod = types.SimpleNamespace(Date=_FakeOdooFieldType, Datetime=_FakeOdooFieldType)
     _install_module("odoo", exceptions=exc_mod, fields=fields_mod)
 
@@ -193,6 +193,44 @@ class TestApiOnchangeRecordIdBoundaries(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(result["data"]["patch"]["original_label"], "基础设置")
         self.assertEqual(result["data"]["patch"]["preview_summary"], "保存后刷新页面生效")
+
+    def test_native_failures_never_enter_manual_supplement(self):
+        for failure, code, reason in (
+            (self.module.AccessError("private access detail"), 403, "ONCHANGE_ACCESS_DENIED"),
+            (self.module.UserError("Invalid business value"), 400, "ONCHANGE_VALIDATION_FAILED"),
+            (RuntimeError("private internal detail"), 500, "ONCHANGE_EXECUTION_FAILED"),
+        ):
+            with self.subTest(reason=reason):
+                model = _ManualOnchangeModel()
+                handler = self.module.ApiOnchangeHandler(env=_Env({"x.manual": model}), params={
+                    "model": "x.manual", "values": {"menu_id": 1}, "changed_fields": ["menu_id"],
+                    "include_v2_patch": True,
+                })
+                with patch.object(model, "onchange", side_effect=failure), patch.object(handler, "_manual_onchange_result") as manual:
+                    result = handler.handle()
+                manual.assert_not_called()
+                self.assertFalse(result["ok"])
+                self.assertEqual(result["code"], code)
+                self.assertEqual(result["error"]["reason_code"], reason)
+                self.assertNotIn("private", result["error"]["message"])
+                self.assertNotIn("data", result)
+                self.assertNotIn("unified_page_patch_v2", result)
+                if code == 400:
+                    self.assertEqual(result["error"]["message"], "Invalid business value")
+
+    def test_invalid_native_response_is_not_empty_success(self):
+        for raw in (None, [], "invalid", {"value": []}, {"domain": "bad"},
+                    {"modifiers_patch": []}, {"line_patches": {}}, {"line_patches": [1]},
+                    {"warning": "bad"}, {"warning": [1]}):
+            model = _ManualOnchangeModel()
+            handler = self.module.ApiOnchangeHandler(env=_Env({"x.manual": model}), params={
+                "model": "x.manual", "values": {"menu_id": 1}, "changed_fields": ["menu_id"],
+            })
+            with patch.object(model, "onchange", return_value=raw), patch.object(handler, "_manual_onchange_result") as manual:
+                result = handler.handle()
+            manual.assert_not_called()
+            self.assertFalse(result["ok"])
+            self.assertEqual(result["error"]["reason_code"], "ONCHANGE_RESPONSE_INVALID")
 
     def feedback_params(self, **overrides):
         params = {
