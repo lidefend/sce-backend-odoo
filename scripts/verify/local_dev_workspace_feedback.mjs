@@ -101,7 +101,7 @@ try {
     assert(node, 'native contact entry missing');
     const item = { model, field: 'child_ids', route: node.meta.route, passed: false };
     report.cases.push(item);
-    await page.goto(new URL(node.meta.route, base).href, {waitUntil: 'domcontentloaded'});
+    await page.goto(base + node.meta.route, {waitUntil: 'domcontentloaded'});
     await page.getByRole('button', {name: /^(新建|新增|创建)$/}).first().click();
     const name = page.locator('[data-field-name="name"] input:visible').first();
     await name.waitFor({state: 'visible', timeout: 45000});
