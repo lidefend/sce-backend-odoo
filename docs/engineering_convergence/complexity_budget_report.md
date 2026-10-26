@@ -175,7 +175,7 @@ Generated from repository source files. This report is informational during the 
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 918 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
-| 911 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
+| 914 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 910 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |

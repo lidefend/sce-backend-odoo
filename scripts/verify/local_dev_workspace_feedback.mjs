@@ -679,8 +679,11 @@ try {
           assert.equal(payload.ok,true);
           await page.waitForFunction(()=>['ok','empty'].includes(document.querySelector('[data-semantic-component="ActionView"]')?.getAttribute('data-collection-state')));
           if (entry.meta.model === 'account.move') {
-            await page.getByRole('columnheader',{name:'凭证编号',exact:true}).waitFor({state:'visible'});
-            assert.equal(await page.getByRole('columnheader',{name:'数量',exact:true}).count(),0);
+            const headers = page.locator('[data-semantic-component="ActionView"] thead th');
+            report.journalHeaders = (await headers.allTextContents()).map(text=>text.trim());
+            assert.equal(report.journalHeaders.filter(text=>text==='凭证编号').length,1);
+            assert(!report.journalHeaders.includes('数量'));
+            await headers.getByText('凭证编号',{exact:true}).waitFor({state:'visible'});
             report.journalNumberLabel = '凭证编号';
           }
           report.cases.push({model:entry.meta.model,menu,route:entry.meta.route,navigationPublished:true,
