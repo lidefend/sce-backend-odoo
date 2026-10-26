@@ -1810,9 +1810,9 @@
         "addons/smart_construction_core/tests/test_system_permission_accounting.py",
         "scripts/verify/local_dev_workspace_feedback.mjs"
       ],
-      "status": "static_and_orm_passed_browser_pending",
+      "status": "browser_sample_assumption_corrected_pending",
       "validation": "L1+collection_view_semantics PASS (includes3739 native differential cases and8/20/41 test groups); journal policy25JS+11Python PASS; actual accounting class20 post-tests0fail0error; final full frontend lint exit0 with existing StatusPanel warning and strict types exit0; four affected regression targets PASS.",
-      "limits": "Generic nonempty JSON follows existing readable raw JSON representation; native analytic widget/account label/percentage editing support remains open. No claim of complete analytic distribution UX.",
+      "limits": "GenericJSON display consumes existing P0 rule only, not native analytic-widget acceptance. Real sample NONEMPTY. Preserve account IDs/raw values; next native widget needs authorized account names/percentage semantics, not raw JSON acceptance. Browser report explicitly nativeAnalyticWidgetAccepted=false.",
       "lint_blockers": {
         "original": "native-values-lint.log 10 errors in unchanged existing candidate files; no browser run over failure",
         "scope": [
@@ -1826,7 +1826,8 @@
         "validation": "rerun affected existing tests, lint and strict types"
       },
       "review": "review_takeover no blockers after journal-save selector sync and minimal lint corrections. Original lint failure retained. No permissions relaxed.",
-      "runtime_plan": "Registered sc-local-dev/sc_dev_demo namespace ns_000000000002; read-only draft10/posted55 first, then existing owned single-draft create/readback/cleanup/independent absence via write lease. No posted55 mutation, no migrations."
+      "runtime_plan": "Registered sc-local-dev/sc_dev_demo namespace ns_000000000002; read-only draft10/posted55 first, then existing owned single-draft create/readback/cleanup/independent absence via write lease. No posted55 mutation, no migrations.",
+      "failure": "native-values-browser.log at744be8dc9: empty analytic sample assumption failed; actual posted55 both lines auto-populated {\"1\":100}. Label already保存, errors0. GenericJSON text visible; originalfailure preserved."
     }
   }
 }

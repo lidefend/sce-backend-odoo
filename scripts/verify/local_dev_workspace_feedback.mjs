@@ -798,9 +798,14 @@ try {
               assert.equal(readonlyHeaders.filter(text=>text==='分析分配').length,1);
               for (const line of lines) {
                 const distribution=line.analytic_distribution;
-                assert(distribution===false || distribution===null || (typeof distribution==='object' && !Array.isArray(distribution) && Object.keys(distribution).length===0),'this empty-value demo assertion needs an unallocated line');
+                assert(distribution===false || distribution===null || (typeof distribution==='object' && !Array.isArray(distribution)), 'expected native distribution object');
+                const empty=distribution===false || distribution===null || Object.keys(distribution).length===0;
+                const expected=empty ? '—' : JSON.stringify(distribution);
                 const row=readonlyTable.locator('tbody tr').filter({has:page.getByText(line.account_id[1],{exact:true})});
-                assert.equal((await row.locator('td').nth(readonlyHeaders.indexOf('分析分配')).innerText()).trim(),'—');
+                const actual=(await row.locator('td').nth(readonlyHeaders.indexOf('分析分配')).innerText()).trim();
+                assert.equal(actual,expected);
+                (detail.structuredValues ??= []).push({lineId:line.id,raw:distribution,display:actual,
+                  representation:empty ? 'empty' : 'generic_json_text',nativeAnalyticWidgetAccepted:false});
               }
               assert(!(await readonlyTable.innerText()).includes('[object Object]'));
               assert.equal(await page.locator('[data-semantic-component="ContractFormPage"]').getByRole('button',{name:'过账',exact:true}).count(),0,'posted journal must not expose posting again');
