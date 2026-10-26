@@ -29,32 +29,38 @@ def collect_modifier_dependency_fields(*sources: Any, known_fields: Any = None) 
     allowed = set(known_fields or []) if known_fields is not None else None
     names: list[str] = []
 
-    def walk(value: Any) -> None:
+    def add(field: Any, depth: int) -> None:
+        if not isinstance(field, str):
+            return
+        name = field.strip()
+        if depth == 1 and name.startswith("parent."):
+            name = name[len("parent."):]
+        elif depth != 0:
+            return
+        # Dotted paths are not fields of the root model. Nested parent frames
+        # need their own hydration authority and must never alias this record.
+        if not name or "." in name:
+            return
+        if (allowed is None or name in allowed) and name not in names:
+            names.append(name)
+
+    def walk(value: Any, depth: int = 0) -> None:
         if isinstance(value, (list, tuple)):
             for item in value:
-                walk(item)
+                walk(item, depth)
             return
         if not isinstance(value, dict):
             return
         kind = str(value.get("kind") or "").strip()
-        field_name = str(value.get("field") or "").strip()
-        if (
-            kind in MODIFIER_DEPENDENCY_KINDS
-            and field_name
-            and (allowed is None or field_name in allowed)
-            and field_name not in names
-        ):
-            names.append(field_name)
-        value_field = str(value.get("value_field") or "").strip()
-        if (
-            kind == "field_compare"
-            and value_field
-            and (allowed is None or value_field in allowed)
-            and value_field not in names
-        ):
-            names.append(value_field)
-        for child in value.values():
-            walk(child)
+        if kind in MODIFIER_DEPENDENCY_KINDS:
+            add(value.get("field"), depth)
+        if kind == "field_compare":
+            add(value.get("value_field"), depth)
+        for key, child in value.items():
+            # Both the field descriptor and native projection preserve explicit
+            # subview carriers. The plural carrier adds one scope, not one per
+            # field/view key beneath it.
+            walk(child, depth + 1 if key in {"subview", "subviews"} else depth)
 
     for source in sources:
         walk(source)

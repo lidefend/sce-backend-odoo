@@ -798,6 +798,37 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                     self.assertNotIn('has_lines', contract['dataContract']['mainData'])
                 self.assertNotIn('has_lines_limit', contract['dataContract']['mainData'])
 
+    def test_child_parent_dependencies_hydrate_without_child_field_aliasing(self):
+        for carrier in ("subview", "subviews"):
+            for deny in (None, "read", "field"):
+                with self.subTest(carrier=carrier, deny=deny):
+                    model, contract = self._create_modifier_fixture(lines=[(0, 0, {"quantity": 2})], deny=deny)
+                    child = {"tree": {"fields": [{"name": "note", "modifiers": {
+                        "readonly": {"kind": "field_truthy", "field": "parent.has_lines"},
+                        "required": {"kind": "field_truthy", "field": "display_only"},
+                        "invisible": {"kind": "field_compare", "field": "state", "operator": "==", "value_field": "parent.state"},
+                    }}]}}
+                    contract["layoutContract"]["containerTree"] = [{carrier: child if carrier == "subview" else {"lines": child}}]
+                    self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract,
+                        model="x.document", record_id=None, view_type="form")
+                    if deny is None:
+                        self.assertIs(contract["dataContract"]["mainData"]["has_lines"], True)
+                    else:
+                        self.assertNotIn("has_lines", contract["dataContract"]["mainData"])
+                    self.assertNotIn("display_only", contract["dataContract"]["mainData"])
+
+    def test_child_local_and_nested_parent_dependencies_do_not_read_root(self):
+        for field in ("has_lines", "parent.parent.has_lines"):
+            model, contract = self._create_modifier_fixture()
+            contract["layoutContract"]["containerTree"] = [{"subview": {"tree": {
+                "modifiers": {"readonly": {"kind": "field_truthy", "field": field}},
+                "subviews": {"nested": {"modifiers": {"readonly": {"kind": "field_value", "field": "parent.has_lines"}}}},
+            }}}]
+            self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract,
+                model="x.document", record_id=None, view_type="form")
+            self.assertNotIn("has_lines", contract["dataContract"]["mainData"])
+            self.assertEqual(model.calls, [])
+
     def test_create_modifier_dependencies_accept_new_request_identity(self):
         model, contract = self._create_modifier_fixture()
         self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id="new", view_type="form")
@@ -906,6 +937,34 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(contract["dataContract"]["mainData"]["type"], "pay")
         self.assertEqual(model.record_id, 42)
         self.assertEqual(model.record.read_fields, [["type"]])
+
+    def test_persisted_child_parent_operand_hydrates_and_preserves_read_denial(self):
+        for denied in (False, True):
+            calls = []
+            class Model:
+                _fields = {"amount": type("Field", (), {"type": "float"})()}
+                def browse(self, identity):
+                    self_identity = identity
+                    calls.append(("browse", self_identity))
+                    return self
+                def exists(self):
+                    return self
+                def read(self, fields):
+                    calls.append(("read", fields))
+                    if denied:
+                        raise PermissionError("record rule denied")
+                    return [{"amount": 23}]
+            contract = {"dataContract": {"mainData": {}}, "layoutContract": {"containerTree": [{
+                "subview": {"tree": {"modifiers": {"readonly": {
+                    "kind": "value_compare", "semantics": "python", "operator": ">",
+                    "left": {"kind": "field_value", "field": "parent.amount"},
+                    "right": {"kind": "context_get", "key": "limit", "default": 0},
+                }}}}
+            }]}}
+            self.module.hydrate_final_modifier_dependencies({"x.document": Model()}, contract,
+                model="x.document", record_id=42, view_type="form")
+            self.assertEqual(calls, [("browse", 42), ("read", ["amount"])])
+            self.assertEqual(contract["dataContract"]["mainData"], {} if denied else {"amount": 23})
 
     def test_final_modifier_hydration_performs_no_read_without_missing_dependency(self):
         class _Model:
