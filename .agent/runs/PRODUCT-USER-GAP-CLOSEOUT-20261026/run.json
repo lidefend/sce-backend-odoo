@@ -154,7 +154,13 @@
     "addons/smart_construction_core/views/support/account_extend_views.xml",
     "demo_addons/smart_construction_demo/seed/steps/step_formal_product_surfaces.py",
     "addons/smart_construction_core/services/contract_governance_overrides.py",
-    "frontend/apps/web/scripts/node_component_consumption_test.ts"
+    "frontend/apps/web/scripts/node_component_consumption_test.ts",
+    "frontend/apps/web/src/components/template/relationField.types.ts",
+    "frontend/apps/web/src/components/template/weightedRelationDisplay.ts",
+    "frontend/apps/web/src/components/template/NativeWeightedRelationDisplay.vue",
+    "frontend/apps/web/src/components/template/One2ManyCellEditor.vue",
+    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+    "frontend/apps/web/scripts/weighted_relation_component_test.mjs"
   ],
   "environment": {
     "kind": "runtime",
@@ -166,7 +172,7 @@
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Implement native analytic_distribution widget declaration/consumption including authorized account names, percentages and safe editing/readonly behavior; preserve raw JSON values and fail closed on missing declarations. Then seed explicit accounting_read demo and verify state/action matrix. Do not treat generic JSON text as analytic widget completion.",
+  "next_exact_step": "Validate native weighted relation declarations and rendering, real company-boundary ORM, then affected exact candidate browser/owned save cleanup.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1832,6 +1838,34 @@
       "browser": "native-values-final-browser.log exit0 PASS6 and draft10/posted55 verified. Both save labels保存; account/debit/credit and original line values unchanged; errors0 blocked0. Actual distributions {\"1\":100} shown by existing generic JSON display; structuredValues explicitly nativeAnalyticWidgetAcceptedfalse.",
       "save_browser": "native-values-save-browser.log exit0 PASS: owned record64 lines59/60 create/readback/reload, ORM cleanup committed, independent verify_absent passedtrue absenttrue. No posting. Original10/55 retained.",
       "evidence": "journal-role-browser/23e06062e965275da976a965a375dd4d3a90efe8/; journal-save-browser/23e06062e965275da976a965a375dd4d3a90efe8/P4-JOURNAL-23e06062e965275da976a965a375dd4d3a90efe8-e0aa8f05e36b470fb5349e1d7ac05ab2/"
+    },
+    "native_analytic_readonly": {
+      "head": "602dadd8f plus explicit paths",
+      "layer": "P0 native widget parser declaration and generic weighted relation display; P1 tests only",
+      "scope": [
+        "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+        "addons/smart_core/tests/test_native_view_parser_surfaces.py",
+        "frontend/apps/web/src/pages/contractForm/types.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
+        "frontend/apps/web/src/components/template/relationField.types.ts",
+        "frontend/apps/web/src/components/template/weightedRelationDisplay.ts",
+        "frontend/apps/web/src/components/template/NativeWeightedRelationDisplay.vue",
+        "frontend/apps/web/src/components/template/One2ManyCellEditor.vue",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+        "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+        "make/frontend.mk",
+        "frontend/apps/web/scripts/weighted_relation_component_test.mjs",
+        "scripts/verify/local_dev_workspace_feedback.mjs"
+      ],
+      "reason": "Native analytic_distribution widget, not model/field name guesses, declares related model/label/unit/csv encoding/readonly mode. Ordinary API reads with contract context, no sudo or ACL expansion. Raw distribution values unchanged; no text editor for this declared readonly widget.",
+      "status": "static_orm_component_passed_browser_pending",
+      "validation": "analytic-native-unit-complete.log:42 parser tests+collection/native differential3739 and weighted display cases PASS; analytic-native-occurrence-component.log mounted actual SFC stale/context/denied/empty/unmount/raw tests PASS plus existing SSR42. Final types/lint PASS (existing warning only), contract_basis15 tests/guard0open PASS; analytic-native-final-orm.log21 actual post-tests0fail0error including analytic company boundary; L1 and25JS+11Python policy PASS.",
+      "limits": "Readonly native distribution display only; distribution editor remains unimplemented and is explicitly not rendered. No demo seed/migration/upgrade required.",
+      "review": "review_takeover S2 occurrence mixing fixed and mounted asynchronous evidence reviewed, no remaining blockers. Runtime chain still required.",
+      "failures": "First collection exact shape check failed on new empty widget properties: changed to conditional source-paired projection. Initial types failed FieldDescriptor.widget unsupported: removed descriptor fallback in occurrence pairing fix. Original logs retained.",
+      "runtime_plan": "Registered sc-local-dev/sc_dev_demo, uid7/company1, exact candidate readonly draft10/posted55 native account-label/percentage/ready/no-input and unchanged raw checks; then existing owned single draft save/readback/cleanup. No demo mutation/migration/module upgrade."
     }
   }
 }

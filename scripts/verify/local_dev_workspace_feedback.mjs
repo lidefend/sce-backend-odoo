@@ -794,22 +794,41 @@ try {
             const form=page.locator('[data-semantic-component="ContractFormPage"]');
             await form.getByRole('button',{name:'保存',exact:true}).waitFor({state:'visible'});
             assert.equal(await form.getByRole('button',{name:'保存草稿',exact:true}).count(),0);
+            const nativeCells=page.locator('[data-field-name="line_ids"] [data-detail-collection-content="desktop-table"] [data-semantic-component="NativeWeightedRelationDisplay"]');
+            assert.equal(await nativeCells.count(),lines.length);
+            await page.waitForFunction(() => {
+              const cells=[...document.querySelectorAll('[data-field-name="line_ids"] [data-detail-collection-content="desktop-table"] [data-semantic-component="NativeWeightedRelationDisplay"]')];
+              return cells.length>0 && cells.every(cell=>cell.getAttribute('data-display-state')==='ready');
+            });
+            assert.equal(await page.locator('input[id$="-analytic_distribution-desktop"]').count(),0);
             if (journalState === 'posted') {
               assert.equal(readonlyHeaders.filter(text=>text==='分析分配').length,1);
               for (const line of lines) {
                 const distribution=line.analytic_distribution;
                 assert(distribution===false || distribution===null || (typeof distribution==='object' && !Array.isArray(distribution)), 'expected native distribution object');
-                const empty=distribution===false || distribution===null || Object.keys(distribution).length===0;
-                const expected=empty ? '—' : JSON.stringify(distribution);
+                assert(distribution && Object.keys(distribution).length===1,'demo should retain one native analytic allocation');
+                const [key,percentage]=Object.entries(distribution)[0];
+                assert.match(key,/^[1-9]\d*$/); assert.equal(percentage,100);
+                const accountId=Number(key);
+                const named=await journalApi('api.data',{op:'read',model:'account.analytic.account',ids:[accountId],fields:['id','display_name'],context:{allowed_company_ids:[1]}});
+                assert.equal(named.status,200); assert.equal(named.payload.ok,true);
+                assert.equal(named.payload.data.records.length,1); assert.equal(named.payload.data.records[0].id,accountId);
+                const expected=`${named.payload.data.records[0].display_name}：100%`;
                 const row=readonlyTable.locator('tbody tr').filter({has:page.getByText(line.account_id[1],{exact:true})});
-                const actual=(await row.locator('td').nth(readonlyHeaders.indexOf('分析分配')).innerText()).trim();
-                assert.equal(actual,expected);
+                const cell=row.locator('td').nth(readonlyHeaders.indexOf('分析分配'));
+                await cell.locator('[data-semantic-component="NativeWeightedRelationDisplay"][data-display-state="ready"]').waitFor({state:'visible'});
+                const actual=(await cell.innerText()).trim();
+                assert.equal(actual,expected); assert.equal(await cell.locator('input').count(),0);
                 (detail.structuredValues ??= []).push({lineId:line.id,raw:distribution,display:actual,
-                  representation:empty ? 'empty' : 'generic_json_text',nativeAnalyticWidgetAccepted:false});
+                  representation:'native_weighted_relation',nativeAnalyticReadonlyAccepted:true,nativeAnalyticEditingAccepted:false});
               }
               assert(!(await readonlyTable.innerText()).includes('[object Object]'));
+              const right=readonlyTable.getByRole('button',{name:'查看右侧列',exact:true});
+              if (await right.count() && await right.isEnabled()) await right.click();
+
               assert.equal(await page.locator('[data-semantic-component="ContractFormPage"]').getByRole('button',{name:'过账',exact:true}).count(),0,'posted journal must not expose posting again');
             }
+            detail.lineRegionText=await page.locator('[data-field-name="line_ids"]').first().innerText();
             report.journalStates.push({state:journalState,outcome:'verified',...detail});
             if (journalState === 'draft') report.journalDetail=detail;
             await page.screenshot({path:`${root}/${actor}-saved-${journalState}-detail.png`});
