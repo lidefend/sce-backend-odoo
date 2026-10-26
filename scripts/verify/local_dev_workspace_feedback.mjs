@@ -222,7 +222,7 @@ try {
     assert(!/页面加载失败|ContractGapError|字段联动失败|字段联动声明不完整/.test(await page.locator('body').innerText()));
     assert.equal(report.blocked.length, 0);
     // Query the actual selector; an unopened selector's placeholder is not data evidence.
-    const accountInput = collection.locator('input[aria-label="科目"]');
+    const accountInput = collection.locator('input[aria-label="科目"]:visible');
     const [accountResponse] = await Promise.all([
       page.waitForResponse(response => {
         let body; try { body = response.request().postDataJSON(); } catch { return false; }
