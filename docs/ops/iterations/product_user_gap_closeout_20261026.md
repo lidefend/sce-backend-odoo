@@ -904,3 +904,33 @@ parser39、canonical新增快照绑定/伪造拒绝断言、strict typecheck和c
 `twentyfirst-orm-fixed.log`：通过现有`local.dev.test`、`sc-local-dev/sc_dev_demo`回滚管理
 入口执行普通accounting_user用例，非零1项、0失败/0错误；断言非空原生默认命令、空_origin持久
 身份、mainData命令保留与最终False条件。没有模块升级、fixture重建或服务候选切换。
+
+## 第二十二增量：未保存明细的虚拟ID联动定位
+
+候选基于`8ba805dcd3401ccdb5388b2de0d0e315b4d7f68d`，P0子表onchange身份与传输，P1
+扩展已有普通会计ORM测试；P4仅同步既有命令类型守卫。
+依据[Odoo17 RecordSnapshot.diff](https://github.com/odoo/odoo/blob/17.0/addons/web/models/models.py)，
+新行可用NewId.ref返回CREATE/UPDATE/DELETE命令。此前请求把每个新行引用都发成0，不能稳定定位。
+
+- 子表onchange create命令第二项携带稳定row.key，要求非空且唯一；正式write仍生成
+  `[0,0,values]`，虚拟ID不作为数据库ID或原生条件持久ID。
+- 回应UPDATE以字符串key精确定位新行；已知CREATE引用合并已有行，保留未改字段，不重复造行；
+  新CREATE引用建立对应新行，后续同批UPDATE可定位。虚拟DELETE/UNLINK移除草稿，不发数据库
+  删除命令。未知更新/删除、持久行key冲突、同批删除后复活和虚拟LINK/SET仍显式拒绝。
+- 命令准备失败不修改当前行。两个显示名相同的新行按不同key定位，不按文本或位置猜测。
+  本轮只扩展受控one2many inline路径，旧通用sanitizer未获得虚拟ID支持。
+
+证据根`.runtime/product-user-gap-closeout-20261026/`：`twentysecond-l1.log`轻量迭代通过；
+`twentysecond-l2.log`默认值55及新增runtime虚拟身份断言、实际formstate请求/响应定位用例、
+onchange守卫和4项竞态通过，随后旧x2many守卫仅数字ID类型字面标记失败。P4同步为number|string
+协议类型，未删除其他断言；`twentysecond-guards-fixed.log`x2many守卫、明细组件定向回归、
+strict typecheck和contract basis通过。独立只读复核无新增S0–S2阻断。
+
+真实ORM使用既有local.dev.test与会计测试类，检查两个同名原生新行的RecordSnapshot差异更新，
+结果在本节最终条目记录。这不等于api_onchange handler全链路已贯通；其field_spec声明形状、
+隐藏默认字段权威与真实页面验收仍是后续重点。无主线集成、部署、模块升级或demo重建；FG15未关闭。
+
+最终ORM：`twentysecond-orm.log`记录2026-10-26 01:12 UTC在已登记的
+`sc-local-dev/sc_dev_demo`执行普通会计用例，实际1项、0失败/0错误。原生快照只返回
+指定虚拟ID的UPDATE，另一同名草稿不受影响，持久身份仍为空。使用既有回滚测试入口，
+未升级模块、重建demo或切换服务候选；最终仅补证据记录，已通过检查的源码输入未变。

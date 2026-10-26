@@ -389,3 +389,33 @@ for (const tail of [[4, 42], [6, 0, [42]], [1, 42, { name: 'Revived' }]]) {
 }
 replayChild.prepareOnchangeRows('lines', [[3, 42], [4, 42]])();
 assert.deepEqual(replayChild.visibleRows('lines').map(row => row.id), [42, 43], 'unlink followed by link is reversible');
+
+const virtualChild = useOne2manyRuntime({ model: () => 'x.parent', recordId: () => 0,
+  originalValues: () => ({}), parentValues: () => ({ '$native.fieldTypes': { lines: 'one2many' } }),
+  onchangeLinePatches: () => [], resolveColumns: () => replayColumns, resolvePrimaryColumn: () => 'name',
+  resolveRelationOptions: () => [], markFieldChanged: () => {}, loadDefaults: async () => ({ name: 'Same label', quantity: 1 }),
+});
+await virtualChild.addRow('lines'); await virtualChild.addRow('lines');
+const [virtualA, virtualB] = virtualChild.visibleRows('lines');
+const requestCommands = virtualChild.buildCommandValue('lines', 'onchange') as unknown[][];
+assert.deepEqual(requestCommands.map(command => command[1]), [virtualA!.key, virtualB!.key]);
+assert.notEqual(virtualA!.key, virtualB!.key);
+virtualChild.prepareOnchangeRows('lines', [[1, virtualB!.key, { quantity: 8 }]])();
+assert.equal(virtualChild.visibleRows('lines')[0]!.values.quantity, 1);
+assert.equal(virtualChild.visibleRows('lines')[1]!.values.quantity, 8);
+virtualChild.prepareOnchangeRows('lines', [[0, virtualB!.key, { name: 'Echo' }]])();
+assert.equal(virtualChild.visibleRows('lines').length, 2, 'create echo must not duplicate an existing virtual identity');
+assert.equal(virtualChild.visibleRows('lines')[1]!.values.quantity, 8);
+assert.deepEqual((virtualChild.buildCommandValue('lines', 'write') as unknown[][]).map(command => command[1]), [0, 0]);
+for (const commands of [[[1, 'unknown_ref', { name: 'Wrong' }]], [[2, 'unknown_ref']], [[4, virtualA!.key]], [[6, 0, [virtualA!.key]]]]) {
+  const before = JSON.stringify(virtualChild.fieldRows('lines'));
+  assert.throws(() => virtualChild.prepareOnchangeRows('lines', commands), { name: 'ContractGapError' });
+  assert.equal(JSON.stringify(virtualChild.fieldRows('lines')), before);
+}
+virtualChild.prepareOnchangeRows('lines', [[2, virtualA!.key]])();
+assert.equal(virtualChild.visibleRows('lines').length, 1);
+assert.equal((virtualChild.buildCommandValue('lines', 'write') as unknown[][]).some(command => command[0] === 2), false);
+virtualChild.prepareOnchangeRows('lines', [[0, 'server_ref', { name: 'Server', quantity: 3 }], [1, 'server_ref', { quantity: 4 }]])();
+assert.equal(virtualChild.visibleRows('lines').find(row => row.key === 'server_ref')?.values.quantity, 4);
+assert.deepEqual(virtualChild.projectModifierValues({ '$native.fieldTypes': { lines: 'one2many' } }).lines, []);
+console.log('virtual relation identities roundtrip and write separation: passed');

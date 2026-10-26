@@ -1,5 +1,7 @@
-export type X2ManyCommand = [number, number, unknown?];
+import { contractGapError } from './contract/contractGap';
+export type X2ManyCommand = [number, number | string, unknown?];
 export type One2ManyInlineDraftRow = {
+  key?: string;
   removalCommand?: 2 | 3;
   id?: number | null;
   isNew?: boolean;
@@ -100,12 +102,20 @@ export function buildOne2ManyInlineCommands(params: {
   const originalSet = new Set(originalIds);
   const commands: X2ManyCommand[] = [];
 
+  const virtualKeys = new Set<string>();
   params.draftRows.forEach((row) => {
     const id = toPositiveInt(row.id);
     const values = row.values && typeof row.values === 'object' ? row.values : {};
     if (row.isNew) {
       if (!row.removed) {
-        commands.push([0, 0, values]);
+        if (params.mode === 'onchange') {
+          if (typeof row.key !== 'string' || !row.key.trim() || virtualKeys.has(row.key)) {
+            throw contractGapError({ kind: 'contract_defect', missing: 'one2many.virtual_identity',
+              requiredDeclarationLayer: 'P0:smart_core:onchange' }, '未保存明细缺少唯一联动身份');
+          }
+          virtualKeys.add(row.key);
+        }
+        commands.push([0, params.mode === 'onchange' ? row.key! : 0, values]);
       }
       return;
     }

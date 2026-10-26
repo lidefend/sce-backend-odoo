@@ -107,6 +107,28 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
             ('ref', '=', values['ref']), ('company_id', '=', self.env.company.id)]), 1)
         self.assertEqual(move.with_env(self.env).state, 'posted')
 
+    def test_native_virtual_relation_snapshot_roundtrip(self):
+        from odoo.addons.web.models.models import RecordSnapshot
+        user = self._subject('accounting_user')
+        model = self.env['account.move'].with_user(user)
+        model.check_access_rights('read')
+        model.check_access_rights('create')
+        draft = model.new({'move_type': 'out_invoice', 'invoice_line_ids': [
+            (0, 'sce_virtual_a', {'name': 'Synthetic same label', 'quantity': 1}),
+            (0, 'sce_virtual_b', {'name': 'Synthetic same label', 'quantity': 1}),
+        ]})
+        specification = {'invoice_line_ids': {'fields': {'name': {}, 'quantity': {}}}}
+        before = RecordSnapshot(draft, specification)
+        target = draft.invoice_line_ids.filtered(lambda line: line.id.ref == 'sce_virtual_b')
+        self.assertEqual(len(target), 1)
+        target.quantity = 8
+        patch = RecordSnapshot(draft, specification).diff(before)
+        commands = patch['invoice_line_ids']
+        self.assertTrue(commands)
+        self.assertEqual([(int(command[0]), command[1]) for command in commands], [(1, 'sce_virtual_b')])
+        self.assertEqual(commands[0][2]['quantity'], 8)
+        self.assertEqual(draft.invoice_line_ids._origin.ids, [])
+
     def test_native_create_relation_modifier_snapshot(self):
         from odoo.addons.smart_core.core.unified_page_contract_v2_modifier_dependencies import hydrate_final_modifier_dependencies
         from odoo.addons.smart_core.core.native_modifier_context import native_modifier_values

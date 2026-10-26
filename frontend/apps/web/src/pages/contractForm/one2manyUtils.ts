@@ -678,6 +678,7 @@ export function buildOne2manyCommandValue(
   return buildOne2ManyInlineCommands({
     original,
     draftRows: rows.map((row) => ({
+      key: row.key,
       id: row.id,
       isNew: row.isNew,
       removed: row.removed,

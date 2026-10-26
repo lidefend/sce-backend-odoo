@@ -15,7 +15,17 @@ export function replayOne2manyOnchange(params: {
   };
   if (!Array.isArray(params.commands)) return fail();
   let rows = params.rows.map(row => ({ ...row, values: { ...row.values }, dirtyFields: [...row.dirtyFields] }));
-  const deleted = new Set<number>();
+  const virtual = (value: unknown): value is string => typeof value === 'string' && Boolean(value.trim());
+  if (new Set(rows.map(row => row.key)).size !== rows.length) return fail();
+  const deleted = new Set<number | string>();
+  const target = (identity: unknown) => id(identity)
+    ? rows.find(row => !row.isNew && row.id === identity)
+    : virtual(identity) ? rows.find(row => row.isNew && row.key === identity) : undefined;
+  const patchRow = (row: One2ManyInlineRow, value: unknown) => {
+    const patch = payload(value);
+    row.values = { ...row.values, ...patch };
+    row.dirtyFields = [...new Set([...row.dirtyFields, ...Object.keys(patch)])]; row.dirty = true;
+  };
   const link = (recordId: unknown) => {
     if (!id(recordId) || deleted.has(recordId)) return fail();
     const row = rows.find(item => item.id === recordId && !item.isNew);
@@ -33,20 +43,28 @@ export function replayOne2manyOnchange(params: {
   for (const command of params.commands) {
     if (!Array.isArray(command)) return fail();
     const [op, recordId, value] = command;
-    if (op === 0 && recordId === 0 && command.length === 3) {
-      rows.push(createOne2manyDraftRow({ key: params.makeKey(), primary: params.primary, columns: params.columns, defaults: payload(value) }));
-    } else if (op === 1 && id(recordId) && command.length === 3) {
-      const row = rows.find(item => !item.isNew && !item.removed && item.id === recordId);
-      if (!row) return fail();
-      const patch = payload(value);
-      row.values = { ...row.values, ...patch };
-      row.dirtyFields = [...new Set([...row.dirtyFields, ...Object.keys(patch)])]; row.dirty = true;
-    } else if ((op === 2 || op === 3) && id(recordId) && (command.length === 2 || command.length === 3 && value === 0)) {
-      const row = rows.find(item => !item.isNew && item.id === recordId);
-      if (!row) return fail();
-      if (deleted.has(recordId)) return fail();
-      row.removed = true; row.removalCommand = op; row.dirty = true;
-      if (op === 2) deleted.add(recordId);
+    if (op === 0 && (recordId === 0 || virtual(recordId)) && command.length === 3) {
+      const key = recordId === 0 ? params.makeKey() : recordId;
+      if (!virtual(key) || deleted.has(key)) return fail();
+      const existing = rows.find(row => row.key === key);
+      if (existing) {
+        if (recordId === 0 || !existing.isNew || existing.removed) return fail();
+        patchRow(existing, value);
+      } else rows.push(createOne2manyDraftRow({ key, primary: params.primary, columns: params.columns, defaults: payload(value) }));
+    } else if (op === 1 && (id(recordId) || virtual(recordId)) && command.length === 3) {
+      const row = target(recordId);
+      if (!row || row.removed || deleted.has(recordId)) return fail();
+      patchRow(row, value);
+    } else if ((op === 2 || op === 3) && (id(recordId) || virtual(recordId)) && (command.length === 2 || command.length === 3 && value === 0)) {
+      const row = target(recordId);
+      if (!row || deleted.has(recordId)) return fail();
+      if (row.isNew) {
+        rows = rows.filter(item => item !== row);
+        deleted.add(recordId);
+      } else {
+        row.removed = true; row.removalCommand = op; row.dirty = true;
+        if (op === 2) deleted.add(recordId);
+      }
     } else if (op === 4 && (command.length === 2 || command.length === 3 && value === 0)) link(recordId);
     else if (op === 5 && recordId === 0 && (command.length === 2 || command.length === 3 && value === 0)) set([]);
     else if (op === 6 && recordId === 0 && command.length === 3) set(value);

@@ -251,3 +251,19 @@ assert.equal(child.fieldRows('lines')[0]!.values.name, 'Server update');
 assert.equal(child.fieldRows('lines').some(row => row.isNew), true);
 assert.equal(h.context.applyingOnchangePatch.value, false);
 console.log('formstate real onchange entry staged rejection and success: passed');
+
+await child.addRow('lines');
+const newRows = child.visibleRows('lines').filter(row => row.isNew);
+const targetKey = newRows[1]!.key;
+let sentVirtualKeys: unknown[] = [];
+h.context.requestOnchange = async request => {
+  sentVirtualKeys = (request.values.lines as unknown[][]).filter(command => command[0] === 0).map(command => command[1]);
+  return { patch: { lines: [[1, targetKey, { name: 'Targeted virtual row' }]] } };
+};
+h.changedFieldSet.add('name');
+await h.api.runOnchangeRoundtrip();
+assert.deepEqual(sentVirtualKeys, newRows.map(row => row.key));
+assert.equal(child.visibleRows('lines').find(row => row.key === targetKey)?.values.name, 'Targeted virtual row');
+assert.notEqual(child.visibleRows('lines').find(row => row.key === newRows[0]!.key)?.values.name, 'Targeted virtual row');
+assert.equal(h.context.applyingOnchangePatch.value, false);
+console.log('formstate virtual request/response identity: passed');
