@@ -1780,6 +1780,8 @@ verify.local.dev.journal.draft: guard.prod.forbid local.dev.ready local.dev.entr
 .PHONY: verify.local.dev.journal.save verify.local.dev.journal.save.run verify.local.dev.journal.save.policy
 verify.local.dev.journal.save.policy: guard.prod.forbid
 	@node --test scripts/verify/test_local_dev_journal_save_policy.mjs
+	@python3 scripts/verify/test_local_dev_journal_recovery.py
+	@bash -n scripts/verify/local_dev_workspace_feedback.sh
 	@node --check scripts/verify/local_dev_workspace_feedback.mjs
 verify.local.dev.journal.save: guard.prod.forbid
 	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "journal-draft-save" -- $(MAKE) --no-print-directory verify.local.dev.journal.save.run
@@ -1793,7 +1795,7 @@ verify.local.dev.journal.save.run: guard.prod.forbid local.dev.ready local.dev.e
 local.dev.journal.recovery: guard.prod.forbid
 	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "journal-owned-recovery" -- $(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" local.dev.journal.recovery.run
 local.dev.journal.recovery.run: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.write_lease.require
-	@test "$(SC_CONFIRM_JOURNAL_RECOVERY)" = "READBACK_CLEANUP_OWNED_DRAFT_13"
+	@case "$(SC_CONFIRM_JOURNAL_RECOVERY)" in READBACK_CLEANUP_OWNED_DRAFT_13|PREFLIGHT_CLEANUP_ONE_OWNED_DRAFT) ;; *) exit 1 ;; esac
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  SC_CONFIRM_JOURNAL_RECOVERY="$(SC_CONFIRM_JOURNAL_RECOVERY)" SC_RUNTIME_JOURNAL_RECOVERY="$(SC_RUNTIME_JOURNAL_RECOVERY)" \
 	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_journal_recovery.py

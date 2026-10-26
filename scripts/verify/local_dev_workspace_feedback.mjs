@@ -8,7 +8,9 @@ import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap
 const base = 'http://127.0.0.1:18081/t/demo';
 const scope = process.env.SC_FEEDBACK_SCOPE || 'workspace';
 assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child', 'journal-draft', 'journal-save'].includes(scope));
-const root = `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}`;
+const root = scope === 'journal-save' ? process.env.SC_RUNTIME_JOURNAL_EVIDENCE
+  : `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}`;
+if (scope === 'journal-save') assert.equal(root, `.runtime/product-user-gap-closeout-20261026/journal-save-browser/${process.env.CANDIDATE_GIT_HEAD}/${process.env.SC_RUNTIME_JOURNAL_REF}`);
 fs.mkdirSync(root, {recursive: true});
 const actor = scope === 'usability' ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
 assert(['demo_full', 'demo_role_pm', 'demo_role_finance', 'demo_role_project_read'].includes(actor));
@@ -44,8 +46,10 @@ const browser = await launchChromium({headless: true});
 let page;
 let certificateRecordId = null;
 const journalSave = { enabled: scope === 'journal-save', ready: false, createAttempted: false, cleanupVerified: false,
-  ref: `P4-JOURNAL-${process.env.CANDIDATE_GIT_HEAD}-${Date.now()}`, createdId: null, accounts: [], rowKeys: [] };
+  ref: process.env.SC_RUNTIME_JOURNAL_REF, createdId: null, accounts: [], rowKeys: [] };
 if (journalSave.enabled) {
+  assert(new RegExp(`^P4-JOURNAL-${report.head}-[a-f0-9]{32}$`).test(journalSave.ref));
+  report.ownedRef = journalSave.ref;
   assert.equal(process.env.CONFIRM_LOCAL_DEV_JOURNAL_SAVE, 'CREATE_READBACK_CLEANUP_ONE_DRAFT');
   assert(process.env.SC_LOCAL_DEV_WRITE_LEASE_TOKEN, 'governed write lease required');
   assert.equal(process.env.DB_NAME, 'sc_dev_demo');
@@ -343,7 +347,10 @@ try {
         (Array.isArray(command[2].account_id) ? command[2].account_id[0] : command[2].account_id)===nextId));
       await nextOption.click(); assert.equal((await capture(await selected)).ok,true);
       await setAmount('credit',1,100);
-      journalSave.accounts=[item.selectedAccountId,nextId]; journalSave.ready=true;
+      journalSave.accounts=[item.selectedAccountId,nextId];
+      assert.deepEqual({user:journalSave.userId,company:journalSave.companyId,journal:journalSave.journalId,
+        currency:journalSave.currencyId,accounts:journalSave.accounts}, {user:40,company:1,journal:3,currency:6,accounts:[49,48]}, 'recovery scope mismatch');
+      journalSave.ready=true;
       const createResponse=page.waitForResponse(response => {
         let body; try { body=response.request().postDataJSON(); } catch { return false; }
         const request=body?.params?.intent ? body.params : body;
@@ -354,6 +361,8 @@ try {
       report.saved={httpStatus:saved.status(),ok:savedBody.ok,data:savedBody.data,error:savedBody.error};
       assert.equal(savedBody.ok,true,'draft save failed');
       journalSave.createdId=savedBody.data.id; assert(Number.isSafeInteger(journalSave.createdId) && journalSave.createdId>0);
+      fs.writeFileSync(`${root}/created-receipt.json`, JSON.stringify({head:report.head,ref:journalSave.ref,
+        record_id:journalSave.createdId,line_ids:[]}));
       await page.waitForURL(url => url.pathname.endsWith('/'+journalSave.createdId),{timeout:20000});
       await page.reload({waitUntil:'domcontentloaded'});
       await page.waitForFunction(ref => document.body.innerText.includes(ref),journalSave.ref);
@@ -377,6 +386,8 @@ try {
       }
       assert.equal(report.blocked.length,0);
       report.readback={record:rows[0],lines:lines.payload.data.records};
+      fs.writeFileSync(`${root}/created-receipt.json`, JSON.stringify({head:report.head,ref:journalSave.ref,
+        record_id:journalSave.createdId,line_ids:lines.payload.data.records.map(row=>row.id)}));
       await page.screenshot({path:`${root}/saved-reloaded.png`});
     }
     item.passed = true;
@@ -795,28 +806,13 @@ try {
       return { unavailable: true };
     }).catch(error => ({ error: error.message }));
   }
-  if (journalSave.enabled && journalSave.createAttempted && journalTransport) {
-    try {
-      const rows=await ownedJournalRows(); assert(rows.length<=1,'ambiguous cleanup ownership');
-      if (rows.length) {
-        const row=rows[0]; const company=Array.isArray(row.company_id)?row.company_id[0]:row.company_id;
-        assert.equal(row.ref,journalSave.ref); assert.equal(row.state,'draft'); assert.equal(company,journalSave.companyId);
-        if (journalSave.createdId) assert.equal(row.id,journalSave.createdId);
-        journalSave.createdId=row.id; journalSave.cleanupVerified=true;
-        const knownLines=row.line_ids;
-        const removed=await journalApi('api.data.unlink',{model:'account.move',ids:[row.id],idempotency_key:journalSave.ref+'-cleanup'});
-        assert.equal(removed.payload.ok,true,'owned draft cleanup failed');
-        const children=await journalApi('api.data',{op:'list',model:'account.move.line',domain:[['id','in',knownLines]],fields:['id'],limit:3});
-        assert.equal(children.payload.ok,true); assert.equal(children.payload.data.records.length,0,'owned lines remain');
-      }
-      assert.equal((await ownedJournalRows()).length,0,'owned draft remains after cleanup');
-      report.cleanup={passed:true,createdId:journalSave.createdId,ref:journalSave.ref};
-    } catch (error) { report.passed=false; report.cleanup={passed:false,error:error.message,createdId:journalSave.createdId,ref:journalSave.ref}; }
-  }
+  if (journalSave.enabled) report.cleanup = {passed: false, pending: 'governed ordinary-user ORM and independent readback',
+    createdId: journalSave.createdId, ref: journalSave.ref};
   if (page && ['native-child', 'journal-draft', 'journal-save'].includes(scope)) await page.screenshot({path: `${root}/final.png`}).catch(() => {});
   report.lastPage = page ? {url: page.url(), text: await page.locator('body').innerText().catch(() => '')} : null;
   await browser.close();
+  if (journalSave.enabled) { report.browserPassed = report.passed; report.passed = false; }
   fs.writeFileSync(`${root}/${scope === 'usability' ? actor + '-' : ''}report.json`, JSON.stringify(report, null, 2));
 }
-assert(report.passed && (!journalSave.createAttempted || report.cleanup?.passed), 'acceptance or cleanup failed');
-console.log(`browser: PASS (${report.cases.length} ${scope} cases${journalSave.enabled ? ', draft save/readback/cleanup' : ', no save/dispatch'})`);
+assert(journalSave.enabled ? report.browserPassed : report.passed, 'browser acceptance failed; governed wrapper must still clean up');
+console.log(`browser: PASS (${report.cases.length} ${scope} cases${journalSave.enabled ? ', draft save/readback; ORM cleanup pending' : ', no save/dispatch'})`);

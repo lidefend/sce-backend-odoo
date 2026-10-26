@@ -136,7 +136,8 @@
     "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
     "frontend/apps/web/scripts/adopted_form_engine_decision_test.ts",
     "scripts/verify/local_dev_journal_recovery.py",
-    "addons/smart_core/tests/test_node_component_validation.py"
+    "addons/smart_core/tests/test_node_component_validation.py",
+    "scripts/verify/test_local_dev_journal_recovery.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -1611,6 +1612,17 @@
       "limits": "Residual XML groups require explicit refusal; not full groups-expression support. No browser save/reload acceptance yet. Prior page evidence remains tied to earlier candidates.",
       "reuse": "Child tests unchanged by feedback-only node validation/cache edits; cache version-only handler change does not alter saved-record assembly algorithm, which is revalidated per request. Existing targeted ORM result reused; assembler pin guard separately passed.",
       "rollback": "Revert native feedback reader and paired cache pin to restore prior explicit rejection; no data migration."
+    },
+    "journal_reusable_cleanup": {
+      "layer": "P4 existing governed browser/recovery tooling only",
+      "head": "4fb0fcc19ff2760e5f04f406f0d4de3b574eb4bc",
+      "reason": "Public unlink403 must not weaken product permissions. Same lease wraps rollback permission preflight, exactly one unique marked browser draft, ordinary-creator ORM cleanup and separate process absence verification.",
+      "scope": "Existing journal recovery, feedback wrapper/browser, policy tests and Make targets; fixed actor40/company1/journal3/currency6/accounts49,48 on sc-local-dev/sc_dev_demo/ns_000000000002. No posting or existing-record edit.",
+      "validation": "L1 and pure recovery policy tests, independent review, clean candidate runtime refresh then only affected save journey. No module upgrade needed.",
+      "status": "reviewed_targeted_passed_runtime_pending",
+      "tests": "journal-cleanup-reviewed-policy.log 23JS+11Python PASS, including failure lifecycle; journal-cleanup-final-l1.log PASS",
+      "review": "review_takeover S2 hidden record false absence fixed: immediate browser ID receipt, exact-ref elevated identity-only audit vs ordinary actor search, independent parent/child absence; business reads/unlink never elevated. No remaining S1/S2.",
+      "next": "Commit clean candidate, governed local.dev up and frontend refresh, then verify.local.dev.journal.save with existing explicit confirmation."
     }
   }
 }
