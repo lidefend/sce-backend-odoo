@@ -1191,6 +1191,23 @@
         "ef06e0adc context.get no-default"
       ],
       "next": "implement the legacy-alert-to-explicit-feedback declaration in the view parser, regenerate carriers, rebuild, and re-probe"
+    },
+    "fg15_stage1_alert_projection_plan": {
+      "status": "plan_recorded",
+      "frontend_contract": {
+        "sc.feedback.message": "componentConfig must be {purpose: advisory|error|warning|explanation, contentRef: {containerId: <source>}}; host must have modifiers.invisible with a compiled condition; source must be a scalar field (char/text/boolean/int/float/monetary/selection/date/datetime) or a text/div/span/label/p node with text and no children; error purpose only allows char/text source",
+        "sc.navigation.anchor": "componentConfig must be {targetContainerId: <valid containerId>}; anchor node must have text, no children, and no href/onclick/target attributes; target must be a group/page/sheet/div/container with native identity and be visible"
+      },
+      "backend_work": [
+        "in the view parser/assembler, detect legacy alert containers (<div class~alert/role=alert>) and project componentKey=sc.feedback.message with purpose mapped from class (alert-warning->warning, alert-info->info, alert-danger->error, alert->advisory/explanation), contentRef pointing to the alert's own text/child text node, and preserve modifiers.invisible as the visibility condition",
+        "detect <a class=alert-link href=#target> and project componentKey=sc.navigation.anchor with componentConfig.targetContainerId resolved and validated against a declared container/page id; strip href/onclick/target attributes so the anchor projection accepts it",
+        "no account.move hardcoding: apply the same native-markup rules to every form"
+      ],
+      "constraints": [
+        "unknown markers or unresolvable href targets must still fail closed",
+        "colors/classes must not become business decisions; purpose comes from the alert token mapping only",
+        "existing sc.feedback.message / sc.navigation.anchor projections must not be duplicated"
+      ]
     }
   }
 }
