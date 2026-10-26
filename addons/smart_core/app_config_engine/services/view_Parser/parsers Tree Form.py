@@ -197,6 +197,13 @@ class _TreeFormParserMixin:
     def _field_widget_semantics(self, fname, widget, options):
         options = options if isinstance(options, dict) else {}
         semantics = {}
+        if widget == 'analytic_distribution':
+            semantics.update({
+                'kind': 'weighted_relation', 'version': 1,
+                'relation_model': 'account.analytic.account', 'label_field': 'display_name',
+                'key_encoding': 'csv_ids', 'value_unit': '%', 'mode': 'readonly',
+                'empty_text': '未分配',
+            })
         if widget == 'daterange':
             end_field = (
                 options.get('end_date_field')
@@ -536,6 +543,10 @@ class _TreeFormParserMixin:
                         "attributes": dict(el.attrib or {}),
                         "modifiers": occurrence_modifiers,
                     }
+                    widget_semantics = self._field_widget_semantics(
+                        fname, occurrence['widget'], self._safe_eval_expr(el.get('options')) if el.get('options') else {})
+                    if widget_semantics:
+                        occurrence['widget_semantics'] = widget_semantics
                     selection = (field_info or {}).get("selection")
                     if isinstance(selection, (list, tuple)):
                         occurrence["selection"] = [
@@ -650,6 +661,9 @@ class _TreeFormParserMixin:
             "type": meta.get('type') or 'char',
             "widget": widget,
         }
+        semantics = self._field_widget_semantics(name, widget, mods.get('options'))
+        if semantics:
+            schema['widget_semantics'] = semantics
         selection = meta.get('selection')
         if isinstance(selection, (list, tuple)):
             schema["selection"] = [
@@ -1181,9 +1195,9 @@ class _TreeFormParserMixin:
             if el.get('options'):
                 options_val = self._safe_eval_expr(el.get('options'))
                 meta['widget_options'] = options_val if isinstance(options_val, dict) else {}
-                semantics = self._field_widget_semantics(fname, meta.get('widget'), meta['widget_options'])
-                if semantics:
-                    meta['widget_semantics'] = semantics
+            semantics = self._field_widget_semantics(fname, meta.get('widget'), meta.get('widget_options'))
+            if semantics:
+                meta['widget_semantics'] = semantics
             if el.get('filename'):
                 node['filename'] = el.get('filename')
                 meta['filename'] = el.get('filename')

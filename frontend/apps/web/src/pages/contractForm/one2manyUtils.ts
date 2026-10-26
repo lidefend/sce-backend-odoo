@@ -75,6 +75,17 @@ function one2manySelectionOptions(value: unknown): Array<[string, string]> | und
   return options.length ? options : undefined;
 }
 
+function one2manyNativeWidget(source: Record<string, unknown> | undefined) {
+  if (!source) return {};
+  const attributes = source.attributes && typeof source.attributes === 'object'
+    ? source.attributes as Record<string, unknown> : {};
+  const widget = String(attributes.widget || source.widget || '').trim();
+  if (!widget) return {};
+  const semantics = source.widget_semantics;
+  return { widget, ...(semantics && typeof semantics === 'object' && !Array.isArray(semantics)
+    ? { widgetSemantics: semantics as Record<string, unknown> } : {}) };
+}
+
 export function one2manyColumnsFromSubview(
   subview: unknown,
   resolveDescriptor: (column: string) => FieldDescriptor | null | undefined,
@@ -118,6 +129,7 @@ export function one2manyColumnsFromSubview(
         const businessColumn = businessColumnsByName.get(normalized);
         out.push({
           name: normalized,
+          ...one2manyNativeWidget(businessColumn),
           ...(businessColumn?.force_save === undefined ? {} : { forceSave: nativeForceSave(businessColumn.force_save) }),
           label: one2manyColumnLabel(businessColumn?.label || businessColumn?.string || descriptor?.string, normalized),
           ttype: String(businessColumn?.ttype || businessColumn?.type || ttype),
@@ -155,6 +167,7 @@ export function one2manyColumnsFromSubview(
       out.push({
         key: locator || `${colName}@@${occurrenceIndex || out.length + 1}`,
         name: colName,
+        ...one2manyNativeWidget(row),
         ...((attributes.force_save ?? row.force_save) === undefined ? {} : { forceSave: nativeForceSave(attributes.force_save ?? row.force_save) }),
         label: one2manyColumnLabel(
           attributes.string || row.label || row.string || businessColumn.label || businessColumn.string || descriptor?.string,

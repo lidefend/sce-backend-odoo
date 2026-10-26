@@ -579,3 +579,49 @@ for (const empty of [null, undefined, false, {}, []]) assert.equal(one2manyColum
 assert.equal(one2manyColumnDisplayValue(jsonColumn, { amount: 100 }), '{"amount":100}');
 assert.equal(one2manyColumnDisplayValue(jsonColumn, [{ amount: 100 }]), '[{"amount":100}]');
 assert.equal(one2manyColumnDisplayValue(jsonColumn, { zh_CN: '原始结构值' }), '{"zh_CN":"原始结构值"}', 'JSON must not be mistaken for a translated label');
+
+
+const { weightedRelationDisplay } = await import('../src/components/template/weightedRelationDisplay');
+const weightedSpec = { kind: 'weighted_relation', version: 1, relation_model: 'x.authorized.account',
+  label_field: 'display_name', key_encoding: 'csv_ids', value_unit: '%', mode: 'readonly', empty_text: '未分配' };
+const weightedContext = { allowed_company_ids: [8] };
+const weightedRaw = { '11,12': 75.5, '13': 0 };
+let weightedReads = 0;
+const weightedRead = async (params: { model: string; ids: number[]; fields: string[]; context: Record<string, unknown> }) => {
+  weightedReads++;
+  assert.equal(params.model, 'x.authorized.account');
+  assert.deepEqual(params.context, weightedContext);
+  assert.deepEqual(params.fields, ['id', 'display_name']);
+  return { records: params.ids.map(id => ({ id, display_name: `账户${id}` })) };
+};
+assert.equal(await weightedRelationDisplay(weightedSpec, weightedRaw, weightedContext, weightedRead), '账户13：0%；账户11 / 账户12：75.5%');
+assert.deepEqual(weightedRaw, { '11,12': 75.5, '13': 0 }, 'display never mutates native values');
+for (const empty of [false, null, {}]) assert.equal(await weightedRelationDisplay(weightedSpec, empty, weightedContext, weightedRead), '未分配');
+assert.equal(weightedReads, 1);
+for (const invalid of [{ '0': 100 }, { '11,11': 100 }, { '11': '100' }, { '11': Infinity }, { '1e3': 100 }, []]) {
+  await assert.rejects(weightedRelationDisplay(weightedSpec, invalid, weightedContext, weightedRead), { name: 'ContractGapError' });
+}
+await assert.rejects(weightedRelationDisplay(undefined, {}, weightedContext, weightedRead), { name: 'ContractGapError' });
+await assert.rejects(weightedRelationDisplay({ ...weightedSpec, mode: 'edit' }, {}, weightedContext, weightedRead), { name: 'ContractGapError' });
+await assert.rejects(weightedRelationDisplay(weightedSpec, { '11': 100 }, undefined, weightedRead), { name: 'ContractGapError' });
+await assert.rejects(weightedRelationDisplay(weightedSpec, { '11': 100 }, weightedContext, async () => ({ records: [] })), { name: 'ContractGapError' });
+await assert.rejects(weightedRelationDisplay(weightedSpec, { '11': 100 }, weightedContext, async () => { throw new Error('permission denied'); }), /permission denied/);
+await assert.rejects(weightedRelationDisplay(weightedSpec, { '11': 100 }, weightedContext, async () => ({ records: [{ id: 12, display_name: 'Foreign' }] })), { name: 'ContractGapError' });
+const weightedColumns = one2manyColumnsFromSubview({ tree: { columns: [{ name: 'distribution', type: 'json', widget: 'analytic_distribution', widget_semantics: weightedSpec }] } }, () => ({ type: 'json' }));
+assert.deepEqual(weightedColumns[0].widgetSemantics, weightedSpec);
+assert.equal(weightedColumns[0].widget, 'analytic_distribution');
+console.log('[weighted-relation-display] PASS names, combined keys, zero, empty, invalid, denied, context, preservation');
+
+const weightedOccurrences = one2manyColumnsFromSubview({ tree: {
+  columns: [{ name: 'distribution', type: 'json', widget: 'analytic_distribution', widget_semantics: weightedSpec }],
+  column_occurrences: [
+    { name: 'distribution', field_type: 'json', widget: 'analytic_distribution', widget_semantics: weightedSpec, native_locator: '/tree/field[1]' },
+    { name: 'distribution', field_type: 'json', widget: 'json', native_locator: '/tree/field[2]' },
+    { name: 'distribution', field_type: 'json', widget: 'analytic_distribution', native_locator: '/tree/field[3]' },
+  ],
+} }, () => ({ type: 'json' }));
+assert.deepEqual(weightedOccurrences[0].widgetSemantics, weightedSpec);
+assert.equal(weightedOccurrences[1].widget, 'json');
+assert.equal(weightedOccurrences[1].widgetSemantics, undefined, 'other occurrence never inherits weighted semantics');
+assert.equal(weightedOccurrences[2].widgetSemantics, undefined, 'missing own semantics cannot borrow from business column');
+await assert.rejects(weightedRelationDisplay(weightedOccurrences[2].widgetSemantics, {}, weightedContext, weightedRead), { name: 'ContractGapError' });

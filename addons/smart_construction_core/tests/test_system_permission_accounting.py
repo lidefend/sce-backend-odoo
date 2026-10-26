@@ -617,3 +617,18 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
             'arch_db': '<data>' + ''.join(etree.tostring(node, encoding='unicode') for node in arch) + '</data>',
         })
         self.test_journal_number_native_column_label()
+
+    def test_native_analytic_display_names_preserve_company_boundary(self):
+        reader = self._subject('accounting_read')
+        plan = self.env['account.analytic.plan'].create({'name': 'Synthetic native display plan'})
+        own = self.env['account.analytic.account'].create({'name': 'Synthetic readable account',
+            'plan_id': plan.id, 'company_id': self.env.company.id})
+        other = self.env['res.company'].create({'name': 'Synthetic analytic foreign company'})
+        self.register_business_company(other)
+        foreign = self.env['account.analytic.account'].create({'name': 'Synthetic forbidden account',
+            'plan_id': plan.id, 'company_id': other.id})
+        model = self.env['account.analytic.account'].with_user(reader).with_context(allowed_company_ids=self.env.company.ids)
+        self.assertFalse(model.env.su)
+        self.assertEqual(model.browse(own.id).read(['display_name'])[0]['display_name'], own.display_name)
+        with self.assertRaises(AccessError), self.env.cr.savepoint():
+            model.browse(foreign.id).read(['display_name'])

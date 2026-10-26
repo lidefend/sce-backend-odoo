@@ -11,6 +11,7 @@ import type { RelationFieldAdapter, RelationFieldColumn, RelationFieldRow } from
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { ContractAction } from './types';
 import { resolveNativeContractActionState, isUnifiedSubmitAction, isUnifiedSubmitMethod, resolveAuthorizedWindowActionTarget, resolveContractActionForNativeOccurrence } from './contractActionPresentation';
+import { resolveContractFormReadContext } from './contractRuntimeVm';
 import { fieldType } from './fieldUtils';
 
 type PresentationDependencies = Record<string, any>;
@@ -418,6 +419,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     selectPlaceholder: resolveSelectPlaceholder,
     one2manyColumnInputType,
     one2manyColumnDisplayValue,
+    readContext: resolveContractFormReadContext(v2ContractStore.value),
     inputFieldValue,
     fieldInputType,
     inputPlaceholder: resolveInputPlaceholder,

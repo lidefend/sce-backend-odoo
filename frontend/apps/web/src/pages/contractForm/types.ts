@@ -146,6 +146,8 @@ export type One2ManyInlineRow = {
 };
 
 export type One2ManyColumn = {
+  widget?: string;
+  widgetSemantics?: Record<string, unknown>;
   key?: string;
   name: string;
   label: string;

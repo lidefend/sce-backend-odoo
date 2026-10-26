@@ -1459,6 +1459,7 @@ verify.frontend.node_component.unit: guard.prod.forbid
 	@node /tmp/fe-gate-03a-nodes.mjs
 verify.frontend.node_component.component: guard.prod.forbid
 	@node frontend/apps/web/scripts/node_component_consumption_component_test.mjs
+	@node frontend/apps/web/scripts/weighted_relation_component_test.mjs
 
 .PHONY: verify.frontend.feedback_evaluation.unit
 verify.frontend.feedback_evaluation.unit: guard.prod.forbid

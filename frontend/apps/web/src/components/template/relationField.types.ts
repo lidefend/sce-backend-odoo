@@ -14,6 +14,8 @@ export type RelationFieldRow = {
 };
 
 export type RelationFieldColumn = {
+  widget?: string;
+  widgetSemantics?: Record<string, unknown>;
   name: string;
   label: string;
   ttype: string;
@@ -40,6 +42,7 @@ export type RelationRemovalLabels = {
 };
 
 export type RelationFieldAdapter = {
+  readContext?: Record<string, unknown>;
   busy: boolean;
   showOne2manyErrors: boolean;
   relationKeyword: (name: string) => string;

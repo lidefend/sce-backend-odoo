@@ -599,6 +599,22 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
             },
         )
 
+    def test_native_analytic_widget_declares_readonly_weighted_relation(self):
+        expected = {'kind': 'weighted_relation', 'version': 1,
+                    'relation_model': 'account.analytic.account', 'label_field': 'display_name',
+                    'key_encoding': 'csv_ids', 'value_unit': '%', 'mode': 'readonly', 'empty_text': '未分配'}
+        self.assertEqual(self.tree_form_parser._field_widget_semantics('any_field', 'analytic_distribution', {}), expected)
+        schema = self.tree_form_parser._tree_column_schema('any_field', {'type': 'json'}, {'widget': 'analytic_distribution'})
+        self.assertEqual(schema['widget_semantics'], expected)
+        self.assertNotIn('kind', self.tree_form_parser._field_widget_semantics('analytic_distribution', '', {}))
+        tree = self.tree_form_parser._parse_tree_view(
+            '<tree><field name="same" widget="analytic_distribution"/><field name="same" widget="json"/></tree>',
+            {'same': {'type': 'json', 'string': '分配'}},
+        )
+        self.assertEqual(tree['column_occurrences'][0]['widget_semantics'], expected)
+        self.assertNotIn('widget_semantics', tree['column_occurrences'][1])
+
+
     def test_field_widget_semantics_rejects_invalid_readonly_empty_text(self):
         for value in ("", " " * 4, 42, "x" * 81):
             with self.subTest(value=value):

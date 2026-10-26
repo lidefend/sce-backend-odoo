@@ -5,8 +5,12 @@
     :data-validation-target="validationTarget"
     :data-relation-query-diagnostic="relationQueryDiagnostic || undefined"
   >
+    <NativeWeightedRelationDisplay
+      v-if="column.widget === 'analytic_distribution' || column.widgetSemantics?.kind === 'weighted_relation'"
+      :declaration="column.widgetSemantics" :value="value" :context="adapter.readContext"
+    />
     <ScCheckbox
-      v-if="column.ttype === 'boolean'"
+      v-else-if="column.ttype === 'boolean'"
       :id="controlId"
       class="input-checkbox"
       :disabled="column.readonly || !adapter.one2manyCanInlineEdit(fieldName) || adapter.busy"
@@ -77,6 +81,7 @@
 </template>
 
 <script setup lang="ts">
+import NativeWeightedRelationDisplay from './NativeWeightedRelationDisplay.vue';
 import { computed, getCurrentInstance, onBeforeUnmount } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScCheckbox from '../design-system/ScCheckbox.vue';

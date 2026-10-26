@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4971`
+- Scanned files: `4973`
 - Files requiring split plan: `72`
 - Files above warning threshold: `144`
 
@@ -55,7 +55,7 @@ Generated from repository source files. This report is informational during the 
 | 1870 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1869 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
-| 1847 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
+| 1861 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1844 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1818 | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1798 | YAML workflow | `scripts/verify/registry.yaml` |
@@ -63,7 +63,7 @@ Generated from repository source files. This report is informational during the 
 | 1747 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1738 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1730 | Python source | `scripts/verify/system_performance_baseline.py` |
-| 1693 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
+| 1710 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1681 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1668 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1652 | Python source | `scripts/release/release_publication.py` |
@@ -150,12 +150,12 @@ Generated from repository source files. This report is informational during the 
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
 | 1090 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1087 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
+| 1062 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
-| 1043 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
+| 1037 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1024 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
-| 1021 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1018 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
 | 1016 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
@@ -168,9 +168,9 @@ Generated from repository source files. This report is informational during the 
 | 988 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 976 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
+| 967 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
 | 962 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
-| 954 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
@@ -281,7 +281,7 @@ Generated from repository source files. This report is informational during the 
 | 1870 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1869 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
-| 1847 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
+| 1861 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1844 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1818 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1798 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
@@ -289,7 +289,7 @@ Generated from repository source files. This report is informational during the 
 | 1747 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1738 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1730 | split_plan_required | Python source | `scripts/verify/system_performance_baseline.py` |
-| 1693 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
+| 1710 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1681 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1668 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1652 | split_plan_required | Python source | `scripts/release/release_publication.py` |
