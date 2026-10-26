@@ -157,6 +157,23 @@ def differential_cases():
             actual = fixture.assembler._evaluate_action_modifier(node, record, strict=True)
             assert actual is expected, (raw, context, node, actual, expected)
             cases.append({"node": node, "record": record, "expected": expected, "contract": contract})
+    for value, expected in [([7, "A"], True), (7, True), (False, False), ([8, "A"], False),
+                            ([7, 8], None), (True, None), (None, None), ("7", None)]:
+        contract = {"dataContract": {"mainData": {"partner_id": value, "$native.fieldTypes": {"partner_id": "char"}},
+                    "dataMeta": {"sourceContext": {"context": {}}, "nativeModifierFieldTypes": {"partner_id": "many2one"}}}}
+        record = fixture.assembler.native_modifier_values(contract)
+        for raw in ("partner_id == 7", "partner_id == context.get('id', 7)"):
+            node = MODULE.normalize_native_modifier(raw)
+            actual = fixture.assembler._evaluate_action_modifier(node, record, strict=True)
+            assert actual is expected, (value, actual, expected)
+            cases.append({"node": node, "record": record, "expected": expected, "contract": contract})
+    for value, expected in [([], False), ([7], True), ([7, 8], True), ([[6, 0, [7]]], None), ([True], None), ([7, "A"], None)]:
+        contract = {"dataContract": {"mainData": {"tag_ids": value}, "dataMeta": {
+            "sourceContext": {"context": {}}, "nativeModifierFieldTypes": {"tag_ids": "many2many"}}}}
+        record = fixture.assembler.native_modifier_values(contract)
+        node = MODULE.normalize_native_modifier("tag_ids")
+        assert fixture.assembler._evaluate_action_modifier(node, record, strict=True) is expected
+        cases.append({"node": node, "record": record, "expected": expected, "contract": contract})
     dependencies = fixture._load_module("odoo.addons.smart_core.core.unified_page_contract_v2_modifier_dependencies",
                                        MODULE_PATH.parents[1] / "core" / "unified_page_contract_v2_modifier_dependencies.py")
     assert dependencies.collect_modifier_dependency_fields(MODULE.normalize_native_modifier("amount > context.get('limit', 0)")) == ['amount']

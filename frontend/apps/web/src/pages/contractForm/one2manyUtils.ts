@@ -1,3 +1,4 @@
+import { resolveTypedNativeField } from '../../app/nativeModifierContext';
 import { contractGapError } from '../../app/contract/contractGap';
 import { nativeModifierRelationValue } from '../../app/nativeModifierRelationValue';
 import { buildOne2ManyInlineCommands } from '../../app/x2manyCommands';
@@ -196,7 +197,8 @@ export function resolveOne2manyRowColumnBehavior(
   };
   const evaluateModifier = (value: unknown) => evaluateNativeModifierValue(value, resolve, (field) => {
     const actual = resolve(field);
-    if (field.startsWith('parent.') || field === '$native.context') return actual;
+    if (field.startsWith('parent.')) return resolveTypedNativeField(name => parentValues[name], field.slice('parent.'.length));
+    if (field === '$native.context') return actual;
     const types = [...new Set(columns.filter(item => item.name === field).map(item => item.ttype))];
     if (types.length > 1) throw contractGapError({ kind: 'contract_defect', missing: `native_modifier.field_type.${field}`, requiredDeclarationLayer: 'P0:smart_core:field_descriptor' }, '原生条件字段类型声明冲突');
     return nativeModifierRelationValue(actual, types[0]);

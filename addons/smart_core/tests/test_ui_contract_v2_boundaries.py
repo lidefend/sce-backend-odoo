@@ -817,6 +817,18 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                         self.assertNotIn("has_lines", contract["dataContract"]["mainData"])
                     self.assertNotIn("display_only", contract["dataContract"]["mainData"])
 
+    def test_modifier_type_metadata_comes_from_model_not_snapshot_spoof(self):
+        model, contract = self._create_modifier_fixture()
+        contract["dataContract"]["mainData"]["$native.fieldTypes"] = {"partner_id": "char"}
+        contract["dataContract"]["dataMeta"]["nativeModifierFieldTypes"] = {"partner_id": "char"}
+        self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract,
+            model="x.document", record_id=None, view_type="form")
+        types = contract["dataContract"]["dataMeta"]["nativeModifierFieldTypes"]
+        self.assertEqual(types["partner_id"], "many2one")
+        self.assertEqual(types["has_lines"], "boolean")
+        self.assertNotIn("$native.fieldTypes", types)
+        self.assertNotIn("display_only", types)
+
     def test_child_local_and_nested_parent_dependencies_do_not_read_root(self):
         for field in ("has_lines", "parent.parent.has_lines"):
             model, contract = self._create_modifier_fixture()

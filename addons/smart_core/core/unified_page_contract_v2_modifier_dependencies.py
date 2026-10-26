@@ -234,6 +234,15 @@ def hydrate_final_modifier_dependencies(
     fields_map = getattr(Model, "_fields", {})
     if not isinstance(fields_map, dict):
         return
+    data = contract_v2.get("dataContract")
+    if isinstance(data, dict) and isinstance(data.get("mainData"), dict):
+        names = set(data["mainData"]) | set(collect_modifier_dependency_fields(contract_v2, known_fields=fields_map))
+        meta = data.setdefault("dataMeta", {})
+        if isinstance(meta, dict):
+            meta["nativeModifierFieldTypes"] = {
+                name: fields_map[name].type for name in sorted(names)
+                if name in fields_map and isinstance(getattr(fields_map[name], "type", None), str)
+            }
     if record_id_int <= 0:
         _hydrate_create_modifier_dependencies(Model, contract_v2, logger)
         return

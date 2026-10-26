@@ -2022,6 +2022,12 @@ function decodeDataMeta(value: unknown, issues: DecodeIssue[]): ContractV2DataMe
   const row = asRecord(value);
   const businessOperationProfile = optionalRecord(row, 'businessOperationProfile', 'dataContract.dataMeta', issues);
   const sourceContext = decodeSourceContext(row.sourceContext, issues);
+  if (row.nativeModifierFieldTypes !== undefined) {
+    const types = row.nativeModifierFieldTypes;
+    if (!isRecord(types) || Object.values(types).some(type => typeof type !== 'string' || !type.trim())) {
+      issues.push({ path: 'dataContract.dataMeta.nativeModifierFieldTypes', message: 'must map fields to non-empty type strings' });
+    }
+  }
   const forbiddenKeys = [
     'business_operation_profile',
     'visible_fields',

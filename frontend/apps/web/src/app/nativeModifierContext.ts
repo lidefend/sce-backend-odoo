@@ -1,3 +1,4 @@
+import { nativeModifierRelationValue } from './nativeModifierRelationValue';
 import { contractGapError } from './contract/contractGap';
 import { isPythonModifierValue } from './nativeModifierComparison';
 
@@ -42,4 +43,20 @@ export function bindNativeRowParentContext(parent: Record<string, unknown>, fiel
   const context = parent['$native.context'];
   if (!record(context)) return gap();
   return { ...parent, '$native.context': { ...context, ...fieldContext } };
+}
+
+export function bindNativeFieldTypes(values: Record<string, unknown>, types: unknown): Record<string, unknown> {
+  const bound = { ...values };
+  delete bound['$native.fieldTypes'];
+  if (record(types)) bound['$native.fieldTypes'] = { ...types };
+  return bound;
+}
+
+export function resolveTypedNativeField(resolve: (field: string) => unknown, field: string): unknown {
+  const value = resolve(field);
+  if (field === '$native.context' || field === '$native.fieldTypes') return value;
+  const types = resolve('$native.fieldTypes');
+  const type = record(types) && Object.prototype.hasOwnProperty.call(types, field) ? types[field] : undefined;
+  if (type !== undefined && typeof type !== 'string') return gap();
+  return nativeModifierRelationValue(value, type as string | undefined);
 }

@@ -13,8 +13,8 @@ Generated from repository source files. This report is informational during the 
 | Lines | Category | File |
 | ---: | --- | --- |
 | 7088 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
-| 5873 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 5480 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 5885 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
+| 5485 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5250 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 4991 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
@@ -36,7 +36,7 @@ Generated from repository source files. This report is informational during the 
 | 2894 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2727 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
-| 2586 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
+| 2592 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2425 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2342 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2245 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
@@ -199,8 +199,8 @@ Generated from repository source files. This report is informational during the 
 | 843 | Python source | `scripts/verify/test_scene_r3_action_target_scene_resolution.py` |
 | 842 | Python source | `scripts/verify/guard_registry_audit.py` |
 | 841 | Python source | `scripts/verify/test_sc_data_scope_rule_coverage_guard.py` |
+| 838 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
 | 837 | Python source | `addons/smart_construction_core/core_extension_system_init_rows.py` |
-| 836 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
 | 833 | JavaScript source | `scripts/verify/frontend_geometry_scroll_audit.mjs` |
 | 832 | Python source | `scripts/ops/production_acceptance_clone_runtime.py` |
 | 830 | Python source | `scripts/release/test_production_release_contract.py` |
@@ -238,8 +238,8 @@ Generated from repository source files. This report is informational during the 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
 | 7088 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
-| 5873 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 5480 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 5885 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
+| 5485 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5250 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 4991 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
@@ -261,7 +261,7 @@ Generated from repository source files. This report is informational during the 
 | 2894 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2727 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
-| 2586 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
+| 2592 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2425 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2342 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2245 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |

@@ -748,3 +748,30 @@ many2one条件使用记录ID，x2many条件使用当前ID列表。原子表Pytho
 验证结果：`sixteenth-l1.log`轻量迭代通过；`sixteenth-l2.log`编译器8、跨端3710、parser39、
 集合语义、默认值55及新增关系/hook行为断言、严格类型检查和契约依据守卫全部通过。
 独立只读复核无新增S0–S2阻断。未开展真实页面端到端验收，FG15仍未关闭。
+
+## 第十七增量：form根记录与父记录的关系类型权威绑定
+
+开发候选基于`1fb9b1fcaa9ed87ef70c87c67875976f86e2c18f`加本节登记修改。P0统一契约生产
+与消费，不新增业务特判。第十六轮的子表本地类型转换扩展到最终form状态与实时父/根记录：
+
+- 最终form hydration从模型字段定义发布`dataContract.dataMeta.nativeModifierFieldTypes`，
+  范围为mainData字段和最终条件依赖（含直接子表parent依赖）；类型信息不代替字段值读取，
+  原有访问拒绝仍保持未知值。前端decoder验证类型map为非空字符串值。
+- 前后端清除业务数据中的`$native.fieldTypes`伪造值，重新从metadata绑定内部namespace；
+  前端实时草稿不能覆盖。Python字段真假、比较双方、context复合操作数使用many2one ID与
+  持久x2many ID列表语义；context值与字面值不转换，旧domain比较路径保留。
+- 前端子表`parent.x`从父级类型表求值，父记录草稿变化继续覆盖快照字段值。后端最终动作/
+  布局状态与前端canonical呈现使用同一声明载体。缓存版本同步为
+  `ui-contract-v2-native-relation-types-v1`并更新装配输入摘要。
+
+证据根`.runtime/product-user-gap-closeout-20261026/`：`seventeenth-l1.log`轻量迭代通过；
+`seventeenth-l2.log`handler153、cache48、orchestrator62、基线工具5、assembler通过，
+canonical真实呈现新增3组关系类型及草稿伪造断言通过，strict typecheck与contract basis通过。
+`seventeenth-relations-final.log`编译器8、跨端3732（新增22项关系值形态）、parser39、集合
+行为、runtime23及投影133通过。新增元数据来源断言确认模型类型覆盖伪造声明；ID/显示对、
+无效身份、空集合与关系命令拒绝均有跨端结果。独立只读复核未发现新增S0–S2阻断。
+
+边界：类型元数据当前发布限定form，未声明类型仍兼容透传，不声称所有裸record消费者已
+覆盖；未保存x2many命令仍显式拒绝。本轮无新增ORM/浏览器端到端验收、模块升级、主线集成、
+部署或demo重建。FG15未关闭，后续优先处理未保存关系集合的原生求值身份，再核验嵌套父级、
+既有行写入策略和真实子表页面。回滚本轮源码及缓存版本可撤销行为，无数据库恢复需求。

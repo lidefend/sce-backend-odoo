@@ -13,12 +13,36 @@ def native_modifier_values(contract: dict[str, Any]) -> dict[str, Any]:
     values = dict(main) if isinstance(main, dict) else {}
     # This is an evaluator namespace, never a model field or writable draft value.
     values.pop("$native.context", None)
+    values.pop("$native.fieldTypes", None)
     meta = data.get("dataMeta")
+    if isinstance(meta, dict) and isinstance(meta.get("nativeModifierFieldTypes"), dict):
+        values["$native.fieldTypes"] = dict(meta["nativeModifierFieldTypes"])
     source = meta.get("sourceContext") if isinstance(meta, dict) else None
     context = source.get("context") if isinstance(source, dict) else None
     if isinstance(context, dict):
         values["$native.context"] = dict(context)
     return values
+
+
+def native_field_value(record: dict[str, Any], name: str) -> tuple[bool, Any]:
+    if name not in record:
+        return False, None
+    value = record[name]
+    types = record.get("$native.fieldTypes", {})
+    kind = types.get(name) if isinstance(types, dict) else None
+    if kind is not None and not isinstance(kind, str):
+        return False, None
+    def identity(item):
+        return isinstance(item, int) and not isinstance(item, bool) and 0 < item <= 9007199254740991
+    if kind == "many2one":
+        if value is False or identity(value):
+            return True, value
+        if isinstance(value, (list, tuple)) and len(value) == 2 and identity(value[0]) and isinstance(value[1], str):
+            return True, value[0]
+        return False, None
+    if kind in {"one2many", "many2many"}:
+        return (True, value) if isinstance(value, list) and all(identity(item) for item in value) else (False, None)
+    return True, value
 
 
 def _operand(node: Any, record: dict[str, Any]) -> tuple[bool, Any]:
@@ -28,7 +52,9 @@ def _operand(node: Any, record: dict[str, Any]) -> tuple[bool, Any]:
     if kind == "literal" and "value" in node:
         value = node["value"]
     elif kind == "field_value" and isinstance(node.get("field"), str) and node["field"].strip() and node["field"] in record:
-        value = record[node["field"]]
+        known, value = native_field_value(record, node["field"])
+        if not known:
+            return False, None
     elif kind == "context_get":
         context = record.get("$native.context")
         key = node.get("key")

@@ -542,3 +542,8 @@ assert.throws(() => relationBehavior({ kind: 'field_truthy', field: 'tag_ids' },
 // Legacy domain nodes retain their previous comparator, including display-pair handling.
 assert.equal(relationBehavior({ ...equalPartner, semantics: undefined }, { partner_id: [7, 'A'] }), true);
 console.log('typed child native relation operands: passed');
+assert.equal(resolveOne2manyRowColumnBehavior({ name: 'note', label: 'Note', modifiers: { readonly: {
+  kind: 'field_compare', semantics: 'python', field: 'parent.partner_id', operator: '==', value: 7,
+} } }, { '$native.fieldTypes': { partner_id: 'char' } }, {
+  partner_id: [7, 'Parent'], '$native.fieldTypes': { partner_id: 'many2one' },
+}).readonly, true);

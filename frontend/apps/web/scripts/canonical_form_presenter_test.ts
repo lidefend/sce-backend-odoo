@@ -4208,3 +4208,21 @@ assert.equal(
   assert.equal(adapters[0]?.requiresSavedRecord, true);
 }
 console.log('[canonical_form_presenter] record-persistence action gating cases PASS count=4');
+
+for (const [value, expected] of [[[7, 'A'], true], [8, false], [false, false]] as const) {
+  const candidate = snapshot();
+  candidate.dataContract.dataMeta.nativeModifierFieldTypes = { partner_id: 'many2one' };
+  candidate.dataContract.mainData.partner_id = [7, 'Snapshot'];
+  candidate.dataContract.mainData['$native.fieldTypes'] = { partner_id: 'char' };
+  candidate.layoutContract.containerTree[0].children[0].readonly = {
+    kind: 'field_compare', semantics: 'python', field: 'partner_id', operator: '==', value: 7,
+  };
+  const store = createContractV2Store(decodeContractV2Snapshot(candidate));
+  const live = { partner_id: value, '$native.fieldTypes': { partner_id: 'char' } };
+  const values = resolveContractV2ModifierValues(store, live);
+  assert.deepEqual(values['$native.fieldTypes'], { partner_id: 'many2one' });
+  assert.deepEqual(resolveDeclaredModifierFieldValue(values, live, '$native.fieldTypes'), { partner_id: 'many2one' });
+  const fields = presentContractV2Form(store, 'edit', live).zones.primary[0].children.flatMap(node => node.fields);
+  assert.equal(fields.find(field => field.fieldCode === 'name')?.readonly, expected);
+}
+console.log('[canonical_form_presenter] authoritative native relation types PASS');

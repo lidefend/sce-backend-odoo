@@ -1,4 +1,4 @@
-import { resolveNativeOperand } from './nativeModifierContext';
+import { resolveNativeOperand, resolveTypedNativeField } from './nativeModifierContext';
 import { comparePythonModifier } from './nativeModifierComparison';
 import { contractGapError } from './contract/contractGap';
 
@@ -63,7 +63,7 @@ export function resolveDeclaredModifierFieldValue(
 ): unknown {
   const name = String(field || '').trim();
   if (!name) return undefined;
-  if (name === '$native.context') return snapshot?.[name];
+  if (name === '$native.context' || name === '$native.fieldTypes') return snapshot?.[name];
   if (live && Object.prototype.hasOwnProperty.call(live, name) && live[name] !== undefined) {
     return live[name];
   }
@@ -83,7 +83,7 @@ function nativeTruthy(value: unknown): boolean {
   return Boolean(value);
 }
 
-export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (field: string) => unknown, resolvePythonFieldValue = resolveFieldValue): boolean {
+export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (field: string) => unknown, resolvePythonFieldValue = (field: string) => resolveTypedNativeField(resolveFieldValue, field)): boolean {
   if (typeof value === 'boolean') return value;
   // An absent optional modifier is not an expression with a missing dependency.
   if (value === undefined || value === null || value === '' || value === 0 || value === '0' || value === 'false' || value === 'False') return false;

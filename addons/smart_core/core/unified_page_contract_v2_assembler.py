@@ -11,7 +11,7 @@ from typing import Any
 _logger = logging.getLogger(__name__)
 
 from .native_modifier_comparison import compare_python_modifier
-from .native_modifier_context import evaluate_context_modifier, native_modifier_values
+from .native_modifier_context import evaluate_context_modifier, native_modifier_values, native_field_value
 
 from .field_presentation_usage import assert_field_body_usage, statically_hidden
 from .action_semantics_vocabulary import (
@@ -4359,7 +4359,8 @@ def _evaluate_action_modifier(value: Any, record: dict[str, Any], *, strict: boo
     if not field or field not in record:
         return None
     if kind == "field_truthy":
-        return bool(record.get(field))
+        known, actual = native_field_value(record, field)
+        return bool(actual) if known else None
     if kind == "field_compare":
         value_field = _text(value.get("value_field"))
         if value_field:
@@ -4372,7 +4373,11 @@ def _evaluate_action_modifier(value: Any, record: dict[str, Any], *, strict: boo
             expected = value.get("value")
         semantics = value.get("semantics")
         if semantics == "python":
-            return compare_python_modifier(record.get(field), _text(value.get("operator")), expected)
+            known, actual = native_field_value(record, field)
+            if value_field:
+                expected_known, expected = native_field_value(record, value_field)
+                known = known and expected_known
+            return compare_python_modifier(actual, _text(value.get("operator")), expected) if known else None
         if semantics is not None:
             return None
         compared = _compare_action_value(record.get(field), _text(value.get("operator")), expected)
