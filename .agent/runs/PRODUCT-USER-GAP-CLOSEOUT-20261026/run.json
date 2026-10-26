@@ -79,7 +79,12 @@
     "frontend/apps/web/scripts/native_modifier_test.ts",
     "make/frontend.mk",
     "frontend/apps/web/src/app/nativeModifierComparison.ts",
-    "addons/smart_core/core/native_modifier_comparison.py"
+    "addons/smart_core/core/native_modifier_comparison.py",
+    "addons/smart_core/core/native_modifier_context.py",
+    "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
+    "frontend/apps/web/src/app/nativeModifierContext.ts",
+    "frontend/apps/web/src/app/contracts/v2/store.ts",
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -87,7 +92,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Declare typed native evaluation bindings for context/parent and relational fields; verify authoritative dependency transport and live draft behavior before FG15 rich components and browser acceptance.",
+  "next_exact_step": "Implement explicit one2many row evaluation frame carrying declared parent/context and typed relation values; verify draft reactivity and denial boundaries before FG15 rich components/browser acceptance.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -825,6 +830,120 @@
       "product_commit": "18b70a42b70d952c66ffbc5eb7ea4d0277bda03e",
       "final_identity": "18b70a42b70d952c66ffbc5eb7ea4d0277bda03e + P4 cache guard and documentation only",
       "generated_diff_review": "Only source counts/line counts and frontend input digest changed, generated semantics unchanged"
+    },
+    "thirteenth_kernel": {
+      "identity": "93642077811e1b6bf5bc19087b7f4b4ec6a675a2 + declared dirty scope",
+      "formal_product_layer": "P0",
+      "layer_target": "smart_core native modifier context operands and generic frontend evaluation",
+      "why_here": "Reuse declared sourceContext.context as authoritative evaluation input; parser/consumer must distinguish missing namespace from absent key",
+      "why_not_elsewhere": "No business defaults, eval, frontend context inference or model-specific behavior",
+      "blast_radius": "context.get literal-key/default expressions in canonical forms/actions/native layout; field dependencies for mixed comparisons; legacy scalar/domain evaluation unchanged",
+      "risk": "high visibility/readonly; source validation and scoped ORM only, no runtime acceptance claim",
+      "validation": {
+        "L0": "passed identity and existing run resume",
+        "L1": "ci.local.iteration and existing semantic generator",
+        "L2": "cross-runtime context cases, parser, canonical draft/authority tests, assembler/runtime, contract basis/typecheck; verify.business_config.formal_list.unit for real handler dependency hydration closure, including denied reads",
+        "L3": "existing local.dev.test scoped journal native contract regression",
+        "L4": "not_run; served candidate/deployment unchanged",
+        "L5": "independent source review; no publication/freeze"
+      },
+      "exclusions": [
+        "parent record frame and relational RPC normalization",
+        "context subscript/arbitrary methods/dynamic keys/default expressions",
+        "one2many context delivery expansion",
+        "full accounting workflow/browser acceptance",
+        "integration/deployment/demo rebuild"
+      ],
+      "review_recovery": {
+        "classification": "product_defect",
+        "severity": "S2",
+        "reason": "native layout structural-container dependency check still used raw mainData/live union without context binding",
+        "recovery": "use shared resolveContractV2ModifierValues for both evaluation and dependency readiness; add actual layout hook tests",
+        "clarification": "initial claimed live override at resolveDeclaredModifierFieldValue is not reproduced: reserved namespace protection already precedes live preference; nevertheless call path now uses final map directly"
+      },
+      "layout_test_failure": {
+        "log": "thirteenth-l2-reviewed.log",
+        "classification": "validation_tool_defect",
+        "reason": "older real layout fixture expected missing dependency to hide silently, incompatible with eleventh strict error semantics; target had not been rerun in that increment",
+        "recovery": "move missing-dependency case to isolated real-hook ContractGapError assertion, retain normal tree and authority/static/disabled denials"
+      },
+      "layout_cleanup_failure": {
+        "log": "thirteenth-l2-fixed.log",
+        "classification": "validation_tool_defect",
+        "reason": "expected missing-context exception was asserted but fixture left invalid reactive store for deferred Vue scheduler",
+        "recovery": "restore original valid store and draft after negative assertion; no product exception swallowed"
+      },
+      "orm_failure": {
+        "log": "thirteenth-orm.log",
+        "classification": "validation_tool_defect",
+        "reason": "archive contains both form and search; default_move_type expression selected from searchContract, not form layout",
+        "recovery": "select actual native form journal selector compound default_journal_id/move_type expression and retain nonzero/native behavior assertions"
+      },
+      "status": "source_validation_passed_runtime_acceptance_pending",
+      "results": {
+        "L1": {
+          "status": "passed",
+          "entry": "make ci.local.iteration contract.semantic.registry.generate",
+          "log": "thirteenth-l1-shapes.log"
+        },
+        "L2": {
+          "status": "passed",
+          "entry": "make verify.frontend.collection_view_semantics.unit verify.frontend.canonical_form_presenter.unit verify.frontend.contract_v2_occurrence_authority.unit verify.unified_page_contract.v2.assembler verify.unified_page_contract.v2.runtime",
+          "log": "thirteenth-l2-shapes.log",
+          "counts": {
+            "compiler": 8,
+            "cross_runtime": 3710,
+            "native_parser": 39,
+            "canonical_context": 7,
+            "native_layout_context": 4,
+            "runtime": 23,
+            "assembly_projection": 133
+          }
+        },
+        "dependency_hydration": {
+          "status": "passed",
+          "entry": "make verify.business_config.formal_list.unit verify.unified_page_contract.v2.assembler",
+          "log": "thirteenth-hydration.log",
+          "counts": {
+            "handler_boundary": 149,
+            "cache": 48,
+            "view_orchestration": 62,
+            "baseline_tools": 5
+          }
+        },
+        "frontend_guards": {
+          "status": "passed",
+          "entry": "make verify.frontend.contract_basis.enforce verify.frontend.typecheck.strict",
+          "log": "thirteenth-guards-shapes.log"
+        },
+        "ORM": {
+          "status": "passed",
+          "count": 1,
+          "entry": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestSystemPermissionAccounting.test_native_journal_notice_parser_preserves_inline_contract",
+          "log": "thirteenth-orm-shapes.log",
+          "limits": "real native form parse and context condition evaluation, not browser/save/post acceptance"
+        },
+        "independent_review": {
+          "status": "passed_after_S2_repair",
+          "reviewer": "/root/review_quick_closeout",
+          "limits": "final context binding and malformed AST shapes reviewed; corrected false-positive override concern, actual container readiness issue repaired; no publication/runtime approval"
+        }
+      },
+      "evidence_reuse": "Final shape guards affect only malformed operator/empty operand evaluation; compiler/consumer/runtime/typecheck/ORM rerun. Field dependency hydration collector and access-checked hydration implementation/fixtures unchanged since thirteenth-hydration.log, so reuse those boundary results; no unrelated entry matrix or browser rerun.",
+      "remaining": [
+        "explicit parent and context frame in one2many rows",
+        "typed relational RPC/display normalization",
+        "other native consumer coverage",
+        "rich notices/conditional links/accounting widgets",
+        "actual page and full business workflow acceptance"
+      ],
+      "final_shape_hardening": "Final inspection found frontend String(operator) could accept array [==] unlike backend; require operator string and reject empty field_value identity on both ends. Add three malformed AST differential cases; rerun affected compiler/consumer/runtime checks and ORM; no changes to hydration access path.",
+      "product_commits": [
+        "39619650d583d47344e90de36a083e31cabb43cb",
+        "12af199373f07f42d15e06218ba6eee9bc8016d6"
+      ],
+      "final_identity": "12af199373f07f42d15e06218ba6eee9bc8016d6 + P4 cache guard and documentation only",
+      "generated_diff_review": "Only source counts/line counts and frontend input digest changed; generated semantic registry has no product declaration delta."
     }
   }
 }

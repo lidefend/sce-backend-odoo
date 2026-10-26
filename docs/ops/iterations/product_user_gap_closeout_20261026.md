@@ -601,3 +601,67 @@ P0归属`smart_core`编译器/求值器与通用前端消费者；P4仅现有测
 context.get/parent依赖传输、legacy/domain的like等差异、富提示/条件导航和专用会计组件继续未完成。
 下一步建立上下文/父记录与字段类型的显式求值绑定，再做真实消费错误态及受影响页面验证。
 回退本批源码恢复c79e4adc7；无本批业务数据写入或部署需要回退。
+
+
+## 第十三批：context.get声明、绑定与求值闭环（2026-10-26）
+
+阶段身份`93642077811e1b6bf5bc19087b7f4b4ec6a675a2`加声明dirty范围。P0归属原生表达编译器、
+装配器和通用消费机制；P4仅现有测试入口、缓存输入锁与单一结果记录。
+复用已有`dataContract.dataMeta.sourceContext.context`，不新增上下文来源或业务默认值。
+
+### 本批实现的协议
+
+- 支持`context.get(字面字符串键)`及带已支持字面标量/列表默认值的形式；缺省默认值明确为null。
+  支持真假、NOT/AND/OR以及与字段/字面值/另一context.get的Python比较。动态键、动态默认值、
+  任意函数、context下标访问、复杂方法链不支持，整条表达式显式拒绝。
+- 新AST为`value_truthy`/`value_compare`（显式`semantics: python`），操作数为`context_get`、
+  `field_value`或`literal`。比较继续复用第十二批限定JSON值域。
+- 后端最终字段/容器/动作状态与前端canonical/原生layout桥都从声明上下文构造内部求值键
+  `$native.context`。该键不是模型字段或新增wire字段；mainData/草稿同名值不能替代声明上下文。
+  空字典是有效上下文，键不存在时才用表达式声明的默认值；整个namespace缺失/非法时保持未知或
+  `ContractGapError`，不能靠默认值掩盖缺声明。
+- 空source context保留优先级，不再因falsy而落到其他来源；已编译的条件不再被旧字符串context
+  处理覆盖成静态布尔值。原有权限、禁用、静态隐藏和策略拒绝保持约束。
+- `field_value`进入现有字段依赖补读闭包，context key不被当作数据库字段读取；创建草稿的读取
+  和字段访问检查不变，无sudo。前端容器依赖检查同步使用最终绑定map。
+- 缓存版本`ui-contract-v2-native-context-binding-v1`，新context求值器及依赖模块纳入缓存输入锁。
+
+### 检查与失败保留
+
+证据根`.runtime/product-user-gap-closeout-20261026/`：
+
+- `thirteenth-l1-shapes.log`：`make ci.local.iteration contract.semantic.registry.generate`通过。
+- `thirteenth-l2-shapes.log`：8项编译器测试、3,710项跨端检查、39项原生parser测试；
+  canonical新增7项上下文绑定/动作呈现断言，真实layout hook新增4组空/有/无context及伪造输入用例；
+  runtime 23项及装配投影133项通过。全部通过现有Make入口，非零收集。
+- `thirteenth-guards-shapes.log`：contract basis与strict typecheck通过。
+- `thirteenth-hydration.log`：`verify.business_config.formal_list.unit`的149项handler边界、48项缓存、
+  62项视图编排及5项基线工具测试通过，另装配guard通过。新增测试验证context比较中的field_value
+  正常补读及拒绝read/拒绝field时不补值，context key不进入mainData。
+- 独立复核确认layout容器依赖检查漏用绑定context（S2），已统一最终值map并通过真实hook测试。
+  初步提出的live覆盖专用resolver问题未复现：该resolver已有保留键保护；复核已纠正此项描述。
+- `thirteenth-l2-reviewed.log`保留旧layout fixture期望缺依赖静默隐藏的失败；迁为隔离的显式异常
+  负例，其他权限/禁用/静态隐藏断言保留。`thirteenth-l2-fixed.log`保留负例后未恢复合法store造成
+  Vue延迟watch报错；恢复fixture后通过，没有在产品代码吞掉异常。
+- `thirteenth-orm.log`保留选错原始证据范围的失败：default_move_type条件来自searchContract，
+  不在当前form布局。追溯原始路径后选择真实form的default_journal_id与move_type复合条件。
+- `thirteenth-orm-shapes.log`：现有`local.dev.test`指定journal parser用例，在注册
+  `sc-local-dev/sc_dev_demo`回滚管理ORM中1项通过，0失败/0错误。要求实际普通会计用户原生表单
+  非空命中，检查四种context结果及缺namespace未知，保留既有状态/inline/link/button断言。
+- 最后收口补三项非法AST负例：两种比较均要求string操作符，field_value拒绝空身份，避免前端类型
+  转换与后端结果分歧。受影响L1/L2/typecheck/ORM重新通过；字段补读访问路径未变，复用其通过日志。
+- P0源码提交`39619650d583d47344e90de36a083e31cabb43cb`、`12af199373f07f42d15e06218ba6eee9bc8016d6`。
+  生成报告仅源码数量/行数及前端输入摘要变化，已检查。
+- 最终开发独立复核通过，无剩余确认阻断项；不等于浏览器或发布批准。
+
+### 尚未覆盖与下一步
+
+这批支持主表单canonical/layout上下文求值，不证明所有原生表达式或所有消费者完成支持。
+parent记录帧、one2many行的context传输、关系RPC/display编码、搜索/活动等其他消费路径、
+富提示/条件导航和会计专用组件仍待覆盖。新AST要求匹配的后端/前端候选一起验证和发布，
+未证明其他客户端兼容，也未做浏览器错误态及完整会计保存/过账验收。
+
+没有服务候选切换、主线集成、部署或Demo重建；当前已登记服务候选仍870a36bd2，
+主线/日常服务器仍bdef29e11。FG15未关闭，原始功能组仍为16组局部修复。
+下一步建立子表行的显式parent/context求值帧及关系类型绑定，再进入受影响用户路径验收。
+回退本批源码恢复936420778；本批无业务数据写入或部署需要回退。

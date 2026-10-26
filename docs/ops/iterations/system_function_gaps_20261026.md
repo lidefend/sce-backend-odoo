@@ -172,6 +172,9 @@ sc.hr.payroll.document，点击新建也出现相同错误终态。两者分别�
 
 ### FG-15：日记账分录新建加载失败
 
+- 第十三批补有限context.get表达式的声明、权威上下文绑定及两端求值；3,710项跨端检查、
+  canonical/真实layout hook及journal原生复合条件ORM通过。子表context/parent、关系类型和富组件未完成，未部署，FG15仍未关闭。
+
 - 第十二批补原生Python比较的显式语义、类型/序列保真、成员及排序判断；3,596项跨端检查、
   4项新增canonical呈现断言及真实journal状态条件ORM通过。上下文/父记录与关系值绑定仍待完善，未部署，FG15仍未关闭。
 
