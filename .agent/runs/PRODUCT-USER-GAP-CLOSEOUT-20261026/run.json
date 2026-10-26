@@ -1223,6 +1223,17 @@
       "result": "13 account.move legacy alert <div> nodes now project to sc.feedback.message (purpose advisory) and the contract assembles ok=true with no ContractGapError; parser emits alert own-text as a native-identity text child",
       "remaining": "4 <a class=\"alert-link\" href=\"#...\"> anchors still fail assertNativePresentationConsumption; they need sc.navigation.anchor projection with href target resolved to a valid containerId and href stripped",
       "tests": "semantic registry lint + node-component validation (22) pass; browser still loadFailed because of the alert-link anchors"
+    },
+    "fg15_progress_after_anchor_fix": {
+      "status": "still_one_frontend_render_error",
+      "commits": [
+        "2a5b9e56e alert->feedback",
+        "3cd139f89 alert-link->text + compiledCondition compound"
+      ],
+      "backend_contract": "account.move assembles ok=true with 13 sc.feedback.message projections; alert-link anchors become plain text",
+      "frontend_tests": "node-component-consumption 36 cases pass",
+      "browser_state": "journal entry still shows generic 加载失败 (data-error-kind=unknown), no ContractGapError, no pageerror; the remaining error is a caught rendering error not yet re-surfaced after the latest fixes",
+      "next": "re-instrument applyFormRuntimeStatusEvent/onErrorCaptured once more to capture the new error string, then fix and re-probe"
     }
   }
 }
