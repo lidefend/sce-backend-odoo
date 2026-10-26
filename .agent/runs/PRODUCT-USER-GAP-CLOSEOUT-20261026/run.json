@@ -163,7 +163,7 @@
     "FG15: persistent posting lifecycle not run; requires bounded exact-object recovery plan before writes.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Diagnose journal list175 voucher-number column displayed as 数量 at P1 native/contract declaration; fix owning label authority and targeted contract/browser test. Continue accounting detail and ordinary reader/user usability as needed. Development demo gaps use existing named seed steps directly; no migration framework or full rebuild unless requested.",
+  "next_exact_step": "Continue accounting actual record-detail and handling workflow acceptance under the existing demo accounting role. Start read-only saved journal detail/feedback and contract-rendered actions, then identify missing demo scenarios via existing seed steps. Preserve completed journal list label and six-entry evidence; no migration framework for development demo.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1741,7 +1741,18 @@
       "reproduction": "accounting-number-before-orm.log exact1 FAIL: view781, name field label数量, no view label. Owning native label source confirmed.",
       "validation": "accounting-number-projection-orm.log exact1 PASS: source XML temporarily inherited in rollback, native view and actual parser column both凭证编号/char. Static L1 +24JS/11Python policy PASS. Installed declaration and browser pending.",
       "review": "review_takeover approved narrow /tree/field[name=name] inherited label; shared account.view_move_tree consumers affected, quantity/value/permissions unchanged.",
-      "runtime_plan": "Governed local.dev.upgrade MODULE=smart_construction_core required only to load new native view declaration; no demo module upgrade or data rebuild. Then installed ORM and exact candidate browser label check."
+      "runtime_plan": "Governed local.dev.upgrade MODULE=smart_construction_core required only to load new native view declaration; no demo module upgrade or data rebuild. Then installed ORM and exact candidate browser label check.",
+      "status": "native_parser_browser_label_gap_closed",
+      "product_candidate": "760572c62592651cafe8d39c8424a45efebff14c",
+      "browser_candidate": "28637161491e32493b2c74959068cd74dac13f87",
+      "installed": "accounting-number-view-upgrade.log PASS with explicit CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core for changed XML; namespace and demo authority PASS. First default fast-mode upgrade refused before update, recorded separately.",
+      "tests": "accounting-number-installed-orm.log actual22 tests PASS0failed/0error at760572c62; includes native installed label/parser, six-role entry tests, mixed/revocation/readonly/company and experience. accounting-number-header-probe-static.log L1+24JS/11Python PASS.",
+      "browser": "accounting-number-final-browser.log PASS6 at286371614; real uid7/company1 and namespace assets verified, exact one凭证编号 and no数量 in actual th labels, visible text checked, six list statesok,errors0/blocked0. Screenshot175 visually confirmed. Raw report journal-role-browser/28637161491e32493b2c74959068cd74dac13f87/sc_demo_accounting_manager-report.json.",
+      "negative": "accounting-number-demo_role_finance-browser.log and accounting-number-demo_role_project_read-browser.log eachPASS1 at760572c62 after module update; later P4 probe-only change does not invalidate product/negative inputs, retain original identity.",
+      "failure": "accounting-number-sc_demo_accounting_manager-browser.log at760572c62 failed columnheader accessibility selector. Raw lastPage.text already showed凭证编号; fixed test to actual ActionView thead th exact labels+visible text, product unchanged. Failed report retained.",
+      "limits": "Only journal list number label closed; all consumers of shared account.view_move_tree inherit label. No field type/value/ACL/frontend product change. No demo seed rerun/rebuild, business workflow posting or remote deployment. Details/save/workflow acceptance not implied.",
+      "rollback": "Revert P1 native view declaration through reviewed code and governed module declaration refresh; no business record migration required.",
+      "final_review": "review_takeover independently read final286371614 browser report: exact headers, uid/company, six cases, errors0/blocked0; label gap can close. Keep22ORM and2denials at original760572c62 identity."
     }
   }
 }

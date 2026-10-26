@@ -1641,3 +1641,37 @@ uid41/project_member/primary3、uid47/finance/primary15保持原样。
 会计负责人Demo身份与六页面入口缺口在此范围关闭；会计只读/经办正向浏览器、跨公司页面、
 详情办理与持久过账仍未验收，FG15整体开放。本轮只读浏览器未新增业务单据。
 未远端发布、未集成主线、未部署日常服务器；本地开发运行候选为f68368103。
+
+
+## 凭证编号列表语义收口（2026-10-27）
+
+P1 `760572c62592651cafe8d39c8424a45efebff14c`：在已有account_extend_views.xml继承
+account.view_move_tree，仅`/tree/field[@name='name']`声明string=凭证编号。
+共享该原生树视图的入口都会继承标签；不改字段类型、值、权限、排序，不做前端模型特判。
+修复前真实普通会计只读ORM证实view781的name字段中文标签为“数量”，视图未覆盖，
+`accounting-number-before-orm.log`精确1项失败。不是仅凭截图猜测前端问题。
+
+验证按原证据保存：
+- `accounting-number-projection-orm.log`精确1项PASS：读取真实XML声明创建临时继承视图，
+  回滚事务内原生name列和parser columns_schema均为凭证编号/char。
+- `accounting-number-view-upgrade.log`：因XML改动，经local.dev.upgrade的显式view升级开关
+  加载smart_construction_core声明，namespace和Demo权威检查通过；未重建或重放Demo。
+  初次默认fast-mode阻止升级，保留accounting-number-upgrade.log，不计为升级通过。
+- `accounting-number-installed-orm.log`：已安装环境实际22项，0失败/0错误；包含两项标签、
+  六入口三档角色、组合/撤权、只读/跨公司、原生反馈及体验身份回归。
+- 760572c62下两个财务/项目只读浏览器各PASS1，日志accounting-number-demo_role_finance-browser.log、
+  accounting-number-demo_role_project_read-browser.log。正向自有入口及凭证拒绝边界保持成立。
+- 首轮manager浏览器在可访问性columnheader定位超时，但原报告lastPage.text已显示凭证编号。
+  P4 `28637161491e32493b2c74959068cd74dac13f87`改为ActionView内真实thead/th文本及可见性：
+  凭证编号恰好一项且无数量。没有放宽标签语义或修改产品。原失败报告保留。
+- `accounting-number-header-probe-static.log` L1、24JS+11Python通过。
+- `accounting-number-final-browser.log`在286371614下PASS6：uid7/company1、候选资产核验，
+  六列表均ok、errors0/blocked0。真实表头数组包含凭证编号，截图175已目视确认原编号和5条记录可见。
+  报告及截图：`.runtime/product-user-gap-closeout-20261026/journal-role-browser/`
+  `28637161491e32493b2c74959068cd74dac13f87/`。
+
+原生声明→解析→实际页面三段闭合，关闭“凭证编号误标数量”这一具体缺口。
+此前22 ORM与两个拒绝浏览器保留760572c62身份，P4定位修正不伪写为新SHA全部重跑。
+独立复核认可P1范围及修正后的可见表头断言。下一步进入普通会计账号的已保存详情/反馈及办理动作，
+六列表可用不代表详情、保存、过账或跨公司页面已全部验收，FG15整体保持开放。
+本地运行候选286371614；未主线集成、未远端日常服务器部署，未开展Demo迁移或重建。
