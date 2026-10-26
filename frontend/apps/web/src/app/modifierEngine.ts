@@ -94,6 +94,7 @@ export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (
   if (kind === 'value_truthy' || kind === 'value_compare') {
     if (row.semantics !== 'python') return modifierGap('comparison_semantics');
     if (kind === 'value_truthy') return nativeTruthy(resolveNativeOperand(row.value_expr, resolveFieldValue));
+    if (typeof row.operator !== 'string') return modifierGap('operator');
     const left = resolveNativeOperand(row.left, resolveFieldValue);
     const right = resolveNativeOperand(row.right, resolveFieldValue);
     return comparePythonModifier(left, String(row.operator || ''), right);
@@ -121,7 +122,8 @@ export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (
     return actual;
   };
   if (kind === 'field_truthy') return nativeTruthy(resolve(field));
-  const operator = String(row.operator || '').trim();
+  if (typeof row.operator !== 'string') return modifierGap('operator');
+  const operator = row.operator.trim();
   if (!['=', '==', '!=', '<>', '>', '>=', '<', '<=', 'in', 'not in', 'like', 'ilike'].includes(operator)) return modifierGap('operator');
   const valueField = String(row.value_field || row.valueField || '').trim();
   if (!valueField && !Object.prototype.hasOwnProperty.call(row, 'value')) return modifierGap('value');

@@ -24,7 +24,7 @@ export function resolveNativeOperand(node: unknown, resolve: (field: string) => 
   if (!record(node)) return gap();
   let value: unknown;
   if (node.kind === 'literal' && Object.prototype.hasOwnProperty.call(node, 'value')) value = node.value;
-  else if (node.kind === 'field_value' && typeof node.field === 'string') value = resolve(node.field);
+  else if (node.kind === 'field_value' && typeof node.field === 'string' && node.field.trim()) value = resolve(node.field);
   else if (node.kind === 'context_get') {
     const context = resolve('$native.context');
     if (!record(context) || typeof node.key !== 'string' || !isPythonModifierValue(node.key)

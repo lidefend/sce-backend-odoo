@@ -169,6 +169,10 @@ def differential_cases():
         assert fixture.assembler._evaluate_action_modifier(node, record, strict=True) is None
         cases.append({"node": node, "record": record, "expected": None, "contract": contract})
     for node, record in [
+        ({"kind": "value_compare", "semantics": "python", "operator": ["=="],
+          "left": {"kind": "literal", "value": 1}, "right": {"kind": "literal", "value": 1}}, {}),
+        ({"kind": "value_truthy", "semantics": "python", "value_expr": {"kind": "field_value", "field": ""}}, {"": True}),
+        ({"kind": "field_compare", "semantics": "python", "field": "state", "operator": ["=="], "value": "draft"}, {"state": "draft"}),
         (MODULE.normalize_native_modifier("state == 'draft' or context.get('x')"), {"state": "draft"}),
         ({"kind": "not", "expr": {"kind": "unknown"}}, {}),
         ({"kind": "static", "value": "false"}, {}),

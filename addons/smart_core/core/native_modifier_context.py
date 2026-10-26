@@ -27,7 +27,7 @@ def _operand(node: Any, record: dict[str, Any]) -> tuple[bool, Any]:
     kind = node.get("kind")
     if kind == "literal" and "value" in node:
         value = node["value"]
-    elif kind == "field_value" and isinstance(node.get("field"), str) and node["field"] in record:
+    elif kind == "field_value" and isinstance(node.get("field"), str) and node["field"].strip() and node["field"] in record:
         value = record[node["field"]]
     elif kind == "context_get":
         context = record.get("$native.context")
