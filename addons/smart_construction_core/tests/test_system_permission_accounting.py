@@ -93,6 +93,7 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
         self.assertEqual(move.state, 'draft')
         move.action_post()
         self.assertEqual(move.with_env(self.env).state, 'posted')
+        self._assert_journal_save_label(move)
         self.assertEqual(sum(move.with_env(self.env).line_ids.mapped('balance')), 0)
         self.assertEqual(move.with_user(reader).read(['state'])[0]['state'], 'posted')
         with self.assertRaises(AccessError), self.env.cr.savepoint():
@@ -391,11 +392,26 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
         self.assertEqual(denied['error']['reason_code'], 'ONCHANGE_SPEC_INVALID', denied)
 
 
+    def _assert_journal_save_label(self, record):
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+        result = UiContractV2Handler(record.env, su_env=self.env).handle({
+            'op': 'model', 'model': 'account.move', 'view_id': self.env.ref('account.view_move_form').id,
+            'view_type': 'form', 'render_profile': 'edit', 'record_id': record.id,
+            'client_contract_capabilities': ['form.feedback.message.v1', 'form.navigation.anchor.v1', 'form.feedback.draft.v1'],
+        })
+        result = result.to_legacy_dict() if hasattr(result, 'to_legacy_dict') else result
+        self.assertTrue(result.get('ok', True), result)
+        actions = result['data']['actionContract']['actionRuleList']
+        saves = [action for action in actions if action.get('actionId') == 'form.save']
+        self.assertEqual(len(saves), 1)
+        self.assertEqual(saves[0]['label'], '保存')
+
     def test_native_saved_journal_feedback_contract(self):
         from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
         user = self._subject('accounting_user')
         record = self.env['account.move'].with_user(user).create({'journal_id': self.journal.id, 'ref': 'Synthetic saved contract'})
         self.assertFalse(record.env.su)
+        self._assert_journal_save_label(record)
         result = UiContractV2Handler(record.env, su_env=self.env).handle({
             'op': 'model', 'model': 'account.move', 'view_id': self.env.ref('account.view_move_form').id,
             'view_type': 'form', 'render_profile': 'edit', 'record_id': record.id,

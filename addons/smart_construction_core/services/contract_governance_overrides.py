@@ -333,3 +333,23 @@ register_contract_domain_override(
     _apply_partner_form_surface_governance,
     priority=30,
 )
+
+
+def _apply_accounting_form_save_label(data: dict, contract_mode: str) -> None:
+    """Saving a journal changes its editable fields, not its posting state."""
+    if contract_mode != "user":
+        return
+    head = _as_dict(data.get("head"))
+    if _text(head.get("model") or data.get("model")) != "account.move":
+        return
+    governance = _as_dict(data.get("form_governance"))
+    governance["primary_action_label"] = "保存"
+    data["form_governance"] = governance
+
+
+register_contract_domain_override(
+    "smart_construction_core.accounting_form_save_label",
+    _apply_accounting_form_save_label,
+    priority=30,
+    native_authority_safe=True,
+)
