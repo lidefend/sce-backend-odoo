@@ -1234,6 +1234,12 @@
       "frontend_tests": "node-component-consumption 36 cases pass",
       "browser_state": "journal entry still shows generic 加载失败 (data-error-kind=unknown), no ContractGapError, no pageerror; the remaining error is a caught rendering error not yet re-surfaced after the latest fixes",
       "next": "re-instrument applyFormRuntimeStatusEvent/onErrorCaptured once more to capture the new error string, then fix and re-probe"
+    },
+    "fg15_page_opens_20261026": {
+      "status": "page_opens",
+      "commit": "26eb20414",
+      "browser_observation": "journal entry create form (account.move, demo_full, sc_dev_demo) now opens with 4 rendered fields, no ContractGapError, no pageerror, no API failure (only benign 409 db hint)",
+      "remaining_stage3": "line add/edit, debit/credit binding, balance feedback, save/readback, permission denial - not yet browser-verified"
     }
   }
 }
