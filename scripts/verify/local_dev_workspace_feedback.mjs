@@ -365,7 +365,11 @@ try {
         record_id:journalSave.createdId,line_ids:[]}));
       await page.waitForURL(url => url.pathname.endsWith('/'+journalSave.createdId),{timeout:20000});
       await page.reload({waitUntil:'domcontentloaded'});
-      await page.waitForFunction(ref => document.body.innerText.includes(ref),journalSave.ref);
+      const reloadedRef = page.locator('[data-field-name="ref"] input:visible').first();
+      await reloadedRef.waitFor({state:'visible'});
+      await page.waitForFunction(ref => document.querySelector('[data-field-name="ref"] input')?.value === ref,journalSave.ref);
+      item.reloadedRef = await reloadedRef.inputValue();
+      assert.equal(item.reloadedRef,journalSave.ref,'reloaded field must contain saved reference');
       const rows=await ownedJournalRows(); assert.equal(rows.length,1);
       assert.equal(rows[0].id,journalSave.createdId); assert.equal(rows[0].state,'draft');
       const relationId = value => Array.isArray(value) ? value[0] : value;

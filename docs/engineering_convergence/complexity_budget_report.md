@@ -207,7 +207,7 @@ Generated from repository source files. This report is informational during the 
 | 829 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
-| 818 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
+| 822 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 815 | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
 | 810 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |
