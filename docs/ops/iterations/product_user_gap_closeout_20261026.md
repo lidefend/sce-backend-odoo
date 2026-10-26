@@ -1363,3 +1363,39 @@ query runtime 的零 fetch/list 反例。静态守卫也由名称存在检查改
 
 单一索引已更新；批次active，未做业务持久化、demo重建、远端集成或日常服务器部署。
 回滚本轮拒绝修复会重新出现域丢失风险，不能作为关闭问题的方案；保留受管运行环境与全部失败证据。
+
+
+## 原生关系域表达式接入及科目筛选恢复（2026-10-26）
+
+产品代码/受管运行候选 `1958136964016db335d445a92e2d21d449bcc0d6`。P0 `smart_core` 编译，
+前端仅消费显式数据表达式；P4 扩展既有 journal-draft 实际请求断言。当前工作树无外部执行者写入。
+
+声明：原生字段字符串 domain 经 Python AST 白名单编译为 `fieldDescriptor.domain_expression`：
+`version=1/raw/dependencies/tree`；未支持表达式为显式 unsupported。覆盖安全字面量、字段/parent字段、
+list/tuple、返回操作数的 and/or、同类型序列拼接。List与Tuple保留类型，不接受Python本应拒绝的混合拼接。
+无eval/任意调用/任意属性访问。新增compiler纳入 assembled cache输入，版本及摘要同步。
+消费：严格绑定原始domain，校验AST、依赖及最终前缀域；normalized store保留声明。
+当前行字段不借同名父字段兜底，显式parent字段按父描述符转换；缺少原始值在归一化为false/[]之前即拒绝。
+512节点/32层资源限制登记在contract-basis机制豁免，不承载产品规则，不截断业务集合。
+
+独立复核发现的两项S2（缺值归一化掩盖、parent类型来源）已修复，并补真实query runtime反例。
+跨端共享fixture由后端测试核对编译结果，前端验证同一数据协议、raw不一致/非法节点/缺值/数组非法值/混合拼接拒绝。
+实际查询测试证明子行公司7不会误用父公司1，显式parent.company_id才使用父描述符；缺少行公司不发第二次查询。
+
+测试通过：`native-domain-final-back.log`135项后端；`native-domain-final-front.log`明细/域实际runtime与反例、
+67项结算、10项后端附属及46项守卫、严格类型；`native-domain-semantic-tests.log`真实decode/store保持声明；
+`native-domain-final-guards.log`L1/assembler缓存/探针语法/11项请求策略；`native-domain-root-tests.log`根关系及40项守卫。
+早期类型检查失败、缓存摘要失败等原始日志保留，不算通过证据。
+
+真实行为：`native-domain-browser.log` PASS，实际account.account查询包含完整域
+`['|', ['company_id','=',false], ['company_id','parent_of',[1]], ['deprecated','=',false], ['account_type','!=','off_balance']]`。
+返回49条，选择49“601880 工程收入”，ID进入同一虚拟新增行、onchange200；0→1行及币种6继续通过，
+错误0/拦截0，截图已核。`native-domain-contact.log`联系人回归PASS，0→1行/5输入项，错误0/拦截0。
+两份报告目录分别为 `journal-draft-browser/<candidate>/report.json` 与 `native-child-browser/<candidate>/report.json`，
+均位于既有 `.runtime/product-user-gap-closeout-20261026/`；单一run索引已更新。
+
+结论：上一轮科目复杂公司域阻断在该受限表达式范围内关闭；有数据且约束进入查询，不再靠丢域获取候选。
+这不代表全部Python表达式已支持；函数调用、context.get、条件表达式/比较等仍显式拒绝，需按实际声明继续扩展。
+仅证明demo_full的草稿/查询/选中链，未完成普通角色跨公司矩阵，也未保存、验证借贷平衡、回读或过账。
+FG15整体保持开放。未合并主线或部署日常服务器；本地服务保留上述候选，后续记录提交不改变产品行为。
+回滚195813696会恢复明确拒绝，不得恢复静默空域。

@@ -137,9 +137,9 @@
   },
   "checks": {},
   "blockers": [
-    "Native relation domain expression support in implementation; account selector/browser acceptance pending"
+    "FG15 save/balance/readback/posting acceptance remains pending; account domain query blocker resolved at195813696"
   ],
-  "next_exact_step": "P0 native relation domain support: account_id combines company_id and/or, prefix |, parent_of and list concat with deprecated/account_type filters; preserve row/parent context and fail closed. Current bdeaada explicitly blocks account query; do not proceed save or claim FG15 closure. Verify authoritative current descriptor then declaration-consumption-runtime filtered selection.",
+  "next_exact_step": "Continue governed journal save validation: two lines with valid filtered accounts, debit/credit balance, required-field coverage, draft save/readback then posting/role/company boundaries. Native compiled account domain and contact draft now pass on195813696; preserve explicit refusal of unsupported expressions.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1526,7 +1526,14 @@
       "scope": "Data-only version1 AST for literals, row/parent fields, lists/tuples, operand-returning and/or, list concat. No calls/subscripts/arbitrary attributes; raw source binding; missing dependency refuses.",
       "mechanism_limits": "AST512 nodes/depth32, transport/parser resource limits only; no product semantics",
       "environment": "reuse registered sc-local-dev/sc_dev_demo/ns_000000000002, no persistence",
-      "status": "implementation"
+      "status": "bounded_scope_passed",
+      "candidate": "1958136964016db335d445a92e2d21d449bcc0d6",
+      "tests": "native-domain-final-back.log135; native-domain-final-front.log detail runtime/negative/parent tests + guards46 + strict; native-domain-semantic-tests.log normalized decode/store; native-domain-final-guards.log L1/cache/syntax/policy11; native-domain-root-tests.log root relation guard40.",
+      "review": "review_takeover independent no remaining S0-S2 after fixing raw-missing normalization and parent descriptor typing; list/tuple and recursion boundaries added.",
+      "browser": "native-domain-browser.log PASS: query exact company=false OR company parent_of[1], deprecated=false, account_type!=off_balance; records49, selected49/601880工程收入, same virtual line onchange200;0->1,currency6,errors0,blocked0; screenshot inspected. native-domain-contact.log PASS0->1,5inputs,errors0,blocked0.",
+      "evidence_root": ".runtime/product-user-gap-closeout-20261026/",
+      "known_limits": "Data-only subset: no arbitrary calls/attributes/subscripts, context.get/conditional expressions/comparisons not implemented by this protocol. Unsupported remains explicit refusal. No save/posting or cross-company role matrix claim; demo_full browser only.",
+      "rollback": "Revert195813696 to prior explicit refusal, never reinstate silent empty domain. Cache version/digest move with compiler."
     }
   }
 }
