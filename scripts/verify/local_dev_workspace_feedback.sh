@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 : "${ENV_FILE:?governed environment is required}"
+journal_authority_env_file="$ENV_FILE"
 set -a
-source "$ENV_FILE"
+source "$journal_authority_env_file"
 set +a
 [[ "${COMPOSE_PROJECT_NAME:-}" == sc-local-dev && "${DB_NAME:-}" == sc_dev_demo && "${NGINX_PORT:-}" == 18081 ]]
 : "${SC_DEMO_USER_PASSWORD:?canonical demo credential required}"
@@ -18,7 +19,7 @@ export SC_RUNTIME_JOURNAL_EVIDENCE=".runtime/product-user-gap-closeout-20261026/
 export SC_CONFIRM_JOURNAL_RECOVERY=PREFLIGHT_CLEANUP_ONE_OWNED_DRAFT
 mkdir -p "$SC_RUNTIME_JOURNAL_EVIDENCE"
 recover() {
-  SC_RUNTIME_JOURNAL_RECOVERY="$1" make --no-print-directory ENV=dev ENV_FILE="$ENV_FILE" local.dev.journal.recovery.run > "$SC_RUNTIME_JOURNAL_EVIDENCE/$1.log" 2>&1
+  SC_RUNTIME_JOURNAL_RECOVERY="$1" make --no-print-directory ENV=dev ENV_FILE="$journal_authority_env_file" local.dev.journal.recovery.run > "$SC_RUNTIME_JOURNAL_EVIDENCE/$1.log" 2>&1
 }
 recover preflight
 # Even a browser failure must finish recovery while this same write lease is held.

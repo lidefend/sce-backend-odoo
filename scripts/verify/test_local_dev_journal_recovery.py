@@ -72,6 +72,7 @@ class WrapperLifecycleTests(unittest.TestCase):
 import os,json,sys
 from pathlib import Path
 kind=Path(sys.argv[0]).name
+if kind=='make' and ('ENV_FILE='+os.environ['TEST_ENVFILE']) not in sys.argv: sys.exit(2)
 mode=os.environ.get('SC_RUNTIME_JOURNAL_RECOVERY') if kind=='make' else 'browser'
 root=Path(os.environ['SC_RUNTIME_JOURNAL_EVIDENCE']); root.mkdir(parents=True,exist_ok=True)
 with open(os.environ['TEST_EVENTS'],'a') as f: f.write(mode+'\n')
@@ -88,11 +89,11 @@ print('JOURNAL_RECOVERY '+json.dumps(receipt))
 '''
             for name in ('make','node'):
                 p=binpath/name;p.write_text(fake);p.chmod(0o755)
-            envfile=root/'env'; envfile.write_text('COMPOSE_PROJECT_NAME=sc-local-dev\nDB_NAME=sc_dev_demo\nNGINX_PORT=18081\nSC_DEMO_USER_PASSWORD=synthetic-test-only\n')
+            envfile=root/'env'; envfile.write_text('COMPOSE_PROJECT_NAME=sc-local-dev\nDB_NAME=sc_dev_demo\nNGINX_PORT=18081\nSC_DEMO_USER_PASSWORD=synthetic-test-only\nENV_FILE=.env.dev\n')
             env=dict(os.environ, PATH=str(binpath)+os.pathsep+os.environ['PATH'], ENV_FILE=str(envfile),
                      SC_FEEDBACK_SCOPE='journal-save',CANDIDATE_GIT_HEAD='a'*40,
                      CONFIRM_LOCAL_DEV_JOURNAL_SAVE='CREATE_READBACK_CLEANUP_ONE_DRAFT',
-                     SC_LOCAL_DEV_WRITE_LEASE_TOKEN='synthetic-unit-lease',TEST_EVENTS=str(events),TEST_FAILURE=failure)
+                     SC_LOCAL_DEV_WRITE_LEASE_TOKEN='synthetic-unit-lease',TEST_EVENTS=str(events),TEST_ENVFILE=str(envfile),TEST_FAILURE=failure)
             result=subprocess.run(['bash',str(wrapper)],cwd=root,env=env,capture_output=True,text=True)
             order=events.read_text().splitlines()
             reports=list(root.glob('.runtime/**/report.json'))
