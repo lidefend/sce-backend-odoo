@@ -1557,7 +1557,10 @@
       "reason": "Native notebook unmounts inactive contract-visible pages while save expects all required native positions. Keep all contract-visible panels mounted in same existing engine; no model-specific rule or weakening coverage guard.",
       "blast_radius": "Native notebook panels only; ScTabs new optional props preserve other callers defaults. Existing required validation and title handling unchanged.",
       "validation": "L1 then real TDesign panel/engine tests, adopted save identity and strict checks; affected journal save browser. Prior runtime diagnostic cannot access compiled Vue instances; no write attempted.",
-      "status": "implementation"
+      "status": "runtime_validation_unblocked",
+      "candidate": "ea780d72addb82d6c5346fb956c738ac1033c23f",
+      "result": "L1, real engine87, identity91, strict and primitive/basis/container guards PASS; independent noS1/S2. Browser emits create after prior validation block; strict P4 rejects missing readonly journal and native action context before transport. No persisted write.",
+      "next": "P4 permit native readonly journal omission and exact observed action context; preserve actual journal/company/currency readback and cleanup."
     }
   }
 }

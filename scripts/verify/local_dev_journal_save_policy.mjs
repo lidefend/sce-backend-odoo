@@ -12,7 +12,10 @@ export function permitsJournalSaveMutation(request, state, transport) {
   const p = request?.params;
   if (!state.enabled || !p || p.model !== 'account.move' || p.sudo) return false;
   const context = p.context || {};
-  if (Object.keys(context).some(key => !['company_id','allowed_company_ids','lang','tz','menu_id'].includes(key))) return false;
+  if (Object.keys(context).some(key => !['company_id','allowed_company_ids','lang','tz','menu_id','default_move_type','search_default_posted','view_no_maturity'].includes(key))) return false;
+  if (context.default_move_type !== undefined && context.default_move_type !== 'entry') return false;
+  if (context.search_default_posted !== undefined && context.search_default_posted !== 1) return false;
+  if (context.view_no_maturity !== undefined && context.view_no_maturity !== true) return false;
   if (context.company_id !== undefined && context.company_id !== state.companyId) return false;
   if (context.allowed_company_ids !== undefined && JSON.stringify(context.allowed_company_ids) !== JSON.stringify([state.companyId])) return false;
   if (request.context && JSON.stringify(request.context) !== JSON.stringify(context)) return false;
@@ -22,7 +25,7 @@ export function permitsJournalSaveMutation(request, state, transport) {
   const vals = p.vals;
   if (!vals || Object.keys(vals).some(key => !rootAllowed.has(key)) || vals.ref !== state.ref
     || (vals.move_type !== undefined && vals.move_type !== 'entry') || (vals.state !== undefined && vals.state !== 'draft')
-    || id(vals.journal_id) !== state.journalId || (vals.company_id !== undefined && id(vals.company_id) !== state.companyId)
+    || (vals.journal_id !== undefined && id(vals.journal_id) !== state.journalId) || (vals.company_id !== undefined && id(vals.company_id) !== state.companyId)
     || (vals.currency_id !== undefined && id(vals.currency_id) !== state.currencyId)
     || !Array.isArray(vals.line_ids) || vals.line_ids.length !== 2) return false;
   for (const key of rootEmpty) if (vals[key] !== undefined && !empty(vals[key])) return false;

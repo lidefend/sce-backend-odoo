@@ -37,3 +37,12 @@ test('wrong transport refuses mutation', () => {
  assert(!permitsJournalSaveMutation(create,state,{method:'GET',path:'/api/v1/intent'}));
  assert(!permitsJournalSaveMutation(create,state,{method:'POST',path:'/api/other'}));
 });
+
+test('native readonly journal defaults and exact action context are permitted', () => {
+ const x=structuredClone(create); delete x.params.vals.journal_id;
+ x.params.context={company_id:1,allowed_company_ids:[1],default_move_type:'entry',search_default_posted:1,view_no_maturity:true};
+ assert(allow(x,state));
+ for (const [key,value] of [['default_move_type','out_invoice'],['search_default_posted',0],['view_no_maturity',false],['default_journal_id',4]]) {
+  const y=structuredClone(x); y.params.context[key]=value; assert(!allow(y,state));
+ }
+});
