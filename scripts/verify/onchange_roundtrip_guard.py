@@ -35,7 +35,7 @@ def main() -> int:
     backend_markers = [
         'class ApiOnchangeHandler(BaseIntentHandler):',
         'INTENT_TYPE = "api.onchange"',
-        'env_model.onchange(values, changed_fields, field_onchange)',
+        'env_model.onchange(values, changed_fields, fields_spec)',
         '"patch": patch',
         '"modifiers_patch": modifiers_patch',
     ]

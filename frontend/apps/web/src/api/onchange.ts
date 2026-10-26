@@ -26,6 +26,7 @@ export type OnchangeResponse = {
 export async function triggerOnchange(params: {
   model: string;
   res_id?: number | null;
+  view_id?: unknown;
   values: Record<string, unknown>;
   changed_fields: string[];
   context?: Record<string, unknown>;
@@ -37,6 +38,7 @@ export async function triggerOnchange(params: {
     params: {
       model: params.model,
       res_id: params.res_id || undefined,
+      view_id: params.view_id,
       values: params.values,
       changed_fields: params.changed_fields,
       context: params.context || {},

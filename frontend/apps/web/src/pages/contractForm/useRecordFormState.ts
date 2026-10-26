@@ -181,7 +181,7 @@ export function useRecordFormState(context: {
     const changed=Array.from(context.changedFieldSet);context.changedFieldSet.clear();
     const ticket=createOnchangeRoundtripTicket({sequence:onchangeSequence+1,model:context.model.value,recordId:context.recordId.value,snapshot:buildOnchangeDraftSnapshot(Object.keys(context.formFields.value),name=>comparableFieldValue(name,context.formData[name]))});
     onchangeSequence=ticket.sequence;
-    try{const response=await (context.requestOnchange || triggerOnchange)({model:context.model.value,res_id:context.recordId.value,values:buildOnchangeValues(),changed_fields:changed,context:buildFormRequestContext(context.route.query)});const {patch:rawPatch,modifiersPatch,linePatches,warnings}=normalizeOnchangeResponse(response);
+    try{const response=await (context.requestOnchange || triggerOnchange)({model:context.model.value,res_id:context.recordId.value,view_id:context.route.query.view_id ?? context.route.query.viewId,values:buildOnchangeValues(),changed_fields:changed,context:buildFormRequestContext(context.route.query)});const {patch:rawPatch,modifiersPatch,linePatches,warnings}=normalizeOnchangeResponse(response);
       const plan=planOnchangeApplication({ticket,latestSequence:onchangeSequence,currentRecordKey:onchangeRecordKey(context.model.value,context.recordId.value),patch:rawPatch,comparableValue:name=>comparableFieldValue(name,context.formData[name])});
       // A superseded or foreign response is dropped whole: its patch, row
       // patches, modifier overlay and warnings all describe an obsolete draft.

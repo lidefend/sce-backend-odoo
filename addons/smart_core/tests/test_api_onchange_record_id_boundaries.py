@@ -24,6 +24,12 @@ class _Model:
     def check_access_rights(self, mode):
         return True
 
+    def check_field_access_rights(self, mode, names):
+        return names
+
+    def get_view(self, view_id=None, view_type="form"):
+        return {"arch": "<form>" + "".join('<field name="%s"/>' % name for name in self._fields) + "</form>"}
+
 
 class _Field:
     def __init__(self, field_type="", comodel_name=""):
@@ -60,7 +66,7 @@ class _ManualOnchangeModel(_Model):
     _onchange_methods = {"menu_id": [_manual_menu_onchange]}
 
     def onchange(self, values, changed_fields, field_onchange):
-        return {"value": {}}
+        return {"value": {"original_label": "基础设置", "preview_summary": "保存后刷新页面生效"}}
 
     def new(self, values):
         return types.SimpleNamespace(**(values or {}))
@@ -170,7 +176,7 @@ class TestApiOnchangeRecordIdBoundaries(unittest.TestCase):
         env = _Env({"x.model": _OnchangeModel(), "x.line": _LineModel()})
         handler = self.module.ApiOnchangeHandler(
             env=env,
-            params={"model": "x.model", "changed_fields": ["line_ids"]},
+            params={"model": "x.model", "changed_fields": ["line_ids"], "values": {"line_ids": []}},
         )
 
         result = handler.handle()
@@ -181,7 +187,7 @@ class TestApiOnchangeRecordIdBoundaries(unittest.TestCase):
         self.assertEqual(line_patch["row_state"], "create")
         self.assertEqual(line_patch["command_hint"], [0])
 
-    def test_empty_odoo_onchange_falls_back_to_registered_methods(self):
+    def test_native_result_preserved_without_manual_reexecution(self):
         env = _Env({"x.manual": _ManualOnchangeModel()})
         handler = self.module.ApiOnchangeHandler(
             env=env,
@@ -206,7 +212,7 @@ class TestApiOnchangeRecordIdBoundaries(unittest.TestCase):
                     "model": "x.manual", "values": {"menu_id": 1}, "changed_fields": ["menu_id"],
                     "include_v2_patch": True,
                 })
-                with patch.object(model, "onchange", side_effect=failure), patch.object(handler, "_manual_onchange_result") as manual:
+                with patch.object(model, "onchange", side_effect=failure), patch.object(model, "new") as manual:
                     result = handler.handle()
                 manual.assert_not_called()
                 self.assertFalse(result["ok"])
@@ -226,11 +232,76 @@ class TestApiOnchangeRecordIdBoundaries(unittest.TestCase):
             handler = self.module.ApiOnchangeHandler(env=_Env({"x.manual": model}), params={
                 "model": "x.manual", "values": {"menu_id": 1}, "changed_fields": ["menu_id"],
             })
-            with patch.object(model, "onchange", return_value=raw), patch.object(handler, "_manual_onchange_result") as manual:
+            with patch.object(model, "onchange", return_value=raw), patch.object(model, "new") as manual:
                 result = handler.handle()
             manual.assert_not_called()
             self.assertFalse(result["ok"])
             self.assertEqual(result["error"]["reason_code"], "ONCHANGE_RESPONSE_INVALID")
+
+    def test_view_spec_keeps_hidden_fields_and_separates_child_scope(self):
+        model = _ManualOnchangeModel()
+        child = _LineModel()
+        model._fields = {**model._fields, "line_ids": _Field("one2many", "x.line")}
+        model.env = _Env({"x.line": child})
+        child._fields = {"name": _Field("char"), "hidden": _Field("char")}
+        arch = '<form><field name="menu_id"/><field name="original_label" invisible="1"/><field name="line_ids"><tree><field name="name"/></tree></field><field name="line_ids"><form><field name="hidden" invisible="1"/></form></field></form>'
+        with patch.object(model, "get_view", return_value={"arch": arch}) as get_view:
+            spec = self.module.build_native_onchange_spec(model, view_id=17)
+        get_view.assert_called_once_with(view_id=17, view_type="form")
+        self.assertEqual(spec, {"menu_id": {"fields": {"display_name": {}}}, "original_label": {},
+                                "line_ids": {"fields": {"name": {}, "hidden": {}}}})
+        with patch.object(model, "get_view", return_value={"arch": arch}), patch.object(child, "check_field_access_rights", side_effect=self.module.AccessError("denied")):
+            with self.assertRaises(self.module.AccessError):
+                self.module.build_native_onchange_spec(model)
+
+    def test_changed_field_requires_view_declaration_and_value(self):
+        model = _ManualOnchangeModel()
+        for values, arch in (({}, '<form><field name="menu_id"/></form>'),
+                             ({"menu_id": 1}, '<form><field name="original_label"/></form>')):
+            handler = self.module.ApiOnchangeHandler(env=_Env({"x.manual": model}), params={
+                "model": "x.manual", "values": values, "changed_fields": ["menu_id"],
+            })
+            with patch.object(model, "get_view", return_value={"arch": arch}), patch.object(model, "onchange") as native:
+                result = handler.handle()
+            native.assert_not_called()
+            self.assertEqual(result["error"]["reason_code"], "ONCHANGE_SPEC_INVALID")
+
+    def test_native_called_once_with_full_view_spec(self):
+        model = _ManualOnchangeModel()
+        handler = self.module.ApiOnchangeHandler(env=_Env({"x.manual": model}), params={
+            "model": "x.manual", "values": {"menu_id": 1}, "changed_fields": ["menu_id"],
+        })
+        with patch.object(model, "onchange", return_value={"value": {}}) as native, patch.object(model, "new") as manual:
+            result = handler.handle()
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["data"]["patch"], {})
+        manual.assert_not_called()
+        native.assert_called_once_with({"menu_id": 1}, ["menu_id"], {
+            "menu_id": {"fields": {"display_name": {}}}, "original_label": {}, "preview_summary": {},
+        })
+
+    def test_native_relation_objects_adapt_without_losing_virtual_identity(self):
+        model = _ManualOnchangeModel()
+        child = _LineModel()
+        model._fields = {**model._fields, "line_ids": _Field("one2many", "x.line")}
+        child._fields = {"partner_id": _Field("many2one", "res.partner")}
+        model.env = _Env({"x.line": child})
+        raw = {"menu_id": {"id": 7, "display_name": "Native menu"},
+               "line_ids": [[1, "virtual_a", {"partner_id": {"id": 9, "display_name": "Native partner"}}]]}
+        result = self.module.normalize_native_onchange_values(model, raw)
+        self.assertEqual(result, {"menu_id": [7, "Native menu"],
+                                 "line_ids": [[1, "virtual_a", {"partner_id": [9, "Native partner"]}]]})
+        self.assertIsInstance(raw["menu_id"], dict)
+        handler = self.module.ApiOnchangeHandler(env=_Env({"x.manual": model}), params={
+            "model": "x.manual", "values": {"menu_id": 1}, "changed_fields": ["menu_id"],
+        })
+        with patch.object(model, "onchange", return_value={"value": raw}):
+            response = handler.handle()
+        self.assertTrue(response["ok"], response)
+        self.assertEqual(response["data"]["patch"], result)
+        with patch.object(model, "onchange", return_value={"value": {"menu_id": {"id": True}}}):
+            response = handler.handle()
+        self.assertEqual(response["error"]["reason_code"], "ONCHANGE_RESPONSE_INVALID")
 
     def feedback_params(self, **overrides):
         params = {

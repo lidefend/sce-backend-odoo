@@ -107,6 +107,44 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
             ('ref', '=', values['ref']), ('company_id', '=', self.env.company.id)]), 1)
         self.assertEqual(move.with_env(self.env).state, 'posted')
 
+    def test_native_onchange_handler_uses_authorized_view(self):
+        from odoo.addons.smart_core.handlers.api_onchange import ApiOnchangeHandler
+        user = self._subject('accounting_user')
+        model = self.env['res.partner'].with_user(user)
+        state = self.env['res.country.state'].search([('country_id', '=', self.env.ref('base.us').id)], limit=1)
+        self.assertTrue(state)
+        view = self.env.ref('base.view_partner_form')
+        result = ApiOnchangeHandler(model.env, payload={'params': {
+            'model': 'res.partner', 'view_id': view.id,
+            'values': {'name': 'Synthetic native onchange', 'country_id': self.env.ref('base.fr').id,
+                       'state_id': state.id}, 'changed_fields': ['country_id'],
+        }}).handle()
+        self.assertFalse(model.env.su)
+        self.assertTrue(result.get('ok'), result)
+        self.assertIn('state_id', result['data']['patch'])
+        self.assertFalse(result['data']['patch']['state_id'])
+        self.assertEqual(result['data']['applied_fields'], ['country_id'])
+        selected = ApiOnchangeHandler(model.env, payload={'params': {
+            'model': 'res.partner', 'view_id': view.id,
+            'values': {'name': 'Synthetic native onchange', 'country_id': self.env.ref('base.fr').id,
+                       'state_id': state.id}, 'changed_fields': ['state_id'],
+        }}).handle()
+        self.assertTrue(selected.get('ok'), selected)
+        self.assertEqual(selected['data']['patch']['country_id'][0], state.country_id.id)
+        self.assertIsInstance(selected['data']['patch']['country_id'][1], str)
+        origin = self.env['res.partner'].create({
+            'name': 'Synthetic onchange origin', 'country_id': state.country_id.id, 'state_id': state.id,
+        })
+        existing = ApiOnchangeHandler(model.env, payload={'params': {
+            'model': 'res.partner', 'view_id': view.id, 'res_id': origin.id,
+            'values': {'country_id': self.env.ref('base.fr').id, 'state_id': state.id},
+            'changed_fields': ['country_id'],
+        }}).handle()
+        self.assertTrue(existing.get('ok'), existing)
+        self.assertFalse(existing['data']['patch']['state_id'])
+        self.assertEqual(origin.with_user(user).state_id, state)
+        self.assertEqual(origin.country_id, state.country_id)
+
     def test_native_virtual_relation_snapshot_roundtrip(self):
         from odoo.addons.web.models.models import RecordSnapshot
         user = self._subject('accounting_user')

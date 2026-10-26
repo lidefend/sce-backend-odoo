@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from odoo import fields as odoo_fields
 from odoo.exceptions import AccessError, UserError
 
 from ..core.base_handler import BaseIntentHandler
@@ -23,6 +22,7 @@ except ImportError:  # pragma: no cover - compatibility for lightweight boundary
     def record_in_business_scope(env_model, record_id, params=None, context=None):
         return record_in_project_scope(env_model, record_id, selected_record_context_id_from_context(params, context))
 from ..core.request_params import parse_bool, parse_positive_int
+from ..core.native_onchange_spec import build_native_onchange_spec, normalize_native_onchange_values, NativeOnchangeSpecError
 from ..core.draft_feedback import (
     CAPABILITY as FEEDBACK_DRAFT_CAPABILITY,
     DraftFeedbackError,
@@ -41,7 +41,7 @@ class ApiOnchangeHandler(BaseIntentHandler):
     REQUIRED_GROUPS = ["smart_core.group_smart_core_data_operator"]
     ACL_MODE = "explicit_check"
     SOURCE_KIND = "odoo_onchange_proxy"
-    SOURCE_AUTHORITIES = ("odoo.onchange", "ir.model.fields")
+    SOURCE_AUTHORITIES = ("odoo.onchange", "ir.model.fields", "ir.ui.view")
     FEEDBACK_MESSAGE_CAPABILITY = "form.feedback.message.v1"
 
     def _with_v2_patch_if_requested(self, response: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
@@ -227,13 +227,6 @@ class ApiOnchangeHandler(BaseIntentHandler):
                 continue
             out.append(name)
         return out
-
-    def _build_field_onchange_map(self, env_model) -> Dict[str, str]:
-        # Odoo onchange RPC expects a mapping describing fields participating in onchange.
-        methods = getattr(env_model, "_onchange_methods", {}) or {}
-        if isinstance(methods, dict) and methods:
-            return {str(key): "1" for key in methods.keys()}
-        return {}
 
     def _normalize_patch(self, env_model, patch_raw: Any) -> Dict[str, Any]:
         if not isinstance(patch_raw, dict):
@@ -445,92 +438,6 @@ class ApiOnchangeHandler(BaseIntentHandler):
             return [2, 3]
         return [4, 6]
 
-    def _manual_onchange_result(self, env_model, values: Dict[str, Any], changed_fields: List[str]) -> Dict[str, Any]:
-        methods = getattr(env_model, "_onchange_methods", {}) or {}
-        if not isinstance(methods, dict):
-            return {}
-        try:
-            record = env_model.new(values)
-        except Exception:
-            return {}
-        merged: Dict[str, Any] = {"value": {}, "domain": {}, "warning": [], "modifiers_patch": {}, "line_patches": []}
-        baseline = {
-            name: self._serialize_onchange_record_value(record, name)
-            for name, field in (getattr(env_model, "_fields", {}) or {}).items()
-            if str(getattr(field, "type", "") or "") not in {"one2many", "many2many"}
-        }
-        called = set()
-        for field_name in changed_fields:
-            for method in methods.get(field_name, []) or []:
-                if not callable(method) or method in called:
-                    continue
-                called.add(method)
-                try:
-                    result = method(record)
-                except TypeError:
-                    result = method()
-                except Exception:
-                    continue
-                if not isinstance(result, dict):
-                    continue
-                value = result.get("value")
-                if isinstance(value, dict):
-                    merged["value"].update(value)
-                domain = result.get("domain")
-                if isinstance(domain, dict):
-                    merged["domain"].update(domain)
-                modifiers = result.get("modifiers_patch")
-                if isinstance(modifiers, dict):
-                    merged["modifiers_patch"].update(modifiers)
-                lines = result.get("line_patches")
-                if isinstance(lines, list):
-                    merged["line_patches"].extend(lines)
-                warning = result.get("warning")
-                if warning:
-                    if isinstance(warning, list):
-                        merged["warning"].extend(warning)
-                    else:
-                        merged["warning"].append(warning)
-        for name, before in baseline.items():
-            if name in changed_fields:
-                continue
-            after = self._serialize_onchange_record_value(record, name)
-            if after != before:
-                merged["value"][name] = after
-        if not merged["value"] and not merged["domain"] and not merged["warning"] and not merged["modifiers_patch"] and not merged["line_patches"]:
-            return {}
-        if len(merged["warning"]) == 1:
-            merged["warning"] = merged["warning"][0]
-        return merged
-
-    def _serialize_onchange_record_value(self, record, field_name: str) -> Any:
-        try:
-            field = record._fields.get(field_name)
-        except Exception:
-            return None
-        if not field:
-            return None
-        ftype = str(getattr(field, "type", "") or "").strip()
-        try:
-            value = record[field_name]
-        except Exception:
-            return None
-        if ftype == "many2one":
-            if not value:
-                return False
-            try:
-                rid = int(value.id or 0)
-            except Exception:
-                rid = 0
-            return [rid, value.display_name] if rid > 0 else False
-        if ftype == "date":
-            return odoo_fields.Date.to_string(value) if value else False
-        if ftype == "datetime":
-            return odoo_fields.Datetime.to_string(value) if value else False
-        if ftype in {"one2many", "many2many"}:
-            return None
-        return value if value not in (None, "") else False
-
     def handle(self, payload=None, ctx=None):
         payload = payload or {}
         params = self._collect_params(payload)
@@ -580,10 +487,22 @@ class ApiOnchangeHandler(BaseIntentHandler):
             response = self._with_v2_patch_if_requested(response, params)
             return with_lite_preview_if_requested(response, params, "api_onchange")
 
-        field_onchange = self._build_field_onchange_map(env_model)
-
+        view_id, view_error = parse_positive_int(params.get("view_id"), allow_empty=True)
+        if view_error:
+            return self._onchange_error(400, "ONCHANGE_SPEC_INVALID", "联动视图标识无效")
         try:
-            onchange_result = env_model.onchange(values, changed_fields, field_onchange)
+            if record_id:
+                env_model = env_model.browse(record_id).exists()
+                if not env_model:
+                    return self._err(404, "record not found")
+                env_model.check_access_rule("read")
+            fields_spec = build_native_onchange_spec(env_model, view_id=view_id or None)
+            if any(name not in fields_spec or name not in values for name in changed_fields):
+                raise NativeOnchangeSpecError("changed field absent from view or values")
+            env_model.check_field_access_rights("read", list(values))
+            onchange_result = env_model.onchange(values, changed_fields, fields_spec)
+        except NativeOnchangeSpecError:
+            return self._onchange_error(422, "ONCHANGE_SPEC_INVALID", "字段联动声明不完整或无效")
         except AccessError:
             return self._onchange_error(403, "ONCHANGE_ACCESS_DENIED", "无权执行字段联动")
         except UserError as exc:
@@ -593,25 +512,11 @@ class ApiOnchangeHandler(BaseIntentHandler):
 
         if not self._valid_native_result(onchange_result):
             return self._onchange_error(500, "ONCHANGE_RESPONSE_INVALID", "字段联动返回格式无效")
-        manual_result = self._manual_onchange_result(env_model, values, changed_fields)
-        if manual_result:
-            merged_result = dict(onchange_result)
-            for key in ("value", "domain", "modifiers_patch"):
-                base = merged_result.get(key) if isinstance(merged_result.get(key), dict) else {}
-                supplement = manual_result.get(key) if isinstance(manual_result.get(key), dict) else {}
-                if base or supplement:
-                    merged_result[key] = {**base, **supplement}
-            base_lines = merged_result.get("line_patches") if isinstance(merged_result.get("line_patches"), list) else []
-            supplement_lines = manual_result.get("line_patches") if isinstance(manual_result.get("line_patches"), list) else []
-            if base_lines or supplement_lines:
-                merged_result["line_patches"] = [*base_lines, *supplement_lines]
-            base_warnings = self._normalize_warning_list(merged_result.get("warning"))
-            supplement_warnings = self._normalize_warning_list(manual_result.get("warning"))
-            if base_warnings or supplement_warnings:
-                merged_result["warning"] = [*base_warnings, *supplement_warnings]
-            onchange_result = merged_result
-
-        patch = self._normalize_patch(env_model, onchange_result.get("value"))
+        try:
+            native_values = normalize_native_onchange_values(env_model, onchange_result.get("value", {}))
+        except NativeOnchangeSpecError:
+            return self._onchange_error(500, "ONCHANGE_RESPONSE_INVALID", "字段联动返回格式无效")
+        patch = self._normalize_patch(env_model, native_values)
         domain_patch = self._normalize_domain_patch(env_model, onchange_result.get("domain"))
         warnings = self._normalize_warning_list(onchange_result.get("warning"))
         line_patches = self._normalize_line_patches(env_model, onchange_result.get("line_patches"))

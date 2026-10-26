@@ -957,3 +957,35 @@ strict typecheck和contract basis通过。独立只读复核无新增S0–S2阻�
 本轮为错误边界收口，不是fields_spec迁移。成功路径旧手工补算仍保留；下一步须由权威视图声明
 建立原生字段规格，补隐藏默认字段并验证真实handler。无ORM算法/模型结构变更，本轮未运行
 ORM或浏览器验收，未升级、部署、重建demo或集成主线。FG15仍未关闭。
+
+## 第二十四增量：原生视图字段规格与单次onchange执行
+
+候选基于`c3a9234feb68f1173323b4e67607e24030014fdc`。P0从当前用户get_view表单XML
+生成原生fields_spec，替代旧注册方法字段名→字符串映射；依据
+[Odoo17 onchange/RecordSnapshot](https://github.com/odoo/odoo/blob/17.0/addons/web/models/models.py)
+与[get_view](https://github.com/odoo/odoo/blob/17.0/odoo/addons/base/models/ir_ui_view.py)。
+前端传选中view_id，未指定时由原生默认视图选择机制解析。get_view之后只用sudo读取视图
+model/type元数据校验归属，字段规格本身使用当前用户处理后的架构，不读取sudo业务记录。
+
+隐藏字段保留；显式子表tree/list/form/kanban按comodel隔离并合并重复字段声明，逐模型与
+字段验证read权限。已有记录绑定原始记录并检查read规则；changed字段必须存在于视图及请求
+values。原生onchange只执行一次，移除旧手工补算与合并。没有改成自行执行模型方法。
+
+独立复核S2：原生many2one显示对象不兼容既有ID提取/条件消费。修复采用后端公共传输适配，
+根字段及x2many的0/1/4命令payload中将对象转为[id,label]，保持虚拟引用且不改输入；非法对象
+明确报错。前端实际formstate用例确认非空关系ID及显示名称保留，复核关闭该S2。
+
+证据仍位于既有.runtime批次目录。`twentyfourth-l2.log`保留首次轻量测试缺lxml的失败；
+仅需XML遍历，改用标准库ElementTree，不新增环境依赖。`twentyfourth-l1-reviewed.log`通过；
+`twentyfourth-l2-reviewed.log`后端14项、schema、实际formstate视图传输与关系值用例、4项
+联动竞态、严格类型检查及contract basis通过。静态守卫同步原生规格变量名，断言未减少。
+
+`twentyfourth-orm.log`初次真实清空关系通过，随后适配变更使其不再作为最终证据。
+`twentyfourth-orm-reviewed.log`在sc-local-dev/sc_dev_demo通过既有local.dev.test执行，
+普通会计身份、真实res.partner原生视图/handler：国家变化清空不匹配省份、省份变化选中非空
+国家、已有记录联动不修改持久原值。实际1项、0失败/0错误，测试数据由既有事务回滚。
+
+边界：原生LINK携带行数据仍会被前端拒绝；隐藏子列/默认值的完整声明消费、隐式子视图、
+字段context/order、空changed_fields初始化和真实浏览器闭环仍需推进。此处只证明真实handler
+与上述普通用户场景，不证明所有原生模型/菜单兼容。无模块升级、demo重建、服务候选切换、
+部署或主线集成，FG15未关闭。下步优先收口LINK数据回放及隐藏子列声明消费。

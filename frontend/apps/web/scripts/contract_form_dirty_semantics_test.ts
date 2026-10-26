@@ -302,3 +302,21 @@ for (const change of ['record', 'draft', 'sequence']) {
   h.context.formData.name = previousName;
 }
 console.log('formstate visible current failure and stale error isolation: passed');
+
+let selectedView: unknown;
+h.context.route.query.view_id = '17';
+h.context.requestOnchange = async request => { selectedView = request.view_id; return { patch: {} }; };
+h.changedFieldSet.add('name');
+await h.api.runOnchangeRoundtrip();
+assert.equal(selectedView, '17');
+delete h.context.route.query.view_id;
+console.log('formstate selected native view transport: passed');
+
+const relationForm = harness({ fields: { partner_id: { ttype: 'many2one', name: 'partner_id' } },
+  formData: { partner_id: false }, originalValues: { partner_id: false } });
+relationForm.context.requestOnchange = async () => ({ patch: { partner_id: [9, 'Native partner'] } });
+relationForm.changedFieldSet.add('partner_id');
+await relationForm.api.runOnchangeRoundtrip();
+assert.equal(relationForm.context.formData.partner_id, 9);
+assert.equal(relationForm.context.relationKeywords.partner_id, 'Native partner');
+console.log('formstate normalized native many2one preserves selected identity: passed');
