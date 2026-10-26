@@ -28,9 +28,14 @@ export function resolveNativeOperand(node: unknown, resolve: (field: string) => 
   else if (node.kind === 'field_value' && typeof node.field === 'string' && node.field.trim()) value = resolve(node.field);
   else if (node.kind === 'context_get') {
     const context = resolve('$native.context');
+    const hasDefault = Object.prototype.hasOwnProperty.call(node, 'default');
     if (!record(context) || typeof node.key !== 'string' || !isPythonModifierValue(node.key)
-      || !Object.prototype.hasOwnProperty.call(node, 'default') || !isPythonModifierValue(node.default)) return gap();
-    value = Object.prototype.hasOwnProperty.call(context, node.key) ? context[node.key] : node.default;
+      || (hasDefault && !isPythonModifierValue(node.default))) return gap();
+    // ``context.get(key)`` without a default returns Python None when the key
+    // is absent; nativeTruthy(None) is false, so false is the faithful wire value.
+    value = Object.prototype.hasOwnProperty.call(context, node.key)
+      ? context[node.key]
+      : (hasDefault ? node.default : false);
   } else return gap();
   if (!isPythonModifierValue(value)) return gap();
   return value;

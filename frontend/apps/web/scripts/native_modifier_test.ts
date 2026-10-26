@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { evaluateNativeModifierValue } from '../src/app/modifierEngine';
 import { bindNativeContext, bindNativeFieldTypes } from '../src/app/nativeModifierContext';
+import { resolveNativeOperand } from '../src/app/nativeModifierContext';
 import { nativeModifierRelationValue } from '../src/app/nativeModifierRelationValue';
 import { isContractGapError } from '../src/app/contract/contractGap';
 
@@ -33,4 +34,14 @@ assert.deepEqual(nativeModifierRelationValue([1, 2, 3], 'many2many'), [1, 2, 3])
 assert.throws(() => nativeModifierRelationValue('Journal', 'many2one'), isContractGapError);
 assert.throws(() => nativeModifierRelationValue(null, 'many2one'), isContractGapError);
 assert.throws(() => nativeModifierRelationValue([0, 0, { name: 'x' }], 'one2many'), isContractGapError);
+// context.get(key) without a default resolves to falsy when the key is absent,
+// matching Python None truthiness; a missing default key must not fail the form.
+assert.equal(
+  resolveNativeOperand({ kind: 'context_get', key: 'default_journal_id' }, (name) => (name === '$native.context' ? {} : undefined)),
+  false,
+);
+assert.equal(
+  resolveNativeOperand({ kind: 'context_get', key: 'move_type', default: 'entry' }, (name) => (name === '$native.context' ? {} : undefined)),
+  'entry',
+);
 console.log(`[native_modifier] PASS ${cases.length + 5} cases; Python native truth / backend / frontend differential`);
