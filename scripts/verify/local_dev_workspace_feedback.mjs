@@ -729,6 +729,29 @@ try {
             const status = await validateForm(open);
             const reload=waitForm(); await page.reload({waitUntil:'domcontentloaded'});
             const reloadedStatus=await validateForm(reload);
+            const lineRead=await journalApi('api.data',{op:'read',model:'account.move.line',ids:record.line_ids,
+              fields:['id','move_id','account_id','debit','credit','write_date']});
+            assert.equal(lineRead.status,200); assert.equal(lineRead.payload.ok,true);
+            const lines=lineRead.payload.data.records;
+            assert.deepEqual(lines.map(line=>line.id).sort((a,b)=>a-b),[...record.line_ids].sort((a,b)=>a-b));
+            const lineComparisons=[];
+            for (const line of lines) {
+              assert.equal(relationId(line.move_id),record.id);
+              const cell=field=>page.locator(`#o2m-control-line_ids-o2m_id_${line.id}-${field}-desktop`);
+              const values={};
+              for (const field of ['debit','credit']) {
+                values[field]=await cell(field).inputValue();
+                assert.match(values[field],/^-?\d+(?:\.\d+)?$/,'amount must be an explicit numeric UI value');
+                assert.equal(Number(values[field]),line[field],`line ${line.id} ${field} differs from ORM`);
+              }
+              values.account=await cell('account_id').inputValue();
+              assert.equal(values.account,line.account_id[1],`line ${line.id} account label differs from ORM`);
+              lineComparisons.push({id:line.id,account:line.account_id,debit:line.debit,credit:line.credit,ui:values,passed:true});
+            }
+            const linesAfter=await journalApi('api.data',{op:'read',model:'account.move.line',ids:record.line_ids,
+              fields:['id','move_id','account_id','debit','credit','write_date']});
+            assert.equal(linesAfter.status,200); assert.equal(linesAfter.payload.ok,true);
+            assert.deepEqual(linesAfter.payload.data.records,lines,'readonly inspection must preserve journal lines');
             const readback=await journalApi('api.data',{op:'read',model:'account.move',ids:[record.id],
               fields:['id','name','ref','state','move_type','company_id','journal_id','line_ids','write_date']});
             assert.equal(readback.payload.ok,true);
@@ -736,7 +759,7 @@ try {
             const savedFields=['id','name','ref','state','move_type','company_id','journal_id','line_ids','write_date'];
             const facts=row=>Object.fromEntries(savedFields.map(key=>[key,row[key]]));
             assert.deepEqual(facts(readback.payload.data.records[0]),facts(record),'readonly detail must preserve saved record');
-            report.journalDetail={record,status,reloadedStatus,readback:facts(readback.payload.data.records[0]),comparisonPassed:true,
+            report.journalDetail={record,status,reloadedStatus,lineComparisons,readback:facts(readback.payload.data.records[0]),comparisonPassed:true,
               visibleLineCount:Number(await page.locator('[data-field-name="line_ids"] [data-row-count]').first().getAttribute('data-row-count')),
               lineRegionText:await page.locator('[data-field-name="line_ids"]').first().innerText(),route:page.url(),
               visibleButtons:await page.locator('[data-semantic-component="ContractFormPage"] button:visible').allTextContents(),passed:true};

@@ -163,7 +163,7 @@
     "FG15: persistent posting lifecycle not run; requires bounded exact-object recovery plan before writes.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Continue accounting detail usability with read-only per-line account/debit/credit UI-to-ORM value comparison and posted-state/readonly role action availability. Use existing demo seed directly for missing demo identities/scenarios, not migration framework. Do not claim visible save/post buttons as executed workflows; keep any actual posting separately scoped.",
+  "next_exact_step": "Run governed exact-candidate journal-role browser for per-line UI/ORM values, independent review, then record actual result.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1767,6 +1767,14 @@
       "review": "review_takeover final raw-report review PASS: one saved draft opened/reloaded,2 visible lines, selected record fields/write_date unchanged; no broader amount/save/post claim.",
       "limits": "Only current accounting_manager on one named saved draft entry. Native feedback produces successful contract/DOM but no warning-condition matrix. Visible save/post buttons observed only, never invoked. Amount/account per-cell equality and posted/readonly role detail matrix pending. No demo data edit/seed/upgrade/migration this turn, only governed local runtime refresh and P4 observer.",
       "reuse": "Prior22 ORM at760572c62 and role negatives at760572c62 remain original evidence because backend/permissions unchanged. Six list/header cases rerun incidentally in same existing probe; no broad repository retest."
+    },
+    "accounting_line_values": {
+      "layer": "P4 existing readonly browser observer; no product/frontend/data changes",
+      "head": "577c41bfe plus scripts/verify/local_dev_workspace_feedback.mjs",
+      "status": "runtime_pending",
+      "validation": "accounting-line-static.log L1 PASS;25 JS+11 Python PASS",
+      "scope": "Selected draft10 lines19/20: compare exact IDs, parent, account display label and numeric debit/credit input values to ordinary actor ORM read, then repeat line read including write_date. Existing read-only transport policy unchanged.",
+      "limits": "Not posting or write workflow; posted/readonly roles remain pending."
     }
   }
 }
