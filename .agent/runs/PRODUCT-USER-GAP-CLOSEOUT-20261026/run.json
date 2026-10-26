@@ -1207,7 +1207,14 @@
         "unknown markers or unresolvable href targets must still fail closed",
         "colors/classes must not become business decisions; purpose comes from the alert token mapping only",
         "existing sc.feedback.message / sc.navigation.anchor projections must not be duplicated"
-      ]
+      ],
+      "implementation_findings": {
+        "purpose_enum": "must be advisory|warning|error|explanation; 'info' is rejected, so alert-info maps to explanation",
+        "source_identity": "native_source() requires the content source to exist in the ORIGINAL native tree with nativeLocator + occurrenceIndex + sourceAuthority; a synthetic assembler node is rejected",
+        "condition_model": "condition_dependencies accepts any/all, but require_nonconstant only accepts leaf/negation and must be extended to recurse through any/all",
+        "account_move_alert_shapes": "1 field-child alert (tax_lock_date_message); 16 own-text alerts (text plus button/bold/a children)",
+        "parser_requirement": "the view parser must emit alert own-text as a real text node with native identity and set sourceAuthority on the content source before assembly"
+      }
     }
   }
 }
