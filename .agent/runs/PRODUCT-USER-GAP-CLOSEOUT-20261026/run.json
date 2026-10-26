@@ -1318,6 +1318,12 @@
       "browser": "debit/credit fill to 100/100 binds; save draft returns 表单校验未能完成 (server-side validation, not ContractGapError); account selection via the dropdown did not persist in this probe",
       "note": "the save flow is wired and the server rejects an incomplete entry (missing account) - this is the authoritative business-validation path working",
       "remaining": "select a valid account via dropdown, then verify save draft succeeds and reload readback; balance feedback UI"
+    },
+    "fg15_account_select_save": {
+      "status": "account_select_works_save_rejects_debit_credit_same_line",
+      "browser": "account selection persists (601880 工程收入); debit/credit fill to 100/100; save draft returns 表单校验未能完成",
+      "hypothesis": "a journal entry line cannot carry both debit and credit; Odoo rejects the combined line, so the validation failure is the authoritative business rule",
+      "next": "fill debit-only on line 1 and credit-only on line 2, then save draft and reload readback"
     }
   }
 }
