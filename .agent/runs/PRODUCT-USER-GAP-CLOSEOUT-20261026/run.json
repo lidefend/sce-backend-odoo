@@ -1293,6 +1293,13 @@
         "listContractFormRecords / relation search intent: accept serverDomain + raw domain expression and evaluate it via Odoo safe_eval in the record context (company_id, parent.company_id) before search"
       ],
       "note": "this is the last bounded Stage 3 refinement; core FG15 page-open is resolved"
+    },
+    "fg15_account_readable": {
+      "status": "account_relation_now_readable",
+      "commit": "faea74717",
+      "change": "account_id dynamic domain no longer marks the relation unreadable; relationReadable only requires canRead, and unsupported dynamic domains forward an empty client domain for server-side evaluation",
+      "browser": "line account column placeholder changed from 可选范围暂不可用 to 暂无可选内容 (readable, options load on interaction)",
+      "remaining": "verify clicking 科目 triggers the relation query and returns the 49 accounts; then balance feedback, save draft + readback, permission denial"
     }
   }
 }
