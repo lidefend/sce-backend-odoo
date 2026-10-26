@@ -779,6 +779,22 @@ try {
   if (!['native-child', 'journal-draft', 'journal-save'].includes(scope)) for (const model of models) assert(report.feedback.some(r => r.model === model && r.ok), 'feedback transport missing');
   report.passed = true;
 } finally {
+  if (journalSave.enabled && !report.passed && page) {
+    report.validationDiagnostic = await page.evaluate(async () => {
+      for (const element of document.querySelectorAll('*')) {
+        let component = element.__vueParentComponent;
+        while (component) {
+          if (component.type?.__name === 'ContractFormPage') {
+            const state = component.setupState;
+            return { expectedRequired: state.nativeRequiredEditableFieldNames?.(),
+              outcome: await state.standardFormComposition?.validateAdoptedFields() };
+          }
+          component = component.parent;
+        }
+      }
+      return { unavailable: true };
+    }).catch(error => ({ error: error.message }));
+  }
   if (journalSave.enabled && journalSave.createAttempted && journalTransport) {
     try {
       const rows=await ownedJournalRows(); assert(rows.length<=1,'ambiguous cleanup ownership');

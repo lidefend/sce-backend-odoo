@@ -1543,7 +1543,10 @@
       "authority": "User continues demo-backed product closeout and previously authorized demo edits/rebuild; one owned draft only, no posting.",
       "environment": "sc-local-dev/sc_dev_demo/^sc_dev_demo$/ns_000000000002/sc_local_dev_odoo_data; managed auth and write lease",
       "mutation": "One unique ref balanced two-row100 debit/credit UI create; read/reload; exact owned draft unlink and absence readback in finally. No existing record writes or posting.",
-      "status": "implementation"
+      "status": "runtime_blocked_before_create",
+      "candidate": "0167ec4aa4cf3cf3c9d7e91b2a06fedcfff5877f",
+      "tests": "journal-save-final-l1.log PASS; journal-save-policy-reviewed.log 22+11 PASS; independent review closed both S2",
+      "runtime": "journal-save-browser.log: two lines100/100; save fails frontend validation before create; no blocked requests/errors/persistence. Add bounded P4 failure-state capture to distinguish coverage vs engine failure."
     }
   }
 }
