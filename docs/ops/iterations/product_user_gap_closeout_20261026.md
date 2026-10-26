@@ -1178,3 +1178,20 @@ namespace=ns_000000000002，入口http://127.0.0.1:18081/t/demo；候选前端51
 结论限于真实客户页的一次根字段联动及新增子草稿出现；未验证新增子行字段联动、保存、落库
 回读和清理。无业务记录写入，不能作为保存或全用户交付通过证据；FG15不关闭。
 下一步通过现有受管fixture/浏览器通道绑定可回读、可清理的父子记录，完成保存验收。
+
+## 第二十九增量：隐式关系子视图的onchange字段解析
+
+P0 smart_core `core/native_onchange_spec.py`：x2many字段没有内联 tree/list/form/kanban
+子视图时，原实现只返回空 spec，子行联动字段被静默丢弃。本增量改为经 comodel 默认表单视图
+（`get_view(view_type="form")`，沿用当前用户权限）补齐子行字段；显式子视图保持优先，不触发
+回退；自引用隐式子视图（如 res.partner.child_ids）用解析栈防无限递归；未知视图字段、读权限
+拒绝维持 fail-closed。候选提交 `647075525`。
+
+验证：L0 工作区 clean 身份；L1 `py_compile` 与 `make ci.local.iteration` 通过（L1_only，
+无 receipt）；L2 非零边界套件 `test_api_onchange_record_id_boundaries` 19 项全过（14 项既有
++ 5 项新增：隐式解析、显式优先、自引用防递归、未知字段、读拒绝）。未做真实 Odoo 运行时
+联动、前端/浏览器、模块升级、部署或主线集成。
+
+结论：补齐“隐式子视图”这一动态语义缺口；字段 context/order、空 changed_fields 初始化、
+富会计告警及 FG15 仍未闭合，继续按声明→消费→行为证据逐个增量推进，不提前宣告完整动态语义
+或主线集成。

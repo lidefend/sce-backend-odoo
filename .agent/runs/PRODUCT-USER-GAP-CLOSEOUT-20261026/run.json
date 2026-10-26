@@ -117,7 +117,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Extend existing governed browser/fixture authority with exact recoverable res.partner parent+child save/readback/cleanup, then validate native child edits and persistence. Current probe is draft-only; FG15 and overall delivery remain open.",
+  "next_exact_step": "Continue P0 kernel dynamic-semantics completion: next bounded capabilities are native field-level context/order propagation in onchange spec and default_get, then empty changed_fields initialization for new child rows, then rich accounting warnings to close FG15. Each stays declaration->consumption->behavior evidence; no deploy until a frozen protected PR passes current CI.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1039,6 +1039,8 @@
       "evidence": "Original .runtime logs remain local and ignored by Git; do not hand off clone alone as evidence-complete",
       "next": "Read handoff and make agent.run.resume; implement governed exact-record parent-child save/readback/cleanup in existing local.dev authority before persistence acceptance",
       "rollback": "No persistent browser business writes; no fixture reset. Preserve registered runtime and worktree. Future test records require exact-ID cleanup."
-    }
+    },
+    "twentyninth_scope": "P0 smart_core native_onchange_spec: resolve implicit relation subviews. When an x2many field declares no inline tree/list/form/kanban subview, collect child onchange fields from the comodel default form view via get_view, scoped to the current user. Explicit subviews keep priority; self-referential implicit subviews are guarded against infinite recursion; unknown view field and read-denied field remain fail-closed. Candidate 647075525 clean.",
+    "twentyninth_result": "L0 preflight clean on fix/demo-product-completion-20261026; L1 py_compile and make ci.local.iteration passed (L1_only, receipt none); L2 non-zero lightweight boundary suite test_api_onchange_record_id_boundaries: 19 tests passed (14 existing + 5 new: implicit resolution, explicit priority, self-referential guard, unknown field, read denied). No real Odoo runtime onchange exercised; no frontend/browser/module-upgrade/deploy/mainline. FG15 and remaining dynamic-semantics capabilities stay open."
   }
 }
