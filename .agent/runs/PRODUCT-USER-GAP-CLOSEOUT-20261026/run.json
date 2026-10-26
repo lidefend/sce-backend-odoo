@@ -1216,6 +1216,13 @@
         "account_move_alert_shapes": "1 field-child alert (tax_lock_date_message); 16 own-text alerts (text plus button/bold/a children)",
         "parser_requirement": "the view parser must emit alert own-text as a real text node with native identity and set sourceAuthority on the content source before assembly"
       }
+    },
+    "fg15_stage1_alert_done": {
+      "status": "alert_container_projected",
+      "commit": "2a5b9e56e",
+      "result": "13 account.move legacy alert <div> nodes now project to sc.feedback.message (purpose advisory) and the contract assembles ok=true with no ContractGapError; parser emits alert own-text as a native-identity text child",
+      "remaining": "4 <a class=\"alert-link\" href=\"#...\"> anchors still fail assertNativePresentationConsumption; they need sc.navigation.anchor projection with href target resolved to a valid containerId and href stripped",
+      "tests": "semantic registry lint + node-component validation (22) pass; browser still loadFailed because of the alert-link anchors"
     }
   }
 }
