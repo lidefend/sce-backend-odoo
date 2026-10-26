@@ -314,6 +314,10 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     return (layoutNodes.value as LayoutNode[])
       .filter((node) => node.kind === 'field' && !node.readonly && Boolean(node.descriptor?.required))
       .filter((node) => isWritableFieldVisible(node.name))
+      .filter((node) => {
+        const value = formData[node.name];
+        return value === undefined || value === null || value === '' || value === false;
+      })
       .map((node) => node.name);
   }
 

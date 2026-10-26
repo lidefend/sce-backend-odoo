@@ -74,6 +74,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     relationOptions,
     renderErrorMessage,
     renderProfile,
+    runOnchangeRoundtrip,
     requestedSourceMode,
     requestedSurface,
     resolveContractV2MainData,
@@ -369,7 +370,8 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       // New-record computed defaults (journal/date) are only derived through the
       // native onchange; mark the default-set fields so the roundtrip recomputes
       // the dependent fields before the draft is saved.
-      presentFields.forEach((name) => markFieldChanged(name));
+      presentFields.forEach((name) => changedFieldSet.add(name));
+      void runOnchangeRoundtrip();
       originalValues.value = snapshotOriginalFormValues(fieldNames, formData);
       nativeLayoutVisibilityRevision.value += 1;
       restoreIntakeAutosave();

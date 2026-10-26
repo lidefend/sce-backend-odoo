@@ -1869,6 +1869,7 @@ const contractReadiness = computed<FormContractReadiness>(() => {
 });
 let recordFormStateRuntime: ReturnType<typeof useRecordFormState>;
 function markFieldChanged(name: string) { recordFormStateRuntime.markFieldChanged(name); }
+function runOnchangeRoundtrip() { return recordFormStateRuntime.runOnchangeRoundtrip(); }
 function inputFieldValue(name: string) { return recordFormStateRuntime.inputFieldValue(name); }
 const canonicalFieldOccurrences = computed(() => collectCanonicalFieldOccurrences(canonicalFormRenderState.value.model));
 const layoutFieldOccurrences = computed(() => collectLayoutFieldOccurrences(layoutNodes.value));
@@ -1947,6 +1948,7 @@ const {
   initOne2manyRows, isComponentActive, layoutNodes,
   loadActionContractV2, loadError, loadModelContractV2,
   markFieldChanged,
+  runOnchangeRoundtrip,
   loadNativeChatterTimeline, menuId,
   model, nativeAttachments,
   nativeChatterActions, nativeChatterAutoLoadKey, nativeLayoutVisibilityRevision,
