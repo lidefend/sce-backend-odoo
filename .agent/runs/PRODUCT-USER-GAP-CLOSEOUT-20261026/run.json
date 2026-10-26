@@ -1324,6 +1324,12 @@
       "browser": "account selection persists (601880 工程收入); debit/credit fill to 100/100; save draft returns 表单校验未能完成",
       "hypothesis": "a journal entry line cannot carry both debit and credit; Odoo rejects the combined line, so the validation failure is the authoritative business rule",
       "next": "fill debit-only on line 1 and credit-only on line 2, then save draft and reload readback"
+    },
+    "fg15_balanced_save_probe": {
+      "status": "probe_timing_issue_not_product",
+      "finding": "single-line account select + debit/credit fill verified; the balanced two-line probe hit a playwright timing issue (second row account dropdown not visible while first dropdown open), no pageerror",
+      "verified_so_far": "page opens, line add, debit/credit bind, account query 49 options, account select persists, server rejects debit+credit same line",
+      "remaining": "two-line balanced save draft + reload readback (probe timing), balance feedback UI, permission denial"
     }
   }
 }
