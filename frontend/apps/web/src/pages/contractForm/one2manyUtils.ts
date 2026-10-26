@@ -149,7 +149,7 @@ export function one2manyColumnsFromSubview(
       const relationValueRequiresSelector = ['many2one', 'many2many', 'one2many'].includes(ttype);
       const relation = String(descriptor?.relation || '').trim();
       const domainAnalysis = analyzeDynamicRelationDomain(descriptor);
-      const relationReadable = Boolean(relation && relationEntry(descriptor)?.canRead === true && domainAnalysis.supported);
+      const relationReadable = Boolean(relation && relationEntry(descriptor)?.canRead === true);
       const explicitReadonly = readonly ?? Boolean(descriptor?.readonly);
       out.push({
         key: locator || `${colName}@@${occurrenceIndex || out.length + 1}`,
@@ -171,8 +171,6 @@ export function one2manyColumnsFromSubview(
           relationDependencies: domainAnalysis.dependencies,
           disabledReason: explicitReadonly
             ? '此字段目前仅供查看'
-            : !domainAnalysis.supported
-              ? '可选范围暂不可用'
             : !relationReadable
               ? '可选内容暂不可用'
               : undefined,

@@ -343,7 +343,9 @@ export function dynamicRelationDomainFromDescriptor(params: {
 }) {
   const raw = (params.descriptor as Record<string, unknown> | undefined)?.domain;
   const analysis = analyzeDynamicRelationDomain(params.descriptor);
-  if (!analysis.supported) return [['id', '=', -1]];
+  // A dynamic domain the client cannot reduce is still server-evaluable: Odoo
+  // applies the field domain during search, so do not block all rows here.
+  if (!analysis.supported) return [];
   if (Array.isArray(raw)) return [...raw];
   if (typeof raw !== 'string' || !raw.trim()) return [];
   const out: unknown[] = [];
