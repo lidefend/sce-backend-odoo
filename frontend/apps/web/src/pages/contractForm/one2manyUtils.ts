@@ -167,7 +167,7 @@ export function one2manyColumnsFromSubview(
         ...(ttype === 'many2one' ? {
           relation: relation || undefined,
           relationReadable,
-          relationDomainSupported: domainAnalysis.supported,
+          relationDomainSupported: true,
           relationDependencies: domainAnalysis.dependencies,
           disabledReason: explicitReadonly
             ? '此字段目前仅供查看'
