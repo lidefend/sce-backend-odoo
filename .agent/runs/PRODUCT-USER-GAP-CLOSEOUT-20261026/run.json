@@ -1637,12 +1637,13 @@
     "journal_role_company_closeout": {
       "layer": "P1 existing permission ORM test carrier, P4 existing bounded demo probe; product changes only if a demonstrated owning-layer defect is found",
       "head": "d67adfd68 (clean start)",
-      "declaration": "finance_read implies accounting_read; finance_manager chain does not imply accounting_user. Both demo_role_finance and demo_role_project_read declare finance read. Expect accounting read, no create/write/post authority. Accounting_user allowed only own company.",
+      "declaration": "Model ACL: finance_read inherits accounting_read, no accounting_user. Route authority: P1 ROLE_SURFACE_OVERRIDES finance/project_member does not publish accounting menu175/action292. Therefore saved-reader ORM allowed but mutations denied; demo-role journal navigation/direct route denied. Do not equate model read with route publication.",
       "validation": "L1 then exact rollback ORM reader saved contract and write denials, native feedback foreign-company denial. Reuse established demo_full save evidence; no persistent posting, user/group mutation, module upgrade or data reset.",
       "status": "orm_passed_browser_pending",
-      "tests": "journal-role-l1.log PASS; journal-role-orm.log exact2 PASS; journal-role-reviewed-tests.log syntax + 23JS/11Python PASS.",
-      "review": "review_takeover: ORM valid; required actual uid/company and namespace asset identity checks added; final no blocking findings.",
-      "affected": "Only two demo actors, menu175 list read/create denial and direct new-page denial; no persistence. Saved existing-record reader contract tested separately in rollback ORM."
+      "tests": "journal-role-orm.log exact2 PASS; journal-role-route-reviewed-orm.log exact1 positive published route allowed plus journal route denied PASS; journal-role-positive-probe-tests.log syntax and23JS+11Python PASS; corrected L1 log PASS.",
+      "review": "review_takeover positive route control closes empty-authority false-pass; actualuid/company/assets checked; no remaining blocker.",
+      "affected": "Only two demo actors, menu175 list read/create denial and direct new-page denial; no persistence. Saved existing-record reader contract tested separately in rollback ORM.",
+      "failure": "journal-finance-browser.log at3e6c9d8b5 failed declared entry missing. P4 expected menu publication based only on ACL; corrected against P1 role surface, no product permission changes. Original failed evidence retained."
     }
   }
 }

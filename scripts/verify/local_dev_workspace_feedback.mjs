@@ -85,12 +85,15 @@ try {
       req.method() === 'POST' && pathname === '/api/v1/intent' && ['chatter.timeline', 'chatter.followers.list'].includes(request?.intent) &&
       request.params?.model === 'sc.document.admin.document' &&
       Number(request.params.res_id ?? request.params.record_id) === certificateRecordId;
+    const roleAuthorityRead = scope === 'journal-role' && req.method() === 'POST' && pathname === '/api/v1/intent'
+      && request?.intent === 'route.authority.validate' && request.params?.action_id === 292
+      && request.params?.menu_id === 175 && Object.keys(request.params).length === 2;
     const ownedMutation = permitsJournalSaveMutation(request, journalSave, {method:req.method(),path:pathname});
     const ownedRead = journalSave.enabled && Number.isSafeInteger(journalSave.createdId) && req.method()==='POST' && pathname==='/api/v1/intent'
       && ['chatter.timeline','chatter.followers.list'].includes(request?.intent) && request.params?.model==='account.move'
       && (request.params.res_id ?? request.params.record_id)===journalSave.createdId;
     if (ownedMutation && request.intent === 'api.data') journalSave.createAttempted = true;
-    if (!draft && !certificateRead && !ownedMutation && !ownedRead && !permitsInventoryRequest(req.method(), pathname, body, false)) {
+    if (!draft && !roleAuthorityRead && !certificateRead && !ownedMutation && !ownedRead && !permitsInventoryRequest(req.method(), pathname, body, false)) {
       report.blocked.push({intent: request?.intent || pathname, ...(journalSave.enabled && request?.params?.model==='account.move' ? {params:request.params} : {})});
       return route.abort();
     }
@@ -101,7 +104,11 @@ try {
     if (!['system.init', 'api.onchange'].includes(request?.intent)) return;
     try {
       const payload = await response.json();
-      if (request.intent === 'system.init') init = payload.data;
+      if (request.intent === 'system.init') {
+        init = payload.data;
+        if (scope === 'journal-role') journalTransport = {url:response.url(), headers:Object.fromEntries(
+          Object.entries(await response.request().allHeaders()).filter(([key])=>/^(authorization|content-type)$|^x-/i.test(key)))};
+      }
       else if (request.params.feedback_evaluation) report.feedback.push({model: request.params.model, ok: payload.ok, data: payload.data});
       else if (request.params.child_initialization) report.childInitializations.push({params: request.params, httpStatus: response.status(), ok: payload.ok, data: payload.data, error: payload.error});
 
@@ -631,8 +638,7 @@ try {
     }
     assert.equal(report.blocked.length, 0);
   }
-  if (['create-authority', 'journal-role'].includes(scope)) {
-    if (scope === 'journal-role') {
+  if (scope === 'journal-role') {
       const expectedUid = {demo_role_finance:47,demo_role_project_read:41}[actor];
       assert(expectedUid, 'undeclared actor');
       assert.equal(init.user.id,expectedUid,'authenticated actor differs from registered demo identity');
@@ -643,12 +649,39 @@ try {
       const servedEntries = await page.locator('script[src]').evaluateAll(nodes=>nodes.map(node=>new URL(node.src).pathname).filter(path=>path.includes('/assets/')));
       assert(expectedEntries.length && expectedEntries.every(path=>servedEntries.includes(path)),'namespace frontend differs from candidate build');
       report.frontendEntries = servedEntries;
-    }
-    for (const plan of (scope === 'journal-role' ? [{model:'account.move',menu:'175',allowed:false}] : [
+      assert(!leaves.some(n=>n.meta?.model==='account.move' && new URL(n.meta.route,base).searchParams.get('menu_id')==='175'),
+        'role policy must not publish undeclared journal route');
+      const positive = leaves.find(n=>n.meta?.route?.startsWith('/a/') && n.meta?.model !== 'account.move');
+      assert(positive,'role must publish a positive business route');
+      const positiveMenu = new URL(positive.meta.route,base).searchParams.get('menu_id');
+      const positiveResponse = page.waitForResponse(response=>{
+        let body; try {body=response.request().postDataJSON();} catch {return false;}
+        const request=body?.params?.intent ? body.params : body;
+        return request?.intent==='ui.contract.v2' && request.params?.op==='action_open'
+          && String(request.params.menu_id)===positiveMenu;
+      });
+      await page.goto(base+positive.meta.route,{waitUntil:'domcontentloaded'});
+      const positiveTransport=await positiveResponse;
+      assert.equal(positiveTransport.status(),200); assert.equal((await positiveTransport.json()).ok,true);
+      await page.waitForFunction(()=>['ok','empty'].includes(document.querySelector('[data-semantic-component="ActionView"]')?.getAttribute('data-collection-state')));
+      report.positiveRoute={route:positive.meta.route,model:positive.meta.model,passed:true};
+      const denied=await journalApi('route.authority.validate',{action_id:292,menu_id:175});
+      assert.equal(denied.status,403); assert.equal(denied.payload.ok,false);
+      assert.equal(denied.payload.error.reason_code,'ROUTE_ACTION_NOT_AUTHORIZED');
+      await page.goto(base+'/a/292?menu_id=175',{waitUntil:'domcontentloaded'});
+      await page.waitForURL(url=>url.pathname.endsWith('/access-denied'));
+      await page.locator('[data-semantic-component="AccessDeniedView"]').waitFor({state:'visible'});
+      report.cases.push({model:'account.move',menu:'175',route:'/a/292?menu_id=175',navigationPublished:false,
+        authority:{status:denied.status,reason:denied.payload.error.reason_code},pageDenied:true,passed:true});
+      await page.screenshot({path:`${root}/${actor}-journal-denied.png`});
+      assert.equal(report.blocked.length,0);
+  }
+  if (scope === 'create-authority') {
+    for (const plan of [
       {model: 'account.move.line', menu: '176', allowed: false},
       {model: 'sc.tax.filing', menu: '703', allowed: false},
       {model: 'sc.tax.filing', menu: '702', allowed: true},
-    ])) {
+    ]) {
       const node = leaves.find(n => n.meta?.model === plan.model && new URL(n.meta.route, base).searchParams.get('menu_id') === plan.menu);
       assert(node?.meta?.route?.startsWith('/'), 'declared entry missing');
       const responseFor = operation => page.waitForResponse(response => {
@@ -658,11 +691,6 @@ try {
           String(request.params.menu_id) === plan.menu;
       }, {timeout: 45000});
       const collectionResponse = responseFor('action_open');
-      const listResponse = scope === 'journal-role' ? page.waitForResponse(response => {
-        let body; try { body=response.request().postDataJSON(); } catch { return false; }
-        const request=body?.params?.intent ? body.params : body;
-        return request?.intent==='api.data' && request.params?.model===plan.model && request.params?.op==='list';
-      }) : null;
       await page.goto(base + node.meta.route, {waitUntil: 'domcontentloaded'});
       const collectionPayload = await (await collectionResponse).json();
       assert.equal(collectionPayload.ok, true);
@@ -675,13 +703,6 @@ try {
       if (plan.allowed) { assert.equal(await create.count(), 1); assert(await create.isEnabled()); }
       else for (const button of await create.all()) assert(!await button.isEnabled(), 'forbidden create offered');
       const item = {...plan, collectionStatus, route: node.meta.route}; report.cases.push(item);
-      if (listResponse) {
-        const response=await listResponse; const payload=await response.json();
-        assert.equal(response.status(),200); assert.equal(payload.ok,true);
-        assert(Array.isArray(payload.data.records));
-        item.listRead={count:payload.data.records.length,ids:payload.data.records.map(row=>row.id)};
-        assert.equal(collectionStatus.effectiveRecordCapabilities.write,false);
-      }
       await page.screenshot({path: `${root}/${actor}-${plan.menu}-list.png`});
       const formResponse = responseFor('model');
       if (plan.allowed) await create.click();

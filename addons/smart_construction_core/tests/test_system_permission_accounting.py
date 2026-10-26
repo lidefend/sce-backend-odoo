@@ -451,3 +451,35 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
             read_native_facts(actor.with_context(allowed_company_ids=other_company.ids), {'state'}, 'layoutContract.feedback')
         self.assertEqual(foreign.ref, 'Synthetic foreign journal')
         self.assertEqual(foreign.state, 'draft')
+
+    def test_finance_and_project_reader_journal_route_not_published(self):
+        from odoo.addons.smart_core.delivery.runtime_route_authority import build_runtime_route_authority
+        from odoo.addons.smart_core.handlers.route_authority_validate import RouteAuthorityValidateHandler
+        finance = self._subject('finance_manager')
+        reader = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name':'Synthetic project finance reader', 'login':'auth01_project_finance_reader',
+            'company_id':self.env.company.id, 'company_ids':[(6,0,self.env.company.ids)],
+            'groups_id':[(6,0,[self.env.ref(name).id for name in (
+                'base.group_user','smart_construction_core.group_sc_cap_project_read',
+                'smart_construction_core.group_sc_cap_finance_read')])],
+        })
+        action = self.env.ref('account.action_move_journal_line')
+        menu = self.env.ref('account.menu_action_move_journal_line_form')
+        for user in (finance, reader):
+            actor_env = self.env['account.move'].with_user(user).env
+            self.assertTrue(actor_env['account.move'].check_access_rights('read', raise_exception=False))
+            authority = build_runtime_route_authority(actor_env)
+            published = [row for row in authority.get('primary_actions', [])
+                         if row.get('action_id') and row.get('menu_id')
+                         and not (row.get('context_requirements') or {}).get('required_query')]
+            self.assertTrue(published, 'role authority must have an independently usable positive route')
+            positive = RouteAuthorityValidateHandler(actor_env, su_env=self.env).handle({
+                'action_id':published[0]['action_id'], 'menu_id':published[0]['menu_id']}).to_legacy_dict()
+            self.assertTrue(positive['ok'], positive)
+            self.assertTrue(positive['data']['allowed'])
+            for bucket in ('primary_actions','role_home_actions','contextual_actions','admin_actions'):
+                self.assertFalse(any(row.get('action_id') == action.id for row in authority.get(bucket, [])))
+            result = RouteAuthorityValidateHandler(actor_env, su_env=self.env).handle({
+                'action_id':action.id,'menu_id':menu.id}).to_legacy_dict()
+            self.assertFalse(result['ok'])
+            self.assertEqual(result['error']['reason_code'],'ROUTE_ACTION_NOT_AUTHORIZED')

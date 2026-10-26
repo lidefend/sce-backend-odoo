@@ -188,13 +188,13 @@ Generated from repository source files. This report is informational during the 
 | 877 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
 | 872 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
 | 868 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
+| 867 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 862 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 854 | Python source | `scripts/ops/test_daily_runtime_duty_operator_grant.py` |
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |
 | 849 | Python source | `scripts/verify/test_system_performance_baseline.py` |
-| 846 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
 | 843 | Python source | `scripts/verify/frontend_decision_authority.py` |
