@@ -513,3 +513,32 @@ assert.throws(() => resolveOne2manyRowColumnBehavior({ ...dynamicColumn, modifie
   readonly: { kind: 'field_truthy', field: 'parent.missing' },
 } }, { 'parent.missing': false }, {}));
 console.log('one2many context namespace and missing-parent denial: passed');
+
+const relationColumns = [
+  { name: 'partner_id', label: 'Partner', ttype: 'many2one' },
+  { name: 'other_id', label: 'Other', ttype: 'many2one' },
+  { name: 'tag_ids', label: 'Tags', ttype: 'many2many' },
+];
+const relationBehavior = (node: unknown, values: Record<string, unknown>) => resolveOne2manyRowColumnBehavior(
+  { name: 'note', label: 'Note', modifiers: { readonly: node } }, values, {}, {}, relationColumns,
+).readonly;
+const equalPartner = { kind: 'field_compare', semantics: 'python', field: 'partner_id', operator: '==', value: 7 };
+assert.equal(relationBehavior(equalPartner, { partner_id: [7, 'Display'] }), true);
+assert.equal(relationBehavior(equalPartner, { partner_id: [8, 'Display'] }), false);
+assert.equal(relationBehavior(equalPartner, { partner_id: 7 }), true);
+assert.equal(relationBehavior(equalPartner, { partner_id: false }), false);
+assert.equal(relationBehavior({ ...equalPartner, value_field: 'other_id' }, { partner_id: [7, 'A'], other_id: [7, 'B'] }), true);
+assert.equal(relationBehavior({ kind: 'not', expr: { kind: 'any', exprs: [equalPartner] } }, { partner_id: [7, 'A'] }), false);
+assert.equal(relationBehavior({ kind: 'value_compare', semantics: 'python', operator: '==',
+  left: { kind: 'field_value', field: 'partner_id' }, right: { kind: 'literal', value: 7 },
+}, { partner_id: [7, 'A'] }), true);
+assert.equal(relationBehavior({ ...equalPartner, field: 'tag_ids', value: [7, 8] }, { tag_ids: [7, 8] }), true);
+assert.equal(relationBehavior({ ...equalPartner, field: 'tag_ids', value: [7, 8] }, { tag_ids: [8, 7] }), false);
+assert.equal(relationBehavior({ kind: 'field_truthy', field: 'tag_ids' }, { tag_ids: [] }), false);
+for (const malformed of [null, true, 0, -1, 1.5, '7', [], [7], [7, 8], [7, 'A', 9]]) {
+  assert.throws(() => relationBehavior(equalPartner, { partner_id: malformed }), { name: 'ContractGapError' });
+}
+assert.throws(() => relationBehavior({ kind: 'field_truthy', field: 'tag_ids' }, { tag_ids: [[6, 0, [7]]] }), { name: 'ContractGapError' });
+// Legacy domain nodes retain their previous comparator, including display-pair handling.
+assert.equal(relationBehavior({ ...equalPartner, semantics: undefined }, { partner_id: [7, 'A'] }), true);
+console.log('typed child native relation operands: passed');

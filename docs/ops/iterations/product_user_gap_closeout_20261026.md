@@ -721,3 +721,30 @@ FG15仍未关闭，16组局部修复口径不变。后续：按声明字段类�
 主线集成、部署或demo重建。FG15仍未关闭；下一步为按声明类型规范关系值，再验证嵌套父级、
 既有行写入策略及真实原生子表页面行为。回滚本轮内核/缓存变更即可撤销该依赖收集行为，
 无数据库恢复操作。
+
+## 第十六增量：子表本地关系字段的原生求值类型
+
+候选基于`3f434d0541c19bc99ffcb97e8231d8dff35adc4c`及本节修改，P0通用消费机制。
+查核[Odoo17 Record._computeDataContext](https://github.com/odoo/odoo/blob/17.0/addons/web/static/src/model/relational_model/record.js)：
+many2one条件使用记录ID，x2many条件使用当前ID列表。原子表Python比较直接收到显示对
+`[ID,label]`，导致与ID字面值或同ID不同显示名字段比较不一致。
+
+本轮按子表完整columns声明选择转换，仅在原生Python操作数/字段真假路径使用：
+
+- many2one接受false、正安全整数ID、`[正安全整数ID,字符串显示名]`，返回false或ID。
+- one2many/many2many仅接受已保存ID列表，保留顺序及列表比较语义；空列表合法。
+- 非法身份、显示对误作ID列表、关系命令数组显式ContractGapError；类型冲突也显式拒绝。
+- 共享求值器递归传递Python字段resolver，context与literal不按关系字段转换；旧domain
+  比较保持既有路径。显示、编辑、必填校验和新增写入过滤传入相同完整子表列声明。
+
+范围明确限定子表本地已声明类型的字段；没有推断缺失类型，没有修改父/根记录和后端
+状态求值器。未保存x2many命令到ID集合、嵌套父级、既有行写入策略和隐藏依赖类型声明仍需
+后续收口，不据此宣称关系字段全覆盖。无schema变更、ORM写入、模块升级、demo重建或部署。
+
+本轮证据沿用`.runtime/product-user-gap-closeout-20261026/sixteenth-*`；新增用例包括ID与
+显示对等价、同ID不同显示名、两个字段比较、组合表达式、操作数AST、列表顺序、非法身份、
+命令拒绝和旧domain保留，以及真实useOne2manyRuntime草稿改选后的只读/必填/提交行为。
+
+验证结果：`sixteenth-l1.log`轻量迭代通过；`sixteenth-l2.log`编译器8、跨端3710、parser39、
+集合语义、默认值55及新增关系/hook行为断言、严格类型检查和契约依据守卫全部通过。
+独立只读复核无新增S0–S2阻断。未开展真实页面端到端验收，FG15仍未关闭。

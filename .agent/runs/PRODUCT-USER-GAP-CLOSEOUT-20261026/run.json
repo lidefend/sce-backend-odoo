@@ -90,7 +90,8 @@
     "frontend/apps/web/src/pages/ContractFormPage.vue",
     "frontend/apps/web/scripts/collection_view_semantics_test.ts",
     "frontend/apps/web/scripts/create_default_hydration_test.ts",
-    "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md"
+    "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
+    "frontend/apps/web/src/app/nativeModifierRelationValue.ts"
   ],
   "environment": {
     "kind": "runtime",
@@ -98,7 +99,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Normalize native relation modifier values using declared field types; then verify nested parent frames, existing-row write policy and real child-view browser behavior before FG15 acceptance.",
+  "next_exact_step": "Bind authoritative root/parent field types consistently across backend final states and frontend live modifier evaluation; then unsaved x2many identity and real native child browser acceptance.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -956,6 +957,8 @@
     "fifteenth_scope": "P0 smart_core dependency closure: distinguish root and direct child subview/subviews scopes, hydrate parent.foo only at depth one, exclude child local fields and deeper scopes. Standard platform, no P1 special cases. Risk read/access boundary and cache freshness. HEAD 5d6637a98632f1c3626d40daec9a59e48f6f5345 clean before scope edit. L0 diff, L1 iteration, L2 formal_list/unit assembler. No ORM schema changes, module upgrade/browser/deployment deferred; relation normalization and nested frames excluded.",
     "fifteenth_l1_recovery": "Initial L1 rejected prior-commit auto-generated split evidence absent from cumulative run scope. Registered that generated report; no source gate weakened.",
     "fifteenth_validation_scope": "L2 includes v2.runtime projection regression and collection_view_semantics for shared dependency collector assertions/native compiler cross-runtime agreement; no frontend changes, strict typecheck unchanged and reused from fourteenth. Module schema unchanged, no upgrade; no browser/deployment claims.",
-    "fifteenth_result": "L1 fixed scope pass; L2 handler152 cache48 orchestrator62 tools5 assembler pass; runtime23 projection133 compiler8 differential3710 parser39 collection pass. Independent review no S0-S2. Direct-child parent scalar dependency closure only; no new ORM/browser/upgrade/deploy/demo reset. See fifteenth-* logs and iteration record."
+    "fifteenth_result": "L1 fixed scope pass; L2 handler152 cache48 orchestrator62 tools5 assembler pass; runtime23 projection133 compiler8 differential3710 parser39 collection pass. Independent review no S0-S2. Direct-child parent scalar dependency closure only; no new ORM/browser/upgrade/deploy/demo reset. See fifteenth-* logs and iteration record.",
+    "sixteenth_scope": "P0 generic child native field-value consumer. HEAD3f434d0541c19bc99ffcb97e8231d8dff35adc4c clean at start. Resolve declared child many2one ID/display-pair and persisted x2many ID lists for Python AST, retaining legacy/domain comparison and context literals. Shared renderer/setter/validation/new-write frame. Exclude root/parent type binding, unsaved x2many commands, nested frames, ORM/deploy. L0/L1, collection/default-hydration/typecheck/contract-basis L2 and independent review. Odoo17 record.js _computeDataContext source confirms semantics.",
+    "sixteenth_result": "sixteenth-l1.log PASS; sixteenth-l2.log collection/compiler8/differential3710/parser39, create-default55 plus typed relation/runtime assertions, strict typecheck and contract basis PASS. Independent read-only review no S0-S2. Child declared types only; missing types passthrough, root/parent/backend normalization and unsaved x2many remain. No browser/ORM/deploy."
   }
 }

@@ -83,7 +83,7 @@ function nativeTruthy(value: unknown): boolean {
   return Boolean(value);
 }
 
-export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (field: string) => unknown): boolean {
+export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (field: string) => unknown, resolvePythonFieldValue = resolveFieldValue): boolean {
   if (typeof value === 'boolean') return value;
   // An absent optional modifier is not an expression with a missing dependency.
   if (value === undefined || value === null || value === '' || value === 0 || value === '0' || value === 'false' || value === 'False') return false;
@@ -93,10 +93,10 @@ export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (
   const kind = String(row.kind || '').trim();
   if (kind === 'value_truthy' || kind === 'value_compare') {
     if (row.semantics !== 'python') return modifierGap('comparison_semantics');
-    if (kind === 'value_truthy') return nativeTruthy(resolveNativeOperand(row.value_expr, resolveFieldValue));
+    if (kind === 'value_truthy') return nativeTruthy(resolveNativeOperand(row.value_expr, resolvePythonFieldValue));
     if (typeof row.operator !== 'string') return modifierGap('operator');
-    const left = resolveNativeOperand(row.left, resolveFieldValue);
-    const right = resolveNativeOperand(row.right, resolveFieldValue);
+    const left = resolveNativeOperand(row.left, resolvePythonFieldValue);
+    const right = resolveNativeOperand(row.right, resolvePythonFieldValue);
     return comparePythonModifier(left, String(row.operator || ''), right);
   }
   if (kind === 'static') {
@@ -105,19 +105,19 @@ export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (
   }
   if (kind === 'not') {
     if (!Object.prototype.hasOwnProperty.call(row, 'expr') || row.expr == null || row.expr === '') return modifierGap('not.expr');
-    return !evaluateNativeModifierValue(row.expr, resolveFieldValue);
+    return !evaluateNativeModifierValue(row.expr, resolveFieldValue, resolvePythonFieldValue);
   }
   if (kind === 'all' || kind === 'any') {
     if (!Array.isArray(row.exprs) || !row.exprs.length || row.exprs.some((expr) => expr == null || expr === '')) return modifierGap(`${kind}.exprs`);
     // Resolve every declared branch before reducing: short-circuiting must not hide a contract defect.
-    const verdicts = row.exprs.map((expr) => evaluateNativeModifierValue(expr, resolveFieldValue));
+    const verdicts = row.exprs.map((expr) => evaluateNativeModifierValue(expr, resolveFieldValue, resolvePythonFieldValue));
     return kind === 'all' ? verdicts.every(Boolean) : verdicts.some(Boolean);
   }
   if (kind !== 'field_truthy' && kind !== 'field_compare') return modifierGap('unsupported_kind');
   const field = String(row.field || '').trim();
   if (!field) return modifierGap('field');
   const resolve = (name: string) => {
-    const actual = resolveFieldValue(name);
+    const actual = (row.semantics === 'python' || kind === 'field_truthy' ? resolvePythonFieldValue : resolveFieldValue)(name);
     if (actual === undefined) return modifierGap(`dependency.${name}`);
     return actual;
   };

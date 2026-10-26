@@ -92,7 +92,7 @@ export function useOne2manyRuntime(params: {
 
   function setRowField(fieldName: string, rowKey: string, column: One2ManyColumn, value: unknown) {
     const changed = setOne2manyDraftRowField({
-      rowsByField, fieldName, rowKey, column, value, parentValues: params.parentValues(fieldName),
+      rowsByField, fieldName, rowKey, column, columns: params.resolveColumns(fieldName), value, parentValues: params.parentValues(fieldName),
     });
     if (changed) params.markFieldChanged(fieldName);
   }
@@ -103,6 +103,7 @@ export function useOne2manyRuntime(params: {
       row.values || {},
       params.parentValues(fieldName),
       row.modifierPatches || {},
+      params.resolveColumns(fieldName),
     );
     return {
       ...column,

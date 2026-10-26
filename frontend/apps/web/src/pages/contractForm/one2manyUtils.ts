@@ -1,3 +1,5 @@
+import { contractGapError } from '../../app/contract/contractGap';
+import { nativeModifierRelationValue } from '../../app/nativeModifierRelationValue';
 import { buildOne2ManyInlineCommands } from '../../app/x2manyCommands';
 import {
   BusinessErrorCodes,
@@ -180,16 +182,24 @@ export function resolveOne2manyRowColumnBehavior(
   rowValues: Record<string, unknown>,
   parentValues: Record<string, unknown> = {},
   modifierPatches: Record<string, Record<string, unknown>> = {},
+  columns: One2ManyColumn[] = [column],
 ) {
   const runtimeModifiers = modifierPatches[column.name] && typeof modifierPatches[column.name] === 'object'
     ? modifierPatches[column.name]
     : {};
   const modifiers = { ...(column.modifiers || {}), ...runtimeModifiers };
-  const evaluateModifier = (value: unknown) => evaluateNativeModifierValue(value, (field) => {
+  const resolve = (field: string) => {
     const fieldName = String(field || '').trim();
     if (fieldName === '$native.context') return parentValues[fieldName];
     if (fieldName.startsWith('parent.')) return parentValues[fieldName.slice('parent.'.length)];
     return rowValues[fieldName];
+  };
+  const evaluateModifier = (value: unknown) => evaluateNativeModifierValue(value, resolve, (field) => {
+    const actual = resolve(field);
+    if (field.startsWith('parent.') || field === '$native.context') return actual;
+    const types = [...new Set(columns.filter(item => item.name === field).map(item => item.ttype))];
+    if (types.length > 1) throw contractGapError({ kind: 'contract_defect', missing: `native_modifier.field_type.${field}`, requiredDeclarationLayer: 'P0:smart_core:field_descriptor' }, '原生条件字段类型声明冲突');
+    return nativeModifierRelationValue(actual, types[0]);
   });
   const verdict = (key: 'invisible' | 'readonly' | 'required' | 'column_invisible') => {
     const value = modifiers[key];
@@ -421,6 +431,7 @@ export function setOne2manyDraftRowField(params: {
   fieldName: string;
   rowKey: string;
   column: One2ManyColumn;
+  columns?: One2ManyColumn[];
   value: unknown;
   parentValues?: Record<string, unknown>;
 }) {
@@ -428,7 +439,7 @@ export function setOne2manyDraftRowField(params: {
   const row = rows.find((item) => item.key === params.rowKey);
   if (!row) return false;
   const behavior = resolveOne2manyRowColumnBehavior(
-    params.column, row.values || {}, params.parentValues || {}, row.modifierPatches || {},
+    params.column, row.values || {}, params.parentValues || {}, row.modifierPatches || {}, params.columns,
   );
   if (behavior.invisible || behavior.columnInvisible || behavior.readonly) return false;
   const normalized = normalizeOne2manyColumnValue(params.column, params.value);
@@ -563,7 +574,7 @@ export function collectOne2manyDraftValidationFromRows(params: {
       const checkedRequiredFields = new Set<string>();
       columns.forEach((column) => {
         const behavior = resolveOne2manyRowColumnBehavior(
-          column, row.values || {}, params.resolveParentValues?.(fieldName) ?? params.parentValues ?? {}, row.modifierPatches || {},
+          column, row.values || {}, params.resolveParentValues?.(fieldName) ?? params.parentValues ?? {}, row.modifierPatches || {}, columns,
         );
         if (!behavior.required || behavior.invisible || behavior.columnInvisible || checkedRequiredFields.has(column.name)) return;
         checkedRequiredFields.add(column.name);
@@ -640,7 +651,7 @@ export function buildOne2manyCommandValue(
         : Object.fromEntries((row.dirtyFields || []).filter(key => {
           if (!row.isNew || !columns) return true;
           return columns.some(column => column.name === key
-            && !resolveOne2manyRowColumnBehavior(column, row.values, parentValues, row.modifierPatches || {}).readonly);
+            && !resolveOne2manyRowColumnBehavior(column, row.values, parentValues, row.modifierPatches || {}, columns).readonly);
         }).map((key) => [key, row.values?.[key]])),
     })),
     mode,

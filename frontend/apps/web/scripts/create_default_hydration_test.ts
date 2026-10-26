@@ -269,3 +269,31 @@ assert.deepEqual(contextual.buildCommandValue('lines', 'write'), [[0, 0, {}]]);
 assert.throws(() => bindNativeRowParentContext({}, { required: true }));
 assert.throws(() => bindNativeRowParentContext({ '$native.context': {} }, "{'required': True}"));
 console.log('one2many authoritative row frame: passed');
+
+const typedColumns = [
+  { name: 'partner_id', label: 'Partner', ttype: 'many2one' },
+  { name: 'note', label: 'Note', ttype: 'char', modifiers: {
+    readonly: { kind: 'field_compare', semantics: 'python', field: 'partner_id', operator: '==', value: 7 },
+    required: { kind: 'field_compare', semantics: 'python', field: 'partner_id', operator: '==', value: 8 },
+  } },
+];
+const typedChild = useOne2manyRuntime({
+  model: () => 'x.parent', recordId: () => 0, originalValues: () => ({}), parentValues: () => ({}),
+  onchangeLinePatches: () => [], resolveColumns: () => typedColumns,
+  resolvePrimaryColumn: () => '', resolveRelationOptions: () => [], markFieldChanged: () => {},
+  loadDefaults: async () => ({ partner_id: [7, 'Initial'] }),
+});
+await typedChild.addRow('lines');
+const typedRow = typedChild.visibleRows('lines')[0]!;
+assert.equal(typedChild.effectiveColumn('lines', typedRow, typedColumns[1]!).readonly, true);
+typedChild.setRowField('lines', typedRow.key, typedColumns[1]!, 'Denied');
+assert.equal(typedRow.values.note, '');
+typedChild.setRowField('lines', typedRow.key, typedColumns[0]!, 8);
+assert.equal(typedChild.effectiveColumn('lines', typedRow, typedColumns[1]!).readonly, false);
+assert.equal(typedChild.collectValidation().issues.length, 1);
+typedChild.setRowField('lines', typedRow.key, typedColumns[1]!, 'Allowed');
+assert.equal(typedChild.collectValidation().issues.length, 0);
+assert.deepEqual(typedChild.buildCommandValue('lines', 'write'), [[0, 0, { partner_id: 8, note: 'Allowed' }]]);
+typedChild.setRowField('lines', typedRow.key, typedColumns[0]!, 7);
+assert.deepEqual(typedChild.buildCommandValue('lines', 'write'), [[0, 0, { partner_id: 7 }]]);
+console.log('typed child relation draft runtime: passed');
