@@ -456,3 +456,31 @@ replayChild.setRowField('lines', linked.key, replayColumns[1]!, 10);
 replayChild.prepareOnchangeRows('lines', [[4, 99, { id: 99, quantity: 7 }]])();
 assert.equal(replayChild.fieldRows('lines').find(row => row.id === 99)?.values.quantity, 10);
 console.log('native LINK hydration preserves local and prior UPDATE dirty values: passed');
+
+const { one2manyColumnsFromSubview } = await import('../src/pages/contractForm/one2manyUtils');
+const forceColumns = one2manyColumnsFromSubview({ tree: {
+  columns: ['name', 'forced', 'computed'], column_occurrences: [
+    { name: 'name', field_type: 'char' },
+    { name: 'forced', field_type: 'char', attributes: { force_save: '1' }, modifiers: { readonly: true, invisible: true } },
+    { name: 'computed', field_type: 'char', attributes: { force_save: '0' }, modifiers: { readonly: true, invisible: true } },
+  ],
+} }, () => null);
+const forceChild = useOne2manyRuntime({
+  model: () => 'x.parent', recordId: () => 9, originalValues: () => ({ lines: [42] }), parentValues: () => ({}),
+  onchangeLinePatches: () => [], resolveColumns: () => forceColumns, resolvePrimaryColumn: () => 'name',
+  resolveRelationOptions: () => [], markFieldChanged: () => {},
+});
+forceChild.initRows('lines', [[0, 0, { name: 'New', forced: 'Default force', computed: 'Default computed' }]]);
+const forceNew = forceChild.visibleRows('lines')[0]!;
+forceChild.setRowField('lines', forceNew.key, forceColumns[1]!, 'Forbidden edit');
+assert.equal(forceNew.values.forced, 'Default force');
+assert.deepEqual(forceChild.buildCommandValue('lines', 'write')[0], [0, 0, { name: 'New', forced: 'Default force' }]);
+assert.equal((forceChild.buildCommandValue('lines', 'onchange')[0]![2] as Record<string, unknown>).computed, 'Default computed');
+forceChild.initRows('lines', [42]);
+forceChild.prepareOnchangeRows('lines', [[1, 42, { forced: 'Server force', computed: 'Server computed' }]])();
+assert.deepEqual(forceChild.buildCommandValue('lines', 'write'), [[1, 42, { forced: 'Server force' }]]);
+assert.deepEqual(forceChild.buildCommandValue('lines', 'onchange'), [[1, 42, { forced: 'Server force', computed: 'Server computed' }]]);
+forceChild.initRows('lines', [42]);
+forceChild.prepareOnchangeRows('lines', [[1, 42, { computed: 'No forced write' }]])();
+assert.deepEqual(forceChild.buildCommandValue('lines', 'write'), []);
+console.log('native hidden force_save write/onchange separation and edit refusal: passed');

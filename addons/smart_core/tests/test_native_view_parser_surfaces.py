@@ -537,6 +537,17 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
             with self.subTest(arch=arch):
                 self.assertEqual(resolve(_parse_test_xml(arch), "activate"), expected)
 
+    def test_tree_hidden_force_save_is_declared_without_becoming_editable(self):
+        result = self.tree_form_parser._parse_tree_view(
+            '<tree><field name="hidden_value" invisible="1" readonly="1" force_save="1"/></tree>',
+            {"hidden_value": {"type": "char"}},
+        )
+        self.assertIn("hidden_value", result["columns"])
+        occurrence = result["column_occurrences"][0]
+        self.assertEqual(occurrence["attributes"]["force_save"], "1")
+        self.assertTrue(occurrence["modifiers"]["readonly"])
+        self.assertTrue(occurrence["modifiers"]["invisible"])
+
     def test_form_field_keeps_raw_and_normalized_modifier_values(self):
         element = _parse_test_xml(
             '<field name="partner_id" modifiers="{\'readonly\': true}" can_create="0"/>'

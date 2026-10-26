@@ -47,6 +47,14 @@ function staticNativeBoolean(value: unknown): boolean | undefined {
   return undefined;
 }
 
+function nativeForceSave(value: unknown): boolean {
+  if (value === undefined) return false;
+  const flag = staticNativeBoolean(value);
+  if (flag === undefined) throw contractGapError({ kind: 'contract_defect', missing: 'one2many.force_save',
+    requiredDeclarationLayer: 'P0:smart_core:field_occurrence' }, '明细字段强制保存声明无效');
+  return flag;
+}
+
 function one2manyColumnLabel(value: unknown, fallback: string) {
   const label = String(value || '').trim();
   if (label === 'display_name' || label === 'name') return '名称';
@@ -109,6 +117,7 @@ export function one2manyColumnsFromSubview(
         const businessColumn = businessColumnsByName.get(normalized);
         out.push({
           name: normalized,
+          ...(businessColumn?.force_save === undefined ? {} : { forceSave: nativeForceSave(businessColumn.force_save) }),
           label: one2manyColumnLabel(businessColumn?.label || businessColumn?.string || descriptor?.string, normalized),
           ttype: String(businessColumn?.ttype || businessColumn?.type || ttype),
           required: businessColumn?.required === undefined ? descriptorSemantics.required : Boolean(businessColumn.required),
@@ -145,6 +154,7 @@ export function one2manyColumnsFromSubview(
       out.push({
         key: locator || `${colName}@@${occurrenceIndex || out.length + 1}`,
         name: colName,
+        ...((attributes.force_save ?? row.force_save) === undefined ? {} : { forceSave: nativeForceSave(attributes.force_save ?? row.force_save) }),
         label: one2manyColumnLabel(
           attributes.string || row.label || row.string || businessColumn.label || businessColumn.string || descriptor?.string,
           colName,
@@ -687,9 +697,10 @@ export function buildOne2manyCommandValue(
       values: row.isNew && mode === 'onchange'
         ? row.values || {}
         : Object.fromEntries((row.dirtyFields || []).filter(key => {
-          if (!row.isNew || !columns) return true;
+          if (mode === 'onchange' || !columns) return true;
           return columns.some(column => column.name === key
-            && !resolveOne2manyRowColumnBehavior(column, row.values, parentValues, row.modifierPatches || {}, columns).readonly);
+            && (column.forceSave === true
+              || !resolveOne2manyRowColumnBehavior(column, row.values, parentValues, row.modifierPatches || {}, columns).readonly));
         }).map((key) => [key, row.values?.[key]])),
     })),
     mode,

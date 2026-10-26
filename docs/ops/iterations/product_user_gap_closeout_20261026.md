@@ -1012,3 +1012,27 @@ RecordSnapshot用例，实际1项、0失败/0错误；确认[4,id,{id,name}]返�
 
 本轮仍拒绝未声明的隐藏子列；未解决隐式子视图、字段context/order、空changed_fields初始化
 或完整页面业务验收。无主线集成、部署、模块升级或demo重建，FG15保持未关闭。
+
+## 第二十六增量：隐藏只读子列force_save声明消费
+
+候选基于`18c0f4add760501c34817607d040e4b7f1615cf2`。检查发现原生tree解析器已保留
+隐藏字段及原始occurrence.attributes，本轮不新增隐藏字段授权，也不接受未声明字段；具体缺口
+为force_save声明未消费，以及已有行只读dirty字段此前未按原生写策略筛选。
+依据[Odoo17 Record._getChanges](https://github.com/odoo/odoo/blob/17.0/addons/web/static/src/model/relational_model/record.js)，
+P0消费静态force_save为可选forceSave；未声明保持原形状，非法显式值报契约缺口。write对新行
+及已有行均只选可写或明确forceSave的dirty字段，抑制空UPDATE；onchange仍携带只读值。
+隐藏、readonly、界面setter拒绝和后端权限不改变，force_save不是模型/字段写权限授权。
+
+声明→消费→行为证据：原生解析器用例断言隐藏/readonly/force_save保留；前端从occurrence
+构造列，实际子表runtime验证隐藏默认值写出、已有行服务端更新写出、显式false排除、onchange
+保留只读值和手工编辑拒绝。一般form-only或默认值中未声明的子字段仍未接入，不能宣称隐藏
+数据范围整体闭合。
+
+`twentysixth-l2.log`保留首轮失败：缺省force_save时添加forceSave:false导致原有精确形状
+断言失败，修复为缺省不添加属性，未修改断言。`twentysixth-l2-fixed.log`编译器8、跨端3739、
+parser40、默认值55及新增runtime用例、明细组件定向测试/守卫、x2many守卫、严格类型检查与
+contract basis均通过。`twentysixth-l1-final.log`记录最终轻量静态结果，独立复核无S0–S2。
+
+本轮只改变前端声明消费和写命令筛选、增加后端解析回归；无后端产品/模型结构变化，未重复
+运行ORM，无浏览器保存验收、模块升级、主线集成、部署或demo重建。FG15仍未关闭；下一步
+处理inline tree外子字段的声明来源及草稿/写入传递，再验证实际页面保存。

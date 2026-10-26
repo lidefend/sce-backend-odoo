@@ -126,7 +126,7 @@ export function buildOne2ManyInlineCommands(params: {
     }
     if (!originalSet.has(id)) commands.push([4, id]);
     if (params.mode === 'write' && row.dirty) {
-      commands.push([1, id, values]);
+      if (Object.keys(values).length) commands.push([1, id, values]);
       return;
     }
     if (params.mode === 'onchange' && row.dirty) {

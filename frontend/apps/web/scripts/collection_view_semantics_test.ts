@@ -560,3 +560,15 @@ console.log('native initial snapshot grammar and denial: passed');
 
 assert.throws(() => initNativeRows([[0, 0, { name: 'Known', account_id: 7 }]]), { name: 'ContractGapError' });
 assert.throws(() => initNativeRows([[0, 0, { name: 'Known', id: 7 }]]), { name: 'ContractGapError' });
+
+const forcedColumns = one2manyColumnsFromSubview({ tree: {
+  columns: ['hidden_value'], column_occurrences: [{ name: 'hidden_value', field_type: 'char',
+    attributes: { force_save: '1' }, modifiers: { invisible: true, readonly: true } }],
+} }, () => null);
+assert.equal(forcedColumns[0]!.forceSave, true);
+assert.equal(forcedColumns[0]!.readonly, true);
+assert.equal(forcedColumns[0]!.modifiers?.invisible, true);
+assert.throws(() => one2manyColumnsFromSubview({ tree: {
+  columns: ['hidden_value'], column_occurrences: [{ name: 'hidden_value', attributes: { force_save: 'maybe' } }],
+} }, () => null), { name: 'ContractGapError' });
+console.log('native hidden force_save declaration and invalid rejection: passed');

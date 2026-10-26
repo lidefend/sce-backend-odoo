@@ -152,6 +152,7 @@ export type One2ManyColumn = {
   ttype: string;
   required: boolean;
   readonly?: boolean;
+  forceSave?: boolean;
   nativeLocator?: string;
   occurrenceIndex?: number;
   modifiers?: Record<string, unknown>;
