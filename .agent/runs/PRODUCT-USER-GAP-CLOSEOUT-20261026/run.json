@@ -1312,6 +1312,12 @@
       "commit": "c66792b41",
       "browser": "clicking 科目 in the line row now returns 49 account options (工程收入/应收账款/...); no pageerror",
       "remaining": "balance feedback, save draft + readback, permission denial"
+    },
+    "fg15_save_validation": {
+      "status": "server_validation_rejects_incomplete_entry",
+      "browser": "debit/credit fill to 100/100 binds; save draft returns 表单校验未能完成 (server-side validation, not ContractGapError); account selection via the dropdown did not persist in this probe",
+      "note": "the save flow is wired and the server rejects an incomplete entry (missing account) - this is the authoritative business-validation path working",
+      "remaining": "select a valid account via dropdown, then verify save draft succeeds and reload readback; balance feedback UI"
     }
   }
 }
