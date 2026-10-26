@@ -159,7 +159,8 @@ try {
     const capture = async (response) => {
       let body; try { body = response.request().postDataJSON(); } catch { return; }
       const request = body?.params?.intent ? body.params : body;
-      if (request?.intent !== 'api.onchange' || !models.includes(request.params?.model) || request.params?.feedback_evaluation) return;
+      const accountRead = request?.intent === 'api.data' && request.params?.model === 'account.account' && request.params?.op === 'list';
+      if (!accountRead && (request?.intent !== 'api.onchange' || !models.includes(request.params?.model) || request.params?.feedback_evaluation)) return;
       const payload = await response.json();
       return {httpStatus: response.status(), ok: payload.ok, params: request.params, data: payload.data, error: payload.error};
     };
@@ -233,7 +234,7 @@ try {
     const accountResult = await capture(accountResponse);
     item.accountQuery = accountResult;
     assert(accountResult.httpStatus === 200 && accountResult.ok === true, 'account selector query failed');
-    const option = page.getByRole('option').filter({ hasNot: page.locator('[aria-disabled="true"]') }).first();
+    const option = page.locator('[role="option"]:visible:not([aria-disabled="true"])').first();
     await option.waitFor({state: 'visible'});
     item.accountOptionLabel = await option.innerText();
     const [selectedResponse] = await Promise.all([
@@ -246,6 +247,9 @@ try {
       option.click(),
     ]);
     item.accountSelection = await capture(selectedResponse);
+    const selectedAccount = item.accountSelection.params.values.line_ids.find(command => command[0] === 0 && command[2]?.account_id)?.[2].account_id;
+    item.selectedAccountId = Array.isArray(selectedAccount) ? selectedAccount[0] : selectedAccount;
+    assert(accountResult.data?.records?.some(record => record.id === item.selectedAccountId), 'selected account must belong to returned options');
     assert(item.accountSelection.httpStatus === 200 && item.accountSelection.ok === true, 'selected account onchange failed');
     assert.equal(report.blocked.length, 0);
     await page.screenshot({path: `${root}/after-account-selection.png`});
