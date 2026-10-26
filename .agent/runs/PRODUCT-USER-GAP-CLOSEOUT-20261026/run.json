@@ -1145,6 +1145,23 @@
       "validation": "make verify.semantic.registry.lint PASS (31 resolver tests); make ci.local.iteration L1_only PASS; real Odoo readback confirms sc.display.text",
       "no_new_component": "reused existing readable_value -> sc.display.text chain; no frontend vocabulary added",
       "remaining": "interactive journal-line accounting component (debit/credit/balance) and real browser journey (page open, line edit, balance, save, readback, permissions) remain"
+    },
+    "fe_accounting_widget_01_contract_readback": {
+      "status": "passed",
+      "kind": "scoped_readonly_odoo_shell_diagnostic",
+      "head": "5f51d2512",
+      "display_widgets": {
+        "tax_totals": "readable_value -> sc.display.text",
+        "invoice_payments_widget": "readable_value -> sc.display.text",
+        "invoice_outstanding_credits_debits_widget": "readable_value -> sc.display.text",
+        "purchase_order_count": "readable_value -> sc.display.text"
+      },
+      "line_collections": {
+        "line_ids": "detail_collection -> sc.relation.table (generic collection)",
+        "invoice_line_ids": "detail_collection -> sc.relation.table"
+      },
+      "note": "child line fields (debit/credit/account_id) resolve via account.move.line comodel metadata, not the parent; diagnostic used parent _fields so type=None is an artifact, not a product defect",
+      "remaining": "real browser journey (Stage 3) for page open / line edit / balance / save / readback / permissions"
     }
   }
 }
