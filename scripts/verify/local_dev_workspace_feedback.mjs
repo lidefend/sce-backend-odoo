@@ -234,15 +234,22 @@ try {
     const accountResult = await capture(accountResponse);
     item.accountQuery = accountResult;
     assert(accountResult.httpStatus === 200 && accountResult.ok === true, 'account selector query failed');
-    const option = page.locator('[role="option"]:visible:not([aria-disabled="true"])').first();
+    // Inline cells use ScSelect (official TDesign rows), not ScRelationField's ARIA adapter.
+    const options = page.locator('li.t-select-option:visible:not(.t-is-disabled)');
+    const option = options.first();
     await option.waitFor({state: 'visible'});
-    item.accountOptionLabel = await option.innerText();
+    item.accountOptionLabel = (await option.innerText()).trim();
+    const matchedAccounts = accountResult.data?.records?.filter(record => [record.display_name, record.name].includes(item.accountOptionLabel)) || [];
+    assert.equal(matchedAccounts.length, 1, 'visible option must uniquely identify a returned account');
+    const expectedAccountId = matchedAccounts[0].id;
     const [selectedResponse] = await Promise.all([
       page.waitForResponse(response => {
         let body; try { body = response.request().postDataJSON(); } catch { return false; }
         const request = body?.params?.intent ? body.params : body;
         return request?.intent === 'api.onchange' && request.params?.model === model
-          && request.params?.values?.line_ids?.some(command => command[0] === 0 && command[2]?.account_id);
+          && !request.params?.res_id && request.params?.changed_fields?.includes('line_ids')
+          && request.params?.values?.line_ids?.some(command => command[0] === 0 && command[1] === item.virtualKey
+            && (Array.isArray(command[2]?.account_id) ? command[2].account_id[0] : command[2]?.account_id) === expectedAccountId);
       }),
       option.click(),
     ]);
