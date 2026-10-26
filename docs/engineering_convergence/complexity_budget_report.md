@@ -187,8 +187,8 @@ Generated from repository source files. This report is informational during the 
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 877 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
 | 872 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
+| 871 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 868 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
-| 867 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 862 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |

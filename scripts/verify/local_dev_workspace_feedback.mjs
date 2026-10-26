@@ -667,7 +667,11 @@ try {
       report.positiveRoute={route:positive.meta.route,model:positive.meta.model,passed:true};
       const denied=await journalApi('route.authority.validate',{action_id:292,menu_id:175});
       assert.equal(denied.status,403); assert.equal(denied.payload.ok,false);
-      assert.equal(denied.payload.error.reason_code,'ROUTE_ACTION_NOT_AUTHORIZED');
+      report.routeValidation = denied;
+      // Public dispatch checks published menus before invoking the route handler.
+      assert.equal(denied.payload.error.reason_code,'PERMISSION_DENIED');
+      assert.equal(denied.payload.error.details.intent,'route.authority.validate');
+      assert.match(denied.payload.error.details.cause,/^用户无权访问菜单 /);
       await page.goto(base+'/a/292?menu_id=175',{waitUntil:'domcontentloaded'});
       await page.waitForURL(url=>url.pathname.endsWith('/access-denied'));
       await page.locator('[data-semantic-component="AccessDeniedView"]').waitFor({state:'visible'});
