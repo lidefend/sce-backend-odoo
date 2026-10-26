@@ -1065,7 +1065,17 @@ class _TreeFormParserMixin:
             }
 
         # 容器节点：sheet/group/notebook/page/div/header/footer/separator + h1/h2/h3（oe_title 标题区字段必须进入布局，否则必填标题字段丢失）
-        if tag in ('sheet', 'group', 'notebook', 'page', 'div', 'header', 'footer', 'separator', 'h1', 'h2', 'h3'):
+        if tag in ('sheet', 'group', 'notebook', 'page', 'div', 'header', 'footer', 'separator', 'h1', 'h2', 'h3', 'a', 'b', 'bold', 'span', 'p'):
+            if tag == 'a' and 'alert-link' in (el.get('class') or '').split():
+                # Odoo soft fragment anchors (href="#...") have no declared target
+                # in the contract form; render the link text as plain content and
+                # never treat the raw fragment as an authorized navigation target.
+                return {
+                    'type': 'text',
+                    'text': " ".join((el.text or "").split()),
+                    'attributes': {},
+                    'children': [],
+                }
             node = {
                 'type': self._layout_type(tag),
                 'attributes': _attrs(el),
