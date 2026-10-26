@@ -1788,3 +1788,12 @@ verify.local.dev.journal.save.run: guard.prod.forbid local.dev.ready local.dev.e
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  SC_LOCAL_DEV_WRITE_LEASE_TOKEN="$(SC_LOCAL_DEV_WRITE_LEASE_TOKEN)" CONFIRM_LOCAL_DEV_JOURNAL_SAVE="$(CONFIRM_LOCAL_DEV_JOURNAL_SAVE)" \
 	  SC_FEEDBACK_SCOPE=journal-save bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: local.dev.journal.recovery local.dev.journal.recovery.run
+local.dev.journal.recovery: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "journal-owned-recovery" -- $(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" local.dev.journal.recovery.run
+local.dev.journal.recovery.run: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.write_lease.require
+	@test "$(SC_CONFIRM_JOURNAL_RECOVERY)" = "READBACK_CLEANUP_OWNED_DRAFT_13"
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  SC_CONFIRM_JOURNAL_RECOVERY="$(SC_CONFIRM_JOURNAL_RECOVERY)" SC_RUNTIME_JOURNAL_RECOVERY="$(SC_RUNTIME_JOURNAL_RECOVERY)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_journal_recovery.py

@@ -134,7 +134,8 @@
     "scripts/verify/test_local_dev_journal_save_policy.mjs",
     "frontend/apps/web/src/components/design-system/ScTabs.vue",
     "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
-    "frontend/apps/web/scripts/adopted_form_engine_decision_test.ts"
+    "frontend/apps/web/scripts/adopted_form_engine_decision_test.ts",
+    "scripts/verify/local_dev_journal_recovery.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -142,9 +143,12 @@
   },
   "checks": {},
   "blockers": [
-    "FG15 save/balance/readback/posting acceptance remains pending; account domain query blocker resolved at195813696"
+    "FG15: saved journal lines lose entered debit/credit100 and persist all amounts0; native child field onchange/write semantics remain incomplete",
+    "FG15: saved form ui.contract.v2 rejects FEEDBACK_SOURCE_INVALID layoutContract.feedback with409",
+    "P4: HTTP account.move unlink denied403; successful exact ORM recovery is not a reusable cleanup strategy. No fresh journal creates until validated cleanup preflight/path.",
+    "FG15: posting and ordinary-role/company matrix not run"
   ],
-  "next_exact_step": "Continue governed journal save validation: two lines with valid filtered accounts, debit/credit balance, required-field coverage, draft save/readback then posting/role/company boundaries. Native compiled account domain and contact draft now pass on195813696; preserve explicit refusal of unsupported expressions.",
+  "next_exact_step": "Start at L1/L2: reproduce native child debit/credit onchange and write carrier with rollback ORM test and generic runtime test; implement native declared semantics, not accounting frontend formulas. Diagnose saved-record feedback source validation. Extend P4 cleanup with exact report ownership and preflight before another fresh create. Reuse prior unrelated evidence; do not claim baseline/mainline/deployment completion.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1546,10 +1550,12 @@
       "authority": "User continues demo-backed product closeout and previously authorized demo edits/rebuild; one owned draft only, no posting.",
       "environment": "sc-local-dev/sc_dev_demo/^sc_dev_demo$/ns_000000000002/sc_local_dev_odoo_data; managed auth and write lease",
       "mutation": "One unique ref balanced two-row100 debit/credit UI create; read/reload; exact owned draft unlink and absence readback in finally. No existing record writes or posting.",
-      "status": "runtime_blocked_before_create",
+      "status": "failed_product_and_cleanup",
       "candidate": "0167ec4aa4cf3cf3c9d7e91b2a06fedcfff5877f",
       "tests": "journal-save-final-l1.log PASS; journal-save-policy-reviewed.log 22+11 PASS; independent review closed both S2",
-      "runtime": "journal-save-browser.log: two lines100/100; save fails frontend validation before create; no blocked requests/errors/persistence. Add bounded P4 failure-state capture to distinguish coverage vs engine failure."
+      "runtime": "journal-save-browser.log: two lines100/100; save fails frontend validation before create; no blocked requests/errors/persistence. Add bounded P4 failure-state capture to distinguish coverage vs engine failure.",
+      "latest_candidate": "c0624c553232883baa8552fa49ca667f14326ef8",
+      "result": "create200 id13; display reload409; HTTPcleanup403; recovered separately through reviewed ordinary-user ORM. Overall browser FAIL, not acceptance."
     },
     "journal_notebook_validation": {
       "layer": "P0 generic native notebook renderer, shared ScTabs panel lifecycle passthrough",
@@ -1567,7 +1573,21 @@
       "head": "f8e113ed9c799c5561efd59a550d00e01a12f001",
       "reason": "Real create HTTP500 SQL currency_id ARRAY[6,CNY]. Display tuple survives default/onchange, while edited account is already normalized. Normalize declared many2one values at write boundary without changing display/onchange carrier or inventing values.",
       "evidence": "journal-save-context-browser.log; journal-create-backend-diagnostic.log; cleanup passed no owned draft retained",
-      "validation": "Regression through useOne2manyRuntime; L1/L2 and strict; then bounded journal save. No module upgrade, backend behavior or broad matrix."
+      "validation": "Regression through useOne2manyRuntime; L1/L2 and strict; then bounded journal save. No module upgrade, backend behavior or broad matrix.",
+      "status": "bounded_transport_fix_passed",
+      "candidate": "c0624c553232883baa8552fa49ca667f14326ef8",
+      "tests": "journal-child-write-before.log reproduces tuple != id; corrected tests log passes create defaults55 plus real child defaults/onchange/write/negative cases, strict and basis. L1 from journal-child-write-tests.log pass; its later test fixture wrong row assertion preserved and corrected. Independent no blocking findings.",
+      "runtime": "journal-child-write-browser.log create200 id13 confirms currency tuple write500 resolved; remaining read/load, zero amounts and HTTPcleanup errors keep full save journey failed."
+    },
+    "journal_recovery": {
+      "layer": "P4 exact owned test-record recovery",
+      "authority": "Existing one-draft test cleanup authority; HTTP deletion is forbidden by product policy, do not change product policy for test cleanup. Governed ORM cleanup of own synthetic draft only, ordinary creator rights, no sudo.",
+      "identity": "Exact id13/ref/creator40/company1/journal3/draft, lines21/22/accounts49/48/currency6; no matched debit/credit reconciliation relations. Zero receivable line computes reconciled=true; original overly broad check failure retained.",
+      "status": "cleanup_committed_and_independent_readback_passed",
+      "failure": "create HTTP200 id13; saved form ui.contract.v2 409 FEEDBACK_SOURCE_INVALID layoutContract.feedback; API cleanup403; original report retained.",
+      "result": "journal-recovery-inspect-lines.log exact object and amount0; journal-recovery-cleanup.log committed parent13+lines21/22 deletion and absence; journal-recovery-after.log independent Odoo shell process confirms parent/ref and known children absent. Original browser remains failed.",
+      "review": "review_takeover approved scoped ORM recovery and actual reconciliation relation checks. Make recursion loads canonical env. No sudo or public delete-policy changes.",
+      "remaining": "No fresh creates; original browser cleanup remains FAIL. This fixed recovery script accepts only this recorded object."
     }
   }
 }

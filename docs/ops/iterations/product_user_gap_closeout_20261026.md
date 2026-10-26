@@ -1399,3 +1399,33 @@ list/tuple、返回操作数的 and/or、同类型序列拼接。List与Tuple保
 仅证明demo_full的草稿/查询/选中链，未完成普通角色跨公司矩阵，也未保存、验证借贷平衡、回读或过账。
 FG15整体保持开放。未合并主线或部署日常服务器；本地服务保留上述候选，后续记录提交不改变产品行为。
 回滚195813696会恢复明确拒绝，不得恢复静默空域。
+
+## 草稿保存实测、两项内核修复与恢复（2026-10-26）
+
+本轮最后产品候选 `c0624c553232883baa8552fa49ca667f14326ef8`，本地服务与前端均绑定该候选。
+沿用 sc-local-dev / sc_dev_demo / ns_000000000002 / sc_local_dev_odoo_data；未集成主线、部署日常服务器或重建demo。
+
+- P4 `0167ec4aa` 增加单张唯一标记草稿的 UI 保存、刷新回读、精确清理探针；独立复核收紧 root/row/context/transport 白名单，禁止额外关系写入和禁用校验。策略23项、只读策略11项通过。后续 `f8e113ed9` 仅允许观察到的原生动作上下文精确值，显式日记账受限、默认日记账须回读核验。
+- P0 `ea780d72a` 修复原生 notebook 只挂载当前页导致必填校验范围与引擎覆盖不一致。契约可见页保持挂载并绑定各自节点身份，复用原校验器；不删除校验失败保护。真实 TDesign panel/form 引擎87项、保存身份91项、strict、primitive、contract basis和容器守卫通过（journal-notebook-tests.log / journal-notebook-guards.log）。真实保存从“表单校验未能完成”推进到发出create请求，证明该阻断解除。`24af8b842` 的失败后内部状态诊断返回 unavailable，不算证据。
+- P0 `c0624c553` 修复子行默认/联动回填 many2one 显示元组直接进入 ORM 外键。服务端 SQL 原始失败为 currency_id ARRAY[6,'CNY']；现在仅 write 按字段声明转换合法ID，保留展示/onchange元组，非法载体显式拒绝，无会计模型特判。新增真实子行runtime回归先复现后通过；create-default55及附加子行回归、strict、basis通过，独立复核无阻断。日志 journal-child-write-before.log / journal-child-write-tests-corrected.log。
+
+**完整保存验收仍失败，FG15保持开放。** c0624c553真实create HTTP200生成草稿13，但刷新
+ui.contract.v2返回409 `FEEDBACK_SOURCE_INVALID` / `layoutContract.feedback`，界面误呈“数据已发生变化”。
+受管ORM权威回读另证实：界面借贷各100，保存后明细21/22的debit、credit、balance、amount_currency全部0。
+不能以创建成功或借贷合计同为0宣布金额语义通过。后续应验证原生子行字段onchange/派生值及写入载体，不能前端硬算会计金额。
+
+HTTP清理也返回403：产品未开放account.move unlink。未为测试放宽产品删除政策。
+经独立复核新增P4 `local.dev.journal.recovery`，复用受管shell、写租约、数据库/命名空间身份；
+只接受这次完整ref与id13、creator40/demo_full、公司1、日记账3、未过账draft及已核明细21/22。
+以原创建用户检查ORM删除权限，不使用sudo；删除前保留金额证据，提交后验证父子不存在。
+零金额应收行的reconciled计算值为true，但matched_debit_ids/matched_credit_ids均空，恢复按实际核销关系拒绝保护。
+首轮环境绑定与该计算字段误判失败均保留；没有在不匹配时写入。
+
+原始报告 `journal-save-browser/c0624c553232883baa8552fa49ca667f14326ef8/report.json` 保持FAIL与cleanup失败原貌，
+恢复证据独立引用 journal-recovery-inspect-lines.log、journal-recovery-cleanup.log、journal-recovery-after.log，
+单一run索引记录最终恢复状态。既有测试对象清理不等于HTTP删除/保存闭环通过。
+在可复用清理路径和前置核验完善前，禁止再运行新的凭证创建验收。
+
+本次两项阻断是功能/平台内核问题，不是demo缺少科目：有效科目仍有49条。测试草稿不纳入demo基线。
+下一步从定向回滚ORM及前端runtime测试开始补齐子行金额联动、保存记录反馈源，再恢复保存回读验收；
+过账、普通角色与跨公司矩阵仍未验证。回滚应按逆依赖撤销对应产品提交，保留失败证据，不恢复空域查询或放宽校验。
