@@ -1492,6 +1492,12 @@
       "limits": "Draft only. FG15 save/readback/balance/posting and role/company acceptance remain open. Child nonempty warnings/modifiers/line_patches explicitly refused pending native support. No remote push/mainline/daily-server deployment.",
       "rollback": "Revert selected form identity and child initialization commits together in reverse dependency order, preserving draft tests; do not restore frontend currency inference.",
       "followup_observation": "Journal screenshot account selector initially no options and project unavailable; probe did not query/select. Diagnose relation query/selection before save; do not infer demo-data absence from initial text."
+    },
+    "journal_account_selection": {
+      "layer": "P4 existing governed journal draft probe",
+      "head": "ab798ca9b079a218c76fd0b31e50f314955ffb93",
+      "scope": "Open account selector, capture real api.data list, choose declared option, verify onchange; all persistence blocked",
+      "status": "verification_pending"
     }
   }
 }

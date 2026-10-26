@@ -220,7 +220,37 @@ try {
     assert(item.inputs > 0, 'journal line has no editable input');
     assert(!/页面加载失败|ContractGapError|字段联动失败|字段联动声明不完整/.test(await page.locator('body').innerText()));
     assert.equal(report.blocked.length, 0);
-    item.passed = true; // Draft transport only; returned computed fields require separate inspection.
+    // Query the actual selector; an unopened selector's placeholder is not data evidence.
+    const accountInput = collection.locator('input[aria-label="科目"]');
+    const [accountResponse] = await Promise.all([
+      page.waitForResponse(response => {
+        let body; try { body = response.request().postDataJSON(); } catch { return false; }
+        const request = body?.params?.intent ? body.params : body;
+        return request?.intent === 'api.data' && request.params?.model === 'account.account' && request.params?.op === 'list';
+      }),
+      accountInput.click(),
+    ]);
+    const accountResult = await capture(accountResponse);
+    item.accountQuery = accountResult;
+    assert(accountResult.httpStatus === 200 && accountResult.ok === true, 'account selector query failed');
+    const option = page.getByRole('option').filter({ hasNot: page.locator('[aria-disabled="true"]') }).first();
+    await option.waitFor({state: 'visible'});
+    item.accountOptionLabel = await option.innerText();
+    const [selectedResponse] = await Promise.all([
+      page.waitForResponse(response => {
+        let body; try { body = response.request().postDataJSON(); } catch { return false; }
+        const request = body?.params?.intent ? body.params : body;
+        return request?.intent === 'api.onchange' && request.params?.model === model
+          && request.params?.values?.line_ids?.some(command => command[0] === 0 && command[2]?.account_id);
+      }),
+      option.click(),
+    ]);
+    item.accountSelection = await capture(selectedResponse);
+    assert(item.accountSelection.httpStatus === 200 && item.accountSelection.ok === true, 'selected account onchange failed');
+    assert.equal(report.blocked.length, 0);
+    await page.screenshot({path: `${root}/after-account-selection.png`});
+    item.passed = true; // Draft selection only; no persistence.
+
   }
   if (scope === 'payroll') {
     const model = 'sc.hr.payroll.document';
