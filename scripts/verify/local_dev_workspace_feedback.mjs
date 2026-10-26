@@ -6,12 +6,12 @@ import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap
 // The existing nginx owns the namespace stamp; the preview server does not.
 const base = 'http://127.0.0.1:18081/t/demo';
 const scope = process.env.SC_FEEDBACK_SCOPE || 'workspace';
-assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority', 'certificate', 'analysis', 'payroll'].includes(scope));
+assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child'].includes(scope));
 const root = `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}`;
 fs.mkdirSync(root, {recursive: true});
 const actor = scope === 'usability' ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
 assert(['demo_full', 'demo_role_pm', 'demo_role_finance', 'demo_role_project_read'].includes(actor));
-const availableCases = ['usability', 'create-authority', 'certificate', 'analysis', 'payroll'].includes(scope) ? [] : scope === 'workspace' ? [
+const availableCases = ['usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child'].includes(scope) ? [] : scope === 'workspace' ? [
   {model: 'sc.team.loan.deduction.workspace', field: 'note', hint: '建议补充办理说明'},
   {model: 'sc.current.account.workspace', field: 'note', hint: '建议补充办理说明', retained: '办理承包人借还款前请选择承包人/往来单位'},
 ] : scope === 'cost' ? [
@@ -36,8 +36,8 @@ if (selected) {
   assert(selected.every(model => availableCases.some(item => item.model === model)), 'model outside fixed scope');
 }
 const cases = selected ? availableCases.filter(item => selected.includes(item.model)) : availableCases;
-const models = cases.map(item => item.model);
-const report = {head: process.env.CANDIDATE_GIT_HEAD, cases: [], blocked: [], errors: [], feedback: [], passed: false};
+const models = scope === 'native-child' ? ['res.partner'] : cases.map(item => item.model);
+const report = {head: process.env.CANDIDATE_GIT_HEAD, cases: [], blocked: [], errors: [], feedback: [], onchanges: [], passed: false};
 assert(/^[a-f0-9]{40}$/.test(report.head || ''));
 const browser = await launchChromium({headless: true});
 let page;
@@ -71,6 +71,7 @@ try {
       const payload = await response.json();
       if (request.intent === 'system.init') init = payload.data;
       else if (request.params.feedback_evaluation) report.feedback.push({model: request.params.model, ok: payload.ok, data: payload.data});
+      else if (scope === 'native-child' && request.params?.model === 'res.partner') report.onchanges.push({ok: payload.ok, error: payload.error, fields: request.params.changed_fields});
     } catch {}
   });
   await page.goto(base + '/login', {waitUntil: 'domcontentloaded'});
@@ -89,6 +90,40 @@ try {
   function walk(nodes) { for (const node of nodes) { if (node.children?.length) walk(node.children); else leaves.push(node); } }
   walk(init.navigation.nav);
   report.actor = {uid: init.user?.id, login: actor, company: init.user?.company_id};
+  if (scope === 'native-child') {
+    const model = 'res.partner';
+    const candidateIndex = fs.readFileSync('frontend/apps/web/dist-dev/index.html', 'utf8');
+    const expectedEntries = [...candidateIndex.matchAll(/<script[^>]*src="([^"]*assets\/[^"]+)"/g)].map(match => new URL(match[1], base).pathname);
+    const servedEntries = await page.locator('script[src]').evaluateAll(nodes => nodes.map(node => new URL(node.src).pathname).filter(path => path.includes('/assets/')));
+    assert(expectedEntries.length > 0 && expectedEntries.every(path => servedEntries.includes(path)), 'namespace frontend differs from candidate build');
+    report.frontendEntries = servedEntries;
+    const node = leaves.find(item => item.meta?.model === model && item.meta?.route?.startsWith('/'));
+    assert(node, 'native contact entry missing');
+    const item = { model, field: 'child_ids', route: node.meta.route, passed: false };
+    report.cases.push(item);
+    await page.goto(new URL(node.meta.route, base).href, {waitUntil: 'domcontentloaded'});
+    await page.getByRole('button', {name: /^(新建|新增|创建)$/}).first().click();
+    const name = page.locator('[data-field-name="name"] input:visible').first();
+    await name.waitFor({state: 'visible', timeout: 45000});
+    await name.fill('原生子表草稿验证（不保存）');
+    await name.blur();
+    item.before = await page.locator('body').innerText();
+    await page.screenshot({path: `${root}/before-child.png`});
+    assert(!/页面加载失败|ContractGapError|字段联动失败|字段联动声明不完整/.test(item.before));
+    const collection = page.locator('[data-field-name="child_ids"]').first();
+    await collection.waitFor({state: 'visible', timeout: 20000});
+    item.collection = await collection.innerText();
+    await collection.getByRole('button', {name: /新增|添加/}).first().click();
+    await page.waitForTimeout(1000);
+    item.after = await page.locator('body').innerText();
+    item.inputs = await collection.locator('input:visible, textarea:visible').count();
+    await page.screenshot({path: `${root}/after-child.png`});
+    assert(item.inputs > 0, 'native child draft has no editable input');
+    assert(!/页面加载失败|ContractGapError|字段联动失败|字段联动声明不完整/.test(item.after));
+    assert.equal(report.blocked.length, 0);
+    assert(report.onchanges.every(result => result.ok === true), 'native onchange returned failure');
+    item.passed = true;
+  }
   if (scope === 'payroll') {
     const model = 'sc.hr.payroll.document';
     for (const menu of ['673', '695', '706']) {
@@ -482,9 +517,10 @@ try {
     item.passed = true;
   }
   assert.equal(report.errors.length, 0);
-  for (const model of models) assert(report.feedback.some(r => r.model === model && r.ok), 'feedback transport missing');
+  if (scope !== 'native-child') for (const model of models) assert(report.feedback.some(r => r.model === model && r.ok), 'feedback transport missing');
   report.passed = true;
 } finally {
+  if (page && scope === 'native-child') await page.screenshot({path: `${root}/final.png`}).catch(() => {});
   report.lastPage = page ? {url: page.url(), text: await page.locator('body').innerText().catch(() => '')} : null;
   await browser.close();
   fs.writeFileSync(`${root}/${scope === 'usability' ? actor + '-' : ''}report.json`, JSON.stringify(report, null, 2));

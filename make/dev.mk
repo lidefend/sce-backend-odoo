@@ -1762,3 +1762,12 @@ verify.local.dev.analysis: guard.prod.forbid local.dev.ready local.dev.entry_ide
 verify.local.dev.payroll: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  SC_FEEDBACK_SCOPE=payroll bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.native_child.draft verify.local.dev.native_child.syntax
+verify.local.dev.native_child.syntax: guard.prod.forbid
+	@node --check scripts/verify/local_dev_workspace_feedback.mjs
+	@bash -n scripts/verify/local_dev_workspace_feedback.sh
+
+verify.local.dev.native_child.draft: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_SCOPE=native-child bash scripts/verify/local_dev_workspace_feedback.sh
