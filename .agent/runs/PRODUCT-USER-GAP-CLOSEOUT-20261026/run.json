@@ -1240,6 +1240,11 @@
       "commit": "26eb20414",
       "browser_observation": "journal entry create form (account.move, demo_full, sc_dev_demo) now opens with 4 rendered fields, no ContractGapError, no pageerror, no API failure (only benign 409 db hint)",
       "remaining_stage3": "line add/edit, debit/credit binding, balance feedback, save/readback, permission denial - not yet browser-verified"
+    },
+    "fg15_stage3_line_add": {
+      "status": "line_add_verified",
+      "browser_observation": "journal entry create form renders fields name/ref/project_id/line_ids; clicking 添加日记账项目 adds one line row with columns 科目/标签/项目/工程结构/成本科目/分析分配/借项/贷项/操作 and 16 editable inputs; no pageerror/ContractGapError",
+      "remaining": "fill account (many2one select), debit/credit monetary binding, balance feedback, save draft + readback, permission denial"
     }
   }
 }
