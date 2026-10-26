@@ -16,6 +16,43 @@ Blast Radius：按捕获契约与实际根因推导精确受影响入口，局�
 回退：按层级独立提交/受保护revert；如涉及受管升级，另绑定原环境恢复点，不假设代码revert恢复数据。
 首批产品声明已修改，尚未集成或部署，用户交付仍未通过。Demo重建留在后续数据任务。
 
+## 接管增量：真实日记账草稿与子行值缺失语义（2026-10-26）
+
+P4提交d9c2be503扩展已有workspace草稿探针与Make包装器，固定account.move菜单175，
+从system.init取得入口，复用现有账号、sc-local-dev/sc_dev_demo、namespace ns_000000000002
+及候选前端。保存/create/write/unlink/业务动作继续被拦截。探针等待本次新建根联动与
+新增line_ids命令的实际HTTP/ok响应，要求行数精确+1；passed只代表草稿传输。
+L1、语法及11项请求策略单测通过，独立复核无S0-S2。未添加新的环境、凭据或fixture。
+
+首次真实候选d9c2be503：受管up/build/health与静态资源身份均通过，demo_full在菜单175
+新增日记账项目，0→1行、2次HTTP200/ok、blocked0/errors0。根联动返回journal_id=3、
+currency_id=6（CNY）。新子行却把未取得默认值的currency_id/company_id/tax_ids等字段全部
+发送为''，服务端仅返回tax_lock_date_message=false、没有line patch。截图已查看。
+证据journal-browser.log及journal-draft-browser/d9c2be50398e22a871ede098cb205f968b213b28/report.json。
+
+P0提交112f80f40修复one2manyUtils通用请求构造：新行onchange使用default/edit/server-patch
+登记的字段集合，排除展示占位值及id:false；显式false/0/空字符串、只读默认值继续传递，
+虚拟行key不变，写入时readonly/force_save规则不变。新增反例在旧代码实际失败，保留
+child-presence-before.log；child-presence-checks.log中的L1、默认值55项及新增断言/既有
+子表边界、关系生命周期及7项守卫、严格类型检查通过；child-presence-dirty.log通过。
+独立复核无S0-S2，生成差异仅源码行数/摘要更新。
+
+复验候选112f80f408a31d412340c834dbc7317187c6e4a9：健康、资源index-CpmASzhI.js身份
+与草稿流程通过；新行请求已为[0, virtual_key, {}]，0→1行，blocked0/errors0；服务端仍仅
+返回tax_lock_date_message=false，无line patch。因此本修复仅关闭“占位空值污染原生请求”，
+不证明子行币种初始化成功。证据journal-presence-browser.log与
+journal-draft-browser/112f80f408a31d412340c834dbc7317187c6e4a9/report.json；受管up/build
+日志使用journal-presence-runtime/up前缀。原始文件均在本批.runtime目录，不随Git克隆。
+
+下一步：在原有api.onchange/default_get协议内补齐独立子行初始化，绑定当前授权父视图的
+关系字段、comodel、inverse、父草稿与context，保留字段/记录权限及虚拟身份；先用真实ORM
+验证原生行为，再接入新增行的等待/过期响应保护。禁止以父币种特判或仅移除校验补偿。
+根初始化await/空changed_fields与真实保存覆盖也仍待闭合。
+
+运行服务保留在112f80f40；后续记录提交只改变文档，不伪造运行SHA。无模块升级、demo重建、
+持久业务写入、主线集成或远端日常部署。FG15未关闭；尚未验证保存、落库回读、精确清理或
+角色拒绝，也未通过点击保存证明前一轮原生必填覆盖修复在真实页面生效。
+
 ## 接管增量：原生位置与保存校验覆盖一致（2026-10-26）
 
 起点d9d2e2f9f，P0通用前端契约消费。历史走查原件journal-form-failure.json显示auto_post
