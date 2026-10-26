@@ -114,12 +114,16 @@ function collectModifierFields(value: unknown, fields: Set<string>): void {
   }
   if (!value || typeof value !== 'object') return;
   const row = value as Record<string, unknown>;
+  if (row.kind === 'context_get') fields.add('$native.context');
   const field = text(row.field);
   if (field) fields.add(field);
   const valueField = text(row.value_field) || text(row.valueField);
   if (valueField) fields.add(valueField);
   collectModifierFields(row.expr, fields);
   collectModifierFields(row.exprs, fields);
+  collectModifierFields(row.value_expr, fields);
+  collectModifierFields(row.left, fields);
+  collectModifierFields(row.right, fields);
 }
 
 export function declaredModifierDependenciesResolved(modifier: unknown, values: ContractV2Dictionary): boolean {

@@ -46,7 +46,29 @@ def _operator(node: ast.AST) -> str:
     }.get(type(node), "")
 
 
+def _context_get(node: ast.AST) -> Any:
+    if not isinstance(node, ast.Call):
+        return None
+    if (_field_name(node.func) != "context.get" or node.keywords or len(node.args) not in (1, 2)
+            or not isinstance(node.args[0], ast.Constant) or not isinstance(node.args[0].value, str)):
+        raise ValueError("unsupported_context_call")
+    return {"kind": "context_get", "key": _literal(node.args[0]),
+            "default": _literal(node.args[1]) if len(node.args) == 2 else None}
+
+
+def _operand(node: ast.AST) -> Any:
+    context = _context_get(node)
+    if context is not None:
+        return context
+    field = _field_name(node)
+    if field:
+        return {"kind": "field_value", "field": field}
+    return {"kind": "literal", "value": _literal(node)}
+
+
 def _python_expr(node: ast.AST) -> Any:
+    if isinstance(node, ast.Call):
+        return {"kind": "value_truthy", "semantics": "python", "value_expr": _context_get(node)}
     if isinstance(node, (ast.Name, ast.Attribute)):
         if isinstance(node, ast.Name) and node.id in ("True", "False"):
             return node.id == "True"
@@ -63,8 +85,14 @@ def _python_expr(node: ast.AST) -> Any:
             return None
         return {"kind": "all" if isinstance(node.op, ast.And) else "any", "exprs": children} if children else None
     if isinstance(node, ast.Compare) and len(node.ops) == 1 and len(node.comparators) == 1:
-        field = _field_name(node.left)
         operator = _operator(node.ops[0])
+        comparator = node.comparators[0]
+        if operator and (isinstance(node.left, ast.Call) or isinstance(comparator, ast.Call)):
+            if isinstance(comparator, ast.Tuple) and operator in ("in", "not in"):
+                comparator = ast.List(elts=comparator.elts)
+            return {"kind": "value_compare", "semantics": "python", "operator": operator,
+                    "left": _operand(node.left), "right": _operand(comparator)}
+        field = _field_name(node.left)
         if field and operator:
             normalized = {
                 "kind": "field_compare",

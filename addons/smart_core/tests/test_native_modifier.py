@@ -41,8 +41,9 @@ class TestNativeModifier(unittest.TestCase):
         self.assertNotIn("value", value)
 
     def test_unknown_branch_invalidates_whole_expression(self):
-        for raw in ("state == 'draft' or context.get('show_warning')",
-                    "state == 'draft' and len(ids)", "not context.get('show_warning')",
+        for raw in ("state == 'draft' or context.other('show_warning')",
+                    "state == 'draft' and len(ids)", "not context.get(dynamic_key)", "context.get('x', other_field)",
+                    "context.get('x', default=True)", "context.get()",
                     "amount > compute_limit()", "state in [other_state]", "state ==",
                     "source().active", "state == source().state", "ids == (1, 2)",
                     "ids in [(1, 2)]", "amount == 1e999", "amount == 9007199254740992", r"state == '\ud83d'"):
@@ -68,6 +69,15 @@ class TestNativeModifier(unittest.TestCase):
     def test_signed_literal_and_numeric_zero(self):
         self.assertEqual(MODULE.normalize_native_modifier("amount >= -1")["value"], -1)
         self.assertIs(MODULE.normalize_native_modifier(0), False)
+
+    def test_context_get_declares_literal_key_and_explicit_default(self):
+        value = MODULE.normalize_native_modifier("context.get('x')")
+        self.assertEqual(value['value_expr'], {'kind': 'context_get', 'key': 'x', 'default': None})
+        self.assertEqual(value['kind'], 'value_truthy')
+        self.assertEqual(value['semantics'], 'python')
+        value = MODULE.normalize_native_modifier("amount >= context.get('limit', -1)")
+        self.assertEqual(value['left'], {'kind': 'field_value', 'field': 'amount'})
+        self.assertEqual(value['right'], {'kind': 'context_get', 'key': 'limit', 'default': -1})
 
 
 def differential_cases():
@@ -126,6 +136,38 @@ def differential_cases():
         node = MODULE.normalize_native_modifier("left in right")
         assert fixture.assembler._evaluate_action_modifier(node, record, strict=True) is None
         cases.append({"node": node, "record": record, "expected": None})
+    contexts = [{}, {"flag": False}, {"flag": None}, {"flag": True}, {"flag": 0},
+                {"flag": []}, {"flag": [1]}, {"flag": "draft"}, {"__proto__": True}]
+    expressions = ["context.get('flag')", "not context.get('flag')", "context.get('flag', True)",
+                   "state == 'draft' or context.get('flag')", "state != 'draft' and context.get('flag')",
+                   "context.get('flag') == False", "context.get('flag') != ''",
+                   "context.get('flag') in (False, None, 'draft')", "state == context.get('flag', 'draft')",
+                   "context.get('flag', 0) < amount", "context.get('__proto__', False)",
+                   "context.get('missing', [1, 2]) == ids"]
+    for context in contexts:
+        for raw in expressions:
+            main = {"state": "draft", "amount": 3, "ids": [1, 2], "$native.context": {"flag": "spoof"}}
+            contract = {"dataContract": {"mainData": main, "dataMeta": {"sourceContext": {"context": context}}}}
+            record = fixture.assembler.native_modifier_values(contract)
+            node = MODULE.normalize_native_modifier(raw)
+            try:
+                expected = bool(eval(raw, {"__builtins__": {}}, {**main, "context": context}))
+            except TypeError:
+                expected = None
+            actual = fixture.assembler._evaluate_action_modifier(node, record, strict=True)
+            assert actual is expected, (raw, context, node, actual, expected)
+            cases.append({"node": node, "record": record, "expected": expected, "contract": contract})
+    dependencies = fixture._load_module("odoo.addons.smart_core.core.unified_page_contract_v2_modifier_dependencies",
+                                       MODULE_PATH.parents[1] / "core" / "unified_page_contract_v2_modifier_dependencies.py")
+    assert dependencies.collect_modifier_dependency_fields(MODULE.normalize_native_modifier("amount > context.get('limit', 0)")) == ['amount']
+    assert dependencies.collect_modifier_dependency_fields(MODULE.normalize_native_modifier("context.get('limit', 0) > amount")) == ['amount']
+    assert fixture.assembler._ui_source_context({'context': {}}, {'context': {'flag': 'fallback'}})['context'] == {}
+    for source in ({}, {"context": None}, {"context": []}):
+        contract = {"dataContract": {"mainData": {"$native.context": {"flag": True}}, "dataMeta": {"sourceContext": source}}}
+        record = fixture.assembler.native_modifier_values(contract)
+        node = MODULE.normalize_native_modifier("context.get('flag', True)")
+        assert fixture.assembler._evaluate_action_modifier(node, record, strict=True) is None
+        cases.append({"node": node, "record": record, "expected": None, "contract": contract})
     for node, record in [
         (MODULE.normalize_native_modifier("state == 'draft' or context.get('x')"), {"state": "draft"}),
         ({"kind": "not", "expr": {"kind": "unknown"}}, {}),

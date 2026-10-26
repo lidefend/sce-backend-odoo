@@ -11,6 +11,7 @@ from typing import Any
 _logger = logging.getLogger(__name__)
 
 from .native_modifier_comparison import compare_python_modifier
+from .native_modifier_context import evaluate_context_modifier, native_modifier_values
 
 from .field_presentation_usage import assert_field_body_usage, statically_hidden
 from .action_semantics_vocabulary import (
@@ -3266,7 +3267,8 @@ def _ui_data_source_extra_params(source: dict[str, Any], ui: dict[str, Any]) -> 
     domain = source.get("domain") or source_meta.get("domain") or ui.get("domain") or action.get("domain")
     if isinstance(domain, list):
         out.setdefault("domain", deepcopy(domain))
-    context = source.get("context") or source_meta.get("context") or ui.get("context") or action.get("context")
+    context = next((owner["context"] for owner in (source, source_meta, ui, action)
+                    if isinstance(owner.get("context"), dict)), None)
     if isinstance(context, dict):
         out.setdefault("context", deepcopy(context))
     order = source.get("order") or source_meta.get("order") or ui.get("order") or search_defaults.get("order")
@@ -3311,7 +3313,8 @@ def _ui_source_context(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, 
         render_profile = "readonly"
     if render_profile in {"create", "edit", "readonly"}:
         out["renderProfile"] = render_profile
-    context = source.get("context") or source_meta.get("context") or ui.get("context") or head.get("context") or action.get("context")
+    context = next((owner["context"] for owner in (source, source_meta, ui, head, action)
+                    if isinstance(owner.get("context"), dict)), None)
     if isinstance(context, dict):
         out.setdefault("context", deepcopy(context))
     domain = source.get("domain") or source_meta.get("domain") or ui.get("domain") or head.get("domain") or action.get("domain")
@@ -3553,6 +3556,11 @@ def _apply_contextual_invisible_modifier(node: dict[str, Any], context: dict[str
     attributes = _dict(node.get("attributes"))
     attribute_modifiers = _dict(attributes.get("modifiers"))
     modifiers = _dict(node.get("modifiers"))
+    # Compiled expressions retain their declaration and bind context at final
+    # evaluation. Legacy raw-string folding must not overwrite that AST.
+    if any(isinstance(item, dict) for item in (node.get("invisible"),
+            modifiers.get("invisible"), attribute_modifiers.get("invisible"))):
+        return None
     candidates = [
         node.get("invisible"),
         attributes.get("invisible"),
@@ -4328,6 +4336,8 @@ def _evaluate_action_modifier(value: Any, record: dict[str, Any], *, strict: boo
     if not isinstance(value, dict):
         return None
     kind = _text(value.get("kind"))
+    if kind in {"value_truthy", "value_compare"}:
+        return evaluate_context_modifier(value, record)
     if kind == "static":
         static_value = value.get("value")
         return static_value if isinstance(static_value, bool) else None
@@ -4373,7 +4383,7 @@ def _evaluate_action_modifier(value: Any, record: dict[str, Any], *, strict: boo
 def _enforce_single_effective_primary_action(contract: dict[str, Any]) -> None:
     action_contract = _dict(contract.get("actionContract"))
     rows = _list(action_contract.get("actionRuleList"))
-    record = _dict(_dict(contract.get("dataContract")).get("mainData"))
+    record = native_modifier_values(contract)
     previous_resolution = _dict(action_contract.pop("primaryResolution", {}))
     previously_demoted = {
         _text(item.get("actionId"))
@@ -4533,7 +4543,7 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
     status_contract = _dict(contract.get("statusContract"))
     rows = _list(action_contract.get("actionRuleList"))
     statuses = _list(status_contract.get("buttonStatus"))
-    record = _dict(_dict(contract.get("dataContract")).get("mainData"))
+    record = native_modifier_values(contract)
     status_by_btn_id = {
         _text(status.get("btnId")): status
         for status in statuses
@@ -4695,7 +4705,7 @@ def hydrate_final_layout_modifier_status(contract: dict[str, Any]) -> None:
     layout = _dict(contract.get("layoutContract"))
     tree = _list(layout.get("containerTree"))
     status_contract = _dict(contract.get("statusContract"))
-    record = _dict(_dict(contract.get("dataContract")).get("mainData"))
+    record = native_modifier_values(contract)
     container_statuses = _list(status_contract.get("containerStatus"))
     widget_statuses = _list(status_contract.get("widgetStatus"))
     container_by_id = {

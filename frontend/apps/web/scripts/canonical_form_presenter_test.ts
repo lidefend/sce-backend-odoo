@@ -1529,6 +1529,39 @@ unknownComparisonSnapshot.layoutContract.containerTree[0].children[0].readonly =
 assert.throws(() => presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(unknownComparisonSnapshot)), 'edit'),
   { name: 'ContractGapError' }, 'unknown comparison semantics must stop canonical presentation');
 console.log('[canonical_form_presenter] typed native comparison cases PASS count=4');
+// Context is a declared namespace: missing key uses its declared default;
+// absent namespace is a contract defect and editable values cannot forge it.
+const contextTruthy = { kind: 'value_truthy', semantics: 'python',
+  value_expr: { kind: 'context_get', key: 'lock', default: true } };
+for (const [context, expected] of [[{}, true], [{ lock: false }, false], [{ lock: null }, false], [{ lock: [] }, false]] as const) {
+  const candidate = snapshot();
+  candidate.dataContract.dataMeta.sourceContext = { context };
+  candidate.dataContract.mainData['$native.context'] = { lock: !expected };
+  candidate.layoutContract.containerTree[0].children[0].readonly = contextTruthy;
+  const store = createContractV2Store(decodeContractV2Snapshot(candidate));
+  const live = { '$native.context': { lock: !expected } };
+  const fields = presentContractV2Form(store, 'edit', live).zones.primary[0].children.flatMap((node) => node.fields);
+  assert.equal(fields.find((field) => field.fieldCode === 'name')?.readonly, expected);
+  assert.deepEqual(resolveContractV2ModifierValues(store, live)['$native.context'], context);
+  assert.deepEqual(resolveDeclaredModifierFieldValue(resolveContractV2ModifierValues(store), live, '$native.context'), context);
+}
+const missingContextSnapshot = snapshot();
+missingContextSnapshot.dataContract.mainData['$native.context'] = { lock: false };
+missingContextSnapshot.layoutContract.containerTree[0].children[0].readonly = contextTruthy;
+assert.throws(() => presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(missingContextSnapshot)), 'edit'),
+  { name: 'ContractGapError' }, 'a default argument must not conceal a missing context namespace');
+const contextAction = snapshot();
+contextAction.actionContract.actionRuleList[0].invisible = { kind: 'value_truthy', semantics: 'python',
+  value_expr: { kind: 'context_get', key: 'hide', default: false } };
+contextAction.statusContract.buttonStatus[0].visible = false;
+contextAction.statusContract.buttonStatus[0].reasonCode = 'ACTION_NOT_VISIBLE_IN_STATE';
+for (const [hide, expectedCount] of [[false, 1], [true, 0]] as const) {
+  contextAction.dataContract.dataMeta.sourceContext = { context: { hide } };
+  const shown = presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(contextAction)), 'edit',
+    { '$native.context': { hide: !hide } });
+  assert.equal(shown.actionBar.length, expectedCount, 'context dependency readiness and action renderer share the binding');
+}
+console.log('[canonical_form_presenter] native context binding cases PASS count=7');
 const nativeDynamicConstraintSnapshot = snapshot();
 nativeDynamicConstraintSnapshot.layoutContract.containerTree[0].children[0].readonly = {
   kind: 'field_compare', field: 'state', operator: '=', value: 'approved',

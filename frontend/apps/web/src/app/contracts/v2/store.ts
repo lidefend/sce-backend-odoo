@@ -1,3 +1,4 @@
+import { bindNativeContext } from '../../nativeModifierContext';
 import type {
   ContractV2ActionRule,
   ContractV2ButtonStatus,
@@ -372,7 +373,7 @@ export function resolveContractV2ModifierValues(
     if (value === undefined && !Object.prototype.hasOwnProperty.call(snapshot, key)) return;
     merged[key] = value;
   });
-  return merged;
+  return bindNativeContext(merged, store?.snapshot.dataContract.dataMeta?.sourceContext);
 }
 
 export function resolveContractV2ValueSource(store: ContractV2NormalizedStore | null): ContractV2ValueSource {

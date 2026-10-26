@@ -151,7 +151,6 @@ for (const [id, reason, disabled, staticHidden, dependency] of [
   ['authority', 'POLICY_HIDDEN', false, false, 'category'],
   ['disabled', 'NATIVE_MODIFIER_INVISIBLE', true, false, 'category'],
   ['static', 'NATIVE_MODIFIER_INVISIBLE', false, true, 'category'],
-  ['missing', 'NATIVE_MODIFIER_INVISIBLE', false, false, 'absent_category'],
   ['unresolved', 'NATIVE_MODIFIER_UNRESOLVED', true, false, 'category'],
 ] as const) {
   snapshot.layoutContract.containerTree[0].children.push({
@@ -286,10 +285,47 @@ assert.equal(layout.runtimeOccurrenceState(dynamic).invisible, false);
 assert.equal(layout.isNativeLayoutNodeVisible(dynamic), true);
 assert(layout.baseNativeFormLayoutNodes.value.some(node =>
   JSON.stringify(node).includes('"containerId":"dynamic"')), 'live group reaches the rendered tree');
-for (const id of ['authority', 'disabled', 'static', 'missing', 'unresolved']) {
+for (const id of ['authority', 'disabled', 'static', 'unresolved']) {
   assert.equal(layout.isNativeLayoutNodeVisible(nodeByContainerId(id) as never), false, id);
 }
 draft.category = 'salary';
 assert.equal(layout.isNativeLayoutNodeVisible(dynamic), false, 'switching back hides the group');
 assert(!JSON.stringify(layout.baseNativeFormLayoutNodes.value).includes('"containerId":"dynamic"'));
 console.log('[contract_v2_occurrence_authority_test] PASS declared authority and reactive container cases');
+
+// Missing dependencies are a visible contract defect under the strict engine,
+// not an ordinary hidden group. Keep this negative case isolated from valid trees.
+const missingDependencySnapshot = structuredClone(snapshot);
+const missingNode = missingDependencySnapshot.layoutContract.containerTree[0].children.find((node) => node.containerId === 'dynamic')!;
+missingNode.modifiers = { invisible: { kind: 'field_compare', field: 'absent_category', operator: '!=', value: 'fund' } };
+storeRef.value = createContractV2Store(decodeContractV2Snapshot(missingDependencySnapshot));
+const missingTarget = collect(layout.runtimeNativeFormLayoutNodes() as unknown as Array<Record<string, unknown>>)
+  .find((node) => node.containerId === 'dynamic')!;
+assert.throws(() => layout.isNativeLayoutNodeVisible(missingTarget as never), { name: 'ContractGapError' });
+storeRef.value = store;
+
+// Exercise the actual mounted layout hook, including its container dependency
+// check, with a declared context and hostile same-name draft/model fields.
+const contextual = structuredClone(snapshot);
+const contextualNode = contextual.layoutContract.containerTree[0].children.find((node) => node.containerId === 'dynamic')!;
+contextualNode.modifiers = { invisible: { kind: 'not', expr: {
+  kind: 'value_truthy', semantics: 'python', value_expr: { kind: 'context_get', key: 'show_group', default: true },
+} } };
+contextual.dataContract.mainData['$native.context'] = { show_group: false };
+draft['$native.context'] = { show_group: false };
+for (const [context, expectedVisible] of [[{}, true], [{ show_group: true }, true], [{ show_group: false }, false]] as const) {
+  contextual.dataContract.dataMeta.sourceContext = { context };
+  storeRef.value = createContractV2Store(decodeContractV2Snapshot(contextual));
+  const target = collect(layout.runtimeNativeFormLayoutNodes() as unknown as Array<Record<string, unknown>>)
+    .find((node) => node.containerId === 'dynamic')!;
+  assert.equal(layout.runtimeOccurrenceState(target as never).invisible, !expectedVisible);
+  assert.equal(layout.isNativeLayoutNodeVisible(target as never), expectedVisible);
+}
+delete contextual.dataContract.dataMeta.sourceContext;
+storeRef.value = createContractV2Store(decodeContractV2Snapshot(contextual));
+assert.throws(() => layout.evaluateNativeModifierValue(contextualNode.modifiers.invisible), { name: 'ContractGapError' });
+console.log('[contract_v2_occurrence_authority_test] PASS native context binding count=4');
+
+// Restore a valid contract before the reactive scheduler flushes the fixture.
+storeRef.value = store;
+delete draft['$native.context'];

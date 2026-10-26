@@ -1,3 +1,4 @@
+import { resolveNativeOperand } from './nativeModifierContext';
 import { comparePythonModifier } from './nativeModifierComparison';
 import { contractGapError } from './contract/contractGap';
 
@@ -62,6 +63,7 @@ export function resolveDeclaredModifierFieldValue(
 ): unknown {
   const name = String(field || '').trim();
   if (!name) return undefined;
+  if (name === '$native.context') return snapshot?.[name];
   if (live && Object.prototype.hasOwnProperty.call(live, name) && live[name] !== undefined) {
     return live[name];
   }
@@ -89,6 +91,13 @@ export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (
   if (typeof value !== 'object' || Array.isArray(value)) return modifierGap('unsupported_expression');
   const row = value as Record<string, unknown>;
   const kind = String(row.kind || '').trim();
+  if (kind === 'value_truthy' || kind === 'value_compare') {
+    if (row.semantics !== 'python') return modifierGap('comparison_semantics');
+    if (kind === 'value_truthy') return nativeTruthy(resolveNativeOperand(row.value_expr, resolveFieldValue));
+    const left = resolveNativeOperand(row.left, resolveFieldValue);
+    const right = resolveNativeOperand(row.right, resolveFieldValue);
+    return comparePythonModifier(left, String(row.operator || ''), right);
+  }
   if (kind === 'static') {
     if (typeof row.value !== 'boolean') return modifierGap('static.value');
     return row.value;

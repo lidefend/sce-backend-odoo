@@ -6,7 +6,7 @@ from typing import Any
 from .request_params import parse_positive_int
 
 
-MODIFIER_DEPENDENCY_KINDS = {"field_compare", "field_truthy"}
+MODIFIER_DEPENDENCY_KINDS = {"field_compare", "field_truthy", "field_value"}
 # Bounds opportunistic display hydration only. Fields referenced by normalized
 # modifiers are correctness dependencies and are added independently.
 FORM_RECORD_SNAPSHOT_FIELD_BUDGET = 80

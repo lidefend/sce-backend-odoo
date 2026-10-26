@@ -5,16 +5,16 @@ function invalid(): never {
     requiredDeclarationLayer: 'P0:smart_core:utils/native_modifier' }, '原生 Python 比较的类型或操作符不受支持');
 }
 
-function jsonValue(value: unknown): boolean {
+export function isPythonModifierValue(value: unknown): boolean {
   if (value === null || typeof value === 'boolean') return true;
   if (typeof value === 'string') return Array.from(value).every((char) => {
     const point = char.codePointAt(0)!;
     return point < 0xD800 || point > 0xDFFF;
   });
   if (typeof value === 'number') return Number.isFinite(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER;
-  if (Array.isArray(value)) return value.every(jsonValue);
+  if (Array.isArray(value)) return value.every(isPythonModifierValue);
   if (value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
-    return Object.entries(value).every(([key, item]) => jsonValue(key) && jsonValue(item));
+    return Object.entries(value).every(([key, item]) => isPythonModifierValue(key) && isPythonModifierValue(item));
   }
   return false;
 }
@@ -54,7 +54,7 @@ function order(left: unknown, right: unknown): number {
 }
 
 export function comparePythonModifier(actual: unknown, operator: string, expected: unknown): boolean {
-  if (!jsonValue(actual) || !jsonValue(expected)) return invalid();
+  if (!isPythonModifierValue(actual) || !isPythonModifierValue(expected)) return invalid();
   if (operator === '==') return equal(actual, expected);
   if (operator === '!=') return !equal(actual, expected);
   if (operator === 'in' || operator === 'not in') {

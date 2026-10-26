@@ -132,6 +132,19 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
             self.assertEqual(condition.get('semantics'), 'python')
             self.assertIs(_evaluate_action_modifier(condition, {'state': 'draft'}, strict=True), False)
             self.assertIs(_evaluate_action_modifier(condition, {'state': 'posted'}, strict=True), True)
+        from odoo.addons.smart_core.core.native_modifier_context import native_modifier_values
+        context_expression = "context.get('default_journal_id') and context.get('move_type', 'entry') != 'entry'"
+        context_conditions = [value for value in comparisons if isinstance(value, dict)
+                              and value.get('raw') == context_expression]
+        self.assertTrue(context_conditions, 'real journal must carry its native context condition')
+        for condition in context_conditions:
+            self.assertEqual(condition['kind'], 'all')
+            for context, expected in (({'default_journal_id': 7, 'move_type': 'out_invoice'}, True),
+                                      ({'default_journal_id': 7, 'move_type': 'entry'}, False),
+                                      ({'default_journal_id': 0, 'move_type': 'out_invoice'}, False), ({}, False)):
+                contract = {'dataContract': {'mainData': {}, 'dataMeta': {'sourceContext': {'context': context}}}}
+                self.assertIs(_evaluate_action_modifier(condition, native_modifier_values(contract), strict=True), expected)
+            self.assertIsNone(_evaluate_action_modifier(condition, {}, strict=True))
         spans = root.xpath('.//span[@invisible="not auto_post_until"]')
         self.assertEqual(len(spans), 1)
         span = spans[0]

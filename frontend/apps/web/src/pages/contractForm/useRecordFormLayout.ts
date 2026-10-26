@@ -6,7 +6,7 @@ import { buildRuntimeFieldStates } from '../../app/modifierEngine';
 import { resolveNativeContainerStateDerivedStatus } from '../../app/presentation/actionRuleDerivation';
 import { resolveOccurrenceAuthVerdict } from '../../app/contract/contractAuthLevel';
 import {
-  collectContractV2FieldStatusByCode, resolveContractV2ContainerTree, resolveContractV2FormFieldMap, resolveContractV2MainData, resolveContractV2WorkflowContract,
+  collectContractV2FieldStatusByCode, resolveContractV2ContainerTree, resolveContractV2FormFieldMap, resolveContractV2MainData, resolveContractV2ModifierValues, resolveContractV2WorkflowContract,
 } from '../../app/contracts/v2';
 import {
   applyNativeFieldOrderPreview as applyNativeFieldOrderPreviewFromTree,
@@ -18,7 +18,7 @@ import {
   isNativeLayoutNodeVisible as isNativeLayoutNodeVisibleFromNativeLayout,
   normalizeContractV2ContainersForNativeForm as normalizeContractV2ContainersForNativeFormFromTree,
   resolveNativeButtonLabel as resolveNativeButtonLabelFromNode, resolveNativeFormRootColumns,
-  resolveDeclaredModifierFieldValue, resolveNativeOccurrenceBehavior, resolveStatusFieldSuppression, nativeModifierValue,
+  resolveNativeOccurrenceBehavior, resolveStatusFieldSuppression, nativeModifierValue,
   type NativeLayoutLikeNode, type FieldSemanticMeta,
 } from './nativeLayoutUtils';
 import { normalizeNativeFormStatusbar, resolveStatusbarSelectionValue } from './workflowContract';
@@ -137,7 +137,7 @@ export function useRecordFormLayout(context: {
     const liveContainerVisibility = resolveNativeContainerStateDerivedStatus(
       String(source.type || source.containerType || '').trim().toLowerCase(),
       nativeModifierValue(liveSource, 'invisible'), containerStatus,
-      { ...resolveContractV2MainData(store), ...context.formData },
+      resolveContractV2ModifierValues(store, context.formData),
     );
     const invisible = blocked ? true : Boolean(live.invisible
       || (status.visible === false && !liveContainerVisibility));
@@ -256,8 +256,8 @@ export function useRecordFormLayout(context: {
   const setStatusbarValue=(value:string)=>{const field=nativeStatusbar.value.field;if(!field||nativeStatusbar.value.readonly)return;
     context.formData[field]=resolveStatusbarSelectionValue(formFields.value[field],value);context.markFieldChanged(field);};
   const nativeStatusbarNodeIdentity=computed(()=>nativeStatusbar.value.field?canonicalNativeStatusbar.value.nodeIdentity:'');
-  const modifierMainData=()=>resolveContractV2MainData(context.v2ContractStore.value);
-  const evaluateNativeModifierValue=(value:unknown)=>evaluateNativeModifierValueWithResolver(value,(field)=>resolveDeclaredModifierFieldValue(modifierMainData(),context.formData,field));
+  const modifierMainData=()=>resolveContractV2ModifierValues(context.v2ContractStore.value,context.formData);
+  const evaluateNativeModifierValue=(value:unknown)=>evaluateNativeModifierValueWithResolver(value,(field)=>modifierMainData()[field]);
   const evaluateNativeActionVisibility=(row:Record<string,unknown>)=>isNativeActionVisible({row,currentState:String(context.formData.state||'').trim(),evaluateModifier:evaluateNativeModifierValue,resolveAction:context.contractActionFromNativeRow});
   function isNativeLayoutNodeVisible(node:NativeFormLayoutNode){const source=node as Record<string,unknown>;if(String(source.nativeLocator||'').trim()&&runtimeOccurrenceState(node).invisible===true)return false;const nodeType=String(source.type||'').trim().toLowerCase();const fieldName=String(source.name||'').trim();if(nodeType==='field'&&fieldName){const semantic=context.fieldSemanticMeta(fieldName);if((semantic.surface_role==='hidden'||semantic.technical)&&!context.showHud.value){return false;}}return isNativeLayoutNodeVisibleFromNativeLayout({node,editable:context.isContractFieldOrderEditable.value,evaluateModifier:evaluateNativeModifierValue,normalizeGroupTitle:normalizeFieldGroupTitle,isGroupVisible:context.effectiveGroupVisible,isFieldVisibleInDraft:(name)=>Object.prototype.hasOwnProperty.call(context.fieldVisibilityDraft,name)?context.fieldVisibilityDraft[name]:undefined,resolveAction:context.contractActionFromNativeRow});}
   function isNativeFieldVisible(name:string,node?:NativeFormLayoutNode){const statusField=resolveStatusFieldSuppression({hasNode:Boolean(node),nodeIdentity:nativeNodeIdentity(node),statusbarNodeIdentity:nativeStatusbarNodeIdentity.value,statusbarField:nativeStatusbar.value.field});return isNativeFieldVisibleFromNativeLayout({name,node,statusField,showHud:context.showHud.value,renderProfile:context.renderProfile.value,isNodeVisible:(item)=>isNativeLayoutNodeVisible(item as NativeFormLayoutNode),resolveDescriptor:(field,item)=>item?(item as any).descriptor||formFields.value[field]:formFields.value[field],resolveFieldLabel:context.contractFieldLabel,semantic:context.fieldSemanticMeta,runtimeState:(field)=>node?runtimeOccurrenceState(node):runtimeState(field),evaluatePolicy:(_field,descriptor)=>({visible:true,required:Boolean(descriptor?.required),readonly:Boolean(descriptor?.readonly)})});}

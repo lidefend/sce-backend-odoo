@@ -780,6 +780,24 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 self.assertEqual(model.values["lines"], lines)
                 self.assertNotIn("display_only", contract["dataContract"]["mainData"])
 
+    def test_context_comparison_field_operand_hydrates_with_existing_access_checks(self):
+        for deny in (None, "read", "field"):
+            with self.subTest(deny=deny):
+                model, contract = self._create_modifier_fixture(lines=[(0, 0, {"quantity": 2})], deny=deny)
+                contract['layoutContract']['containerTree'][0]['modifiers']['readonly'] = {
+                    'kind': 'value_compare', 'semantics': 'python', 'operator': '!=',
+                    'left': {'kind': 'field_value', 'field': 'has_lines'},
+                    'right': {'kind': 'context_get', 'key': 'has_lines_limit', 'default': False},
+                }
+                self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract,
+                    model="x.document", record_id=None, view_type="form")
+                if deny is None:
+                    self.assertIs(contract['dataContract']['mainData']['has_lines'], True)
+                    self.assertEqual(model.calls, ['create', 'read', 'default_get', 'new'])
+                else:
+                    self.assertNotIn('has_lines', contract['dataContract']['mainData'])
+                self.assertNotIn('has_lines_limit', contract['dataContract']['mainData'])
+
     def test_create_modifier_dependencies_accept_new_request_identity(self):
         model, contract = self._create_modifier_fixture()
         self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id="new", view_type="form")

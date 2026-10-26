@@ -168,6 +168,33 @@ def _native_view_fixture_arch(relative_path: str, record_id: str) -> str:
 
 class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
 
+    def test_context_operand_is_bound_for_final_layout_status_without_ast_folding(self):
+        modifier = {"kind": "value_truthy", "semantics": "python",
+                    "value_expr": {"kind": "context_get", "key": "lock", "default": True}}
+        node = {"type": "field", "name": "amount", "widgetId": "field.amount.occ.context",
+                "modifiers": {"readonly": modifier}}
+        for context, expected in (({}, True), ({"lock": False}, False), ({"lock": None}, False)):
+            contract = {"layoutContract": {"containerTree": [deepcopy(node)]},
+                        "statusContract": {"widgetStatus": [{"widgetId": node["widgetId"], "auth": "edit"}]},
+                        "dataContract": {"mainData": {"amount": 1, "$native.context": {"lock": not expected}},
+                                         "dataMeta": {"sourceContext": {"context": context}}}}
+            assembler.hydrate_final_layout_modifier_status(contract)
+            status = contract['statusContract']['widgetStatus'][0]
+            self.assertEqual(status['readonly'], expected)
+            self.assertFalse(status['disabled'])
+            self.assertEqual(contract['layoutContract']['containerTree'][0], node)
+        del contract['dataContract']['dataMeta']['sourceContext']
+        assembler.hydrate_final_layout_modifier_status(contract)
+        self.assertTrue(contract['statusContract']['widgetStatus'][0]['disabled'])
+        self.assertEqual(contract['statusContract']['widgetStatus'][0]['reasonCode'], 'NATIVE_MODIFIER_UNRESOLVED')
+        compiled = {"kind": "value_compare", "semantics": "python", "operator": "==",
+                    "left": {"kind": "context_get", "key": "lock", "default": None},
+                    "right": {"kind": "literal", "value": ""}}
+        original = {"attributes": {"invisible": "context.get('lock') == ''"}, "modifiers": {"invisible": compiled}}
+        candidate = deepcopy(original)
+        self.assertIsNone(assembler._apply_contextual_invisible_modifier(candidate, {"lock": False}))
+        self.assertEqual(candidate, original, 'legacy raw folding cannot erase the compiled context AST')
+
     def test_kanban_object_fields_and_published_columns_preserve_selection(self):
         source = {
             "fields": {
