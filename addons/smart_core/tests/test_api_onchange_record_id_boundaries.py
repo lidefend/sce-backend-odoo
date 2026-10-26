@@ -173,7 +173,10 @@ class TestApiOnchangeRecordIdBoundaries(unittest.TestCase):
         self.assertNotIn("unified_page_patch_v2", result)
 
     def test_invalid_backend_line_row_id_does_not_break_normalization(self):
-        env = _Env({"x.model": _OnchangeModel(), "x.line": _LineModel()})
+        model = _OnchangeModel()
+        line = _LineModel()
+        model.env = _Env({"x.line": line})
+        env = _Env({"x.model": model, "x.line": line})
         handler = self.module.ApiOnchangeHandler(
             env=env,
             params={"model": "x.model", "changed_fields": ["line_ids"], "values": {"line_ids": []}},
@@ -251,6 +254,83 @@ class TestApiOnchangeRecordIdBoundaries(unittest.TestCase):
         self.assertEqual(spec, {"menu_id": {"fields": {"display_name": {}}}, "original_label": {},
                                 "line_ids": {"fields": {"name": {}, "hidden": {}}}})
         with patch.object(model, "get_view", return_value={"arch": arch}), patch.object(child, "check_field_access_rights", side_effect=self.module.AccessError("denied")):
+            with self.assertRaises(self.module.AccessError):
+                self.module.build_native_onchange_spec(model)
+
+    def test_implicit_relation_subview_resolves_comodel_default_form(self):
+        model = _ManualOnchangeModel()
+        child = _LineModel()
+        child._fields = {"name": _Field("char"), "partner_id": _Field("many2one", "res.partner")}
+        model._fields = {**model._fields, "line_ids": _Field("one2many", "x.line")}
+        model.env = _Env({"x.line": child})
+
+        with patch.object(child, "get_view", wraps=child.get_view) as get_view:
+            spec = self.module.build_native_onchange_spec(model)
+
+        get_view.assert_called_once_with(view_type="form")
+        self.assertEqual(
+            spec,
+            {
+                "menu_id": {"fields": {"display_name": {}}},
+                "original_label": {},
+                "preview_summary": {},
+                "line_ids": {
+                    "fields": {
+                        "name": {},
+                        "partner_id": {"fields": {"display_name": {}}},
+                    },
+                },
+            },
+        )
+
+    def test_explicit_subview_skips_implicit_resolution(self):
+        model = _ManualOnchangeModel()
+        child = _LineModel()
+        child._fields = {"name": _Field("char"), "hidden": _Field("char")}
+        model._fields = {**model._fields, "line_ids": _Field("one2many", "x.line")}
+        model.env = _Env({"x.line": child})
+        arch = '<form><field name="menu_id"/><field name="line_ids"><tree><field name="name"/></tree></field></form>'
+
+        with patch.object(model, "get_view", return_value={"arch": arch}), patch.object(
+            child, "get_view", side_effect=AssertionError("implicit subview must not resolve")
+        ) as implicit:
+            spec = self.module.build_native_onchange_spec(model)
+
+        implicit.assert_not_called()
+        self.assertEqual(spec["line_ids"], {"fields": {"name": {}}})
+
+    def test_implicit_self_referential_subview_does_not_recurse(self):
+        model = _ManualOnchangeModel()
+        child = _LineModel()
+        child._fields = {"name": _Field("char"), "child_ids": _Field("one2many", "x.line")}
+        model._fields = {**model._fields, "line_ids": _Field("one2many", "x.line")}
+        model.env = _Env({"x.line": child})
+
+        with patch.object(child, "get_view", wraps=child.get_view) as get_view:
+            spec = self.module.build_native_onchange_spec(model)
+
+        self.assertEqual(get_view.call_count, 1)
+        self.assertEqual(spec["line_ids"], {"fields": {"name": {}, "child_ids": {}}})
+
+    def test_implicit_subview_unknown_field_raises(self):
+        model = _ManualOnchangeModel()
+        child = _LineModel()
+        child._fields = {"name": _Field("char")}
+        model._fields = {**model._fields, "line_ids": _Field("one2many", "x.line")}
+        model.env = _Env({"x.line": child})
+
+        with patch.object(child, "get_view", return_value={"arch": '<form><field name="ghost"/></form>'}):
+            with self.assertRaises(self.module.NativeOnchangeSpecError):
+                self.module.build_native_onchange_spec(model)
+
+    def test_implicit_subview_read_denied_raises(self):
+        model = _ManualOnchangeModel()
+        child = _LineModel()
+        child._fields = {"name": _Field("char")}
+        model._fields = {**model._fields, "line_ids": _Field("one2many", "x.line")}
+        model.env = _Env({"x.line": child})
+
+        with patch.object(child, "check_access_rights", side_effect=self.module.AccessError("denied")):
             with self.assertRaises(self.module.AccessError):
                 self.module.build_native_onchange_spec(model)
 

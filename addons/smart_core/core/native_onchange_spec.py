@@ -30,6 +30,40 @@ def build_native_onchange_spec(model, view_id=None):
             if "fields" in spec:
                 merge(current.setdefault("fields", {}), spec["fields"])
 
+    # Self-referential implicit subviews (for example res.partner.child_ids)
+    # must not resolve infinitely. Explicit subviews are finite XML and are not
+    # guarded here; only the unbounded comodel-default fallback is.
+    resolving = set()
+
+    def implicit_subview(current_model, field):
+        """Resolve an x2many field that has no explicit inline subview.
+
+        The child onchange fields come from the comodel's default form view,
+        still scoped to the current user by ``get_view``. The result is merged
+        exactly like an explicit subview and carries the same fail-closed
+        semantics (unknown view field or read-denied field raises).
+        """
+        comodel_name = field.comodel_name
+        if comodel_name in resolving:
+            return {}
+        resolving.add(comodel_name)
+        try:
+            comodel = current_model.env[comodel_name]
+            comodel.check_access_rights("read")
+            implicit = comodel.get_view(view_type="form")
+            implicit_arch = implicit.get("arch") if isinstance(implicit, dict) else None
+            if not isinstance(implicit_arch, (str, bytes)) or not implicit_arch:
+                raise NativeOnchangeSpecError("missing implicit relation subview")
+            try:
+                implicit_root = etree.fromstring(implicit_arch)
+            except etree.ParseError as exc:
+                raise NativeOnchangeSpecError("invalid implicit relation subview") from exc
+            if implicit_root.tag != "form":
+                raise NativeOnchangeSpecError("invalid implicit relation subview architecture")
+            return collect(comodel, implicit_root)
+        finally:
+            resolving.discard(comodel_name)
+
     def collect(current_model, container):
         current_model.check_access_rights("read")
         result = {}
@@ -49,9 +83,13 @@ def build_native_onchange_spec(model, view_id=None):
                     spec["fields"] = {"display_name": {}}
                 if field.type in ("one2many", "many2many"):
                     nested = {}
+                    explicit = False
                     for subview in child:
                         if subview.tag in ("tree", "list", "form", "kanban"):
+                            explicit = True
                             merge(nested, collect(current_model.env[field.comodel_name], subview))
+                    if not explicit:
+                        nested = implicit_subview(current_model, field)
                     if nested:
                         spec["fields"] = nested
                 merge(result, {name: spec})
