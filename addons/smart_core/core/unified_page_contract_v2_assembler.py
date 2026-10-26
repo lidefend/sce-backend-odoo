@@ -10,6 +10,8 @@ from typing import Any
 
 _logger = logging.getLogger(__name__)
 
+from .native_modifier_comparison import compare_python_modifier
+
 from .field_presentation_usage import assert_field_body_usage, statically_hidden
 from .action_semantics_vocabulary import (
     EXECUTORS as ACTION_SEMANTICS_EXECUTORS,
@@ -4358,6 +4360,11 @@ def _evaluate_action_modifier(value: Any, record: dict[str, Any], *, strict: boo
             if "value" not in value:
                 return None
             expected = value.get("value")
+        semantics = value.get("semantics")
+        if semantics == "python":
+            return compare_python_modifier(record.get(field), _text(value.get("operator")), expected)
+        if semantics is not None:
+            return None
         compared = _compare_action_value(record.get(field), _text(value.get("operator")), expected)
         return compared
     return None

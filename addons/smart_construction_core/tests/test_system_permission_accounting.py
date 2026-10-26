@@ -121,6 +121,17 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
                 for key in ('children', 'tabs'):
                     yield from walk(node.get(key, []))
         nodes = list(walk(result['layout']))
+        # Real inherited journal conditions retain the explicit Python comparison
+        # semantics all the way from native XML to the backend consumer.
+        from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import _evaluate_action_modifier
+        comparisons = [value for node in nodes for value in node.get('modifiers', {}).values()]
+        state_conditions = [value for value in comparisons if isinstance(value, dict)
+                            and value.get('raw') == "state != 'draft'"]
+        self.assertTrue(state_conditions, 'real journal must expose native draft-state conditions')
+        for condition in state_conditions:
+            self.assertEqual(condition.get('semantics'), 'python')
+            self.assertIs(_evaluate_action_modifier(condition, {'state': 'draft'}, strict=True), False)
+            self.assertIs(_evaluate_action_modifier(condition, {'state': 'posted'}, strict=True), True)
         spans = root.xpath('.//span[@invisible="not auto_post_until"]')
         self.assertEqual(len(spans), 1)
         span = spans[0]

@@ -1,3 +1,4 @@
+import { comparePythonModifier } from './nativeModifierComparison';
 import { contractGapError } from './contract/contractGap';
 
 export type FieldRuntimeState = {
@@ -116,6 +117,8 @@ export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (
   const valueField = String(row.value_field || row.valueField || '').trim();
   if (!valueField && !Object.prototype.hasOwnProperty.call(row, 'value')) return modifierGap('value');
   const expected = valueField ? resolve(valueField) : row.value;
+  if (row.semantics === 'python') return comparePythonModifier(resolve(field), operator, expected);
+  if (row.semantics !== undefined) return modifierGap('comparison_semantics');
   return compareNativeModifierValue(resolve(field), operator, expected);
 }
 

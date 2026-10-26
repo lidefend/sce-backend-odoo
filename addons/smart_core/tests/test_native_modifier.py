@@ -19,6 +19,7 @@ class TestNativeModifier(unittest.TestCase):
             MODULE.normalize_native_modifier("state != 'upload'"),
             {
                 "kind": "field_compare",
+                "semantics": "python",
                 "field": "state",
                 "operator": "!=",
                 "value": "upload",
@@ -43,7 +44,8 @@ class TestNativeModifier(unittest.TestCase):
         for raw in ("state == 'draft' or context.get('show_warning')",
                     "state == 'draft' and len(ids)", "not context.get('show_warning')",
                     "amount > compute_limit()", "state in [other_state]", "state ==",
-                    "source().active", "state == source().state"):
+                    "source().active", "state == source().state", "ids == (1, 2)",
+                    "ids in [(1, 2)]", "amount == 1e999", "amount == 9007199254740992", r"state == '\ud83d'"):
             with self.subTest(raw=raw):
                 value = MODULE.normalize_native_modifier(raw)
                 self.assertEqual(value["kind"], "unsupported")
@@ -94,10 +96,41 @@ def differential_cases():
         node = MODULE.normalize_native_modifier(raw)
         assert fixture.assembler._evaluate_action_modifier(node, {}, strict=True) is expected
         cases.append({"node": node, "record": {}, "expected": expected})
+    # Python itself is the reference; no expected result is inferred from either implementation.
+    values = [None, False, True, 0, 1, 1.5, "", "0", "draft", "ra", "\ue000", "\U00010000",
+              [], [1], [1, 2], [1, "x"], [None], [[1]], {}, {"draft": 1}, {"draft": True}]
+    for left in values:
+        for right in values:
+            for operator in ("==", "!=", ">", ">=", "<", "<=", "in", "not in"):
+                raw = f"left {operator} right"
+                record = {"left": left, "right": right}
+                node = MODULE.normalize_native_modifier(raw)
+                try:
+                    expected = eval(raw, {"__builtins__": {}}, record)
+                except TypeError:
+                    expected = None
+                actual = fixture.assembler._evaluate_action_modifier(node, record, strict=True)
+                assert actual is expected, (raw, record, actual, expected)
+                cases.append({"node": node, "record": record, "expected": expected})
+    for raw, record, expected in [
+        ("state in ('draft', 'posted')", {"state": "draft"}, True),
+        ("ids == [1, 2]", {"ids": [1, 2]}, True),
+        ("ids != [1, 2]", {"ids": [1, 3]}, True),
+    ]:
+        node = MODULE.normalize_native_modifier(raw)
+        assert fixture.assembler._evaluate_action_modifier(node, record, strict=True) is expected
+        cases.append({"node": node, "record": record, "expected": expected})
+    for record in ({"left": "\ud83d", "right": "😀"},
+                   {"left": "x", "right": {"\ude00": 1}},
+                   {"left": 9007199254740992, "right": 1}):
+        node = MODULE.normalize_native_modifier("left in right")
+        assert fixture.assembler._evaluate_action_modifier(node, record, strict=True) is None
+        cases.append({"node": node, "record": record, "expected": None})
     for node, record in [
         (MODULE.normalize_native_modifier("state == 'draft' or context.get('x')"), {"state": "draft"}),
         ({"kind": "not", "expr": {"kind": "unknown"}}, {}),
         ({"kind": "static", "value": "false"}, {}),
+        ({"kind": "field_compare", "semantics": "unknown", "field": "state", "operator": "==", "value": "draft"}, {"state": "draft"}),
         ({"kind": "not", "expr": ""}, {}),
         ({"kind": "any", "exprs": [True, ""]}, {}),
         ({"kind": "any", "exprs": [True, {"kind": "field_truthy", "field": "missing"}]}, {}),

@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { evaluateNativeModifierValue } from '../src/app/modifierEngine';
 import { isContractGapError } from '../src/app/contract/contractGap';
 
-const cases = JSON.parse(execFileSync('python3', ['addons/smart_core/tests/test_native_modifier.py', '--emit-differential'], { encoding: 'utf8' }));
+const cases = JSON.parse(execFileSync('python3', ['addons/smart_core/tests/test_native_modifier.py', '--emit-differential'], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 }));
 for (const row of cases) {
   const evaluate = () => evaluateNativeModifierValue(row.node, (name) => row.record[name]);
   if (row.expected === null) assert.throws(evaluate, isContractGapError);

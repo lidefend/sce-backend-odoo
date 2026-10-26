@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import math
 from typing import Any
 
 
@@ -17,9 +18,13 @@ def _field_name(node: ast.AST) -> str:
 
 def _literal(node: ast.AST) -> Any:
     if isinstance(node, ast.Constant):
-        if node.value is None or isinstance(node.value, (str, bool, int, float)):
+        if node.value is None or isinstance(node.value, bool):
             return node.value
-    if isinstance(node, (ast.List, ast.Tuple)):
+        if isinstance(node.value, str) and all(not 0xD800 <= ord(char) <= 0xDFFF for char in node.value):
+            return node.value
+        if isinstance(node.value, (int, float)) and abs(node.value) <= 9007199254740991 and math.isfinite(node.value):
+            return node.value
+    if isinstance(node, ast.List):
         return [_literal(item) for item in node.elts]
     if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.USub, ast.UAdd)):
         value = _literal(node.operand)
@@ -63,16 +68,19 @@ def _python_expr(node: ast.AST) -> Any:
         if field and operator:
             normalized = {
                 "kind": "field_compare",
+                "semantics": "python",
                 "field": field,
                 "operator": operator,
             }
             comparator = node.comparators[0]
+            if isinstance(comparator, ast.Tuple) and operator not in ("in", "not in"):
+                return None
             if isinstance(comparator, (ast.Name, ast.Attribute)):
                 right_field = _field_name(comparator)
                 if right_field and right_field not in ("True", "False", "None"):
                     normalized["value_field"] = right_field
             if "value_field" not in normalized:
-                normalized["value"] = _literal(comparator)
+                normalized["value"] = _literal(ast.List(elts=comparator.elts) if isinstance(comparator, ast.Tuple) else comparator)
             return normalized
     return None
 

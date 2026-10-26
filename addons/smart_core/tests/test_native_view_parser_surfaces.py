@@ -471,6 +471,7 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
                 "field": "state",
                 "operator": "==",
                 "value": "done",
+                "semantics": "python",
                 "raw": "state == 'done'",
             }
         })
@@ -794,6 +795,7 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
                 "field": "state",
                 "operator": "==",
                 "value": "done",
+                "semantics": "python",
                 "raw": "state == 'done'",
             }
         })

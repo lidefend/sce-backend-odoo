@@ -1511,6 +1511,24 @@ assert.deepEqual(
   { nameReadonly: true, nameRequired: true, stateVisible: false },
   'explicit static native constraints must not be revived by permissive runtime status',
 );
+// The native Python comparison marker survives contract decoding and presentation.
+for (const [actual, expected] of [[[7], true], [[7, 8], false], [['7'], false]] as const) {
+  const typed = snapshot();
+  typed.layoutContract.containerTree[0].children[0].readonly = {
+    kind: 'field_compare', semantics: 'python', field: 'line_ids', operator: '==', value: [7],
+  };
+  const fields = presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(typed)), 'edit',
+    { line_ids: actual }).zones.primary[0].children.flatMap((node) => node.fields);
+  assert.equal(fields.find((field) => field.fieldCode === 'name')?.readonly, expected,
+    'native Python comparison preserves complete typed lists through the canonical presenter');
+}
+const unknownComparisonSnapshot = snapshot();
+unknownComparisonSnapshot.layoutContract.containerTree[0].children[0].readonly = {
+  kind: 'field_compare', semantics: 'unknown', field: 'line_ids', operator: '==', value: [7],
+};
+assert.throws(() => presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(unknownComparisonSnapshot)), 'edit'),
+  { name: 'ContractGapError' }, 'unknown comparison semantics must stop canonical presentation');
+console.log('[canonical_form_presenter] typed native comparison cases PASS count=4');
 const nativeDynamicConstraintSnapshot = snapshot();
 nativeDynamicConstraintSnapshot.layoutContract.containerTree[0].children[0].readonly = {
   kind: 'field_compare', field: 'state', operator: '=', value: 'approved',
