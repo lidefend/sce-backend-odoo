@@ -77,7 +77,9 @@
     "addons/smart_core/tests/test_native_modifier.py",
     "frontend/apps/web/src/app/modifierEngine.ts",
     "frontend/apps/web/scripts/native_modifier_test.ts",
-    "make/frontend.mk"
+    "make/frontend.mk",
+    "frontend/apps/web/src/app/nativeModifierComparison.ts",
+    "addons/smart_core/core/native_modifier_comparison.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -85,7 +87,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Implement bounded context/parent dependency binding and cross-runtime comparison semantics; verify actual contract error-state consumption before rich notice/conditional navigation and FG15 acceptance.",
+  "next_exact_step": "Declare typed native evaluation bindings for context/parent and relational fields; verify authoritative dependency transport and live draft behavior before FG15 rich components and browser acceptance.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -721,6 +723,108 @@
       ],
       "final_identity": "80971054924137098008850a0e8995d6db53d159 + P4 Make/cache pin and documentation only",
       "generated_diff_review": "Only assembler line counts and frontend production source input digest changed; no product declarations generated differently."
+    },
+    "twelfth_kernel": {
+      "identity": "c79e4adc7ae9e4f8fd5be6cca5f17c9c946be215 + declared dirty scope",
+      "formal_product_layer": "P0",
+      "layer_target": "smart_core compiler/evaluator and generic client comparison",
+      "module": "native modifier protocol",
+      "why_here": "Python comparisons require explicit semantics and type preservation; legacy domain compatibility cannot define Python semantics.",
+      "why_not_elsewhere": "No model-specific frontend inference or P1 business defaults",
+      "blast_radius": "Compiled Python field_compare nodes; legacy/domain nodes retain existing semantics",
+      "risk": "high: visibility/readonly comparison behavior",
+      "scope_delta": "P0 new pure comparison helpers, existing compiler/assembler/consumer and affected tests; P4 cache pin; existing run/docs",
+      "validation": {
+        "L0": "passed clean identity and resume",
+        "L1": "required ci.local.iteration",
+        "L2": "compiler/consumer differential, parser, canonical presenter, assembler/runtime, typecheck and contract basis",
+        "L3": "targeted real journal parser ORM after L2",
+        "L4": "not_run: no served candidate/deploy or browser acceptance claimed",
+        "L5": "independent source review; no freeze/publication"
+      },
+      "exclusions": [
+        "context/parent transport requires separate declared binding",
+        "relational RPC/display encoding normalization",
+        "rich component capabilities",
+        "mainline/deploy/demo rebuild"
+      ],
+      "review_recovery": {
+        "classification": "product_defect",
+        "severity": "S2",
+        "reason": "isolated Unicode surrogate can match half of JS UTF-16 substring while Python compares codepoints",
+        "recovery": "Python compiler/evaluator and frontend reject isolated surrogate characters in values/keys; negative differential cases plus canonical typed-list/unknown-semantics consumption tests"
+      },
+      "orm_failure": {
+        "status": "failed",
+        "log": "twelfth-orm.log",
+        "classification": "validation_tool_defect",
+        "reason": "new assertion searched invisible only; actual native state != draft condition is readonly",
+        "recovery": "inspect existing original journal response and collect all declared modifier buckets; preserve nonzero real-condition and draft/posted behavior assertions"
+      },
+      "status": "source_validation_passed_runtime_acceptance_pending",
+      "results": {
+        "L1": {
+          "status": "passed",
+          "entry": "make ci.local.iteration contract.semantic.registry.generate",
+          "log": "twelfth-l1-import-final.log"
+        },
+        "L2": {
+          "status": "passed",
+          "entry": "make verify.frontend.collection_view_semantics.unit verify.frontend.canonical_form_presenter.unit verify.unified_page_contract.v2.assembler verify.unified_page_contract.v2.runtime",
+          "log": "twelfth-l2-reviewed.log",
+          "counts": {
+            "compiler": 7,
+            "cross_runtime": 3596,
+            "native_parser": 39,
+            "new_canonical_comparison": 4,
+            "assembler": 23,
+            "runtime": 132
+          },
+          "final_backend_log": "twelfth-l2-import-final.log"
+        },
+        "frontend_guards": {
+          "status": "passed",
+          "entry": "make verify.frontend.contract_basis.enforce verify.frontend.typecheck.strict",
+          "log": "twelfth-frontend-guards.log"
+        },
+        "ORM": {
+          "status": "passed",
+          "count": 1,
+          "entry": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestSystemPermissionAccounting.test_native_journal_notice_parser_preserves_inline_contract",
+          "log": "twelfth-orm-import-final.log",
+          "limits": "native journal parse/state-condition evaluation, not browser/save/post acceptance"
+        },
+        "review": {
+          "status": "passed_after_S2_repair",
+          "reviewer": "/root/review_quick_closeout",
+          "scope": "final product helpers/dispatch/canonical plus corrected ORM assertions and sibling import path",
+          "limits": "no deployment approval"
+        }
+      },
+      "evidence_reuse": "After helper relocation, generator + collection differential/parser + assembler/runtime + real journal ORM rerun; unchanged frontend canonical/typecheck retained from reviewed logs. Documentation/cache-pin finalization changes no product inputs. No full entry matrix or deployment.",
+      "remaining": [
+        "context/parent declared binding and transport",
+        "relational RPC/display value normalization by field type",
+        "legacy/domain like semantics",
+        "actual page error-state/browser acceptance",
+        "rich notices and dedicated accounting widgets"
+      ],
+      "commit_failure": {
+        "classification": "product_defect",
+        "status": "failed",
+        "entry": "git commit pre-commit contract.semantic.registry.generate",
+        "reason": "assembler is also loaded as top-level core by generator; ..utils import escapes top-level package",
+        "recovery": "move pure evaluator into core and use sibling import, preserving existing generator loader and runtime entrypoints"
+      },
+      "scope_index_failure": {
+        "log": "twelfth-l1-import-fixed.log",
+        "classification": "baseline_evidence_defect",
+        "reason": "staged old helper path survived filesystem move and was outside updated scope",
+        "recovery": "stage exact owned move to align index and declared core helper path"
+      },
+      "product_commit": "18b70a42b70d952c66ffbc5eb7ea4d0277bda03e",
+      "final_identity": "18b70a42b70d952c66ffbc5eb7ea4d0277bda03e + P4 cache guard and documentation only",
+      "generated_diff_review": "Only source counts/line counts and frontend input digest changed, generated semantics unchanged"
     }
   }
 }

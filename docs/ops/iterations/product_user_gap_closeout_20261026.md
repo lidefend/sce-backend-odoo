@@ -544,3 +544,60 @@ P0源码提交`3ac785fd0`、`809710549`；生成报告仅行数及前端输入�
 最后补拒绝函数调用派生空字段与复合AST空字符串操作数；受影响解析器/前端重跑通过。
 ORM最终日志对应未再变化的后端源码；末次前端补丁不影响该ORM输入。
 回退本批源码恢复b48aab846；没有本批业务数据变更需要回退。
+
+
+## 第十二批：原生 Python 比较的类型与集合语义（2026-10-26）
+
+阶段身份：`c79e4adc7ae9e4f8fd5be6cca5f17c9c946be215`加本批声明dirty范围。
+P0归属`smart_core`编译器/求值器与通用前端消费者；P4仅现有测试、缓存输入锁和结果记录。
+检查发现旧比较器字符串化两端且把数组取首项，不能代表Python表达式；
+上下文/父记录与关系RPC编码需要声明载体，不在前端猜测后直接放行。
+
+### 实现范围
+
+- 原生Python表达式的比较叶显式声明`semantics: python`。两端按声明分派；没有该标记的
+  legacy/domain节点保持原有行为，未知标记后端未知、前端`ContractGapError`。
+- 新纯函数比较器保留JSON类型和完整序列，支持等于/不等于、数值/字符串/列表顺序、
+  字符串/列表/字典键成员判断；布尔与数值等价遵循Python，数字字符串不转为数字。
+  字符串排序按Unicode码点。非法类型比较不制造False结论。
+- 支持范围为Unicode标量字符串、有限且绝对值不超过2^53−1的数值、布尔/null和递归JSON
+  列表/字符串键对象。孤立surrogate、超范围数值、非有限值明确拒绝。
+- Tuple只在成员判断的右侧作为容器规范化；无法保留tuple/list差别的比较和嵌套tuple显式拒绝。
+- 缓存版本为`ui-contract-v2-native-python-comparison-v1`；新后端比较器纳入装配缓存摘要。
+
+[Odoo 17视图规范](https://www.odoo.com/documentation/17.0/developer/reference/user_interface/view_architecture.html)
+说明原生表达式有字段、context及parent等求值环境，关系值具有原生表达形态。
+本批仅关闭有限JSON值比较语义，未把数据库read/display关系值当作原生表达值完整支持。
+
+### 证据和修复
+
+原始日志均位于`.runtime/product-user-gap-closeout-20261026/`：
+
+- `twelfth-l1-import-final.log`：`make ci.local.iteration contract.semantic.registry.generate`通过。
+- `twelfth-l2-reviewed.log`及包路径修复后的`twelfth-l2-import-final.log`：现有collection/canonical/assembler/runtime Make入口通过。
+  7项编译器测试，3,596项跨端检查（其中21×21×8比较矩阵直接以Python固定表达式为oracle），
+  39项原生解析器、23项装配、132项运行时测试；新增4项canonical呈现断言证明语义标记穿过
+  契约decode，完整列表及类型差异影响readonly，未知语义进入契约缺口错误。
+- `twelfth-frontend-guards.log`：contract basis与strict typecheck通过。
+- 独立复核发现S2：UTF-16 substring可能匹配孤立surrogate，双方初版接受此输入。
+  已在编译literal、后端递归值/对象键、前端码点校验统一拒绝，并加入负例；复核确认修复。
+  初版绿色日志`twelfth-l2.log`保留，不当作Unicode边界覆盖证明。
+- `twelfth-orm.log`失败为新增测试定位错误：只找invisible，但实际原生`state != 'draft'`
+  存在于readonly。根据原始journal契约改为检查全部modifier桶，未删除非零真实条件断言。
+- `twelfth-orm-fixed.log`及最终`twelfth-orm-import-final.log`：指定`TestSystemPermissionAccounting.test_native_journal_notice_parser_preserves_inline_contract`
+  经`make local.dev.test`在注册`sc-local-dev/sc_dev_demo`回滚管理测试中1项通过，0失败/0错误。
+  验证普通会计用户真实继承视图的Python语义标记及draft/posted两种求值结果，保留inline/link/button断言。
+
+- 首次提交钩子的生成器以独立`core`包加载装配器，暴露跨包导入失败。将纯比较器移到
+  `core/native_modifier_comparison.py`并使用同包导入；生成器本身不变。同步scope/index/缓存输入后
+  生成入口、受影响后端L2与ORM均重跑通过；路径同步前的L0失败保留于`twelfth-l1-import-fixed.log`。
+- P0提交`18b70a42b70d952c66ffbc5eb7ea4d0277bda03e`；生成报告仅源码数量/行数及前端输入摘要变化，已检查。
+
+### 状态与后续
+
+源码定向验证通过；未做浏览器产品验收、主线集成、部署或Demo重建。
+当前服务仍为870a36bd2，主线/日常开发服务器仍为bdef29e11；FG15未关闭，累计仍为16组局部修复。
+关系RPC/display编码没有原生求值绑定，不能因数组比较正确就宣称关系语义完整；
+context.get/parent依赖传输、legacy/domain的like等差异、富提示/条件导航和专用会计组件继续未完成。
+下一步建立上下文/父记录与字段类型的显式求值绑定，再做真实消费错误态及受影响页面验证。
+回退本批源码恢复c79e4adc7；无本批业务数据写入或部署需要回退。
