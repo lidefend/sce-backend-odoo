@@ -3,7 +3,7 @@
 状态：执行中。以完整走查17组功能问题为输入，先恢复阻断业务办理的表单/入口，再收口呈现和权限声明一致性。
 唯一结果索引 `.agent/runs/PRODUCT-USER-GAP-CLOSEOUT-20261026/run.json`；不重开已完成走查任务。
 
-起点 e0bd7d35b2d8ffcb1d4bbed1b841b98ba424a274，包含已冻结审计记录；实际主线/日常部署
+起点 e0bd7d35b2d8ffcb1d4bbed1b841b98ba424a274，包含已冻结审计记录；当时观测的主线/日常部署
 bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963。沿用同一工作树，另建fix分支，不新建运行环境。
 
 Formal Product Layer：诊断区分P0通用契约机制/消费和P1原生业务声明；未确定根因前不修改产品。
@@ -15,6 +15,94 @@ Blast Radius：按捕获契约与实际根因推导精确受影响入口，局�
 验收：每个修复均需声明→消费→实际行为证据；保留权限拒绝、数据完整性和缺契约停机机制。
 回退：按层级独立提交/受保护revert；如涉及受管升级，另绑定原环境恢复点，不假设代码revert恢复数据。
 首批产品声明已修改，尚未集成或部署，用户交付仍未通过。Demo重建留在后续数据任务。
+
+## 执行工作区交接（2026-10-26，接手先读）
+
+交接状态：本轮执行已收口并停止新增任务，批次仍active，等待下一执行者接手；不是批次验收
+完成、主线集成完成或产品交付完成。不得另建平行结果台账或将该批次标为completed。
+
+### 工作区与身份
+
+- 唯一执行仓库：`/home/lidefend/workspace/sce-backend-odoo-entry-validation`。
+- 分支：`fix/demo-product-completion-20261026`；交接记录前HEAD：
+  `49c38622c7b73a89b82bac360b7c4e6a42f9c58b`。交接文档提交后的最新HEAD用`git rev-parse HEAD`读取。
+- 交接前工作区干净，所有产品与探针改动已提交；没有待提交补丁、运行中的测试或待接续exec会话。
+  独立复核代理已结束，无并行写者。保留正在运行的验收服务，不关闭容器或删除工作树。
+- 唯一任务索引：`.agent/runs/PRODUCT-USER-GAP-CLOSEOUT-20261026/run.json`；所有任务文件
+  范围以其scope为准。目标文件`.agent/goals/PRODUCT-USER-GAP-CLOSEOUT-20261026.yaml`保持active。
+- 基线锚点PR735/main `5b58d6a1b2ac759c2f1c1cac26e820236fd74f9f`仅覆盖既定manifest/ORM范围。
+  批次起点e0bd7d35与历史日常部署bdef29e11不是当前候选；交接未查询新的远端状态，不据旧记录
+  推断当前远端HEAD、CI或合并资格。此次未推送/开PR/合并，也无最终发布冻结、Quick或外部归档回执。
+
+### 运行服务与证据身份
+
+- 已登记环境：project=`sc-local-dev`，DB=`sc_dev_demo`，dbfilter=`^sc_dev_demo$`，
+  namespace=`ns_000000000002`，入口`http://127.0.0.1:18081/t/demo`；候选前端5176。
+  沿用sc_local_dev_*卷及规范凭据；不得新建或手拼环境、凭据、fixture。
+- 最后通过健康/浏览器验证的服务候选：
+  `b976394010599e9a2e9cb7675809fb4de0de1d7e`。交接只读PID记录仍指向该候选（进程身份以受管工具回读为准）。
+- 交接已逐项比较Git对象，确认服务候选与49c38622c的`addons/smart_core`、
+  `addons/smart_construction_core`、`frontend/apps/web`、现有浏览器探针和`make/dev.mk`一致；
+  差异为记录文档。不要因文档HEAD变化重跑无关产品测试，也不要伪造服务SHA为文档SHA。
+- `local.dev.candidate.frontend.health`强制当前clean HEAD、pid候选及后端source stamp一致。
+  因此不能把历史服务SHA当当前HEAD直接重跑该入口。下一实际候选完成并提交后，按受管
+  down/up/build/health顺序刷新；不要改PID文件或放宽检查来绕过身份差异。
+- 第28轮刷新了本地验收服务，无模块升级、demo重建或业务记录写入，不等同远端日常服务器发布。
+
+### 已完成能力和证据边界
+
+- 内核增量11–21：原生表达式严格求值、Python语义跨端一致、context/parent与关系身份、
+  草稿生命周期及受权限检查的create关系快照；具体覆盖与失败修复保留在各增量记录中。
+- 增量22–27：虚拟行ID；显式onchange错误；授权视图fields_spec与单次原生调用；many2one
+  对象到既有传输格式的适配；LINK行数据回放且不覆盖dirty值；force_save；显式子表表单
+  数据字段与显示列分离，并继承祖先readonly/invisible、验证全部条件后再合并。
+- 关键代码：`addons/smart_core/core/native_onchange_spec.py`、`handlers/api_onchange.py`；
+  前端`pages/contractForm/{one2manyUtils,one2manyOnchange,useOne2manyRuntime,useRecordRelationshipFields,useRecordFormState}.ts`
+  及`app/x2manyCommands.ts`。修改前按run.scope和提交diff确认完整依赖，不仅依赖该摘要。
+- 最终P0定向证据：`twentyseventh-l1-final.log`、`twentyseventh-l2-strict.log`，包括编译器8、
+  跨端3739、parser41、实际子表runtime/读取入口、关系生命周期、严格类型与契约守卫。
+  独立复核发现的祖先约束及短路问题已修复关闭。
+- 真实ORM：`twentyfourth-orm-reviewed.log`为普通会计真实handler的关系清空、非空选择、
+  已有记录联动不落库；`twentyfifth-orm.log`为原生LINK数据与持久关系不变；各实际1项通过。
+  第26/27轮无后端产品变化，未新增ORM运行，不将旧ORM扩大为新前端保存证明。
+- 真实浏览器：`twentyeighth-browser-namespace.log`及
+  `native-child-browser/b976394010599e9a2e9cb7675809fb4de0de1d7e/report.json`。
+  demo_full/uid40/company1，客户入口`/a/891?menu_id=603`：一次本次输入对应的根字段联动
+  HTTP200/ok=true，child_ids从0→1行、5个输入，错误/拦截均0，截图已核对。
+- 浏览器**没有验证子行字段联动、保存、落库回读或清理**。探针继续拒绝业务写入。
+  P4复核指出的误报及响应关联问题已修复；最终namespace修正由执行者复跑确认，尚无最终
+  交付级完整指纹独立复核或发布资格结论。
+
+所有日志/截图原件位于`.runtime/product-user-gap-closeout-20261026/`，为本机忽略目录，
+Git克隆不会携带。换机器时需按现有归档规则转交并验证，不得只交Git而声称证据齐备。
+原始17组功能问题和23组demo缺口台账仍在本目录的system_function_gaps/demo_data_gaps文档。
+累计16组仅局部修复；FG15、完整业务闭环与demo重建仍未闭合，不提高总体通过率。
+
+### 接手后的确切步骤
+
+1. 在上述仓库读AGENTS.md、.agent/context.yaml及协作协议，核对root/branch/HEAD/status，
+   执行`make agent.run.resume`。复用当前run与工作树，先确认没有其他写者。
+2. 继续run.next_exact_step：复用现有受管浏览器/fixture及write lease机制，增加固定客户父子
+   测试记录的保存、权威回读和精确清理。先定义目标公司/角色、唯一记录标识、创建结果ID、
+   失败时保留证据与清理策略；禁止按宽泛名称清理既有demo数据。
+3. 扩展前检查已有`local.dev.project_profile_write_*`及其他fixture/browser包装器的治理方式；
+   只复用工具机制，不把项目fixture冒充客户fixture。现有`verify.local.dev.native_child.draft`
+   仅为草稿前置，不能直接放开其全局写拦截器来跑保存。
+4. 新P4改动先声明scope、执行L1及非零受影响测试/独立复核；提交clean候选后再更新已登记
+   服务。入口是`make local.dev.up SC_SOURCE_REVISION=<candidate>`、
+   `make local.dev.candidate.frontend.down/up/health CANDIDATE_GIT_HEAD=<candidate> CONFIRM_LOCAL_DEV_CANDIDATE_FRONTEND=SERVE_FROZEN_LOCAL_DEV_CANDIDATE`
+   （down/up/health分别调用），以及草稿探针同一候选参数。当前探针固定res.partner/child_ids，
+   无需重跑全部菜单或重建demo；保存入口尚待实现，不能称已可直接运行。
+5. 真实保存验证通过后再扩普通业务角色与受影响原生页面。隐式子视图、字段context/order、
+   空changed_fields初始化、富会计告警等剩余能力分别诊断，严格维持声明→消费→行为证据。
+   只通过受保护PR流程集成；未具备当前源/目标CI结果前不宣称主线集成。
+
+### 回退与执行纪律
+
+本轮无需恢复业务数据；浏览器草稿未保存，ORM夹具由既有事务回滚。若后续保存测试失败，
+按所登记的准确记录ID执行恢复/清理；代码回退不能代替数据库恢复。保留本批所有失败日志，
+仅在代码/工具/环境依赖明确变化后重跑。候选源码回退通过受管分支或受保护revert，不reset/强推
+共享历史。继续单写者、最早失败层优先、受影响证据复用，不另起工作树或平行环境。
 
 ## 首批：两个办理工作台的提示声明
 

@@ -1015,6 +1015,30 @@
     "twentyeighth_scope": "HEAD7fe16a179a61ebe7fb03e63895dd2ac174849f90 clean. P4 extend existing workspace feedback browser probe with fixed res.partner/child_ids native draft prerequisite. Reuse registered sc-local-dev/sc_dev_demo namespace and managed credentials; bring backend/source stamp and candidate frontend to clean committed candidate via Make. Probe blocks all persistence/dispatch and records route, contract/errors and screenshots. Actual save is not authorized by this probe until prerequisite and recoverable record fixture lane exists; task authorization already allows developing that lane. L1 syntax and existing inventory guard unit before runtime, independent review; reuse unchanged P0 L2 from27. No module upgrade/demo rebuild/mainline/daily server deployment.",
     "twentyeighth_review_recovery": "Independent S2 probe could pass with no onchange and preexisting inputs after fixed sleep. Now explicitly wait/parse HTTP+ok ordinary onchange while triggering edit; require nonzero evidence; verify row-count increment exactly1 instead of mere existing input. No browser run on old probe. If chosen native field produces no declared request, report prerequisite failure and do not call it product success.",
     "twentyeighth_namespace_recovery": "First browser candidate ab0434899 passed source/backend/namespace and frontend asset identity, then probe new URL(/a/... , namespace base) dropped /t/demo and redirected to unnamespaced login. Validation-tool defect, no product conclusion and zero business writes. Preserve twenty-eighth browser log/report/screenshots; concatenate registered namespace base + authoritative route before rerun. Product module trees unchanged; runtime tool gates still require clean new SHA.",
-    "twentyeighth_result": "P4 probe committed96c087df1/6526274d2/ab0434899/b97639401. L1, syntax and bootstrap inventory unit passed; unchanged P0 candidate tests from27 reused. Registered local.dev up and candidate frontend build now serve b976394010599e9a2e9cb7675809fb4de0de1d7e, health verifies exact backend source/mount/dbfilter/filestore and namespace ns_000000000002; browser asset index-vC_g85dF.js matches dist. First run ab043 failed probe namespace routing, repaired before retry. Final twenty-eighth-browser-namespace.log/native-child-browser/b976.../report.json PASS one demo_full uid40 res.partner route /a/891?menu_id=603: input-correlated root onchange HTTP200 oktrue; child_ids count0->1 with5 editable inputs; blocked0/errors0, screenshots inspected. No save/create/write/unlink/business dispatch: not child-field onchange or persistence acceptance. No module upgrade/demo reset/mainline/daily server release. Documentation commit does not change tested product trees."
+    "twentyeighth_result": "P4 probe committed96c087df1/6526274d2/ab0434899/b97639401. L1, syntax and bootstrap inventory unit passed; unchanged P0 candidate tests from27 reused. Registered local.dev up and candidate frontend build now serve b976394010599e9a2e9cb7675809fb4de0de1d7e, health verifies exact backend source/mount/dbfilter/filestore and namespace ns_000000000002; browser asset index-vC_g85dF.js matches dist. First run ab043 failed probe namespace routing, repaired before retry. Final twentyeighth-browser-namespace.log/native-child-browser/b976.../report.json PASS one demo_full uid40 res.partner route /a/891?menu_id=603: input-correlated root onchange HTTP200 oktrue; child_ids count0->1 with5 editable inputs; blocked0/errors0, screenshots inspected. No save/create/write/unlink/business dispatch: not child-field onchange or persistence acceptance. No module upgrade/demo reset/mainline/daily server release. Documentation commit does not change tested product trees.",
+    "handoff_20261026": {
+      "state": "handoff_ready; batch remains active; no pending execution or writer",
+      "workspace": "/home/lidefend/workspace/sce-backend-odoo-entry-validation",
+      "branch": "fix/demo-product-completion-20261026",
+      "code_head_before_handoff": "49c38622c7b73a89b82bac360b7c4e6a42f9c58b",
+      "served_candidate": "b976394010599e9a2e9cb7675809fb4de0de1d7e",
+      "same_git_objects": [
+        "addons/smart_core",
+        "addons/smart_construction_core",
+        "frontend/apps/web",
+        "scripts/verify/local_dev_workspace_feedback.mjs",
+        "make/dev.mk"
+      ],
+      "entry": "docs/ops/iterations/product_user_gap_closeout_20261026.md#执行工作区交接2026-10-26接手先读",
+      "status_boundaries": {
+        "batch": "incomplete",
+        "mainline": "not integrated; remote status not refreshed",
+        "local_runtime": "candidate b97639401 retained",
+        "user_acceptance": "draft prerequisite passed; save/readback/cleanup not run"
+      },
+      "evidence": "Original .runtime logs remain local and ignored by Git; do not hand off clone alone as evidence-complete",
+      "next": "Read handoff and make agent.run.resume; implement governed exact-record parent-child save/readback/cleanup in existing local.dev authority before persistence acceptance",
+      "rollback": "No persistent browser business writes; no fixture reset. Preserve registered runtime and worktree. Future test records require exact-ID cleanup."
+    }
   }
 }
