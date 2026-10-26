@@ -618,3 +618,83 @@ for (const bad of [[6,'CNY','extra'],[0,'None'],[6,{label:'CNY'}],{},'invalid',1
  assert.throws(()=>relationWrite.buildCommandValue('lines','write'),{name:'ContractGapError'});
 }
 console.log('child default/onchange many2one write identity and invalid-carrier refusal: passed');
+
+// The actual child runtime awaits native derived values before notifying the
+// parent, and never accepts a stale/failed child result as saveable data.
+const changeColumns = [
+ {name:'amount',label:'Amount',ttype:'float'},
+ {name:'derived',label:'Derived',ttype:'float',readonly:true,forceSave:true},
+];
+let changeParent = 1, changeNotifications = 0, dirtyNotifications = 0;
+let changeScope = {};
+const changeCalls: Array<{input: unknown; resolve: (value: Record<string,unknown>)=>void; reject:(error:Error)=>void}> = [];
+const fieldChanges = useOne2manyRuntime({
+ model:()=> 'x.parent', recordId:()=>0, originalValues:()=>({}), parentValues:()=>({company_id:changeParent}),
+ createScope:()=>changeScope, onchangeLinePatches:()=>[], resolveColumns:()=>changeColumns, resolvePrimaryColumn:()=> 'amount', resolveRelationOptions:()=>[],
+ markFieldChanged:()=>{ changeNotifications++; }, markDirty:()=>{ dirtyNotifications++; },
+ loadDefaults:async()=>({amount:0,derived:0}),
+ loadRowChange:async(_name,input)=>new Promise((resolve,reject)=>changeCalls.push({input,resolve,reject})),
+});
+await fieldChanges.addRow('lines');
+let changeRow=fieldChanges.fieldRows('lines')[0]!;
+const firstChange=fieldChanges.setRowField('lines',changeRow.key,changeColumns[0]!,5);
+assert.equal(fieldChanges.defaultsPending.value,true);
+assert.equal(changeNotifications,1,'parent onchange waits for child result');
+assert.equal(dirtyNotifications,1,'unsaved protection starts before network');
+assert(fieldChanges.collectValidation().issues.length>0,'pending computation must block save');
+changeCalls.at(-1)!.resolve({derived:17}); await firstChange;
+assert.equal(fieldChanges.defaultsPending.value,false);
+assert.equal(changeNotifications,2);
+assert.equal(fieldChanges.collectValidation().issues.length,0);
+assert.equal((fieldChanges.buildCommandValue('lines','write')[0]![2] as Record<string,unknown>).derived,17);
+const failedChange=fieldChanges.setRowField('lines',changeRow.key,changeColumns[0]!,6);
+changeCalls.at(-1)!.reject(new Error('native refused')); await failedChange;
+assert(fieldChanges.collectValidation().issues.includes('native refused'),'failed computation must block save');
+const oldChange=fieldChanges.setRowField('lines',changeRow.key,changeColumns[0]!,7);
+const oldCall=changeCalls.at(-1)!;
+const latestChange=fieldChanges.setRowField('lines',changeRow.key,changeColumns[0]!,8);
+oldCall.resolve({derived:999}); await oldChange;
+assert.equal(fieldChanges.defaultsPending.value,true,'old completion cannot clear newer pending');
+changeCalls.at(-1)!.resolve({derived:28}); await latestChange;
+assert.equal((fieldChanges.buildCommandValue('lines','write')[0]![2] as Record<string,unknown>).derived,28);
+const drifted=fieldChanges.setRowField('lines',changeRow.key,changeColumns[0]!,9);
+changeParent=2; changeCalls.at(-1)!.resolve({derived:888}); await drifted;
+assert(fieldChanges.collectValidation().issues.length>0,'changed parent refuses old derivation');
+assert.equal((fieldChanges.buildCommandValue('lines','write')[0]![2] as Record<string,unknown>).derived,28);
+const invalidPatch=fieldChanges.setRowField('lines',changeRow.key,changeColumns[0]!,10);
+changeCalls.at(-1)!.resolve({unrelated:1}); await invalidPatch;
+assert(fieldChanges.collectValidation().issues.length>0,'undeclared patch blocks save');
+const departed=fieldChanges.setRowField('lines',changeRow.key,changeColumns[0]!,11);
+fieldChanges.clearRows(); changeCalls.at(-1)!.resolve({derived:123}); await departed;
+assert.equal(fieldChanges.fieldRows('lines').length,0);
+assert.equal(fieldChanges.defaultsPending.value,false);
+assert.equal(fieldChanges.collectValidation().issues.length,0,'departed failure cannot contaminate new page');
+console.log('native child field onchange: pending/save, failure, latest, parent drift, invalid patch, departed page passed');
+
+await fieldChanges.addRow('lines'); changeRow=fieldChanges.fieldRows('lines')[0]!;
+const changedScope=fieldChanges.setRowField('lines',changeRow.key,changeColumns[0]!,3);
+changeScope={}; changeCalls.at(-1)!.resolve({derived:31}); await changedScope;
+assert(fieldChanges.collectValidation().issues.length>0,'same row under new contract must not become saveable');
+fieldChanges.clearRows();
+const multiColumns = [...changeColumns,{name:'second',label:'Second',ttype:'float'}];
+const multiCalls: Array<{input:{id:number;values:Record<string,unknown>;changed:string[]};resolve:(value:Record<string,unknown>)=>void}> = [];
+const multi=useOne2manyRuntime({model:()=> 'x.parent', recordId:()=>9, originalValues:()=>({lines:[42]}),parentValues:()=>({}),
+ onchangeLinePatches:()=>[],resolveColumns:()=>multiColumns,resolvePrimaryColumn:()=> 'amount',resolveRelationOptions:()=>[],
+ markFieldChanged:()=>{}, loadRowChange:async(_name,input)=>new Promise(resolve=>multiCalls.push({input,resolve})),
+});
+multi.initRows('lines',[42]);
+multi.mergeHydratedRecords('lines',[{id:42,display_name:'UI label',amount:1,derived:0,second:0}]);
+const hydrated=multi.fieldRows('lines')[0]!;
+const eventA=multi.setRowField('lines',hydrated.key,multiColumns[0]!,10);
+const eventB=multi.setRowField('lines',hydrated.key,multiColumns[2]!,20);
+assert.deepEqual(multiCalls[1]!.input.changed,['amount','second'],'latest request includes all unacknowledged field onchanges');
+assert.deepEqual(Object.keys(multiCalls[1]!.input.values).sort(),['amount','derived','second'],'loaded identity and display metadata are not business inputs');
+assert.equal(multiCalls[1]!.input.id,42,'existing identity has its own channel');
+multiCalls[1]!.resolve({derived:77}); await eventB;
+multiCalls[0]!.resolve({derived:99}); await eventA;
+assert.equal(multi.fieldRows('lines')[0]!.values.derived,77);
+assert.equal(multi.collectValidation().issues.length,0);
+const eventC=multi.setRowField('lines',hydrated.key,multiColumns[2]!,21);
+assert.deepEqual(multiCalls[2]!.input.changed,['second'],'applied fieldChanges are acknowledged');
+multiCalls[2]!.resolve({}); await eventC;
+console.log('native child onchange: contract scope fail-closed, cross-field pending union and hydrated existing row passed');

@@ -135,7 +135,8 @@
     "frontend/apps/web/src/components/design-system/ScTabs.vue",
     "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
     "frontend/apps/web/scripts/adopted_form_engine_decision_test.ts",
-    "scripts/verify/local_dev_journal_recovery.py"
+    "scripts/verify/local_dev_journal_recovery.py",
+    "addons/smart_core/tests/test_node_component_validation.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -143,12 +144,11 @@
   },
   "checks": {},
   "blockers": [
-    "FG15: saved journal lines lose entered debit/credit100 and persist all amounts0; native child field onchange/write semantics remain incomplete",
-    "FG15: saved form ui.contract.v2 rejects FEEDBACK_SOURCE_INVALID layoutContract.feedback with409",
-    "P4: HTTP account.move unlink denied403; successful exact ORM recovery is not a reusable cleanup strategy. No fresh journal creates until validated cleanup preflight/path.",
+    "FG15: native child amount onchange and saved feedback fixes pass targeted tests and rollback ORM; browser save/reload/readback on refreshed candidate remains not_run",
+    "P4: HTTP account.move unlink denied403; previous exact ORM recovery is not reusable cleanup. No fresh journal creates until validated cleanup preflight/path.",
     "FG15: posting and ordinary-role/company matrix not run"
   ],
-  "next_exact_step": "Start at L1/L2: reproduce native child debit/credit onchange and write carrier with rollback ORM test and generic runtime test; implement native declared semantics, not accounting frontend formulas. Diagnose saved-record feedback source validation. Extend P4 cleanup with exact report ownership and preflight before another fresh create. Reuse prior unrelated evidence; do not claim baseline/mainline/deployment completion.",
+  "next_exact_step": "P4 extend existing governed journal probe/recovery with exact run-owned ref/object identity, ordinary-creator ACL preflight, bounded cleanup and independent absence readback; test policy before new persistent create. Then refresh clean candidate through local.dev and run only journal save/reload/amount readback/cleanup. No full matrix, mainline or deployment claim.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1588,6 +1588,29 @@
       "result": "journal-recovery-inspect-lines.log exact object and amount0; journal-recovery-cleanup.log committed parent13+lines21/22 deletion and absence; journal-recovery-after.log independent Odoo shell process confirms parent/ref and known children absent. Original browser remains failed.",
       "review": "review_takeover approved scoped ORM recovery and actual reconciliation relation checks. Make recursion loads canonical env. No sudo or public delete-policy changes.",
       "remaining": "No fresh creates; original browser cleanup remains FAIL. This fixed recovery script accepts only this recorded object."
+    },
+    "native_child_field_onchange": {
+      "layer": "P0 smart_core native child onchange plus generic frontend consumer; existing P1 ORM test carrier only",
+      "head": "f3812808bdb12b33c968c32d0dbea38eb1f0461b",
+      "reason": "Parent line_ids onchange does not identify which child field changed; native child balance/currency derivation must execute in ORM with authorized parent/subview context. No frontend accounting formula.",
+      "scope": "First rollback native debit/credit ORM test to prove semantics, then bounded child field onchange transport and stale/save guards; feedback source issue separately within same result.",
+      "validation": "L1 then targeted nonzero backend/frontend, exact ordinary-user rollback ORM; no fresh browser creates until cleanup preflight repaired, no module upgrade or new environment needed.",
+      "status": "targeted_and_rollback_orm_passed_browser_pending",
+      "tests": "native-child-change-backend-reviewed.log 28 PASS; native-child-change-front-reviewed2.log create defaults55 plus runtime race/scope/dirty/write cases, strict+basis PASS; native-child-change-loader-tests.log real loader/refusal and backend28 PASS; native-child-change-handler-orm.log exact1 PASS.",
+      "result": "Native child debit100/credit100 derive balances +/-100 and amount_currency +/-100; actual ORM save preserves totals100/100. Existing child edit produces120 without persistence; foreign parent rejected. No frontend accounting formulas.",
+      "review": "review_takeover three S2 closed: scope drift blocking, existing hydrated fields filtered, union pending changes. No remaining blocker in scoped change.",
+      "limits": "Child warning/modifier/line patches explicitly rejected. Browser runtime remains previous c0624c553; no fresh create this turn."
+    },
+    "native_saved_feedback": {
+      "layer": "P0 smart_core native-view-bound ORM feedback read; generic mechanism, no account model special cases; P1 test carrier only",
+      "head": "f3812808bdb12b33c968c32d0dbea38eb1f0461b plus explicit current dirty scope",
+      "reason": "Strict custom scalar compute dependency closure rejects genuine native relation/dotted/stored/compute_sudo fields. Actor get_view independently binds native alert host, first content, raw/compiled condition and top-level field set; ordinary ORM direct read preserves ACL/rules/field/context checks. Custom declarations remain strict, partitioned per plan.",
+      "validation": "L1 native-feedback-final-guards.log PASS including assembler cache version/digest; native-feedback-reviewed-unit.log 30+154+48 PASS; native-feedback-reviewed-orm.log exact1 ordinary accounting_user saved account.move contract PASS. No module upgrade: Python only; no persistent write: rollback test. L4 browser not_run pending reusable cleanup.",
+      "failures": "saved-journal-feedback-before/nodes.log reproduced source invalid. native-feedback-orm.log progressed to COMPONENT_CAPABILITY_REQUIRED because test omitted browser capabilities; corrected test request, no product gate weakening.",
+      "review": "review_takeover final no discovered S1/S2; residual host/ancestor/source groups explicitly refused and tested; actual ordinary-user ORM success confirmed.",
+      "limits": "Residual XML groups require explicit refusal; not full groups-expression support. No browser save/reload acceptance yet. Prior page evidence remains tied to earlier candidates.",
+      "reuse": "Child tests unchanged by feedback-only node validation/cache edits; cache version-only handler change does not alter saved-record assembly algorithm, which is revalidated per request. Existing targeted ORM result reused; assembler pin guard separately passed.",
+      "rollback": "Revert native feedback reader and paired cache pin to restore prior explicit rejection; no data migration."
     }
   }
 }

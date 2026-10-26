@@ -219,6 +219,17 @@ for (const sideEffects of [{ warnings: [{ message: 'Native warning' }] }, { modi
   await assert.rejects(fields.loadOne2manyCreateDefaults('line_ids', { model: 'x.parent', res_id: null, values: {} }), /尚未接入/);
 }
 childInitializationSideEffects = {};
+const rowChangeResult = await fields.loadOne2manyRowChange('line_ids', { id: 4, values: { name: 'Edited' }, changed: ['name'] },
+  { model: 'x.parent', res_id: 9, view_id: 17, values: { owner_id: 2 } });
+equal(rowChangeResult, {name:'Native name'}, 'child edit consumes native result');
+const childEditRequest=childInitializationRequests.at(-1)!;
+equal(childEditRequest.child_onchange, {field:'line_ids',fields:['name','internal_note'],values:{name:'Edited'},changed_fields:['name'],record_id:4}, 'child edit uses explicit owned identity and changed fields');
+equal(childEditRequest.view_id,17,'child edit retains selected parent view');
+equal(childEditRequest.context, {company_id:8,allowed_company_ids:[8]}, 'child edit retains authoritative company context');
+childInitializationSideEffects={warnings:[{message:'Native warning'}]};
+await assert.rejects(fields.loadOne2manyRowChange('line_ids',{id:0,values:{name:'Edited'},changed:['name']},
+ {model:'x.parent',res_id:null,values:{}}),/尚未接入/);
+childInitializationSideEffects={};
 
 guarded.clearRelationRuntime();
 const labelOld = fields.hydrateSelectedRelationOptions();

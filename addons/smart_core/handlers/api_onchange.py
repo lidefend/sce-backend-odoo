@@ -22,7 +22,7 @@ except ImportError:  # pragma: no cover - compatibility for lightweight boundary
     def record_in_business_scope(env_model, record_id, params=None, context=None):
         return record_in_project_scope(env_model, record_id, selected_record_context_id_from_context(params, context))
 from ..core.request_params import parse_bool, parse_positive_int
-from ..core.native_onchange_spec import build_native_onchange_spec, normalize_native_onchange_values, initialize_native_child, NativeOnchangeSpecError
+from ..core.native_onchange_spec import build_native_onchange_spec, normalize_native_onchange_values, initialize_native_child, onchange_native_child, NativeOnchangeSpecError
 from ..core.draft_feedback import (
     CAPABILITY as FEEDBACK_DRAFT_CAPABILITY,
     DraftFeedbackError,
@@ -493,7 +493,7 @@ class ApiOnchangeHandler(BaseIntentHandler):
 
         values = self._normalize_values(env_model, params.get("values") if isinstance(params.get("values"), dict) else {})
         changed_fields = self._normalize_changed_fields(env_model, params.get("changed_fields") or params.get("changed"))
-        if not changed_fields and not values and "child_initialization" not in params:
+        if not changed_fields and not values and "child_initialization" not in params and "child_onchange" not in params:
             response = {
                 "ok": True,
                 "data": {
@@ -522,11 +522,14 @@ class ApiOnchangeHandler(BaseIntentHandler):
             if any(name not in fields_spec or name not in values for name in changed_fields):
                 raise NativeOnchangeSpecError("changed field absent from view or values")
             env_model.check_field_access_rights("read", list(values))
-            if "child_initialization" in params:
+            if "child_initialization" in params or "child_onchange" in params:
+                if "child_initialization" in params and "child_onchange" in params:
+                    raise NativeOnchangeSpecError("ambiguous child operation")
                 if params.get("changed_fields") != [] or params.get("changed") or type(params.get("values")) is not dict or set(params["values"]) != set(values):
                     raise NativeOnchangeSpecError("invalid parent initialization values")
-                env_model, onchange_result = initialize_native_child(
-                    env_model, values, fields_spec, params["child_initialization"], record_id)
+                operation = initialize_native_child if "child_initialization" in params else onchange_native_child
+                block = params["child_initialization"] if "child_initialization" in params else params["child_onchange"]
+                env_model, onchange_result = operation(env_model, values, fields_spec, block, record_id)
             else:
                 onchange_result = env_model.onchange(values, changed_fields, fields_spec)
         except NativeOnchangeSpecError:

@@ -454,6 +454,27 @@ class TestApiOnchangeRecordIdBoundaries(unittest.TestCase):
         native.assert_not_called()
         self.assertEqual(result['error']['reason_code'], 'ONCHANGE_ACCESS_DENIED')
 
+    def test_child_field_onchange_uses_declared_changed_field(self):
+        parent, child, params = self._child_initialization_case()
+        block = params.pop('child_initialization')
+        params['child_onchange'] = {**block, 'changed_fields': ['name'], 'record_id': 0}
+        with patch.object(child, 'onchange', create=True, return_value={'value': {'name': 'Changed'}}) as native:
+            result = self.module.ApiOnchangeHandler(env=_Env({'x.model': parent}), params=params).handle()
+        self.assertTrue(result['ok'], result)
+        native.assert_called_once_with({'name': '', 'parent_id': {}}, ['name'], {'name': {}})
+
+    def test_child_field_onchange_rejects_invalid_change_and_identity(self):
+        for change in [{'changed_fields': []}, {'changed_fields': [{}]}, {'changed_fields': ['unknown']}, {'changed_fields': ['name', 'name']},
+                       {'record_id': -1}, {'record_id': True}, {'record_id': 7}, {'values': {}},
+                       {'values': {'name': '', 'parent_id': 4}}]:
+            parent, child, params = self._child_initialization_case()
+            block = params.pop('child_initialization')
+            params['child_onchange'] = {**block, 'changed_fields': ['name'], 'record_id': 0, **change}
+            with patch.object(child, 'onchange', create=True) as native:
+                result = self.module.ApiOnchangeHandler(env=_Env({'x.model': parent}), params=params).handle()
+            native.assert_not_called()
+            self.assertEqual(result['error']['reason_code'], 'ONCHANGE_SPEC_INVALID', result)
+
     def test_native_called_once_with_full_view_spec(self):
         model = _ManualOnchangeModel()
         handler = self.module.ApiOnchangeHandler(env=_Env({"x.manual": model}), params={

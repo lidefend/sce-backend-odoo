@@ -128,8 +128,17 @@ def normalize_native_onchange_values(model, values):
 
 
 def initialize_native_child(parent, parent_values, parent_spec, block, parent_id=0):
-    """Initialize a new child using the authorized parent view and ORM inverse."""
-    if type(block) is not dict or set(block) != {'field', 'fields', 'values'}:
+    return _evaluate_native_child(parent, parent_values, parent_spec, block, parent_id, initialize=True)
+
+
+def onchange_native_child(parent, parent_values, parent_spec, block, parent_id=0):
+    return _evaluate_native_child(parent, parent_values, parent_spec, block, parent_id, initialize=False)
+
+
+def _evaluate_native_child(parent, parent_values, parent_spec, block, parent_id, *, initialize):
+    """Run child ORM semantics with the authorized parent view and inverse."""
+    keys = {'field', 'fields', 'values'} if initialize else {'field', 'fields', 'values', 'changed_fields', 'record_id'}
+    if type(block) is not dict or set(block) != keys:
         raise NativeOnchangeSpecError('invalid child initialization request')
     name, names, values = block['field'], block['fields'], block['values']
     if type(name) is not str or type(names) is not list or not names or any(type(n) is not str for n in names):
@@ -139,7 +148,6 @@ def initialize_native_child(parent, parent_values, parent_spec, block, parent_id
         raise NativeOnchangeSpecError('child relation absent from authorized parent view')
     child = parent.env[field.comodel_name]
     child.check_access_rights('read')
-    child.check_access_rights('create')
     inverse = field.inverse_name
     inverse_field = child._fields.get(inverse)
     if not inverse_field or inverse_field.type != 'many2one' or inverse_field.comodel_name != parent._name:
@@ -155,9 +163,28 @@ def initialize_native_child(parent, parent_values, parent_spec, block, parent_id
         raise NativeOnchangeSpecError('parent identity mismatch')
     parent.check_field_access_rights('read', list(parent_values))
     child.check_field_access_rights('read', [*names, inverse])
+    changed = [] if initialize else block['changed_fields']
+    child_id = 0 if initialize else block['record_id']
+    if type(child_id) is not int or child_id < 0:
+        raise NativeOnchangeSpecError('invalid child identity')
+    if not initialize and (type(changed) is not list or not changed
+                           or any(type(n) is not str or n not in names or n not in values for n in changed)
+                           or len(set(changed)) != len(changed)):
+        raise NativeOnchangeSpecError('invalid changed child fields')
+    if child_id:
+        if not parent_id:
+            raise NativeOnchangeSpecError('existing child requires persisted parent')
+        child = child.browse(child_id).exists()
+        if not child:
+            raise NativeOnchangeSpecError('child does not exist')
+        child.check_access_rule('read')
+        if child[inverse].id != parent_id:
+            raise NativeOnchangeSpecError('child belongs to another parent')
+    else:
+        child.check_access_rights('create')
     parent_draft = dict(parent_values)
     parent_draft.pop('id', None)
     if parent_id:
         parent_draft['id'] = parent_id
     child_values = {**values, inverse: parent_draft}
-    return child, child.onchange(child_values, [], {n: allowed[n] for n in names})
+    return child, child.onchange(child_values, changed, {n: allowed[n] for n in names})

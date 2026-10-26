@@ -937,6 +937,8 @@ const {
     resolveContractV2ModifierValues(v2ContractStore.value, formData), (effectiveFieldDescriptor(fieldName) as Record<string, unknown> | undefined)?.context,
   ),
   loadDefaults: (fieldName) => loadOne2manyCreateDefaults(fieldName, one2manyParentDraftRequest()),
+  loadRowChange: (fieldName, row) => loadOne2manyRowChange(fieldName, row, one2manyParentDraftRequest()),
+  markDirty: (fieldName) => dirtyFieldSet.add(fieldName),
   createDraftIdentity: (fieldName) => ({ request: one2manyParentDraftRequest(),
     context: resolveContractFormReadContext(v2ContractStore.value), fieldContext: (effectiveFieldDescriptor(fieldName) as Record<string, unknown> | undefined)?.context }),
   createScope: () => v2ContractStore.value,
@@ -1701,7 +1703,7 @@ const actionPlaceholderGate = computed(() => resolveFormActionPlaceholderGate({
 }));
 const {
   relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions,
-  loadOne2manyCreateDefaults, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
+  loadOne2manyCreateDefaults, loadOne2manyRowChange, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
   nativeFieldSubview, one2manyColumns, one2manyDataColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId,
   one2manyCreateLabel, one2manyRemovalLabels, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows,
   prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, one2manyCellError, one2manyColumnQueryScope, queryOne2manyColumnOptions, setRelationKeyword, filteredRelationOptions, relationModel,

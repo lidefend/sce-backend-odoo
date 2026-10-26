@@ -1429,3 +1429,38 @@ HTTP清理也返回403：产品未开放account.move unlink。未为测试放宽
 本次两项阻断是功能/平台内核问题，不是demo缺少科目：有效科目仍有49条。测试草稿不纳入demo基线。
 下一步从定向回滚ORM及前端runtime测试开始补齐子行金额联动、保存记录反馈源，再恢复保存回读验收；
 过账、普通角色与跨公司矩阵仍未验证。回滚应按逆依赖撤销对应产品提交，保留失败证据，不恢复空域查询或放宽校验。
+
+
+## 原生子行金额联动与已保存反馈读取（2026-10-26）
+
+候选阶段：`f3812808bdb12b33c968c32d0dbea38eb1f0461b` 加本轮显式未提交范围；单writer、单run。
+P0 `smart_core` 与通用前端消费者负责原生语义；P1仅复用会计权限测试载体，不添加会计公式或行业默认值。
+沿用 sc-local-dev/sc_dev_demo/ns_000000000002/sc_local_dev_odoo_data，测试事务回滚；未新增持久凭证。
+
+原生子行字段 onchange：传递父记录/原生视图、子字段集合、实际changed_fields和已有子行身份，
+从当前用户父表单及子视图推导字段规格，验证已有子行确属该父记录。前端按行请求版本接收服务端派生值，
+待返回及失败均阻止保存；立即登记dirty，累计未确认字段，防并发编辑丢失不同字段的联动。
+父草稿/页面身份漂移显式阻断；已有行显示元数据不进入业务字段输入。没有前端借贷计算。
+真实普通角色 rollback ORM 证实借贷各100经原生child onchange导出balance/amount_currency正负100，
+实际保存合计仍为100/100；已有行联动120不隐式落库，错误父记录拒绝。
+独立复核发现的scope漂移、已有行id混入、跨字段并发遗漏三项S2已修复并补用例。
+
+已保存反馈：原校验器递归标量依赖，拒绝原生计算字段的关系/点路径/compute_sudo/无_depends。
+新增路径从普通用户get_view实际XML证明host、首个内容节点、原始invisible及AST、顶层字段；
+关系子视图不授予父字段权限，残留host/祖先/source groups拒绝。仅按当前记录ACL/rule/字段权限读取
+提示直接需要的字段，使用原生ORM计算语义；不sudo业务记录，不重写计算方法。
+逐plan隔离原生和自定义读取，自定义sc_feedback_usage仍走原严格校验，不能借同名字段绕过。
+缓存版本与输入摘要同步。独立复核无已发现S1/S2。
+
+证据均在原 `.runtime/product-user-gap-closeout-20261026/`：
+- `native-child-change-backend-reviewed.log` 28项；`native-child-change-front-reviewed2.log` create-default55及实际行runtime、strict/basis通过；`native-child-change-loader-tests.log` 实际传输/显式拒绝及后端28通过。
+- `native-child-change-handler-orm.log` 精确1项真实子行onchange/save/ownership回归通过。
+- `saved-journal-feedback-before.log` 与 nodes日志保留真实409；`native-feedback-orm.log` 暴露测试请求缺客户端capability，修正测试后 `native-feedback-reviewed-orm.log` 普通会计角色保存记录契约成功，精确1项通过。
+- `native-feedback-reviewed-unit.log` 30+154+48项通过，含来源伪造、其他alert内容借用、子视图、groups、跨公司/用户拒绝和混合来源；`native-feedback-final-guards.log` L1及assembler缓存守卫通过。
+
+结论仅为上述两项修复的定向和rollback ORM验证通过，**FG15整体仍开放**。
+本地浏览器服务仍是c0624c553，未将测试结果描述为新版本页面验收。
+原生子行warning/modifier/line patches当前显式拒绝；完整groups表达能力、过账和角色公司矩阵未验收。
+下一步先完善P4可复用的精确清理/preflight，解决HTTP unlink403条件下的自有测试草稿恢复，
+再刷新干净候选并重验唯一凭证保存、刷新、金额权威回读、清理和独立不存在证明。禁止直接再创持久草稿。
+无模块升级、demo重建、远端发布、主线集成或日常服务器部署；不声明完整基线/产品交付成立。

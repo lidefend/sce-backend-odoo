@@ -31,6 +31,7 @@ export async function triggerOnchange(params: {
   changed_fields: string[];
   context?: Record<string, unknown>;
   child_initialization?: { field: string; fields: string[]; values: Record<string, unknown> };
+  child_onchange?: { field: string; fields: string[]; values: Record<string, unknown>; changed_fields: string[]; record_id: number };
   feedback_evaluation?: FeedbackDescribeRequest | FeedbackEvaluateRequest;
   client_contract_capabilities?: string[];
 }) {
@@ -44,6 +45,7 @@ export async function triggerOnchange(params: {
       changed_fields: params.changed_fields,
       context: params.context || {},
       ...(params.child_initialization ? { child_initialization: params.child_initialization } : {}),
+      ...(params.child_onchange ? { child_onchange: params.child_onchange } : {}),
       ...(params.feedback_evaluation ? { feedback_evaluation: params.feedback_evaluation } : {}),
       ...(params.client_contract_capabilities
         ? { client_contract_capabilities: params.client_contract_capabilities }

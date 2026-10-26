@@ -330,3 +330,74 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
         self.assertEqual(existing.ref, 'Synthetic child-init origin')
         self.assertEqual(existing.currency_id.id, persisted_currency)
         self.assertFalse(existing.line_ids)
+
+
+    def test_native_child_amount_onchange_preserves_saved_amounts(self):
+        from odoo.addons.smart_core.core.native_onchange_spec import (
+            build_native_onchange_spec, normalize_native_onchange_values,
+        )
+        user = self._subject('accounting_user')
+        parent = self.env['account.move'].with_user(user)
+        child = parent.env['account.move.line']
+        self.assertFalse(child.env.su)
+        account = self.env['account.account'].create({
+            'name': 'Synthetic child amount', 'code': 'AUTH0191',
+            'account_type': 'asset_current', 'company_id': self.env.company.id,
+        })
+        parent_values = {'move_type': 'entry', 'journal_id': self.journal.id,
+                         'company_id': self.env.company.id, 'currency_id': self.env.company.currency_id.id}
+        spec = build_native_onchange_spec(parent)['line_ids']['fields']
+        commands = []
+        for changed, sign in [('debit', 1), ('credit', -1)]:
+            values = {'account_id': account.id, 'currency_id': self.env.company.currency_id.id,
+                      'debit': 0.0, 'credit': 0.0, 'balance': 0.0, 'amount_currency': 0.0}
+            values[changed] = 100.0
+            result = child.onchange({**values, 'move_id': parent_values}, [changed], spec)
+            patch = normalize_native_onchange_values(child, result['value'])
+            self.assertEqual(patch.get('balance'), sign * 100, result)
+            self.assertEqual(patch.get('amount_currency'), sign * 100, result)
+            from odoo.addons.smart_core.handlers.api_onchange import ApiOnchangeHandler
+            response = ApiOnchangeHandler(parent.env, payload={'params': {
+                'model': 'account.move', 'values': parent_values, 'changed_fields': [],
+                'child_onchange': {'field': 'line_ids', 'fields': list(values), 'values': values,
+                                   'changed_fields': [changed], 'record_id': 0},
+            }}).handle()
+            self.assertTrue(response.get('ok'), response)
+            self.assertEqual(response['data']['patch']['balance'], sign * 100, response)
+            self.assertEqual(response['data']['patch']['amount_currency'], sign * 100, response)
+            commands.append((0, 0, {**values, 'balance': patch['balance'], 'amount_currency': patch['amount_currency']}))
+        record = parent.create({**parent_values, 'ref': 'Synthetic child amount roundtrip', 'line_ids': commands})
+        self.assertEqual(sum(record.line_ids.mapped('debit')), 100)
+        self.assertEqual(sum(record.line_ids.mapped('credit')), 100)
+        self.assertEqual(sorted(record.line_ids.mapped('balance')), [-100, 100])
+
+        line = record.line_ids[0]
+        from odoo.addons.smart_core.handlers.api_onchange import ApiOnchangeHandler
+        persisted = {'account_id': account.id, 'currency_id': self.env.company.currency_id.id,
+                     'debit': 120.0, 'credit': 0.0, 'balance': 100.0, 'amount_currency': 100.0}
+        request = {'model': 'account.move', 'res_id': record.id, 'values': parent_values, 'changed_fields': [],
+                   'child_onchange': {'field': 'line_ids', 'fields': list(persisted), 'values': persisted,
+                                      'changed_fields': ['debit'], 'record_id': line.id}}
+        response = ApiOnchangeHandler(parent.env, payload={'params': request}).handle()
+        self.assertTrue(response.get('ok'), response)
+        self.assertEqual(response['data']['patch']['balance'], 120, response)
+        line.invalidate_recordset()
+        self.assertEqual(line.balance, 100, 'onchange must not persist child edits')
+        other = parent.create({**parent_values, 'ref': 'Synthetic unrelated parent'})
+        request['res_id'] = other.id
+        denied = ApiOnchangeHandler(parent.env, payload={'params': request}).handle()
+        self.assertEqual(denied['error']['reason_code'], 'ONCHANGE_SPEC_INVALID', denied)
+
+
+    def test_native_saved_journal_feedback_contract(self):
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+        user = self._subject('accounting_user')
+        record = self.env['account.move'].with_user(user).create({'journal_id': self.journal.id, 'ref': 'Synthetic saved contract'})
+        self.assertFalse(record.env.su)
+        result = UiContractV2Handler(record.env, su_env=self.env).handle({
+            'op': 'model', 'model': 'account.move', 'view_id': self.env.ref('account.view_move_form').id,
+            'view_type': 'form', 'render_profile': 'edit', 'record_id': record.id,
+            'client_contract_capabilities': ['form.feedback.message.v1', 'form.navigation.anchor.v1', 'form.feedback.draft.v1'],
+        })
+        result = result.to_legacy_dict() if hasattr(result, 'to_legacy_dict') else result
+        self.assertTrue(result.get('ok', True), result)

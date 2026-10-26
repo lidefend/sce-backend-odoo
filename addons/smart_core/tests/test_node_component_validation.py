@@ -282,4 +282,112 @@ class NodeValidationTests(unittest.TestCase):
             if case == 'forbidden': self.assertEqual(result.error['reason_code'], 'FEEDBACK_SOURCE_FORBIDDEN')
 
 
+class NativeSavedFeedbackTests(unittest.TestCase):
+    def setUp(self):
+        self.record = Record()
+        self.record._fields['message'].compute_sudo = True
+        self.record._fields['active'].compute = '_native_without_dependency_metadata'
+        old_env = self.record.env
+        class ActorEnv:
+            def __getitem__(self, model):
+                if model != 'ir.ui.view': raise AssertionError(model)
+                return self
+            def sudo(self): return self
+            def browse(self, view_id):
+                if view_id != 42: raise AssertionError(view_id)
+                return SimpleNamespace(model='fixture.record', type='form')
+        self.record.env = ActorEnv()
+        self.record.env.__dict__.update(old_env.__dict__)
+        self.arch = '<form><field name="active"/><div class="alert" invisible="not active"><field name="message"/></div></form>'
+        self.record.get_view = lambda **kw: {'id': 42, 'arch': self.arch}
+        self.env = Env(self.record)
+        source = dict(type='field', name='message', containerId='message',
+                      nativeLocator='/form[1]/div[1]/field[1]', occurrenceIndex=1,
+                      sourceAuthority={'kind': 'native_view'})
+        self.host = dict(type='container', containerId='host', nativeLocator='/form[1]/div[1]',
+                         attributes={'invisible': 'not active'}, children=[source], componentKey='sc.feedback.message',
+                         componentConfig={'purpose':'advisory', 'contentRef':{'containerId':'message'}},
+                         modifiers={'invisible':{'kind':'not','expr':{'kind':'field_truthy','field':'active'}}})
+        self.contract = {'pageInfo':{'model':self.record._name,'viewType':'form'},
+                         'dataContract':{'mainData':{'id':7},'dataMeta':{'sourceContext':{'formViewId':42}}},
+                         'layoutContract':{'containerTree':[self.host]}}
+        self.native = copy.deepcopy([self.host])
+
+    def validate(self): validate_final_nodes(self.env, self.contract, self.native)
+
+    def test_native_orm_semantics_and_only_direct_fields(self):
+        self.validate()
+        self.assertEqual(self.record.reads[-1][-1], ('active', 'message'))
+        self.assertNotIn('visible', self.host)
+        self.record.amount = 1
+        self.validate()
+        self.assertFalse(self.host['visible'])
+
+    def test_native_source_and_condition_forgery(self):
+        changes = [lambda: self.host.update(nativeLocator='/form[1]/div[2]'),
+                   lambda: self.host['modifiers'].update(invisible={'kind':'field_truthy','field':'active'}),
+                   lambda: self.host['attributes'].update(invisible='active'),
+                   lambda: self.host['children'][0].update(nativeLocator='/form[1]/field[1]'),
+                   lambda: setattr(self, 'arch', self.arch.replace('name="message"','name="amount"'))]
+        for change in changes:
+            self.setUp(); change()
+            with self.assertRaises(FormConfigurationError): self.validate()
+            self.assertFalse(self.record.reads)
+
+    def test_subview_fields_do_not_authorize_parent(self):
+        self.arch = self.arch.replace('<field name="active"/>', '<field name="lines"><tree><field name="active"/></tree></field>')
+        with self.assertRaises(FormConfigurationError): self.validate()
+        self.assertFalse(self.record.reads)
+
+    def test_acl_rule_field_and_context_boundaries(self):
+        changes = [lambda: self.record.denied.add('message'),
+                   lambda: self.record.forbidden_users.add(39),
+                   lambda: self.record.forbidden_companies.add(1),
+                   lambda: setattr(self.record.env, 'su', True),
+                   lambda: setattr(self.record, 'bad_read_id', True)]
+        for change in changes:
+            self.setUp(); change()
+            with self.assertRaises(FormConfigurationError) as caught: self.validate()
+            self.assertEqual(caught.exception.code, 'FEEDBACK_SOURCE_FORBIDDEN')
+
+    def test_mixed_custom_source_cannot_borrow_native_authority(self):
+        custom = copy.deepcopy(self.host)
+        custom.update(containerId='custom', children=[])
+        custom.pop('nativeLocator')
+        self.contract['layoutContract']['containerTree'].append(custom)
+        with self.assertRaises(FormConfigurationError): self.validate()
+        self.assertFalse(self.record.reads)
+
+    def test_text_and_relation_condition(self):
+        self.record._fields['active'].type = 'many2many'
+        self.arch = self.arch.replace('<field name="message"/>', 'Native message')
+        source = self.host['children'][0]
+        source.update(type='text', text='Native message', nativeLocator='/form[1]/div[1]/text[1]')
+        source.pop('name')
+        self.native = copy.deepcopy([self.host])
+        self.record.read = lambda names: [{'id':7, 'active':[]}]
+        self.validate()
+        self.assertFalse(self.host['visible'])
+        self.host.pop('visible')
+        self.record.read = lambda names: [{'id':7, 'active':[15]}]
+        self.validate()
+        self.assertNotIn('visible', self.host)
+
+    def test_group_restricted_host_ancestor_and_source(self):
+        for tag in ('<form', '<div', '<field name="message"'):
+            self.setUp()
+            self.arch = self.arch.replace(tag, tag + ' groups="fixture.restricted"', 1)
+            with self.assertRaises(FormConfigurationError) as caught: self.validate()
+            self.assertEqual(caught.exception.code, 'FEEDBACK_SOURCE_FORBIDDEN')
+            self.assertFalse(self.record.reads)
+
+    def test_other_native_alert_cannot_supply_content(self):
+        self.arch = self.arch.replace('</form>', '<div class="alert" invisible="not active"><field name="message"/></div></form>')
+        source = self.host['children'][0]
+        source['nativeLocator'] = '/form[1]/div[2]/field[1]'
+        self.native = copy.deepcopy([self.host])
+        with self.assertRaises(FormConfigurationError): self.validate()
+        self.assertFalse(self.record.reads)
+
+
 if __name__ == '__main__': unittest.main()
