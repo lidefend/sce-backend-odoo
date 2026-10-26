@@ -17,6 +17,7 @@
  * index or a button verdict read as field authority each change an expectation.
  */
 import assert from 'node:assert/strict';
+import { isContractGapError } from '../src/app/contract/contractGap';
 import { computed, reactive, ref } from 'vue';
 import { createContractV2Store } from '../src/app/contracts/v2/store';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
@@ -358,7 +359,7 @@ const requiredNode = (name: string, readonly = false) => ({
   type: 'field', name, span: 12, readonly,
   fieldInfo: { name, type: 'char', required: true, readonly: false },
 });
-const requiredTree = ref<any[]>([
+const requiredTree = ref<Array<Record<string, unknown>>>([
   requiredNode('shared', true),
   { type: 'group', hidden: true, children: [requiredNode('shared')] },
   { ...requiredNode('lines', true), children: [requiredNode('child_only')] },
@@ -367,7 +368,7 @@ let occurrenceReadonly = false;
 const requiredSchemas = useRecordFormFieldSchemas({
   v2ContractStore: ref(null), nativeFormLayoutNodes: requiredTree,
   isNativeFieldVisible: () => true,
-  isNativeLayoutNodeVisible: (node: any) => !node.hidden,
+  isNativeLayoutNodeVisible: (node: { hidden?: boolean }) => !node.hidden,
   runtimeOccurrenceState: () => ({ readonly: occurrenceReadonly, required: false }),
   recordId: computed(() => 0), rights: computed(() => ({ create: true, write: true })),
   contractFieldLabel: (name: string) => name,
@@ -376,7 +377,7 @@ const requiredSchemas = useRecordFormFieldSchemas({
 } as never);
 assert.deepEqual(requiredSchemas.nativeRequiredEditableFieldNames(), [],
   'readonly occurrence plus hidden editable duplicate must not demand an editor rule; child fields stay child-owned');
-(requiredTree.value[1] as any).hidden = false;
+requiredTree.value[1].hidden = false;
 assert.deepEqual(requiredSchemas.nativeRequiredEditableFieldNames(), ['shared'],
   'a visible editable duplicate requires validation even though another occurrence is readonly');
 occurrenceReadonly = true;
@@ -387,11 +388,11 @@ requiredTree.value.push(requiredNode('shared'));
 assert.deepEqual(requiredSchemas.nativeRequiredEditableFieldNames(), ['shared'], 'duplicate business fields are deduplicated');
 requiredTree.value = [{ ...requiredNode('missing'), nativeLocator: '/form/field[1]', occurrenceIndex: 1, widgetId: 'missing.widget' }];
 assert.throws(() => requiredSchemas.nativeRequiredEditableFieldNames(),
-  (error: any) => error.name === 'ContractGapError' && error.defect.missing.includes('fieldDescriptor'),
+  (error: unknown) => isContractGapError(error) && error.defect.missing.includes('fieldDescriptor'),
   'visible occurrence without its strict descriptor cannot become a legal empty validation scope');
 requiredTree.value = [{ type: 'field', name: 'unknown', span: 12 }];
 assert.throws(() => requiredSchemas.nativeRequiredEditableFieldNames(),
-  (error: any) => error.name === 'ContractGapError', 'missing field metadata fails closed');
+  (error: unknown) => isContractGapError(error), 'missing field metadata fails closed');
 requiredTree.value = [];
 assert.equal(requiredSchemas.nativeRequiredEditableFieldNames(), null, 'no native tree explicitly selects legacy validation authority');
 console.log('[native-required-coverage] PASS cases=7');

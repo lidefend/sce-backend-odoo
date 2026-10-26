@@ -52,7 +52,6 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     loadActionContractV2,
     loadError,
     loadModelContractV2,
-    markFieldChanged,
     menuId,
     model,
     nativeChatterAutoLoadKey,

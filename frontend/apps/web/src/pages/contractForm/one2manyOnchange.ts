@@ -76,7 +76,8 @@ export function replayOne2manyOnchange(params: {
         if (!value || typeof value !== 'object' || Array.isArray(value)) return fail();
         const raw = value as Record<string, unknown>;
         if (Object.prototype.hasOwnProperty.call(raw, 'id') && raw.id !== recordId) return fail();
-        const { id: _identity, ...fields } = raw;
+        const fields = { ...raw };
+        delete fields.id;
         data = payload(fields);
       }
       const row = link(recordId);

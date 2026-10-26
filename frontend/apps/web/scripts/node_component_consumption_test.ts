@@ -170,8 +170,8 @@ for(const mutation of ['key','purpose','version','extra','missing','duplicate','
 });
 test('actual decoder presenter bridge',()=>{
   const b=bridge();assert.equal(b.primaryNodes[0].containerId,'feedback');
-  assert.equal((b.primaryNodes[0] as any).nodeComponent.content,'Read this');
-  assert.equal((b.primaryNodes[0].children![0] as any).feedbackContentOwned,true);
+  assert.equal((b.primaryNodes[0] as { nodeComponent?: { content: string } }).nodeComponent?.content,'Read this');
+  assert.equal((b.primaryNodes[0].children![0] as { feedbackContentOwned?: boolean }).feedbackContentOwned,true);
 });
 export function navigationFixture() {
   const s=fixture();s.layoutContract.componentRegistry['sc.navigation.anchor']={version:'1.0.0'};

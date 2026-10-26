@@ -181,13 +181,13 @@ const store = ref({
   snapshot: { dataContract: { dataMeta: { sourceContext: { context: { company_id: 8, allowed_company_ids: [8] } } } } },
 });
 class Denied extends Error { status = 403; reasonCode = 'PERMISSION_DENIED'; }
-const childInitializationRequests: any[] = [];
+const childInitializationRequests: Array<Record<string, unknown>> = [];
 let childInitializationSideEffects: Record<string, unknown> = {};
 let childInitializationPatch: Record<string, unknown> = { name: 'Native name', internal_note: 'Native computed' };
 const fields = scope.run(() => useRecordRelationshipFields({
   ...guarded, ApiError: Denied, formData, v2ContractStore: store,
   fetchCreateDefaults: async () => ({ record: { name: 'Default name' } }),
-  initializeChild: async (request: unknown) => { childInitializationRequests.push(request); return { patch: childInitializationPatch, ...childInitializationSideEffects }; },
+  initializeChild: async (request: unknown) => { assert(request && typeof request === 'object' && !Array.isArray(request)); childInitializationRequests.push(request as Record<string, unknown>); return { patch: childInitializationPatch, ...childInitializationSideEffects }; },
   one2manySubviewPolicies: () => ({}), one2manyCanCreateFromPolicies: () => true,
   relationFieldDescriptors: ref({ 'x.line': { name: { type: 'char' }, internal_note: { type: 'char' } } }),
 
