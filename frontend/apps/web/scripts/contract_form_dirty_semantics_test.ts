@@ -88,6 +88,7 @@ function harness(options: {
   const api = useRecordFormState(context);
   return {
     api,
+    context,
     dirtyFieldSet,
     changedFieldSet,
     hasTimer: () => timer !== null,
@@ -216,3 +217,37 @@ function harness(options: {
 }
 
 process.stdout.write('contract_form_dirty_semantics_test: PASS\n');
+
+
+const { useOne2manyRuntime } = await import('../src/pages/contractForm/useOne2manyRuntime');
+const replayColumns = [{ name: 'name', label: 'Name', ttype: 'char' }];
+const child = useOne2manyRuntime({ model: () => 'project.project', recordId: () => 581,
+  originalValues: () => ({ lines: [42] }), parentValues: () => ({}), onchangeLinePatches: () => [],
+  resolveColumns: () => replayColumns, resolvePrimaryColumn: () => 'name', resolveRelationOptions: () => [], markFieldChanged: () => {},
+});
+child.initRows('lines', [42]);
+await child.addRow('lines');
+const h = harness({ fields: { name: { ttype: 'char' }, lines: { ttype: 'one2many' } },
+  formData: { name: 'Keep', lines: [42] }, originalValues: { name: 'Keep', lines: [42] } });
+h.context.prepareOne2manyOnchange = child.prepareOnchangeRows;
+h.context.one2manyFieldRows = child.fieldRows;
+h.context.buildOne2manyCommandValue = child.buildCommandValue;
+for (const malformed of ['bad', { id: 42 }, null]) {
+  h.context.requestOnchange = async () => ({ patch: { name: 'Must not apply', lines: malformed } });
+  const beforeRows = JSON.stringify(child.fieldRows('lines'));
+  const beforeValues = JSON.stringify(h.context.formData);
+  h.changedFieldSet.add('name');
+  await h.api.runOnchangeRoundtrip();
+  assert.equal(JSON.stringify(child.fieldRows('lines')), beforeRows);
+  assert.equal(JSON.stringify(h.context.formData), beforeValues);
+  assert.equal(h.context.applyingOnchangePatch.value, false);
+  assert.equal(h.context.validationErrors.value.length, 1);
+}
+h.context.requestOnchange = async () => ({ patch: { name: 'Updated', lines: [[1, 42, { name: 'Server update' }]] } });
+h.changedFieldSet.add('name');
+await h.api.runOnchangeRoundtrip();
+assert.equal(h.context.formData.name, 'Updated');
+assert.equal(child.fieldRows('lines')[0]!.values.name, 'Server update');
+assert.equal(child.fieldRows('lines').some(row => row.isNew), true);
+assert.equal(h.context.applyingOnchangePatch.value, false);
+console.log('formstate real onchange entry staged rejection and success: passed');

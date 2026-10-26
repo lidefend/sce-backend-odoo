@@ -338,3 +338,54 @@ assert.equal(identityChild.visibleRows('lines').length, 0);
 await identityChild.addRow('lines');
 assert.equal(identityChild.visibleRows('lines').length, 2, 'add hydrates initial defaults before appending');
 console.log('native default rows and parent collection identities: passed');
+
+const replayColumns = [
+  { name: 'name', label: 'Name', ttype: 'char' },
+  { name: 'quantity', label: 'Quantity', ttype: 'float' },
+];
+const replayChild = useOne2manyRuntime({
+  model: () => 'x.parent', recordId: () => 9, originalValues: () => ({ lines: [42, 43] }),
+  parentValues: () => ({ '$native.fieldTypes': { lines: 'one2many' } }),
+  onchangeLinePatches: () => [], resolveColumns: () => replayColumns,
+  resolvePrimaryColumn: () => 'name', resolveRelationOptions: () => [], markFieldChanged: () => {},
+});
+replayChild.initRows('lines', [42, 43]);
+replayChild.mergeHydratedRecords('lines', [{ id: 42, name: 'Keep', quantity: 1 }, { id: 43, name: 'Other', quantity: 3 }]);
+await replayChild.addRow('lines');
+const localNewKey = replayChild.visibleRows('lines')[2]!.key;
+replayChild.setRowField('lines', localNewKey, replayColumns[0]!, 'Local unsaved');
+const beforeReplay = JSON.stringify(replayChild.fieldRows('lines'));
+assert.throws(() => replayChild.prepareOnchangeRows('lines', [[1, 42, { quantity: 2 }], [1, 999, { quantity: 4 }]]), { name: 'ContractGapError' });
+assert.equal(JSON.stringify(replayChild.fieldRows('lines')), beforeReplay, 'invalid later command cannot partially apply earlier command');
+const commitReplay = replayChild.prepareOnchangeRows('lines', [[1, 42, { quantity: 2 }], [0, 0, { name: 'Server new', quantity: 4 }]]);
+assert.equal(JSON.stringify(replayChild.fieldRows('lines')), beforeReplay, 'preparation is read-only');
+commitReplay();
+assert.equal(replayChild.fieldRows('lines')[0]!.values.name, 'Keep');
+assert.equal(replayChild.fieldRows('lines')[0]!.values.quantity, 2);
+assert.equal(replayChild.visibleRows('lines').some(row => row.key === localNewKey && row.values.name === 'Local unsaved'), true);
+assert.equal(replayChild.visibleRows('lines').length, 4);
+replayChild.prepareOnchangeRows('lines', [[2, 42], [3, 43], [4, 99]])();
+assert.deepEqual(replayChild.buildCommandValue('lines', 'write'), [
+  [2, 42], [3, 43], [0, 0, { name: 'Local unsaved' }], [0, 0, { name: 'Server new', quantity: 4 }], [4, 99],
+]);
+replayChild.prepareOnchangeRows('lines', [[6, 0, [99, 43]]])();
+assert.deepEqual(replayChild.visibleRows('lines').map(row => row.id), [99, 43]);
+replayChild.prepareOnchangeRows('lines', [[5, 0, 0]])();
+assert.equal(replayChild.visibleRows('lines').length, 0);
+const beforeInvalid = JSON.stringify(replayChild.fieldRows('lines'));
+for (const commands of [[[1, 'virtual_1', { name: 'Unknown' }]], [[0, 0, { hidden: 1 }]], [[6, 0, [42, 42]]], [[4, -1]]]) {
+  assert.throws(() => replayChild.prepareOnchangeRows('lines', commands), { name: 'ContractGapError' });
+  assert.equal(JSON.stringify(replayChild.fieldRows('lines')), beforeInvalid);
+}
+console.log('one2many staged onchange replay and transport semantics: passed');
+replayChild.initRows('lines', [42, 43]);
+replayChild.prepareOnchangeRows('lines', [[2, 42], [5, 0, 0]])();
+assert.deepEqual(replayChild.buildCommandValue('lines', 'write'), [[2, 42], [3, 43]], 'clear preserves earlier delete tombstone');
+replayChild.initRows('lines', [42, 43]);
+for (const tail of [[4, 42], [6, 0, [42]], [1, 42, { name: 'Revived' }]]) {
+  const before = JSON.stringify(replayChild.fieldRows('lines'));
+  assert.throws(() => replayChild.prepareOnchangeRows('lines', [[2, 42], tail]), { name: 'ContractGapError' });
+  assert.equal(JSON.stringify(replayChild.fieldRows('lines')), before);
+}
+replayChild.prepareOnchangeRows('lines', [[3, 42], [4, 42]])();
+assert.deepEqual(replayChild.visibleRows('lines').map(row => row.id), [42, 43], 'unlink followed by link is reversible');

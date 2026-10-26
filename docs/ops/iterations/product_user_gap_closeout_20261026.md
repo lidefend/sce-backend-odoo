@@ -808,3 +808,36 @@ canonical真实呈现新增3组关系类型及草稿伪造断言通过，strict 
 
 最终`eighteenth-l2-reviewed.log`：编译器8、跨端3732、parser39、集合语义、默认值55及新增
 生命周期断言、严格类型检查、契约依据守卫均通过；独立复核确认S2关闭，无其他新增阻断。
+
+## 第十九增量：基于当前明细草稿的onchange命令回放
+
+候选基于`7139989a0625d5fd5cb8213c4547bc200016007c`，P0明细命令与表单消费，另有P4
+既有静态守卫调用标记同步。未新增环境或业务特判。
+
+- 新增纯副本reducer，以明确的当前rows为基线回放0–6命令：创建新行、更新已有持久行、
+  删除、解除关联、关联、清空和替换。update保留未改字段及本地未保存行。虚拟ID目标更新、
+  未声明payload字段和非法身份仍显式拒绝，不伪造关联或猜测隐藏字段。
+- runtime先prepare再commit；表单先准备所有字段的明细命令，准备失败时不改formData、
+  rows或响应覆盖层。提交阶段用finally复位applyingOnchangePatch，契约错误通过可见的
+  validationErrors反馈；网络失败继续保留草稿。既有响应过期/跨记录防护保持。
+- delete2与unlink3在行状态及写命令中分开保留；新增关联生成link4，避免只生成update1而
+  丢关联。set保持声明顺序，clear/set清除未保存行并解除不再选中的持久关联。
+
+独立复核暴露并关闭两项S2：
+
+1. set/clear曾将delete2覆盖为unlink3。现保留删除标记，同批delete后link/update或set
+   再包含该ID显式拒绝；unlink后link仍可恢复。新增组合序列回归。
+2. 真实formstate入口的旧normalization会把非数组关系响应变成空数组。现向prepare传
+   原始值，禁止非法响应变成清空集合。通过真实useRecordFormState入口注入测试请求，验证
+   字符串/对象/null响应下rows与formData均不变、flag复位、错误可见；正常响应保留本地新行。
+
+证据根`.runtime/product-user-gap-closeout-20261026/`：`nineteenth-l1-final.log`通过；
+`nineteenth-l2.log`保留初轮集合/编译器8/跨端3732/parser39及已有回归通过结果；
+`nineteenth-l2-reviewed.log`真实runtime新增回放断言、默认值55和dirty semantics实际入口通过，
+随后P4守卫因旧direct-call字面标记失败。同步为仍默认triggerOnchange的可注入请求表达式，
+无删除断言；`nineteenth-guards-fixed.log`onchange守卫、4项竞态用例、x2many语义守卫、strict
+类型检查及contract basis均通过。独立复核确认两项S2关闭，无其他新增阻断。
+
+本轮没有证明任意line_patches异常后的整体事务回滚，原子性证据限定命令准备失败；虚拟ID
+目标、隐藏默认字段声明、根表单/动作实时集合投影和后端创建关系求值仍待收口。无新增ORM/
+浏览器验收、部署、主线集成或demo重建，FG15未关闭。回滚本轮命令/接线源码即可，无数据库恢复。

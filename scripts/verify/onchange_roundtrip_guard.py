@@ -58,7 +58,7 @@ def main() -> int:
         'context.changedFieldSet.add(key)',
         'setTimeout(()=>void runOnchangeRoundtrip(),300)',
         'async function runOnchangeRoundtrip()',
-        'const response=await triggerOnchange({',
+        'const response=await (context.requestOnchange || triggerOnchange)({',
         'const patch = response?.patch && typeof response.patch',
         # A response is written back only through its roundtrip identity: the
         # record it was computed for, its issue order, and the draft values it

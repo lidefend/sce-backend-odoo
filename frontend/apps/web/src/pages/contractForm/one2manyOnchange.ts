@@ -1,0 +1,56 @@
+import { contractGapError } from '../../app/contract/contractGap';
+import { createOne2manyDraftRow, initOne2manyRowsFromRelationSource } from './one2manyUtils';
+import type { One2ManyColumn, One2ManyInlineRow } from './types';
+
+export function replayOne2manyOnchange(params: {
+  rows: One2ManyInlineRow[]; commands: unknown; columns: One2ManyColumn[]; primary: string; makeKey: () => string;
+}): One2ManyInlineRow[] {
+  const fail = (): never => { throw contractGapError({ kind: 'contract_defect', missing: 'one2many.onchange_command',
+    requiredDeclarationLayer: 'P0:smart_core:onchange' }, '明细联动命令缺少合法身份、字段声明或当前行基线'); };
+  const id = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+  const payload = (value: unknown): Record<string, unknown> => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)
+      || Object.keys(value).some(name => name === 'id' || !params.columns.some(column => column.name === name))) return fail();
+    return value as Record<string, unknown>;
+  };
+  if (!Array.isArray(params.commands)) return fail();
+  let rows = params.rows.map(row => ({ ...row, values: { ...row.values }, dirtyFields: [...row.dirtyFields] }));
+  const deleted = new Set<number>();
+  const link = (recordId: unknown) => {
+    if (!id(recordId) || deleted.has(recordId)) return fail();
+    const row = rows.find(item => item.id === recordId && !item.isNew);
+    if (row) { row.removed = false; row.removalCommand = undefined; }
+    else rows.push(...initOne2manyRowsFromRelationSource({ source: [recordId], relationOptions: [], primary: params.primary }));
+  };
+  const set = (ids: unknown) => {
+    if (!Array.isArray(ids) || !ids.every(id) || new Set(ids).size !== ids.length) return fail();
+    rows = rows.filter(row => !row.isNew);
+    rows.forEach(row => { if (!ids.includes(row.id)) { row.removed = true; row.removalCommand = row.removalCommand === 2 ? 2 : 3; row.dirty = true; } });
+    ids.forEach(link);
+    rows = [...ids.map(recordId => rows.find(row => row.id === recordId)!), ...rows.filter(row => row.removed)];
+  };
+  if (params.commands.every(id)) { set(params.commands); return rows; }
+  for (const command of params.commands) {
+    if (!Array.isArray(command)) return fail();
+    const [op, recordId, value] = command;
+    if (op === 0 && recordId === 0 && command.length === 3) {
+      rows.push(createOne2manyDraftRow({ key: params.makeKey(), primary: params.primary, columns: params.columns, defaults: payload(value) }));
+    } else if (op === 1 && id(recordId) && command.length === 3) {
+      const row = rows.find(item => !item.isNew && !item.removed && item.id === recordId);
+      if (!row) return fail();
+      const patch = payload(value);
+      row.values = { ...row.values, ...patch };
+      row.dirtyFields = [...new Set([...row.dirtyFields, ...Object.keys(patch)])]; row.dirty = true;
+    } else if ((op === 2 || op === 3) && id(recordId) && (command.length === 2 || command.length === 3 && value === 0)) {
+      const row = rows.find(item => !item.isNew && item.id === recordId);
+      if (!row) return fail();
+      if (deleted.has(recordId)) return fail();
+      row.removed = true; row.removalCommand = op; row.dirty = true;
+      if (op === 2) deleted.add(recordId);
+    } else if (op === 4 && (command.length === 2 || command.length === 3 && value === 0)) link(recordId);
+    else if (op === 5 && recordId === 0 && (command.length === 2 || command.length === 3 && value === 0)) set([]);
+    else if (op === 6 && recordId === 0 && command.length === 3) set(value);
+    else return fail();
+  }
+  return rows;
+}

@@ -1,3 +1,4 @@
+import { isContractGapError } from '../../app/contract/contractGap';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ComputedRef, Ref } from 'vue';
 import type { FieldDescriptor } from '@sc/schema';
@@ -21,6 +22,7 @@ import type { BusinessFieldError } from '../../app/businessValidationError';
 import type { FieldOccurrenceDecision } from './fieldOccurrenceWritability';
 
 export function useRecordFormState(context: {
+  requestOnchange?: typeof triggerOnchange;
   formFields:ComputedRef<Record<string,FieldDescriptor>>; model:ComputedRef<string>; recordId:ComputedRef<number|null>;
   rights:ComputedRef<{write:boolean}>; formData:Record<string,unknown>; originalValues:Ref<Record<string,unknown>>;
   submissionFeedback:Ref<any>; relationKeywords:Record<string,string>; invalidatedRelationKeywords:Record<string,string>;
@@ -40,7 +42,7 @@ export function useRecordFormState(context: {
   relationUiLabel:(descriptor:FieldDescriptor|undefined,key:string,fallback?:string)=>string; relationModel:(name:string)=>string;
   relationIds:(name:string)=>number[]; upsertRelationOption:(name:string,option:RelationOption|null)=>void;
   buildOne2manyCommandValue:(name:string,mode:'write'|'onchange')=>unknown; one2manyFieldRows:(name:string)=>any[];
-  initOne2manyRows:(name:string,value:unknown)=>void; applyOnchangeLinePatches:(patches:any[])=>void;
+  initOne2manyRows:(name:string,value:unknown)=>void; prepareOne2manyOnchange:(name:string,value:unknown)=>(()=>void); applyOnchangeLinePatches:(patches:any[])=>void;
   isWritableFieldVisible:(name:string)=>boolean;
   canonicalFieldWritable?:(name:string)=>boolean|undefined;
   fieldOccurrenceDecision?:(name:string,occurrenceKey:string)=>FieldOccurrenceDecision;
@@ -179,14 +181,45 @@ export function useRecordFormState(context: {
     const changed=Array.from(context.changedFieldSet);context.changedFieldSet.clear();
     const ticket=createOnchangeRoundtripTicket({sequence:onchangeSequence+1,model:context.model.value,recordId:context.recordId.value,snapshot:buildOnchangeDraftSnapshot(Object.keys(context.formFields.value),name=>comparableFieldValue(name,context.formData[name]))});
     onchangeSequence=ticket.sequence;
-    try{const response=await triggerOnchange({model:context.model.value,res_id:context.recordId.value,values:buildOnchangeValues(),changed_fields:changed,context:buildFormRequestContext(context.route.query)});const {patch:rawPatch,modifiersPatch,linePatches,warnings}=normalizeOnchangeResponse(response);
+    try{const response=await (context.requestOnchange || triggerOnchange)({model:context.model.value,res_id:context.recordId.value,values:buildOnchangeValues(),changed_fields:changed,context:buildFormRequestContext(context.route.query)});const {patch:rawPatch,modifiersPatch,linePatches,warnings}=normalizeOnchangeResponse(response);
       const plan=planOnchangeApplication({ticket,latestSequence:onchangeSequence,currentRecordKey:onchangeRecordKey(context.model.value,context.recordId.value),patch:rawPatch,comparableValue:name=>comparableFieldValue(name,context.formData[name])});
       // A superseded or foreign response is dropped whole: its patch, row
       // patches, modifier overlay and warnings all describe an obsolete draft.
       if(plan.dropped)return;
-      context.onchangeWarnings.value=warnings;context.onchangeLinePatches.value=linePatches;if(Object.keys(modifiersPatch).length)context.onchangeModifiersPatch.value={...context.onchangeModifiersPatch.value,...modifiersPatch};
-      if(Object.keys(plan.patch).length){const feedbackChanged:string[]=[];context.applyingOnchangePatch.value=true;Object.entries(plan.patch).forEach(([name,value])=>{if(!(name in context.formFields.value))return;const node=context.layoutNodes.value.find(item=>item.kind==='field'&&item.name===name);const normalized=normalizeOnchangeFieldPatch({descriptor:context.formFields.value[name],readonly:Boolean(node?.readonly||context.formFields.value[name]?.readonly),value});if(normalized.kind==='x2many'){context.formData[name]=normalized.value;if(normalized.fieldType==='one2many')context.initOne2manyRows(name,context.formData[name]);}else if(normalized.kind==='many2one'){context.upsertRelationOption(name,normalized.option);context.formData[name]=normalized.value;context.relationKeywords[name]=normalized.keyword||'';}else context.formData[name]=normalized.value;feedbackChanged.push(name);});context.applyingOnchangePatch.value=false;feedbackChanged.forEach(noteFeedbackDraftChange);}
-      if(linePatches.length){context.applyingOnchangePatch.value=true;context.applyOnchangeLinePatches(linePatches);context.applyingOnchangePatch.value=false;}}catch{/* Onchange preserves current values when the optional roundtrip fails. */}}
+      const commits: Array<() => void> = [];
+      const feedbackChanged: string[] = [];
+      Object.entries(plan.patch).forEach(([name, value]) => {
+        if (!(name in context.formFields.value)) return;
+        const node = context.layoutNodes.value.find(item => item.kind === 'field' && item.name === name);
+        const normalized = normalizeOnchangeFieldPatch({ descriptor: context.formFields.value[name],
+          readonly: Boolean(node?.readonly || context.formFields.value[name]?.readonly), value });
+        const commitRows = normalized.kind === 'x2many' && normalized.fieldType === 'one2many'
+          ? context.prepareOne2manyOnchange(name, value) : undefined;
+        commits.push(() => {
+          commitRows?.();
+          context.formData[name] = normalized.value;
+          if (normalized.kind === 'many2one') {
+            context.upsertRelationOption(name, normalized.option);
+            context.relationKeywords[name] = normalized.keyword || '';
+          }
+        });
+        feedbackChanged.push(name);
+      });
+      context.applyingOnchangePatch.value = true;
+      try {
+        commits.forEach(commit => commit());
+        context.onchangeWarnings.value = warnings;
+        context.onchangeLinePatches.value = linePatches;
+        if (Object.keys(modifiersPatch).length) context.onchangeModifiersPatch.value = { ...context.onchangeModifiersPatch.value, ...modifiersPatch };
+        if (linePatches.length) context.applyOnchangeLinePatches(linePatches);
+      } finally { context.applyingOnchangePatch.value = false; }
+      feedbackChanged.forEach(noteFeedbackDraftChange);
+    } catch (error) {
+      if (isContractGapError(error)) context.validationErrors.value = [error.message];
+      // Optional transport failures preserve the current draft.
+    }
+  }
+
   const collectWritableValues=()=>{const values=context.layoutNodes.value.filter(node=>node.kind==='field'&&!node.readonly&&context.isWritableFieldVisible(node.name)).reduce<Record<string,unknown>>((output,node)=>{const value=normalizeFieldValue(node.name,context.formData[node.name]);const type=fieldType(node.descriptor);if((type==='many2many'||type==='one2many')&&Array.isArray(value)&&!value.length)return output;if(!shouldWriteFieldValue({recordId:context.recordId.value,dirty:context.dirtyFieldSet.has(node.name),value,descriptor:node.descriptor}))return output;output[node.name]=value;return output;},{});
     // Native forms legitimately use invisible companion fields (for example a
     // Binary field's `filename`) and onchange-updated technical values.  If the
@@ -194,5 +227,5 @@ export function useRecordFormState(context: {
     // visible layout node; the native model/ACL remains the write authority.
     for(const name of context.dirtyFieldSet){if(name in values)continue;const descriptor=context.formFields.value[name];if(!descriptor||descriptor.readonly===true)continue;const value=normalizeFieldValue(name,context.formData[name]);if(!shouldWriteFieldValue({recordId:context.recordId.value,dirty:true,value,descriptor}))continue;values[name]=value;}
     const status=context.nativeStatusbar.value.field;if(context.recordId.value&&status&&context.dirtyFieldSet.has(status)&&!context.nativeStatusbar.value.readonly&&status in context.formFields.value&&!(status in values))values[status]=normalizeFieldValue(status,context.formData[status]);return values;};
-  return {addRelationId,collectWritableValues,commitMany2oneInline,comparableFieldValue,inputFieldValue,isFieldWritable,markFieldChanged,normalizeFieldValue,queryMany2oneInline,quickCreateMany2manyTag,resetPendingInlineRelationCreates,resolvePendingInlineRelationCreates,resolvePendingMany2manyTagCreates,setBooleanField,setMany2oneField,setRelationIds,setRelationMultiField,setSelectionField,setTechnicalCompanionTextField,setTextField};
+  return {runOnchangeRoundtrip,addRelationId,collectWritableValues,commitMany2oneInline,comparableFieldValue,inputFieldValue,isFieldWritable,markFieldChanged,normalizeFieldValue,queryMany2oneInline,quickCreateMany2manyTag,resetPendingInlineRelationCreates,resolvePendingInlineRelationCreates,resolvePendingMany2manyTagCreates,setBooleanField,setMany2oneField,setRelationIds,setRelationMultiField,setSelectionField,setTechnicalCompanionTextField,setTextField};
 }

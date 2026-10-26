@@ -134,6 +134,7 @@ export type NativeStatusbarVm = {
 };
 
 export type One2ManyInlineRow = {
+  removalCommand?: 2 | 3;
   key: string;
   id: number | null;
   isNew: boolean;

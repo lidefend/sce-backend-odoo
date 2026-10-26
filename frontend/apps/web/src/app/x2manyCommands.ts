@@ -1,5 +1,6 @@
 export type X2ManyCommand = [number, number, unknown?];
 export type One2ManyInlineDraftRow = {
+  removalCommand?: 2 | 3;
   id?: number | null;
   isNew?: boolean;
   removed?: boolean;
@@ -110,14 +111,15 @@ export function buildOne2ManyInlineCommands(params: {
     }
     if (!id) return;
     if (row.removed) {
-      commands.push([2, id]);
+      commands.push([row.removalCommand || 2, id]);
       return;
     }
+    if (!originalSet.has(id)) commands.push([4, id]);
     if (params.mode === 'write' && row.dirty) {
       commands.push([1, id, values]);
       return;
     }
-    if (params.mode === 'onchange' && (row.dirty || !originalSet.has(id))) {
+    if (params.mode === 'onchange' && row.dirty) {
       commands.push([1, id, values]);
     }
   });

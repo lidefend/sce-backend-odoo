@@ -465,6 +465,7 @@ export function removeOne2manyDraftRow(rowsByField: Record<string, One2ManyInlin
     rows.splice(index, 1);
   } else {
     row.removed = true;
+  row.removalCommand = 2;
     row.dirty = true;
   }
   return true;
@@ -475,6 +476,7 @@ export function restoreOne2manyDraftRow(rowsByField: Record<string, One2ManyInli
   const row = rows.find((item) => item.key === rowKey);
   if (!row) return false;
   row.removed = false;
+  row.removalCommand = undefined;
   row.dirty = true;
   return true;
 }
@@ -679,6 +681,7 @@ export function buildOne2manyCommandValue(
       id: row.id,
       isNew: row.isNew,
       removed: row.removed,
+      removalCommand: row.removalCommand,
       dirty: row.dirty,
       values: row.isNew && mode === 'onchange'
         ? row.values || {}

@@ -93,7 +93,13 @@
     "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
     "frontend/apps/web/src/app/nativeModifierRelationValue.ts",
     "frontend/apps/web/src/app/contracts/v2/types.ts",
-    "frontend/apps/web/src/app/contracts/v2/schema.ts"
+    "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    "frontend/apps/web/src/pages/contractForm/one2manyOnchange.ts",
+    "frontend/apps/web/src/pages/contractForm/types.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordFormState.ts",
+    "frontend/apps/web/src/app/x2manyCommands.ts",
+    "frontend/apps/web/scripts/contract_form_dirty_semantics_test.ts",
+    "scripts/verify/onchange_roundtrip_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -101,7 +107,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Close onchange incremental one2many replay with explicit baseline and declared hidden default fields; connect root/action live collection identity and backend create relation evaluation before native child browser acceptance.",
+  "next_exact_step": "Connect root/action live relation identity and backend create relation evaluation; then declared virtual-ID onchange targeting and hidden default-field authority before actual native child browser acceptance.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -965,6 +971,10 @@
     "seventeenth_scope": "P0 root/parent native relation type authority: dataMeta.nativeModifierFieldTypes emitted by final hydration from model declarations for mainData/dependency fields; bind reserved internal namespace, normalize only native Python values, preserve domain/raw display. Risk metadata authority and backend/frontend parity. HEAD1fb9b1fcaa9ed87ef70c87c67875976f86e2c18f clean. Excludes unsaved relation commands/nested frames/browser deployment. L0/L1 then compiler differential/formal handler/runtime/typecheck/basis plus independent review.",
     "seventeenth_result": "L1 and L2 passed: handler153/cache48/orchestrator62/tools5/assembler, canonical new3, strict typecheck/basis; final differential3732/compiler8/parser39/runtime23/projection133. Independent review no S0-S2. Metadata from model, reserved namespace protected; form final-state/live/parent paths only. No browser/ORM/deploy. See seventeenth logs and living record.",
     "eighteenth_scope": "P0 direct child draft lifecycle: preserve default_get create commands in initial one2many rows; bounded full snapshots (IDs, initial set/link/create), explicit rejection of incremental commands lacking baseline. Derive parent condition persisted-ID list from initialized reactive rows, excluding removed/new rows per Odoo17 Record._computeDataContext withoutVirtualIds. Shared parent frame for render/edit/validation/new writes. HEAD8d13b273e49a0b1390f3907d3d3e33a6194395c2 clean. Excludes root form/action live collection projection, backend create relation snapshots, nested scopes/deploy. L0/L1 then collection/create-default/strict/basis and independent review.",
-    "eighteenth_review": "Independent review S2: initial create payload fields absent from columns were silently dropped. Fixed by explicit rejection including forged id; two negative cases added. initRows also receives onchange; incremental command replay without baseline remains unclosed. Final affected rerun eighteenth-l2-reviewed.log passed: compiler8/differential3732/parser39/collection, create-default55 plus lifecycle assertions, strict typecheck and contract basis. Independent reviewer confirmed S2 closed, no other blockers."
+    "eighteenth_review": "Independent review S2: initial create payload fields absent from columns were silently dropped. Fixed by explicit rejection including forged id; two negative cases added. initRows also receives onchange; incremental command replay without baseline remains unclosed. Final affected rerun eighteenth-l2-reviewed.log passed: compiler8/differential3732/parser39/collection, create-default55 plus lifecycle assertions, strict typecheck and contract basis. Independent reviewer confirmed S2 closed, no other blockers.",
+    "nineteenth_scope": "P0 onchange child command replay against explicit current rows, staged before mutation; op0-6 persisted identities with new0 preserving existing drafts, delete/unlink transport distinction. Contract errors visible and applying flag finally restored. Risk write-command semantics. HEAD7139989a0625d5fd5cb8213c4547bc200016007c clean. Exclude virtual-ID-target updates, unknown payload fields, root/action projection, backend defaults, deploy. L0/L1 then collection/default-hydration/onchange/x2many guards/typecheck/basis and independent review.",
+    "nineteenth_review": "Two S2 findings: set/clear overwrote delete2, and normalization converted malformed one2many payload to empty snapshot. Preserve tombstones/reject resurrection; pass original value to preparation. Add real useRecordFormState request-injected entry regression via existing dirty semantics target; no network/credentials added.",
+    "nineteenth_guard_recovery": "Reviewed rerun product hook tests passed; P4 onchange guard rejected obsolete literal direct-call marker after injectable transport seam. Update marker to exact default-preserving request expression; no behavior assertion removed. Preserve nineteenth-l2-reviewed.log.",
+    "nineteenth_result": "L1-final passed; initial collection/compiler8/differential3732/parser39 passed. Reviewed default hydration55+replay and real formstate dirty semantics entry passed. guards-fixed onchange4 race/x2many/strict/basis passed. Two independent S2 findings fixed and re-reviewed closed. Preserve old literal-marker guard failure. Atomic scope command preparation only, not arbitrary line_patch commit exceptions. No browser/ORM/deploy."
   }
 }

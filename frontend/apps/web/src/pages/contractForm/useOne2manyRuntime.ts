@@ -1,3 +1,4 @@
+import { replayOne2manyOnchange } from './one2manyOnchange';
 import { computed, reactive } from 'vue';
 import { createOne2manyRelationRequestAuthority } from '../../components/template/one2manyRelationQuery';
 import type { One2ManyColumn, One2ManyInlineRow, RelationOption } from './types';
@@ -144,6 +145,16 @@ export function useOne2manyRuntime(params: {
     initialized[name] = true;
   }
 
+  function prepareOnchangeRows(name: string, commands: unknown) {
+    const baseline = initialized[name] ? fieldRows(name) : initOne2manyRowsFromRelationSource({
+      source: params.originalValues()[name], columns: params.resolveColumns(name),
+      relationOptions: params.resolveRelationOptions(name), primary: params.resolvePrimaryColumn(name),
+    });
+    const next = replayOne2manyOnchange({ rows: baseline, commands, columns: params.resolveColumns(name),
+      primary: params.resolvePrimaryColumn(name), makeKey: makeOne2manyKey });
+    return () => { rowsByField[name] = next; initialized[name] = true; };
+  }
+
   function mergeHydratedRecords(fieldName: string, records: Array<Record<string, unknown>>) {
     mergeOne2manyHydratedRecords({
       rows: ensureRows(fieldName).filter((row) => row.id && !row.isNew),
@@ -223,6 +234,7 @@ export function useOne2manyRuntime(params: {
     removeRow,
     restoreRow,
     initRows,
+    prepareOnchangeRows,
     mergeHydratedRecords,
     buildCommandValue,
     collectValidation,

@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4963`
+- Scanned files: `4964`
 - Files requiring split plan: `72`
 - Files above warning threshold: `143`
 
@@ -45,7 +45,7 @@ Generated from repository source files. This report is informational during the 
 | 2121 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
-| 2060 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 2061 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2003 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1956 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
@@ -185,8 +185,8 @@ Generated from repository source files. This report is informational during the 
 | 885 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 877 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
+| 873 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
 | 872 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
-| 870 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
 | 868 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 862 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
@@ -270,7 +270,7 @@ Generated from repository source files. This report is informational during the 
 | 2121 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2121 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
-| 2060 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 2061 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2003 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1956 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
