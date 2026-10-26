@@ -158,11 +158,11 @@
   },
   "checks": {},
   "blockers": [
-    "FG15: ordinary accounting-specific positive browser role workflow and browser cross-company context matrix remain unverified. Finance/project-reader denial now passed; do not substitute it for accounting positive acceptance.",
+    "FG15: accounting_manager six-entry positive browser now passed; accounting_read/accounting_user positive browser, browser company-boundary matrix and six entry business workflows remain unverified.",
     "FG15: persistent posting lifecycle not run; requires bounded exact-object recovery plan before writes.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Prepare bounded governed migration of existing accounting demo uid7 from tracked roots to explicit accounting_manager using runtime user-management authority, preserving unrelated roots, company and credentials, with exact preimage/readback and restoration checks. Do not full-upgrade demo module (noupdate0 contains other credentials) or switch uid41 while group provenance unresolved. Validate canonical login without password resets, refresh clean candidate only when needed, then ordinary accounting positive browser. Seed fix alone is not runtime repair.",
+  "next_exact_step": "Diagnose journal list175 voucher-number column displayed as 数量 at P1 native/contract declaration; fix owning label authority and targeted contract/browser test. Continue accounting detail and ordinary reader/user usability as needed. Development demo gaps use existing named seed steps directly; no migration framework or full rebuild unless requested.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1715,15 +1715,22 @@
       "authority": "User continues authorized demo gap remediation. Existing governed write lease, canonical env, no new account/password/database. Preflight rollback plus durable preimage, compare before apply and restore, independent readback.",
       "limits": "Role includes project read capability; no broad demo upgrade, no uid41/47 mutation, no business posting.",
       "status": "abandoned_per_user_direction_no_commit",
-      "result": "User directs development demo adjustment, not migration. Uncommitted migration tooling removed. Rollback preflight failed before any commit at overstrict roots equality; transaction ended without persistent account changes. No formal migration will execute."
+      "result": "User directs development demo adjustment, not migration. Uncommitted migration tooling removed. Rollback preflight failed before any commit at overstrict roots equality; transaction ended without persistent account changes. No formal migration will execute.",
+      "superseded_by": "accounting_demo_seed_adjustment; do not resume migration tooling. User directs development demo edits via existing seed."
     },
     "accounting_demo_seed_adjustment": {
       "layer": "P4 existing demo seed registry and _ensure_user helper",
       "authority": "User explicit: development should directly adjust demo, not migrate data. Run one named seed step only.",
       "scope": "sc_demo_accounting_manager existing uid7, base user + explicit accounting_manager, main company, canonical managed demo credential; preserve other demo users and business data. Reuse local.dev.demo.seed STEPS=demo_accounting_user; no migration pipeline, broad module upgrade or data rebuild.",
-      "status": "seed_applied_browser_pending",
+      "status": "demo_adjusted_six_entry_browser_passed",
       "result": "accounting-demo-seed-apply.log exit0 single step; accounting-demo-seed-readback.log independent process: uid7 resolved accounting, explicit accounting_manager,6 primary routes; uid41 project_member3 and uid47 finance15 unchanged. canonical demo credential aligned by existing helper; no business rows written.",
-      "validation": "accounting-demo-browser-static.log L1 +23JS/11Python PASS; prior real three-role six-entry/mixed ORM evidence reused. New browser case pending."
+      "validation": "accounting-demo-browser-reviewed-static.log L1 and24JS+11Python policy tests PASS. New pair guard rejects cross-pair, extra parameter, string IDs, wrong intent, empty publication and GET.",
+      "candidate": "f68368103cf5d05db41e81e74a18a5fc7588e56e",
+      "browser": "accounting-demo-six-browser.log PASS6: real uid7/company1, candidate namespace assets verified, six published pairs validate and list contracts return200/ok, six actual ActionView states ok, errors0/blocked0. Reports/screenshots journal-role-browser/f68368103cf5d05db41e81e74a18a5fc7588e56e/. Screenshots175 and672 visually reviewed.",
+      "negative": "accounting-demo-demo_role_finance-browser.log and accounting-demo-demo_role_project_read-browser.log each PASS1 at same candidate. Both have positive own-business route and journal public403/directURL AccessDenied; no expanded accounting publication.",
+      "review": "review_takeover verified seed scope, route transport pair restrictions and raw positive report; supports six lists only, not detail/save/post/semantic completeness.",
+      "limits": "Only demo accounting_manager browser covered; reader/user positive browser and company switching still pending. No new business write/posting; only one demo user seeded and local runtime refreshed, no mainline integration/daily remote deployment.",
+      "new_observation": "Journal list175 visually labels voucher-number values under 数量. Presentation semantic issue pending owning declaration diagnosis; screenshot175 evidence, do not infer passing list rendering means correct label."
     }
   }
 }

@@ -212,3 +212,5 @@ P1 模型对奖金要求金额/发生日期而非工资年月。因此不能认�
 种子文件 sc_demo_users.xml 中 sc_demo_accounting_manager 只绑定 group_sc_cap_accounting_manager，不能凭名称认定它覆盖新声明的显式会计角色。三类显式角色已有合成回滚ORM证明，尚缺受管Demo身份的正向浏览器证据；运行态身份需由既有受管工具回读确认，不能把静态种子推断为当前数据库事实。本轮未更改用户、组或重建数据。后续通过既有夹具流程补齐/核验精确身份及恢复检查，继续保留财务与项目只读的会计入口拒绝边界。
 
 - 2026-10-27运行态只读确认：sc_demo_accounting_manager uid7为active/公司1，但仅能力授权、无显式业务角色，解析restricted且primary入口0；不是仅静态种子推断。源种子已改显式会计经理角色，尚未重放或迁移现存账号。uid41/47权限来源unresolved，不能将有效组当完整可恢复原始授权。证据accounting-demo-identities-canonical.log，后续仅精确迁移tracked的uid7，禁止借全量demo升级重置其他身份/密码。
+
+- 最新收口（2026-10-27）：按用户指示直接运行既有seed单步骤demo_accounting_user，现存uid7已具显式会计经理角色且使用受管Demo凭据。独立回读6入口，f68368103真实登录六列表PASS；该账号身份缺口关闭。其他账号未重放、没有正式迁移或数据重建。只读/经办Demo及更完整业务场景仍未证明齐备。

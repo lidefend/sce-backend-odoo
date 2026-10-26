@@ -1605,3 +1605,39 @@ P4扩展既有journal recovery载体及Make，只读观察固定三个Demo账号
 本轮无远端CI、主线集成或日常服务器部署。
 
 独立复核通过，并明确：会计经理角色除原会计能力外还继承项目读取能力，后续应用并非权限完全不变；导航仍由六入口白名单约束。种子写groups_id不等于现存受管账号已变更，迁移后必须核验显式角色及真实入口。
+
+
+## 直接调整开发Demo与会计六页面验收（2026-10-27）
+
+按用户最新指示，开发期间Demo缺口直接通过既有seed调整，不套用正式数据迁移流程。
+本轮曾编写的未提交迁移/恢复工具已全部撤销，唯一事务内演练在commit前失败并回滚；
+没有执行正式迁移，不应恢复该旧计划。后续开发Demo调整优先复用命名seed，范围明确即可。
+
+`f5b37fdfd`在既有demo_users载体注册单步骤demo_accounting_user，复用_ensure_user：
+仅将sc_demo_accounting_manager设为base.user+显式会计经理、公司1，并对齐受管Demo凭据。
+`make local.dev.demo.seed STEPS=demo_accounting_user`实际执行成功，末尾角色/root断言通过后提交。
+没有重放其他用户、没有全量升级/重建，也没有新增账号或凭据来源。
+独立只读进程`accounting-demo-seed-readback.log`确认uid7/accounting/显式manager/primary6；
+uid41/project_member/primary3、uid47/finance/primary15保持原样。
+
+候选`f68368103cf5d05db41e81e74a18a5fc7588e56e`经既有local.dev.up及candidate.frontend入口刷新，
+复用sc-local-dev/sc_dev_demo/ns_000000000002。P4只读探针从已核验六入口构造精确action/menu对；
+旧两角色仍只允许原292/175验证，禁止任意路由请求或业务写。独立复核发现初版探针仅放行292/175，
+已在实际浏览器前修正；新增负例覆盖错配pair、额外参数、字符串ID、错误intent、空集合与GET。
+`accounting-demo-browser-reviewed-static.log` L1、24JS+11Python通过。
+
+真实浏览器结果：
+- `accounting-demo-six-browser.log` PASS6：uid7/company1与当前候选资产核验通过；
+  日记账分录175、日记账项目176、会计科目195、日记账670、分析账户671、分析分配模型672
+  均发布、路由验证200/allowed、列表契约200/ok、实际ActionView状态ok，errors0/blocked0。
+- `accounting-demo-demo_role_finance-browser.log`与`accounting-demo-demo_role_project_read-browser.log`
+  各PASS1：自有业务正向入口可用，会计入口未发布、公共403及直接URL拒绝仍成立。
+- 原始报告与六截图位于`.runtime/product-user-gap-closeout-20261026/journal-role-browser/`
+  `f68368103cf5d05db41e81e74a18a5fc7588e56e/`，已目视175/672代表页面。
+独立复核确认报告可支撑六列表可读结论，不覆盖详情、保存、过账或全部展示语义。
+
+新发现：175页面凭证编号值显示在“数量”列头下，记为待定位的声明/翻译展示缺口，
+不能因列表正常渲染就判语义正确。下一步从P1原生视图/字段与契约来源查明，不在前端硬改。
+会计负责人Demo身份与六页面入口缺口在此范围关闭；会计只读/经办正向浏览器、跨公司页面、
+详情办理与持久过账仍未验收，FG15整体开放。本轮只读浏览器未新增业务单据。
+未远端发布、未集成主线、未部署日常服务器；本地开发运行候选为f68368103。
