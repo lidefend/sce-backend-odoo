@@ -1,5 +1,5 @@
 import type { FieldDescriptor } from '@sc/schema';
-import { requireDeclaredNumber } from '../../app/contract/contractGap';
+import { contractGapError, requireDeclaredNumber } from '../../app/contract/contractGap';
 import { toPositiveInt } from '../../app/contractRuntime';
 import { normalizeModelWriteAuthority, normalizeRecordOpenIntent } from '../../app/runtime/recordEntryContract';
 import { cleanRelationDisplayLabel, fieldType, normalizeRelationIds } from './fieldUtils';
@@ -343,9 +343,12 @@ export function dynamicRelationDomainFromDescriptor(params: {
 }) {
   const raw = (params.descriptor as Record<string, unknown> | undefined)?.domain;
   const analysis = analyzeDynamicRelationDomain(params.descriptor);
-  // A dynamic domain the client cannot reduce is still server-evaluable: Odoo
-  // applies the field domain during search, so do not block all rows here.
-  if (!analysis.supported) return [];
+  // A comodel list request cannot reapply its caller field's domain. Refuse
+  // unsupported declarations before transport instead of widening the query.
+  if (!analysis.supported) throw contractGapError({
+    kind: 'contract_defect', missing: 'relation.domain',
+    requiredDeclarationLayer: 'P0:smart_core:relation_domain',
+  }, '关系筛选声明暂不支持，无法加载可选内容');
   if (Array.isArray(raw)) return [...raw];
   if (typeof raw !== 'string' || !raw.trim()) return [];
   const out: unknown[] = [];

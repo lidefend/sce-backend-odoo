@@ -170,12 +170,12 @@ assert.deepEqual(analyzeDynamicRelationDomain(supportedDomain), {
 });
 const unsupportedDomain = { type: 'many2one', domain: "['|', ('project_id', '=', parent.project_id)]" } as never;
 assert.equal(analyzeDynamicRelationDomain(unsupportedDomain).supported, false);
-assert.deepEqual(dynamicRelationDomainFromDescriptor({
+assert.throws(() => dynamicRelationDomainFromDescriptor({
   descriptor: unsupportedDomain,
   resolveDependencyValue: () => 9,
   normalizeDependencyValue: (_field, value) => value,
   currentFieldValue: () => false,
-}), [['id', '=', -1]]);
+}), { name: 'ContractGapError' });
 const mixedDomain = {
   name: 'award_opening_id',
   type: 'many2one',
@@ -263,3 +263,22 @@ assert.deepEqual(buildX2ManyCommands({
 }), [[3, 8]]);
 
 console.log(`[professional_detail_collection_model_test] PASS matrix=${matrix} relation_domain_cases=7`);
+
+// The actual inline query runtime must refuse before any transport/cache fetch.
+const { createOne2manyColumnOptionsRuntime } = await import('../src/pages/contractForm/one2manyColumnOptionsRuntime');
+const relationFunctions = await import('../src/pages/contractForm/relationDescriptor');
+let networkCalls = 0;
+const queryRuntime = createOne2manyColumnOptionsRuntime({
+  ...relationFunctions,
+  relationModelFromDescriptor: relationFunctions.relationModel,
+  ensureRelationFieldDescriptors: async () => {},
+  one2manyRelationFieldDescriptor: () => ({ type: 'many2one', relation: 'x.account',
+    domain: "[('id', 'in', unknown_function())]", relation_entry: { can_read: true } }) as never,
+  one2manyFieldRows: () => [{ key: 'draft-1', values: {} }] as never,
+  formData: {}, route: { query: {} },
+  fetchRelationOptionsFromRuntime: async () => { networkCalls++; return []; },
+  listContractFormRecords: async () => { networkCalls++; return { records: [] }; },
+} as never);
+await assert.rejects(queryRuntime.queryOne2manyColumnOptions('lines', 'draft-1', { name: 'account_id' }), { name: 'ContractGapError' });
+assert.equal(networkCalls, 0, 'unsupported field domains must not become unfiltered queries');
+console.log('[professional_detail_collection] unsupported domain transport refusal PASS');

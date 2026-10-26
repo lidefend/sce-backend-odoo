@@ -122,7 +122,10 @@
     "frontend/apps/web/src/pages/contractForm/useRecordFormFieldSchemas.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
     "frontend/apps/web/scripts/adopted_form_validation_identity_test.ts",
-    "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
+    "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+    "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
+    "scripts/verify/frontend_professional_detail_collection_guard.py",
+    "scripts/verify/test_frontend_professional_detail_collection_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -1497,6 +1500,14 @@
       "layer": "P4 existing governed journal draft probe",
       "head": "ab798ca9b079a218c76fd0b31e50f314955ffb93",
       "scope": "Open account selector, capture real api.data list, choose declared option, verify onchange; all persistence blocked",
+      "status": "verification_pending",
+      "result": "cca43487 browser PASS: 49 records, selected49/601880工程收入, same virtual row onchange200. Empty initial text is not missing demo data. Query domain=[] remains needing source investigation."
+    },
+    "relation_domain_refusal": {
+      "layer": "P0 generic relation query consumer",
+      "reason": "Unsupported dynamic field domain was replaced with []; comodel api.data cannot reconstruct field origin domain. Fail before query; no model-specific rules.",
+      "baseline_failure": "journal-domain-before.log existing detail collection assertion expected block-all but actual empty domain",
+      "scope": "relationDescriptor.ts plus existing detail collection tests",
       "status": "verification_pending"
     }
   }
