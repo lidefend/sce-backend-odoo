@@ -1172,6 +1172,13 @@
       "validated": "native_modifier differential 3739 + 2 cases pass; verify.frontend.collection_view_semantics.unit pass",
       "current_browser_state": "journal entry form still shows generic 加载失败 (data-error-kind=unknown); the two ContractGapErrors are gone and no API request fails (all ok=true), so the remaining failure is a caught JS rendering error not yet surfaced",
       "next": "instrument the form lifecycle to surface the caught rendering error, then fix and re-probe"
+    },
+    "fg15_third_blocker_20261026": {
+      "status": "diagnosed",
+      "finding": "after the two ContractGapError fixes, the journal-entry form no longer fails on modifier evaluation; the contract loads ok=true (95 widgets, store ready, decode error empty). The remaining failure is the canonical form driver: canonicalFormDriverError = canonicalFormRenderState.error || canonicalActionExecutionError.",
+      "evidence": "data-v2-shadow-store=true, widgets=95, actions=20, field-overlap=77, decode error='-'; canonicalFormRenderState transiently logged NORMALIZED_FORM_CONTRACT_MISSING during initial render, then store became ready.",
+      "likely_root": "canonicalActionExecutionError: one or more accounting-specific actions (post/reverse/etc.) have no canonical form action executor adapter, so validateCanonicalFormActionExecutors fails and the form fails closed.",
+      "next": "inspect validateCanonicalFormActionExecutors failure detail for account.move actions; register generic accounting action adapters or a governed fallback, then re-probe."
     }
   }
 }
