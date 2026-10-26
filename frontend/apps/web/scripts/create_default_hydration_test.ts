@@ -419,3 +419,40 @@ virtualChild.prepareOnchangeRows('lines', [[0, 'server_ref', { name: 'Server', q
 assert.equal(virtualChild.visibleRows('lines').find(row => row.key === 'server_ref')?.values.quantity, 4);
 assert.deepEqual(virtualChild.projectModifierValues({ '$native.fieldTypes': { lines: 'one2many' } }).lines, []);
 console.log('virtual relation identities roundtrip and write separation: passed');
+
+replayChild.initRows('lines', [42, 43]);
+replayChild.prepareOnchangeRows('lines', [[4, 99, { id: 99, name: 'Native linked', quantity: 7 }]])();
+const linked = replayChild.fieldRows('lines').find(row => row.id === 99)!;
+assert.equal(linked.values.name, 'Native linked');
+assert.equal(linked.values.quantity, 7);
+assert.equal(linked.values.id, 99);
+assert.deepEqual(linked.dirtyFields, []);
+assert.equal(linked.dirty, false);
+assert.deepEqual(replayChild.buildCommandValue('lines', 'write'), [[4, 99]], 'hydration must not become a write');
+replayChild.prepareOnchangeRows('lines', [[4, 99, { id: 99, name: 'Refreshed' }], [1, 99, { quantity: 8 }]])();
+assert.equal(replayChild.fieldRows('lines').filter(row => row.id === 99).length, 1);
+assert.deepEqual(replayChild.buildCommandValue('lines', 'write'), [[4, 99], [1, 99, { quantity: 8 }]]);
+for (const commands of [
+  [[4, 100, { id: 101, name: 'Wrong identity' }]],
+  [[4, 100, { undeclared: 'Unknown field' }]],
+  [[4, 100, null]], [[4, 'virtual', { name: 'Invalid target' }]],
+  [[4, 100, { name: 'Staged' }], [4, 101, { id: 100 }]],
+  [[2, 99], [4, 99, { id: 99, name: 'Resurrected' }]],
+]) {
+  const before = JSON.stringify(replayChild.fieldRows('lines'));
+  assert.throws(() => replayChild.prepareOnchangeRows('lines', commands), { name: 'ContractGapError' });
+  assert.equal(JSON.stringify(replayChild.fieldRows('lines')), before);
+}
+console.log('native LINK row data hydration, identity and atomic rejection: passed');
+
+replayChild.prepareOnchangeRows('lines', [[4, 99, { id: 99, quantity: 7, name: 'Latest baseline' }]])();
+assert.equal(replayChild.fieldRows('lines').find(row => row.id === 99)?.values.quantity, 8);
+assert.equal(replayChild.fieldRows('lines').find(row => row.id === 99)?.values.name, 'Latest baseline');
+assert.deepEqual(replayChild.buildCommandValue('lines', 'write'), [[4, 99], [1, 99, { quantity: 8 }]]);
+replayChild.prepareOnchangeRows('lines', [[1, 99, { quantity: 9 }], [4, 99, { id: 99, quantity: 7 }]])();
+assert.equal(replayChild.fieldRows('lines').find(row => row.id === 99)?.values.quantity, 9);
+assert.deepEqual(replayChild.buildCommandValue('lines', 'write'), [[4, 99], [1, 99, { quantity: 9 }]]);
+replayChild.setRowField('lines', linked.key, replayColumns[1]!, 10);
+replayChild.prepareOnchangeRows('lines', [[4, 99, { id: 99, quantity: 7 }]])();
+assert.equal(replayChild.fieldRows('lines').find(row => row.id === 99)?.values.quantity, 10);
+console.log('native LINK hydration preserves local and prior UPDATE dirty values: passed');

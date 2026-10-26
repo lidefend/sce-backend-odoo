@@ -989,3 +989,26 @@ values。原生onchange只执行一次，移除旧手工补算与合并。没有
 字段context/order、空changed_fields初始化和真实浏览器闭环仍需推进。此处只证明真实handler
 与上述普通用户场景，不证明所有原生模型/菜单兼容。无模块升级、demo重建、服务候选切换、
 部署或主线集成，FG15未关闭。下步优先收口LINK数据回放及隐藏子列声明消费。
+
+## 第二十五增量：原生LINK行数据的受控回放
+
+候选基于`17dbb342f6c23d694ac45b8a07e67c54d8deb006`。P0子表回放接受原生
+`[4,persisted_id,base_data]`：base_data.id若出现必须与命令身份严格一致，其余字段必须有
+现有列声明；未声明字段、非法身份/载体、删除后复活及新行key碰撞仍拒绝。原先纯ID LINK
+行为保留，不扩虚拟LINK。没有放宽CREATE/UPDATE中伪造id的拒绝规则。
+
+LINK数据仅补读取基线，不标记dirty或新增UPDATE；显式UPDATE另行处理。独立复核发现S2：
+无条件hydrate会覆盖dirty字段并生成旧值写回，现按dirtyFields过滤，只补clean字段，保留
+本地编辑或较早UPDATE。新增重复LINK、LINK→UPDATE、UPDATE→LINK、本地编辑→LINK回归。
+已知行不重复创建。所有变化仍在副本上准备，后续命令错误时不部分提交；真实formstate也验证
+根字段与子表共同准备失败时均保持原状。复核确认S2关闭，无新增阻断。
+
+证据根沿用现有.runtime目录：`twentyfifth-l1.log`及`twentyfifth-l1-reviewed.log`通过；
+`twentyfifth-l2-reviewed.log`默认值55及新增runtime断言、实际formstate联动、x2many守卫、
+严格类型检查、contract basis通过。初始`twentyfifth-l2.log`保留，不能替代修复后的结果。
+`twentyfifth-orm.log`在已登记sc-local-dev/sc_dev_demo通过local.dev.test执行普通会计
+RecordSnapshot用例，实际1项、0失败/0错误；确认[4,id,{id,name}]返回且持久父子关系不变，
+沿用事务回滚，不等同真实浏览器端到端证明。
+
+本轮仍拒绝未声明的隐藏子列；未解决隐式子视图、字段context/order、空changed_fields初始化
+或完整页面业务验收。无主线集成、部署、模块升级或demo重建，FG15保持未关闭。

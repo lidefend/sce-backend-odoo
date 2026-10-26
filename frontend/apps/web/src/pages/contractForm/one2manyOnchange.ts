@@ -28,9 +28,14 @@ export function replayOne2manyOnchange(params: {
   };
   const link = (recordId: unknown) => {
     if (!id(recordId) || deleted.has(recordId)) return fail();
-    const row = rows.find(item => item.id === recordId && !item.isNew);
+    let row = rows.find(item => item.id === recordId && !item.isNew);
     if (row) { row.removed = false; row.removalCommand = undefined; }
-    else rows.push(...initOne2manyRowsFromRelationSource({ source: [recordId], relationOptions: [], primary: params.primary }));
+    else {
+      row = initOne2manyRowsFromRelationSource({ source: [recordId], relationOptions: [], primary: params.primary })[0]!;
+      if (rows.some(existing => existing.key === row!.key)) return fail();
+      rows.push(row);
+    }
+    return row;
   };
   const set = (ids: unknown) => {
     if (!Array.isArray(ids) || !ids.every(id) || new Set(ids).size !== ids.length) return fail();
@@ -65,8 +70,22 @@ export function replayOne2manyOnchange(params: {
         row.removed = true; row.removalCommand = op; row.dirty = true;
         if (op === 2) deleted.add(recordId);
       }
-    } else if (op === 4 && (command.length === 2 || command.length === 3 && value === 0)) link(recordId);
-    else if (op === 5 && recordId === 0 && (command.length === 2 || command.length === 3 && value === 0)) set([]);
+    } else if (op === 4 && (command.length === 2 || command.length === 3)) {
+      let data: Record<string, unknown> | undefined;
+      if (command.length === 3 && value !== 0) {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return fail();
+        const raw = value as Record<string, unknown>;
+        if (Object.prototype.hasOwnProperty.call(raw, 'id') && raw.id !== recordId) return fail();
+        const { id: _identity, ...fields } = raw;
+        data = payload(fields);
+      }
+      const row = link(recordId);
+      // Native LINK data describes the persisted baseline, not an UPDATE.
+      if (data) {
+        const baseline = Object.fromEntries(Object.entries(data).filter(([name]) => !row.dirtyFields.includes(name)));
+        row.values = { ...row.values, ...baseline, id: row.id };
+      }
+    } else if (op === 5 && recordId === 0 && (command.length === 2 || command.length === 3 && value === 0)) set([]);
     else if (op === 6 && recordId === 0 && command.length === 3) set(value);
     else return fail();
   }

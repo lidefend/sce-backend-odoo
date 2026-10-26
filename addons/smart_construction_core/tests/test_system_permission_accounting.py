@@ -145,6 +145,24 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
         self.assertEqual(origin.with_user(user).state_id, state)
         self.assertEqual(origin.country_id, state.country_id)
 
+    def test_native_relation_link_snapshot_contains_row_data(self):
+        from odoo.addons.web.models.models import RecordSnapshot
+        from odoo.addons.smart_core.core.native_onchange_spec import normalize_native_onchange_values
+        user = self._subject('accounting_user')
+        model = self.env['res.partner'].with_user(user)
+        child = self.env['res.partner'].create({'name': 'Synthetic linked contact'})
+        draft = model.new({'name': 'Synthetic parent draft', 'child_ids': []})
+        specification = {'child_ids': {'fields': {'name': {}}}}
+        before = RecordSnapshot(draft, specification)
+        draft.update({'child_ids': [(4, child.id)]})
+        patch = normalize_native_onchange_values(model, RecordSnapshot(draft, specification).diff(before))
+        self.assertFalse(model.env.su)
+        self.assertEqual(len(patch['child_ids']), 1)
+        command = patch['child_ids'][0]
+        self.assertEqual((int(command[0]), command[1]), (4, child.id))
+        self.assertEqual(command[2], {'id': child.id, 'name': 'Synthetic linked contact'})
+        self.assertFalse(child.with_user(user).parent_id)
+
     def test_native_virtual_relation_snapshot_roundtrip(self):
         from odoo.addons.web.models.models import RecordSnapshot
         user = self._subject('accounting_user')
