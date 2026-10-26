@@ -214,3 +214,13 @@ P1 模型对奖金要求金额/发生日期而非工资年月。因此不能认�
 - 2026-10-27运行态只读确认：sc_demo_accounting_manager uid7为active/公司1，但仅能力授权、无显式业务角色，解析restricted且primary入口0；不是仅静态种子推断。源种子已改显式会计经理角色，尚未重放或迁移现存账号。uid41/47权限来源unresolved，不能将有效组当完整可恢复原始授权。证据accounting-demo-identities-canonical.log，后续仅精确迁移tracked的uid7，禁止借全量demo升级重置其他身份/密码。
 
 - 最新收口（2026-10-27）：按用户指示直接运行既有seed单步骤demo_accounting_user，现存uid7已具显式会计经理角色且使用受管Demo凭据。独立回读6入口，f68368103真实登录六列表PASS；该账号身份缺口关闭。其他账号未重放、没有正式迁移或数据重建。只读/经办Demo及更完整业务场景仍未证明齐备。
+
+
+## 已过账普通凭证样本（2026-10-27，本地）
+
+d8986abea下sc-local-dev/sc_dev_demo会计经理uid7可见范围查询无有效编号的posted/entry，
+该数据缺口已通过现有单步`demo_posted_journal`补齐：普通经理原生create/action_post生成
+专属XMLID sc_demo_posted_journal_001，凭证55、明细51/52；独立进程重放同ID不重复创建。
+13483ecb3浏览器两态详情科目借贷/回读及posted按钮隐藏通过，关闭该样本缺口。
+重建时在基础Demo科目/业主/MISC日记账和显式会计经理到位后重放该步骤，无数据迁移。
+分析分配对象展示及posted保存草稿文案属于功能呈现缺口，另记FG15，不靠修改Demo掩盖。

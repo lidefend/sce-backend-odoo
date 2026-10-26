@@ -1727,3 +1727,40 @@ errors0/blocked0。科目控件ID由ScSelect投影至真实input，独立代码�
 关闭单条草稿两行数值核对范围，FG15仍开放：已过账/只读角色详情动作矩阵、保存/过账
 完整办理链继续验证。缺demo身份或场景直接使用现有seed，不开发迁移流程。
 本轮仅受管本地候选刷新，没有seed、迁移、升级、主线合并或远端服务器部署。
+
+
+## 已过账凭证Demo与两态详情（2026-10-27）
+
+P4扩展现有journal-role探针后，d8986abea真实查询确认：当前会计经理可见范围内没有
+有效编号、state=posted且move_type=entry的样本；不是发票或全库零记录结论。
+accounting-state-browser.log保留该缺口。初版状态报告与globalStatus字段重名，已用独立
+outcome修正；覆盖标记和控制台明确区分列表成功与两态覆盖，不把缺样本算作验证通过。
+
+按用户“直接调整demo”指示，在现有step_formal_product_surfaces.py注册单步
+`demo_posted_journal`；受管调用`make local.dev.demo.seed STEPS=demo_posted_journal`。
+复用主公司MISC日记账、Demo应收/工程收入科目及业主，普通会计经理创建并原生action_post，
+不以sudo执行业务操作、不直接写posted。唯一XMLID sc_demo_posted_journal_001标记拥有权，
+无拥有权ref冲突拒绝，重复执行核对模型/存在性/公司/日记账/每行科目借贷/每行往来单位。
+apply与独立新进程replay日志均返回move55、lines51/52、posted；没有重复造数或更改草稿10。
+该示例借应收100、贷收入100，保留供后续开发使用。重建后需在既有Demo基础数据和经理
+身份到位后显式重放该步骤；未添加迁移、备份恢复流程或全量重建。
+
+ab502f16e首轮浏览器失败：已过账line_ids正常切换为只读表格，旧探针仍寻找可编辑input。
+原失败日志/最终截图保留。修正仅P4：草稿继续按保存ID读input；posted明确只读表格，
+唯一科目标签绑定行，唯一表头索引核对借贷单元格，行数和每行API值均需一致。
+独立复核确认未降低金额比较或扩大业务写放行。
+
+最终候选`13483ecb3188c6f793756175285b511533387214`：
+- accounting-posted-readonly-static.log：L1、25JS+11Python通过；新增文件初次未登记run范围
+  的静态失败保留于accounting-posted-seed-static.log，登记后重跑通过。
+- accounting-posted-final-browser.log退出0，六列表通过；两态覆盖COMPLETE。
+- 草稿10及已过账55（MISC/2026/10/0002）均打开/刷新成功；四条分录科目与借贷值一致，
+  凭证/明细含write_date前后不变，errors0/blocked0。posted明确只读表格且不出现“过账”按钮。
+- 原始报告与截图位于journal-role-browser/13483ecb3188c6f793756175285b511533387214/。
+
+本轮仍暴露两项产品缺口：已过账明细的分析分配显示[object Object]；已过账页面仍显示
+“保存草稿”。前者通用one2manyColumnDisplayValue将未处理结构化值String化，后者契约
+组装器缺primary_action_label时使用通用草稿文案；后续需在对应声明/原生组件消费层修复，
+不能用会计模型前端特判或原始JSON代替用户语义。FG15保持开放。
+只读角色及UI点击过账未验收；本轮seed原生过账不作为浏览器办理证明。
+没有主线合并或远端日常服务器部署，只有本地候选刷新及上述专用Demo样本新增。
