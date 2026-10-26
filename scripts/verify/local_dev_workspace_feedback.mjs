@@ -71,7 +71,7 @@ try {
       const payload = await response.json();
       if (request.intent === 'system.init') init = payload.data;
       else if (request.params.feedback_evaluation) report.feedback.push({model: request.params.model, ok: payload.ok, data: payload.data});
-      else if (scope === 'native-child' && request.params?.model === 'res.partner') report.onchanges.push({ok: payload.ok, error: payload.error, fields: request.params.changed_fields});
+
     } catch {}
   });
   await page.goto(base + '/login', {waitUntil: 'domcontentloaded'});
@@ -105,23 +105,40 @@ try {
     await page.getByRole('button', {name: /^(新建|新增|创建)$/}).first().click();
     const name = page.locator('[data-field-name="name"] input:visible').first();
     await name.waitFor({state: 'visible', timeout: 45000});
-    await name.fill('原生子表草稿验证（不保存）');
-    await name.blur();
+    const [onchangeResponse] = await Promise.all([
+      page.waitForResponse(response => {
+        let body; try { body = response.request().postDataJSON(); } catch { return false; }
+        const request = body?.params?.intent ? body.params : body;
+        return request?.intent === 'api.onchange' && request.params?.model === model && !request.params?.feedback_evaluation;
+      }, {timeout: 20000}),
+      (async () => { await name.fill('原生子表草稿验证（不保存）'); await name.blur(); })(),
+    ]);
+    const onchange = await onchangeResponse.json();
+    report.onchanges.push({httpStatus: onchangeResponse.status(), ok: onchange.ok, error: onchange.error});
+    assert(onchangeResponse.ok() && onchange.ok === true, 'native onchange did not succeed');
     item.before = await page.locator('body').innerText();
     await page.screenshot({path: `${root}/before-child.png`});
     assert(!/页面加载失败|ContractGapError|字段联动失败|字段联动声明不完整/.test(item.before));
     const collection = page.locator('[data-field-name="child_ids"]').first();
     await collection.waitFor({state: 'visible', timeout: 20000});
     item.collection = await collection.innerText();
+    const counter = collection.locator('[data-row-count]').first();
+    const beforeCount = Number(await counter.getAttribute('data-row-count'));
+    assert(Number.isSafeInteger(beforeCount) && beforeCount >= 0);
     await collection.getByRole('button', {name: /新增|添加/}).first().click();
-    await page.waitForTimeout(1000);
+    await page.waitForFunction(({selector, expected}) => {
+      const node = document.querySelector(selector)?.querySelector('[data-row-count]');
+      return Number(node?.getAttribute('data-row-count')) === expected;
+    }, {selector: '[data-field-name="child_ids"]', expected: beforeCount + 1});
+    item.beforeCount = beforeCount;
+    item.afterCount = Number(await counter.getAttribute('data-row-count'));
     item.after = await page.locator('body').innerText();
     item.inputs = await collection.locator('input:visible, textarea:visible').count();
     await page.screenshot({path: `${root}/after-child.png`});
     assert(item.inputs > 0, 'native child draft has no editable input');
     assert(!/页面加载失败|ContractGapError|字段联动失败|字段联动声明不完整/.test(item.after));
     assert.equal(report.blocked.length, 0);
-    assert(report.onchanges.every(result => result.ok === true), 'native onchange returned failure');
+    assert(report.onchanges.length > 0 && report.onchanges.every(result => result.ok === true), 'native onchange evidence missing or failed');
     item.passed = true;
   }
   if (scope === 'payroll') {
