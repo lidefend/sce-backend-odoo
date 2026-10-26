@@ -1267,6 +1267,13 @@
       "finding": "account.move.line.account_id domain is the string \"[('deprecated', '=', False), ('account_type', '!=', 'off_balance')]\"; in the line context the relation shows 可选范围暂不可用 (= !domainAnalysis.supported)",
       "hypothesis": "JSON serialization turns Python False into false; analyzeDynamicRelationDomain's dynamic tuple branch skips only True/False/None (capitalized), so lowercase false is misread as a field dependency and may produce unsupportedRemainder, breaking supported",
       "next": "inspect the actual domain string delivered in the ui.contract.v2 response for account_id, then fix analyzeDynamicRelationDomain to treat lowercase true/false/none as literals"
+    },
+    "fg15_account_domain_root": {
+      "status": "root_cause_confirmed",
+      "domain": "(company_id and ['|', ('company_id', '=', False), ('company_id', 'parent_of', [company_id])] or ['|', ('company_id', '=', False), ('company_id', 'parent_of', [''])]) + ([('deprecated', '=', False), ('account_type', '!=', 'off_balance')])",
+      "why_unavailable": "account_id domain is a dynamic Python expression (parent_of / and / or / +) that analyzeDynamicRelationDomain cannot reduce to simple tuples, so supported=false and the relation renders 可选范围暂不可用",
+      "fix_direction": "server-side dynamic domain must be evaluated by Odoo search/name_search, not parsed client-side; either project a query-capable domain carrier or treat unsupported dynamic domains as server-evaluated (not as unreadable)",
+      "layer": "P0 smart_core relation descriptor + frontend relationDescriptor domain analysis"
     }
   }
 }
