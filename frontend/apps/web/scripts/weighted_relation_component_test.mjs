@@ -33,6 +33,7 @@ const app=renderer.createApp({setup:()=>()=>h(Component,props.value)});app.mount
 assert.equal(calls.length,1);assert.equal(state(),'loading');
 props.value={...props.value,value:{'2':50}};await tick();assert.equal(calls.length,2);
 calls[1].resolve({records:[{id:2,display_name:'新账户'}]});await tick();assert.equal(text(),'新账户：50%');
+assert(all().some(n=>n.type==='button'&&n.props.type==='button'));assert(!all().some(n=>n.type==='input'));
 calls[0].resolve({records:[{id:1,display_name:'过期账户'}]});await tick();assert.equal(text(),'新账户：50%');
 props.value={...props.value,context:{allowed_company_ids:[2]}};await tick();assert.equal(calls.length,3);
 assert.deepEqual(calls[2].params.context,{allowed_company_ids:[2]});assert.equal(state(),'loading');assert(!text().includes('新账户'));
@@ -49,7 +50,15 @@ await build({ stdin: { contents: harness, resolveDir: path.dirname(entry), sourc
   bundle: true, platform: 'node', format: 'esm', outfile: output, logLevel: 'error', plugins: [{ name: 'mounted-weighted-relation', setup(builder) {
     builder.onLoad({filter:/\/api\/data\.ts$/},()=>({contents:'export const calls=[];export const readRecord=params=>new Promise((resolve,reject)=>calls.push({params,resolve,reject}));',loader:'js'}));
     builder.onLoad({filter:/\.vue$/},args=>{
-      if(args.path!==entry){assert(args.path.endsWith('/ScInlineState.vue'));return {contents:"import {h} from 'vue';export default {inheritAttrs:false,props:['label'],setup:props=>()=>h('span',props.label)};",loader:'js',resolveDir:path.dirname(args.path)};}
+      if(args.path!==entry){
+        assert(/\/(ScInlineState|ScPopover|ScButton)\.vue$/.test(args.path));
+        const contents=args.path.endsWith('/ScPopover.vue')
+          ? "import {h} from 'vue';export default {inheritAttrs:false,setup:(_, {slots})=>()=>h('span',slots.trigger?.())};"
+          : args.path.endsWith('/ScButton.vue')
+            ? "import {h} from 'vue';export default {inheritAttrs:false,setup:(_, {attrs,slots})=>()=>h('button',attrs,slots.default?.())};"
+            : "import {h} from 'vue';export default {inheritAttrs:false,props:['label'],setup:props=>()=>h('span',props.label)};";
+        return {contents,loader:'js',resolveDir:path.dirname(args.path)};
+      }
       const {descriptor}=parse(fs.readFileSync(args.path,'utf8'),{filename:args.path});
       return {contents:compileScript(descriptor,{id:args.path,inlineTemplate:true}).content,loader:'ts',resolveDir:path.dirname(args.path)};
     });

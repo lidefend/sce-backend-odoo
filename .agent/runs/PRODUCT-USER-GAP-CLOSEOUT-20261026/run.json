@@ -1860,12 +1860,16 @@
         "scripts/verify/local_dev_workspace_feedback.mjs"
       ],
       "reason": "Native analytic_distribution widget, not model/field name guesses, declares related model/label/unit/csv encoding/readonly mode. Ordinary API reads with contract context, no sudo or ACL expansion. Raw distribution values unchanged; no text editor for this declared readonly widget.",
-      "status": "static_orm_component_passed_browser_pending",
+      "status": "native_browser_passed_compact_display_pending",
       "validation": "analytic-native-unit-complete.log:42 parser tests+collection/native differential3739 and weighted display cases PASS; analytic-native-occurrence-component.log mounted actual SFC stale/context/denied/empty/unmount/raw tests PASS plus existing SSR42. Final types/lint PASS (existing warning only), contract_basis15 tests/guard0open PASS; analytic-native-final-orm.log21 actual post-tests0fail0error including analytic company boundary; L1 and25JS+11Python policy PASS.",
       "limits": "Readonly native distribution display only; distribution editor remains unimplemented and is explicitly not rendered. No demo seed/migration/upgrade required.",
       "review": "review_takeover S2 occurrence mixing fixed and mounted asynchronous evidence reviewed, no remaining blockers. Runtime chain still required.",
       "failures": "First collection exact shape check failed on new empty widget properties: changed to conditional source-paired projection. Initial types failed FieldDescriptor.widget unsupported: removed descriptor fallback in occurrence pairing fix. Original logs retained.",
-      "runtime_plan": "Registered sc-local-dev/sc_dev_demo, uid7/company1, exact candidate readonly draft10/posted55 native account-label/percentage/ready/no-input and unchanged raw checks; then existing owned single draft save/readback/cleanup. No demo mutation/migration/module upgrade."
+      "runtime_plan": "Registered sc-local-dev/sc_dev_demo, uid7/company1, exact candidate readonly draft10/posted55 native account-label/percentage/ready/no-input and unchanged raw checks; then existing owned single draft save/readback/cleanup. No demo mutation/migration/module upgrade.",
+      "candidate": "dd5ea775f1e745e4e23289cbfcaff5657f98e598",
+      "browser": "analytic-native-browser.log exit0 PASS6/two states. Actual posted51/52 display authorized [DEMO-ANALYTIC-001] 项目成本分析账户 - 德阳市高新智造产业投资有限公司：100%; raw {\"1\":100} unchanged. Desktop components ready, no text input, errors0blocked0. Screenshot inspected.",
+      "save_browser": "analytic-native-save-browser.log exit0 browser+independent cleanup PASS atdd5ea775f, exact owned object in journal-save-browser/dd5ea775f1e745e4e23289cbfcaff5657f98e598/P4-JOURNAL-dd5ea775f1e745e4e23289cbfcaff5657f98e598-59f236beda83436fabebeabc4a2a4195/.",
+      "visual_followup": "Long authoritative account display_name wrapped many lines in narrow column. Reuse ScPopover/ScButton structured-content compact readonly trigger and full-value expansion. Pure resolver/context/raw/save unchanged. Revalidate actual expanded popup and no mutation; save proof retains original candidate identity."
     }
   }
 }

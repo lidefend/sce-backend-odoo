@@ -819,6 +819,14 @@ try {
                 await cell.locator('[data-semantic-component="NativeWeightedRelationDisplay"][data-display-state="ready"]').waitFor({state:'visible'});
                 const actual=(await cell.innerText()).trim();
                 assert.equal(actual,expected); assert.equal(await cell.locator('input').count(),0);
+                const expand=cell.getByRole('button',{name:`查看完整内容：${expected}`,exact:true});
+                await expand.click();
+                const full=page.locator('[data-native-weighted-full-value]').filter({hasText:expected});
+                await full.waitFor({state:'visible'}); assert.equal((await full.innerText()).trim(),expected);
+                await page.screenshot({path:`${root}/${actor}-analytic-full-value.png`});
+                await expand.click();
+                await full.waitFor({state:'hidden'});
+
                 (detail.structuredValues ??= []).push({lineId:line.id,raw:distribution,display:actual,
                   representation:'native_weighted_relation',nativeAnalyticReadonlyAccepted:true,nativeAnalyticEditingAccepted:false});
               }
