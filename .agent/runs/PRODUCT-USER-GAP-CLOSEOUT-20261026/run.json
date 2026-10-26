@@ -1300,6 +1300,12 @@
       "change": "account_id dynamic domain no longer marks the relation unreadable; relationReadable only requires canRead, and unsupported dynamic domains forward an empty client domain for server-side evaluation",
       "browser": "line account column placeholder changed from 可选范围暂不可用 to 暂无可选内容 (readable, options load on interaction)",
       "remaining": "verify clicking 科目 triggers the relation query and returns the 49 accounts; then balance feedback, save draft + readback, permission denial"
+    },
+    "fg15_account_click": {
+      "status": "account_readable_but_query_not_triggered",
+      "browser": "clicking the 科目 input in the line row does not surface relation options (optionCount 0); no pageerror",
+      "note": "the line-context many2one relation query is not wired to the click/focus trigger; this is a separate relation-query interaction gap beyond the domain-readability fix",
+      "remaining": "wire line-context many2one query trigger, balance feedback, save draft + readback, permission denial"
     }
   }
 }
