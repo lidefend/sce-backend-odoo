@@ -37,7 +37,7 @@ if (selected) {
 }
 const cases = selected ? availableCases.filter(item => selected.includes(item.model)) : availableCases;
 const models = scope === 'journal-draft' ? ['account.move', 'account.move.line'] : scope === 'native-child' ? ['res.partner'] : cases.map(item => item.model);
-const report = {head: process.env.CANDIDATE_GIT_HEAD, cases: [], blocked: [], errors: [], feedback: [], onchanges: [], passed: false};
+const report = {head: process.env.CANDIDATE_GIT_HEAD, cases: [], blocked: [], errors: [], feedback: [], onchanges: [], childInitializations: [], passed: false};
 assert(/^[a-f0-9]{40}$/.test(report.head || ''));
 const browser = await launchChromium({headless: true});
 let page;
@@ -71,6 +71,7 @@ try {
       const payload = await response.json();
       if (request.intent === 'system.init') init = payload.data;
       else if (request.params.feedback_evaluation) report.feedback.push({model: request.params.model, ok: payload.ok, data: payload.data});
+      else if (request.params.child_initialization) report.childInitializations.push({params: request.params, httpStatus: response.status(), ok: payload.ok, data: payload.data, error: payload.error});
 
     } catch {}
   });
