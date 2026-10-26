@@ -133,7 +133,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Continue FG15 save/readback/balance and required-field coverage browser acceptance through governed write probe; resolve native child warnings/modifiers/line patches consumption where declared. Current contact+journal draft passes, no full product/mainline claim.",
+  "next_exact_step": "P0 native relation domain support: account_id combines company_id and/or, prefix |, parent_of and list concat with deprecated/account_type filters; preserve row/parent context and fail closed. Current bdeaada explicitly blocks account query; do not proceed save or claim FG15 closure. Verify authoritative current descriptor then declaration-consumption-runtime filtered selection.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1508,7 +1508,12 @@
       "reason": "Unsupported dynamic field domain was replaced with []; comodel api.data cannot reconstruct field origin domain. Fail before query; no model-specific rules.",
       "baseline_failure": "journal-domain-before.log existing detail collection assertion expected block-all but actual empty domain",
       "scope": "relationDescriptor.ts plus existing detail collection tests",
-      "status": "verification_pending"
+      "status": "static_pass_runtime_blocked",
+      "candidate": "bdeaada403205f428486f1c0f703ba8a421b07ed",
+      "tests": "journal-domain-final-tests.log L1/detail matrix6+domain7+structured6+actual runtime zero-fetch negative; settlement67/backend10/guard46/strict passed. journal-domain-root-tests.log root relation and guards40 passed. Independent review no S0-S2.",
+      "runtime": "journal-domain-browser.log failed awaiting account list: unsupported domain now refuses query. Initialization/currency assertions pass, account selection unavailable. No persistence attempted.",
+      "source_evidence": "Historical caught-exceptions/report.json responses19 account_id descriptor includes conditional company scope with and/or, prefix |, parent_of, list concat +, deprecated=False and account_type != off_balance. Current request previously [] omitted semantics; must not accept historical unrestricted selection as product success.",
+      "next": "Implement governed native relation-domain expression compilation/evaluation with row/parent/context identity; support conditional/list concat/company domain without model special case. Prove same-user filtered query before save/readback."
     }
   }
 }
