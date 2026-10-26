@@ -153,11 +153,11 @@ Generated from repository source files. This report is informational during the 
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
+| 1027 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1024 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1021 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1018 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
 | 1016 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |
-| 1011 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 1005 | Python source | `scripts/ci/test_backend_test_receipt.py` |
 | 1001 | Python source | `scripts/verify/local_dev_project_create_contract_action_scope.py` |

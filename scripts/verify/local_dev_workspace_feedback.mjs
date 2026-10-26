@@ -747,16 +747,32 @@ try {
             const lines=lineRead.payload.data.records;
             assert.deepEqual(lines.map(line=>line.id).sort((a,b)=>a-b),[...record.line_ids].sort((a,b)=>a-b));
             const lineComparisons=[];
+            const readonlyTable=page.locator('[data-field-name="line_ids"] [data-readonly-relation] [data-detail-collection-content="desktop-table"]');
+            let readonlyHeaders=[];
+            if (journalState === 'posted') {
+              await readonlyTable.waitFor({state:'visible'});
+              readonlyHeaders=(await readonlyTable.locator('thead th').allTextContents()).map(text=>text.trim());
+              for (const label of ['科目','借项','贷项']) assert.equal(readonlyHeaders.filter(text=>text===label).length,1);
+              assert.equal(new Set(lines.map(line=>line.account_id[1])).size,lines.length,'readonly sample needs unique account labels for row binding');
+              assert.equal(await readonlyTable.locator('tbody tr').count(),lines.length);
+            }
             for (const line of lines) {
               assert.equal(relationId(line.move_id),record.id);
               const cell=field=>page.locator(`#o2m-control-line_ids-o2m_id_${line.id}-${field}-desktop`);
               const values={};
+              const readonlyRow=journalState === 'posted'
+                ? readonlyTable.locator('tbody tr').filter({has:page.getByText(line.account_id[1],{exact:true})}) : null;
+              if (readonlyRow) assert.equal(await readonlyRow.count(),1,'readonly line account must identify one actual row');
               for (const field of ['debit','credit']) {
-                values[field]=await cell(field).inputValue();
+                values[field]=readonlyRow
+                  ? (await readonlyRow.locator('td').nth(readonlyHeaders.indexOf(field==='debit' ? '借项' : '贷项')).innerText()).trim()
+                  : await cell(field).inputValue();
                 assert.match(values[field],/^-?\d+(?:\.\d+)?$/,'amount must be an explicit numeric UI value');
                 assert.equal(Number(values[field]),line[field],`line ${line.id} ${field} differs from ORM`);
               }
-              values.account=await cell('account_id').inputValue();
+              values.account=readonlyRow
+                ? (await readonlyRow.locator('td').nth(readonlyHeaders.indexOf('科目')).innerText()).trim()
+                : await cell('account_id').inputValue();
               assert.equal(values.account,line.account_id[1],`line ${line.id} account label differs from ORM`);
               lineComparisons.push({id:line.id,account:line.account_id,debit:line.debit,credit:line.credit,ui:values,passed:true});
             }

@@ -1784,15 +1784,17 @@
     "accounting_posted_detail": {
       "layer": "P4 existing readonly journal-role browser, no product or demo mutation",
       "head": "207af4c11 plus workspace feedback observer",
-      "status": "demo_seed_applied_browser_pending",
+      "status": "readonly_probe_fix_pending",
       "scope": "Ordinary accounting manager selects draft and posted move_type entry independently; exact action/menu/record form reload, line values, unchanged readback. Posted button must be absent. Missing posted record is explicit demo_gap, never a verified state.",
       "validation": "First seed static stopped because new file not yet in run scope; registered exact scope before rerun. Retain accounting-posted-seed-static.log. Seed actual replay/readback plus browser required.",
       "limits": "Readonly role identity/browser remains pending; no posting execution.",
       "candidate": "d8986abeab043e048a18c144eaa93c77275da132",
       "result": "accounting-state-browser.log:6 lists/draft pass errors0 blocked0; named posted entry query empty. journalStateCoverageComplete=false. outcome status collided with globalStatus object for draft; fix uses distinct outcome key, no false full-coverage pass.",
       "seed_scope": "P4 existing demo seed step demo_posted_journal. sc-local-dev/sc_dev_demo namespace ns_000000000002 dbfilter ^sc_dev_demo$ volume sc_local_dev_odoo_data. Ordinary non-superuser manager creates one XMLID-owned 100 receivable debit/revenue credit example through native action_post. Existing draft10 untouched. Canonical demo accounts/partner and MISC journal reused; no migration.",
-      "seed_result": "accounting-posted-seed-apply.log exit0: ordinary-manager native action_post created owned move55 lines51/52. Review then tightened each-line partner equality and stale/mismatched XMLID rejection; replay pending. No existing draft modified.",
-      "review": "Source review requested/received: native actor path correct, outcome fix correct; tightened XMLID model/existence and each-line partner equality per review."
+      "seed_result": "apply and independent-process replay both exit0 same move55 lines51/52 posted. No duplicate creation.",
+      "review": "Source review requested/received: native actor path correct, outcome fix correct; tightened XMLID model/existence and each-line partner equality per review.",
+      "failure": "ab502f16e accounting-posted-browser.log failed: posted readonly table has no debit input. Screenshot confirms normal readonly renderer. Fix P4 observer to compare readonly cells with unique account-label row binding; retain failed report.",
+      "product_gap": "Actual posted readonly analytic_distribution renders [object Object]; separate P0 structured native value/widget presentation gap, not fixed by observer. Posted still shows generic 保存草稿 label; assess declaration/action semantics separately, do not assert full action UX closed."
     }
   }
 }
