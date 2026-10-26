@@ -1,17 +1,18 @@
-// P4: fixed affected forms, draft interaction only; never save or dispatch.
+// P4: fixed affected forms. journal-save permits one owned draft and exact cleanup; no posting.
 import fs from 'node:fs';
+import { permitsJournalSaveMutation } from './local_dev_journal_save_policy.mjs';
 import assert from 'node:assert/strict';
 import {launchChromium} from './playwright_runtime.mjs';
 import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap_inventory_policy.mjs';
 // The existing nginx owns the namespace stamp; the preview server does not.
 const base = 'http://127.0.0.1:18081/t/demo';
 const scope = process.env.SC_FEEDBACK_SCOPE || 'workspace';
-assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child', 'journal-draft'].includes(scope));
+assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child', 'journal-draft', 'journal-save'].includes(scope));
 const root = `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}`;
 fs.mkdirSync(root, {recursive: true});
 const actor = scope === 'usability' ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
 assert(['demo_full', 'demo_role_pm', 'demo_role_finance', 'demo_role_project_read'].includes(actor));
-const availableCases = ['usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child', 'journal-draft'].includes(scope) ? [] : scope === 'workspace' ? [
+const availableCases = ['usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child', 'journal-draft', 'journal-save'].includes(scope) ? [] : scope === 'workspace' ? [
   {model: 'sc.team.loan.deduction.workspace', field: 'note', hint: '建议补充办理说明'},
   {model: 'sc.current.account.workspace', field: 'note', hint: '建议补充办理说明', retained: '办理承包人借还款前请选择承包人/往来单位'},
 ] : scope === 'cost' ? [
@@ -36,12 +37,34 @@ if (selected) {
   assert(selected.every(model => availableCases.some(item => item.model === model)), 'model outside fixed scope');
 }
 const cases = selected ? availableCases.filter(item => selected.includes(item.model)) : availableCases;
-const models = scope === 'journal-draft' ? ['account.move', 'account.move.line'] : scope === 'native-child' ? ['res.partner'] : cases.map(item => item.model);
+const models = ['journal-draft', 'journal-save'].includes(scope) ? ['account.move', 'account.move.line'] : scope === 'native-child' ? ['res.partner'] : cases.map(item => item.model);
 const report = {head: process.env.CANDIDATE_GIT_HEAD, cases: [], blocked: [], errors: [], feedback: [], onchanges: [], childInitializations: [], passed: false};
 assert(/^[a-f0-9]{40}$/.test(report.head || ''));
 const browser = await launchChromium({headless: true});
 let page;
 let certificateRecordId = null;
+const journalSave = { enabled: scope === 'journal-save', ready: false, createAttempted: false, cleanupVerified: false,
+  ref: `P4-JOURNAL-${process.env.CANDIDATE_GIT_HEAD}-${Date.now()}`, createdId: null, accounts: [], rowKeys: [] };
+if (journalSave.enabled) {
+  assert.equal(process.env.CONFIRM_LOCAL_DEV_JOURNAL_SAVE, 'CREATE_READBACK_CLEANUP_ONE_DRAFT');
+  assert(process.env.SC_LOCAL_DEV_WRITE_LEASE_TOKEN, 'governed write lease required');
+  assert.equal(process.env.DB_NAME, 'sc_dev_demo');
+  assert.equal(process.env.ODOO_DBFILTER, '^sc_dev_demo$');
+}
+let journalTransport;
+async function journalApi(intent, params) {
+  assert(journalTransport, 'existing authenticated transport required');
+  return page.evaluate(async ({url, headers, body}) => {
+    const response = await fetch(url, {method: 'POST', headers, body: JSON.stringify(body)});
+    return {status: response.status, payload: await response.json()};
+  }, {...journalTransport, body: {intent, params}});
+}
+async function ownedJournalRows() {
+  const result = await journalApi('api.data', {op:'list',model:'account.move',domain:[['ref','=',journalSave.ref]],
+    fields:['id','ref','state','company_id','journal_id','currency_id','line_ids'],limit:2});
+  assert.equal(result.payload.ok,true); assert.equal(result.status,200);
+  return result.payload.data.records;
+}
 try {
   page = await browser.newPage({viewport: {width: 1440, height: 960}, locale: 'zh-CN'});
   page.setDefaultTimeout(20000);
@@ -58,8 +81,13 @@ try {
       req.method() === 'POST' && pathname === '/api/v1/intent' && ['chatter.timeline', 'chatter.followers.list'].includes(request?.intent) &&
       request.params?.model === 'sc.document.admin.document' &&
       Number(request.params.res_id ?? request.params.record_id) === certificateRecordId;
-    if (!draft && !certificateRead && !permitsInventoryRequest(req.method(), pathname, body, false)) {
-      report.blocked.push({intent: request?.intent || pathname});
+    const ownedMutation = permitsJournalSaveMutation(request, journalSave, {method:req.method(),path:pathname});
+    const ownedRead = journalSave.enabled && Number.isSafeInteger(journalSave.createdId) && req.method()==='POST' && pathname==='/api/v1/intent'
+      && ['chatter.timeline','chatter.followers.list'].includes(request?.intent) && request.params?.model==='account.move'
+      && (request.params.res_id ?? request.params.record_id)===journalSave.createdId;
+    if (ownedMutation && request.intent === 'api.data') journalSave.createAttempted = true;
+    if (!draft && !certificateRead && !ownedMutation && !ownedRead && !permitsInventoryRequest(req.method(), pathname, body, false)) {
+      report.blocked.push({intent: request?.intent || pathname, ...(journalSave.enabled && request?.params?.model==='account.move' ? {params:request.params} : {})});
       return route.abort();
     }
     await route.continue();
@@ -144,7 +172,7 @@ try {
     assert(report.onchanges.length > 0 && report.onchanges.every(result => result.ok === true), 'native onchange evidence missing or failed');
     item.passed = true;
   }
-  if (scope === 'journal-draft') {
+  if (['journal-draft', 'journal-save'].includes(scope)) {
     const model = 'account.move';
     const candidateIndex = fs.readFileSync('frontend/apps/web/dist-dev/index.html', 'utf8');
     const expectedEntries = [...candidateIndex.matchAll(/<script[^>]*src="([^"]*assets\/[^"]+)"/g)].map(match => new URL(match[1], base).pathname);
@@ -264,7 +292,95 @@ try {
     assert(item.accountSelection.httpStatus === 200 && item.accountSelection.ok === true, 'selected account onchange failed');
     assert.equal(report.blocked.length, 0);
     await page.screenshot({path: `${root}/after-account-selection.png`});
-    item.passed = true; // Draft selection only; no persistence.
+    if (journalSave.enabled) {
+      journalSave.companyId = childCompany[0]; journalSave.currencyId = currency[0];
+      journalSave.userId=init.user.id; journalSave.date=initial.data?.patch?.date || initial.params.values.date;
+      const journal = initial.data?.patch?.journal_id;
+      assert(Array.isArray(journal) && journal[0] > 0); journalSave.journalId = journal[0];
+      journalSave.accounts = accountResult.data.records.map(record => record.id);
+      journalSave.rowKeys = [item.virtualKey];
+      journalTransport = {url: accountResponse.url(), headers: Object.fromEntries(Object.entries(await accountResponse.request().allHeaders())
+        .filter(([key]) => /^(authorization|content-type)$|^x-/i.test(key)))};
+      assert.equal((await ownedJournalRows()).length, 0, 'marker already exists');
+      const ref = page.locator('[data-field-name="ref"] input:visible').first();
+      await ref.fill(journalSave.ref); await ref.blur();
+      const waitLine = (predicate) => page.waitForResponse(response => {
+        let body; try { body=response.request().postDataJSON(); } catch { return false; }
+        const request=body?.params?.intent ? body.params : body;
+        return request?.intent==='api.onchange' && request.params?.model===model && !request.params.res_id
+          && request.params.changed_fields?.includes('line_ids') && predicate(request.params.values?.line_ids || []);
+      });
+      const setAmount = async (field, index, amount) => {
+        const [response] = await Promise.all([
+          waitLine(commands => Number(commands[index]?.[2]?.[field])===amount),
+          (async () => { const input=collection.locator(`input[id$="-${field}-desktop"]`).nth(index);
+            await input.fill(String(amount)); await input.blur(); })(),
+        ]);
+        const result=await capture(response); report.onchanges.push(result);
+        assert.equal(result.ok,true, 'amount onchange failed');
+      };
+      await setAmount('debit',0,100);
+      const [secondResponse] = await Promise.all([
+        waitLine(commands => commands.filter(command => command[0]===0).length===2),
+        collection.getByRole('button', {name:/新增|添加/}).first().click(),
+      ]);
+      const second=await capture(secondResponse); assert.equal(second.ok,true);
+      const secondKey=second.params.values.line_ids[1][1]; journalSave.rowKeys.push(secondKey);
+      const secondInput=collection.locator('input[aria-label="科目"]:visible').nth(1);
+      const secondQuery=page.waitForResponse(response => {
+        let body; try { body=response.request().postDataJSON(); } catch { return false; }
+        const request=body?.params?.intent ? body.params : body;
+        return request?.intent==='api.data' && request.params?.model==='account.account' && request.params?.op==='list';
+      });
+      await secondInput.click(); const secondOptions=await capture(await secondQuery); assert.equal(secondOptions.ok,true);
+      const nextOption=page.locator('li.t-select-option:visible:not(.t-is-disabled)').nth(1);
+      await nextOption.waitFor({state:'visible'});
+      const nextLabel=(await nextOption.innerText()).trim();
+      const nextRecords=secondOptions.data.records.filter(record => [record.name,record.display_name].includes(nextLabel));
+      assert.equal(nextRecords.length,1); const nextId=nextRecords[0].id;
+      assert.notEqual(nextId,item.selectedAccountId);
+      const selected=waitLine(commands => commands.some(command => command[1]===secondKey &&
+        (Array.isArray(command[2].account_id) ? command[2].account_id[0] : command[2].account_id)===nextId));
+      await nextOption.click(); assert.equal((await capture(await selected)).ok,true);
+      await setAmount('credit',1,100);
+      journalSave.accounts=[item.selectedAccountId,nextId]; journalSave.ready=true;
+      const createResponse=page.waitForResponse(response => {
+        let body; try { body=response.request().postDataJSON(); } catch { return false; }
+        const request=body?.params?.intent ? body.params : body;
+        return request?.intent==='api.data' && request.params?.op==='create' && request.params?.model===model;
+      }, {timeout:20000});
+      await page.getByRole('button',{name:/^保存草稿$/}).click();
+      const saved=await createResponse; const savedBody=await saved.json();
+      report.saved={httpStatus:saved.status(),ok:savedBody.ok,data:savedBody.data,error:savedBody.error};
+      assert.equal(savedBody.ok,true,'draft save failed');
+      journalSave.createdId=savedBody.data.id; assert(Number.isSafeInteger(journalSave.createdId) && journalSave.createdId>0);
+      await page.waitForURL(url => url.pathname.endsWith('/'+journalSave.createdId),{timeout:20000});
+      await page.reload({waitUntil:'domcontentloaded'});
+      await page.waitForFunction(ref => document.body.innerText.includes(ref),journalSave.ref);
+      const rows=await ownedJournalRows(); assert.equal(rows.length,1);
+      assert.equal(rows[0].id,journalSave.createdId); assert.equal(rows[0].state,'draft');
+      const relationId = value => Array.isArray(value) ? value[0] : value;
+      assert.equal(relationId(rows[0].company_id),journalSave.companyId);
+      assert.equal(relationId(rows[0].journal_id),journalSave.journalId);
+      assert.equal(relationId(rows[0].currency_id),journalSave.currencyId);
+      const lines=await journalApi('api.data',{op:'read',model:'account.move.line',ids:rows[0].line_ids,
+        fields:['id','move_id','account_id','currency_id','debit','credit','balance']});
+      assert.equal(lines.payload.ok,true); assert.equal(lines.payload.data.records.length,2);
+      assert.equal(lines.payload.data.records.reduce((sum,row)=>sum+row.balance,0),0);
+      assert.equal(lines.payload.data.records.reduce((sum,row)=>sum+row.debit,0),100);
+      assert.equal(lines.payload.data.records.reduce((sum,row)=>sum+row.credit,0),100);
+      for (const row of lines.payload.data.records) {
+        assert.equal(relationId(row.move_id),journalSave.createdId);
+        assert.equal(relationId(row.currency_id),journalSave.currencyId);
+        const debit=row.debit===100; assert.equal(row.debit,debit?100:0); assert.equal(row.credit,debit?0:100);
+        assert.equal(relationId(row.account_id),journalSave.accounts[debit?0:1]);
+      }
+      assert.equal(report.blocked.length,0);
+      report.readback={record:rows[0],lines:lines.payload.data.records};
+      await page.screenshot({path:`${root}/saved-reloaded.png`});
+    }
+    item.passed = true;
+
 
   }
   if (scope === 'payroll') {
@@ -660,12 +776,31 @@ try {
     item.passed = true;
   }
   assert.equal(report.errors.length, 0);
-  if (!['native-child', 'journal-draft'].includes(scope)) for (const model of models) assert(report.feedback.some(r => r.model === model && r.ok), 'feedback transport missing');
+  if (!['native-child', 'journal-draft', 'journal-save'].includes(scope)) for (const model of models) assert(report.feedback.some(r => r.model === model && r.ok), 'feedback transport missing');
   report.passed = true;
 } finally {
-  if (page && ['native-child', 'journal-draft'].includes(scope)) await page.screenshot({path: `${root}/final.png`}).catch(() => {});
+  if (journalSave.enabled && journalSave.createAttempted && journalTransport) {
+    try {
+      const rows=await ownedJournalRows(); assert(rows.length<=1,'ambiguous cleanup ownership');
+      if (rows.length) {
+        const row=rows[0]; const company=Array.isArray(row.company_id)?row.company_id[0]:row.company_id;
+        assert.equal(row.ref,journalSave.ref); assert.equal(row.state,'draft'); assert.equal(company,journalSave.companyId);
+        if (journalSave.createdId) assert.equal(row.id,journalSave.createdId);
+        journalSave.createdId=row.id; journalSave.cleanupVerified=true;
+        const knownLines=row.line_ids;
+        const removed=await journalApi('api.data.unlink',{model:'account.move',ids:[row.id],idempotency_key:journalSave.ref+'-cleanup'});
+        assert.equal(removed.payload.ok,true,'owned draft cleanup failed');
+        const children=await journalApi('api.data',{op:'list',model:'account.move.line',domain:[['id','in',knownLines]],fields:['id'],limit:3});
+        assert.equal(children.payload.ok,true); assert.equal(children.payload.data.records.length,0,'owned lines remain');
+      }
+      assert.equal((await ownedJournalRows()).length,0,'owned draft remains after cleanup');
+      report.cleanup={passed:true,createdId:journalSave.createdId,ref:journalSave.ref};
+    } catch (error) { report.passed=false; report.cleanup={passed:false,error:error.message,createdId:journalSave.createdId,ref:journalSave.ref}; }
+  }
+  if (page && ['native-child', 'journal-draft', 'journal-save'].includes(scope)) await page.screenshot({path: `${root}/final.png`}).catch(() => {});
   report.lastPage = page ? {url: page.url(), text: await page.locator('body').innerText().catch(() => '')} : null;
   await browser.close();
   fs.writeFileSync(`${root}/${scope === 'usability' ? actor + '-' : ''}report.json`, JSON.stringify(report, null, 2));
 }
-console.log(`browser: PASS (${report.cases.length} ${scope} cases, no save/dispatch)`);
+assert(report.passed && (!journalSave.createAttempted || report.cleanup?.passed), 'acceptance or cleanup failed');
+console.log(`browser: PASS (${report.cases.length} ${scope} cases${journalSave.enabled ? ', draft save/readback/cleanup' : ', no save/dispatch'})`);

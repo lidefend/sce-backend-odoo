@@ -129,7 +129,9 @@
     "addons/smart_core/core/native_relation_domain.py",
     "frontend/apps/web/src/pages/contractForm/nativeRelationDomain.ts",
     "frontend/apps/web/src/pages/contractForm/one2manyColumnOptionsRuntime.ts",
-    "frontend/apps/web/scripts/fixtures/native_relation_domain.json"
+    "frontend/apps/web/scripts/fixtures/native_relation_domain.json",
+    "scripts/verify/local_dev_journal_save_policy.mjs",
+    "scripts/verify/test_local_dev_journal_save_policy.mjs"
   ],
   "environment": {
     "kind": "runtime",
@@ -1534,6 +1536,14 @@
       "evidence_root": ".runtime/product-user-gap-closeout-20261026/",
       "known_limits": "Data-only subset: no arbitrary calls/attributes/subscripts, context.get/conditional expressions/comparisons not implemented by this protocol. Unsupported remains explicit refusal. No save/posting or cross-company role matrix claim; demo_full browser only.",
       "rollback": "Revert195813696 to prior explicit refusal, never reinstate silent empty domain. Cache version/digest move with compiler."
+    },
+    "journal_save_scope": {
+      "layer": "P4 existing local.dev probe extension",
+      "head": "836c6b79c8416abbb74836806d8ebdbc751b48d1",
+      "authority": "User continues demo-backed product closeout and previously authorized demo edits/rebuild; one owned draft only, no posting.",
+      "environment": "sc-local-dev/sc_dev_demo/^sc_dev_demo$/ns_000000000002/sc_local_dev_odoo_data; managed auth and write lease",
+      "mutation": "One unique ref balanced two-row100 debit/credit UI create; read/reload; exact owned draft unlink and absence readback in finally. No existing record writes or posting.",
+      "status": "implementation"
     }
   }
 }

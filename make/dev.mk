@@ -1776,3 +1776,15 @@ verify.local.dev.native_child.draft: guard.prod.forbid local.dev.ready local.dev
 verify.local.dev.journal.draft: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  SC_FEEDBACK_SCOPE=journal-draft bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.journal.save verify.local.dev.journal.save.run verify.local.dev.journal.save.policy
+verify.local.dev.journal.save.policy: guard.prod.forbid
+	@node --test scripts/verify/test_local_dev_journal_save_policy.mjs
+	@node --check scripts/verify/local_dev_workspace_feedback.mjs
+verify.local.dev.journal.save: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "journal-draft-save" -- $(MAKE) --no-print-directory verify.local.dev.journal.save.run
+verify.local.dev.journal.save.run: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health local.dev.write_lease.require
+	@test "$(CONFIRM_LOCAL_DEV_JOURNAL_SAVE)" = "CREATE_READBACK_CLEANUP_ONE_DRAFT"
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_LOCAL_DEV_WRITE_LEASE_TOKEN="$(SC_LOCAL_DEV_WRITE_LEASE_TOKEN)" CONFIRM_LOCAL_DEV_JOURNAL_SAVE="$(CONFIRM_LOCAL_DEV_JOURNAL_SAVE)" \
+	  SC_FEEDBACK_SCOPE=journal-save bash scripts/verify/local_dev_workspace_feedback.sh

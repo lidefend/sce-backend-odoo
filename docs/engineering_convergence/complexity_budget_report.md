@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4967`
+- Scanned files: `4969`
 - Files requiring split plan: `72`
-- Files above warning threshold: `143`
+- Files above warning threshold: `144`
 
 ## Split Plan Required
 
@@ -214,6 +214,7 @@ Generated from repository source files. This report is informational during the 
 | 808 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
 | 806 | Python source | `addons/smart_construction_core/models/core/funding_baseline.py` |
+| 806 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 803 | Python source | `scripts/verify/frontend_product_page_header_guard.py` |
 | 802 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
