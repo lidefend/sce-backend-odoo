@@ -1342,6 +1342,15 @@
       "finding": "journal_id (_compute_journal_id) and date (_compute_date) are stored computed required fields with no default; default_get returns only move_type/state, so a new draft never hydrates journal_id/date and save is rejected",
       "fix": "P0 create-default hydration must trigger an onchange roundtrip for default-set fields (move_type) so the native onchange recomputes journal_id/date before save; this is the empty changed_fields initialization gap",
       "layer": "P0 smart_core api_onchange / frontend createDefaults hydration"
+    },
+    "fg15_save_adopted_validation": {
+      "status": "computed-default hydration done; save blocked by adopted-form validation",
+      "commits": [
+        "8f443d355 onchange hydrates journal_id/date"
+      ],
+      "backend_verified": "api.onchange with values={move_type:entry} and empty changed_fields returns journal_id=[3,杂项操作], date=2026-10-26",
+      "frontend": "markFieldChanged after create-default hydration triggers the onchange roundtrip",
+      "remaining_block": "saveRecord still fails 表单校验未能完成 from runAdoptedFormValidation (adopted standard form composition validation covers zero required fields); this is a separate canonical-form validation gap"
     }
   }
 }
