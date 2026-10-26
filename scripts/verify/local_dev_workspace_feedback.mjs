@@ -693,12 +693,20 @@ try {
             collectionState:await page.locator('[data-semantic-component="ActionView"]').getAttribute('data-collection-state'),passed:true});
           await page.screenshot({path:`${root}/${actor}-${menu}.png`});
           if (entry.meta.model === 'account.move') {
+            report.journalStates=[];
+            for (const journalState of ['draft','posted']) {
             const selected = await journalApi('api.data',{op:'list',model:'account.move',
-              domain:[['state','=','draft'],['move_type','=','entry']],
+              domain:[['state','=',journalState],['move_type','=','entry'],['name','!=','/'],['name','!=',false]],
               fields:['id','name','ref','state','move_type','company_id','journal_id','line_ids','write_date'],limit:5});
             assert.equal(selected.status,200); assert.equal(selected.payload.ok,true);
             const record = selected.payload.data.records.find(row=>row.name && row.name !== '/');
+            if (!record && journalState === 'posted') {
+              report.journalStates.push({state:journalState,status:'demo_gap',reason:'No named posted journal entry available to the accounting manager',passed:false});
+              continue;
+            }
             assert(record,'demo gap: no named saved draft journal entry');
+            assert.equal(record.state,journalState);
+            assert.equal(record.move_type,'entry');
             journalDetailId = record.id;
             assert(Number.isSafeInteger(journalDetailId) && journalDetailId>0);
             const relationId = value=>Array.isArray(value) ? value[0] : value;
@@ -712,7 +720,11 @@ try {
                 && Number(request.params?.menu_id)===Number(menu) && Number(request.params?.record_id)===record.id;
             });
             const open = waitForm();
-            await page.locator('[data-semantic-component="ActionView"]').getByRole('button',{name:record.name,exact:true}).click();
+            if (journalState === 'draft') {
+              await page.locator('[data-semantic-component="ActionView"]').getByRole('button',{name:record.name,exact:true}).click();
+            } else {
+              await page.goto(`${base}/f/account.move/${record.id}?menu_id=${menu}&action_id=${action}`,{waitUntil:'domcontentloaded'});
+            }
             const validateForm = async pending=>{
               const response=await pending; assert.equal(response.status(),200);
               const payload=await response.json(); assert.equal(payload.ok,true);
@@ -759,11 +771,18 @@ try {
             const savedFields=['id','name','ref','state','move_type','company_id','journal_id','line_ids','write_date'];
             const facts=row=>Object.fromEntries(savedFields.map(key=>[key,row[key]]));
             assert.deepEqual(facts(readback.payload.data.records[0]),facts(record),'readonly detail must preserve saved record');
-            report.journalDetail={record,status,reloadedStatus,lineComparisons,readback:facts(readback.payload.data.records[0]),comparisonPassed:true,
+            const detail={record,status,reloadedStatus,lineComparisons,readback:facts(readback.payload.data.records[0]),comparisonPassed:true,
               visibleLineCount:Number(await page.locator('[data-field-name="line_ids"] [data-row-count]').first().getAttribute('data-row-count')),
               lineRegionText:await page.locator('[data-field-name="line_ids"]').first().innerText(),route:page.url(),
               visibleButtons:await page.locator('[data-semantic-component="ContractFormPage"] button:visible').allTextContents(),passed:true};
-            await page.screenshot({path:`${root}/${actor}-saved-draft-detail.png`});
+            if (journalState === 'posted') {
+              assert.equal(await page.locator('[data-semantic-component="ContractFormPage"]').getByRole('button',{name:'过账',exact:true}).count(),0,'posted journal must not expose posting again');
+            }
+            report.journalStates.push({state:journalState,status:'verified',...detail});
+            if (journalState === 'draft') report.journalDetail=detail;
+            await page.screenshot({path:`${root}/${actor}-saved-${journalState}-detail.png`});
+            }
+            report.journalStateCoverageComplete=report.journalStates.length===2 && report.journalStates.every(item=>item.status==='verified' && item.passed);
           }
         }
       } else {
@@ -988,3 +1007,5 @@ try {
 }
 assert(journalSave.enabled ? report.browserPassed : report.passed, 'browser acceptance failed; governed wrapper must still clean up');
 console.log(`browser: PASS (${report.cases.length} ${scope} cases${journalSave.enabled ? ', draft save/readback; ORM cleanup pending' : ', no save/dispatch'})`);
+
+if (report.journalStates) console.log(`journal state coverage: ${report.journalStateCoverageComplete ? 'COMPLETE' : 'INCOMPLETE'} (${report.journalStates.map(item=>`${item.state}:${item.status}`).join(', ')})`);

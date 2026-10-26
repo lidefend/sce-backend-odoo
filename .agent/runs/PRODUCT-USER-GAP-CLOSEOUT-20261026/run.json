@@ -163,7 +163,7 @@
     "FG15: persistent posting lifecycle not run; requires bounded exact-object recovery plan before writes.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Inspect posted-entry demo availability and readonly accounting identity/detail action matrix using existing governed browser/seed. Do not count visible buttons as executed save/post workflows; no migration framework.",
+  "next_exact_step": "Run exact candidate journal-role observer and record posted-state verification or explicit demo gap, then address readonly role scenario.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1779,6 +1779,14 @@
       "result": "accounting-line-browser.log exit0 PASS6 plus detail: line19 account49 label601880工程收入 debit100 credit0; line20 account48 label131880应收账款 debit0 credit100. Exact desktop inputs equal ORM labels/numbers; lines before/after including write_date identical; parent unchanged; errors0 blocked0.",
       "evidence": "journal-role-browser/9542745a63a223d79120923ac6a40b756d4c1b8b/sc_demo_accounting_manager-report.json",
       "review": "review_takeover source and raw report PASS: exact two line input values/API match, parent unchanged, errors0/blocked0. No save/post or horizontal viewport claim."
+    },
+    "accounting_posted_detail": {
+      "layer": "P4 existing readonly journal-role browser, no product or demo mutation",
+      "head": "207af4c11 plus workspace feedback observer",
+      "status": "runtime_pending",
+      "scope": "Ordinary accounting manager selects draft and posted move_type entry independently; exact action/menu/record form reload, line values, unchanged readback. Posted button must be absent. Missing posted record is explicit demo_gap, never a verified state.",
+      "validation": "Existing L1 and journal save policy targets; real browser required. No new write exemptions.",
+      "limits": "Readonly role identity/browser remains pending; no posting execution."
     }
   }
 }

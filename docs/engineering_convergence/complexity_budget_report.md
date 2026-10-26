@@ -157,6 +157,7 @@ Generated from repository source files. This report is informational during the 
 | 1021 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1018 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
 | 1016 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |
+| 1011 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 1005 | Python source | `scripts/ci/test_backend_test_receipt.py` |
 | 1001 | Python source | `scripts/verify/local_dev_project_create_contract_action_scope.py` |
@@ -164,7 +165,6 @@ Generated from repository source files. This report is informational during the 
 | 996 | Python source | `scripts/ops/daily_runtime_legacy_stack_retire.py` |
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 992 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
-| 990 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 988 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 976 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
