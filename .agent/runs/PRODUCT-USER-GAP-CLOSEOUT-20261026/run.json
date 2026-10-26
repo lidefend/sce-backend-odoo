@@ -1136,6 +1136,15 @@
         "wrong_but_not_hard_fail": "tax_totals and payment binary widgets render as ScFileField upload; statinfo as number input",
         "fix_owner": "contracts/registry/semantic.yaml + component.yaml + frontend professionalComponentRegistry + a dedicated accounting renderer; no account.move model hardcoding"
       }
+    },
+    "fe_accounting_widget_01_stage2_backend": {
+      "status": "committed",
+      "commit": "50480c5b9",
+      "scope": "contracts/registry/semantic.yaml + semantic_resolver.SEMANTIC_WIDGET_HINTS + regenerated semantic_registry_generated + resolver tests",
+      "change": "account-tax-totals-field, payment, statinfo now resolve to readable_value -> sc.display.text (read-only display), not binary/number editable controls",
+      "validation": "make verify.semantic.registry.lint PASS (31 resolver tests); make ci.local.iteration L1_only PASS; real Odoo readback confirms sc.display.text",
+      "no_new_component": "reused existing readable_value -> sc.display.text chain; no frontend vocabulary added",
+      "remaining": "interactive journal-line accounting component (debit/credit/balance) and real browser journey (page open, line edit, balance, save, readback, permissions) remain"
     }
   }
 }
