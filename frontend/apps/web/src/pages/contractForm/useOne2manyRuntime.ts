@@ -28,7 +28,7 @@ export function useOne2manyRuntime(params: {
   resolveColumns: (fieldName: string) => One2ManyColumn[];
   resolvePrimaryColumn: (fieldName: string) => string;
   resolveRelationOptions: (fieldName: string) => RelationOption[];
-  parentValues: () => Record<string, unknown>;
+  parentValues: (fieldName: string) => Record<string, unknown>;
   markFieldChanged: (fieldName: string) => void;
   loadDefaults?: (fieldName: string) => Promise<Record<string, unknown>>;
   createScope?: () => unknown;
@@ -92,16 +92,16 @@ export function useOne2manyRuntime(params: {
 
   function setRowField(fieldName: string, rowKey: string, column: One2ManyColumn, value: unknown) {
     const changed = setOne2manyDraftRowField({
-      rowsByField, fieldName, rowKey, column, value, parentValues: params.parentValues(),
+      rowsByField, fieldName, rowKey, column, value, parentValues: params.parentValues(fieldName),
     });
     if (changed) params.markFieldChanged(fieldName);
   }
 
-  function effectiveColumn(_fieldName: string, row: One2ManyInlineRow, column: One2ManyColumn) {
+  function effectiveColumn(fieldName: string, row: One2ManyInlineRow, column: One2ManyColumn) {
     const behavior = resolveOne2manyRowColumnBehavior(
       column,
       row.values || {},
-      params.parentValues(),
+      params.parentValues(fieldName),
       row.modifierPatches || {},
     );
     return {
@@ -138,7 +138,7 @@ export function useOne2manyRuntime(params: {
   }
 
   function buildCommandValue(name: string, mode: 'onchange' | 'write') {
-    return buildOne2manyCommandValue(params.originalValues()[name], fieldRows(name), mode, params.resolveColumns(name), params.parentValues());
+    return buildOne2manyCommandValue(params.originalValues()[name], fieldRows(name), mode, params.resolveColumns(name), params.parentValues(name));
   }
 
   function collectValidation() {
@@ -148,7 +148,7 @@ export function useOne2manyRuntime(params: {
       recordId: params.recordId(),
       resolvePrimaryColumn: params.resolvePrimaryColumn,
       resolveColumns: params.resolveColumns,
-      parentValues: params.parentValues(),
+      resolveParentValues: params.parentValues,
     });
   }
 

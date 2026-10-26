@@ -232,3 +232,40 @@ assert.equal(child.visibleRows('lines').length, 1);
 assert.equal(child.visibleRows('lines')[0]!.values.state, 'draft');
 assert.equal(changes, 4, 'only accepted rows and explicit edits dirty the parent');
 console.log('[create-default-hydration] PASS cases=55');
+
+// One authoritative frame feeds actual child rendering, edits, validation and writes.
+const { bindNativeContext, bindNativeRowParentContext } = await import('../src/app/nativeModifierContext');
+let parentDraft = false;
+const contextualColumns = [{ name: 'note', label: 'Note', ttype: 'char', modifiers: {
+  required: { kind: 'value_truthy', semantics: 'python', value_expr: { kind: 'context_get', key: 'required', default: false } },
+  readonly: { kind: 'field_truthy', field: 'parent.locked' },
+} }];
+const contextual = useOne2manyRuntime({
+  model: () => 'x.parent', recordId: () => 0, originalValues: () => ({}),
+  parentValues: name => bindNativeRowParentContext(
+    bindNativeContext({ locked: parentDraft, '$native.context': { required: false } }, { context: { required: false } }),
+    { required: name === 'lines' },
+  ),
+  onchangeLinePatches: () => [], resolveColumns: () => contextualColumns,
+  resolvePrimaryColumn: () => '', resolveRelationOptions: () => [], markFieldChanged: () => {},
+});
+await contextual.addRow('lines');
+await contextual.addRow('other');
+const contextualRow = contextual.visibleRows('lines')[0]!;
+contextualRow.values['$native.context'] = { required: false };
+assert.equal(contextual.effectiveColumn('lines', contextualRow, contextualColumns[0]!).required, true);
+assert.equal(contextual.effectiveColumn('other', contextual.visibleRows('other')[0]!, contextualColumns[0]!).required, false);
+assert.equal(contextual.collectValidation().issues.length, 1);
+parentDraft = true;
+contextual.setRowField('lines', contextualRow.key, contextualColumns[0]!, 'Denied');
+assert.equal(contextualRow.values.note, '');
+assert.equal(contextual.effectiveColumn('lines', contextualRow, contextualColumns[0]!).readonly, true);
+parentDraft = false;
+contextual.setRowField('lines', contextualRow.key, contextualColumns[0]!, 'Allowed');
+assert.equal(contextual.collectValidation().issues.length, 0);
+assert.deepEqual(contextual.buildCommandValue('lines', 'write'), [[0, 0, { note: 'Allowed' }]]);
+parentDraft = true;
+assert.deepEqual(contextual.buildCommandValue('lines', 'write'), [[0, 0, {}]]);
+assert.throws(() => bindNativeRowParentContext({}, { required: true }));
+assert.throws(() => bindNativeRowParentContext({ '$native.context': {} }, "{'required': True}"));
+console.log('one2many authoritative row frame: passed');

@@ -84,7 +84,12 @@
     "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
     "frontend/apps/web/src/app/nativeModifierContext.ts",
     "frontend/apps/web/src/app/contracts/v2/store.ts",
-    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py"
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+    "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+    "frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+    "frontend/apps/web/scripts/create_default_hydration_test.ts"
   ],
   "environment": {
     "kind": "runtime",
@@ -92,7 +97,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Implement explicit one2many row evaluation frame carrying declared parent/context and typed relation values; verify draft reactivity and denial boundaries before FG15 rich components/browser acceptance.",
+  "next_exact_step": "Verify declared relation-value normalization and child parent dependency hydration closure, then nested frames and FG15 rich components/browser acceptance.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -944,6 +949,8 @@
       ],
       "final_identity": "12af199373f07f42d15e06218ba6eee9bc8016d6 + P4 cache guard and documentation only",
       "generated_diff_review": "Only source counts/line counts and frontend input digest changed; generated semantic registry has no product declaration delta."
-    }
+    },
+    "fourteenth_scope": "P0 generic row evaluation: authoritative context plus field overlay, snapshot/live parent and shared evaluator; risk dynamic visibility/editability/required. Excludes relation normalization, notices, deployment, demo reset. L0/L1 collection/default hydration/typecheck/basis and independent review. Initial scope update script failed on observations dict; corrected immediately before tests.",
+    "fourteenth_result": "Shared row context and parent resolver implemented; collection/compiler/differential/parser and actual hook tests passed; independent review no S0-S2; strict typecheck and contract basis passed (fourteenth-guards.log). Initial AST fixture and TS context-property failures preserved. No browser/ORM/deploy/reset. Backend parent dependency closure, typed relations, nested scope and existing row write policy remain."
   }
 }

@@ -34,3 +34,12 @@ export function resolveNativeOperand(node: unknown, resolve: (field: string) => 
   if (!isPythonModifierValue(value)) return gap();
   return value;
 }
+
+// The parent map is already bound by the contract store; row data cannot supply context.
+export function bindNativeRowParentContext(parent: Record<string, unknown>, fieldContext: unknown): Record<string, unknown> {
+  if (fieldContext === undefined || fieldContext === null) return parent;
+  if (!record(fieldContext)) return gap();
+  const context = parent['$native.context'];
+  if (!record(context)) return gap();
+  return { ...parent, '$native.context': { ...context, ...fieldContext } };
+}

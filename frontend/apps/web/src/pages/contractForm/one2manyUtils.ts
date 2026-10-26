@@ -187,26 +187,13 @@ export function resolveOne2manyRowColumnBehavior(
   const modifiers = { ...(column.modifiers || {}), ...runtimeModifiers };
   const evaluateModifier = (value: unknown) => evaluateNativeModifierValue(value, (field) => {
     const fieldName = String(field || '').trim();
+    if (fieldName === '$native.context') return parentValues[fieldName];
     if (fieldName.startsWith('parent.')) return parentValues[fieldName.slice('parent.'.length)];
     return rowValues[fieldName];
   });
-  const isCanonical = (value: unknown): boolean => {
-    if (typeof value === 'boolean' || value === 0 || value === 1) return true;
-    if (typeof value === 'string') return ['0', '1', 'false', 'False', 'true', 'True'].includes(value.trim());
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-    const row = value as Record<string, unknown>;
-    const kind = String(row.kind || '').trim();
-    if (kind === 'static') return true;
-    if (kind === 'not') return isCanonical(row.expr);
-    if (kind === 'all' || kind === 'any') return Array.isArray(row.exprs) && row.exprs.every(isCanonical);
-    if (kind !== 'field_truthy' && kind !== 'field_compare') return false;
-    const fields = [row.field, row.value_field].filter(Boolean).map((field) => String(field));
-    return fields.every((field) => !field.startsWith('context.'));
-  };
   const verdict = (key: 'invisible' | 'readonly' | 'required' | 'column_invisible') => {
     const value = modifiers[key];
     if (value === undefined) return false;
-    if (!isCanonical(value)) return key !== 'required';
     return evaluateModifier(value);
   };
   return {
@@ -557,6 +544,7 @@ export function collectOne2manyDraftValidationFromRows(params: {
   resolvePrimaryColumn: (fieldName: string) => string;
   resolveColumns: (fieldName: string) => One2ManyColumn[];
   parentValues?: Record<string, unknown>;
+  resolveParentValues?: (fieldName: string) => Record<string, unknown>;
 }) {
   const issues: string[] = [];
   const rowErrors: Record<string, string[]> = {};
@@ -575,7 +563,7 @@ export function collectOne2manyDraftValidationFromRows(params: {
       const checkedRequiredFields = new Set<string>();
       columns.forEach((column) => {
         const behavior = resolveOne2manyRowColumnBehavior(
-          column, row.values || {}, params.parentValues || {}, row.modifierPatches || {},
+          column, row.values || {}, params.resolveParentValues?.(fieldName) ?? params.parentValues ?? {}, row.modifierPatches || {},
         );
         if (!behavior.required || behavior.invisible || behavior.columnInvisible || checkedRequiredFields.has(column.name)) return;
         checkedRequiredFields.add(column.name);

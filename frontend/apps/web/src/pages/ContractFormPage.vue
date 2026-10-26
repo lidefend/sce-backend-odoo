@@ -351,6 +351,8 @@ import { executeButton } from '../api/executeButton';
 import { triggerOnchange } from '../api/onchange';
 import type { OnchangeLinePatch } from '../api/onchange';
 import type { FieldDescriptor } from '@sc/schema';
+import { resolveContractV2ModifierValues } from '../app/contracts/v2/store';
+import { bindNativeRowParentContext } from '../app/nativeModifierContext';
 import { useSessionStore } from '../stores/session';
 import { ErrorCodes } from '../app/error_codes';
 import {
@@ -914,7 +916,9 @@ const {
   model: () => model.value,
   recordId: () => recordId.value,
   originalValues: () => originalValues.value,
-  parentValues: () => formData,
+  parentValues: (fieldName) => bindNativeRowParentContext(
+    resolveContractV2ModifierValues(v2ContractStore.value, formData), (effectiveFieldDescriptor(fieldName) as Record<string, unknown> | undefined)?.context,
+  ),
   loadDefaults: (fieldName) => loadOne2manyCreateDefaults(fieldName),
   createScope: () => v2ContractStore.value,
   onCreateError: (error) => applyPageStatusEvent({ kind: 'status', transaction: 'runAction', status: 'error', errorMessage: error instanceof Error ? error.message : '明细默认值加载失败' }),

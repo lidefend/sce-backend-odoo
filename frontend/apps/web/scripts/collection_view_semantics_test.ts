@@ -231,9 +231,9 @@ assert.equal(
   false,
   'a new relation row must remain editable when the dynamic readonly modifier is false',
 );
-assert.equal(resolveOne2manyRowColumnBehavior({
+assert.throws(() => resolveOne2manyRowColumnBehavior({
   ...dynamicColumn, modifiers: { column_invisible: "context.get('hide_note')" },
-}, {}, {}).columnInvisible, true);
+}, {}, {}));
 assert.equal(resolveOne2manyRowColumnBehavior({
   ...dynamicColumn,
   modifiers: { column_invisible: { kind: 'field_truthy', field: 'parent.hide_note' } },
@@ -502,3 +502,14 @@ assert.deepEqual(extractKanbanFieldsFromContract(orderedKanban), ['name', 'strat
 orderedKanban.snapshot.layoutContract.listProfile = {columns: ['private_field', 'name']};
 assert.deepEqual(extractKanbanFieldsFromContract(orderedKanban), ['name', 'date', 'state', 'strategy']);
 console.log('kanban published ordering: 2 assertions PASS');
+
+const contextColumn = { ...dynamicColumn, modifiers: { column_invisible: {
+  kind: 'value_truthy', semantics: 'python', value_expr: { kind: 'context_get', key: 'view_no_maturity', default: false },
+} } };
+assert.equal(resolveOne2manyRowColumnBehavior(contextColumn, {}, { '$native.context': { view_no_maturity: true } }).columnInvisible, true);
+assert.equal(resolveOne2manyRowColumnBehavior(contextColumn, { '$native.context': { view_no_maturity: true } }, { '$native.context': {} }).columnInvisible, false);
+assert.throws(() => resolveOne2manyRowColumnBehavior(contextColumn, { '$native.context': {} }, {}));
+assert.throws(() => resolveOne2manyRowColumnBehavior({ ...dynamicColumn, modifiers: {
+  readonly: { kind: 'field_truthy', field: 'parent.missing' },
+} }, { 'parent.missing': false }, {}));
+console.log('one2many context namespace and missing-parent denial: passed');
