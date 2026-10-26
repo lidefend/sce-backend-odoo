@@ -145,10 +145,11 @@
   },
   "checks": {},
   "blockers": [
-    "FG15: ordinary-role/company permission matrix and posting lifecycle not run; demo_full unposted draft success does not prove these surfaces.",
-    "FG15: unsupported child warning/modifier/line patches and residual native groups declarations still explicitly refused; broader native capability coverage remains open."
+    "FG15: ordinary accounting-specific positive browser role workflow and browser cross-company context matrix remain unverified. Finance/project-reader denial now passed; do not substitute it for accounting positive acceptance.",
+    "FG15: persistent posting lifecycle not run; requires bounded exact-object recovery plan before writes.",
+    "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Continue FG15 on existing local.dev: derive affected ordinary finance/read-only role and company cases from declared permissions, first inspect entry/read/edit denial without persistence; add only scoped governed probes where missing. Posting requires its own exact object and restoration plan before runtime mutation. Reuse d4da473f2 journal draft save/readback/cleanup evidence; no broad matrix or demo rebuild just to change identity. Mainline/remote CI/daily deployment remain pending.",
+  "next_exact_step": "Audit the dedicated accounting_read/accounting_user role surface and available governed demo identities against formal journal menu declarations; distinguish model ACL, role publication and data coverage. Add owning P1 declaration only if a proven role-surface gap exists, then bounded positive accounting-role browser coverage. Keep posting separate until rollback handler tests and exact restoration scope exist. Reuse passed d4da draft loop and ee49685d4 denial evidence; no broad rerun or demo rebuild solely for identity changes.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1639,11 +1640,16 @@
       "head": "d67adfd68 (clean start)",
       "declaration": "Model ACL: finance_read inherits accounting_read, no accounting_user. Route authority: P1 ROLE_SURFACE_OVERRIDES finance/project_member does not publish accounting menu175/action292. Therefore saved-reader ORM allowed but mutations denied; demo-role journal navigation/direct route denied. Do not equate model read with route publication.",
       "validation": "L1 then exact rollback ORM reader saved contract and write denials, native feedback foreign-company denial. Reuse established demo_full save evidence; no persistent posting, user/group mutation, module upgrade or data reset.",
-      "status": "orm_passed_browser_pending",
-      "tests": "journal-role-orm.log exact2 PASS; journal-role-route-reviewed-orm.log exact1 positive published route allowed plus journal route denied PASS; journal-role-positive-probe-tests.log syntax and23JS+11Python PASS; corrected L1 log PASS.",
-      "review": "review_takeover positive route control closes empty-authority false-pass; actualuid/company/assets checked; no remaining blocker.",
-      "affected": "Only two demo actors, menu175 list read/create denial and direct new-page denial; no persistence. Saved existing-record reader contract tested separately in rollback ORM.",
-      "failure": "journal-finance-browser.log at3e6c9d8b5 failed declared entry missing. P4 expected menu publication based only on ACL; corrected against P1 role surface, no product permission changes. Original failed evidence retained."
+      "status": "scoped_orm_and_declared_route_browser_passed",
+      "tests": "journal-role-orm.log exact2 PASS (reader saved form/ACL writes/post denied, foreign-company feedback/write/context denied); journal-role-route-reviewed-orm.log exact1 PASS (nonempty authority + positive route allowed, journal handler denied); journal-role-wire-tests.log23JS+11Python PASS; journal-role-final-l1.log PASS.",
+      "review": "review_takeover final raw-report review: no false pass, identity/positive control/namespace binding and two denial layers confirmed. No product permission changes.",
+      "affected": "Two demo actors only: independently allowed positive route, absence of undeclared menu175, public menu-authority403 and directURL AccessDeniedView. No journal list/record-read browser claim for these actors.",
+      "failure": "journal-finance-browser.log at3e6c9d8b5 failed declared entry missing. P4 expected menu publication based only on ACL; corrected against P1 role surface, no product permission changes. Original failed evidence retained.",
+      "candidate": "ee49685d4bd491fd7ca9d47b0dea3466a8a91559",
+      "runtime": "journal-finance-final-browser.log and journal-project-read-final-browser.log each PASS1; journal-role-browser/ee49685d4bd491fd7ca9d47b0dea3466a8a91559/{demo_role_finance,demo_role_project_read}-report.json. Actual uid47/41 company1, namespace assets verified, finance positive sc.receipt.income /a/708?menu_id=338, project reader positive project.project /a/590?menu_id=382. Public journal request403 PERMISSION_DENIED with cause 用户无权访问菜单 日记账分录; directURL denied; errors0/blocked0. Screenshots inspected.",
+      "failure_history": "3e6c9d8b5 journal-finance-browser.log failed wrong menu-publication assumption. c9cda28f8 journal-finance-reviewed-browser.log positive passed then expected wrong HTTP reason; public intent_permission published-menu gate rejects before handler, intent_dispatcher normalizes AccessError toPERMISSION_DENIED. ee49685d4 asserts exact public403/reason/details/cause while ORM retains handler-specific ROUTE_ACTION_NOT_AUTHORIZED. Original logs preserved.",
+      "limits": "Only finance/project-reader declared route denial in browser. Ordinary accounting-specific positive browser workflow, browser cross-company context, posting lifecycle and broader native expression capabilities remain pending. Synthetic rollback ORM is separate evidence, not demo browser acceptance.",
+      "reuse": "Initial two ORM methods/fixtures unchanged when route-only test appended; product kernel unchanged this turn, so prior native child/feedback/save evidence remains valid at original d4da identity. Final docs-only commit does not invalidate ee49685d4 observations."
     }
   }
 }

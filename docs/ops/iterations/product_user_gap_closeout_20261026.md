@@ -1500,3 +1500,40 @@ sudo只用于本次唯一ref/已知ID的身份及不存在审计，防记录规�
 下一步从声明权限推导普通财务/只读角色的入口、读取和编辑拒绝用例；过账须独立建立精确对象及恢复方案。
 本轮未做远端发布、主线集成或日常服务器部署，未声明完整批次/基线/产品交付完成。
 记录提交不改变d4da产品和探针输入，保留原证据与运行时身份，无需仅为记录SHA重跑。
+
+
+## 普通只读、公司边界与角色入口收口（2026-10-26）
+
+最终浏览器候选 `ee49685d4bd491fd7ca9d47b0dea3466a8a91559`，后端/前端经原local.dev入口绑定，
+复用sc-local-dev/sc_dev_demo/ns_000000000002。P1仅新增现有权限ORM测试，P4扩展既有只读探针；
+没有修改角色组、菜单发布、ACL、业务语义或demo账户，没有持久业务写入、过账、模块升级或demo重建。
+
+本轮明确区分三层：
+- 模型权限：finance_read继承accounting_read，finance_manager不因此获得accounting_user写能力。
+  `journal-role-orm.log`精确2项通过：会计只读/财务经理的保存凭证契约可读且create/write=false；
+  实际create/write/unlink/action_post均AccessError，savepoint回滚且原记录未变。会计经办有本公司写权限，
+  但外公司search不见，原生反馈读取、写入和伪造allowed_company_ids均拒绝。
+- 入口发布：P1 `ROLE_SURFACE_OVERRIDES` 的finance/project_member未发布会计账务入口。
+  `journal-role-route-reviewed-orm.log`精确1项通过：两个合成角色各有真实非空发布权威，
+  正向路由由同handler放行，凭证路由未发布且直接handler返回ROUTE_ACTION_NOT_AUTHORIZED。
+  独立复核要求的正向对照已补齐，不能以空权威下“全部拒绝”算通过。
+- demo浏览器：finance uid47/company1可用收款登记 `/a/708?menu_id=338`；project_read uid41/company1
+  可用项目台账 `/a/590?menu_id=382`。两者均不发布175凭证菜单，公共验证请求返回HTTP403、
+  PERMISSION_DENIED，details明确“用户无权访问菜单 日记账分录”；直接访问 `/a/292?menu_id=175`
+  均显示AccessDeniedView。实际登录身份、公司及18081资产与候选构建一致，errors0/blocked0。
+
+原证据在 `.runtime/product-user-gap-closeout-20261026/`：
+`journal-finance-final-browser.log`、`journal-project-read-final-browser.log`均PASS1；
+`journal-role-browser/ee49685d4bd491fd7ca9d47b0dea3466a8a91559/`下两份actor-report.json及拒绝页面截图。
+截图已目视复核，独立复核已检查原始报告无假通过。
+`journal-role-wire-tests.log`23JS+11Python、`journal-role-final-l1.log`通过。
+
+原失败证据保留：3e6c9d8b5首次探针错误地从模型read推断菜单应发布；c9cda28f8误将直接handler
+错误码当成公共HTTP错误码。公共intent_permission先执行发布菜单门禁，AccessError由intent_dispatcher
+转为PERMISSION_DENIED。ee49685d4仅修P4断言并保留精确拒绝原因，不为测试扩大产品权限。
+
+结论：上述只读/跨公司ORM边界及两个demo角色的**未发布入口拒绝边界**通过，不能描述为这两个
+角色可用凭证列表/详情，也不能代替普通会计职责的正向浏览器验收。d4da草稿保存闭环原证据继续有效。
+下一步审计专用accounting_read/accounting_user职责的角色面与可用demo身份，按正式菜单声明定位缺口，
+再做会计角色正向页面验证；过账仍需独立精确对象与恢复方案。FG15整体开放。
+未集成主线、未部署日常服务器；本地服务保留ee49685d4，记录提交不触发无影响重跑。
