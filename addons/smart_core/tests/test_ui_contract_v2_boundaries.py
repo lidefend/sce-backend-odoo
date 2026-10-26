@@ -740,7 +740,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                     raise PermissionError(operation)
 
             def check_field_access_rights(self, operation, names):
-                return [name for name in self._fields if not (deny == "field" and name == "has_lines")]
+                return [name for name in self._fields if not (deny == "field" and name == "has_lines" or deny == "relation_field" and name == "lines")]
 
             def default_get(self, names):
                 self.calls.append("default_get")
@@ -754,6 +754,22 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 return self
 
             def __getitem__(self, name):
+                if name == "lines" and broken != "compute":
+                    owner = self
+                    class Relation:
+                        @property
+                        def _origin(self):
+                            return self
+                        @property
+                        def ids(self):
+                            return getattr(owner, "relation_ids", [])
+                        def check_access_rights(self, operation):
+                            if deny == "relation_read":
+                                raise PermissionError(operation)
+                        def check_access_rule(self, operation):
+                            if deny == "relation_rule":
+                                raise PermissionError(operation)
+                    return Relation()
                 if name != "has_lines" or broken == "compute":
                     raise RuntimeError("compute unavailable")
                 return bool(self.values["lines"])
@@ -816,6 +832,24 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                     else:
                         self.assertNotIn("has_lines", contract["dataContract"]["mainData"])
                     self.assertNotIn("display_only", contract["dataContract"]["mainData"])
+
+    def test_create_relation_snapshot_uses_native_origin_and_access_checks(self):
+        for deny in (None, "create", "read", "relation_field", "relation_read", "relation_rule"):
+            with self.subTest(deny=deny):
+                commands = [(0, 0, {"quantity": 2}), (4, 42)]
+                model, contract = self._create_modifier_fixture(lines=commands, deny=deny)
+                model.relation_ids = [42]
+                contract["layoutContract"]["containerTree"][0]["modifiers"]["readonly"] = {"kind": "field_truthy", "field": "lines"}
+                contract["dataContract"]["mainData"]["lines"] = commands
+                contract["dataContract"]["dataMeta"]["nativeModifierRelationSnapshots"] = {"lines": {"persistedIds": [999]}}
+                self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract,
+                    model="x.document", record_id=None, view_type="form")
+                snapshots = contract["dataContract"]["dataMeta"].get("nativeModifierRelationSnapshots", {})
+                if deny is None:
+                    self.assertEqual(snapshots["lines"], {"sourceValue": [[0, 0, {"quantity": 2}], [4, 42]], "persistedIds": [42]})
+                else:
+                    self.assertNotIn("lines", snapshots)
+                self.assertEqual(contract["dataContract"]["mainData"]["lines"], commands)
 
     def test_modifier_type_metadata_comes_from_model_not_snapshot_spoof(self):
         model, contract = self._create_modifier_fixture()

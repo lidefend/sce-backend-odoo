@@ -107,6 +107,34 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
             ('ref', '=', values['ref']), ('company_id', '=', self.env.company.id)]), 1)
         self.assertEqual(move.with_env(self.env).state, 'posted')
 
+    def test_native_create_relation_modifier_snapshot(self):
+        from odoo.addons.smart_core.core.unified_page_contract_v2_modifier_dependencies import hydrate_final_modifier_dependencies
+        from odoo.addons.smart_core.core.native_modifier_context import native_modifier_values
+        from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import _evaluate_action_modifier
+        user = self._subject('accounting_user')
+        model = self.env['account.move'].with_user(user)
+        commands = [(0, 0, {'name': 'Synthetic unsaved line', 'quantity': 1})]
+        context = {'default_invoice_line_ids': commands, 'default_move_type': 'out_invoice'}
+        defaults = model.with_context(**context).default_get(['invoice_line_ids'])
+        source = defaults['invoice_line_ids']
+        condition = {'kind': 'field_truthy', 'field': 'invoice_line_ids'}
+        contract = {
+            'statusContract': {'globalStatus': {'effectiveRenderProfile': 'create', 'effectiveRecordCapabilities': {'create': True}}},
+            'layoutContract': {'containerTree': [{'modifiers': {'readonly': condition}}]},
+            'dataContract': {'mainData': {'invoice_line_ids': source}, 'dataMeta': {'sourceContext': {'context': context}}},
+        }
+        hydrate_final_modifier_dependencies(model.env, contract, model='account.move', record_id='new', view_type='form')
+        self.assertTrue(source, 'must exercise nonempty native create commands')
+        snapshots = contract['dataContract']['dataMeta']['nativeModifierRelationSnapshots']
+        self.assertEqual(snapshots['invoice_line_ids']['persistedIds'], [])
+        self.assertEqual(contract['dataContract']['mainData']['invoice_line_ids'], source)
+        from odoo.addons.smart_core.core.native_modifier_context import _snapshot_json, _same_snapshot
+        from odoo.addons.smart_core.core.native_modifier_comparison import _json_value
+        normalized_source = _snapshot_json(source)
+        self.assertTrue(_json_value(normalized_source), repr(normalized_source))
+        self.assertTrue(_same_snapshot(normalized_source, snapshots['invoice_line_ids']['sourceValue']), repr(snapshots))
+        self.assertIs(_evaluate_action_modifier(condition, native_modifier_values(contract), strict=True), False)
+
     def test_native_journal_notice_parser_preserves_inline_contract(self):
         from lxml import etree
         user = self._subject('accounting_user')

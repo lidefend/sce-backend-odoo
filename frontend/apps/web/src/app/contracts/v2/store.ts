@@ -374,7 +374,7 @@ export function resolveContractV2ModifierValues(
     merged[key] = value;
   });
   return bindNativeFieldTypes(bindNativeContext(merged, store?.snapshot.dataContract.dataMeta?.sourceContext),
-    store?.snapshot.dataContract.dataMeta?.nativeModifierFieldTypes);
+    store?.snapshot.dataContract.dataMeta?.nativeModifierFieldTypes, store?.snapshot.dataContract.dataMeta?.nativeModifierRelationSnapshots);
 }
 
 export function resolveContractV2ValueSource(store: ContractV2NormalizedStore | null): ContractV2ValueSource {

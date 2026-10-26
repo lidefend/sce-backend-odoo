@@ -13,7 +13,7 @@ Generated from repository source files. This report is informational during the 
 | Lines | Category | File |
 | ---: | --- | --- |
 | 7088 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
-| 5885 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
+| 5919 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 5485 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5250 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
@@ -36,7 +36,7 @@ Generated from repository source files. This report is informational during the 
 | 2894 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2727 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
-| 2592 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
+| 2600 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2425 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2342 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2245 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
@@ -238,7 +238,7 @@ Generated from repository source files. This report is informational during the 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
 | 7088 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
-| 5885 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
+| 5919 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 5485 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5250 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
@@ -261,7 +261,7 @@ Generated from repository source files. This report is informational during the 
 | 2894 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2727 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
-| 2592 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
+| 2600 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2425 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2342 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2245 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |

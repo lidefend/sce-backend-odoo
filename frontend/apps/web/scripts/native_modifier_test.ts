@@ -7,7 +7,7 @@ import { isContractGapError } from '../src/app/contract/contractGap';
 const cases = JSON.parse(execFileSync('python3', ['addons/smart_core/tests/test_native_modifier.py', '--emit-differential'], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 }));
 for (const row of cases) {
   if (row.contract) assert.deepEqual(bindNativeFieldTypes(bindNativeContext(row.contract.dataContract.mainData,
-    row.contract.dataContract.dataMeta.sourceContext), row.contract.dataContract.dataMeta.nativeModifierFieldTypes), row.record);
+    row.contract.dataContract.dataMeta.sourceContext), row.contract.dataContract.dataMeta.nativeModifierFieldTypes, row.contract.dataContract.dataMeta.nativeModifierRelationSnapshots), row.record);
   const evaluate = () => evaluateNativeModifierValue(row.node, (name) => row.record[name]);
   if (row.expected === null) assert.throws(evaluate, isContractGapError);
   else assert.equal(evaluate(), row.expected, JSON.stringify(row));

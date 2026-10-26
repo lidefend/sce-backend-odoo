@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from typing import Any
+from enum import IntEnum
+from copy import deepcopy
 
 from .request_params import parse_positive_int
 
@@ -135,6 +137,8 @@ def collect_visible_layout_hydration_fields(contract_v2: Any) -> list[str]:
 
 def _relation_seed_shape(value: Any) -> Any:
     """Compare native commands with their JSON transport shape, not display rows."""
+    if isinstance(value, IntEnum):
+        return int(value)
     if isinstance(value, (list, tuple)):
         return [_relation_seed_shape(item) for item in value]
     if isinstance(value, dict):
@@ -153,9 +157,11 @@ def _hydrate_create_modifier_dependencies(Model: Any, contract: dict[str, Any], 
         return
     fields = Model._fields
     scalar_types = {"boolean", "integer", "float", "monetary", "char", "text", "selection", "date", "datetime", "many2one"}
-    missing = [name for name in collect_modifier_dependency_fields(contract, known_fields=fields)
+    dependencies = collect_modifier_dependency_fields(contract, known_fields=fields)
+    relations = [name for name in dependencies if name in main and getattr(fields[name], "type", "") in {"one2many", "many2many"}]
+    missing = [name for name in dependencies
                if name not in main and getattr(fields[name], "type", "") in scalar_types]
-    if not missing:
+    if not missing and not relations:
         return
     try:
         # Use the same server-resolved create context as the primary data source.
@@ -165,7 +171,8 @@ def _hydrate_create_modifier_dependencies(Model: Any, contract: dict[str, Any], 
         Model.check_access_rights("read")
         readable = set(Model.check_field_access_rights("read", None))
         missing = [name for name in missing if name in readable]
-        if not missing:
+        relations = [name for name in relations if name in readable]
+        if not missing and not relations:
             return
         # default_get supplies native relation commands; never feed display
         # values or serialized relation rows from mainData into Model.new().
@@ -192,6 +199,21 @@ def _hydrate_create_modifier_dependencies(Model: Any, contract: dict[str, Any], 
         if logger is not None:
             logger.debug("ui.contract.v2 create modifier draft unavailable", exc_info=True)
         return
+    for name in relations:
+        try:
+            origin = draft[name]._origin
+            origin.check_access_rights("read")
+            origin.check_access_rule("read")
+            ids = origin.ids
+            if not all(isinstance(item, int) and not isinstance(item, bool) and 0 < item <= 9007199254740991 for item in ids):
+                raise ValueError("invalid persisted native relation identity")
+            data.setdefault("dataMeta", {}).setdefault("nativeModifierRelationSnapshots", {})[name] = {
+                "sourceValue": _relation_seed_shape(deepcopy(main[name])), "persistedIds": list(ids),
+            }
+        except Exception:
+            if logger is not None:
+                logger.debug("ui.contract.v2 create relation evaluation unavailable: %s", name, exc_info=True)
+
     for name in missing:
         try:
             main[name] = fields[name].convert_to_read(draft[name], draft, use_display_name=False)
@@ -239,6 +261,7 @@ def hydrate_final_modifier_dependencies(
         names = set(data["mainData"]) | set(collect_modifier_dependency_fields(contract_v2, known_fields=fields_map))
         meta = data.setdefault("dataMeta", {})
         if isinstance(meta, dict):
+            meta.pop("nativeModifierRelationSnapshots", None)
             meta["nativeModifierFieldTypes"] = {
                 name: fields_map[name].type for name in sorted(names)
                 if name in fields_map and isinstance(getattr(fields_map[name], "type", None), str)

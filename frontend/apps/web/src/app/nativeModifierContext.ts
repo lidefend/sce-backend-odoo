@@ -45,18 +45,29 @@ export function bindNativeRowParentContext(parent: Record<string, unknown>, fiel
   return { ...parent, '$native.context': { ...context, ...fieldContext } };
 }
 
-export function bindNativeFieldTypes(values: Record<string, unknown>, types: unknown): Record<string, unknown> {
+export function bindNativeFieldTypes(values: Record<string, unknown>, types: unknown, snapshots?: unknown): Record<string, unknown> {
   const bound = { ...values };
   delete bound['$native.fieldTypes'];
+  delete bound['$native.relationSnapshots'];
   if (record(types)) bound['$native.fieldTypes'] = { ...types };
+  if (record(snapshots)) bound['$native.relationSnapshots'] = { ...snapshots };
   return bound;
 }
 
 export function resolveTypedNativeField(resolve: (field: string) => unknown, field: string): unknown {
-  const value = resolve(field);
+  let value = resolve(field);
   if (field === '$native.context' || field === '$native.fieldTypes') return value;
   const types = resolve('$native.fieldTypes');
   const type = record(types) && Object.prototype.hasOwnProperty.call(types, field) ? types[field] : undefined;
   if (type !== undefined && typeof type !== 'string') return gap();
+  if (type === 'one2many' || type === 'many2many') {
+    const snapshots = resolve('$native.relationSnapshots');
+    const snapshot = record(snapshots) && Object.hasOwn(snapshots, field) ? snapshots[field] : undefined;
+    const canonical = (item: unknown): unknown => Array.isArray(item) ? item.map(canonical)
+      : record(item) ? Object.fromEntries(Object.keys(item).sort().map(key => [key, canonical(item[key])])) : item;
+    if (record(snapshot) && Object.hasOwn(snapshot, 'sourceValue') && isPythonModifierValue(value)
+      && isPythonModifierValue(snapshot.sourceValue)
+      && JSON.stringify(canonical(value)) === JSON.stringify(canonical(snapshot.sourceValue))) value = snapshot.persistedIds;
+  }
   return nativeModifierRelationValue(value, type as string | undefined);
 }

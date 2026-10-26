@@ -174,6 +174,33 @@ def differential_cases():
         node = MODULE.normalize_native_modifier("tag_ids")
         assert fixture.assembler._evaluate_action_modifier(node, record, strict=True) is expected
         cases.append({"node": node, "record": record, "expected": expected, "contract": contract})
+    for source, actual, ids, expected in [
+        ([[0, 0, {"quantity": 2}]], [[0, 0, {"quantity": 2}]], [], False),
+        ([[0, 0, {"quantity": 2}], [4, 42]], [[0, 0, {"quantity": 2}], [4, 42]], [42], True),
+        ([[0, 0, {"quantity": 2}]], [[0, 0, {"quantity": 3}]], [], None),
+        ([[0, 0, {"quantity": 1}]], [[0, 0, {"quantity": True}]], [], None),
+        ([[0, 0, {"quantity": 1.0}]], [[0, 0, {"quantity": 1}]], [], False),
+        ([[0, 0, {"quantity": 2}]], [42], [], True),
+    ]:
+        contract = {"dataContract": {"mainData": {"lines": actual, "$native.relationSnapshots": {"lines": {"sourceValue": actual, "persistedIds": [999]}}},
+            "dataMeta": {"sourceContext": {"context": {}}, "nativeModifierFieldTypes": {"lines": "one2many"},
+                "nativeModifierRelationSnapshots": {"lines": {"sourceValue": source, "persistedIds": ids}}}}}
+        record = fixture.assembler.native_modifier_values(contract)
+        node = MODULE.normalize_native_modifier("lines")
+        assert fixture.assembler._evaluate_action_modifier(node, record, strict=True) is expected
+        cases.append({"node": node, "record": record, "expected": expected, "contract": contract})
+    from enum import IntEnum
+    class NativeCommand(IntEnum):
+        CREATE = 0
+        SET = 6
+    source = [(NativeCommand.SET, 0, []), (NativeCommand.CREATE, 0, {"quantity": 1.0})]
+    contract = {"dataContract": {"mainData": {"lines": source}, "dataMeta": {
+        "sourceContext": {"context": {}}, "nativeModifierFieldTypes": {"lines": "one2many"},
+        "nativeModifierRelationSnapshots": {"lines": {"sourceValue": source, "persistedIds": []}}}}}
+    record = fixture.assembler.native_modifier_values(contract)
+    node = MODULE.normalize_native_modifier("lines")
+    assert fixture.assembler._evaluate_action_modifier(node, record, strict=True) is False
+    cases.append({"node": node, "record": record, "expected": False, "contract": contract})
     dependencies = fixture._load_module("odoo.addons.smart_core.core.unified_page_contract_v2_modifier_dependencies",
                                        MODULE_PATH.parents[1] / "core" / "unified_page_contract_v2_modifier_dependencies.py")
     assert dependencies.collect_modifier_dependency_fields(MODULE.normalize_native_modifier("amount > context.get('limit', 0)")) == ['amount']

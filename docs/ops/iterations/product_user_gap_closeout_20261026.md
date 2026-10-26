@@ -865,3 +865,42 @@ strict typecheck与contract basis均通过。新增组合用例覆盖实际行ru
 本轮没有后端源码或数据库改动，不重复未受影响的跨端编译器与ORM检查；没有新增浏览器
 业务验收、主线集成、部署或demo重建。后端未保存关系快照、虚拟ID目标、隐藏默认字段声明
 以及真实页面交付验收仍未闭合，FG15未关闭。下一步处理服务端创建快照的关系求值权威。
+
+## 第二十一增量：服务端创建关系快照的原生求值
+
+开发候选基于`de92fc82fb993c36f29ac3cf8c5aadf7ccfb88ac`。P0服务端声明及通用消费，P1
+仅扩展现有会计权限ORM测试。创建mainData中的关系默认值是命令，不能直接当作条件ID列表。
+
+- 对已在mainData出现且被条件引用的one2many/many2many，使用同一sourceContext和原生
+  default_get构造Model.new草稿；保留已有create/read/字段检查，并对关联_origin执行read
+  权限与记录规则检查，取合法持久ID。拒绝时不发布结果，不制造空集合。
+- 发布`dataMeta.nativeModifierRelationSnapshots[field]={sourceValue,persistedIds}`；
+  sourceValue规范为JSON命令形状，mainData原命令不替换，每次最终hydration先清旧快照。
+- 前后端只有在当前关系值与sourceValue一致时采用该ID列表；对象键顺序无影响，数值1/1.0
+  视为同一JSON数值，布尔与数值不同。草稿变化后旧快照不再生效，合法实时ID数组继续直接
+  校验，其他命令保持未知/ContractGapError。已有行runtime投影优先反映实时身份。
+- `$native.relationSnapshots`为内部保留namespace，业务数据和实时草稿不能伪造；前端
+  decoder验证快照结构。context值、字面值、原始显示/写入数据及旧domain比较不改。
+- 缓存版本`ui-contract-v2-native-create-relation-snapshots-v1`与装配输入摘要同步。
+
+证据根`.runtime/product-user-gap-closeout-20261026/`：`twentyfirst-l1.log`轻量迭代通过；
+`twentyfirst-l2.log`handler154、cache48、视图编排62、工具5、assembler、编译器8、跨端3738、
+parser39、canonical新增快照绑定/伪造拒绝断言、strict typecheck和contract basis均通过。
+`twentyfirst-runtime-unit.log`runtime23及投影133通过。独立只读复核无新增S0–S2阻断。
+
+本轮边界：缺失关系源字段不自动补值；虚拟ID目标、隐藏默认字段及完整真实页面业务验收仍未
+闭合。普通会计用户的新增ORM用例通过既有local.dev.test入口执行，结果另记于本节最终条目；
+该用例使用合成契约调用真实原生草稿，不等同完整页面端到端证明。无主线集成、部署、模块升级
+或demo重建，FG15未关闭。
+
+最终ORM与修复证据：`twentyfirst-orm.log`、`twentyfirst-orm-diagnostic.log`保留两次失败。
+真实default_get返回Command IntEnum操作码（SET/CREATE），严格JSON校验将其拒绝，导致已有
+空ID快照仍得到未知条件；诊断定位到原生命令类型，未放宽通用比较器。仅在关系快照形状转换中
+将明确IntEnum转为其JSON整数，原始mainData不修改，并新增枚举跨端用例。
+`twentyfirst-enum-fixed.log`受影响后端/装配/编译器/parser/runtime投影回归通过，跨端总数3739。
+前端产品源码未随枚举修复改变，沿用twentyfirst-l2中的类型检查和canonical证据。
+独立复核确认适配未扩大通用值域。
+
+`twentyfirst-orm-fixed.log`：通过现有`local.dev.test`、`sc-local-dev/sc_dev_demo`回滚管理
+入口执行普通accounting_user用例，非零1项、0失败/0错误；断言非空原生默认命令、空_origin持久
+身份、mainData命令保留与最终False条件。没有模块升级、fixture重建或服务候选切换。

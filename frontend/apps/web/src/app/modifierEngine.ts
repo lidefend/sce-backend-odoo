@@ -63,7 +63,7 @@ export function resolveDeclaredModifierFieldValue(
 ): unknown {
   const name = String(field || '').trim();
   if (!name) return undefined;
-  if (name === '$native.context' || name === '$native.fieldTypes') return snapshot?.[name];
+  if (name === '$native.context' || name === '$native.fieldTypes' || name === '$native.relationSnapshots') return snapshot?.[name];
   if (live && Object.prototype.hasOwnProperty.call(live, name) && live[name] !== undefined) {
     return live[name];
   }

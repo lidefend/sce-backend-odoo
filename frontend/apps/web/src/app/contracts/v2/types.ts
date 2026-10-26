@@ -487,6 +487,7 @@ export interface ContractV2DataMeta extends ContractV2Dictionary {
   fieldGroups?: ContractV2FieldGroups;
   sourceContext?: ContractV2SourceContext;
   nativeModifierFieldTypes?: Record<string, string>;
+  nativeModifierRelationSnapshots?: Record<string, { sourceValue: unknown; persistedIds: number[] }>;
 }
 
 export interface ContractV2DataContract {

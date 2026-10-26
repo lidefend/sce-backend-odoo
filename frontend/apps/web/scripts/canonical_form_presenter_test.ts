@@ -4261,3 +4261,20 @@ assert.equal((liveRows.buildCommandValue('line_ids', 'write') as unknown[][]).so
 liveRows.clearRows();
 assert.throws(presentLiveRows, { name: 'ContractGapError' }, 'cleared ownership cannot reuse stale collection IDs');
 console.log('root canonical fields/actions share live collection projection: passed');
+
+const createRelationSnapshot = snapshot();
+const createSource = [[0, 0, { name: 'Default child' }]];
+createRelationSnapshot.dataContract.mainData.line_ids = createSource;
+createRelationSnapshot.dataContract.dataMeta.nativeModifierFieldTypes = { line_ids: 'one2many' };
+createRelationSnapshot.dataContract.dataMeta.nativeModifierRelationSnapshots = {
+  line_ids: { sourceValue: createSource, persistedIds: [] },
+};
+createRelationSnapshot.layoutContract.containerTree[0].children[0].readonly = { kind: 'field_truthy', field: 'line_ids' };
+const createRelationStore = createContractV2Store(decodeContractV2Snapshot(createRelationSnapshot));
+const createBound = presentContractV2Form(createRelationStore, 'edit');
+assert.equal(createBound.zones.primary[0].children[0].fields.find(field => field.fieldCode === 'name')?.readonly, false);
+assert.throws(() => presentContractV2Form(createRelationStore, 'edit', { line_ids: [[0, 0, { name: 'Changed' }]],
+  '$native.relationSnapshots': { line_ids: { sourceValue: [[0, 0, { name: 'Changed' }]], persistedIds: [] } },
+}), { name: 'ContractGapError' }, 'changed commands cannot reuse or forge server snapshot identity');
+assert.deepEqual(createRelationStore.snapshot.dataContract.mainData.line_ids, createSource);
+console.log('native create relation snapshot binding: passed');

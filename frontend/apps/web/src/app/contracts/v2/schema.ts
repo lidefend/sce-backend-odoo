@@ -2028,6 +2028,14 @@ function decodeDataMeta(value: unknown, issues: DecodeIssue[]): ContractV2DataMe
       issues.push({ path: 'dataContract.dataMeta.nativeModifierFieldTypes', message: 'must map fields to non-empty type strings' });
     }
   }
+  if (row.nativeModifierRelationSnapshots !== undefined) {
+    const snapshots = row.nativeModifierRelationSnapshots;
+    if (!isRecord(snapshots) || Object.values(snapshots).some(item => !isRecord(item)
+      || !Object.hasOwn(item, 'sourceValue') || !Array.isArray(item.persistedIds)
+      || !item.persistedIds.every(id => typeof id === 'number' && Number.isSafeInteger(id) && id > 0))) {
+      issues.push({ path: 'dataContract.dataMeta.nativeModifierRelationSnapshots', message: 'must bind source values to persisted identity arrays' });
+    }
+  }
   const forbiddenKeys = [
     'business_operation_profile',
     'visible_fields',

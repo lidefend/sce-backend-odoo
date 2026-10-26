@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Any
+from enum import IntEnum
 
 from .native_modifier_comparison import _json_value, compare_python_modifier
 
@@ -14,14 +15,39 @@ def native_modifier_values(contract: dict[str, Any]) -> dict[str, Any]:
     # This is an evaluator namespace, never a model field or writable draft value.
     values.pop("$native.context", None)
     values.pop("$native.fieldTypes", None)
+    values.pop("$native.relationSnapshots", None)
     meta = data.get("dataMeta")
     if isinstance(meta, dict) and isinstance(meta.get("nativeModifierFieldTypes"), dict):
         values["$native.fieldTypes"] = dict(meta["nativeModifierFieldTypes"])
+    if isinstance(meta, dict) and isinstance(meta.get("nativeModifierRelationSnapshots"), dict):
+        values["$native.relationSnapshots"] = dict(meta["nativeModifierRelationSnapshots"])
     source = meta.get("sourceContext") if isinstance(meta, dict) else None
     context = source.get("context") if isinstance(source, dict) else None
     if isinstance(context, dict):
         values["$native.context"] = dict(context)
     return values
+
+
+def _snapshot_json(value):
+    if isinstance(value, IntEnum):
+        return int(value)
+    if isinstance(value, (list, tuple)):
+        return [_snapshot_json(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _snapshot_json(item) for key, item in value.items()}
+    return value
+
+
+def _same_snapshot(left, right):
+    if type(left) in (int, float) and type(right) in (int, float):
+        return left == right
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, list):
+        return len(left) == len(right) and all(_same_snapshot(a, b) for a, b in zip(left, right))
+    if isinstance(left, dict):
+        return left.keys() == right.keys() and all(_same_snapshot(left[key], right[key]) for key in left)
+    return left == right
 
 
 def native_field_value(record: dict[str, Any], name: str) -> tuple[bool, Any]:
@@ -41,6 +67,13 @@ def native_field_value(record: dict[str, Any], name: str) -> tuple[bool, Any]:
             return True, value[0]
         return False, None
     if kind in {"one2many", "many2many"}:
+        snapshots = record.get("$native.relationSnapshots", {})
+        snapshot = snapshots.get(name) if isinstance(snapshots, dict) else None
+        source = _snapshot_json(snapshot.get("sourceValue")) if isinstance(snapshot, dict) else None
+        current = _snapshot_json(value)
+        if isinstance(snapshot, dict) and "sourceValue" in snapshot and _json_value(current) and _json_value(source):
+            if _same_snapshot(current, source):
+                value = snapshot.get("persistedIds")
         return (True, value) if isinstance(value, list) and all(identity(item) for item in value) else (False, None)
     return True, value
 
