@@ -1044,6 +1044,18 @@
     "twentyninth_result": "L0 preflight clean on fix/demo-product-completion-20261026; L1 py_compile and make ci.local.iteration passed (L1_only, receipt none); L2 non-zero lightweight boundary suite test_api_onchange_record_id_boundaries: 19 tests passed (14 existing + 5 new: implicit resolution, explicit priority, self-referential guard, unknown field, read denied). No real Odoo runtime onchange exercised; no frontend/browser/module-upgrade/deploy/mainline. FG15 and remaining dynamic-semantics capabilities stay open.",
     "thirtieth_scope": "P0 smart_core api_onchange: normalize relation values inside onchange line_patches. Child line patches carry the same native many2one/x2many wire objects as the top-level value but were passed through raw. Apply normalize_native_onchange_values for the relation comodel so the frontend consumes one wire format; malformed child relation objects fail closed with ONCHANGE_RESPONSE_INVALID. Candidate 203ecdf8d clean.",
     "thirtieth_result": "L0 preflight clean on fix/demo-product-completion-20261026; L1 py_compile and make ci.local.iteration passed (L1_only, receipt none); L2 non-zero lightweight boundary suite test_api_onchange_record_id_boundaries: 21 tests passed (19 existing + 2 new: public-wire line-patch adaptation and invalid relation rejection). No real Odoo runtime onchange exercised; no frontend/browser/module-upgrade/deploy/mainline. FG15 and remaining dynamic-semantics capabilities stay open.",
-    "preexisting_guard_drift_20261026": "Pre-existing, unrelated to this batch's P0 backend changes: onchange_line_patch_guard.py and contract_form_onchange_normalization_guard.py fail on whitespace-sensitive frontend literals (e.g. context.onchangeLinePatches.value=linePatches vs the reformatted context.onchangeLinePatches.value = linePatches; constresponse=awaittriggerOnchange vs the injectable-transport-seam const response=await ...). Backend markers pass; frontend files are unchanged by this batch. Classified baseline_evidence_defect / validation-tool defect owned by the frontend guard layer; not fixed here."
+    "preexisting_guard_drift_20261026": "Pre-existing, unrelated to this batch's P0 backend changes: onchange_line_patch_guard.py and contract_form_onchange_normalization_guard.py fail on whitespace-sensitive frontend literals (e.g. context.onchangeLinePatches.value=linePatches vs the reformatted context.onchangeLinePatches.value = linePatches; constresponse=awaittriggerOnchange vs the injectable-transport-seam const response=await ...). Backend markers pass; frontend files are unchanged by this batch. Classified baseline_evidence_defect / validation-tool defect owned by the frontend guard layer; not fixed here.",
+    "runtime_diagnostic_20261026": {
+      "status": "passed",
+      "kind": "scoped_readonly_odoo_shell_diagnostic",
+      "command": "local.dev restart + local.dev.health + odoo_shell_exec diagnostic on sc-local-dev/sc_dev_demo",
+      "head": "69ad4c0940ee13e2ab0f6e6e2fc03df1105a6123",
+      "steps": {
+        "build_native_onchange_spec_res.partner": "child_ids resolved with 26 child fields",
+        "normalize_native_onchange_values": "many2one dict -> [id,label]; nested x2many create command child many2one -> [id,label]",
+        "malformed_many2one": "rejected via NativeOnchangeSpecError (fail-closed)"
+      },
+      "limits": "read-only diagnostic; not full HTTP onchange acceptance, no browser journey, no module upgrade, no deploy/mainline"
+    }
   }
 }
