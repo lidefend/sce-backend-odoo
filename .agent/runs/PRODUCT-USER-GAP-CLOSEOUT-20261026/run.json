@@ -148,7 +148,8 @@
     "config/frontend/role_surface_exposure_declarations_v1.json",
     "docs/audit/scene_role_surface_consistency_report.md",
     "scripts/verify/product_menu_contract_v1_guard.py",
-    "scripts/verify/test_product_menu_contract_v1_guard.py"
+    "scripts/verify/test_product_menu_contract_v1_guard.py",
+    "demo_addons/smart_construction_demo/data/demo/sc_demo_users.xml"
   ],
   "environment": {
     "kind": "runtime",
@@ -160,7 +161,7 @@
     "FG15: persistent posting lifecycle not run; requires bounded exact-object recovery plan before writes.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Use existing governed demo identity/read-only tooling to resolve dedicated accounting role fixture. Seed sc_demo_accounting_manager binds capability only; do not widen capability fallback or mutate credentials ad hoc. Extend existing governed fixture/probe only with exact scope and restore checks, then refresh clean candidate and validate accounting positive browser plus unchanged finance/project denial. Six-entry workflows and browser multi-company remain pending.",
+  "next_exact_step": "Prepare bounded governed migration of existing accounting demo uid7 from tracked roots to explicit accounting_manager using runtime user-management authority, preserving unrelated roots, company and credentials, with exact preimage/readback and restoration checks. Do not full-upgrade demo module (noupdate0 contains other credentials) or switch uid41 while group provenance unresolved. Validate canonical login without password resets, refresh clean candidate only when needed, then ordinary accounting positive browser. Seed fix alone is not runtime repair.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1687,6 +1688,24 @@
       "limits": "Six accounting routes declared; positive ORM proves journal entry only, not six full workflows. No new browser, service refresh, demo user/group edit, upgrade, rebuild, persistent posting, remote CI/integration/deployment. Existing demo accounting manager seed binds capability group only, no validated dedicated accounting role browser identity.",
       "rollback": "Revert P4 46fe8df6e, P1 449781f02 and P0 c2e00d56f in dependency order through normal reviewed change; no persistent business data to restore.",
       "generated": "Commit hook refreshed tracked complexity_budget_report and split_plan_queue. Reviewed line-count-only changes, scope registered; no runtime behavior dependency."
+    },
+    "accounting_six_entry_validation": {
+      "layer": "P1 accounting permission tests only; P4 fixture design under review, no runtime role write authorized by this record",
+      "head": "1211f2d66 clean start",
+      "reason": "Before temporary browser identity, verify all six declared accounting routes with ordinary read/user/manager roles and explicit mixed-role containment. No product change assumed.",
+      "validation": "L1 then actual rollback ORM; preserve prior18 test evidence for unchanged inputs.",
+      "identity_probe": "P4 extend existing journal recovery carrier with distinct readonly identity branch and governed Make target. Fixed three demo logins only; report explicit/effective group identity and published routes, never credentials. Commit forbidden and rollback finally; no role or data changes.",
+      "demo_seed_repair": {
+        "layer": "P4 governed demo fixture, not product ACL or capability fallback",
+        "reason": "Actual uid7 active/company1 has tracked capability-only roots and resolves restricted with0 routes. Update existing seed to explicit accounting_manager role for future governed replay; do not upgrade full demo module or silently reset passwords. Existing runtime remains unchanged.",
+        "blast_radius": "Only existing accounting manager seed group declaration. Standard role includes accounting manager and project read capabilities; publication remains six accounting entries. Actual manager six-entry ORM passes."
+      },
+      "status": "targeted_orm_and_readonly_identity_passed_seed_replay_pending",
+      "tests": "accounting-six-reviewed-orm.log exact2 tests PASS: six route pairs each under3 accounting roles (18 combinations), mixed finance+accounting_read allowed/no-write and role revocation denies journal while modelread retained. accounting-six-final-static.log L1 +23JS/11Python policy tests PASS; seed XML parses.",
+      "failures": "accounting-six-orm.log six-entry PASS/mixed FAIL: test wrote raw groups_id through runtime-managed input and assignment ignored; corrected to sc_user_role_group_ids, not product permission change. accounting-demo-identities.log failed before shell due missing DB_NAME; canonical nested ENV=dev Make fixed, actual audit exit0.",
+      "identity": "accounting-demo-identities-canonical.log: uid7 active/company1/allowed[1], group authority tracked, no assigned role, resolved restricted/0 primary routes. uid41 active/company1 has unresolved group provenance, resolves project_member/3 routes. uid47 resolves finance/15 routes, provenance unresolved. Readonly audit never changed accounts, credentials or business rows.",
+      "limits": "No browser or runtime role mutation. XML is noupdate0, full demo upgrade would touch unrelated demo identities/credentials; do not use it for targeted migration. Explicit/effective XMLID audit is not a complete restoration snapshot. Temporary uid41 switch not executed because provenance unresolved. Prior18 ORM evidence reused for unaffected product inputs.",
+      "review": "review_takeover no blockers. Seed role also implies project_read capability; future application is not permission-neutral, though accounting navigation remains six-entry whitelist. Verify explicit assignment and actual routes after governed replay, not XML diff. No runtime identity mutation this turn."
     }
   }
 }

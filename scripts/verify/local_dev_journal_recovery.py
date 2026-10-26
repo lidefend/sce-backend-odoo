@@ -170,8 +170,46 @@ def run_legacy(env):
             print('JOURNAL_RECOVERY ' + json.dumps({'mode': mode, 'record_id': 13, 'line_ids': line_ids, 'absent': True, 'committed': True}))
 
 
+def inspect_role_identity(env):
+    """Read only: fixed demo principals; not a role assignment/fixture API."""
+    assert env.cr.dbname == 'sc_dev_demo'
+    assert os.environ.get('SC_CONFIRM_JOURNAL_RECOVERY') == 'READ_ONLY_ACCOUNTING_ROLE_IDENTITIES'
+    from odoo.addons.smart_core.identity.identity_resolver import IdentityResolver
+    from odoo.addons.smart_core.delivery.runtime_route_authority import build_runtime_route_authority
+    original_commit = env.cr.commit
+    def refuse_commit(*args, **kwargs):
+        raise AssertionError('identity observation must not commit')
+    env.cr.commit = refuse_commit
+    rows = []
+    try:
+        for login in ('sc_demo_accounting_manager', 'demo_role_project_read', 'demo_role_finance'):
+            user = env['res.users'].with_context(active_test=False).search([('login', '=', login)], limit=2)
+            assert len(user) <= 1
+            if not user:
+                rows.append({'login': login, 'exists': False})
+                continue
+            actor_env = env['account.move'].with_user(user).with_context(allowed_company_ids=user.company_id.ids).env
+            resolver = IdentityResolver(actor_env)
+            groups = resolver.user_group_xmlids(user)
+            roles, evidence = resolver.resolve_role_codes_with_evidence(groups)
+            authority = build_runtime_route_authority(actor_env)
+            rows.append({'login': login, 'exists': True, 'uid': user.id, 'active': user.active,
+                         'company_id': user.company_id.id, 'company_ids': user.company_ids.ids,
+                         'group_authority_state': user.sc_group_authority_state,
+                         'assigned_role_xmlids': sorted(user.sc_user_role_group_ids.get_external_id().values()),
+                         'effective_group_xmlids': sorted(groups), 'resolved_roles': roles,
+                         'resolution_source': evidence.get('source'),
+                         'primary_routes': authority.get('primary_actions', [])})
+    finally:
+        env.cr.rollback()
+        env.cr.commit = original_commit
+    print('JOURNAL_ROLE_IDENTITIES ' + json.dumps({'database': env.cr.dbname, 'read_only': True, 'actors': rows}, ensure_ascii=False))
+
+
 if 'env' in globals():
-    if os.environ.get('SC_CONFIRM_JOURNAL_RECOVERY') == 'PREFLIGHT_CLEANUP_ONE_OWNED_DRAFT':
+    if os.environ.get('SC_CONFIRM_JOURNAL_RECOVERY') == 'READ_ONLY_ACCOUNTING_ROLE_IDENTITIES':
+        inspect_role_identity(env)
+    elif os.environ.get('SC_CONFIRM_JOURNAL_RECOVERY') == 'PREFLIGHT_CLEANUP_ONE_OWNED_DRAFT':
         run_owned(env)
     else:
         run_legacy(env)

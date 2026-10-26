@@ -1805,3 +1805,11 @@ verify.local.dev.journal.role: guard.prod.forbid local.dev.ready local.dev.entry
 	@test "$(SC_FEEDBACK_ACTOR)" = demo_role_finance -o "$(SC_FEEDBACK_ACTOR)" = demo_role_project_read
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  SC_FEEDBACK_SCOPE=journal-role SC_FEEDBACK_ACTOR="$(SC_FEEDBACK_ACTOR)" bash scripts/verify/local_dev_workspace_feedback.sh
+
+# Fixed demo accounting identity observation: no permission or credential writes.
+.PHONY: local.dev.journal.role.identities
+local.dev.journal.role.identities: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  SC_CONFIRM_JOURNAL_RECOVERY=READ_ONLY_ACCOUNTING_ROLE_IDENTITIES \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/verify/local_dev_journal_recovery.py

@@ -1572,3 +1572,36 @@ P4 `46fe8df6e`：旧合同中心守卫遗漏 PR712 已加入的预览结算单�
 发现种子 `sc_demo_accounting_manager` 仅绑定capability，不能据名称当作显式accounting角色已验证。
 下一步通过既有受管身份/夹具工具解决精确角色样本，再做正向浏览器验证；不得借此扩大能力回退授权。
 回滚按P4、P1、P0依赖逆序执行正常审查变更，无需恢复持久业务数据。
+
+
+## 会计六入口与Demo身份事实收口（2026-10-27）
+
+从1211f2d66干净工作区续跑。P1仅追加回滚测试：三档会计角色逐项核验六个primary入口集合、
+各模型read ACL及真实路由handler允许，共18个角色/入口组合；财务叠加会计只读后可达凭证但
+没有write，撤销会计角色后凭证路由拒绝且原有model read保留。体验/平台管理员优先级为resolver
+输入级断言，不代表真实浏览器组合身份验收。`accounting-six-reviewed-orm.log`实际2项PASS。
+初次混合测试误用raw groups_id，受管入口忽略该字段，改用sc_user_role_group_ids后通过；
+没有改变产品授权来迎合测试，原失败保留在accounting-six-orm.log。
+
+P4扩展既有journal recovery载体及Make，只读观察固定三个Demo账号，拒绝commit并finally rollback。
+初版Make缺DB_NAME在进入shell前失败，改用既有隔离shell和canonical ENV=dev递归入口；
+`accounting-demo-identities-canonical.log`退出0，实际事实如下：
+- sc_demo_accounting_manager uid7，active、公司1/allowed[1]，组来源tracked；无显式业务角色，
+  当前解析restricted，发布primary入口0。这证实此前种子观察确实对应运行态缺口。
+- demo_role_project_read uid41：project_member、primary3；组来源unresolved。
+- demo_role_finance uid47：finance、primary15；组来源unresolved。
+没有执行临时权限切换。尤其不能从unresolved的有效组反推原始授权并冒充可恢复快照。
+审计XMLID列表也不是完整恢复快照，后续须记录真实roots/effective IDs和受管状态。
+
+同一P4种子修复仅将现有会计经理用户的cap_accounting_manager改为role_accounting_manager，
+沿用P1显式角色及六入口。XML解析通过；`accounting-six-final-static.log` L1及既有23JS/11Python
+策略测试通过。种子是noupdate0，不能为这一个用户全量升级demo模块而重放其他账号/密码。
+本轮未执行种子重放、现存账号迁移、密码修改、服务刷新、浏览器、业务写入或数据重建。
+此前18 ORM证据对未变化产品代码继续有效，新两项不是全库测试基线声明。
+
+下一步为uid7制定精确受管迁移：核对tracked roots、保留无关授权/公司/凭据，显式角色分配、
+回读与可恢复快照齐备后再迁移；通过现有canonical登录验证身份，不自行重置凭据。
+仍需专属会计正向浏览器、六入口实际业务流程、跨公司页面及持久过账验收；FG15继续开放。
+本轮无远端CI、主线集成或日常服务器部署。
+
+独立复核通过，并明确：会计经理角色除原会计能力外还继承项目读取能力，后续应用并非权限完全不变；导航仍由六入口白名单约束。种子写groups_id不等于现存受管账号已变更，迁移后必须核验显式角色及真实入口。
