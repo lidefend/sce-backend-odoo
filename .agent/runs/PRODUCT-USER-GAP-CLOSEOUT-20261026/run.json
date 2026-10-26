@@ -1424,6 +1424,14 @@
         "review": "S2 missing descriptor silently empty fixed; final independent review no remaining S0-S2 in bounded diff",
         "runtime": "not_run; no environment/DB changes; FG15 remains open"
       }
+    },
+    "journal_draft_probe_scope": {
+      "head": "a65867c225160b3dc8aa2c73be0eb0ee5b788df5",
+      "layer": "P4 existing workspace draft browser + make/dev.mk",
+      "scope": "fixed account.move menu175 line_ids; capture correlated root/child draft onchange, never persistence; no new fixture/environment",
+      "environment": "registered sc-local-dev/sc_dev_demo/^sc_dev_demo$/ns_000000000002/sc_local_dev_odoo_data; existing managed credentials and candidate frontend",
+      "validation": "L1 syntax and existing request policy unit; clean candidate runtime health then actual draft",
+      "exclusions": "no save/create/write/unlink/dispatch, no reset/upgrade/mainline/remote deployment"
     }
   }
 }

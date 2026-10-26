@@ -6,12 +6,12 @@ import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap
 // The existing nginx owns the namespace stamp; the preview server does not.
 const base = 'http://127.0.0.1:18081/t/demo';
 const scope = process.env.SC_FEEDBACK_SCOPE || 'workspace';
-assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child'].includes(scope));
+assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child', 'journal-draft'].includes(scope));
 const root = `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}`;
 fs.mkdirSync(root, {recursive: true});
 const actor = scope === 'usability' ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
 assert(['demo_full', 'demo_role_pm', 'demo_role_finance', 'demo_role_project_read'].includes(actor));
-const availableCases = ['usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child'].includes(scope) ? [] : scope === 'workspace' ? [
+const availableCases = ['usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child', 'journal-draft'].includes(scope) ? [] : scope === 'workspace' ? [
   {model: 'sc.team.loan.deduction.workspace', field: 'note', hint: '建议补充办理说明'},
   {model: 'sc.current.account.workspace', field: 'note', hint: '建议补充办理说明', retained: '办理承包人借还款前请选择承包人/往来单位'},
 ] : scope === 'cost' ? [
@@ -36,7 +36,7 @@ if (selected) {
   assert(selected.every(model => availableCases.some(item => item.model === model)), 'model outside fixed scope');
 }
 const cases = selected ? availableCases.filter(item => selected.includes(item.model)) : availableCases;
-const models = scope === 'native-child' ? ['res.partner'] : cases.map(item => item.model);
+const models = scope === 'journal-draft' ? ['account.move', 'account.move.line'] : scope === 'native-child' ? ['res.partner'] : cases.map(item => item.model);
 const report = {head: process.env.CANDIDATE_GIT_HEAD, cases: [], blocked: [], errors: [], feedback: [], onchanges: [], passed: false};
 assert(/^[a-f0-9]{40}$/.test(report.head || ''));
 const browser = await launchChromium({headless: true});
@@ -142,6 +142,68 @@ try {
     assert.equal(report.blocked.length, 0);
     assert(report.onchanges.length > 0 && report.onchanges.every(result => result.ok === true), 'native onchange evidence missing or failed');
     item.passed = true;
+  }
+  if (scope === 'journal-draft') {
+    const model = 'account.move';
+    const candidateIndex = fs.readFileSync('frontend/apps/web/dist-dev/index.html', 'utf8');
+    const expectedEntries = [...candidateIndex.matchAll(/<script[^>]*src="([^"]*assets\/[^"]+)"/g)].map(match => new URL(match[1], base).pathname);
+    const servedEntries = await page.locator('script[src]').evaluateAll(nodes => nodes.map(node => new URL(node.src).pathname).filter(path => path.includes('/assets/')));
+    assert(expectedEntries.length && expectedEntries.every(path => servedEntries.includes(path)), 'namespace frontend differs from candidate build');
+    report.frontendEntries = servedEntries;
+    const node = leaves.find(item => item.meta?.model === model && item.meta?.route?.startsWith('/')
+      && new URL(item.meta.route, base).searchParams.get('menu_id') === '175');
+    assert(node, 'fixed journal entry missing');
+    const item = {model, field: 'line_ids', route: node.meta.route, passed: false};
+    report.cases.push(item);
+    const capture = async (response) => {
+      let body; try { body = response.request().postDataJSON(); } catch { return; }
+      const request = body?.params?.intent ? body.params : body;
+      if (request?.intent !== 'api.onchange' || !models.includes(request.params?.model) || request.params?.feedback_evaluation) return;
+      const payload = await response.json();
+      return {httpStatus: response.status(), ok: payload.ok, params: request.params, data: payload.data, error: payload.error};
+    };
+    await page.goto(base + node.meta.route, {waitUntil: 'domcontentloaded'});
+    const [initialResponse] = await Promise.all([
+      page.waitForResponse(response => {
+        let body; try { body = response.request().postDataJSON(); } catch { return false; }
+        const request = body?.params?.intent ? body.params : body;
+        return request?.intent === 'api.onchange' && request.params?.model === model && !request.params?.res_id && !request.params?.feedback_evaluation;
+      }),
+      page.getByRole('button', {name: /^(新建|新增|创建)$/}).first().click(),
+    ]);
+    const initial = await capture(initialResponse);
+    report.onchanges.push(initial);
+    assert(initial?.httpStatus === 200 && initial.ok === true, 'root initialization failed');
+    const collection = page.locator('[data-field-name="line_ids"]').first();
+    await collection.waitFor({state: 'visible', timeout: 45000});
+    const counter = collection.locator('[data-row-count]').first();
+    const beforeCount = Number(await counter.getAttribute('data-row-count'));
+    assert(Number.isSafeInteger(beforeCount) && beforeCount >= 0);
+    await page.screenshot({path: `${root}/before-line.png`});
+    const [lineResponse] = await Promise.all([
+      page.waitForResponse(response => {
+        let body; try { body = response.request().postDataJSON(); } catch { return false; }
+        const request = body?.params?.intent ? body.params : body;
+        return request?.intent === 'api.onchange' && request.params?.model === model && !request.params?.res_id
+          && request.params?.changed_fields?.includes('line_ids') && Array.isArray(request.params?.values?.line_ids)
+          && request.params.values.line_ids.some(command => Array.isArray(command) && command[0] === 0);
+      }),
+      collection.getByRole('button', {name: /新增|添加/}).first().click(),
+    ]);
+    const line = await capture(lineResponse);
+    report.onchanges.push(line);
+    assert(line?.httpStatus === 200 && line.ok === true, 'new-line onchange failed');
+    await page.waitForFunction(({expected}) => Number(document.querySelector('[data-field-name="line_ids"] [data-row-count]')?.getAttribute('data-row-count')) === expected,
+      {expected: beforeCount + 1});
+    item.beforeCount = beforeCount;
+    item.afterCount = Number(await counter.getAttribute('data-row-count'));
+    item.collection = await collection.innerText();
+    item.inputs = await collection.locator('input:visible').count();
+    await page.screenshot({path: `${root}/after-line.png`});
+    assert(item.inputs > 0, 'journal line has no editable input');
+    assert(!/页面加载失败|ContractGapError|字段联动失败|字段联动声明不完整/.test(await page.locator('body').innerText()));
+    assert.equal(report.blocked.length, 0);
+    item.passed = true; // Draft transport only; returned computed fields require separate inspection.
   }
   if (scope === 'payroll') {
     const model = 'sc.hr.payroll.document';
@@ -536,10 +598,10 @@ try {
     item.passed = true;
   }
   assert.equal(report.errors.length, 0);
-  if (scope !== 'native-child') for (const model of models) assert(report.feedback.some(r => r.model === model && r.ok), 'feedback transport missing');
+  if (!['native-child', 'journal-draft'].includes(scope)) for (const model of models) assert(report.feedback.some(r => r.model === model && r.ok), 'feedback transport missing');
   report.passed = true;
 } finally {
-  if (page && scope === 'native-child') await page.screenshot({path: `${root}/final.png`}).catch(() => {});
+  if (page && ['native-child', 'journal-draft'].includes(scope)) await page.screenshot({path: `${root}/final.png`}).catch(() => {});
   report.lastPage = page ? {url: page.url(), text: await page.locator('body').innerText().catch(() => '')} : null;
   await browser.close();
   fs.writeFileSync(`${root}/${scope === 'usability' ? actor + '-' : ''}report.json`, JSON.stringify(report, null, 2));
