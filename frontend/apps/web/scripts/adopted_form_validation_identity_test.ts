@@ -317,6 +317,21 @@ const stubSection = (validate: () => Promise<string[]>) => {
 const immediateSection = () => stubSection(() => Promise.resolve<string[]>([]));
 
 
+// A populated/defaulted required field still needs its declared validator.
+// Removing the section must not become permission to persist merely because
+// the field happens to contain a value.
+registry.unregister('section-a');
+formData.name = 'Defaulted name';
+check(await saveRecord(), false, 'populated required field without registered validation blocks save');
+check(writes.length, 0, 'missing validation registration never reaches the write boundary');
+check(validationErrors.value.includes('表单校验未能完成，请重试。'), true,
+  'missing validation remains explicit even when the required value is populated');
+writes.length = 0;
+formData.name = '';
+validationErrors.value = [];
+validationFieldErrors.value = {};
+submissionFeedback.value = null;
+
 // ---------------------------------------------------------------------------
 // Baseline: the shipped chain does save when nothing moves underneath it
 // ---------------------------------------------------------------------------

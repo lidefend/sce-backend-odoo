@@ -114,7 +114,14 @@
     "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
     "addons/smart_core/tests/test_contract_runtime_semantic_resolver.py",
     "contracts/registry/semantic.yaml",
-    "addons/smart_core/core/node_component_validation.py"
+    "addons/smart_core/core/node_component_validation.py",
+    "contracts/generated/contract_structure_fingerprint.json",
+    "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
+    "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordFormFieldSchemas.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
+    "frontend/apps/web/scripts/adopted_form_validation_identity_test.ts"
   ],
   "environment": {
     "kind": "runtime",
@@ -122,7 +129,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Continue P0 kernel dynamic-semantics completion: next bounded capabilities are native field-level context/order propagation in onchange spec and default_get, then empty changed_fields initialization for new child rows, then rich accounting warnings to close FG15. Each stays declaration->consumption->behavior evidence; no deploy until a frozen protected PR passes current CI.",
+  "next_exact_step": "Close native create/child initialization through authorized onchange semantics; preserve required validation coverage. Verify nonzero targeted tests before governed journal save/readback/exact cleanup; FG15 remains open.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1365,6 +1372,32 @@
       "current_error": "save now reports specific 币种不能为空 for the line collection",
       "root": "account.move.line.currency_id is a stored computed required field (_compute_currency_id, no default) not hydrated when a new line is added",
       "next": "line create-default must trigger the line onchange (or inherit parent currency_id) so each new line hydrates currency_id"
+    },
+    "takeover_reconcile_20261026": {
+      "head": "4a996cfb4aa83fed3ecbfeffdc7fe2499e25a8fd",
+      "authority": "User confirmed previous executor paused; current executor owns inherited uncommitted useRecordRelationshipFields.ts patch.",
+      "scope_reconciliation": [
+        "contracts/generated/contract_structure_fingerprint.json",
+        "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
+        "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormFieldSchemas.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts"
+      ],
+      "classification": "Prior committed paths omitted from run.scope caused agent.run.resume failure; register existing batch changes, not acceptance proof.",
+      "layer": "P0 smart_core native onchange initialization and generic frontend consumption; no accounting value inference in frontend. P4 run metadata only.",
+      "next": "Remove inherited uncommitted currency inference; review native initialization/validation gaps and add affected regressions before runtime save.",
+      "tests": "L1 ci.local.iteration then affected onchange/create-default/validation tests; no environment writes before pass.",
+      "bounded_fix": "Restore contract-based adopted required coverage; regression uses shipped save chain with populated required value and no registered section. Remove inherited currency inference. Independent review confirms bypass.",
+      "result": {
+        "resume": "passed after scope reconciliation",
+        "l1": "passed takeover-l1.log",
+        "negative_before": "failed 3/87; populated required field without section reached simulated write once",
+        "l2": "passed: save identity87, adopted engine74, create defaults55 plus child assertions, relation lifecycle and7 guards, strict typecheck; takeover-l2.log",
+        "runtime": "not_run; initialization and registration gaps remain; no DB writes/environment change",
+        "handoff_patch": "removed unauthorized frontend currency inference; file equals inherited HEAD",
+        "remaining": "Capture child initialization native request/spec/context/inverse parent; repair adopted section registration and root init await/empty semantics before save acceptance"
+      }
     }
   }
 }
