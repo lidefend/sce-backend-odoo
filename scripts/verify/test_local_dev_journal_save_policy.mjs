@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { permitsJournalSaveMutation } from './local_dev_journal_save_policy.mjs';
+import { permitsJournalSaveMutation, permitsJournalRoleRead } from './local_dev_journal_save_policy.mjs';
 const allow = (request,state) => permitsJournalSaveMutation(request,state,{method:'POST',path:'/api/v1/intent'});
 const state = { enabled: true, ready: true, ref: 'P4-JOURNAL-test', companyId: 1, journalId: 3, currencyId: 6,
   accounts: [49, 48], rowKeys: ['r1', 'r2'], createAttempted: false, createdId: null, cleanupVerified: false };
@@ -45,4 +45,19 @@ test('native readonly journal defaults and exact action context are permitted', 
  for (const [key,value] of [['default_move_type','out_invoice'],['search_default_posted',0],['view_no_maturity',false],['default_journal_id',4]]) {
   const y=structuredClone(x); y.params.context[key]=value; assert(!allow(y,state));
  }
+});
+
+test('role authority reads stay bound to verified published pairs', () => {
+  const pairs = new Set(['292/175','293/176']);
+  const request = {intent:'route.authority.validate',params:{action_id:293,menu_id:176}};
+  const transport = {method:'POST',path:'/api/v1/intent'};
+  assert.equal(permitsJournalRoleRead(request,pairs,transport),true);
+  for (const changed of [
+    {...request,params:{action_id:293,menu_id:175}},
+    {...request,params:{action_id:293,menu_id:176,sudo:true}},
+    {...request,params:{action_id:'293',menu_id:176}},
+    {...request,intent:'api.data'},
+  ]) assert.equal(permitsJournalRoleRead(changed,pairs,transport),false);
+  assert.equal(permitsJournalRoleRead(request,new Set(),transport),false);
+  assert.equal(permitsJournalRoleRead(request,pairs,{...transport,method:'GET'}),false);
 });

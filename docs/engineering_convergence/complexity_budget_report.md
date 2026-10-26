@@ -177,8 +177,8 @@ Generated from repository source files. This report is informational during the 
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 910 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
+| 906 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
-| 901 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 900 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |
 | 888 | Python source | `scripts/verify/test_local_quick_evidence.py` |

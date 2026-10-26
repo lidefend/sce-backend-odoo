@@ -1,6 +1,6 @@
 // P4: fixed affected forms. journal-save permits one owned draft and exact cleanup; no posting.
 import fs from 'node:fs';
-import { permitsJournalSaveMutation } from './local_dev_journal_save_policy.mjs';
+import { permitsJournalSaveMutation, permitsJournalRoleRead } from './local_dev_journal_save_policy.mjs';
 import assert from 'node:assert/strict';
 import {launchChromium} from './playwright_runtime.mjs';
 import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap_inventory_policy.mjs';
@@ -45,6 +45,7 @@ assert(/^[a-f0-9]{40}$/.test(report.head || ''));
 const browser = await launchChromium({headless: true});
 let page;
 let certificateRecordId = null;
+const journalRolePairs = new Set(actor === 'sc_demo_accounting_manager' ? [] : ['292/175']);
 const journalSave = { enabled: scope === 'journal-save', ready: false, createAttempted: false, cleanupVerified: false,
   ref: process.env.SC_RUNTIME_JOURNAL_REF, createdId: null, accounts: [], rowKeys: [] };
 if (journalSave.enabled) {
@@ -85,9 +86,8 @@ try {
       req.method() === 'POST' && pathname === '/api/v1/intent' && ['chatter.timeline', 'chatter.followers.list'].includes(request?.intent) &&
       request.params?.model === 'sc.document.admin.document' &&
       Number(request.params.res_id ?? request.params.record_id) === certificateRecordId;
-    const roleAuthorityRead = scope === 'journal-role' && req.method() === 'POST' && pathname === '/api/v1/intent'
-      && request?.intent === 'route.authority.validate' && request.params?.action_id === 292
-      && request.params?.menu_id === 175 && Object.keys(request.params).length === 2;
+    const roleAuthorityRead = scope === 'journal-role'
+      && permitsJournalRoleRead(request, journalRolePairs, {method:req.method(),path:pathname});
     const ownedMutation = permitsJournalSaveMutation(request, journalSave, {method:req.method(),path:pathname});
     const ownedRead = journalSave.enabled && Number.isSafeInteger(journalSave.createdId) && req.method()==='POST' && pathname==='/api/v1/intent'
       && ['chatter.timeline','chatter.followers.list'].includes(request?.intent) && request.params?.model==='account.move'
@@ -655,6 +655,11 @@ try {
         const entries = leaves.filter(n=>models.includes(n.meta?.model) && n.meta?.route?.startsWith('/a/'));
         assert.equal(entries.length,6,'accounting must expose exactly six declared entries');
         assert.deepEqual([...new Set(entries.map(n=>n.meta.model))].sort(),[...models].sort());
+        for (const entry of entries) {
+          const route = new URL(entry.meta.route,base);
+          journalRolePairs.add(`${Number(route.pathname.split('/').at(-1))}/${Number(route.searchParams.get('menu_id'))}`);
+        }
+        assert.equal(journalRolePairs.size,6);
         for (const entry of entries) {
           const route = new URL(entry.meta.route,base);
           const menu = route.searchParams.get('menu_id');

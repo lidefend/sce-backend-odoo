@@ -53,3 +53,11 @@ export function permitsJournalSaveMutation(request, state, transport) {
   }
   return lines[0].debit === 100 && lines[0].credit === 0 && lines[1].debit === 0 && lines[1].credit === 100;
 }
+
+export function permitsJournalRoleRead(request, pairs, transport) {
+  const params = request?.params;
+  return transport?.method === 'POST' && transport?.path === '/api/v1/intent'
+    && request?.intent === 'route.authority.validate' && params && Object.keys(params).length === 2
+    && Number.isSafeInteger(params.action_id) && Number.isSafeInteger(params.menu_id)
+    && pairs.has(`${params.action_id}/${params.menu_id}`);
+}
