@@ -1469,6 +1469,7 @@ def _assemble_native_form_projection(
         "view_type": "form",
         "title": deepcopy(page.get("title")),
         "head": deepcopy(_dict(page.get("head"))),
+        "view_ids_by_type": {"form": deepcopy(page.get("formViewId"))},
         "record_id": deepcopy(page.get("recordId")),
         "render_profile": deepcopy(page.get("renderProfile")),
         "domain": deepcopy(_list(page.get("domain"))),

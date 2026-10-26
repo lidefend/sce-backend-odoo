@@ -4650,6 +4650,10 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
         self.assertEqual(contract["meta"]["sourceType"], "native_form_projection")
 
+        source["nativeFormProjection"]["page"] = {"formViewId": 731}
+        projected = assembler.assemble_unified_page_contract_v2(source, source_type="native_form_projection")
+        self.assertEqual(projected["dataContract"]["dataMeta"]["sourceContext"]["formViewId"], 731)
+
         camel_identity = deepcopy(source)
         camel_field = camel_identity["nativeFormProjection"]["layout"][0]
         camel_field["nativeLocator"] = camel_field.pop("native_locator")

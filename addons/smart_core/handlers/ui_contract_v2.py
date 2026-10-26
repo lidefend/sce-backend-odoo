@@ -93,7 +93,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-selected-form-identity-v2"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-selected-form-identity-v3"
 
 
 def _node_validation_snapshot_ready(source):
@@ -3987,6 +3987,7 @@ class UiContractV2Handler(BaseIntentHandler):
             "page": {
                 "title": deepcopy(source.get("title")),
                 "head": deepcopy(source.get("head") if isinstance(source.get("head"), dict) else {}),
+                "formViewId": deepcopy((source.get("view_ids_by_type") or {}).get("form")),
                 "recordId": deepcopy(source.get("record_id") or source.get("recordId")),
                 "renderProfile": deepcopy(source.get("render_profile") or source.get("renderProfile")),
                 "domain": deepcopy(source.get("domain") if isinstance(source.get("domain"), list) else []),
