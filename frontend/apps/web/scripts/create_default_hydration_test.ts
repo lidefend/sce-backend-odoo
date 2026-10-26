@@ -212,11 +212,16 @@ await child.addRow('lines'); assert.equal(requests, 1, 'duplicate clicks cannot 
 resolveChild({ state: 'draft', approved_by: false, quantity: 0, active: false }); await adding;
 const draft = child.visibleRows('lines')[0]!;
 assert.equal(draft.values.state, 'draft');
+assert.deepEqual(child.buildCommandValue('lines', 'onchange'), [[0, draft.key,
+  { state: 'draft', approved_by: false, quantity: 0, active: false }]],
+  'new-row onchange preserves declared defaults but never serializes unprovided display placeholders');
+
 assert.equal(child.effectiveColumn('lines', draft, columns[0]!).readonly, false);
 child.setRowField('lines', draft.key, columns[0]!, 'Entered name');
 assert.deepEqual(child.buildCommandValue('lines', 'write'), [[0, 0, { quantity: 0, active: false, name: 'Entered name' }]], 'readonly audit/state and untouched empty note are not writes');
 child.setRowField('lines', draft.key, columns[5]!, '');
 assert.equal((child.buildCommandValue('lines', 'write') as unknown as Array<[number, number, { note?: string }]>)[0][2].note, '', 'explicit empty user edit remains a write');
+assert.equal((child.buildCommandValue('lines', 'onchange')[0]![2] as Record<string, unknown>).note, '', 'explicit empty user edit remains present in onchange');
 assert.equal((child.buildCommandValue('lines', 'onchange') as unknown as Array<[number, number, { state?: string }]>)[0][2].state, 'draft', 'onchange sees full defaults including readonly state');
 const failed = child.addRow('lines'); rejectChild(new Error('temporary failure')); await failed;
 assert.equal(errors, 1); assert.equal(child.visibleRows('lines').length, 1, 'failure cannot append empty row');

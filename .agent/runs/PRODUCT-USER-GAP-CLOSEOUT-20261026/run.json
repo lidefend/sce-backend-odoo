@@ -1432,6 +1432,20 @@
       "environment": "registered sc-local-dev/sc_dev_demo/^sc_dev_demo$/ns_000000000002/sc_local_dev_odoo_data; existing managed credentials and candidate frontend",
       "validation": "L1 syntax and existing request policy unit; clean candidate runtime health then actual draft",
       "exclusions": "no save/create/write/unlink/dispatch, no reset/upgrade/mainline/remote deployment"
+    },
+    "journal_draft_probe_result": {
+      "candidate": "d9c2be50398e22a871ede098cb205f968b213b28",
+      "result": "PASS draft transport; one line0->1; HTTP200/ok twice; blocked0/errors0; screenshot inspected",
+      "evidence": "journal-browser.log and journal-draft-browser/d9c2be50398e22a871ede098cb205f968b213b28/report.json",
+      "finding": "root currency6/journal3; new line request sends every absent default as empty string including currency_id/company_id/debit/tax_ids; response only tax_lock_date_message false, no line patch. Native initialization remains absent.",
+      "no_writes": true
+    },
+    "child_presence_scope": {
+      "layer": "P0 generic one2many onchange serialization",
+      "reason": "Only defaulted/edited/server-patched child values are authoritative; display placeholders are not explicit input. Preserve explicit false/0/empty and readonly defaults in onchange; keep write permissions intact.",
+      "scope": "one2manyUtils.ts and existing create_default_hydration_test.ts",
+      "validation": "L1+affected defaults/runtime tests then exact clean candidate journal draft repeat",
+      "limits": "This is missingness repair, not sufficient child native initialization proof."
     }
   }
 }

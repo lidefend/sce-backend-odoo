@@ -750,9 +750,10 @@ export function buildOne2manyCommandValue(
       removed: row.removed,
       removalCommand: row.removalCommand,
       dirty: row.dirty,
-      values: row.isNew && mode === 'onchange'
-        ? row.values || {}
-        : Object.fromEntries((row.dirtyFields || []).filter(key => {
+      // New rows contain display placeholders for absent defaults. Only the
+      // default/edit/onchange presence set is input to native computation;
+      // sending placeholders would turn an omitted computed value into a clear.
+      values: Object.fromEntries((row.dirtyFields || []).filter(key => {
           if (mode === 'onchange' || !columns) return true;
           return columns.some(column => column.name === key
             && (column.forceSave === true
