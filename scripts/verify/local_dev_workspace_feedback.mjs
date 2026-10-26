@@ -707,8 +707,9 @@ try {
             const waitForm = ()=>page.waitForResponse(response=>{
               let body; try {body=response.request().postDataJSON();} catch {return false;}
               const request=body?.params?.intent ? body.params : body;
-              return request?.intent==='ui.contract.v2' && request.params?.op==='model'
-                && request.params?.model==='account.move' && Number(request.params?.record_id)===record.id;
+              return request?.intent==='ui.contract.v2' && request.params?.op==='action_open'
+                && request.params?.view_type==='form' && Number(request.params?.action_id)===action
+                && Number(request.params?.menu_id)===Number(menu) && Number(request.params?.record_id)===record.id;
             });
             const open = waitForm();
             await page.locator('[data-semantic-component="ActionView"]').getByRole('button',{name:record.name,exact:true}).click();
@@ -717,7 +718,8 @@ try {
               const payload=await response.json(); assert.equal(payload.ok,true);
               await page.waitForFunction(id=>{
                 const form=document.querySelector('[data-semantic-component="ContractFormPage"]');
-                return form?.getAttribute('data-state')==='ok' && form?.getAttribute('data-form-record')===String(id)
+                return form?.getAttribute('data-state')==='ok' && form?.getAttribute('data-form-model')==='account.move'
+                  && form?.getAttribute('data-form-record')===String(id)
                   && form?.getAttribute('data-v2-shadow-error')==='-';
               },record.id);
               await page.locator('[data-field-name="line_ids"]').first().waitFor({state:'visible'});
@@ -955,7 +957,7 @@ try {
   }
   if (journalSave.enabled) report.cleanup = {passed: false, pending: 'governed ordinary-user ORM and independent readback',
     createdId: journalSave.createdId, ref: journalSave.ref};
-  if (page && ['native-child', 'journal-draft', 'journal-save'].includes(scope)) await page.screenshot({path: `${root}/final.png`}).catch(() => {});
+  if (page && ['native-child', 'journal-draft', 'journal-save', 'journal-role'].includes(scope)) await page.screenshot({path: `${root}/${scope === 'journal-role' ? actor + '-' : ''}final.png`}).catch(() => {});
   report.lastPage = page ? {url: page.url(), text: await page.locator('body').innerText().catch(() => '')} : null;
   await browser.close();
   if (journalSave.enabled) { report.browserPassed = report.passed; report.passed = false; }
