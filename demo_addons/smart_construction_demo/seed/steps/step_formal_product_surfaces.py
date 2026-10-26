@@ -264,3 +264,59 @@ register(SeedStep(
     description="Seed current formal product transaction and administration surfaces.",
     run=run,
 ))
+
+
+def run_posted_journal(env):
+    """One dedicated posted demo entry, authored through the ordinary manager."""
+    from ...tools.scenario_loader import _demo_action_record
+
+    company = env.ref("base.main_company")
+    actor_xmlid = "smart_construction_demo.user_sc_accounting_manager_demo"
+    Move = _demo_action_record(env, env["account.move"], "create", actor_xmlid).with_context(
+        allowed_company_ids=company.ids)
+    journal = Move.env["account.journal"].search([
+        ("company_id", "=", company.id), ("type", "=", "general"), ("code", "=", "MISC")], limit=2)
+    if len(journal) != 1:
+        raise ValueError("Demo requires exactly one main-company MISC general journal")
+    debit = env.ref("smart_construction_demo.sc_demo_account_receivable")
+    credit = env.ref("smart_construction_demo.sc_demo_account_revenue")
+    partner = env.ref("smart_construction_demo.sc_demo_partner_owner_001")
+    assert debit.company_id == credit.company_id == company
+    assert debit.account_type == "asset_receivable" and credit.account_type == "income"
+    marker = "SC-DEMO-POSTED-JOURNAL-001"
+    xmlid = "smart_construction_demo.sc_demo_posted_journal_001"
+    registered = env.ref(xmlid, raise_if_not_found=False)
+    if registered and (registered._name != "account.move" or not registered.exists()):
+        raise ValueError("Demo journal XMLID must identify an existing account.move")
+    move = Move.browse(registered.id) if registered else Move.browse()
+    if not move:
+        if env["account.move"].search_count([("ref", "=", marker)]):
+            raise ValueError("Demo journal reference already exists without seed ownership")
+        today = fields.Date.context_today(Move)
+        move = Move.create({"move_type": "entry", "company_id": company.id,
+            "journal_id": journal.id, "date": today, "ref": marker,
+            "line_ids": [
+                (0, 0, {"name": "示例工程收入确认", "account_id": debit.id,
+                    "partner_id": partner.id, "date_maturity": today, "debit": 100.0, "credit": 0.0}),
+                (0, 0, {"name": "示例工程收入确认", "account_id": credit.id,
+                    "partner_id": partner.id, "debit": 0.0, "credit": 100.0}),
+            ]})
+        env["ir.model.data"].sudo().create({"module": "smart_construction_demo",
+            "name": "sc_demo_posted_journal_001", "model": "account.move", "res_id": move.id, "noupdate": True})
+    assert move.company_id == company and move.journal_id == journal
+    assert move.ref == marker and move.move_type == "entry"
+    assert len(move.line_ids) == 2
+    assert sorted((line.account_id.id, line.debit, line.credit) for line in move.line_ids) == sorted([
+        (debit.id, 100.0, 0.0), (credit.id, 0.0, 100.0)])
+    assert all(line.partner_id == partner for line in move.line_ids)
+    if move.state == "draft":
+        move.action_post()
+    assert move.state == "posted" and move.name and move.name != "/"
+    print("[demo.posted_journal] id=%s state=%s lines=%s" % (move.id, move.state, move.line_ids.ids))
+
+
+register(SeedStep(
+    name="demo_posted_journal",
+    description="Seed one owned ordinary-manager posted journal entry; leave existing drafts untouched.",
+    run=run_posted_journal,
+))

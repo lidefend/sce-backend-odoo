@@ -701,7 +701,7 @@ try {
             assert.equal(selected.status,200); assert.equal(selected.payload.ok,true);
             const record = selected.payload.data.records.find(row=>row.name && row.name !== '/');
             if (!record && journalState === 'posted') {
-              report.journalStates.push({state:journalState,status:'demo_gap',reason:'No named posted journal entry available to the accounting manager',passed:false});
+              report.journalStates.push({state:journalState,outcome:'demo_gap',reason:'No named posted journal entry available to the accounting manager',passed:false});
               continue;
             }
             assert(record,'demo gap: no named saved draft journal entry');
@@ -778,11 +778,11 @@ try {
             if (journalState === 'posted') {
               assert.equal(await page.locator('[data-semantic-component="ContractFormPage"]').getByRole('button',{name:'过账',exact:true}).count(),0,'posted journal must not expose posting again');
             }
-            report.journalStates.push({state:journalState,status:'verified',...detail});
+            report.journalStates.push({state:journalState,outcome:'verified',...detail});
             if (journalState === 'draft') report.journalDetail=detail;
             await page.screenshot({path:`${root}/${actor}-saved-${journalState}-detail.png`});
             }
-            report.journalStateCoverageComplete=report.journalStates.length===2 && report.journalStates.every(item=>item.status==='verified' && item.passed);
+            report.journalStateCoverageComplete=report.journalStates.length===2 && report.journalStates.every(item=>item.outcome==='verified' && item.passed);
           }
         }
       } else {
@@ -1008,4 +1008,4 @@ try {
 assert(journalSave.enabled ? report.browserPassed : report.passed, 'browser acceptance failed; governed wrapper must still clean up');
 console.log(`browser: PASS (${report.cases.length} ${scope} cases${journalSave.enabled ? ', draft save/readback; ORM cleanup pending' : ', no save/dispatch'})`);
 
-if (report.journalStates) console.log(`journal state coverage: ${report.journalStateCoverageComplete ? 'COMPLETE' : 'INCOMPLETE'} (${report.journalStates.map(item=>`${item.state}:${item.status}`).join(', ')})`);
+if (report.journalStates) console.log(`journal state coverage: ${report.journalStateCoverageComplete ? 'COMPLETE' : 'INCOMPLETE'} (${report.journalStates.map(item=>`${item.state}:${item.outcome}`).join(', ')})`);

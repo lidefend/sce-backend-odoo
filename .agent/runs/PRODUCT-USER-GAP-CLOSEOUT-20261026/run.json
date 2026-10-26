@@ -151,7 +151,8 @@
     "scripts/verify/test_product_menu_contract_v1_guard.py",
     "demo_addons/smart_construction_demo/data/demo/sc_demo_users.xml",
     "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py",
-    "addons/smart_construction_core/views/support/account_extend_views.xml"
+    "addons/smart_construction_core/views/support/account_extend_views.xml",
+    "demo_addons/smart_construction_demo/seed/steps/step_formal_product_surfaces.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -163,7 +164,7 @@
     "FG15: persistent posting lifecycle not run; requires bounded exact-object recovery plan before writes.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Run exact candidate journal-role observer and record posted-state verification or explicit demo gap, then address readonly role scenario.",
+  "next_exact_step": "Validate/review single posted demo seed, apply via local.dev.demo.seed STEPS=demo_posted_journal, replay to prove idempotence, then run corrected exact candidate browser.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1783,10 +1784,15 @@
     "accounting_posted_detail": {
       "layer": "P4 existing readonly journal-role browser, no product or demo mutation",
       "head": "207af4c11 plus workspace feedback observer",
-      "status": "runtime_pending",
+      "status": "demo_seed_applied_browser_pending",
       "scope": "Ordinary accounting manager selects draft and posted move_type entry independently; exact action/menu/record form reload, line values, unchanged readback. Posted button must be absent. Missing posted record is explicit demo_gap, never a verified state.",
-      "validation": "Existing L1 and journal save policy targets; real browser required. No new write exemptions.",
-      "limits": "Readonly role identity/browser remains pending; no posting execution."
+      "validation": "First seed static stopped because new file not yet in run scope; registered exact scope before rerun. Retain accounting-posted-seed-static.log. Seed actual replay/readback plus browser required.",
+      "limits": "Readonly role identity/browser remains pending; no posting execution.",
+      "candidate": "d8986abeab043e048a18c144eaa93c77275da132",
+      "result": "accounting-state-browser.log:6 lists/draft pass errors0 blocked0; named posted entry query empty. journalStateCoverageComplete=false. outcome status collided with globalStatus object for draft; fix uses distinct outcome key, no false full-coverage pass.",
+      "seed_scope": "P4 existing demo seed step demo_posted_journal. sc-local-dev/sc_dev_demo namespace ns_000000000002 dbfilter ^sc_dev_demo$ volume sc_local_dev_odoo_data. Ordinary non-superuser manager creates one XMLID-owned 100 receivable debit/revenue credit example through native action_post. Existing draft10 untouched. Canonical demo accounts/partner and MISC journal reused; no migration.",
+      "seed_result": "accounting-posted-seed-apply.log exit0: ordinary-manager native action_post created owned move55 lines51/52. Review then tightened each-line partner equality and stale/mismatched XMLID rejection; replay pending. No existing draft modified.",
+      "review": "Source review requested/received: native actor path correct, outcome fix correct; tightened XMLID model/existence and each-line partner equality per review."
     }
   }
 }
