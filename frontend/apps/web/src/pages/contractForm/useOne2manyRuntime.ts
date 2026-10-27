@@ -13,6 +13,7 @@ import {
   one2manyNativeEvaluationIds,
   removeOne2manyDraftRow,
   resolveOne2manyRowColumnBehavior,
+  resolveOne2manyColumnInvisible,
   restoreOne2manyDraftRow,
   setOne2manyDraftRowField,
   visibleOne2manyRows,
@@ -166,6 +167,10 @@ export function useOne2manyRuntime(params: {
     }
   }
 
+  function visibleColumns(fieldName: string) {
+    return params.resolveColumns(fieldName).filter(column => !resolveOne2manyColumnInvisible(column, modifierParentValues(fieldName)));
+  }
+
   function effectiveColumn(fieldName: string, row: One2ManyInlineRow, column: One2ManyColumn) {
     const behavior = resolveOne2manyRowColumnBehavior(
       column,
@@ -295,6 +300,7 @@ export function useOne2manyRuntime(params: {
     addRow,
     setRowField,
     effectiveColumn,
+    visibleColumns,
     removeRow,
     restoreRow,
     initRows,

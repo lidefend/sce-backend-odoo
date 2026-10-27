@@ -296,6 +296,14 @@ export function resolveOne2manyRowColumnBehavior(
   return { invisible, columnInvisible, readonly: Boolean(column.readonly || readonly), required: Boolean(column.required || required) };
 }
 
+// Column layout has no row evaluation frame, including when the collection is
+// empty. Cell invisible/readonly/required expressions belong to actual rows.
+export function resolveOne2manyColumnInvisible(column: One2ManyColumn, parentValues: Record<string, unknown>) {
+  return resolveOne2manyRowColumnBehavior({ ...column, ancestorModifiers: [],
+    modifiers: { column_invisible: column.modifiers?.column_invisible },
+  }, {}, parentValues).columnInvisible;
+}
+
 export function one2manyRowActionsFromSubview(subview: unknown) {
   const tree = subview && typeof subview === 'object' && !Array.isArray(subview)
     ? (subview as Record<string, unknown>).tree

@@ -194,7 +194,7 @@
     "Integration revalidation at 3c8593 and f4c125: clerk create fails before initial onchange; captured contract lacks authorized_transaction_ids and duplicated_ref_ids. Owned probes independently cleaned. P0 native hydration fix pending actual replay.",
     "Isolated acceptance contract receipt rejects stale lifecycle schema digest; governed declaration sync applied, runtime revalidation pending. Merge-stage presentation/list/relation receipts still required."
   ],
-  "next_exact_step": "Diagnose post-default clerk form loading failure using caught ContractGapError and initial onchange payload. Revalidate fix, rerun invalidated Quick, preserve passing e430 local presentation/list/relation evidence with true identity; do not merge while runtime blocker remains.",
+  "next_exact_step": "Validate P0 separation of column visibility from row modifiers, then ordinary clerk create/save without CDP diagnostics; re-freeze, affected acceptance, Quick and protected PR integration.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -2180,6 +2180,14 @@
         "Quick PD003 historical namespace false positives; exact blob registry repair pending recheck"
       ],
       "publication": "not pushed; no PR; no main merge"
+    },
+    "empty_collection_header_root_cause": {
+      "head": "3a562863ba9b5cfaed739bbf1085555a1467d296",
+      "evidence": "journal-save-browser/3a562863ba9b5cfaed739bbf1085555a1467d296/*/report.json",
+      "defect": "native_modifier.field_value.display_type",
+      "cause": "one2manyVisibleColumns fabricated __empty__ row and evaluated all cell modifiers before rows existed",
+      "fix": "Column visibility consumes only column_invisible with parent/context; actual row cell modifiers remain strict",
+      "diagnostics": "CDP removed for final non-debug replay; failed diagnostic probe cleaned and independently absent"
     }
   }
 }

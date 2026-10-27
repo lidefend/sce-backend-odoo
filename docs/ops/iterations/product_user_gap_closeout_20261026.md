@@ -2170,3 +2170,5 @@ L1、集合语义/原生差分/43parser、32JS+14Python及严格types通过。�
 隔离验收运行时通过受管入口纠正旧工作区挂载，但 contract receipt 报 `contract_schema_digest_not_bound`：本批 schema 已增加 formViewId，运行时摘要漏同步。使用 `make contract.schema.declaration.sync` 更新派生声明及示例，须重启候选并重新采集回执。当前未推送、未创建 PR、未合并、未部署；presentation/list/relation 合并证据和最终 Quick 均待完成。原始日志保留于当前 `.runtime/product-user-gap-closeout-20261026/integration-*`，不把失败作为通过。
 
 P4 增加 `verify.frontend.presentation.local.browser`：复用已登记 5180/sc_frontend_acceptance、普通 fixture_config_admin、同一 browser 和完整呈现断言；先取得精确候选 contract receipt，再从同 SHA 的权威 fixture resolution 解析项目入口，保留 daily 车道不变。独立源码复核未发现 S0–S2。相关测试暴露旧 onchange 静态守卫要求“失败静默”，现按本批已经实现的当前草稿错误反馈、过期响应隔离同步守卫和说明，并添加删除错误反馈/隔离条件的负例；不降低运行时契约要求。
+
+3a562 的只读调试抓到 `native_modifier.field_value.display_type`：空集合表头筛选构造了 `__empty__` 假行，错误求值行级 invisible/readonly/required。P0 通用消费修复将列布局仅绑定 `column_invisible` 的 parent/context 声明，行级条件仍对实际行严格求值；新增空集合、父依赖缺失及列条件非法引用行的负例。诊断探针已清理，CDP 暂停机制已从最终复验工具移除。e430 的列表18场景、呈现、关系回跳均通过并绑定原SHA；Quick曾因31个历史 namespace 技术标识误报失败，完整blob白名单经独立复核且全量个人数据扫描已通过。主线仍未集成，须完成修复后无调试浏览器与最终门禁。

@@ -10,6 +10,7 @@ import {
   one2manyRowLabelFromPrimary,
   one2manyRowActionsFromSubview,
   resolveOne2manyRowColumnBehavior,
+  resolveOne2manyColumnInvisible,
   selectOne2manySubview,
   setOne2manyDraftRowField,
 } from '../src/pages/contractForm/one2manyUtils';
@@ -638,3 +639,16 @@ for (const field of ['partner_id','tag_ids']) {
     {}, {'$native.fieldTypes':{[field]:field==='partner_id'?'many2one':'many2many'}}), {name:'ContractGapError'});
 }
 console.log('missing child and typed parent dependencies: denied');
+
+// Empty collections have no row: a cell dependency cannot decide header layout.
+const emptyColumn = {name: 'amount', label: 'Amount', modifiers: {
+  invisible: {kind: 'field_truthy', field: 'display_type'},
+  readonly: {kind: 'field_truthy', field: 'unknown_row_lock'},
+  required: {kind: 'field_truthy', field: 'unknown_row_required'},
+  column_invisible: {kind: 'field_truthy', field: 'parent.hide_amount'},
+}};
+assert.equal(resolveOne2manyColumnInvisible(emptyColumn, {hide_amount: false}), false);
+assert.equal(resolveOne2manyColumnInvisible(emptyColumn, {hide_amount: true}), true);
+assert.throws(() => resolveOne2manyColumnInvisible(emptyColumn, {}));
+assert.throws(() => resolveOne2manyColumnInvisible({...emptyColumn, modifiers: {column_invisible: {kind: 'field_truthy', field: 'display_type'}}}, {}));
+assert.throws(() => resolveOne2manyRowColumnBehavior(emptyColumn, {}, {hide_amount: false}));
