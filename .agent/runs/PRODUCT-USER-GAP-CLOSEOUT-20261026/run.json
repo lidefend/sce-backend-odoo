@@ -172,7 +172,7 @@
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Validate native weighted relation declarations and rendering, real company-boundary ORM, then affected exact candidate browser/owned save cleanup.",
+  "next_exact_step": "Extend declared native analytic readonly rendering to root-form surface, then accounting_read/user and mobile browser coverage; preserve original values and ordinary permissions.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1860,16 +1860,18 @@
         "scripts/verify/local_dev_workspace_feedback.mjs"
       ],
       "reason": "Native analytic_distribution widget, not model/field name guesses, declares related model/label/unit/csv encoding/readonly mode. Ordinary API reads with contract context, no sudo or ACL expansion. Raw distribution values unchanged; no text editor for this declared readonly widget.",
-      "status": "native_browser_passed_compact_display_pending",
+      "status": "desktop_child_readonly_verified_remaining_native_surfaces_open",
       "validation": "analytic-native-unit-complete.log:42 parser tests+collection/native differential3739 and weighted display cases PASS; analytic-native-occurrence-component.log mounted actual SFC stale/context/denied/empty/unmount/raw tests PASS plus existing SSR42. Final types/lint PASS (existing warning only), contract_basis15 tests/guard0open PASS; analytic-native-final-orm.log21 actual post-tests0fail0error including analytic company boundary; L1 and25JS+11Python policy PASS.",
-      "limits": "Readonly native distribution display only; distribution editor remains unimplemented and is explicitly not rendered. No demo seed/migration/upgrade required.",
-      "review": "review_takeover S2 occurrence mixing fixed and mounted asynchronous evidence reviewed, no remaining blockers. Runtime chain still required.",
+      "limits": "Only desktop accounting_manager child readonly sample accepted. Root field display, native editing, real mobile and accounting_read/user browser/ UI posting remain open; no demo/migration/upgrade/merge/remote deploy.",
+      "review": "review_takeover final source and raw runtime report PASS: six entries/two states, 22px nowrap/errors0blocked0. dd5ea save cleanup original evidence verified; no remaining blockers in child readonly scope.",
       "failures": "First collection exact shape check failed on new empty widget properties: changed to conditional source-paired projection. Initial types failed FieldDescriptor.widget unsupported: removed descriptor fallback in occurrence pairing fix. Original logs retained.",
       "runtime_plan": "Registered sc-local-dev/sc_dev_demo, uid7/company1, exact candidate readonly draft10/posted55 native account-label/percentage/ready/no-input and unchanged raw checks; then existing owned single draft save/readback/cleanup. No demo mutation/migration/module upgrade.",
-      "candidate": "dd5ea775f1e745e4e23289cbfcaff5657f98e598",
+      "candidate": "3b8faa3a12529d70409168fd656e1420cecff2c4",
       "browser": "analytic-native-browser.log exit0 PASS6/two states. Actual posted51/52 display authorized [DEMO-ANALYTIC-001] 项目成本分析账户 - 德阳市高新智造产业投资有限公司：100%; raw {\"1\":100} unchanged. Desktop components ready, no text input, errors0blocked0. Screenshot inspected.",
-      "save_browser": "analytic-native-save-browser.log exit0 browser+independent cleanup PASS atdd5ea775f, exact owned object in journal-save-browser/dd5ea775f1e745e4e23289cbfcaff5657f98e598/P4-JOURNAL-dd5ea775f1e745e4e23289cbfcaff5657f98e598-59f236beda83436fabebeabc4a2a4195/.",
-      "visual_followup": "Long authoritative account display_name wrapped many lines in narrow column. Reuse ScPopover/ScButton structured-content compact readonly trigger and full-value expansion. Pure resolver/context/raw/save unchanged. Revalidate actual expanded popup and no mutation; save proof retains original candidate identity."
+      "save_browser": "dd5ea775f exact original proof: owned record80/lines71,72 saved/readback/reloaded, cleaned with independent verify_absent passedtrue absenttrue. Compact UI does not change raw/read/save logic; no latest-SHA save replay claim.",
+      "visual_followup": "Long authoritative account display_name wrapped many lines in narrow column. Reuse ScPopover/ScButton structured-content compact readonly trigger and full-value expansion. Pure resolver/context/raw/save unchanged. Revalidate actual expanded popup and no mutation; save proof retains original candidate identity.",
+      "compact_validation": "analytic-native-css-browser.log PASS6/two states errors0blocked0; both native triggers/content22px nowrap, expand full text and close verified, no writes. Posted screenshot inspected; full-value screenshot captured during fade-in, not visual clarity proof.",
+      "visual_failure": "4ff3 functional probes passed but screenshot rejected excessive row height: scoped styles did not penetrate primitive wrapper. Fixed scoped deep selectors plus computed nowrap/height assertion at3b8faa3a1. Original report retained."
     }
   }
 }
