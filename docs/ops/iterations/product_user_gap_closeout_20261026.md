@@ -1926,3 +1926,52 @@ FG15仍开放：会计只读/经办角色浏览器、真实移动端、原生分
 需要数据修正时调整demo种子，不做开发数据迁移。无主线合并、远端部署或产品全批验收结论。
 
 review_takeover最终独立复核70939ce8b原始报告通过，两态标题/文案和数据不变性成立，保留测试来源SHA及未覆盖范围。
+### 2026-10-27：会计只读与经办 Demo 身份及桌面走查
+
+运行前通过local.dev.journal.role.identities独立只读观察，确认sc_demo_accounting_read/
+sc_demo_accounting_user不存在；不能用静态种子存在替代运行态事实。
+6276ecd8a550e10b9a3d75842ab19330a1368747新增两个显式角色的XML身份、可重放
+demo_accounting_roles种子和demo_full挂载。复用canonical demo凭据、公司1与既有
+_ensure_user流程，固定XMLID，未改P0/P1权限声明或迁移数据。末尾调用既有
+enroll_data_space_identities(purpose=demo)：实际覆盖已登记demo空间的全部
+active/internal/company-authorized操作者，不声称仅两账号；未新建数据空间或客户授权。
+身份回执在enrollment成功后输出，随后wrapper事务提交与独立只读回读确认最终身份。
+
+首次ORM用/module:class选择到了0项（测试为-standard专用标签），保留为失败，
+改用TEST_TAGS=demo_accounting_roles。最终accounting-roles-orm-final.log真实1项post-test，
+0失败0错误，stats3不算执行数：覆盖两次seed同ID、不重复、显式角色、公司、
+普通主体数据域身份、move/line读写ACL与journal create拒绝，不扩大为实际业务写或
+所有配置写删验收。L1通过；新增契约成员读取测试后策略27JS+11Python通过。
+受管local.dev.demo.seed STEPS=demo_accounting_roles成功落地read1987/user1988；
+accounting-roles-before/seed/after.log保留原始证据。after独立回读两者公司[1]、精确角色，
+原manager7/finance47/project_read41保留。没有重建、模块升级或修改已有凭证。
+
+P4既有journal-role入口扩展精确账号白名单及SC_FEEDBACK_EXPECTED_UID显式透传，
+由独立回读UID绑定登录，未使用测试事务中会回滚的临时UID。
+6276 reader首轮失败于nativeCells0!=2：探针误用主管的分析分配列要求。
+核对P1既有组声明，read只含account.group_account_readonly，user才含
+analytic.group_analytic_accounting；reader实际视图没有发布分析分配列。
+修复只涉及验证工具：读取真实layoutContract.containerTree.widgetList的line_ids子视图
+columns及根字段成员，缺结构明确失败。reader必须未发布且DOM无组件/无该表头；
+manager/user仍必须发布并显示，posted样本仍强制按授权名称/比例比较。
+没有为使探针通过而给reader加分析组。原失败保留accounting-read-browser.log。
+
+最终候选8d007e20fc5d4a8bf0b4630e6ba8e86da09a02dd：
+- accounting-read-final-browser.log、accounting-user-browser.log均退出0，各六入口通过，
+  父凭证10/55及根分录19/51的草稿/已过账两态通过，errors0/blocked0、无save/dispatch。
+- reader1987 effective read=true，write/create/unlink/duplicate=false，无保存/过账入口；
+  子表及根分析分配声明均未发布且页面缺席，不能记作reader分析组件正样本验收。
+- user1988保存入口可见，原生分析分配已发布；posted原始{"1":100}的授权账户名称/比例
+  强制比较通过。草稿displayValueCompared=false，仍不扩大为草稿名称比例正样本。
+- 两角色四行科目/借贷与API一致，父记录与根记录before/after（含状态/父归属/
+  analytic_distribution/write_date）一致。原始报告和截图位于
+  journal-role-browser/8d007e20fc5d4a8bf0b4630e6ba8e86da09a02dd/，
+  文件前缀分别sc_demo_accounting_read和sc_demo_accounting_user，已人工检查代表截图。
+- review_takeover独立读取两份原始报告，未发现假通过或本轮阻断；seed及ORM证据
+  保留6276原身份，后续仅P4探针变化，不冒称该候选重跑种子。
+
+关闭两个demo身份缺口及上述桌面角色读取路径的未验证项；不代表经办实际保存、
+UI过账、跨公司浏览器矩阵、真实移动端、原生分析编辑或完整产品交付完成。
+新增呈现观察：reader只读表格科目/标签的ScButton structured-content展开按钮仍呈
+原生默认边框，X2ManyRelationRenderer的scoped trigger样式可能未穿透包装层；
+登记为P0呈现缺口，后续修复并核对展开行为。无主线合并或远端部署。

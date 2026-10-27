@@ -226,3 +226,5 @@ d8986abea下sc-local-dev/sc_dev_demo会计经理uid7可见范围查询无有效�
 分析分配对象展示及posted保存草稿文案属于功能呈现缺口，另记FG15，不靠修改Demo掩盖。
 
 - 2026-10-27样本事实补充：posted55两条明细已有自动带入的analytic_distribution={"1":100}，并非未分配空值。744be8dc9空值假设失败保留，23e06062e按实际数据核对通过；本轮未修改该Demo分配，也不将JSON原始文本展示问题归为数据缺口。
+
+- 2026-10-27会计只读/经办身份缺口关闭：独立运行态预检确认两login缺失；6276ecd8a通过既有demo_accounting_roles种子创建read1987/user1988，稳定XMLID并进入demo_full重建路径。独立after回读公司1、精确显式role，原manager7/finance47/project_read41保留；既有标准enrollment覆盖所有已登记demo空间合格操作者，非仅两账号。真实1项ORM验证重放不重复、角色与指定ACL/data-space范围。8d007e20f两身份各六入口/两态详情只读走查通过。未迁移或重建数据，未修改现有凭证；实际业务写、移动端和跨公司场景仍未验收。

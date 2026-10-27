@@ -175,11 +175,11 @@
   },
   "checks": {},
   "blockers": [
-    "FG15: accounting_manager six-entry positive browser now passed; accounting_read/accounting_user positive browser, browser company-boundary matrix and six entry business workflows remain unverified.",
+    "FG15: manager/read/user desktop six-entry and selected journal readonly journeys passed; browser company-boundary matrix, mobile and six-entry business write workflows remain unverified.",
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Inspect existing demo accounting_read/accounting_user identities and scenario data, then expand actual role browser coverage with existing governed tools. Adjust demo seeds if data is missing; no development data migrations.",
+  "next_exact_step": "Fix generic readonly X2Many expanded-value button styles through primitive wrappers and verify real expansion/compact display; then extend selected accounting role journeys to mobile. Preserve demo identities and readonly transport gates.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1957,15 +1957,19 @@
       "reason": "Fill missing explicit accounting_read/user demo identities via repeatable seed/XML baseline, then verify real role surfaces using existing journal data. Not a migration or authorization change.",
       "environment": "sc-local-dev/sc_dev_demo filter^sc_dev_demo$ namespace ns_000000000002 volume sc_local_dev_odoo_data port18081; canonical demo credential reused",
       "validation_plan": "L1,focused seed ORM idempotency/exact roles/access,policy25JS+11Python,governed demo_accounting_roles seed with nonsecret UID receipt,exact candidate reader/user browser serially. No writes in browser.",
-      "status": "seed_applied_role_probe_corrected_pending_browser",
+      "status": "demo_identities_and_desktop_readonly_journeys_verified",
       "validation": "L1 reviewed PASS; policy-final25JS+11Python PASS; orm-final real1post-test0failed0error (stats3 not actual), seed twice same IDs/exact roles/read+write ACL/journal create denied/current-principal demo company membership.",
       "failures": "Initial /module:class selector collected0 because -standard tagged test; preserved as failure, switched to explicit demo_accounting_roles tag. Review caught Make actor allowlist/UID passthrough missing, fixed before browser.",
       "enrollment_scope": "Existing standard enroll_data_space_identities(purpose=demo) covers all active/internal/company-authorized operators of already registered demo spaces, not only two seats; no new space/customer purpose/role permission. Receipts emitted after enrollment.",
       "before": "accounting-roles-before.log governed read-only observation proves read/user absent; manager7/finance47/project_read41 retained.",
-      "limits": "ACL checks not proof of actual create/write/delete journeys or every configuration action. Browser pending; no manager proof inherited for new roles.",
+      "limits": "Not actual clerk saving/UI posting/cross-company browser/mobile/native analytic editor/full delivery. Reader analytic hidden by existing native group declaration is not positive display acceptance. New visual gap: readonly generic expanded-value buttons show default borders; investigate scoped style wrapper. No migrations/schema upgrade/mainline merge/remote deployment.",
       "seed": "6276ecd8a local.dev.demo.seed STEPS=demo_accounting_roles committed read1987/user1988 company1; independent accounting-roles-after.log confirms exact roles and retained manager7/finance47/project_read41.",
       "failure_browser": "accounting-read-browser.log 6276ecd8a failed nativeCells0!=2. Native role source: read omits analytic.group_analytic_accounting, user includes it. Reader page correctly omits analytic column; manager-only probe expectation was wrong. No permission change.",
-      "correction": "P4 helper reads exact published layout widget/subview column membership; missing structure fails. Reader analytic column/root must be undeclared and absent, user/manager must declare/render. Only declared posted allocation requires sample. 27JS+11Python/L1 passed."
+      "correction": "P4 helper reads exact published layout widget/subview column membership; missing structure fails. Reader analytic column/root must be undeclared and absent, user/manager must declare/render. Only declared posted allocation requires sample. 27JS+11Python/L1 passed.",
+      "candidate": "8d007e20fc5d4a8bf0b4630e6ba8e86da09a02dd",
+      "browser": "reader1987/user1988 each PASS6/parent2states/root2states errors0blocked0. Reader write/create/unlink/duplicatefalse/no save-post, analytic field undeclared+absent. User save visible/analytic declared/posted labels+percentage compared. All parent/root before-after and4line account/debit/credit equal; no save/dispatch.",
+      "evidence": "accounting-read-final-browser.log; accounting-user-browser.log; journal-role-browser/8d007e20fc5d4a8bf0b4630e6ba8e86da09a02dd/sc_demo_accounting_{read,user}-report.json",
+      "review": "review_takeover final source/raw two reports PASS no blockers/false pass; scope readonly journeys only, seed remains6276."
     }
   }
 }
