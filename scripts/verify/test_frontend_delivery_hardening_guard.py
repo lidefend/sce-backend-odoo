@@ -344,9 +344,15 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
             action_value.value, "smart_construction_core.action_sc_general_contract"
         )
 
+        resolve_targets = next(
+            node
+            for node in module.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "resolve_targets"
+        )
         payload = next(
             node.value
-            for node in module.body
+            for node in resolve_targets.body
             if isinstance(node, ast.Assign)
             and isinstance(node.value, ast.Dict)
             and any(
