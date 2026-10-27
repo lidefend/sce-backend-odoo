@@ -26,7 +26,10 @@ export async function saveClerkJournal({page,base,root,report,leaves,state,api})
   await page.waitForFunction(()=>['ok','empty'].includes(document.querySelector('[data-semantic-component="ActionView"]')?.getAttribute('data-collection-state')));
   const [contractResponse,initialResponse]=await Promise.all([
     wait(r=>r?.intent==='ui.contract.v2' && r.params?.op==='model' && r.params?.model==='account.move' && r.params?.view_type==='form'
-      && Number(r.params.menu_id)===menu && !r.params.record_id && r.params.render_profile==='create'),
+      && Number(r.params.menu_id)===menu && !r.params.record_id && r.params.render_profile==='create').then(async response => {
+        report.createContract = await capture(response);
+        return response;
+      }),
     wait(r=>r?.intent==='api.onchange' && r.params?.model==='account.move' && !r.params.res_id && !r.params.feedback_evaluation && !r.params.child_initialization),
     page.getByRole('button',{name:/^(新建|新增|创建)$/}).first().click(),
   ]);
