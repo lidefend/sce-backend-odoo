@@ -299,7 +299,9 @@ def hydrate_final_modifier_dependencies(
         if field_name not in fields_map:
             continue
         field_type = str(getattr(fields_map.get(field_name), "type", "") or "")
-        if field_type in {"one2many", "many2many", "binary", "html"}:
+        if field_type in {"binary", "html"}:
+            continue
+        if field_type in {"one2many", "many2many"} and field_name not in dependencies:
             continue
         missing.append(field_name)
     if not missing:
@@ -312,7 +314,17 @@ def hydrate_final_modifier_dependencies(
         if rows and isinstance(rows[0], dict):
             for field_name in missing:
                 if field_name in rows[0]:
-                    main_data[field_name] = rows[0][field_name]
+                    value = rows[0][field_name]
+                    if fields_map[field_name].type in {"one2many", "many2many"}:
+                        # Only actual ORM identities establish relation truth.
+                        # Denied or malformed values must remain missing.
+                        if not isinstance(value, (list, tuple)) or not all(
+                            isinstance(item, int) and not isinstance(item, bool)
+                            and 0 < item <= 9007199254740991 for item in value
+                        ):
+                            continue
+                        value = list(value)
+                    main_data[field_name] = value
     except Exception:
         # Missing values leave modifier evaluation fail-closed. Never sudo or
         # manufacture permission truth to make an action visible.

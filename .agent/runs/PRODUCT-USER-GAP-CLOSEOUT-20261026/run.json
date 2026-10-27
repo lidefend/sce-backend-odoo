@@ -191,10 +191,9 @@
     "FG15: selected desktop/mobile read journeys and ordinary-clerk single draft save/readback/cleanup passed; cross-company browser matrix, remaining mobile interactions and other six-entry business write workflows remain unverified.",
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open.",
-    "Integration revalidation at 3c8593 and f4c125: clerk create fails before initial onchange; captured contract lacks authorized_transaction_ids and duplicated_ref_ids. Owned probes independently cleaned. P0 native hydration fix pending actual replay.",
-    "Isolated acceptance contract receipt rejects stale lifecycle schema digest; governed declaration sync applied, runtime revalidation pending. Merge-stage presentation/list/relation receipts still required."
+    "Integration: 9bdc clerk create succeeded but persisted reload failed; cleanup verified record101 lines103/104 absent. P0 persisted relation hydration fixed; actual replay pending. Final Quick and merge evidence pending."
   ],
-  "next_exact_step": "Validate hidden tree schema data inclusion and assembled cache invalidation, then actual clerk create/save; finish final acceptance, Quick, archive and protected GitHub PR merge.",
+  "next_exact_step": "Validate persisted relation hydration with actual clerk save/reload/readback/cleanup, then final acceptance, exact-head Quick, independent review, archive and protected GitHub merge.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",

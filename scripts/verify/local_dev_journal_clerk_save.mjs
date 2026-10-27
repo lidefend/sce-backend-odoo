@@ -104,7 +104,18 @@ export async function saveClerkJournal({page,base,root,report,leaves,state,api})
   const saved=await capture(savedResponse);state.createdId=saved.data.id;assert(Number.isSafeInteger(state.createdId)&&state.createdId>0);
   const receipt={head:report.head,ref:state.ref,actor:report.actor.login,uid:report.actor.uid,record_id:state.createdId,line_ids:[]};
   fs.writeFileSync(`${root}/created-receipt.json`,JSON.stringify(receipt));report.saved=saved;
-  await page.waitForURL(url=>url.pathname.endsWith('/'+state.createdId));await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForURL(url=>url.pathname.endsWith('/'+state.createdId));
+  const [persistedResponse]=await Promise.all([
+    wait(r=>r?.intent==='ui.contract.v2' && r.params?.model==='account.move'
+      && Number(r.params.record_id)===state.createdId && r.params?.view_type==='form'),
+    page.reload({waitUntil:'domcontentloaded'}),
+  ]);
+  report.persistedContract=await capture(persistedResponse);
+  for (const field of ['authorized_transaction_ids','duplicated_ref_ids']) {
+    const ids=report.persistedContract.data.dataContract.mainData[field];
+    assert(Array.isArray(ids),`missing persisted relation dependency: ${field}`);
+    assert(ids.every(id=>Number.isSafeInteger(id)&&id>0));
+  }
   await page.waitForFunction(value=>document.querySelector('[data-field-name="ref"] input')?.value===value,state.ref);
   const result=await api('api.data',{op:'read',model:'account.move',ids:[state.createdId],fields:['id','ref','state','create_uid','company_id','journal_id','currency_id','line_ids']});
   assert.equal(result.payload.ok,true);assert.equal(result.payload.data.records.length,1);const record=result.payload.data.records[0];
