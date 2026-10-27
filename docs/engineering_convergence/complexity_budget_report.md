@@ -141,7 +141,7 @@ Generated from repository source files. This report is informational during the 
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
 | 1117 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
-| 1102 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
+| 1107 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1096 | JavaScript source | `scripts/verify/local_dev_project_create_contract_driver_probe.mjs` |
 | 1095 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
 | 1095 | JavaScript source | `scripts/verify/pfl035_payment_request_runtime_acceptance.mjs` |

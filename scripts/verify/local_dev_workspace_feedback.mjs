@@ -858,7 +858,8 @@ try {
         const lineId=sample.lineId;
         const lineFields=['id','analytic_distribution','write_date'];
         const before=await journalApi('api.data',{op:'read',model:'account.move.line',ids:[lineId],fields:lineFields});
-        assert.equal(before.payload.ok,true);
+        assert.equal(before.status,200); assert.equal(before.payload.ok,true);
+        assert.equal(before.payload.data.records.length,1); assert.equal(before.payload.data.records[0].id,lineId);
         await page.goto(`${base}/f/account.move.line/${lineId}?menu_id=${lineRoute.searchParams.get('menu_id')}&action_id=${lineRoute.pathname.split('/').at(-1)}`,{waitUntil:'domcontentloaded'});
         await page.waitForFunction(id=>{
           const form=document.querySelector('[data-semantic-component="ContractFormPage"]');
@@ -872,9 +873,13 @@ try {
         assert.equal((await rootDisplay.innerText()).trim(),sample.display);
         assert.equal(await rootField.locator('input,textarea').count(),0);
         const after=await journalApi('api.data',{op:'read',model:'account.move.line',ids:[lineId],fields:lineFields});
-        assert.equal(after.payload.ok,true); assert.deepEqual(after.payload.data.records,before.payload.data.records);
+        assert.equal(after.status,200); assert.equal(after.payload.ok,true);
+        assert.equal(after.payload.data.records.length,1); assert.equal(after.payload.data.records[0].id,lineId);
+        assert.deepEqual(after.payload.data.records,before.payload.data.records);
         report.rootAnalyticReadonly={model:'account.move.line',recordId:lineId,display:sample.display,
-          raw:before.payload.data.records[0].analytic_distribution,unchanged:true,noEditor:true,passed:true};
+          raw:before.payload.data.records[0].analytic_distribution,
+          before:before.payload.data.records[0],after:after.payload.data.records[0],unchanged:true,noEditor:true,passed:true};
+        await rootDisplay.scrollIntoViewIfNeeded();
         await page.screenshot({path:`${root}/${actor}-root-analytic.png`});
       } else {
       assert(!leaves.some(n=>n.meta?.model==='account.move' && new URL(n.meta.route,base).searchParams.get('menu_id')==='175'),
