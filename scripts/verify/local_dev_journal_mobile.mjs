@@ -86,6 +86,7 @@ export async function inspectMobileAccounting({page, base, root, actor, accounti
         const readonly=accountingReadonly || state==='posted';
         const card=readonly ? cards.locator('article').filter({hasText:line.account_id[1]})
           : cards.locator('article').filter({has:page.locator(`#o2m-control-line_ids-o2m_id_${line.id}-account_id-mobile`)});
+        await card.waitFor({state:'visible'});
         assert.equal(await card.count(),1);
         const disclosure=card.locator('[data-disclosure-trigger]');
         let expanded=false;
