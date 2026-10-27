@@ -1362,7 +1362,7 @@ verify.repository.local_hygiene:
 # Deliberately excluded from ci.local.quick: harmless dangling objects are a
 # release-workspace concern, not a normal development failure.
 verify.repository.release_hygiene: guard.prod.forbid verify.repository.clean_history.unit
-	@python3 scripts/verify/repository_clean_history_guard.py --local-hygiene
+	@python3 scripts/verify/repository_clean_history_guard.py --local-hygiene --auto-trusted-base
 
 verify.repository.public_old_sha:
 	@test -n "$(OLD_PUBLIC_COMMIT_URL)" || (echo "OLD_PUBLIC_COMMIT_URL is required"; exit 2)
