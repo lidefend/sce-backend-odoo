@@ -63,7 +63,7 @@ Generated from repository source files. This report is informational during the 
 | 1751 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1747 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1730 | Python source | `scripts/verify/system_performance_baseline.py` |
-| 1710 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
+| 1720 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1681 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1668 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1652 | Python source | `scripts/release/release_publication.py` |
@@ -125,10 +125,10 @@ Generated from repository source files. This report is informational during the 
 | 1204 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1199 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
+| 1180 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1157 | Python source | `scripts/verify/fact_source_coverage_guard.py` |
-| 1150 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1149 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |
 | 1147 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 1147 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
@@ -289,7 +289,7 @@ Generated from repository source files. This report is informational during the 
 | 1751 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1747 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1730 | split_plan_required | Python source | `scripts/verify/system_performance_baseline.py` |
-| 1710 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
+| 1720 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1681 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1668 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1652 | split_plan_required | Python source | `scripts/release/release_publication.py` |

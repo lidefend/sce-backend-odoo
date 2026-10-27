@@ -749,7 +749,7 @@ try {
             assert.equal(status.effectiveRecordCapabilities.write,!accountingReadonly);
             assert.equal(reloadedStatus.effectiveRecordCapabilities.write,!accountingReadonly);
             const lineRead=await journalApi('api.data',{op:'read',model:'account.move.line',ids:record.line_ids,
-              fields:['id','move_id','account_id','debit','credit','analytic_distribution','write_date']});
+              fields:['id','move_id','name','account_id','debit','credit','analytic_distribution','write_date']});
             assert.equal(lineRead.status,200); assert.equal(lineRead.payload.ok,true);
             const lines=lineRead.payload.data.records;
             assert.deepEqual(lines.map(line=>line.id).sort((a,b)=>a-b),[...record.line_ids].sort((a,b)=>a-b));
@@ -781,10 +781,40 @@ try {
                 ? (await readonlyRow.locator('td').nth(readonlyHeaders.indexOf('科目')).innerText()).trim()
                 : await cell('account_id').inputValue();
               assert.equal(values.account,line.account_id[1],`line ${line.id} account label differs from ORM`);
+              if (readonlyRow) {
+                values.expansions=[];
+                for (const [field,label,expected] of [['account_id','科目',line.account_id[1]],['name','标签',line.name]]) {
+                  if (typeof expected !== 'string' || !expected) continue;
+                  const trigger=readonlyRow.getByRole('button',{name:`查看完整${label}：${expected}`,exact:true});
+                  const style=await trigger.evaluate(button=>{
+                    const css=getComputedStyle(button), rect=button.getBoundingClientRect();
+                    const content=button.querySelector('.sc-btn__content');
+                    return {border:css.borderTopWidth,background:css.backgroundColor,whiteSpace:css.whiteSpace,
+                      height:rect.height,width:rect.width,cellWidth:button.closest('td').getBoundingClientRect().width,
+                      contentWhiteSpace:content && getComputedStyle(content).whiteSpace,type:button.type};
+                  });
+                  assert.equal(style.border,'0px'); assert.equal(style.background,'rgba(0, 0, 0, 0)');
+                  assert.equal(style.whiteSpace,'nowrap'); assert.equal(style.contentWhiteSpace,'nowrap');
+                  assert.equal(style.type,'button'); assert(style.height>0 && style.height<60 && style.width<=style.cellWidth);
+                  assert.equal(await trigger.getAttribute('title'),null,'explicit popup should not compete with a tooltip');
+                  await trigger.focus(); await trigger.press('Enter');
+                  const full=page.locator('.o2m-readonly-full-value:visible');
+                  await full.waitFor({state:'visible'}); assert.equal(await full.innerText(),expected);
+                  await page.waitForFunction(()=>{
+                    let element=document.querySelector('.o2m-readonly-full-value');
+                    if (!element) return false;
+                    for (;element;element=element.parentElement) if (Number(getComputedStyle(element).opacity)<1) return false;
+                    return true;
+                  });
+                  await page.screenshot({path:`${root}/${actor}-${journalState}-${line.id}-${field}-expanded.png`});
+                  await trigger.click(); await full.waitFor({state:'hidden'});
+                  values.expansions.push({field,text:expected,style,keyboardOpened:true,closed:true});
+                }
+              }
               lineComparisons.push({id:line.id,account:line.account_id,debit:line.debit,credit:line.credit,ui:values,passed:true});
             }
             const linesAfter=await journalApi('api.data',{op:'read',model:'account.move.line',ids:record.line_ids,
-              fields:['id','move_id','account_id','debit','credit','analytic_distribution','write_date']});
+              fields:['id','move_id','name','account_id','debit','credit','analytic_distribution','write_date']});
             assert.equal(linesAfter.status,200); assert.equal(linesAfter.payload.ok,true);
             assert.deepEqual(linesAfter.payload.data.records,lines,'readonly inspection must preserve journal lines');
             const readback=await journalApi('api.data',{op:'read',model:'account.move',ids:[record.id],

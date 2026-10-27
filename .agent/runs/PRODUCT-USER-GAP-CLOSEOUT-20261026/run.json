@@ -1970,6 +1970,20 @@
       "browser": "reader1987/user1988 each PASS6/parent2states/root2states errors0blocked0. Reader write/create/unlink/duplicatefalse/no save-post, analytic field undeclared+absent. User save visible/analytic declared/posted labels+percentage compared. All parent/root before-after and4line account/debit/credit equal; no save/dispatch.",
       "evidence": "accounting-read-final-browser.log; accounting-user-browser.log; journal-role-browser/8d007e20fc5d4a8bf0b4630e6ba8e86da09a02dd/sc_demo_accounting_{read,user}-report.json",
       "review": "review_takeover final source/raw two reports PASS no blockers/false pass; scope readonly journeys only, seed remains6276."
+    },
+    "readonly_cell_presentation": {
+      "head": "07c784daf plus explicit dirty scope",
+      "layer": "P0 frontend generic X2Many readonly presentation; P4 existing journal-role probe",
+      "scope": [
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "scripts/verify/local_dev_workspace_feedback.mjs"
+      ],
+      "reason": "Readonly expansion button CSS is blocked by primitive wrappers, as confirmed in prior reader screenshot. Apply parent-scoped deep styles without business/permission changes; remove duplicate tooltip, preserve button keyboard interaction.",
+      "validation_plan": "L1,collection/policy nonzero,types/lint; existing exact candidate reader desktop two-state journey with computed border/background/nowrap/dimensions, keyboard open/full-text/close and unchanged readback. Unchanged seed/ORM evidence stays at6276, no data writes.",
+      "status": "static_passed_browser_pending",
+      "validation": "readonly-cell-static/unit/policy/types/lint logs PASS; collection suite includes43parser+native differential3739; policy27JS+11Python; strict types exit0; full lint existingStatusPanel warning only.",
+      "review": "review_takeover source PASS no S1/S2; real styles/keyboard/popup/full text/close need browser confirmation.",
+      "reuse": "No backend/seed/role changes. Seed and ORM remain6276, role user browser remains8d007e20f; reader affected desktop readonly cells rechecked only. Native analytic component unchanged."
     }
   }
 }

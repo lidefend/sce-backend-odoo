@@ -99,7 +99,6 @@
                     appearance="structured-content"
                     variant="ghost"
                     size="small"
-                    :title="readonlyCellValue(row[column.name])"
                     :aria-label="`查看完整${column.label}：${readonlyCellValue(row[column.name])}`"
                   >{{ readonlyCellValue(row[column.name]) }}</ScButton>
                 </template>
@@ -1122,16 +1121,27 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
   white-space: nowrap;
 }
 
-.o2m-readonly-value-trigger {
+.o2m-readonly :deep(.o2m-readonly-value-trigger) {
   display: block;
   width: 100%;
   min-width: 0;
   max-width: 100%;
   padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
   overflow: hidden;
   font: inherit;
   line-height: inherit;
   text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.o2m-readonly :deep(.o2m-readonly-value-trigger .sc-btn__content) {
+  display: block;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
