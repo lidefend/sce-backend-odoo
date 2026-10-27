@@ -11,7 +11,7 @@ export async function saveClerkJournal({page,base,root,report,leaves,state,api})
   report.frontendEntries=served;
   const entry=leaves.find(item=>item.meta?.model==='account.move' && new URL(item.meta.route,base).searchParams.get('menu_id')==='175');
   assert(entry);
-  const route=new URL(entry.meta.route,base), action=Number(route.pathname.split('/').at(-1)), menu=175;
+  const menu=175;
   const wait=predicate=>page.waitForResponse(response=>{
     let body;try {body=response.request().postDataJSON();} catch {return false;}
     const request=body?.params?.intent ? body.params : body;
@@ -25,8 +25,8 @@ export async function saveClerkJournal({page,base,root,report,leaves,state,api})
   await page.goto(base+entry.meta.route,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>['ok','empty'].includes(document.querySelector('[data-semantic-component="ActionView"]')?.getAttribute('data-collection-state')));
   const [contractResponse,initialResponse]=await Promise.all([
-    wait(r=>r?.intent==='ui.contract.v2' && r.params?.op==='action_open' && r.params?.view_type==='form'
-      && Number(r.params.action_id)===action && Number(r.params.menu_id)===menu && !r.params.record_id),
+    wait(r=>r?.intent==='ui.contract.v2' && r.params?.op==='model' && r.params?.model==='account.move' && r.params?.view_type==='form'
+      && Number(r.params.menu_id)===menu && !r.params.record_id && r.params.render_profile==='create'),
     wait(r=>r?.intent==='api.onchange' && r.params?.model==='account.move' && !r.params.res_id && !r.params.feedback_evaluation && !r.params.child_initialization),
     page.getByRole('button',{name:/^(新建|新增|创建)$/}).first().click(),
   ]);
