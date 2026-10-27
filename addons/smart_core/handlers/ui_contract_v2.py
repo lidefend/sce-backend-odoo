@@ -93,7 +93,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-saved-feedback-v1"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-native-create-relation-dependencies-v2"
 
 
 def _node_validation_snapshot_ready(source):

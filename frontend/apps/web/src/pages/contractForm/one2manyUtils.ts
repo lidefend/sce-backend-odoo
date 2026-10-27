@@ -208,6 +208,29 @@ export function one2manyDataColumnsFromSubview(
   const source = subview as Record<string, unknown>;
   const fail = (): never => { throw contractGapError({ kind: 'contract_defect', missing: 'one2many.form_data_fields',
     requiredDeclarationLayer: 'P0:smart_core:subview' }, '明细表单数据字段声明不完整或无效'); };
+  const tree = source.tree && typeof source.tree === 'object' && !Array.isArray(source.tree)
+    ? source.tree as Record<string, unknown> : {};
+  if (tree.columns_schema !== undefined) {
+    if (!Array.isArray(tree.columns_schema)) return fail();
+    const rendered = new Set(columns.map(column => column.name));
+    const occurrences = Array.isArray(tree.column_occurrences) ? tree.column_occurrences : [];
+    for (const item of tree.columns_schema) {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return fail();
+      const schema = item as Record<string, unknown>;
+      const name = typeof schema.name === 'string' ? schema.name.trim() : '';
+      if (!name) return fail();
+      if (rendered.has(name)) continue;
+      const declared = occurrences.filter(item => item && typeof item === 'object' && (item as Record<string, unknown>).name === name) as Record<string, unknown>[];
+      if (!declared.length) return fail();
+      const dataOccurrences = declared.map(row => {
+        const ttype = String(row.field_type || row.ttype || schema.type || fieldType(resolveDescriptor(name)) || '').trim();
+        if (!ttype) return fail();
+        return { ...row, field_type: ttype };
+      });
+      columns.push(...one2manyColumnsFromSubview({ tree: { columns: [schema], column_occurrences: dataOccurrences } }, resolveDescriptor));
+      rendered.add(name);
+    }
+  }
   if (source.form === undefined) return columns;
   if (!source.form || typeof source.form !== 'object' || Array.isArray(source.form)) return fail();
   const form = source.form as Record<string, unknown>;

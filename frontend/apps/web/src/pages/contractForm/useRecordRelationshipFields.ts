@@ -182,7 +182,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }): Promise<Record<string, unknown>> {
     const model = one2manyRelationModel(name);
     if (!model || !one2manyCanCreate(name)) throw new Error('当前明细未开放新增');
-    const fields = [...new Set(one2manyDataColumns(name).map((column: One2ManyColumn) => column.name))];
+    const fields = [...new Set(one2manyDataColumns(name).map((column: One2ManyColumn) => column.name).filter((field: string) => field !== 'id'))];
     if (!fields.length) throw new Error('当前明细缺少字段契约');
     const fieldContext = (effectiveFieldDescriptor(name) as Record<string, unknown> | undefined)?.context;
     if (fieldContext != null && (typeof fieldContext !== 'object' || Array.isArray(fieldContext))) {
@@ -213,7 +213,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   async function loadOne2manyRowChange(name: string, row: { id: number; values: Record<string, unknown>; changed: string[] }, parent: {
     model: string; res_id: number | null; view_id?: unknown; values: Record<string, unknown>;
   }): Promise<Record<string, unknown>> {
-    const fields = [...new Set(one2manyDataColumns(name).map((column: One2ManyColumn) => column.name))];
+    const fields = [...new Set(one2manyDataColumns(name).map((column: One2ManyColumn) => column.name).filter((field: string) => field !== 'id'))];
     const fieldContext = (effectiveFieldDescriptor(name) as Record<string, unknown> | undefined)?.context;
     if (fieldContext != null && (typeof fieldContext !== 'object' || Array.isArray(fieldContext))) throw new Error('明细联动上下文尚未解析');
     const response = await (dependencies.initializeChild || triggerOnchange)(JSON.parse(JSON.stringify({

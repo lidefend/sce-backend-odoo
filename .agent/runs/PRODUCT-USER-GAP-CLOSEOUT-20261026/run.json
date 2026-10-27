@@ -194,7 +194,7 @@
     "Integration revalidation at 3c8593 and f4c125: clerk create fails before initial onchange; captured contract lacks authorized_transaction_ids and duplicated_ref_ids. Owned probes independently cleaned. P0 native hydration fix pending actual replay.",
     "Isolated acceptance contract receipt rejects stale lifecycle schema digest; governed declaration sync applied, runtime revalidation pending. Merge-stage presentation/list/relation receipts still required."
   ],
-  "next_exact_step": "Validate P0 separation of column visibility from row modifiers, then ordinary clerk create/save without CDP diagnostics; re-freeze, affected acceptance, Quick and protected PR integration.",
+  "next_exact_step": "Validate hidden tree schema data inclusion and assembled cache invalidation, then actual clerk create/save; finish final acceptance, Quick, archive and protected GitHub PR merge.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -2188,6 +2188,22 @@
       "cause": "one2manyVisibleColumns fabricated __empty__ row and evaluated all cell modifiers before rows existed",
       "fix": "Column visibility consumes only column_invisible with parent/context; actual row cell modifiers remain strict",
       "diagnostics": "CDP removed for final non-debug replay; failed diagnostic probe cleaned and independently absent"
+    },
+    "integration_fa884_results": {
+      "passed": [
+        "contract receipt",
+        "presentation",
+        "list18 scenarios",
+        "personal and clean-history scans before later Quick failure"
+      ],
+      "failed": [
+        "clerk add first child: requested fields omitted declared hidden tree columns",
+        "Quick assembled cache input digest not repinned after native hydration changes"
+      ],
+      "cancelled": [
+        "relation roundtrip cancelled when candidate invalidated by known product failure; readonly process group only"
+      ],
+      "next": "Include declared tree data schema while preserving occurrence metadata and visible columns; filter native id from child init/onchange payload; bump assembled cache version and exact input pin. Revalidate then integrate."
     }
   }
 }

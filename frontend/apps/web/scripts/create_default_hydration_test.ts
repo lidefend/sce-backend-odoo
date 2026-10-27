@@ -698,3 +698,38 @@ const eventC=multi.setRowField('lines',hydrated.key,multiColumns[2]!,21);
 assert.deepEqual(multiCalls[2]!.input.changed,['second'],'applied fieldChanges are acknowledged');
 multiCalls[2]!.resolve({}); await eventC;
 console.log('native child onchange: contract scope fail-closed, cross-field pending union and hydrated existing row passed');
+
+const hiddenTreeSubview = { tree: {
+  columns: [{name: 'name', type: 'char'}],
+  columns_schema: [{name: 'name', type: 'char'}, {name: 'row_kind', type: 'selection'}, {name: 'computed_token', type: 'char'}],
+  column_occurrences: [
+    {name: 'name', field_type: 'char'},
+    {name: 'row_kind', field_type: 'selection', native_locator: '/tree/field[2]', attributes: {force_save: '1'}, modifiers: {readonly: true, column_invisible: true}},
+    {name: 'row_kind', field_type: 'selection', native_locator: '/tree/field[3]', modifiers: {readonly: true, column_invisible: true}},
+    {name: 'computed_token', field_type: 'char', modifiers: {readonly: true, column_invisible: true}},
+  ],
+} };
+const hiddenDisplay = one2manyColumnsFromSubview(hiddenTreeSubview, () => null);
+const hiddenData = one2manyDataColumnsFromSubview(hiddenTreeSubview, () => null);
+assert.deepEqual(hiddenDisplay.map(column => column.name), ['name']);
+assert.deepEqual(hiddenData.map(column => column.name), ['name', 'row_kind', 'row_kind', 'computed_token']);
+assert.equal(hiddenData[1]!.forceSave, true);
+assert.equal(hiddenData[2]!.forceSave, undefined);
+assert.notEqual(hiddenData[1]!.key, hiddenData[2]!.key);
+const hiddenRuntime = useOne2manyRuntime({
+  model: () => 'x.parent', recordId: () => 0, originalValues: () => ({}), parentValues: () => ({}),
+  onchangeLinePatches: () => [], resolveColumns: () => hiddenDisplay, resolveDataColumns: () => hiddenData,
+  resolvePrimaryColumn: () => 'name', resolveRelationOptions: () => [], markFieldChanged: () => {},
+  loadDefaults: async () => ({row_kind: 'item', computed_token: 'default'}),
+});
+await hiddenRuntime.addRow('lines');
+const hiddenRow = hiddenRuntime.visibleRows('lines')[0]!;
+assert.equal(hiddenRow.values.row_kind, 'item');
+hiddenRuntime.setRowField('lines', hiddenRow.key, hiddenData[1]!, 'forged');
+assert.equal(hiddenRow.values.row_kind, 'item');
+hiddenRuntime.prepareOnchangeRows('lines', [[1, hiddenRow.key, {row_kind: 'server', computed_token: 'server'}]])();
+const hiddenCommands = hiddenRuntime.buildCommandValue('lines', 'write') as unknown[][];
+assert.equal((hiddenCommands[0]![2] as Record<string, unknown>).row_kind, 'server');
+assert.equal(Object.hasOwn(hiddenCommands[0]![2] as object, 'computed_token'), false);
+assert.throws(() => one2manyDataColumnsFromSubview({tree: {...hiddenTreeSubview.tree, column_occurrences: []}}, () => null), {name: 'ContractGapError'});
+console.log('hidden tree dependency defaults/onchange, occurrence, force_save and edit boundary: passed');
