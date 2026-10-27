@@ -227,7 +227,14 @@ export function one2manyDataColumnsFromSubview(
         if (!ttype) return fail();
         return { ...row, field_type: ttype };
       });
-      columns.push(...one2manyColumnsFromSubview({ tree: { columns: [schema], column_occurrences: dataOccurrences } }, resolveDescriptor));
+      const fieldMap = source.fields && typeof source.fields === 'object' && !Array.isArray(source.fields)
+        ? source.fields as Record<string, unknown> : {};
+      const nativeField = fieldMap[name];
+      if (nativeField !== undefined && (!nativeField || typeof nativeField !== 'object' || Array.isArray(nativeField))) return fail();
+      // Native subview metadata owns field readonly/required/type. Enriched
+      // relation navigation may supplement it but cannot erase those facts.
+      const descriptor = { ...resolveDescriptor(name), ...(nativeField as FieldDescriptor | undefined) };
+      columns.push(...one2manyColumnsFromSubview({ tree: { columns: [schema], column_occurrences: dataOccurrences } }, () => descriptor));
       rendered.add(name);
     }
   }

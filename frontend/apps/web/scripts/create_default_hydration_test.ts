@@ -699,14 +699,14 @@ assert.deepEqual(multiCalls[2]!.input.changed,['second'],'applied fieldChanges a
 multiCalls[2]!.resolve({}); await eventC;
 console.log('native child onchange: contract scope fail-closed, cross-field pending union and hydrated existing row passed');
 
-const hiddenTreeSubview = { tree: {
+const hiddenTreeSubview = { fields: {computed_token: {type: 'char', readonly: true}}, tree: {
   columns: [{name: 'name', type: 'char'}],
   columns_schema: [{name: 'name', type: 'char'}, {name: 'row_kind', type: 'selection'}, {name: 'computed_token', type: 'char'}],
   column_occurrences: [
     {name: 'name', field_type: 'char'},
     {name: 'row_kind', field_type: 'selection', native_locator: '/tree/field[2]', attributes: {force_save: '1'}, modifiers: {readonly: true, column_invisible: true}},
     {name: 'row_kind', field_type: 'selection', native_locator: '/tree/field[3]', modifiers: {readonly: true, column_invisible: true}},
-    {name: 'computed_token', field_type: 'char', modifiers: {readonly: true, column_invisible: true}},
+    {name: 'computed_token', field_type: 'char', modifiers: {column_invisible: true}},
   ],
 } };
 const hiddenDisplay = one2manyColumnsFromSubview(hiddenTreeSubview, () => null);
@@ -715,6 +715,8 @@ assert.deepEqual(hiddenDisplay.map(column => column.name), ['name']);
 assert.deepEqual(hiddenData.map(column => column.name), ['name', 'row_kind', 'row_kind', 'computed_token']);
 assert.equal(hiddenData[1]!.forceSave, true);
 assert.equal(hiddenData[2]!.forceSave, undefined);
+assert.equal(hiddenData[3]!.readonly, true);
+assert.equal(one2manyDataColumnsFromSubview(hiddenTreeSubview, () => ({type:'char',readonly:false}))[3]!.readonly, true);
 assert.notEqual(hiddenData[1]!.key, hiddenData[2]!.key);
 const hiddenRuntime = useOne2manyRuntime({
   model: () => 'x.parent', recordId: () => 0, originalValues: () => ({}), parentValues: () => ({}),

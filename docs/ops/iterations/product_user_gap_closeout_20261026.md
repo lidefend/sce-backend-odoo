@@ -2176,3 +2176,5 @@ P4 增加 `verify.frontend.presentation.local.browser`：复用已登记 5180/sc
 fa884 的无调试浏览器已能打开空表并填写引用，但新增第一条明细后失败：真实 child_initialization 请求只有可见树列与表单字段，漏掉契约 columns_schema/column_occurrences 已声明的 display_type 等隐藏依赖。P0 数据字段闭包现纳入有完整 occurrence 的隐藏树字段，保留类型、修饰、同名 occurrence 和显式 force_save；显示列与 UI setter 范围不扩展。child 请求排除原生 id 字段，身份继续由 record_id 通道承载。隐藏默认值/onchange、readonly 不写、force_save、禁止 UI 隐藏编辑及缺 occurrence 负例通过。Quick 另发现 assembled cache 输入漏重新绑定，已同时更新 handler/guard 缓存版本并按真实输入重算摘要，assembler guard 通过。fa884 的关系回跳在候选失效后取消（只读），不计通过；保存失败探针清理与独立不存在确认完成。
 
 P4 保存探针随已声明隐藏数据消费做精确收紧映射：仅接受 display_type=product、sequence=10、无折扣日期且折扣金额=0，仍为原两个科目/金额/币种/公司和唯一标记的草稿；tax/section、重排序、非零折扣、其他税字段均拒绝。保存后回读同时断言上述四项；失败仍执行既有所有权清理。
+
+146a 的无调试普通会计复验已通过空表、两行新增、科目与借贷联动，保存被P4 gate拦截（未创建记录）：原生初始化明确返回 sequence=100，而此前探针预测限定10；现按实际证据收紧到数值100。另捕获 account_type/account_internal_group 两个只读隐藏字段进入提交，根因数据列只消费 occurrence、未补 subview.fields 中原生 readonly。P0 改为原生字段元数据优先保留只读事实，扩展关系导航不能覆盖；探针继续拒绝这两个字段而非放宽白名单。补充原生 readonly 无局部readonly修饰及外部描述冲突测试。

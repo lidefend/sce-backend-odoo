@@ -98,9 +98,9 @@ for (const key of ['payload','params','data','args','values']) {
 
 test('declared hidden defaults preserve the exact journal probe scope', () => {
  const x=structuredClone(create);
- for (const command of x.params.vals.line_ids) Object.assign(command[2], {display_type:'product',sequence:10,discount_date:false,discount_amount_currency:0});
+ for (const command of x.params.vals.line_ids) Object.assign(command[2], {display_type:'product',sequence:100,discount_date:false,discount_amount_currency:0});
  assert(allow(x,state));
- for (const [key,value] of [['display_type','tax'],['display_type','line_section'],['sequence',11],['sequence','10'],['discount_date','2026-10-27'],['discount_amount_currency',1],['discount_amount_currency','0'],['tax_line_id',1]]) {
+ for (const [key,value] of [['display_type','tax'],['display_type','line_section'],['sequence',11],['sequence','100'],['discount_date','2026-10-27'],['discount_amount_currency',1],['discount_amount_currency','0'],['tax_line_id',1]]) {
   const y=structuredClone(x);y.params.vals.line_ids[0][2][key]=value;assert(!allow(y,state),key);
  }
 });

@@ -2204,6 +2204,14 @@
         "relation roundtrip cancelled when candidate invalidated by known product failure; readonly process group only"
       ],
       "next": "Include declared tree data schema while preserving occurrence metadata and visible columns; filter native id from child init/onchange payload; bump assembled cache version and exact input pin. Revalidate then integrate."
+    },
+    "integration_146a_save": {
+      "status": "failed_safely_before_write",
+      "progress": "empty form, two child initializations, account selection and balanced debit/credit onchanges succeeded",
+      "blocker": "probe expected sequence10 but native returned100; hidden native readonly account_type/account_internal_group were omitted from renderer descriptor and wrongly entered payload",
+      "fix": "Use native subview.fields readonly before enriched descriptor, keep readonly fields rejected by write probe, bind sequence to observed numeric100",
+      "cleanup": "ordinary cleanup and independent absence passed",
+      "next": "non-debug clerk save/readback/cleanup at fixed candidate"
     }
   }
 }

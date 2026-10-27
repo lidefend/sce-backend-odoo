@@ -117,7 +117,7 @@ export async function saveClerkJournal({page,base,root,report,leaves,state,api})
   for(const [account,debit,credit,balance] of [[49,100,0,100],[48,0,100,-100]]) {
     const matching=rows.filter(row=>row.account_id[0]===account);assert.equal(matching.length,1);const row=matching[0];
     assert.equal(row.move_id[0],state.createdId);assert.equal(row.currency_id[0],6);assert.equal(row.company_id[0],1);assert.equal(row.amount_currency,balance);
-    assert.equal(row.display_type,'product');assert.equal(row.sequence,10);assert.equal(row.discount_date,false);assert.equal(row.discount_amount_currency,0);
+    assert.equal(row.display_type,'product');assert.equal(row.sequence,100);assert.equal(row.discount_date,false);assert.equal(row.discount_amount_currency,0);
     assert.equal(row.debit,debit);assert.equal(row.credit,credit);assert.equal(row.balance,balance);
   }
   receipt.line_ids=record.line_ids;fs.writeFileSync(`${root}/created-receipt.json`,JSON.stringify(receipt));

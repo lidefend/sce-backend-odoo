@@ -49,7 +49,7 @@ export function permitsJournalSaveMutation(request, state, transport) {
     }
     // Newly consumed native hidden defaults: no section/tax line, reordering or discount.
     if (row.display_type !== undefined && row.display_type !== 'product') return false;
-    if (row.sequence !== undefined && row.sequence !== 10) return false;
+    if (row.sequence !== undefined && row.sequence !== 100) return false;
     if (row.discount_date !== undefined && !empty(row.discount_date)) return false;
     if (row.discount_amount_currency !== undefined && row.discount_amount_currency !== 0) return false;
     if (row.date_maturity !== undefined && !empty(row.date_maturity) && row.date_maturity !== state.date) return false;
