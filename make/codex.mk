@@ -446,7 +446,7 @@ pr.merge.local_quick_gate:
 	fi; \
 	echo "[pr.merge.local_quick_gate] evidence miss; running fail-closed fallback"; \
 	echo "[pr.merge.local_quick_gate] running make ci.local.quick on $$EXPECTED (this takes several minutes)"; \
-	env -u MAKEOVERRIDES $(MAKE) --no-print-directory ci.local.quick; \
+	env -u MAKEOVERRIDES -u MAKEFLAGS -u MFLAGS $(MAKE) --no-print-directory ci.local.quick; \
 	python3 scripts/ops/local_quick_evidence.py verify --expected-head "$$EXPECTED" >/dev/null; \
 	echo "[pr.merge.local_quick_gate] PASS"; \
 	'
