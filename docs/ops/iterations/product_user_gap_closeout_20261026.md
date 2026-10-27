@@ -1841,3 +1841,41 @@ analytic-native-css-browser.log退出0，六入口及草稿/已过账两态通�
 本轮无demo修改、迁移、模块升级、主线合并或远端部署。原有草稿10/已过账55保留。
 下一步按同一原生声明链补根表单展示覆盖，再扩展真实会计角色与移动端验证；
 编辑能力另按原生数据模型及权限声明实现，不用文本JSON输入代替。
+### 2026-10-27：根表单原生分析分配只读消费
+
+实现候选 `04d59718692ab29aaa8c2ca3768741af5abbde98`。P0 FormSection的普通字段区和
+只读事实区复用NativeWeightedRelationDisplay，消费字段自身widget/semantics、原始value和
+relationAdapter正式readContext；未增加业务模型分支、权限或文本JSON编辑器。
+smart_core旧结构转换路径在没有options时也计算原生widget语义，DOM/转换路径重算前
+去除旧widget_semantics，防止同名字段不同widget残留。该变化不涉及数据库schema或demo。
+
+L1首次被scope登记缺漏阻断，已将两个新增前端路径加入当前run.scope；原日志保留。
+native-layout既有测试stub缺少NativeFormTreeRenderer早已引用的TDesignAlert，补充呈现
+边界stub后通过，未移除既有错误断言。验证通过：80纯布局+45实际挂载检查、
+43 parser测试及既有原生差分/集合语义套件、36组件消费/42 SSR及异步组件回归、
+严格类型、完整lint（仅既有StatusPanel警告）、15项contract basis及0开放缺陷守卫、
+25JS+11Python策略测试。挂载测试使用真实NativeFormTreeRenderer/FormSection/分析分配
+组件，schema投影是测试构造，因此另用真实浏览器补声明链。
+沿用dd5ea普通权限/公司隔离ORM及原保存清理的原始证据身份：读取函数、ACL和保存逻辑
+没有变化，不宣称本候选重跑保存或ORM。只重启受管sc-local-dev服务，无模块升级。
+
+真实浏览器：04d597186先通过根字段链，但截图未滚动到字段。P4后续仅补充
+HTTP200、唯一记录ID和before/after原值/修改时间回执，以及scrollIntoViewIfNeeded；
+最终候选 `b6fcfd96ad5a1f403dd64455f2b88d9851f78803` 的
+native-root-final-browser.log退出0，既有六入口、草稿/已过账两态和新增根字段验证通过。
+原始report.rootAnalyticReadonly确认account.move.line/51显示
+“[DEMO-ANALYTIC-001] 项目成本分析账户 - 德阳市高新智造产业投资有限公司：100%”，
+无input/textarea，查看前后原始分配均{"1":100}、write_date均2026-10-26 23:26:42，
+errors/blocked均空。目标字段截图已人工查看：紧凑显示，未出现原始JSON。
+证据为journal-role-browser/b6fcfd96ad5a1f403dd64455f2b88d9851f78803/；
+早期成功日志/截图保留原SHA。P4回执变化不改变产品代码，沿用04d597186定向测试身份，
+最终探针策略25JS+11Python已重跑。两轮均无业务写入、无demo变更。
+
+仅关闭当前桌面会计主管、日记账项目样本的根字段只读展示缺口；编辑布局/只读布局
+组件路径已由挂载测试覆盖，不扩大为全部模型、角色或移动端验收。原生编辑、
+会计只读/经办角色、移动端、UI过账仍开放。新增实际页面缺口：日记账项目51的父凭证
+已过账，但根详情主保存动作仍标“保存草稿”；这不同于已关闭的account.move父表文案，
+应由P1保存语义声明修复。下一步先处理此具体文案，再推进角色/移动端。
+无主线合并、远端部署或全批产品验收结论。
+
+review_takeover已独立复核代码及b6fcfd96a原始报告，无本轮只读展示范围阻断。

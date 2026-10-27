@@ -172,9 +172,10 @@
   "blockers": [
     "FG15: accounting_manager six-entry positive browser now passed; accounting_read/accounting_user positive browser, browser company-boundary matrix and six entry business workflows remain unverified.",
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
-    "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
+    "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open.",
+    "FG15: account.move.line root primary action still 保存草稿 for posted parent sample51; P1 persistence label declaration pending."
   ],
-  "next_exact_step": "Extend declared native analytic readonly rendering to root-form surface, then accounting_read/user and mobile browser coverage; preserve original values and ordinary permissions.",
+  "next_exact_step": "Fix P1 account.move.line root persistence label 保存草稿 for already-posted parent through form_governance declaration; validate draft/posted native form semantics and affected browser. Then accounting_read/user and mobile.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1887,10 +1888,16 @@
         "scripts/verify/local_dev_workspace_feedback.mjs"
       ],
       "validation_plan": "L1 then parser/actual mounted native-layout/typecheck/contract basis; affected root runtime after static passes. Reuse unchanged weighted resolver and company ORM evidence at dd5ea; no migration/module schema upgrade.",
-      "status": "static_passed_runtime_pending",
+      "status": "desktop_root_readonly_sample_verified",
       "failure": "First L1 stopped because two new frontend paths were only in observation scope, not run.scope. Added exact owned paths, original log retained. Existing native-layout stub lacked TDesignAlert already imported by NativeFormTreeRenderer; added presentation-only export, original component failure retained.",
       "validation": "L1 PASS after exact scope registration; form_canvas80 pure +45 actual mounted checks PASS; collection/native parser43 tests and existing differential/semantic suite PASS; strict types, full lint(existing StatusPanel warning only), contract_basis15/0open, policy25JS+11Python, existing node36/SSR42 and weighted async mounted PASS.",
-      "runtime_plan": "Exact candidate registered sc-local-dev/sc_dev_demo ns_000000000002; existing journal-role readonly wrapper plus posted line chosen from authorized parent read to root form. Probe compares label/proportion to prior authorized read, no input, unchanged raw/write_date. No data writes/schema upgrades; backend restart only. Existing wrapper lists retained as its precondition, no89-entry matrix."
+      "runtime_plan": "Exact candidate registered sc-local-dev/sc_dev_demo ns_000000000002; existing journal-role readonly wrapper plus posted line chosen from authorized parent read to root form. Probe compares label/proportion to prior authorized read, no input, unchanged raw/write_date. No data writes/schema upgrades; backend restart only. Existing wrapper lists retained as its precondition, no89-entry matrix.",
+      "candidate": "b6fcfd96ad5a1f403dd64455f2b88d9851f78803",
+      "browser": "native-root-final-browser.log PASS six entries/two parent states/root account.move.line51; authorized label/100%, no editor, before/after raw{1:100} and write_date2026-10-26 23:26:42 equal; errors0blocked0; target screenshot inspected.",
+      "evidence": "journal-role-browser/b6fcfd96ad5a1f403dd64455f2b88d9851f78803/sc_demo_accounting_manager-report.json and root-analytic.png",
+      "review": "review_takeover source and final original report PASS no blockers within readonly root scope.",
+      "reuse": "Product inputs unchanged from04d597186; b6fcfd96a only probe HTTP/unique id/full before-after/screenshot scroll plus generated statistics. Original targeted tests remain bound04d597186; policy rerun25JS+11Python PASS. Existing ORM/save proof retains dd5ea original identity; no new writes.",
+      "limits": "Desktop accounting_manager root line51 only; mounted tests cover both form display paths. No native editor/other models/all roles/mobile/UI posting acceptance. New observed P1 line form 保存草稿 label on posted parent remains open. No demo edits/migration/module upgrade/mainline merge/remote deployment."
     }
   }
 }
