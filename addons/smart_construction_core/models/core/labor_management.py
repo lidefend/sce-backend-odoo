@@ -487,11 +487,11 @@ class ScLaborUsage(models.Model):
     )
     labor_team = fields.Char(string="班组", required=True, index=True)
     contractor_id = fields.Many2one(
-        "res.partner", string="劳务单位", index=True, help="建议补充劳务单位"
+        "res.partner", string="劳务单位", index=True, help="建议补充劳务单位", default=False
     )
     work_content = fields.Char(string="作业内容", required=True)
-    work_type = fields.Char(string="工种", help="建议补充工种")
-    construction_part = fields.Char(string="施工部位", help="建议补充施工部位")
+    work_type = fields.Char(string="工种", help="建议补充工种", default=False)
+    construction_part = fields.Char(string="施工部位", help="建议补充施工部位", default=False)
     worker_qty = fields.Float(string="用工人数", required=True, default=1)
     work_hours = fields.Float(string="工时")
     currency_id = fields.Many2one(
@@ -501,7 +501,7 @@ class ScLaborUsage(models.Model):
         default=lambda self: self.env.company.currency_id.id,
     )
     price_unit = fields.Monetary(
-        string="用工单价", currency_field="currency_id", help="建议补充用工单价"
+        string="用工单价", currency_field="currency_id", help="建议补充用工单价", default=False
     )
     amount_total = fields.Monetary(
         string="用工金额",
@@ -517,7 +517,7 @@ class ScLaborUsage(models.Model):
         required=True,
         index=True,
     )
-    foreman_name = fields.Char(string="带班人", help="建议补充带班人")
+    foreman_name = fields.Char(string="带班人", help="建议补充带班人", default=False)
     recorder_id = fields.Many2one("res.users", string="记录人", default=lambda self: self.env.user, index=True)
     state = fields.Selection(
         [("draft", "草稿"), ("submitted", "审批中"), ("approved", "已审批待确认"), ("confirmed", "已确认"), ("cancel", "已取消")],
@@ -533,6 +533,7 @@ class ScLaborUsage(models.Model):
         "attachment_id",
         string="附件",
         help="建议上传用工依据",
+        default=False,
     )
     note = fields.Text(string="用工说明")
     legacy_fact_model = fields.Char(string="来源通用模型", index=True)

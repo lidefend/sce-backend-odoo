@@ -5,13 +5,6 @@ from odoo import api, fields, models
 class ScLaborUsageProductAdvisory(models.Model):
     _inherit = "sc.labor.usage"
 
-    contractor_id = fields.Many2one(default=False)
-    work_type = fields.Char(default=False)
-    construction_part = fields.Char(default=False)
-    foreman_name = fields.Char(default=False)
-    price_unit = fields.Monetary(default=False)
-    attachment_ids = fields.Many2many(default=False)
-
     processing_advisory = fields.Char(
         "办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction",
         sc_feedback_usage={
