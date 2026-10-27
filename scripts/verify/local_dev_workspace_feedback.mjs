@@ -307,7 +307,7 @@ try {
       ['deprecated', '=', false], ['account_type', '!=', 'off_balance']], 'native account restrictions must reach actual query');
     // Select the exact business label returned by the authorized query.
     assert(accountResult.data.records[0]?.display_name);
-    const option = page.getByText(accountResult.data.records[0].display_name, {exact: true});
+    const option = page.getByText(accountResult.data.records[0].display_name, {exact: true}).filter({visible:true});
     await option.waitFor({state: 'visible'});
     item.accountOptionLabel = (await option.innerText()).trim();
     const matchedAccounts = accountResult.data?.records?.filter(record => [record.display_name, record.name].includes(item.accountOptionLabel)) || [];
@@ -373,7 +373,7 @@ try {
       });
       await secondInput.click(); const secondOptions=await capture(await secondQuery); assert.equal(secondOptions.ok,true);
       assert(secondOptions.data.records[1]?.display_name);
-      const nextOption=page.getByText(secondOptions.data.records[1].display_name,{exact:true});
+      const nextOption=page.getByText(secondOptions.data.records[1].display_name,{exact:true}).filter({visible:true});
       await nextOption.waitFor({state:'visible'});
       const nextLabel=(await nextOption.innerText()).trim();
       const nextRecords=secondOptions.data.records.filter(record => [record.name,record.display_name].includes(nextLabel));

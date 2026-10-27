@@ -69,7 +69,7 @@ export async function saveClerkJournal({page,base,root,report,leaves,state,api})
     const query=await capture(queryResponse);
     assert.deepEqual(query.params.domain,['|',['company_id','=',false],['company_id','parent_of',[1]],['deprecated','=',false],['account_type','!=','off_balance']]);
     const expectedOption=query.data.records[index];assert(expectedOption && typeof expectedOption.display_name==='string' && expectedOption.display_name);
-    const option=page.getByText(expectedOption.display_name,{exact:true});await option.waitFor({state:'visible'});
+    const option=page.getByText(expectedOption.display_name,{exact:true}).filter({visible:true});await option.waitFor({state:'visible'});
     const label=(await option.innerText()).trim();
     const records=query.data.records.filter(row=>[row.display_name,row.name].includes(label));assert.equal(records.length,1);
     const accountId=records[0].id;assert.equal(accountId,index===0?49:48);state.accounts.push(accountId);
