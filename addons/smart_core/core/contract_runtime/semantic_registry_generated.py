@@ -25,6 +25,7 @@ DERIVATION_RULES = (
     {"semantic": 'percentage', "widgets": ('percentage', 'percentpie',)},
     {"semantic": 'duration', "widgets": ('float_time',)},
     {"semantic": 'status', "widgets": ('statusbar', 'badge',)},
+    {"semantic": 'readable_value', "widgets": ('account-tax-totals-field', 'payment', 'statinfo',), "reason": '会计只读摘要/统计载体（tax_totals、支付挂件、statinfo）是可读展示，不是可编辑的二进制或数字控件。'},
     {"semantic": 'relation', "field_types": ('many2one',)},
     {"semantic": 'relation', "widget_suffix": 'many2one'},
     {"semantic": 'relation_collection', "field_types": ('many2many',), "widgets_exclude": ('many2many_tags',)},

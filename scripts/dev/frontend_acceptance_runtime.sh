@@ -323,7 +323,7 @@ case "$command" in
   preflight)
     preflight
     ;;
-  standard-approval-runtime|standard-favorite-recovery|standard-page-build|standard-page-up|standard-page-browser|standard-list-surface-browser|standard-contract-prerequisite|standard-relation-roundtrip-browser|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic|standard-relation-nav-diagnostic)
+  standard-approval-runtime|standard-favorite-recovery|standard-page-build|standard-page-up|standard-page-browser|standard-list-surface-browser|standard-contract-prerequisite|standard-relation-roundtrip-browser|standard-presentation-browser|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic|standard-relation-nav-diagnostic)
     preflight
     validate_backend_resource_identity
     # Same unchanged-backend reuse rules as the preceding low-code batch.
@@ -426,6 +426,41 @@ PYRESOLUTION
           --contract-declaration config/acceptance/backend_contract_instance_v1.json \
           --record-resolution artifacts/backend/acceptance_record_identity.json \
           --output artifacts/backend/dev_acceptance_release_probe.json
+        ;;
+      standard-presentation-browser)
+        [[ "$PROFILE" == local && "$DB_NAME" == sc_frontend_acceptance && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: presentation requires frozen candidate" >&2; exit 2; }
+        python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
+        expected_sha="$(git -C "$ROOT_DIR" rev-parse HEAD)"
+        targets_json="$(EXPECTED_SHA="$expected_sha" python3 - <<'PYPRESENTATION'
+import json, os
+from pathlib import Path
+resolution = json.loads(Path('artifacts/backend/acceptance_record_identity.json').read_text())
+assert resolution['schema'] == 'acceptance.record_identity_resolution.v1'
+assert resolution['producer'] == 'scripts/verify/frontend_delivery_hardening_runtime_ids.py'
+assert resolution['expected_sha'] == os.environ['EXPECTED_SHA']
+project = resolution['targets']['project']
+assert project['model'] == 'project.project'
+assert project['record_xmlid'] == 'smart_construction_acceptance_fixture.fe_project_a'
+for key in ('record_id', 'action_id', 'menu_id'):
+    assert type(project[key]) is int and project[key] > 0
+# Same presentation assertions as daily; only the fixture-owned route differs.
+targets = json.loads(Path('config/acceptance/frontend_presentation_targets.v1.json').read_text())['targets']
+assert len(targets) == 1 and targets[0]['entryObjectModel'] == 'project.project'
+target = dict(targets[0])
+del target['entryObjectModel']
+target['route'] = f"/r/project.project/{project['record_id']}?action_id={project['action_id']}&menu_id={project['menu_id']}"
+print(json.dumps([target], separators=(',', ':')))
+PYPRESENTATION
+)"
+        SC_ACCEPTANCE_PROFILE=local SC_ACCEPTANCE_FRONTEND_URL=http://127.0.0.1:5180 SC_ACCEPTANCE_API_URL=http://127.0.0.1:5180 \
+          FRONTEND_URL=http://127.0.0.1:5180 ACCEPTANCE_BASE_URL=http://127.0.0.1:5180 BASE_URL=http://127.0.0.1:5180 \
+          SC_ACCEPTANCE_DATABASE=sc_frontend_acceptance DB_NAME=sc_frontend_acceptance E2E_DB=sc_frontend_acceptance DB=sc_frontend_acceptance \
+          SC_ACCEPTANCE_EXPECTED_SHA="$expected_sha" SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_MANAGE_SERVICE=false \
+          SC_ACCEPTANCE_TARGET_MODE=managed SC_ACCEPTANCE_LOGIN=fixture_role_config_admin SC_ACCEPTANCE_ROLE= E2E_LOGIN=fixture_role_config_admin \
+          E2E_PASSWORD="$SC_ACCEPTANCE_FIXTURE_PASSWORD" PRODUCT_PAGE_HEADER_TARGETS_JSON="$targets_json" \
+          PRODUCT_PAGE_HEADER_OUTPUT=.runtime/final-acceptance/frontend-presentation/header.json \
+          node "$ROOT_DIR/scripts/verify/frontend_product_page_header_browser.mjs"
         ;;
       standard-relation-roundtrip-browser)
         [[ "$PROFILE" == local && "$DB_NAME" == sc_frontend_acceptance && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2

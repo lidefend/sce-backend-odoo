@@ -104,6 +104,7 @@ export function resolveCanonicalFormRenderState(
   validationFieldErrors: Record<string, BusinessFieldError> = {},
   errorScope: CanonicalValidationErrorScope = {},
   feedbackEvaluations?: ReadonlyMap<string, FeedbackEvaluationOverride>,
+  modifierValues?: ContractV2Dictionary,
 ) {
   if (decodeError) return { model: null, error: decodeError };
   if (!store) return { model: null, error: 'NORMALIZED_FORM_CONTRACT_MISSING' };
@@ -113,6 +114,7 @@ export function resolveCanonicalFormRenderState(
         presentContractV2Form(store, mode, runtimeValues, {
           recordPersisted: Number(errorScope?.recordId || 0) > 0,
           feedbackEvaluations,
+          modifierValues,
         }),
         validationFieldErrors,
         errorScope,

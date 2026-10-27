@@ -89,13 +89,15 @@
             class="native-tabs"
             :model-value="activePageIndex"
             :items="notebookTabItems(node)"
+            :lazy="false"
+            :destroy-on-hide="false"
             size="small"
             @update:model-value="activePageIndex = Number($event)"
           >
             <template #panel="{ item }">
-          <div v-if="Number(item.value) === activePageIndex" class="native-tab-panel" :data-contract-container-id="notebookPages(node)[activePageIndex]?.containerId" tabindex="-1">
+          <div v-show="Number(item.value) === activePageIndex" class="native-tab-panel" :data-contract-container-id="notebookPages(node)[Number(item.value)]?.containerId" tabindex="-1">
             <NativeFormTreeRenderer
-              :nodes="notebookPageChildren(node, activePageIndex)"
+              :nodes="notebookPageChildren(node, Number(item.value))"
               :field-schemas-for-nodes="fieldSchemasForNodes"
               :is-node-visible="isNodeVisible"
               :button-label-resolver="buttonLabelResolver"

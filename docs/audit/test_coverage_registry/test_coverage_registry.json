@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 200,
+    "odoo_tags": 205,
     "gated": 5,
-    "on_demand": 48,
-    "unwired": 147,
-    "odoo_tag_declarations": 419,
+    "on_demand": 52,
+    "unwired": 148,
+    "odoo_tag_declarations": 424,
     "gated_declarations": 97,
-    "uncovered_declarations": 322,
+    "uncovered_declarations": 327,
     "ci_unit_scripts": 17,
     "ci_unit_scripts_wired": 17,
     "ci_unit_scripts_unwired": 0
@@ -608,6 +608,20 @@
       "disposition": "wire-pending"
     },
     {
+      "group": "approval_policy_feedback",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_approval_policy_feedback.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.local.dev.approval.feedback.orm :: approval_policy_feedback,conditioned_processing_feedback,cost_processing_feedbac"
+      ],
+      "disposition": "class-selected"
+    },
+    {
       "group": "approval_scope_authority",
       "status": "on-demand",
       "kind": "odoo_tag",
@@ -747,7 +761,9 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "make:verify.company_project_refund.feedback.orm :: company_project_refund_feedback_orm"
+        "make:verify.company_project_refund.feedback.orm :: company_project_refund_feedback_orm",
+        "make:verify.local.dev.approval.feedback.orm :: approval_policy_feedback,conditioned_processing_feedback,cost_processing_feedbac",
+        "make:verify.local.dev.conditioned.feedback.orm :: conditioned_processing_feedback,cost_processing_feedback,workspace_processing_fe"
       ],
       "disposition": "class-selected"
     },
@@ -776,6 +792,21 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "conditioned_processing_feedback",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_conditioned_processing_feedback.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.local.dev.approval.feedback.orm :: approval_policy_feedback,conditioned_processing_feedback,cost_processing_feedbac",
+        "make:verify.local.dev.conditioned.feedback.orm :: conditioned_processing_feedback,cost_processing_feedback,workspace_processing_fe"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "contract_assembly_determinism",
@@ -861,6 +892,22 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "cost_processing_feedback",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_cost_processing_feedback.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.local.dev.approval.feedback.orm :: approval_policy_feedback,conditioned_processing_feedback,cost_processing_feedbac",
+        "make:verify.local.dev.conditioned.feedback.orm :: conditioned_processing_feedback,cost_processing_feedback,workspace_processing_fe",
+        "make:verify.local.dev.cost.feedback.orm :: cost_processing_feedback,workspace_processing_feedback,company_project_refund_fe"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "current_account_workspace",
@@ -953,6 +1000,18 @@
         "make:verify.local.dev.data_space_uncached_membership.orm :: data_space_uncached_membership"
       ],
       "disposition": "class-selected"
+    },
+    {
+      "group": "demo_accounting_roles",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py"
+      ],
+      "owner": "demo-team",
+      "evidence": [],
+      "disposition": "wire-pending"
     },
     {
       "group": "demo_action_roles",
@@ -2682,6 +2741,22 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.workflow_contract.backend :: /TestWorkflowContractBackend (class selection)"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "workspace_processing_feedback",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_workspace_processing_feedback.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.local.dev.approval.feedback.orm :: approval_policy_feedback,conditioned_processing_feedback,cost_processing_feedbac",
+        "make:verify.local.dev.conditioned.feedback.orm :: conditioned_processing_feedback,cost_processing_feedback,workspace_processing_fe",
+        "make:verify.local.dev.cost.feedback.orm :: cost_processing_feedback,workspace_processing_feedback,company_project_refund_fe"
       ],
       "disposition": "class-selected"
     }

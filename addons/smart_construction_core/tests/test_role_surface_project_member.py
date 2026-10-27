@@ -116,6 +116,30 @@ class TestProjectMemberRoleSurface(TransactionCase):
         self.assertEqual(row["model"], "project.risk.action")
         self.assertEqual(row["record_id"], risk.id)
 
+    def test_risk_card_uses_native_state_labels_and_preserves_targets(self):
+        from odoo.addons.smart_construction_core.core_extension_system_init_rows import build_risk_action_rows
+        producer = "odoo.addons.smart_construction_core.core_extension_system_init_rows"
+        labels = dict(self.env["project.risk.action"].fields_get(
+            ["state"], attributes=["selection"])["state"]["selection"])
+        for state in ("open", "claimed", "escalated"):
+            with self.subTest(state=state), mock.patch(producer + ".safe_search_read", return_value=[{
+                "id": 123, "name": "Risk label", "state": state, "project_id": [456, "Project"],
+            }]):
+                row, = build_risk_action_rows(self.env)
+                self.assertEqual(row["description"], "Project 风险状态：" + labels[state])
+                self.assertNotEqual(labels[state], state)
+                self.assertEqual(row["status"], "normal" if state == "claimed" else "urgent")
+                self.assertEqual(row["path"], "/r/project.risk.action/123")
+                self.assertEqual(row["record_id"], 123)
+
+    def test_risk_card_rejects_undeclared_state_label(self):
+        from odoo.addons.smart_construction_core.core_extension_system_init_rows import build_risk_action_rows
+        with mock.patch(
+            "odoo.addons.smart_construction_core.core_extension_system_init_rows.safe_search_read",
+            return_value=[{"id": 123, "state": "undeclared"}],
+        ), self.assertRaisesRegex(ValueError, "RISK_STATE_LABEL_MISSING"):
+            build_risk_action_rows(self.env)
+
     def test_role_matrix_uses_authoritative_groups(self):
         resolver = self._resolver()
         matrix = {

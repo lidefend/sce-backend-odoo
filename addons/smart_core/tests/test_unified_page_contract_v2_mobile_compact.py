@@ -168,6 +168,52 @@ def _native_view_fixture_arch(relative_path: str, record_id: str) -> str:
 
 class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
 
+    def test_native_relation_domain_wire_and_rejection(self):
+        from odoo.addons.smart_core.core.native_relation_domain import compile_relation_domain
+        fixture = json.loads((REPO_ROOT / "frontend/apps/web/scripts/fixtures/native_relation_domain.json").read_text())
+        self.assertEqual(compile_relation_domain(fixture["raw"]), fixture["expression"])
+        self.assertEqual(compile_relation_domain(fixture["parentRaw"]), fixture["parentExpression"])
+        widget = assembler._field_widget({"name": "account_id", "type": "many2one", "relation": "x.account", "domain": fixture["raw"]}, layout_type="form")
+        self.assertEqual(widget["fieldDescriptor"]["domain_expression"], fixture["expression"])
+        for raw in ["evil()", "record.env", "__import__('os')", "x[0]", "[('id', '=', 1e999)]"]:
+            self.assertEqual(compile_relation_domain(raw)["kind"], "unsupported")
+        self.assertEqual(compile_relation_domain("[('id', '=', -1)]")["tree"]["kind"], "sequence")
+        self.assertEqual(compile_relation_domain("[('id', '=', parent.project_id)]")["dependencies"], ["parent.project_id"])
+
+    def test_source_context_preserves_selected_form_identity(self):
+        ui = {"views": {"form": {"meta": {"projection_identity": {"source_view_id": 731}}}}}
+        self.assertEqual(assembler._ui_source_context({"view_id": 42}, ui)["formViewId"], 731)
+        self.assertNotIn("formViewId", assembler._ui_source_context({"view_id": 42}, {}))
+        self.assertEqual(assembler._ui_source_context({"view_ids_by_type": {"form": 732, "list": 42}}, {})["formViewId"], 732)
+        self.assertEqual(assembler._ui_source_context({"view_ids_by_type": {"form": 732}}, ui)["formViewId"], 732)
+
+    def test_context_operand_is_bound_for_final_layout_status_without_ast_folding(self):
+        modifier = {"kind": "value_truthy", "semantics": "python",
+                    "value_expr": {"kind": "context_get", "key": "lock", "default": True}}
+        node = {"type": "field", "name": "amount", "widgetId": "field.amount.occ.context",
+                "modifiers": {"readonly": modifier}}
+        for context, expected in (({}, True), ({"lock": False}, False), ({"lock": None}, False)):
+            contract = {"layoutContract": {"containerTree": [deepcopy(node)]},
+                        "statusContract": {"widgetStatus": [{"widgetId": node["widgetId"], "auth": "edit"}]},
+                        "dataContract": {"mainData": {"amount": 1, "$native.context": {"lock": not expected}},
+                                         "dataMeta": {"sourceContext": {"context": context}}}}
+            assembler.hydrate_final_layout_modifier_status(contract)
+            status = contract['statusContract']['widgetStatus'][0]
+            self.assertEqual(status['readonly'], expected)
+            self.assertFalse(status['disabled'])
+            self.assertEqual(contract['layoutContract']['containerTree'][0], node)
+        del contract['dataContract']['dataMeta']['sourceContext']
+        assembler.hydrate_final_layout_modifier_status(contract)
+        self.assertTrue(contract['statusContract']['widgetStatus'][0]['disabled'])
+        self.assertEqual(contract['statusContract']['widgetStatus'][0]['reasonCode'], 'NATIVE_MODIFIER_UNRESOLVED')
+        compiled = {"kind": "value_compare", "semantics": "python", "operator": "==",
+                    "left": {"kind": "context_get", "key": "lock", "default": None},
+                    "right": {"kind": "literal", "value": ""}}
+        original = {"attributes": {"invisible": "context.get('lock') == ''"}, "modifiers": {"invisible": compiled}}
+        candidate = deepcopy(original)
+        self.assertIsNone(assembler._apply_contextual_invisible_modifier(candidate, {"lock": False}))
+        self.assertEqual(candidate, original, 'legacy raw folding cannot erase the compiled context AST')
+
     def test_kanban_object_fields_and_published_columns_preserve_selection(self):
         source = {
             "fields": {
@@ -3364,6 +3410,54 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(status["effectiveRenderProfile"], "readonly")
         self.assertNotIn("formCapabilities", full["dataContract"]["dataMeta"])
 
+    def test_collection_create_intersects_entry_and_native_views(self):
+        for view_type in ("tree", "list", "kanban", "pivot", "graph"):
+            for context, form_create, list_create, model_create, expected in (
+                ({}, True, True, True, True),
+                ({"create": False}, True, True, True, False),
+                ({"create": "false"}, True, True, True, False),
+                ({"create": True, "no_create": True}, True, True, True, False),
+                ({}, False, True, True, False),
+                ({}, True, False, True, False),
+                ({}, True, True, False, False),
+            ):
+                with self.subTest(view_type=view_type, context=context, form=form_create, collection=list_create, acl=model_create):
+                    source = {
+                        "model": "res.partner", "view_type": view_type, "context": context,
+                        "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
+                        "head": {"permissions": {"read": True, "write": True, "create": model_create, "unlink": True}},
+                        "views": {
+                            view_type: {"capabilities": {"can_create": list_create}, "columns": ["name"]},
+                            "form": {"capabilities": {"can_create": form_create}},
+                        },
+                    }
+                    original = deepcopy(source)
+                    full = assembler.assemble_unified_page_contract_v2(source, source_type="ui.contract", client_type="web_pc", request_id="test.collection.create")
+                    rights = full["statusContract"]["globalStatus"]["effectiveRecordCapabilities"]
+                    self.assertIs(rights["create"], expected)
+                    self.assertIs(rights["read"], True)
+                    self.assertIs(rights["write"], True)
+                    self.assertEqual(source, original)
+
+    def test_collection_create_preserves_effective_verdict_and_tree_alias(self):
+        source = {
+            "model": "res.partner", "view_type": "list", "context": {"create": True},
+            "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
+            "views": {
+                "tree": {"capabilities": {"can_create": False}, "columns": ["name"]},
+                "form": {"capabilities": {"can_create": True, "effectiveRecordCapabilities": {
+                    "read": True, "create": True, "write": False, "unlink": False, "duplicate": False,
+                }}},
+            },
+        }
+        for tree_create, context in ((False, {"create": True}), (True, {"no_create": True})):
+            source["views"]["tree"]["capabilities"]["can_create"] = tree_create
+            source["context"] = context
+            full = assembler.assemble_unified_page_contract_v2(source, source_type="ui.contract", client_type="web_pc", request_id="test.collection.effective")
+            self.assertEqual(full["statusContract"]["globalStatus"]["effectiveRecordCapabilities"], {
+                "read": True, "create": False, "write": False, "unlink": False, "duplicate": False,
+            })
+
     def test_denied_create_is_explicitly_rejected_instead_of_rendered_readonly(self):
         denied = {"read": True, "write": False, "create": False, "unlink": False, "duplicate": False}
         source = {
@@ -4495,13 +4589,13 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
     def test_analysis_projection_requires_authoritative_named_semantics(self):
         for view_type, native_analysis in (
             ("pivot", {
-                "measures": [{"name": "amount", "label": "Amount"}],
-                "dimensions": [{"name": "date", "label": "Date", "axis": "col"}],
+                "measures": [{"name": "amount", "label": "Amount", "fieldType": "monetary"}],
+                "dimensions": [{"name": "date", "label": "Date", "fieldType": "date", "axis": "col"}],
                 "defaults": {"expanded": False},
             }),
             ("graph", {
-                "measures": [{"name": "amount", "label": "Amount"}],
-                "dimensions": [{"name": "project_id", "label": "Project"}],
+                "measures": [{"name": "amount", "label": "Amount", "fieldType": "monetary"}],
+                "dimensions": [{"name": "state", "label": "状态", "fieldType": "selection", "selection": [["draft", "草稿"]]}],
                 "type_default": "line",
             }),
         ):
@@ -4567,6 +4661,10 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             source_type="native_form_projection",
         )
         self.assertEqual(contract["meta"]["sourceType"], "native_form_projection")
+
+        source["nativeFormProjection"]["page"] = {"formViewId": 731}
+        projected = assembler.assemble_unified_page_contract_v2(source, source_type="native_form_projection")
+        self.assertEqual(projected["dataContract"]["dataMeta"]["sourceContext"]["formViewId"], 731)
 
         camel_identity = deepcopy(source)
         camel_field = camel_identity["nativeFormProjection"]["layout"][0]

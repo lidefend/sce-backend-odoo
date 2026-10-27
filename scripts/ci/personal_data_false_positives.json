@@ -343,6 +343,223 @@
       "blob_id": "16b7a48cbebc61b688f5177669654f9bf2180caa",
       "classification": "GOVERNMENT_ID_PATTERN",
       "reason": "verified_synthetic_demo_business_fixture_prior_revision_superseded_in_branch"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "431e76f21a05bb32feac81301fb3fdc7dc30e260",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "85600e0a0381edd0b038d416ef98b1d12f72ce58",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "300394293e866ed3ac264711340cefde9b70f5a0",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "bb81207bda477a38c36eac0f2f3f4e4152e216e9",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "239b2cfb451398da3f4046cb3a3bdf44c6166743",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "1c361f1bc2d3758fd9a19b98417e436de2d3c0ad",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "72fefe3f4ac472f07dc4dc2d22ad4d01b150a8cf",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "020c084e0176c9a156d9bfe58aa798697bab2faf",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "4a62b9fec516d22384c15ec711de1f0ad5bdb8d7",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "fd630e8034791bf20e3540958d4a07ab577718b2",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "135660623f2cf265e76f70a3b63ecb7338ede3f7",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "f25cb5ef3ea4cec911b6dbb64d0e0f1266bdf31e",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "e0178dec198492ed0a0c886cbffbd2e378791952",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "1197bcc585e9bfc95d42379f57fac398f2d36e1a",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "92c0250d661dd4ab0472b52decc4888ccb633216",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "d299138ef028c12c87da419971d92d192dd691aa",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "e2e4316e73025b53f5de4f996c6bba5317fde2c0",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "0ccec5e417e36c02b2b68b224a155d5b4c56833e",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "023e4afa7a4ec2ac23a37f89f4b3053b283cb5d4",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "2e43b956ae95217c30e6e2987a64ef2f2ae0cc95",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "b7031ce52f126374d6ec0a5038d2e09685942c7e",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "7f7febb9b0618c57fb84ad7ada6b7dc113f870db",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "62bda38c41950ad08dcd782d09f76535fb26d8c6",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "e11f88e2b0d780a1fc0954c14d0a2bd933648efe",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "4287721bacaff1a794d04df1e792b7bf9b97a4f8",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "539e084cb7d1dab4cd4fdf682d8f67411722d8fe",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "ce46fe25485bd335b33585b8e48b94042da6529e",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "51be9ea19b34e74464ad9ce414a30244047e1a08",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "fbfe8ccbd7d4313ec11ff2dbf9e6a0d6fc36a54e",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "1f791161b8d7c679a5623090db0d502f4e5e15ce",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "blob_id": "8b1ff0319ff659a82158d60940737c117ed336d0",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_demo_entry_namespace_identifier_not_a_bank_account_exact_historical_blob"
     }
   ]
 }

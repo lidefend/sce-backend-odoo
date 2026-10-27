@@ -1511,6 +1511,57 @@ assert.deepEqual(
   { nameReadonly: true, nameRequired: true, stateVisible: false },
   'explicit static native constraints must not be revived by permissive runtime status',
 );
+// The native Python comparison marker survives contract decoding and presentation.
+for (const [actual, expected] of [[[7], true], [[7, 8], false], [['7'], false]] as const) {
+  const typed = snapshot();
+  typed.layoutContract.containerTree[0].children[0].readonly = {
+    kind: 'field_compare', semantics: 'python', field: 'line_ids', operator: '==', value: [7],
+  };
+  const fields = presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(typed)), 'edit',
+    { line_ids: actual }).zones.primary[0].children.flatMap((node) => node.fields);
+  assert.equal(fields.find((field) => field.fieldCode === 'name')?.readonly, expected,
+    'native Python comparison preserves complete typed lists through the canonical presenter');
+}
+const unknownComparisonSnapshot = snapshot();
+unknownComparisonSnapshot.layoutContract.containerTree[0].children[0].readonly = {
+  kind: 'field_compare', semantics: 'unknown', field: 'line_ids', operator: '==', value: [7],
+};
+assert.throws(() => presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(unknownComparisonSnapshot)), 'edit'),
+  { name: 'ContractGapError' }, 'unknown comparison semantics must stop canonical presentation');
+console.log('[canonical_form_presenter] typed native comparison cases PASS count=4');
+// Context is a declared namespace: missing key uses its declared default;
+// absent namespace is a contract defect and editable values cannot forge it.
+const contextTruthy = { kind: 'value_truthy', semantics: 'python',
+  value_expr: { kind: 'context_get', key: 'lock', default: true } };
+for (const [context, expected] of [[{}, true], [{ lock: false }, false], [{ lock: null }, false], [{ lock: [] }, false]] as const) {
+  const candidate = snapshot();
+  candidate.dataContract.dataMeta.sourceContext = { context };
+  candidate.dataContract.mainData['$native.context'] = { lock: !expected };
+  candidate.layoutContract.containerTree[0].children[0].readonly = contextTruthy;
+  const store = createContractV2Store(decodeContractV2Snapshot(candidate));
+  const live = { '$native.context': { lock: !expected } };
+  const fields = presentContractV2Form(store, 'edit', live).zones.primary[0].children.flatMap((node) => node.fields);
+  assert.equal(fields.find((field) => field.fieldCode === 'name')?.readonly, expected);
+  assert.deepEqual(resolveContractV2ModifierValues(store, live)['$native.context'], context);
+  assert.deepEqual(resolveDeclaredModifierFieldValue(resolveContractV2ModifierValues(store), live, '$native.context'), context);
+}
+const missingContextSnapshot = snapshot();
+missingContextSnapshot.dataContract.mainData['$native.context'] = { lock: false };
+missingContextSnapshot.layoutContract.containerTree[0].children[0].readonly = contextTruthy;
+assert.throws(() => presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(missingContextSnapshot)), 'edit'),
+  { name: 'ContractGapError' }, 'a default argument must not conceal a missing context namespace');
+const contextAction = snapshot();
+contextAction.actionContract.actionRuleList[0].invisible = { kind: 'value_truthy', semantics: 'python',
+  value_expr: { kind: 'context_get', key: 'hide', default: false } };
+contextAction.statusContract.buttonStatus[0].visible = false;
+contextAction.statusContract.buttonStatus[0].reasonCode = 'ACTION_NOT_VISIBLE_IN_STATE';
+for (const [hide, expectedCount] of [[false, 1], [true, 0]] as const) {
+  contextAction.dataContract.dataMeta.sourceContext = { context: { hide } };
+  const shown = presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(contextAction)), 'edit',
+    { '$native.context': { hide: !hide } });
+  assert.equal(shown.actionBar.length, expectedCount, 'context dependency readiness and action renderer share the binding');
+}
+console.log('[canonical_form_presenter] native context binding cases PASS count=7');
 const nativeDynamicConstraintSnapshot = snapshot();
 nativeDynamicConstraintSnapshot.layoutContract.containerTree[0].children[0].readonly = {
   kind: 'field_compare', field: 'state', operator: '=', value: 'approved',
@@ -1679,6 +1730,7 @@ assert.deepEqual(
   'an explicitly hidden action definition must not be revived by a visible button status',
 );
 const conditionalActionSnapshot = snapshot();
+conditionalActionSnapshot.dataContract.mainData.blocked = false;
 conditionalActionSnapshot.actionContract.actionRuleList[0].invisible = {
   kind: 'field_compare', field: 'state', operator: '=', value: 'approved',
 };
@@ -2733,6 +2785,40 @@ assert.equal(
   false,
   'container visibility must constrain descendant fields',
 );
+
+
+const conditionalContainer = snapshot();
+conditionalContainer.layoutContract.containerTree[0].modifiers = {
+  invisible: {kind: 'field_compare', field: 'draft_category', operator: '!=', value: 'fund'},
+};
+conditionalContainer.statusContract.containerStatus = [{
+  containerId: 'section.identity', visible: false, disabled: false, reasonCode: 'NATIVE_MODIFIER_INVISIBLE',
+}];
+const conditionalStore = createContractV2Store(conditionalContainer);
+for (const [category, expected] of [['salary', false], ['fund', true], ['salary', false]] as const) {
+  const presented = presentContractV2Form(conditionalStore, 'create', {draft_category: category});
+  assert.equal(collectFields(presented.zones.primary).find(field => field.fieldCode === 'name')?.visible, expected);
+  const bridge = buildCanonicalNativeFormBridge(presented);
+  assert.equal(bridge.nodeVisible(bridge.primaryNodes[0]), expected, 'actual canonical bridge tracks the draft group');
+}
+for (const denial of ['authority', 'disabled', 'static', 'missing', 'unresolved', 'widget'] as const) {
+  const blocked = structuredClone(conditionalContainer);
+  const status = blocked.statusContract.containerStatus[0];
+  if (denial === 'authority') status.reasonCode = 'POLICY_HIDDEN';
+  if (denial === 'disabled') status.disabled = true;
+  if (denial === 'static') blocked.layoutContract.containerTree[0].visible = false;
+  if (denial === 'unresolved') {status.reasonCode = 'NATIVE_MODIFIER_UNRESOLVED'; status.disabled = true;}
+  if (denial === 'widget') {
+    const field = blocked.statusContract.widgetStatus.find(row => row.widgetId === 'field.name')!;
+    field.visible = false; field.auth = 'none';
+  }
+  if (denial === 'missing') {
+    assert.throws(() => presentContractV2Form(createContractV2Store(blocked), 'create', {}), { name: 'ContractGapError' });
+    continue;
+  }
+  const presented = presentContractV2Form(createContractV2Store(blocked), 'create', {draft_category: 'fund'});
+  assert.equal(collectFields(presented.zones.primary).find(field => field.fieldCode === 'name')?.visible, false, denial);
+}
 
 const disabledContainer = snapshot();
 disabledContainer.statusContract.containerStatus = [{ containerId: 'section.identity', visible: true, disabled: true }];
@@ -3794,9 +3880,9 @@ assert.equal(
   'a state-derived status reason must not leak onto a recomputed visible button',
 );
 
-assert.deepEqual(
-  presentStateDependentNativeHeader({}).actionBar.map((action) => action.key), [],
-  'an unresolvable declared dependency must still fail closed, never guess visibility',
+assert.throws(
+  () => presentStateDependentNativeHeader({}), { name: 'ContractGapError' },
+  'an unresolvable declared dependency must expose the contract defect',
 );
 
 assert.deepEqual(
@@ -4122,3 +4208,73 @@ assert.equal(
   assert.equal(adapters[0]?.requiresSavedRecord, true);
 }
 console.log('[canonical_form_presenter] record-persistence action gating cases PASS count=4');
+
+for (const [value, expected] of [[[7, 'A'], true], [8, false], [false, false]] as const) {
+  const candidate = snapshot();
+  candidate.dataContract.dataMeta.nativeModifierFieldTypes = { partner_id: 'many2one' };
+  candidate.dataContract.mainData.partner_id = [7, 'Snapshot'];
+  candidate.dataContract.mainData['$native.fieldTypes'] = { partner_id: 'char' };
+  candidate.layoutContract.containerTree[0].children[0].readonly = {
+    kind: 'field_compare', semantics: 'python', field: 'partner_id', operator: '==', value: 7,
+  };
+  const store = createContractV2Store(decodeContractV2Snapshot(candidate));
+  const live = { partner_id: value, '$native.fieldTypes': { partner_id: 'char' } };
+  const values = resolveContractV2ModifierValues(store, live);
+  assert.deepEqual(values['$native.fieldTypes'], { partner_id: 'many2one' });
+  assert.deepEqual(resolveDeclaredModifierFieldValue(values, live, '$native.fieldTypes'), { partner_id: 'many2one' });
+  const fields = presentContractV2Form(store, 'edit', live).zones.primary[0].children.flatMap(node => node.fields);
+  assert.equal(fields.find(field => field.fieldCode === 'name')?.readonly, expected);
+}
+console.log('[canonical_form_presenter] authoritative native relation types PASS');
+
+const { useOne2manyRuntime } = await import('../src/pages/contractForm/useOne2manyRuntime');
+const liveCollectionSnapshot = snapshot();
+liveCollectionSnapshot.dataContract.mainData.line_ids = [42];
+liveCollectionSnapshot.dataContract.dataMeta.nativeModifierFieldTypes = { line_ids: 'one2many' };
+const collectionCondition = { kind: 'field_truthy', field: 'line_ids' };
+liveCollectionSnapshot.layoutContract.containerTree[0].children[0].readonly = collectionCondition;
+liveCollectionSnapshot.actionContract.actionRuleList[0]!.modifiers = { invisible: collectionCondition };
+const liveCollectionStore = createContractV2Store(decodeContractV2Snapshot(liveCollectionSnapshot));
+const collectionDraft = { name: 'Unchanged draft', line_ids: [[0, 0, { name: 'New' }]] };
+const liveRows = useOne2manyRuntime({ model: () => 'x.document', recordId: () => 7,
+  originalValues: () => ({ line_ids: [42] }), parentValues: () => resolveContractV2ModifierValues(liveCollectionStore, collectionDraft),
+  onchangeLinePatches: () => [], resolveColumns: () => [{ name: 'name', label: 'Name', ttype: 'char' }],
+  resolvePrimaryColumn: () => 'name', resolveRelationOptions: () => [], markFieldChanged: () => {},
+});
+const presentLiveRows = () => presentContractV2Form(liveCollectionStore, 'edit', collectionDraft, {
+  recordPersisted: true,
+  modifierValues: liveRows.projectModifierValues(resolveContractV2ModifierValues(liveCollectionStore, collectionDraft)),
+});
+liveRows.initRows('line_ids', [42]);
+assert.equal(presentLiveRows().actionBar.length, 0);
+assert.equal(presentLiveRows().zones.primary[0].children[0].fields.find(field => field.fieldCode === 'name')?.readonly, true);
+liveRows.removeRow('line_ids', 'o2m_id_42');
+assert.equal(presentLiveRows().actionBar.length, 1);
+assert.equal(presentLiveRows().zones.primary[0].children[0].fields.find(field => field.fieldCode === 'name')?.readonly, false);
+await liveRows.addRow('line_ids');
+assert.equal(presentLiveRows().actionBar.length, 1, 'new rows do not invent persisted IDs');
+liveRows.restoreRow('line_ids', 'o2m_id_42');
+assert.equal(presentLiveRows().actionBar.length, 0);
+assert.deepEqual(collectionDraft.line_ids, [[0, 0, { name: 'New' }]], 'evaluation never overwrites raw draft commands');
+assert.equal(presentLiveRows().zones.primary[0].children[0].fields.find(field => field.fieldCode === 'name')?.value, 'Unchanged draft');
+assert.equal((liveRows.buildCommandValue('line_ids', 'write') as unknown[][]).some(command => command[0] === 0), true);
+liveRows.clearRows();
+assert.throws(presentLiveRows, { name: 'ContractGapError' }, 'cleared ownership cannot reuse stale collection IDs');
+console.log('root canonical fields/actions share live collection projection: passed');
+
+const createRelationSnapshot = snapshot();
+const createSource = [[0, 0, { name: 'Default child' }]];
+createRelationSnapshot.dataContract.mainData.line_ids = createSource;
+createRelationSnapshot.dataContract.dataMeta.nativeModifierFieldTypes = { line_ids: 'one2many' };
+createRelationSnapshot.dataContract.dataMeta.nativeModifierRelationSnapshots = {
+  line_ids: { sourceValue: createSource, persistedIds: [] },
+};
+createRelationSnapshot.layoutContract.containerTree[0].children[0].readonly = { kind: 'field_truthy', field: 'line_ids' };
+const createRelationStore = createContractV2Store(decodeContractV2Snapshot(createRelationSnapshot));
+const createBound = presentContractV2Form(createRelationStore, 'edit');
+assert.equal(createBound.zones.primary[0].children[0].fields.find(field => field.fieldCode === 'name')?.readonly, false);
+assert.throws(() => presentContractV2Form(createRelationStore, 'edit', { line_ids: [[0, 0, { name: 'Changed' }]],
+  '$native.relationSnapshots': { line_ids: { sourceValue: [[0, 0, { name: 'Changed' }]], persistedIds: [] } },
+}), { name: 'ContractGapError' }, 'changed commands cannot reuse or forge server snapshot identity');
+assert.deepEqual(createRelationStore.snapshot.dataContract.mainData.line_ids, createSource);
+console.log('native create relation snapshot binding: passed');

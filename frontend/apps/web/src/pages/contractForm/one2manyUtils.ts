@@ -1,3 +1,7 @@
+import { formatDisplayValue } from '../../utils/display';
+import { resolveTypedNativeField } from '../../app/nativeModifierContext';
+import { contractGapError } from '../../app/contract/contractGap';
+import { nativeModifierRelationValue } from '../../app/nativeModifierRelationValue';
 import { buildOne2ManyInlineCommands } from '../../app/x2manyCommands';
 import {
   BusinessErrorCodes,
@@ -7,7 +11,7 @@ import {
   type BusinessFieldError,
 } from '../../app/businessValidationError';
 import { FIELD_VALUE_FALSE_TEXT, FIELD_VALUE_TRUE_TEXT } from '../../utils/fieldSemantics.ts';
-import { fieldType, fromDatetimeInputValue, normalizeRelationIds, toDateInputValue, toDatetimeInputValue } from './fieldUtils';
+import { fieldType, fromDatetimeInputValue, toDateInputValue, toDatetimeInputValue } from './fieldUtils';
 import type { One2ManyColumn, One2ManyInlineRow } from './types';
 import type { FieldDescriptor } from '@sc/schema';
 import { evaluateNativeModifierValue } from './nativeLayoutUtils';
@@ -44,6 +48,14 @@ function staticNativeBoolean(value: unknown): boolean | undefined {
   return undefined;
 }
 
+function nativeForceSave(value: unknown): boolean {
+  if (value === undefined) return false;
+  const flag = staticNativeBoolean(value);
+  if (flag === undefined) throw contractGapError({ kind: 'contract_defect', missing: 'one2many.force_save',
+    requiredDeclarationLayer: 'P0:smart_core:field_occurrence' }, '明细字段强制保存声明无效');
+  return flag;
+}
+
 function one2manyColumnLabel(value: unknown, fallback: string) {
   const label = String(value || '').trim();
   if (label === 'display_name' || label === 'name') return '名称';
@@ -61,6 +73,17 @@ function one2manySelectionOptions(value: unknown): Array<[string, string]> | und
     return [[String(row.value), String(row.label)]];
   });
   return options.length ? options : undefined;
+}
+
+function one2manyNativeWidget(source: Record<string, unknown> | undefined) {
+  if (!source) return {};
+  const attributes = source.attributes && typeof source.attributes === 'object'
+    ? source.attributes as Record<string, unknown> : {};
+  const widget = String(attributes.widget || source.widget || '').trim();
+  if (!widget) return {};
+  const semantics = source.widget_semantics;
+  return { widget, ...(semantics && typeof semantics === 'object' && !Array.isArray(semantics)
+    ? { widgetSemantics: semantics as Record<string, unknown> } : {}) };
 }
 
 export function one2manyColumnsFromSubview(
@@ -106,6 +129,8 @@ export function one2manyColumnsFromSubview(
         const businessColumn = businessColumnsByName.get(normalized);
         out.push({
           name: normalized,
+          ...one2manyNativeWidget(businessColumn),
+          ...(businessColumn?.force_save === undefined ? {} : { forceSave: nativeForceSave(businessColumn.force_save) }),
           label: one2manyColumnLabel(businessColumn?.label || businessColumn?.string || descriptor?.string, normalized),
           ttype: String(businessColumn?.ttype || businessColumn?.type || ttype),
           required: businessColumn?.required === undefined ? descriptorSemantics.required : Boolean(businessColumn.required),
@@ -137,11 +162,13 @@ export function one2manyColumnsFromSubview(
       const relationValueRequiresSelector = ['many2one', 'many2many', 'one2many'].includes(ttype);
       const relation = String(descriptor?.relation || '').trim();
       const domainAnalysis = analyzeDynamicRelationDomain(descriptor);
-      const relationReadable = Boolean(relation && relationEntry(descriptor)?.canRead === true && domainAnalysis.supported);
+      const relationReadable = Boolean(relation && relationEntry(descriptor)?.canRead === true);
       const explicitReadonly = readonly ?? Boolean(descriptor?.readonly);
       out.push({
         key: locator || `${colName}@@${occurrenceIndex || out.length + 1}`,
         name: colName,
+        ...one2manyNativeWidget(row),
+        ...((attributes.force_save ?? row.force_save) === undefined ? {} : { forceSave: nativeForceSave(attributes.force_save ?? row.force_save) }),
         label: one2manyColumnLabel(
           attributes.string || row.label || row.string || businessColumn.label || businessColumn.string || descriptor?.string,
           colName,
@@ -154,12 +181,10 @@ export function one2manyColumnsFromSubview(
         ...(ttype === 'many2one' ? {
           relation: relation || undefined,
           relationReadable,
-          relationDomainSupported: domainAnalysis.supported,
+          relationDomainSupported: true,
           relationDependencies: domainAnalysis.dependencies,
           disabledReason: explicitReadonly
             ? '此字段目前仅供查看'
-            : !domainAnalysis.supported
-              ? '可选范围暂不可用'
             : !relationReadable
               ? '可选内容暂不可用'
               : undefined,
@@ -175,46 +200,138 @@ export function one2manyColumnsFromSubview(
   return out;
 }
 
+export function one2manyDataColumnsFromSubview(
+  subview: unknown, resolveDescriptor: (name: string) => FieldDescriptor | null | undefined,
+): One2ManyColumn[] {
+  const columns = one2manyColumnsFromSubview(subview, resolveDescriptor);
+  if (!subview || typeof subview !== 'object' || Array.isArray(subview)) return columns;
+  const source = subview as Record<string, unknown>;
+  const fail = (): never => { throw contractGapError({ kind: 'contract_defect', missing: 'one2many.form_data_fields',
+    requiredDeclarationLayer: 'P0:smart_core:subview' }, '明细表单数据字段声明不完整或无效'); };
+  const tree = source.tree && typeof source.tree === 'object' && !Array.isArray(source.tree)
+    ? source.tree as Record<string, unknown> : {};
+  if (tree.columns_schema !== undefined) {
+    if (!Array.isArray(tree.columns_schema)) return fail();
+    const rendered = new Set(columns.map(column => column.name));
+    const occurrences = Array.isArray(tree.column_occurrences) ? tree.column_occurrences : [];
+    for (const item of tree.columns_schema) {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return fail();
+      const schema = item as Record<string, unknown>;
+      const name = typeof schema.name === 'string' ? schema.name.trim() : '';
+      if (!name) return fail();
+      if (rendered.has(name)) continue;
+      const declared = occurrences.filter(item => item && typeof item === 'object' && (item as Record<string, unknown>).name === name) as Record<string, unknown>[];
+      if (!declared.length) return fail();
+      const dataOccurrences = declared.map(row => {
+        const ttype = String(row.field_type || row.ttype || schema.type || fieldType(resolveDescriptor(name)) || '').trim();
+        if (!ttype) return fail();
+        return { ...row, field_type: ttype };
+      });
+      const fieldMap = source.fields && typeof source.fields === 'object' && !Array.isArray(source.fields)
+        ? source.fields as Record<string, unknown> : {};
+      const nativeField = fieldMap[name];
+      if (nativeField !== undefined && (!nativeField || typeof nativeField !== 'object' || Array.isArray(nativeField))) return fail();
+      // Native subview metadata owns field readonly/required/type. Enriched
+      // relation navigation may supplement it but cannot erase those facts.
+      const descriptor = { ...resolveDescriptor(name), ...(nativeField as FieldDescriptor | undefined) };
+      columns.push(...one2manyColumnsFromSubview({ tree: { columns: [schema], column_occurrences: dataOccurrences } }, () => descriptor));
+      rendered.add(name);
+    }
+  }
+  if (source.form === undefined) return columns;
+  if (!source.form || typeof source.form !== 'object' || Array.isArray(source.form)) return fail();
+  const form = source.form as Record<string, unknown>;
+  if (!Array.isArray(form.layout)) return fail();
+  const treeNames = new Set(columns.map(column => column.name));
+  const walk = (nodes: unknown[], ancestors: Array<Record<string, unknown>> = []) => {
+    for (const node of nodes) {
+      if (!node || typeof node !== 'object' || Array.isArray(node)) return fail();
+      const row = node as Record<string, unknown>;
+      if (row.type === 'field') {
+        const name = typeof row.name === 'string' ? row.name.trim() : '';
+        if (!name) return fail();
+        if (treeNames.has(name)) continue;
+        const info = row.fieldInfo && typeof row.fieldInfo === 'object' && !Array.isArray(row.fieldInfo)
+          ? row.fieldInfo as FieldDescriptor : resolveDescriptor(name);
+        const ttype = fieldType(info);
+        if (!ttype) return fail();
+        const parsed = one2manyColumnsFromSubview({ tree: { columns: [name], column_occurrences: [
+          { ...row, name, field_type: ttype },
+        ] } }, () => info);
+        // Selector availability controls the rendered editor, not a declared
+        // form-only field's server default/onchange persistence semantics.
+        const attributes = (row.attributes || {}) as Record<string, unknown>;
+        const modifiers = (row.modifiers || {}) as Record<string, unknown>;
+        parsed[0]!.readonly = staticNativeBoolean(modifiers.readonly ?? attributes.readonly) ?? Boolean(info?.readonly);
+        if (ancestors.length) parsed[0]!.ancestorModifiers = ancestors;
+        columns.push(...parsed);
+        continue; // A field owns its nested relation; never flatten grandchildren.
+      }
+      if (row.children !== undefined) {
+        if (!Array.isArray(row.children)) return fail();
+        const inherited: Record<string, unknown> = {};
+        if (row.modifiers !== undefined && (!row.modifiers || typeof row.modifiers !== 'object' || Array.isArray(row.modifiers))) return fail();
+        const modifiers = (row.modifiers || {}) as Record<string, unknown>;
+        const attributes = (row.attributes || {}) as Record<string, unknown>;
+        for (const key of ['readonly', 'invisible']) {
+          if (modifiers[key] !== undefined) inherited[key] = modifiers[key];
+          else if (attributes[key] !== undefined) {
+            const value = staticNativeBoolean(attributes[key]);
+            if (value === undefined) return fail();
+            inherited[key] = value;
+          }
+        }
+        walk(row.children, Object.keys(inherited).length ? [...ancestors, inherited] : ancestors);
+      }
+    }
+  };
+  walk(form.layout);
+  return columns;
+}
+
 export function resolveOne2manyRowColumnBehavior(
   column: One2ManyColumn,
   rowValues: Record<string, unknown>,
   parentValues: Record<string, unknown> = {},
   modifierPatches: Record<string, Record<string, unknown>> = {},
+  columns: One2ManyColumn[] = [column],
 ) {
   const runtimeModifiers = modifierPatches[column.name] && typeof modifierPatches[column.name] === 'object'
     ? modifierPatches[column.name]
     : {};
   const modifiers = { ...(column.modifiers || {}), ...runtimeModifiers };
-  const evaluateModifier = (value: unknown) => evaluateNativeModifierValue(value, (field) => {
+  const resolve = (field: string) => {
     const fieldName = String(field || '').trim();
+    if (fieldName === '$native.context') return parentValues[fieldName];
     if (fieldName.startsWith('parent.')) return parentValues[fieldName.slice('parent.'.length)];
     return rowValues[fieldName];
+  };
+  const evaluateModifier = (value: unknown) => evaluateNativeModifierValue(value, resolve, (field) => {
+    const actual = resolve(field);
+    if (field.startsWith('parent.')) return resolveTypedNativeField(name => parentValues[name], field.slice('parent.'.length));
+    if (field === '$native.context') return actual;
+    const types = [...new Set(columns.filter(item => item.name === field).map(item => item.ttype))];
+    if (types.length > 1) throw contractGapError({ kind: 'contract_defect', missing: `native_modifier.field_type.${field}`, requiredDeclarationLayer: 'P0:smart_core:field_descriptor' }, '原生条件字段类型声明冲突');
+    if (actual === undefined) throw contractGapError({ kind: 'contract_defect', missing: `native_modifier.field_value.${field}`, requiredDeclarationLayer: 'P0:smart_core:field_descriptor' }, '原生条件依赖字段尚未加载');
+    return nativeModifierRelationValue(actual, types[0]);
   });
-  const isCanonical = (value: unknown): boolean => {
-    if (typeof value === 'boolean' || value === 0 || value === 1) return true;
-    if (typeof value === 'string') return ['0', '1', 'false', 'False', 'true', 'True'].includes(value.trim());
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-    const row = value as Record<string, unknown>;
-    const kind = String(row.kind || '').trim();
-    if (kind === 'static') return true;
-    if (kind === 'not') return isCanonical(row.expr);
-    if (kind === 'all' || kind === 'any') return Array.isArray(row.exprs) && row.exprs.every(isCanonical);
-    if (kind !== 'field_truthy' && kind !== 'field_compare') return false;
-    const fields = [row.field, row.value_field].filter(Boolean).map((field) => String(field));
-    return fields.every((field) => !field.startsWith('context.'));
-  };
   const verdict = (key: 'invisible' | 'readonly' | 'required' | 'column_invisible') => {
-    const value = modifiers[key];
-    if (value === undefined) return false;
-    if (!isCanonical(value)) return key !== 'required';
-    return evaluateModifier(value);
+    const sources = key === 'readonly' || key === 'invisible' ? [modifiers, ...(column.ancestorModifiers || [])] : [modifiers];
+    return sources.map(source => source[key] !== undefined && evaluateModifier(source[key])).some(Boolean);
   };
-  return {
-    invisible: verdict('invisible'),
-    columnInvisible: verdict('column_invisible'),
-    readonly: Boolean(column.readonly || verdict('readonly')),
-    required: Boolean(column.required || verdict('required')),
-  };
+  const invisible = verdict('invisible');
+  const columnInvisible = verdict('column_invisible');
+  const readonly = verdict('readonly');
+  const required = verdict('required');
+  return { invisible, columnInvisible, readonly: Boolean(column.readonly || readonly), required: Boolean(column.required || required) };
+}
+
+// Column layout has no row evaluation frame, including when the collection is
+// empty. Cell invisible/readonly/required expressions belong to actual rows.
+export function resolveOne2manyColumnInvisible(column: One2ManyColumn, parentValues: Record<string, unknown>) {
+  return resolveOne2manyRowColumnBehavior({ ...column, ancestorModifiers: [],
+    modifiers: { column_invisible: column.modifiers?.column_invisible },
+  }, {}, parentValues).columnInvisible;
 }
 
 export function one2manyRowActionsFromSubview(subview: unknown) {
@@ -388,7 +505,7 @@ export function createOne2manyDraftRow(params: {
     removed: false,
     dirty: true,
     dirtyFields: Object.keys(params.defaults || {}).filter(name => params.columns.some(column => column.name === name)),
-    values: { ...values, [params.primary]: values[params.primary] ?? '' },
+    values: { ...values, [params.primary]: values[params.primary] ?? '', id: false },
   };
 }
 
@@ -434,6 +551,7 @@ export function setOne2manyDraftRowField(params: {
   fieldName: string;
   rowKey: string;
   column: One2ManyColumn;
+  columns?: One2ManyColumn[];
   value: unknown;
   parentValues?: Record<string, unknown>;
 }) {
@@ -441,7 +559,7 @@ export function setOne2manyDraftRowField(params: {
   const row = rows.find((item) => item.key === params.rowKey);
   if (!row) return false;
   const behavior = resolveOne2manyRowColumnBehavior(
-    params.column, row.values || {}, params.parentValues || {}, row.modifierPatches || {},
+    params.column, row.values || {}, params.parentValues || {}, row.modifierPatches || {}, params.columns,
   );
   if (behavior.invisible || behavior.columnInvisible || behavior.readonly) return false;
   const normalized = normalizeOne2manyColumnValue(params.column, params.value);
@@ -465,6 +583,7 @@ export function removeOne2manyDraftRow(rowsByField: Record<string, One2ManyInlin
     rows.splice(index, 1);
   } else {
     row.removed = true;
+  row.removalCommand = 2;
     row.dirty = true;
   }
   return true;
@@ -475,6 +594,7 @@ export function restoreOne2manyDraftRow(rowsByField: Record<string, One2ManyInli
   const row = rows.find((item) => item.key === rowKey);
   if (!row) return false;
   row.removed = false;
+  row.removalCommand = undefined;
   row.dirty = true;
   return true;
 }
@@ -508,24 +628,56 @@ export function initOne2manyRowsFromRelationSource(params: {
   source: unknown;
   relationOptions: Array<{ id: number; label: string }>;
   primary: string;
+  columns?: One2ManyColumn[];
 }): One2ManyInlineRow[] {
-  const ids = normalizeRelationIds(params.source);
-  const optionMap = new Map(params.relationOptions.map((item) => [
-    item.id,
-    authoritativeOne2manyRelationLabel(item.label),
-  ]));
-  return ids.map((id) => ({
-    key: `o2m_id_${id}`,
-    id,
-    isNew: false,
-    removed: false,
-    dirty: false,
-    dirtyFields: [],
-    values: {
-      [params.primary]: optionMap.get(id) || '',
-      name: optionMap.get(id) || '',
-    },
-  }));
+  const fail = (): never => { throw contractGapError({ kind: 'contract_defect',
+    missing: 'native_modifier.one2many_initial_snapshot', requiredDeclarationLayer: 'P0:smart_core:relation_defaults' },
+  '明细初始化需要完整身份快照，不能静默丢弃新增行或重放缺少基线的增量命令'); };
+  const source = params.source == null || params.source === false ? [] : params.source;
+  if (!Array.isArray(source)) return fail();
+  const validId = (id: unknown): id is number => typeof id === 'number' && Number.isSafeInteger(id) && id > 0;
+  const optionMap = new Map(params.relationOptions.map(item => [item.id, authoritativeOne2manyRelationLabel(item.label)]));
+  const rows: One2ManyInlineRow[] = [];
+  const ids = new Set<number>();
+  const link = (id: unknown) => {
+    if (!validId(id) || ids.has(id)) return fail();
+    ids.add(id);
+    rows.push({ key: `o2m_id_${id}`, id, isNew: false, removed: false, dirty: false, dirtyFields: [],
+      values: { id, [params.primary]: optionMap.get(id) || '', name: optionMap.get(id) || '' } });
+  };
+  if (source.every(validId)) {
+    source.forEach(link);
+    return rows;
+  }
+  source.forEach((command, index) => {
+    if (!Array.isArray(command)) return fail();
+    const [op, id, payload] = command;
+    if (op === 0 && id === 0 && command.length === 3 && payload && typeof payload === 'object'
+      && !Array.isArray(payload) && params.columns?.length) {
+      if (Object.keys(payload).some(name => name === 'id' || !params.columns!.some(column => column.name === name))) return fail();
+      rows.push(createOne2manyDraftRow({ key: `o2m_default_${index}`, primary: params.primary,
+        columns: params.columns, defaults: payload }));
+    } else if (op === 6 && id === 0 && index === 0 && command.length === 3 && Array.isArray(payload)) {
+      payload.forEach(link);
+    } else if (op === 4 && (command.length === 2 || command.length === 3 && payload === 0)) {
+      link(id);
+    } else return fail();
+  });
+  return rows;
+}
+
+// Odoo's ordinary evalContext contains persisted IDs only, never virtual draft keys.
+export function one2manyNativeEvaluationIds(rows: One2ManyInlineRow[]): number[] {
+  const ids: number[] = [];
+  for (const row of rows) {
+    if (row.removed || row.isNew) continue;
+    if (typeof row.id !== 'number' || !Number.isSafeInteger(row.id) || row.id <= 0 || ids.includes(row.id)) {
+      throw contractGapError({ kind: 'contract_defect', missing: 'native_modifier.one2many_identity',
+        requiredDeclarationLayer: 'P0:smart_core:relation_identity' }, '明细求值身份无效');
+    }
+    ids.push(row.id);
+  }
+  return ids;
 }
 
 /**
@@ -557,6 +709,7 @@ export function collectOne2manyDraftValidationFromRows(params: {
   resolvePrimaryColumn: (fieldName: string) => string;
   resolveColumns: (fieldName: string) => One2ManyColumn[];
   parentValues?: Record<string, unknown>;
+  resolveParentValues?: (fieldName: string) => Record<string, unknown>;
 }) {
   const issues: string[] = [];
   const rowErrors: Record<string, string[]> = {};
@@ -575,7 +728,7 @@ export function collectOne2manyDraftValidationFromRows(params: {
       const checkedRequiredFields = new Set<string>();
       columns.forEach((column) => {
         const behavior = resolveOne2manyRowColumnBehavior(
-          column, row.values || {}, params.parentValues || {}, row.modifierPatches || {},
+          column, row.values || {}, params.resolveParentValues?.(fieldName) ?? params.parentValues ?? {}, row.modifierPatches || {}, columns,
         );
         if (!behavior.required || behavior.invisible || behavior.columnInvisible || checkedRequiredFields.has(column.name)) return;
         checkedRequiredFields.add(column.name);
@@ -643,17 +796,31 @@ export function buildOne2manyCommandValue(
   return buildOne2ManyInlineCommands({
     original,
     draftRows: rows.map((row) => ({
+      key: row.key,
       id: row.id,
       isNew: row.isNew,
       removed: row.removed,
+      removalCommand: row.removalCommand,
       dirty: row.dirty,
-      values: row.isNew && mode === 'onchange'
-        ? row.values || {}
-        : Object.fromEntries((row.dirtyFields || []).filter(key => {
-          if (!row.isNew || !columns) return true;
+      // New rows contain display placeholders for absent defaults. Only the
+      // default/edit/onchange presence set is input to native computation;
+      // sending placeholders would turn an omitted computed value into a clear.
+      values: Object.fromEntries((row.dirtyFields || []).filter(key => {
+          if (mode === 'onchange' || !columns) return true;
           return columns.some(column => column.name === key
-            && !resolveOne2manyRowColumnBehavior(column, row.values, parentValues, row.modifierPatches || {}).readonly);
-        }).map((key) => [key, row.values?.[key]])),
+            && (column.forceSave === true
+              || !resolveOne2manyRowColumnBehavior(column, row.values, parentValues, row.modifierPatches || {}, columns).readonly));
+        }).map((key) => {
+          const value = row.values?.[key];
+          const column = columns?.find(candidate => candidate.name === key);
+          if (mode !== 'write' || column?.ttype !== 'many2one') return [key, value];
+          // Labels are a read/onchange carrier, never an ORM foreign key.
+          if (value === false || value === null || value === undefined || value === '') return [key, false];
+          const id = Array.isArray(value) && value.length === 2 && typeof value[1] === 'string' ? value[0] : value;
+          if (typeof id === 'number' && Number.isSafeInteger(id) && id > 0) return [key, id];
+          throw contractGapError({ kind: 'contract_defect', missing: `one2many.${key}.write_relation_identity`,
+            requiredDeclarationLayer: 'P0:smart_core:field_descriptor' }, '明细关系值缺少合法记录身份，无法保存');
+        })),
     })),
     mode,
   });
@@ -691,6 +858,7 @@ export function one2manyColumnInputType(column: One2ManyColumn): 'text' | 'numbe
 export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknown) {
   const ttype = String(column.ttype || '').trim().toLowerCase();
   if (value === null || value === undefined || (value === false && ttype !== 'boolean')) return '';
+  if (ttype === 'json') return formatDisplayValue(value, { ttype }, { emptyText: '' });
   if (ttype === 'many2one') {
     if (Array.isArray(value)) return value.length > 1 ? String(value[1] ?? '').trim() : '';
     if (typeof value === 'object') {

@@ -410,8 +410,8 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
     def test_unsupported_relation_domain_must_fail_closed(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
-            if path.endswith("one2manyUtils.ts"):
-                return value.replace("relationDomainSupported: domainAnalysis.supported,", "")
+            if path.endswith("relationDescriptor.ts"):
+                return value.replace("if (!analysis.supported) throw contractGapError(", "if (false) throw contractGapError(")
             return value
 
         self.assertTrue(any("do not fail closed" in item for item in validate(read_text)))

@@ -40,7 +40,7 @@ class RelationalActionPrimitivesGuardTest(unittest.TestCase):
             (button, button.replace('type="button"', 'type="button" :onClick="writeRecord"'), "must only reveal"),
             (button, button.replace('type="button"', 'type="button" :[eventName]="writeRecord"'), "must only reveal"),
             (button, button.replace('type="button"', 'type="submit"'), "must only reveal"),
-            ('v-if="readonlyCellCanExpand(column, row[column.name])"', 'v-if="true"', "must only reveal"),
+            ('v-else-if="readonlyCellCanExpand(column, row[column.name])"', 'v-else-if="true"', "must only reveal"),
             (button, button.replace('readonlyCellValue(row[column.name])', 'otherValue'), "must only reveal"),
         )
         for before, after, reason in cases:

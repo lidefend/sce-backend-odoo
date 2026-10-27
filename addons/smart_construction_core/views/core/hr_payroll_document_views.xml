@@ -77,6 +77,27 @@
       </field>
     </record>
 
+    <record id="view_sc_payroll_management_tree" model="ir.ui.view">
+      <field name="name">sc.hr.payroll.document.management.tree</field>
+      <field name="model">sc.hr.payroll.document</field>
+      <field name="priority">90</field>
+      <field name="arch" type="xml">
+        <tree string="工资薪酬" default_order="business_date desc, id desc">
+          <field name="document_no"/>
+          <field name="fact_type"/>
+          <field name="payroll_display_period"/>
+          <field name="payroll_display_amount"/>
+          <field name="employee_name"/>
+          <field name="state"/>
+          <field name="project_id" optional="show"/>
+          <field name="item_type" optional="show"/>
+          <field name="employee_user_id" optional="hide"/>
+          <field name="business_date" optional="hide"/>
+          <field name="currency_id" column_invisible="True"/>
+        </tree>
+      </field>
+    </record>
+
     <record id="view_sc_hr_payroll_document_form" model="ir.ui.view">
       <field name="name">sc.hr.payroll.document.form</field>
       <field name="model">sc.hr.payroll.document</field>

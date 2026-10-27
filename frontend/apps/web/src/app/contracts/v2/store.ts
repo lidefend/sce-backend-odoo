@@ -1,3 +1,4 @@
+import { bindNativeContext, bindNativeFieldTypes } from '../../nativeModifierContext';
 import type {
   ContractV2ActionRule,
   ContractV2ButtonStatus,
@@ -372,7 +373,8 @@ export function resolveContractV2ModifierValues(
     if (value === undefined && !Object.prototype.hasOwnProperty.call(snapshot, key)) return;
     merged[key] = value;
   });
-  return merged;
+  return bindNativeFieldTypes(bindNativeContext(merged, store?.snapshot.dataContract.dataMeta?.sourceContext),
+    store?.snapshot.dataContract.dataMeta?.nativeModifierFieldTypes, store?.snapshot.dataContract.dataMeta?.nativeModifierRelationSnapshots);
 }
 
 export function resolveContractV2ValueSource(store: ContractV2NormalizedStore | null): ContractV2ValueSource {
@@ -404,6 +406,7 @@ export function resolveContractV2SourceContext(store: ContractV2NormalizedStore 
     ? renderProfileRaw
     : '';
   return {
+    ...(source.formViewId !== undefined ? { formViewId: source.formViewId as number } : {}),
     ...(Object.keys(context).length ? { context } : {}),
     ...(domain.length ? { domain } : {}),
     ...(contextRaw ? { contextRaw } : {}),
@@ -470,6 +473,7 @@ export function resolveContractV2FieldDescriptorMap(
       ...(selectionPairs(config.selection ?? descriptor.selection)
         ? { selection: selectionPairs(config.selection ?? descriptor.selection) }
         : {}),
+      ...(descriptor.domain_expression !== undefined ? { domainExpression: descriptor.domain_expression } : {}),
       ...(Object.prototype.hasOwnProperty.call(config, 'domain') ? { domain: config.domain }
         : Object.prototype.hasOwnProperty.call(descriptor, 'domain') ? { domain: descriptor.domain } : {}),
       ...(Object.prototype.hasOwnProperty.call(config, 'context') ? { context: config.context }
@@ -505,6 +509,7 @@ export function toContractV2FormFieldDescriptor(row: ContractV2FieldDescriptor):
     ...(row.subview ? { subview: row.subview } : {}),
     ...(row.filename ? { filename: row.filename } : {}),
     ...(row.domain !== undefined ? { domain: row.domain } : {}),
+    ...(row.domainExpression !== undefined ? { domain_expression: row.domainExpression } : {}),
     ...(row.context !== undefined ? { context: row.context } : {}),
   };
 }

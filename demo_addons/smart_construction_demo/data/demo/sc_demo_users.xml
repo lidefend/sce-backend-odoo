@@ -16,7 +16,21 @@
             <field name="email">wuhaiyan@zhihui-construction.cn</field>
             <field name="company_id" ref="base.main_company"/>
             <field name="company_ids" eval="[(6, 0, [ref('base.main_company')])]"/>
-            <field name="groups_id" eval="[(6, 0, [ref('base.group_user'), ref('smart_construction_core.group_sc_cap_accounting_manager')])]"/>
+            <field name="groups_id" eval="[(6, 0, [ref('base.group_user'), ref('smart_construction_core.group_sc_role_accounting_manager')])]"/>
+        </record>
+        <record id="user_sc_accounting_read_demo" model="res.users">
+            <field name="name">会计只读示例</field>
+            <field name="login">sc_demo_accounting_read</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="company_ids" eval="[(6, 0, [ref('base.main_company')])]"/>
+            <field name="groups_id" eval="[(6, 0, [ref('base.group_user'), ref('smart_construction_core.group_sc_role_accounting_read')])]"/>
+        </record>
+        <record id="user_sc_accounting_user_demo" model="res.users">
+            <field name="name">会计经办示例</field>
+            <field name="login">sc_demo_accounting_user</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="company_ids" eval="[(6, 0, [ref('base.main_company')])]"/>
+            <field name="groups_id" eval="[(6, 0, [ref('base.group_user'), ref('smart_construction_core.group_sc_role_accounting_user')])]"/>
         </record>
         <record id="base.lang_zh_CN" model="res.lang">
             <field name="active" eval="True"/>

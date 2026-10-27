@@ -134,6 +134,7 @@ export type NativeStatusbarVm = {
 };
 
 export type One2ManyInlineRow = {
+  removalCommand?: 2 | 3;
   key: string;
   id: number | null;
   isNew: boolean;
@@ -145,15 +146,19 @@ export type One2ManyInlineRow = {
 };
 
 export type One2ManyColumn = {
+  widget?: string;
+  widgetSemantics?: Record<string, unknown>;
   key?: string;
   name: string;
   label: string;
   ttype: string;
   required: boolean;
   readonly?: boolean;
+  forceSave?: boolean;
   nativeLocator?: string;
   occurrenceIndex?: number;
   modifiers?: Record<string, unknown>;
+  ancestorModifiers?: Array<Record<string, unknown>>;
   relationActiveActions?: Record<string, unknown>;
   selection?: Array<[string, string]>;
   relation?: string;

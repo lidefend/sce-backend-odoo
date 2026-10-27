@@ -15,6 +15,8 @@ class ScHrPayrollDocument(models.Model):
     _inherit = ["sc.business.fact.mixin", "mail.thread", "mail.activity.mixin", "sc.delete.guard.mixin"]
     _order = "period_year desc, period_month desc, business_date desc, id desc"
 
+    fact_type = fields.Selection(default=False)
+
     def _selection_fact_type(self):
         return [
             ("social_person_registration", "社保人员登记"),
@@ -25,24 +27,24 @@ class ScHrPayrollDocument(models.Model):
             ("bonus", "奖金"),
         ]
 
-    employee_user_id = fields.Many2one("res.users", string="人员", index=True, tracking=True, help='公积金登记建议补充缴存人员')
+    employee_user_id = fields.Many2one("res.users", string="人员", index=True, tracking=True, help='公积金登记建议补充缴存人员', default=False)
     company_id = fields.Many2one(
         "res.company", readonly=True, string="所属公司", index=True, ondelete="restrict",
         help="薪酬事实的公司归属；项目为可选业务范围，不能代替公司归属。",
     )
-    employee_name = fields.Char(string="人员姓名", index=True, tracking=True, help='公积金登记建议补充缴存人员')
+    employee_name = fields.Char(string="人员姓名", index=True, tracking=True, help='公积金登记建议补充缴存人员', default=False)
     employee_status = fields.Char(string="人员状态", index=True)
     employee_type = fields.Char(string="人员类型", index=True)
     id_number = fields.Char(string="身份证号", index=True)
     contact_phone = fields.Char(string="联系方式", index=True)
-    period_year = fields.Integer(string="年度", index=True, help='公积金登记建议补充缴存期间')
-    period_month = fields.Integer(string="月份", index=True, help='公积金登记建议补充缴存期间')
-    payer_unit = fields.Char(string="缴纳单位", index=True, help='建议补充缴存单位')
-    payout_unit = fields.Char(string="发放单位", index=True, help='建议补充发放单位')
+    period_year = fields.Integer(string="年度", index=True, help='公积金登记建议补充缴存期间', default=False)
+    period_month = fields.Integer(string="月份", index=True, help='公积金登记建议补充缴存期间', default=False)
+    payer_unit = fields.Char(string="缴纳单位", index=True, help='建议补充缴存单位', default=False)
+    payout_unit = fields.Char(string="发放单位", index=True, help='建议补充发放单位', default=False)
     people_count = fields.Integer(string="人数")
     social_security_base = fields.Monetary(string="社保基数", currency_field="currency_id")
-    provident_fund_account = fields.Char(string="公积金账号", index=True, tracking=True, help='建议补充公积金账号')
-    provident_fund_base = fields.Monetary(string="公积金基数", currency_field="currency_id", help='建议补充公积金基数')
+    provident_fund_account = fields.Char(string="公积金账号", index=True, tracking=True, help='建议补充公积金账号', default=False)
+    provident_fund_base = fields.Monetary(string="公积金基数", currency_field="currency_id", help='建议补充公积金基数', default=False)
     company_contribution_rate = fields.Float(string="单位缴存比例(%)", digits=(8, 4))
     individual_contribution_rate = fields.Float(string="个人缴存比例(%)", digits=(8, 4))
     company_amount = fields.Monetary(string="公司承担", currency_field="currency_id")
@@ -84,6 +86,28 @@ class ScHrPayrollDocument(models.Model):
     amount = fields.Monetary(string="金额", currency_field="currency_id", tracking=True)
     certificate_fee = fields.Monetary(string="证书费用", currency_field="currency_id")
     occurrence_date = fields.Date(string="发生日期", index=True)
+    payroll_display_period = fields.Char(
+        string="薪酬期间/发生日期", compute="_compute_payroll_display", readonly=True,
+        help="工资显示年度和月份；补助、奖金显示发生日期。未填期间不显示零年月。",
+    )
+    payroll_display_amount = fields.Monetary(
+        string="薪酬金额", currency_field="currency_id", compute="_compute_payroll_display", readonly=True,
+        help="工资取实发工资；补助、奖金取事项金额。仅展示，不改变核算或发放依据。",
+    )
+
+    @api.depends("fact_type", "period_year", "period_month", "net_salary", "occurrence_date", "amount")
+    def _compute_payroll_display(self):
+        for record in self:
+            record.payroll_display_period = False
+            record.payroll_display_amount = 0.0
+            if record.fact_type == "salary_registration":
+                if record.period_year and record.period_month:
+                    record.payroll_display_period = "%04d-%02d" % (record.period_year, record.period_month)
+                record.payroll_display_amount = record.net_salary
+            elif record.fact_type in ("subsidy", "bonus"):
+                record.payroll_display_period = fields.Date.to_string(record.occurrence_date) if record.occurrence_date else False
+                record.payroll_display_amount = record.amount
+
     attachment_ids = fields.Many2many(
         "ir.attachment",
         "sc_hr_payroll_document_attachment_rel",
@@ -91,12 +115,23 @@ class ScHrPayrollDocument(models.Model):
         "attachment_id",
         string="附件",
         help='建议上传薪资核算依据',
+        default=False,
     )
     legacy_document_no = fields.Char(string="历史单号", index=True, readonly=True)
     legacy_document_state = fields.Char(string="历史状态", index=True, readonly=True)
     legacy_source_table = fields.Char(string="历史来源表", index=True, readonly=True)
     legacy_source_id = fields.Char(string="历史来源ID", index=True, readonly=True)
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
+    processing_advisory = fields.Char(
+        "办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction",
+        sc_feedback_usage={
+            "purpose": "advisory",
+            "occurrences": [{
+                "view_xmlid": "smart_construction_core.view_sc_hr_payroll_document_form",
+                "native_locator": "/form[1]/sheet[1]/div[1]/field[1]",
+                "occurrence_index": 1,
+            }],
+        },
+    )
 
     _sql_constraints = [
         (
@@ -216,13 +251,13 @@ class ScHrPayrollDocument(models.Model):
         "project_id",
         "department_id",
         "payout_unit",
+        "employee_user_id",
+        "employee_name",
         "period_year",
         "period_month",
         "payer_unit",
         "provident_fund_account",
         "provident_fund_base",
-        "company_contribution_rate",
-        "individual_contribution_rate",
         "description",
         "attachment_ids",
     )
@@ -254,6 +289,25 @@ class ScHrPayrollDocument(models.Model):
             record.processing_advisory = (
                 "；".join(suggestions) if suggestions else ""
             )
+
+    _compute_processing_advisory._sc_feedback_evaluation_review = {
+        "purpose": "advisory",
+        "inputs": [
+            {"field": "fact_type", "type": "selection"},
+            {"field": "project_id", "type": "many2one_presence"},
+            {"field": "department_id", "type": "many2one_presence"},
+            {"field": "payout_unit", "type": "char"},
+            {"field": "employee_user_id", "type": "many2one_presence"},
+            {"field": "employee_name", "type": "char"},
+            {"field": "period_year", "type": "number_nonzero"},
+            {"field": "period_month", "type": "number_nonzero"},
+            {"field": "payer_unit", "type": "char"},
+            {"field": "provident_fund_account", "type": "char"},
+            {"field": "provident_fund_base", "type": "number_nonzero"},
+            {"field": "description", "type": "text"},
+            {"field": "attachment_ids", "type": "many2many_presence"},
+        ],
+    }
 
     @api.depends("net_salary", "paid_amount")
     def _compute_payment_summary(self):
@@ -419,11 +473,11 @@ class ScHrPayrollDocument(models.Model):
         return super().write(vals)
 
 
-    department_id = fields.Many2one(ondelete="restrict", help='薪资核算建议补充所属部门')
+    department_id = fields.Many2one(ondelete="restrict", help='薪资核算建议补充所属部门', default=False)
 
-    description = fields.Text(help='薪资核算建议补充核算说明')
+    description = fields.Text(help='薪资核算建议补充核算说明', default=False)
 
-    project_id = fields.Many2one(ondelete="restrict", help='薪资核算建议关联所属项目')
+    project_id = fields.Many2one(ondelete="restrict", help='薪资核算建议关联所属项目', default=False)
 
     def unlink(self):
         locked = self.filtered(lambda rec: rec.state not in ("draft", "cancel"))
@@ -506,7 +560,7 @@ class ScHrSalaryPayment(models.Model):
         default="bank",
         required=True,
     )
-    payment_reference = fields.Char("支付凭证号", index=True, help='建议补充支付凭证号')
+    payment_reference = fields.Char("支付凭证号", index=True, help='建议补充支付凭证号', default=False)
     responsible_id = fields.Many2one(
         "res.users", string="经办人", default=lambda self: self.env.user, index=True
     )
@@ -524,9 +578,20 @@ class ScHrSalaryPayment(models.Model):
         "attachment_id",
         string="附件",
         help='建议上传发放依据',
+        default=False,
     )
-    note = fields.Text("发放说明", help='建议补充发放说明')
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
+    note = fields.Text("发放说明", help='建议补充发放说明', default=False)
+    processing_advisory = fields.Char(
+        "办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction",
+        sc_feedback_usage={
+            "purpose": "advisory",
+            "occurrences": [{
+                "view_xmlid": "smart_construction_core.view_sc_hr_salary_payment_form",
+                "native_locator": "/form[1]/sheet[1]/div[1]/field[1]",
+                "occurrence_index": 1,
+            }],
+        },
+    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -578,6 +643,15 @@ class ScHrSalaryPayment(models.Model):
             record.processing_advisory = (
                 "；".join(suggestions) if suggestions else ""
             )
+
+    _compute_processing_advisory._sc_feedback_evaluation_review = {
+        "purpose": "advisory",
+        "inputs": [
+            {"field": "payment_reference", "type": "char"},
+            {"field": "attachment_ids", "type": "many2many_presence"},
+            {"field": "note", "type": "text"},
+        ],
+    }
 
     def _check_project_manager(self):
         if self.env.su or self.env.user.has_group(

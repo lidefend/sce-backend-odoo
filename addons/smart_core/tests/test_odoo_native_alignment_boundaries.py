@@ -1003,6 +1003,37 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual(((plain.arch_parsed or {}).get("statusbar") or {}).get("states"), [])
         self.assertEqual(((explicit.arch_parsed or {}).get("statusbar") or {}).get("field"), "stage_id")
 
+    def test_collection_create_matches_native_form_and_action_restrictions(self):
+        for index, (form_create, tree_create, context, expected) in enumerate((
+            (True, True, "{}", True),
+            (False, True, "{}", False),
+            (True, False, "{}", False),
+            (True, True, "{'create': False, 'edit': False, 'delete': False}", False),
+        )):
+            with self.subTest(form=form_create, tree=tree_create, context=context):
+                form = self.env["ir.ui.view"].create({
+                    "name": "collection authority form %s" % index, "model": "res.partner", "type": "form",
+                    "arch": '<form create="%s"><sheet><field name="name"/></sheet></form>' % int(form_create),
+                })
+                tree = self.env["ir.ui.view"].create({
+                    "name": "collection authority tree %s" % index, "model": "res.partner", "type": "tree",
+                    "arch": '<tree create="%s"><field name="name"/></tree>' % int(tree_create),
+                })
+                action = self.env["ir.actions.act_window"].create({
+                    "name": "Collection authority %s" % index, "res_model": "res.partner",
+                    "view_mode": "tree,form", "context": context,
+                    "view_ids": [(0, 0, {"sequence": 1, "view_mode": "tree", "view_id": tree.id}),
+                                 (0, 0, {"sequence": 2, "view_mode": "form", "view_id": form.id})],
+                })
+                source, _ = ActionDispatcher(self.env, self.env["ir.model"].sudo().env).dispatch({
+                    "subject": "action", "action_id": action.id, "view_type": "tree",
+                })
+                self.assertIn("form", source["views"])
+                contract = unified_page_contract_v2_assembler.assemble_unified_page_contract_v2(
+                    source, source_type="ui.contract", client_type="web_pc", request_id="native.collection.create",
+                )
+                self.assertIs(contract["statusContract"]["globalStatus"]["effectiveRecordCapabilities"]["create"], expected, msg=repr({"head": source.get("head", {}).get("view_type"), "root": source.get("view_type"), "views": {k: {"capabilities": v.get("capabilities"), "view_id": v.get("view_id"), "keys": list(v)} for k, v in source["views"].items()}}))
+
     def test_form_parser_preserves_native_duplicate_capability(self):
         denied_view = self.env["ir.ui.view"].sudo().create({
             "name": "Native alignment partner duplicate denied",

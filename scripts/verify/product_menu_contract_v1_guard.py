@@ -74,8 +74,12 @@ def validate(contract: dict, baseline: dict, evolution_policy: dict | None = Non
                 errors.append(f"invalid delivery for menu {item.get('name')!r}")
     contract_center = next((item for item in centers if item.get("key") == "contract"), {})
     names = tuple(item.get("name") for item in contract_center.get("level_two", []))
-    if names != EXPECTED_CONTRACT_LEVEL_TWO:
+    if names != (*EXPECTED_CONTRACT_LEVEL_TWO, "结算单"):
         errors.append("合同中心二级菜单 must exactly use the approved daily-contract structure")
+    for item in contract_center.get("level_two", []):
+        expected = "PREVIEW_FOUNDATION" if item.get("name") == "结算单" else "RELEASED_FOUNDATION"
+        if item.get("delivery") != expected:
+            errors.append("合同中心二级菜单 delivery must preserve seven released entries and preview-only 结算单")
     if "通用合同" in names or "通用合同结算" in names:
         errors.append("customer-facing contract menus must use 日常合同 and 日常合同结算")
     if contract.get("runtime_migration_status") != baseline.get("runtime_migration_status"):

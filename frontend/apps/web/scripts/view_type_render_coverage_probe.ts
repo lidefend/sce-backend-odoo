@@ -116,13 +116,13 @@ const analysisAuthority = (viewType: 'pivot' | 'graph') => ({
   runtime_carrier: `ui.contract.v2.layoutContract.${viewType}Profile`,
 });
 const pivotProfile = {
-  measures: [{ name: 'amount', label: 'Amount' }],
-  dimensions: [{ name: 'date', label: 'Date', axis: 'col' }],
+  measures: [{ name: 'amount', label: 'Amount', fieldType: 'monetary' }],
+  dimensions: [{ name: 'date', label: 'Date', fieldType: 'date', axis: 'col' }],
   defaults: {}, sourceAuthority: analysisAuthority('pivot'),
 };
 const graphProfile = {
-  measures: [{ name: 'amount', label: 'Amount' }],
-  dimensions: [{ name: 'project_id', label: 'Project' }],
+  measures: [{ name: 'amount', label: 'Amount', fieldType: 'monetary' }],
+  dimensions: [{ name: 'project_id', label: 'Project', fieldType: 'many2one' }],
   typeDefault: 'bar', sourceAuthority: analysisAuthority('graph'),
 };
 const decodedPivot = decodeContractV2Snapshot({

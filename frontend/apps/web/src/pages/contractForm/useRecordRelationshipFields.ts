@@ -1,3 +1,5 @@
+import { triggerOnchange } from '../../api/onchange';
+import { one2manyDataColumnsFromSubview } from './one2manyUtils';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FieldDescriptor } from '@sc/schema';
 import { reactive, watch } from 'vue';
@@ -123,6 +125,12 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     return one2manyColumnsFromSubview(fieldSubview, (column) => one2manyRelationFieldDescriptor(name, column));
   }
 
+  function one2manyDataColumns(name: string): One2ManyColumn[] {
+    const descriptorSubview = (formFields()[name] as Record<string, unknown> | undefined)?.subview;
+    const fieldSubview = selectOne2manySubview(descriptorSubview, nativeFieldSubview(name));
+    return one2manyDataColumnsFromSubview(fieldSubview, (column) => one2manyRelationFieldDescriptor(name, column));
+  }
+
   function one2manyPolicies(name: string) {
     const descriptorSubview = (formFields()[name] as Record<string, unknown> | undefined)?.subview;
     const nativeSubview = nativeFieldSubview(name);
@@ -169,22 +177,56 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     return one2manyDraftSummary(one2manyFieldRows(name));
   }
 
-  async function loadOne2manyCreateDefaults(name: string): Promise<Record<string, unknown>> {
+  async function loadOne2manyCreateDefaults(name: string, parent: {
+    model: string; res_id: number | null; view_id?: unknown; values: Record<string, unknown>;
+  }): Promise<Record<string, unknown>> {
     const model = one2manyRelationModel(name);
     if (!model || !one2manyCanCreate(name)) throw new Error('当前明细未开放新增');
-    const fields = [...new Set(one2manyColumns(name).map((column: One2ManyColumn) => column.name))];
+    const fields = [...new Set(one2manyDataColumns(name).map((column: One2ManyColumn) => column.name).filter((field: string) => field !== 'id'))];
     if (!fields.length) throw new Error('当前明细缺少字段契约');
     const fieldContext = (effectiveFieldDescriptor(name) as Record<string, unknown> | undefined)?.context;
     if (fieldContext != null && (typeof fieldContext !== 'object' || Array.isArray(fieldContext))) {
       throw new Error('明细默认值上下文尚未解析');
     }
-    const result = await defaultContractFormRecord({ model, fields,
-      context: { ...resolveContractFormReadContext(v2ContractStore.value), ...(fieldContext as Record<string, unknown> | undefined) },
-    });
+    const context = JSON.parse(JSON.stringify({ ...resolveContractFormReadContext(v2ContractStore.value),
+      ...(fieldContext as Record<string, unknown> | undefined) }));
+    const parentSnapshot = JSON.parse(JSON.stringify(parent));
+    const result = await (dependencies.fetchCreateDefaults || defaultContractFormRecord)({ model, fields, context });
     if (!result?.record || typeof result.record !== 'object' || Array.isArray(result.record)) {
       throw new Error('未能取得明细默认值，请重试');
     }
-    return Object.fromEntries(Object.entries(result.record).filter(([name]) => fields.includes(name)));
+    const defaults = Object.fromEntries(Object.entries(result.record).filter(([name]) => fields.includes(name)));
+    const initialized = await (dependencies.initializeChild || triggerOnchange)({
+      ...parentSnapshot, changed_fields: [], context,
+      child_initialization: { field: name, fields, values: defaults },
+    });
+    if (!initialized?.patch || typeof initialized.patch !== 'object' || Array.isArray(initialized.patch)
+      || Object.keys(initialized.patch).some(field => !fields.includes(field))) {
+      throw new Error('明细初始化返回字段与声明不一致');
+    }
+    if (Object.keys(initialized.modifiers_patch || {}).length || initialized.line_patches?.length || initialized.warnings?.length) {
+      throw new Error('明细初始化包含尚未接入的联动提示或修饰声明');
+    }
+    return { ...defaults, ...initialized.patch };
+  }
+
+  async function loadOne2manyRowChange(name: string, row: { id: number; values: Record<string, unknown>; changed: string[] }, parent: {
+    model: string; res_id: number | null; view_id?: unknown; values: Record<string, unknown>;
+  }): Promise<Record<string, unknown>> {
+    const fields = [...new Set(one2manyDataColumns(name).map((column: One2ManyColumn) => column.name).filter((field: string) => field !== 'id'))];
+    const fieldContext = (effectiveFieldDescriptor(name) as Record<string, unknown> | undefined)?.context;
+    if (fieldContext != null && (typeof fieldContext !== 'object' || Array.isArray(fieldContext))) throw new Error('明细联动上下文尚未解析');
+    const response = await (dependencies.initializeChild || triggerOnchange)(JSON.parse(JSON.stringify({
+      ...parent, changed_fields: [], context: { ...resolveContractFormReadContext(v2ContractStore.value),
+        ...(fieldContext as Record<string, unknown> | undefined) },
+      child_onchange: { field: name, fields, values: row.values, changed_fields: row.changed, record_id: row.id },
+    })));
+    if (!response?.patch || typeof response.patch !== 'object' || Array.isArray(response.patch)
+      || Object.keys(response.patch).some(field => !fields.includes(field))) throw new Error('明细联动返回字段与声明不一致');
+    if (Object.keys(response.modifiers_patch || {}).length || response.line_patches?.length || response.warnings?.length) {
+      throw new Error('明细联动包含尚未接入的提示或修饰声明');
+    }
+    return response.patch;
   }
 
   async function hydrateOne2manyRows(name: string, ownsRequest = captureRelationRequest(`one2many:${name}`)) {
@@ -206,7 +248,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
       && JSON.stringify(resolveContractFormReadContext(v2ContractStore.value)) === contextIdentity
       && JSON.stringify(rowIds()) === JSON.stringify(ids);
     if (!rows.length) return;
-    const columns = one2manyColumns(name);
+    const columns = one2manyDataColumns(name);
     if (!columns.length) return;
     // 注意：不请求 'name' —— 部分子模型（如 payment.request.line）无 name 字段，
     // 请求会触发后端 ValueError 导致整行 hydrate 失败（catch 静默吞掉后列值全空）。
@@ -259,5 +301,5 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }
 
 
-  return { loadOne2manyCreateDefaults, relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId, one2manyCreateLabel, one2manyRemovalLabels, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, one2manyCellError };
+  return { loadOne2manyRowChange, loadOne2manyCreateDefaults, relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, nativeFieldSubview, one2manyColumns, one2manyDataColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId, one2manyCreateLabel, one2manyRemovalLabels, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, one2manyCellError };
 }

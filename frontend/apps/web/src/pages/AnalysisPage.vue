@@ -51,7 +51,7 @@ const props = defineProps<{
 }>();
 
 const tableColumns = computed(() => [...props.model.dimensions, ...props.model.measures].map((field) => ({
-  colKey: field.name, title: field.label, ellipsis: true,
+  colKey: field.name, title: field.label, ellipsis: false,
 })));
 const graphRows = computed(() => {
   const measure = props.model.measures[0];

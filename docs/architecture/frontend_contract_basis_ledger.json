@@ -185,6 +185,19 @@
       "regressionGuard": "verify.frontend.delivery_hardening.guard",
       "behaviourTest": "scripts/verify/test_error_state_contract.py",
       "stopDetail": "StatusPanel 对缺失/非法声明或 retry executor 缺失显示精确 ContractGap；AccessDeniedView 复用同一消费者。真实 SFC 点击测试覆盖声明改名、route 导航、retry 执行和缺口无按钮；P4 浏览器从真实 startupData 取声明并验证恢复结果。"
+    },
+    {
+      "surface": "Analysis pivot/graph 字段标题与枚举显示",
+      "declared": "layoutContract.pivotProfile/graphProfile measures/dimensions label,fieldType,selection",
+      "declaredBy": "addons/smart_core/app_config_engine/services/view_Parser/parsers Kanban Pivot Graph.py",
+      "declaredMethod": "_analysis_field_metadata",
+      "declaredSymbol": "\"fieldType\": native.get('type')",
+      "consumedBy": "frontend/apps/web/src/app/contracts/actionViewAnalysisContract.ts",
+      "consumedSymbol": "validMetadata",
+      "onMissing": "stop",
+      "stopSymbol": "ANALYSIS_FIELD_METADATA_INVALID",
+      "regressionGuard": "verify.frontend.action_surface_renderer_registry.unit",
+      "behaviourTest": "frontend/apps/web/scripts/action_surface_renderer_registry_test.ts"
     }
   ],
   "registeredMechanismExemptions": [
@@ -243,6 +256,14 @@
       "layer": "P0",
       "carriesProductSemantics": false,
       "rationale": "显式场景补载的客户端传输截止时间；超时中止等待并进入已有错误恢复契约，不改变权限、业务状态或可见集合，不代表业务SLA。"
+    },
+    {
+      "symbol": "relationDomainExpression",
+      "file": "frontend/apps/web/src/pages/contractForm/nativeRelationDomain.ts",
+      "class": "expression_complexity",
+      "layer": "P0",
+      "carriesProductSemantics": false,
+      "rationale": "原生关系域version1解析/求值资源边界：AST及输入最多512节点、最大32层，最终domain最多512 token、前缀深度32；同文件evaluateRelationDomainExpression共用该协议边界，后端compiler对应限制。超界明确拒绝，不截断候选集合、不替换业务域或改变权限/状态。"
     }
   ],
   "openContractDefects": [],

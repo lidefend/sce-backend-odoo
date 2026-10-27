@@ -1,3 +1,7 @@
+import { resolveNativeOperand, resolveTypedNativeField } from './nativeModifierContext';
+import { comparePythonModifier } from './nativeModifierComparison';
+import { contractGapError } from './contract/contractGap';
+
 export type FieldRuntimeState = {
   invisible: boolean;
   readonly: boolean;
@@ -59,40 +63,74 @@ export function resolveDeclaredModifierFieldValue(
 ): unknown {
   const name = String(field || '').trim();
   if (!name) return undefined;
+  if (name === '$native.context' || name === '$native.fieldTypes' || name === '$native.relationSnapshots') return snapshot?.[name];
   if (live && Object.prototype.hasOwnProperty.call(live, name) && live[name] !== undefined) {
     return live[name];
   }
   return snapshot ? snapshot[name] : undefined;
 }
 
-export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (field: string) => unknown): boolean {
+function modifierGap(reason: string): never {
+  throw contractGapError({
+    kind: 'contract_defect', missing: `native_modifier.${reason}`,
+    requiredDeclarationLayer: 'P0:smart_core:utils/native_modifier',
+  }, `原生条件契约不可求值：${reason}`);
+}
+
+function nativeTruthy(value: unknown): boolean {
+  if (Array.isArray(value)) return value.length > 0;
+  if (value && typeof value === 'object') return Object.keys(value).length > 0;
+  return Boolean(value);
+}
+
+export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (field: string) => unknown, resolvePythonFieldValue = (field: string) => resolveTypedNativeField(resolveFieldValue, field)): boolean {
   if (typeof value === 'boolean') return value;
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return isStaticTruthyModifier(value);
+  // An absent optional modifier is not an expression with a missing dependency.
+  if (value === undefined || value === null || value === '' || value === 0 || value === '0' || value === 'false' || value === 'False') return false;
+  if (isStaticTruthyModifier(value)) return true;
+  if (typeof value !== 'object' || Array.isArray(value)) return modifierGap('unsupported_expression');
   const row = value as Record<string, unknown>;
   const kind = String(row.kind || '').trim();
-  if (kind === 'static') return Boolean(row.value);
-  if (kind === 'not') return !evaluateNativeModifierValue(row.expr, resolveFieldValue);
-  if (kind === 'all') {
-    const exprs = Array.isArray(row.exprs) ? row.exprs : [];
-    return exprs.every((expr) => evaluateNativeModifierValue(expr, resolveFieldValue));
+  if (kind === 'value_truthy' || kind === 'value_compare') {
+    if (row.semantics !== 'python') return modifierGap('comparison_semantics');
+    if (kind === 'value_truthy') return nativeTruthy(resolveNativeOperand(row.value_expr, resolvePythonFieldValue));
+    if (typeof row.operator !== 'string') return modifierGap('operator');
+    const left = resolveNativeOperand(row.left, resolvePythonFieldValue);
+    const right = resolveNativeOperand(row.right, resolvePythonFieldValue);
+    return comparePythonModifier(left, String(row.operator || ''), right);
   }
-  if (kind === 'any') {
-    const exprs = Array.isArray(row.exprs) ? row.exprs : [];
-    return exprs.some((expr) => evaluateNativeModifierValue(expr, resolveFieldValue));
+  if (kind === 'static') {
+    if (typeof row.value !== 'boolean') return modifierGap('static.value');
+    return row.value;
   }
+  if (kind === 'not') {
+    if (!Object.prototype.hasOwnProperty.call(row, 'expr') || row.expr == null || row.expr === '') return modifierGap('not.expr');
+    return !evaluateNativeModifierValue(row.expr, resolveFieldValue, resolvePythonFieldValue);
+  }
+  if (kind === 'all' || kind === 'any') {
+    if (!Array.isArray(row.exprs) || !row.exprs.length || row.exprs.some((expr) => expr == null || expr === '')) return modifierGap(`${kind}.exprs`);
+    // Resolve every declared branch before reducing: short-circuiting must not hide a contract defect.
+    const verdicts = row.exprs.map((expr) => evaluateNativeModifierValue(expr, resolveFieldValue, resolvePythonFieldValue));
+    return kind === 'all' ? verdicts.every(Boolean) : verdicts.some(Boolean);
+  }
+  if (kind !== 'field_truthy' && kind !== 'field_compare') return modifierGap('unsupported_kind');
   const field = String(row.field || '').trim();
-  if (!field) return false;
-  if (kind === 'field_truthy') return Boolean(resolveFieldValue(field));
-  if (kind === 'field_compare') {
-    // The declared modifier AST compares a field either against a literal or
-    // against another record field (`value_field`). The producer registers
-    // that field as a runtime dependency, so a client that only reads the
-    // literal silently evaluates the wrong branch.
-    const valueField = String(row.value_field || row.valueField || '').trim();
-    const expected = valueField ? resolveFieldValue(valueField) : row.value;
-    return compareNativeModifierValue(resolveFieldValue(field), String(row.operator || ''), expected);
-  }
-  return false;
+  if (!field) return modifierGap('field');
+  const resolve = (name: string) => {
+    const actual = (row.semantics === 'python' || kind === 'field_truthy' ? resolvePythonFieldValue : resolveFieldValue)(name);
+    if (actual === undefined) return modifierGap(`dependency.${name}`);
+    return actual;
+  };
+  if (kind === 'field_truthy') return nativeTruthy(resolve(field));
+  if (typeof row.operator !== 'string') return modifierGap('operator');
+  const operator = row.operator.trim();
+  if (!['=', '==', '!=', '<>', '>', '>=', '<', '<=', 'in', 'not in', 'like', 'ilike'].includes(operator)) return modifierGap('operator');
+  const valueField = String(row.value_field || row.valueField || '').trim();
+  if (!valueField && !Object.prototype.hasOwnProperty.call(row, 'value')) return modifierGap('value');
+  const expected = valueField ? resolve(valueField) : row.value;
+  if (row.semantics === 'python') return comparePythonModifier(resolve(field), operator, expected);
+  if (row.semantics !== undefined) return modifierGap('comparison_semantics');
+  return compareNativeModifierValue(resolve(field), operator, expected);
 }
 
 function evalLeaf(expr: unknown, values: Record<string, unknown>): boolean {

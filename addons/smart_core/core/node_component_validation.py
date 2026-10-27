@@ -82,7 +82,18 @@ def require_nonconstant(value, path):
     # dependency presence proves an arbitrary compound formula nonconstant.
     while isinstance(value, dict) and value.get("kind") == "not":
         value = value["expr"]
-    if not isinstance(value, dict) or value.get("kind") not in {"field_truthy", "field_compare"}:
+    if not isinstance(value, dict):
+        fail("FEEDBACK_CONDITION_INVALID", path)
+    # Compound visibility conditions are valid only when every branch is a
+    # nonconstant leaf; a static branch cannot make the host dynamic.
+    if value.get("kind") in {"all", "any"}:
+        exprs = value.get("exprs")
+        if not isinstance(exprs, list) or not exprs:
+            fail("FEEDBACK_CONDITION_INVALID", path)
+        for expr in exprs:
+            require_nonconstant(expr, path)
+        return
+    if value.get("kind") not in {"field_truthy", "field_compare"}:
         fail("FEEDBACK_CONDITION_INVALID", path)
     if value["kind"] == "field_compare" and ("value_field" in value or value.get("value") in ([], {})):
         fail("FEEDBACK_CONDITION_INVALID", path)
@@ -112,7 +123,6 @@ def native_source(node, originals, path, code="FEEDBACK_SOURCE_INVALID"):
 def read_facts(record, names, path):
     if record is None or len(record) != 1 or type(record.id) is not int or record.id <= 0 or record.env.su:
         fail("FEEDBACK_SOURCE_FORBIDDEN", path)
-    context = _context(record)
     needed, pending = set(), list(names)
     while pending:
         name = pending.pop()
@@ -130,22 +140,132 @@ def read_facts(record, names, path):
             if not isinstance(dependencies, tuple) or any(not isinstance(d, str) or not d.isidentifier() for d in dependencies):
                 fail("FEEDBACK_SOURCE_INVALID", path)
             pending.extend(dependencies)
+    return _read_actor_facts(record, needed, path)
+
+
+def _read_actor_facts(record, names, path):
+    context = _context(record)
     try:
         record.check_access_rights("read")
         record.check_access_rule("read")
-        allowed = record.check_field_access_rights("read", sorted(needed))
-        if allowed is None or not needed.issubset(allowed):
+        allowed = record.check_field_access_rights("read", sorted(names))
+        if allowed is None or not names.issubset(allowed):
             fail("FEEDBACK_SOURCE_FORBIDDEN", path)
-        values = record.read(sorted(needed))
+        values = record.read(sorted(names))
     except Exception as exc:
         if isinstance(exc, PermissionError) or type(exc).__name__ in {"AccessError", "AccessDenied", "MissingError"}:
             fail("FEEDBACK_SOURCE_FORBIDDEN", path)
         raise
     if _context(record) != context or len(values) != 1 or values[0].get("id") != context[1]:
         fail("FEEDBACK_SOURCE_FORBIDDEN", path)
-    if not needed.issubset(values[0]):
+    if not names.issubset(values[0]):
         fail("FEEDBACK_SOURCE_INVALID", path)
     return values[0]
+
+
+def native_feedback_fields(record, contract, node, source, invisible, path):
+    """Prove a legacy advisory against the actor's actual native form.
+
+    A wire native marker grants nothing. Only matching XML host, direct content
+    and condition may use native ORM field semantics. Custom declarations keep
+    the separately reviewed strict dependency policy.
+    """
+    config = node.get("componentConfig") or {}
+    if config.get("purpose") != "advisory":
+        return False
+    if source.get("name") and getattr(record._fields.get(source["name"]), "sc_feedback_usage", None) is not None:
+        return False
+    locator = node.get("nativeLocator")
+    if not locator:
+        return False
+    from xml.etree import ElementTree as ET
+    from .unified_page_contract_v2_assembler import _normalize_feedback_condition
+    try:
+        from odoo.addons.smart_core.utils.native_modifier import normalize_native_modifier
+    except ImportError:
+        from utils.native_modifier import normalize_native_modifier
+    meta = ((contract.get("dataContract") or {}).get("dataMeta") or {}).get("sourceContext") or {}
+    view_id = meta.get("formViewId")
+    if type(view_id) is not int or view_id <= 0:
+        return False
+    view = record.get_view(view_id=view_id, view_type="form")
+    if view.get("id") != view_id:
+        fail("FEEDBACK_SOURCE_INVALID", path)
+    # Metadata only, never sudo the business record or its field values.
+    view_record = record.env["ir.ui.view"].sudo().browse(view_id)
+    if view_record.model != record._name or view_record.type != "form":
+        fail("FEEDBACK_SOURCE_INVALID", path)
+    try:
+        root = ET.fromstring(view.get("arch", ""))
+    except (ET.ParseError, TypeError):
+        fail("FEEDBACK_SOURCE_INVALID", path)
+    if root.tag != "form":
+        fail("FEEDBACK_SOURCE_INVALID", path)
+    elements, fields = {}, set()
+    def visit(element, location):
+        elements[location] = element
+        if element.tag == "field":
+            fields.add(element.get("name"))
+            return  # Relation subviews are not declarations on this model.
+        counts = {}
+        for child in element:
+            counts[child.tag] = counts.get(child.tag, 0) + 1
+            visit(child, f"{location}/{child.tag}[{counts[child.tag]}]")
+    visit(root, "/form[1]")
+    host = elements.get(locator)
+    if host is None:
+        fail("FEEDBACK_SOURCE_INVALID", path)
+    classes = set(host.get("class", "").split())
+    if not (classes & {"alert", "alert-info", "alert-warning", "alert-danger", "alert-success"}
+            or host.get("role", "").lower() == "alert"):
+        return False
+    # get_view normally prunes groups. A residual restriction must never turn
+    # this reader into a way to evaluate hidden native content.
+    source_locator = source.get("nativeLocator") or ""
+    for location, element in elements.items():
+        if (location == locator or locator.startswith(location + "/")
+                or location == source_locator):
+            if element.get("groups"):
+                fail("FEEDBACK_SOURCE_FORBIDDEN", path)
+    raw = host.get("invisible")
+    if (raw is None or (node.get("attributes") or {}).get("invisible") != raw
+            or _normalize_feedback_condition(normalize_native_modifier(raw)) != invisible):
+        fail("FEEDBACK_SOURCE_INVALID", path)
+    # Bind the same first content selected by the native alert projection.
+    text = " ".join((host.text or "").split())
+    expected = None
+    if text:
+        expected = (locator + "/text[1]", "text", None, text)
+    else:
+        for child in host:
+            child_text = " ".join((child.text or "").split())
+            if child.tag == "field" or (child.tag in {"div", "span", "label", "p"} and child_text):
+                child_locator = next((key for key, value in elements.items() if value is child), None)
+                expected = (child_locator, child.tag, child.get("name") if child.tag == "field" else None,
+                            None if child.tag == "field" else child_text)
+                break
+    actual = (source.get("nativeLocator"), source.get("type"), source.get("name"), source.get("text"))
+    if expected is None or expected != actual:
+        fail("FEEDBACK_SOURCE_INVALID", path)
+    needed = condition_dependencies(invisible, path) | ({source["name"]} if source.get("name") else set())
+    if not needed.issubset(fields):
+        fail("FEEDBACK_SOURCE_INVALID", path)
+    return True
+
+
+def read_native_facts(record, names, path):
+    """Read only view-proven direct facts under ordinary ORM permissions."""
+    if record is None or len(record) != 1 or type(record.id) is not int or record.id <= 0 or record.env.su:
+        fail("FEEDBACK_SOURCE_FORBIDDEN", path)
+    for name in names:
+        field = record._fields.get(name)
+        if field is None or field.type not in SCALARS | {"many2one", "one2many", "many2many"}:
+            fail("FEEDBACK_SOURCE_INVALID", path)
+    values = _read_actor_facts(record, names, path)
+    for name in names:
+        if record._fields[name].type == "many2one" and isinstance(values[name], (list, tuple)):
+            values[name] = values[name][0] if values[name] else False
+    return values
 
 
 def validate_final_nodes(env, contract, native_tree, *, apply_visibility=True, draft_feedback=None):
@@ -163,7 +283,7 @@ def validate_final_nodes(env, contract, native_tree, *, apply_visibility=True, d
     model, record_id = page.get("model"), ((contract.get("dataContract") or {}).get("mainData") or {}).get("id")
     record = env[model].browse(record_id) if env is not None and model and type(record_id) is int and record_id > 0 else None
     draft_only = record is None and draft_feedback is not None
-    plans, needed = [], set()
+    plans, needed, native_needed, native_plans = [], set(), set(), set()
     for node, path in declarations:
         key, config = node["componentKey"], node.get("componentConfig")
         unique(rows, node.get("containerId"), path)
@@ -228,8 +348,6 @@ def validate_final_nodes(env, contract, native_tree, *, apply_visibility=True, d
             if (field_owner is None or name not in field_owner._fields
                     or field_owner._fields[name].type not in SCALARS):
                 fail("FEEDBACK_SOURCE_INVALID", path)
-            if config["purpose"] != "error":
-                needed.add(name)
         elif source.get("type") in {"text", "div", "span", "label", "p"} and type(original.get("text")) is str and not source.get("children"):
             name = None
         else:
@@ -259,7 +377,12 @@ def validate_final_nodes(env, contract, native_tree, *, apply_visibility=True, d
         if config["purpose"] in {"advisory", "warning", "error"}:
             require_nonconstant(invisible, path)
         if config["purpose"] != "error":
-            needed.update(deps)
+            direct = deps | ({name} if name else set())
+            if record is not None and native_feedback_fields(record, contract, node, source, invisible, path):
+                native_needed.update(direct)
+                native_plans.add(node["containerId"])
+            else:
+                needed.update(direct)
         plans.append((node, config["purpose"], source, name, invisible, path))
     if draft_only:
         registry = contract["layoutContract"].setdefault("componentRegistry", {})
@@ -268,6 +391,7 @@ def validate_final_nodes(env, contract, native_tree, *, apply_visibility=True, d
             registry[node["componentKey"]] = {"version": registration["version"]}
         return
     facts = read_facts(record, needed, "layoutContract.feedback") if needed else {}
+    native_facts = read_native_facts(record, native_needed, "layoutContract.feedback") if native_needed else {}
     error_enabled = validate_record_errors(record, tree, native_tree,
         action_rules=(contract.get("actionContract") or {}).get("actionRuleList", [])) if any(p[1] == "error" for p in plans) else ()
     visibility = {}
@@ -279,10 +403,11 @@ def validate_final_nodes(env, contract, native_tree, *, apply_visibility=True, d
             # combine its decision with an older generic facts read.
             visibility[node["containerId"]] = node["containerId"] in error_enabled
             continue
-        hidden = _evaluate_action_modifier(invisible, facts, strict=True)
+        plan_facts = native_facts if node["containerId"] in native_plans else facts
+        hidden = _evaluate_action_modifier(invisible, plan_facts, strict=True)
         if hidden is None:
             fail("FEEDBACK_CONDITION_INVALID", path)
-        content = facts.get(name) if name else source.get("text")
+        content = plan_facts.get(name) if name else source.get("text")
         present = content is not None and content is not False and (not isinstance(content, str) or bool(content.strip()))
         if purpose in {"warning", "error"} and hidden is False and not present:
             fail("FEEDBACK_CONTENT_MISSING", path)

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { effectScope, reactive, ref } from 'vue';
+import { effectScope, reactive, ref, watch, nextTick } from 'vue';
 import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime';
 import { useRecordRelationshipFields } from '../src/pages/contractForm/useRecordRelationshipFields';
 import { useRecordPageLifecycle } from '../src/pages/contractForm/useRecordPageLifecycle';
@@ -168,6 +168,7 @@ equal(guarded.deniedRelationModels.has('x.owner'), false, 'stale 403 cannot deny
 guarded.invalidateRelationRequests();
 equal(guarded.relationOptions.value.owner_id, [{ id: 2, label: 'Current' }], 'deactivation preserves settled labels');
 
+const requestedReadFields: string[][] = [];
 const reads: Array<ReturnType<typeof deferred<{ records: Array<Record<string, unknown>> }>>> = [];
 const formData = reactive({ owner_id: [2] });
 const rows = ref([{ id: 4, isNew: false }]);
@@ -180,20 +181,56 @@ const store = ref({
   snapshot: { dataContract: { dataMeta: { sourceContext: { context: { company_id: 8, allowed_company_ids: [8] } } } } },
 });
 class Denied extends Error { status = 403; reasonCode = 'PERMISSION_DENIED'; }
+const childInitializationRequests: Array<Record<string, unknown>> = [];
+let childInitializationSideEffects: Record<string, unknown> = {};
+let childInitializationPatch: Record<string, unknown> = { name: 'Native name', internal_note: 'Native computed' };
 const fields = scope.run(() => useRecordRelationshipFields({
   ...guarded, ApiError: Denied, formData, v2ContractStore: store,
+  fetchCreateDefaults: async () => ({ record: { name: 'Default name' } }),
+  initializeChild: async (request: unknown) => { assert(request && typeof request === 'object' && !Array.isArray(request)); childInitializationRequests.push(request as Record<string, unknown>); return { patch: childInitializationPatch, ...childInitializationSideEffects }; },
+  one2manySubviewPolicies: () => ({}), one2manyCanCreateFromPolicies: () => true,
+  relationFieldDescriptors: ref({ 'x.line': { name: { type: 'char' }, internal_note: { type: 'char' } } }),
+
   fieldType: (descriptor: { type: string }) => descriptor.type,
-  relationModel: () => 'x.owner', relationEntry: () => ({ canRead: true }),
+  relationModel: (descriptor: { relation?: string }) => descriptor?.relation || 'x.owner', relationEntry: () => ({ canRead: true }),
   normalizeRelationIds: (value: unknown) => Array.isArray(value) ? value.map(Number) : [],
   relationReadFields: () => ['id', 'display_name'],
-  readContractFormRecord: () => { const read = deferred<{ records: Array<Record<string, unknown>> }>(); reads.push(read); return read.promise; },
+  readContractFormRecord: (request: { fields: string[] }) => { requestedReadFields.push(request.fields); const read = deferred<{ records: Array<Record<string, unknown>> }>(); reads.push(read); return read.promise; },
   relationOptionsFromRecords: (records: Array<{ id: number; display_name: string }>) => records.map(row => ({ id: row.id, label: row.display_name })),
   ensureOne2manyRows: () => rows.value, one2manyFieldRows: () => rows.value,
   mergeHydratedOne2manyRecords: (_name: string, records: unknown) => mergedChildren.push(records),
   nativeFormLayoutNodes: ref([]), findNativeFieldNodeInTree: () => null,
-  nativeFieldSubviewFromTree: () => null, selectOne2manySubview: () => ({}),
+  nativeFieldSubviewFromTree: () => null, selectOne2manySubview: () => ({ tree: { columns: ['name'] }, form: { layout: [{ type: 'field', name: 'internal_note', fieldInfo: { type: 'char' } }] } }),
   one2manyColumnsFromSubview: () => [{ name: 'name' }], isWritableFieldVisible: () => true,
 }))!;
+const initializedValues = await fields.loadOne2manyCreateDefaults('line_ids', {
+  model: 'x.parent', res_id: null, view_id: 17, values: { owner_id: 2 },
+});
+equal(initializedValues, { name: 'Native name', internal_note: 'Native computed' }, 'loader consumes computed native values before returning');
+equal(childInitializationRequests[0].model, 'x.parent', 'parent model remains request authority');
+equal(childInitializationRequests[0].view_id, 17, 'selected parent view is preserved');
+equal(childInitializationRequests[0].child_initialization,
+  { field: 'line_ids', fields: ['name', 'internal_note'], values: { name: 'Default name' } }, 'only declared child fields and authoritative defaults initialize');
+childInitializationPatch = { unexpected: 'Not declared' };
+await assert.rejects(fields.loadOne2manyCreateDefaults('line_ids', { model: 'x.parent', res_id: null, values: {} }), /返回字段与声明不一致/);
+childInitializationPatch = { name: 'Native name' };
+for (const sideEffects of [{ warnings: [{ message: 'Native warning' }] }, { modifiers_patch: { name: { readonly: true } } }, { line_patches: [{ field: 'nested' }] }]) {
+  childInitializationSideEffects = sideEffects;
+  await assert.rejects(fields.loadOne2manyCreateDefaults('line_ids', { model: 'x.parent', res_id: null, values: {} }), /尚未接入/);
+}
+childInitializationSideEffects = {};
+const rowChangeResult = await fields.loadOne2manyRowChange('line_ids', { id: 4, values: { name: 'Edited' }, changed: ['name'] },
+  { model: 'x.parent', res_id: 9, view_id: 17, values: { owner_id: 2 } });
+equal(rowChangeResult, {name:'Native name'}, 'child edit consumes native result');
+const childEditRequest=childInitializationRequests.at(-1)!;
+equal(childEditRequest.child_onchange, {field:'line_ids',fields:['name','internal_note'],values:{name:'Edited'},changed_fields:['name'],record_id:4}, 'child edit uses explicit owned identity and changed fields');
+equal(childEditRequest.view_id,17,'child edit retains selected parent view');
+equal(childEditRequest.context, {company_id:8,allowed_company_ids:[8]}, 'child edit retains authoritative company context');
+childInitializationSideEffects={warnings:[{message:'Native warning'}]};
+await assert.rejects(fields.loadOne2manyRowChange('line_ids',{id:0,values:{name:'Edited'},changed:['name']},
+ {model:'x.parent',res_id:null,values:{}}),/尚未接入/);
+childInitializationSideEffects={};
+
 guarded.clearRelationRuntime();
 const labelOld = fields.hydrateSelectedRelationOptions();
 guarded.clearRelationRuntime();
@@ -222,6 +259,7 @@ equal(guarded.relationOptions.value.owner_id, [{ id: 3, label: 'Current owner' }
 
 const childrenOld = fields.hydrateVisibleOne2manyRows();
 const childOldRead = reads.at(-1)!;
+equal(requestedReadFields.at(-1), ['id', 'display_name', 'name', 'internal_note'], 'actual read includes declared form-only field');
 guarded.clearRelationRuntime();
 equal(fields.isOne2manyHydrating('line_ids'), false, 'reset clears cancelled loading');
 const childrenNew = fields.hydrateVisibleOne2manyRows();
@@ -313,3 +351,35 @@ console.log(`[professional_relation_lifecycle_model_test] PASS shared-record-lif
   assert.deepEqual(superseded.relationOptions.value.partner_id, [{ id: 5, label: 'Unfiltered record' }]);
   console.log('[professional_relation_lifecycle_model_test] PASS superseded-dynamic-fallback=1');
 }
+
+// Vue flushes queued rendering before an async loadRecord caller resumes.
+// ID-only rows must already be marked loading in that first render.
+{
+  const loadedRows = ref<number[]>([]), childLoading = ref(false);
+  const observations: boolean[] = [];
+  const stop = watch(loadedRows, rows => { if (rows.length) observations.push(childLoading.value); });
+  const formData = reactive<Record<string, unknown>>({});
+  const noOp = () => {};
+  const recordLoader = useRecordPageLifecycle({
+    recordVersionPolicy: () => null, formDataFieldNames: () => ['line_ids'],
+    recordVersionToken: ref(''), closeNativeChatterComposer: noOp, clearNativeChatterForRecordLoad: noOp,
+    nativeChatterAutoLoadKey: ref(''), clearNativeAttachmentError: noOp,
+    recordId: ref(42), formData, relationKeywords: {}, relationOptions: ref({}),
+    clearOne2manyRows: noOp, onchangeModifiersPatch: ref({}), onchangeWarnings: ref([]), onchangeLinePatches: ref([]),
+    changedFieldSet: new Set(), dirtyFieldSet: new Set(), resetPendingInlineRelationCreates: noOp,
+    getOnchangeTimer: () => null, renderProfile: ref('readonly'), v2ContractStore: ref(null),
+    resolveContractV2MainData: () => ({line_ids: [7], display_name: 'Existing'}),
+    recordMissing: ref(false), originalValues: ref({}), nativeLayoutVisibilityRevision: ref(0),
+    applyIncomingFormFieldValue: ({fieldName, incoming}: {fieldName: string; incoming: unknown}) => {
+      formData[fieldName] = incoming;
+      if (fieldName === 'line_ids') loadedRows.value = incoming as number[];
+    },
+    prepareVisibleOne2manyHydration: () => { childLoading.value = true; },
+    snapshotOriginalFormValues: () => ({}),
+  });
+  await recordLoader.loadRecord();
+  await nextTick();
+  assert.deepEqual(observations, [true], 'first Vue render must not evaluate ID-only persisted child rows');
+  stop();
+}
+console.log('persisted child loading: first Vue flush is protected');

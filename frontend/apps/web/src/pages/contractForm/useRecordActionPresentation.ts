@@ -11,6 +11,7 @@ import type { RelationFieldAdapter, RelationFieldColumn, RelationFieldRow } from
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { ContractAction } from './types';
 import { resolveNativeContractActionState, isUnifiedSubmitAction, isUnifiedSubmitMethod, resolveAuthorizedWindowActionTarget, resolveContractActionForNativeOccurrence } from './contractActionPresentation';
+import { resolveContractFormReadContext } from './contractRuntimeVm';
 import { fieldType } from './fieldUtils';
 
 type PresentationDependencies = Record<string, any>;
@@ -54,7 +55,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
       // contract's modifier dependency closure plus the live form values.
       // Resolving it against live form values alone drops the adapter exactly
       // when the declared state makes the action visible again.
-      values: resolveContractV2ModifierValues(v2ContractStore.value, formData as Record<string, unknown>),
+      values: resolveContractV2ModifierValues(v2ContractStore.value, dependencies.modifierValues?.() ?? formData as Record<string, unknown>),
       resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
         routeAuthorityEntries(session.routeAuthority),
         requested,
@@ -211,7 +212,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     nativeVisibleFieldNames, nativeVisibleSectionTitles, rawNativeFormLayoutNodes, resolveNativeButtonLabel,
     runtimeFieldStates, runtimeNativeFormLayoutNodes, runtimeOccurrenceState, runtimeState, setStatusbarValue, showNativeDefaultSectionTitle, useNativeFormTree,
   } = useRecordFormLayout({
-    v2ContractStore, contractVisibleFields, onchangeModifiersPatch, formData,
+    v2ContractStore, contractVisibleFields, onchangeModifiersPatch, formData, modifierValues: dependencies.modifierValues,
     isQuickIntakeMode, contractFieldLabel, fieldSemanticMeta, showHud, advancedExpanded,
     coreFieldNames, advancedFieldNames, renderProfile, recordId, isContractFieldOrderEditable,
     fieldOrderDraft, fieldOrderPreviewActive, changedFieldGroupDraft, fieldMoveTargetDraft,
@@ -221,7 +222,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     markFieldChanged, layoutNodes: () => layoutNodes.value,
   });
 
-  const { layoutNodes, nativeFieldSchemasForNodes } = useRecordFormFieldSchemas({
+  const { layoutNodes, nativeFieldSchemasForNodes, nativeRequiredEditableFieldNames } = useRecordFormFieldSchemas({
     contract, v2ContractStore, nativeFormLayoutNodes, isNativeFieldVisible, isNativeLayoutNodeVisible,
     runtimeState, recordId, rights, contractFieldLabel, isContractFieldOrderEditable, effectiveFieldSize,
     rememberFormConfigFieldLabel, fieldOrderPreviewActive, fieldOrderDraft, formData, isFieldVisible,
@@ -388,14 +389,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     one2manyRowStateLabel,
     prepareOne2manyColumns: (fieldName: string) => dependencies.ensureRelationFieldDescriptors?.(fieldName),
     one2manyColumns,
-    one2manyVisibleColumns: (fieldName: string) => {
-      const rows = visibleOne2manyRows(fieldName);
-      const probes = rows.length ? rows : [{ key: '__empty__', values: {} } as RelationFieldRow];
-      return one2manyColumns(fieldName).filter((column: RelationFieldColumn) => probes.some((row: RelationFieldRow) => {
-        const effective = dependencies.one2manyEffectiveColumn(fieldName, row, column);
-        return effective.invisible !== true && effective.columnInvisible !== true;
-      }));
-    },
+    one2manyVisibleColumns: dependencies.one2manyVisibleColumns,
     one2manyEffectiveColumn: dependencies.one2manyEffectiveColumn,
     one2manyColumnQueryScope,
     queryOne2manyColumnOptions: dependencies.queryOne2manyColumnOptions,
@@ -418,6 +412,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     selectPlaceholder: resolveSelectPlaceholder,
     one2manyColumnInputType,
     one2manyColumnDisplayValue,
+    readContext: resolveContractFormReadContext(v2ContractStore.value),
     inputFieldValue,
     fieldInputType,
     inputPlaceholder: resolveInputPlaceholder,
@@ -500,6 +495,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     useNativeFormTree,
     layoutNodes,
     nativeFieldSchemasForNodes,
+    nativeRequiredEditableFieldNames,
     collectSceneValidationPrecheckErrors,
     onTemplateFieldChange,
     relationFieldAdapter,

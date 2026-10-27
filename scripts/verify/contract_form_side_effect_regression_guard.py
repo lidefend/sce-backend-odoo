@@ -171,18 +171,22 @@ def main() -> int:
     else:
         compact_onchange = re.sub(r"\s+", "", onchange_body)
         for token in [
-            "constresponse=awaittriggerOnchange({",
+            "constresponse=await(context.requestOnchange||triggerOnchange)({",
             "normalizeOnchangeResponse(response)",
             "context.onchangeWarnings.value=warnings;",
             "context.onchangeLinePatches.value=linePatches;",
             "context.applyOnchangeLinePatches(linePatches);",
-            "catch{",
-            "Onchangepreservescurrentvalueswhentheoptionalroundtripfails.",
+            "catch(error){",
+            "ticket.sequence!==onchangeSequence",
+            "ticket.recordKey!==onchangeRecordKey(context.model.value,context.recordId.value)",
+            "Object.entries(ticket.snapshot).some(",
+            "context.validationErrors.value=[isContractGapError(error)?error.message",
+            "sanitizeUiErrorMessage(",
         ]:
             if token not in compact_onchange:
                 errors.append(f"runOnchangeRoundtrip missing behavior token: {token}")
         if "busyKind.value" in onchange_body:
-            errors.append("runOnchangeRoundtrip must stay silent and not own global busyKind")
+            errors.append("runOnchangeRoundtrip must not own global busyKind")
 
     # The action-feedback ownership predicate (owner.owns()) is part of the locked
     # duplicate-click boundary: a superseded run must not confirm, save or clobber state.

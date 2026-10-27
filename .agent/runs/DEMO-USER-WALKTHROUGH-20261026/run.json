@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "id": "DEMO-USER-WALKTHROUGH-20261026",
+  "branch": "audit/demo-user-walkthrough-20261026",
+  "baseline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
+  "status": "completed",
+  "goal": ".agent/goals/DEMO-USER-WALKTHROUGH-20261026.yaml",
+  "record": "docs/ops/iterations/demo_user_walkthrough_20261026.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DEMO-USER-WALKTHROUGH-20261026.yaml",
+    ".agent/runs/DEMO-USER-WALKTHROUGH-20261026/run.json",
+    "docs/ops/iterations/demo_user_walkthrough_20261026.md",
+    "docs/ops/iterations/system_function_gaps_20261026.md",
+    "docs/ops/iterations/demo_data_gaps_20261026.md",
+    "make/role_authority.mk",
+    "scripts/verify/daily_demo_walkthrough_ui.mjs",
+    "scripts/verify/daily_demo_walkthrough_policy.mjs",
+    "scripts/verify/daily_demo_walkthrough_policy.test.mjs",
+    "scripts/verify/daily_demo_walkthrough_contract_flow.mjs",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing daily demo duty sc-root/sc-demo-dev/sc_demo; original read-only snapshot plus owner-authorized serial bounded UI transactions, rebuild deferred"
+  },
+  "checks": {
+    "demo_walkthrough_write_policy": {
+      "target": "verify.daily.demo.walkthrough.policy",
+      "inputs": [
+        "make/role_authority.mk",
+        "scripts/verify/daily_demo_walkthrough_ui.mjs",
+        "scripts/verify/daily_demo_walkthrough_policy.mjs",
+        "scripts/verify/daily_demo_walkthrough_policy.test.mjs",
+        "scripts/verify/playwright_runtime.mjs",
+        "frontend/apps/web/scripts/bootstrap_inventory_policy.mjs",
+        "scripts/verify/daily_demo_walkthrough_contract_flow.mjs"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Audit complete: consume separate function/data registers for risk-selected fixes; rebuild Demo only in subsequent governed task. Do not replay any completed write checkpoint.",
+  "observations": {
+    "source_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
+    "evidence_root": ".runtime/demo-user-walkthrough-20261026",
+    "preexisting_dirty": [],
+    "prior_evidence": ".runtime/final-acceptance/user-delivery-baseline/execution.json; historical leads only unless inputs revalidated",
+    "validation_plan": "Existing tool guards, L0 runtime identity, nonzero targeted/entry observations, screenshots and independent finding review; no code delivery Quick needed for diagnosis-only task",
+    "expanded_scope": "Owner explicitly requests expose problems across all user-usable surfaces: retain 90-entry deep matrix, add actual131 published navigation leaves, additional user roles, forms/dialog affordances, reports/configuration and mobile. Reuse already observed unchanged11 primary pages; no blind rewrite or data repair.",
+    "owner_scope_delta": "2026-10-26 Owner explicitly requests complete walkthrough, authorizes modifying demo data during journeys, and defers rebuilding data until after walkthrough. Finish initial read-only snapshot before serial bounded writes; bind UUID/duty/recovery and preserve write ledger/readback. No product fix or reset implied.",
+    "write_tool_boundary": "P4 minimal bounded UI adapter through existing daily.demo.write.recovery_gate, same registered runtime/credentials and Playwright/policy. Explicit plan-bound created records only, no seed/reset/deploy/schema/product edits. Existing read-only observations are independent of new write tool; any changed data is subsequent phase.",
+    "write_phase": {
+      "authority": "Owner permits Demo changes during complete walkthrough; rebuild later",
+      "target": "sc-root / demo / sc-demo-dev / sc_demo / sc-demo-main / sc_demo_app / ^sc_demo$ / sc_demo_db_data + sc_demo_odoo_data",
+      "database_uuid": "c7ffe700-ce02-11f1-9a86-a213133df790",
+      "recovery_backup": "sc_demo-20261025T012344Z-b64644be",
+      "recovery_preflight": ".runtime/demo-user-walkthrough-20261026/write-recovery-preflight.log",
+      "containment_checks": ".runtime/demo-user-walkthrough-20261026/write-policy-registered.log",
+      "independent_review": "Three request-containment bypasses closed before any execution; 32 assertions. Unique-key response synchronization corrected. Local advisory receipt marks runtime reuse stale, not a runtime gate pass.",
+      "stage_barrier": "Primary 131 navigation and six-role observer complete; worker/opportunity/contract initial entries and new forms already observed. Remaining disjoint entry/form scans may continue; subsequent data observations are post-write and must not replace original zero-count facts.",
+      "plans": [
+        ".runtime/demo-user-walkthrough-20261026/worker-plan.json",
+        ".runtime/demo-user-walkthrough-20261026/opportunity-plan.json"
+      ],
+      "first_attempt_planned_at": "2026-10-25T21:17:51.417067+00:00",
+      "rebuild": "deferred; retain uniquely named created records and actual side effects, no seed reset or rewrite",
+      "latest_worker_checkpoint": ".runtime/demo-user-walkthrough-20261026/writes/worker-exit/report.json",
+      "worker_result": "Created id1, action_activate and action_exit via UI; final reload 已退场. Do not replay old checkpoints.",
+      "contract_flow": "UI new contract create/edit/submit followed by existing four approval seats and signer, exact new creation checkpoint, serialized through same recovery gate; never replay historical id6.",
+      "latest_contract_checkpoint": ".runtime/demo-user-walkthrough-20261026/writes/contract-approval-ui-03/report.json",
+      "opportunity_result": "opportunity1 converted, generated bid12; both actions HTTP200/ok; final opportunity readback bid_id12. Child chatter reads blocked by observer, not product failure.",
+      "contract_result": "UI create/edit/submit, four reviewers and signer all completed. Independent readback signed/12500, reviews692-695 approved; separate UI open+reload verified.",
+      "write_ledger": ".runtime/demo-user-walkthrough-20261026/write-ledger.json"
+    },
+    "matrix_result": {
+      "runtime_source": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
+      "complete": "complete",
+      "entry_count": 90,
+      "matrix_passed": false,
+      "problems": [
+        "smart_construction_core.menu_ui_menu_config_policy_business_config: runtime activated presentation \"admin\" ([data-product-page-mode=\"admin\"]) not declared in rendering_path: 后端 action context sc_web_route=/admin/menu-config → 菜单配置专用面板",
+        "authority: 20 selected entries have no eligible denied-role candidate whose released navigation was observed and whose capability closure is disjoint from the declared groups"
+      ],
+      "negative": [
+        {
+          "stage": "authority_negative_summary",
+          "candidates": [
+            "demo_role_project_read",
+            "demo_role_executive",
+            "demo_role_pm",
+            "demo_role_finance"
+          ],
+          "checked_entries": 70,
+          "uncovered_entries": 20
+        }
+      ],
+      "classification": {
+        "menu_config": "P4 manifest/adapter presentation token mismatch; current admin panel independently rendered. Not confirmed user malfunction.",
+        "negative_coverage": "20 entries lack eligible denied-role candidate; no security pass for those entries."
+      }
+    },
+    "coverage_summary": {
+      "navigation_leaf_count": 131,
+      "page_observed": 131,
+      "new_entry_observed": 130,
+      "enabled_create": 108,
+      "opened_forms": 106,
+      "failed_new_forms": 10,
+      "formal_matrix": {
+        "entries": 90,
+        "passed": false,
+        "negative_navigation_checked": 70,
+        "uncovered_negative": 20
+      }
+    },
+    "conclusion": {
+      "delivery_ready": false,
+      "functional_gap_groups": 17,
+      "functional_B1": 11,
+      "functional_B2": 6,
+      "data_gap_groups": 23,
+      "pending_function_leads": 3,
+      "audit_complete": true,
+      "mainline_changes": false,
+      "deployment_changes": false,
+      "demo_rebuilt": false
+    },
+    "verification_results": {
+      "policy_assertions": 51,
+      "policy_log": ".runtime/demo-user-walkthrough-20261026/policy-final.log",
+      "iteration_log": ".runtime/demo-user-walkthrough-20261026/iteration-final.log",
+      "entry_matrix": "complete_failed: admin presentation token mismatch +20 denied-role coverage gaps",
+      "readiness": "PASS before/after, limited 24hard/28presence + existing golden chain",
+      "independent_review": "review_quick_closeout: final contents/counts and bounded write changes reviewed; no unresolved audit blockers; product not accepted",
+      "archive_manifests": [
+        ".runtime/demo-user-walkthrough-20261026/archive-visual-manifest.json",
+        ".runtime/demo-user-walkthrough-20261026/archive-raw-manifest.json"
+      ]
+    },
+    "generated_evidence": "Repository commit hook refreshed and staged three derived inventory/complexity reports for new P4 verification assets; reviewed and registered, no product source changes."
+  }
+}

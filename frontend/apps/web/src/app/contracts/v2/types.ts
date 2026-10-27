@@ -225,6 +225,7 @@ export interface ContractV2FieldDescriptor {
   relationField?: string;
   selection?: Array<[string, string]>;
   domain?: unknown;
+  domainExpression?: unknown;
   context?: unknown;
   relationEntry?: ContractV2Dictionary;
   widgetOptions?: ContractV2Dictionary;
@@ -472,6 +473,7 @@ export interface ContractV2FieldGroups {
 }
 
 export interface ContractV2SourceContext {
+  formViewId?: number;
   context?: ContractV2Dictionary;
   domain?: unknown[];
   contextRaw?: string;
@@ -486,6 +488,8 @@ export interface ContractV2DataMeta extends ContractV2Dictionary {
   visibleFields?: ContractV2VisibleFields;
   fieldGroups?: ContractV2FieldGroups;
   sourceContext?: ContractV2SourceContext;
+  nativeModifierFieldTypes?: Record<string, string>;
+  nativeModifierRelationSnapshots?: Record<string, { sourceValue: unknown; persistedIds: number[] }>;
 }
 
 export interface ContractV2DataContract {

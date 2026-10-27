@@ -36,6 +36,9 @@ derivation:
       when: {widgets: [float_time]}
     - semantic: status
       when: {widgets: [statusbar, badge]}
+    - semantic: readable_value
+      when: {widgets: [account-tax-totals-field, payment, statinfo]}
+      reason: 会计只读摘要/统计载体（tax_totals、支付挂件、statinfo）是可读展示，不是可编辑的二进制或数字控件。
     - semantic: relation
       when: {field_types: [many2one]}
     - semantic: relation

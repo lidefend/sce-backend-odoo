@@ -1,0 +1,8 @@
+schema_version: 1
+goal:
+  id: DEMO-USER-WALKTHROUGH-20261026
+  title: User-perspective walkthrough of daily demo and separate delivery gap registers
+  status: completed
+  formal_product_layer: P4
+  layer_target: evidence-bound user walkthrough and iteration backlog
+  objective: Observe delivered demo user journeys and separately record system functional gaps and demo data gaps with reproducible evidence and follow-up acceptance criteria.

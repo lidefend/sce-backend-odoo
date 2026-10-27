@@ -10,6 +10,10 @@ from typing import Any
 
 _logger = logging.getLogger(__name__)
 
+from .native_relation_domain import compile_relation_domain
+from .native_modifier_comparison import compare_python_modifier
+from .native_modifier_context import evaluate_context_modifier, native_modifier_values, native_field_value
+
 from .field_presentation_usage import assert_field_body_usage, statically_hidden
 from .action_semantics_vocabulary import (
     EXECUTORS as ACTION_SEMANTICS_EXECUTORS,
@@ -472,6 +476,20 @@ ATTACHMENT_CONTAINER_KINDS = frozenset({"attachment", "attachments"})
 CONTAINER_GRID_COLUMNS_DEFAULT = 2
 CONTAINER_FIELD_CHILD_KIND = "field"
 CONTAINER_LEAF_KINDS = frozenset({"field", "widget", "button", "label", "text", "i"})
+_LEGACY_NATIVE_ALERT_TOKENS = frozenset({"alert", "alert-info", "alert-warning", "alert-danger"})
+def _normalize_feedback_condition(value: Any) -> Any:
+    """Strip assembler provenance keys the feedback validator does not accept."""
+    if isinstance(value, bool) or value is None:
+        return value
+    if isinstance(value, list):
+        return [_normalize_feedback_condition(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+    return {
+        key: _normalize_feedback_condition(item)
+        for key, item in value.items()
+        if key not in ("semantics", "raw")
+    }
 
 
 def declared_container_columns(node: dict[str, Any]) -> int | None:
@@ -1072,6 +1090,7 @@ def _assemble_ui_contract(
             native_layout_rows,
             fields_by_name,
             layout_type=layout_type,
+            model=model,
             form_subviews=form_subviews,
             component_keys=component_keys,
             container_status=contract["statusContract"]["containerStatus"],
@@ -1290,13 +1309,11 @@ def _assemble_ui_contract(
     ).lower()
     if effective_render_profile in {"create", "edit", "readonly"}:
         contract["statusContract"]["globalStatus"]["effectiveRenderProfile"] = effective_render_profile
-    effective_record_capabilities = _dict(form_capabilities.get("effectiveRecordCapabilities"))
-    if not effective_record_capabilities:
-        effective_record_capabilities = _ui_contract_permission_rights(_dict(source), _dict(ui))
-        if effective_record_capabilities:
-            contract["statusContract"]["globalStatus"]["effectiveRecordCapabilities"] = deepcopy(
-                effective_record_capabilities
-            )
+    effective_record_capabilities = _ui_contract_permission_rights(_dict(source), _dict(ui))
+    if effective_record_capabilities:
+        contract["statusContract"]["globalStatus"]["effectiveRecordCapabilities"] = deepcopy(
+            effective_record_capabilities
+        )
     if effective_render_profile == "create" and effective_record_capabilities.get("create") is not True:
         contract["statusContract"]["globalStatus"]["pageVisible"] = False
         contract["statusContract"]["globalStatus"]["pageAuth"] = "none"
@@ -1453,6 +1470,7 @@ def _assemble_native_form_projection(
         "view_type": "form",
         "title": deepcopy(page.get("title")),
         "head": deepcopy(_dict(page.get("head"))),
+        "view_ids_by_type": {"form": deepcopy(page.get("formViewId"))},
         "record_id": deepcopy(page.get("recordId")),
         "render_profile": deepcopy(page.get("renderProfile")),
         "domain": deepcopy(_list(page.get("domain"))),
@@ -1783,6 +1801,9 @@ def _view_column_schema_by_name(ui: dict[str, Any], view_type: str) -> dict[str,
 
 
 def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
+    field = deepcopy(field)
+    if isinstance(field.get("domain"), str) and field["domain"].strip():
+        field["domain_expression"] = compile_relation_domain(field["domain"])
     assert_field_body_usage(field, str(field.get("name") or "field"), hidden=statically_hidden(field))
     field_name = _stable_id(field.get("name"), "field")
     native_locator = _text(field.get("native_locator"))
@@ -1982,11 +2003,62 @@ def _direct_field_widgets_from_nodes(
     return widgets
 
 
+def _project_legacy_native_alert(node: dict[str, Any]) -> dict[str, Any] | None:
+    """Project Odoo legacy ``alert`` markup into an explicit feedback node."""
+    if node.get("componentKey"):
+        return None
+    attributes = _dict(node.get("attributes") or node.get("attrs"))
+    classes = {_text(item) for item in _text(attributes.get("class")).split() if item}
+    is_alert = any(item in classes for item in _LEGACY_NATIVE_ALERT_TOKENS)
+    if not is_alert and _text(attributes.get("role")).lower() != "alert":
+        return None
+    # A CSS alert class carries presentation, not business severity; the only
+    # derivable semantics is a generic advisory message.
+    purpose = "advisory"
+    source = None
+    for child in _list(node.get("children")):
+        if not isinstance(child, dict):
+            continue
+        kind = _text(child.get("type") or child.get("kind")).lower()
+        if kind == "field" or (kind in ("text", "div", "span", "label", "p") and _text(child.get("text"))):
+            source = child
+            break
+    if source is None:
+        raise ValueError("legacy native alert has no resolvable content source")
+    source_kind = _text(source.get("type") or source.get("kind")).lower()
+    if source_kind != "field":
+        if source.get("native_locator") and "nativeLocator" not in source:
+            source["nativeLocator"] = source.get("native_locator")
+        if source.get("occurrence_index") and "occurrenceIndex" not in source:
+            source["occurrenceIndex"] = _positive_int(source.get("occurrence_index"), 0)
+    if not _dict(source.get("sourceAuthority")):
+        source["sourceAuthority"] = {
+            "kind": "native_view",
+            "no_business_fact_authority": True,
+        }
+    source_id = _text(source.get("containerId") or source.get("widgetId"))
+    if not source_id:
+        raise ValueError("legacy native alert content source has no identity")
+    modifiers = _dict(node.get("modifiers"))
+    if not isinstance(modifiers.get("invisible"), (dict, bool)):
+        raise ValueError("legacy native alert has no declared visibility condition")
+    if isinstance(modifiers.get("invisible"), dict):
+        modifiers["invisible"] = _normalize_feedback_condition(modifiers["invisible"])
+        node["modifiers"] = modifiers
+    node["componentKey"] = "sc.feedback.message"
+    node["componentConfig"] = {
+        "purpose": purpose,
+        "contentRef": {"containerId": source_id},
+    }
+    return source
+
+
 def _normalize_native_layout_nodes(
     rows: list[dict[str, Any]],
     fields_by_name: dict[str, dict[str, Any]],
     *,
     layout_type: str,
+    model: str = "",
     form_subviews: dict[str, Any] | None = None,
     component_keys: set[str],
     container_status: list[dict[str, Any]],
@@ -2014,6 +2086,7 @@ def _normalize_native_layout_nodes(
             ("container_id", "containerId"),
             ("container_type", "containerType"),
             ("widget_id", "widgetId"),
+            ("source_authority", "sourceAuthority"),
         )
         for alias, canonical in alias_pairs:
             if alias in node and canonical not in node:
@@ -2115,6 +2188,7 @@ def _normalize_native_layout_nodes(
             source_children,
             fields_by_name,
             layout_type=layout_type,
+            model=model,
             form_subviews=form_subviews,
             component_keys=component_keys,
             container_status=container_status,
@@ -2124,6 +2198,7 @@ def _normalize_native_layout_nodes(
             container_ids=used_container_ids,
             root_level=False,
         )
+        _project_legacy_native_alert(node)
         for legacy_key in ("pages", "tabs", "nodes", "items"):
             node.pop(legacy_key, None)
         direct_widgets = _direct_field_widgets_from_nodes(
@@ -3266,7 +3341,8 @@ def _ui_data_source_extra_params(source: dict[str, Any], ui: dict[str, Any]) -> 
     domain = source.get("domain") or source_meta.get("domain") or ui.get("domain") or action.get("domain")
     if isinstance(domain, list):
         out.setdefault("domain", deepcopy(domain))
-    context = source.get("context") or source_meta.get("context") or ui.get("context") or action.get("context")
+    context = next((owner["context"] for owner in (source, source_meta, ui, action)
+                    if isinstance(owner.get("context"), dict)), None)
     if isinstance(context, dict):
         out.setdefault("context", deepcopy(context))
     order = source.get("order") or source_meta.get("order") or ui.get("order") or search_defaults.get("order")
@@ -3290,6 +3366,12 @@ def _ui_source_context(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, 
         out["contextRaw"] = _text(transport.get("context_raw"))
     if _text(transport.get("domain_raw")):
         out["domainRaw"] = _text(transport.get("domain_raw"))
+    form_meta = _dict(_dict(_dict(ui.get("views")).get("form")).get("meta"))
+    form_view_id = _positive_int(_dict(source.get("view_ids_by_type")).get("form"), 0)
+    if not form_view_id:
+        form_view_id = _positive_int(_dict(form_meta.get("projection_identity")).get("source_view_id"), 0)
+    if form_view_id:
+        out["formViewId"] = form_view_id
     source_meta = _dict(source.get("source_meta"))
     action = _dict(ui.get("action"))
     head = _dict(ui.get("head"))
@@ -3311,7 +3393,8 @@ def _ui_source_context(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, 
         render_profile = "readonly"
     if render_profile in {"create", "edit", "readonly"}:
         out["renderProfile"] = render_profile
-    context = source.get("context") or source_meta.get("context") or ui.get("context") or head.get("context") or action.get("context")
+    context = next((owner["context"] for owner in (source, source_meta, ui, head, action)
+                    if isinstance(owner.get("context"), dict)), None)
     if isinstance(context, dict):
         out.setdefault("context", deepcopy(context))
     domain = source.get("domain") or source_meta.get("domain") or ui.get("domain") or head.get("domain") or action.get("domain")
@@ -3323,8 +3406,6 @@ def _ui_source_context(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, 
 def _ui_contract_permission_rights(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, Any]:
     form_capabilities = _dict(_dict(_dict(ui.get("views")).get("form")).get("capabilities"))
     effective_record_capabilities = _dict(form_capabilities.get("effectiveRecordCapabilities"))
-    if effective_record_capabilities:
-        return effective_record_capabilities
     permission_sources = [
         _dict(_dict(ui.get("head")).get("permissions")),
         _dict(_dict(source.get("head")).get("permissions")),
@@ -3332,11 +3413,30 @@ def _ui_contract_permission_rights(source: dict[str, Any], ui: dict[str, Any]) -
         _dict(source.get("permissions")),
         _dict(source.get("permission_surface")),
     ]
-    rights: dict[str, Any] = {}
-    for row in permission_sources:
-        resolved = resolve_permission_rights(row)
-        if resolved:
-            return resolved
+    rights: dict[str, Any] = dict(effective_record_capabilities)
+    if not rights:
+        for row in permission_sources:
+            resolved = resolve_permission_rights(row)
+            if resolved:
+                rights = dict(resolved)
+                break
+    view_type = _text(ui.get("view_type") or source.get("view_type") or _dict(ui.get("head")).get("view_type")).split(",")[0].strip()
+    if rights and view_type in {"tree", "list", "kanban", "pivot", "graph", "calendar", "gantt", "activity"}:
+        # A model ACL is necessary but not sufficient for a collection's
+        # create entry. Consume the same native view/entry restrictions that
+        # the target form enforces; never grant rights from presentation.
+        context = _dict(_ui_source_context(source, ui).get("context"))
+        allowed = rights.get("create") is True
+        if "create" in context:
+            allowed = allowed and _modifier_true(context["create"])
+        if _modifier_true(context.get("no_create")):
+            allowed = False
+        views = _dict(ui.get("views"))
+        for kind in {view_type, "tree" if view_type == "list" else view_type, "form"}:
+            capabilities = _dict(_dict(views.get(kind)).get("capabilities"))
+            if "can_create" in capabilities:
+                allowed = allowed and _modifier_true(capabilities["can_create"])
+        rights["create"] = allowed
     return rights
 
 
@@ -3536,6 +3636,11 @@ def _apply_contextual_invisible_modifier(node: dict[str, Any], context: dict[str
     attributes = _dict(node.get("attributes"))
     attribute_modifiers = _dict(attributes.get("modifiers"))
     modifiers = _dict(node.get("modifiers"))
+    # Compiled expressions retain their declaration and bind context at final
+    # evaluation. Legacy raw-string folding must not overwrite that AST.
+    if any(isinstance(item, dict) for item in (node.get("invisible"),
+            modifiers.get("invisible"), attribute_modifiers.get("invisible"))):
+        return None
     candidates = [
         node.get("invisible"),
         attributes.get("invisible"),
@@ -4303,22 +4408,26 @@ def _evaluate_action_modifier(value: Any, record: dict[str, Any], *, strict: boo
     if isinstance(value, bool):
         return value
     if value is None or value == "":
-        return None if strict else False
+        return None
     if value in (0, "0", "false", "False"):
         return False
     if value in (1, "1", "true", "True"):
         return True
     if not isinstance(value, dict):
-        return None if strict else False
+        return None
     kind = _text(value.get("kind"))
+    if kind in {"value_truthy", "value_compare"}:
+        return evaluate_context_modifier(value, record)
     if kind == "static":
         static_value = value.get("value")
-        return static_value if isinstance(static_value, bool) else (None if strict else False)
+        return static_value if isinstance(static_value, bool) else None
     if kind == "not":
         resolved = _evaluate_action_modifier(value.get("expr"), record, strict=strict)
         return None if resolved is None else not resolved
     if kind in {"all", "any"}:
         values = [_evaluate_action_modifier(item, record, strict=strict) for item in _list(value.get("exprs"))]
+        if any(item is None for item in values):
+            return None
         if kind == "all":
             if False in values:
                 return False
@@ -4328,26 +4437,38 @@ def _evaluate_action_modifier(value: Any, record: dict[str, Any], *, strict: boo
         return False if values and all(item is False for item in values) else None
     field = _text(value.get("field"))
     if not field or field not in record:
-        return None if strict else False
+        return None
     if kind == "field_truthy":
-        return bool(record.get(field))
+        known, actual = native_field_value(record, field)
+        return bool(actual) if known else None
     if kind == "field_compare":
         value_field = _text(value.get("value_field"))
         if value_field:
             if value_field not in record:
-                return None if strict else False
+                return None
             expected = record.get(value_field)
         else:
+            if "value" not in value:
+                return None
             expected = value.get("value")
+        semantics = value.get("semantics")
+        if semantics == "python":
+            known, actual = native_field_value(record, field)
+            if value_field:
+                expected_known, expected = native_field_value(record, value_field)
+                known = known and expected_known
+            return compare_python_modifier(actual, _text(value.get("operator")), expected) if known else None
+        if semantics is not None:
+            return None
         compared = _compare_action_value(record.get(field), _text(value.get("operator")), expected)
-        return compared if strict or compared is not None else False
-    return None if strict else False
+        return compared
+    return None
 
 
 def _enforce_single_effective_primary_action(contract: dict[str, Any]) -> None:
     action_contract = _dict(contract.get("actionContract"))
     rows = _list(action_contract.get("actionRuleList"))
-    record = _dict(_dict(contract.get("dataContract")).get("mainData"))
+    record = native_modifier_values(contract)
     previous_resolution = _dict(action_contract.pop("primaryResolution", {}))
     previously_demoted = {
         _text(item.get("actionId"))
@@ -4507,7 +4628,7 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
     status_contract = _dict(contract.get("statusContract"))
     rows = _list(action_contract.get("actionRuleList"))
     statuses = _list(status_contract.get("buttonStatus"))
-    record = _dict(_dict(contract.get("dataContract")).get("mainData"))
+    record = native_modifier_values(contract)
     status_by_btn_id = {
         _text(status.get("btnId")): status
         for status in statuses
@@ -4669,7 +4790,7 @@ def hydrate_final_layout_modifier_status(contract: dict[str, Any]) -> None:
     layout = _dict(contract.get("layoutContract"))
     tree = _list(layout.get("containerTree"))
     status_contract = _dict(contract.get("statusContract"))
-    record = _dict(_dict(contract.get("dataContract")).get("mainData"))
+    record = native_modifier_values(contract)
     container_statuses = _list(status_contract.get("containerStatus"))
     widget_statuses = _list(status_contract.get("widgetStatus"))
     container_by_id = {

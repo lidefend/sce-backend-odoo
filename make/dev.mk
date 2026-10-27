@@ -1698,3 +1698,119 @@ acceptance.deployment.postverify.bundle: guard.prod.forbid
 .PHONY: local.test.baseline
 local.test.baseline: guard.prod.forbid
 	@python3 -m scripts.verify.test_baseline_contract --orm --output .runtime/test-baseline/orm
+
+.PHONY: verify.local.dev.workspace.feedback
+verify.local.dev.workspace.feedback: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.workspace.feedback.orm
+verify.local.dev.workspace.feedback.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.dev.test MODULE=smart_construction_core \
+	  TEST_TAGS=workspace_processing_feedback,company_project_refund_feedback_orm
+
+.PHONY: verify.local.dev.cost.feedback verify.local.dev.cost.feedback.orm
+verify.local.dev.cost.feedback: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_SCOPE=cost bash scripts/verify/local_dev_workspace_feedback.sh
+
+verify.local.dev.cost.feedback.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.dev.test MODULE=smart_construction_core \
+	  TEST_TAGS=cost_processing_feedback,workspace_processing_feedback,company_project_refund_feedback_orm
+
+.PHONY: verify.local.dev.conditioned.feedback.orm
+verify.local.dev.conditioned.feedback.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.dev.test MODULE=smart_construction_core \
+	  TEST_TAGS=conditioned_processing_feedback,cost_processing_feedback,workspace_processing_feedback,company_project_refund_feedback_orm
+
+.PHONY: verify.local.dev.conditioned.feedback
+verify.local.dev.conditioned.feedback: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_SCOPE=conditioned bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.approval.feedback.orm
+verify.local.dev.approval.feedback.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.dev.test MODULE=smart_construction_core \
+	  TEST_TAGS=approval_policy_feedback,conditioned_processing_feedback,cost_processing_feedback,workspace_processing_feedback,company_project_refund_feedback_orm
+
+.PHONY: verify.local.dev.approval.feedback
+verify.local.dev.approval.feedback: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_SCOPE=approval bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.usability
+verify.local.dev.usability: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_SCOPE=usability SC_FEEDBACK_ACTOR="$(or $(SC_FEEDBACK_ACTOR),demo_full)" bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.create_authority
+verify.local.dev.create_authority: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_SCOPE=create-authority bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.certificate
+verify.local.dev.certificate: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_SCOPE=certificate SC_CERTIFICATE_MENUS="$(or $(SC_CERTIFICATE_MENUS),356,708)" bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.analysis
+verify.local.dev.analysis: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_SCOPE=analysis SC_ANALYSIS_VIEWS="$(or $(SC_ANALYSIS_VIEWS),pivot,graph)" bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.payroll
+verify.local.dev.payroll: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_SCOPE=payroll bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.native_child.draft verify.local.dev.native_child.syntax
+verify.local.dev.native_child.syntax: guard.prod.forbid
+	@node --check scripts/verify/local_dev_workspace_feedback.mjs
+	@bash -n scripts/verify/local_dev_workspace_feedback.sh
+
+verify.local.dev.native_child.draft: guard.prod.forbid verify.local.dev.native_child.syntax local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_SCOPE=native-child bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.journal.draft
+verify.local.dev.journal.draft: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_SCOPE=journal-draft bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: verify.local.dev.journal.save verify.local.dev.journal.save.run verify.local.dev.journal.save.policy
+verify.local.dev.journal.save.policy: guard.prod.forbid
+	@node --test scripts/verify/test_local_dev_journal_save_policy.mjs
+	@python3 scripts/verify/test_local_dev_journal_recovery.py
+	@bash -n scripts/verify/local_dev_workspace_feedback.sh
+	@node --check scripts/verify/local_dev_workspace_feedback.mjs
+verify.local.dev.journal.save: guard.prod.forbid verify.local.dev.journal.save.policy
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "journal-draft-save" -- $(MAKE) --no-print-directory verify.local.dev.journal.save.run
+verify.local.dev.journal.save.run: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health local.dev.write_lease.require
+	@test "$(CONFIRM_LOCAL_DEV_JOURNAL_SAVE)" = "CREATE_READBACK_CLEANUP_ONE_DRAFT"
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_LOCAL_DEV_WRITE_LEASE_TOKEN="$(SC_LOCAL_DEV_WRITE_LEASE_TOKEN)" CONFIRM_LOCAL_DEV_JOURNAL_SAVE="$(CONFIRM_LOCAL_DEV_JOURNAL_SAVE)" \
+	  SC_FEEDBACK_ACTOR="$(or $(SC_FEEDBACK_ACTOR),demo_full)" SC_FEEDBACK_EXPECTED_UID="$(or $(SC_FEEDBACK_EXPECTED_UID),40)" SC_FEEDBACK_SCOPE=journal-save bash scripts/verify/local_dev_workspace_feedback.sh
+
+.PHONY: local.dev.journal.recovery local.dev.journal.recovery.run
+local.dev.journal.recovery: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "journal-owned-recovery" -- $(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" local.dev.journal.recovery.run
+local.dev.journal.recovery.run: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.write_lease.require
+	@case "$(SC_CONFIRM_JOURNAL_RECOVERY)" in READBACK_CLEANUP_OWNED_DRAFT_13|PREFLIGHT_CLEANUP_ONE_OWNED_DRAFT) ;; *) exit 1 ;; esac
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  SC_RUNTIME_JOURNAL_ACTOR="$(SC_FEEDBACK_ACTOR)" SC_RUNTIME_JOURNAL_ACTOR_UID="$(SC_FEEDBACK_EXPECTED_UID)" \
+	  SC_CONFIRM_JOURNAL_RECOVERY="$(SC_CONFIRM_JOURNAL_RECOVERY)" SC_RUNTIME_JOURNAL_RECOVERY="$(SC_RUNTIME_JOURNAL_RECOVERY)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_journal_recovery.py
+
+.PHONY: verify.local.dev.journal.role
+verify.local.dev.journal.role: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+	@test "$(SC_FEEDBACK_ACTOR)" = demo_role_finance -o "$(SC_FEEDBACK_ACTOR)" = demo_role_project_read -o "$(SC_FEEDBACK_ACTOR)" = sc_demo_accounting_manager -o "$(SC_FEEDBACK_ACTOR)" = sc_demo_accounting_read -o "$(SC_FEEDBACK_ACTOR)" = sc_demo_accounting_user
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_FEEDBACK_VIEWPORT="$(SC_FEEDBACK_VIEWPORT)" SC_FEEDBACK_SCOPE=journal-role SC_FEEDBACK_ACTOR="$(SC_FEEDBACK_ACTOR)" SC_FEEDBACK_EXPECTED_UID="$(SC_FEEDBACK_EXPECTED_UID)" bash scripts/verify/local_dev_workspace_feedback.sh
+
+# Fixed demo accounting identity observation: no permission or credential writes.
+.PHONY: local.dev.journal.role.identities
+local.dev.journal.role.identities: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ODOO_SHELL_RUN_ISOLATED=1 \
+	  SC_CONFIRM_JOURNAL_RECOVERY=READ_ONLY_ACCOUNTING_ROLE_IDENTITIES \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  odoo.shell.exec < scripts/verify/local_dev_journal_recovery.py

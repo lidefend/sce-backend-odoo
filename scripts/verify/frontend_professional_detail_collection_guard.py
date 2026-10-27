@@ -280,9 +280,9 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection search lifecycle is not explicitly controlled")
     if "data-relation-query-state=\"error\"" not in cell_editor or "@click=\"$emit('retry')\"" not in cell_editor:
         failures.append("detail collection relation failure does not expose retry")
-    if "analyzeDynamicRelationDomain" not in relation_descriptor or "relationDomainSupported" not in relation_utils:
+    if "if (!analysis.supported) throw contractGapError(" not in relation_descriptor:
         failures.append("unsupported detail relation domains do not fail closed")
-    if "rowKey: string" not in relation_types or "rowValues[normalized] ?? formData[normalized]" not in relation_runtime:
+    if "rowKey: string" not in relation_types or "rowValues[normalized]" not in relation_runtime:
         failures.append("detail collection relation domain is not bound to the current row and parent form")
     if "one2manyCellError" not in relation_types or 'role="alert"' not in cell_editor:
         failures.append("detail collection cell validation is not associated with its control")

@@ -544,3 +544,61 @@ class TestHrPayrollNativeLowcode(TransactionCase):
         form = record.contract_json["view_orchestration"]["views"]["form"]
         self.assertNotIn("sections", form)
         self.assertNotIn("fields", form)
+
+    def test_mixed_payroll_display_uses_each_fact_and_tracks_dependencies(self):
+        model = self.env["sc.hr.payroll.document"]
+        salary = model.new({"fact_type": "salary_registration", "period_year": 2026,
+                            "period_month": 10, "net_salary": 8200, "amount": 99})
+        self.assertEqual(salary.payroll_display_period, "2026-10")
+        self.assertEqual(salary.payroll_display_amount, 8200)
+        salary.net_salary = 8300
+        salary.period_month = 11
+        self.assertEqual(salary.payroll_display_amount, 8300)
+        self.assertEqual(salary.payroll_display_period, "2026-11")
+        salary.period_month = False
+        self.assertFalse(salary.payroll_display_period)
+        for fact_type in ("subsidy", "bonus"):
+            row = model.new({"fact_type": fact_type, "occurrence_date": "2026-10-20",
+                             "amount": 1200, "net_salary": 99, "period_year": 2020, "period_month": 1})
+            self.assertEqual(row.payroll_display_period, "2026-10-20")
+            self.assertEqual(row.payroll_display_amount, 1200)
+            row.amount = 1500
+            row.occurrence_date = "2026-10-21"
+            self.assertEqual(row.payroll_display_amount, 1500)
+            self.assertEqual(row.payroll_display_period, "2026-10-21")
+            row.occurrence_date = False
+            self.assertFalse(row.payroll_display_period)
+            self.assertEqual(row.net_salary, 99, "display must not overwrite source values")
+        salary.fact_type = "bonus"
+        self.assertEqual(salary.payroll_display_amount, 99)
+        self.assertFalse(salary.payroll_display_period)
+        for name in ("payroll_display_period", "payroll_display_amount"):
+            self.assertFalse(model._fields[name].store)
+            self.assertTrue(model._fields[name].readonly)
+
+    def test_mixed_payroll_native_collection_keeps_sibling_entries(self):
+        from odoo.tools.convert import convert_file
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+        convert_file(self.env, "smart_construction_core", "views/menu_product_administration_wave1.xml", {}, mode="update", noupdate=False)
+        action = self.ref("action_sc_payroll_management")
+        self.assertEqual(action.view_id, self.ref("view_sc_payroll_management_tree"))
+        self.assertEqual(action.views[0], (action.view_id.id, "tree"))
+        self.assertEqual(action.domain, "[('fact_type', 'in', ['salary_registration', 'subsidy', 'bonus'])]")
+        for key in ("action_sc_payroll_management", "action_sc_product_project_payroll_v1", "action_sc_product_social_fund_v1"):
+            entry = self.ref(key)
+            response = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+                "op": "action_open", "action_id": entry.id, "view_type": "tree", "contract_surface": "user",
+            })
+            response = response.to_legacy_dict() if hasattr(response, "to_legacy_dict") else response
+            self.assertTrue(response.get("ok"), response)
+            profile = response["data"]["layoutContract"]["listProfile"]
+            columns = profile.get("fact_columns") or profile.get("columns") or []
+            if key == "action_sc_payroll_management":
+                for name in ("document_no", "fact_type", "payroll_display_period", "payroll_display_amount"):
+                    self.assertIn(name, columns)
+                self.assertEqual(columns[:4], ["document_no", "fact_type", "payroll_display_period", "payroll_display_amount"])
+                for name in ("period_year", "period_month", "net_salary"):
+                    self.assertNotIn(name, columns)
+            else:
+                self.assertNotEqual(entry.view_id, action.view_id)
+                self.assertNotIn("payroll_display_amount", columns)

@@ -5,6 +5,25 @@ from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
 
+_PROCESSING_ADVISORY_FEEDBACK = {
+    "purpose": "advisory",
+    "occurrences": [{
+        "view_xmlid": "smart_construction_core.view_sc_current_account_workspace_form",
+        "native_locator": "/form[1]/sheet[1]/div[1]/field[1]",
+        "occurrence_index": 1,
+    }],
+}
+
+_PROCESSING_ADVISORY_REVIEW = {
+    "purpose": "advisory",
+    "inputs": [
+        {"field": "partner_id", "type": "many2one_presence"},
+        {"field": "business_date", "type": "date"},
+        {"field": "note", "type": "text"},
+    ],
+}
+
+
 class ScCurrentAccountWorkspace(models.TransientModel):
     _name = "sc.current.account.workspace"
     _inherit = ["sc.context.workspace.entry.authority"]
@@ -12,10 +31,12 @@ class ScCurrentAccountWorkspace(models.TransientModel):
     _sc_dispatch_menu_xmlid = "smart_construction_core.menu_sc_product_current_account_v1"
 
     project_id = fields.Many2one("project.project", string="项目", required=True)
-    partner_id = fields.Many2one("res.partner", string="承包人/往来单位", help='办理承包人借还款前请选择承包人/往来单位')
+    partner_id = fields.Many2one("res.partner", string="承包人/往来单位", default=False, help='办理承包人借还款前请选择承包人/往来单位')
     business_date = fields.Date(string="办理日期", default=fields.Date.context_today, help='建议补充办理日期')
-    note = fields.Text(string="办理说明", help='建议补充办理说明')
-    processing_advisory = fields.Char(string="办理提示", compute="_compute_processing_advisory", sc_ui_usage="interaction")
+    note = fields.Text(string="办理说明", default=False, help='建议补充办理说明')
+    processing_advisory = fields.Char(string="办理提示", compute="_compute_processing_advisory", sc_ui_usage="interaction",
+        sc_feedback_usage=_PROCESSING_ADVISORY_FEEDBACK,
+    )
 
     @api.depends("partner_id", "business_date", "note")
     def _compute_processing_advisory(self):
@@ -28,6 +49,8 @@ class ScCurrentAccountWorkspace(models.TransientModel):
             if not record.note:
                 suggestions.append("建议补充办理说明")
             record.processing_advisory = "；".join(suggestions) if suggestions else ""
+
+    _compute_processing_advisory._sc_feedback_evaluation_review = _PROCESSING_ADVISORY_REVIEW
 
     def _sc_readable_context_name(self):
         self.ensure_one()

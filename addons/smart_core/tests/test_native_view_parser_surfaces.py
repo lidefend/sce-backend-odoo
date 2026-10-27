@@ -26,6 +26,9 @@ class _ElementWrapper:
     def get(self, key, default=None):
         return self._element.get(key, default)
 
+    def itertext(self):
+        return self._element.itertext()
+
     def getparent(self):
         return self._parent
 
@@ -247,6 +250,28 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.tree_form_parser = _TreeFormParserProbe()
         self.base_parser = _BaseParserProbe()
 
+    def test_analysis_fields_use_native_metadata_and_xml_label_precedence(self):
+        metadata = {
+            "state": {"string": "状态", "type": "selection", "selection": [("draft", "草稿")]},
+            "amount": {"string": "金额", "type": "monetary"},
+        }
+        for view_type in ("pivot", "graph"):
+            with self.subTest(view_type=view_type):
+                result = getattr(self.kanban_parser, "_parse_" + view_type + "_view")(
+                    '<%s><field name="state"/><field name="amount" type="measure"/>'
+                    '<measure name="amount" string="自定义金额"/></%s>' % (view_type, view_type), metadata)
+                dimension = result["dimensions"][0]
+                self.assertEqual(dimension["label"], "状态")
+                self.assertEqual(dimension["fieldType"], "selection")
+                self.assertEqual(dimension["selection"], metadata["state"]["selection"])
+                self.assertEqual(result["measures"][0]["label"], "金额")
+                self.assertEqual(result["measures"][0]["fieldType"], "monetary")
+                self.assertEqual(result["measures"][1]["label"], "自定义金额")
+                missing = getattr(self.kanban_parser, "_parse_" + view_type + "_view")(
+                    '<%s><field name="unknown"/></%s>' % (view_type, view_type), {})
+                self.assertIsNone(missing["dimensions"][0]["label"])
+                self.assertIsNone(missing["dimensions"][0]["fieldType"])
+
     def test_calendar_parser_preserves_native_slots_and_fields(self):
         result = self.parser._parse_calendar_view(
             """
@@ -446,6 +471,7 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
                 "field": "state",
                 "operator": "==",
                 "value": "done",
+                "semantics": "python",
                 "raw": "state == 'done'",
             }
         })
@@ -475,6 +501,68 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
             "operator": "==",
             "value": "done",
         })
+
+    def test_inline_nodes_preserve_identity_conditions_and_text_order(self):
+        root = _parse_test_xml('<form><div>开始<span invisible="not until">结束于'
+                               '<b readonly="True">日期</b>（包含）</span>'
+                               '<a href="#outstanding">未结清项</a>尾注</div></form>')
+        div = self.tree_form_parser._node_to_layout_from_dom(list(root)[0], {})
+        span, anchor, tail = div["children"]
+        self.assertEqual(span["native_locator"], "/form[1]/div[1]/span[1]")
+        self.assertEqual(span["occurrence_index"], 1)
+        self.assertEqual(span["modifiers"]["invisible"], {"kind": "not", "expr": {"kind": "field_truthy", "field": "until"}, "raw": "not until"})
+        self.assertEqual(span["text"], "结束于")
+        self.assertEqual(span["children"][0]["text"], "日期")
+        self.assertTrue(span["children"][0]["modifiers"]["readonly"])
+        self.assertEqual(span["children"][1]["text"], "（包含）")
+        self.assertEqual(anchor["native_locator"], "/form[1]/div[1]/a[1]")
+        self.assertEqual(anchor["attributes"]["href"], "#outstanding")
+        self.assertEqual(tail["text"], "尾注")
+
+    def test_native_button_static_body_label_and_explicit_precedence(self):
+        parser = self.tree_form_parser
+        resolve = super(_TreeFormParserProbe, parser)._resolve_action_label
+        for arch, expected in (
+            ('<button name="activate">启用<span>货币</span></button>', '启用货币'),
+            ('<button name="activate" string="显式">正文</button>', '显式'),
+            ('<button name="activate" title="标题">正文</button>', '标题'),
+            ('<button name="activate">金额<field name="amount"/></button>', ''),
+            ('<button name="activate">提示<widget name="dynamic"/></button>', ''),
+            ('<button name="activate">前缀<span invisible="hidden">动态文字</span></button>', ''),
+            ('<button name="activate"><span t-if="value">动态文字</span></button>', ''),
+            ('<button name="activate"><span hidden="hidden">隐藏</span></button>', ''),
+            ('<button name="activate"><span style="display:none">隐藏</span></button>', ''),
+            ('<button name="activate"><span class="d-none">隐藏</span></button>', ''),
+        ):
+            with self.subTest(arch=arch):
+                self.assertEqual(resolve(_parse_test_xml(arch), "activate"), expected)
+
+    def test_child_form_only_data_declaration_keeps_type_and_scope(self):
+        self.tree_form_parser._safe_relation_fields_for_subview = lambda _relation: {
+            "name": {"type": "char"}, "internal_note": {"type": "char"},
+        }
+        root = _parse_test_xml('<form><field name="line_ids"><tree><field name="name"/></tree>'
+                               '<form><group><field name="internal_note" invisible="1" readonly="1" force_save="1"/></group></form>'
+                               '</field></form>')
+        entry = self.tree_form_parser._collect_x2many_subviews_from_dom(
+            root, {"line_ids": {"type": "one2many", "relation": "test.line"}},
+        )["line_ids"]
+        node = entry["form"]["layout"][0]["children"][0]
+        self.assertEqual(node["name"], "internal_note")
+        self.assertEqual(node["fieldInfo"]["type"], "char")
+        self.assertEqual(node["attributes"]["force_save"], "1")
+        self.assertNotIn("internal_note", [row.get("name") if isinstance(row, dict) else row for row in entry["tree"]["columns"]])
+
+    def test_tree_hidden_force_save_is_declared_without_becoming_editable(self):
+        result = self.tree_form_parser._parse_tree_view(
+            '<tree><field name="hidden_value" invisible="1" readonly="1" force_save="1"/></tree>',
+            {"hidden_value": {"type": "char"}},
+        )
+        self.assertIn("hidden_value", result["columns"])
+        occurrence = result["column_occurrences"][0]
+        self.assertEqual(occurrence["attributes"]["force_save"], "1")
+        self.assertTrue(occurrence["modifiers"]["readonly"])
+        self.assertTrue(occurrence["modifiers"]["invisible"])
 
     def test_form_field_keeps_raw_and_normalized_modifier_values(self):
         element = _parse_test_xml(
@@ -510,6 +598,34 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
                 "readonly_empty_text": "尚未生成",
             },
         )
+
+    def test_native_analytic_widget_declares_readonly_weighted_relation(self):
+        expected = {'kind': 'weighted_relation', 'version': 1,
+                    'relation_model': 'account.analytic.account', 'label_field': 'display_name',
+                    'key_encoding': 'csv_ids', 'value_unit': '%', 'mode': 'readonly', 'empty_text': '未分配'}
+        self.assertEqual(self.tree_form_parser._field_widget_semantics('any_field', 'analytic_distribution', {}), expected)
+        schema = self.tree_form_parser._tree_column_schema('any_field', {'type': 'json'}, {'widget': 'analytic_distribution'})
+        self.assertEqual(schema['widget_semantics'], expected)
+        self.assertNotIn('kind', self.tree_form_parser._field_widget_semantics('analytic_distribution', '', {}))
+        tree = self.tree_form_parser._parse_tree_view(
+            '<tree><field name="same" widget="analytic_distribution"/><field name="same" widget="json"/></tree>',
+            {'same': {'type': 'json', 'string': '分配'}},
+        )
+        self.assertEqual(tree['column_occurrences'][0]['widget_semantics'], expected)
+        self.assertNotIn('widget_semantics', tree['column_occurrences'][1])
+
+
+    def test_root_analytic_semantics_without_options_and_occurrence_isolation(self):
+        fields = {'same': {'type': 'json', 'string': 'Allocation'}}
+        for widget in ('analytic_distribution', 'json'):
+            element = _parse_test_xml(f'<field name="same" widget="{widget}"/>')
+            dom = self.tree_form_parser._node_to_layout_from_dom(element, fields, list(element.iter()))
+            converted = self.tree_form_parser._convert_node_to_layout(
+                {'tag': 'field', 'attributes': {'name': 'same', 'widget': widget}}, fields)
+            for layout in (dom, converted):
+                semantics = layout['fieldInfo'].get('widget_semantics', {})
+                self.assertEqual(semantics.get('kind'), 'weighted_relation' if widget == 'analytic_distribution' else None)
+        self.assertNotIn('widget_semantics', fields['same'])
 
     def test_field_widget_semantics_rejects_invalid_readonly_empty_text(self):
         for value in ("", " " * 4, 42, "x" * 81):
@@ -734,6 +850,7 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
                 "field": "state",
                 "operator": "==",
                 "value": "done",
+                "semantics": "python",
                 "raw": "state == 'done'",
             }
         })

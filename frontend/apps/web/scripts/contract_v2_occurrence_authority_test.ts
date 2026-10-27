@@ -17,9 +17,11 @@
  * index or a button verdict read as field authority each change an expectation.
  */
 import assert from 'node:assert/strict';
-import { computed, ref } from 'vue';
+import { isContractGapError } from '../src/app/contract/contractGap';
+import { computed, reactive, ref } from 'vue';
 import { createContractV2Store } from '../src/app/contracts/v2/store';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
+import { useRecordFormFieldSchemas } from '../src/pages/contractForm/useRecordFormFieldSchemas';
 import { useRecordFormLayout } from '../src/pages/contractForm/useRecordFormLayout';
 
 const VISIBLE_BUTTON_IDENTITY = 'native_button:object:action_sc_submit:/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/button[5]:1';
@@ -72,7 +74,7 @@ const snapshot = {
     // declared stage fields and the declared stage actions, in declared order.
     containerTree: [{
       containerId: 'container.native.0', containerType: 'container', type: 'container',
-      title: '', span: 24, styleToken: 'd-flex flex-wrap gap-2', children: [
+      title: '', span: 24, columns: 2, styleToken: 'd-flex flex-wrap gap-2', children: [
         buttonNode('action_sc_submit', VISIBLE_BUTTON_IDENTITY, 5),
         buttonNode('action_sc_start', HIDDEN_BUTTON_IDENTITY, 4),
         fieldNode('sc_approval_state', 'field.sc_approval_state.occ.1', 1),
@@ -143,6 +145,34 @@ const snapshot = {
   },
 };
 
+
+// A structural group's fetch-time predicate must follow the same live draft
+// used by the controls. Neither static hiding nor authority may be released.
+for (const [id, reason, disabled, staticHidden, dependency] of [
+  ['dynamic', 'NATIVE_MODIFIER_INVISIBLE', false, false, 'category'],
+  ['authority', 'POLICY_HIDDEN', false, false, 'category'],
+  ['disabled', 'NATIVE_MODIFIER_INVISIBLE', true, false, 'category'],
+  ['static', 'NATIVE_MODIFIER_INVISIBLE', false, true, 'category'],
+  ['unresolved', 'NATIVE_MODIFIER_UNRESOLVED', true, false, 'category'],
+] as const) {
+  snapshot.layoutContract.containerTree[0].children.push({
+    containerId: id, containerType: 'group', type: 'group', title: id,
+    nativeLocator: '/form[1]/sheet[1]/group[' + id + ']', occurrenceIndex: 1,
+    visible: !staticHidden, span: 24, columns: 2,
+    children: id === 'dynamic' ? [fieldNode('group_content', 'field.group_content.occ.1', 1)] : [], widgetList: [],
+    modifiers: {invisible: {kind: 'field_compare', field: dependency, operator: '!=', value: 'fund'}},
+  } as never);
+  snapshot.statusContract.containerStatus.push({
+    containerId: id, visible: false, disabled, reasonCode: reason,
+  });
+}
+snapshot.statusContract.widgetStatus.push({
+  widgetId: 'field.group_content.occ.1', visible: true, readonly: true, required: false, disabled: false, auth: 'read',
+});
+const draft = reactive<Record<string, unknown>>({
+  lifecycle_state: 'draft', sc_approval_state: 'draft', validation_status: 'no', category: 'salary',
+});
+
 const store = createContractV2Store(decodeContractV2Snapshot(snapshot));
 
 assert.equal(
@@ -165,11 +195,13 @@ assert.equal(
 // The store starts empty and is published once the record form is mounted, as
 // the real page does: the layout must consume the contract that arrives.
 const storeRef = ref<typeof store | null>(null);
+let liveModifierValues: (() => Record<string, unknown>) | undefined;
 const layout = useRecordFormLayout({
   v2ContractStore: storeRef,
   contractVisibleFields: computed(() => [] as string[]),
   onchangeModifiersPatch: ref<Record<string, Record<string, unknown>>>({}),
-  formData: { lifecycle_state: 'draft', sc_approval_state: 'draft', validation_status: 'no' },
+  formData: draft,
+  modifierValues: () => liveModifierValues ? liveModifierValues() : draft,
   isQuickIntakeMode: computed(() => false),
   contractFieldLabel: (name: string) => name,
   fieldSemanticMeta: () => ({}),
@@ -249,4 +281,148 @@ assert.equal(unknown.reasonCode, 'V2_OCCURRENCE_STATUS_MISSING', 'and it must sa
 const plainField = layout.runtimeOccurrenceState({ type: 'field', name: 'partner_id' } as never);
 assert.equal(plainField.invisible, false, 'a non-occurrence node keeps the field-name runtime state path');
 
-console.log('[contract_v2_occurrence_authority_test] PASS declared authority consumption cases=14');
+
+const dynamic = nodeByContainerId('dynamic') as never;
+assert.equal(layout.isNativeLayoutNodeVisible(dynamic), false);
+draft.category = 'fund';
+assert.equal(layout.runtimeOccurrenceState(dynamic).invisible, false);
+assert.equal(layout.isNativeLayoutNodeVisible(dynamic), true);
+assert(layout.baseNativeFormLayoutNodes.value.some(node =>
+  JSON.stringify(node).includes('"containerId":"dynamic"')), 'live group reaches the rendered tree');
+for (const id of ['authority', 'disabled', 'static', 'unresolved']) {
+  assert.equal(layout.isNativeLayoutNodeVisible(nodeByContainerId(id) as never), false, id);
+}
+draft.category = 'salary';
+assert.equal(layout.isNativeLayoutNodeVisible(dynamic), false, 'switching back hides the group');
+assert(!JSON.stringify(layout.baseNativeFormLayoutNodes.value).includes('"containerId":"dynamic"'));
+console.log('[contract_v2_occurrence_authority_test] PASS declared authority and reactive container cases');
+
+// Missing dependencies are a visible contract defect under the strict engine,
+// not an ordinary hidden group. Keep this negative case isolated from valid trees.
+const missingDependencySnapshot = structuredClone(snapshot);
+const missingNode = missingDependencySnapshot.layoutContract.containerTree[0].children.find((node) => node.containerId === 'dynamic')!;
+missingNode.modifiers = { invisible: { kind: 'field_compare', field: 'absent_category', operator: '!=', value: 'fund' } };
+storeRef.value = createContractV2Store(decodeContractV2Snapshot(missingDependencySnapshot));
+const missingTarget = collect(layout.runtimeNativeFormLayoutNodes() as unknown as Array<Record<string, unknown>>)
+  .find((node) => node.containerId === 'dynamic')!;
+assert.throws(() => layout.isNativeLayoutNodeVisible(missingTarget as never), { name: 'ContractGapError' });
+storeRef.value = store;
+
+// Exercise the actual mounted layout hook, including its container dependency
+// check, with a declared context and hostile same-name draft/model fields.
+const contextual = structuredClone(snapshot);
+const contextualNode = contextual.layoutContract.containerTree[0].children.find((node) => node.containerId === 'dynamic')!;
+contextualNode.modifiers = { invisible: { kind: 'not', expr: {
+  kind: 'value_truthy', semantics: 'python', value_expr: { kind: 'context_get', key: 'show_group', default: true },
+} } };
+contextual.dataContract.mainData['$native.context'] = { show_group: false };
+draft['$native.context'] = { show_group: false };
+for (const [context, expectedVisible] of [[{}, true], [{ show_group: true }, true], [{ show_group: false }, false]] as const) {
+  contextual.dataContract.dataMeta.sourceContext = { context };
+  storeRef.value = createContractV2Store(decodeContractV2Snapshot(contextual));
+  const target = collect(layout.runtimeNativeFormLayoutNodes() as unknown as Array<Record<string, unknown>>)
+    .find((node) => node.containerId === 'dynamic')!;
+  assert.equal(layout.runtimeOccurrenceState(target as never).invisible, !expectedVisible);
+  assert.equal(layout.isNativeLayoutNodeVisible(target as never), expectedVisible);
+}
+delete contextual.dataContract.dataMeta.sourceContext;
+storeRef.value = createContractV2Store(decodeContractV2Snapshot(contextual));
+assert.throws(() => layout.evaluateNativeModifierValue(contextualNode.modifiers.invisible), { name: 'ContractGapError' });
+console.log('[contract_v2_occurrence_authority_test] PASS native context binding count=4');
+
+// Restore a valid contract before the reactive scheduler flushes the fixture.
+storeRef.value = store;
+delete draft['$native.context'];
+
+const { useOne2manyRuntime } = await import('../src/pages/contractForm/useOne2manyRuntime');
+const collectionStore = structuredClone(snapshot);
+collectionStore.dataContract.dataMeta.nativeModifierFieldTypes = { line_ids: 'one2many' };
+storeRef.value = createContractV2Store(decodeContractV2Snapshot(collectionStore));
+const collectionRows = useOne2manyRuntime({ model: () => 'x.document', recordId: () => 7,
+  originalValues: () => ({ line_ids: [42] }), parentValues: () => ({}), onchangeLinePatches: () => [],
+  resolveColumns: () => [{ name: 'name', label: 'Name', ttype: 'char' }], resolvePrimaryColumn: () => 'name',
+  resolveRelationOptions: () => [], markFieldChanged: () => {},
+});
+liveModifierValues = () => collectionRows.projectModifierValues({ line_ids: [[0, 0, { name: 'New' }]], '$native.fieldTypes': { line_ids: 'one2many' } });
+collectionRows.initRows('line_ids', [42]);
+assert.equal(layout.evaluateNativeModifierValue({ kind: 'field_truthy', field: 'line_ids' }), true);
+collectionRows.removeRow('line_ids', 'o2m_id_42');
+assert.equal(layout.evaluateNativeModifierValue({ kind: 'field_truthy', field: 'line_ids' }), false);
+collectionRows.restoreRow('line_ids', 'o2m_id_42');
+assert.equal(layout.evaluateNativeModifierValue({ kind: 'field_truthy', field: 'line_ids' }), true);
+liveModifierValues = undefined;
+storeRef.value = store;
+console.log('native layout live collection projection: passed');
+
+// Required validation follows occurrence editability, not a flattened model flag.
+const requiredNode = (name: string, readonly = false) => ({
+  type: 'field', name, span: 12, readonly,
+  fieldInfo: { name, type: 'char', required: true, readonly: false },
+});
+const requiredTree = ref<Array<Record<string, unknown>>>([
+  requiredNode('shared', true),
+  { type: 'group', hidden: true, children: [requiredNode('shared')] },
+  { ...requiredNode('lines', true), children: [requiredNode('child_only')] },
+]);
+let occurrenceReadonly = false;
+const requiredSchemas = useRecordFormFieldSchemas({
+  v2ContractStore: ref(null), nativeFormLayoutNodes: requiredTree,
+  isNativeFieldVisible: () => true,
+  isNativeLayoutNodeVisible: (node: { hidden?: boolean }) => !node.hidden,
+  runtimeOccurrenceState: () => ({ readonly: occurrenceReadonly, required: false }),
+  recordId: computed(() => 0), rights: computed(() => ({ create: true, write: true })),
+  contractFieldLabel: (name: string) => name,
+  isContractFieldOrderEditable: computed(() => false),
+  effectiveFieldSize: () => 'normal', rememberFormConfigFieldLabel: () => {},
+} as never);
+assert.deepEqual(requiredSchemas.nativeRequiredEditableFieldNames(), [],
+  'readonly occurrence plus hidden editable duplicate must not demand an editor rule; child fields stay child-owned');
+requiredTree.value[1].hidden = false;
+assert.deepEqual(requiredSchemas.nativeRequiredEditableFieldNames(), ['shared'],
+  'a visible editable duplicate requires validation even though another occurrence is readonly');
+occurrenceReadonly = true;
+assert.deepEqual(requiredSchemas.nativeRequiredEditableFieldNames(), [],
+  'live readonly state uses the same occurrence projection as rendering');
+occurrenceReadonly = false;
+requiredTree.value.push(requiredNode('shared'));
+assert.deepEqual(requiredSchemas.nativeRequiredEditableFieldNames(), ['shared'], 'duplicate business fields are deduplicated');
+requiredTree.value = [{ ...requiredNode('missing'), nativeLocator: '/form/field[1]', occurrenceIndex: 1, widgetId: 'missing.widget' }];
+assert.throws(() => requiredSchemas.nativeRequiredEditableFieldNames(),
+  (error: unknown) => isContractGapError(error) && error.defect.missing.includes('fieldDescriptor'),
+  'visible occurrence without its strict descriptor cannot become a legal empty validation scope');
+requiredTree.value = [{ type: 'field', name: 'unknown', span: 12 }];
+assert.throws(() => requiredSchemas.nativeRequiredEditableFieldNames(),
+  (error: unknown) => isContractGapError(error), 'missing field metadata fails closed');
+requiredTree.value = [];
+assert.equal(requiredSchemas.nativeRequiredEditableFieldNames(), null, 'no native tree explicitly selects legacy validation authority');
+console.log('[native-required-coverage] PASS cases=7');
+
+// Selected action form identity survives decoding/normalization; malformed IDs fail closed.
+const { resolveContractV2SourceContext } = await import('../src/app/contracts/v2/store');
+const selectedForm = structuredClone(snapshot);
+selectedForm.dataContract.dataMeta.sourceContext = { formViewId: 731 };
+assert.equal(resolveContractV2SourceContext(createContractV2Store(decodeContractV2Snapshot(selectedForm))).formViewId, 731);
+for (const formViewId of [0, -1, 1.5, '731', null, Number.MAX_SAFE_INTEGER + 1]) {
+  selectedForm.dataContract.dataMeta.sourceContext = { formViewId } as never;
+  assert.throws(() => decodeContractV2Snapshot(selectedForm));
+}
+console.log('[contract_v2_occurrence_authority_test] PASS selected form identity count=7');
+
+const domainFixture = (await import('./fixtures/native_relation_domain.json')).default;
+const domainSnapshot = structuredClone(snapshot);
+function attachDomain(nodes: Array<Record<string, unknown>>): boolean {
+  for (const node of nodes) {
+    const widgets = node.widgetList as Array<Record<string, unknown>> | undefined;
+    if (widgets?.length) {
+      Object.assign(widgets[0].fieldDescriptor as object, { domain: domainFixture.raw, domain_expression: domainFixture.expression });
+      return true;
+    }
+    if (Array.isArray(node.children) && attachDomain(node.children)) return true;
+  }
+  return false;
+}
+assert(attachDomain(domainSnapshot.layoutContract.containerTree as unknown as Array<Record<string, unknown>>));
+const { resolveContractV2FormFieldMap } = await import('../src/app/contracts/v2/store');
+const domainFields = resolveContractV2FormFieldMap(createContractV2Store(decodeContractV2Snapshot(domainSnapshot)));
+assert(Object.values(domainFields).some(field => JSON.stringify((field as Record<string, unknown>).domain_expression) === JSON.stringify(domainFixture.expression)));
+console.log('[contract_v2_occurrence_authority_test] compiled domain normalized store PASS');

@@ -81,8 +81,12 @@
               :key="`readonly-cell-${column.name}`"
               #[column.name]="{ row }"
             >
+              <NativeWeightedRelationDisplay
+                v-if="column.widget === 'analytic_distribution' || column.widgetSemantics?.kind === 'weighted_relation'"
+                :declaration="column.widgetSemantics" :value="row._row.values[column.name]" :context="adapter.readContext"
+              />
               <ScPopover
-                v-if="readonlyCellCanExpand(column, row[column.name])"
+                v-else-if="readonlyCellCanExpand(column, row[column.name])"
                 trigger="click"
                 placement="bottom-left"
                 :overlay-style="readonlyValueOverlayStyle"
@@ -145,7 +149,13 @@
               class="o2m-readonly-fact"
             >
               <dt>{{ column.label }}</dt>
-              <dd>{{ adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || '—' }}</dd>
+              <dd>
+                <NativeWeightedRelationDisplay
+                  v-if="column.widget === 'analytic_distribution' || column.widgetSemantics?.kind === 'weighted_relation'"
+                  :declaration="column.widgetSemantics" :value="row.values[column.name]" :context="adapter.readContext"
+                />
+                <template v-else>{{ adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || '—' }}</template>
+              </dd>
             </div>
           </dl>
           <ScDisclosure
@@ -160,7 +170,13 @@
                 class="o2m-readonly-fact"
               >
                 <dt>{{ column.label }}</dt>
-                <dd>{{ adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || '—' }}</dd>
+                <dd>
+                <NativeWeightedRelationDisplay
+                  v-if="column.widget === 'analytic_distribution' || column.widgetSemantics?.kind === 'weighted_relation'"
+                  :declaration="column.widgetSemantics" :value="row.values[column.name]" :context="adapter.readContext"
+                />
+                <template v-else>{{ adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || '—' }}</template>
+              </dd>
               </div>
             </dl>
           </ScDisclosure>
@@ -427,6 +443,7 @@ import ScInlineState from '../design-system/ScInlineState.vue';
 import ScPopover from '../design-system/ScPopover.vue';
 import ScTable from '../design-system/ScTable.vue';
 import ProfessionalManyToManySelect from '../professional-fields/ProfessionalManyToManySelect.vue';
+import NativeWeightedRelationDisplay from './NativeWeightedRelationDisplay.vue';
 import One2ManyCellEditor from './One2ManyCellEditor.vue';
 import {
   createOne2manyRelationPopupAuthority,
@@ -1105,16 +1122,24 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
   white-space: nowrap;
 }
 
-.o2m-readonly-value-trigger {
+.o2m-readonly :deep(.o2m-readonly-value-trigger) {
   display: block;
   width: 100%;
   min-width: 0;
   max-width: 100%;
   padding: 0;
+  cursor: pointer;
   overflow: hidden;
   font: inherit;
   line-height: inherit;
   text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.o2m-readonly :deep(.o2m-readonly-value-trigger .sc-btn__content) {
+  display: block;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

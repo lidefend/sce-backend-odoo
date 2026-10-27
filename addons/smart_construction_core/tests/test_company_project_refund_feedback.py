@@ -1,4 +1,4 @@
-"""Controlled singleton migration tests for the company project refund workbench."""
+"""Controlled native advisory migration tests for the company project refund workbench."""
 import copy
 import json
 import secrets
@@ -17,12 +17,12 @@ from odoo.addons.smart_core.tests.test_intent_smoke import setup_test_entry_name
 MODEL = "sc.company.project.refund.workspace"
 FIELD = "processing_advisory"
 VIEW = "smart_construction_core.view_sc_company_project_refund_workspace_form"
-OTHER_MODEL = "sc.current.account.workspace"
+OTHER_MODEL = "sc.labor.worker"
 LOCATOR = "/form[1]/sheet[1]/div[1]/field[1]"
 EVIDENCE_PREFIX = "LOCAL_DEV_COMPANY_PROJECT_REFUND_FEEDBACK_JSON="
 ADVISORY_MODELS = (
     MODEL,
-    OTHER_MODEL,
+    "sc.current.account.workspace",
     "sc.team.loan.deduction.workspace",
     "sc.equipment.usage",
     "sc.hr.payroll.document",
@@ -30,6 +30,8 @@ ADVISORY_MODELS = (
     "sc.subcontract.register",
     "sc.labor.usage",
     "sc.quality.acceptance",
+    "sc.approval.policy",
+    OTHER_MODEL,
 )
 
 
@@ -204,14 +206,18 @@ class TestCompanyProjectRefundFeedback(CompanyRefundFeedbackAssertions, Transact
             getattr(self.env[OTHER_MODEL]._fields[FIELD], "sc_feedback_usage", None)
         )
 
-    def test_only_company_refund_production_advisory_is_enabled(self):
+    def test_only_reviewed_workspace_advisories_are_enabled(self):
         enabled = []
         for model_name in ADVISORY_MODELS:
             field = self.env[model_name]._fields.get(FIELD)
             self.assertIsNotNone(field, model_name)
             if getattr(field, "sc_feedback_usage", None) is not None:
                 enabled.append(model_name)
-        self.assertEqual(enabled, [MODEL])
+        self.assertEqual(enabled, [
+            MODEL, "sc.current.account.workspace", "sc.team.loan.deduction.workspace",
+            "sc.equipment.usage", "sc.hr.payroll.document", "sc.hr.salary.payment", "sc.subcontract.register",
+            "sc.labor.usage", "sc.quality.acceptance", "sc.approval.policy",
+        ])
 
     def test_create_ui_contract_uses_request_local_feedback_proof(self):
         from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler

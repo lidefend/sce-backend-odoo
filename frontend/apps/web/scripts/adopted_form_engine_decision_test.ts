@@ -21,13 +21,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRenderer, defineComponent, h, nextTick, ref } from 'vue';
+import { createRenderer, defineComponent, h, nextTick, ref, provide, onMounted, onBeforeUnmount } from 'vue';
 
 import {
   buildContractFormRules,
   failedAdoptedFieldNames,
 } from '../src/components/template/contractFormValidationRules';
-import { TDesignForm, TDesignFormItem } from '../src/components/design-system/tdesignPrimitiveBridge';
+import { TDesignForm, TDesignFormItem, TDesignTabPanel } from '../src/components/design-system/tdesignPrimitiveBridge';
 import { createStandardFormValidationRegistry } from '../src/pages/contractForm/standardFormCompositionRuntime';
 import { collectRequiredFieldValidation } from '../src/pages/contractForm/saveRecordHelpers';
 import type { FormSectionFieldSchema } from '../src/components/template/formSection.types';
@@ -747,6 +747,82 @@ check(
   2,
   'G: every loaded record bumps that revision, so both create and edit loads re-create the tree',
 );
+
+// A native notebook keeps every contract-visible page in the same official
+// engine, even before the user visits it. Use the installed real panel (including
+// its lazy/destroy watchers), not a stub that always renders its slot.
+{
+  const active = ref(0);
+  const draft = ref('');
+  const readonly = ref(false);
+  const visible = ref(true);
+  const registry = createStandardFormValidationRegistry(() => ({ pageType: 'record-form', reason: 'contract-record-view' }));
+  let mounted = 0;
+  const RequiredSection = defineComponent({
+    setup() {
+      const engine = ref<{ validate: () => Promise<unknown> } | null>(null);
+      const fields = () => [field({ name: 'date', type: 'char', required: true, readonly: readonly.value, value: draft.value })];
+      onMounted(() => {
+        mounted += 1;
+        registry.register({ sectionId: 'unvisited',
+          ruleFieldNames: () => Object.keys(buildContractFormRules(fields())),
+          validate: async () => {
+            assert(engine.value, 'registered section must retain its real engine');
+            const failed = failedAdoptedFieldNames(await engine.value.validate());
+            assert(failed !== null); return failed;
+          },
+        });
+      });
+      onBeforeUnmount(() => registry.unregister('unvisited'));
+      return () => {
+        const rules = buildContractFormRules(fields());
+        return h(TDesignForm as never, { ref: engine, data: { date: draft.value }, rules }, () => [
+          h(TDesignFormItem as never, { name: 'date', rules: rules.date }, () => h('input')),
+        ]);
+      };
+    },
+  });
+  const Notebook = defineComponent({
+    setup() {
+      provide('tabs', { value: active });
+      return () => [
+        h(TDesignTabPanel as never, { value: 0, lazy: false, destroyOnHide: false }, () => h('span', 'current page')),
+        ...(visible.value ? [h(TDesignTabPanel as never, { value: 1, lazy: false, destroyOnHide: false }, () => h(RequiredSection))] : []),
+      ];
+    },
+  });
+  const app = renderer.createApp(Notebook as never);
+  app.mount(hostNode('root'));
+  await nextTick();
+  check(mounted, 1, 'H: an unvisited page mounts its real validator');
+  let result = await registry.validateAdoptedFields();
+  check(result.ok, true, 'H: unvisited engine answers');
+  checkDeep(result.coveredFieldNames, ['date'], 'H: unvisited required field is covered');
+  checkDeep(result.fieldNames, ['date'], 'H: empty unvisited required field blocks save');
+  draft.value = '2026-10-26'; await nextTick();
+  checkDeep((await registry.validateAdoptedFields()).fieldNames, [], 'H: populated unvisited field passes its actual rule');
+  active.value = 1; await nextTick(); active.value = 0; await nextTick();
+  check(mounted, 1, 'H: switching away retains the same validator instance');
+  draft.value = ''; await nextTick();
+  checkDeep((await registry.validateAdoptedFields()).fieldNames, ['date'], 'H: inactive retained page validates latest draft');
+  readonly.value = true; await nextTick();
+  result = await registry.validateAdoptedFields();
+  checkDeep(result.coveredFieldNames, [], 'H: readonly occurrence has no editable required rule');
+  checkDeep(result.fieldNames, [], 'H: readonly occurrence is not rejected');
+  visible.value = false; await nextTick();
+  checkDeep((await registry.validateAdoptedFields()).coveredFieldNames, [], 'H: contract-hidden page unregisters');
+  app.unmount();
+}
+const nativeNotebookSource = readSource('frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue');
+check(nativeNotebookSource.includes(':lazy="false"') && nativeNotebookSource.includes(':destroy-on-hide="false"'), true,
+  'H: native notebook selects the tested persistent panel lifecycle');
+check(nativeNotebookSource.includes('v-show="Number(item.value) === activePageIndex"')
+  && nativeNotebookSource.includes(':nodes="notebookPageChildren(node, Number(item.value))"')
+  && nativeNotebookSource.includes('notebookPages(node)[Number(item.value)]?.containerId'), true,
+  'H: each persistent panel binds its own children and identity');
+const tabsSource = readSource('frontend/apps/web/src/components/design-system/ScTabs.vue');
+check(tabsSource.includes('lazy: props.lazy') && tabsSource.includes('destroyOnHide: props.destroyOnHide'), true,
+  'H: primitive forwards lifecycle props to real panel items');
 
 surface.unmount();
 

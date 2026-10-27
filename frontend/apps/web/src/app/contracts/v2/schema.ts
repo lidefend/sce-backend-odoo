@@ -1985,7 +1985,7 @@ function decodeSourceContext(value: unknown, issues: DecodeIssue[]): ContractV2S
     return undefined;
   }
   const row = value as ContractV2Dictionary;
-  const allowed = new Set(['context', 'domain', 'contextRaw', 'domainRaw', 'renderProfile', 'order', 'limit']);
+  const allowed = new Set(['context', 'domain', 'contextRaw', 'domainRaw', 'renderProfile', 'order', 'limit', 'formViewId']);
   Object.keys(row).filter((key) => !allowed.has(key)).forEach((key) => {
     issues.push({ path: `dataContract.dataMeta.sourceContext.${key}`, message: 'is not allowed' });
   });
@@ -2003,11 +2003,16 @@ function decodeSourceContext(value: unknown, issues: DecodeIssue[]): ContractV2S
   if (row.renderProfile !== undefined && !['create', 'edit', 'readonly'].includes(renderProfile)) {
     issues.push({ path: 'dataContract.dataMeta.sourceContext.renderProfile', message: 'must be create, edit, or readonly' });
   }
+  const formViewId = row.formViewId;
+  if (formViewId !== undefined && (typeof formViewId !== 'number' || !Number.isSafeInteger(formViewId) || formViewId < 1)) {
+    issues.push({ path: 'dataContract.dataMeta.sourceContext.formViewId', message: 'must be a positive safe integer' });
+  }
   const limit = Number(row.limit);
   if (row.limit !== undefined && (!Number.isInteger(limit) || limit < 1)) {
     issues.push({ path: 'dataContract.dataMeta.sourceContext.limit', message: 'must be a positive integer' });
   }
   return {
+    ...(typeof formViewId === 'number' && Number.isSafeInteger(formViewId) && formViewId > 0 ? { formViewId } : {}),
     ...(context ? { context } : {}),
     ...(Array.isArray(domain) ? { domain } : {}),
     ...(typeof row.contextRaw === 'string' ? { contextRaw: row.contextRaw } : {}),
@@ -2022,6 +2027,20 @@ function decodeDataMeta(value: unknown, issues: DecodeIssue[]): ContractV2DataMe
   const row = asRecord(value);
   const businessOperationProfile = optionalRecord(row, 'businessOperationProfile', 'dataContract.dataMeta', issues);
   const sourceContext = decodeSourceContext(row.sourceContext, issues);
+  if (row.nativeModifierFieldTypes !== undefined) {
+    const types = row.nativeModifierFieldTypes;
+    if (!isRecord(types) || Object.values(types).some(type => typeof type !== 'string' || !type.trim())) {
+      issues.push({ path: 'dataContract.dataMeta.nativeModifierFieldTypes', message: 'must map fields to non-empty type strings' });
+    }
+  }
+  if (row.nativeModifierRelationSnapshots !== undefined) {
+    const snapshots = row.nativeModifierRelationSnapshots;
+    if (!isRecord(snapshots) || Object.values(snapshots).some(item => !isRecord(item)
+      || !Object.hasOwn(item, 'sourceValue') || !Array.isArray(item.persistedIds)
+      || !item.persistedIds.every(id => typeof id === 'number' && Number.isSafeInteger(id) && id > 0))) {
+      issues.push({ path: 'dataContract.dataMeta.nativeModifierRelationSnapshots', message: 'must bind source values to persisted identity arrays' });
+    }
+  }
   const forbiddenKeys = [
     'business_operation_profile',
     'visible_fields',

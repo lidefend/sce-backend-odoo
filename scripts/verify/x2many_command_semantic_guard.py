@@ -32,7 +32,7 @@ def main() -> int:
         return 1
 
     engine_markers = [
-        'export type X2ManyCommand = [number, number, unknown?];',
+        'export type X2ManyCommand = [number, number | string, unknown?];',
         'export function extractX2ManyIds(value: unknown): number[] {',
         'export function buildX2ManyCommands(params: {',
         "mode: 'onchange' | 'write';",

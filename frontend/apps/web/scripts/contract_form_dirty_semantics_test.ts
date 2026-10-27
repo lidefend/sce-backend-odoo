@@ -35,7 +35,7 @@ function harness(options: {
   const context = {
     formFields: computed(() => fields),
     model: computed(() => 'project.project'),
-    recordId: computed(() => 581),
+    recordId: ref(581),
     rights: computed(() => ({ write: true })),
     formData,
     originalValues,
@@ -88,6 +88,7 @@ function harness(options: {
   const api = useRecordFormState(context);
   return {
     api,
+    context,
     dirtyFieldSet,
     changedFieldSet,
     hasTimer: () => timer !== null,
@@ -216,3 +217,127 @@ function harness(options: {
 }
 
 process.stdout.write('contract_form_dirty_semantics_test: PASS\n');
+
+
+const { useOne2manyRuntime } = await import('../src/pages/contractForm/useOne2manyRuntime');
+const replayColumns = [{ name: 'name', label: 'Name', ttype: 'char' }];
+const child = useOne2manyRuntime({ model: () => 'project.project', recordId: () => 581,
+  originalValues: () => ({ lines: [42] }), parentValues: () => ({}), onchangeLinePatches: () => [],
+  resolveColumns: () => replayColumns, resolvePrimaryColumn: () => 'name', resolveRelationOptions: () => [], markFieldChanged: () => {},
+});
+child.initRows('lines', [42]);
+await child.addRow('lines');
+const h = harness({ fields: { name: { ttype: 'char' }, lines: { ttype: 'one2many' } },
+  formData: { name: 'Keep', lines: [42] }, originalValues: { name: 'Keep', lines: [42] } });
+h.context.prepareOne2manyOnchange = child.prepareOnchangeRows;
+h.context.one2manyFieldRows = child.fieldRows;
+h.context.buildOne2manyCommandValue = child.buildCommandValue;
+for (const malformed of ['bad', { id: 42 }, null]) {
+  h.context.requestOnchange = async () => ({ patch: { name: 'Must not apply', lines: malformed } });
+  const beforeRows = JSON.stringify(child.fieldRows('lines'));
+  const beforeValues = JSON.stringify(h.context.formData);
+  h.changedFieldSet.add('name');
+  await h.api.runOnchangeRoundtrip();
+  assert.equal(JSON.stringify(child.fieldRows('lines')), beforeRows);
+  assert.equal(JSON.stringify(h.context.formData), beforeValues);
+  assert.equal(h.context.applyingOnchangePatch.value, false);
+  assert.equal(h.context.validationErrors.value.length, 1);
+}
+h.context.requestOnchange = async () => ({ patch: { name: 'Updated', lines: [[1, 42, { name: 'Server update' }]] } });
+h.changedFieldSet.add('name');
+await h.api.runOnchangeRoundtrip();
+assert.equal(h.context.formData.name, 'Updated');
+assert.equal(child.fieldRows('lines')[0]!.values.name, 'Server update');
+assert.equal(child.fieldRows('lines').some(row => row.isNew), true);
+assert.equal(h.context.applyingOnchangePatch.value, false);
+console.log('formstate real onchange entry staged rejection and success: passed');
+
+await child.addRow('lines');
+const newRows = child.visibleRows('lines').filter(row => row.isNew);
+const targetKey = newRows[1]!.key;
+let sentVirtualKeys: unknown[] = [];
+h.context.requestOnchange = async request => {
+  sentVirtualKeys = (request.values.lines as unknown[][]).filter(command => command[0] === 0).map(command => command[1]);
+  return { patch: { lines: [[1, targetKey, { name: 'Targeted virtual row' }]] } };
+};
+h.changedFieldSet.add('name');
+await h.api.runOnchangeRoundtrip();
+assert.deepEqual(sentVirtualKeys, newRows.map(row => row.key));
+assert.equal(child.visibleRows('lines').find(row => row.key === targetKey)?.values.name, 'Targeted virtual row');
+assert.notEqual(child.visibleRows('lines').find(row => row.key === newRows[0]!.key)?.values.name, 'Targeted virtual row');
+assert.equal(h.context.applyingOnchangePatch.value, false);
+console.log('formstate virtual request/response identity: passed');
+
+const failureDraft = JSON.stringify(h.context.formData);
+const failureRows = JSON.stringify(child.fieldRows('lines'));
+h.context.validationErrors.value = [];
+h.context.requestOnchange = async () => { throw new Error('字段联动失败，请稍后重试'); };
+h.changedFieldSet.add('name');
+await h.api.runOnchangeRoundtrip();
+assert.deepEqual(h.context.validationErrors.value, ['字段联动失败，请稍后重试']);
+assert.equal(JSON.stringify(h.context.formData), failureDraft);
+assert.equal(JSON.stringify(child.fieldRows('lines')), failureRows);
+assert.equal(h.context.applyingOnchangePatch.value, false);
+
+// A failed older request must not replace the current form's error state.
+for (const change of ['record', 'draft', 'sequence']) {
+  h.context.validationErrors.value = [];
+  let rejectRequest!: (reason: Error) => void;
+  h.context.requestOnchange = () => new Promise((_resolve, reject) => { rejectRequest = reject; });
+  h.changedFieldSet.add('name');
+  const pending = h.api.runOnchangeRoundtrip();
+  const previousId = h.context.recordId.value;
+  const previousName = h.context.formData.name;
+  if (change === 'record') h.context.recordId.value = Number(previousId || 0) + 1;
+  if (change === 'draft') h.context.formData.name = 'Newer unsent draft';
+  if (change === 'sequence') {
+    h.context.requestOnchange = async () => ({ patch: {} });
+    h.changedFieldSet.add('name');
+    await h.api.runOnchangeRoundtrip();
+  }
+  rejectRequest(new Error('Stale failure'));
+  await pending;
+  assert.deepEqual(h.context.validationErrors.value, [], change);
+  h.context.recordId.value = previousId;
+  h.context.formData.name = previousName;
+}
+console.log('formstate visible current failure and stale error isolation: passed');
+
+let selectedView: unknown;
+h.context.route.query.view_id = '17';
+h.context.requestOnchange = async request => { selectedView = request.view_id; return { patch: {} }; };
+h.changedFieldSet.add('name');
+await h.api.runOnchangeRoundtrip();
+assert.equal(selectedView, '17');
+h.context.resolveOnchangeViewId = () => 731;
+h.changedFieldSet.add('name');
+await h.api.runOnchangeRoundtrip();
+assert.equal(selectedView, 731);
+delete h.context.resolveOnchangeViewId;
+delete h.context.route.query.view_id;
+console.log('formstate selected native view transport: passed');
+
+const relationForm = harness({ fields: { partner_id: { ttype: 'many2one', name: 'partner_id' } },
+  formData: { partner_id: false }, originalValues: { partner_id: false } });
+relationForm.context.requestOnchange = async () => ({ patch: { partner_id: [9, 'Native partner'] } });
+relationForm.changedFieldSet.add('partner_id');
+await relationForm.api.runOnchangeRoundtrip();
+assert.equal(relationForm.context.formData.partner_id, 9);
+assert.equal(relationForm.context.relationKeywords.partner_id, 'Native partner');
+console.log('formstate normalized native many2one preserves selected identity: passed');
+
+h.context.requestOnchange = async () => ({ patch: { lines: [[4, 105, { id: 105, name: 'Native linked row' }]] } });
+h.changedFieldSet.add('name');
+await h.api.runOnchangeRoundtrip();
+assert.equal(child.fieldRows('lines').find(row => row.id === 105)?.values.name, 'Native linked row');
+assert.equal(child.fieldRows('lines').find(row => row.id === 105)?.dirty, false);
+assert.equal(child.buildCommandValue('lines', 'write').some(command => command[0] === 1 && command[1] === 105), false);
+const linkFailureBefore = JSON.stringify(child.fieldRows('lines'));
+const linkParentBefore = h.context.formData.name;
+h.context.requestOnchange = async () => ({ patch: { name: 'Must not apply', lines: [[4, 106, { id: 107 }]] } });
+h.changedFieldSet.add('name');
+await h.api.runOnchangeRoundtrip();
+assert.equal(JSON.stringify(child.fieldRows('lines')), linkFailureBefore);
+assert.equal(h.context.formData.name, linkParentBefore);
+assert.equal(h.context.validationErrors.value.length, 1);
+console.log('formstate native LINK data and cross-field staged rejection: passed');

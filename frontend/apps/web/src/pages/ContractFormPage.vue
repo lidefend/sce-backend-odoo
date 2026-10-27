@@ -289,6 +289,7 @@
   </LayoutShell>
 </template>
 <script setup lang="ts">
+import { resolveContractV2SourceContext } from '../app/contracts/v2/store';
 import ScInlineState from '../components/design-system/ScInlineState.vue';
 import { showNativeActionNotification } from '../components/design-system/scActionNotification';
 import { useNativeActionFeedback, type ActionFeedbackOwner } from './contractForm/useNativeActionFeedback';
@@ -351,6 +352,8 @@ import { executeButton } from '../api/executeButton';
 import { triggerOnchange } from '../api/onchange';
 import type { OnchangeLinePatch } from '../api/onchange';
 import type { FieldDescriptor } from '@sc/schema';
+import { resolveContractV2ModifierValues } from '../app/contracts/v2/store';
+import { bindNativeRowParentContext } from '../app/nativeModifierContext';
 import { useSessionStore } from '../stores/session';
 import { ErrorCodes } from '../app/error_codes';
 import {
@@ -723,7 +726,7 @@ import {
   buildWorkflowTransitions,
   buildRouteContractContext,
   buildContractFormPolicyContext,
-  resolveBusinessCategoryContext,
+  resolveBusinessCategoryContext, resolveContractFormReadContext,
   resolveNativeStructureAuthority,
   resolveRuntimeRoleCode,
   type FormContractReadiness,
@@ -819,6 +822,11 @@ const {
 const originalValues = ref<Record<string, unknown>>({});
 const recordVersionToken = ref('');
 const formData = reactive<Record<string, unknown>>({});
+const nativeRelationProjection = shallowRef<(values: Record<string, unknown>) => Record<string, unknown>>();
+function formModifierValues() {
+  const values = resolveContractV2ModifierValues(v2ContractStore.value, formData);
+  return nativeRelationProjection.value ? nativeRelationProjection.value(values) : values;
+}
 const feedbackDependencyPresence = ref<Set<string>>(new Set());
 let feedbackEvaluationRuntime: ReturnType<typeof useDraftFeedbackEvaluation> | undefined;
 const canonicalFormRenderState = computed(() => resolveCanonicalFormRenderState(
@@ -829,6 +837,7 @@ const canonicalFormRenderState = computed(() => resolveCanonicalFormRenderState(
   validationFieldErrors.value,
   { model: model.value, recordId: recordId.value },
   feedbackEvaluationRuntime?.states.value,
+  formModifierValues(),
 ));
 const canonicalProductFloorplan = computed(() => canonicalFormRenderState.value.model
   ? composeCanonicalFormFloorplan(canonicalFormRenderState.value.model)
@@ -891,8 +900,17 @@ const {
 const onchangeModifiersPatch = ref<Record<string, Record<string, unknown>>>({});
 const onchangeWarnings = ref<Array<{ title?: string; message?: string; reason_code?: string }>>([]);
 const onchangeLinePatches = ref<OnchangeLinePatch[]>([]);
+function resolveOnchangeViewId() {
+  return resolveContractV2SourceContext(v2ContractStore.value).formViewId ?? route.query.view_id ?? route.query.viewId;
+}
+function one2manyParentDraftRequest() {
+  return { model: model.value, res_id: recordId.value, view_id: resolveOnchangeViewId(),
+    values: buildOnchangeRequestPayload({ fields: canonicalFormFields.value, formData,
+      originalValues: originalValues.value, recordId: recordId.value, buildOne2manyValue: buildOne2manyCommandValue }) };
+}
 const {
   defaultsPending: one2manyDefaultsPending,
+  projectModifierValues: projectOne2manyModifierValues,
   rowsByField: one2manyRows,
   fieldRows: one2manyFieldRows,
   visibleRows: visibleOne2manyRows,
@@ -901,10 +919,11 @@ const {
   clearRows: clearOne2manyRows,
   addRow: addOne2manyRow,
   setRowField: setOne2manyRowField,
-  effectiveColumn: one2manyEffectiveColumn,
+  effectiveColumn: one2manyEffectiveColumn, visibleColumns: one2manyVisibleColumns,
   removeRow: removeOne2manyRow,
   restoreRow: restoreOne2manyRow,
   initRows: initOne2manyRows,
+  prepareOnchangeRows: prepareOne2manyOnchange,
   mergeHydratedRecords: mergeHydratedOne2manyRecords,
   buildCommandValue: buildOne2manyCommandValue,
   collectValidation: collectOne2manyDraftValidation,
@@ -914,16 +933,24 @@ const {
   model: () => model.value,
   recordId: () => recordId.value,
   originalValues: () => originalValues.value,
-  parentValues: () => formData,
-  loadDefaults: (fieldName) => loadOne2manyCreateDefaults(fieldName),
+  parentValues: (fieldName) => bindNativeRowParentContext(
+    resolveContractV2ModifierValues(v2ContractStore.value, formData), (effectiveFieldDescriptor(fieldName) as Record<string, unknown> | undefined)?.context,
+  ),
+  loadDefaults: (fieldName) => loadOne2manyCreateDefaults(fieldName, one2manyParentDraftRequest()),
+  loadRowChange: (fieldName, row) => loadOne2manyRowChange(fieldName, row, one2manyParentDraftRequest()),
+  markDirty: (fieldName) => dirtyFieldSet.add(fieldName),
+  createDraftIdentity: (fieldName) => ({ request: one2manyParentDraftRequest(),
+    context: resolveContractFormReadContext(v2ContractStore.value), fieldContext: (effectiveFieldDescriptor(fieldName) as Record<string, unknown> | undefined)?.context }),
   createScope: () => v2ContractStore.value,
   onCreateError: (error) => applyPageStatusEvent({ kind: 'status', transaction: 'runAction', status: 'error', errorMessage: error instanceof Error ? error.message : '明细默认值加载失败' }),
   onchangeLinePatches: () => onchangeLinePatches.value as Array<Record<string, unknown>>,
   resolveColumns: (fieldName) => one2manyColumns(fieldName),
+  resolveDataColumns: (fieldName) => one2manyDataColumns(fieldName),
   resolvePrimaryColumn: (fieldName) => one2manyPrimaryColumn(fieldName),
   resolveRelationOptions: (fieldName) => relationOptionsForField(fieldName),
   markFieldChanged,
 });
+nativeRelationProjection.value = projectOne2manyModifierValues;
 const changedFieldSet = new Set<string>();
 const dirtyFieldSet = new Set<string>();
 const pendingInlineCreateFields = ref<string[]>([]);
@@ -1676,8 +1703,8 @@ const actionPlaceholderGate = computed(() => resolveFormActionPlaceholderGate({
 }));
 const {
   relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions,
-  loadOne2manyCreateDefaults, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
-  nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId,
+  loadOne2manyCreateDefaults, loadOne2manyRowChange, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
+  nativeFieldSubview, one2manyColumns, one2manyDataColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId,
   one2manyCreateLabel, one2manyRemovalLabels, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows,
   prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, one2manyCellError, one2manyColumnQueryScope, queryOne2manyColumnOptions, setRelationKeyword, filteredRelationOptions, relationModel,
   formUiLabels, formUiLabel, dynamicDomainFromDescriptor, resolveDynamicDomainDependencyValue, clearDynamicRelationDependents,
@@ -1747,8 +1774,9 @@ const {
   nativeFormRootColumns, nativeGroupCount, nativeNotebookPageCount, nativeStatusbar, nativeStatusbarNodeIdentity, nativeVisibleFieldNames,
   nativeVisibleSectionTitles, rawNativeFormLayoutNodes, resolveNativeButtonLabel, runtimeFieldStates, runtimeNativeFormLayoutNodes,
   runtimeState, setStatusbarValue, showNativeDefaultSectionTitle, useNativeFormTree, layoutNodes,
-  nativeFieldSchemasForNodes, collectSceneValidationPrecheckErrors, onTemplateFieldChange, relationFieldAdapter,
+  nativeFieldSchemasForNodes, nativeRequiredEditableFieldNames, collectSceneValidationPrecheckErrors, onTemplateFieldChange, relationFieldAdapter,
 } = useRecordActionPresentation({
+  modifierValues: formModifierValues,
   beginActionFeedback: actionFeedback.begin,
   ErrorCodes, actionId, activeChatterLabel,
   activeChatterMode, activityAssigneeId, activityDeadline,
@@ -1779,7 +1807,7 @@ const {
   normalizeRequiredParams,
   onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink,
   one2manyRowRecordId, canOpenRelationRecord, openRelationRecord, effectiveFieldDescriptor,
-  one2manyEffectiveColumn,
+  one2manyEffectiveColumn, one2manyVisibleColumns,
   one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns,
   one2manyCreateLabel, one2manyRemovalLabels, one2manyRowErrors, one2manyCellError, one2manyColumnQueryScope, queryOne2manyColumnOptions, one2manyRowHints,
   ensureRelationFieldDescriptors,
@@ -1854,6 +1882,7 @@ const contractReadiness = computed<FormContractReadiness>(() => {
 });
 let recordFormStateRuntime: ReturnType<typeof useRecordFormState>;
 function markFieldChanged(name: string) { recordFormStateRuntime.markFieldChanged(name); }
+function runOnchangeRoundtrip() { return recordFormStateRuntime.runOnchangeRoundtrip(); }
 function inputFieldValue(name: string) { return recordFormStateRuntime.inputFieldValue(name); }
 const canonicalFieldOccurrences = computed(() => collectCanonicalFieldOccurrences(canonicalFormRenderState.value.model));
 const layoutFieldOccurrences = computed(() => collectLayoutFieldOccurrences(layoutNodes.value));
@@ -1887,6 +1916,7 @@ function canonicalFieldWritable(name: string): boolean | undefined {
   return matches.some((field) => !field.readonly && !field.disabled);
 }
 recordFormStateRuntime = useRecordFormState({
+  resolveOnchangeViewId,
   pendingInlineCreateFields,
   formFields: canonicalFormFields, model, recordId, rights, formData, originalValues, submissionFeedback, relationKeywords,
   invalidatedRelationKeywords, clearedDynamicRelationFields, relationQueryTimers, relationOptions,
@@ -1897,7 +1927,7 @@ recordFormStateRuntime = useRecordFormState({
   openRelationCreateForm, openRelationSearchDialog, openRelationRecordForm, relationOptionsForField,
   switchFormByRelationOption, queryRelationOptions, setRelationKeyword, setMany2oneOption,
   relationKeyword, quickCreateRelation, relationUiLabel, relationModel, relationIds, upsertRelationOption,
-  buildOne2manyCommandValue, one2manyFieldRows, initOne2manyRows, applyOnchangeLinePatches,
+  buildOne2manyCommandValue, one2manyFieldRows, initOne2manyRows, prepareOne2manyOnchange, applyOnchangeLinePatches,
   isWritableFieldVisible,
   canonicalFieldWritable,
   fieldOccurrenceDecision,
@@ -1931,6 +1961,8 @@ const {
   formRouteIdentity, feedbackDependencyPresence, hydrateSelectedRelationOptions, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows,
   initOne2manyRows, isComponentActive, layoutNodes,
   loadActionContractV2, loadError, loadModelContractV2,
+  markFieldChanged,
+  runOnchangeRoundtrip,
   loadNativeChatterTimeline, menuId,
   model, nativeAttachments,
   nativeChatterActions, nativeChatterAutoLoadKey, nativeLayoutVisibilityRevision,
@@ -2002,6 +2034,7 @@ const {
   showOne2manyErrors, status, submissionFeedback,
   uploadPendingNativeAttachments, useFormPageLifecycleRuntime, v2ContractStore,
   contractPageType: () => contractPageType.value,
+  nativeRequiredEditableFieldNames,
   validateAdoptedFormSections: () => standardFormComposition.validateAdoptedFields(),
   validateBeforeSaveRecord, validationErrors, validationFieldErrors,
   writeContractFormRecord,

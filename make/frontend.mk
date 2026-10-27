@@ -686,6 +686,9 @@ verify.frontend.list_optional_columns.unit: guard.prod.forbid
 	@node --experimental-strip-types scripts/verify/frontend_list_optional_columns_contract_test.ts
 
 verify.frontend.collection_view_semantics.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_native_modifier.py
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_modifier_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-modifier-test.mjs >/dev/null
+	@node /tmp/native-modifier-test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/record_entry_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/record-entry-contract-test.mjs >/dev/null
 	@node /tmp/record-entry-contract-test.mjs
 	@python3 addons/smart_core/tests/test_navigation_entry_target.py
@@ -1257,6 +1260,10 @@ verify.daily.demo_credential.confirmation: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/daily_demo_credential_confirmation.py scripts/verify/test_daily_demo_credential_confirmation.py
 	@python3 -m unittest scripts.verify.test_daily_demo_credential_confirmation
 
+.PHONY: verify.frontend.presentation.local.browser
+verify.frontend.presentation.local.browser: guard.prod.forbid acceptance.runtime.contract_receipt
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-presentation-browser
+
 .PHONY: verify.frontend.presentation.browser
 verify.frontend.presentation.browser: guard.prod.forbid verify.daily.demo_credential.confirmation
 	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
@@ -1456,6 +1463,7 @@ verify.frontend.node_component.unit: guard.prod.forbid
 	@node /tmp/fe-gate-03a-nodes.mjs
 verify.frontend.node_component.component: guard.prod.forbid
 	@node frontend/apps/web/scripts/node_component_consumption_component_test.mjs
+	@node frontend/apps/web/scripts/weighted_relation_component_test.mjs
 
 .PHONY: verify.frontend.feedback_evaluation.unit
 verify.frontend.feedback_evaluation.unit: guard.prod.forbid

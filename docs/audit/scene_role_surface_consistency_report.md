@@ -1,22 +1,24 @@
 # Scene Role Surface Consistency Report
 
-更新时间：2026-10-09 14:02:57
+更新时间：2026-10-27 06:43:44
 
 ## Summary
 
-- `role_count`: 10
+- `role_count`: 12
 - `r3_scene_count`: 22
 - `errors`: 0
-- `warnings`: 17
+- `warnings`: 21
 
 ## Role Overrides
 
 | role_code | candidates | candidate_missing | menu_overlap | r3_scene_hits | status |
 | --- | ---: | ---: | ---: | ---: | --- |
+| accounting | 1 | 1 | 0 | 0 | PASS |
 | business_config_admin | 4 | 1 | 0 | 0 | PASS |
 | business_full | 2 | 1 | 0 | 0 | PASS |
 | cost | 3 | 1 | 0 | 1 | PASS |
 | executive | 7 | 1 | 0 | 15 | PASS |
+| experience | 1 | 1 | 0 | 0 | PASS |
 | finance | 4 | 1 | 0 | 10 | PASS |
 | owner | 4 | 1 | 0 | 0 | PASS |
 | pm | 8 | 1 | 0 | 18 | PASS |
@@ -54,12 +56,16 @@
 ## Warnings
 
 - finance.settlement_orders: role_variants empty for R3 scene
+- role_surface_overrides.accounting: landing_scene_candidate not in inventory/payload (workspace.home)
+- role_surface_overrides.accounting: no R3 scene role_variants coverage
 - role_surface_overrides.business_config_admin: landing_scene_candidate not in inventory/payload (workspace.home)
 - role_surface_overrides.business_config_admin: no R3 scene role_variants coverage
 - role_surface_overrides.business_full: landing_scene_candidate not in inventory/payload (workspace.home)
 - role_surface_overrides.business_full: no R3 scene role_variants coverage
 - role_surface_overrides.cost: landing_scene_candidate not in inventory/payload (workspace.home)
 - role_surface_overrides.executive: landing_scene_candidate not in inventory/payload (workspace.home)
+- role_surface_overrides.experience: landing_scene_candidate not in inventory/payload (workspace.home)
+- role_surface_overrides.experience: no R3 scene role_variants coverage
 - role_surface_overrides.finance: landing_scene_candidate not in inventory/payload (workspace.home)
 - role_surface_overrides.owner: landing_scene_candidate not in inventory/payload (workspace.home)
 - role_surface_overrides.owner: no R3 scene role_variants coverage

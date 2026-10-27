@@ -33,7 +33,7 @@ function compiledCondition(value: unknown, dynamic: boolean): boolean {
   if (row.kind === 'field_truthy') return typeof row.field === 'string' && !!row.field;
   if (row.kind === 'field_compare') return typeof row.field === 'string' && !!row.field
     && ['=', '==', '!=', '>', '>=', '<', '<=', 'in', 'not in'].includes(String(row.operator)) && Object.hasOwn(row, 'value');
-  if (!dynamic && ['all', 'any'].includes(String(row.kind)) && Array.isArray(row.exprs)) return row.exprs.length > 0 && row.exprs.every((expr) => compiledCondition(expr, false));
+  if (['all', 'any'].includes(String(row.kind)) && Array.isArray(row.exprs)) return row.exprs.length > 0 && row.exprs.every((expr) => compiledCondition(expr, dynamic));
   return false;
 }
 function nativeIdentity(node: ContractV2Container) {

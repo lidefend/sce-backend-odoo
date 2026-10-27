@@ -131,6 +131,16 @@
         ]
       },
       {
+        "role_code": "accounting",
+        "label": "会计账务",
+        "precedence": 85,
+        "group_xmlids": [
+          "smart_construction_core.group_sc_role_accounting_read",
+          "smart_construction_core.group_sc_role_accounting_user",
+          "smart_construction_core.group_sc_role_accounting_manager"
+        ]
+      },
+      {
         "role_code": "project_member",
         "label": "项目成员",
         "precedence": 90,
@@ -241,6 +251,11 @@
             ]
           },
           "experience": {
+            "landing_scene_candidates": [
+              "workspace.home"
+            ]
+          },
+          "accounting": {
             "landing_scene_candidates": [
               "workspace.home"
             ]
@@ -6646,6 +6661,11 @@
             ]
           },
           "experience": {
+            "landing_scene_candidates": [
+              "workspace.home"
+            ]
+          },
+          "accounting": {
             "landing_scene_candidates": [
               "workspace.home"
             ]

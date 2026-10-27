@@ -499,11 +499,11 @@ class ScSubcontractRegister(models.Model):
     company_id = fields.Many2one(
         related="project_id.company_id", store=True, readonly=True, string="所属公司"
     )
-    request_id = fields.Many2one("sc.subcontract.request", string="来源分包申请", index=True, help='建议关联来源分包申请')
-    contract_id = fields.Many2one("construction.contract", string="分包合同", index=True, help='建议关联分包合同')
+    request_id = fields.Many2one("sc.subcontract.request", string="来源分包申请", index=True, help='建议关联来源分包申请', default=False)
+    contract_id = fields.Many2one("construction.contract", string="分包合同", index=True, help='建议关联分包合同', default=False)
     register_date = fields.Date(string="登记日期", required=True, default=fields.Date.context_today, index=True)
-    start_date = fields.Date(string="履约开始日期", index=True, help='建议补充履约期间')
-    end_date = fields.Date(string="履约结束日期", index=True, help='建议补充履约期间')
+    start_date = fields.Date(string="履约开始日期", index=True, help='建议补充履约期间', default=False)
+    end_date = fields.Date(string="履约结束日期", index=True, help='建议补充履约期间', default=False)
     subcontract_scope = fields.Char(string="登记分包范围", required=True, index=True, tracking=True)
     subcontractor_id = fields.Many2one("res.partner", string="分包单位", index=True, tracking=True)
     responsible_id = fields.Many2one("res.users", string="现场负责人", default=lambda self: self.env.user, index=True)
@@ -554,7 +554,7 @@ class ScSubcontractRegister(models.Model):
         tracking=True,
     )
     line_ids = fields.One2many("sc.subcontract.register.line", "register_id", string="登记明细")
-    management_note = fields.Text(string="管理要求", help='建议补充管理要求')
+    management_note = fields.Text(string="管理要求", help='建议补充管理要求', default=False)
     note = fields.Text(string="备注")
     attachment_ids = fields.Many2many(
         "ir.attachment",
@@ -563,8 +563,19 @@ class ScSubcontractRegister(models.Model):
         "attachment_id",
         string="附件",
         help='建议上传分包成本依据',
+        default=False,
     )
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
+    processing_advisory = fields.Char(
+        "办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction",
+        sc_feedback_usage={
+            "purpose": "advisory",
+            "occurrences": [{
+                "view_xmlid": "smart_construction_core.view_sc_subcontract_register_form",
+                "native_locator": "/form[1]/sheet[1]/div[1]/field[1]",
+                "occurrence_index": 1,
+            }],
+        },
+    )
     legacy_fact_model = fields.Char(string="来源通用模型", index=True)
     legacy_fact_id = fields.Integer(string="来源通用记录ID", index=True)
     legacy_fact_type = fields.Char(string="来源业务类型", index=True)
@@ -949,6 +960,18 @@ class ScSubcontractRegister(models.Model):
             record.processing_advisory = (
                 "；".join(suggestions) if suggestions else ""
             )
+
+    _compute_processing_advisory._sc_feedback_evaluation_review = {
+        "purpose": "advisory",
+        "inputs": [
+            {"field": "request_id", "type": "many2one_presence"},
+            {"field": "contract_id", "type": "many2one_presence"},
+            {"field": "start_date", "type": "date"},
+            {"field": "end_date", "type": "date"},
+            {"field": "management_note", "type": "text"},
+            {"field": "attachment_ids", "type": "many2many_presence"},
+        ],
+    }
 
     def _check_business_anchor(self):
         for record in self:

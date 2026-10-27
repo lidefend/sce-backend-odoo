@@ -106,6 +106,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     uploadPendingNativeAttachments,
     useFormPageLifecycleRuntime,
     v2ContractStore,
+    nativeRequiredEditableFieldNames,
     validateAdoptedFormSections,
     validateBeforeSaveRecord,
     validationErrors,
@@ -311,6 +312,9 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
    * "the composition should have validated but had nothing registered".
    */
   function adoptedExpectedRequiredFieldNames(): string[] {
+    const nativeFields = typeof nativeRequiredEditableFieldNames === 'function'
+      ? nativeRequiredEditableFieldNames() : null;
+    if (nativeFields !== null) return nativeFields;
     return (layoutNodes.value as LayoutNode[])
       .filter((node) => node.kind === 'field' && !node.readonly && Boolean(node.descriptor?.required))
       .filter((node) => isWritableFieldVisible(node.name))

@@ -52,8 +52,8 @@ const analysisAuthority = (viewType: 'pivot' | 'graph') => ({
   runtime_carrier: `ui.contract.v2.layoutContract.${viewType}Profile`,
 });
 const pivotModel = resolveAnalysisSurfaceModelFromProfile({
-  dimensions: [{ name: 'project_id', label: 'Project' }],
-  measures: [{ name: 'amount', label: 'Amount' }],
+  dimensions: [{ name: 'project_id', label: 'Project', fieldType: 'many2one' }],
+  measures: [{ name: 'amount', label: 'Amount', fieldType: 'monetary' }],
   defaults: {}, sourceAuthority: analysisAuthority('pivot'),
 }, 'pivot', [
   { project_id: [7, 'Project A'], amount: 12 },
@@ -63,6 +63,35 @@ assert.equal(pivotModel.ok, true);
 assert.equal(pivotModel.rows.length, 1);
 assert.equal(pivotModel.rows[0]?.amount, 20);
 assert.equal(pivotModel.rows[0]?.project_id, 'Project A');
+for (const viewType of ['pivot', 'graph'] as const) {
+  const profile = {
+    dimensions: [{ name: 'state', label: '状态', fieldType: 'selection', selection: [['a', '同名'], ['b', '同名']] }],
+    measures: [{ name: 'amount', label: '金额', fieldType: 'monetary' }],
+    sourceAuthority: analysisAuthority(viewType), typeDefault: 'bar',
+  };
+  const rows = [{ state: 'a', amount: 12 }, { state: 'a', amount: 8 }, { state: 'b', amount: 3 }];
+  const resolved = resolveAnalysisSurfaceModelFromProfile(profile, viewType, rows);
+  assert.equal(resolved.ok, true);
+  assert.deepEqual(resolved.rows.map(row => [row.state, row.amount]), [['同名', 20], ['同名', 3]]);
+  for (const dimension of [
+    { ...profile.dimensions[0], label: '' },
+    { ...profile.dimensions[0], fieldType: '' },
+    { ...profile.dimensions[0], selection: undefined },
+    { ...profile.dimensions[0], selection: [['a', '甲'], ['a', '乙']] },
+  ]) {
+    const rejected = resolveAnalysisSurfaceModelFromProfile({ ...profile, dimensions: [dimension] }, viewType, rows);
+    assert.equal(rejected.reasonCode, 'ANALYSIS_FIELD_METADATA_INVALID');
+    assert.deepEqual(rejected.rows, []);
+  }
+  const unknown = resolveAnalysisSurfaceModelFromProfile(profile, viewType, [{ state: 'unknown', amount: 1 }]);
+  assert.equal(unknown.reasonCode, 'ANALYSIS_SELECTION_VALUE_UNDECLARED');
+  assert.deepEqual(unknown.rows, []);
+  const relations = resolveAnalysisSurfaceModelFromProfile({ ...profile,
+    dimensions: [{ name: 'project_id', label: '项目', fieldType: 'many2one' }],
+  }, viewType, [{ project_id: [7, '同名项目'], amount: 12 }, { project_id: [8, '同名项目'], amount: 8 }]);
+  assert.equal(relations.ok, true);
+  assert.equal(relations.rows.length, 2);
+}
 const invalidGraphModel = resolveAnalysisSurfaceModelFromProfile({
   dimensions: [{ name: 'project_id' }], measures: [], typeDefault: 'bar',
   sourceAuthority: { ...analysisAuthority('graph'), runtime_carrier: 'wrong' },

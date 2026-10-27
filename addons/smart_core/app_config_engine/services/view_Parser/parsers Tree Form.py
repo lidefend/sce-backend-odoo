@@ -197,6 +197,13 @@ class _TreeFormParserMixin:
     def _field_widget_semantics(self, fname, widget, options):
         options = options if isinstance(options, dict) else {}
         semantics = {}
+        if widget == 'analytic_distribution':
+            semantics.update({
+                'kind': 'weighted_relation', 'version': 1,
+                'relation_model': 'account.analytic.account', 'label_field': 'display_name',
+                'key_encoding': 'csv_ids', 'value_unit': '%', 'mode': 'readonly',
+                'empty_text': '未分配',
+            })
         if widget == 'daterange':
             end_field = (
                 options.get('end_date_field')
@@ -230,6 +237,15 @@ class _TreeFormParserMixin:
         label = (btn_node.get('string') or btn_node.get('title') or '').strip()
         if label:
             return label
+        # Native object buttons may declare their translated label in markup.
+        # Dynamic fields/widgets need their own renderer; do not flatten them
+        # into a misleading partial label.
+        descendants = list(btn_node.iter())[1:]
+        static_tags = {'span', 'b', 'strong', 'i', 'em', 'small'}
+        if all(node.tag in static_tags and not node.attrib for node in descendants):
+            label = " ".join("".join(btn_node.itertext()).split())
+            if label:
+                return label
         try:
             if str(name_raw or '').strip().isdigit():
                 action = self.env['ir.actions.actions'].sudo().browse(int(name_raw))
@@ -527,6 +543,10 @@ class _TreeFormParserMixin:
                         "attributes": dict(el.attrib or {}),
                         "modifiers": occurrence_modifiers,
                     }
+                    widget_semantics = self._field_widget_semantics(
+                        fname, occurrence['widget'], self._safe_eval_expr(el.get('options')) if el.get('options') else {})
+                    if widget_semantics:
+                        occurrence['widget_semantics'] = widget_semantics
                     selection = (field_info or {}).get("selection")
                     if isinstance(selection, (list, tuple)):
                         occurrence["selection"] = [
@@ -641,6 +661,9 @@ class _TreeFormParserMixin:
             "type": meta.get('type') or 'char',
             "widget": widget,
         }
+        semantics = self._field_widget_semantics(name, widget, mods.get('options'))
+        if semantics:
+            schema['widget_semantics'] = semantics
         selection = meta.get('selection')
         if isinstance(selection, (list, tuple)):
             schema["selection"] = [
@@ -1056,7 +1079,18 @@ class _TreeFormParserMixin:
             }
 
         # 容器节点：sheet/group/notebook/page/div/header/footer/separator + h1/h2/h3（oe_title 标题区字段必须进入布局，否则必填标题字段丢失）
-        if tag in ('sheet', 'group', 'notebook', 'page', 'div', 'header', 'footer', 'separator', 'h1', 'h2', 'h3'):
+        if tag in ('sheet', 'group', 'notebook', 'page', 'div', 'header', 'footer', 'separator', 'h1', 'h2', 'h3', 'a', 'b', 'bold', 'span', 'p'):
+            if tag == 'a' and 'alert-link' in (el.get('class') or '').split():
+                # Odoo soft fragment anchors (href="#...") have no declared target
+                # in the contract form; render the link text as plain content and
+                # never treat the raw fragment as an authorized navigation target.
+                return {
+                    'type': 'text',
+                    **self._native_element_identity(el),
+                    'text': " ".join((el.text or "").split()),
+                    'attributes': {},
+                    'children': [],
+                }
             node = {
                 'type': self._layout_type(tag),
                 'attributes': _attrs(el),
@@ -1065,7 +1099,10 @@ class _TreeFormParserMixin:
             if el.get('name'):
                 node['name'] = el.get('name')
             text = " ".join((el.text or "").split())
-            if text:
+            is_legacy_alert = any(
+                token in (el.get('class') or '').split() for token in ('alert', 'alert-info', 'alert-warning', 'alert-danger')
+            ) or (el.get('role') or '').strip().lower() == 'alert'
+            if text and not is_legacy_alert:
                 node['text'] = text
             # 标签/列数等
             if tag in ('group', 'page', 'notebook'):
@@ -1085,6 +1122,20 @@ class _TreeFormParserMixin:
 
             # 递归子节点
             children = []
+            if is_legacy_alert and text:
+                # Legacy native alert text must be a declared content source, not
+                # the host's own text; project it as a real text child with the
+                # host's native identity so the feedback projection can bind it.
+                identity = self._native_element_identity(el)
+                children.append({
+                    'type': 'text',
+                    'text': text,
+                    'attributes': {},
+                    'children': [],
+                    'native_locator': (identity.get('native_locator') or '') + '/text[1]',
+                    'occurrence_index': 1,
+                    'source_authority': {'kind': 'native_view'},
+                })
             for ch in el:
                 cv = self._node_to_layout_from_dom(ch, fields_info, source_nodes)
                 if cv:
@@ -1144,9 +1195,10 @@ class _TreeFormParserMixin:
             if el.get('options'):
                 options_val = self._safe_eval_expr(el.get('options'))
                 meta['widget_options'] = options_val if isinstance(options_val, dict) else {}
-                semantics = self._field_widget_semantics(fname, meta.get('widget'), meta['widget_options'])
-                if semantics:
-                    meta['widget_semantics'] = semantics
+            semantics = self._field_widget_semantics(fname, meta.get('widget'), meta.get('widget_options'))
+            meta.pop('widget_semantics', None)
+            if semantics:
+                meta['widget_semantics'] = semantics
             if el.get('filename'):
                 node['filename'] = el.get('filename')
                 meta['filename'] = el.get('filename')
@@ -1197,7 +1249,13 @@ class _TreeFormParserMixin:
             return node
 
         # 其他未知节点：以 container 兜底
-        node = {'type': self._layout_type(tag), 'attributes': _attrs(el)}
+        node = {'type': self._layout_type(tag), 'attributes': _attrs(el),
+                **self._native_element_identity(el)}
+        mods, relation_active_actions = self._native_behavior_from_element(el)
+        if mods:
+            node['modifiers'] = mods
+        if relation_active_actions:
+            node['relation_active_actions'] = relation_active_actions
         text = " ".join((el.text or "").split())
         if text:
             node['text'] = text
@@ -1704,9 +1762,10 @@ class _TreeFormParserMixin:
             if attrs.get('options'):
                 options_val = self._safe_eval_expr(attrs.get('options'))
                 meta['widget_options'] = options_val if isinstance(options_val, dict) else {}
-                semantics = self._field_widget_semantics(fname, meta.get('widget'), meta['widget_options'])
-                if semantics:
-                    meta['widget_semantics'] = semantics
+            semantics = self._field_widget_semantics(fname, meta.get('widget'), meta.get('widget_options'))
+            meta.pop('widget_semantics', None)
+            if semantics:
+                meta['widget_semantics'] = semantics
             for key in ('readonly', 'required', 'invisible'):
                 if attrs.get(key):
                     meta.setdefault('modifiers', {})[key] = self._normalize_modifier_value(attrs.get(key))

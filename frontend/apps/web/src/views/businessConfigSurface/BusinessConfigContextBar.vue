@@ -58,5 +58,19 @@ defineProps<{
 .business-config-context__facts dd { min-width: 0; margin: 0; color: var(--sc-app-text-primary); font-weight: 600; overflow-wrap: anywhere; }
 .business-config-context__actions { display: flex; flex-wrap: wrap; gap: var(--sc-product-space-2); }
 @media (max-width: 900px) { .business-config-context__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 480px) { .business-config-context__facts { grid-template-columns: 1fr; } }
+@media (max-width: 480px) {
+  .business-config-context__facts { grid-template-columns: 1fr; }
+  .business-config-context :deep(.product-page-header.product-page-header--collection) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .business-config-context :deep(.product-page-header.product-page-header--collection .product-page-header__identity),
+  .business-config-context :deep(.product-page-header.product-page-header--collection .product-page-header__actions) {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  .business-config-context :deep(.product-page-header.product-page-header--collection .product-page-header__actions) {
+    justify-self: stretch;
+    justify-content: flex-start;
+  }
+}
 </style>

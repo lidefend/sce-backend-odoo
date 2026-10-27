@@ -114,12 +114,16 @@ function collectModifierFields(value: unknown, fields: Set<string>): void {
   }
   if (!value || typeof value !== 'object') return;
   const row = value as Record<string, unknown>;
+  if (row.kind === 'context_get') fields.add('$native.context');
   const field = text(row.field);
   if (field) fields.add(field);
   const valueField = text(row.value_field) || text(row.valueField);
   if (valueField) fields.add(valueField);
   collectModifierFields(row.expr, fields);
   collectModifierFields(row.exprs, fields);
+  collectModifierFields(row.value_expr, fields);
+  collectModifierFields(row.left, fields);
+  collectModifierFields(row.right, fields);
 }
 
 export function declaredModifierDependenciesResolved(modifier: unknown, values: ContractV2Dictionary): boolean {
@@ -141,4 +145,19 @@ export function resolveStateDerivedStatus(
   if (status?.visible !== false) return false;
   if (!STATE_DERIVED_STATUS_REASONS.has(text(status?.reasonCode))) return false;
   return declaredModifierDependenciesResolved(declaredVisibilityModifier(action), values);
+}
+
+
+// A structural node's resolved native predicate is fetch-time draft state.
+// Do not release widget/button authority, disabled or unresolved verdicts.
+export function resolveNativeContainerStateDerivedStatus(
+  nodeType: string,
+  modifier: unknown,
+  status: {visible?: boolean; disabled?: boolean; reasonCode?: string} | undefined,
+  values: ContractV2Dictionary,
+): boolean {
+  return Boolean(nodeType && !['field', 'button'].includes(nodeType)
+    && status?.visible === false && status.disabled === false
+    && status.reasonCode === 'NATIVE_MODIFIER_INVISIBLE'
+    && declaredModifierDependenciesResolved(modifier, values));
 }

@@ -113,8 +113,8 @@
         data-semantic-component="WorkspaceHomeCapabilityMap"
         :data-state="catalogLoading ? 'loading' : catalogError || catalogGap ? 'error' : loginBlocks.length ? 'ready' : 'empty'"
       >
-        <h3>首屏能力</h3>
-        <ScInlineState v-if="catalogLoading" state="loading" label="正在加载能力目录。" />
+        <h3>工作入口</h3>
+        <ScInlineState v-if="catalogLoading" state="loading" label="正在加载工作入口。" />
         <ScInlineState v-else-if="catalogError" state="error" :label="catalogError">
           <template #actions><ScButton type="button" variant="secondary" @click="loadCatalog">重试</ScButton></template>
         </ScInlineState>
@@ -146,7 +146,7 @@
             </ScButton>
           </article>
         </div>
-        <p v-else class="role-home-surface__state">当前账号没有声明登录首屏能力区块。</p>
+        <p v-else class="role-home-surface__state">暂无首页快捷入口。请从导航菜单选择业务；如需调整权限，请联系管理员。</p>
       </div>
     </template>
   </ProductWorkspaceSurface>

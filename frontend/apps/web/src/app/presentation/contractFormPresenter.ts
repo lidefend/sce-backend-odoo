@@ -6,6 +6,7 @@ import {
   actionRequiresPersistedRecord,
   declaredVisibilityModifier,
   resolveStateDerivedStatus,
+  resolveNativeContainerStateDerivedStatus,
 } from './actionRuleDerivation';
 import type {
   CanonicalFormAction,
@@ -385,6 +386,7 @@ function presentNode(
   componentRegistry: ContractV2Dictionary,
   clientType: string,
   ancestorTitle = '',
+  modifierValues?: ContractV2Dictionary,
 ): CanonicalFormNode {
   const ownRole = declaredZoneRole(container);
   const effectiveRole = ownRole ?? inheritedRole;
@@ -397,14 +399,18 @@ function presentNode(
     nodeSemantics.slot,
     nodeSemantics.group,
   ]);
-  const currentValues = resolveContractV2ModifierValues(store, runtimeValues);
+  const currentValues = modifierValues ?? resolveContractV2ModifierValues(store, runtimeValues);
   const resolveFieldValue = (field: string) => currentValues[field];
   const explicitFeedback = container.componentKey === 'sc.feedback.message';
   const layoutInvisible = explicitFeedback ? false : evaluateNativeModifierValue(containerModifierValue(container, 'invisible'), resolveFieldValue);
   const layoutReadonly = evaluateNativeModifierValue(containerModifierValue(container, 'readonly'), resolveFieldValue);
   const layoutRequired = evaluateNativeModifierValue(containerModifierValue(container, 'required'), resolveFieldValue);
+  const liveContainerVisibility = resolveNativeContainerStateDerivedStatus(
+    text(container.type || container.containerType).toLowerCase(),
+    containerModifierValue(container, 'invisible'), status, currentValues,
+  );
   const visible = ancestorVisible && container.visible !== false && !layoutInvisible
-    && bool(status?.visible, true) && bool(selectorStatus?.visible, true);
+    && (bool(status?.visible, true) || liveContainerVisibility) && bool(selectorStatus?.visible, true);
   const disabled = ancestorDisabled || bool(status?.disabled, false) || selectorStatus?.disabled === true;
   const readonly = ancestorReadonly || layoutReadonly || selectorStatus?.readonly === true;
   const widgets = (store.widgetsByOwnerContainerId.get(container.containerId) || []).map((widget) => (
@@ -501,7 +507,7 @@ function presentNode(
         child, effectiveRole, childIndex, store, contractValues, runtimeValues,
         mode, presentationMode, pageCanEdit, visible, disabled, readonly, actionsByIdentity, actionsByNativeOccurrence,
         authoritativeFieldLabels, structure, componentRegistry, clientType,
-        rawTitle || ancestorTitle,
+        rawTitle || ancestorTitle, modifierValues,
       )
     )),
   };
@@ -665,6 +671,7 @@ export function presentContractV2Form(
   runtimeValues?: ContractV2Dictionary,
   context?: {
     recordPersisted?: boolean;
+    modifierValues?: ContractV2Dictionary;
     feedbackEvaluations?: ReadonlyMap<string, FeedbackEvaluationOverride>;
   },
 ): CanonicalFormRenderModel {
@@ -692,7 +699,7 @@ export function presentContractV2Form(
     if (identity) actionIdentityCounts.set(identity, (actionIdentityCounts.get(identity) || 0) + 1);
     if (actionId) actionIdCounts.set(actionId, (actionIdCounts.get(actionId) || 0) + 1);
   });
-  const runtimeValuesMerged = resolveContractV2ModifierValues(store, runtimeValues);
+  const runtimeValuesMerged = resolveContractV2ModifierValues(store, context?.modifierValues ?? runtimeValues);
   const stateDerivedKeys = new Set<string>();
   const allActions = snapshot.actionContract.actionRuleList.map((action) => {
     const status = actionStatus(store, action);
@@ -725,7 +732,7 @@ export function presentContractV2Form(
     presentNode(
       container, declaredZoneRole(container) ?? 'primary', index, store, contractValues, runtimeValues, mode, presentationMode, pageCanEdit,
       pageVisible, contractAuthLevelDeniesAccess(pageAuthLevel), false, actionsByIdentity, actionsByNativeOccurrence, authoritativeFieldLabels, structure,
-      snapshot.layoutContract.componentRegistry, snapshot.pageInfo.clientType,
+      snapshot.layoutContract.componentRegistry, snapshot.pageInfo.clientType, '', runtimeValuesMerged,
     )
   ));
   const explicitNodes = projectNodeComponents(snapshot, context?.feedbackEvaluations);

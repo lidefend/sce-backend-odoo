@@ -10,6 +10,7 @@ import {
   one2manyRowLabelFromPrimary,
   one2manyRowActionsFromSubview,
   resolveOne2manyRowColumnBehavior,
+  resolveOne2manyColumnInvisible,
   selectOne2manySubview,
   setOne2manyDraftRowField,
 } from '../src/pages/contractForm/one2manyUtils';
@@ -231,9 +232,9 @@ assert.equal(
   false,
   'a new relation row must remain editable when the dynamic readonly modifier is false',
 );
-assert.equal(resolveOne2manyRowColumnBehavior({
+assert.throws(() => resolveOne2manyRowColumnBehavior({
   ...dynamicColumn, modifiers: { column_invisible: "context.get('hide_note')" },
-}, {}, {}).columnInvisible, true);
+}, {}, {}));
 assert.equal(resolveOne2manyRowColumnBehavior({
   ...dynamicColumn,
   modifiers: { column_invisible: { kind: 'field_truthy', field: 'parent.hide_note' } },
@@ -502,3 +503,152 @@ assert.deepEqual(extractKanbanFieldsFromContract(orderedKanban), ['name', 'strat
 orderedKanban.snapshot.layoutContract.listProfile = {columns: ['private_field', 'name']};
 assert.deepEqual(extractKanbanFieldsFromContract(orderedKanban), ['name', 'date', 'state', 'strategy']);
 console.log('kanban published ordering: 2 assertions PASS');
+
+const contextColumn = { ...dynamicColumn, modifiers: { column_invisible: {
+  kind: 'value_truthy', semantics: 'python', value_expr: { kind: 'context_get', key: 'view_no_maturity', default: false },
+} } };
+assert.equal(resolveOne2manyRowColumnBehavior(contextColumn, {}, { '$native.context': { view_no_maturity: true } }).columnInvisible, true);
+assert.equal(resolveOne2manyRowColumnBehavior(contextColumn, { '$native.context': { view_no_maturity: true } }, { '$native.context': {} }).columnInvisible, false);
+assert.throws(() => resolveOne2manyRowColumnBehavior(contextColumn, { '$native.context': {} }, {}));
+assert.throws(() => resolveOne2manyRowColumnBehavior({ ...dynamicColumn, modifiers: {
+  readonly: { kind: 'field_truthy', field: 'parent.missing' },
+} }, { 'parent.missing': false }, {}));
+console.log('one2many context namespace and missing-parent denial: passed');
+
+const relationColumns = [
+  { name: 'partner_id', label: 'Partner', ttype: 'many2one' },
+  { name: 'other_id', label: 'Other', ttype: 'many2one' },
+  { name: 'tag_ids', label: 'Tags', ttype: 'many2many' },
+];
+const relationBehavior = (node: unknown, values: Record<string, unknown>) => resolveOne2manyRowColumnBehavior(
+  { name: 'note', label: 'Note', modifiers: { readonly: node } }, values, {}, {}, relationColumns,
+).readonly;
+const equalPartner = { kind: 'field_compare', semantics: 'python', field: 'partner_id', operator: '==', value: 7 };
+assert.equal(relationBehavior(equalPartner, { partner_id: [7, 'Display'] }), true);
+assert.equal(relationBehavior(equalPartner, { partner_id: [8, 'Display'] }), false);
+assert.equal(relationBehavior(equalPartner, { partner_id: 7 }), true);
+assert.equal(relationBehavior(equalPartner, { partner_id: false }), false);
+assert.equal(relationBehavior({ ...equalPartner, value_field: 'other_id' }, { partner_id: [7, 'A'], other_id: [7, 'B'] }), true);
+assert.equal(relationBehavior({ kind: 'not', expr: { kind: 'any', exprs: [equalPartner] } }, { partner_id: [7, 'A'] }), false);
+assert.equal(relationBehavior({ kind: 'value_compare', semantics: 'python', operator: '==',
+  left: { kind: 'field_value', field: 'partner_id' }, right: { kind: 'literal', value: 7 },
+}, { partner_id: [7, 'A'] }), true);
+assert.equal(relationBehavior({ ...equalPartner, field: 'tag_ids', value: [7, 8] }, { tag_ids: [7, 8] }), true);
+assert.equal(relationBehavior({ ...equalPartner, field: 'tag_ids', value: [7, 8] }, { tag_ids: [8, 7] }), false);
+assert.equal(relationBehavior({ kind: 'field_truthy', field: 'tag_ids' }, { tag_ids: [] }), false);
+for (const malformed of [null, true, 0, -1, 1.5, '7', [], [7], [7, 8], [7, 'A', 9]]) {
+  assert.throws(() => relationBehavior(equalPartner, { partner_id: malformed }), { name: 'ContractGapError' });
+}
+assert.throws(() => relationBehavior({ kind: 'field_truthy', field: 'tag_ids' }, { tag_ids: [[6, 0, [7]]] }), { name: 'ContractGapError' });
+// Legacy domain nodes retain their previous comparator, including display-pair handling.
+assert.equal(relationBehavior({ ...equalPartner, semantics: undefined }, { partner_id: [7, 'A'] }), true);
+console.log('typed child native relation operands: passed');
+assert.equal(resolveOne2manyRowColumnBehavior({ name: 'note', label: 'Note', modifiers: { readonly: {
+  kind: 'field_compare', semantics: 'python', field: 'parent.partner_id', operator: '==', value: 7,
+} } }, { '$native.fieldTypes': { partner_id: 'char' } }, {
+  partner_id: [7, 'Parent'], '$native.fieldTypes': { partner_id: 'many2one' },
+}).readonly, true);
+
+const initNativeRows = (source: unknown) => initOne2manyRowsFromRelationSource({ source, relationOptions: [],
+  primary: 'name', columns: [{ name: 'name', label: 'Name', ttype: 'char' }] });
+assert.equal(initNativeRows([[0, 0, { name: 'Default' }]])[0]?.values.name, 'Default');
+assert.deepEqual(initNativeRows([[6, 0, [5]], [4, 7], [0, 0, { name: 'New' }]]).map(row => row.id), [5, 7, null]);
+for (const source of [[[1, 5, { name: 'Delta' }]], [[2, 5]], [[3, 5]], [[5, 0]],
+  [[4, 5], [6, 0, [7]]], [[0, 0, []]], [[6, 0, ['5']]], [5, 5], [[4, 5], [4, 5]]]) {
+  assert.throws(() => initNativeRows(source), { name: 'ContractGapError' });
+}
+console.log('native initial snapshot grammar and denial: passed');
+
+assert.throws(() => initNativeRows([[0, 0, { name: 'Known', account_id: 7 }]]), { name: 'ContractGapError' });
+assert.throws(() => initNativeRows([[0, 0, { name: 'Known', id: 7 }]]), { name: 'ContractGapError' });
+
+const forcedColumns = one2manyColumnsFromSubview({ tree: {
+  columns: ['hidden_value'], column_occurrences: [{ name: 'hidden_value', field_type: 'char',
+    attributes: { force_save: '1' }, modifiers: { invisible: true, readonly: true } }],
+} }, () => null);
+assert.equal(forcedColumns[0]!.forceSave, true);
+assert.equal(forcedColumns[0]!.readonly, true);
+assert.equal(forcedColumns[0]!.modifiers?.invisible, true);
+assert.throws(() => one2manyColumnsFromSubview({ tree: {
+  columns: ['hidden_value'], column_occurrences: [{ name: 'hidden_value', attributes: { force_save: 'maybe' } }],
+} }, () => null), { name: 'ContractGapError' });
+console.log('native hidden force_save declaration and invalid rejection: passed');
+
+// Native JSON cells share the declared readable-value path with root fields.
+const jsonColumn = { name: 'structured_value', label: '结构化值', ttype: 'json', required: false };
+for (const empty of [null, undefined, false, {}, []]) assert.equal(one2manyColumnDisplayValue(jsonColumn, empty), '');
+assert.equal(one2manyColumnDisplayValue(jsonColumn, { amount: 100 }), '{"amount":100}');
+assert.equal(one2manyColumnDisplayValue(jsonColumn, [{ amount: 100 }]), '[{"amount":100}]');
+assert.equal(one2manyColumnDisplayValue(jsonColumn, { zh_CN: '原始结构值' }), '{"zh_CN":"原始结构值"}', 'JSON must not be mistaken for a translated label');
+
+
+const { weightedRelationDisplay } = await import('../src/components/template/weightedRelationDisplay');
+const weightedSpec = { kind: 'weighted_relation', version: 1, relation_model: 'x.authorized.account',
+  label_field: 'display_name', key_encoding: 'csv_ids', value_unit: '%', mode: 'readonly', empty_text: '未分配' };
+const weightedContext = { allowed_company_ids: [8] };
+const weightedRaw = { '11,12': 75.5, '13': 0 };
+let weightedReads = 0;
+const weightedRead = async (params: { model: string; ids: number[]; fields: string[]; context: Record<string, unknown> }) => {
+  weightedReads++;
+  assert.equal(params.model, 'x.authorized.account');
+  assert.deepEqual(params.context, weightedContext);
+  assert.deepEqual(params.fields, ['id', 'display_name']);
+  return { records: params.ids.map(id => ({ id, display_name: `账户${id}` })) };
+};
+assert.equal(await weightedRelationDisplay(weightedSpec, weightedRaw, weightedContext, weightedRead), '账户13：0%；账户11 / 账户12：75.5%');
+assert.deepEqual(weightedRaw, { '11,12': 75.5, '13': 0 }, 'display never mutates native values');
+for (const empty of [false, null, {}]) assert.equal(await weightedRelationDisplay(weightedSpec, empty, weightedContext, weightedRead), '未分配');
+assert.equal(weightedReads, 1);
+for (const invalid of [{ '0': 100 }, { '11,11': 100 }, { '11': '100' }, { '11': Infinity }, { '1e3': 100 }, []]) {
+  await assert.rejects(weightedRelationDisplay(weightedSpec, invalid, weightedContext, weightedRead), { name: 'ContractGapError' });
+}
+await assert.rejects(weightedRelationDisplay(undefined, {}, weightedContext, weightedRead), { name: 'ContractGapError' });
+await assert.rejects(weightedRelationDisplay({ ...weightedSpec, mode: 'edit' }, {}, weightedContext, weightedRead), { name: 'ContractGapError' });
+await assert.rejects(weightedRelationDisplay(weightedSpec, { '11': 100 }, undefined, weightedRead), { name: 'ContractGapError' });
+await assert.rejects(weightedRelationDisplay(weightedSpec, { '11': 100 }, weightedContext, async () => ({ records: [] })), { name: 'ContractGapError' });
+await assert.rejects(weightedRelationDisplay(weightedSpec, { '11': 100 }, weightedContext, async () => { throw new Error('permission denied'); }), /permission denied/);
+await assert.rejects(weightedRelationDisplay(weightedSpec, { '11': 100 }, weightedContext, async () => ({ records: [{ id: 12, display_name: 'Foreign' }] })), { name: 'ContractGapError' });
+const weightedColumns = one2manyColumnsFromSubview({ tree: { columns: [{ name: 'distribution', type: 'json', widget: 'analytic_distribution', widget_semantics: weightedSpec }] } }, () => ({ type: 'json' }));
+assert.deepEqual(weightedColumns[0].widgetSemantics, weightedSpec);
+assert.equal(weightedColumns[0].widget, 'analytic_distribution');
+console.log('[weighted-relation-display] PASS names, combined keys, zero, empty, invalid, denied, context, preservation');
+
+const weightedOccurrences = one2manyColumnsFromSubview({ tree: {
+  columns: [{ name: 'distribution', type: 'json', widget: 'analytic_distribution', widget_semantics: weightedSpec }],
+  column_occurrences: [
+    { name: 'distribution', field_type: 'json', widget: 'analytic_distribution', widget_semantics: weightedSpec, native_locator: '/tree/field[1]' },
+    { name: 'distribution', field_type: 'json', widget: 'json', native_locator: '/tree/field[2]' },
+    { name: 'distribution', field_type: 'json', widget: 'analytic_distribution', native_locator: '/tree/field[3]' },
+  ],
+} }, () => ({ type: 'json' }));
+assert.deepEqual(weightedOccurrences[0].widgetSemantics, weightedSpec);
+assert.equal(weightedOccurrences[1].widget, 'json');
+assert.equal(weightedOccurrences[1].widgetSemantics, undefined, 'other occurrence never inherits weighted semantics');
+assert.equal(weightedOccurrences[2].widgetSemantics, undefined, 'missing own semantics cannot borrow from business column');
+await assert.rejects(weightedRelationDisplay(weightedOccurrences[2].widgetSemantics, {}, weightedContext, weightedRead), { name: 'ContractGapError' });
+
+// Missing child dependencies are not native empty values, including existing rows.
+for (const node of [
+  { kind: 'field_truthy', field: 'missing_gate' },
+  { kind: 'value_compare', semantics: 'python', operator: '==',
+    left: { kind: 'field_value', field: 'missing_gate' }, right: { kind: 'literal', value: false } },
+]) assert.throws(() => relationBehavior(node, {}), { name: 'ContractGapError' });
+for (const field of ['partner_id','tag_ids']) {
+  assert.throws(() => relationBehavior({kind:'field_truthy',field}, {id:33}), {name:'ContractGapError'});
+  assert.throws(() => resolveOne2manyRowColumnBehavior({name:'note',label:'Note',modifiers:{readonly:{kind:'field_truthy',field:`parent.${field}`}}},
+    {}, {'$native.fieldTypes':{[field]:field==='partner_id'?'many2one':'many2many'}}), {name:'ContractGapError'});
+}
+console.log('missing child and typed parent dependencies: denied');
+
+// Empty collections have no row: a cell dependency cannot decide header layout.
+const emptyColumn = {name: 'amount', label: 'Amount', modifiers: {
+  invisible: {kind: 'field_truthy', field: 'display_type'},
+  readonly: {kind: 'field_truthy', field: 'unknown_row_lock'},
+  required: {kind: 'field_truthy', field: 'unknown_row_required'},
+  column_invisible: {kind: 'field_truthy', field: 'parent.hide_amount'},
+}};
+assert.equal(resolveOne2manyColumnInvisible(emptyColumn, {hide_amount: false}), false);
+assert.equal(resolveOne2manyColumnInvisible(emptyColumn, {hide_amount: true}), true);
+assert.throws(() => resolveOne2manyColumnInvisible(emptyColumn, {}));
+assert.throws(() => resolveOne2manyColumnInvisible({...emptyColumn, modifiers: {column_invisible: {kind: 'field_truthy', field: 'display_type'}}}, {}));
+assert.throws(() => resolveOne2manyRowColumnBehavior(emptyColumn, {}, {hide_amount: false}));

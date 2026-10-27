@@ -74,6 +74,34 @@ class TestDocumentNativeLowcode(TransactionCase):
             yield node
             yield from TestDocumentNativeLowcode.walk(node.get("children", []))
 
+    def test_certificate_collection_declares_factual_fields_and_keeps_policy_isolation(self):
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+        expected = ["certificate_name", "certificate_no", "holder_name", "valid_until"]
+        action = self.ref("action_sc_certificate_registration")
+        self.assertEqual(action.view_id, self.ref("view_sc_certificate_registration_tree"))
+        self.assertEqual(action.views[0], (action.view_id.id, "tree"))
+        self.assertIn("certificate_registration", action.domain)
+        self.assertEqual(ast.literal_eval(action.context)["default_fact_type"], "certificate_registration")
+        for key, required, excluded in (
+            ("action_sc_certificate_registration", expected, ["document_title", "policy_version"]),
+            ("action_sc_product_policy_document_v1", ["document_title", "policy_version"], expected),
+        ):
+            entry = self.ref(key)
+            result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+                "op": "action_open", "action_id": entry.id, "view_type": "tree", "contract_surface": "user",
+            })
+            envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+            self.assertTrue(envelope.get("ok"), envelope)
+            contract = envelope["data"]
+            profile = contract["layoutContract"]["listProfile"]
+            columns = profile.get("fact_columns") or profile.get("columns") or []
+            for field in required:
+                self.assertIn(field, columns, (key, profile))
+            for field in excluded:
+                self.assertNotIn(field, columns, (key, profile))
+        self.assertNotEqual(self.ref("action_sc_document_borrow").view_id, action.view_id)
+        self.assertNotEqual(self.ref("action_sc_company_document_archive").view_id, action.view_id)
+
     def test_shared_archive_borrow_keep_capabilities_and_classification(self):
         from lxml import etree
         arch = etree.fromstring(self.ref("view_sc_document_admin_document_form").arch_db.encode())

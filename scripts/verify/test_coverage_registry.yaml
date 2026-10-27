@@ -92,6 +92,14 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: approval_policy_feedback
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.local.dev.approval.feedback.orm :: approval_policy_feedback'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: approval_scope_authority
   kind: odoo_tag
   status: on-demand
@@ -216,6 +224,14 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: conditioned_processing_feedback
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.local.dev.conditioned.feedback.orm :: conditioned_processing_feedback'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: contract
   kind: odoo_tag
   status: unwired
@@ -304,6 +320,14 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: cost_processing_feedback
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.local.dev.cost.feedback.orm :: cost_processing_feedback'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: current_account_workspace
   kind: odoo_tag
   status: unwired
@@ -365,6 +389,15 @@ entries:
     a tools.ormcache helper instead of the persisted relation, so an out-of-band grant or revocation was
     invisible to a long-lived worker. Reachable only through a hand-invoked ORM entry; no recurring workflow
     selects this group yet.
+- group: demo_accounting_roles
+  kind: odoo_tag
+  status: unwired
+  owner: demo-team
+  dispose: wire-pending
+  reason: Demo accounting role seed replay boundary added by PRODUCT-USER-GAP-CLOSEOUT-20261026. No governed
+    entry selects this tag yet; keep explicit demo-team wiring debt. Ordinary-clerk browser save/readback/cleanup
+    is separate evidence and does not claim this ORM group ran.
+  review_by: '2026-11-10'
 - group: demo_action_roles
   kind: odoo_tag
   status: on-demand
@@ -1580,5 +1613,13 @@ entries:
   owner: construction-product
   dispose: class-selected
   gate: 'make:verify.workflow_contract.backend :: /TestWorkflowContractBackend (class selection)'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: workspace_processing_feedback
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.local.dev.workspace.feedback.orm :: workspace_processing_feedback'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.

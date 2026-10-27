@@ -26,9 +26,12 @@ export type OnchangeResponse = {
 export async function triggerOnchange(params: {
   model: string;
   res_id?: number | null;
+  view_id?: unknown;
   values: Record<string, unknown>;
   changed_fields: string[];
   context?: Record<string, unknown>;
+  child_initialization?: { field: string; fields: string[]; values: Record<string, unknown> };
+  child_onchange?: { field: string; fields: string[]; values: Record<string, unknown>; changed_fields: string[]; record_id: number };
   feedback_evaluation?: FeedbackDescribeRequest | FeedbackEvaluateRequest;
   client_contract_capabilities?: string[];
 }) {
@@ -37,9 +40,12 @@ export async function triggerOnchange(params: {
     params: {
       model: params.model,
       res_id: params.res_id || undefined,
+      view_id: params.view_id,
       values: params.values,
       changed_fields: params.changed_fields,
       context: params.context || {},
+      ...(params.child_initialization ? { child_initialization: params.child_initialization } : {}),
+      ...(params.child_onchange ? { child_onchange: params.child_onchange } : {}),
       ...(params.feedback_evaluation ? { feedback_evaluation: params.feedback_evaluation } : {}),
       ...(params.client_contract_capabilities
         ? { client_contract_capabilities: params.client_contract_capabilities }

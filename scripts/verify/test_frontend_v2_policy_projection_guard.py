@@ -47,6 +47,30 @@ class RefusalMarkerGuardTest(unittest.TestCase):
         self.assertNotEqual(result, 0)
         self.assertIn('is not declared by the backend identity producers', output)
 
+    def test_relation_domain_token_must_have_a_backend_producer(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'assembler.py'
+            path.write_text('UNRELATED = True')
+            with patch.object(guard, 'RELATION_DOMAIN_PRODUCERS', (path,)), patch.object(guard, '_relative', lambda p: str(p)):
+                result, output = self.run_guard()
+        self.assertNotEqual(result, 0)
+        self.assertIn('is not declared by the backend relation domain producers', output)
+
+    def test_native_relation_metadata_schema_rejects_malformed_snapshots(self):
+        import jsonschema
+        schema = json.loads(guard.BACKEND_SCHEMA.read_text())['$defs']['dataMeta']['properties']
+        jsonschema.validate({'lines': 'one2many'}, schema['nativeModifierFieldTypes'])
+        for value in ['', ' ', False, None]:
+            with self.assertRaises(jsonschema.ValidationError):
+                jsonschema.validate({'lines': value}, schema['nativeModifierFieldTypes'])
+        snapshot_schema = schema['nativeModifierRelationSnapshots']
+        for ids in ([], [7, 9]):
+            jsonschema.validate({'lines': {'sourceValue': [], 'persistedIds': ids}}, snapshot_schema)
+        for value in ({'persistedIds': []}, {'sourceValue': []}, {'sourceValue': [], 'persistedIds': [True]},
+                      {'sourceValue': [], 'persistedIds': [0]}, {'sourceValue': [], 'persistedIds': [9007199254740992]}):
+            with self.assertRaises(jsonschema.ValidationError):
+                jsonschema.validate({'lines': value}, snapshot_schema)
+
     def test_modifier_declaration_token_must_have_a_backend_producer(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'native_modifier.py'

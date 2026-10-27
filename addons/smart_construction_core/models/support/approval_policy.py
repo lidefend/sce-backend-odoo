@@ -190,7 +190,33 @@ class ScApprovalPolicy(models.Model):
         index=True,
         tracking=True,
         string="业务单据",
+        default=False,
     )
+    processing_advisory = fields.Char(
+        "办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction",
+        sc_feedback_usage={
+            "purpose": "advisory",
+            "occurrences": [{
+                "view_xmlid": "smart_construction_core.view_sc_approval_policy_form",
+                "native_locator": "/form[1]/sheet[1]/div[1]/field[1]",
+                "occurrence_index": 1,
+            }],
+        },
+    )
+
+    @api.depends("target_model")
+    def _compute_processing_advisory(self):
+        for policy in self:
+            policy.processing_advisory = (
+                "付款申请的启用审批和审批方式请在“系统参数”中发布或回滚。"
+                if policy.target_model == "payment.request" else ""
+            )
+
+    _compute_processing_advisory._sc_feedback_evaluation_review = {
+        "purpose": "advisory",
+        "inputs": [{"field": "target_model", "type": "selection"}],
+    }
+
     model_name = fields.Char(compute="_compute_model_name", store=True, index=True, string="技术模型")
     approval_required = fields.Boolean(default=True, tracking=True, string="启用审批")
     trigger = fields.Selection(
