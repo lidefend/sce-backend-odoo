@@ -371,6 +371,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       // the dependent fields before the draft is saved.
       presentFields.forEach((name) => changedFieldSet.add(name));
       void runOnchangeRoundtrip();
+      prepareVisibleOne2manyHydration();
       originalValues.value = snapshotOriginalFormValues(fieldNames, formData);
       nativeLayoutVisibilityRevision.value += 1;
       restoreIntakeAutosave();
@@ -422,6 +423,9 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       });
     });
     if (feedbackDependencyPresence) feedbackDependencyPresence.value = presentFields;
+    // Publish the loading state in the same synchronous batch as ID-only rows.
+    // An await in reload yields to Vue before its continuation can mark them.
+    prepareVisibleOne2manyHydration();
     originalValues.value = snapshotOriginalFormValues(fieldNames, formData);
     nativeLayoutVisibilityRevision.value += 1;
   }
@@ -452,7 +456,6 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         if (reloadToken !== activeReloadToken) return;
         await loadRecord();
         if (reloadToken !== activeReloadToken) return;
-        prepareVisibleOne2manyHydration();
         applyPageStatusEvent({ kind: 'status', transaction: 'formReload', status: 'ok' });
         retainedRouteIdentity.value = formRouteIdentity();
         void preloadFormAuxiliaryData(reloadToken);

@@ -84,27 +84,6 @@ async function ownedJournalRows() {
 try {
   page = await browser.newPage({viewport: mobile ? {width: 390, height: 844} : {width: 1440, height: 960}, hasTouch: mobile, isMobile: mobile, locale: 'zh-CN'});
   page.setDefaultTimeout(20000);
-  // Temporary read-only diagnosis of the persisted journal load blocker.
-  if (scope === 'journal-role') {
-    report.diagnosticOnly = true;
-    report.contractExceptions = [];
-    const diagnostic = await page.context().newCDPSession(page);
-    diagnostic.on('Debugger.paused', async event => {
-      try {
-        if (event.reason === 'exception' && event.data?.objectId) {
-          const own = await diagnostic.send('Runtime.getProperties', {objectId: event.data.objectId, ownProperties: true});
-          const props = Object.fromEntries(own.result.map(item => [item.name, item.value]));
-          const defect = props.defect?.objectId ? await diagnostic.send('Runtime.getProperties', {objectId: props.defect.objectId, ownProperties: true}) : {result: []};
-          report.contractExceptions.push({name: props.name?.value, message: props.message?.value, stack: props.stack?.value,
-            defect: Object.fromEntries(defect.result.filter(item => ['kind','missing','requiredDeclarationLayer'].includes(item.name)).map(item => [item.name,item.value?.value])),
-            frames: event.callFrames.slice(0, 15).map(frame => ({function:frame.functionName,location:frame.location}))});
-        }
-      } catch { report.exceptionDiagnosticIncomplete = true; }
-      finally { await diagnostic.send('Debugger.resume').catch(() => {}); }
-    });
-    await diagnostic.send('Debugger.enable');
-    await diagnostic.send('Debugger.setPauseOnExceptions', {state:'all'});
-  }
   let init;
   page.on('pageerror', error => report.errors.push(error.message));
   await page.route('**/api/**', async route => {

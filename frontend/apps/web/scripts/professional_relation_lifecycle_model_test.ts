@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { effectScope, reactive, ref } from 'vue';
+import { effectScope, reactive, ref, watch, nextTick } from 'vue';
 import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime';
 import { useRecordRelationshipFields } from '../src/pages/contractForm/useRecordRelationshipFields';
 import { useRecordPageLifecycle } from '../src/pages/contractForm/useRecordPageLifecycle';
@@ -351,3 +351,35 @@ console.log(`[professional_relation_lifecycle_model_test] PASS shared-record-lif
   assert.deepEqual(superseded.relationOptions.value.partner_id, [{ id: 5, label: 'Unfiltered record' }]);
   console.log('[professional_relation_lifecycle_model_test] PASS superseded-dynamic-fallback=1');
 }
+
+// Vue flushes queued rendering before an async loadRecord caller resumes.
+// ID-only rows must already be marked loading in that first render.
+{
+  const loadedRows = ref<number[]>([]), childLoading = ref(false);
+  const observations: boolean[] = [];
+  const stop = watch(loadedRows, rows => { if (rows.length) observations.push(childLoading.value); });
+  const formData = reactive<Record<string, unknown>>({});
+  const noOp = () => {};
+  const recordLoader = useRecordPageLifecycle({
+    recordVersionPolicy: () => null, formDataFieldNames: () => ['line_ids'],
+    recordVersionToken: ref(''), closeNativeChatterComposer: noOp, clearNativeChatterForRecordLoad: noOp,
+    nativeChatterAutoLoadKey: ref(''), clearNativeAttachmentError: noOp,
+    recordId: ref(42), formData, relationKeywords: {}, relationOptions: ref({}),
+    clearOne2manyRows: noOp, onchangeModifiersPatch: ref({}), onchangeWarnings: ref([]), onchangeLinePatches: ref([]),
+    changedFieldSet: new Set(), dirtyFieldSet: new Set(), resetPendingInlineRelationCreates: noOp,
+    getOnchangeTimer: () => null, renderProfile: ref('readonly'), v2ContractStore: ref(null),
+    resolveContractV2MainData: () => ({line_ids: [7], display_name: 'Existing'}),
+    recordMissing: ref(false), originalValues: ref({}), nativeLayoutVisibilityRevision: ref(0),
+    applyIncomingFormFieldValue: ({fieldName, incoming}: {fieldName: string; incoming: unknown}) => {
+      formData[fieldName] = incoming;
+      if (fieldName === 'line_ids') loadedRows.value = incoming as number[];
+    },
+    prepareVisibleOne2manyHydration: () => { childLoading.value = true; },
+    snapshotOriginalFormValues: () => ({}),
+  });
+  await recordLoader.loadRecord();
+  await nextTick();
+  assert.deepEqual(observations, [true], 'first Vue render must not evaluate ID-only persisted child rows');
+  stop();
+}
+console.log('persisted child loading: first Vue flush is protected');
