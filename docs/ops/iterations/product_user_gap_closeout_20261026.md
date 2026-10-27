@@ -19,7 +19,7 @@ Blast Radius：按捕获契约与实际根因推导精确受影响入口，局�
 ## 接管增量：真实日记账草稿与子行值缺失语义（2026-10-26）
 
 P4提交d9c2be503扩展已有workspace草稿探针与Make包装器，固定account.move菜单175，
-从system.init取得入口，复用现有账号、sc-local-dev/sc_dev_demo、namespace ns_000000000002
+从system.init取得入口，复用现有用户身份、sc-local-dev/sc_dev_demo、namespace ns_000000000002
 及候选前端。保存/create/write/unlink/业务动作继续被拦截。探针等待本次新建根联动与
 新增line_ids命令的实际HTTP/ok响应，要求行数精确+1；passed只代表草稿传输。
 L1、语法及11项请求策略单测通过，独立复核无S0-S2。未添加新的环境、凭据或fixture。

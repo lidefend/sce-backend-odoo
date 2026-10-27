@@ -34,6 +34,7 @@ export async function saveClerkJournal({page,base,root,report,leaves,state,api})
     page.getByRole('button',{name:/^(新建|新增|创建)$/}).first().click(),
   ]);
   const contract=await capture(contractResponse), initial=await capture(initialResponse);
+  report.initialOnchange = initial;
   assert.equal(contract.data.pageInfo.model,'account.move');
   const rules=contract.data.actionContract.actionRuleList; assert(Array.isArray(rules));
   const parentRules=rules.filter(rule=>(rule.sourceWidgetId || rule.source_widget_id)==='field.line_ids'

@@ -84,6 +84,34 @@ async function ownedJournalRows() {
 try {
   page = await browser.newPage({viewport: mobile ? {width: 390, height: 844} : {width: 1440, height: 960}, hasTouch: mobile, isMobile: mobile, locale: 'zh-CN'});
   page.setDefaultTimeout(20000);
+  // Read-only debugger evidence: caught contract gaps otherwise become generic UI errors.
+  if (journalSave.enabled) {
+    const diagnostic = await page.context().newCDPSession(page);
+    report.contractExceptions = [];
+    diagnostic.on('Debugger.paused', async event => {
+      try {
+        if (event.reason === 'exception' && event.data?.objectId) {
+          const own = await diagnostic.send('Runtime.getProperties', {objectId: event.data.objectId, ownProperties: true});
+          const props = Object.fromEntries(own.result.map(item => [item.name, item.value]));
+          if (props.name?.value === 'ContractGapError') {
+            const defect = props.defect?.objectId ? await diagnostic.send('Runtime.getProperties', {objectId: props.defect.objectId, ownProperties: true}) : {result: []};
+            const frames = [];
+            for (const frame of event.callFrames.slice(0, 5)) {
+              const local = frame.scopeChain.find(scope => scope.type === 'local');
+              const values = local ? await diagnostic.send('Runtime.getProperties', {objectId: local.object.objectId, ownProperties: true}) : {result: []};
+              frames.push({function: frame.functionName, location: frame.location,
+                fieldNames: values.result.filter(item => item.value?.type === 'string' && /^[a-zA-Z_][a-zA-Z0-9_.]{0,100}$/.test(item.value.value)).map(item => ({binding: item.name, value: item.value.value}))});
+            }
+            report.contractExceptions.push({message: props.message?.value,
+              defect: Object.fromEntries(defect.result.filter(item => ['kind','missing','requiredDeclarationLayer'].includes(item.name)).map(item => [item.name,item.value?.value])), frames});
+          }
+        }
+      } catch { report.exceptionDiagnosticIncomplete = true; }
+      finally { await diagnostic.send('Debugger.resume').catch(() => {}); }
+    });
+    await diagnostic.send('Debugger.enable');
+    await diagnostic.send('Debugger.setPauseOnExceptions', {state: 'all'});
+  }
   let init;
   page.on('pageerror', error => report.errors.push(error.message));
   await page.route('**/api/**', async route => {

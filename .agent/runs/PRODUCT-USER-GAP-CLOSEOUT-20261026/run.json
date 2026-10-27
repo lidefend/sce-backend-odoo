@@ -179,7 +179,8 @@
     "config/acceptance/evolution_binding.v1.json",
     "scripts/verify/contract_form_side_effect_regression_guard.py",
     "scripts/verify/test_frontend_standard_preview.py",
-    "docs/engineering_convergence/contract_form_side_effect_map.md"
+    "docs/engineering_convergence/contract_form_side_effect_map.md",
+    "scripts/ci/personal_data_false_positives.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -193,7 +194,7 @@
     "Integration revalidation at 3c8593 and f4c125: clerk create fails before initial onchange; captured contract lacks authorized_transaction_ids and duplicated_ref_ids. Owned probes independently cleaned. P0 native hydration fix pending actual replay.",
     "Isolated acceptance contract receipt rejects stale lifecycle schema digest; governed declaration sync applied, runtime revalidation pending. Merge-stage presentation/list/relation receipts still required."
   ],
-  "next_exact_step": "Revalidate ordinary clerk create/save after native missing x2many dependency hydration and schema declaration sync; then collect merge-stage presentation/list/relation evidence, freeze, Quick, independent archive and protected GitHub PR merge.",
+  "next_exact_step": "Diagnose post-default clerk form loading failure using caught ContractGapError and initial onchange payload. Revalidate fix, rerun invalidated Quick, preserve passing e430 local presentation/list/relation evidence with true identity; do not merge while runtime blocker remains.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -2166,6 +2167,19 @@
       "presentation": "Governed local 5180/sc_frontend_acceptance adapter added; same presentation assertions, fixture resolution and contract receipt required; independent source review no S0-S2",
       "guard_repair": "Existing onchange guard incorrectly required silent failure; aligned with current-draft error feedback and stale-response isolation, with negative tests.",
       "pending": "Actual clerk save and merge-stage presentation/list/relation, final Quick and PR gates"
+    },
+    "integration_e430_results": {
+      "passed": [
+        "contract receipt",
+        "local presentation 1 target zero mutation/error",
+        "list surface 18 scenarios",
+        "relation roundtrip no blocking differences"
+      ],
+      "failed": [
+        "clerk create page after initial onchange; independently cleaned",
+        "Quick PD003 historical namespace false positives; exact blob registry repair pending recheck"
+      ],
+      "publication": "not pushed; no PR; no main merge"
     }
   }
 }
