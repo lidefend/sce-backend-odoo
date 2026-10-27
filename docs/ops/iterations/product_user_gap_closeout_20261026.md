@@ -2001,3 +2001,14 @@ height均22px、width不超过所在单元格。逐项focus+Enter打开全文，
 下一步用已有read/user身份开展选定会计入口/详情的移动端走查，依据实际契约和角色权限
 分别验收；实际保存、UI过账、跨公司矩阵和原生分析编辑仍开放。
 无demo变更、迁移、模块升级、主线合并或远端部署。
+
+### 2026-10-27：会计角色移动端增量走查（执行中）
+
+起点1899a574ec286e176d06cd3becbdb449a685a4b5，初始clean。P4验证工具
+local_dev_workspace_feedback及同入口mobile helper、make/dev.mk；仅扩展视口参数和
+只读断言，不承载P0-P3产品定义。复用sc-local-dev/sc_dev_demo、既有凭据与read1987/user1988，
+无数据写入。影响集合由已发布六会计入口 × 两角色 × mobile390x844，另两角色
+凭证draft/posted父详情卡片；根分录详情不在本次集合。桌面原始证据保持原身份。
+最早L1 syntax/iteration，L2既有journal.save.policy非零策略用例，L4受管实际走查，
+L5独立复核。未改产品/权限/seed，L2产品ORM及L3升级不适用；不运行全矩阵/Quick。
+首次L1因新helper未入run scope拒绝，已补登记后再跑；不算产品失败。
