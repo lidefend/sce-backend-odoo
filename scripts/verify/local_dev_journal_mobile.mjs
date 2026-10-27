@@ -23,10 +23,19 @@ export async function inspectMobileAccounting({page, base, root, actor, accounti
     const action=Number(route.pathname.split('/').at(-1));
     const allowed=await journalApi('route.authority.validate',{action_id:action,menu_id:menu});
     assert.equal(allowed.status,200); assert.equal(allowed.payload.data.allowed,true);
+    const collectionPending=page.waitForResponse(response=>{
+      let body; try {body=response.request().postDataJSON();} catch {return false;}
+      const request=body?.params?.intent ? body.params : body;
+      return request?.intent==='ui.contract.v2' && request.params?.op==='action_open'
+        && Number(request.params.action_id)===action && Number(request.params.menu_id)===menu;
+    });
     await page.goto(base+entry.meta.route,{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>['ok','empty'].includes(document.querySelector('[data-semantic-component="ActionView"]')?.getAttribute('data-collection-state')));
+    const collectionResponse=await collectionPending, collection=await collectionResponse.json();
+    assert.equal(collectionResponse.status(),200); assert.equal(collection.ok,true);
+    assert.equal(collection.data.pageInfo.model,entry.meta.model);
     const list=page.locator('[data-semantic-component="ActionView"]');
-    const item={model:entry.meta.model,menu,route:entry.meta.route,geometry:await geometry(),
+    const item={model:entry.meta.model,contractModel:collection.data.pageInfo.model,action,menu,route:entry.meta.route,geometry:await geometry(),
       collectionState:await list.getAttribute('data-collection-state'),passed:true};
     report.cases.push(item);
     await page.screenshot({path:`${root}/${actor}-${menu}.png`});
@@ -34,14 +43,15 @@ export async function inspectMobileAccounting({page, base, root, actor, accounti
     for (const state of ['draft','posted']) {
       const selected=await journalApi('api.data',{op:'list',model:'account.move',
         domain:[['state','=',state],['move_type','=','entry'],['name','!=','/'],['name','!=',false]],
-        fields:['id','name','state','line_ids','write_date'],limit:5});
+        fields:['id','name','state','line_ids','write_date','company_id','journal_id','move_type'],limit:5});
       assert.equal(selected.status,200); assert.equal(selected.payload.ok,true);
       const record=selected.payload.data.records.find(row=>row.name && row.name!=='/');
       assert(record,`demo gap: named ${state} journal required`);
-      assert.equal(record.state,state); assert(record.line_ids.length>0);
+      assert.equal(record.state,state); assert.equal(record.company_id[0],1); assert.equal(record.move_type,'entry'); assert(record.line_ids.length>0);
       setDetailId(record.id);
       const fields=['id','move_id','name','account_id','debit','credit','analytic_distribution','write_date'];
       const before=await read('account.move.line',record.line_ids,fields);
+      for (const line of before) assert.equal(line.move_id[0],record.id);
       const pending=page.waitForResponse(response=>{
         let body; try {body=response.request().postDataJSON();} catch {return false;}
         const request=body?.params?.intent ? body.params : body;
@@ -52,10 +62,10 @@ export async function inspectMobileAccounting({page, base, root, actor, accounti
       if (state==='draft') await list.getByRole('button',{name:record.name,exact:true}).click();
       else await page.goto(`${base}/f/account.move/${record.id}?menu_id=${menu}&action_id=${action}`,{waitUntil:'domcontentloaded'});
       const response=await pending, payload=await response.json();
-      assert.equal(response.status(),200); assert.equal(payload.ok,true);
+      assert.equal(response.status(),200); assert.equal(payload.ok,true); assert.equal(payload.data.pageInfo.model,'account.move');
       await page.waitForFunction(id=>{
         const form=document.querySelector('[data-semantic-component="ContractFormPage"]');
-        return form?.getAttribute('data-state')==='ok' && form?.getAttribute('data-form-record')===String(id);
+        return form?.getAttribute('data-state')==='ok' && form?.getAttribute('data-form-model')==='account.move' && form?.getAttribute('data-form-record')===String(id);
       },record.id);
       const form=page.locator('[data-semantic-component="ContractFormPage"]');
       const cards=form.locator('[data-field-name="line_ids"] [data-detail-collection-content="mobile-cards"]');
@@ -108,7 +118,7 @@ export async function inspectMobileAccounting({page, base, root, actor, accounti
       }
       const after=await read('account.move.line',record.line_ids,fields);
       assert.deepEqual(after,before);
-      const parentAfter=await read('account.move',[record.id],['id','name','state','line_ids','write_date']);
+      const parentAfter=await read('account.move',[record.id],['id','name','state','line_ids','write_date','company_id','journal_id','move_type']);
       assert.deepEqual(parentAfter,[record]);
       report.mobileDetails.push({state,record,before,after,parentAfter,comparisons,declared,geometry:await geometry(),unchanged:true,passed:true});
     }
