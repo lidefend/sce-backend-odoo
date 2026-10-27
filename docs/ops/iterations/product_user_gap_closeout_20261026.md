@@ -1975,3 +1975,29 @@ UI过账、跨公司浏览器矩阵、真实移动端、原生分析编辑或完
 新增呈现观察：reader只读表格科目/标签的ScButton structured-content展开按钮仍呈
 原生默认边框，X2ManyRelationRenderer的scoped trigger样式可能未穿透包装层；
 登记为P0呈现缺口，后续修复并核对展开行为。无主线合并或远端部署。
+### 2026-10-27：只读表格完整值展开按钮样式
+
+P0 X2ManyRelationRenderer将只读值触发器样式限定在.o2m-readonly父容器并使用deep
+穿透ScButton/ScTooltip包装层，覆盖实际按钮和.sc-btn__content；去除原生边框/背景，
+保留继承字体、颜色、紧凑省略及既有全局focus样式。去除与ScPopover重复的title提示，
+保留type=button和可访问名称。未改字段值、角色权限、原生字段发布范围或数据请求。
+
+实现/运行候选c417520991dc76537676bd9052113e2b9ce2cad3。
+readonly-cell-static/unit/policy/types/lint通过：既有集合语义/3739原生差分及43parser测试，
+策略27JS+11Python、严格类型和完整lint（仅既有StatusPanel警告）。本次未改后端或seed，
+未重复数据写入/ORM；seed及ORM仍引用6276原始证据，经办权限走查保留8d007e20f身份。
+
+readonly-cell-browser.log退出0：reader1987六入口、父凭证10/55及根分录19/51两态通过，
+errors0/blocked0、无save/dispatch。原始report的journalStates[].lineComparisons[].ui.expansions
+记录6次操作（4科目+2非空标签）：实际border=0px、background透明、nowrap、type=button，
+height均22px、width不超过所在单元格。逐项focus+Enter打开全文，全文与原始账户标签/分录名
+一致，等待弹层淡入完成后截图，再点击关闭并等待隐藏。不是仅凭选择器或CSS字符串验收。
+前后line读取增加name字段，连同科目/金额/分配/write_date及父记录回读保持一致。
+已人工检查saved-posted-detail及posted-51-name-expanded截图：默认边框消失、窄列省略、
+完整弹层清晰可读。证据目录journal-role-browser/c417520991dc76537676bd9052113e2b9ce2cad3/，
+文件前缀sc_demo_accounting_read。review_takeover独立原始报告复核通过，无本轮阻断。
+
+关闭reader桌面两态样本的该只读值按钮样式缺口；没有扩大为所有角色、移动端或业务写验收。
+下一步用已有read/user身份开展选定会计入口/详情的移动端走查，依据实际契约和角色权限
+分别验收；实际保存、UI过账、跨公司矩阵和原生分析编辑仍开放。
+无demo变更、迁移、模块升级、主线合并或远端部署。

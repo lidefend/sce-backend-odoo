@@ -179,7 +179,7 @@
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Fix generic readonly X2Many expanded-value button styles through primitive wrappers and verify real expansion/compact display; then extend selected accounting role journeys to mobile. Preserve demo identities and readonly transport gates.",
+  "next_exact_step": "Extend existing governed journal-role tool to selected mobile accounting list/detail journeys using existing reader1987/user1988 and contract-derived membership; inspect viewport/interaction/readback without business writes.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1980,10 +1980,14 @@
       ],
       "reason": "Readonly expansion button CSS is blocked by primitive wrappers, as confirmed in prior reader screenshot. Apply parent-scoped deep styles without business/permission changes; remove duplicate tooltip, preserve button keyboard interaction.",
       "validation_plan": "L1,collection/policy nonzero,types/lint; existing exact candidate reader desktop two-state journey with computed border/background/nowrap/dimensions, keyboard open/full-text/close and unchanged readback. Unchanged seed/ORM evidence stays at6276, no data writes.",
-      "status": "static_passed_browser_pending",
+      "status": "reader_desktop_two_state_visual_and_interaction_verified",
       "validation": "readonly-cell-static/unit/policy/types/lint logs PASS; collection suite includes43parser+native differential3739; policy27JS+11Python; strict types exit0; full lint existingStatusPanel warning only.",
-      "review": "review_takeover source PASS no S1/S2; real styles/keyboard/popup/full text/close need browser confirmation.",
-      "reuse": "No backend/seed/role changes. Seed and ORM remain6276, role user browser remains8d007e20f; reader affected desktop readonly cells rechecked only. Native analytic component unchanged."
+      "review": "review_takeover final source/raw report PASS no blockers. Limit reader desktop2states; user original8d007e20f evidence retained.",
+      "reuse": "No backend/seed/role changes. Seed and ORM remain6276, role user browser remains8d007e20f; reader affected desktop readonly cells rechecked only. Native analytic component unchanged.",
+      "candidate": "c417520991dc76537676bd9052113e2b9ce2cad3",
+      "browser": "readonly-cell-browser.log PASS6/parent2/root2 errors0blocked0 no writes. 6expansions(4account+2name) border0 transparent nowrap typebutton height22 width<=cell; Enter/fullText/close all pass. Added name to unchanged pre/post line readback; parent/root data unchanged. Screenshots manually inspected.",
+      "evidence": "journal-role-browser/c417520991dc76537676bd9052113e2b9ce2cad3/sc_demo_accounting_read-report.json journalStates[].lineComparisons[].ui.expansions; saved-posted-detail.png and posted-51-name-expanded.png with same actor prefix",
+      "limits": "No other-role/mobile/business-write acceptance expansion. No seed/migration/upgrade/merge/remote deployment."
     }
   }
 }
