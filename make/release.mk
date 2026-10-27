@@ -18,7 +18,7 @@ export ACCEPTANCE_PASSWORD
 RELEASE_COMPOSE = $(COMPOSE_BIN) -p $(RELEASE_PROJECT) -f docker-compose.yml -f docker-compose.release-rehearsal.yml
 RELEASE_ENV = SC_ENVIRONMENT=release_rehearsal SC_ALLOW_DEMO_DATA=0 DB_NAME=$(RELEASE_DB) ODOO_DB=$(RELEASE_DB) ODOO_DBFILTER=^$(RELEASE_DB)$$ COMPOSE_PROJECT_NAME=$(RELEASE_PROJECT) DB_DATA=$(RELEASE_PROJECT)-db REDIS_DATA=$(RELEASE_PROJECT)-redis ODOO_DATA=$(RELEASE_PROJECT)-odoo ODOO_PORT=18087 NGINX_PORT=18086 FRONTEND_DIST_DIR=./frontend/apps/web/dist-release DB_USER=$(DB_USER) DB_PASSWORD=$(DB_PASSWORD) ADMIN_PASSWD=$(ADMIN_PASSWD) JWT_SECRET=$(JWT_SECRET) SC_BOOTSTRAP_SECRET=$(SC_BOOTSTRAP_SECRET) SC_BOOTSTRAP_LOGIN=$(SC_BOOTSTRAP_LOGIN) SCENE_CHANNEL=$(SCENE_CHANNEL) SCENE_USE_PINNED=$(SCENE_USE_PINNED) SCENE_ROLLBACK=$(SCENE_ROLLBACK)
 
-.PHONY: verify.release.guard verify.release.tooling verify.production.release_contract release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
+.PHONY: verify.release.guard verify.release.tooling verify.production.release_contract release.rehearsal.prepare release.rehearsal.build release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.data_compatibility release.rehearsal.fingerprint release.rehearsal.fingerprint.pre release.rehearsal.fingerprint.post release.rehearsal.backup release.rehearsal.filestore.recover release.rehearsal.restore release.rehearsal.rollback verify.release.rehearsal verify.release.monitoring release.rehearsal.cleanup release.production.acceptance release.production.acceptance.report release.readiness.report release.pilot.all
 .PHONY: release.production.identity.preflight release.production.compose.preflight release.production.infrastructure.up release.production.runtime.up release.production.db.preflight release.production.db.init release.production.module.install release.production.module.upgrade release.production.health.readonly release.production.platform.configure release.production.platform.snapshot.initialize release.production.contract.image.acceptance
 .PHONY: release.production.first_fresh.cleanup.preflight release.production.first_fresh.cleanup.confirm release.production.first_fresh.cleanup release.production.admin.harden release.production.admin_identity.baseline release.production.public_signup.close.plan release.production.public_signup.close.apply release.production.public_signup.close.verify release.production.user_activation.readiness release.production.user_activation.predeploy.plan release.production.user_activation.predeploy.apply release.production.user_activation.predeploy.verify release.production.single_user_activation.plan release.production.single_user_activation.apply release.production.single_user_activation.verify release.production.formal_modules.install_missing ops.user.password-reset ops.user.password-verify
 .PHONY: production.backup.install.preflight production.backup.install production.backup.run production.restore.tool.sync production.candidate.image.sync production.candidate.manifest.sync production.deployment.tool.sync production.tenant.delivery.artifacts.sync production.customer.runtime.config.promote production.release.config.promote production.restore.rehearsal production.restore.cancel production.restore.cleanup production.backup.timer.restore production.acceptance.backup.remote_install production.acceptance.backup.remote_sync production.acceptance.image.remote_import production.acceptance.candidate.remote_import production.acceptance.restore.remote_verify production.acceptance.tenant.remote_install production.acceptance.clone.remote_activate production.acceptance.clone.remote_replace production.acceptance.clone.remote_publish verify.production.acceptance.payload production.acceptance.payload.remote.plan production.acceptance.payload.remote.import production.acceptance.payload.remote.verify production.acceptance.final_image.real_plan verify.production.backup_restore_contract
@@ -927,6 +927,12 @@ release.rehearsal.fingerprint: verify.release.guard
 	@$(RELEASE_ENV) RELEASE_FINGERPRINT_PATH=/tmp/release-fingerprint.json $(RELEASE_COMPOSE) exec -T -e RELEASE_FINGERPRINT_PATH odoo odoo shell -d $(RELEASE_DB) -c /var/lib/odoo/odoo.conf < scripts/release/release_fingerprint.py
 	@$(RELEASE_ENV) $(RELEASE_COMPOSE) cp odoo:/tmp/release-fingerprint.json $(RELEASE_ARTIFACTS)/fingerprints/$${PHASE:-current}.json >/dev/null
 
+release.rehearsal.fingerprint.pre:
+	@$(MAKE) --no-print-directory PHASE=pre release.rehearsal.fingerprint
+
+release.rehearsal.fingerprint.post:
+	@$(MAKE) --no-print-directory PHASE=post release.rehearsal.fingerprint
+
 release.rehearsal.backup: verify.release.guard
 	@$(RELEASE_ENV) RELEASE_PROJECT=$(RELEASE_PROJECT) bash scripts/release/with_rehearsal_lock.sh $(RELEASE_DB) bash scripts/release/rehearsal_backup_restore.sh backup $(RELEASE_DB)
 
@@ -956,7 +962,7 @@ release.production.acceptance.report:
 release.readiness.report:
 	@python3 scripts/release/release_readiness_report.py
 
-release.pilot.all: verify.release.tooling release.rehearsal.prepare release.rehearsal.runtime.up release.rehearsal.upgrade verify.release.rehearsal release.rehearsal.backup release.rehearsal.restore release.rehearsal.rollback verify.release.monitoring release.production.acceptance release.readiness.report
+release.pilot.all: verify.release.tooling release.rehearsal.prepare release.rehearsal.runtime.up release.rehearsal.fingerprint.pre release.rehearsal.upgrade release.rehearsal.fingerprint.post verify.release.rehearsal release.rehearsal.backup release.rehearsal.restore release.rehearsal.rollback verify.release.monitoring release.production.acceptance release.readiness.report
 
 release.rehearsal.cleanup: verify.release.guard
 	@$(RELEASE_ENV) $(RELEASE_COMPOSE) down --remove-orphans
