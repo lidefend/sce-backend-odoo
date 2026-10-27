@@ -106,11 +106,16 @@ export async function saveClerkJournal({page,base,root,report,leaves,state,api})
   fs.writeFileSync(`${root}/created-receipt.json`,JSON.stringify(receipt));report.saved=saved;
   await page.waitForURL(url=>url.pathname.endsWith('/'+state.createdId));
   const [persistedResponse]=await Promise.all([
-    wait(r=>r?.intent==='ui.contract.v2' && r.params?.model==='account.move'
-      && Number(r.params.record_id)===state.createdId && r.params?.view_type==='form'),
+    wait(r=>r?.intent==='ui.contract.v2'
+      && (r.params?.model==='account.move' || (r.params?.op==='action_open' && Number(r.params.action_id)===292))
+      && Number(r.params.record_id)===state.createdId && r.params?.view_type==='form').then(async response=>{
+        report.persistedContract=await capture(response);
+        return response;
+      }),
     page.reload({waitUntil:'domcontentloaded'}),
   ]);
   report.persistedContract=await capture(persistedResponse);
+  assert.equal(report.persistedContract.data.pageInfo.model,'account.move');
   for (const field of ['authorized_transaction_ids','duplicated_ref_ids']) {
     const ids=report.persistedContract.data.dataContract.mainData[field];
     assert(Array.isArray(ids),`missing persisted relation dependency: ${field}`);
