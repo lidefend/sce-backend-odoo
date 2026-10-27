@@ -83,9 +83,11 @@ export async function saveClerkJournal({page,base,root,report,leaves,state,api})
         && r.params.child_onchange.values[amountField]===100),
       (async()=>{await amount.fill('100');await amount.blur();})(),
     ]);
-    const changed=await capture(amountResponse);assert.equal(changed.data.patch[amountField],100);
-    await page.waitForFunction(({id})=>document.getElementById(id)?.value==='100',{id:await amount.getAttribute('id')});
+    const changed=await capture(amountResponse);
     report.childSteps.push({index,key,accountId,defaults,selection,changed});
+    assert.equal(changed.data.patch.balance,index===0?100:-100);
+    assert.equal(changed.data.patch.amount_currency,index===0?100:-100);
+    await page.waitForFunction(({id})=>document.getElementById(id)?.value==='100',{id:await amount.getAttribute('id')});
   }
   state.ready=true;
   const [savedResponse]=await Promise.all([
