@@ -2078,7 +2078,7 @@ parent_state/company/write_date等before/after完全一致，无save/dispatch。
 review_takeover已独立核对a7fb两份原始报告，四根身份/契约/归属/前后不变及tap全文
 边界均确认，无阻断；支持上述限定收口结论。
 
-### 2026-10-27：普通经办真实保存闭环（执行中）
+### 2026-10-27：普通经办真实保存闭环
 
 起点ebc13a0ae，clean。P4既有journal-save及recovery工具；变更限定make/dev.mk、
 workspace_feedback.mjs、journal_recovery.py及其定向测试。精确白名单demo_full40/
@@ -2111,3 +2111,37 @@ line_ids没有server change/select/blur规则才进入该路径，避免把未�
 虚拟行key从真实控制器ID读取；原写拦截要求两行币种/金额/账户/唯一ref全部匹配。
 保存后校验普通创建者1988、原值与两行±100，reload和同一精确清理机制保留。
 旧demo_full全路径不改变。此前桌面/移动读取证据输入未变，保持原身份。
+
+后续工具协议修正和失败均保留：116cdc创建契约误等action_open，依据实际加载源码改为
+精确model/account.move/menu175/form/render_profile=create；5e1fb实际actionRuleList
+确认parent line server规则为空，子行成功，但delta并不回传用户已输入debit；95c4
+验证第一行delta余额100成功，第二行原生初始化已credit100/balance-100/amount_currency
+-100，再输入相同值delta为空。因此最终按真实请求values合并patch检查完整有效行，
+并保留UI输入100及严格create策略/落库回读，不以默认值代替实际数据。
+116/5e1/95c均在create前失败，独立verify_absent record_id=null/line_ids=[]，无残留；
+不计成功，不重试不变输入。全部原始report与cleanup日志保留在各SHA的唯一ref目录。
+
+最终候选72cc37f012dcb60a08674c916d471ce65aa50187，L1 clerk-effective-static.log
+通过；27JS+14Python策略与wrapper测试通过（clerk-child-policy.log，后续仅helper变化
+不使策略输入失效）。helper真实执行补足受影响行为证据，不重复后端/前端产品测试，
+没有模块升级、demo重放或全矩阵。独立源码复核逐项确认协议修正不放宽写入边界。
+
+clerk-effective-browser.log退出0。原始证据：
+journal-save-browser/72cc37f012dcb60a08674c916d471ce65aa50187/
+P4-JOURNAL-72cc37f012dcb60a08674c916d471ce65aa50187-5df029ab076b44b495be1f3d7125c72c/。
+preflight容器主体1988创建/删除成功并回滚；真实浏览器创建草稿93、分录87/88，
+科目49借100/贷0、科目48借0/贷100，余额及币种金额分别+100/-100，公司1/日记账3/
+币种6。创建者API回读1988；刷新后参考值保持唯一ref。errors0/blocked0，未过账。
+cleanup.log以同一普通主体核对精确ref/creator/draft/posted_before=false/name=/及
+两行形状后删除并commit；verify_absent.log另一会话独立确认93/87/88均不存在。
+最终report browserPassed=true/passed=true，cleanup.absent=true。
+
+已查看saved-reloaded.png：参考值正确，但截图时关系明细仍在hydrate，因此本轮
+仅证明刷新主字段+API/ORM完整数据，不声称该新记录刷新后明细表已完成视觉验收。
+普通经办单张平衡草稿保存/落库回读/清理闭环关闭；UI过账、跨公司、其他办理、
+分析编辑等仍开放，不宣称FG15或产品交付完成。产品代码/demo/角色权限未改，
+只修P4工具及证据；无主线合并或远端部署。下一步准备受限UI过账流程，须先扩展并
+验证已过账对象的原生恢复边界，当前草稿清理明确拒绝posted，不能直接重放93。
+
+review_takeover独立核对72cc37f原始五份证据，确认身份、真实金额、删除提交及父子
+独立不存在一致，无阻断；接受创建→刷新ref→API回读→清理的限定闭环。

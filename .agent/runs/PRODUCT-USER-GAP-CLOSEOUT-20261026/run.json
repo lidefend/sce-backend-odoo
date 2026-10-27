@@ -177,11 +177,11 @@
   },
   "checks": {},
   "blockers": [
-    "FG15: manager/read/user desktop and reader/user emulated mobile selected read journeys passed; company-boundary browser matrix, remaining mobile interactions and six-entry business write workflows remain unverified.",
+    "FG15: selected desktop/mobile read journeys and ordinary-clerk single draft save/readback/cleanup passed; cross-company browser matrix, remaining mobile interactions and other six-entry business write workflows remain unverified.",
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Review the existing governed journal-save owned draft/readback/cleanup lane for ordinary accounting user1988; extend exact actor authority minimally and verify real save plus independent cleanup, without replaying previous owned writes or changing demo data.",
+  "next_exact_step": "Prepare bounded UI posting journey on one new owned draft through existing native action and governed lease; first define and test exact ordinary-user recovery for posted state (current draft cleanup refuses posted), then independent review before any posting write. Do not replay prior draft93.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -2083,6 +2083,59 @@
         "no business save/posting or cross-company matrix",
         "native analytic editing remains open"
       ]
+    },
+    "ordinary_clerk_save": {
+      "status": "browser_save_readback_and_independent_cleanup_verified",
+      "candidate_head": "72cc37f012dcb60a08674c916d471ce65aa50187",
+      "actor": {
+        "login": "sc_demo_accounting_user",
+        "uid": 1988,
+        "company": 1
+      },
+      "evidence_root": ".runtime/product-user-gap-closeout-20261026/journal-save-browser/72cc37f012dcb60a08674c916d471ce65aa50187/P4-JOURNAL-72cc37f012dcb60a08674c916d471ce65aa50187-5df029ab076b44b495be1f3d7125c72c/",
+      "results": {
+        "browserPassed": true,
+        "passed": true,
+        "created_record": 93,
+        "created_lines": [
+          87,
+          88
+        ],
+        "debit": 100,
+        "credit": 100,
+        "balances": [
+          100,
+          -100
+        ],
+        "amount_currency": [
+          100,
+          -100
+        ],
+        "cleanup_committed": true,
+        "independently_absent": true,
+        "errors": 0,
+        "blocked": 0
+      },
+      "checks": {
+        "L1": "clerk-effective-static.log passed",
+        "L2": "clerk-child-policy.log 27JS+14Python passed; policy and wrapper unchanged in subsequent helper-only commits",
+        "L3": "same-run preflight ordinary uid1988 create/unlink rolled_back=true",
+        "L4": "clerk-effective-browser.log exit0; UI create/reload ref/API readback; ordinary ORM cleanup and independent verify_absent",
+        "L5": "review_takeover independently verified exact source plus report/preflight/created receipt/cleanup/verify_absent; no blockers"
+      },
+      "previous_failures": {
+        "9ddeac2c8": "parent line onchange wrongly required; child initialization succeeded, no create, absent verified",
+        "116cdc84f": "create contract used model/create rather than action_open; no create, absent verified",
+        "5e1fb1545": "delta need not echo edited debit; no create, absent verified",
+        "95c4e9d0e": "second line native initialization already balanced, empty delta valid; no create, absent verified"
+      },
+      "limits": [
+        "single desktop ordinary-clerk balanced draft create only",
+        "reload reference checked; screenshot still shows relation hydration, not a completed reload line visual acceptance",
+        "no UI posting or cross-company workflow",
+        "native analytic editing remains open"
+      ],
+      "reuse": "Unchanged P0/P1, demo seed, roles and read journeys retain original identities. No product source change/module upgrade/demo migration. Previous owned writes not replayed."
     }
   }
 }
