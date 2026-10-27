@@ -19,15 +19,13 @@ for (const node of ['context.get("x")', { kind: 'not' }, { kind: 'any', exprs: [
   assert.throws(() => evaluateNativeModifierValue(node, () => 'draft'), isContractGapError);
 }
 assert.equal(evaluateNativeModifierValue(undefined, () => undefined), false);
-// Empty relation drafts evaluate as the native empty value instead of failing
-// the contract (FG15: an absent many2one/x2many is not a display value or an
-// ORM command). Non-empty display labels and relation commands still fail.
-for (const empty of [false, undefined, '']) {
+// Explicit empty relation values are valid; missing dependencies must fail closed.
+for (const empty of [false, '']) {
   assert.equal(nativeModifierRelationValue(empty, 'many2one'), false, `many2one empty ${String(empty)}`);
 }
 assert.equal(nativeModifierRelationValue(7, 'many2one'), 7);
 assert.equal(nativeModifierRelationValue([7, 'Display'], 'many2one'), 7);
-for (const empty of [undefined, '']) {
+for (const empty of ['']) {
   assert.deepEqual(nativeModifierRelationValue(empty, 'one2many'), []);
 }
 assert.deepEqual(nativeModifierRelationValue([1, 2, 3], 'many2many'), [1, 2, 3]);
@@ -45,3 +43,7 @@ assert.equal(
   'entry',
 );
 console.log(`[native_modifier] PASS ${cases.length + 5} cases; Python native truth / backend / frontend differential`);
+
+for (const type of ['many2one','one2many','many2many']) {
+  assert.throws(() => nativeModifierRelationValue(undefined, type), isContractGapError);
+}

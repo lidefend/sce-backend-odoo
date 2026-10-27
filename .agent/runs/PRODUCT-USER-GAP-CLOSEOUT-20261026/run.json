@@ -3,7 +3,7 @@
   "id": "PRODUCT-USER-GAP-CLOSEOUT-20261026",
   "branch": "fix/demo-product-completion-20261026",
   "baseline_sha": "e0bd7d35b2d8ffcb1d4bbed1b841b98ba424a274",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/PRODUCT-USER-GAP-CLOSEOUT-20261026.yaml",
   "record": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
   "scope": [
@@ -181,7 +181,7 @@
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Prepare bounded UI posting journey on one new owned draft through existing native action and governed lease; first define and test exact ordinary-user recovery for posted state (current draft cleanup refuses posted), then independent review before any posting write. Do not replay prior draft93.",
+  "next_exact_step": "Finalize the reviewed incremental scope for protected GitHub integration: freeze prepare, exact clean-head Quick, independent final review, external evidence archive, PR checks and protected merge. Retain unverified product workflows as open follow-up gaps.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -2136,6 +2136,16 @@
         "native analytic editing remains open"
       ],
       "reuse": "Unchanged P0/P1, demo seed, roles and read journeys retain original identities. No product source change/module upgrade/demo migration. Previous owned writes not replayed."
+    },
+    "integration_scope": {
+      "requested_by_owner": "收口 集成主线",
+      "target": "origin/main",
+      "base_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
+      "source_before_freeze": "7c998a06a",
+      "scope": "completed declared increments and bounded demo/native accounting evidence; not full product acceptance",
+      "open_product_gaps_retained": true,
+      "deployment_authorized_this_step": false,
+      "freeze_failure": "completed DEMO-USER-WALKTHROUGH run remained in active index; remove only that stale mapping, retain historical run"
     }
   }
 }

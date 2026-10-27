@@ -2145,3 +2145,20 @@ cleanup.log以同一普通主体核对精确ref/creator/draft/posted_before=fals
 
 review_takeover独立核对72cc37f原始五份证据，确认身份、真实金额、删除提交及父子
 独立不存在一致，无阻断；接受创建→刷新ref→API回读→清理的限定闭环。
+
+### 2026-10-27：所有者要求收口并集成主线
+
+以GitHub origin/main bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963为权威目标，
+首读远端无漂移；候选起点7c998a06a，clean。集成已完成的P0/P1/P4增量及真实证据，
+不把尚未验收的UI过账/跨公司/分析编辑/其他业务流程改为通过；缺口台账继续开放。
+本轮明确集成授权不等于部署或完整产品交付。采用现有受保护GitHub车道，最终clean
+候选Quick、整批独立复核、外部证据归档及远端必需检查通过后合并。
+冻结准备首次因历史DEMO-USER-WALKTHROUGH已completed却仍在active-runs索引失败，
+修复仅移除该过期映射，保留历史run及证据，未改变测试门禁。
+
+整批复核额外阻断及归属：P0 child缺依赖被补false及typed root/parent关系缺值被补
+false/[]，已恢复undefined拒绝，保留显式空关系；新增unknown字段truthy/compare、
+既有行缺关系、typed parent缺关系负例。P4保存参数可能被后端嵌套参数展开，改为
+create仅op/model/vals/context、unlink仅model/ids/context，拒绝五类嵌套/歧义载体。
+L1、集合语义/原生差分/43parser、32JS+14Python及严格types通过。影响范围为原生
+条件缺依赖路径及保存写拦截；需要实际经办新建/保存复验，旧成功不得替代本次结果。

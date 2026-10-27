@@ -87,3 +87,11 @@ test('missing journal declaration does not become hidden-field success',()=>{
   assert.throws(()=>journalLineColumns({layoutContract:{containerTree:[]}}));
   assert.throws(()=>journalFormWidgets({layoutContract:{containerTree:[{}]}}));
 });
+
+for (const key of ['payload','params','data','args','values']) {
+ test(`reject ambiguous nested create carrier ${key}`,()=>{
+  const request=structuredClone(create);
+  request.params[key]={context:{default_state:'posted'}};
+  assert(!allow(request,state));
+ });
+}

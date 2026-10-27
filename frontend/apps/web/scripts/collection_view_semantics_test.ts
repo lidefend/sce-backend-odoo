@@ -625,3 +625,16 @@ assert.equal(weightedOccurrences[1].widget, 'json');
 assert.equal(weightedOccurrences[1].widgetSemantics, undefined, 'other occurrence never inherits weighted semantics');
 assert.equal(weightedOccurrences[2].widgetSemantics, undefined, 'missing own semantics cannot borrow from business column');
 await assert.rejects(weightedRelationDisplay(weightedOccurrences[2].widgetSemantics, {}, weightedContext, weightedRead), { name: 'ContractGapError' });
+
+// Missing child dependencies are not native empty values, including existing rows.
+for (const node of [
+  { kind: 'field_truthy', field: 'missing_gate' },
+  { kind: 'value_compare', semantics: 'python', operator: '==',
+    left: { kind: 'field_value', field: 'missing_gate' }, right: { kind: 'literal', value: false } },
+]) assert.throws(() => relationBehavior(node, {}), { name: 'ContractGapError' });
+for (const field of ['partner_id','tag_ids']) {
+  assert.throws(() => relationBehavior({kind:'field_truthy',field}, {id:33}), {name:'ContractGapError'});
+  assert.throws(() => resolveOne2manyRowColumnBehavior({name:'note',label:'Note',modifiers:{readonly:{kind:'field_truthy',field:`parent.${field}`}}},
+    {}, {'$native.fieldTypes':{[field]:field==='partner_id'?'many2one':'many2many'}}), {name:'ContractGapError'});
+}
+console.log('missing child and typed parent dependencies: denied');

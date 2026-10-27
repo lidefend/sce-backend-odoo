@@ -11,6 +11,8 @@ export function permitsJournalSaveMutation(request, state, transport) {
   if (transport?.method !== 'POST' || transport?.path !== '/api/v1/intent') return false;
   const p = request?.params;
   if (!state.enabled || !p || p.model !== 'account.move' || p.sudo) return false;
+  const parameterKeys=request.intent==='api.data.unlink' ? ['model','ids','context'] : ['op','model','vals','context'];
+  if (Object.keys(p).some(key=>!parameterKeys.includes(key))) return false;
   const context = p.context || {};
   if (Object.keys(context).some(key => !['company_id','allowed_company_ids','lang','tz','menu_id','default_move_type','search_default_posted','view_no_maturity'].includes(key))) return false;
   if (context.default_move_type !== undefined && context.default_move_type !== 'entry') return false;
