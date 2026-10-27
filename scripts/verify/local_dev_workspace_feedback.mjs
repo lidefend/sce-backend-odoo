@@ -95,9 +95,9 @@ try {
           const own = await diagnostic.send('Runtime.getProperties', {objectId: event.data.objectId, ownProperties: true});
           const props = Object.fromEntries(own.result.map(item => [item.name, item.value]));
           const defect = props.defect?.objectId ? await diagnostic.send('Runtime.getProperties', {objectId: props.defect.objectId, ownProperties: true}) : {result: []};
-          report.contractExceptions.push({name: props.name?.value, message: props.message?.value,
+          report.contractExceptions.push({name: props.name?.value, message: props.message?.value, stack: props.stack?.value,
             defect: Object.fromEntries(defect.result.filter(item => ['kind','missing','requiredDeclarationLayer'].includes(item.name)).map(item => [item.name,item.value?.value])),
-            frames: event.callFrames.slice(0, 5).map(frame => ({function:frame.functionName,location:frame.location}))});
+            frames: event.callFrames.slice(0, 15).map(frame => ({function:frame.functionName,location:frame.location}))});
         }
       } catch { report.exceptionDiagnosticIncomplete = true; }
       finally { await diagnostic.send('Debugger.resume').catch(() => {}); }
