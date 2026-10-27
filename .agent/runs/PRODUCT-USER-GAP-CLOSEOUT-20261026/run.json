@@ -125,6 +125,7 @@
     "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
     "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
     "scripts/verify/frontend_professional_detail_collection_guard.py",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py",
     "scripts/verify/test_frontend_professional_detail_collection_guard.py",
     "addons/smart_core/core/native_relation_domain.py",
     "frontend/apps/web/src/pages/contractForm/nativeRelationDomain.ts",

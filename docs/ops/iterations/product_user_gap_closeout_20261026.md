@@ -2214,3 +2214,22 @@ P4架构门禁进一步发现手动入口登记遗漏：19项未登记、1项过
 架构recipe逐项收集后仅发现另两处P4旧口径：onchange纯函数拆分守卫仍要求直接triggerOnchange，未识别现有可注入传输；role policy拆分守卫遗漏本批已审核accounting尾部角色。按实际调用链和严格完整角色顺序同步断言，保留原normalize/应用、纯函数边界及既有角色优先级。onchange三个破坏性负例（去原生传输、去normalize、去行patch应用）均拒绝；其他独立recipe均已执行，不再通过重跑Quick发现同层问题。
 
 326921冻结复验：隔离契约回执、列表18场景、关系回跳13入口（0阻断/8分类非阻断）通过，原始证据已登记。保存探针因同一精确科目文本包含隐藏重复节点而严格定位失败，未调用保存；普通清理及独立verify_absent确认无记录。P4三处业务标签定位添加visible过滤，仍要求唯一可见匹配，不用first/nth绕过歧义，业务写入白名单及回读不变。方案独立复核通过；需新候选保存/角色复验，其他merge证据由确定性引擎携带。
+
+### 定时CI收红修复（2026-10-27）
+
+受管续跑定位 origin/main bdef29e 定时排程自 10-24 起连续三日三红：真正失败为
+frontend_release_gate，merge_policy_gate 与 release_candidate_gate 是下游等待器，因
+frontend_release_gate conclusion=failure 连锁失败。frontend_release_gate 内两个独立根因：
+其一 verify.frontend.release.unit 中 test_browser_contract_target_uses_released_ten_center_entry
+仍按模块级字面量 payload 字典解析，而 frontend_delivery_hardening_runtime_ids.py 已重构为
+resolve_targets() 函数，next() 抛 StopIteration；其二 verify.frontend.release.audit 的 eslint 对
+frontend/apps/web/scripts/node_component_consumption_test.ts 173/174 行 as any 报
+no-explicit-any，该处当前分支已改为类型化断言，合并后即消除。
+
+修复仅改 P4 验证测试：test_frontend_delivery_hardening_guard.py 改为在 resolve_targets()
+函数体内定位 payload 字典，保留按 CONTRACT_MENU_XMLID/CONTRACT_ACTION_XMLID 常量锁定
+released 菜单与 declared action pair 的断言，不改产品、契约或运行时代码。提交 82ccbe0ea，
+该文件补登记入 run scope。验证：该守卫 29 测试 passed；单元目标其余 Python 守卫
+（acceptance_login_probe 5、release_local_entry 16、release_audit 5、release_gate 11、
+release_ci_guard 12，及 frontend_release_ci_guard PASS）全部 passed；全量 pnpm lint 0 错误、
+1 既有 StatusPanel.vue 警告。main 定时CI将在本批受保护合并后转绿，不单独部署、不改门禁。
