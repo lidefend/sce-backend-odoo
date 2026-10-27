@@ -175,10 +175,9 @@
   "blockers": [
     "FG15: accounting_manager six-entry positive browser now passed; accounting_read/accounting_user positive browser, browser company-boundary matrix and six entry business workflows remain unverified.",
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
-    "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open.",
-    "FG15: account.move.line root primary action still 保存草稿 for posted parent sample51; P1 persistence label declaration pending."
+    "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Fix P1 account.move.line root persistence label 保存草稿 for already-posted parent through form_governance declaration; validate draft/posted native form semantics and affected browser. Then accounting_read/user and mobile.",
+  "next_exact_step": "Inspect existing demo accounting_read/accounting_user identities and scenario data, then expand actual role browser coverage with existing governed tools. Adjust demo seeds if data is missing; no development data migrations.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1911,12 +1910,14 @@
         "addons/smart_construction_core/tests/test_system_permission_accounting.py",
         "scripts/verify/local_dev_workspace_feedback.mjs"
       ],
-      "status": "targeted_checks_passed_runtime_pending",
+      "status": "draft_posted_root_save_labels_verified",
       "validation_plan": "L1 then existing policy25JS+11Python and real accounting ORM class with draft/posted line contracts; governed exact candidate browser. Frontend source unchanged, reuse previous types/component/lint source identities. No schema/module upgrade/demo mutation.",
       "validation": "line-label-static.log L1 PASS; policy-reviewed25JS+11Python PASS; line-label-orm.log actual21post-tests0failed0error incl ordinary-user draft/posted root line final actionContract save label. stats23 not actual count.",
-      "review": "review_takeover source no product blockers; probe optional posted sample identified and fixed: posted requires sample, draft displayValueComparedfalse only label/ready scoped.",
+      "review": "review_takeover final original70939ce8b report PASS two root states saveLabel保存 and complete before-after unchanged; ORM21 remains7d50d6894.",
       "runtime_plan": "Existing registered journal-role readonly wrapper: root lines from current draft/posted parent record.line_ids, parent ID/state verified; both save labels保存 no保存草稿, no editor, full before/after values/write_date identical. Posted name/percentage comparison mandatory. No writes/demo/module upgrade.",
-      "browser": "7d50d6894 PASS six entries/two parents/two root lines19,51,saveLabel保存,full before-after unchanged errors0blocked0. Screenshots expose independent P0 false title for empty draft name; next bounded fix."
+      "browser": "7d50d6894 PASS six entries/two parents/two root lines19,51,saveLabel保存,full before-after unchanged errors0blocked0. Screenshots expose independent P0 false title for empty draft name; next bounded fix.",
+      "candidate": "7d50d68945065a9f40446588d26a556bddc32f68",
+      "final_browser_candidate": "70939ce8b534ccd173346c11df33eaf78eeff2f1"
     },
     "empty_record_identity": {
       "head": "7d50d6894 plus explicit dirty scope",
@@ -1928,10 +1929,14 @@
         "scripts/verify/frontend_page_identity_lifecycle_smoke.js",
         "scripts/verify/local_dev_workspace_feedback.mjs"
       ],
-      "status": "static_passed_runtime_pending",
+      "status": "desktop_draft_empty_name_identity_verified",
       "validation_plan": "L1,page identity smoke/lifecycle,types/lint/contract basis; affected root browser. P1 ORM21 results remain bound7d50d6894; no change in P1/backend.",
       "validation": "empty-identity-static/unit/types/lint/basis/policy all PASS: identity23+lifecycle28 assertions, guard1writer/6integrations, full lint existingStatusPanel warning only, basis15tests0open, policy25JS+11Python.",
-      "review": "review_takeover source no blockers; false empty skipped, literal string false preserved, authorized identity chain unchanged."
+      "review": "review_takeover final raw report PASS; both titles/labels correct, full fields unchanged; draft displayValueComparedfalse/postedtrue scope truthful.",
+      "candidate": "70939ce8b534ccd173346c11df33eaf78eeff2f1",
+      "browser": "empty-identity-browser.log PASS6/parent2states/root19,51; draft title/document title MISC/2026/10/0001,posted示例工程收入确认,saveLabel保存 both; errors0blocked0 no writes. Full before-after fields/write_date unchanged; draft screenshot inspected.",
+      "evidence": "journal-role-browser/70939ce8b534ccd173346c11df33eaf78eeff2f1/sc_demo_accounting_manager-report.json lineRootStates plus root-draft/posted-analytic.png",
+      "limits": "Only declared desktop manager/root samples; no native editing/other-role/mobile/UI posting acceptance. P1 ORM21 original7d50d6894 source unchanged; no re-run claim. No demo edit/migration/module upgrade/merge/remote deploy."
     }
   }
 }

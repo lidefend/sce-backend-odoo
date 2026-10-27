@@ -1879,3 +1879,50 @@ errors/blocked均空。目标字段截图已人工查看：紧凑显示，未出
 无主线合并、远端部署或全批产品验收结论。
 
 review_takeover已独立复核代码及b6fcfd96a原始报告，无本轮只读展示范围阻断。
+### 2026-10-27：分录根表单保存文案
+
+P1将既有accounting_form_save_label声明范围从account.move扩展至account.move.line，
+继续通过native_authority_safe通道发布primary_action_label=保存。保存编辑字段不会
+改变凭证的过账状态，因此两态使用同一持久化文案。未修改前端、ACL、过账动作或保存逻辑，
+未用demo数据或迁移绕过声明缺口。
+
+候选 `7d50d68945065a9f40446588d26a556bddc32f68`。
+line-label-static.log L1通过；line-label-policy-reviewed.log策略25JS+11Python通过；
+line-label-orm.log真实21个post-tests、0失败0错误，既有普通用户创建/过账测试新增
+草稿和已过账分录最终actionContract的保存文案断言，仍确认env.su=false。
+日志stats23是统计口径，不冒充执行用例数。前端代码、解析器和读取函数未变，
+保留上一轮原生根字段/组件/类型/lint证据的原始候选身份，不重跑无关套件。
+P4扩展既有只读浏览器探针到两态根分录，使用父记录提供的line_ids，并核验move_id及
+parent_state；名称/比例的已过账样本仍强制存在并比较。独立复核发现扩展时原断言变成
+可选，已恢复强制检查；草稿仅验证文案/组件就绪，report.displayValueCompared=false
+明确未独立比较草稿分配名称比例，不扩张验收结论。
+
+7d50d6894真实浏览器先通过六入口、父凭证两态及分录19/51两态保存文案，原始回执前后
+数据不变；但截图暴露独立P0缺口：空标签草稿分录标题、页签显示false，未将该视觉结果
+视为页面整体完成。P0在pageIdentityAdapters和通用pageIdentity文本转换中仅跳过原始布尔
+false，继续使用既有授权display_name/契约对象标题；字面字符串"false"仍可作为真实名称。
+未新增业务文案、模型分支或demo标签来掩盖问题。
+
+最终候选 `70939ce8b534ccd173346c11df33eaf78eeff2f1`：
+- empty-identity-unit.log：身份23断言+生命周期28断言通过，守卫1writer/6integrations；
+  新增false空名称、全空名称、字面字符串false及直接解析路径回归。
+- empty-identity-static/types/lint/basis/policy通过，完整lint仅既有StatusPanel warning；
+  contract basis15项且0开放缺陷，策略25JS+11Python。P1后端输入未变，
+  21真实ORM证据仍绑定7d50d6894，不冒称新候选重跑ORM。
+- empty-identity-browser.log退出0，六入口、父凭证两态和分录根详情两态通过，
+  errors0/blocked0、无save/dispatch。草稿19标题/页签/面包屑恢复
+  MISC/2026/10/0001，已过账51保持“示例工程收入确认”，documentTitle对应一致，
+  两态主动作均“保存”。草稿目标截图已人工检查。
+- 原始report.lineRootStates保存父ID/parent_state和before/after值：
+  19归属草稿10，write_date为2026-10-26 06:46:40；51归属已过账55，
+  write_date为2026-10-26 23:26:42，前后均一致。已过账分配{"1":100}名称/比例仍强制核验。
+  草稿displayValueCompared=false明确仅验文案/ready，不冒称比例正样本。
+- 证据目录journal-role-browser/70939ce8b534ccd173346c11df33eaf78eeff2f1/；
+  7d50d6894截图与报告保留作问题发现及文案原始证据。
+
+关闭分录根表单保存文案和空名称布尔值被展示为标题两项具体缺口。
+FG15仍开放：会计只读/经办角色浏览器、真实移动端、原生分析分配编辑和UI过账流程
+尚未完成。下一步核对已有demo会计只读/经办身份及场景数据，补齐实际角色走查；
+需要数据修正时调整demo种子，不做开发数据迁移。无主线合并、远端部署或产品全批验收结论。
+
+review_takeover最终独立复核70939ce8b原始报告通过，两态标题/文案和数据不变性成立，保留测试来源SHA及未覆盖范围。
