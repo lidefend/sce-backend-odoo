@@ -136,14 +136,14 @@ daily.candidate.continuity.remote_backup: daily.candidate.continuity.remote_inst
 
 daily.candidate.continuity.remote_restore_drill: daily.candidate.continuity.remote_install
 	@test -n "$(DAILY_CONTINUITY_BACKUP_DIR)" || { echo "DAILY_CONTINUITY_BACKUP_DIR is required" >&2; exit 2; }
-	@[[ "$(DAILY_CONTINUITY_BACKUP_DIR)" =~ ^/data/backups/daily_candidate/sc_demo-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$ ]] || { echo "invalid daily candidate backup directory" >&2; exit 2; }
+	@[[ "$(DAILY_CONTINUITY_BACKUP_DIR)" =~ ^/data/backups/daily-demo-dev/sc_demo-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$ ]] || { echo "invalid daily candidate backup directory" >&2; exit 2; }
 	@test "$${CONFIRM_DAILY_CANDIDATE_RESTORE_DRILL:-}" = "RESTORE_ISOLATED_COPY" || { echo "exact isolated restore confirmation is required" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'CONFIRM_DAILY_CANDIDATE_RESTORE_DRILL=RESTORE_ISOLATED_COPY DAILY_CONTINUITY_EVIDENCE=/tmp/daily-candidate-continuity-restore.json python3 "$(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_candidate_data_continuity.py" restore-drill --backup-dir "$(DAILY_CONTINUITY_BACKUP_DIR)"'
 
 daily.candidate.continuity.remote_closeout: daily.candidate.continuity.remote_install
 	@test -n "$(DAILY_CONTINUITY_BACKUP_DIR)" || { echo "DAILY_CONTINUITY_BACKUP_DIR is required" >&2; exit 2; }
-	@[[ "$(DAILY_CONTINUITY_BACKUP_DIR)" =~ ^/data/backups/daily_candidate/sc_demo-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$ ]] || { echo "invalid daily candidate backup directory" >&2; exit 2; }
+	@[[ "$(DAILY_CONTINUITY_BACKUP_DIR)" =~ ^/data/backups/daily-demo-dev/sc_demo-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$ ]] || { echo "invalid daily candidate backup directory" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'python3 "$(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_candidate_data_continuity.py" closeout --backup-dir "$(DAILY_CONTINUITY_BACKUP_DIR)"'
 
