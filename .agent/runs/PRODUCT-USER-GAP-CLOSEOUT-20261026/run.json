@@ -168,7 +168,8 @@
     "scripts/verify/frontend_page_identity_lifecycle_smoke.js",
     "demo_addons/smart_construction_demo/seed/registry.py",
     "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py",
-    "scripts/verify/local_dev_journal_mobile.mjs"
+    "scripts/verify/local_dev_journal_mobile.mjs",
+    "scripts/verify/local_dev_journal_clerk_save.mjs"
   ],
   "environment": {
     "kind": "runtime",

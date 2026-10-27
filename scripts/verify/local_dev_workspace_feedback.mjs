@@ -1,5 +1,6 @@
 // P4: fixed affected forms. journal-save permits one owned draft and exact cleanup; no posting.
 import fs from 'node:fs';
+import { saveClerkJournal } from './local_dev_journal_clerk_save.mjs';
 import { inspectMobileAccounting, inspectMobileJournalRoots } from './local_dev_journal_mobile.mjs';
 import { permitsJournalSaveMutation, permitsJournalRoleRead, permitsJournalDetailRead, journalFormWidgets, journalLineColumns } from './local_dev_journal_save_policy.mjs';
 import assert from 'node:assert/strict';
@@ -118,7 +119,7 @@ try {
       const payload = await response.json();
       if (request.intent === 'system.init') {
         init = payload.data;
-        if (scope === 'journal-role') journalTransport = {url:response.url(), headers:Object.fromEntries(
+        if (['journal-role','journal-save'].includes(scope)) journalTransport = {url:response.url(), headers:Object.fromEntries(
           Object.entries(await response.request().allHeaders()).filter(([key])=>/^(authorization|content-type)$|^x-/i.test(key)))};
       }
       else if (request.params.feedback_evaluation) report.feedback.push({model: request.params.model, ok: payload.ok, data: payload.data});
@@ -200,7 +201,9 @@ try {
     assert(report.onchanges.length > 0 && report.onchanges.every(result => result.ok === true), 'native onchange evidence missing or failed');
     item.passed = true;
   }
-  if (['journal-draft', 'journal-save'].includes(scope)) {
+  if (journalSave.enabled && actor==='sc_demo_accounting_user') {
+    await saveClerkJournal({page,base,root,report,leaves,state:journalSave,api:journalApi});
+  } else if (['journal-draft', 'journal-save'].includes(scope)) {
     const model = 'account.move';
     const candidateIndex = fs.readFileSync('frontend/apps/web/dist-dev/index.html', 'utf8');
     const expectedEntries = [...candidateIndex.matchAll(/<script[^>]*src="([^"]*assets\/[^"]+)"/g)].map(match => new URL(match[1], base).pathname);

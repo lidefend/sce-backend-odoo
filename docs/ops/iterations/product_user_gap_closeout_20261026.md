@@ -2097,3 +2097,17 @@ L5独立复核。产品/seed未改，不升级或重放数据，不重跑读取�
 JOURNAL_ACTOR/ACTOR_UID，Python同名读取；wrapper在browser前核验preflight
 head/ref/actor/uid/passed/rolled_back。新增wrapper错主体拒绝且不启动browser负例。
 修正后L1及27JS+14Python通过，review_takeover确认S1消除，无剩余S1/S2。
+
+9ddeac2c8首轮：preflight容器主体1988/公司1成功创建删除并回滚；browser在新增行后的
+parent line_ids onchange等待超时，尚未create，child_initialization已成功。cleanup及
+verify_absent均主体1988、record_id=null、line_ids=[]、absent=true，最终report passed=false，
+未残留草稿。原始证据journal-save-browser/9ddeac2c832ca29ef4159ed38a407a7bda77ae01/
+P4-JOURNAL-9ddeac2c832ca29ef4159ed38a407a7bda77ae01-57ee512843074cd1b0d9326e2b981e85/。
+这是未通过的保存链，不计业务保存成功。
+
+P4定向新增clerk helper，登记同run scope；真实创建form的actionRuleList必须断言
+line_ids没有server change/select/blur规则才进入该路径，避免把未声明parent dispatch
+当作业务必要步骤。使用实际child_initialization与child_onchange响应检查科目/金额，
+虚拟行key从真实控制器ID读取；原写拦截要求两行币种/金额/账户/唯一ref全部匹配。
+保存后校验普通创建者1988、原值与两行±100，reload和同一精确清理机制保留。
+旧demo_full全路径不改变。此前桌面/移动读取证据输入未变，保持原身份。
