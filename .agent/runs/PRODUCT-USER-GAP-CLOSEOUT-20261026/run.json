@@ -160,7 +160,9 @@
     "frontend/apps/web/src/components/template/NativeWeightedRelationDisplay.vue",
     "frontend/apps/web/src/components/template/One2ManyCellEditor.vue",
     "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
-    "frontend/apps/web/scripts/weighted_relation_component_test.mjs"
+    "frontend/apps/web/scripts/weighted_relation_component_test.mjs",
+    "frontend/apps/web/src/components/template/FormSection.vue",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs"
   ],
   "environment": {
     "kind": "runtime",
@@ -1872,6 +1874,23 @@
       "visual_followup": "Long authoritative account display_name wrapped many lines in narrow column. Reuse ScPopover/ScButton structured-content compact readonly trigger and full-value expansion. Pure resolver/context/raw/save unchanged. Revalidate actual expanded popup and no mutation; save proof retains original candidate identity.",
       "compact_validation": "analytic-native-css-browser.log PASS6/two states errors0blocked0; both native triggers/content22px nowrap, expand full text and close verified, no writes. Posted screenshot inspected; full-value screenshot captured during fade-in, not visual clarity proof.",
       "visual_failure": "4ff3 functional probes passed but screenshot rejected excessive row height: scoped styles did not penetrate primitive wrapper. Fixed scoped deep selectors plus computed nowrap/height assertion at3b8faa3a1. Original report retained."
+    },
+    "native_analytic_root": {
+      "head": "adcd5b432 plus explicit dirty scope",
+      "layer": "P0 smart_core native parser and frontend FormSection; P4 existing verification only",
+      "reason": "Generic declared weighted-relation consumption, not construction/user-specific semantics. Reuse child display and formal readContext; no model special cases. Root form only; no data or ACL changes.",
+      "scope": [
+        "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+        "addons/smart_core/tests/test_native_view_parser_surfaces.py",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "scripts/verify/local_dev_workspace_feedback.mjs"
+      ],
+      "validation_plan": "L1 then parser/actual mounted native-layout/typecheck/contract basis; affected root runtime after static passes. Reuse unchanged weighted resolver and company ORM evidence at dd5ea; no migration/module schema upgrade.",
+      "status": "static_passed_runtime_pending",
+      "failure": "First L1 stopped because two new frontend paths were only in observation scope, not run.scope. Added exact owned paths, original log retained. Existing native-layout stub lacked TDesignAlert already imported by NativeFormTreeRenderer; added presentation-only export, original component failure retained.",
+      "validation": "L1 PASS after exact scope registration; form_canvas80 pure +45 actual mounted checks PASS; collection/native parser43 tests and existing differential/semantic suite PASS; strict types, full lint(existing StatusPanel warning only), contract_basis15/0open, policy25JS+11Python, existing node36/SSR42 and weighted async mounted PASS.",
+      "runtime_plan": "Exact candidate registered sc-local-dev/sc_dev_demo ns_000000000002; existing journal-role readonly wrapper plus posted line chosen from authorized parent read to root form. Probe compares label/proportion to prior authorized read, no input, unchanged raw/write_date. No data writes/schema upgrades; backend restart only. Existing wrapper lists retained as its precondition, no89-entry matrix."
     }
   }
 }

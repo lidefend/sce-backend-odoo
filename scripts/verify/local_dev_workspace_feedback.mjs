@@ -852,6 +852,30 @@ try {
             report.journalStateCoverageComplete=report.journalStates.length===2 && report.journalStates.every(item=>item.outcome==='verified' && item.passed);
           }
         }
+        const lineEntry=entries.find(entry=>entry.meta.model==='account.move.line');
+        const lineRoute=new URL(lineEntry.meta.route,base);
+        const sample=report.journalStates.find(item=>item.state==='posted').structuredValues[0];
+        const lineId=sample.lineId;
+        const lineFields=['id','analytic_distribution','write_date'];
+        const before=await journalApi('api.data',{op:'read',model:'account.move.line',ids:[lineId],fields:lineFields});
+        assert.equal(before.payload.ok,true);
+        await page.goto(`${base}/f/account.move.line/${lineId}?menu_id=${lineRoute.searchParams.get('menu_id')}&action_id=${lineRoute.pathname.split('/').at(-1)}`,{waitUntil:'domcontentloaded'});
+        await page.waitForFunction(id=>{
+          const form=document.querySelector('[data-semantic-component="ContractFormPage"]');
+          return form?.getAttribute('data-state')==='ok' && form?.getAttribute('data-form-model')==='account.move.line'
+            && form?.getAttribute('data-form-record')===String(id);
+        },lineId);
+        const rootField=page.locator('[data-field-name="analytic_distribution"]');
+        const rootDisplay=rootField.locator('[data-semantic-component="NativeWeightedRelationDisplay"]');
+        await rootDisplay.waitFor({state:'visible'});
+        await page.waitForFunction(()=>document.querySelector('[data-field-name="analytic_distribution"] [data-semantic-component="NativeWeightedRelationDisplay"]')?.getAttribute('data-display-state')==='ready');
+        assert.equal((await rootDisplay.innerText()).trim(),sample.display);
+        assert.equal(await rootField.locator('input,textarea').count(),0);
+        const after=await journalApi('api.data',{op:'read',model:'account.move.line',ids:[lineId],fields:lineFields});
+        assert.equal(after.payload.ok,true); assert.deepEqual(after.payload.data.records,before.payload.data.records);
+        report.rootAnalyticReadonly={model:'account.move.line',recordId:lineId,display:sample.display,
+          raw:before.payload.data.records[0].analytic_distribution,unchanged:true,noEditor:true,passed:true};
+        await page.screenshot({path:`${root}/${actor}-root-analytic.png`});
       } else {
       assert(!leaves.some(n=>n.meta?.model==='account.move' && new URL(n.meta.route,base).searchParams.get('menu_id')==='175'),
         'role policy must not publish undeclared journal route');

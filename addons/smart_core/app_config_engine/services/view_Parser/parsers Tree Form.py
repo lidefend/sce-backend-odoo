@@ -1196,6 +1196,7 @@ class _TreeFormParserMixin:
                 options_val = self._safe_eval_expr(el.get('options'))
                 meta['widget_options'] = options_val if isinstance(options_val, dict) else {}
             semantics = self._field_widget_semantics(fname, meta.get('widget'), meta.get('widget_options'))
+            meta.pop('widget_semantics', None)
             if semantics:
                 meta['widget_semantics'] = semantics
             if el.get('filename'):
@@ -1761,9 +1762,10 @@ class _TreeFormParserMixin:
             if attrs.get('options'):
                 options_val = self._safe_eval_expr(attrs.get('options'))
                 meta['widget_options'] = options_val if isinstance(options_val, dict) else {}
-                semantics = self._field_widget_semantics(fname, meta.get('widget'), meta['widget_options'])
-                if semantics:
-                    meta['widget_semantics'] = semantics
+            semantics = self._field_widget_semantics(fname, meta.get('widget'), meta.get('widget_options'))
+            meta.pop('widget_semantics', None)
+            if semantics:
+                meta['widget_semantics'] = semantics
             for key in ('readonly', 'required', 'invisible'):
                 if attrs.get(key):
                     meta.setdefault('modifiers', {})[key] = self._normalize_modifier_value(attrs.get(key))

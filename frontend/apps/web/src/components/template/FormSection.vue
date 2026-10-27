@@ -53,8 +53,13 @@
           :data-component-renderer="detailFactField(item).componentRenderer || undefined"
           :data-native-locator="detailFactField(item).nativeLocator || undefined"
           :data-source-position="detailFactField(item).sourcePosition ?? undefined">
+        <NativeWeightedRelationDisplay
+          v-if="usesNativeWeightedRelation(detailFactField(item))"
+          :declaration="detailFactField(item).widgetSemantics" :value="detailFactField(item).value"
+          :context="relationAdapter?.readContext"
+        />
         <ProfessionalBusinessValueControl
-          v-if="usesProfessionalBusinessValue(detailFactField(item))"
+          v-else-if="usesProfessionalBusinessValue(detailFactField(item))"
           :field="detailFactField(item)"
           :control-id="fieldControlId(detailFactField(item))"
           :placeholder="detailFactField(item).inputPlaceholder || businessValuePlaceholderText(detailFactField(item))"
@@ -191,6 +196,10 @@
                 role="alert"
                 :data-field-fail-closed="String(field.componentRenderer || '')"
               >{{ failClosedRendererText(field) }}</div>
+              <NativeWeightedRelationDisplay
+                v-else-if="usesNativeWeightedRelation(field)"
+                :declaration="field.widgetSemantics" :value="field.value" :context="relationAdapter?.readContext"
+              />
               <ScRadioGroup
                 v-else-if="field.type === 'selection' && isRadioWidget(field) && !(preferReadonlyFacts && field.readonly)"
                 class="native-radio-group"
@@ -425,6 +434,7 @@ import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScRelationField from '../design-system/ScRelationField.vue';
 import ScRadioGroup, { type ScRadioOption } from '../design-system/ScRadioGroup.vue';
+import NativeWeightedRelationDisplay from './NativeWeightedRelationDisplay.vue';
 import ProfessionalBaseFieldControl from '../professional-fields/ProfessionalBaseFieldControl.vue';
 import ProfessionalBusinessValueControl from '../professional-fields/ProfessionalBusinessValueControl.vue';
 import ProfessionalDetailCollectionControl from '../professional-fields/ProfessionalDetailCollectionControl.vue';
@@ -717,6 +727,10 @@ function usesProfessionalBaseField(field: FormSectionFieldSchema) {
   const candidate = isProfessionalBaseFieldCandidate(String(field.type || ''), fieldWidget(field));
   if (!candidate) return false;
   return !field.componentRenderer || field.componentRenderer === 'ProfessionalBaseFieldControl';
+}
+
+function usesNativeWeightedRelation(field: FormSectionFieldSchema) {
+  return field.widget === 'analytic_distribution' || field.widgetSemantics?.kind === 'weighted_relation';
 }
 
 function usesProfessionalBusinessValue(field: FormSectionFieldSchema) {

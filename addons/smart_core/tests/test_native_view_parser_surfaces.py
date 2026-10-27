@@ -615,6 +615,18 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertNotIn('widget_semantics', tree['column_occurrences'][1])
 
 
+    def test_root_analytic_semantics_without_options_and_occurrence_isolation(self):
+        fields = {'same': {'type': 'json', 'string': 'Allocation'}}
+        for widget in ('analytic_distribution', 'json'):
+            element = _parse_test_xml(f'<field name="same" widget="{widget}"/>')
+            dom = self.tree_form_parser._node_to_layout_from_dom(element, fields, list(element.iter()))
+            converted = self.tree_form_parser._convert_node_to_layout(
+                {'tag': 'field', 'attributes': {'name': 'same', 'widget': widget}}, fields)
+            for layout in (dom, converted):
+                semantics = layout['fieldInfo'].get('widget_semantics', {})
+                self.assertEqual(semantics.get('kind'), 'weighted_relation' if widget == 'analytic_distribution' else None)
+        self.assertNotIn('widget_semantics', fields['same'])
+
     def test_field_widget_semantics_rejects_invalid_readonly_empty_text(self):
         for value in ("", " " * 4, 42, "x" * 81):
             with self.subTest(value=value):

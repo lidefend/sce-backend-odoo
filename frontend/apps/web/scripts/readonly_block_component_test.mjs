@@ -44,7 +44,7 @@ async function runMounted({ useRecordFormLayout, createContractV2Store, Componen
     globalThis.window = { matchMedia: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }) };
     globalThis.document = { getElementById: () => null };
     const all = (predicate, n = rootNode) => [n, ...n.children.flatMap(child => all(() => true, child))].filter(predicate);
-    const schema = nodes => nodes.filter(n => n.type === 'field').map(n => ({ name: n.name, label: n.name, key: n.name, type: n.fieldType || 'char', value: Object.hasOwn(n, 'value') ? n.value : 'visible', inputValue: Object.hasOwn(n, 'value') ? n.value : 'visible', readonlyEmptyText: n.readonlyEmptyText, readonly: n.readonly !== false, helpText: n.helpText, span: n.span }));
+    const schema = nodes => nodes.filter(n => n.type === 'field').map(n => ({ name: n.name, label: n.name, key: n.name, type: n.fieldType || 'char', value: Object.hasOwn(n, 'value') ? n.value : 'visible', inputValue: Object.hasOwn(n, 'value') ? n.value : 'visible', widget: n.widget, widgetSemantics: n.widgetSemantics, readonlyEmptyText: n.readonlyEmptyText, readonly: n.readonly !== false, helpText: n.helpText, span: n.span }));
     const direct = { type: 'field', name: 'direct', span: 12 };
     const group = { type: 'group', name: 'g', span: 24, columns: 2, children: [
       { type: 'field', name: 'a', span: 12 }, { type: 'field', name: 'b', span: 8 }] };
@@ -93,6 +93,27 @@ async function runMounted({ useRecordFormLayout, createContractV2Store, Componen
       equal(trigger.props['aria-controls'], undefined, 'closing removes dangling reference');
       equal(trigger.props['aria-expanded'], false, 'closing updates expanded state');
       equal(textOf(rootNode).includes('Native field explanation'), false, 'closed help content is destroyed');
+    }
+    const allocation = { type: 'field', name: 'allocation', fieldType: 'json', span: 12,
+      widget: 'analytic_distribution', value: { '1': 100 },
+      widgetSemantics: { kind: 'weighted_relation', version: 1, relation_model: 'account.analytic.account',
+        label_field: 'display_name', key_encoding: 'csv_ids', value_unit: '%', mode: 'readonly', empty_text: '未分配' } };
+    for (const readonly of [false, true]) {
+      const start = calls.length;
+      props.value = { ...props.value, relationAdapter: { readContext: { allowed_company_ids: [1] } },
+        nodes: [{ ...group, children: [{ ...allocation, readonly }] }], preferReadonlyFacts: readonly };
+      await waitCalls(start + 1);
+      equal(calls[start].request, { intent: 'api.data', params: { op: 'read', model: 'account.analytic.account',
+        ids: [1], fields: ['id', 'display_name'], context: { allowed_company_ids: [1] } } }, 'root component uses authorized formal context');
+      calls[start].resolve({ records: [{ id: 1, display_name: '授权分析账户' }] }); await tick();
+      equal(textOf(rootNode).includes('授权分析账户：100%'), true, 'actual root edit/readonly composition displays native label and percentage');
+      equal(all(n => n.props['data-semantic-component'] === 'NativeWeightedRelationDisplay').length, 1, 'exactly one native display mounted');
+      equal(all(n => n.props['data-semantic-component'] === 'NativeWeightedRelationDisplay')[0].props['data-display-state'], 'ready', 'native display is ready');
+      equal(allocation.value, { '1': 100 }, 'root raw value preserved');
+      props.value = { ...props.value, nodes: [{ ...group, children: [{ ...allocation, readonly, widgetSemantics: undefined }] }] };
+      await tick();
+      equal(all(n => n.props['data-semantic-component'] === 'NativeWeightedRelationDisplay')[0].props['data-display-state'], 'error', 'root missing semantics stops rather than JSON fallback');
+      equal(calls.length, start + 1, 'missing declaration does not read');
     }
     props.value = { ...props.value, nodes: [{ ...group, columns: undefined }] }; await tick();
     equal(errors.some(e => e.name === 'ContractGapError'), true, 'missing grid columns stops actual renderer');
@@ -430,10 +451,10 @@ try {
         loader: 'js', resolveDir: `${root}/frontend/apps/web` }));
       if (kind === 'native-layout') {
         builder.onResolve({ filter: /tdesignPrimitiveBridge$/ }, () => ({ path: 'popup', namespace: 'popup' }));
-        builder.onLoad({ filter: /.*/, namespace: 'popup' }, () => ({ contents: `import {h,defineComponent,ref} from 'vue';export const TDesignPopup=defineComponent({emits:['visible-change'],setup:(_, {attrs,slots,emit})=>{const open=ref(false);return()=>h('test-help-popover',{...attrs,onClick:()=>{open.value=!open.value;emit('visible-change',open.value)}},[slots.default?.(),open.value?slots.content?.():null])}});`, loader: 'js', resolveDir: `${root}/frontend/apps/web` }));
+        builder.onLoad({ filter: /.*/, namespace: 'popup' }, () => ({ contents: `import {h,defineComponent,ref} from 'vue';export const TDesignAlert=defineComponent({setup:(_, {attrs,slots})=>()=>h('test-alert',attrs,slots.default?.())});export const TDesignPopup=defineComponent({emits:['visible-change'],setup:(_, {attrs,slots,emit})=>{const open=ref(false);return()=>h('test-help-popover',{...attrs,onClick:()=>{open.value=!open.value;emit('visible-change',open.value)}},[slots.default?.(),open.value?slots.content?.():null])}});`, loader: 'js', resolveDir: `${root}/frontend/apps/web` }));
       }
       builder.onLoad({ filter: /\.vue$/ }, args => {
-        if (args.path !== entry && !(kind === 'native-layout' && /\/(FormSection|ProfessionalBaseFieldControl|ScPopover)\.vue$/.test(args.path))) {
+        if (args.path !== entry && !(kind === 'native-layout' && /\/(FormSection|ProfessionalBaseFieldControl|ScPopover|NativeWeightedRelationDisplay)\.vue$/.test(args.path))) {
           if (kind === 'native-layout') {
             assert.ok(/\/(design-system|template|professional-fields)\//.test(args.path) || /\/(SceneFieldControl|SceneButton|SceneUiProvider|RestrictedHtmlEditor)\.vue$/.test(args.path), `unexpected layout presentation ${args.path}`);
             if (args.path.endsWith('/ScDescriptions.vue')) return { contents: `import {h,defineComponent} from 'vue';export default defineComponent({setup:(_, {attrs,slots})=>()=>h('test-descriptions',{},(attrs.items || []).map(item=>slots.item?.({item})))});`, loader: 'js', resolveDir: path.dirname(args.path) };
