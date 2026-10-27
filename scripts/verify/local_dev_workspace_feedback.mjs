@@ -135,6 +135,14 @@ try {
   });
   page.on('response', async response => {
     let request; try { const body = response.request().postDataJSON(); request = body?.params?.intent ? body.params : body; } catch {}
+    if (['journal-role','journal-save'].includes(scope) && request?.intent === 'api.data'
+      && request.params?.op === 'read' && request.params?.model === 'account.move.line') {
+      try {
+        const payload = await response.json();
+        (report.childReads ||= []).push({params:request.params,httpStatus:response.status(),ok:payload.ok,error:payload.error,
+          records:(payload.data?.records || []).map(row=>({id:row.id,fields:Object.keys(row)}))});
+      } catch { report.childReadCaptureIncomplete = true; }
+    }
     if (!['system.init', 'api.onchange'].includes(request?.intent)) return;
     try {
       const payload = await response.json();

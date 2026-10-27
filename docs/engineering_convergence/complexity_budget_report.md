@@ -118,8 +118,8 @@ Generated from repository source files. This report is informational during the 
 | 1267 | Python source | `scripts/verify/local_dev_runtime_performance.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1245 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
+| 1229 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1222 | Python source | `addons/smart_construction_core/models/support/tender.py` |
-| 1221 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
