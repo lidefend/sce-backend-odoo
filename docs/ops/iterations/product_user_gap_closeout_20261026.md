@@ -2043,7 +2043,7 @@ errors0/blocked0，无save/dispatch。已查看reader草稿和user已过账卡�
 review_takeover独立读取d6e3两份原始报告，确认主体/公司/六契约模型、四父详情/八卡、
 六次开关及前后值一致，无本轮阻断；接受上述限定结论。
 
-### 2026-10-27：移动根分录与分析全文触控（执行中）
+### 2026-10-27：移动根分录与分析全文触控
 
 起点2fb3866e0a16f3576431f0ed14d21e825830a03d，clean。Formal Product Layer P4，
 Layer Target既有journal-role工具；Module scripts/verify/local_dev_journal_mobile.mjs及
@@ -2053,3 +2053,27 @@ local_dev_workspace_feedback.mjs。只增加mobile-root限定模式，不改产�
 保留d6e3原证据，不重新执行全矩阵。复用既有sc-local-dev身份和凭据，禁止业务写。
 最早L1 syntax/iteration，L2既有27JS+11Python策略，L4上述精确集合及L5独立复核；
 无产品代码变化，不适用产品types/lint/ORM、模块升级或seed重放。
+
+候选a7fb21984a658f3b5eb5642be08693fac86fc99b：mobile-root-static.log L1通过，
+mobile-root-policy.log真实27JS+11Python通过；独立源码复核无S1/S2。受管启动及
+mobile-root-reader.log/mobile-root-user.log均退出0。原始报告/截图位于
+journal-role-browser/a7fb21984a658f3b5eb5642be08693fac86fc99b/mobile-root/，
+两角色前缀分别sc_demo_accounting_read/sc_demo_accounting_user。
+
+read1987/user1988各验证根分录19(draft)/51(posted)，精确action/menu/record/model
+响应绑定、父凭证10/55及公司1归属、标题非空且无false泄露、保存标签/写权限均通过。
+reader没有分析字段，user声明并显示；posted授权名称及100%与普通API读取一致，
+原生组件无编辑器。user posted真实tap打开全文、全文相等、淡入完成截图，再tap关闭；
+文字边界left8/right379.546875/top724/bottom762完整位于390×844屏幕。已查看截图，
+名称和比例完整清楚。四根页面document clientWidth/scrollWidth均390，errors0/blocked0。
+父name/state/type/company/line_ids/write_date及子name/account/debit/credit/distribution/
+parent_state/company/write_date等before/after完全一致，无save/dispatch。
+
+只关闭上述模拟移动根详情及根分析全文触控未验证项。父卡分析全文触控、真实设备/
+其他视口、跨公司、普通经办真实保存/UI过账和原生分析编辑仍开放。前轮d6e3六列表/
+父详情证据保留原身份，本轮未重跑。没有产品代码/demo数据修改、迁移、模块升级、
+主线合并或远端部署。下一步优先补普通经办真实保存闭环：沿既有journal-save的
+精确owned draft及回读/清理机制扩展主体，禁止重放历史写操作，不重建demo。
+
+review_takeover已独立核对a7fb两份原始报告，四根身份/契约/归属/前后不变及tap全文
+边界均确认，无阻断；支持上述限定收口结论。

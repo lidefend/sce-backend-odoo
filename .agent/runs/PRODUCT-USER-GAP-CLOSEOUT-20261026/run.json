@@ -180,7 +180,7 @@
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Extend the same governed mobile journal-role helper to root line detail and native analytic full-text touch interaction, retaining contract-derived membership, exact identities and no business writes.",
+  "next_exact_step": "Review the existing governed journal-save owned draft/readback/cleanup lane for ordinary accounting user1988; extend exact actor authority minimally and verify real save plus independent cleanup, without replaying previous owned writes or changing demo data.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -2035,6 +2035,53 @@
         "mobile-reader-navigation.log and mobile-user.log at d3027: checked cards before hydration; wait for exact account card added"
       ],
       "reuse": "P0/P1/seed and permissions unchanged; desktop/ORM/identity evidence retains original candidates."
+    },
+    "accounting_mobile_roots": {
+      "status": "selected_root_read_and_touch_verified",
+      "candidate_head": "a7fb21984a658f3b5eb5642be08693fac86fc99b",
+      "evidence_root": ".runtime/product-user-gap-closeout-20261026/journal-role-browser/a7fb21984a658f3b5eb5642be08693fac86fc99b/mobile-root/",
+      "actors": {
+        "sc_demo_accounting_read": 1987,
+        "sc_demo_accounting_user": 1988
+      },
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "touch": true,
+        "real_device": false
+      },
+      "results": {
+        "root_details": 4,
+        "records": [
+          19,
+          51
+        ],
+        "parent_records": [
+          10,
+          55
+        ],
+        "analytic_touch_expansions": 1,
+        "errors": 0,
+        "blocked": 0,
+        "before_after_equal": true,
+        "page_overflow": false,
+        "business_writes": 0
+      },
+      "checks": {
+        "L1": "mobile-root-static.log passed",
+        "L2": "mobile-root-policy.log 27 JS + 11 Python passed",
+        "L3": "no module/seed changes; no upgrade or data replay",
+        "L4": "mobile-root-reader.log and mobile-root-user.log exit0",
+        "L5": "review_takeover independently verified exact source and both original reports; no blockers"
+      },
+      "reuse": "Product, demo and policy inputs unchanged. Previous d6e3 mobile lists/parent details and original desktop evidence retained without rerunning. New exact set: published line entry x two actors x two states, plus user posted full-text tap.",
+      "limits": [
+        "emulated mobile 390x844 only",
+        "parent card analytic popup touch not verified",
+        "real devices/other viewport not verified",
+        "no business save/posting or cross-company matrix",
+        "native analytic editing remains open"
+      ]
     }
   }
 }
