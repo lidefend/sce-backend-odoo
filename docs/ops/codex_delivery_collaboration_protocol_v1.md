@@ -106,6 +106,9 @@ skip 或 expected failure 不能伪装成必需断言已通过。当前 quaranti
 
 ## 如何集成与接续
 
+精确执行顺序与已拦截的易错点见 [交付车道执行 Runbook](delivery_lane_execution_runbook_v1.md)；
+本协议定义职责边界，Runbook 固化步骤顺序，两者冲突时以本协议为准。
+
 1. 收敛已知缺陷，完成适用层验证与批次复核；冻结前运行既有生成证据准备入口
    `make ci.delivery.freeze.prepare`，审查生成差异后提交 clean 候选。
 2. **按平台车道执行，不混用豁免。** GitHub 延续 exact-head `make ci.local.quick`、独立
