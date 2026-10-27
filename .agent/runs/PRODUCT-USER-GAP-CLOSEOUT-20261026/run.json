@@ -190,10 +190,9 @@
   "blockers": [
     "FG15: selected desktop/mobile read journeys and ordinary-clerk single draft save/readback/cleanup passed; cross-company browser matrix, remaining mobile interactions and other six-entry business write workflows remain unverified.",
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
-    "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open.",
-    "Integration: 9bdc clerk create succeeded but persisted reload failed; cleanup verified record101 lines103/104 absent. P0 persisted relation hydration fixed; actual replay pending. Final Quick and merge evidence pending."
+    "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Validate persisted relation hydration with actual clerk save/reload/readback/cleanup, then final acceptance, exact-head Quick, independent review, archive and protected GitHub merge.",
+  "next_exact_step": "Runtime scope passed at 4726fde1925a4231c87ffb6b45a222ddf532a63d. Freeze documentation-only final candidate, carry verified unchanged evidence, exact-head Quick, independent fingerprint review, external archive, protected GitHub PR CI and merge.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -2211,6 +2210,15 @@
       "fix": "Use native subview.fields readonly before enriched descriptor, keep readonly fields rejected by write probe, bind sequence to observed numeric100",
       "cleanup": "ordinary cleanup and independent absence passed",
       "next": "non-debug clerk save/readback/cleanup at fixed candidate"
+    },
+    "integration_runtime_20261027": {
+      "head": "4726fde1925a4231c87ffb6b45a222ddf532a63d",
+      "status": "passed",
+      "record": "docs/ops/iterations/product_user_gap_closeout_20261026.md",
+      "evidence": ".runtime/product-user-gap-closeout-20261026/integration-v13-evidence.log",
+      "scope": "clerk save/reload/readback/cleanup, six role entries draft/posted, presentation, 18 list cases, relation roundtrip",
+      "integration": "pending_final_quick_review_archive_remote_ci",
+      "deployment": "not_run"
     }
   }
 }
