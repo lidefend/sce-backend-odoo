@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { permitsJournalSaveMutation, permitsJournalRoleRead, permitsJournalDetailRead } from './local_dev_journal_save_policy.mjs';
+import { permitsJournalSaveMutation, permitsJournalRoleRead, permitsJournalDetailRead, journalFormWidgets, journalLineColumns } from './local_dev_journal_save_policy.mjs';
 const allow = (request,state) => permitsJournalSaveMutation(request,state,{method:'POST',path:'/api/v1/intent'});
 const state = { enabled: true, ready: true, ref: 'P4-JOURNAL-test', companyId: 1, journalId: 3, currencyId: 6,
   accounts: [49, 48], rowKeys: ['r1', 'r2'], createAttempted: false, createdId: null, cleanupVerified: false };
@@ -73,4 +73,17 @@ test('saved detail only reads chatter for the selected account move', () => {
   ]) assert.equal(permitsJournalDetailRead(changed,21,transport),false);
   assert.equal(permitsJournalDetailRead(request,null,transport),false);
   assert.equal(permitsJournalDetailRead(request,21,{...transport,method:'GET'}),false);
+});
+
+const contractWithColumns = columns => ({layoutContract:{containerTree:[{widgetList:[],children:[{
+  children:[],widgetList:[{fieldCode:'line_ids',componentConfig:{subview:{tree:{columns}}}}]}]}]}});
+test('published journal columns preserve native membership',()=>{
+  assert.deepEqual(journalLineColumns(contractWithColumns(['account_id','analytic_distribution'])),['account_id','analytic_distribution']);
+  assert.deepEqual(journalLineColumns(contractWithColumns([{name:'account_id'}])),['account_id']);
+  assert.equal(journalFormWidgets(contractWithColumns([])).length,1);
+});
+test('missing journal declaration does not become hidden-field success',()=>{
+  assert.throws(()=>journalLineColumns({}));
+  assert.throws(()=>journalLineColumns({layoutContract:{containerTree:[]}}));
+  assert.throws(()=>journalFormWidgets({layoutContract:{containerTree:[{}]}}));
 });

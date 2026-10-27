@@ -128,6 +128,7 @@ Generated from repository source files. This report is informational during the 
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1157 | Python source | `scripts/verify/fact_source_coverage_guard.py` |
+| 1150 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1149 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |
 | 1147 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 1147 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
@@ -135,7 +136,6 @@ Generated from repository source files. This report is informational during the 
 | 1138 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1133 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
 | 1131 | Python source | `scripts/release/test_release_publication.py` |
-| 1131 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1130 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1129 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1128 | Python source | `addons/smart_core/handlers/ui_contract_v2_projection.py` |

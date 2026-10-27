@@ -69,3 +69,23 @@ export function permitsJournalDetailRead(request, recordId, transport) {
     && request.params?.model === 'account.move'
     && (request.params.res_id ?? request.params.record_id) === recordId;
 }
+
+
+// P4 reads published widget membership, never infers it from the acting role.
+export function journalFormWidgets(contract) {
+  const roots = contract?.layoutContract?.containerTree;
+  if (!Array.isArray(roots)) throw new Error('form container declaration missing');
+  const visit = nodes => nodes.flatMap(node => {
+    if (!Array.isArray(node.widgetList) || !Array.isArray(node.children)) throw new Error('invalid form container');
+    return [...node.widgetList, ...visit(node.children)];
+  });
+  return visit(roots);
+}
+export function journalLineColumns(contract) {
+  const widgets = journalFormWidgets(contract).filter(widget => widget.fieldCode === 'line_ids');
+  if (widgets.length !== 1) throw new Error('unique journal lines declaration required');
+  const widget = widgets[0];
+  const tree = (widget.componentConfig?.subview || widget.fieldDescriptor?.subview)?.tree;
+  if (!Array.isArray(tree?.columns)) throw new Error('journal columns declaration missing');
+  return tree.columns.map(column => typeof column === 'string' ? column : column.name || column.field);
+}

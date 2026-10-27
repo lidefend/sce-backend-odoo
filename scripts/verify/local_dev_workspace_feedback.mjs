@@ -1,6 +1,6 @@
 // P4: fixed affected forms. journal-save permits one owned draft and exact cleanup; no posting.
 import fs from 'node:fs';
-import { permitsJournalSaveMutation, permitsJournalRoleRead, permitsJournalDetailRead } from './local_dev_journal_save_policy.mjs';
+import { permitsJournalSaveMutation, permitsJournalRoleRead, permitsJournalDetailRead, journalFormWidgets, journalLineColumns } from './local_dev_journal_save_policy.mjs';
 import assert from 'node:assert/strict';
 import {launchChromium} from './playwright_runtime.mjs';
 import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap_inventory_policy.mjs';
@@ -728,6 +728,7 @@ try {
             } else {
               await page.goto(`${base}/f/account.move/${record.id}?menu_id=${menu}&action_id=${action}`,{waitUntil:'domcontentloaded'});
             }
+            let detailContract;
             const validateForm = async pending=>{
               const response=await pending; assert.equal(response.status(),200);
               const payload=await response.json(); assert.equal(payload.ok,true);
@@ -739,6 +740,7 @@ try {
               },record.id);
               await page.locator('[data-field-name="line_ids"]').first().waitFor({state:'visible'});
               await page.waitForFunction(expected=>Number(document.querySelector('[data-field-name="line_ids"] [data-row-count]')?.getAttribute('data-row-count'))===expected,record.line_ids.length);
+              detailContract=payload.data;
               return payload.data.statusContract.globalStatus;
             };
             const status = await validateForm(open);
@@ -802,14 +804,19 @@ try {
               assert.equal(await form.getByRole('button',{name:'过账',exact:true}).count(),0);
             } else await form.getByRole('button',{name:'保存',exact:true}).waitFor({state:'visible'});
             assert.equal(await form.getByRole('button',{name:'保存草稿',exact:true}).count(),0);
+            const publishedColumns=journalLineColumns(detailContract);
+            const analyticDeclared=publishedColumns.includes('analytic_distribution');
+            assert.equal(analyticDeclared,!accountingReadonly,'native role column membership differs from declared role baseline');
+            detail.analyticPresentation={declared:analyticDeclared,publishedColumns};
+            if (!analyticDeclared) assert(!readonlyHeaders.includes('分析分配'),'undeclared allocation must not leak through a generic column');
             const nativeCells=page.locator('[data-field-name="line_ids"] [data-detail-collection-content="desktop-table"] [data-semantic-component="NativeWeightedRelationDisplay"]');
-            assert.equal(await nativeCells.count(),lines.length);
-            await page.waitForFunction(() => {
+            assert.equal(await nativeCells.count(),analyticDeclared ? lines.length : 0);
+            if (analyticDeclared) await page.waitForFunction(() => {
               const cells=[...document.querySelectorAll('[data-field-name="line_ids"] [data-detail-collection-content="desktop-table"] [data-semantic-component="NativeWeightedRelationDisplay"]')];
               return cells.length>0 && cells.every(cell=>cell.getAttribute('data-display-state')==='ready');
             });
             assert.equal(await page.locator('input[id$="-analytic_distribution-desktop"]').count(),0);
-            if (journalState === 'posted') {
+            if (journalState === 'posted' && analyticDeclared) {
               assert.equal(readonlyHeaders.filter(text=>text==='分析分配').length,1);
               for (const line of lines) {
                 const distribution=line.analytic_distribution;
@@ -866,19 +873,30 @@ try {
         for (const source of report.journalStates) {
         const lineId=source.record.line_ids[0];
         const sample=source.structuredValues?.find(item=>item.lineId===lineId);
-        if (source.state==='posted') assert(sample,'posted root must retain authorized allocation comparison');
+        if (source.state==='posted' && source.analyticPresentation.declared) assert(sample,'posted root must retain authorized allocation comparison');
         const lineFields=['id','move_id','parent_state','analytic_distribution','write_date'];
         const before=await journalApi('api.data',{op:'read',model:'account.move.line',ids:[lineId],fields:lineFields});
         assert.equal(before.status,200); assert.equal(before.payload.ok,true);
         assert.equal(before.payload.data.records.length,1); assert.equal(before.payload.data.records[0].id,lineId);
         assert.equal(before.payload.data.records[0].parent_state,source.state);
         assert.equal(before.payload.data.records[0].move_id[0],source.record.id);
+        const rootResponse=page.waitForResponse(response=>{
+          let body; try {body=response.request().postDataJSON();} catch {return false;}
+          const request=body?.params?.intent ? body.params : body;
+          return request?.intent==='ui.contract.v2' && request.params?.op==='action_open' && request.params?.view_type==='form'
+            && Number(request.params?.action_id)===Number(lineRoute.pathname.split('/').at(-1))
+            && Number(request.params?.record_id)===lineId && Number(request.params?.menu_id)===Number(lineRoute.searchParams.get('menu_id'));
+        });
         await page.goto(`${base}/f/account.move.line/${lineId}?menu_id=${lineRoute.searchParams.get('menu_id')}&action_id=${lineRoute.pathname.split('/').at(-1)}`,{waitUntil:'domcontentloaded'});
         await page.waitForFunction(id=>{
           const form=document.querySelector('[data-semantic-component="ContractFormPage"]');
           return form?.getAttribute('data-state')==='ok' && form?.getAttribute('data-form-model')==='account.move.line'
             && form?.getAttribute('data-form-record')===String(id);
         },lineId);
+        const rootTransport=await rootResponse; assert.equal(rootTransport.status(),200);
+        const rootPayload=await rootTransport.json(); assert.equal(rootPayload.ok,true);
+        const rootAnalyticDeclared=journalFormWidgets(rootPayload.data).some(widget=>widget.fieldCode==='analytic_distribution');
+        assert.equal(rootAnalyticDeclared,!accountingReadonly);
         const lineForm=page.locator('[data-semantic-component="ContractFormPage"]');
         if (accountingReadonly) assert.equal(await lineForm.getByRole('button',{name:'保存',exact:true}).count(),0);
         else await lineForm.getByRole('button',{name:'保存',exact:true}).waitFor({state:'visible'});
@@ -888,21 +906,22 @@ try {
         assert(!(await page.title()).startsWith('false'),'document title must not expose boolean name');
         const rootField=page.locator('[data-field-name="analytic_distribution"]');
         const rootDisplay=rootField.locator('[data-semantic-component="NativeWeightedRelationDisplay"]');
-        await rootDisplay.waitFor({state:'visible'});
-        await page.waitForFunction(()=>document.querySelector('[data-field-name="analytic_distribution"] [data-semantic-component="NativeWeightedRelationDisplay"]')?.getAttribute('data-display-state')==='ready');
-        const rootText=(await rootDisplay.innerText()).trim();
+        if (rootAnalyticDeclared) await rootDisplay.waitFor({state:'visible'});
+        else assert.equal(await rootField.count(),0,'undeclared analytic field must stay absent');
+        if (rootAnalyticDeclared) await page.waitForFunction(()=>document.querySelector('[data-field-name="analytic_distribution"] [data-semantic-component="NativeWeightedRelationDisplay"]')?.getAttribute('data-display-state')==='ready');
+        const rootText=rootAnalyticDeclared ? (await rootDisplay.innerText()).trim() : null;
         if (sample) assert.equal(rootText,sample.display);
         assert.equal(await rootField.locator('input,textarea').count(),0);
         const after=await journalApi('api.data',{op:'read',model:'account.move.line',ids:[lineId],fields:lineFields});
         assert.equal(after.status,200); assert.equal(after.payload.ok,true);
         assert.equal(after.payload.data.records.length,1); assert.equal(after.payload.data.records[0].id,lineId);
         assert.deepEqual(after.payload.data.records,before.payload.data.records);
-        const rootResult={model:'account.move.line',recordId:lineId,state:source.state,title:rootTitle,documentTitle:await page.title(),display:rootText,displayValueCompared:Boolean(sample),saveLabel:accountingReadonly ? null : '保存',
+        const rootResult={model:'account.move.line',recordId:lineId,state:source.state,title:rootTitle,documentTitle:await page.title(),display:rootText,analyticDeclared:rootAnalyticDeclared,displayValueCompared:Boolean(sample),saveLabel:accountingReadonly ? null : '保存',
           raw:before.payload.data.records[0].analytic_distribution,
           before:before.payload.data.records[0],after:after.payload.data.records[0],unchanged:true,noEditor:true,passed:true};
         report.lineRootStates.push(rootResult);
-        if (source.state==='posted') report.rootAnalyticReadonly=rootResult;
-        await rootDisplay.scrollIntoViewIfNeeded();
+        if (source.state==='posted' && rootAnalyticDeclared) report.rootAnalyticReadonly=rootResult;
+        if (rootAnalyticDeclared) await rootDisplay.scrollIntoViewIfNeeded();
         await page.screenshot({path:`${root}/${actor}-root-${source.state}-analytic.png`});
         }
       } else {

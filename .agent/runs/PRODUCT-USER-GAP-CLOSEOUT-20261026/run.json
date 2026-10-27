@@ -1950,17 +1950,22 @@
         "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py",
         "scripts/verify/local_dev_workspace_feedback.mjs",
         "make/dev.mk",
-        "scripts/verify/local_dev_journal_recovery.py"
+        "scripts/verify/local_dev_journal_recovery.py",
+        "scripts/verify/local_dev_journal_save_policy.mjs",
+        "scripts/verify/test_local_dev_journal_save_policy.mjs"
       ],
       "reason": "Fill missing explicit accounting_read/user demo identities via repeatable seed/XML baseline, then verify real role surfaces using existing journal data. Not a migration or authorization change.",
       "environment": "sc-local-dev/sc_dev_demo filter^sc_dev_demo$ namespace ns_000000000002 volume sc_local_dev_odoo_data port18081; canonical demo credential reused",
       "validation_plan": "L1,focused seed ORM idempotency/exact roles/access,policy25JS+11Python,governed demo_accounting_roles seed with nonsecret UID receipt,exact candidate reader/user browser serially. No writes in browser.",
-      "status": "targeted_checks_passed_seed_pending",
+      "status": "seed_applied_role_probe_corrected_pending_browser",
       "validation": "L1 reviewed PASS; policy-final25JS+11Python PASS; orm-final real1post-test0failed0error (stats3 not actual), seed twice same IDs/exact roles/read+write ACL/journal create denied/current-principal demo company membership.",
       "failures": "Initial /module:class selector collected0 because -standard tagged test; preserved as failure, switched to explicit demo_accounting_roles tag. Review caught Make actor allowlist/UID passthrough missing, fixed before browser.",
       "enrollment_scope": "Existing standard enroll_data_space_identities(purpose=demo) covers all active/internal/company-authorized operators of already registered demo spaces, not only two seats; no new space/customer purpose/role permission. Receipts emitted after enrollment.",
       "before": "accounting-roles-before.log governed read-only observation proves read/user absent; manager7/finance47/project_read41 retained.",
-      "limits": "ACL checks not proof of actual create/write/delete journeys or every configuration action. Browser pending; no manager proof inherited for new roles."
+      "limits": "ACL checks not proof of actual create/write/delete journeys or every configuration action. Browser pending; no manager proof inherited for new roles.",
+      "seed": "6276ecd8a local.dev.demo.seed STEPS=demo_accounting_roles committed read1987/user1988 company1; independent accounting-roles-after.log confirms exact roles and retained manager7/finance47/project_read41.",
+      "failure_browser": "accounting-read-browser.log 6276ecd8a failed nativeCells0!=2. Native role source: read omits analytic.group_analytic_accounting, user includes it. Reader page correctly omits analytic column; manager-only probe expectation was wrong. No permission change.",
+      "correction": "P4 helper reads exact published layout widget/subview column membership; missing structure fails. Reader analytic column/root must be undeclared and absent, user/manager must declare/render. Only declared posted allocation requires sample. 27JS+11Python/L1 passed."
     }
   }
 }
