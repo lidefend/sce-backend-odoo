@@ -2042,3 +2042,14 @@ errors0/blocked0，无save/dispatch。已查看reader草稿和user已过账卡�
 
 review_takeover独立读取d6e3两份原始报告，确认主体/公司/六契约模型、四父详情/八卡、
 六次开关及前后值一致，无本轮阻断；接受上述限定结论。
+
+### 2026-10-27：移动根分录与分析全文触控（执行中）
+
+起点2fb3866e0a16f3576431f0ed14d21e825830a03d，clean。Formal Product Layer P4，
+Layer Target既有journal-role工具；Module scripts/verify/local_dev_journal_mobile.mjs及
+local_dev_workspace_feedback.mjs。只增加mobile-root限定模式，不改产品语义/P0-P3/
+权限/seed。影响集合从已发布account.move.line入口 × read1987/user1988 × draft/posted
+推导，共4根详情，另user已过账1次分析全文tap开关。前轮12列表/4父详情输入未改，
+保留d6e3原证据，不重新执行全矩阵。复用既有sc-local-dev身份和凭据，禁止业务写。
+最早L1 syntax/iteration，L2既有27JS+11Python策略，L4上述精确集合及L5独立复核；
+无产品代码变化，不适用产品types/lint/ORM、模块升级或seed重放。

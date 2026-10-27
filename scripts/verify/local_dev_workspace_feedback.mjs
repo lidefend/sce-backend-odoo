@@ -1,6 +1,6 @@
 // P4: fixed affected forms. journal-save permits one owned draft and exact cleanup; no posting.
 import fs from 'node:fs';
-import { inspectMobileAccounting } from './local_dev_journal_mobile.mjs';
+import { inspectMobileAccounting, inspectMobileJournalRoots } from './local_dev_journal_mobile.mjs';
 import { permitsJournalSaveMutation, permitsJournalRoleRead, permitsJournalDetailRead, journalFormWidgets, journalLineColumns } from './local_dev_journal_save_policy.mjs';
 import assert from 'node:assert/strict';
 import {launchChromium} from './playwright_runtime.mjs';
@@ -9,11 +9,12 @@ import {permitsInventoryRequest} from '../../frontend/apps/web/scripts/bootstrap
 const base = 'http://127.0.0.1:18081/t/demo';
 const scope = process.env.SC_FEEDBACK_SCOPE || 'workspace';
 assert(['workspace', 'cost', 'conditioned', 'approval', 'usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child', 'journal-draft', 'journal-save', 'journal-role'].includes(scope));
-const mobile = process.env.SC_FEEDBACK_VIEWPORT === 'mobile';
-assert(['', 'desktop', 'mobile'].includes(process.env.SC_FEEDBACK_VIEWPORT || ''));
+const mobileRoot = process.env.SC_FEEDBACK_VIEWPORT === 'mobile-root';
+const mobile = mobileRoot || process.env.SC_FEEDBACK_VIEWPORT === 'mobile';
+assert(['', 'desktop', 'mobile', 'mobile-root'].includes(process.env.SC_FEEDBACK_VIEWPORT || ''));
 assert(!mobile || scope === 'journal-role');
 const root = scope === 'journal-save' ? process.env.SC_RUNTIME_JOURNAL_EVIDENCE
-  : `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}${mobile ? '/mobile' : ''}`;
+  : `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}${mobileRoot ? '/mobile-root' : mobile ? '/mobile' : ''}`;
 if (scope === 'journal-save') assert.equal(root, `.runtime/product-user-gap-closeout-20261026/journal-save-browser/${process.env.CANDIDATE_GIT_HEAD}/${process.env.SC_RUNTIME_JOURNAL_REF}`);
 fs.mkdirSync(root, {recursive: true});
 const actor = ['usability', 'journal-role'].includes(scope) ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
@@ -671,7 +672,7 @@ try {
         }
         assert.equal(journalRolePairs.size,6);
         if (mobile) {
-          await inspectMobileAccounting({page, base, root, actor, accountingReadonly, entries, report, journalApi,
+          await (mobileRoot ? inspectMobileJournalRoots : inspectMobileAccounting)({page, base, root, actor, accountingReadonly, entries, report, journalApi,
             setDetailId: id => { journalDetailId = id; }});
         } else {
         for (const entry of entries) {

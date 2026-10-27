@@ -125,7 +125,7 @@ Generated from repository source files. This report is informational during the 
 | 1204 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1199 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
-| 1189 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
+| 1190 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1157 | Python source | `scripts/verify/fact_source_coverage_guard.py` |

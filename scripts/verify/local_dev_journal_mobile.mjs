@@ -1,6 +1,103 @@
 // P4: bounded mobile observations on existing demo records, with no business writes.
 import assert from 'node:assert/strict';
-import { journalLineColumns } from './local_dev_journal_save_policy.mjs';
+import { journalLineColumns, journalFormWidgets } from './local_dev_journal_save_policy.mjs';
+
+export async function inspectMobileJournalRoots({page, base, root, actor, accountingReadonly, entries, report, journalApi}) {
+  report.viewport={width:390,height:844,touch:true};
+  report.mobileRootStates=[];
+  const entry=entries.find(item=>item.meta.model==='account.move.line');
+  assert(entry);
+  const route=new URL(entry.meta.route,base);
+  const action=Number(route.pathname.split('/').at(-1)), menu=Number(route.searchParams.get('menu_id'));
+  const authority=await journalApi('route.authority.validate',{action_id:action,menu_id:menu});
+  assert.equal(authority.status,200); assert.equal(authority.payload.ok,true); assert.equal(authority.payload.data.allowed,true);
+  const read=async (model,ids,fields)=>{
+    const response=await journalApi('api.data',{op:'read',model,ids,fields});
+    assert.equal(response.status,200); assert.equal(response.payload.ok,true);
+    assert.deepEqual(response.payload.data.records.map(row=>row.id),ids);
+    return response.payload.data.records;
+  };
+  const parentFields=['id','name','state','move_type','company_id','line_ids','write_date'];
+  const lineFields=['id','move_id','name','parent_state','company_id','account_id','debit','credit','analytic_distribution','write_date'];
+  for (const state of ['draft','posted']) {
+    const selected=await journalApi('api.data',{op:'list',model:'account.move',
+      domain:[['state','=',state],['move_type','=','entry'],['name','!=','/'],['name','!=',false]],fields:parentFields,limit:5});
+    assert.equal(selected.status,200); assert.equal(selected.payload.ok,true);
+    const parent=selected.payload.data.records.find(row=>row.name && row.name!=='/');
+    assert(parent); assert.equal(parent.company_id[0],1); assert.equal(parent.move_type,'entry'); assert.equal(parent.state,state);
+    const lineId=parent.line_ids[0]; assert(Number.isSafeInteger(lineId) && lineId>0);
+    const before=await read('account.move.line',[lineId],lineFields), line=before[0];
+    assert.equal(line.move_id[0],parent.id); assert.equal(line.company_id[0],1); assert.equal(line.parent_state,state);
+    const pending=page.waitForResponse(response=>{
+      let body; try {body=response.request().postDataJSON();} catch {return false;}
+      const request=body?.params?.intent ? body.params : body;
+      return request?.intent==='ui.contract.v2' && request.params?.op==='action_open' && request.params?.view_type==='form'
+        && Number(request.params.action_id)===action && Number(request.params.menu_id)===menu && Number(request.params.record_id)===lineId;
+    });
+    const [response]=await Promise.all([pending,page.goto(`${base}/f/account.move.line/${lineId}?menu_id=${menu}&action_id=${action}`,{waitUntil:'domcontentloaded'})]);
+    const payload=await response.json(); assert.equal(response.status(),200); assert.equal(payload.ok,true);
+    assert.equal(payload.data.pageInfo.model,'account.move.line');
+    await page.waitForFunction(id=>{
+      const node=document.querySelector('[data-semantic-component="ContractFormPage"]');
+      return node?.getAttribute('data-state')==='ok' && node?.getAttribute('data-form-model')==='account.move.line'
+        && node?.getAttribute('data-form-record')===String(id);
+    },lineId);
+    const form=page.locator('[data-semantic-component="ContractFormPage"]');
+    const title=(await form.locator('h1').first().innerText()).trim();
+    assert(title && title!=='false'); assert(!(await page.title()).startsWith('false'));
+    const capabilities=payload.data.statusContract.globalStatus.effectiveRecordCapabilities;
+    assert.equal(capabilities.write,!accountingReadonly);
+    if (accountingReadonly) assert.equal(await form.getByRole('button',{name:'保存',exact:true}).count(),0);
+    else await form.getByRole('button',{name:'保存',exact:true}).waitFor({state:'visible'});
+    assert.equal(await form.getByRole('button',{name:'保存草稿',exact:true}).count(),0);
+    const widget=journalFormWidgets(payload.data).filter(item=>item.fieldCode==='analytic_distribution');
+    assert.equal(widget.length,accountingReadonly ? 0 : 1);
+    const field=form.locator('[data-field-name="analytic_distribution"]');
+    let display=null, touchExpansion=null;
+    if (accountingReadonly) assert.equal(await field.count(),0);
+    else {
+      const native=field.locator('[data-semantic-component="NativeWeightedRelationDisplay"][data-display-state="ready"]');
+      await native.waitFor({state:'visible'});
+      assert.equal(await field.locator('input,textarea').count(),0);
+      display=(await native.innerText()).trim();
+      if (state==='posted') {
+        const raw=line.analytic_distribution;
+        assert(raw && typeof raw==='object' && !Array.isArray(raw));
+        assert.deepEqual(Object.values(raw),[100]);
+        const key=Object.keys(raw)[0]; assert.match(key,/^[1-9]\d*$/);
+        const named=await read('account.analytic.account',[Number(key)],['id','display_name']);
+        const expected=`${named[0].display_name}：100%`; assert.equal(display,expected);
+        const trigger=native.getByRole('button',{name:`查看完整内容：${expected}`,exact:true});
+        await trigger.tap();
+        const full=page.locator('[data-native-weighted-full-value]:visible');
+        await full.waitFor({state:'visible'}); assert.equal((await full.innerText()).trim(),expected);
+        await page.waitForFunction(()=>{
+          let node=document.querySelector('[data-native-weighted-full-value]');
+          if (!node) return false;
+          for (;node;node=node.parentElement) if (Number(getComputedStyle(node).opacity)<1) return false;
+          return true;
+        });
+        const bounds=await full.evaluate(node=>{
+          const box=node.getBoundingClientRect();
+          return {left:box.left,right:box.right,top:box.top,bottom:box.bottom,width:innerWidth,height:innerHeight};
+        });
+        assert(bounds.left>=0 && bounds.right<=bounds.width && bounds.top>=0 && bounds.bottom<=bounds.height,`full text outside viewport: ${JSON.stringify(bounds)}`);
+        await page.screenshot({path:`${root}/${actor}-${state}-analytic-expanded.png`});
+        await trigger.tap(); await full.waitFor({state:'hidden'});
+        touchExpansion={text:expected,bounds,opened:true,closed:true,method:'tap'};
+      } else assert(line.analytic_distribution===false || line.analytic_distribution===null);
+    }
+    const geometry=await page.evaluate(()=>({width:innerWidth,client:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth}));
+    assert.equal(geometry.width,390); assert(geometry.scroll<=geometry.client+1);
+    const after=await read('account.move.line',[lineId],lineFields), parentAfter=await read('account.move',[parent.id],parentFields);
+    assert.deepEqual(after,before); assert.deepEqual(parentAfter,[parent]);
+    const result={state,lineId,action,menu,contractModel:payload.data.pageInfo.model,parent,before,after,parentAfter,
+      title,capabilities,analyticDeclared:widget.length===1,display,touchExpansion,geometry,unchanged:true,passed:true};
+    report.mobileRootStates.push(result); report.cases.push({model:'account.move.line',recordId:lineId,state,passed:true});
+    await page.screenshot({path:`${root}/${actor}-${state}-root.png`});
+  }
+  assert.equal(report.mobileRootStates.length,2); assert.equal(report.blocked.length,0);
+}
 
 export async function inspectMobileAccounting({page, base, root, actor, accountingReadonly, entries, report, journalApi, setDetailId}) {
   report.viewport = {width:390,height:844,touch:true};
