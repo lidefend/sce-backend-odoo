@@ -17,7 +17,7 @@ const root = scope === 'journal-save' ? process.env.SC_RUNTIME_JOURNAL_EVIDENCE
   : `.runtime/product-user-gap-closeout-20261026/${scope}-browser/${process.env.CANDIDATE_GIT_HEAD}${mobileRoot ? '/mobile-root' : mobile ? '/mobile' : ''}`;
 if (scope === 'journal-save') assert.equal(root, `.runtime/product-user-gap-closeout-20261026/journal-save-browser/${process.env.CANDIDATE_GIT_HEAD}/${process.env.SC_RUNTIME_JOURNAL_REF}`);
 fs.mkdirSync(root, {recursive: true});
-const actor = ['usability', 'journal-role'].includes(scope) ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
+const actor = ['usability', 'journal-role', 'journal-save'].includes(scope) ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
 assert(['demo_full', 'demo_role_pm', 'demo_role_finance', 'demo_role_project_read', 'sc_demo_accounting_manager', 'sc_demo_accounting_read', 'sc_demo_accounting_user'].includes(actor));
 const accountingActor = ['sc_demo_accounting_manager','sc_demo_accounting_read','sc_demo_accounting_user'].includes(actor);
 const accountingReadonly = actor === 'sc_demo_accounting_read';
@@ -57,6 +57,8 @@ const journalRolePairs = new Set(accountingActor ? [] : ['292/175']);
 const journalSave = { enabled: scope === 'journal-save', ready: false, createAttempted: false, cleanupVerified: false,
   ref: process.env.SC_RUNTIME_JOURNAL_REF, createdId: null, accounts: [], rowKeys: [] };
 if (journalSave.enabled) {
+  assert(['demo_full','sc_demo_accounting_user'].includes(actor));
+  assert.equal(Number(process.env.SC_FEEDBACK_EXPECTED_UID || 40), actor === 'demo_full' ? 40 : 1988);
   assert(new RegExp(`^P4-JOURNAL-${report.head}-[a-f0-9]{32}$`).test(journalSave.ref));
   report.ownedRef = journalSave.ref;
   assert.equal(process.env.CONFIRM_LOCAL_DEV_JOURNAL_SAVE, 'CREATE_READBACK_CLEANUP_ONE_DRAFT');
@@ -140,6 +142,11 @@ try {
   function walk(nodes) { for (const node of nodes) { if (node.children?.length) walk(node.children); else leaves.push(node); } }
   walk(init.navigation.nav);
   report.actor = {uid: init.user?.id, login: actor, company: init.user?.company_id};
+  if (journalSave.enabled) {
+    assert.equal(init.user.id,Number(process.env.SC_FEEDBACK_EXPECTED_UID || 40));
+    assert.equal(init.user.company_id,1);
+    report.actor.identityVerified=true;
+  }
   if (scope === 'native-child') {
     const model = 'res.partner';
     const candidateIndex = fs.readFileSync('frontend/apps/web/dist-dev/index.html', 'utf8');
@@ -366,7 +373,7 @@ try {
       await setAmount('credit',1,100);
       journalSave.accounts=[item.selectedAccountId,nextId];
       assert.deepEqual({user:journalSave.userId,company:journalSave.companyId,journal:journalSave.journalId,
-        currency:journalSave.currencyId,accounts:journalSave.accounts}, {user:40,company:1,journal:3,currency:6,accounts:[49,48]}, 'recovery scope mismatch');
+        currency:journalSave.currencyId,accounts:journalSave.accounts}, {user:Number(process.env.SC_FEEDBACK_EXPECTED_UID || 40),company:1,journal:3,currency:6,accounts:[49,48]}, 'recovery scope mismatch');
       journalSave.ready=true;
       const createResponse=page.waitForResponse(response => {
         let body; try { body=response.request().postDataJSON(); } catch { return false; }
@@ -378,7 +385,7 @@ try {
       report.saved={httpStatus:saved.status(),ok:savedBody.ok,data:savedBody.data,error:savedBody.error};
       assert.equal(savedBody.ok,true,'draft save failed');
       journalSave.createdId=savedBody.data.id; assert(Number.isSafeInteger(journalSave.createdId) && journalSave.createdId>0);
-      fs.writeFileSync(`${root}/created-receipt.json`, JSON.stringify({head:report.head,ref:journalSave.ref,
+      fs.writeFileSync(`${root}/created-receipt.json`, JSON.stringify({head:report.head,ref:journalSave.ref,actor,uid:init.user.id,
         record_id:journalSave.createdId,line_ids:[]}));
       await page.waitForURL(url => url.pathname.endsWith('/'+journalSave.createdId),{timeout:20000});
       await page.reload({waitUntil:'domcontentloaded'});
@@ -407,7 +414,7 @@ try {
       }
       assert.equal(report.blocked.length,0);
       report.readback={record:rows[0],lines:lines.payload.data.records};
-      fs.writeFileSync(`${root}/created-receipt.json`, JSON.stringify({head:report.head,ref:journalSave.ref,
+      fs.writeFileSync(`${root}/created-receipt.json`, JSON.stringify({head:report.head,ref:journalSave.ref,actor,uid:init.user.id,
         record_id:journalSave.createdId,line_ids:lines.payload.data.records.map(row=>row.id)}));
       await page.screenshot({path:`${root}/saved-reloaded.png`});
     }

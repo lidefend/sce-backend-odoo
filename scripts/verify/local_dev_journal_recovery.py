@@ -15,9 +15,16 @@ def validate_identity(visible_ids, audited_ids, known_existing_ids=None):
         assert known_existing_ids == audited_ids, 'browser identity differs from marker identity'
 
 
-def validate_snapshot(snapshot, ref):
+def journal_actor_identity(login='demo_full', uid=40):
+    assert (login, uid) in (('demo_full', 40), ('sc_demo_accounting_user', 1988)), 'actor outside registered save scope'
+    assert type(uid) is int
+    return login, uid
+
+
+def validate_snapshot(snapshot, ref, actor_login='demo_full', actor_uid=40):
+    journal_actor_identity(actor_login, actor_uid)
     assert snapshot['ref'] == ref
-    assert snapshot['creator'] == 40 and snapshot['company'] == 1 and snapshot['journal'] == 3
+    assert snapshot['creator'] == actor_uid and snapshot['company'] == 1 and snapshot['journal'] == 3
     assert snapshot['currency'] == 6 and snapshot['state'] == 'draft'
     assert snapshot['posted_before'] is False and snapshot['name'] == '/'
     assert type(snapshot['id']) is int and snapshot['id'] > 0
@@ -42,8 +49,11 @@ def run_owned(env):
     validate_run_ref(ref, head)
     mode = os.environ.get('SC_RUNTIME_JOURNAL_RECOVERY')
     assert mode in ('preflight', 'cleanup', 'verify_absent')
-    actor = env['res.users'].browse(40)
-    assert actor.exists() and actor.login == 'demo_full'
+    login, uid = journal_actor_identity(os.environ.get('SC_RUNTIME_JOURNAL_ACTOR') or 'demo_full',
+                                       int(os.environ.get('SC_RUNTIME_JOURNAL_ACTOR_UID') or '40'))
+    actor = env['res.users'].browse(uid)
+    assert actor.exists() and actor.login == login and actor.active
+    assert actor.company_id.id == 1 and actor.company_ids.ids == [1]
     model = env['account.move'].with_user(actor).with_context(allowed_company_ids=[1], company_id=1)
     assert not model.env.su
     model.check_access_rights('read')
@@ -57,6 +67,7 @@ def run_owned(env):
     browser_receipt = json.loads(os.environ.get('SC_RUNTIME_JOURNAL_BROWSER_RECEIPT', 'null'))
     if browser_receipt is not None:
         assert browser_receipt['head'] == head and browser_receipt['ref'] == ref
+        assert browser_receipt['actor'] == login and browser_receipt['uid'] == uid
         known_id = browser_receipt['record_id']
         assert type(known_id) is int and known_id > 0
         known_lines = browser_receipt['line_ids']
@@ -70,7 +81,7 @@ def run_owned(env):
         if not records:
             assert not env['account.move.line'].sudo().browse(known_lines).exists()
 
-    result = {'mode': mode, 'ref': ref, 'head': head}
+    result = {'mode': mode, 'ref': ref, 'head': head, 'actor': login, 'uid': uid}
     if mode == 'preflight':
         assert not records
         # Demonstrate record-rule and unlink support on the exact draft shape,
@@ -104,7 +115,7 @@ def run_owned(env):
                                    'amount_currency': line.amount_currency,
                                    'matched_debit': line.matched_debit_ids.ids,
                                    'matched_credit': line.matched_credit_ids.ids} for line in records.line_ids]}
-            validate_snapshot(snapshot, ref)
+            validate_snapshot(snapshot, ref, login, uid)
             print('JOURNAL_RECOVERY_BEFORE ' + json.dumps(snapshot))
             result.update(record_id=records.id, line_ids=records.line_ids.ids)
             records.check_access_rule('unlink')
@@ -117,6 +128,7 @@ def run_owned(env):
     else:
         receipt = json.loads(os.environ['SC_RUNTIME_JOURNAL_CLEANUP_RECEIPT'])
         assert receipt['ref'] == ref and receipt['head'] == head and receipt['mode'] == 'cleanup'
+        assert receipt['actor'] == login and receipt['uid'] == uid
         assert receipt['passed'] is True and receipt['committed'] is True and receipt['absent'] is True
         record_id, line_ids = receipt['record_id'], receipt['line_ids']
         assert (record_id is None and line_ids == []) or (type(record_id) is int and record_id > 0

@@ -1789,7 +1789,7 @@ verify.local.dev.journal.save.run: guard.prod.forbid local.dev.ready local.dev.e
 	@test "$(CONFIRM_LOCAL_DEV_JOURNAL_SAVE)" = "CREATE_READBACK_CLEANUP_ONE_DRAFT"
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  SC_LOCAL_DEV_WRITE_LEASE_TOKEN="$(SC_LOCAL_DEV_WRITE_LEASE_TOKEN)" CONFIRM_LOCAL_DEV_JOURNAL_SAVE="$(CONFIRM_LOCAL_DEV_JOURNAL_SAVE)" \
-	  SC_FEEDBACK_SCOPE=journal-save bash scripts/verify/local_dev_workspace_feedback.sh
+	  SC_FEEDBACK_ACTOR="$(or $(SC_FEEDBACK_ACTOR),demo_full)" SC_FEEDBACK_EXPECTED_UID="$(or $(SC_FEEDBACK_EXPECTED_UID),40)" SC_FEEDBACK_SCOPE=journal-save bash scripts/verify/local_dev_workspace_feedback.sh
 
 .PHONY: local.dev.journal.recovery local.dev.journal.recovery.run
 local.dev.journal.recovery: guard.prod.forbid
@@ -1797,6 +1797,7 @@ local.dev.journal.recovery: guard.prod.forbid
 local.dev.journal.recovery.run: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.write_lease.require
 	@case "$(SC_CONFIRM_JOURNAL_RECOVERY)" in READBACK_CLEANUP_OWNED_DRAFT_13|PREFLIGHT_CLEANUP_ONE_OWNED_DRAFT) ;; *) exit 1 ;; esac
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  SC_RUNTIME_JOURNAL_ACTOR="$(SC_FEEDBACK_ACTOR)" SC_RUNTIME_JOURNAL_ACTOR_UID="$(SC_FEEDBACK_EXPECTED_UID)" \
 	  SC_CONFIRM_JOURNAL_RECOVERY="$(SC_CONFIRM_JOURNAL_RECOVERY)" SC_RUNTIME_JOURNAL_RECOVERY="$(SC_RUNTIME_JOURNAL_RECOVERY)" \
 	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_journal_recovery.py
 

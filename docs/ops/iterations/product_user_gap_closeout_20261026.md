@@ -2077,3 +2077,23 @@ parent_state/company/write_date等before/after完全一致，无save/dispatch。
 
 review_takeover已独立核对a7fb两份原始报告，四根身份/契约/归属/前后不变及tap全文
 边界均确认，无阻断；支持上述限定收口结论。
+
+### 2026-10-27：普通经办真实保存闭环（执行中）
+
+起点ebc13a0ae，clean。P4既有journal-save及recovery工具；变更限定make/dev.mk、
+workspace_feedback.mjs、journal_recovery.py及其定向测试。精确白名单demo_full40/
+sc_demo_accounting_user1988，清理创建者与浏览器/cleanup回执绑定；不承载业务权限，
+不改变P0-P3或demo。使用既有sc-local-dev/sc_dev_demo、alias demo、namespace
+ns_000000000002、dbfilter ^sc_dev_demo$、filestore sc_local_dev_odoo_data。
+唯一新增写集合为经办1988的一张本轮P4-JOURNAL-SHA-nonce草稿及两行，company1/
+journal3/currency6/accounts49,48/debit-credit100；不操作原10/55或历史owned记录。
+先现有写租约内ordinary-user预检create/unlink并回滚，再浏览器保存/回读/reload，
+无论浏览器成败均按精确marker/creator/state/line形状清理并独立verify_absent。
+最早L1迭代静态，L2策略负例，L3预检真实ACL/规则和回滚，L4唯一新增保存链，
+L5独立复核。产品/seed未改，不升级或重放数据，不重跑读取矩阵或Quick。
+
+独立源码复核发现S1：SC_FEEDBACK_*不在odoo_shell_exec容器转发白名单，若直接跑
+预检会默认40而清理不匹配1988。真实写入前已修：Make明确映射到既有SC_RUNTIME_
+JOURNAL_ACTOR/ACTOR_UID，Python同名读取；wrapper在browser前核验preflight
+head/ref/actor/uid/passed/rolled_back。新增wrapper错主体拒绝且不启动browser负例。
+修正后L1及27JS+14Python通过，review_takeover确认S1消除，无剩余S1/S2。

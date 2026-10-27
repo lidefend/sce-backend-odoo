@@ -1,7 +1,7 @@
 """Bounded owned-recovery policy; no database connection."""
 import copy
 import unittest
-from local_dev_journal_recovery import validate_run_ref, validate_snapshot, validate_identity
+from local_dev_journal_recovery import validate_run_ref, validate_snapshot, validate_identity, journal_actor_identity
 
 
 class RecoveryPolicyTests(unittest.TestCase):
@@ -24,6 +24,20 @@ class RecoveryPolicyTests(unittest.TestCase):
 
     def test_balanced_owned_draft(self):
         validate_snapshot(self.snapshot, self.ref)
+
+    def test_clerk_requires_exact_creator(self):
+        self.snapshot['creator'] = 1988
+        validate_snapshot(self.snapshot, self.ref, 'sc_demo_accounting_user', 1988)
+        with self.assertRaises(AssertionError): validate_snapshot(self.snapshot, self.ref)
+        self.snapshot['creator'] = 40
+        with self.assertRaises(AssertionError):
+            validate_snapshot(self.snapshot, self.ref, 'sc_demo_accounting_user', 1988)
+
+    def test_unknown_or_mismatched_actor_rejected(self):
+        for login, uid in [('sc_demo_accounting_read', 1987), ('sc_demo_accounting_user', 40),
+                           ('demo_full', 1988), ('sc_demo_accounting_user', 1), ('demo_full', True)]:
+            with self.subTest(login=login, uid=uid), self.assertRaises(AssertionError):
+                journal_actor_identity(login, uid)
 
     def test_prior_zero_amount_defect_still_cleanable(self):
         for line in self.snapshot['lines']:
@@ -61,7 +75,7 @@ class IdentityTests(unittest.TestCase):
 
 
 class WrapperLifecycleTests(unittest.TestCase):
-    def run_wrapper(self, failure):
+    def run_wrapper(self, failure, actor="demo_full", uid=40):
         import os, subprocess, tempfile, json
         from pathlib import Path
         wrapper = Path(__file__).with_name('local_dev_workspace_feedback.sh').resolve()
@@ -84,14 +98,16 @@ if mode=='browser':
 if failure==mode: sys.exit(1)
 if mode=='cleanup' and failure=='missing_receipt': sys.exit(0)
 receipt={'mode':mode,'ref':os.environ['SC_RUNTIME_JOURNAL_REF'],'head':os.environ['CANDIDATE_GIT_HEAD'],
-         'record_id':None,'line_ids':[],'passed':True,'committed':True,'absent':True}
+         'record_id':None,'line_ids':[],'passed':True,'committed':True,'absent':True,'rolled_back':True,
+         'actor':os.environ['SC_FEEDBACK_ACTOR'],'uid':int(os.environ['SC_FEEDBACK_EXPECTED_UID'])}
+if failure=='wrong_actor' and mode=='preflight': receipt.update(actor='demo_full',uid=40)
 print('JOURNAL_RECOVERY '+json.dumps(receipt))
 '''
             for name in ('make','node'):
                 p=binpath/name;p.write_text(fake);p.chmod(0o755)
             envfile=root/'env'; envfile.write_text('COMPOSE_PROJECT_NAME=sc-local-dev\nDB_NAME=sc_dev_demo\nNGINX_PORT=18081\nSC_DEMO_USER_PASSWORD=synthetic-test-only\nENV_FILE=.env.dev\n')
             env=dict(os.environ, PATH=str(binpath)+os.pathsep+os.environ['PATH'], ENV_FILE=str(envfile),
-                     SC_FEEDBACK_SCOPE='journal-save',CANDIDATE_GIT_HEAD='a'*40,
+                     SC_FEEDBACK_SCOPE='journal-save',SC_FEEDBACK_ACTOR=actor,SC_FEEDBACK_EXPECTED_UID=str(uid),CANDIDATE_GIT_HEAD='a'*40,
                      CONFIRM_LOCAL_DEV_JOURNAL_SAVE='CREATE_READBACK_CLEANUP_ONE_DRAFT',
                      SC_LOCAL_DEV_WRITE_LEASE_TOKEN='synthetic-unit-lease',TEST_EVENTS=str(events),TEST_ENVFILE=str(envfile),TEST_FAILURE=failure)
             result=subprocess.run(['bash',str(wrapper)],cwd=root,env=env,capture_output=True,text=True)
@@ -105,6 +121,15 @@ print('JOURNAL_RECOVERY '+json.dumps(receipt))
         self.assertEqual(status,0)
         self.assertEqual(order,['preflight','browser','cleanup','verify_absent'])
         self.assertTrue(report['passed'])
+
+    def test_clerk_identity_observed_before_browser(self):
+        status,order,report=self.run_wrapper('', 'sc_demo_accounting_user', 1988)
+        self.assertEqual(status,0)
+        self.assertEqual(order,['preflight','browser','cleanup','verify_absent'])
+        self.assertTrue(report['passed'])
+        status,order,report=self.run_wrapper('wrong_actor', 'sc_demo_accounting_user', 1988)
+        self.assertNotEqual(status,0)
+        self.assertEqual(order,['preflight'])
 
     def test_browser_failure_or_missing_report_still_cleans(self):
         for failure in ('browser','missing_report'):

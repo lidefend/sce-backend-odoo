@@ -22,6 +22,17 @@ recover() {
   SC_RUNTIME_JOURNAL_RECOVERY="$1" make --no-print-directory ENV=dev ENV_FILE="$journal_authority_env_file" local.dev.journal.recovery.run > "$SC_RUNTIME_JOURNAL_EVIDENCE/$1.log" 2>&1
 }
 recover preflight
+# Verify the container-observed principal before permitting any browser write.
+python3 - "$SC_RUNTIME_JOURNAL_EVIDENCE/preflight.log" <<'VERIFY_PREFLIGHT'
+import json,os,sys
+rows=[json.loads(line.removeprefix('JOURNAL_RECOVERY ')) for line in open(sys.argv[1]) if line.startswith('JOURNAL_RECOVERY ')]
+assert len(rows)==1
+receipt=rows[0]
+assert receipt['mode']=='preflight' and receipt['passed'] is True and receipt['rolled_back'] is True
+assert receipt['ref']==os.environ['SC_RUNTIME_JOURNAL_REF'] and receipt['head']==os.environ['CANDIDATE_GIT_HEAD']
+assert receipt['actor']==(os.environ.get('SC_FEEDBACK_ACTOR') or 'demo_full')
+assert receipt['uid']==int(os.environ.get('SC_FEEDBACK_EXPECTED_UID') or '40')
+VERIFY_PREFLIGHT
 # Even a browser failure must finish recovery while this same write lease is held.
 finish() {
   local browser_status=$?
