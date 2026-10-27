@@ -24,7 +24,7 @@ GLOBAL = ('Dockerfile*', 'docker-compose*', 'requirements*', 'odoo.conf',
           '.github/workflows/backend_test_suite.yml',
           '.github/workflows/professional_quality_gate.yml', 'make/ci.mk',
           'make/dev_test.mk', 'Makefile')
-NON_RUNTIME = ('docs/**', '.agent/**', 'frontend/**', '*.md',
+NON_RUNTIME = ('docs/**', '.agent/**', 'frontend/**', 'make/frontend.mk', '*.md',
                'scripts/verify/**', 'scripts/ci/**', 'scripts/ops/**')
 
 # Existing CI control-plane inputs are not Odoo runtime inputs. Changes still

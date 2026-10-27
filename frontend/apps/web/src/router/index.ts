@@ -13,6 +13,7 @@ import { beginPageIdentity } from '../app/pageIdentityRuntime';
 import { resolveRoutePageIdentity } from '../app/pageIdentityRoute';
 import type { NavMeta } from '@sc/schema';
 import { findRouteAuthority } from '../app/routeAuthority';
+import { consumeButtonNavigationAuthority } from '../app/buttonNavigationAuthority';
 import { resolveAuthorizedConfigurationRoute } from '../services/actionRoutePolicy';
 import { resolveBusinessActivityTitle, shouldDeferActivityPageTitle } from '../app/activityPageTitle';
 import { intentRequest } from '../api/intents';
@@ -416,6 +417,11 @@ router.beforeEach(async (to) => {
     }
     const authorityBoundRoute = to.name === 'action' || to.name === 'menu'
       || ((to.name === 'record' || to.name === 'model-form') && (actionId > 0 || menuId > 0));
+    if (authorityBoundRoute && (actionId > 0 || menuId > 0) && !runtimeRouteAuthorized) {
+      if (consumeButtonNavigationAuthority(actionId, to.fullPath)) {
+        runtimeRouteAuthorized = true;
+      }
+    }
     if (authorityBoundRoute && (actionId > 0 || menuId > 0) && !runtimeRouteAuthorized) {
       return {
         name: 'access-denied',

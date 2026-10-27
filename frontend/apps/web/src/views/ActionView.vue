@@ -830,6 +830,7 @@ import { useStatus } from '../composables/useStatus';
 import { parseContractContextRaw, resolveContractAccessPolicy, resolveContractReadRight, resolveContractViewMode } from '../app/contractActionRuntime';
 import { resolveStandardPageTypeFromStore, type StandardPageTypeDecision } from '../app/presentation/standardPageType';
 import { detectObjectMethodFromActionKey, normalizeActionKind, toPositiveInt } from '../app/contractRuntime';
+import { grantButtonNavigationAuthority } from '../app/buttonNavigationAuthority';
 import { findActionMeta, findMenuNode } from '../app/menu';
 import { getSceneByKey, type Scene, type SceneListProfile } from '../app/resolvers/sceneRegistry';
 import { findSceneReadyEntry, resolveCollectionSceneReady } from '../app/resolvers/sceneReadyResolver';
@@ -2463,7 +2464,13 @@ const { runContractAction } = useActionViewActionRuntime({
     keepSceneRoute: keepSceneRoute.value,
     routePath: route.path,
   }),
-  routerPush: async (target) => router.push(target as never),
+  routerPush: async (target) => {
+    const resolved = router.resolve(target as never);
+    const rawActionId = resolved.query.action_id ?? resolved.params.actionId;
+    const navActionId = toPositiveInt(typeof rawActionId === 'string' ? rawActionId : '');
+    if (navActionId) grantButtonNavigationAuthority(navActionId, resolved.fullPath);
+    return router.push(target as never);
+  },
   resolveNavigationUrl,
   openWindow: (url, target) => {
     window.open(url, target, 'noopener,noreferrer');
