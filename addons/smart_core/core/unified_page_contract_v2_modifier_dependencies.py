@@ -158,7 +158,7 @@ def _hydrate_create_modifier_dependencies(Model: Any, contract: dict[str, Any], 
     fields = Model._fields
     scalar_types = {"boolean", "integer", "float", "monetary", "char", "text", "selection", "date", "datetime", "many2one"}
     dependencies = collect_modifier_dependency_fields(contract, known_fields=fields)
-    relations = [name for name in dependencies if name in main and getattr(fields[name], "type", "") in {"one2many", "many2many"}]
+    relations = [name for name in dependencies if getattr(fields[name], "type", "") in {"one2many", "many2many"}]
     missing = [name for name in dependencies
                if name not in main and getattr(fields[name], "type", "") in scalar_types]
     if not missing and not relations:
@@ -201,12 +201,23 @@ def _hydrate_create_modifier_dependencies(Model: Any, contract: dict[str, Any], 
         return
     for name in relations:
         try:
-            origin = draft[name]._origin
+            relation = draft[name]
+            origin = relation._origin
             origin.check_access_rights("read")
             origin.check_access_rule("read")
             ids = origin.ids
             if not all(isinstance(item, int) and not isinstance(item, bool) and 0 < item <= 9007199254740991 for item in ids):
                 raise ValueError("invalid persisted native relation identity")
+            if name not in main:
+                # Defaults retain native commands. Computed/empty relations not
+                # supplied by default_get must be read from the actual draft.
+                value = deepcopy(defaults[name]) if name in defaults else fields[name].convert_to_read(
+                    relation, draft, use_display_name=False)
+                if name not in defaults and (not isinstance(value, (list, tuple)) or not all(
+                    isinstance(item, int) and not isinstance(item, bool) and 0 < item <= 9007199254740991 for item in value
+                )):
+                    raise ValueError("unserializable native create relation dependency")
+                main[name] = _relation_seed_shape(value)
             data.setdefault("dataMeta", {}).setdefault("nativeModifierRelationSnapshots", {})[name] = {
                 "sourceValue": _relation_seed_shape(deepcopy(main[name])), "persistedIds": list(ids),
             }

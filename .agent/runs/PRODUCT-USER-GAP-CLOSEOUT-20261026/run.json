@@ -169,7 +169,12 @@
     "demo_addons/smart_construction_demo/seed/registry.py",
     "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py",
     "scripts/verify/local_dev_journal_mobile.mjs",
-    "scripts/verify/local_dev_journal_clerk_save.mjs"
+    "scripts/verify/local_dev_journal_clerk_save.mjs",
+    "addons/smart_core/core/contract_lifecycle.py",
+    "docs/architecture/unified_page_contract_v2/examples/tree_project.json",
+    "docs/architecture/unified_page_contract_v2/examples/form_project.json",
+    "docs/architecture/unified_page_contract_v2/examples/nested_form_relation.json",
+    "docs/architecture/unified_page_contract_v2/examples/list_project.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -179,9 +184,11 @@
   "blockers": [
     "FG15: selected desktop/mobile read journeys and ordinary-clerk single draft save/readback/cleanup passed; cross-company browser matrix, remaining mobile interactions and other six-entry business write workflows remain unverified.",
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
-    "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
+    "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open.",
+    "Integration revalidation at 3c8593 and f4c125: clerk create fails before initial onchange; captured contract lacks authorized_transaction_ids and duplicated_ref_ids. Owned probes independently cleaned. P0 native hydration fix pending actual replay.",
+    "Isolated acceptance contract receipt rejects stale lifecycle schema digest; governed declaration sync applied, runtime revalidation pending. Merge-stage presentation/list/relation receipts still required."
   ],
-  "next_exact_step": "Finalize the reviewed incremental scope for protected GitHub integration: freeze prepare, exact clean-head Quick, independent final review, external evidence archive, PR checks and protected merge. Retain unverified product workflows as open follow-up gaps.",
+  "next_exact_step": "Revalidate ordinary clerk create/save after native missing x2many dependency hydration and schema declaration sync; then collect merge-stage presentation/list/relation evidence, freeze, Quick, independent archive and protected GitHub PR merge.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",

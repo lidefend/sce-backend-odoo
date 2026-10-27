@@ -720,7 +720,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
             def convert_to_read(self, value, record, use_display_name=True):
                 self_test.assertFalse(use_display_name)
-                return value
+                return value.ids if self.type == "one2many" else value
 
         self_test = self
 
@@ -852,6 +852,33 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 else:
                     self.assertNotIn("lines", snapshots)
                 self.assertEqual(contract["dataContract"]["mainData"]["lines"], commands)
+
+    def test_missing_create_relation_dependency_uses_native_value_and_preserves_denials(self):
+        for supplied in (False, True):
+            for deny in (None, "create", "read", "relation_field", "relation_read", "relation_rule"):
+                with self.subTest(supplied=supplied, deny=deny):
+                    commands = [(4, 42)]
+                    model, contract = self._create_modifier_fixture(lines=commands, deny=deny)
+                    model.relation_ids = [42] if supplied else []
+                    if not supplied:
+                        native_defaults = model.default_get
+                        def without_relation(names):
+                            values = native_defaults(names)
+                            values.pop("lines", None)
+                            return values
+                        model.default_get = without_relation
+                    contract["layoutContract"]["containerTree"][0]["modifiers"]["readonly"] = {"kind": "field_truthy", "field": "lines"}
+                    self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract,
+                        model="x.document", record_id=None, view_type="form")
+                    data = contract["dataContract"]
+                    if deny is None:
+                        expected = [[4, 42]] if supplied else []
+                        self.assertEqual(data["mainData"]["lines"], expected)
+                        self.assertEqual(data["dataMeta"]["nativeModifierRelationSnapshots"]["lines"],
+                                         {"sourceValue": expected, "persistedIds": model.relation_ids})
+                    else:
+                        self.assertNotIn("lines", data["mainData"])
+                        self.assertNotIn("lines", data["dataMeta"].get("nativeModifierRelationSnapshots", {}))
 
     def test_modifier_type_metadata_comes_from_model_not_snapshot_spoof(self):
         model, contract = self._create_modifier_fixture()

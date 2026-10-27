@@ -2162,3 +2162,9 @@ false/[]，已恢复undefined拒绝，保留显式空关系；新增unknown字�
 create仅op/model/vals/context、unlink仅model/ids/context，拒绝五类嵌套/歧义载体。
 L1、集合语义/原生差分/43parser、32JS+14Python及严格types通过。影响范围为原生
 条件缺依赖路径及保存写拦截；需要实际经办新建/保存复验，旧成功不得替代本次结果。
+
+### 主线集成复验阻断（2026-10-27）
+
+用户已授权收口并通过受保护 PR 集成 GitHub main。3c8593 与 f4c125 的普通会计新建复验在保存前失败，两次探针均完成普通主体清理及独立不存在确认。f4c125 保留的新建契约证明 `authorized_transaction_ids`、`duplicated_ref_ids` 已声明类型但缺少 mainData。P0 修复从权限约束下原生草稿读取缺失 x2many，保留原生默认命令与 origin 身份快照；ACL/计算失败仍不可求值，不恢复前端空值兜底。补充默认存在/省略及创建、读取、字段、关系规则拒绝的测试。
+
+隔离验收运行时通过受管入口纠正旧工作区挂载，但 contract receipt 报 `contract_schema_digest_not_bound`：本批 schema 已增加 formViewId，运行时摘要漏同步。使用 `make contract.schema.declaration.sync` 更新派生声明及示例，须重启候选并重新采集回执。当前未推送、未创建 PR、未合并、未部署；presentation/list/relation 合并证据和最终 Quick 均待完成。原始日志保留于当前 `.runtime/product-user-gap-closeout-20261026/integration-*`，不把失败作为通过。
