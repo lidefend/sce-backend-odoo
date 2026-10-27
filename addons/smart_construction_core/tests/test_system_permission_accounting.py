@@ -91,9 +91,11 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
         self.assertFalse(model.env.su)
         move = model.create(values)
         self.assertEqual(move.state, 'draft')
+        self._assert_journal_save_label(move.line_ids[0])
         move.action_post()
         self.assertEqual(move.with_env(self.env).state, 'posted')
         self._assert_journal_save_label(move)
+        self._assert_journal_save_label(move.line_ids[0])
         self.assertEqual(sum(move.with_env(self.env).line_ids.mapped('balance')), 0)
         self.assertEqual(move.with_user(reader).read(['state'])[0]['state'], 'posted')
         with self.assertRaises(AccessError), self.env.cr.savepoint():
@@ -393,9 +395,11 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
 
 
     def _assert_journal_save_label(self, record):
+        self.assertFalse(record.env.su)
         from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
         result = UiContractV2Handler(record.env, su_env=self.env).handle({
-            'op': 'model', 'model': 'account.move', 'view_id': self.env.ref('account.view_move_form').id,
+            'op': 'model', 'model': record._name,
+            **({'view_id': self.env.ref('account.view_move_form').id} if record._name == 'account.move' else {}),
             'view_type': 'form', 'render_profile': 'edit', 'record_id': record.id,
             'client_contract_capabilities': ['form.feedback.message.v1', 'form.navigation.anchor.v1', 'form.feedback.draft.v1'],
         })

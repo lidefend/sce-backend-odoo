@@ -1898,6 +1898,21 @@
       "review": "review_takeover source and final original report PASS no blockers within readonly root scope.",
       "reuse": "Product inputs unchanged from04d597186; b6fcfd96a only probe HTTP/unique id/full before-after/screenshot scroll plus generated statistics. Original targeted tests remain bound04d597186; policy rerun25JS+11Python PASS. Existing ORM/save proof retains dd5ea original identity; no new writes.",
       "limits": "Desktop accounting_manager root line51 only; mounted tests cover both form display paths. No native editor/other models/all roles/mobile/UI posting acceptance. New observed P1 line form 保存草稿 label on posted parent remains open. No demo edits/migration/module upgrade/mainline merge/remote deployment."
+    },
+    "line_save_label": {
+      "head": "d9377c77d plus explicit dirty scope",
+      "layer": "P1 smart_construction_core accounting form_governance; P4 existing readonly probe",
+      "reason": "Persistence label belongs to accounting product declaration, not frontend model-specific branches or runtime data. Extend existing native_authority_safe label to journal line; no ACL/state/write-path changes.",
+      "scope": [
+        "addons/smart_construction_core/services/contract_governance_overrides.py",
+        "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+        "scripts/verify/local_dev_workspace_feedback.mjs"
+      ],
+      "status": "targeted_checks_passed_runtime_pending",
+      "validation_plan": "L1 then existing policy25JS+11Python and real accounting ORM class with draft/posted line contracts; governed exact candidate browser. Frontend source unchanged, reuse previous types/component/lint source identities. No schema/module upgrade/demo mutation.",
+      "validation": "line-label-static.log L1 PASS; policy-reviewed25JS+11Python PASS; line-label-orm.log actual21post-tests0failed0error incl ordinary-user draft/posted root line final actionContract save label. stats23 not actual count.",
+      "review": "review_takeover source no product blockers; probe optional posted sample identified and fixed: posted requires sample, draft displayValueComparedfalse only label/ready scoped.",
+      "runtime_plan": "Existing registered journal-role readonly wrapper: root lines from current draft/posted parent record.line_ids, parent ID/state verified; both save labels保存 no保存草稿, no editor, full before/after values/write_date identical. Posted name/percentage comparison mandatory. No writes/demo/module upgrade."
     }
   }
 }

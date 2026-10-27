@@ -854,33 +854,45 @@ try {
         }
         const lineEntry=entries.find(entry=>entry.meta.model==='account.move.line');
         const lineRoute=new URL(lineEntry.meta.route,base);
-        const sample=report.journalStates.find(item=>item.state==='posted').structuredValues[0];
-        const lineId=sample.lineId;
-        const lineFields=['id','analytic_distribution','write_date'];
+        report.lineRootStates=[];
+        for (const source of report.journalStates) {
+        const lineId=source.record.line_ids[0];
+        const sample=source.structuredValues?.find(item=>item.lineId===lineId);
+        if (source.state==='posted') assert(sample,'posted root must retain authorized allocation comparison');
+        const lineFields=['id','move_id','parent_state','analytic_distribution','write_date'];
         const before=await journalApi('api.data',{op:'read',model:'account.move.line',ids:[lineId],fields:lineFields});
         assert.equal(before.status,200); assert.equal(before.payload.ok,true);
         assert.equal(before.payload.data.records.length,1); assert.equal(before.payload.data.records[0].id,lineId);
+        assert.equal(before.payload.data.records[0].parent_state,source.state);
+        assert.equal(before.payload.data.records[0].move_id[0],source.record.id);
         await page.goto(`${base}/f/account.move.line/${lineId}?menu_id=${lineRoute.searchParams.get('menu_id')}&action_id=${lineRoute.pathname.split('/').at(-1)}`,{waitUntil:'domcontentloaded'});
         await page.waitForFunction(id=>{
           const form=document.querySelector('[data-semantic-component="ContractFormPage"]');
           return form?.getAttribute('data-state')==='ok' && form?.getAttribute('data-form-model')==='account.move.line'
             && form?.getAttribute('data-form-record')===String(id);
         },lineId);
+        const lineForm=page.locator('[data-semantic-component="ContractFormPage"]');
+        await lineForm.getByRole('button',{name:'保存',exact:true}).waitFor({state:'visible'});
+        assert.equal(await lineForm.getByRole('button',{name:'保存草稿',exact:true}).count(),0);
         const rootField=page.locator('[data-field-name="analytic_distribution"]');
         const rootDisplay=rootField.locator('[data-semantic-component="NativeWeightedRelationDisplay"]');
         await rootDisplay.waitFor({state:'visible'});
         await page.waitForFunction(()=>document.querySelector('[data-field-name="analytic_distribution"] [data-semantic-component="NativeWeightedRelationDisplay"]')?.getAttribute('data-display-state')==='ready');
-        assert.equal((await rootDisplay.innerText()).trim(),sample.display);
+        const rootText=(await rootDisplay.innerText()).trim();
+        if (sample) assert.equal(rootText,sample.display);
         assert.equal(await rootField.locator('input,textarea').count(),0);
         const after=await journalApi('api.data',{op:'read',model:'account.move.line',ids:[lineId],fields:lineFields});
         assert.equal(after.status,200); assert.equal(after.payload.ok,true);
         assert.equal(after.payload.data.records.length,1); assert.equal(after.payload.data.records[0].id,lineId);
         assert.deepEqual(after.payload.data.records,before.payload.data.records);
-        report.rootAnalyticReadonly={model:'account.move.line',recordId:lineId,display:sample.display,
+        const rootResult={model:'account.move.line',recordId:lineId,state:source.state,display:rootText,displayValueCompared:Boolean(sample),saveLabel:'保存',
           raw:before.payload.data.records[0].analytic_distribution,
           before:before.payload.data.records[0],after:after.payload.data.records[0],unchanged:true,noEditor:true,passed:true};
+        report.lineRootStates.push(rootResult);
+        if (source.state==='posted') report.rootAnalyticReadonly=rootResult;
         await rootDisplay.scrollIntoViewIfNeeded();
-        await page.screenshot({path:`${root}/${actor}-root-analytic.png`});
+        await page.screenshot({path:`${root}/${actor}-root-${source.state}-analytic.png`});
+        }
       } else {
       assert(!leaves.some(n=>n.meta?.model==='account.move' && new URL(n.meta.route,base).searchParams.get('menu_id')==='175'),
         'role policy must not publish undeclared journal route');

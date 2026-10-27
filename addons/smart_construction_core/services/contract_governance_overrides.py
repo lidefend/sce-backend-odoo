@@ -336,11 +336,11 @@ register_contract_domain_override(
 
 
 def _apply_accounting_form_save_label(data: dict, contract_mode: str) -> None:
-    """Saving a journal changes its editable fields, not its posting state."""
+    """Saving a journal or its line does not change the journal posting state."""
     if contract_mode != "user":
         return
     head = _as_dict(data.get("head"))
-    if _text(head.get("model") or data.get("model")) != "account.move":
+    if _text(head.get("model") or data.get("model")) not in ("account.move", "account.move.line"):
         return
     governance = _as_dict(data.get("form_governance"))
     governance["primary_action_label"] = "保存"
