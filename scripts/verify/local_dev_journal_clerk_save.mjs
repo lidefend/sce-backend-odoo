@@ -111,12 +111,13 @@ export async function saveClerkJournal({page,base,root,report,leaves,state,api})
   assert.equal(record.id,state.createdId);assert.equal(record.ref,state.ref);assert.equal(record.state,'draft');assert.equal(record.create_uid[0],1988);
   for(const [key,value] of [['company_id',1],['journal_id',3],['currency_id',6]]) assert.equal(record[key][0],value);
   assert.equal(record.line_ids.length,2);
-  const lines=await api('api.data',{op:'read',model:'account.move.line',ids:record.line_ids,fields:['id','move_id','account_id','currency_id','company_id','debit','credit','balance','amount_currency']});
+  const lines=await api('api.data',{op:'read',model:'account.move.line',ids:record.line_ids,fields:['id','move_id','account_id','currency_id','company_id','debit','credit','balance','amount_currency','display_type','sequence','discount_date','discount_amount_currency']});
   assert.equal(lines.payload.ok,true);const rows=lines.payload.data.records;
   assert.equal(rows.length,2);assert.deepEqual(rows.map(row=>row.id).sort((a,b)=>a-b),[...record.line_ids].sort((a,b)=>a-b));
   for(const [account,debit,credit,balance] of [[49,100,0,100],[48,0,100,-100]]) {
     const matching=rows.filter(row=>row.account_id[0]===account);assert.equal(matching.length,1);const row=matching[0];
     assert.equal(row.move_id[0],state.createdId);assert.equal(row.currency_id[0],6);assert.equal(row.company_id[0],1);assert.equal(row.amount_currency,balance);
+    assert.equal(row.display_type,'product');assert.equal(row.sequence,10);assert.equal(row.discount_date,false);assert.equal(row.discount_amount_currency,0);
     assert.equal(row.debit,debit);assert.equal(row.credit,credit);assert.equal(row.balance,balance);
   }
   receipt.line_ids=record.line_ids;fs.writeFileSync(`${root}/created-receipt.json`,JSON.stringify(receipt));

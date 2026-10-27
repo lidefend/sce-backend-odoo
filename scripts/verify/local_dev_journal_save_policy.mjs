@@ -6,7 +6,8 @@ const rootEmpty = new Set(['auto_post_until','partner_id','project_id','invoice_
   'fiscal_position_id','invoice_source_email','to_check','reversed_entry_id','purchase_id','purchase_vendor_bill_id','tax_cash_basis_origin_move_id']);
 const rootAllowed = new Set([...rootEmpty,'ref','journal_id','company_id','currency_id','state','move_type','date','name','auto_post','invoice_date_due','user_id','invoice_user_id','line_ids']);
 const rowAllowed = new Set(['account_id','name','project_id','wbs_id','cost_code_id','analytic_distribution','debit','credit','partner_id',
-  'amount_currency','company_currency_id','company_id','currency_id','balance','date_maturity']);
+  'amount_currency','company_currency_id','company_id','currency_id','balance','date_maturity',
+  'display_type','sequence','discount_date','discount_amount_currency']);
 export function permitsJournalSaveMutation(request, state, transport) {
   if (transport?.method !== 'POST' || transport?.path !== '/api/v1/intent') return false;
   const p = request?.params;
@@ -46,6 +47,11 @@ export function permitsJournalSaveMutation(request, state, transport) {
     for (const key of ['name','project_id','wbs_id','cost_code_id','partner_id','analytic_distribution']) {
       if (row[key] !== undefined && !empty(row[key])) return false;
     }
+    // Newly consumed native hidden defaults: no section/tax line, reordering or discount.
+    if (row.display_type !== undefined && row.display_type !== 'product') return false;
+    if (row.sequence !== undefined && row.sequence !== 10) return false;
+    if (row.discount_date !== undefined && !empty(row.discount_date)) return false;
+    if (row.discount_amount_currency !== undefined && row.discount_amount_currency !== 0) return false;
     if (row.date_maturity !== undefined && !empty(row.date_maturity) && row.date_maturity !== state.date) return false;
     for (const key of ['amount_currency','balance']) {
       if (row[key] !== undefined && (typeof row[key] !== 'number' || ![0,index === 0 ? 100 : -100].includes(row[key]))) return false;

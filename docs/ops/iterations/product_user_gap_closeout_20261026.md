@@ -2174,3 +2174,5 @@ P4 增加 `verify.frontend.presentation.local.browser`：复用已登记 5180/sc
 3a562 的只读调试抓到 `native_modifier.field_value.display_type`：空集合表头筛选构造了 `__empty__` 假行，错误求值行级 invisible/readonly/required。P0 通用消费修复将列布局仅绑定 `column_invisible` 的 parent/context 声明，行级条件仍对实际行严格求值；新增空集合、父依赖缺失及列条件非法引用行的负例。诊断探针已清理，CDP 暂停机制已从最终复验工具移除。e430 的列表18场景、呈现、关系回跳均通过并绑定原SHA；Quick曾因31个历史 namespace 技术标识误报失败，完整blob白名单经独立复核且全量个人数据扫描已通过。主线仍未集成，须完成修复后无调试浏览器与最终门禁。
 
 fa884 的无调试浏览器已能打开空表并填写引用，但新增第一条明细后失败：真实 child_initialization 请求只有可见树列与表单字段，漏掉契约 columns_schema/column_occurrences 已声明的 display_type 等隐藏依赖。P0 数据字段闭包现纳入有完整 occurrence 的隐藏树字段，保留类型、修饰、同名 occurrence 和显式 force_save；显示列与 UI setter 范围不扩展。child 请求排除原生 id 字段，身份继续由 record_id 通道承载。隐藏默认值/onchange、readonly 不写、force_save、禁止 UI 隐藏编辑及缺 occurrence 负例通过。Quick 另发现 assembled cache 输入漏重新绑定，已同时更新 handler/guard 缓存版本并按真实输入重算摘要，assembler guard 通过。fa884 的关系回跳在候选失效后取消（只读），不计通过；保存失败探针清理与独立不存在确认完成。
+
+P4 保存探针随已声明隐藏数据消费做精确收紧映射：仅接受 display_type=product、sequence=10、无折扣日期且折扣金额=0，仍为原两个科目/金额/币种/公司和唯一标记的草稿；tax/section、重排序、非零折扣、其他税字段均拒绝。保存后回读同时断言上述四项；失败仍执行既有所有权清理。
