@@ -13,7 +13,9 @@ const root = scope === 'journal-save' ? process.env.SC_RUNTIME_JOURNAL_EVIDENCE
 if (scope === 'journal-save') assert.equal(root, `.runtime/product-user-gap-closeout-20261026/journal-save-browser/${process.env.CANDIDATE_GIT_HEAD}/${process.env.SC_RUNTIME_JOURNAL_REF}`);
 fs.mkdirSync(root, {recursive: true});
 const actor = ['usability', 'journal-role'].includes(scope) ? (process.env.SC_FEEDBACK_ACTOR || 'demo_full') : 'demo_full';
-assert(['demo_full', 'demo_role_pm', 'demo_role_finance', 'demo_role_project_read', 'sc_demo_accounting_manager'].includes(actor));
+assert(['demo_full', 'demo_role_pm', 'demo_role_finance', 'demo_role_project_read', 'sc_demo_accounting_manager', 'sc_demo_accounting_read', 'sc_demo_accounting_user'].includes(actor));
+const accountingActor = ['sc_demo_accounting_manager','sc_demo_accounting_read','sc_demo_accounting_user'].includes(actor);
+const accountingReadonly = actor === 'sc_demo_accounting_read';
 const availableCases = ['usability', 'create-authority', 'certificate', 'analysis', 'payroll', 'native-child', 'journal-draft', 'journal-save', 'journal-role'].includes(scope) ? [] : scope === 'workspace' ? [
   {model: 'sc.team.loan.deduction.workspace', field: 'note', hint: '建议补充办理说明'},
   {model: 'sc.current.account.workspace', field: 'note', hint: '建议补充办理说明', retained: '办理承包人借还款前请选择承包人/往来单位'},
@@ -46,7 +48,7 @@ const browser = await launchChromium({headless: true});
 let page;
 let certificateRecordId = null;
 let journalDetailId = null;
-const journalRolePairs = new Set(actor === 'sc_demo_accounting_manager' ? [] : ['292/175']);
+const journalRolePairs = new Set(accountingActor ? [] : ['292/175']);
 const journalSave = { enabled: scope === 'journal-save', ready: false, createAttempted: false, cleanupVerified: false,
   ref: process.env.SC_RUNTIME_JOURNAL_REF, createdId: null, accounts: [], rowKeys: [] };
 if (journalSave.enabled) {
@@ -89,7 +91,7 @@ try {
       Number(request.params.res_id ?? request.params.record_id) === certificateRecordId;
     const roleAuthorityRead = scope === 'journal-role'
       && permitsJournalRoleRead(request, journalRolePairs, {method:req.method(),path:pathname});
-    const detailRead = scope === 'journal-role' && actor === 'sc_demo_accounting_manager'
+    const detailRead = scope === 'journal-role' && accountingActor
       && permitsJournalDetailRead(request,journalDetailId,{method:req.method(),path:pathname});
     const ownedMutation = permitsJournalSaveMutation(request, journalSave, {method:req.method(),path:pathname});
     const ownedRead = journalSave.enabled && Number.isSafeInteger(journalSave.createdId) && req.method()==='POST' && pathname==='/api/v1/intent'
@@ -642,8 +644,9 @@ try {
     assert.equal(report.blocked.length, 0);
   }
   if (scope === 'journal-role') {
-      const expectedUid = {demo_role_finance:47,demo_role_project_read:41,sc_demo_accounting_manager:7}[actor];
-      assert(expectedUid, 'undeclared actor');
+      const expectedUid = {demo_role_finance:47,demo_role_project_read:41,sc_demo_accounting_manager:7}[actor]
+        ?? (['sc_demo_accounting_read','sc_demo_accounting_user'].includes(actor) ? Number(process.env.SC_FEEDBACK_EXPECTED_UID) : undefined);
+      assert(Number.isSafeInteger(expectedUid) && expectedUid > 0, 'undeclared actor or missing seed identity receipt');
       assert.equal(init.user.id,expectedUid,'authenticated actor differs from registered demo identity');
       assert.equal(init.user.company_id,1,'unexpected actor company');
       report.actor.identityVerified = true;
@@ -652,7 +655,7 @@ try {
       const servedEntries = await page.locator('script[src]').evaluateAll(nodes=>nodes.map(node=>new URL(node.src).pathname).filter(path=>path.includes('/assets/')));
       assert(expectedEntries.length && expectedEntries.every(path=>servedEntries.includes(path)),'namespace frontend differs from candidate build');
       report.frontendEntries = servedEntries;
-      if (actor === 'sc_demo_accounting_manager') {
+      if (accountingActor) {
         const models = ['account.move','account.move.line','account.account','account.journal',
           'account.analytic.account','account.analytic.distribution.model'];
         const entries = leaves.filter(n=>models.includes(n.meta?.model) && n.meta?.route?.startsWith('/a/'));
@@ -741,6 +744,8 @@ try {
             const status = await validateForm(open);
             const reload=waitForm(); await page.reload({waitUntil:'domcontentloaded'});
             const reloadedStatus=await validateForm(reload);
+            assert.equal(status.effectiveRecordCapabilities.write,!accountingReadonly);
+            assert.equal(reloadedStatus.effectiveRecordCapabilities.write,!accountingReadonly);
             const lineRead=await journalApi('api.data',{op:'read',model:'account.move.line',ids:record.line_ids,
               fields:['id','move_id','account_id','debit','credit','analytic_distribution','write_date']});
             assert.equal(lineRead.status,200); assert.equal(lineRead.payload.ok,true);
@@ -749,7 +754,7 @@ try {
             const lineComparisons=[];
             const readonlyTable=page.locator('[data-field-name="line_ids"] [data-readonly-relation] [data-detail-collection-content="desktop-table"]');
             let readonlyHeaders=[];
-            if (journalState === 'posted') {
+            if (journalState === 'posted' || accountingReadonly) {
               await readonlyTable.waitFor({state:'visible'});
               readonlyHeaders=(await readonlyTable.locator('thead th').allTextContents()).map(text=>text.trim());
               for (const label of ['科目','借项','贷项']) assert.equal(readonlyHeaders.filter(text=>text===label).length,1);
@@ -760,7 +765,7 @@ try {
               assert.equal(relationId(line.move_id),record.id);
               const cell=field=>page.locator(`#o2m-control-line_ids-o2m_id_${line.id}-${field}-desktop`);
               const values={};
-              const readonlyRow=journalState === 'posted'
+              const readonlyRow=journalState === 'posted' || accountingReadonly
                 ? readonlyTable.locator('tbody tr').filter({has:page.getByText(line.account_id[1],{exact:true})}) : null;
               if (readonlyRow) assert.equal(await readonlyRow.count(),1,'readonly line account must identify one actual row');
               for (const field of ['debit','credit']) {
@@ -792,7 +797,10 @@ try {
               lineRegionText:await page.locator('[data-field-name="line_ids"]').first().innerText(),route:page.url(),
               visibleButtons:await page.locator('[data-semantic-component="ContractFormPage"] button:visible').allTextContents(),passed:true};
             const form=page.locator('[data-semantic-component="ContractFormPage"]');
-            await form.getByRole('button',{name:'保存',exact:true}).waitFor({state:'visible'});
+            if (accountingReadonly) {
+              assert.equal(await form.getByRole('button',{name:'保存',exact:true}).count(),0);
+              assert.equal(await form.getByRole('button',{name:'过账',exact:true}).count(),0);
+            } else await form.getByRole('button',{name:'保存',exact:true}).waitFor({state:'visible'});
             assert.equal(await form.getByRole('button',{name:'保存草稿',exact:true}).count(),0);
             const nativeCells=page.locator('[data-field-name="line_ids"] [data-detail-collection-content="desktop-table"] [data-semantic-component="NativeWeightedRelationDisplay"]');
             assert.equal(await nativeCells.count(),lines.length);
@@ -872,7 +880,8 @@ try {
             && form?.getAttribute('data-form-record')===String(id);
         },lineId);
         const lineForm=page.locator('[data-semantic-component="ContractFormPage"]');
-        await lineForm.getByRole('button',{name:'保存',exact:true}).waitFor({state:'visible'});
+        if (accountingReadonly) assert.equal(await lineForm.getByRole('button',{name:'保存',exact:true}).count(),0);
+        else await lineForm.getByRole('button',{name:'保存',exact:true}).waitFor({state:'visible'});
         assert.equal(await lineForm.getByRole('button',{name:'保存草稿',exact:true}).count(),0);
         const rootTitle=(await lineForm.locator('h1').first().innerText()).trim();
         assert(rootTitle && rootTitle !== 'false','empty record name must not render a boolean title');
@@ -888,7 +897,7 @@ try {
         assert.equal(after.status,200); assert.equal(after.payload.ok,true);
         assert.equal(after.payload.data.records.length,1); assert.equal(after.payload.data.records[0].id,lineId);
         assert.deepEqual(after.payload.data.records,before.payload.data.records);
-        const rootResult={model:'account.move.line',recordId:lineId,state:source.state,title:rootTitle,documentTitle:await page.title(),display:rootText,displayValueCompared:Boolean(sample),saveLabel:'保存',
+        const rootResult={model:'account.move.line',recordId:lineId,state:source.state,title:rootTitle,documentTitle:await page.title(),display:rootText,displayValueCompared:Boolean(sample),saveLabel:accountingReadonly ? null : '保存',
           raw:before.payload.data.records[0].analytic_distribution,
           before:before.payload.data.records[0],after:after.payload.data.records[0],unchanged:true,noEditor:true,passed:true};
         report.lineRootStates.push(rootResult);

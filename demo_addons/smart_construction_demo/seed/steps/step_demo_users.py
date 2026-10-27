@@ -158,3 +158,37 @@ register(
         run=run_accounting_user,
     )
 )
+
+
+def run_accounting_roles(env):
+    """Two ordinary accounting seats, with stable XML identities for rebuilds."""
+    import json
+    identities = []
+    for suffix, label in (("read", "会计只读示例"), ("user", "会计经办示例")):
+        login = "sc_demo_accounting_" + suffix
+        role_xmlid = "smart_construction_core.group_sc_role_accounting_" + suffix
+        _ensure_user(env, login, label, ["base.group_user", role_xmlid],
+                     DEMO_USER_PASSWORD, _resolve_lang(env), "Asia/Shanghai")
+        user = env["res.users"].search([("login", "=", login)])
+        role = env.ref(role_xmlid)
+        assert len(user) == 1 and user.active and user.company_id == env.ref("base.main_company")
+        assert user.sc_user_role_group_ids == role
+        assert role.id in user._sc_explicit_group_roots(lock=False)
+        name = "user_sc_accounting_" + suffix + "_demo"
+        identity = env["ir.model.data"].search([("module", "=", "smart_construction_demo"), ("name", "=", name)])
+        if identity:
+            assert identity.model == "res.users" and identity.res_id == user.id
+        else:
+            env["ir.model.data"].create({"module": "smart_construction_demo", "name": name,
+                                       "model": "res.users", "res_id": user.id, "noupdate": False})
+        identities.append({"login": login, "uid": user.id,
+                           "company": user.company_id.id, "role": role_xmlid})
+
+    from odoo.addons.smart_core.security import data_space_provisioning as provisioning
+    provisioning.enroll_data_space_identities(env, purpose="demo")
+    for identity in identities:
+        print("ACCOUNTING_DEMO_IDENTITY " + json.dumps(identity, ensure_ascii=False))
+
+
+register(SeedStep(name="demo_accounting_roles", description="Ensure readonly and clerk accounting demo seats.",
+                  run=run_accounting_roles))

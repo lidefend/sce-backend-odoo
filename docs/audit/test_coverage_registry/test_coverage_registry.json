@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 204,
+    "odoo_tags": 205,
     "gated": 5,
     "on_demand": 52,
-    "unwired": 147,
-    "odoo_tag_declarations": 423,
+    "unwired": 148,
+    "odoo_tag_declarations": 424,
     "gated_declarations": 97,
-    "uncovered_declarations": 326,
+    "uncovered_declarations": 327,
     "ci_unit_scripts": 17,
     "ci_unit_scripts_wired": 17,
     "ci_unit_scripts_unwired": 0
@@ -997,6 +997,17 @@
         "make:verify.local.dev.data_space_uncached_membership.orm :: data_space_uncached_membership"
       ],
       "disposition": "class-selected"
+    },
+    {
+      "group": "demo_accounting_roles",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py"
+      ],
+      "owner": "demo-team",
+      "evidence": []
     },
     {
       "group": "demo_action_roles",

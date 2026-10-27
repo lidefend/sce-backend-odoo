@@ -22,6 +22,7 @@ _PROFILES: Dict[str, List[str]] = {
         "metrics_smoke",
         "company_currency_cny",
         "demo_10_users",
+        "demo_accounting_roles",
         "demo_company_membership",
         "demo_user_prefs",
         "demo_20_projects",

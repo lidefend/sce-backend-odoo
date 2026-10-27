@@ -329,3 +329,29 @@ class TestDemoActionRoles(TransactionCase):
             scenario_loader._demo_action_record(
                 self.env, self.env["sc.material.outbound"], "action_issue", "base.user_root"
             )
+
+
+@tagged("post_install", "-at_install", "-standard", "demo_accounting_roles")
+class TestDemoAccountingRoles(TransactionCase):
+    def test_seed_replay_preserves_identity_and_role_boundaries(self):
+        from ..seed.steps.step_demo_users import run_accounting_roles
+        run_accounting_roles(self.env)
+        first = {}
+        for suffix in ("read", "user"):
+            user = self.env.ref("smart_construction_demo.user_sc_accounting_" + suffix + "_demo")
+            first[suffix] = user.id
+            self.assertIn(self.env.ref("base.main_company").id, user.with_user(user).sudo(False)._sc_data_company_ids())
+            role = self.env.ref("smart_construction_core.group_sc_role_accounting_" + suffix)
+            self.assertEqual(user.sc_user_role_group_ids, role)
+            self.assertEqual(user.company_ids, self.env.ref("base.main_company"))
+            for model in ("account.move", "account.move.line"):
+                actor = self.env[model].with_user(user).sudo(False)
+                self.assertTrue(actor.check_access_rights("read", raise_exception=False))
+                self.assertEqual(actor.check_access_rights("write", raise_exception=False), suffix == "user")
+            journal = self.env["account.journal"].with_user(user).sudo(False)
+            self.assertFalse(journal.check_access_rights("create", raise_exception=False))
+            self.assertFalse(user.has_group("smart_construction_core.group_sc_role_accounting_manager"))
+        run_accounting_roles(self.env)
+        for suffix, uid in first.items():
+            self.assertEqual(self.env.ref("smart_construction_demo.user_sc_accounting_" + suffix + "_demo").id, uid)
+            self.assertEqual(self.env["res.users"].search_count([("login", "=", "sc_demo_accounting_" + suffix)]), 1)

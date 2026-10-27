@@ -165,7 +165,9 @@
     "frontend/apps/web/scripts/readonly_block_component_test.mjs",
     "frontend/apps/web/src/app/pageIdentityAdapters.ts",
     "frontend/apps/web/src/app/pageIdentity.ts",
-    "scripts/verify/frontend_page_identity_lifecycle_smoke.js"
+    "scripts/verify/frontend_page_identity_lifecycle_smoke.js",
+    "demo_addons/smart_construction_demo/seed/registry.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -1937,6 +1939,28 @@
       "browser": "empty-identity-browser.log PASS6/parent2states/root19,51; draft title/document title MISC/2026/10/0001,posted示例工程收入确认,saveLabel保存 both; errors0blocked0 no writes. Full before-after fields/write_date unchanged; draft screenshot inspected.",
       "evidence": "journal-role-browser/70939ce8b534ccd173346c11df33eaf78eeff2f1/sc_demo_accounting_manager-report.json lineRootStates plus root-draft/posted-analytic.png",
       "limits": "Only declared desktop manager/root samples; no native editing/other-role/mobile/UI posting acceptance. P1 ORM21 original7d50d6894 source unchanged; no re-run claim. No demo edit/migration/module upgrade/merge/remote deploy."
+    },
+    "accounting_role_browser": {
+      "head": "120238ccd plus explicit dirty scope",
+      "layer": "Demo seed/data authority; P4 bounded existing journal-role probe; no P0/P1 permission changes",
+      "scope": [
+        "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py",
+        "demo_addons/smart_construction_demo/seed/registry.py",
+        "demo_addons/smart_construction_demo/data/demo/sc_demo_users.xml",
+        "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py",
+        "scripts/verify/local_dev_workspace_feedback.mjs",
+        "make/dev.mk",
+        "scripts/verify/local_dev_journal_recovery.py"
+      ],
+      "reason": "Fill missing explicit accounting_read/user demo identities via repeatable seed/XML baseline, then verify real role surfaces using existing journal data. Not a migration or authorization change.",
+      "environment": "sc-local-dev/sc_dev_demo filter^sc_dev_demo$ namespace ns_000000000002 volume sc_local_dev_odoo_data port18081; canonical demo credential reused",
+      "validation_plan": "L1,focused seed ORM idempotency/exact roles/access,policy25JS+11Python,governed demo_accounting_roles seed with nonsecret UID receipt,exact candidate reader/user browser serially. No writes in browser.",
+      "status": "targeted_checks_passed_seed_pending",
+      "validation": "L1 reviewed PASS; policy-final25JS+11Python PASS; orm-final real1post-test0failed0error (stats3 not actual), seed twice same IDs/exact roles/read+write ACL/journal create denied/current-principal demo company membership.",
+      "failures": "Initial /module:class selector collected0 because -standard tagged test; preserved as failure, switched to explicit demo_accounting_roles tag. Review caught Make actor allowlist/UID passthrough missing, fixed before browser.",
+      "enrollment_scope": "Existing standard enroll_data_space_identities(purpose=demo) covers all active/internal/company-authorized operators of already registered demo spaces, not only two seats; no new space/customer purpose/role permission. Receipts emitted after enrollment.",
+      "before": "accounting-roles-before.log governed read-only observation proves read/user absent; manager7/finance47/project_read41 retained.",
+      "limits": "ACL checks not proof of actual create/write/delete journeys or every configuration action. Browser pending; no manager proof inherited for new roles."
     }
   }
 }

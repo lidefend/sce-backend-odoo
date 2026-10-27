@@ -182,7 +182,7 @@ def inspect_role_identity(env):
     env.cr.commit = refuse_commit
     rows = []
     try:
-        for login in ('sc_demo_accounting_manager', 'demo_role_project_read', 'demo_role_finance'):
+        for login in ('sc_demo_accounting_manager', 'sc_demo_accounting_read', 'sc_demo_accounting_user', 'demo_role_project_read', 'demo_role_finance'):
             user = env['res.users'].with_context(active_test=False).search([('login', '=', login)], limit=2)
             assert len(user) <= 1
             if not user:
