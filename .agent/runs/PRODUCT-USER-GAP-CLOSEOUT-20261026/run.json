@@ -183,7 +183,12 @@
     "scripts/ci/personal_data_false_positives.json",
     "scripts/verify/frontend_v2_policy_projection_guard.py",
     "scripts/verify/test_frontend_v2_policy_projection_guard.py",
-    "scripts/verify/test_coverage_registry.yaml"
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/audit/verification_lane_baseline.json",
+    "addons/smart_construction_core/models/core/labor_management.py",
+    "scripts/verify/contract_form_onchange_normalization_guard.py",
+    "scripts/verify/construction_core_extension_policy_maps_split_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -196,7 +201,7 @@
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open.",
     "Test coverage: demo_accounting_roles remains explicitly unwired, owned by demo-team, review_by 2026-11-10; runtime clerk evidence is not a claim that this ORM tag ran."
   ],
-  "next_exact_step": "Strict schema/projection and coverage registry fixed; stable offline baseline266 x3 passed. Freeze new candidate, refresh isolated runtime contract receipt, recompute acceptance evidence validity, exact-head Quick, updated independent review/archive and protected GitHub merge.",
+  "next_exact_step": "Review the exact manual-target lane baseline delta, pass remaining architecture checks, refreeze and replay affected journal probes, then exact-head Quick/reviews/archive and protected GitHub integration.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",

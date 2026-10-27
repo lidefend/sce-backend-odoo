@@ -93,7 +93,7 @@ def main() -> int:
         "buildOnchangeRequestPayload({",
         "normalizeOnchangeResponse(response)",
         "normalizeOnchangeFieldPatch({",
-        "constresponse=awaittriggerOnchange({",
+        "constresponse=await(context.requestOnchange||triggerOnchange)({",
         "context.onchangeWarnings.value=warnings;",
         "context.onchangeLinePatches.value=linePatches;",
         "context.applyOnchangeLinePatches(linePatches);",

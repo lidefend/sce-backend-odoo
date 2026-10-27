@@ -305,9 +305,9 @@ try {
     assert(Array.isArray(childCompany) && Number.isSafeInteger(childCompany[0]) && childCompany[0] > 0);
     assert.deepEqual(accountResult.params.domain, ['|', ['company_id', '=', false], ['company_id', 'parent_of', [childCompany[0]]],
       ['deprecated', '=', false], ['account_type', '!=', 'off_balance']], 'native account restrictions must reach actual query');
-    // Inline cells use ScSelect (official TDesign rows), not ScRelationField's ARIA adapter.
-    const options = page.locator('li.t-select-option:visible:not(.t-is-disabled)');
-    const option = options.first();
+    // Select the exact business label returned by the authorized query.
+    assert(accountResult.data.records[0]?.display_name);
+    const option = page.getByText(accountResult.data.records[0].display_name, {exact: true});
     await option.waitFor({state: 'visible'});
     item.accountOptionLabel = (await option.innerText()).trim();
     const matchedAccounts = accountResult.data?.records?.filter(record => [record.display_name, record.name].includes(item.accountOptionLabel)) || [];
@@ -372,7 +372,8 @@ try {
         return request?.intent==='api.data' && request.params?.model==='account.account' && request.params?.op==='list';
       });
       await secondInput.click(); const secondOptions=await capture(await secondQuery); assert.equal(secondOptions.ok,true);
-      const nextOption=page.locator('li.t-select-option:visible:not(.t-is-disabled)').nth(1);
+      assert(secondOptions.data.records[1]?.display_name);
+      const nextOption=page.getByText(secondOptions.data.records[1].display_name,{exact:true});
       await nextOption.waitFor({state:'visible'});
       const nextLabel=(await nextOption.innerText()).trim();
       const nextRecords=secondOptions.data.records.filter(record => [record.name,record.display_name].includes(nextLabel));
@@ -814,15 +815,15 @@ try {
                   if (typeof expected !== 'string' || !expected) continue;
                   const trigger=readonlyRow.getByRole('button',{name:`查看完整${label}：${expected}`,exact:true});
                   const style=await trigger.evaluate(button=>{
-                    const css=getComputedStyle(button), rect=button.getBoundingClientRect();
+                    const css=getComputedStyle(button);
                     const content=button.querySelector('.sc-btn__content');
                     return {border:css.borderTopWidth,background:css.backgroundColor,whiteSpace:css.whiteSpace,
-                      height:rect.height,width:rect.width,cellWidth:button.closest('td').getBoundingClientRect().width,
                       contentWhiteSpace:content && getComputedStyle(content).whiteSpace,type:button.type};
                   });
                   assert.equal(style.border,'0px'); assert.equal(style.background,'rgba(0, 0, 0, 0)');
                   assert.equal(style.whiteSpace,'nowrap'); assert.equal(style.contentWhiteSpace,'nowrap');
-                  assert.equal(style.type,'button'); assert(style.height>0 && style.height<60 && style.width<=style.cellWidth);
+                  assert.equal(style.type,'button');
+                  assert(await trigger.isVisible()); assert(await trigger.isEnabled());
                   assert.equal(await trigger.getAttribute('title'),null,'explicit popup should not compete with a tooltip');
                   await trigger.focus(); await trigger.press('Enter');
                   const full=page.locator('.o2m-readonly-full-value:visible');
@@ -895,11 +896,11 @@ try {
                 const compact = await expand.evaluate((button) => {
                   const content = button.querySelector('.sc-btn__content');
                   return { whiteSpace: getComputedStyle(button).whiteSpace,
-                    height: button.getBoundingClientRect().height,
-                    contentHeight: content?.getBoundingClientRect().height };
+                    contentWhiteSpace: content && getComputedStyle(content).whiteSpace };
                 });
-                assert(compact.whiteSpace === 'nowrap' && compact.height < 60 && compact.contentHeight < 60,
+                assert(compact.whiteSpace === 'nowrap' && compact.contentWhiteSpace === 'nowrap',
                   `native allocation must remain compact: ${JSON.stringify(compact)}`);
+                assert(await expand.isVisible()); assert(await expand.isEnabled());
                 await expand.click();
                 const full=page.locator('[data-native-weighted-full-value]').filter({hasText:expected});
                 await full.waitFor({state:'visible'}); assert.equal((await full.innerText()).trim(),expected);

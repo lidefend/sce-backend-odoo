@@ -1768,7 +1768,7 @@ verify.local.dev.native_child.syntax: guard.prod.forbid
 	@node --check scripts/verify/local_dev_workspace_feedback.mjs
 	@bash -n scripts/verify/local_dev_workspace_feedback.sh
 
-verify.local.dev.native_child.draft: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
+verify.local.dev.native_child.draft: guard.prod.forbid verify.local.dev.native_child.syntax local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  SC_FEEDBACK_SCOPE=native-child bash scripts/verify/local_dev_workspace_feedback.sh
 
@@ -1783,7 +1783,7 @@ verify.local.dev.journal.save.policy: guard.prod.forbid
 	@python3 scripts/verify/test_local_dev_journal_recovery.py
 	@bash -n scripts/verify/local_dev_workspace_feedback.sh
 	@node --check scripts/verify/local_dev_workspace_feedback.mjs
-verify.local.dev.journal.save: guard.prod.forbid
+verify.local.dev.journal.save: guard.prod.forbid verify.local.dev.journal.save.policy
 	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "journal-draft-save" -- $(MAKE) --no-print-directory verify.local.dev.journal.save.run
 verify.local.dev.journal.save.run: guard.prod.forbid local.dev.ready local.dev.entry_identity.verify local.dev.candidate.frontend.health local.dev.write_lease.require
 	@test "$(CONFIRM_LOCAL_DEV_JOURNAL_SAVE)" = "CREATE_READBACK_CLEANUP_ONE_DRAFT"
