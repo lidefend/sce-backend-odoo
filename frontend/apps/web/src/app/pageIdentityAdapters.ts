@@ -30,7 +30,7 @@ function primaryRecordName(contract: BusinessMetadata, formData: Record<string, 
       if (relationLabel) return relationLabel;
       continue;
     }
-    if (value === null || value === undefined || typeof value === 'object') continue;
+    if (value === false || value === null || value === undefined || typeof value === 'object') continue;
     const label = String(value).replace(/\s+/g, ' ').trim();
     if (label) return label;
   }

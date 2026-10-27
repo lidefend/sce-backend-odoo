@@ -162,7 +162,10 @@
     "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
     "frontend/apps/web/scripts/weighted_relation_component_test.mjs",
     "frontend/apps/web/src/components/template/FormSection.vue",
-    "frontend/apps/web/scripts/readonly_block_component_test.mjs"
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+    "frontend/apps/web/src/app/pageIdentity.ts",
+    "scripts/verify/frontend_page_identity_lifecycle_smoke.js"
   ],
   "environment": {
     "kind": "runtime",
@@ -1912,7 +1915,23 @@
       "validation_plan": "L1 then existing policy25JS+11Python and real accounting ORM class with draft/posted line contracts; governed exact candidate browser. Frontend source unchanged, reuse previous types/component/lint source identities. No schema/module upgrade/demo mutation.",
       "validation": "line-label-static.log L1 PASS; policy-reviewed25JS+11Python PASS; line-label-orm.log actual21post-tests0failed0error incl ordinary-user draft/posted root line final actionContract save label. stats23 not actual count.",
       "review": "review_takeover source no product blockers; probe optional posted sample identified and fixed: posted requires sample, draft displayValueComparedfalse only label/ready scoped.",
-      "runtime_plan": "Existing registered journal-role readonly wrapper: root lines from current draft/posted parent record.line_ids, parent ID/state verified; both save labels保存 no保存草稿, no editor, full before/after values/write_date identical. Posted name/percentage comparison mandatory. No writes/demo/module upgrade."
+      "runtime_plan": "Existing registered journal-role readonly wrapper: root lines from current draft/posted parent record.line_ids, parent ID/state verified; both save labels保存 no保存草稿, no editor, full before/after values/write_date identical. Posted name/percentage comparison mandatory. No writes/demo/module upgrade.",
+      "browser": "7d50d6894 PASS six entries/two parents/two root lines19,51,saveLabel保存,full before-after unchanged errors0blocked0. Screenshots expose independent P0 false title for empty draft name; next bounded fix."
+    },
+    "empty_record_identity": {
+      "head": "7d50d6894 plus explicit dirty scope",
+      "layer": "P0 generic page identity scalar normalization; P4 test/probe",
+      "reason": "Odoo false is empty scalar name, must not stringify to title; use existing authorized display name/title chain. No fabricated labels/model cases or demo edits.",
+      "scope": [
+        "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+        "frontend/apps/web/src/app/pageIdentity.ts",
+        "scripts/verify/frontend_page_identity_lifecycle_smoke.js",
+        "scripts/verify/local_dev_workspace_feedback.mjs"
+      ],
+      "status": "static_passed_runtime_pending",
+      "validation_plan": "L1,page identity smoke/lifecycle,types/lint/contract basis; affected root browser. P1 ORM21 results remain bound7d50d6894; no change in P1/backend.",
+      "validation": "empty-identity-static/unit/types/lint/basis/policy all PASS: identity23+lifecycle28 assertions, guard1writer/6integrations, full lint existingStatusPanel warning only, basis15tests0open, policy25JS+11Python.",
+      "review": "review_takeover source no blockers; false empty skipped, literal string false preserved, authorized identity chain unchanged."
     }
   }
 }

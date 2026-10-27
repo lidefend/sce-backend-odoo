@@ -58,6 +58,10 @@ function main() {
   equal(identity({ formData: { ...draft, name: '' } }).title, sourceRecord.display_name, 'explicitly cleared draft identity is not restored');
   equal(identity({ recordData: { display_name: sourceRecord.display_name } }).title, sourceRecord.display_name, 'missing authorized identity retains display fallback');
   equal(identity({ recordData: { code: 'CODE-017' }, contract: { views: { form: { profile: { title_field: 'code' } } } } }).title, 'CODE-017', 'declared non-name identity remains authoritative');
+  equal(identity({ formData: { name: false, display_name: sourceRecord.display_name } }).title, sourceRecord.display_name, 'false empty name uses authorized display name');
+  equal(identity({ formData: { name: false, display_name: false }, recordData: {} }).title, 'Document详情', 'all false names preserve existing declared object identity');
+  equal(identity({ formData: { name: 'false' }, recordData: {} }).title, 'false', 'literal business text false is not erased');
+  equal(resolveProductPageIdentity({ kind: 'detail', actionName: 'Document', record: { name: false, display_name: false } }).title, 'Document详情', 'standalone false scalar cannot become record title');
   equal(identity({ isCreate: true }).title, '新建Document', 'create ignores prior record identity');
   equal(identity({ recordMissing: true }).title, '记录不存在', 'missing record suppresses snapshot identity');
   equal(draft, { amount: 20, display_name: sourceRecord.display_name }, 'identity does not add fields to writable draft');
@@ -78,7 +82,7 @@ function main() {
   equal(coordinator.clear().title, '工作台', 'logout clears business identity');
   equal(coordinator.currentKey(), '', 'logout clears active route key');
 
-  console.log('[frontend_page_identity_lifecycle_smoke] PASS assertions=24');
+  console.log('[frontend_page_identity_lifecycle_smoke] PASS assertions=28');
 }
 
 main();

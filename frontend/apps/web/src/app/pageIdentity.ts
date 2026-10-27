@@ -49,6 +49,7 @@ const DEFAULT_PRIMARY_FIELDS = [
 ];
 
 function text(value: unknown): string {
+  if (value === false) return '';
   if (Array.isArray(value)) return text(value.length > 1 ? value[1] : value[0]);
   const display = resolveLocalizedDisplayValue(value, { emptyText: '' });
   if (display === null || display === undefined || typeof display === 'object') return '';

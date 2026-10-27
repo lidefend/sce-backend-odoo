@@ -874,6 +874,9 @@ try {
         const lineForm=page.locator('[data-semantic-component="ContractFormPage"]');
         await lineForm.getByRole('button',{name:'保存',exact:true}).waitFor({state:'visible'});
         assert.equal(await lineForm.getByRole('button',{name:'保存草稿',exact:true}).count(),0);
+        const rootTitle=(await lineForm.locator('h1').first().innerText()).trim();
+        assert(rootTitle && rootTitle !== 'false','empty record name must not render a boolean title');
+        assert(!(await page.title()).startsWith('false'),'document title must not expose boolean name');
         const rootField=page.locator('[data-field-name="analytic_distribution"]');
         const rootDisplay=rootField.locator('[data-semantic-component="NativeWeightedRelationDisplay"]');
         await rootDisplay.waitFor({state:'visible'});
@@ -885,7 +888,7 @@ try {
         assert.equal(after.status,200); assert.equal(after.payload.ok,true);
         assert.equal(after.payload.data.records.length,1); assert.equal(after.payload.data.records[0].id,lineId);
         assert.deepEqual(after.payload.data.records,before.payload.data.records);
-        const rootResult={model:'account.move.line',recordId:lineId,state:source.state,display:rootText,displayValueCompared:Boolean(sample),saveLabel:'保存',
+        const rootResult={model:'account.move.line',recordId:lineId,state:source.state,title:rootTitle,documentTitle:await page.title(),display:rootText,displayValueCompared:Boolean(sample),saveLabel:'保存',
           raw:before.payload.data.records[0].analytic_distribution,
           before:before.payload.data.records[0],after:after.payload.data.records[0],unchanged:true,noEditor:true,passed:true};
         report.lineRootStates.push(rootResult);
