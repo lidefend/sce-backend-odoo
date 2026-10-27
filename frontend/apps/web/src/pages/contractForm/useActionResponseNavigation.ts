@@ -12,6 +12,7 @@ import {
   actionResponseNavQuery,
   actionResponseRouteTarget,
 } from './actionContract';
+import { grantButtonNavigationAuthority } from '../../app/buttonNavigationAuthority';
 
 export type ActionResponseNavigationResult = boolean | 'invalidated';
 
@@ -100,15 +101,24 @@ export function useActionResponseNavigation(params: {
       // transient record after an object button. Vue Router treats that as a
       // no-op, so let the caller refresh the current contract and record.
       if (params.router.resolve(target as never).fullPath === params.router.currentRoute.value.fullPath) return false;
+      grantButtonNavigationAuthority(
+        toPositiveInt(resultRecord?.action_id),
+        params.router.resolve(target as never).fullPath,
+      );
       return await pushResultTarget(target as never, result, owner) ? true : 'invalidated';
     }
     const nextActionId = toPositiveInt(resultRecord?.action_id);
     if (nextActionId) {
-      const navigated = await pushResultTarget({
+      const target = {
         name: 'action',
         params: { actionId: String(nextActionId) },
         query: navQuery(resultRecord, { action_id: nextActionId }),
-      }, result, owner);
+      };
+      grantButtonNavigationAuthority(
+        nextActionId,
+        params.router.resolve(target as never).fullPath,
+      );
+      const navigated = await pushResultTarget(target as never, result, owner);
       return navigated ? true : 'invalidated';
     }
     return false;
