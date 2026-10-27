@@ -59,9 +59,11 @@ export async function inspectMobileAccounting({page, base, root, actor, accounti
           && request.params?.view_type==='form' && Number(request.params.action_id)===action
           && Number(request.params.menu_id)===menu && Number(request.params.record_id)===record.id;
       });
-      if (state==='draft') await list.getByRole('button',{name:record.name,exact:true}).click();
-      else await page.goto(`${base}/f/account.move/${record.id}?menu_id=${menu}&action_id=${action}`,{waitUntil:'domcontentloaded'});
-      const response=await pending, payload=await response.json();
+      const open=state==='draft'
+        ? list.locator('[data-semantic-component="CollectionMobileRecordRow"]').filter({hasText:record.name})
+          .locator('[data-semantic-action="open-record"]').click()
+        : page.goto(`${base}/f/account.move/${record.id}?menu_id=${menu}&action_id=${action}`,{waitUntil:'domcontentloaded'});
+      const [response]=await Promise.all([pending,open]), payload=await response.json();
       assert.equal(response.status(),200); assert.equal(payload.ok,true); assert.equal(payload.data.pageInfo.model,'account.move');
       await page.waitForFunction(id=>{
         const form=document.querySelector('[data-semantic-component="ContractFormPage"]');
