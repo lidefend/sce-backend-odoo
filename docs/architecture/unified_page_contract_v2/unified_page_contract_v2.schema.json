@@ -1512,6 +1512,34 @@
       },
       "additionalProperties": true,
       "properties": {
+        "nativeModifierFieldTypes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "\\S"
+          }
+        },
+        "nativeModifierRelationSnapshots": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "sourceValue",
+              "persistedIds"
+            ],
+            "properties": {
+              "sourceValue": {},
+              "persistedIds": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            }
+          }
+        },
         "businessOperationProfile": {
           "type": "object"
         },

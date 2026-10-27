@@ -618,7 +618,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.local.dev.approval.feedback.orm :: approval_policy_feedback,conditioned_processing_feedback,cost_processing_feedbac"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "approval_scope_authority",
@@ -804,7 +805,8 @@
       "evidence": [
         "make:verify.local.dev.approval.feedback.orm :: approval_policy_feedback,conditioned_processing_feedback,cost_processing_feedbac",
         "make:verify.local.dev.conditioned.feedback.orm :: conditioned_processing_feedback,cost_processing_feedback,workspace_processing_fe"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "contract_assembly_determinism",
@@ -904,7 +906,8 @@
         "make:verify.local.dev.approval.feedback.orm :: approval_policy_feedback,conditioned_processing_feedback,cost_processing_feedbac",
         "make:verify.local.dev.conditioned.feedback.orm :: conditioned_processing_feedback,cost_processing_feedback,workspace_processing_fe",
         "make:verify.local.dev.cost.feedback.orm :: cost_processing_feedback,workspace_processing_feedback,company_project_refund_fe"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "current_account_workspace",
@@ -1007,7 +1010,8 @@
         "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py"
       ],
       "owner": "demo-team",
-      "evidence": []
+      "evidence": [],
+      "disposition": "wire-pending"
     },
     {
       "group": "demo_action_roles",
@@ -2753,7 +2757,8 @@
         "make:verify.local.dev.approval.feedback.orm :: approval_policy_feedback,conditioned_processing_feedback,cost_processing_feedbac",
         "make:verify.local.dev.conditioned.feedback.orm :: conditioned_processing_feedback,cost_processing_feedback,workspace_processing_fe",
         "make:verify.local.dev.cost.feedback.orm :: cost_processing_feedback,workspace_processing_feedback,company_project_refund_fe"
-      ]
+      ],
+      "disposition": "class-selected"
     }
   ],
   "ci_unit_scripts": [

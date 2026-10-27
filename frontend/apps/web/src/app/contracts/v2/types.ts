@@ -295,7 +295,6 @@ export interface ContractV2Container {
   required?: unknown;
   columnInvisible?: unknown;
   domain?: unknown;
-  domainExpression?: unknown;
   context?: unknown;
   options?: unknown;
   visible?: boolean;

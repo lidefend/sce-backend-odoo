@@ -180,7 +180,10 @@
     "scripts/verify/contract_form_side_effect_regression_guard.py",
     "scripts/verify/test_frontend_standard_preview.py",
     "docs/engineering_convergence/contract_form_side_effect_map.md",
-    "scripts/ci/personal_data_false_positives.json"
+    "scripts/ci/personal_data_false_positives.json",
+    "scripts/verify/frontend_v2_policy_projection_guard.py",
+    "scripts/verify/test_frontend_v2_policy_projection_guard.py",
+    "scripts/verify/test_coverage_registry.yaml"
   ],
   "environment": {
     "kind": "runtime",
@@ -190,9 +193,10 @@
   "blockers": [
     "FG15: selected desktop/mobile read journeys and ordinary-clerk single draft save/readback/cleanup passed; cross-company browser matrix, remaining mobile interactions and other six-entry business write workflows remain unverified.",
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
-    "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
+    "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open.",
+    "Test coverage: demo_accounting_roles remains explicitly unwired, owned by demo-team, review_by 2026-11-10; runtime clerk evidence is not a claim that this ORM tag ran."
   ],
-  "next_exact_step": "Runtime scope passed at 4726fde1925a4231c87ffb6b45a222ddf532a63d. Freeze documentation-only final candidate, carry verified unchanged evidence, exact-head Quick, independent fingerprint review, external archive, protected GitHub PR CI and merge.",
+  "next_exact_step": "Strict schema/projection and coverage registry fixed; stable offline baseline266 x3 passed. Freeze new candidate, refresh isolated runtime contract receipt, recompute acceptance evidence validity, exact-head Quick, updated independent review/archive and protected GitHub merge.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",

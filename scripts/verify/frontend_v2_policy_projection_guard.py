@@ -270,6 +270,11 @@ MODIFIER_DECLARATION_PRODUCERS = (
     ROOT / "addons/smart_core/utils/native_modifier.py",
 )
 
+ALLOWED_STRICT_STORE_RELATION_DOMAIN_TOKENS = {"domain_expression"}
+RELATION_DOMAIN_PRODUCERS = (
+    ROOT / "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+)
+
 ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
     # ContractV2ValueSource.kind; not a payload field read.
     "main_data",
@@ -288,6 +293,7 @@ ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
     # their producers below.
     *ALLOWED_STRICT_STORE_BACKEND_IDENTITY_TOKENS,
     *ALLOWED_STRICT_STORE_MODIFIER_DECLARATION_TOKENS,
+    *ALLOWED_STRICT_STORE_RELATION_DOMAIN_TOKENS,
 }
 
 # Delivered form-structure fact vocabulary.  ``structureSource`` says where the
@@ -801,6 +807,15 @@ def main() -> int:
             violations.append(
                 f"{_relative(STRICT_STORE)}: modifier declaration token {token} is not declared by the backend "
                 "modifier declaration producers, so the strict store must not name it"
+            )
+    relation_domain_producer_source = "\n".join(
+        path.read_text(encoding="utf-8") for path in RELATION_DOMAIN_PRODUCERS
+    )
+    for token in sorted(ALLOWED_STRICT_STORE_RELATION_DOMAIN_TOKENS):
+        if token not in relation_domain_producer_source:
+            violations.append(
+                f"{_relative(STRICT_STORE)}: relation domain token {token} is not declared by the backend "
+                "relation domain producers, so the strict store must not name it"
             )
     strict_store_snake_tokens = _snake_case_tokens(strict_store_source)
     if strict_store_snake_tokens != ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS:

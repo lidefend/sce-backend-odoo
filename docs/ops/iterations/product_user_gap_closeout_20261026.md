@@ -2194,3 +2194,13 @@ d80e 只读诊断证明明细19/20普通 read 成功且包含 display_type；异
 原始证据保留在 `.runtime/product-user-gap-closeout-20261026/integration-v13-*`、同目录 journal-save-browser/4726fde1925a4231c87ffb6b45a222ddf532a63d、journal-role-browser/4726fde1925a4231c87ffb6b45a222ddf532a63d，以及 `.runtime/acceptance/local/4726fde1925a4231c87ffb6b45a222ddf532a63d/relation-roundtrip/20261027T015705590Z-2384919-4b8e97da/summary.json`。三项merge证据已通过 acceptance.evolution.record 绑定。定向生命周期真实Vue调度测试、7项Python守卫、严格类型及33JS/14Python保存策略通过；后端30/158/48测试和缓存绑定通过。
 
 后续仅更新本记录、当前run与派生报告，不改变产品、探针、配置或环境；既有运行时证据由确定性输入比较携带，不为文档提交重放写入。最终clean提交仍须Quick、同候选完整指纹独立复核、外部归档和GitHub四项必需CI后才能受保护合并。当前批次验收范围已闭合，主线集成仍待门禁；未部署。完整跨公司矩阵、UI过账及其他业务流程仍以原缺口台账为准；子行读取失败的细化提示未在本轮处理，不宣称全产品交付。
+
+fb878 最终Quick在严格V2投影检查失败，未签发成功回执、未推送：实际dataMeta发布的 nativeModifierFieldTypes/nativeModifierRelationSnapshots 未登记schema，Container类型另有未发布且未消费的domainExpression成员。P0补齐元数据schema和安全整数边界，删除无生产者的容器成员（实际字段domainExpression保留）；P4将domain_expression投影绑定现有assembler生产者，新增生产者缺失和非法快照负例，8项守卫测试通过。使用受管schema同步更新lifecycle及4示例；后端独立复核无S2+。静态入口初次因工作树.env.dev缺失未执行构建，后使用登记的共享ENV_FILE恢复，失败日志保留。
+
+影响分析：没有表单运行逻辑/写入探针/demo数据变更，4726保存/角色原始证据保持有效且不重放写入；schema/lifecycle内容与前端类型文件改变，须重启隔离后端、取得新contract receipt，并由证据输入引擎判定三项merge浏览器证据能否复用，受影响项重验。当前候选的精确Quick和独立指纹复核必须重新执行。
+
+同层剩余检查发现测试覆盖登记遗漏：approval/conditioned/cost/workspace_processing_feedback 四组已有按需Make入口，demo_accounting_roles无入口。通过既有registry seed登记真实状态；后者保留demo-team负责、2026-11-10复核的wire-pending债务，不删除测试、不冒称该ORM组通过。完整测试基线仍限定既有声明清单，不能扩大为全仓库覆盖。
+
+覆盖注册导出后守卫通过。独立基线首轮266项测试均passed，但同时进行派生报告刷新导致执行前后源码指纹变化，整体回执正确拒绝；这是执行排序问题，不是用例失败。保留baseline-source-drift-forward.json及原日志，派生更新完成后停止源码写入、顺序复验该基线，再进入最终冻结。
+
+顺序复验通过：266项、正序/逆序/固定随机3个独立进程、quarantine=0；严格schema/投影8测试、前端静态构建和类型、lifecycle权威、assembler、lint（0错误、1既有警告）均通过。修复后的覆盖登记已由独立复核确认如实保留按需与未接入边界；四个入口名称改为完整明确target，避免seed摘要截断误读。
