@@ -299,7 +299,10 @@ def derive_digests(repository: Path, args: argparse.Namespace, identity: Identit
     instances, so it can never be computed by hand. Run the read-only duty plan
     first, read both digests from its report, and require any operator-supplied
     value to agree. This also validates the declaration/entry/identity before
-    any remote mutation happens.
+    any remote mutation happens. The duty plan asserts the *current* remote
+    HEAD against ``--expected-sha``, so the read-only probe must pin the
+    deployed old SHA here: the bundle sync that advances the remote tree to the
+    target SHA is the first mutation and runs only after these digests exist.
     """
     plan_report = repository / DUTY_PLAN_REPORT
     command = [
@@ -307,7 +310,7 @@ def derive_digests(repository: Path, args: argparse.Namespace, identity: Identit
         "--no-print-directory",
         "daily.runtime.database.duty.plan",
         "DAILY_RUNTIME_SSH_HOST=" + args.ssh_host,
-        "DAILY_RUNTIME_EXPECTED_SHA=" + identity.expected_sha,
+        "DAILY_RUNTIME_EXPECTED_SHA=" + identity.expected_old_sha,
         "DAILY_RUNTIME_DATABASE_DUTY_SELECTION=demo platform_control",
         "DAILY_RUNTIME_DATABASE_DUTY_PLAN_REPORT=" + str(plan_report),
     ]

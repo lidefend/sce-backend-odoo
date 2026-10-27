@@ -205,15 +205,20 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
         plan_report.write_text(
             '{"declaration_digest":"' + "a" * 64 + '","entry_digest":"' + "b" * 64 + '"}'
         )
+        run = mock.Mock(return_value=type(
+            "Result", (), {"returncode": 0, "stdout": "", "stderr": ""}
+        )())
         with mock.patch.object(orchestration, "DUTY_PLAN_REPORT", ".runtime/test-duty-plan.json"):
-            with mock.patch.object(orchestration.subprocess, "run", return_value=type(
-                "Result", (), {"returncode": 0, "stdout": "", "stderr": ""}
-            )()):
+            with mock.patch.object(orchestration.subprocess, "run", run):
                 declaration_digest, entry_digest = orchestration.derive_digests(
                     ROOT, arguments(), identity()
                 )
         self.assertEqual("a" * 64, declaration_digest)
         self.assertEqual("b" * 64, entry_digest)
+        command = run.call_args[0][0]
+        self.assertIn("daily.runtime.database.duty.plan", command)
+        self.assertIn("DAILY_RUNTIME_EXPECTED_SHA=" + OLD, command)
+        self.assertNotIn("DAILY_RUNTIME_EXPECTED_SHA=" + HEAD, command)
         plan_report.unlink()
 
     def test_derive_digests_fails_closed_when_plan_fails(self):
