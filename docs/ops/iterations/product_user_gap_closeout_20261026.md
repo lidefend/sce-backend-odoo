@@ -2002,7 +2002,7 @@ height均22px、width不超过所在单元格。逐项focus+Enter打开全文，
 分别验收；实际保存、UI过账、跨公司矩阵和原生分析编辑仍开放。
 无demo变更、迁移、模块升级、主线合并或远端部署。
 
-### 2026-10-27：会计角色移动端增量走查（执行中）
+### 2026-10-27：会计角色移动端增量走查
 
 起点1899a574ec286e176d06cd3becbdb449a685a4b5，初始clean。P4验证工具
 local_dev_workspace_feedback及同入口mobile helper、make/dev.mk；仅扩展视口参数和
@@ -2012,3 +2012,33 @@ local_dev_workspace_feedback及同入口mobile helper、make/dev.mk；仅扩展�
 最早L1 syntax/iteration，L2既有journal.save.policy非零策略用例，L4受管实际走查，
 L5独立复核。未改产品/权限/seed，L2产品ORM及L3升级不适用；不运行全矩阵/Quick。
 首次L1因新helper未入run scope拒绝，已补登记后再跑；不算产品失败。
+
+执行结论：仅P4工具有改动，无P0/P1产品或demo变更。源码独立复核先发现六列表缺
+精确契约响应绑定，3fd3补齐action/menu/pageInfo.model，父详情model/company/type和
+逐子行move_id归属；复核通过。3fd3首轮探针误用桌面记录名按钮超时，改为实际
+CollectionMobileRecordRow的open-record，Promise.all保留响应/点击异常。d3027两角色
+在只读卡片hydrate前count0，user草稿两卡已通过；d6e3增加按精确科目卡片等待可见，
+仍要求唯一匹配和字段值比较。两类失败均为验证工具缺陷，未放宽产品断言；原日志保留。
+
+最终候选d6e3e8edde77a214117533edb6ee38de803e549a，mobile-static-hydration.log L1通过；
+mobile-policy.log 27JS+11Python通过（策略输入未变，保留a57c原执行身份）。没有产品
+或后端改动，未重复types/lint/ORM/seed/升级。受管backend/frontend启动成功，
+mobile-reader-hydration.log及mobile-user-hydration.log均退出0。环境仍为sc-local-dev/
+sc_dev_demo/ns_000000000002，两个既有角色独立浏览器只读执行，无共享业务写入。
+
+原始证据journal-role-browser/d6e3e8edde77a214117533edb6ee38de803e549a/mobile/，
+文件前缀sc_demo_accounting_read和sc_demo_accounting_user。各六入口实际契约model
+核验通过；父凭证10/55两态共4详情，明细19/20/51/52共8次科目/借贷对API比较通过，
+6次只读卡片“其余信息”真实打开/关闭通过。reader分析分配不发布/不显示且无保存/过账，
+user分析分配声明并显示，posted两行授权分析账户名称及100%与API一致。所有列表和
+详情视口均390，document clientWidth/scrollWidth均390，无页面级横向溢出。
+父公司、日记账、类型、状态、line_ids、write_date及全部比较子行before/after一致；
+errors0/blocked0，无save/dispatch。已查看reader草稿和user已过账卡片截图。
+
+本次只关闭模拟390×844触屏下上述列表/父详情读取与折叠交互未验证项。真实设备、
+其他视口、根分录移动详情、分析长文本弹窗触控、实际保存/过账、跨公司和原生分析编辑
+仍未验证；不得把innerText一致扩大为长文本弹窗已验收。没有发现需修改demo的缺口。
+下一步沿同工具补根分录移动详情及分析长文本触控。无主线合并或远端部署。
+
+review_takeover独立读取d6e3两份原始报告，确认主体/公司/六契约模型、四父详情/八卡、
+六次开关及前后值一致，无本轮阻断；接受上述限定结论。

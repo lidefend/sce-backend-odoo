@@ -176,11 +176,11 @@
   },
   "checks": {},
   "blockers": [
-    "FG15: manager/read/user desktop six-entry and selected journal readonly journeys passed; browser company-boundary matrix, mobile and six-entry business write workflows remain unverified.",
+    "FG15: manager/read/user desktop and reader/user emulated mobile selected read journeys passed; company-boundary browser matrix, remaining mobile interactions and six-entry business write workflows remain unverified.",
     "FG15: browser posting lifecycle not run; dedicated demo55 now posted through ordinary-manager native seed, not UI workflow evidence.",
     "FG15: unsupported child warning/modifier/line patches and residual native groups declarations remain explicit refusals; broader native expression coverage open."
   ],
-  "next_exact_step": "Extend existing governed journal-role tool to selected mobile accounting list/detail journeys using existing reader1987/user1988 and contract-derived membership; inspect viewport/interaction/readback without business writes.",
+  "next_exact_step": "Extend the same governed mobile journal-role helper to root line detail and native analytic full-text touch interaction, retaining contract-derived membership, exact identities and no business writes.",
   "observations": {
     "mainline_sha": "bdef29e11ed83db03ef18ec3ecbb6a71bb6d8963",
     "authoritative_remote": "origin/GitHub; gitee-mirror/main remains older PR720, not a new baseline",
@@ -1989,6 +1989,52 @@
       "browser": "readonly-cell-browser.log PASS6/parent2/root2 errors0blocked0 no writes. 6expansions(4account+2name) border0 transparent nowrap typebutton height22 width<=cell; Enter/fullText/close all pass. Added name to unchanged pre/post line readback; parent/root data unchanged. Screenshots manually inspected.",
       "evidence": "journal-role-browser/c417520991dc76537676bd9052113e2b9ce2cad3/sc_demo_accounting_read-report.json journalStates[].lineComparisons[].ui.expansions; saved-posted-detail.png and posted-51-name-expanded.png with same actor prefix",
       "limits": "No other-role/mobile/business-write acceptance expansion. No seed/migration/upgrade/merge/remote deployment."
+    },
+    "accounting_mobile_browser": {
+      "status": "selected_mobile_read_journeys_verified",
+      "candidate_head": "d6e3e8edde77a214117533edb6ee38de803e549a",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "touch": true,
+        "real_device": false
+      },
+      "actors": {
+        "sc_demo_accounting_read": 1987,
+        "sc_demo_accounting_user": 1988
+      },
+      "evidence_root": ".runtime/product-user-gap-closeout-20261026/journal-role-browser/d6e3e8edde77a214117533edb6ee38de803e549a/mobile/",
+      "results": {
+        "list_cases": 12,
+        "parent_details": 4,
+        "line_comparisons": 8,
+        "disclosure_open_close": 6,
+        "page_overflow": false,
+        "errors": 0,
+        "blocked": 0,
+        "business_writes": 0,
+        "before_after_equal": true
+      },
+      "checks": {
+        "L1": "mobile-static-hydration.log passed",
+        "L2": "mobile-policy.log 27 JS + 11 Python passed; policy inputs unchanged since a57c85362",
+        "L3": "module upgrade not applicable; no backend or seed changes",
+        "L4": "mobile-reader-hydration.log and mobile-user-hydration.log exit 0",
+        "L5": "review_takeover independently verified exact d6e3 source and both original reports; no blockers"
+      },
+      "limits": [
+        "emulated 390x844 only",
+        "no root line detail mobile coverage",
+        "no analytic full-text popup touch verification",
+        "no business write or posting",
+        "no cross-company matrix"
+      ],
+      "prior_failures": [
+        "mobile-static.log: helper not yet registered in run scope; corrected",
+        "mobile-reader.log at 3fd3: desktop button locator on mobile; corrected to card open-record",
+        "mobile-reader-navigation.log and mobile-user.log at d3027: checked cards before hydration; wait for exact account card added"
+      ],
+      "reuse": "P0/P1/seed and permissions unchanged; desktop/ORM/identity evidence retains original candidates."
     }
   }
 }
