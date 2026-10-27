@@ -48,7 +48,7 @@ def x2many_command_ownership_errors(source: str) -> list[str]:
                 ':aria-label="`查看完整${column.label}：${readonlyCellValue(row[column.name])}`"',
                 '>{{ readonlyCellValue(row[column.name]) }}</ScButton>')
     if (len(owners) != 1
-            or 'v-if="readonlyCellCanExpand(column, row[column.name])"' not in owners[0]
+            or re.search(r'v-(?:else-)?if="readonlyCellCanExpand\(column, row\[column\.name\]\)"', owners[0]) is None
             or 'trigger="click"' not in owners[0]
             or '<template #trigger>' not in owners[0]
             or any(marker not in button for marker in required)

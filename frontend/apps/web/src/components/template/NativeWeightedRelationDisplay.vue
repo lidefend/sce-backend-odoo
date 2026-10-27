@@ -52,7 +52,7 @@ onBeforeUnmount(() => { generation += 1; });
 .native-weighted-display { display: block; min-width: 0; max-width: 100%; }
 .native-weighted-display :deep(.native-weighted-trigger) {
   display: block; width: 100%; min-width: 0; max-width: 100%; padding: 0;
-  border: 0; background: transparent; color: inherit; cursor: pointer;
+  cursor: pointer;
   overflow: hidden; font: inherit; line-height: inherit; text-align: left;
   text-overflow: ellipsis; white-space: nowrap;
 }
