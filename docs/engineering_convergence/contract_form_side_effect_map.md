@@ -119,7 +119,7 @@ flowchart TD
 | Reactive writes | `changedFieldSet`, `onchangeWarnings`, `onchangeLinePatches`, `onchangeModifiersPatch`, `applyingOnchangePatch`, `formData`, `relationKeywords`, invalidated/cleared relation state |
 | APIs | `triggerOnchange` with intent `api.onchange` |
 | Loading lifecycle | No global loading state; debounce is silent |
-| Error lifecycle | Catch-all best effort; failed onchange keeps current values and does not surface a user error |
+| Error lifecycle | Failed onchange preserves current values and surfaces a sanitized error only for the current unchanged draft; stale responses remain isolated |
 | Success refresh order | Apply warnings and line patches metadata; merge modifier patch; query relation options for relational modifier changes; apply field patch; apply one2many line patches |
 | Notification and route effects | None directly |
 | Shared state | Shares relation option caches, one2many row runtime, field dirty/change tracking, route context |
@@ -172,7 +172,7 @@ which behavior must stay covered while pure builders and protocol helpers evolve
 | Config save | `formConfig` uses `begin/end` busy events around API work and keeps reload/feedback ordering in the runtime | `contract_form_runtime_state_behavior_guard.sh`; manual form regression |
 | Inline field policy | Busy precheck prevents duplicate policy writes; `inlinePolicy` clears busy in `finally` | `contract_form_runtime_state_behavior_guard.sh`; manual form regression |
 | Contract mode action | `contractMode` uses shared busy/status events without changing page navigation semantics | `contract_form_runtime_state_behavior_guard.sh`; manual form regression |
-| Onchange field patch | Request payload and response patch normalization remain pure; failed onchange is best-effort and silent | `contract_form_onchange_normalization_guard.py`; manual form regression |
+| Onchange field patch | Request payload and response patch normalization remain pure; failed current-draft onchange surfaces an error; stale failures do not overwrite newer feedback | `contract_form_onchange_normalization_guard.py`; manual form regression |
 | Relation onchange | Relation display/id normalization stays in helper; cache/query side effects stay in page transaction | `contract_form_onchange_normalization_guard.py`; manual form regression |
 | Native structures | group, notebook, statusbar, and x2many behavior remain governed by native contract/runtime guards | `frontend_page_contract_boundary_guard.py`; `frontend_page_contract_orchestration_consumption_guard.py`; manual form regression |
 | Duplicate click | Existing global busy guard remains the concurrency boundary; no new parallel transaction state is introduced | `contract_form_runtime_state_behavior_guard.sh`; `contract_form_side_effect_regression_guard.py` |

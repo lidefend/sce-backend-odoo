@@ -38,7 +38,8 @@
     "frontend_presentation": {
       "description": "纯呈现组件的轻量页面证据：页面身份、契约消费、零写入、零运行错误与响应式无溢出",
       "entrypoints": [
-        "make verify.frontend.presentation.browser"
+        "make verify.frontend.presentation.browser",
+        "make verify.frontend.presentation.local.browser"
       ],
       "inputs": [
         "Makefile",
@@ -51,14 +52,21 @@
         "scripts/verify/lib/frontend_acceptance_environment.mjs",
         "scripts/verify/playwright_runtime.mjs",
         "scripts/verify/test_daily_demo_credential_confirmation.py",
-        "make/frontend_professional_extensions.mk"
+        "make/frontend_professional_extensions.mk",
+        "scripts/dev/frontend_acceptance*",
+        "scripts/dev/frontend_standard_preview.py",
+        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "config/acceptance/backend_contract_instance_v1.json"
       ],
       "make_inputs": [
         {
           "path": "make/frontend.mk",
           "targets": [
             "verify.daily.demo_credential.confirmation",
-            "verify.frontend.presentation.browser"
+            "verify.frontend.presentation.browser",
+            "verify.frontend.presentation.local.browser",
+            "acceptance.runtime.contract_receipt"
           ],
           "variables": [
             "FRONTEND_PRESENTATION_LOGIN",

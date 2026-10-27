@@ -1480,6 +1480,23 @@ class SaveFinallyGuardTest(unittest.TestCase):
                 self.assertEqual(main(), 0 if name == 'valid' else 1)
 
 
+class OnchangeFailureGuardTest(unittest.TestCase):
+    def test_current_error_feedback_and_stale_isolation_are_required(self):
+        import contextlib
+        import io
+        import runpy
+        main = runpy.run_path('scripts/verify/contract_form_side_effect_regression_guard.py')['main']
+        namespace = main.__globals__
+        original_read = namespace['_read']
+        original = original_read(namespace['FORM_STATE_RUNTIME'])
+        for token in ('context.validationErrors.value = [isContractGapError(error) ? error.message',
+                      'ticket.sequence !== onchangeSequence',
+                      'Object.entries(ticket.snapshot).some('):
+            self.assertIn(token, original)
+            with self.subTest(token=token), patch.dict(namespace, {'_read': lambda path: original.replace(token, '') if path == namespace['FORM_STATE_RUNTIME'] else original_read(path)}), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(main(), 1)
+
+
 class StandardListSurfaceAdapterTest(unittest.TestCase):
     def execute_adapter(self, overrides=None, identity_passes=True, backend_passes=True):
         import subprocess

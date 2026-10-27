@@ -174,7 +174,12 @@
     "docs/architecture/unified_page_contract_v2/examples/tree_project.json",
     "docs/architecture/unified_page_contract_v2/examples/form_project.json",
     "docs/architecture/unified_page_contract_v2/examples/nested_form_relation.json",
-    "docs/architecture/unified_page_contract_v2/examples/list_project.json"
+    "docs/architecture/unified_page_contract_v2/examples/list_project.json",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "config/acceptance/evolution_binding.v1.json",
+    "scripts/verify/contract_form_side_effect_regression_guard.py",
+    "scripts/verify/test_frontend_standard_preview.py",
+    "docs/engineering_convergence/contract_form_side_effect_map.md"
   ],
   "environment": {
     "kind": "runtime",
@@ -2153,6 +2158,14 @@
       "open_product_gaps_retained": true,
       "deployment_authorized_this_step": false,
       "freeze_failure": "completed DEMO-USER-WALKTHROUGH run remained in active index; remove only that stale mapping, retain historical run"
+    },
+    "integration_runtime_preparation": {
+      "status": "verification_pending",
+      "native_relation_fix": "f063fa9cb64aaec8c0d5baa0096374c018240270",
+      "tests": "30 node + 155 contract boundary + 48 cache tests passed; lifecycle authority passed",
+      "presentation": "Governed local 5180/sc_frontend_acceptance adapter added; same presentation assertions, fixture resolution and contract receipt required; independent source review no S0-S2",
+      "guard_repair": "Existing onchange guard incorrectly required silent failure; aligned with current-draft error feedback and stale-response isolation, with negative tests.",
+      "pending": "Actual clerk save and merge-stage presentation/list/relation, final Quick and PR gates"
     }
   }
 }

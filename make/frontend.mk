@@ -1260,6 +1260,10 @@ verify.daily.demo_credential.confirmation: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/daily_demo_credential_confirmation.py scripts/verify/test_daily_demo_credential_confirmation.py
 	@python3 -m unittest scripts.verify.test_daily_demo_credential_confirmation
 
+.PHONY: verify.frontend.presentation.local.browser
+verify.frontend.presentation.local.browser: guard.prod.forbid acceptance.runtime.contract_receipt
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-presentation-browser
+
 .PHONY: verify.frontend.presentation.browser
 verify.frontend.presentation.browser: guard.prod.forbid verify.daily.demo_credential.confirmation
 	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
