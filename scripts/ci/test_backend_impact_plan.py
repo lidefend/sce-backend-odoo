@@ -63,7 +63,11 @@ class ImpactSelectionTest(unittest.TestCase):
         self.assertEqual(planner.select(['new_runtime/loader.py'], self.graph, self.graph)['mode'], 'full')
 
     def test_docs_and_frontend_have_explicit_empty_backend_scope(self):
-        plan = planner.select(['docs/a.md', 'frontend/apps/web/src/a.ts'], self.graph, self.graph)
+        plan = planner.select(
+            ['docs/a.md', 'frontend/apps/web/src/a.ts', 'make/frontend.mk'],
+            self.graph,
+            self.graph,
+        )
         self.assertEqual(plan['modules'], [])
         self.assertEqual(plan['mode'], 'incremental')
 
