@@ -45,3 +45,21 @@
 同一有效声明版本内 widgetRef 必须唯一、属于当前表单主记录，并绑定 source 字段。继承布局替换或重新排序必须重新解析稳定 locator/occurrence；不得把缓存中的旧 widgetRef 应用到新树。来源权威冲突按既有治理失败机制处理，不另建前端优先级。
 
 缓存测试必须交叉不同协议能力、公司/角色、记录、view、profile及声明版本；可以复用不含客户端能力的中间纯声明缓存，但最终交付投影必须隔离且逐请求验证。禁止让同一缓存键在旧/新客户端间共享不同结构响应。
+
+## R1 协议细节补充（与主设计C1–C3/D1一致）
+
+| 输入/变化 | 唯一判定与结果 | 必须禁止 |
+| --- | --- | --- |
+| global readonly、widget readonly=false | 使用canonicalFormRenderState目标CanonicalFormField，presenter最终readonly=true时才进入其他激活检查 | 新模块自己OR/AND权限、只看路由或原始widgetStatus |
+| edit且field.readonly=true/disabled=true | renderProfile不是readonly，不省略 | 把控件disabled适配当成新的只读权威 |
+| presenter无model/报错/模式快照不一致 | 不执行旧省略；进入已有错误/加载机制 | 原始状态兜底、沿用旧DOM绑定 |
+| locator相同但有效布局摘要改变 | 原定义绑定失效，重新审批前不交付启用关系 | 认为路径未变所以身份一定未变 |
+| 节点移动/继承替换/重复匹配 | 编译拒绝启用，明确诊断 | 最近路径猜测、同fieldCode自动重绑 |
+| 名称数据patch、布局和绑定都不变 | 仅在patch能证明base快照时原子更新身份 | 分开更新页头值与视觉省略状态 |
+| patch无法证明base/绑定一致 | 关系失效，全量重载 | 继续复用旧widgetRef |
+| 收藏aria-labelledby依赖原名称文本 | 保留ID和语义文本，至多视觉隐藏文本叶子 | 删引用目标、aria-hidden引用文本或父容器 |
+| 不能证明可访问关联完整 | 不激活省略并记录阻断 | 截图通过即放行 |
+| 原生控件正在聚焦时更新 | 保留焦点、tab序及事件身份 | 整个父节点重建/隐藏导致焦点丢失 |
+| 新版本但缺能力，或新能力但无新版本 | 验证源定义后交付合法旧payload；无共同版本则拒绝 | 只删新key或只改版本标记 |
+
+最终readonly来源为既有presenter，不改变字段和收藏授权。引用解析失败的“不得启用”与非法关系显式报错同时成立；不是静默丢弃坏配置后当作成功。旧契约未声明关系则正常兼容，不受新关系校验要求影响。

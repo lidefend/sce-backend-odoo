@@ -18,7 +18,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Freeze design-only candidate, Quick, independent Draft PR; no implementation",
+  "next_exact_step": "Validate R1 design-only diff, freeze Quick and update Draft PR764; await GPT review",
   "layer": {
     "formal_product_layer": "P4",
     "target": "contract design documents",
@@ -45,6 +45,12 @@
       "reused_evidence_files": 3
     },
     "new_protocol_regression": "not_run_no_implementation",
-    "limits": "Proposed 2.3/structure1.2/capability are not current supported runtime protocol"
+    "limits": "Proposed 2.3/structure1.2/capability are not current supported runtime protocol",
+    "R1": {
+      "status": "design_revision_pending_validation",
+      "scope": "four design files + this task metadata only",
+      "runtime_evidence": "unchanged",
+      "implementation": "not_authorized"
+    }
   }
 }

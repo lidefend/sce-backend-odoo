@@ -52,7 +52,13 @@
     "capability": "form.record_identity_projection.v1",
     "currently_supported": false,
     "activation": "all three negotiated plus valid explicit relation and final readonly mode with visible primary header",
-    "old_delivery": "validated old-version projection; remove relation and restore supported version markers, keep text/actions"
+    "old_delivery": "validated old-version projection; remove relation and restore supported version markers, keep text/actions",
+    "roles": {
+      "outer_contract": "whole-response syntax/negotiated delivery boundary",
+      "structure_version": "nested form structure syntax boundary",
+      "capability": "implemented consumer presentation semantics"
+    },
+    "compatibility_proof": "Pinned real old strict decoder plus new decoder matrix; additive analysis insufficient; downgrade payload and both version markers together"
   },
   "approval_required": [
     "object shape and version boundary",
@@ -67,5 +73,21 @@
     "renderer implementation",
     "automatic publication",
     "F1"
-  ]
+  ],
+  "revision": "FEPC-13D-R1",
+  "semantic_closure": {
+    "final_readonly_authority": "canonicalFormRenderState.model target CanonicalFormField from presentContractV2Form/fieldFromWidget; no second permission calculation",
+    "activation_mode": "target.renderProfile readonly and target.readonly and target.visible, plus negotiated valid binding and ready primary identity; never edit/create/preview",
+    "definition_reference": "governed view identity + bound effective-layout version/digest + nativeLocator + occurrenceIndex; expected fieldCode/node type are assertions only",
+    "wire_reference": "unique widgetId resolved in the current response; not a durable config identity",
+    "invalidation": "any bound layout change, missing or ambiguous reference rejects activation; reapproval required, never fieldCode fallback",
+    "patch": "same verified base/layout/binding only; otherwise invalidate and full refresh",
+    "accessibility": [
+      "primary accessible h1 retained",
+      "favorite accessible name/focus/tab order/events unchanged",
+      "retain text IDs/semantics used by assistive references",
+      "never hide a parent to omit a text leaf",
+      "unverifiable accessibility dependency blocks omission"
+    ]
+  }
 }

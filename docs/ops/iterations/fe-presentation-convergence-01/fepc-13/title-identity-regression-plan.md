@@ -39,3 +39,35 @@
 任一引用、权威、版本、模式或权限用例失败即停止后续UI验收；不得调默认值/放宽schema来保持绿色。截图、源码、契约、真实行为各自绑定候选与部署身份。实现PR通过并合并仍不代表Demo已部署。
 
 回滚设计：撤回启用定义或停止向客户端交付该关系，恢复旧文本呈现；不迁移业务数据、不改变字段权限。发布协议必须保留可用旧版本协商及精确回退证据。F1、关注者、关系空状态、协作消息及Demo数据均不在回归修复范围。
+
+## R1 必须新增的判别断言（计划，not_run）
+
+### 状态权威
+
+- 用现有resolveEffectiveContractRenderProfile → presentContractV2Form输出喂给消费测试：global readonly/widget readonly=false必须得到最终readonly呈现；edit+字段readonly与edit+disabled均不得触发省略。
+- 故意令原始widget状态与presenter输出不同，消费必须只随目标CanonicalFormField变化；禁止在被测模块引入独立权限公式。
+- 收藏自己的disabled/auth/descriptor及field-change载荷逐项前后比较；名称投影开关不得改变任何一项。
+
+### 引用稳定性与缓存
+
+- 原布局唯一tuple解析到唯一widgetRef；同字段第二个occurrence保持可见。
+- 零匹配、多匹配、同路径换节点、继承view替换、节点移动、有效布局摘要改变逐一负测，均无省略且返回具体引用错误；不能仅测试字段不存在。
+- 缓存交替请求不同view/定义版本/布局摘要/record/profile/能力及授权上下文，确认无旧widgetRef残留。新树里存在旧ID字符串也必须核验完整绑定身份。
+- patch同base/同布局可原子更新；base未知、布局/模式变化或定义撤回必须失效重载。断言刷新期间不会隐藏唯一身份文本。
+
+### 可访问性与键盘
+
+- 检查实际可访问树中的主要heading名称与级别；页头h1不能只是DOM存在而被hidden/aria-hidden。
+- 收藏前后role、accessible name、pressed（如有）、disabled、焦点和tab顺序一致；原事件身份与descriptor一致。
+- fixture中加入aria-labelledby和aria-describedby引用原名称叶子的场景，省略视觉文本后ID仍存在且引用可解析，辅助技术仍能取得名称/说明。
+- 无关联副本可以减少重复朗读，但主h1必须仍提供完整身份；不允许以隐藏父节点使收藏/附加语义一并消失。
+- 更新模式或重载时保持当前控件焦点；edit/create输入label与键盘操作保持。实际可访问树/键盘验证优先，无法运行辅助技术实测则明确保留限制，不把自动规则扫描当成全面读屏验收。
+
+### 三层协议准入
+
+- 固定旧Web代码版本运行真实schema.ts decoder：完整降级payload应成功；只删新key但保留2.3/1.2应失败；只改版本而保留新key也应失败。
+- 新decoder验证旧2.0–2.2/结构1.0–1.1仍兼容；合法新对象通过，未知policy、引用冲突、未知版本拒绝。
+- 分别移除外层版本支持、结构支持、新能力，验证无任一单项能绕过其他边界；无共同版本返回明确不兼容。
+- 验证服务端顺序是先校验定义，再协商/投影，再目标版本schema验证。非法源关系不能通过旧客户端降级掩盖。
+
+以上测试未来须绑定实际命令、非零用例数、旧decoder提交与载荷哈希；本轮文档修订不提供这些实现证明。
