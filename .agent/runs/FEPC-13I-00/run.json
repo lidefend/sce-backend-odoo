@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "FEPC-13I-00",
+  "branch": "audit/fepc-13i-00-readiness",
+  "baseline_sha": "44e7e8447a77ff347ac2cdaf25d8c28b759e61ff",
+  "status": "verification_pending",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FEPC-13I-00.yaml",
+    ".agent/runs/FEPC-13I-00/run.json",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-13/fepc-13i-implementation-readiness.md",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-13/fepc-13i-change-map.json",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-13/fepc-13i-test-and-release-sequence.md"
+  ],
+  "goal": ".agent/goals/FEPC-13I-00.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-13/fepc-13i-implementation-readiness.md",
+  "environment": {
+    "kind": "offline",
+    "authority": "Read-only source audit; existing FEPC13R runtime evidence reused"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Freeze audit candidate, Quick and independent Draft PR; await GPT review before I1 authorization",
+  "layer": {
+    "formal_product_layer": "P4",
+    "target": "readiness audit documents",
+    "module": "docs/.agent",
+    "why_here": "No implementation authorization",
+    "why_not_elsewhere": "No product/schema/config writes",
+    "blast_radius": "Documentation only"
+  },
+  "observations": {
+    "readiness": "conditional; implementation not authorized",
+    "decoder_baseline": "two existing Make targets passed, non-zero case logs",
+    "decoder_log": ".runtime/fepc13i00/decoder-baseline.log",
+    "L1": "passed ci.local.iteration",
+    "source_hashes": 16,
+    "links": 5,
+    "runtime_readback": "not_repeated; last known FEPC13R only"
+  }
+}
