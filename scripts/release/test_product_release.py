@@ -281,6 +281,67 @@ class ProductReleaseTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(payload), encoding="utf-8")
 
+    def historical_identity(self):
+        relative = next(iter(version_guard.HISTORICAL_IDENTITY_OBSERVATIONS))
+        content = (ROOT / relative).read_bytes().decode("utf-8")
+        return relative, content, json.loads(content)
+
+    def test_registered_historical_identity_has_exact_provenance(self):
+        relative, content, payload = self.historical_identity()
+        self.assertEqual(payload["kind"], "historical_runtime_identity_projection")
+        self.assertEqual(payload["http_status"], 200)
+        self.assertRegex(payload["observed_at"], r"^\d{4}-\d{2}-\d{2}T")
+        self.assertRegex(payload["response_projection"]["source_revision"], r"^[0-9a-f]{40}$")
+        self.assertRegex(payload["provenance"]["original_sha256"], r"^[0-9a-f]{64}$")
+        self.assertRegex(payload["provenance"]["original_commit"], r"^[0-9a-f]{40}$")
+        version = payload["response_projection"]["product_version"]
+        self.assertEqual(version_guard.scalar_paths(payload, version),
+                         [("response_projection", "product_version")])
+        self.assertFalse(version_guard.has_release_version_duplicate(relative, content, version))
+        self.assertEqual(version_guard.validate_historical_identities(ROOT), [])
+
+    def test_historical_identity_does_not_exempt_another_path(self):
+        _, content, payload = self.historical_identity()
+        version = payload["response_projection"]["product_version"]
+        for path in ("docs/current-release.json", "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/other.json"):
+            with self.subTest(path=path):
+                self.assertTrue(version_guard.has_release_version_duplicate(Path(path), content, version))
+
+    def test_historical_identity_rejects_mutations_and_added_declarations(self):
+        relative, content, payload = self.historical_identity()
+        version = payload["response_projection"]["product_version"]
+        variants = [content + f"\nCurrent release: {version}\n", content.replace("\n", "\r\n")]
+        for container, key in ((payload, "observed_at"),
+                               (payload["response_projection"], "source_revision"),
+                               (payload["provenance"], "original_sha256")):
+            previous = container[key]
+            container[key] = "tampered"
+            variants.append(json.dumps(payload))
+            container[key] = previous
+        payload["current_release"] = version
+        variants.append(json.dumps(payload))
+        for mutated in variants:
+            with self.subTest(mutated=mutated[-80:]):
+                self.assertFalse(version_guard.is_registered_historical_identity(relative, mutated))
+                self.assertTrue(version_guard.has_release_version_duplicate(relative, mutated, version))
+
+    def test_historical_identity_missing_or_changed_version_fails_even_after_release_bump(self):
+        relative, _, payload = self.historical_identity()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.assertTrue(version_guard.validate_historical_identities(root))
+            target = root / relative
+            target.parent.mkdir(parents=True)
+            payload["response_projection"]["product_version"] = "99.0.0"
+            target.write_text(json.dumps(payload), encoding="utf-8")
+            self.assertTrue(version_guard.validate_historical_identities(root))
+
+    def test_registered_identity_does_not_exempt_other_lines_in_reports(self):
+        _, _, payload = self.historical_identity()
+        version = payload["response_projection"]["product_version"]
+        report = Path("docs/ops/iterations/fe-presentation-convergence-01/fepc-09/findings.md")
+        self.assertTrue(version_guard.has_release_version_duplicate(report, f"release: {version}", version))
+
     def test_derived_version_observation_matches_exact_snapshot_path(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

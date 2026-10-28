@@ -1,0 +1,74 @@
+{
+  "runtime_declared_sha": "3f46dd7eba9f351386fee446151ee9eb545d56a4",
+  "main_sha": "27de8c2769d4c02a6e1076ad3f60fb9aa9f77e17",
+  "files": [
+    {
+      "path": "frontend/apps/web/src/components/template/formSection.mapper.ts",
+      "runtime_git_blob": "dde2ac4b3a0f9ce6dc6ce8f25d30f461c8362269",
+      "sha256": "7d2b01be785c77325766dd086f28573e2a29d2cb268d8d5c3e349221260960d2",
+      "identical_to_local": true
+    },
+    {
+      "path": "frontend/apps/web/src/components/template/FormSection.vue",
+      "runtime_git_blob": "8a1fdeb38312fd32c412d59c971afb58943b65d3",
+      "sha256": "1308e55a5991930c030af4f4b08218261db170106ec82ffd99ff1b57e36d2b47",
+      "identical_to_local": true
+    },
+    {
+      "path": "frontend/apps/web/src/components/design-system/ScPopover.vue",
+      "runtime_git_blob": "d4e8da162da930d2a4e493d8aa450946f796e6d6",
+      "sha256": "5d6025b22687416e8081b207ae334ad05fda54b4c7de6fa3f473ed19c3c11a36",
+      "identical_to_local": true
+    },
+    {
+      "path": "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+      "runtime_git_blob": "e08b4f5bff424676f27460a3da2a6609bcd13160",
+      "sha256": "b440970231f13badcbe7c507ba923f9f93b693b6c02cfc7072748dbc71205223",
+      "identical_to_local": true
+    },
+    {
+      "path": "frontend/packages/ui/src/primitives.ts",
+      "runtime_git_blob": "d012b9bd8ebcb7637184559f9fc790aa4d0fc741",
+      "sha256": "0602e8ccb1a03a3d90842cd15367c85aeae3ca751b5bf4f603b395d26b23b708",
+      "identical_to_local": true
+    },
+    {
+      "path": "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+      "runtime_git_blob": "07639b914a1f3ac0779f295ed317540287721d42",
+      "sha256": "259fd2ba97cabb135956f763c21e047f1129d0edb1f033f456995a9b3c93a79c",
+      "identical_to_local": true
+    },
+    {
+      "path": "frontend/packages/ui/package.json",
+      "runtime_git_blob": "9ef4062292f92c78cd4832126ca2c0cc598540cf",
+      "sha256": "6bb655ac3ccebe201bc6377d2108ea7f2df4d2ce73e3e439c055105db486a731",
+      "identical_to_local": true
+    },
+    {
+      "path": "frontend/pnpm-lock.yaml",
+      "runtime_git_blob": "aa65b14f6128b3bc96d8c83ca5679e4e3f49e8ac",
+      "sha256": "0d3d8c93500e64b12a8d572bfe87e68aa359de632c63b31185870bc81ac1f6f2",
+      "identical_to_local": true
+    },
+    {
+      "path": "frontend/packages/ui/node_modules/tdesign-vue-next/es/popup/popup.mjs",
+      "authority": "local installed package; version pinned by runtime source lock, deployed bundle contents not independently rebuilt",
+      "sha256": "299a2c109a7050fed7d0aeb0f96f98e66c0c8b9bb44d319341da946f4dd4e521"
+    },
+    {
+      "path": "frontend/packages/ui/node_modules/tdesign-vue-next/es/popup/props.mjs",
+      "authority": "local installed package; version pinned by runtime source lock, deployed bundle contents not independently rebuilt",
+      "sha256": "5497c7043aa418726beafee5e56da5eb723660cb96f84726995d4b74e7b0d34b"
+    },
+    {
+      "path": "frontend/packages/ui/node_modules/tdesign-vue-next/es/popup/container.mjs",
+      "authority": "local installed package; version pinned by runtime source lock, deployed bundle contents not independently rebuilt",
+      "sha256": "806df348eb5ef64f731dafb259045a09a4163f814062aec496c13e30b2708460"
+    },
+    {
+      "path": "frontend/node_modules/.pnpm/@popperjs+core@2.11.8/node_modules/@popperjs/core/lib/modifiers/eventListeners.js",
+      "authority": "local installed package; version pinned by runtime source lock, deployed bundle contents not independently rebuilt",
+      "sha256": "6d10614b494320d1dd278b26c1707aa1f8191ef39875984cf1d51bac7cbfd9e9"
+    }
+  ]
+}

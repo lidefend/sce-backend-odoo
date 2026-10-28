@@ -1,0 +1,289 @@
+{
+  "original_commit": "1214b9ce88c42875436a71340f7dd6d2eea3a126",
+  "local_archive": ".git/codex-recovery/FEPC-09/pr-scope-closeout/files",
+  "preservation": "All originals remain reachable in immutable PR ancestor and a hash-verified local copy; online final files may be projections, not raw responses.",
+  "files": [
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-1-authentication-status.json",
+      "sha256": "c1830c9b50c948b8b5de17d50b4f25273e904f5929c4b4d31f9c62f0bf8a83e6",
+      "bytes": 144,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-1-authentication-status.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-1-f1-measurements.json",
+      "sha256": "9c1b812b9eb900fd652d9149353001bc9795cb7eaa79b74af14e9e63ee7fe27d",
+      "bytes": 88955,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-1-f1-measurements.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-1-probe.mjs",
+      "sha256": "d92d70105f23c326d4761b8f54273cee144eea15c978b86f4884ae79921ebfa2",
+      "bytes": 12927,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-1-probe.mjs"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-2-authentication-status.json",
+      "sha256": "bf9f21924b55cc1a73eb4cb6fce91a9e9291afb520120822c553c1c73b491129",
+      "bytes": 144,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-2-authentication-status.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-2-f1-measurements.json",
+      "sha256": "686f589b2e79248860612924f5535f723c8b5e930007708d35973029fbf1b70c",
+      "bytes": 76066,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-2-f1-measurements.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-2-probe.mjs",
+      "sha256": "d0868ff7cb4659c9e3b96ba65e05549d8d5a8effb133d9589ebef66f0c968461",
+      "bytes": 11547,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-2-probe.mjs"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-3-authentication-status.json",
+      "sha256": "e9239fe335b4cac716cda29f8255637f36322f158a2090603a3f9d5e7b774f7f",
+      "bytes": 144,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-3-authentication-status.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-3-f1-measurements.json",
+      "sha256": "4b38bbf0b95d0bf6a88a7a665aed3e36e29c3f34b5a4f676be036c3cd934008f",
+      "bytes": 16146,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-3-f1-measurements.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-3-probe.mjs",
+      "sha256": "8248b669700c6d3c7d8865df0a7ce99a3bfd8fe0e8f712c9cdc35afb3f3d2082",
+      "bytes": 10505,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-3-probe.mjs"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-4-authentication-status.json",
+      "sha256": "d8b38639301fd33f78bdd82e969985089fbe0f7bdf2759f54a2a6de0b899c661",
+      "bytes": 144,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-4-authentication-status.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-4-f1-measurements.json",
+      "sha256": "c8a9702a32b72dd8f5b5521804ba44afc89c865ef72e5417a3881649e826137e",
+      "bytes": 59379,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-4-f1-measurements.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-4-probe.mjs",
+      "sha256": "ca196dbd7cb6aa9813384b91651106763b05918716315b694d9827878e13dd73",
+      "bytes": 10589,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-4-probe.mjs"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-5-authentication-status.json",
+      "sha256": "36911b0da8aede466ff26c18a3401c6ffb499b4434b086bfd0549ad4ce42d5fe",
+      "bytes": 144,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-5-authentication-status.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-5-f1-measurements.json",
+      "sha256": "b8b44f51a279f4303c5ff36540b7ac2954d6f96511c38560f5e109503b2ae2c4",
+      "bytes": 44244,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-5-f1-measurements.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-5-probe.mjs",
+      "sha256": "1bafebf22d375ee528f5c801e111f33d44fb5ad6b9c2040ca9aa1aa0e3ffd92b",
+      "bytes": 10092,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/attempt-5-probe.mjs"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/authentication-status.json",
+      "sha256": "36911b0da8aede466ff26c18a3401c6ffb499b4434b086bfd0549ad4ce42d5fe",
+      "bytes": 144,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/authentication-status.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/f1-fix-proposal.md",
+      "sha256": "3c40b1fb9a76c5d9f3511f857225f9fbea6d1a783d6ec6a92098fd99118821f1",
+      "bytes": 1262,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/f1-fix-proposal.md"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/f1-measurements.json",
+      "sha256": "aa4b8ea772a1a8860ad023944e64bb21a3bfa40f2ee5fbfacb96b0ebbbacf53e",
+      "bytes": 8098,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/f1-measurements.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/f1-reproduction.md",
+      "sha256": "050b3e8c6580f563a6fd46a40f27e7ebad76770a7f06a88c3dfa19ecb4626f5d",
+      "bytes": 3933,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/f1-reproduction.md"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/f1-root-cause.md",
+      "sha256": "68601b0cf40266746b4c12ddef7198ab9b33f27956131be1a5a0950ae4b5c114",
+      "bytes": 2770,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/f1-root-cause.md"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/probe.mjs",
+      "sha256": "1bafebf22d375ee528f5c801e111f33d44fb5ad6b9c2040ca9aa1aa0e3ffd92b",
+      "bytes": 10092,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/probe.mjs"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/run_probe.py",
+      "sha256": "c42ffcd30e7749f41f284b2700784205ea0c910db9099baf4baaccaf45a32df9",
+      "bytes": 1524,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/run_probe.py"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/source-identity.json",
+      "sha256": "5fad266513578b44487e2b441287bc526753c0d9d57d69914bedbf92450941db",
+      "bytes": 3630,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-08/source-identity.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/01-basic.png",
+      "sha256": "4846ef7a5ec8525c5b37aedbb6e94564d56a1d5d2bd2b8c2517f2dbf2722740c",
+      "bytes": 128949,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/01-basic.png"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/02-plan.png",
+      "sha256": "4846ef7a5ec8525c5b37aedbb6e94564d56a1d5d2bd2b8c2517f2dbf2722740c",
+      "bytes": 128949,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/02-plan.png"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/03-responsibility.png",
+      "sha256": "4846ef7a5ec8525c5b37aedbb6e94564d56a1d5d2bd2b8c2517f2dbf2722740c",
+      "bytes": 128949,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/03-responsibility.png"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/04-collaborators.png",
+      "sha256": "73bc9d3dcc3cc25d59693426d90361f39cfc5694dd603ca79c0f654dd518e052",
+      "bytes": 110899,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/04-collaborators.png"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/05-timeline.png",
+      "sha256": "3e35139946ac3d730fe117f1aa4dc19f72912efcc0db76b033397c24afafb8dc",
+      "bytes": 97886,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/05-timeline.png"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/06-timeline-content.png",
+      "sha256": "898dd38566d559739fce9808eb59b1ef667b8998a8400b66466dfbf083425f58",
+      "bytes": 120982,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/06-timeline-content.png"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/artifact-manifest.json",
+      "sha256": "bc2abcd39803be705978323bd786eac303c67a415b24c71076c806e759e143c3",
+      "bytes": 7746,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/artifact-manifest.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/authentication-status.json",
+      "sha256": "fc91a0f9ab3a4d5f95ef0e25fda198007a0797ec04dafaadea5dd47253154620",
+      "bytes": 144,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/authentication-status.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/collect_message_authors.py",
+      "sha256": "10b04b416110380fb583a455aef45e06f2751dea73c3b4f07b89b15b39efd121",
+      "bytes": 2102,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/collect_message_authors.py"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/evidence-index.md",
+      "sha256": "173263f300034f5a7e0a0a17241325b19a4e6e979c7acc725b0c30b621a327b8",
+      "bytes": 4723,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/evidence-index.md"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/evidence-provenance.json",
+      "sha256": "4f16959252f5e3a90a8765e20cef36a2efdfd5d1e27528e279403a08dc394776",
+      "bytes": 6451,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/evidence-provenance.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/findings.json",
+      "sha256": "0d0f1a071d259f110fdca85fc6725faa3c2572677f81d60d0d0f617a280d7737",
+      "bytes": 11264,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/findings.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/findings.md",
+      "sha256": "442db4bf2750525fbb8b144ceb300e522e83f27e51211f87b39c99abea1f0015",
+      "bytes": 9501,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/findings.md"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/initial-authentication-status.json",
+      "sha256": "1e953a8e70cbb77b42fbe65f0ac09720ffa73285bb5f7f1051cea094cd1b1eaf",
+      "bytes": 144,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/initial-authentication-status.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/initial-presentation-observations.json",
+      "sha256": "afa7a5594b3acc61a28c5f3e98b15e5250c48927260ffe8687fa786e148312b8",
+      "bytes": 57827,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/initial-presentation-observations.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/initial-probe.mjs",
+      "sha256": "ba439ce4171aa9f223b04d70953b87d54973da30d9bdf02036c55f1509da2e08",
+      "bytes": 9022,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/initial-probe.mjs"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/message-author-evidence.json",
+      "sha256": "5aad9f1385eac3af30c3d6d00cbeab85827aff260144b7f80a48817c843e018d",
+      "bytes": 1330,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/message-author-evidence.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/minimal-implementation-proposals.md",
+      "sha256": "83bfb8e6e1e6c935fe453a9f4c53456b03b70148f1a36fd31a66e0a63d5fa6e4",
+      "bytes": 2060,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/minimal-implementation-proposals.md"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/presentation-observations.json",
+      "sha256": "afa7a5594b3acc61a28c5f3e98b15e5250c48927260ffe8687fa786e148312b8",
+      "bytes": 57827,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/presentation-observations.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/probe.mjs",
+      "sha256": "2620b64474ccdd4df0d278c39b01de8156ae6dced04ee9ad6510dd832046a301",
+      "bytes": 8766,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/probe.mjs"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/reused-project-facts.json",
+      "sha256": "081f3a7fc02b0b2e4b3a8c134d3dd545173c831e539bb8b8ab52a48a812b9491",
+      "bytes": 30339,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/reused-project-facts.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/run_probe.py",
+      "sha256": "c42ffcd30e7749f41f284b2700784205ea0c910db9099baf4baaccaf45a32df9",
+      "bytes": 1524,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/run_probe.py"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/supplement-presentation-observations.json",
+      "sha256": "f394e1e4c8c6e774720fbe358b1969211d8485a0ef23ddaf7d18fc72712ce3fc",
+      "bytes": 20724,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/supplement-presentation-observations.json"
+    },
+    {
+      "path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/validation.json",
+      "sha256": "fd4d2aa6088bbd05ee71fe93fef622347f89ea7d6a92420448ef0fdfba1cd633",
+      "bytes": 1402,
+      "original_url": "https://github.com/lidefend/sce-backend-odoo/blob/1214b9ce88c42875436a71340f7dd6d2eea3a126/docs/ops/iterations/fe-presentation-convergence-01/fepc-09/validation.json"
+    }
+  ]
+}
