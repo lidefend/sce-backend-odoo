@@ -161,6 +161,12 @@ def classify(
             or not all(isinstance(path, str) and path for path in context_paths)):
         raise ValueError("ORM dependency policy requires bounded string lists")
     changed = _normalize_paths(paths)
+    if event_name == "schedule":
+        # A scheduled run has no PR base and no push `before` SHA, so the
+        # change set is deliberately empty. It is still an owner-authorized
+        # full audit of main, not an unclassified mutation: classify it as a
+        # release-lane full audit instead of failing closed on the empty set.
+        return Classification("RELEASE", changed, ("schedule_full_audit",), True, True, True)
     if event_name == "workflow_dispatch" or _matches(ref, policy["release_refs"]):
         return Classification("RELEASE", changed, ("release_event",), True, True, True)
     if not changed:

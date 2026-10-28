@@ -246,6 +246,13 @@ class CIRiskClassifierTests(unittest.TestCase):
             "RELEASE",
         )
 
+    def test_schedule_is_a_full_audit_not_an_empty_change_set(self) -> None:
+        result = classify([], event_name="schedule")
+        self.assertEqual(result.lane, "RELEASE")
+        self.assertEqual(result.reasons, ("schedule_full_audit",))
+        self.assertEqual(result.frontend_mode, "full")
+        self.assertEqual(result.professional_mode, "full")
+
     def test_lockfiles_are_high_risk(self) -> None:
         result = classify(["frontend/pnpm-lock.yaml"], event_name="pull_request")
         self.assertEqual(result.lane, "HIGH_RISK")
