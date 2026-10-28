@@ -67,12 +67,12 @@
     },
     "browser": {
       "status": "passed",
-      "command": "make verify.frontend.professional_collaboration.browser",
+      "command": "make verify.frontend.professional_collaboration.unit COLLABORATION_MESSAGE_BROWSER=1",
       "assertions": 10,
       "messages": 7,
       "console_errors": 0,
       "network_requests": 0,
-      "log": ".runtime/fepc10-browser.log",
+      "log": ".runtime/fepc10-browser-corrected.log",
       "limitation": "offline actual SFC, synthetic envelope; not deployed Demo"
     },
     "typecheck": {
@@ -84,8 +84,21 @@
     "freeze_prepare": {
       "status": "passed",
       "command": "make ci.delivery.freeze.prepare",
-      "log": ".runtime/fepc10-freeze.log",
+      "log": ".runtime/fepc10-freeze-corrected.log",
       "generated_diff": "test inventory plus component inputDigest only; reviewed"
+    },
+    "first_quick": {
+      "status": "failed",
+      "candidate": "7b6233f2a191d85dd96f3485c2b3b0ed18d3c3d0",
+      "failure_owner": "P4 verification lane coverage",
+      "reason": "unreferenced new browser Make target",
+      "recovery": "Remove standalone target; use optional browser mode of existing collaboration unit entry; no baseline relaxation",
+      "log": ".runtime/fepc10-quick.log"
+    },
+    "lane_coverage": {
+      "status": "passed",
+      "command": "make audit.verification.lane_coverage.check",
+      "log": ".runtime/fepc10-lane.log"
     }
   }
 }
