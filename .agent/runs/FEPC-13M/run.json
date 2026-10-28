@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "FEPC-13M",
+  "branch": "audit/fepc-13m-minimal-title",
+  "baseline_sha": "e0ce73b47b800da181a224913937720d9c5d77ba",
+  "status": "superseded",
+  "scope": [
+    ".agent/",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-13/"
+  ],
+  "goal": ".agent/goals/FEPC-13M.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-13/fepc-13m-minimal-rendering-plan.md",
+  "environment": {
+    "kind": "offline",
+    "authority": "Pure schema/compiler tests; no runtime changes"
+  },
+  "checks": {},
+  "blockers": [
+    "Adoption scope for optional readonly-title leaf not yet proven",
+    "Existing native action guard fails on unchanged baseline"
+  ],
+  "next_exact_step": "Owner reviews local leaf plan and adoption scope; I1a paused. Resolve baseline native-action guard mismatch before implementation delivery.",
+  "layer": {
+    "formal_product_layer": "P4",
+    "target": "P0 renderer feasibility review",
+    "module": "docs/.agent",
+    "why_here": "Plan only, no product authorization",
+    "why_not_elsewhere": "No protocol or UI implementation",
+    "blast_radius": "Documentation and task metadata"
+  },
+  "observations": {
+    "presenter": "passed; main group 177 cases plus named groups",
+    "composition": "passed 123 cases",
+    "native_action": "failed 1/13 tests on unchanged baseline; existing extra anchor button conflicts with fixed count",
+    "product_changes": false,
+    "proposal_browser": "not_run; no implementation",
+    "quick": "not_run; known baseline guard failure",
+    "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-13/fepc-13m-minimal-rendering-plan.md"
+  }
+}

@@ -15,6 +15,35 @@ class NativeFormActionPresentationGuardTest(unittest.TestCase):
     def test_repository_contract_passes(self):
         self.assertEqual(validate(self.source, self.smart_action, self.overflow_menu, self.visual_smoke), [])
 
+    def test_declared_anchor_keeps_navigation_only_authority(self):
+        anchor = next(button for button in re.findall(r"<ScButton\b[\s\S]*?</ScButton>", self.source)
+                      if "node.nodeComponent?.kind === 'anchor'" in button)
+        mutations = {
+            "missing": "",
+            "duplicate": anchor + anchor,
+            "business_action": anchor.replace('navigateExplicit(node, $event)', 'emitNativeAction(node)'),
+            "extra_event": anchor.replace('type="button"', 'type="button" @dblclick="writeRecord"'),
+            "dynamic_event": anchor.replace('type="button"', 'type="button" @[eventName]="writeRecord"'),
+            "spread": anchor.replace('type="button"', 'type="button" v-bind="untrusted"'),
+            "inline_handler": anchor.replace('type="button"', 'type="button" onclick="writeRecord()"'),
+            "submit": anchor.replace('type="button"', 'type="submit"'),
+            "wrong_identity": anchor.replace('node.containerId', 'other.containerId'),
+            "unconditional": anchor.replace('v-else-if="node.nodeComponent?.kind === \'anchor\'"', ''),
+            "duplicate_click": anchor.replace('type="button"', 'type="button" @click="writeRecord"'),
+        }
+        for name, replacement in mutations.items():
+            with self.subTest(mutation=name):
+                self.assertTrue(any('anchor' in error for error in validate(
+                    self.source.replace(anchor, replacement, 1), self.smart_action,
+                    self.overflow_menu, self.visual_smoke,
+                )))
+
+    def test_unclassified_button_is_rejected(self):
+        source = self.source.replace('<template>', '<template><ScButton @click="writeRecord">Write</ScButton>', 1)
+        self.assertTrue(any('unclassified' in error for error in validate(
+            source, self.smart_action, self.overflow_menu, self.visual_smoke,
+        )))
+
     def test_container_disclosure_cannot_bypass_action_authority(self):
         button = next(button for button in re.findall(r"<ScButton\b[\s\S]*?</ScButton>", self.source)
                       if 'v-else-if="isCollapsibleContainer(node)"' in button)

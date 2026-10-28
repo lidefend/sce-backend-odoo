@@ -16,9 +16,13 @@ def native_button_ownership_errors(source: str) -> list[str]:
         def __init__(self):
             super().__init__()
             self.calls = []
+            self.duplicate_attributes = []
 
         def handle_starttag(self, tag, attrs):
             if tag == "scbutton":
+                names = [name for name, _ in attrs]
+                if len(names) != len(set(names)):
+                    self.duplicate_attributes.append(names)
                 self.calls.append(dict(attrs))
 
     parser = Buttons()
@@ -26,9 +30,24 @@ def native_button_ownership_errors(source: str) -> list[str]:
     attrs = parser.calls
     actions = [item for item in attrs if item.get("class") == "native-action-btn"]
     toggles = [item for item in attrs if item.get("v-else-if") == "isCollapsibleContainer(node)"]
+    anchors = [item for item in attrs if item.get("v-else-if") == "node.nodeComponent?.kind === 'anchor'"]
     failures = []
-    if len(attrs) != 3 or len(actions) != 2:
+    if parser.duplicate_attributes:
+        failures.append("native button/anchor has duplicate attributes")
+    if len(actions) != 2:
         failures.append("native form expected two ordinary action branches and one container disclosure")
+    # Classify every control; do not just raise the global count from 3 to 4.
+    # The declared anchor is navigation, not an ordinary business action.
+    if any(sum((item in actions, item in toggles, item in anchors)) != 1 for item in attrs):
+        failures.append("native form has an unclassified or multiply classified button")
+    anchor_expected = {
+        "v-else-if": "node.nodeComponent?.kind === 'anchor'",
+        "type": "button", "variant": "ghost",
+        ":data-contract-container-id": "node.containerId",
+        "@click": "navigateExplicit(node, $event)",
+    }
+    if len(anchors) != 1 or anchors[0] != anchor_expected:
+        failures.append("declared anchor must only navigate within the current form")
     for node in ("buttonNode", "node"):
         expected = {"v-if": f"!isSmartButtonNode({node})", "v-bind": f"nativeActionEvidenceAttributes({node})",
                     "type": "button", ":disabled": f"nativeActionDisabled({node})", ":title": f"nativeActionTitle({node})",
@@ -136,4 +155,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_native_form_action_presentation_guard] PASS ordinary_sc_buttons=2 container_disclosures=1")
+    print("[frontend_native_form_action_presentation_guard] PASS ordinary_sc_buttons=2 container_disclosures=1 declared_anchors=1")

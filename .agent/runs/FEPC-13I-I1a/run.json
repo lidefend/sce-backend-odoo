@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "id": "FEPC-13I-I1a",
+  "branch": "feature/fepc-13i-i1a-identity-compiler",
+  "baseline_sha": "e0ce73b47b800da181a224913937720d9c5d77ba",
+  "status": "superseded",
+  "scope": [
+    ".agent/",
+    "addons/smart_core/core/form_configuration_compiler.py",
+    "addons/smart_core/core/record_identity_definition.py",
+    "addons/smart_core/model/ui_business_config_contract.py",
+    "addons/smart_core/tests/test_record_identity_definition.py",
+    "docs/architecture/unified_page_contract_v2/versions/",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-13/",
+    "make/runtime_ops.mk"
+  ],
+  "goal": ".agent/goals/FEPC-13I-I1a.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-13/fepc-13i-i1a-results.md",
+  "environment": {
+    "kind": "offline",
+    "authority": "Pure schema/compiler tests; no runtime changes"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Paused by owner; FEPC-13M evaluates minimal rendering. No I1a implementation.",
+  "layer": {
+    "formal_product_layer": "P0",
+    "target": "smart_core declaration compiler",
+    "module": "smart_core",
+    "why_here": "Generic explicit occurrence binding",
+    "why_not_elsewhere": "No frontend inference or business model special cases",
+    "blast_radius": "Dormant schema/compiler; old delivery unchanged"
+  },
+  "observations": {
+    "pause": "Explicit owner request; only metadata and preflight notes created",
+    "product_changes": false
+  }
+}

@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: FEPC-13M-R1
+  title: Minimal title adoption readiness and anchor guard repair
+  status: active
+  formal_product_layer: P4
