@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: FEPC-11
+  title: Relation empty state heading ownership
+  status: active
+  formal_product_layer: P0

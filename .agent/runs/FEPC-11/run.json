@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "id": "FEPC-11",
+  "branch": "fix/fepc-11-relation-empty-titles",
+  "baseline_sha": "192d4e15a8a2413ba38d52d22f2b761e0d5a570f",
+  "status": "verification_pending",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FEPC-11.yaml",
+    ".agent/runs/FEPC-11/run.json",
+    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+    "frontend/apps/web/scripts/relation_heading_component_test.mjs",
+    "make/frontend.mk",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-11/",
+    "docs/engineering_convergence/",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+  ],
+  "goal": ".agent/goals/FEPC-11.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-11/implementation.md",
+  "environment": {
+    "kind": "offline",
+    "authority": "User FEPC-11 authorization; bounded read-only runtime contract verification and existing component tests"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Freeze clean candidate, exact-head Quick, publish independent draft PR for GPT review; no merge/deploy",
+  "layer": {
+    "formal_product_layer": "P0",
+    "target": "generic frontend relation rendering",
+    "why_here": "Consume existing label/hideLabel declarations consistently across states",
+    "why_not_elsewhere": "No data/contract/permissions changes or project-specific business names",
+    "blast_radius": "One2many titles only; many2many and unrelated presentation excluded"
+  },
+  "validation_plan": {
+    "L0": "GitHub main exact identity and clean baseline",
+    "L1": "ci.local.iteration",
+    "L2": "existing detail collection and canonical form tests plus actual component rendering cases",
+    "L3": "No module/database changes",
+    "L4": "Existing offline component evidence; bounded declaration readback",
+    "L5": "Independent PR, exact-head Quick; no merge/deploy"
+  },
+  "observations": {
+    "runtime_declaration": {
+      "status": "passed",
+      "http_status": 200,
+      "application_ok": true,
+      "source": "docs/ops/iterations/fe-presentation-convergence-01/fepc-11/declaration-evidence.json",
+      "scope": "Only three fields on project15, authorized account; no data writes"
+    },
+    "test_first": {
+      "status": "failed_before_product_fix",
+      "reason": "Empty readonly relation had no title",
+      "log": ".runtime/fepc11-red.log"
+    },
+    "L1": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/fepc11-iteration-final.log"
+    },
+    "L2": {
+      "status": "passed",
+      "command": "make verify.frontend.professional_detail_collection.unit",
+      "scenarios": 39,
+      "new_assertions": 147,
+      "guard_tests": 46,
+      "log": ".runtime/fepc11-green.log"
+    },
+    "canonical": {
+      "status": "passed",
+      "command": "make verify.frontend.canonical_form_presenter.unit",
+      "main_cases": 177,
+      "log": ".runtime/fepc11-canonical.log"
+    },
+    "typecheck": {
+      "status": "passed",
+      "command": "make verify.frontend.typecheck.strict",
+      "log": ".runtime/fepc11-typecheck.log"
+    },
+    "independent_review": "pending GPT on independent PR",
+    "deployment": "not authorized/not performed",
+    "freeze_prepare": {
+      "status": "passed",
+      "command": "make ci.delivery.freeze.prepare",
+      "log": ".runtime/fepc11-freeze.log",
+      "generated_diff": "reviewed: test inventory, component source digest and source line-count reports only"
+    }
+  }
+}
