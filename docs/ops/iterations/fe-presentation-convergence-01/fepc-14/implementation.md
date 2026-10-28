@@ -47,6 +47,8 @@ GitHub main / 本地起点：`1e06bcfde151d7669c29825d88c05bf3cd61b455`。实施
 - 直接打开页面后的返回使用服务端 return_path，不携带历史 action/menu；探针原要求完整旧 URL 过严，已按直接入口与按钮入口分别验收。
 - 隔离 Vite HMR client 使用旧端口造成控制台连接失败；通过既有 frontend.acceptance down/up 和既有 HMR 参数对齐注册端口，没有改业务服务/数据。
 
+- 首次 Quick 的覆盖守卫拒绝未被调用链引用的新测试 target；已接入现有本地 Quick 与前端 PR/release 单元车道。不修改覆盖基线，不把需要 Node 的测试放入纯后端车道。
+
 ## 回滚与剩余风险
 
 本批次只有代码/测试/文档。撤回 P1 action 投影、只读 handler 与前端 route/view 即恢复旧 Vue 行为；不需要数据迁移或权限回滚。旧向导创建403会随代码回滚重新出现。

@@ -134,7 +134,9 @@
       "negative_case_logs": "Expected 403/network/500 resource errors checked separately; no internal diagnostic message rendered",
       "review": "GPT independent review pending; no merge or deployment authorization",
       "reused": "Backend/core query and normalizer unchanged after final browser. Later documentation-only edits do not invalidate browser evidence.",
-      "freeze_prepare": "passed; generated evidence reviewed (counts, file sizes and declaration/consumer hashes only)"
+      "freeze_prepare": "passed; generated evidence reviewed (counts, file sizes and declaration/consumer hashes only)",
+      "first_quick": "7b146d5510071343b5bc2228dd7165e28afd82c0: 7/8 shards passed; shard8 lane coverage rejected unreferenced new test target. Fixed by wiring existing target to local Quick and frontend PR/release lanes; no baseline relaxation.",
+      "revalidation": "Only Make wiring and documentation changed; targeted test + lane coverage then regenerate/freeze. Product/probe hashes unchanged, browser reused."
     }
   }
 }
