@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "id": "FEPC-13",
+  "branch": "audit/fepc-13-title-ownership",
+  "baseline_sha": "b918f2a01fbbea01b7665d8c3448ed820050ffae",
+  "status": "verification_pending",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FEPC-13.yaml",
+    ".agent/runs/FEPC-13/run.json",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-13/"
+  ],
+  "goal": ".agent/goals/FEPC-13.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-13/title-ownership.md",
+  "environment": {
+    "kind": "offline",
+    "authority": "Source and existing FEPC-09 evidence only; no runtime mutation"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Validate and publish decision-only PR; await title ownership/declared redundancy ruling before implementation",
+  "layer": {
+    "formal_product_layer": "P4",
+    "target": "audit documentation",
+    "module": "docs/.agent",
+    "why_here": "Decision and provenance only; P0 renderer and declarations unchanged",
+    "why_not_elsewhere": "No inferred title suppression or new contract authority",
+    "blast_radius": "Documentation only"
+  },
+  "validation_plan": {
+    "L0": "main exact identity and clean baseline",
+    "L1": "source-reference checks and ci.local.iteration",
+    "L2": "not_run: no product implementation",
+    "L3": "not_run: no backend or runtime changes",
+    "L4": "not_run: decision-only; historical geometry not current measurements",
+    "L5": "freeze, Quick and draft PR; no merge/deploy"
+  },
+  "observations": {
+    "stage_A": "source tracing completed; current browser behavior not reverified",
+    "stage_B": "decision pending: no established redundancy authority in inspected chain",
+    "stage_C": "not_run",
+    "stage_D": "not_run",
+    "source_file_fingerprints": 21,
+    "product_changes": false,
+    "limits": "No current geometry, deployed behavior or complete inherited-view proof",
+    "L1": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/fepc13-iteration.log",
+      "reference_checks": 22
+    }
+  }
+}
