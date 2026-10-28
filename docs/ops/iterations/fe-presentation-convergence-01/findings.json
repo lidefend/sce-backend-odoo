@@ -31,15 +31,15 @@
     },
     {
       "id": "FEPC-01-F3",
-      "title": "项目台账列表字段值与列头语义重复",
-      "status": "confirmed",
-      "evidence": "校准复测：第一行可见 td（visible=true，非隐藏/辅助文本）innerText 为“状态： 草稿”“合同总额： ¥11,227,000.00”，与列头“项目状态”“合同总额”语义重复；textContent 与 innerText 一致，排除辅助技术文本误读。",
-      "calibration": "前缀确实真实显示给用户，非截图误读。根因待查：疑似响应式/卡片“label: value”格式泄漏到桌面表格，或列渲染显式拼接了标签。不删除前缀、不改公共组件，需先定位字段渲染来源。",
-      "impact": "桌面表格信息冗余，压缩其它列显示空间。",
-      "initial_owner": "P1（列表字段渲染，先定位声明/渲染来源）",
+      "title": "项目台账列值前缀（审计误报，非视觉重复）",
+      "status": "false_positive",
+      "evidence": "根因追踪：前缀“状态：”来自 ScStatusBadge.statusPrefix，“合同总额：”来自 ScMoney.label，两者都渲染在 .sc-visually-hidden 内（1×1 px + clip:rect(0,0,0,0)），视觉不可见、仅辅助技术可读。可见内容只有“草稿”和“¥11,227,000.00”。",
+      "calibration": "FEPC-02 根因结论：视觉上没有重复，之前用 innerText 提取时误读了 clip 式 visually-hidden 文本，属于审计方法误报，不是产品缺陷。不删除前缀、不改产品代码；如需评估列头已提供 label 时 visually-hidden 前缀是否对屏幕阅读器冗余，另立无障碍评估项。",
+      "impact": "无视觉影响。",
+      "initial_owner": "不适用（非产品缺陷）",
       "component": "项目台账列表字段渲染",
-      "priority": "P2",
-      "acceptance": "列头与值不重复语义；金额使用统一金额格式而非文本前缀。",
+      "priority": "P3",
+      "acceptance": "撤销视觉缺陷裁定；若单立无障碍评估，需独立可访问性验收。",
       "known": true
     },
     {
