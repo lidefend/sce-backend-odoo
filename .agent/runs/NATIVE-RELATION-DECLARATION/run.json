@@ -21,7 +21,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Freeze authorized P4 preflight correction, exact-head Quick and remote checks; new-head independent review before merge",
+  "next_exact_step": "Freeze R2 two P4 boundaries; Quick and publish; wait independent review, no merge/deployment",
   "layer": {
     "formal_product_layer": "P0/P4",
     "target": "declaration-only pure relation identity helper; P4 exact-head check-run selection",
@@ -39,13 +39,19 @@
     "native_actions": "15 tests",
     "canonical_presenter": "passed existing suite",
     "browser": "not_applicable: no rendered behavior change; FEPC14 real click remains independently blocked",
-    "quick": "pending new exact HEAD",
+    "quick": "pending R2 exact HEAD",
     "merge_preflight_regression": {
       "target": "verify.integration.cycle.unit",
       "tests": 16,
       "status": "passed",
       "before": "9 failures/15 tests",
       "log": ".runtime/native-helper-preflight-targeted.log"
+    },
+    "merge_preflight_r2": {
+      "status": "passed",
+      "tests": 22,
+      "log": ".runtime/native-helper-r2-final-targeted.log",
+      "before": "8 failed subtests / 19 tests"
     }
   }
 }

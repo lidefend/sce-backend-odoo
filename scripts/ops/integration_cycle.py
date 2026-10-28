@@ -52,6 +52,8 @@ FAILURE_STATES = {"FAILURE", "ERROR", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED
 # Existing GitHub merge requirements (configure_github_mirror_ruleset.sh).
 REQUIRED_MERGE_CHECKS = {"frontend_release_gate", "merge_policy_gate",
                          "professional_quality_gate", "public_guard"}
+REQUIRED_MERGE_IDENTITIES = {(name, name) for name in REQUIRED_MERGE_CHECKS}
+CHECK_RUN_SUCCESS_CONCLUSIONS = {"SUCCESS", "SKIPPED", "NEUTRAL"}
 ACTION_JOB_URL = re.compile(
     r"https://github\.com/([^/]+/[^/]+)/actions/runs/([1-9][0-9]*)/job/([1-9][0-9]*)\Z"
 )
@@ -296,7 +298,7 @@ def quick_status(root: Path) -> tuple[int, dict]:
     return 2, {"status": "stopped_without_receipt", **payload}
 
 
-def checks_ready(rows: Iterable[dict], *, required_names: Iterable[str] = ()) -> tuple[bool, list[str], list[str]]:
+def checks_ready(rows: Iterable[dict], *, required_checks: Iterable[tuple[str, str]] = ()) -> tuple[bool, list[str], list[str]]:
     """Select latest Actions execution, never the latest successful execution.
 
     Workflow/name is the check identity; run ID orders executions and job ID
@@ -330,12 +332,27 @@ def checks_ready(rows: Iterable[dict], *, required_names: Iterable[str] = ()) ->
             pending.append(f"{name}: conflicting execution identity")
             continue
         selected.append(winners[0])
-    present = {str(row.get("name") or row.get("context") or "unknown") for row in selected}
-    pending.extend(f"{name}: missing" for name in sorted(set(required_names) - present))
+    # A same-name check from another workflow (or a commit status) cannot
+    # satisfy the required Actions workflow/job identity.
+    present = {(row["workflowName"], row["name"]) for row in selected
+               if row.get("__typename") == "CheckRun"}
+    pending.extend(f"{workflow}/{name}: missing" for workflow, name in sorted(set(required_checks) - present))
     if not selected and not pending:
         pending.append("checks: missing")
     for row in selected:
         name = str(row.get("name") or row.get("context") or "unknown")
+        if row.get("__typename") == "CheckRun":
+            # Never substitute StatusContext.state for CheckRun.conclusion.
+            # Empty, unknown and future conclusions all fail closed.
+            if row.get("status") != "COMPLETED":
+                pending.append(name)
+            elif row.get("conclusion") in CHECK_RUN_SUCCESS_CONCLUSIONS:
+                continue
+            elif row.get("conclusion") in FAILURE_STATES:
+                failed.append(name)
+            else:
+                pending.append(f"{name}: unsupported or missing conclusion")
+            continue
         if row.get("status") and row["status"] != "COMPLETED":
             pending.append(name)
             continue
@@ -367,7 +384,7 @@ def merge_readiness(root: Path, pr: int, allow_no_quick: bool = False) -> tuple[
     payload = json.loads(result.stdout)
     head = git(root, "rev-parse", "HEAD")
     ready_checks, failed, pending = checks_ready(
-        payload.get("statusCheckRollup") or [], required_names=REQUIRED_MERGE_CHECKS
+        payload.get("statusCheckRollup") or [], required_checks=REQUIRED_MERGE_IDENTITIES
     )
     quick_verified = _receipt_verified(root, head)
     ready = (

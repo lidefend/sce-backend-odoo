@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import tempfile
 import unittest
@@ -89,10 +90,58 @@ class GateTests(unittest.TestCase):
         row["status"] = "IN_PROGRESS"
         self.assertFalse(cycle.checks_ready([row])[0])
 
+    def test_completed_unknown_or_missing_conclusion_blocks(self):
+        for conclusion in (None, "", "UNKNOWN", "STALE", "STARTUP_FAILURE", "PENDING", "PASS"):
+            for fallback in (None, "SUCCESS"):
+                with self.subTest(conclusion=conclusion, fallback=fallback):
+                    row = self.check(11, 101, conclusion)
+                    row["state"] = fallback
+                    self.assertFalse(cycle.checks_ready([
+                        self.check(10, 100, "SUCCESS"), row])[0])
+
+    def test_missing_status_cannot_use_success_conclusion(self):
+        for status in (None, "", "UNKNOWN"):
+            row = self.check(10, 100, "SUCCESS")
+            row["status"] = status
+            with self.subTest(status=status):
+                self.assertFalse(cycle.checks_ready([row])[0])
+
+    def test_other_workflow_or_commit_status_cannot_supply_required_check(self):
+        for row in (self.check(11, 101, "SUCCESS", workflow="unrelated", name="required"),
+                    {"__typename": "StatusContext", "context": "required", "state": "SUCCESS"}):
+            with self.subTest(row=row):
+                self.assertFalse(cycle.checks_ready([row], required_checks={("gate", "required")})[0])
+
+    def test_required_workflow_identity_is_independent_of_unrelated_newer_run(self):
+        required = {("gate", "required")}
+        unrelated = self.check(20, 200, "SUCCESS", workflow="other", name="required")
+        correct = self.check(10, 100, "SUCCESS", name="required")
+        self.assertTrue(cycle.checks_ready([correct, unrelated], required_checks=required)[0])
+        correct["conclusion"] = "FAILURE"
+        self.assertFalse(cycle.checks_ready([correct, unrelated], required_checks=required)[0])
+
+    def test_required_identities_match_existing_workflow_declarations(self):
+        root = Path(__file__).resolve().parents[2]
+        self.assertEqual(len(cycle.REQUIRED_MERGE_IDENTITIES), 4)
+        for workflow, job in cycle.REQUIRED_MERGE_IDENTITIES:
+            text = (root / ".github/workflows" / f"{workflow}.yml").read_text()
+            self.assertRegex(text, rf"(?m)^name: {re.escape(workflow)}$")
+            self.assertRegex(text, rf"(?m)^  {re.escape(job)}:$")
+            # The check name is the explicit job display name, or job ID.
+            block = text.split(f"\n  {job}:\n", 1)[1]
+            block = re.split(r"\n  [^ \n]", block, maxsplit=1)[0]
+            display_names = re.findall(r"(?m)^    name: (.+)$", block)
+            self.assertEqual(display_names or [job], [job])
+
+    def test_only_declared_check_run_success_conclusions_pass(self):
+        for conclusion in ("SUCCESS", "SKIPPED", "NEUTRAL"):
+            with self.subTest(conclusion=conclusion):
+                self.assertTrue(cycle.checks_ready([self.check(10, 100, conclusion)])[0])
+
     def test_empty_checks_and_missing_required_check_block(self):
         self.assertFalse(cycle.checks_ready([])[0])
         self.assertFalse(cycle.checks_ready([self.check(10, 100, "SUCCESS")],
-                                          required_names={"required"})[0])
+                                          required_checks={("gate", "required")})[0])
 
     def test_merge_readiness_preserves_head_quick_and_platform_boundaries(self):
         head = "a" * 40
