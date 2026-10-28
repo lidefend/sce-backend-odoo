@@ -11,6 +11,7 @@ _logger = logging.getLogger(__name__)
 def get_intent_handler_contributions():
     """Return construction intent handler contributions for platform loader."""
     try:
+        from odoo.addons.smart_construction_core.handlers.project_stage_requirements_read import ProjectStageRequirementsReadHandler
         from odoo.addons.smart_construction_core.handlers.baseline_readiness import BaselineReadinessHandler
         from odoo.addons.smart_construction_core.handlers.system_ping_construction import (
             SystemPingConstructionHandler,
@@ -252,6 +253,7 @@ def get_intent_handler_contributions():
         ("project.boq.line.patch", BoqLinePatchHandler),
         ("project.overview.rich_text.patch", OverviewRichTextPatchHandler),
         ("project.dashboard.chart.fetch", VisualizationChartFetchHandler),
+        ("project.stage.requirements.read", ProjectStageRequirementsReadHandler),
     ]
     return [
         {

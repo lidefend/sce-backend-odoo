@@ -17,6 +17,7 @@ CI = ROOT / "make/ci.mk"
 
 
 HANDLER_MODULES = {
+    "odoo.addons.smart_construction_core.handlers.project_stage_requirements_read": ["ProjectStageRequirementsReadHandler"],
     "odoo.addons.smart_construction_core.handlers.baseline_readiness": ["BaselineReadinessHandler"],
     "odoo.addons.smart_construction_core.handlers.system_ping_construction": ["SystemPingConstructionHandler"],
     "odoo.addons.smart_construction_core.handlers.capability_describe": ["CapabilityDescribeHandler"],
@@ -181,6 +182,7 @@ def main() -> int:
         contributions = handlers.get_intent_handler_contributions()
         by_intent = {row.get("intent"): row for row in contributions if isinstance(row, dict)}
         for intent in [
+            "project.stage.requirements.read",
             "baseline.readiness",
             "system.ping.construction",
             "approval.policy.config.get",

@@ -1268,7 +1268,7 @@ verify.daily.demo_credential.confirmation: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_daily_demo_credential_confirmation
 
 .PHONY: verify.frontend.presentation.local.browser
-verify.frontend.presentation.local.browser: guard.prod.forbid acceptance.runtime.contract_receipt
+verify.frontend.presentation.local.browser: guard.prod.forbid $(if $(filter stage_requirements,$(SC_PRESENTATION_SCOPE)),,acceptance.runtime.contract_receipt)
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-presentation-browser
 
 .PHONY: verify.frontend.presentation.browser

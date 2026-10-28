@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4976`
+- Scanned files: `4981`
 - Files requiring split plan: `72`
 - Files above warning threshold: `144`
 
@@ -53,7 +53,7 @@ Generated from repository source files. This report is informational during the 
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1885 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1870 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
-| 1869 | Python source | `addons/smart_construction_core/core_extension.py` |
+| 1867 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1863 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1844 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
@@ -80,7 +80,7 @@ Generated from repository source files. This report is informational during the 
 | 1527 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1522 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 775 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
+| 808 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 604 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
@@ -279,7 +279,7 @@ Generated from repository source files. This report is informational during the 
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1885 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1870 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
-| 1869 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
+| 1867 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1863 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1844 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |

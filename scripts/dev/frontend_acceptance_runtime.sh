@@ -319,6 +319,39 @@ if [[ "$command" == standard-list-surface-browser ]]; then
   standard_list_requested_password="${E2E_PASSWORD:-}"
 fi
 load_profile
+# Bounded representative product review within the existing presentation lane.
+# Reuses managed resource/credential authority and only resolves one fixture.
+if [[ "$command" == standard-presentation-browser && "${SC_PRESENTATION_SCOPE:-}" == stage_requirements ]]; then
+  [[ "$PROFILE" == local && "$DB_NAME" == sc_frontend_acceptance && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+  preflight
+  validate_backend_runtime
+  validate_frontend_runtime
+  [[ "$validated_frontend_mode" == development ]] || { echo "DENY: bounded iteration probe requires managed development frontend" >&2; exit 2; }
+  mkdir -p "$ROOT_DIR/.runtime/fepc-14"
+  docker exec -i -e SC_ACCEPTANCE_RECORD_SCOPE=stage_requirements "$BACKEND_ACCEPTANCE_NAME" \
+    odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf \
+    < "$ROOT_DIR/scripts/verify/frontend_delivery_hardening_runtime_ids.py" > "$ROOT_DIR/.runtime/fepc-14/target-resolution.log"
+  targets_json="$(python3 - "$ROOT_DIR/.runtime/fepc-14/target-resolution.log" <<'PYTARGET'
+import json, sys
+lines = open(sys.argv[1]).read().splitlines()
+rows = [json.loads(x.split('=', 1)[1]) for x in lines if x.startswith('FRONTEND_DELIVERY_HARDENING_TARGETS_JSON=')]
+assert len(rows) == 1
+p = rows[0]['project']
+assert p['record_xmlid'] in {'smart_construction_acceptance_fixture.fe_project_a', 'smart_construction_acceptance_fixture.fe_project_b', 'smart_construction_acceptance_fixture.fe_project_lifecycle'}
+assert p['stage'] and p['stage'] != 'draft'
+print(json.dumps([{'expectedStage':p['stage'], 'requireStageButton':True, 'key':'stage_requirements', 'stageRequirements':True, 'recordId':p['record_id'], 'deniedProjectId':rows[0]['denied_project_id'],
+ 'route':f"/r/project.project/{p['record_id']}?action_id={p['action_id']}&menu_id={p['menu_id']}"}]))
+PYTARGET
+)"
+  SC_ACCEPTANCE_PROFILE=local SC_ACCEPTANCE_FRONTEND_URL="http://127.0.0.1:$FRONTEND_ACCEPTANCE_PORT" \
+    SC_ACCEPTANCE_API_URL="http://127.0.0.1:$FRONTEND_ACCEPTANCE_PORT" FRONTEND_URL="http://127.0.0.1:$FRONTEND_ACCEPTANCE_PORT" ACCEPTANCE_BASE_URL="http://127.0.0.1:$FRONTEND_ACCEPTANCE_PORT" BASE_URL="http://127.0.0.1:$FRONTEND_ACCEPTANCE_PORT" \
+    SC_ACCEPTANCE_DATABASE="$DB_NAME" E2E_DB="$DB_NAME" DB="$DB_NAME" SC_ACCEPTANCE_LOGIN=fixture_role_config_admin E2E_LOGIN=fixture_role_config_admin SC_ACCEPTANCE_ROLE= \
+    SC_ACCEPTANCE_EXPECTED_SHA="$(git -C "$ROOT_DIR" rev-parse HEAD)" SC_ACCEPTANCE_MANAGE_SERVICE=false \
+    E2E_PASSWORD="$SC_ACCEPTANCE_FIXTURE_PASSWORD" PRODUCT_PAGE_HEADER_TARGETS_JSON="$targets_json" \
+    PRODUCT_PAGE_HEADER_OUTPUT="$ROOT_DIR/.runtime/fepc-14/browser.json" \
+    node "$ROOT_DIR/scripts/verify/frontend_product_page_header_browser.mjs"
+  exit $?
+fi
 case "$command" in
   preflight)
     preflight
