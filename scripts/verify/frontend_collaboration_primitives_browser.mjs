@@ -125,8 +125,8 @@ try {
       await followers.locator('.native-follower-name').last().waitFor();
       const measured=await measure();
       // Compare with the same-page control, never a fixed pixel target.
-      measured.height=(await followers.locator('.native-follower-list').boundingBox())?.height;
-      measured.ordinaryHeight=(await page.locator('[data-follower-harness="ordinary"]').boundingBox())?.height;
+      measured.height=(await followers.boundingBox())?.height;
+      measured.ordinaryHeight=(await page.locator('[data-follower-harness="ordinary"] [data-semantic-component="ScList"]').boundingBox())?.height;
       followerEvidence.measurements.push(measured);
       await compact.screenshot({path:`.runtime/fepc12/followers-${width}.png`});
       verify(measured.names.join('|')===Array.from({length:19},(_,i)=>'合成人员'+(i+1)).join('|'),'all followers keep order and names');

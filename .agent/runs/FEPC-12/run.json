@@ -23,7 +23,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Freeze review-requested test-only update, run exact-head Quick and remote gates, update PR762 for final reviewer approval; no merge/deploy",
+  "next_exact_step": "Freeze measurement-target-only follow-up, run current-head Quick/remote gates, update PR762 for final review; no merge/deploy",
   "layer": {
     "formal_product_layer": "P0",
     "target": "generic follower presentation",
@@ -45,7 +45,7 @@
     "browser": {
       "status": "passed",
       "follower_assertions": 31,
-      "log": ".runtime/fepc12/review-followup-browser.log",
+      "log": ".runtime/fepc12/measurement-review-browser.log",
       "evidence": "docs/ops/iterations/fe-presentation-convergence-01/fepc-12/component-browser.json"
     },
     "collaboration": {
@@ -56,7 +56,7 @@
       "status": "passed",
       "log": ".runtime/fepc12-typecheck.log"
     },
-    "independent_review": "Product code approved by user at 9438e542; final approval pending requested height relation assertion and current-head gates",
+    "independent_review": "Product CSS approved at 1062a6bc; final merge approval pending corrected measurement objects and current gates",
     "deployed": "not performed",
     "post_test_css_move": "Moved unchanged flex-shrink declaration into existing selector; no computed style change",
     "freeze_prepare": {
@@ -95,6 +95,19 @@
         ".runtime/fepc12/review-followup-guard.log"
       ],
       "reused": "Product CSS/component/model/contract/typecheck inputs unchanged; no target environment calls"
+    },
+    "measurement_review": {
+      "scope": "P4 test: two boundingBox targets and evidence only",
+      "follower_target": ".native-follower-manager including title/actions/list",
+      "ordinary_target": "ScList actual root via data-semantic-component",
+      "status": "passed",
+      "follower_assertions": 31,
+      "guard_tests": 7,
+      "logs": [
+        ".runtime/fepc12/measurement-review-browser.log",
+        ".runtime/fepc12/measurement-review-guard.log"
+      ],
+      "reused": "Product source, contract, types and existing business unit inputs unchanged; no Demo calls"
     }
   }
 }
