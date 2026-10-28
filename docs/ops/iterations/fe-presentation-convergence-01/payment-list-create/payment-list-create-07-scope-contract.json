@@ -1,0 +1,72 @@
+{
+  "schema": "candidate_view_scope.v1",
+  "owner": "P4",
+  "source_path": "addons/smart_construction_core/views/support/user_confirmed_formal_list_views.xml",
+  "xmlid": "smart_construction_core.view_payment_request_formal_payment_apply_tree",
+  "requested_product_candidate": "7bdf888abcde795ff851bf779add219474cf8fd1",
+  "allowed_semantic_delta": {
+    "create": [
+      "false",
+      "true"
+    ]
+  },
+  "preserved_attributes": {
+    "edit": "false",
+    "delete": "false"
+  },
+  "registered_targets": [],
+  "runtime_driver_supported": false,
+  "required_identities": [
+    "candidate.sha",
+    "candidate.image",
+    "candidate.frontend_sha256",
+    "candidate.xml_sha256",
+    "snapshot.source_database",
+    "snapshot.source_uuid",
+    "snapshot.source_sha",
+    "snapshot.database_sha256",
+    "snapshot.filestore_sha256",
+    "snapshot.manifest_sha256",
+    "target.registration_id",
+    "target.database",
+    "target.uuid",
+    "view.xmlid",
+    "view.id",
+    "view.original_sha256"
+  ],
+  "required_state_witness": [
+    "target",
+    "snapshot",
+    "view_matches",
+    "view_arch",
+    "arch_prev",
+    "view_metadata",
+    "queue",
+    "assets",
+    "cache_state",
+    "business_digest",
+    "other_views_digest",
+    "form_binding"
+  ],
+  "required_runtime_provider": [
+    "exclusive target and source-isolation validation",
+    "trusted registration and scope-bound recovery receipt readback",
+    "complete before/after state witnesses",
+    "ORM write with no_save_prev unset and all normal hooks retained",
+    "prohibit premature commit; commit only after state validation",
+    "rollback and quarantine; cache not assumed restored",
+    "post-commit readback and indeterminate-commit recovery"
+  ],
+  "forbidden": [
+    "module upgrade",
+    "direct SQL write",
+    "fixture",
+    "rebuild",
+    "unregistered runtime connection",
+    "source database write",
+    "original acceptance database access",
+    "business save"
+  ],
+  "acceptance_status": "offline_contract_only; runtime_adapter_not_implemented",
+  "registration_policy": "empty until separately reviewed trusted runtime/recovery provider; JSON cannot enable a driver"
+}
