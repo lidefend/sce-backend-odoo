@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "id": "FEPC-12",
+  "branch": "fix/fepc-12-follower-density",
+  "baseline_sha": "3da65c5c6f3909cb81c0316c85f8a622c952965a",
+  "status": "verification_pending",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FEPC-12.yaml",
+    ".agent/runs/FEPC-12/run.json",
+    "frontend/apps/web/src/pages/contractForm/ProfessionalFollowerManager.vue",
+    "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.css",
+    "scripts/verify/frontend_collaboration_primitives_browser.mjs",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-12/",
+    "docs/engineering_convergence/",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+  ],
+  "goal": ".agent/goals/FEPC-12.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-12/implementation.md",
+  "environment": {
+    "kind": "offline",
+    "authority": "Approved complete compact wrapping; existing collaboration primitives browser harness"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Freeze generated evidence, exact-head Quick and independent Draft PR; no merge/deploy",
+  "layer": {
+    "formal_product_layer": "P0",
+    "target": "generic follower presentation",
+    "module": "frontend",
+    "why_here": "Visual density and responsive wrapping of existing authorized items",
+    "why_not_elsewhere": "No contract/data/auth changes or project-specific semantics",
+    "blast_radius": "Follower list only; ordinary ScList unchanged"
+  },
+  "validation_plan": {
+    "L0": "Clean GitHub main baseline; task branch",
+    "L1": "ci.local.iteration",
+    "L2": "professional_collaboration.unit and typecheck",
+    "L3": "Not applicable: no module/data changes",
+    "L4": "existing collaboration_primitives.browser real Vue and TDesign DOM, 19 synthetic followers plus states/widths",
+    "L5": "freeze prepare, exact-head Quick, independent draft PR; no merge/deploy"
+  },
+  "observations": {
+    "red": ".runtime/fepc12-red.log",
+    "browser": {
+      "status": "passed",
+      "follower_assertions": 28,
+      "log": ".runtime/fepc12-green.log",
+      "evidence": "docs/ops/iterations/fe-presentation-convergence-01/fepc-12/component-browser.json"
+    },
+    "collaboration": {
+      "status": "passed",
+      "log": ".runtime/fepc12-collaboration.log"
+    },
+    "typecheck": {
+      "status": "passed",
+      "log": ".runtime/fepc12-typecheck.log"
+    },
+    "independent_review": "pending GPT",
+    "deployed": "not performed",
+    "post_test_css_move": "Moved unchanged flex-shrink declaration into existing selector; no computed style change",
+    "freeze_prepare": {
+      "status": "passed",
+      "log": ".runtime/fepc12-freeze.log",
+      "generated_diff": "none"
+    },
+    "L1": {
+      "status": "passed",
+      "log": ".runtime/fepc12-iteration-final.log"
+    }
+  }
+}

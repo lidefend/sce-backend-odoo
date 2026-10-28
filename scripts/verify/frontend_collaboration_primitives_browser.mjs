@@ -1,5 +1,7 @@
 import { createServer } from '../../frontend/apps/web/node_modules/vite/dist/node/index.js';
 import { launchChromium } from './playwright_runtime.mjs';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
 
 const entryId = '\0collaboration-primitives-browser-entry';
 const server = await createServer({
@@ -22,9 +24,14 @@ const server = await createServer({
         import Composer from '/src/pages/contractForm/ProfessionalCollaborationComposer.vue';
         import Attachments from '/src/pages/contractForm/ProfessionalAttachmentManager.vue';
         import NativeContractSurface from '/src/pages/contractForm/CanonicalNativeFormSurface.vue';
+        import Followers from '/src/pages/contractForm/ProfessionalFollowerManager.vue';
+        import ScList from '/src/components/design-system/ScList.vue';
         import '/src/styles/design-system.css';
         const state = reactive({ draft: '', note: '', posting: false, selected: '', updates: 0 });
         window.collaborationState = state;
+        const followerItems = Array.from({length:19}, (_, index) => ({partner_id:index+1, name:'合成人员' + (index+1), is_current_user:index===0}));
+        const followerState = reactive({items:followerItems, loading:false, error:'', enabled:true, canFollow:true, canUnfollow:false, actions:[]});
+        window.followerState = followerState;
         // The panel mode is a contract declaration, never a form render mode.
         // panelReadonly stands in for the value the contract resolver computes.
         const declaredSurfaceProps = (panelReadonly) => ({
@@ -54,6 +61,11 @@ const server = await createServer({
           collaborationPanelListeners: {},
         });
         createApp({ render() { return h('main', [
+          h('div', {'data-follower-harness':'compact'}, [h(Followers, {
+            ...followerState, label:'关注者', count:followerState.items.length, followLabel:'关注', unfollowLabel:'取消关注',
+            onUpdate:action=>followerState.actions.push(action),
+          }), h('p', {'data-following-content':''}, '后续协作内容')]),
+          h('div', {'data-follower-harness':'ordinary'}, [h(ScList, {items:followerItems.map(item=>({...item,key:item.partner_id}))}, {item:({item})=>item.name})]),
           h('div', { 'data-surface-harness': 'primitives' }, [
           h(Composer, {
             activity: false, posting: state.posting, usersLoading: false, draft: state.draft,
@@ -89,6 +101,63 @@ try {
   page.on('console', (message) => { if (message.type() === 'error') errors.push(`console:${message.text()}`); });
   page.on('pageerror', (error) => errors.push(`page:${error.message}`));
   await page.goto(`http://127.0.0.1:${address.port}/__collaboration_primitives.html`);
+
+  const followerEvidence = {kind:'actual_component_browser', synthetic:true, measurements:[], assertions:0};
+  const verify = (condition, message) => { assert.ok(condition, message); followerEvidence.assertions++; };
+  const compact = page.locator('[data-follower-harness="compact"]');
+  const followers = compact.locator('.native-follower-manager');
+  const measure = () => page.evaluate(() => {
+    const host=document.querySelector('[data-follower-harness="compact"]');
+    const list=host.querySelector('.native-follower-list');
+    const names=[...host.querySelectorAll('.native-follower-name')];
+    const ordinary=document.querySelector('[data-follower-harness="ordinary"]');
+    return {width:innerWidth, height:list?.getBoundingClientRect().height,
+      names:names.map(e=>e.textContent), rows:new Set(names.map(e=>Math.round(e.getBoundingClientRect().top))).size,
+      allVisible:names.every(e=>e.getClientRects().length>0),
+      overflow:document.documentElement.scrollWidth>innerWidth,
+      ordinaryHeight:ordinary.getBoundingClientRect().height,
+      ordinaryCount:ordinary.querySelectorAll('.t-list-item').length,
+      contentTop:host.querySelector('[data-following-content]').getBoundingClientRect().top};
+  });
+  fs.mkdirSync('.runtime/fepc12', {recursive:true});
+  try {
+    for (const width of [1440,768,320]) {
+      await page.setViewportSize({width,height:1000});
+      await followers.locator('.native-follower-name').last().waitFor();
+      const measured=await measure(); followerEvidence.measurements.push(measured);
+      await compact.screenshot({path:`.runtime/fepc12/followers-${width}.png`});
+      verify(measured.names.join('|')===Array.from({length:19},(_,i)=>'合成人员'+(i+1)).join('|'),'all followers keep order and names');
+      verify(measured.allVisible && !measured.overflow,'all followers visible without horizontal overflow');
+      verify(measured.rows<19 && measured.height<measured.ordinaryHeight,'followers wrap compactly; ordinary list stays vertical');
+      verify(measured.ordinaryCount===19,'ordinary list remains complete');
+      verify(await followers.locator('.native-follower-current').count()===1,'current user marker retained');
+      verify(await followers.locator('.native-follower-title').innerText()==='关注者（19）','declared label and total count retained');
+    }
+    await page.evaluate(()=>{window.followerState.items=[{partner_id:1,name:'合成长姓名'.repeat(30),is_current_user:true}];});
+    const long=await measure(); followerEvidence.longName=long;
+    verify(!long.overflow && long.names[0]==='合成长姓名'.repeat(30),'long name retained on narrow screen');
+    verify(await followers.locator('.native-follower-name').evaluate(e=>e.scrollWidth<=e.clientWidth),'long name is readable without clipping');
+    await followers.getByRole('button',{name:'关注',exact:true}).focus();
+    await page.keyboard.press('Enter');
+    verify(await page.evaluate(()=>window.followerState.actions.join())==='follow','keyboard follow emits existing action');
+    await page.evaluate(()=>{window.followerState.canFollow=false;window.followerState.canUnfollow=true;});
+    await followers.getByRole('button',{name:'取消关注',exact:true}).click();
+    verify(await page.evaluate(()=>window.followerState.actions.join())==='follow,unfollow','unfollow action retained');
+    await page.evaluate(()=>{window.followerState.canUnfollow=false;});
+    verify(await followers.getByRole('button').count()===0,'denied actions stay absent');
+    await page.evaluate(()=>{window.followerState.loading=true;window.followerState.canFollow=true;});
+    verify(await followers.getByRole('button').isDisabled(),'loading disables action');
+    await page.evaluate(()=>{window.followerState.items=[];});
+    verify(await followers.getByText('暂无关注者',{exact:true}).count()===0,'loading does not claim an empty result');
+    await page.evaluate(()=>{window.followerState.items=[];window.followerState.loading=false;});
+    verify(await followers.getByText('暂无关注者',{exact:true}).isVisible(),'empty state retained');
+    await page.evaluate(()=>{window.followerState.error='合成加载错误';});
+    verify(await followers.getByText('合成加载错误',{exact:true}).isVisible(),'error state retained');
+    await page.evaluate(()=>{window.followerState.enabled=false;});
+    verify(await followers.count()===0,'disabled capability remains absent');
+  } finally {
+    fs.writeFileSync('.runtime/fepc12/component-browser.json',JSON.stringify(followerEvidence,null,2)+'\n');
+  }
 
   const primitives = page.locator('[data-surface-harness="primitives"]');
   const textareaHost = primitives.locator('[data-professional-collaboration-component="composer"] [data-semantic-component="ScTextarea"]');
