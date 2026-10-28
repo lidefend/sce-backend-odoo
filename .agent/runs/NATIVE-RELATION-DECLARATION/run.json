@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "id": "NATIVE-RELATION-DECLARATION",
+  "branch": "fix/native-relation-helper-declaration",
+  "baseline_sha": "1e06bcfde151d7669c29825d88c05bf3cd61b455",
+  "status": "verification_pending",
+  "scope": [
+    ".agent/",
+    "frontend/apps/web/src/app/nativeModifierRelationValue.ts",
+    "frontend/apps/web/scripts/native_modifier_test.ts",
+    "docs/ops/iterations/native-relation-helper-declaration.md",
+    "docs/engineering_convergence/",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "scripts/ops/integration_cycle.py",
+    "scripts/ops/test_integration_cycle.py"
+  ],
+  "goal": ".agent/goals/NATIVE-RELATION-DECLARATION.yaml",
+  "record": "docs/ops/iterations/native-relation-helper-declaration.md",
+  "environment": {
+    "kind": "offline"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Freeze R2 two P4 boundaries; Quick and publish; wait independent review, no merge/deployment",
+  "layer": {
+    "formal_product_layer": "P0/P4",
+    "target": "declaration-only pure relation identity helper; P4 exact-head check-run selection",
+    "module": "web native modifier",
+    "standard_vs_user_specific": "standard generic helper",
+    "why_here": "comply with existing module-load boundary without weakening guard",
+    "why_not_elsewhere": "no P1 stages, ACL, configuration or guard exemptions",
+    "blast_radius": "one private pure helper declaration; regression assertions"
+  },
+  "results": {
+    "targeted": "passed",
+    "log": ".runtime/native-helper-targeted.log",
+    "scene_bridge": "129 checks / 262 collaboration self-check",
+    "native_modifier": "3739 differential cases plus 17 identity assertions",
+    "native_actions": "15 tests",
+    "canonical_presenter": "passed existing suite",
+    "browser": "not_applicable: no rendered behavior change; FEPC14 real click remains independently blocked",
+    "quick": "pending R2 exact HEAD",
+    "merge_preflight_regression": {
+      "target": "verify.integration.cycle.unit",
+      "tests": 16,
+      "status": "passed",
+      "before": "9 failures/15 tests",
+      "log": ".runtime/native-helper-preflight-targeted.log"
+    },
+    "merge_preflight_r2": {
+      "status": "passed",
+      "tests": 22,
+      "log": ".runtime/native-helper-r2-final-targeted.log",
+      "before": "8 failed subtests / 19 tests"
+    }
+  }
+}
