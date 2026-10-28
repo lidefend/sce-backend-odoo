@@ -43,6 +43,7 @@
     "fix/user-delivery-acceptance-20261025": ".agent/runs/USER-DELIVERY-ACCEPTANCE-20261025/run.json",
     "fix/verification-efficiency-01": ".agent/runs/VERIFY-EFFICIENCY-01/run.json",
     "codex/stable-baseline-collaboration": ".agent/runs/STABLE-BASELINE-COLLABORATION-20261026/run.json",
-    "fix/demo-product-completion-20261026": ".agent/runs/PRODUCT-USER-GAP-CLOSEOUT-20261026/run.json"
+    "fix/demo-product-completion-20261026": ".agent/runs/PRODUCT-USER-GAP-CLOSEOUT-20261026/run.json",
+    "audit/fepc-07r-home-metric-decisions": ".agent/runs/FEPC-07R/run.json"
   }
 }

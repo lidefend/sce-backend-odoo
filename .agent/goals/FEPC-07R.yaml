@@ -1,0 +1,7 @@
+schema_version: 1
+goal:
+  id: FEPC-07R
+  title: Formal home metric semantic decisions; documentation PR only
+  status: active
+  formal_product_layer: P4
+  exclusions: [product_changes, runtime_requests, merge, deploy]
