@@ -800,22 +800,34 @@
   background: transparent;
 }
 
-.native-follower-header,
-.native-follower-list {
+.native-follower-header {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.native-follower-list {
   flex-wrap: wrap;
 }
 
+/* ScList's root wraps the actual TDesign list; only this follower list wraps. */
+.native-follower-list :deep(.t-list__inner) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sc-space-xs);
+}
+
+.native-follower-list :deep(.t-list-item) {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+}
+
+.native-follower-list :deep(.t-list-item-main) {
+  min-width: 0;
+  gap: var(--sc-space-xs);
+}
+
 .native-follower-name {
-  max-width: min(240px, 100%);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .native-chatter-message-item:focus-within .native-chatter-message-reply,
@@ -849,6 +861,7 @@
 }
 
 .native-follower-current {
+  flex-shrink: 0;
   color: var(--sc-app-primary);
   font-size: 12px;
 }

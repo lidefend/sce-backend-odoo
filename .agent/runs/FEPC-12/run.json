@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "id": "FEPC-12",
+  "branch": "fix/fepc-12-follower-density",
+  "baseline_sha": "3da65c5c6f3909cb81c0316c85f8a622c952965a",
+  "status": "verification_pending",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FEPC-12.yaml",
+    ".agent/runs/FEPC-12/run.json",
+    "frontend/apps/web/src/pages/contractForm/ProfessionalFollowerManager.vue",
+    "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.css",
+    "scripts/verify/frontend_collaboration_primitives_browser.mjs",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-12/",
+    "docs/engineering_convergence/",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+  ],
+  "goal": ".agent/goals/FEPC-12.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-12/implementation.md",
+  "environment": {
+    "kind": "offline",
+    "authority": "Approved complete compact wrapping; existing collaboration primitives browser harness"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Freeze measurement-target-only follow-up, run current-head Quick/remote gates, update PR762 for final review; no merge/deploy",
+  "layer": {
+    "formal_product_layer": "P0",
+    "target": "generic follower presentation",
+    "module": "frontend",
+    "why_here": "Visual density and responsive wrapping of existing authorized items",
+    "why_not_elsewhere": "No contract/data/auth changes or project-specific semantics",
+    "blast_radius": "Follower list only; ordinary ScList unchanged"
+  },
+  "validation_plan": {
+    "L0": "Clean GitHub main baseline; task branch",
+    "L1": "ci.local.iteration",
+    "L2": "professional_collaboration.unit and typecheck",
+    "L3": "Not applicable: no module/data changes",
+    "L4": "existing collaboration_primitives.browser real Vue and TDesign DOM, 19 synthetic followers plus states/widths",
+    "L5": "freeze prepare, exact-head Quick, independent draft PR; no merge/deploy"
+  },
+  "observations": {
+    "red": ".runtime/fepc12-red.log",
+    "browser": {
+      "status": "passed",
+      "follower_assertions": 31,
+      "log": ".runtime/fepc12/measurement-review-browser.log",
+      "evidence": "docs/ops/iterations/fe-presentation-convergence-01/fepc-12/component-browser.json"
+    },
+    "collaboration": {
+      "status": "passed",
+      "log": ".runtime/fepc12-collaboration.log"
+    },
+    "typecheck": {
+      "status": "passed",
+      "log": ".runtime/fepc12-typecheck.log"
+    },
+    "independent_review": "Product CSS approved at 1062a6bc; final merge approval pending corrected measurement objects and current gates",
+    "deployed": "not performed",
+    "post_test_css_move": "Moved unchanged flex-shrink declaration into existing selector; no computed style change",
+    "freeze_prepare": {
+      "status": "passed",
+      "log": ".runtime/fepc12-freeze.log",
+      "generated_diff": "none"
+    },
+    "L1": {
+      "status": "passed",
+      "log": ".runtime/fepc12-iteration-final.log"
+    },
+    "first_quick": {
+      "status": "failed",
+      "head": "4b715f569a7876d79f1dd7cd493d662f36a30aa1",
+      "owner": "validation_tool_defect",
+      "reason": "new probe vendor selector and inline geometry assertions",
+      "log": ".runtime/fepc12-quick-first.log"
+    },
+    "probe_recovery": {
+      "status": "passed",
+      "command": "make verify.frontend.playwright_vendor_coupling.guard && make verify.frontend.collaboration_primitives.browser",
+      "guard_tests": 7,
+      "follower_assertions": 28,
+      "log": ".runtime/fepc12-green.log",
+      "change": "fixture-owned ordinary item marker, wrap/complete-list assertions; pixel values observation-only",
+      "reused": "collaboration model/SSR/typecheck unchanged inputs; product CSS unchanged"
+    },
+    "review_followup": {
+      "scope": "P4 existing browser test and evidence only; product CSS unchanged",
+      "requested_assertion": "follower height < same-page ordinary vertical list height at existing three widths; no fixed pixels",
+      "status": "passed",
+      "follower_assertions": 31,
+      "guard_tests": 7,
+      "logs": [
+        ".runtime/fepc12/review-followup-browser.log",
+        ".runtime/fepc12/review-followup-guard.log"
+      ],
+      "reused": "Product CSS/component/model/contract/typecheck inputs unchanged; no target environment calls"
+    },
+    "measurement_review": {
+      "scope": "P4 test: two boundingBox targets and evidence only",
+      "follower_target": ".native-follower-manager including title/actions/list",
+      "ordinary_target": "ScList actual root via data-semantic-component",
+      "status": "passed",
+      "follower_assertions": 31,
+      "guard_tests": 7,
+      "logs": [
+        ".runtime/fepc12/measurement-review-browser.log",
+        ".runtime/fepc12/measurement-review-guard.log"
+      ],
+      "reused": "Product source, contract, types and existing business unit inputs unchanged; no Demo calls"
+    }
+  }
+}
