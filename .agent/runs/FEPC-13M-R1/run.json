@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "FEPC-13M-R1",
+  "branch": "audit/fepc-13m-minimal-title",
+  "baseline_sha": "e0ce73b47b800da181a224913937720d9c5d77ba",
+  "status": "verification_pending",
+  "scope": [
+    ".agent/",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-13/",
+    "scripts/verify/frontend_native_form_action_presentation_guard.py",
+    "scripts/verify/test_frontend_native_form_action_presentation_guard.py"
+  ],
+  "goal": ".agent/goals/FEPC-13M-R1.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-13/fepc-13m-r1-readiness.md",
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing test entrypoints; no Demo requests"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Finish scoped guard/doc PR validation and publish Draft; no title implementation, A unresolved",
+  "layer": {
+    "formal_product_layer": "P4",
+    "target": "P4 native action verification guard",
+    "module": "scripts/verify + docs/.agent",
+    "why_here": "Correct stale test assumption, preserve P0 implementation",
+    "why_not_elsewhere": "No protocol or UI implementation",
+    "blast_radius": "Guard/tests only; no runtime changes"
+  },
+  "observations": {
+    "A": "not_passed: current node identity lacks adopted duplicate-title selection authority",
+    "B": "passed: 15 guard tests, 36 node component cases",
+    "C": "not_started_per_user_gate",
+    "D": "not_run_no_title_candidate",
+    "product_changes": false,
+    "failure_owner": "validation_tool_defect; stale total button count",
+    "prior_pass_reuse": "presenter main group177 and composition123 inputs unchanged",
+    "L1": "passed ci.local.iteration",
+    "freeze_recovery": "First freeze failed ledger consistency: paused/superseded I1a still indexed. Removed only inactive index entry; preserved records."
+  }
+}
