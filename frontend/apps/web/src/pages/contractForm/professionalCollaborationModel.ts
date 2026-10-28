@@ -233,20 +233,10 @@ export interface ParsedMessageInfo {
 }
 
 export function parseMessageEntry(entry: ChatterTimelineEntry): ParsedMessageInfo {
-  const body = entry.body || entry.title || '';
-  // 尝试从 body 中解析发送者（格式："作者 · 内容" 或 "作者: 内容"）
-  let author = entry.typeLabel || '消息';
-  let content = body;
-
-  const authorMatch = body.match(/^([^·:：]{1,20})[·:：]\s*(.+)$/);
-  if (authorMatch) {
-    author = authorMatch[1].trim();
-    content = authorMatch[2].trim();
-  }
-
+  // Author and body are independent server fields; absent optional author stays blank.
   return {
-    author,
-    body: content,
+    author: entry.message?.author_name ?? '',
+    body: entry.body ?? '',
     at: entry.at,
     atLabel: entry.at ? formatCollaborationTimelineMeta(entry.at) : undefined,
     icon: 'chat',

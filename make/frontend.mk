@@ -353,6 +353,7 @@ verify.frontend.professional_audit.unit: guard.prod.forbid
 verify.frontend.professional_collaboration.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_collaboration_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/professional-collaboration-model-test.mjs >/dev/null
 	@node /tmp/professional-collaboration-model-test.mjs
+	@node frontend/apps/web/scripts/professional_collaboration_message_component_test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_professional_collaboration_guard.py
 	@python3 scripts/verify/frontend_professional_collaboration_guard.py
 
@@ -1503,3 +1504,7 @@ verify.frontend.company_project_refund.feedback.rt.browser: guard.prod.forbid
 	  FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:18081/t/demo}" \
 	  E2E_LOGIN="$${E2E_LOGIN:-wutao}" E2E_PASSWORD="$${E2E_PASSWORD:-123456}" \
 	  node frontend/apps/web/scripts/feedback_evaluation_rt_browser_test.mjs
+
+.PHONY: verify.frontend.professional_collaboration.browser
+verify.frontend.professional_collaboration.browser: guard.prod.forbid
+	@node frontend/apps/web/scripts/professional_collaboration_message_component_test.mjs --browser

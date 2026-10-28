@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "id": "FEPC-10",
+  "branch": "fix/fepc-10-message-author-body",
+  "baseline_sha": "27de8c2769d4c02a6e1076ad3f60fb9aa9f77e17",
+  "status": "verification_pending",
+  "scope": [
+    "frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts",
+    "frontend/apps/web/scripts/professional_collaboration_model_test.ts",
+    "frontend/apps/web/scripts/professional_collaboration_message_component_test.mjs",
+    "make/frontend.mk",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-10/",
+    ".agent/goals/FEPC-10.yaml",
+    ".agent/runs/FEPC-10/run.json",
+    ".agent/active-runs.json",
+    "docs/engineering_convergence/",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+  ],
+  "goal": ".agent/goals/FEPC-10.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-10/implementation.md",
+  "environment": {
+    "kind": "offline",
+    "authority": "User authorized FEPC-10; reuse four historical message samples, no reauthentication or runtime writes"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Freeze candidate, exact-head Quick, publish independent draft PR for GPT review; no merge/deploy",
+  "layer": {
+    "formal_product_layer": "P0",
+    "target": "frontend renderer / collaboration message consumer",
+    "why_here": "Existing server author/body contract consumed independently; generic mechanism",
+    "why_not_elsewhere": "No missing backend declaration or industry/customer rule",
+    "blast_radius": "Message author/body only; preserve time/order/capability gates"
+  },
+  "validation_plan": {
+    "L0": "Clean main baseline and explicit owned dirty scope",
+    "L1": "ci.local.iteration",
+    "L2": "Existing collaboration model and authority tests plus actual consumer fixture checks",
+    "L3": "not applicable: no backend/config/database changes",
+    "L4": "Offline actual component rendering with reused samples; no unrelated browser journeys",
+    "L5": "freeze, clean-head Quick, independent PR for GPT review; no merge/deploy"
+  },
+  "observations": {
+    "test_first": {
+      "status": "failed_before_fix",
+      "reason": "author OdooBot incorrectly parsed as typeLabel 备注",
+      "log": ".runtime/fepc10-red.log"
+    },
+    "L1": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "log": ".runtime/fepc10-iteration.log"
+    },
+    "L2": {
+      "status": "passed",
+      "command": "make verify.frontend.professional_collaboration.unit",
+      "new_message_assertions": 79,
+      "component_messages": 7,
+      "component_assertions": 6,
+      "guard_tests": 32,
+      "log": ".runtime/fepc10-green.log"
+    },
+    "authority": {
+      "status": "passed",
+      "cases": 58,
+      "command": "make verify.frontend.contract_form_collaboration_authority.unit"
+    },
+    "browser": {
+      "status": "passed",
+      "command": "make verify.frontend.professional_collaboration.browser",
+      "assertions": 10,
+      "messages": 7,
+      "console_errors": 0,
+      "network_requests": 0,
+      "log": ".runtime/fepc10-browser.log",
+      "limitation": "offline actual SFC, synthetic envelope; not deployed Demo"
+    },
+    "typecheck": {
+      "status": "passed",
+      "command": "make verify.frontend.typecheck.strict"
+    },
+    "independent_review": "pending GPT on independent PR",
+    "deployment": "not authorized/not performed",
+    "freeze_prepare": {
+      "status": "passed",
+      "command": "make ci.delivery.freeze.prepare",
+      "log": ".runtime/fepc10-freeze.log",
+      "generated_diff": "test inventory plus component inputDigest only; reviewed"
+    }
+  }
+}

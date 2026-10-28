@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { canDeleteCollaborationAttachment, canDeleteCollaborationMessage, canDownloadCollaborationAttachment, canExecuteCollaborationCreateAction, canReplyCollaborationMessage, canUpdateCollaborationActivity, collaborationCapabilityReadiness, formatCollaborationTimelineMeta, isCollaborationAuthorityAbsence, parseActivityEntry, visibleCollaborationTimeline } from '../src/pages/contractForm/professionalCollaborationModel';
+import { canDeleteCollaborationAttachment, canDeleteCollaborationMessage, canDownloadCollaborationAttachment, canExecuteCollaborationCreateAction, canReplyCollaborationMessage, canUpdateCollaborationActivity, collaborationCapabilityReadiness, formatCollaborationTimelineMeta, isCollaborationAuthorityAbsence, parseActivityEntry, parseMessageEntry, visibleCollaborationTimeline } from '../src/pages/contractForm/professionalCollaborationModel';
 import { nativeAttachmentUploadEnabled, nativeChatterActionsFromContract } from '../src/pages/contractForm/collaborationContract';
 
 assert.deepEqual(collaborationCapabilityReadiness({ hasCommentAction: true, hasAttachmentAuthority: true, hasActivityAction: true, hasFollowerAuthority: true }), {
@@ -65,4 +65,38 @@ assert.equal(isCollaborationAuthorityAbsence({ status: 500, reasonCode: 'SYSTEM_
 assert.equal(isCollaborationAuthorityAbsence({ status: 0, reasonCode: 'NETWORK_ERROR' }), false, 'a network failure must stay a visible error');
 assert.equal(isCollaborationAuthorityAbsence(new Error('boom')), false, 'an untyped error must stay a visible error');
 assert.equal(isCollaborationAuthorityAbsence(null), false, 'a missing cause is not an authority absence');
-console.log('[professional_collaboration_model_test] PASS cases=52');
+// FEPC-09 observed author/body pairs; remaining envelope fields are synthetic.
+const observedMessages = [
+  ['OdooBot', ''],
+  ['项目审批岗', '项目立项已通过，尚未启动。'],
+  ['项目审批岗', '项目初始化已完成：已建立项目管理对象；任务根节点已就绪；成本/资金/风险承载采用按业务事件驱动补充。'],
+  ['项目审批岗', '项目 创建'],
+];
+const punctuationBodies = ['进度: 已完成', '说明：保留前缀', '阶段·正文', '甲 · 乙: 丙：丁', '  开头：内容\n下一行  ', '<b>说明：</b>原文'];
+const messageCases = [
+  ...observedMessages.map(([author, body]) => ({ author, body })),
+  ...punctuationBodies.map((body) => ({ author: '服务端作者', body })),
+];
+let messageAssertions = 0;
+for (const [index, sample] of messageCases.entries()) {
+  const entry = { key: `message-${index}`, type: 'message', typeLabel: '备注', title: '标题不能替代正文',
+    meta: '元信息不能替代作者', body: sample.body, at: '2026-10-28T03:40:21',
+    message: { id: index + 1, author_name: sample.author, can_reply: true, reply_intent: 'chatter.post' } };
+  const before = JSON.stringify(entry);
+  const parsed = parseMessageEntry(entry);
+  assert.equal(parsed.author, sample.author); messageAssertions++;
+  assert.equal(parsed.body, sample.body); messageAssertions++;
+  assert.equal(parsed.at, entry.at); messageAssertions++;
+  assert.equal(parsed.atLabel, formatCollaborationTimelineMeta(entry.at)); messageAssertions++;
+  assert.equal(parsed.icon, 'chat'); messageAssertions++;
+  assert.equal(canReplyCollaborationMessage(entry), true); messageAssertions++;
+  assert.equal(JSON.stringify(entry), before); messageAssertions++;
+}
+for (const message of [undefined, {}, { author_name: '' }]) {
+  const parsed = parseMessageEntry({ key: 'missing-author', type: 'message', typeLabel: '备注', title: '标题',
+    meta: '元信息作者', body: '正文作者猜测：不得截断', message });
+  assert.equal(parsed.author, ''); messageAssertions++;
+  assert.equal(parsed.body, '正文作者猜测：不得截断'); messageAssertions++;
+  assert.equal(parsed.atLabel, undefined); messageAssertions++;
+}
+console.log(`[professional_collaboration_model_test] PASS existing_cases=52 message_assertions=${messageAssertions}`);
