@@ -14,7 +14,8 @@
     "scripts/verify/construction_core_extension_intent_handlers_split_guard.py",
     "scripts/verify/frontend_page_contract_boundary_guard.py",
     "docs/ops/iterations/test-integration-preflight.md",
-    "docs/engineering_convergence/"
+    "docs/engineering_convergence/",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs"
   ],
   "goal": ".agent/goals/TEST-INTEGRATION-PREFLIGHT.yaml",
   "record": "docs/ops/iterations/test-integration-preflight.md",
@@ -23,7 +24,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Revalidate synchronized candidate after PR769, freeze, Quick, publish Draft and dispatch required checks",
+  "next_exact_step": "Freeze generated evidence, commit exact candidate, Quick, publish Draft and wait latest remote gates; no merge/deploy",
   "layer": {
     "formal_product_layer": "P4",
     "target": "early test integration verification",
@@ -55,6 +56,15 @@
       "iteration": "four early checks passed",
       "merge_readiness_tests": 22,
       "log": ".runtime/integration-preflight-sync-targeted.log"
+    },
+    "attachment_boundary": {
+      "status": "passed",
+      "classification": "validation_tool_defect",
+      "scope": "P4 test loader only; actual weighted relation SFC; no runtime changes",
+      "validation": "existing professional_relation_field target and iteration; no database/browser changes needed",
+      "boundary_assertions": 5,
+      "mounted_assertions": 38,
+      "log": ".runtime/integration-attachment-final-targeted.log"
     }
   }
 }

@@ -14,8 +14,24 @@ assert.ok(['chart', 'boq', 'grid', 'attachment', 'form-header', 'native-layout']
 const root = process.cwd();
 const component = { 'native-layout': 'components/template/NativeFormTreeRenderer.vue', 'form-header': 'pages/contractForm/ContractFormProductHeader.vue', attachment: 'components/template/X2ManyRelationRenderer.vue', chart: 'components/page/blocks/BlockChartDataset.vue', boq: 'components/page/blocks/BlockBoqImportPreview.vue', grid: 'views/SceneContractBlockGridView.vue' }[kind];
 const entry = `${root}/frontend/apps/web/src/${component}`;
+// This is a real relation renderer dependency, not an attachment presentation stub.
+const weightedRelationEntry = `${root}/frontend/apps/web/src/components/template/NativeWeightedRelationDisplay.vue`;
+function attachmentDependencyMode(file) {
+  if (file === weightedRelationEntry) return 'actual';
+  assert.ok(/\/(ScButton|ScDisclosure|ScEmptyState|ScFileField|ScIcon|ScInput|ScInlineState|ScPopover|ScTable|ProfessionalManyToManySelect|One2ManyCellEditor)\.vue$/.test(file), `unexpected attachment stub ${file}`);
+  return 'stub';
+}
+if (kind === 'attachment') {
+  assert.equal(attachmentDependencyMode(weightedRelationEntry), 'actual');
+  assert.equal(attachmentDependencyMode(`${root}/frontend/apps/web/src/components/design-system/ScButton.vue`), 'stub');
+  for (const file of [weightedRelationEntry.replace('/template/', '/unregistered/'), weightedRelationEntry.replace('NativeWeightedRelationDisplay', 'UnknownRelationDisplay')]) {
+    assert.throws(() => attachmentDependencyMode(file), /unexpected attachment stub/);
+  }
+  console.log('[attachment-boundary] PASS 4 assertions: exact real dependency, existing stub, wrong path, unknown component');
+}
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), `readonly-block-${kind}-`));
 const output = path.join(temporary, 'mounted.mjs');
+const compiledSfcPaths = new Set();
 
 async function runMounted({ useRecordFormLayout, createContractV2Store, Component, kind, createRenderer, h, ref, nextTick, calls, route, assert }) {
   let checks = 0;
@@ -454,7 +470,7 @@ try {
         builder.onLoad({ filter: /.*/, namespace: 'popup' }, () => ({ contents: `import {h,defineComponent,ref} from 'vue';export const TDesignAlert=defineComponent({setup:(_, {attrs,slots})=>()=>h('test-alert',attrs,slots.default?.())});export const TDesignPopup=defineComponent({emits:['visible-change'],setup:(_, {attrs,slots,emit})=>{const open=ref(false);return()=>h('test-help-popover',{...attrs,onClick:()=>{open.value=!open.value;emit('visible-change',open.value)}},[slots.default?.(),open.value?slots.content?.():null])}});`, loader: 'js', resolveDir: `${root}/frontend/apps/web` }));
       }
       builder.onLoad({ filter: /\.vue$/ }, args => {
-        if (args.path !== entry && !(kind === 'native-layout' && /\/(FormSection|ProfessionalBaseFieldControl|ScPopover|NativeWeightedRelationDisplay)\.vue$/.test(args.path))) {
+        if (args.path !== entry && !(kind === 'attachment' && attachmentDependencyMode(args.path) === 'actual') && !(kind === 'native-layout' && /\/(FormSection|ProfessionalBaseFieldControl|ScPopover|NativeWeightedRelationDisplay)\.vue$/.test(args.path))) {
           if (kind === 'native-layout') {
             assert.ok(/\/(design-system|template|professional-fields)\//.test(args.path) || /\/(SceneFieldControl|SceneButton|SceneUiProvider|RestrictedHtmlEditor)\.vue$/.test(args.path), `unexpected layout presentation ${args.path}`);
             if (args.path.endsWith('/ScDescriptions.vue')) return { contents: `import {h,defineComponent} from 'vue';export default defineComponent({setup:(_, {attrs,slots})=>()=>h('test-descriptions',{},(attrs.items || []).map(item=>slots.item?.({item})))});`, loader: 'js', resolveDir: path.dirname(args.path) };
@@ -466,7 +482,7 @@ try {
             return { contents: `import {h,defineComponent} from 'vue';export default defineComponent({setup:(_, {attrs,slots})=>()=>h('${tag}',{...attrs},Object.values(slots).map(slot=>slot()))});`, loader: 'js', resolveDir: path.dirname(args.path) };
           }
           if (kind === 'attachment') {
-            assert.ok(/\/(ScButton|ScDisclosure|ScEmptyState|ScFileField|ScIcon|ScInput|ScInlineState|ScPopover|ScTable|ProfessionalManyToManySelect|One2ManyCellEditor)\.vue$/.test(args.path), `unexpected attachment stub ${args.path}`);
+            assert.equal(attachmentDependencyMode(args.path), 'stub');
             const tag = args.path.endsWith('/ScButton.vue') ? 'test-button' : args.path.endsWith('/ScInlineState.vue') ? 'test-state' : 'test-presentation';
             return { contents: `import {h,defineComponent} from 'vue';export default defineComponent({props:['label'],setup:(props,{attrs,slots})=>()=>h('${tag}',{...attrs,...props},slots.default?.())});`, loader: 'js', resolveDir: path.dirname(args.path) };
           }
@@ -478,10 +494,15 @@ try {
         }
         const { descriptor } = parse(fs.readFileSync(args.path, 'utf8'), { filename: args.path });
         const compiled = compileScript(descriptor, { id: args.path, inlineTemplate: true });
+        compiledSfcPaths.add(args.path);
         return { contents: compiled.content, loader: 'ts', resolveDir: path.dirname(args.path) };
       });
     } }],
   });
+  if (kind === 'attachment') {
+    assert.ok(compiledSfcPaths.has(weightedRelationEntry), 'weighted relation must compile as real SFC, never as a stub');
+    console.log('[attachment-boundary] PASS actual SFC compilation assertion');
+  }
   const run = (await import(pathToFileURL(output).href)).default;
   const checks = await run();
   console.log(`[readonly-block-component] PASS kind=${kind} checks=${checks} actual_sfc=true vue_mount=true transport=mocked presentation=stubbed card_driver=stubbed${kind === 'grid' ? ' grid_child_renderer=stubbed' : ''}`);

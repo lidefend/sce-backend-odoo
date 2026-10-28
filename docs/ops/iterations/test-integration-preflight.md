@@ -35,3 +35,13 @@ Quick 依赖检查覆盖仓库 `Makefile` 与 `make/**/*.mk` 中的显式目标�
 ## 主线同步复验
 
 独立基线修复 PR #769 已合并为 4853b1b441837aa814049b2b9e31e9bdaa827767。本分支通过受管 published GitHub 同步入口追加 main，保留恢复 bundle，仅自动合并 active-runs 索引；未改动预检业务。原 153abbe97ccd455b54cf85638e7b5adcdd1da012 的失败/成功不视为新候选结论。新候选需重新 Quick 和远端门禁，保持 Draft，不合并、不部署。#767 的真实按钮阻断不由本工具 PR 关闭。
+
+## DEV-FOLLOWUP-01：附件测试依赖边界
+
+候选 a0b1c50fa1a016eacfac9985dbe3be68d5127a8a 的远端 frontend_release_gate（run 40754172541）失败于 `unexpected attachment stub NativeWeightedRelationDisplay.vue`。这是测试加载器边界遗漏，不是附件权限或产品组件缺陷：X2ManyRelationRenderer 已导入该通用加权关系组件，后者消费声明并通过 readRecord 读取关系名称；同一测试工具的 native-layout 已编译它的真实 SFC。附件分支却把它错误归入 presentation stub 校验。
+
+修复仅在既有测试加载器中将精确源码路径路由至真实 SFC 编译，不新增 stub、不放宽旧 stub 清单、不修改产品或传输边界。4 项边界断言验证真实依赖、原有合法桩、同名异目录和未知组件；另外断言构建确实编译了该 SFC，防止登记存在但执行仍被替换。
+
+实际执行 `make ci.local.iteration verify.frontend.professional_relation_field.unit` 通过：附件挂载 38 项断言、边界 5 项、关系模型 18 场景/17 反例、列来源 3 项、选项限制 6 项、Python 10+40 项。原有附件读取/拒绝/下载/卸载行为断言全部保留。日志 `.runtime/integration-attachment-final-targeted.log`。L3/L4 不适用：只修改离线测试加载器，无产品与数据库行为变化。最终 Quick 和远端结果须绑定后续冻结 HEAD；旧失败记录保留。
+
+#767 本地同步已完成但未发布；其真实非草稿按钮验收继续 blocked。本次不改变样本或权限，不将工具测试替代产品验收。
