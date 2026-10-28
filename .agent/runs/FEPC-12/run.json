@@ -23,7 +23,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Freeze generated evidence, exact-head Quick and independent Draft PR; no merge/deploy",
+  "next_exact_step": "Freeze review-requested test-only update, run exact-head Quick and remote gates, update PR762 for final reviewer approval; no merge/deploy",
   "layer": {
     "formal_product_layer": "P0",
     "target": "generic follower presentation",
@@ -44,8 +44,8 @@
     "red": ".runtime/fepc12-red.log",
     "browser": {
       "status": "passed",
-      "follower_assertions": 28,
-      "log": ".runtime/fepc12-green.log",
+      "follower_assertions": 31,
+      "log": ".runtime/fepc12/review-followup-browser.log",
       "evidence": "docs/ops/iterations/fe-presentation-convergence-01/fepc-12/component-browser.json"
     },
     "collaboration": {
@@ -56,7 +56,7 @@
       "status": "passed",
       "log": ".runtime/fepc12-typecheck.log"
     },
-    "independent_review": "pending GPT",
+    "independent_review": "Product code approved by user at 9438e542; final approval pending requested height relation assertion and current-head gates",
     "deployed": "not performed",
     "post_test_css_move": "Moved unchanged flex-shrink declaration into existing selector; no computed style change",
     "freeze_prepare": {
@@ -83,6 +83,18 @@
       "log": ".runtime/fepc12-green.log",
       "change": "fixture-owned ordinary item marker, wrap/complete-list assertions; pixel values observation-only",
       "reused": "collaboration model/SSR/typecheck unchanged inputs; product CSS unchanged"
+    },
+    "review_followup": {
+      "scope": "P4 existing browser test and evidence only; product CSS unchanged",
+      "requested_assertion": "follower height < same-page ordinary vertical list height at existing three widths; no fixed pixels",
+      "status": "passed",
+      "follower_assertions": 31,
+      "guard_tests": 7,
+      "logs": [
+        ".runtime/fepc12/review-followup-browser.log",
+        ".runtime/fepc12/review-followup-guard.log"
+      ],
+      "reused": "Product CSS/component/model/contract/typecheck inputs unchanged; no target environment calls"
     }
   }
 }

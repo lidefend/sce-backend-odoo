@@ -124,7 +124,7 @@ try {
       await page.setViewportSize({width,height:1000});
       await followers.locator('.native-follower-name').last().waitFor();
       const measured=await measure();
-      // Geometry is observational evidence, never a pixel target or pass threshold.
+      // Compare with the same-page control, never a fixed pixel target.
       measured.height=(await followers.locator('.native-follower-list').boundingBox())?.height;
       measured.ordinaryHeight=(await page.locator('[data-follower-harness="ordinary"]').boundingBox())?.height;
       followerEvidence.measurements.push(measured);
@@ -132,6 +132,7 @@ try {
       verify(measured.names.join('|')===Array.from({length:19},(_,i)=>'合成人员'+(i+1)).join('|'),'all followers keep order and names');
       verify(measured.allVisible && !measured.overflow,'all followers visible without horizontal overflow');
       verify(measured.rows<19 && measured.ordinaryRows===19,'followers wrap compactly; ordinary list stays vertical');
+      verify(measured.height<measured.ordinaryHeight,'complete follower list uses less height than the same-page vertical list');
       verify(measured.ordinaryCount===19,'ordinary list remains complete');
       verify(await followers.locator('.native-follower-current').count()===1,'current user marker retained');
       verify(await followers.locator('.native-follower-title').innerText()==='关注者（19）','declared label and total count retained');
