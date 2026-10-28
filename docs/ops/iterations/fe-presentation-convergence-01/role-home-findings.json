@@ -1,0 +1,52 @@
+{
+  "schema": "fe-presentation-convergence.role-home-findings.v1",
+  "baseline_main": "a49742c31d1a08e053187c1ab146ab914108ad11",
+  "runtime_revision": "3f46dd7eba9f351386fee446151ee9eb545d56a4",
+  "findings": [
+    {
+      "id": "FEPC-04-R1",
+      "title": "项目经理首页已有常用入口与工作入口区块",
+      "status": "resolved",
+      "evidence": "校准后重放（recreate 定稿 seed + demo_full 及三角色）：项目经理 demo_role_project_manager 首页已包含“常用入口与最近访问”和“工作入口”，与项目成员、企业负责人一致。此前 F5“项目经理无相关区块”的观察已不成立。",
+      "calibration": "旧观察来自重建前数据/运行时；当前运行时三个角色区块集合一致。F5 撤销为不成立。",
+      "initial_owner": "不适用",
+      "priority": "P3"
+    },
+    {
+      "id": "FEPC-04-R2",
+      "title": "风险与提醒：风险处置 vs 项目风险预警是数据可见性差异",
+      "status": "business_justified",
+      "evidence": "项目经理/项目成员展示“风险处置”，企业负责人展示“项目风险预警”。契约逻辑 build_risk_action_rows：有 project.risk.action（open/claimed/escalated）→ 风险处置；否则 fallback 到 project.risk/project.project health_state → 项目风险预警。",
+      "calibration": "企业负责人在运行时会话读不到 risk action 行（ACL/domain），触发 fallback。该差异有业务依据，不是展示缺陷，不强行统一。",
+      "initial_owner": "P1（权限/记录规则，先核实企业负责人读不到 risk.action 的原因）",
+      "priority": "P3"
+    },
+    {
+      "id": "FEPC-04-R3",
+      "title": "工作入口空状态是合法空状态",
+      "status": "expected_empty",
+      "evidence": "三个角色首页“工作入口”均显示“暂无首页快捷入口。请从导航菜单选择业务；如需调整权限，请联系管理员。”",
+      "calibration": "这是未配置快捷入口的合法空状态，不是缺陷；不通过添加虚假入口或扩权消除。F6 裁定为合法空状态，文案可读性可后续单独评估。",
+      "initial_owner": "P1（文案收敛，仅当需要时）",
+      "priority": "P3"
+    },
+    {
+      "id": "FEPC-04-R4",
+      "title": "常用入口集合随角色权限变化",
+      "status": "business_justified",
+      "evidence": "项目经理/企业负责人常用入口 6 项；项目成员 8 项（多“证书管理/行政中心”）。",
+      "calibration": "入口集合随角色导航权限变化，是角色差异，不是展示不一致。",
+      "initial_owner": "不适用",
+      "priority": "P3"
+    },
+    {
+      "id": "FEPC-04-R5",
+      "title": "角色首页存在双重契约（smart_core vs smart_construction_core）",
+      "status": "pending_verification",
+      "evidence": "smart_core/core/workspace_home_contract_builder.py 生成 session.workspaceHome（system.init 生效，字段 hero/advice/metrics/today_actions/risk/my_objects/ops 等）；smart_construction_core/services/workspace_contract_builder.py 由 workspace.home.enter handler 返回另一组区块（metric_card/shortcut_grid/todo_list/warning_list/native_view_ref），与实际渲染的 session.workspaceHome 不一致。",
+      "calibration": "需核实 workspace.home.enter handler 是否仍被前端消费；若未消费则为遗留契约，建议单独治理，不在本轮改动。",
+      "initial_owner": "P0/P1（契约治理，待核实后裁定）",
+      "priority": "P3"
+    }
+  ]
+}
