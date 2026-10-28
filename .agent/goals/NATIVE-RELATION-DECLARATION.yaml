@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: NATIVE-RELATION-DECLARATION
+  title: Declaration-only native relation helper
+  status: verification_pending
+  formal_product_layer: P0

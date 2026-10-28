@@ -1,6 +1,8 @@
 import { contractGapError } from './contract/contractGap';
 
-const identity = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+function identity(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+}
 
 // Native Python evaluation values differ from display values and ORM commands.
 export function nativeModifierRelationValue(value: unknown, type: string | undefined): unknown {
