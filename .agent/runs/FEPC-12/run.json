@@ -67,6 +67,22 @@
     "L1": {
       "status": "passed",
       "log": ".runtime/fepc12-iteration-final.log"
+    },
+    "first_quick": {
+      "status": "failed",
+      "head": "4b715f569a7876d79f1dd7cd493d662f36a30aa1",
+      "owner": "validation_tool_defect",
+      "reason": "new probe vendor selector and inline geometry assertions",
+      "log": ".runtime/fepc12-quick-first.log"
+    },
+    "probe_recovery": {
+      "status": "passed",
+      "command": "make verify.frontend.playwright_vendor_coupling.guard && make verify.frontend.collaboration_primitives.browser",
+      "guard_tests": 7,
+      "follower_assertions": 28,
+      "log": ".runtime/fepc12-green.log",
+      "change": "fixture-owned ordinary item marker, wrap/complete-list assertions; pixel values observation-only",
+      "reused": "collaboration model/SSR/typecheck unchanged inputs; product CSS unchanged"
     }
   }
 }

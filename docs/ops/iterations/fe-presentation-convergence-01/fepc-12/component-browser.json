@@ -4,7 +4,6 @@
   "measurements": [
     {
       "width": 1440,
-      "height": 52,
       "names": [
         "合成人员1",
         "合成人员2",
@@ -29,13 +28,14 @@
       "rows": 2,
       "allVisible": true,
       "overflow": false,
-      "ordinaryHeight": 874,
+      "ordinaryRows": 19,
       "ordinaryCount": 19,
-      "contentTop": 108
+      "contentTop": 108,
+      "height": 52,
+      "ordinaryHeight": 874
     },
     {
       "width": 768,
-      "height": 52,
       "names": [
         "合成人员1",
         "合成人员2",
@@ -60,13 +60,14 @@
       "rows": 2,
       "allVisible": true,
       "overflow": false,
-      "ordinaryHeight": 874,
+      "ordinaryRows": 19,
       "ordinaryCount": 19,
-      "contentTop": 108
+      "contentTop": 108,
+      "height": 52,
+      "ordinaryHeight": 874
     },
     {
       "width": 320,
-      "height": 172,
       "names": [
         "合成人员1",
         "合成人员2",
@@ -91,22 +92,23 @@
       "rows": 6,
       "allVisible": true,
       "overflow": false,
-      "ordinaryHeight": 874,
+      "ordinaryRows": 19,
       "ordinaryCount": 19,
-      "contentTop": 228
+      "contentTop": 228,
+      "height": 172,
+      "ordinaryHeight": 874
     }
   ],
   "assertions": 28,
   "longName": {
     "width": 320,
-    "height": 176,
     "names": [
       "合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名合成长姓名"
     ],
     "rows": 1,
     "allVisible": true,
     "overflow": false,
-    "ordinaryHeight": 874,
+    "ordinaryRows": 19,
     "ordinaryCount": 19,
     "contentTop": 232
   }

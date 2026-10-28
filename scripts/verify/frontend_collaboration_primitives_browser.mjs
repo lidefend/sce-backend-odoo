@@ -65,7 +65,7 @@ const server = await createServer({
             ...followerState, label:'关注者', count:followerState.items.length, followLabel:'关注', unfollowLabel:'取消关注',
             onUpdate:action=>followerState.actions.push(action),
           }), h('p', {'data-following-content':''}, '后续协作内容')]),
-          h('div', {'data-follower-harness':'ordinary'}, [h(ScList, {items:followerItems.map(item=>({...item,key:item.partner_id}))}, {item:({item})=>item.name})]),
+          h('div', {'data-follower-harness':'ordinary'}, [h(ScList, {items:followerItems.map(item=>({...item,key:item.partner_id}))}, {item:({item})=>h('span',{'data-ordinary-follower':''},item.name)})]),
           h('div', { 'data-surface-harness': 'primitives' }, [
           h(Composer, {
             activity: false, posting: state.posting, usersLoading: false, draft: state.draft,
@@ -108,15 +108,14 @@ try {
   const followers = compact.locator('.native-follower-manager');
   const measure = () => page.evaluate(() => {
     const host=document.querySelector('[data-follower-harness="compact"]');
-    const list=host.querySelector('.native-follower-list');
     const names=[...host.querySelectorAll('.native-follower-name')];
     const ordinary=document.querySelector('[data-follower-harness="ordinary"]');
-    return {width:innerWidth, height:list?.getBoundingClientRect().height,
+    return {width:innerWidth,
       names:names.map(e=>e.textContent), rows:new Set(names.map(e=>Math.round(e.getBoundingClientRect().top))).size,
       allVisible:names.every(e=>e.getClientRects().length>0),
       overflow:document.documentElement.scrollWidth>innerWidth,
-      ordinaryHeight:ordinary.getBoundingClientRect().height,
-      ordinaryCount:ordinary.querySelectorAll('.t-list-item').length,
+      ordinaryRows:new Set([...ordinary.querySelectorAll('[data-ordinary-follower]')].map(e=>Math.round(e.getBoundingClientRect().top))).size,
+      ordinaryCount:ordinary.querySelectorAll('[data-ordinary-follower]').length,
       contentTop:host.querySelector('[data-following-content]').getBoundingClientRect().top};
   });
   fs.mkdirSync('.runtime/fepc12', {recursive:true});
@@ -124,11 +123,15 @@ try {
     for (const width of [1440,768,320]) {
       await page.setViewportSize({width,height:1000});
       await followers.locator('.native-follower-name').last().waitFor();
-      const measured=await measure(); followerEvidence.measurements.push(measured);
+      const measured=await measure();
+      // Geometry is observational evidence, never a pixel target or pass threshold.
+      measured.height=(await followers.locator('.native-follower-list').boundingBox())?.height;
+      measured.ordinaryHeight=(await page.locator('[data-follower-harness="ordinary"]').boundingBox())?.height;
+      followerEvidence.measurements.push(measured);
       await compact.screenshot({path:`.runtime/fepc12/followers-${width}.png`});
       verify(measured.names.join('|')===Array.from({length:19},(_,i)=>'合成人员'+(i+1)).join('|'),'all followers keep order and names');
       verify(measured.allVisible && !measured.overflow,'all followers visible without horizontal overflow');
-      verify(measured.rows<19 && measured.height<measured.ordinaryHeight,'followers wrap compactly; ordinary list stays vertical');
+      verify(measured.rows<19 && measured.ordinaryRows===19,'followers wrap compactly; ordinary list stays vertical');
       verify(measured.ordinaryCount===19,'ordinary list remains complete');
       verify(await followers.locator('.native-follower-current').count()===1,'current user marker retained');
       verify(await followers.locator('.native-follower-title').innerText()==='关注者（19）','declared label and total count retained');
