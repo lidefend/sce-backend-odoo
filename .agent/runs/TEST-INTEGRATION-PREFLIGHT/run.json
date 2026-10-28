@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "TEST-INTEGRATION-PREFLIGHT",
   "branch": "fix/test-integration-preflight",
-  "baseline_sha": "1e06bcfde151d7669c29825d88c05bf3cd61b455",
+  "baseline_sha": "4853b1b441837aa814049b2b9e31e9bdaa827767",
   "status": "verification_pending",
   "scope": [
     ".agent/",
@@ -23,7 +23,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Freeze generated evidence, commit clean candidate, run exact-head Quick and publish separate Draft PR",
+  "next_exact_step": "Revalidate synchronized candidate after PR769, freeze, Quick, publish Draft and dispatch required checks",
   "layer": {
     "formal_product_layer": "P4",
     "target": "early test integration verification",
@@ -42,6 +42,19 @@
     "branch_guard_tests": 23,
     "runtime_tests": "not_applicable: P4-only; no environment changes",
     "quick": "pending final HEAD",
-    "failures": "negative fixtures are expected rejections, not successful receipt claims"
+    "failures": "negative fixtures are expected rejections, not successful receipt claims",
+    "main_sync": {
+      "status": "passed",
+      "old_head": "153abbe97ccd455b54cf85638e7b5adcdd1da012",
+      "merge_head": "01a33d7a91b95a99ebdb9ac3d1319576143011a2",
+      "main": "4853b1b441837aa814049b2b9e31e9bdaa827767",
+      "log": ".runtime/integration-preflight-main-sync.log"
+    },
+    "sync_targeted": {
+      "status": "passed",
+      "iteration": "four early checks passed",
+      "merge_readiness_tests": 22,
+      "log": ".runtime/integration-preflight-sync-targeted.log"
+    }
   }
 }
