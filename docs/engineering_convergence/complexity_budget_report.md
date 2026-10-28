@@ -118,12 +118,12 @@ Generated from repository source files. This report is informational during the 
 | 1267 | Python source | `scripts/verify/local_dev_runtime_performance.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1245 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
+| 1230 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1222 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1209 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
-| 1204 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 1199 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
@@ -174,6 +174,7 @@ Generated from repository source files. This report is informational during the 
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
+| 919 | Python source | `scripts/verify/test_local_quick_evidence.py` |
 | 918 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 910 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
@@ -181,7 +182,6 @@ Generated from repository source files. This report is informational during the 
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
 | 900 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |
-| 888 | Python source | `scripts/verify/test_local_quick_evidence.py` |
 | 887 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
 | 885 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |

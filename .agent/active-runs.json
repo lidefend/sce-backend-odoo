@@ -52,6 +52,7 @@
     "fix/fepc-12-follower-density": ".agent/runs/FEPC-12/run.json",
     "audit/fepc-13d-title-contract": ".agent/runs/FEPC-13D/run.json",
     "audit/fepc-13i-00-readiness": ".agent/runs/FEPC-13I-00/run.json",
-    "audit/fepc-13m-minimal-title": ".agent/runs/FEPC-13M-R1/run.json"
+    "audit/fepc-13m-minimal-title": ".agent/runs/FEPC-13M-R1/run.json",
+    "fix/test-integration-preflight": ".agent/runs/TEST-INTEGRATION-PREFLIGHT/run.json"
   }
 }

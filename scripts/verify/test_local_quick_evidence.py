@@ -776,6 +776,37 @@ class DeclaredManifestTests(unittest.TestCase):
         self.assertTrue(all(not token.startswith("$") and "%" not in token and ":" not in token for token in targets))
         self.assertIn("verify.ui_contract.delivery_surface.unit", targets)
 
+    def test_shards_reject_out_of_band_prerequisites(self) -> None:
+        for relative in ("Makefile", "make/extra.mk", "make/nested/extra.mk"):
+            for declaration in ("ci.local.quick.run: verify.hidden", "verify.other ci.local.quick.run: verify.hidden", "ci.local.quick.run verify.other: verify.hidden", "ci.local.quick.run:: verify.hidden"):
+                with self.subTest(relative=relative, declaration=declaration):
+                    root = self._manifest_root("ci.local.quick.run: guard.prod.forbid verify.a\n")
+                    path = root / relative
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text(declaration + "\n")
+                    with self.assertRaisesRegex(evidence.EvidenceError, "canonical declaration"):
+                        evidence.required_targets(root)
+
+    def test_phony_and_recipe_references_are_not_declarations(self) -> None:
+        root = self._manifest_root("ci.local.quick.run: guard.prod.forbid verify.a\n")
+        (root / "Makefile").write_text(".PHONY: ci.local.quick.run\n# ci.local.quick.run: verify.no\nother:\n\t@echo ci.local.quick.run: verify.no\n")
+        self.assertEqual(evidence.required_targets(root), ["guard.prod.forbid", "verify.a"])
+
+    def test_preflight_cli_is_readonly_and_rejects_hidden_dependency(self) -> None:
+        root = self._manifest_root("ci.local.quick.run: guard.prod.forbid verify.a\n\t@git diff --check\n")
+        before = sorted(str(path.relative_to(root)) for path in root.rglob("*"))
+        with mock.patch.object(sys, "argv", ["guard", "preflight"]), \
+             mock.patch.object(evidence, "repository_root", return_value=root), \
+             mock.patch("builtins.print"):
+            self.assertEqual(evidence.main(), 0)
+            self.assertEqual(before, sorted(str(path.relative_to(root)) for path in root.rglob("*")))
+            (root / "make/extra.mk").write_text("ci.local.quick.run: verify.hidden\n")
+            self.assertNotEqual(evidence.main(), 0)
+            self.assertFalse((root / ".runtime").exists())
+            for option in ("--shards", "--shard", "--jobs", "--keep"):
+                with mock.patch.object(sys, "argv", ["guard", "preflight", option, "0"]):
+                    self.assertNotEqual(evidence.main(), 0)
+
     def test_default_part_count_cannot_drift_from_the_make_entry(self) -> None:
         source = (ROOT / "make/ci.mk").read_text(encoding="utf-8")
         rows = [line for line in source.splitlines() if line.startswith("QUICK_SHARDS ?=")]

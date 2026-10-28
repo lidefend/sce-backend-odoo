@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 import json
 import sys
+import argparse
 
 ROOT = Path(__file__).resolve().parents[2]
 VIEWS_DIR = ROOT / "frontend/apps/web/src/views"
@@ -35,6 +36,9 @@ def _check_forbidden(text: str, tokens: list[str], scope: str, errors: list[str]
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check-only", action="store_true", help="Validate without regenerating reports")
+    args = parser.parse_args()
     errors: list[str] = []
     scanned: list[str] = []
 
@@ -431,8 +435,9 @@ def main() -> int:
         "scanned": scanned,
         "errors": errors,
     }
-    REPORT_JSON.parent.mkdir(parents=True, exist_ok=True)
-    REPORT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    if not args.check_only:
+        REPORT_JSON.parent.mkdir(parents=True, exist_ok=True)
+        REPORT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
     lines = [
         "# Frontend Page Contract Boundary Report",
@@ -450,11 +455,13 @@ def main() -> int:
     if errors:
         lines.extend(["", "## Errors"])
         lines.extend([f"- {err}" for err in errors])
-    REPORT_MD.parent.mkdir(parents=True, exist_ok=True)
-    REPORT_MD.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    if not args.check_only:
+        REPORT_MD.parent.mkdir(parents=True, exist_ok=True)
+        REPORT_MD.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    print(str(REPORT_MD))
-    print(str(REPORT_JSON))
+    if not args.check_only:
+        print(str(REPORT_MD))
+        print(str(REPORT_JSON))
     if errors:
         print("[frontend_page_contract_boundary_guard] FAIL")
         for err in errors:
