@@ -252,7 +252,7 @@
         <field name="name">payment.request.formal.payment.apply.tree</field>
         <field name="model">payment.request</field>
         <field name="arch" type="xml">
-            <tree string="付款申请" create="false" edit="false" delete="false" default_order="created_time desc, name desc">
+            <tree string="付款申请" create="true" edit="false" delete="false" default_order="created_time desc, name desc">
                 <field name="state" string="单据状态" />
                 <field name="name" string="单据编号" />
                 <field name="date_request" string="申请日期" />

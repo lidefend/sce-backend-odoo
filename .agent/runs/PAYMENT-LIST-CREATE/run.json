@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "PAYMENT-LIST-CREATE",
+  "branch": "fix/payment-list-create",
+  "baseline_sha": "4853b1b441837aa814049b2b9e31e9bdaa827767",
+  "status": "verification_pending",
+  "scope": [
+    ".agent/",
+    "addons/smart_construction_core/views/support/user_confirmed_formal_list_views.xml",
+    "scripts/verify/test_native_form_declarations.py",
+    "docs/ops/iterations/fe-presentation-convergence-01/payment-list-create/"
+  ],
+  "goal": ".agent/goals/PAYMENT-LIST-CREATE.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/payment-list-create/review.md",
+  "environment": {
+    "kind": "offline"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Freeze preparation, review generated diff, exact-head Quick; then protected Draft PR publication. Candidate browser acceptance pending; no save.",
+  "layer": {
+    "formal_product_layer": "P1",
+    "target": "native payment list declaration",
+    "module": "smart_construction_core",
+    "reason": "user now authorizes creation from formal list; no P0 permission or frontend bypass"
+  },
+  "observations": {
+    "targeted": "3/3 passed; XML eval AST decoded and exact views/view_ids compared",
+    "iteration": "passed",
+    "runtime": "not_run: no module upgrade or database write",
+    "logs": [
+      ".runtime/payment-list-create-before.log",
+      ".runtime/payment-list-create-after.log",
+      ".runtime/payment-list-create-after-fixed.log",
+      ".runtime/payment-list-create-iteration.log",
+      ".runtime/payment-list-create-02-tests.log",
+      ".runtime/payment-list-create-02-iteration.log"
+    ]
+  }
+}

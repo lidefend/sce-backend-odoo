@@ -49,6 +49,44 @@ class NativeFormDeclarationTest(unittest.TestCase):
             self.assertFalse(interaction.intersection(columns), interaction.intersection(columns))
         root = ET.parse(product / 'views/support/user_confirmed_formal_list_views.xml').getroot()
         tree = root.find("record[@id='view_payment_request_formal_payment_apply_tree']/field[@name='arch']/tree")
+        # Formal payment creation belongs to this list, not a retired menu.
+        # Keep inline edits/deletes denied and preserve the payment form context.
+        self.assertEqual(tree.get('create'), 'true')
+        self.assertEqual(tree.get('edit'), 'false')
+        self.assertEqual(tree.get('delete'), 'false')
+        action = root.find("record[@id='action_payment_request_user_payment_apply']")
+        self.assertEqual(action.find("field[@name='view_id']").get('ref'),
+                         'smart_construction_core.view_payment_request_formal_payment_apply_tree')
+        def declared_refs(expression):
+            # Parse Odoo's literal eval structure; never execute arbitrary code.
+            class References(ast.NodeTransformer):
+                def visit_Call(self, node):
+                    if (not isinstance(node.func, ast.Name) or node.func.id != 'ref'
+                            or len(node.args) != 1 or node.keywords
+                            or not isinstance(node.args[0], ast.Constant)
+                            or not isinstance(node.args[0].value, str)):
+                        raise ValueError('unsupported declaration expression')
+                    return ast.copy_location(ast.Constant(node.args[0].value), node)
+            return ast.literal_eval(References().visit(ast.parse(expression, mode='eval')))
+
+        expected_views = [
+            ('smart_construction_core.view_payment_request_formal_payment_apply_tree', 'tree'),
+            ('smart_construction_core.view_payment_request_pay_form', 'form'),
+        ]
+        self.assertEqual(declared_refs(action.find("field[@name='views']").get('eval')), expected_views)
+        self.assertEqual(declared_refs(action.find("field[@name='view_ids']").get('eval')),
+                         [(5, 0, 0)] + [(0, 0, {'view_mode': kind, 'view_id': ref})
+                                        for ref, kind in expected_views])
+        with self.assertRaises((ValueError, SyntaxError)):
+            declared_refs("unknown('smart_construction_core.view_payment_request_pay_form')")
+        taxonomy = ET.parse(product / 'views/menu_business_taxonomy.xml').getroot()
+        entry = taxonomy.find("record[@id='action_payment_request_user_payment_apply']")
+        self.assertEqual(entry.find("field[@name='res_model']").text, 'payment.request')
+        context = ast.literal_eval(entry.find("field[@name='context']").text)
+        self.assertEqual(context['default_type'], 'pay')
+        self.assertEqual(context['default_business_category_code'], 'finance.payment.apply.pay')
+        self.assertNotEqual(context.get('create'), False)
+        self.assertFalse(context.get('no_create', False))
         fields = {field.get('name') for field in tree.iter('field')}
         self.assertFalse(set(policy['critical']) - fields)
         self.assertFalse(fields.intersection(interaction))
