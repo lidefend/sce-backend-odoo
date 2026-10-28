@@ -47,3 +47,11 @@ console.log(`[native_modifier] PASS ${cases.length + 5} cases; Python native tru
 for (const type of ['many2one','one2many','many2many']) {
   assert.throws(() => nativeModifierRelationValue(undefined, type), isContractGapError);
 }
+
+// Identity predicate remains strict after moving it to a declaration-only module shape.
+for (const invalid of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1, true, '7']) {
+  assert.throws(() => nativeModifierRelationValue(invalid, 'many2one'), isContractGapError);
+  assert.throws(() => nativeModifierRelationValue([invalid], 'many2many'), isContractGapError);
+}
+assert.equal(nativeModifierRelationValue(Number.MAX_SAFE_INTEGER, 'many2one'), Number.MAX_SAFE_INTEGER);
+console.log('[native_modifier] identity declaration regression PASS assertions=17');
