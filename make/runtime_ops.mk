@@ -1824,7 +1824,7 @@ verify.candidate.view_adapter.unit: guard.prod.forbid
 	@python3 -m unittest scripts.ops.test_candidate_view_adapter -v
 
 candidate.view.plan: guard.prod.forbid
-	@python3 scripts/ops/candidate_view_adapter.py plan --request "$(CANDIDATE_VIEW_REQUEST)"
+	@python3 scripts/ops/candidate_view_adapter.py plan --request "$(CANDIDATE_VIEW_REQUEST)" --repository "$(or $(CANDIDATE_VIEW_REPOSITORY),$(ROOT_DIR))"
 
 candidate.view.apply: guard.prod.forbid
-	@python3 scripts/ops/candidate_view_adapter.py apply --request "$(CANDIDATE_VIEW_REQUEST)"
+	@python3 scripts/ops/candidate_view_adapter.py apply --request "$(CANDIDATE_VIEW_REQUEST)" --repository "$(or $(CANDIDATE_VIEW_REPOSITORY),$(ROOT_DIR))"

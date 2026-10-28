@@ -20,3 +20,5 @@
 日志：`.runtime/payment07-unit.log`。其他工具检查与候选发布状态由当前 `.agent/runs/PAYMENT-LIST-CREATE-07/run.json` 索引。
 
 `ci.local.iteration` 通过 L1；`ci.delivery.freeze.prepare` 通过。`verify.docs.all` 在链接检查失败：此工作区缺少历史文档引用的 62 个本地运行制品。保留失败，不补造制品，不将其记为文档全量通过；新增文档的相对链接另行核对。
+
+首个冻结候选 Quick 在车道覆盖检查失败：两个 Make 入口缺少可执行引用。随后将真实 Make plan/apply 调用加入既有 CLI 测试，验证离线 plan 成功与 apply 拒绝；不改覆盖守卫或豁免。首次显式 QUICK_SHARDS 参数也被签名入口拒绝，未执行；后续使用默认入口。失败日志保留 `.runtime/payment07-quick.log` 与 `.runtime/payment07-quick-default.log`。

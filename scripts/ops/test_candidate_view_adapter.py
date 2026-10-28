@@ -139,6 +139,15 @@ class AdapterTests(unittest.TestCase):
             self.assertEqual(json.loads(out.getvalue())['request']['candidate']['sha'],sha)
             source.write_bytes(b'not the committed candidate')
             self.assertEqual(a.read_candidate(root,sha,a.SOURCE),XML)
+            # Exercise the real governed wrappers, not only the Python parser.
+            for target, code in (('candidate.view.plan',0),('candidate.view.apply',2)):
+                result=subprocess.run(['make','--no-print-directory',target,
+                    'CANDIDATE_VIEW_REQUEST='+str(request),'CANDIDATE_VIEW_REPOSITORY='+tmp],
+                    cwd=a.ROOT,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+                self.assertEqual(result.returncode,code,result.stdout+result.stderr)
+                if code:self.assertIn('runtime_driver_not_supported',result.stdout)
+                else:self.assertIn('offline_plan_only',result.stdout)
+
 
 
 if __name__ == '__main__':unittest.main()

@@ -50,6 +50,8 @@
     "generated_inventory": "freeze.prepare regenerated new test registration; no product files",
     "iteration": "passed L1",
     "docs": "failed: 62 existing historical .runtime/artifact links absent in reused worktree; not adapter docs",
-    "freeze_prepare": "passed; inventory and complexity reports regenerated"
+    "freeze_prepare": "passed; inventory and complexity reports regenerated",
+    "quick_r1": "failed: new Make entrypoints had no executable references; corrected by actual Make CLI tests",
+    "focused_r2": "28/28 passed, including real Make plan/apply; lane coverage check passed"
   }
 }
