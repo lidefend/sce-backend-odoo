@@ -1,0 +1,122 @@
+{
+  "baseline_sha": "27de8c2769d4c02a6e1076ad3f60fb9aa9f77e17",
+  "runtime_declared_sha": "3f46dd7eba9f351386fee446151ee9eb545d56a4",
+  "reused_artifacts": [
+    {
+      "original": ".git/codex-recovery/FEPC-07R/merge-closeout/files/docs/ops/iterations/fe-presentation-convergence-01/api-evidence/project-display-facts.json",
+      "sha256": "ab074c53b5507539953004249fb3910ec0c3521ff90ba2493bef5116876db307",
+      "use": "project facts/contract and bounded DOM context; archive unchanged"
+    },
+    {
+      "original": ".git/codex-recovery/FEPC-07R/merge-closeout/files/docs/ops/iterations/fe-presentation-convergence-01/api-evidence/browser-response-1.json",
+      "sha256": "714ad92f7f21b88e35ff66df8e1ef82888b6e7d5e121393c2721e08063b97efb",
+      "use": "project facts/contract and bounded DOM context; archive unchanged"
+    },
+    {
+      "original": ".git/codex-recovery/FEPC-07R/merge-closeout/files/docs/ops/iterations/fe-presentation-convergence-01/api-evidence/browser-response-2.json",
+      "sha256": "9799303a57518e3f232894a229d46b74117147f8e40c3b56548493bf3c6399dc",
+      "use": "project facts/contract and bounded DOM context; archive unchanged"
+    },
+    {
+      "original": ".git/codex-recovery/FEPC-07R/merge-closeout/files/docs/ops/iterations/fe-presentation-convergence-01/api-evidence/browser-response-11.json",
+      "sha256": "b79d9bdeec7c80eae906bed8892b336df1eda0aa113845f47507f1c28148b290",
+      "use": "project facts/contract and bounded DOM context; archive unchanged"
+    },
+    {
+      "original": ".git/codex-recovery/FEPC-07R/merge-closeout/files/docs/ops/iterations/fe-presentation-convergence-01/api-evidence/supplement-browser-observations.json",
+      "sha256": "0c3bedf27b10b07dd67c78dc06542bbdd9125341b4931679317823f7188cb07b",
+      "use": "project facts/contract and bounded DOM context; archive unchanged"
+    },
+    {
+      "original": ".git/codex-recovery/FEPC-07R/merge-closeout/files/docs/ops/iterations/fe-presentation-convergence-01/api-evidence/runtime-identity.json",
+      "sha256": "d6bba0fa59e44a3498b82d955261e1348a49a23991ff4170e804c5c069ce898c",
+      "use": "project facts/contract and bounded DOM context; archive unchanged"
+    },
+    {
+      "original": ".git/codex-recovery/FEPC-07R/merge-closeout/files/docs/ops/iterations/fe-presentation-convergence-01/api-evidence-02r/browser-evidence.json",
+      "sha256": "2c56e0548d8cd7bdcb6168b35a9f119b3c08df2ca03423dcb23f52108a46d0e9",
+      "use": "historical identity/context only, not project UI proof"
+    }
+  ],
+  "source_files": [
+    {
+      "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
+      "runtime_blob": "e8c004353d1356d691c399d74269687c1e45f5fa",
+      "sha256": "0a5a6ec1a55506903e0091e3e08462b9d0b075914264e005d704ac71575ccf68",
+      "identical_to_current_main": true
+    },
+    {
+      "path": "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+      "runtime_blob": "07639b914a1f3ac0779f295ed317540287721d42",
+      "sha256": "259fd2ba97cabb135956f763c21e047f1129d0edb1f033f456995a9b3c93a79c",
+      "identical_to_current_main": true
+    },
+    {
+      "path": "frontend/apps/web/src/components/template/FormSection.vue",
+      "runtime_blob": "8a1fdeb38312fd32c412d59c971afb58943b65d3",
+      "sha256": "1308e55a5991930c030af4f4b08218261db170106ec82ffd99ff1b57e36d2b47",
+      "identical_to_current_main": true
+    },
+    {
+      "path": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+      "runtime_blob": "555c5666a064d64c7b65824ee773d644f47a3c90",
+      "sha256": "607a861caf9e352e7e2f0e7d0c2ce4b79030a7e3be53163b3719339a918afadd",
+      "identical_to_current_main": true
+    },
+    {
+      "path": "frontend/apps/web/src/components/design-system/ScList.vue",
+      "runtime_blob": "7918d6edce6ebee569915bc9ed4143dea18ed8b1",
+      "sha256": "ce479b16f31080cc1c52bfeb44a5774ad6bb8d51abb860f547d570ea31e8ce3d",
+      "identical_to_current_main": true
+    },
+    {
+      "path": "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue",
+      "runtime_blob": "f37e1a6916994978f9851f17cd7d9fd5f26a4d21",
+      "sha256": "47b085cf92c7a87b911b45c95ff4994ceb01197ac93a2b70056dcdaead16081f",
+      "identical_to_current_main": true
+    },
+    {
+      "path": "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.css",
+      "runtime_blob": "100a13e534a9fe44553a70f0fd38ff8f135b9766",
+      "sha256": "0183c5a707f5a17fcce4c2db5a489f108c25663ac5da13b0c1e61e1970307248",
+      "identical_to_current_main": true
+    },
+    {
+      "path": "frontend/apps/web/src/pages/contractForm/ProfessionalFollowerManager.vue",
+      "runtime_blob": "f65be4689dcc39e50dd148380bcf3d4f10c1db41",
+      "sha256": "c21d9f396a935b011fb031fa65ceaac53252b60793a45e56fd6ec33c70ca570f",
+      "identical_to_current_main": true
+    },
+    {
+      "path": "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue",
+      "runtime_blob": "4ccb01ac3f1366aca1da2457aaadaeb11efeb835",
+      "sha256": "2bd2aa3e8de7d3a763d264e4fbeb66ee85ad544a50a7232b66e1528a379be5ae",
+      "identical_to_current_main": true
+    },
+    {
+      "path": "frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts",
+      "runtime_blob": "053ce8f28eb41c3f7cd6df76969381cc44ae922c",
+      "sha256": "215fa516f9e43b9bcc197b933ada698c3fdd36e08137891bc2b05d16f5990579",
+      "identical_to_current_main": true
+    },
+    {
+      "path": "addons/smart_core/handlers/chatter_timeline.py",
+      "runtime_blob": "c28408d173807b777cb545f27b81b614d7ad197e",
+      "sha256": "36ca8d7669ad7ba153cfc15822e2a6eaa6a2f9636551ad5c3962ff7d2bf45597",
+      "identical_to_current_main": true
+    },
+    {
+      "path": "addons/smart_construction_core/views/core/project_overview_views.xml",
+      "runtime_blob": "58f4f0cee9445be6892856eec733221ab974214c",
+      "sha256": "406e4b91d56c1bef9ff0395d6fa1fdd8f3be4477e3e17ec5b02efbd3400cb504",
+      "identical_to_current_main": true
+    },
+    {
+      "path": "addons/smart_construction_core/models/core/project_core.py",
+      "runtime_blob": "9d67dd9f3aab8e96af5f736a5c5a4de67261d366",
+      "sha256": "6fa9a577d39843be668ba47030d5c2bec1233cb02f43900002ed608e483fc419",
+      "identical_to_current_main": true
+    }
+  ],
+  "limitations": "Archived raw originals remain local; the selected projection and new screenshot/DOM evidence are provided for PR review. No historical data refresh inferred from source SHA."
+}

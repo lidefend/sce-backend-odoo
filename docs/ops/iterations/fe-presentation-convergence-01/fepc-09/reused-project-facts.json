@@ -1,0 +1,1030 @@
+{
+  "evidence_class": "reused_runtime_response_projection_not_new_API_sampling",
+  "source_task": "FEPC-API-01",
+  "identity": {
+    "user_id": 41,
+    "role": "business_full",
+    "company_id": 1,
+    "allowed_company_ids": [
+      1,
+      2
+    ]
+  },
+  "record_selection": {
+    "model": "project.project",
+    "id": 15,
+    "source": "system.init.workspace_home.my_objects first project entry",
+    "route": "/t/demo/r/project.project/15",
+    "enumeration": "no arbitrary project ID or additional page/search"
+  },
+  "detail": {
+    "request": {
+      "intent": "ui.contract.v2",
+      "params": {
+        "op": "model",
+        "model": "project.project",
+        "view_type": "form",
+        "record_id": 15,
+        "render_profile": "readonly",
+        "contract_surface": "user",
+        "source_mode": "governance_pipeline",
+        "context": {
+          "company_id": 1
+        },
+        "delivery_profile": "full",
+        "client_type": "web_pc",
+        "accepted_contract_versions": [
+          "2.0.x",
+          "2.1.x",
+          "2.2.x"
+        ],
+        "client_contract_capabilities": [
+          "container_tree.v2",
+          "data_source.v2",
+          "action_rule.v2",
+          "relation_entry.v2",
+          "status_contract.v2",
+          "form_layout.children_owner.v1",
+          "form.feedback.message.v1",
+          "form.feedback.draft.v1",
+          "form.navigation.anchor.v1"
+        ]
+      },
+      "context": {
+        "company_id": 1
+      }
+    },
+    "page_info": {
+      "pageId": "project.project.form",
+      "sceneKey": "project.project.form",
+      "pageName": "项目",
+      "model": "project.project",
+      "viewType": "form",
+      "layoutType": "form",
+      "renderMode": "governed",
+      "contractVersion": "2.2.0",
+      "clientType": "web_pc",
+      "deliveryProfile": "full"
+    },
+    "source": {
+      "etag": "upc-v2-sha256-63d594e3979a58c98fe751b4fe9e97caad3a292c74807f056e734ede8ef1f3b1",
+      "snapshotId": "snapshot.upc.v2.63d594e3979a58c98fe751b4fe9e97ca",
+      "traceId": "trace_1793171906503_d29d8f780d6168",
+      "requestId": "trace_1793171906503_d29d8f780d6168",
+      "sourceType": "native_form_projection",
+      "lifecycle": {
+        "lifecycleVersion": "1.0.0",
+        "stage": "runtime_delivery",
+        "definition": {
+          "schemaId": "smart_core.unified_page_contract_v2",
+          "schemaVersion": "2.2.0",
+          "schemaSha256": "fc72fb4cc30d6c064a2fd8a501d060665d4df54fb6d5e04ecbb909e2c6f1cfd1",
+          "contractVersion": "2.2.0",
+          "normativeStatus": "stable"
+        },
+        "generation": {
+          "generator": "unified_page_contract_v2",
+          "generatorVersion": "2.2.0",
+          "sourceType": "native_form_projection",
+          "sourceSha256": "4c4a4c257e3d8fd5b6245376c946022f44940178793aa7da0c1825714c78a832"
+        },
+        "runtime": {
+          "requestId": "trace_1793171906503_d29d8f780d6168",
+          "traceId": "trace_1793171906503_d29d8f780d6168",
+          "clientType": "web_pc",
+          "traceSource": "request_context"
+        },
+        "integrity": {
+          "algorithm": "sha256",
+          "contractSha256": "63d594e3979a58c98fe751b4fe9e97caad3a292c74807f056e734ede8ef1f3b1"
+        },
+        "authority": {
+          "kind": "unified_page_contract_v2",
+          "authorities": [
+            "ui.contract",
+            "ir.ui.view",
+            "ir.actions.act_window",
+            "ir.ui.menu",
+            "ir.model.fields",
+            "ir.model.access",
+            "ir.rule"
+          ],
+          "projection_only": true,
+          "rebuildable": true,
+          "no_business_fact_authority": true,
+          "runtime_carrier": "ui.contract.v2"
+        }
+      },
+      "deliveryTrim": {
+        "clientType": "web_pc",
+        "deliveryProfile": "full",
+        "compact": false,
+        "limits": {
+          "containers": null,
+          "widgets": null,
+          "actions": null
+        },
+        "original": {
+          "containers": 162,
+          "widgets": 81,
+          "actions": 16
+        },
+        "delivered": {
+          "containers": 162,
+          "widgets": 81,
+          "actions": 16
+        },
+        "omitted": {
+          "containers": 0,
+          "widgets": 0,
+          "actions": 0
+        }
+      }
+    },
+    "form_structure_source": {
+      "source": "ui.contract.v2.form_structure_contract",
+      "mode": "native_structured_form",
+      "presentationMode": "workspace",
+      "structureSource": "native_view",
+      "structureAuthority": "container_tree",
+      "sourceAuthority": {
+        "kind": "unified_page_contract_v2",
+        "runtime_carrier": "ui.contract.v2.form_structure_contract",
+        "projection_only": true,
+        "no_business_fact_authority": true,
+        "governed_form_structure": true,
+        "governance_source": {
+          "source": "native_form_layout",
+          "ownerLayer": "native_form_layout",
+          "businessConfigContracts": [],
+          "resolvedViewId": 943,
+          "resolvedActionId": 0,
+          "structureDiagnostics": [],
+          "compatibilityDependencies": [],
+          "legacyFieldPolicyOverlay": false,
+          "formLayoutOverlay": false,
+          "formStructureAuthority": "native_authority",
+          "formPresentationMode": "workspace",
+          "fieldNames": [],
+          "fieldLabels": {},
+          "fieldSemanticRoles": {},
+          "sectionSemanticRoles": {},
+          "configuredSections": [],
+          "sectionTitles": [],
+          "fieldGroups": {},
+          "hiddenFieldNames": [],
+          "groupColumns": {},
+          "groupVisibility": {}
+        }
+      }
+    },
+    "global_status": {
+      "pageVisible": true,
+      "pageAuth": "read",
+      "modelRights": {
+        "read": true,
+        "write": true,
+        "create": true,
+        "unlink": true,
+        "duplicate": true
+      },
+      "recordRights": {
+        "read": true,
+        "write": true,
+        "create": true,
+        "unlink": true,
+        "duplicate": true
+      },
+      "viewCapabilities": {
+        "read": true,
+        "write": true,
+        "create": true,
+        "unlink": true,
+        "duplicate": true
+      },
+      "entryCapabilities": {
+        "read": true,
+        "write": true,
+        "create": true,
+        "unlink": true,
+        "duplicate": true
+      },
+      "effectiveRecordCapabilities": {
+        "read": true,
+        "write": true,
+        "create": true,
+        "unlink": true,
+        "duplicate": true
+      },
+      "effectiveRenderProfile": "readonly",
+      "workflowPhase": "closed",
+      "approvalPhase": "none"
+    },
+    "field_definitions": [
+      {
+        "source_path": "/layoutContract/containerTree/2/widgetList/0",
+        "widget_id": "field.lifecycle_state.occ.7cacbc9d41ed07b6",
+        "field": "lifecycle_state",
+        "label": "项目状态",
+        "widget_type": "display",
+        "component": "sc.display.status",
+        "definition": {
+          "type": "selection",
+          "string": "项目状态",
+          "label": "项目状态",
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "selection": [
+            [
+              "draft",
+              "草稿"
+            ],
+            [
+              "in_progress",
+              "在建"
+            ],
+            [
+              "paused",
+              "停工"
+            ],
+            [
+              "done",
+              "竣工"
+            ],
+            [
+              "closing",
+              "结算中"
+            ],
+            [
+              "warranty",
+              "保修期"
+            ],
+            [
+              "closed",
+              "关闭"
+            ]
+          ],
+          "widget": "statusbar",
+          "native_locator": "/form[1]/header[1]/field[1]",
+          "occurrence_index": 1,
+          "source_position": 4
+        },
+        "config": {
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "fieldType": "selection",
+          "nativeWidget": "statusbar"
+        },
+        "effective_widget_status": {
+          "widgetId": "field.lifecycle_state.occ.7cacbc9d41ed07b6",
+          "visible": true,
+          "readonly": false,
+          "required": false,
+          "disabled": false,
+          "auth": "edit"
+        }
+      },
+      {
+        "source_path": "/layoutContract/containerTree/2/widgetList/1",
+        "widget_id": "field.sc_approval_state.occ.9f64914579652065",
+        "field": "sc_approval_state",
+        "label": "立项审批",
+        "widget_type": "select",
+        "component": "sc.select.remote",
+        "definition": {
+          "type": "selection",
+          "string": "立项审批",
+          "label": "立项审批",
+          "readonly": true,
+          "required": true,
+          "invisible": false,
+          "selection": [
+            [
+              "draft",
+              "待提交"
+            ],
+            [
+              "approved",
+              "立项已通过"
+            ]
+          ],
+          "widget": "select",
+          "modifiers": {
+            "readonly": true
+          },
+          "native_locator": "/form[1]/header[1]/field[2]",
+          "occurrence_index": 1,
+          "source_position": 5
+        },
+        "config": {
+          "readonly": true,
+          "required": true,
+          "invisible": false,
+          "fieldType": "selection",
+          "nativeWidget": "select",
+          "modifiers": {
+            "readonly": true
+          }
+        },
+        "effective_widget_status": {
+          "widgetId": "field.sc_approval_state.occ.9f64914579652065",
+          "visible": true,
+          "readonly": true,
+          "required": true,
+          "disabled": false,
+          "auth": "read"
+        }
+      },
+      {
+        "source_path": "/layoutContract/containerTree/3/children/5/children/0/widgetList/1",
+        "widget_id": "field.name.occ.d185b8cbc2315be5",
+        "field": "name",
+        "label": "名称",
+        "widget_type": "input",
+        "component": "sc.input.text",
+        "definition": {
+          "type": "char",
+          "string": "名称",
+          "label": "名称",
+          "readonly": false,
+          "required": true,
+          "invisible": false,
+          "selection": [],
+          "widget": "text",
+          "widget_options": {
+            "line_breaks": false
+          },
+          "native_locator": "/form[1]/sheet[1]/div[2]/h1[1]/field[2]",
+          "occurrence_index": 1,
+          "source_position": 39
+        },
+        "config": {
+          "readonly": false,
+          "required": true,
+          "invisible": false,
+          "fieldType": "char",
+          "nativeWidget": "text"
+        },
+        "effective_widget_status": {
+          "widgetId": "field.name.occ.d185b8cbc2315be5",
+          "visible": true,
+          "readonly": false,
+          "required": true,
+          "disabled": false,
+          "auth": "edit"
+        }
+      },
+      {
+        "source_path": "/layoutContract/containerTree/3/children/6/children/1/widgetList/1",
+        "widget_id": "field.date.occ.6944c4b164488b38",
+        "field": "date",
+        "label": "有效期",
+        "widget_type": "date",
+        "component": "sc.input.date",
+        "definition": {
+          "type": "date",
+          "string": "有效期",
+          "label": "有效期",
+          "readonly": false,
+          "required": false,
+          "invisible": true,
+          "selection": [],
+          "widget": "date",
+          "modifiers": {
+            "required": {
+              "kind": "field_truthy",
+              "field": "date_start",
+              "raw": "date_start"
+            },
+            "invisible": true
+          },
+          "native_locator": "/form[1]/sheet[1]/group[1]/group[2]/field[2]",
+          "occurrence_index": 1,
+          "source_position": 44
+        },
+        "config": {
+          "readonly": false,
+          "required": false,
+          "invisible": true,
+          "fieldType": "date",
+          "nativeWidget": "date",
+          "modifiers": {
+            "required": {
+              "kind": "field_truthy",
+              "field": "date_start",
+              "raw": "date_start"
+            },
+            "invisible": true
+          }
+        },
+        "effective_widget_status": {
+          "widgetId": "field.date.occ.6944c4b164488b38",
+          "visible": false,
+          "readonly": false,
+          "required": false,
+          "disabled": false,
+          "auth": "none",
+          "reasonCode": "NATIVE_MODIFIER_INVISIBLE"
+        }
+      },
+      {
+        "source_path": "/layoutContract/containerTree/3/children/7/widgetList/0",
+        "widget_id": "field.project_code.occ.87b1e856eb4a44ef",
+        "field": "project_code",
+        "label": "项目编号",
+        "widget_type": "input",
+        "component": "sc.input.text",
+        "definition": {
+          "type": "char",
+          "string": "项目编号",
+          "label": "项目编号",
+          "readonly": true,
+          "required": false,
+          "invisible": false,
+          "selection": [],
+          "widget": "input",
+          "modifiers": {
+            "readonly": true,
+            "invisible": {
+              "kind": "field_compare",
+              "semantics": "python",
+              "field": "id",
+              "operator": "==",
+              "value": false,
+              "raw": "id == False"
+            }
+          },
+          "native_locator": "/form[1]/sheet[1]/group[2]/field[1]",
+          "occurrence_index": 1,
+          "source_position": 46
+        },
+        "config": {
+          "readonly": true,
+          "required": false,
+          "invisible": false,
+          "fieldType": "char",
+          "nativeWidget": "input",
+          "modifiers": {
+            "readonly": true,
+            "invisible": {
+              "kind": "field_compare",
+              "semantics": "python",
+              "field": "id",
+              "operator": "==",
+              "value": false,
+              "raw": "id == False"
+            }
+          }
+        },
+        "effective_widget_status": {
+          "widgetId": "field.project_code.occ.87b1e856eb4a44ef",
+          "visible": true,
+          "readonly": true,
+          "required": false,
+          "disabled": false,
+          "auth": "read"
+        }
+      },
+      {
+        "source_path": "/layoutContract/containerTree/3/children/7/widgetList/1",
+        "widget_id": "field.partner_id.occ.27ddb4c33f5875f1",
+        "field": "partner_id",
+        "label": "客户",
+        "widget_type": "select",
+        "component": "sc.relation.many2one",
+        "definition": {
+          "type": "many2one",
+          "string": "客户",
+          "label": "客户",
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "selection": [],
+          "relation": "res.partner",
+          "widget": "res_partner_many2one",
+          "native_locator": "/form[1]/sheet[1]/group[2]/field[2]",
+          "occurrence_index": 1,
+          "source_position": 47
+        },
+        "config": {
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "fieldType": "many2one",
+          "nativeWidget": "res_partner_many2one",
+          "relation": "res.partner"
+        },
+        "effective_widget_status": {
+          "widgetId": "field.partner_id.occ.27ddb4c33f5875f1",
+          "visible": true,
+          "readonly": false,
+          "required": false,
+          "disabled": false,
+          "auth": "edit"
+        }
+      },
+      {
+        "source_path": "/layoutContract/containerTree/3/children/7/widgetList/6",
+        "widget_id": "field.owner_contact.occ.ea495067e5435f7b",
+        "field": "owner_contact",
+        "label": "业主联系人",
+        "widget_type": "input",
+        "component": "sc.input.text",
+        "definition": {
+          "type": "char",
+          "string": "业主联系人",
+          "label": "业主联系人",
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "selection": [],
+          "widget": "input",
+          "native_locator": "/form[1]/sheet[1]/group[2]/field[7]",
+          "occurrence_index": 1,
+          "source_position": 52
+        },
+        "config": {
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "fieldType": "char",
+          "nativeWidget": "input"
+        },
+        "effective_widget_status": {
+          "widgetId": "field.owner_contact.occ.ea495067e5435f7b",
+          "visible": true,
+          "readonly": false,
+          "required": false,
+          "disabled": false,
+          "auth": "edit"
+        }
+      },
+      {
+        "source_path": "/layoutContract/containerTree/3/children/8/widgetList/0",
+        "widget_id": "field.initiation_date.occ.3376eeaacddf6742",
+        "field": "initiation_date",
+        "label": "单据日期",
+        "widget_type": "date",
+        "component": "sc.input.date",
+        "definition": {
+          "type": "date",
+          "string": "单据日期",
+          "label": "单据日期",
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "selection": [],
+          "widget": "date",
+          "native_locator": "/form[1]/sheet[1]/group[3]/field[1]",
+          "occurrence_index": 1,
+          "source_position": 56
+        },
+        "config": {
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "fieldType": "date",
+          "nativeWidget": "date"
+        },
+        "effective_widget_status": {
+          "widgetId": "field.initiation_date.occ.3376eeaacddf6742",
+          "visible": true,
+          "readonly": false,
+          "required": false,
+          "disabled": false,
+          "auth": "edit"
+        }
+      },
+      {
+        "source_path": "/layoutContract/containerTree/3/children/8/widgetList/1",
+        "widget_id": "field.date_start.occ.548940ca166d4d6f",
+        "field": "date_start",
+        "label": "安排的日期",
+        "widget_type": "date",
+        "component": "sc.input.date",
+        "definition": {
+          "type": "date",
+          "string": "安排的日期",
+          "label": "安排的日期",
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "selection": [],
+          "widget": "daterange",
+          "widget_options": {
+            "end_date_field": "date",
+            "always_range": "1"
+          },
+          "widget_semantics": {
+            "kind": "date_range",
+            "start_field": "date_start",
+            "end_field": "date"
+          },
+          "modifiers": {
+            "required": {
+              "kind": "any",
+              "exprs": [
+                {
+                  "kind": "field_truthy",
+                  "field": "date_start"
+                },
+                {
+                  "kind": "field_truthy",
+                  "field": "date"
+                }
+              ],
+              "raw": "date_start or date"
+            }
+          },
+          "native_locator": "/form[1]/sheet[1]/group[3]/field[2]",
+          "occurrence_index": 1,
+          "source_position": 57
+        },
+        "config": {
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "fieldType": "date",
+          "nativeWidget": "daterange",
+          "widgetSemantics": {
+            "kind": "date_range",
+            "start_field": "date_start",
+            "end_field": "date"
+          },
+          "modifiers": {
+            "required": {
+              "kind": "any",
+              "exprs": [
+                {
+                  "kind": "field_truthy",
+                  "field": "date_start"
+                },
+                {
+                  "kind": "field_truthy",
+                  "field": "date"
+                }
+              ],
+              "raw": "date_start or date"
+            }
+          }
+        },
+        "effective_widget_status": {
+          "widgetId": "field.date_start.occ.548940ca166d4d6f",
+          "visible": true,
+          "readonly": false,
+          "required": false,
+          "disabled": false,
+          "auth": "edit"
+        }
+      },
+      {
+        "source_path": "/layoutContract/containerTree/3/children/8/widgetList/2",
+        "widget_id": "field.start_date.occ.a763a062eb628d42",
+        "field": "start_date",
+        "label": "计划开工日期",
+        "widget_type": "date",
+        "component": "sc.input.date",
+        "definition": {
+          "type": "date",
+          "string": "计划开工日期",
+          "label": "计划开工日期",
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "selection": [],
+          "widget": "date",
+          "native_locator": "/form[1]/sheet[1]/group[3]/field[3]",
+          "occurrence_index": 1,
+          "source_position": 58
+        },
+        "config": {
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "fieldType": "date",
+          "nativeWidget": "date"
+        },
+        "effective_widget_status": {
+          "widgetId": "field.start_date.occ.a763a062eb628d42",
+          "visible": true,
+          "readonly": false,
+          "required": false,
+          "disabled": false,
+          "auth": "edit"
+        }
+      },
+      {
+        "source_path": "/layoutContract/containerTree/3/children/8/widgetList/3",
+        "widget_id": "field.end_date.occ.26889bcf4a88ab95",
+        "field": "end_date",
+        "label": "计划竣工日期",
+        "widget_type": "date",
+        "component": "sc.input.date",
+        "definition": {
+          "type": "date",
+          "string": "计划竣工日期",
+          "label": "计划竣工日期",
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "selection": [],
+          "widget": "date",
+          "native_locator": "/form[1]/sheet[1]/group[3]/field[4]",
+          "occurrence_index": 1,
+          "source_position": 59
+        },
+        "config": {
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "fieldType": "date",
+          "nativeWidget": "date"
+        },
+        "effective_widget_status": {
+          "widgetId": "field.end_date.occ.26889bcf4a88ab95",
+          "visible": true,
+          "readonly": false,
+          "required": false,
+          "disabled": false,
+          "auth": "edit"
+        }
+      },
+      {
+        "source_path": "/layoutContract/containerTree/3/children/9/widgetList/0",
+        "widget_id": "field.responsibility_ids.occ.e0f4e24b06c0de19",
+        "field": "responsibility_ids",
+        "label": "责任矩阵",
+        "widget_type": "table",
+        "component": "sc.relation.table",
+        "definition": {
+          "type": "one2many",
+          "string": "责任矩阵",
+          "label": "责任矩阵",
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "selection": [],
+          "relation": "project.responsibility",
+          "relation_field": "project_id",
+          "widget": "table",
+          "native_locator": "/form[1]/sheet[1]/group[4]/field[1]",
+          "occurrence_index": 1,
+          "source_position": 65
+        },
+        "config": {
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "fieldType": "one2many",
+          "nativeWidget": "table",
+          "relation": "project.responsibility"
+        },
+        "effective_widget_status": {
+          "widgetId": "field.responsibility_ids.occ.e0f4e24b06c0de19",
+          "visible": true,
+          "readonly": false,
+          "required": false,
+          "disabled": false,
+          "auth": "edit"
+        }
+      },
+      {
+        "source_path": "/layoutContract/containerTree/3/children/10/children/0/children/10/children/0/widgetList/3",
+        "widget_id": "field.collaborator_ids.occ.82a75e96ffd18632",
+        "field": "collaborator_ids",
+        "label": "合作者",
+        "widget_type": "table",
+        "component": "sc.relation.table",
+        "definition": {
+          "type": "one2many",
+          "string": "合作者",
+          "label": "合作者",
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "selection": [],
+          "relation": "project.collaborator",
+          "relation_field": "project_id",
+          "widget": "table",
+          "native_locator": "/form[1]/sheet[1]/group[5]/notebook[1]/page[11]/group[1]/field[4]",
+          "occurrence_index": 1,
+          "source_position": 261
+        },
+        "config": {
+          "readonly": false,
+          "required": false,
+          "invisible": false,
+          "fieldType": "one2many",
+          "nativeWidget": "table",
+          "relation": "project.collaborator"
+        },
+        "effective_widget_status": {
+          "widgetId": "field.collaborator_ids.occ.82a75e96ffd18632",
+          "visible": true,
+          "readonly": false,
+          "required": false,
+          "disabled": false,
+          "auth": "edit"
+        }
+      }
+    ],
+    "values": {
+      "name": "城东片区安置房二期工程（归档阶段）",
+      "project_code": "DEMO-PJ-STAGE-CLOSED",
+      "lifecycle_state": "closed",
+      "sc_approval_state": "approved",
+      "date_start": false,
+      "date": false,
+      "start_date": "2026-10-28",
+      "end_date": false,
+      "initiation_date": "2026-10-28",
+      "partner_id": [
+        72,
+        "德阳市城市某某建设投资集团有限公司"
+      ],
+      "owner_contact": false,
+      "responsibility_ids": [],
+      "collaborator_ids": []
+    },
+    "fields_absent_from_detail_read": [
+      "owner_id"
+    ],
+    "owner_from_same_record_list": [
+      72,
+      "德阳市城市某某建设投资集团有限公司"
+    ],
+    "responsibility": {
+      "relation_model": "project.responsibility",
+      "inverse": "project_id",
+      "record_ids": [],
+      "count": 0,
+      "evidence": "browser-response-2.json"
+    },
+    "collaborators": {
+      "relation_model": "project.collaborator",
+      "record_ids": [],
+      "count": 0,
+      "evidence": "browser-response-2.json"
+    },
+    "collaboration_timeline": {
+      "parent_model": "project.project",
+      "parent_id": 15,
+      "counts": {
+        "messages": 4,
+        "attachments": 0,
+        "activities": 1,
+        "audit": 1,
+        "total": 6
+      },
+      "paging": {
+        "offset": 0,
+        "limit": 40,
+        "next_offset": null,
+        "has_more": false
+      },
+      "source_authority": {
+        "kind": "odoo_collaboration_timeline_projection",
+        "authorities": [
+          "mail.message",
+          "ir.attachment",
+          "mail.activity"
+        ],
+        "auxiliary_authorities": [
+          "sc.audit.log"
+        ],
+        "projection_only": true,
+        "rebuildable": true,
+        "no_business_fact_authority": true,
+        "runtime_carrier": "chatter.timeline"
+      },
+      "evidence": "browser-response-11.json"
+    },
+    "browser_fields": [
+      {
+        "field": "partner_id",
+        "text": "德阳市城市某某建设投资集团有限公司",
+        "visible": true,
+        "inputs": []
+      },
+      {
+        "field": "date_start",
+        "text": "-",
+        "visible": true,
+        "inputs": []
+      },
+      {
+        "field": "start_date",
+        "text": "2026-10-28",
+        "visible": true,
+        "inputs": []
+      },
+      {
+        "field": "end_date",
+        "text": "-",
+        "visible": true,
+        "inputs": []
+      },
+      {
+        "field": "responsibility_ids",
+        "text": "暂无可展示记录确认操作取消确认操作",
+        "visible": true,
+        "inputs": []
+      },
+      {
+        "field": "collaborator_ids",
+        "text": "暂无可展示记录确认操作取消确认操作",
+        "visible": false,
+        "inputs": []
+      }
+    ],
+    "limitations": [
+      "collaborator_ids DOM exists but is not visible in sampled tab; do not claim visual empty-state acceptance for hidden tab",
+      "No business actions, edits or permission elevation performed; rights flags are declarations, not exercised write permission"
+    ]
+  },
+  "timeline": {
+    "counts": {
+      "messages": 4,
+      "attachments": 0,
+      "activities": 1,
+      "audit": 1,
+      "total": 6
+    },
+    "paging": {
+      "offset": 0,
+      "limit": 40,
+      "next_offset": null,
+      "has_more": false
+    },
+    "source_authorities": [
+      "mail.message",
+      "ir.attachment",
+      "mail.activity"
+    ],
+    "auxiliary_authorities": [
+      "sc.audit.log"
+    ],
+    "source_authority": {
+      "kind": "odoo_collaboration_timeline_projection",
+      "authorities": [
+        "mail.message",
+        "ir.attachment",
+        "mail.activity"
+      ],
+      "auxiliary_authorities": [
+        "sc.audit.log"
+      ],
+      "projection_only": true,
+      "rebuildable": true,
+      "no_business_fact_authority": true,
+      "runtime_carrier": "chatter.timeline"
+    },
+    "items": [
+      {
+        "id": 1568,
+        "key": "m-1568",
+        "type": "message",
+        "at": "2026-10-28T04:06:46",
+        "subtype": "mail.mt_note"
+      },
+      {
+        "id": 678,
+        "key": "m-678",
+        "type": "message",
+        "at": "2026-10-28T03:40:21",
+        "subtype": "mail.mt_note"
+      },
+      {
+        "id": 672,
+        "key": "m-672",
+        "type": "message",
+        "at": "2026-10-28T03:40:21",
+        "subtype": "mail.mt_note"
+      },
+      {
+        "id": 671,
+        "key": "m-671",
+        "type": "message",
+        "at": "2026-10-28T03:40:21",
+        "subtype": "mail.mt_note"
+      },
+      {
+        "id": 0,
+        "key": "record-created-15",
+        "type": "audit",
+        "at": "2026-10-28T03:40:14.319580",
+        "subtype": null
+      },
+      {
+        "id": 21,
+        "key": "act-21",
+        "type": "activity",
+        "at": "2026-10-26T00:00:00",
+        "subtype": null
+      }
+    ]
+  },
+  "api02r_scope": "Payment/home evidence confirms account/version continuity only; not reused as project layout proof"
+}

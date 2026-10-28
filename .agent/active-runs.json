@@ -3,9 +3,13 @@
   "branches": {
     "audit/daily-dev-mainline-product-acceptance-closeout-20261009": ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
     "audit/fe-contract-runtime-00-20261012": ".agent/runs/FE-CONTRACT-RUNTIME-00/run.json",
+    "audit/fepc-07r-home-metric-decisions": ".agent/runs/FEPC-07R/run.json",
+    "audit/fepc-08-help-popover-diagnosis": ".agent/runs/FEPC-08/run.json",
+    "audit/fepc-09-project-detail-review": ".agent/runs/FEPC-09/run.json",
     "audit/system-permission-roles-20261019": ".agent/runs/SYSTEM-PERMISSION-ROLES-20261019/run.json",
     "codex/backend-suite-reuse-authority": ".agent/runs/BACKEND-SUITE-REUSE-AUTHORITY/run.json",
     "codex/platform-browser-probe-entry-credentials-20261020": ".agent/runs/PLATFORM-BROWSER-PROBE-ENTRY-CREDENTIALS-20261020/run.json",
+    "codex/stable-baseline-collaboration": ".agent/runs/STABLE-BASELINE-COLLABORATION-20261026/run.json",
     "codex/test-baseline-incremental-reuse": ".agent/runs/TEST-BASELINE-QUICK-CLOSEOUT-20261025/run.json",
     "feature/demo-iteration-line-20261020": ".agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json",
     "feature/product-iteration-v2-20261020": ".agent/runs/PRODUCT-ITERATION-V2-20261020/run.json",
@@ -24,10 +28,12 @@
     "fix/daily-runtime-payload-import-closeout-20261016": ".agent/runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/run.json",
     "fix/delivery-lanes-orchestration-20261023": ".agent/runs/DELIVERY-LANES-ORCHESTRATION-20261023/run.json",
     "fix/demo-company-membership-persistence-20261023": ".agent/runs/DEMO-COMPANY-MEMBERSHIP-PERSISTENCE-20261023/run.json",
+    "fix/demo-product-completion-20261026": ".agent/runs/PRODUCT-USER-GAP-CLOSEOUT-20261026/run.json",
     "fix/demo-runtime-closeout-20261017": ".agent/runs/DEMO-RUNTIME-CLOSEOUT-20261017/run.json",
     "fix/fe-contract-runtime-02-consumption-stop-closure": ".agent/runs/FE-CONTRACT-RUNTIME-02/run.json",
     "fix/fe-incremental-validation-01": ".agent/runs/FE-INCREMENTAL-VALIDATION-02/run.json",
     "fix/fe-ux-entry-continuity-01": ".agent/runs/FE-UX-ENTRY-CONTINUITY-01/run.json",
+    "fix/fepc-10-message-author-body": ".agent/runs/FEPC-10/run.json",
     "fix/frontend-static-image-decoupling-20261018": ".agent/runs/FRONTEND-STATIC-IMAGE-DECOUPLING-20261018/run.json",
     "fix/generated-evidence-auto-refresh": ".agent/runs/GENERATED-EVIDENCE-AUTO-REFRESH/run.json",
     "fix/local-development-environment-closeout-20261016": ".agent/runs/LOCAL-DEVELOPMENT-ENVIRONMENT-CLOSEOUT-20261016/run.json",
@@ -41,10 +47,6 @@
     "fix/quick-incremental-execution": ".agent/runs/QUICK-INCREMENTAL-EXECUTION/run.json",
     "fix/quick-input-scoped-reuse": ".agent/runs/QUICK-INPUT-SCOPED-REUSE/run.json",
     "fix/user-delivery-acceptance-20261025": ".agent/runs/USER-DELIVERY-ACCEPTANCE-20261025/run.json",
-    "fix/verification-efficiency-01": ".agent/runs/VERIFY-EFFICIENCY-01/run.json",
-    "codex/stable-baseline-collaboration": ".agent/runs/STABLE-BASELINE-COLLABORATION-20261026/run.json",
-    "fix/demo-product-completion-20261026": ".agent/runs/PRODUCT-USER-GAP-CLOSEOUT-20261026/run.json",
-    "audit/fepc-07r-home-metric-decisions": ".agent/runs/FEPC-07R/run.json",
-    "fix/fepc-10-message-author-body": ".agent/runs/FEPC-10/run.json"
+    "fix/verification-efficiency-01": ".agent/runs/VERIFY-EFFICIENCY-01/run.json"
   }
 }

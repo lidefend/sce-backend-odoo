@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "FEPC-08",
+  "branch": "audit/fepc-08-help-popover-diagnosis",
+  "baseline_sha": "27de8c2769d4c02a6e1076ad3f60fb9aa9f77e17",
+  "status": "verification_pending",
+  "scope": [
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/",
+    ".agent/goals/FEPC-08.yaml",
+    ".agent/runs/FEPC-08/run.json",
+    ".agent/active-runs.json"
+  ],
+  "goal": ".agent/goals/FEPC-08.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/f1-reproduction.md",
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing Demo sc_demo /t/demo read-only project15 help interaction; existing API auth and browser runtime reused; no writes, deploy, merge or payment click"
+  },
+  "checks": {},
+  "blockers": [
+    "Windows observation remains unverified; user explicitly paused further reproduction"
+  ],
+  "next_exact_step": "Paused by user: preserve F1 as verification_pending, no fix; resume only with matching Windows/browser/zoom/help-entry evidence",
+  "layer": {
+    "formal_product_layer": "P4",
+    "target": "read-only evidence",
+    "module": "docs/ops/iterations/fe-presentation-convergence-01/fepc-08",
+    "standard_vs_user_specific": "shared component diagnosis using bounded Demo sample",
+    "why_here": "evidence only; no P0-P3 changes",
+    "blast_radius": "documentation and probe only"
+  }
+}

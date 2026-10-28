@@ -1,0 +1,7 @@
+schema_version: 1
+goal:
+  id: FEPC-08
+  title: Help popover reproduction and root-cause diagnosis
+  status: verification_pending
+  formal_product_layer: P4
+  exclusions: [product_changes, contract_changes, configuration, database_writes, deploy, merge]

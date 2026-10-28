@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import json
 import os
 import re
@@ -27,8 +28,36 @@ HISTORICAL_VERSION_LINE = re.compile(
     r"page_version=`1\.0\.0-rc\.20`。"
 )
 
+# Reviewed historical responses are not current release configuration. Bind the
+# complete projection (including timestamp, source revision and original hash),
+# not a directory or arbitrary product_version field. Any edit needs review.
+HISTORICAL_IDENTITY_OBSERVATIONS = {
+    Path("docs/ops/iterations/fe-presentation-convergence-01/fepc-09/runtime-identity.json"):
+        "2f84cbd776c4b83b9afe4a9d541fc5c377db36ee82d1aaf8ac92c3864aad8d4a",
+}
+
+
+def is_registered_historical_identity(relative: Path, content: str) -> bool:
+    expected = HISTORICAL_IDENTITY_OBSERVATIONS.get(relative)
+    return expected is not None and hashlib.sha256(content.encode("utf-8")).hexdigest() == expected
+
+
+def validate_historical_identities(root: Path) -> list[str]:
+    errors = []
+    for relative in HISTORICAL_IDENTITY_OBSERVATIONS:
+        try:
+            content = (root / relative).read_bytes().decode("utf-8")
+        except (OSError, UnicodeError):
+            errors.append(f"historical runtime identity unreadable: {relative}")
+            continue
+        if not is_registered_historical_identity(relative, content):
+            errors.append(f"historical runtime identity digest mismatch: {relative}")
+    return errors
+
 
 def has_release_version_duplicate(relative: Path, content: str, version: str) -> bool:
+    if is_registered_historical_identity(relative, content):
+        return False
     token = version_token_pattern(version)
     for line in content.splitlines():
         if relative == HISTORICAL_VERSION_REPORT and HISTORICAL_VERSION_LINE.fullmatch(line):
@@ -81,7 +110,7 @@ def validate_derived_version_observations(root: Path, version: str) -> list[str]
     for relative, expected_path in DERIVED_VERSION_OBSERVATIONS.items():
         path = root / relative
         try:
-            content = path.read_text(encoding="utf-8")
+            content = path.read_bytes().decode("utf-8")
             payload = json.loads(content)
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
             errors.append(f"derived product-version observation unreadable: {relative}: {type(exc).__name__}")
@@ -128,6 +157,7 @@ def main() -> int:
     if duplicates:
         errors.append(f"product version duplicated outside VERSION: {duplicates}")
     errors.extend(validate_derived_version_observations(ROOT, version))
+    errors.extend(validate_historical_identities(ROOT))
 
     dockerfile = (ROOT / "Dockerfile.production-candidate").read_text(encoding="utf-8")
     for marker in (
