@@ -305,6 +305,7 @@ verify.daily.runtime.entry.identity.readonly: guard.prod.forbid
 # never to the backend-only architecture suite without Node dependencies.
 ci.local.quick.run verify.frontend.pr.unit verify.frontend.release.unit: verify.project.stage_requirements.unit
 verify.project.stage_requirements.unit: guard.prod.forbid
+	@python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py
 	@python3 -m unittest scripts.verify.test_project_stage_requirements_read
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/project_stage_requirements_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/project-stage-requirements-test.mjs >/dev/null
 	@node /tmp/project-stage-requirements-test.mjs
