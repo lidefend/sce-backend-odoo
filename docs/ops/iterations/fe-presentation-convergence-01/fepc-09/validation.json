@@ -1,0 +1,40 @@
+{
+  "status": "passed",
+  "scope": "P4 documents and read-only evidence, not product acceptance",
+  "baseline_sha": "27de8c2769d4c02a6e1076ad3f60fb9aa9f77e17",
+  "local_iteration": {
+    "command": "make ci.local.iteration",
+    "status": "passed",
+    "layer": "L1",
+    "log": ".runtime/fepc09-local-iteration.log"
+  },
+  "runtime_probe": {
+    "initial_samples": 5,
+    "supplement_samples": 1,
+    "new_author_projection_messages": 4,
+    "status": "completed_with_stated_limitations",
+    "business_writes": 0
+  },
+  "product_L2_L4": "not applicable: no product implementation changes; actual observation validates bounded probe",
+  "final_delivery": "pending; draft audit PR, no merge/deploy",
+  "F1": "user-paused; verification_pending, not fixed",
+  "document_checks": {
+    "status": "passed",
+    "json_files": 23,
+    "items": 14,
+    "checks": [
+      "JSON parse",
+      "Python/JS syntax",
+      "relative Markdown links",
+      "original source hashes",
+      "classification coverage"
+    ]
+  },
+  "generated_evidence_preflight": {
+    "command": "make ci.generated_evidence.preflight",
+    "status": "passed",
+    "log": ".runtime/fepc09-generated-preflight.log",
+    "component_driver_tests": 13
+  },
+  "full_quick": "not_run: diagnostic audit PR, no product implementation/frozen delivery or merge claim; AGENTS Diagnosis Before Delivery prohibits diagnostic-only delivery cycles"
+}

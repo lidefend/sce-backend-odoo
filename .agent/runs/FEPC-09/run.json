@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "FEPC-09",
+  "branch": "audit/fepc-09-project-detail-review",
+  "baseline_sha": "27de8c2769d4c02a6e1076ad3f60fb9aa9f77e17",
+  "status": "verification_pending",
+  "scope": [
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-08/",
+    ".agent/goals/FEPC-09.yaml",
+    ".agent/runs/FEPC-09/run.json",
+    ".agent/goals/FEPC-08.yaml",
+    ".agent/runs/FEPC-08/run.json",
+    ".agent/active-runs.json"
+  ],
+  "goal": ".agent/goals/FEPC-09.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/findings.md",
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing Demo project15 user41 company1, reuse API01/02R evidence; read-only UI observation if needed; F1 investigation paused"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Publish separate GitHub audit PR and wait for GPT review; no product implementation, merge, deploy or further F1 reproduction",
+  "validation_plan": {
+    "L0": "latest GitHub main, dirty docs/P4 probe scope, runtime identity",
+    "L1": "JSON/link/source references and make ci.local.iteration",
+    "L2_L4": "no product changes; actual bounded browser evidence validates probe, no business writes or repeated data collection",
+    "L5": "audit draft PR; GPT review pending; no merge/deploy"
+  },
+  "layer": {
+    "formal_product_layer": "P4",
+    "target": "audit evidence",
+    "why_here": "documentation and observation only",
+    "why_not_elsewhere": "no product semantics or UI implementation",
+    "blast_radius": "audit artifacts only"
+  },
+  "observations": {
+    "local_iteration": "passed L1; product L2 not applicable",
+    "documents": "passed JSON/links/source hash/syntax checks",
+    "runtime": "5 initial DOM samples, 1 supplemental sample, 4 message author projections",
+    "F1": "user explicitly paused, unresolved",
+    "findings": "4 visual_defect candidates; others expected_behavior or verification_pending",
+    "independent_review": "pending GPT after draft PR"
+  }
+}

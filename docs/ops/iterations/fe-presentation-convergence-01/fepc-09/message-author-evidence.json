@@ -1,0 +1,52 @@
+{
+  "task": "FEPC-09",
+  "purpose": "Fill previously omitted message author/body fields only; no new records or pagination",
+  "time": "2026-10-28T09:11:54.139099+00:00",
+  "request": {
+    "intent": "chatter.timeline",
+    "params": {
+      "model": "project.project",
+      "res_id": 15,
+      "offset": 0,
+      "include_audit": true,
+      "context": {
+        "company_id": 1
+      }
+    },
+    "context": {
+      "company_id": 1
+    }
+  },
+  "http_status": 200,
+  "application_ok": true,
+  "messages": [
+    {
+      "key": "m-1568",
+      "typeLabel": "备注",
+      "body": "",
+      "at": "2026-10-28T04:06:46",
+      "author_name": "OdooBot"
+    },
+    {
+      "key": "m-678",
+      "typeLabel": "备注",
+      "body": "项目立项已通过，尚未启动。",
+      "at": "2026-10-28T03:40:21",
+      "author_name": "项目审批岗"
+    },
+    {
+      "key": "m-672",
+      "typeLabel": "备注",
+      "body": "项目初始化已完成：已建立项目管理对象；任务根节点已就绪；成本/资金/风险承载采用按业务事件驱动补充。",
+      "at": "2026-10-28T03:40:21",
+      "author_name": "项目审批岗"
+    },
+    {
+      "key": "m-671",
+      "typeLabel": "备注",
+      "body": "项目 创建",
+      "at": "2026-10-28T03:40:21",
+      "author_name": "项目审批岗"
+    }
+  ]
+}
