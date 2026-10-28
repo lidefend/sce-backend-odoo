@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "id": "FEPC-13D",
+  "branch": "audit/fepc-13d-title-contract",
+  "baseline_sha": "b918f2a01fbbea01b7665d8c3448ed820050ffae",
+  "status": "verification_pending",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FEPC-13D.yaml",
+    ".agent/runs/FEPC-13D/run.json",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-13/"
+  ],
+  "goal": ".agent/goals/FEPC-13D.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-13/title-identity-projection-contract.md",
+  "environment": {
+    "kind": "offline",
+    "authority": "Design only; reuse approved FEPC-13R evidence, no runtime calls"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Validate R1 design-only diff, freeze Quick and update Draft PR764; await GPT review",
+  "layer": {
+    "formal_product_layer": "P4",
+    "target": "contract design documents",
+    "module": "docs/.agent",
+    "why_here": "Design assessment only; proposed implementation owner P0",
+    "why_not_elsewhere": "No runtime declaration or renderer authorization",
+    "blast_radius": "Documents only"
+  },
+  "validation_plan": {
+    "L0": "main baseline and dirty scope",
+    "L1": "design consistency, links, JSON, iteration",
+    "L2": "not_run: no implementation",
+    "L3": "not_run: no runtime change",
+    "L4": "not_run: reuse approved observations",
+    "L5": "Quick and independent Draft PR; no merge/deploy"
+  },
+  "observations": {
+    "design_status": "unique recommendation pending approval",
+    "runtime": "not_called; FEPC-13R evidence reused byte-identically",
+    "checks": {
+      "L1": "passed",
+      "design_links": 8,
+      "json": "passed",
+      "reused_evidence_files": 3
+    },
+    "new_protocol_regression": "not_run_no_implementation",
+    "limits": "Proposed 2.3/structure1.2/capability are not current supported runtime protocol",
+    "R1": {
+      "status": "design_revision_pending_validation",
+      "scope": "four design files + this task metadata only",
+      "runtime_evidence": "unchanged",
+      "implementation": "not_authorized"
+    }
+  }
+}
