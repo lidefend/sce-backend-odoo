@@ -1,0 +1,327 @@
+{
+  "kind": "actual_component_SSR",
+  "checks": 147,
+  "observations": [
+    {
+      "label": "任务",
+      "state": "empty",
+      "hidden": false,
+      "readonly": true,
+      "titles": [
+        "任务"
+      ]
+    },
+    {
+      "label": "任务",
+      "state": "empty",
+      "hidden": false,
+      "readonly": false,
+      "titles": [
+        "任务"
+      ]
+    },
+    {
+      "label": "任务",
+      "state": "empty",
+      "hidden": true,
+      "readonly": true,
+      "titles": []
+    },
+    {
+      "label": "任务",
+      "state": "empty",
+      "hidden": true,
+      "readonly": false,
+      "titles": []
+    },
+    {
+      "label": "任务",
+      "state": "loading",
+      "hidden": false,
+      "readonly": true,
+      "titles": [
+        "任务"
+      ]
+    },
+    {
+      "label": "任务",
+      "state": "loading",
+      "hidden": false,
+      "readonly": false,
+      "titles": [
+        "任务"
+      ]
+    },
+    {
+      "label": "任务",
+      "state": "loading",
+      "hidden": true,
+      "readonly": true,
+      "titles": []
+    },
+    {
+      "label": "任务",
+      "state": "loading",
+      "hidden": true,
+      "readonly": false,
+      "titles": []
+    },
+    {
+      "label": "任务",
+      "state": "populated",
+      "hidden": false,
+      "readonly": true,
+      "titles": [
+        "任务"
+      ]
+    },
+    {
+      "label": "任务",
+      "state": "populated",
+      "hidden": false,
+      "readonly": false,
+      "titles": [
+        "任务"
+      ]
+    },
+    {
+      "label": "任务",
+      "state": "populated",
+      "hidden": true,
+      "readonly": true,
+      "titles": []
+    },
+    {
+      "label": "任务",
+      "state": "populated",
+      "hidden": true,
+      "readonly": false,
+      "titles": []
+    },
+    {
+      "label": "合作者",
+      "state": "empty",
+      "hidden": false,
+      "readonly": true,
+      "titles": [
+        "合作者"
+      ]
+    },
+    {
+      "label": "合作者",
+      "state": "empty",
+      "hidden": false,
+      "readonly": false,
+      "titles": [
+        "合作者"
+      ]
+    },
+    {
+      "label": "合作者",
+      "state": "empty",
+      "hidden": true,
+      "readonly": true,
+      "titles": []
+    },
+    {
+      "label": "合作者",
+      "state": "empty",
+      "hidden": true,
+      "readonly": false,
+      "titles": []
+    },
+    {
+      "label": "合作者",
+      "state": "loading",
+      "hidden": false,
+      "readonly": true,
+      "titles": [
+        "合作者"
+      ]
+    },
+    {
+      "label": "合作者",
+      "state": "loading",
+      "hidden": false,
+      "readonly": false,
+      "titles": [
+        "合作者"
+      ]
+    },
+    {
+      "label": "合作者",
+      "state": "loading",
+      "hidden": true,
+      "readonly": true,
+      "titles": []
+    },
+    {
+      "label": "合作者",
+      "state": "loading",
+      "hidden": true,
+      "readonly": false,
+      "titles": []
+    },
+    {
+      "label": "合作者",
+      "state": "populated",
+      "hidden": false,
+      "readonly": true,
+      "titles": [
+        "合作者"
+      ]
+    },
+    {
+      "label": "合作者",
+      "state": "populated",
+      "hidden": false,
+      "readonly": false,
+      "titles": [
+        "合作者"
+      ]
+    },
+    {
+      "label": "合作者",
+      "state": "populated",
+      "hidden": true,
+      "readonly": true,
+      "titles": []
+    },
+    {
+      "label": "合作者",
+      "state": "populated",
+      "hidden": true,
+      "readonly": false,
+      "titles": []
+    },
+    {
+      "label": "其他关系明细",
+      "state": "empty",
+      "hidden": false,
+      "readonly": true,
+      "titles": [
+        "其他关系明细"
+      ]
+    },
+    {
+      "label": "其他关系明细",
+      "state": "empty",
+      "hidden": false,
+      "readonly": false,
+      "titles": [
+        "其他关系明细"
+      ]
+    },
+    {
+      "label": "其他关系明细",
+      "state": "empty",
+      "hidden": true,
+      "readonly": true,
+      "titles": []
+    },
+    {
+      "label": "其他关系明细",
+      "state": "empty",
+      "hidden": true,
+      "readonly": false,
+      "titles": []
+    },
+    {
+      "label": "其他关系明细",
+      "state": "loading",
+      "hidden": false,
+      "readonly": true,
+      "titles": [
+        "其他关系明细"
+      ]
+    },
+    {
+      "label": "其他关系明细",
+      "state": "loading",
+      "hidden": false,
+      "readonly": false,
+      "titles": [
+        "其他关系明细"
+      ]
+    },
+    {
+      "label": "其他关系明细",
+      "state": "loading",
+      "hidden": true,
+      "readonly": true,
+      "titles": []
+    },
+    {
+      "label": "其他关系明细",
+      "state": "loading",
+      "hidden": true,
+      "readonly": false,
+      "titles": []
+    },
+    {
+      "label": "其他关系明细",
+      "state": "populated",
+      "hidden": false,
+      "readonly": true,
+      "titles": [
+        "其他关系明细"
+      ]
+    },
+    {
+      "label": "其他关系明细",
+      "state": "populated",
+      "hidden": false,
+      "readonly": false,
+      "titles": [
+        "其他关系明细"
+      ]
+    },
+    {
+      "label": "其他关系明细",
+      "state": "populated",
+      "hidden": true,
+      "readonly": true,
+      "titles": []
+    },
+    {
+      "label": "其他关系明细",
+      "state": "populated",
+      "hidden": true,
+      "readonly": false,
+      "titles": []
+    },
+    {
+      "outer": true,
+      "hidden": true,
+      "state": "empty",
+      "titleOccurrences": 1
+    },
+    {
+      "outer": true,
+      "hidden": true,
+      "state": "loading",
+      "titleOccurrences": 1
+    },
+    {
+      "outer": true,
+      "hidden": true,
+      "state": "populated",
+      "titleOccurrences": 1
+    }
+  ],
+  "before": {
+    "baseline": "192d4e15a8a2413ba38d52d22f2b761e0d5a570f",
+    "status": "regression_reproduced",
+    "case": "任务/empty/hidden=false/readonly=true",
+    "expected_titles": [
+      "任务"
+    ],
+    "actual_titles": [],
+    "log_sha256": "2e03e62d575629d7ff6abc7ee7b58ea171e5c44f68a70197b770878d9c8c4178"
+  },
+  "limitations": [
+    "Actual Vue SSR with real FormSection, X2ManyRelationRenderer and NativeFormTreeRenderer; closed ScDialog boundary stubbed because it requires browser CSS APIs",
+    "Synthetic relation rows and adapter; no data writes or new business permissions",
+    "No browser geometry, screenshot, complete page or deployed Demo acceptance claim"
+  ]
+}

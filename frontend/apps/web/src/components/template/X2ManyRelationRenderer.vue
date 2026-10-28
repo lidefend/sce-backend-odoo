@@ -60,11 +60,11 @@
   </div>
   <div v-else-if="field.type === 'one2many'" class="relation-editor">
     <div v-if="field.readonly" class="o2m-readonly" data-readonly-relation>
+      <header v-if="!field.hideLabel || one2manyRows.length" class="o2m-toolbar o2m-toolbar--readonly" data-detail-collection-heading>
+        <span v-if="!field.hideLabel" class="o2m-title" data-detail-collection-title>{{ field.label }}</span>
+        <span v-if="one2manyRows.length" class="o2m-count" data-detail-collection-count>共 {{ one2manyRows.length }} 条</span>
+      </header>
       <div v-if="one2manyRows.length" class="o2m-readonly-table">
-        <header class="o2m-toolbar o2m-toolbar--readonly" data-detail-collection-heading>
-          <span v-if="!field.hideLabel" class="o2m-title" data-detail-collection-title>{{ field.label }}</span>
-          <span class="o2m-count" data-detail-collection-count>共 {{ one2manyRows.length }} 条</span>
-        </header>
         <div class="o2m-table-scroll" data-detail-collection-content="desktop-table">
           <ScTable
             :data="o2mTableData"
@@ -191,11 +191,12 @@
       />
       <ScEmptyState v-else class="relation-readonly-empty" density="compact" title="暂无可展示记录" :heading-level="4" data-readonly-relation-empty />
     </div>
-    <ScInlineState
-      v-else-if="adapter.isOne2manyHydrating(field.name)"
-      state="loading"
-      label="正在加载关系记录"
-    />
+    <div v-else-if="adapter.isOne2manyHydrating(field.name)" class="o2m-card">
+      <header v-if="!field.hideLabel" class="o2m-toolbar" data-detail-collection-heading>
+        <span class="o2m-title" data-detail-collection-title>{{ field.label }}</span>
+      </header>
+      <ScInlineState state="loading" label="正在加载关系记录" />
+    </div>
         <template v-else>
     <div class="o2m-card">
       <header class="o2m-toolbar" data-detail-collection-heading>
