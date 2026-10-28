@@ -1,0 +1,103 @@
+{
+  "schema": "fe-presentation-convergence.findings.v1",
+  "baseline_main": "f9a291ae7d00d0fbb82fef43bd0e3d3ced77028e",
+  "runtime_revision": "3f46dd7eba9f351386fee446151ee9eb545d56a4",
+  "findings": [
+    {
+      "id": "FEPC-01-F1",
+      "title": "字段帮助浮层滚动后跟随触发控件滚出视口",
+      "status": "pending_verification",
+      "evidence": "项目详情 project.project/15 有 9 个 data-field-help-trigger（经营方式、预算差异(台账)、最新进度(%)、描述、分析账户、可见性、别名、任务名称）。点击 ? 展开 ScPopover 后，滚动 MAIN.router-host 内部容器 400px，浮层与触发控件 y 坐标同步变化（相对距离保持约 38px），浮层跟随内容滚出视口。未复现到“触发控件与浮层分离”的明显错位，但浮层打开后不随滚动保持可见。",
+      "impact": "用户滚动时帮助内容可能离开视口，阅读中断。",
+      "initial_owner": "P0",
+      "component": "ScPopover / TDesignPopup / FormSection.vue data-field-help",
+      "priority": "P1",
+      "acceptance": "打开帮助浮层后滚动，浮层要么保持可见、要么随触发控件重新定位、要么关闭；截图前后对比无分离错位。",
+      "known": false
+    },
+    {
+      "id": "FEPC-01-F2",
+      "title": "项目台账列表横向溢出",
+      "status": "confirmed",
+      "evidence": "项目台账 action 588 / menu 382：t-table__content scrollWidth=1424 > clientWidth=1081，横向溢出约 343px，页面显示“横向浏览更多列”。",
+      "impact": "关键业务列需要横向滚动才能看到，默认可视信息不完整。",
+      "initial_owner": "P1",
+      "component": "项目台账列表列集合声明 / 通用列表渲染",
+      "priority": "P2",
+      "acceptance": "默认可视列覆盖核心业务字段，横向滚动范围可控；或列宽自适应到视口。",
+      "known": false
+    },
+    {
+      "id": "FEPC-01-F3",
+      "title": "项目台账列表字段值与列头语义重复",
+      "status": "confirmed",
+      "evidence": "列表“项目状态”列显示“状态：草稿”，“合同总额”列显示“合同总额：¥11,227,000.00”，值与列头重复了“状态：”“合同总额：”前缀。",
+      "impact": "信息冗余，读感不专业，压缩了其它列的显示空间。",
+      "initial_owner": "P1",
+      "component": "项目台账列表字段渲染",
+      "priority": "P2",
+      "acceptance": "列头与值不重复语义；金额使用统一金额格式而非文本前缀。",
+      "known": false
+    },
+    {
+      "id": "FEPC-01-F4",
+      "title": "项目详情责任矩阵空状态",
+      "status": "pending_verification",
+      "evidence": "project.project/15 责任矩阵区块显示“暂无可展示记录”。该 Demo 项目无责任矩阵样本。",
+      "impact": "无法演示责任矩阵展示效果，也无法确认空状态文案是否为最终产品形态。",
+      "initial_owner": "P2/P3",
+      "component": "责任矩阵区块 / Demo 数据",
+      "priority": "P3",
+      "acceptance": "有样本时核对字段布局；空状态文案可理解且不与工程文案混淆。",
+      "known": false
+    },
+    {
+      "id": "FEPC-01-F5",
+      "title": "角色首页模块分组差异",
+      "status": "pending_verification",
+      "evidence": "项目经理首页无“常用入口与最近访问/工作入口”区块；项目成员与企业负责人首页有。企业负责人风险区标题为“项目风险预警”，项目经理/成员为“风险处置”。",
+      "impact": "不同角色信息层次不一致，需确认是否为契约预期的职责差异。",
+      "initial_owner": "P1",
+      "component": "WorkspaceHome.vue / 角色首页契约",
+      "priority": "P3",
+      "acceptance": "按角色契约确认区块集合与标题是否一致，差异有明确职责依据。",
+      "known": false
+    },
+    {
+      "id": "FEPC-01-F6",
+      "title": "角色首页“工作入口”空状态文案",
+      "status": "pending_verification",
+      "evidence": "项目成员/企业负责人首页显示“工作入口：暂无首页快捷入口。请从导航菜单选择业务；如需调整权限，请联系管理员。”",
+      "impact": "文案可理解性需确认；重复出现在多个角色。",
+      "initial_owner": "P0/P1",
+      "component": "WorkspaceHome.vue 首页空状态",
+      "priority": "P3",
+      "acceptance": "空状态文案面向业务角色可理解，保留 fail-closed 边界。",
+      "known": false
+    },
+    {
+      "id": "FEPC-01-F7",
+      "title": "菜单搜索“日常合同”命中“日常合同结算”空列表",
+      "status": "pending_verification",
+      "evidence": "菜单搜索“日常合同”后点击结果，进入 action 944（sc.settlement.order，0 条），而非日常合同列表。需确认是搜索匹配、菜单别名还是入口声明问题。",
+      "impact": "用户可能从搜索进入非预期入口。",
+      "initial_owner": "P1",
+      "component": "菜单搜索匹配 / 入口声明",
+      "priority": "P2",
+      "acceptance": "搜索“日常合同”命中并进入日常合同入口；同名入口可区分。",
+      "known": false
+    },
+    {
+      "id": "FEPC-01-F8",
+      "title": "合同入口技术性限制提示未在本轮定位",
+      "status": "pending_verification",
+      "evidence": "项目详情与日常合同结算入口未发现“限制/禁止/不可/只读”提示文本。需在合同详情或审批规则配置页进一步定位。",
+      "impact": "重点核查项尚未闭环，暂不归因。",
+      "initial_owner": "待定",
+      "component": "待定",
+      "priority": "P3",
+      "acceptance": "定位到合同入口限制提示的真实页面与文案，再判断归属。",
+      "known": false
+    }
+  ]
+}
