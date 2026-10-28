@@ -42,10 +42,10 @@
     {
       "id": "FEPC-04-R5",
       "title": "角色首页存在双重契约（smart_core vs smart_construction_core）",
-      "status": "pending_verification",
+      "status": "candidate_cleanup",
       "evidence": "smart_core/core/workspace_home_contract_builder.py 生成 session.workspaceHome（system.init 生效，字段 hero/advice/metrics/today_actions/risk/my_objects/ops 等）；smart_construction_core/services/workspace_contract_builder.py 由 workspace.home.enter handler 返回另一组区块（metric_card/shortcut_grid/todo_list/warning_list/native_view_ref），与实际渲染的 session.workspaceHome 不一致。",
-      "calibration": "需核实 workspace.home.enter handler 是否仍被前端消费；若未消费则为遗留契约，建议单独治理，不在本轮改动。",
-      "initial_owner": "P0/P1（契约治理，待核实后裁定）",
+      "calibration": "FEPC-05 核查：/s/workspace.home 由 HomeView.vue 渲染（消费 session.workspaceHome），不经 SceneView 的 sceneContractEntryIntent；前端 src/ 无 workspace.home.enter 直接调用。workspace.home.enter 契约当前无生产消费证据，列为候选清理项，删除需独立评审并迁移测试引用。",
+      "initial_owner": "P0/P1（契约治理，独立删除评审）",
       "priority": "P3"
     }
   ]
