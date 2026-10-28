@@ -1,0 +1,220 @@
+{
+  "status": "verification_pending",
+  "source_baseline": "1e06bcfde151d7669c29825d88c05bf3cd61b455",
+  "runtime_identity": {
+    "collected_at": "2026-10-28T16:29:34.571829+00:00",
+    "http_status": 200,
+    "response": {
+      "source_revision": "1e06bcfde151d7669c29825d88c05bf3cd61b455",
+      "git_sha": "1e06bcfde151d7669c29825d88c05bf3cd61b455",
+      "database": "sc_demo",
+      "environment": "demo",
+      "frontend_build_sha256": "03045d0ed5c1359b2e2318be631ac6281bf818c39f272f69bfd62d92ac84c208",
+      "namespace_id": "ns_000000000002",
+      "namespace_alias": "demo",
+      "audience": "tenant"
+    }
+  },
+  "actor": {
+    "user_id": 41,
+    "company_id": 1,
+    "role_code": "business_full",
+    "identity_source": "system.init"
+  },
+  "sample": {
+    "id": 4,
+    "name": "成本资金项目",
+    "lifecycle_state": "in_progress"
+  },
+  "sample_matches_user_screenshot": "unknown",
+  "resolved_overview": {
+    "aid": 649,
+    "vid": 1775
+  },
+  "button_declaration": {
+    "actionId": "action.action_view_stage_requirements",
+    "actionKey": "action_view_stage_requirements",
+    "sourceActionKey": "action_view_stage_requirements",
+    "label": "查看阶段要求",
+    "intent": "execute",
+    "target": {},
+    "button": {
+      "name": "action_view_stage_requirements",
+      "type": "object"
+    },
+    "nativeIdentity": {
+      "authoritative": true,
+      "canonical_region": "layout",
+      "icon": "",
+      "name": "action_view_stage_requirements",
+      "native_locator": "/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/button[6]",
+      "occurrence_index": 1,
+      "projection_region": "layout",
+      "string": "查看阶段要求",
+      "type": "object"
+    },
+    "triggerType": "click",
+    "sourceWidgetId": "action_view_stage_requirements",
+    "targetIds": [],
+    "dispatchMode": "server",
+    "targetScope": "page",
+    "refreshMode": "partial",
+    "sourceChannel": "native_form_layout_button",
+    "presentationAuthority": "native_contract",
+    "presentationPriority": 100,
+    "sourceTrace": [
+      {
+        "actionId": "action.action_view_stage_requirements",
+        "actionKey": "action_view_stage_requirements",
+        "sourceActionKey": "action_view_stage_requirements",
+        "sourceWidgetId": "action_view_stage_requirements",
+        "label": "查看阶段要求",
+        "sequence": 6,
+        "sourceChannel": "native_form_layout_button",
+        "presentationAuthority": "native_contract",
+        "button": {
+          "name": "action_view_stage_requirements",
+          "type": "object"
+        },
+        "target": {},
+        "constraints": {
+          "allowed": true,
+          "enabled": true,
+          "disabled": false,
+          "visible": {
+            "attrs": {
+              "invisible": {
+                "field": "lifecycle_state",
+                "kind": "field_compare",
+                "operator": "==",
+                "raw": "lifecycle_state == 'draft'",
+                "semantics": "python",
+                "value": "draft"
+              }
+            },
+            "domain": [],
+            "states": []
+          },
+          "visibleProfiles": [
+            "create",
+            "edit",
+            "readonly"
+          ]
+        },
+        "permissionConstraints": {},
+        "entitlementEvaluated": true,
+        "reasonCode": "",
+        "businessAvailable": null,
+        "authorizationAllowed": true
+      }
+    ],
+    "visible": {
+      "attrs": {
+        "invisible": {
+          "field": "lifecycle_state",
+          "kind": "field_compare",
+          "operator": "==",
+          "raw": "lifecycle_state == 'draft'",
+          "semantics": "python",
+          "value": "draft"
+        }
+      },
+      "domain": [],
+      "states": []
+    },
+    "visibleProfiles": [
+      "create",
+      "edit",
+      "readonly"
+    ],
+    "presentation": {
+      "tier": "primary"
+    },
+    "actionSafety": {
+      "classification": "safe",
+      "reason_code": "SAFE_NAVIGATION_ACTION",
+      "requires_confirm": false
+    },
+    "allowed": true,
+    "enabled": true,
+    "disabled": false,
+    "permissionConstraints": {},
+    "entitlementEvaluated": true,
+    "authorizationAllowed": true,
+    "backendIdentity": "native_button:object:action_view_stage_requirements:/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/button[6]:1"
+  },
+  "browser_observations": [
+    {
+      "time": "2026-10-28T16:33:56.380Z",
+      "label": "home",
+      "route": "/t/demo/",
+      "headings": [
+        "角色首页",
+        "今日工作",
+        "付款申请",
+        "付款申请",
+        "付款申请",
+        "风险与提醒",
+        "我的项目与业务对象",
+        "常用入口",
+        "最近访问",
+        "工作入口"
+      ]
+    },
+    {
+      "time": "2026-10-28T16:34:02.091Z",
+      "label": "before-stage-click",
+      "route": "/t/demo/access-denied",
+      "headings": [
+        "无权访问",
+        "无权访问"
+      ]
+    }
+  ],
+  "requests": [
+    {
+      "time": "2026-10-28T16:33:57.554Z",
+      "intent": "ui.contract.v2",
+      "op": "action_open",
+      "model": "project.project",
+      "http_status": 200,
+      "ok": true
+    }
+  ],
+  "button_executed": false,
+  "blocked_requests": [],
+  "console_errors": [],
+  "network_errors": [],
+  "limitation": "Overview action route redirected to access-denied before button; this is not reproduction of screenshot generic action failure",
+  "artifact_index": [
+    {
+      "path": ".runtime/fepc-14/runtime-identity.json",
+      "sha256": "dc7e100ee610f0020dac976ac7be52f385377fea800d041de3cd7ef8bcb4748c"
+    },
+    {
+      "path": ".runtime/fepc-14/browser-smoke.json",
+      "sha256": "e0524acd68a7c6a5b3cc4d710a853a516ff43b7149e5ca17e914d991a7f59ea3"
+    },
+    {
+      "path": ".runtime/fepc-14/probe-failure-fetch-status.json",
+      "sha256": "9e2f5a3381e91f23064ed50414acb4616b0b26fe279c0fa3cbd6a55d461ee8d2"
+    },
+    {
+      "path": ".runtime/fepc-14/ordinary-form-no-button.json",
+      "sha256": "ad53c1fff7d97cdd46b7299f1c12f31e653840b9412956b5e05489b367e5c950"
+    },
+    {
+      "path": ".runtime/fepc-14/overview-selector-diagnostic.json",
+      "sha256": "489c95d94ab81779d161fc26fdc008067a7816613d4de4c27edb3aa28cb7fc13"
+    },
+    {
+      "path": ".runtime/fepc-14/before-stage-click.png",
+      "sha256": "cf69fa90089331d18e3104b92da579cddae5a5f878350aae628308ecd0ba9999"
+    },
+    {
+      "path": ".runtime/fepc-14/home.png",
+      "sha256": "e2bc67cd4976493797339607e71d6913e98e7f0efb7cb42bf9cc02a764634105"
+    }
+  ],
+  "projection_note": "Selected evidence, not a complete response. Repeated product_version omitted; original observations remain in local preserved evidence."
+}

@@ -26,6 +26,7 @@ fs.mkdirSync(path.dirname(output), { recursive: true });
 const browser = await launchChromium({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await context.newPage();
+page.setDefaultTimeout(30_000);
 const evidence = {
   schema: 'frontend_product_page_header_browser.v1',
   passed: false,
@@ -42,8 +43,15 @@ const evidence = {
   mutations: [],
   targets: [],
 };
-page.on('console', (message) => { if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) evidence.console.push(message.text()); });
+page.on('console', (message) => { if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) evidence.console.push(message.text().replace(/token=[^\s'"]+/g, 'token=[redacted]')); });
 page.on('pageerror', (error) => evidence.pageerror.push(error.message));
+page.on('response', async (response) => {
+  if (requestBody(response.request()).intent === 'ui.contract.v2' && targets.some(t => t.stageRequirements)) {
+    const body = await response.json().catch(() => ({}));
+    const data = body.data || {};
+    console.log('[presentation] stage contract ' + JSON.stringify({keys:Object.keys(data),stage:data.dataContract?.mainData?.lifecycle_state,rules:(data.actionContract?.actionRuleList || []).filter(r => r.actionKey === 'action_view_stage_requirements' || r.button?.name === 'action_view_stage_requirements')}));
+  }
+});
 page.on('response', (response) => { if (response.status() >= 500) evidence.http.push({ status: response.status(), url: response.url() }); });
 await page.route('**/*', async (route) => {
   if (isMutation(route.request())) {
@@ -54,6 +62,7 @@ await page.route('**/*', async (route) => {
   await route.continue();
 });
 
+console.log('[presentation] login');
 await page.goto(`${acceptance.baseUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
 await page.locator('#login-username, input[autocomplete="username"]').first().fill(acceptance.login);
 await page.locator('#login-password, input[autocomplete="current-password"]').first().fill(acceptance.password);
@@ -62,7 +71,9 @@ if (await database.isEnabled().catch(() => false)) await database.fill(acceptanc
 await page.getByRole('button', { name: /^登录$/ }).click();
 await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45_000 });
 
+console.log("[presentation] login completed");
 for (const target of targets) {
+  console.log(`[presentation] target=${target.key}`);
   if (target.entryObjectModel) {
     check(
       typeof target.entryObjectModel === 'string'
@@ -89,6 +100,66 @@ for (const target of targets) {
   const header = page.locator('[data-product-page-header]');
   await header.waitFor({ state: 'visible', timeout: 45_000 });
   await page.waitForFunction(() => !/正在载入|正在加载|正在初始化/.test(document.body.innerText || ''), null, { timeout: 45_000 });
+  if (target.stageRequirements) {
+    console.log("[presentation] stage button check");
+    const before = page.url();
+    const buttons = await page.getByRole('button', { name: '查看阶段要求', exact: true }).count();
+    console.log(`[presentation] stage visible buttons=${buttons}`);
+    await page.screenshot({ path: path.join(path.dirname(output), 'before-stage.png'), fullPage: false });
+    if (!buttons) {
+      const source = await page.locator('[data-semantic-component]').count();
+      console.log(`[presentation] no visible entry; direct read observation only; nodes=${source}`);
+    }
+    check(buttons <= 1, 'stage navigation is ambiguous');
+    const [response] = await Promise.all([
+      page.waitForResponse(r => requestBody(r.request()).intent === 'project.stage.requirements.read'),
+      buttons ? page.getByRole('button', { name: '查看阶段要求', exact: true }).click() : page.goto(`${acceptance.baseUrl}/project-stage-requirements/${target.recordId}`),
+    ]);
+    const body = await response.json();
+    check(response.status() === 200 && body.ok !== false, `stage read failed HTTP ${response.status()}`);
+    const data = body.data;
+    check(data?.project?.id === target.recordId, 'wrong project in stage response');
+    const surface = page.locator('[data-semantic-component="ProjectStageRequirementsView"]');
+    await surface.getByRole('heading', { name: data.title, exact: true }).waitFor();
+    check((await surface.innerText()).includes(data.project.name), 'project identity missing');
+    check((await surface.innerText()).includes(data.stage.label), 'stage identity missing');
+    check(await surface.locator('li').count() === data.items.length, 'not all requirements rendered');
+    for (const item of data.items) check((await surface.innerText()).includes(item.title), 'requirement missing');
+    if (!data.items.length) check((await surface.innerText()).includes(data.labels.empty), 'empty state missing');
+    await page.screenshot({ path: path.join(path.dirname(output), 'stage-requirements.png'), fullPage: false });
+    await surface.getByRole('button', { name: data.labels.back, exact: true }).click();
+    await page.waitForURL(buttons ? before : `${acceptance.baseUrl}${data.return_path}`);
+    await header.waitFor({ state: 'visible' });
+    evidence.targets.push({ key: target.key, source: 'real_isolated_runtime', buttonClicked: buttons === 1, project: data.project,
+      stage: data.stage, itemCount: data.items.length, httpStatus: response.status(), returned: true });
+    // Existing fixture C belongs to a different company. This is a real server
+    // denial; negative transport cases below are explicitly simulated, not data.
+    const deniedResponse = page.waitForResponse(r => requestBody(r.request()).intent === 'project.stage.requirements.read');
+    await page.goto(`${acceptance.baseUrl}/project-stage-requirements/${target.deniedProjectId}`);
+    check((await deniedResponse).status() === 403, 'cross-company read must remain denied');
+    await page.getByRole('heading', { name: '无权访问', exact: true }).waitFor();
+    evidence.targets.push({ key: 'denied', source: 'real_isolated_runtime', httpStatus: 403 });
+    for (const message of evidence.console.splice(0)) check(/403.*Forbidden|Failed to load resource.*403/.test(message), `unexpected console error: ${message}`);
+    for (const fault of ['empty', 'network', 'server']) {
+      const intercept = async route => {
+        if (requestBody(route.request()).intent !== 'project.stage.requirements.read') return route.fallback();
+        if (fault === 'network') return route.abort('failed');
+        return route.fulfill({ status: fault === 'server' ? 500 : 200, contentType: 'application/json',
+          body: JSON.stringify(fault === 'server' ? {ok:false,error:{code:'INTERNAL_ERROR',message:'internal diagnostic sentinel'}}
+            : {...body,data:{...data,items:[]}}) });
+      };
+      await page.route('**/api/v1/intent', intercept);
+      await page.goto(`${acceptance.baseUrl}/project-stage-requirements/${target.recordId}`);
+      if (fault === 'empty') await page.getByText(data.labels.empty, {exact:true}).waitFor();
+      else await page.getByRole('heading', {name:fault === 'network' ? '网络连接异常' : '服务暂时不可用',exact:true}).waitFor();
+      check(!(await page.locator('body').innerText()).includes('internal diagnostic sentinel'), 'internal diagnostics leaked');
+      evidence.targets.push({key:fault,source:'simulated_transport_only',databaseWrites:false});
+      for (const message of evidence.console.splice(0)) check(/Failed to load resource|net::ERR_FAILED/.test(message), `unexpected console error: ${message}`);
+      for (const failed of evidence.http.splice(0)) check(fault === 'server' && failed.status === 500 && failed.url.endsWith('/api/v1/intent'), 'unexpected server failure');
+      await page.unroute('**/api/v1/intent', intercept);
+    }
+    continue;
+  }
   if (target.activateTab) {
     const tab = page.locator('.native-tab').filter({ hasText: String(target.activateTab) });
     check(await tab.count() === 1, `${target.key}: native tab ${target.activateTab} is not unique`);

@@ -1,0 +1,83 @@
+{
+  "schema": "frontend_product_page_header_browser.v1",
+  "passed": true,
+  "provenance": {
+    "profile": "local",
+    "base_url": "http://127.0.0.1:5175",
+    "database": "sc_frontend_acceptance",
+    "login": "fixture_role_config_admin",
+    "expected_sha": "1e06bcfde151d7669c29825d88c05bf3cd61b455"
+  },
+  "console": [],
+  "pageerror": [],
+  "http": [],
+  "mutations": [],
+  "targets": [
+    {
+      "key": "stage_requirements",
+      "source": "real_isolated_runtime",
+      "buttonClicked": false,
+      "project": {
+        "id": 1,
+        "name": "FE Project A"
+      },
+      "stage": {
+        "value": "draft",
+        "label": "草稿"
+      },
+      "itemCount": 3,
+      "httpStatus": 200,
+      "returned": true
+    },
+    {
+      "key": "denied",
+      "source": "real_isolated_runtime",
+      "httpStatus": 403
+    },
+    {
+      "key": "empty",
+      "source": "simulated_transport_only",
+      "databaseWrites": false
+    },
+    {
+      "key": "network",
+      "source": "simulated_transport_only",
+      "databaseWrites": false
+    },
+    {
+      "key": "server",
+      "source": "simulated_transport_only",
+      "databaseWrites": false
+    }
+  ],
+  "mutationCount": 0,
+  "collected_at": "2026-10-28T17:21:28.440626+00:00",
+  "stage_identity": {
+    "head": "1e06bcfde151d7669c29825d88c05bf3cd61b455",
+    "dirty": true,
+    "mode": "representative_product_review_not_frozen"
+  },
+  "input_sha256": {
+    "addons/smart_construction_core/core_extension.py": "723936bc6537ab12ddbad93faa930f949b46b2559b0f97b3cc99e121a82f4e5d",
+    "addons/smart_construction_core/core_extension_intent_handlers.py": "125d9eb815a22b9c608acc5ecbd5c309eb4dde11554a4b5f91de21c57b747d08",
+    "addons/smart_construction_core/services/project_stage_requirements_read.py": "f2dd0c4a5c770d0e11d9eeb84ce541b8d9e5fb4c23f0b0cb6f98ff9ca6faa429",
+    "addons/smart_construction_core/handlers/project_stage_requirements_read.py": "8a79c5afbe272d2cf1368fb04c76761808a8d63aaa2104bcf2d1085e2c90e8c4",
+    "frontend/apps/web/src/api/projectStageRequirements.ts": "ad2db5f8b4c7d4d9798ede1dcfb77199bea9cbfe9566e4dec772bf446e602662",
+    "frontend/apps/web/src/views/ProjectStageRequirementsView.vue": "600d74cc133e9cb32c25df22240b0dfebb64de5f342732fbf1234a2313340397",
+    "frontend/apps/web/src/router/index.ts": "4803dcb7648573069c9e05cbfeeb6119e98ffea797de6314e161c0ab9f3bd200",
+    "scripts/dev/frontend_acceptance_runtime.sh": "90340969795b1bc5f2ca7c4ed2ff9313a8e8bce5b44cec0608f7196191778ae7",
+    "scripts/verify/frontend_product_page_header_browser.mjs": "79e7cbb60eb8b03bd08597a4a124b5ea8277bd32d0b6fcb56a5c5693413206a1",
+    "scripts/verify/frontend_delivery_hardening_runtime_ids.py": "2c5afb6ab09f8eee00a9cf3abb494b940bee4096dcaed7f84f0e1bc540c334fe"
+  },
+  "artifacts": {
+    ".runtime/fepc-14/browser.json": "a9ae125f7906f771c7ce3e3679310af7b63d7ab8eb2c2f3ca804351f4351f525",
+    ".runtime/fepc-14/browser-run-8.log": "b266ec299d28ca1109fa8a1954fac588dc7ba1ac418ece3f13ac3425f5ffc8c8",
+    ".runtime/fepc-14/stage-requirements.png": "a972c2685bb6726b2b4d0854f3c9d5d67e1e8bc2677fca6f8edc56adc8dce988",
+    ".runtime/fepc-14/targeted-tests.log": "d459b7512ceda1043845220a2e4c2fb20036a6458ec2ceb810573a4798288ac0"
+  },
+  "limitations": [
+    "Fixture A is draft; original declaration hides button. No real non-draft button click claimed.",
+    "Empty/network/server are simulated transport; real successful query and cross-company rejection are separate.",
+    "No daily deployment, fixture mutation, module upgrade, database rebuild or ACL change."
+  ]
+}

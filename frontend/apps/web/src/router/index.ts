@@ -313,6 +313,7 @@ const router = createRouter({
     { path: '/password-recovery', name: 'password-recovery', component: PasswordRecoveryView },
     { path: '/', name: 'home', component: () => import('../views/HomeView.vue'), meta: { layout: 'shell', sceneKey: 'workspace.home', shellDensity: 'minimal', pageHeadingOwner: 'content' } },
     { path: '/s/workspace.home', name: 'scene-home', component: () => import('../views/HomeView.vue'), meta: { layout: 'shell', sceneKey: 'workspace.home', shellDensity: 'minimal', pageHeadingOwner: 'content' } },
+    { path: '/project-stage-requirements/:projectId', name: 'project-stage-requirements', component: () => import('../views/ProjectStageRequirementsView.vue'), meta: { layout: 'shell', pageHeadingOwner: 'content' } },
     { path: '/my-work', name: 'my-work', component: () => import('../views/MyWorkView.vue'), meta: { layout: 'shell', shellDensity: 'minimal', pageHeadingOwner: 'content' } },
     { path: '/my-capabilities', name: 'my-capabilities', component: () => import('../views/MyCapabilitiesView.vue'), meta: { layout: 'shell', shellDensity: 'minimal', pageHeadingOwner: 'content' } },
     { path: '/s/my_work.workspace', name: 'scene-my-work', component: () => import('../views/MyWorkView.vue'), meta: { layout: 'shell', sceneKey: 'my_work.workspace', shellDensity: 'minimal', pageHeadingOwner: 'content' } },

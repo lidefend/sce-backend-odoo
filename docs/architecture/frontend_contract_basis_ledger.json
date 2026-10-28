@@ -198,6 +198,19 @@
       "stopSymbol": "ANALYSIS_FIELD_METADATA_INVALID",
       "regressionGuard": "verify.frontend.action_surface_renderer_registry.unit",
       "behaviourTest": "frontend/apps/web/scripts/action_surface_renderer_registry_test.ts"
+    },
+    {
+      "surface": "ProjectStageRequirementsRead",
+      "declared": "project.stage.requirements.read identity, labels, items and return_path",
+      "declaredBy": "addons/smart_construction_core/services/project_stage_requirements_read.py",
+      "declaredMethod": "project_stage_requirements_payload",
+      "declaredSymbol": "project_stage_requirements_payload",
+      "consumedBy": "frontend/apps/web/src/api/projectStageRequirements.ts",
+      "consumedSymbol": "decodeStageRequirements",
+      "onMissing": "stop",
+      "stopSymbol": "contractGapError",
+      "regressionGuard": "verify.project.stage_requirements.unit",
+      "behaviourTest": "frontend/apps/web/scripts/project_stage_requirements_test.ts"
     }
   ],
   "registeredMechanismExemptions": [

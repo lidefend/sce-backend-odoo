@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "id": "FEPC-14",
+  "branch": "fix/fepc-14-readonly-stage-requirements",
+  "baseline_sha": "1e06bcfde151d7669c29825d88c05bf3cd61b455",
+  "status": "verification_pending",
+  "scope": [
+    ".agent/",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-14/",
+    "addons/smart_construction_core/",
+    "frontend/apps/web/",
+    "make/",
+    "scripts/verify/test_project_stage_requirements_read.py",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/verify/frontend_product_page_header_browser.mjs",
+    "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+    "docs/architecture/frontend_contract_basis_ledger.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+  ],
+  "goal": ".agent/goals/FEPC-14.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-14/review.md",
+  "environment": {
+    "kind": "runtime",
+    "database": "sc_frontend_acceptance",
+    "profile": "local",
+    "deployment_performed": false
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Run freeze preparation, inspect generated changes, commit clean candidate and exact-head Quick; publish Draft for GPT review",
+  "layer": {
+    "formal_product_layer": "P1/P0",
+    "target": "stage requirements read path and explicit action consumption",
+    "module": "smart_construction_core / web",
+    "standard_vs_user_specific": "industry standard read behavior plus generic error consumption",
+    "why_here": "industry owns stage query, client consumes explicit route and result",
+    "why_not_elsewhere": "no ACL workaround, no business logic in frontend",
+    "blast_radius": "one stage requirements action and bounded view; preserve other native actions"
+  },
+  "observations": {
+    "preexisting_drafts": "All existing DATA/CFG/deployment/phase drafts excluded from owned changes; parent scope acknowledges their presence only",
+    "resume_failures": [
+      "missing record corrected",
+      "preexisting docs outside narrow scope: acknowledged without modifying them"
+    ],
+    "runtime_identity": {
+      "source_revision": "1e06bcfde151d7669c29825d88c05bf3cd61b455",
+      "git_sha": "1e06bcfde151d7669c29825d88c05bf3cd61b455",
+      "database": "sc_demo",
+      "environment": "demo",
+      "frontend_build_sha256": "03045d0ed5c1359b2e2318be631ac6281bf818c39f272f69bfd62d92ac84c208",
+      "namespace_id": "ns_000000000002",
+      "namespace_alias": "demo",
+      "audience": "tenant"
+    },
+    "browser_evidence": "docs/ops/iterations/fe-presentation-convergence-01/fepc-14/diagnostic-evidence.json",
+    "button_executed": true,
+    "product_code_changed": true,
+    "deployment_performed": false,
+    "probe_failure": "Browser fetch Response.status incorrectly called as function; corrected, original failure retained",
+    "normal_form": "Loaded successfully but no stage requirements button",
+    "overview_route": "Denied before button; no product-fix claim",
+    "validation": {
+      "command": "make verify.docs.all",
+      "status": "passed",
+      "guard_test_count": 7,
+      "log": ".runtime/fepc-14/docs-validation-matched.log"
+    },
+    "matched_entry_evidence": "docs/ops/iterations/fe-presentation-convergence-01/fepc-14/matched-entry-evidence.json",
+    "button_outcome": "PERMISSION_DENIED at transient wizard create",
+    "root_cause_confirmed": true,
+    "business_data_changed": false,
+    "probe_adjustments": "Expanded collapsed sidebar and selected visible desktop row; hidden mobile duplicate was not clicked",
+    "prior_attempt": "Retained as nonmatching entry evidence, not root cause",
+    "runtime_after_reproduction": {
+      "collected_at": "2026-10-28T16:44:24.286786+00:00",
+      "status": 200,
+      "response": {
+        "source_revision": "1e06bcfde151d7669c29825d88c05bf3cd61b455",
+        "git_sha": "1e06bcfde151d7669c29825d88c05bf3cd61b455",
+        "database": "sc_demo",
+        "environment": "demo",
+        "frontend_build_sha256": "03045d0ed5c1359b2e2318be631ac6281bf818c39f272f69bfd62d92ac84c208",
+        "namespace_id": "ns_000000000002",
+        "namespace_alias": "demo",
+        "audience": "tenant"
+      }
+    },
+    "current_phase": "FEPC-14I",
+    "FEPC-14R": {
+      "status": "assessment_complete_awaiting_review",
+      "recommendation": "A: reuse existing read method with bounded query/presentation adapter; no existing Vue end-to-end path claimed",
+      "runtime_identity": {
+        "collected_at": "2026-10-28T16:49:47.364387+00:00",
+        "http_status": 200,
+        "response": {
+          "source_revision": "1e06bcfde151d7669c29825d88c05bf3cd61b455",
+          "git_sha": "1e06bcfde151d7669c29825d88c05bf3cd61b455",
+          "database": "sc_demo",
+          "environment": "demo",
+          "frontend_build_sha256": "03045d0ed5c1359b2e2318be631ac6281bf818c39f272f69bfd62d92ac84c208",
+          "namespace_id": "ns_000000000002",
+          "namespace_alias": "demo",
+          "audience": "tenant"
+        }
+      },
+      "documents": {
+        "docs/ops/iterations/fe-presentation-convergence-01/fepc-14/fepc-14-readonly-path-assessment.md": "8c44b232ac033b5e7e0617d2b33b1fc1d0b3818efd23d7d7430f30b13a020d21",
+        "docs/ops/iterations/fe-presentation-convergence-01/fepc-14/fepc-14-permission-impact.md": "3629e44e7960eecac3f55e21f493c14a2b93d8a1057cb9e9d765ff5983f29ba1",
+        "docs/ops/iterations/fe-presentation-convergence-01/fepc-14/fepc-14-regression-plan.md": "40813d05795dbe88ae38c78ee48bf3b2b0563ba0efc08833a342dfd3b8534658"
+      },
+      "validation": {
+        "command": "make verify.docs.all",
+        "status": "passed",
+        "guard_tests": 7,
+        "log": ".runtime/fepc-14/assessment-docs-validation.log"
+      },
+      "product_tests": "not_run: design-only, no implementation",
+      "button_replayed": false,
+      "permissions_changed": false
+    },
+    "runtime_probe_scope": "P4 minimal extension of existing standard presentation lane; registered isolated profile, credentials and fixture identities; read-only; no new environment/lane",
+    "projection_note": "Selected evidence, not a complete response. Repeated product_version omitted; original observations remain in local preserved evidence.",
+    "FEPC-14I": {
+      "targeted_tests": "12 Python, 11 TS assertions; typecheck; native guard 15; cross-model navigation; error contract PASS",
+      "commands_log": ".runtime/fepc-14/targeted-tests.log",
+      "browser": "5 cases passed, real read and cross-company denial plus 3 transport simulations; zero business mutation requests",
+      "evidence": "docs/ops/iterations/fe-presentation-convergence-01/fepc-14/implementation-evidence.json",
+      "limitation": "non-draft real button click not_run: fixture stage draft, no stage writes authorized",
+      "negative_case_logs": "Expected 403/network/500 resource errors checked separately; no internal diagnostic message rendered",
+      "review": "GPT independent review pending; no merge or deployment authorization",
+      "reused": "Backend/core query and normalizer unchanged after final browser. Later documentation-only edits do not invalidate browser evidence.",
+      "freeze_prepare": "passed; generated evidence reviewed (counts, file sizes and declaration/consumer hashes only)"
+    }
+  }
+}

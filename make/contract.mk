@@ -299,3 +299,9 @@ verify.daily.runtime.entry.identity.readonly: guard.prod.forbid
 	@$(MAKE) --no-print-directory daily.runtime.entry.verify \
 	  DAILY_RUNTIME_EXPECTED_SHA="$(DAILY_RUNTIME_EXPECTED_SHA)" \
 	  DAILY_RUNTIME_ENTRY_VERIFY_REPORT="$(DAILY_RUNTIME_ENTRY_VERIFY_REPORT)"
+
+.PHONY: verify.project.stage_requirements.unit
+verify.project.stage_requirements.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_project_stage_requirements_read
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/project_stage_requirements_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/project-stage-requirements-test.mjs >/dev/null
+	@node /tmp/project-stage-requirements-test.mjs

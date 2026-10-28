@@ -81,6 +81,12 @@ def resolve_targets(authority):
         }
     if authority != "fixture":
         raise AssertionError("Unknown acceptance record authority")
+    if os.environ.get("SC_ACCEPTANCE_RECORD_SCOPE") == "stage_requirements":
+        return {"project": target(PROJECT_MENU_XMLID,
+            "smart_construction_acceptance_fixture.fe_project_a",
+            declared_action_xmlid=PROJECT_ACTION_XMLID,
+            expect={"stage": lambda record: record.lifecycle_state}),
+            "denied_project_id": int(env.ref("smart_construction_acceptance_fixture.fe_project_c").id)}
     payload = {
         "project": target(
             PROJECT_MENU_XMLID,

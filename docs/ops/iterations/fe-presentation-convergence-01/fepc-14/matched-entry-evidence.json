@@ -1,0 +1,148 @@
+{
+  "status": "reproduced_permission_failure_implementation_blocked",
+  "runtime_identity": {
+    "collected_at": "2026-10-28T16:44:24.286786+00:00",
+    "status": 200,
+    "response": {
+      "source_revision": "1e06bcfde151d7669c29825d88c05bf3cd61b455",
+      "git_sha": "1e06bcfde151d7669c29825d88c05bf3cd61b455",
+      "database": "sc_demo",
+      "environment": "demo",
+      "frontend_build_sha256": "03045d0ed5c1359b2e2318be631ac6281bf818c39f272f69bfd62d92ac84c208",
+      "namespace_id": "ns_000000000002",
+      "namespace_alias": "demo",
+      "audience": "tenant"
+    }
+  },
+  "actor": {
+    "user_id": 41,
+    "company_id": 1,
+    "role_code": "business_full",
+    "identity_source": "system.init"
+  },
+  "sample": {
+    "project_id": 13,
+    "project_code": "DEMO-PJ-STAGE-DONE",
+    "project_name": "城南污水处理厂扩建工程（完工阶段）",
+    "stage_visible": "竣工",
+    "entry": "项目中心 → 项目台账",
+    "form_mode_visible": "编辑 / 尚未修改 / 保存草稿"
+  },
+  "entry_url": "http://1.95.85.92:18081/t/demo/f/project.project/13?menu_id=382&action_id=588&product_domain=%E9%A1%B9%E7%9B%AE%E4%B8%AD%E5%BF%83&entry_intent=handling&disposition_policy=keep_list_form&integration_target=project.project+%E9%A1%B9%E7%9B%AE%E5%8F%B0%E8%B4%A6&entry_target_policy=keep_list_form&business_entry_contract_version=business_entry_disposition.v1",
+  "requests": [
+    {
+      "time": "2026-10-28T16:43:37.220Z",
+      "intent": "execute_button",
+      "model": "project.project",
+      "http_status": 403,
+      "ok": false,
+      "request": {
+        "intent": "execute_button",
+        "params": {
+          "model": "project.project",
+          "res_id": 13,
+          "button": {
+            "name": "action_view_stage_requirements",
+            "type": "object",
+            "action_id": "action.action_view_stage_requirements",
+            "backend_identity": "native_button:object:action_view_stage_requirements:/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/button[6]:1",
+            "source_widget_id": "action_view_stage_requirements"
+          },
+          "context": {
+            "company_id": 1
+          }
+        },
+        "context": {
+          "company_id": 1
+        },
+        "meta": {
+          "menu_id": 382,
+          "action_id": 588
+        }
+      },
+      "response": {
+        "ok": false,
+        "error": {
+          "code": "PERMISSION_DENIED",
+          "message": "You are not allowed to create '项目阶段要求' (sc.project.stage.requirement.wizard) records.\n\nNo group currently allows this operation.\n\nContact your administrator to request access if necessary.",
+          "reason_code": "PERMISSION_DENIED",
+          "retryable": false,
+          "error_category": "permission",
+          "suggested_action": "request_access"
+        },
+        "data": {
+          "result": {
+            "type": "noop",
+            "status": "failure",
+            "success": false,
+            "reason_code": "PERMISSION_DENIED",
+            "message": "You are not allowed to create '项目阶段要求' (sc.project.stage.requirement.wizard) records.\n\nNo group currently allows this operation.\n\nContact your administrator to request access if necessary.",
+            "res_model": "project.project",
+            "res_id": 13
+          },
+          "effect": {
+            "type": "toast",
+            "message": "You are not allowed to create '项目阶段要求' (sc.project.stage.requirement.wizard) records.\n\nNo group currently allows this operation.\n\nContact your administrator to request access if necessary."
+          }
+        },
+        "code": 403,
+        "meta": {
+          "trace_id": "trace_1793205815974_ae0bf579b6cc18",
+          "intent": "execute_button",
+          "elapsed_ms": 1248,
+          "api_version": "v1",
+          "contract_version": "1.0.0",
+          "schema_version": "1.0.0"
+        }
+      }
+    }
+  ],
+  "before": {
+    "route": "http://1.95.85.92:18081/t/demo/f/project.project/13?menu_id=382&action_id=588&product_domain=%E9%A1%B9%E7%9B%AE%E4%B8%AD%E5%BF%83&entry_intent=handling&disposition_policy=keep_list_form&integration_target=project.project+%E9%A1%B9%E7%9B%AE%E5%8F%B0%E8%B4%A6&entry_target_policy=keep_list_form&business_entry_contract_version=business_entry_disposition.v1",
+    "project_code_present": true,
+    "button_visible": true
+  },
+  "after": {
+    "route": "http://1.95.85.92:18081/t/demo/f/project.project/13?menu_id=382&action_id=588&product_domain=%E9%A1%B9%E7%9B%AE%E4%B8%AD%E5%BF%83&entry_intent=handling&disposition_policy=keep_list_form&integration_target=project.project+%E9%A1%B9%E7%9B%AE%E5%8F%B0%E8%B4%A6&entry_target_policy=keep_list_form&business_entry_contract_version=business_entry_disposition.v1",
+    "title": "操作未完成",
+    "message": "请求未能完成，请返回安全页面。"
+  },
+  "console_errors": [
+    "Failed to load resource: the server responded with a status of 403 (FORBIDDEN)"
+  ],
+  "network_errors": [],
+  "blocked_by_probe": [],
+  "source_facts": {
+    "method": "addons/smart_construction_core/models/core/project_core.py:1721",
+    "acl": "addons/smart_construction_core/security/ir.model.access.csv:246",
+    "handler": "addons/smart_core/handlers/execute_button.py:467",
+    "frontend_catch": "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts:183"
+  },
+  "evidence_checks": {
+    "passed": 8,
+    "kind": "offline evidence consistency assertions, not product regression tests"
+  },
+  "artifact_index": [
+    {
+      "path": ".runtime/fepc-14/browser-smoke.json",
+      "sha256": "e0524acd68a7c6a5b3cc4d710a853a516ff43b7149e5ca17e914d991a7f59ea3"
+    },
+    {
+      "path": ".runtime/fepc-14/runtime-after-reproduction.json",
+      "sha256": "59eae37a2e5879e31c034392a4dd56d4757bdb73d674261e6ca401675af7cc32"
+    },
+    {
+      "path": ".runtime/fepc-14/matched-project-before-click.png",
+      "sha256": "e0ec9ae8ff950fdfc195f6469b5b76bd8b64c5c90c7ce61acc2294b387f65c8e"
+    },
+    {
+      "path": ".runtime/fepc-14/matched-project-after-click.png",
+      "sha256": "428ba98437654ab265c7be41ebe5da1c44163ab266afdcadd37c4d43e142617b"
+    },
+    {
+      "path": ".runtime/fepc-14/previous-attempt.json",
+      "sha256": "62968eb2321192b2bf9b817c84c198a572c4e4afd5332c48683f8d0e0fcd394e"
+    }
+  ],
+  "projection_note": "Selected evidence, not a complete response. Repeated product_version omitted; original observations remain in local preserved evidence."
+}

@@ -632,11 +632,9 @@ def smart_core_normalize_projected_contract_data(env, data, context):
 
 
 def smart_core_normalize_unified_page_contract_v2(env, contract, context):
-    del env, contract, context
-    # Native Unified Page Contract V2 is already canonical.  Industry
-    # projected-data compatibility normalizers must not rebuild its layout or
-    # synthesize name-level widget status rows.
-    return None
+    del env
+    from .services.project_stage_requirements_read import stage_requirements_navigation
+    return stage_requirements_navigation(contract, context)
 
 
 def _sc_field_name(node: Any) -> str:
