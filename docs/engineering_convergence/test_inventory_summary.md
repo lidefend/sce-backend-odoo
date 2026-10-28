@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1618`
+- Total assets: `1619`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `223`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1170`
+- PR dedupe candidates: `1171`
 
 ## By Layer
 
@@ -22,7 +22,7 @@ Generated from `test_inventory.csv`.
 | odoo_integration | 145 |
 | security | 50 |
 | e2e | 49 |
-| frontend_acceptance | 39 |
+| frontend_acceptance | 40 |
 | gate | 2 |
 | data_migration | 2 |
 
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1389 |
+| pr_candidate | 1390 |
 | integration_candidate | 173 |
 | release_candidate | 47 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1170 |
+| deduplicate_before_required | 1171 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 172 |
 | keep_release_only | 47 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1391 |
+| <5m | 1392 |
 | 10-30m | 174 |
 | 30-60m | 49 |
 | unknown | 3 |
@@ -158,7 +158,7 @@ Generated from `test_inventory.csv`.
 | backend owner | 145 |
 | security owner | 50 |
 | qa owner | 49 |
-| frontend owner | 40 |
+| frontend owner | 41 |
 | data owner | 2 |
 
 ## By Directory
@@ -167,7 +167,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | scripts/verify | 1403 |
 | scripts/ops | 110 |
-| frontend/apps/web/scripts | 46 |
+| frontend/apps/web/scripts | 47 |
 | scripts/ci | 33 |
 | scripts/audit | 10 |
 | make | 5 |
@@ -224,6 +224,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-68bbc50c | frontend_acceptance | `frontend/apps/web/scripts/onchange_roundtrip_race_test.mjs` | frontend owner |
 | T-ASSET-d399ae8e | frontend_acceptance | `frontend/apps/web/scripts/product_navigation_boundary_acceptance.mjs` | frontend owner |
 | T-ASSET-4e842a94 | frontend_acceptance | `frontend/apps/web/scripts/product_page_structure_guard.mjs` | frontend owner |
+| T-ASSET-b6809406 | frontend_acceptance | `frontend/apps/web/scripts/professional_collaboration_message_component_test.mjs` | frontend owner |
 | T-ASSET-fade93bd | security | `frontend/apps/web/scripts/public_auth_bootstrap_test.mjs` | security owner |
 | T-ASSET-73b78feb | frontend_acceptance | `frontend/apps/web/scripts/readonly_block_component_test.mjs` | frontend owner |
 | T-ASSET-d6b3571c | frontend_acceptance | `frontend/apps/web/scripts/standard_list_lowcode_loop_test.mjs` | frontend owner |
@@ -275,8 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-e9de3f62 | contract | `scripts/ops/repair_unbound_structural_form_contract.py` | platform owner |
 | T-ASSET-95bca637 | contract | `scripts/ops/settlement_contract_surface_backfill.py` | platform owner |
 | T-ASSET-a67db45b | contract | `scripts/ops/test_repair_unbound_structural_form_contract.py` | platform owner |
-| T-ASSET-9a6b60bc | contract | `scripts/ops/validate_contract_business_categories.sh` | platform owner |
-| ... | ... | 1090 more | ... |
+| ... | ... | 1091 more | ... |
 
 ## Dedupe Hotspots
 

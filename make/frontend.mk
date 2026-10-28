@@ -353,6 +353,7 @@ verify.frontend.professional_audit.unit: guard.prod.forbid
 verify.frontend.professional_collaboration.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_collaboration_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/professional-collaboration-model-test.mjs >/dev/null
 	@node /tmp/professional-collaboration-model-test.mjs
+	@node frontend/apps/web/scripts/professional_collaboration_message_component_test.mjs $(if $(filter 1,$(COLLABORATION_MESSAGE_BROWSER)),--browser,)
 	@python3 -m unittest scripts/verify/test_frontend_professional_collaboration_guard.py
 	@python3 scripts/verify/frontend_professional_collaboration_guard.py
 
