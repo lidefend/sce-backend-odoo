@@ -1,0 +1,480 @@
+{
+  "task": "FEPC-13R",
+  "started_at": "2026-10-28T12:51:17.852Z",
+  "host": {
+    "platform": "linux",
+    "release": "6.6.114.1-microsoft-standard-WSL2",
+    "windows_emulation": false
+  },
+  "requests": [
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:19.639Z",
+      "method": "POST",
+      "intent": "system.init",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:23.012Z",
+      "method": "POST",
+      "intent": "ui.contract.v2",
+      "op": "model",
+      "model": "project.project",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:23.372Z",
+      "method": "POST",
+      "intent": "api.data",
+      "op": "read",
+      "model": "project.project",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:23.829Z",
+      "method": "POST",
+      "intent": "api.data",
+      "op": "read",
+      "model": "tender.bid",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:23.845Z",
+      "method": "POST",
+      "intent": "api.data",
+      "op": "read",
+      "model": "construction.work.breakdown",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:23.889Z",
+      "method": "POST",
+      "intent": "api.data",
+      "op": "read",
+      "model": "construction.work.breakdown",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:23.904Z",
+      "method": "POST",
+      "intent": "api.data",
+      "op": "read",
+      "model": "project.boq.line",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:24.389Z",
+      "method": "POST",
+      "intent": "api.data",
+      "op": "read",
+      "model": "construction.contract",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:24.390Z",
+      "method": "POST",
+      "intent": "chatter.timeline",
+      "model": "project.project",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:24.857Z",
+      "method": "POST",
+      "intent": "ui.contract.v2",
+      "op": "model",
+      "model": "project.responsibility",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:26.685Z",
+      "method": "POST",
+      "intent": "ui.contract.v2",
+      "op": "model",
+      "model": "tender.bid",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:26.742Z",
+      "method": "POST",
+      "intent": "ui.contract.v2",
+      "op": "model",
+      "model": "project.tags",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:28.736Z",
+      "method": "POST",
+      "intent": "ui.contract.v2",
+      "op": "model",
+      "model": "construction.work.breakdown",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:28.762Z",
+      "method": "POST",
+      "intent": "chatter.followers.list",
+      "model": "project.project",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:28.808Z",
+      "method": "POST",
+      "intent": "ui.contract.v2",
+      "op": "model",
+      "model": "project.boq.line",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:29.962Z",
+      "method": "POST",
+      "intent": "ui.contract.v2",
+      "op": "model",
+      "model": "project.task",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:30.017Z",
+      "method": "POST",
+      "intent": "ui.contract.v2",
+      "op": "model",
+      "model": "construction.contract",
+      "http_status": 200,
+      "application_ok": true
+    },
+    {
+      "phase": "startup",
+      "time": "2026-10-28T12:51:30.200Z",
+      "method": "POST",
+      "intent": "ui.contract.v2",
+      "op": "model",
+      "model": "project.collaborator",
+      "http_status": 200,
+      "application_ok": true
+    }
+  ],
+  "blocked": [
+    {
+      "phase": "startup",
+      "path": "/t/demo/api/v1/intent",
+      "method": "POST",
+      "intent": "global.message.conversations"
+    }
+  ],
+  "console_errors": [
+    {
+      "phase": "startup",
+      "kind": "console",
+      "message": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    }
+  ],
+  "request_failures": [
+    {
+      "phase": "startup",
+      "path": "/t/demo/api/v1/intent",
+      "error": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    }
+  ],
+  "browser_version": "147.0.7727.15",
+  "runtime_before": {
+    "time": "2026-10-28T12:51:18.447Z",
+    "http_status": 200,
+    "body": {
+      "source_revision": "3da65c5c6f3909cb81c0316c85f8a622c952965a",
+      "database": "sc_demo",
+      "environment": "demo",
+      "frontend_build_sha256": "c565398e8482eda9b7a8a17d6742bfb3149b615011cf8cf8faeafc881d46f92f"
+    }
+  },
+  "identity": {
+    "user_id": 41,
+    "role_code": "business_full",
+    "company_id": 1,
+    "source_revision": "3da65c5c6f3909cb81c0316c85f8a622c952965a"
+  },
+  "environment": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.0.0 Safari/537.36",
+    "platform": "Linux x86_64",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "outer": {
+      "width": 1440,
+      "height": 1000
+    },
+    "dpr": 1,
+    "visualViewport": {
+      "scale": 1,
+      "width": 1440,
+      "height": 1000
+    },
+    "documentScroll": {
+      "height": 1000,
+      "clientHeight": 1000
+    },
+    "url": "/t/demo/r/project.project/15"
+  },
+  "title_observation": {
+    "route": "/t/demo/r/project.project/15",
+    "form_state": "ok",
+    "form_identity": {
+      "model": "project.project",
+      "record": "15"
+    },
+    "headers": [
+      {
+        "attributes": {
+          "data-v-c1e032e3": "",
+          "data-v-73f54e02": "",
+          "data-v-4ba138fc": "",
+          "data-semantic-component": "ContractFormProductHeader",
+          "data-state": "readonly",
+          "data-product-page-header": "",
+          "data-workspace-page-header": "",
+          "data-presentation-mode": "workspace",
+          "data-render-profile": "readonly",
+          "data-dirty-state": "clean",
+          "data-header-variant": "standalone",
+          "data-title-visibility": "visible",
+          "data-has-status": "true",
+          "data-has-actions": "true",
+          "data-professional-workflow-component": "action-bar",
+          "data-workflow-action-count": "1"
+        },
+        "rect": {
+          "x": 256,
+          "y": 129,
+          "width": 1145,
+          "height": 53,
+          "display": "grid",
+          "visibility": "visible",
+          "fontSize": "14px",
+          "position": "sticky"
+        },
+        "headings": [
+          {
+            "tag": "H1",
+            "text": "城东片区安置房二期工程（归档阶段）",
+            "ariaLabel": null,
+            "disabled": null,
+            "rect": {
+              "x": 256,
+              "y": 137,
+              "width": 658.953125,
+              "height": 32,
+              "display": "block",
+              "visibility": "visible",
+              "fontSize": "24px",
+              "position": "static"
+            }
+          }
+        ],
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "text": "返回",
+            "ariaLabel": "返回",
+            "disabled": false,
+            "rect": {
+              "x": 1226.953125,
+              "y": 138,
+              "width": 56.015625,
+              "height": 30,
+              "display": "flex",
+              "visibility": "visible",
+              "fontSize": "12px",
+              "position": "relative"
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "text": "更多操作",
+            "ariaLabel": null,
+            "disabled": false,
+            "rect": {
+              "x": 1290.96875,
+              "y": 138,
+              "width": 64.015625,
+              "height": 30,
+              "display": "flex",
+              "visibility": "visible",
+              "fontSize": "12px",
+              "position": "relative"
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "text": "删除",
+            "ariaLabel": null,
+            "disabled": false,
+            "rect": {
+              "x": 1362.984375,
+              "y": 138,
+              "width": 38.015625,
+              "height": 30,
+              "display": "inline-flex",
+              "visibility": "visible",
+              "fontSize": "12px",
+              "position": "relative"
+            }
+          }
+        ]
+      }
+    ],
+    "native_titles": [
+      {
+        "field": "name",
+        "rect": {
+          "x": 256,
+          "y": 295,
+          "width": 450,
+          "height": 32,
+          "display": "flex",
+          "visibility": "visible",
+          "fontSize": "14px",
+          "position": "static"
+        },
+        "headings": [
+          {
+            "tag": "H2",
+            "text": "城东片区安置房二期工程（归档阶段）",
+            "ariaLabel": null,
+            "disabled": null,
+            "rect": {
+              "x": 298,
+              "y": 295,
+              "width": 408,
+              "height": 32,
+              "display": "block",
+              "visibility": "visible",
+              "fontSize": "24px",
+              "position": "static"
+            }
+          }
+        ],
+        "inputs": [],
+        "favorite": [
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "ariaLabel": "在仪表板上显示项目",
+            "disabled": true,
+            "rect": {
+              "x": 256,
+              "y": 295,
+              "width": 32,
+              "height": 32,
+              "display": "flex",
+              "visibility": "visible",
+              "fontSize": "27px",
+              "position": "relative"
+            }
+          }
+        ],
+        "parent": {
+          "tag": "SECTION",
+          "attributes": {
+            "data-v-6ed87c30": "",
+            "data-contract-container-id": "h1.native.3.children.5.children.0",
+            "data-group-title": "",
+            "data-section-navigation-role": "primary",
+            "data-collapsed": "false"
+          },
+          "children": [
+            {
+              "tag": "DIV",
+              "text": "城东片区安置房二期工程（归档阶段）"
+            }
+          ]
+        }
+      }
+    ],
+    "name_fields": [
+      {
+        "text": "城东片区安置房二期工程（归档阶段）",
+        "rect": {
+          "x": 256,
+          "y": 295,
+          "width": 450,
+          "height": 32,
+          "display": "flex",
+          "visibility": "visible",
+          "fontSize": "14px",
+          "position": "static"
+        },
+        "inputCount": 0
+      }
+    ],
+    "canvases": []
+  },
+  "edit_verification": {
+    "http_status": 200,
+    "application_ok": true,
+    "contract_only": true,
+    "browser_edit_state": "not_verified_no_edit_click_or_navigation"
+  },
+  "limitations": [
+    "Project15 wutao only; no favorite/edit/save actions clicked.",
+    "Readonly DOM observed; edit-profile contract only is NOT edit-page DOM proof.",
+    "Only selected declarations retained; not the complete contract or raw inherited XML chain.",
+    "Blocked background requests are observer constraints."
+  ],
+  "runtime_after": {
+    "time": "2026-10-28T12:51:33.720Z",
+    "http_status": 200,
+    "body": {
+      "source_revision": "3da65c5c6f3909cb81c0316c85f8a622c952965a",
+      "database": "sc_demo",
+      "environment": "demo",
+      "frontend_build_sha256": "c565398e8482eda9b7a8a17d6742bfb3149b615011cf8cf8faeafc881d46f92f"
+    }
+  },
+  "completed_at": "2026-10-28T12:51:33.721Z",
+  "scope": {
+    "model": "project.project",
+    "record_id": 15,
+    "login": "wutao",
+    "company_id": 1,
+    "authoritative_main": "b918f2a01fbbea01b7665d8c3448ed820050ffae",
+    "source_analysis_head": "bca43728c2f1737b9000860e323c77a6e395dbb6",
+    "authentication": "existing authorized login mechanism; no surviving session available; credentials/token only in process memory"
+  },
+  "evidence_kind": "current_browser_dom_and_network_readonly; no edit navigation",
+  "screenshot": {
+    "path": ".runtime/fepc13r/readonly-title.png",
+    "sha256": "470186bf70e93cd08f56d2792acfddd5ac18b37263ce884e29f13e94f2ed4abe",
+    "note": "local supporting artifact, not a committed screenshot or whole-page acceptance"
+  }
+}

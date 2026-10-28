@@ -1,0 +1,71 @@
+{
+  "status": "design_only_not_runtime_contract",
+  "task": "FEPC-13D",
+  "baseline": "b918f2a01fbbea01b7665d8c3448ed820050ffae",
+  "recommended": "navigation_occurrence_relation",
+  "runtime_fields_added": false,
+  "options": [
+    {
+      "id": "hide_page_header",
+      "existing": true,
+      "decision": "reject",
+      "reason": "Hides primary identity instead of native text; contrary to approved ownership"
+    },
+    {
+      "id": "field_or_container_visibility",
+      "existing": true,
+      "decision": "reject",
+      "reason": "May remove editor, favorite or other occurrences/children; visibility is not text-copy ownership"
+    },
+    {
+      "id": "text_equality_or_model_rule",
+      "existing": false,
+      "decision": "reject",
+      "reason": "No semantic authority; equal strings do not prove redundancy"
+    },
+    {
+      "id": "reuse_action_identity_policy",
+      "existing": true,
+      "decision": "reject",
+      "reason": "Existing identityPolicy defines action/backend identity, not record header identity"
+    },
+    {
+      "id": "widget_component_config",
+      "existing": false,
+      "decision": "not_recommended",
+      "advantage": "Local occurrence location",
+      "cost": "Would still need separate primary identity binding; duplicated authority and permissive old dictionary decoding"
+    },
+    {
+      "id": "navigation_occurrence_relation",
+      "existing": false,
+      "decision": "recommend",
+      "carrier_proposal": "formStructureContract.navigation.recordIdentity",
+      "advantage": "One explicit relation joining primary record identity to exact existing widget references",
+      "cost": "Requires future formal schema/decoder/delivery/presenter work and backward projection",
+      "scope": "readonly visual text only; no container/field/action removal"
+    }
+  ],
+  "proposed_protocol": {
+    "outer_contract": "2.3.0",
+    "structure_version": "1.2",
+    "capability": "form.record_identity_projection.v1",
+    "currently_supported": false,
+    "activation": "all three negotiated plus valid explicit relation and final readonly mode with visible primary header",
+    "old_delivery": "validated old-version projection; remove relation and restore supported version markers, keep text/actions"
+  },
+  "approval_required": [
+    "object shape and version boundary",
+    "governed source carrier and occurrence binding",
+    "legacy delivery and cache isolation",
+    "mode/accessibility regression requirements"
+  ],
+  "non_goals": [
+    "project-specific rule",
+    "new config system",
+    "business data mutation",
+    "renderer implementation",
+    "automatic publication",
+    "F1"
+  ]
+}

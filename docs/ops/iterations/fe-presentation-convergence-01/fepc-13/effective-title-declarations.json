@@ -1,0 +1,818 @@
+{
+  "task": "FEPC-13R",
+  "kind": "selected_title_declaration_projection_not_full_response",
+  "responses": [
+    {
+      "time": "2026-10-28T12:51:23.355Z",
+      "origin": "browser_actual_request",
+      "request": {
+        "intent": "ui.contract.v2",
+        "params": {
+          "op": "model",
+          "model": "project.project",
+          "view_type": "form",
+          "record_id": 15,
+          "render_profile": "readonly",
+          "contract_surface": "user",
+          "source_mode": "governance_pipeline",
+          "context": {
+            "company_id": 1
+          },
+          "delivery_profile": "full",
+          "client_type": "web_pc",
+          "accepted_contract_versions": [
+            "2.0.x",
+            "2.1.x",
+            "2.2.x"
+          ]
+        },
+        "context": {
+          "company_id": 1
+        }
+      },
+      "http_status": 200,
+      "application_ok": true,
+      "response_sha256": "dc262c217f6c27ec0ed91332165119f0bdbf219c06e6b5b94b7bb23fb66616de",
+      "titleSubtrees": [
+        {
+          "path": "/layoutContract/containerTree/3/children/5/children/0",
+          "node": {
+            "attributes": {
+              "class": "d-flex flex-row"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "class": "me-2",
+                  "name": "is_favorite",
+                  "nolabel": "1",
+                  "widget": "boolean_favorite"
+                },
+                "fieldInfo": {
+                  "colspan": 1,
+                  "context": {},
+                  "domain": [],
+                  "help": "",
+                  "invisible": false,
+                  "label": "在仪表板上显示项目",
+                  "name": "is_favorite",
+                  "readonly": false,
+                  "required": false,
+                  "sc_ui_usage": "fact",
+                  "selection": [],
+                  "type": "boolean",
+                  "widget": "boolean_favorite"
+                },
+                "label": "在仪表板上显示项目",
+                "name": "is_favorite",
+                "nolabel": true,
+                "type": "field",
+                "string": "在仪表板上显示项目",
+                "readonly": false,
+                "required": false,
+                "widget": "checkbox",
+                "componentKey": "sc.input.boolean",
+                "componentConfig": {
+                  "invisible": false,
+                  "readonly": false,
+                  "required": false,
+                  "native_locator": "/form[1]/sheet[1]/div[2]/h1[1]/field[1]",
+                  "occurrence_index": 1,
+                  "source_position": 38,
+                  "fieldType": "boolean",
+                  "nativeWidget": "boolean_favorite"
+                },
+                "widgetId": "field.is_favorite.occ.b4aa99b580fdaa34",
+                "nativeLocator": "/form[1]/sheet[1]/div[2]/h1[1]/field[1]",
+                "occurrenceIndex": 1,
+                "sourcePosition": 38,
+                "containerId": "field.is_favorite.occ.b4aa99b580fdaa34",
+                "children": [],
+                "widgetList": [],
+                "zone": "detail_zone",
+                "containerType": "field",
+                "title": "在仪表板上显示项目",
+                "styleToken": "",
+                "span": 12
+              },
+              {
+                "attributes": {
+                  "class": "o_text_overflow",
+                  "name": "name",
+                  "on_change": "1",
+                  "options": "{'line_breaks': False}",
+                  "placeholder": "例如，办公场所",
+                  "widget": "text"
+                },
+                "fieldInfo": {
+                  "colspan": 1,
+                  "context": {},
+                  "domain": [],
+                  "help": "",
+                  "invisible": false,
+                  "label": "名称",
+                  "name": "name",
+                  "readonly": false,
+                  "required": true,
+                  "sc_ui_usage": "fact",
+                  "selection": [],
+                  "type": "char",
+                  "widget": "text",
+                  "widget_options": {
+                    "line_breaks": false
+                  }
+                },
+                "label": "名称",
+                "name": "name",
+                "nolabel": false,
+                "required": true,
+                "type": "field",
+                "string": "名称",
+                "readonly": false,
+                "widget": "input",
+                "componentKey": "sc.input.text",
+                "componentConfig": {
+                  "invisible": false,
+                  "readonly": false,
+                  "required": true,
+                  "native_locator": "/form[1]/sheet[1]/div[2]/h1[1]/field[2]",
+                  "occurrence_index": 1,
+                  "source_position": 39,
+                  "fieldType": "char",
+                  "nativeWidget": "text",
+                  "widgetOptions": {
+                    "line_breaks": false
+                  }
+                },
+                "widgetId": "field.name.occ.d185b8cbc2315be5",
+                "nativeLocator": "/form[1]/sheet[1]/div[2]/h1[1]/field[2]",
+                "occurrenceIndex": 1,
+                "sourcePosition": 39,
+                "containerId": "field.name.occ.d185b8cbc2315be5",
+                "children": [],
+                "widgetList": [],
+                "zone": "detail_zone",
+                "containerType": "field",
+                "title": "名称",
+                "styleToken": "",
+                "span": 12
+              }
+            ],
+            "type": "h1",
+            "containerId": "h1.native.3.children.5.children.0",
+            "containerType": "h1",
+            "title": "",
+            "label": "",
+            "widgetList": [
+              {
+                "widgetId": "field.is_favorite.occ.b4aa99b580fdaa34",
+                "widgetType": "checkbox",
+                "fieldCode": "is_favorite",
+                "label": "在仪表板上显示项目",
+                "span": 12,
+                "componentKey": "sc.input.boolean",
+                "capabilities": [],
+                "componentConfig": {
+                  "invisible": false,
+                  "readonly": false,
+                  "required": false,
+                  "native_locator": "/form[1]/sheet[1]/div[2]/h1[1]/field[1]",
+                  "occurrence_index": 1,
+                  "source_position": 38,
+                  "fieldType": "boolean",
+                  "nativeWidget": "boolean_favorite"
+                },
+                "fieldDescriptor": {
+                  "name": "is_favorite",
+                  "readonly": false,
+                  "required": false,
+                  "string": "在仪表板上显示项目",
+                  "type": "boolean",
+                  "label": "在仪表板上显示项目",
+                  "colspan": 1,
+                  "context": {},
+                  "domain": [],
+                  "help": "",
+                  "invisible": false,
+                  "sc_ui_usage": "fact",
+                  "selection": [],
+                  "widget": "boolean_favorite",
+                  "native_locator": "/form[1]/sheet[1]/div[2]/h1[1]/field[1]",
+                  "occurrence_index": 1,
+                  "source_position": 38
+                },
+                "ownerContainerId": "field.is_favorite.occ.b4aa99b580fdaa34",
+                "nativeLocator": "/form[1]/sheet[1]/div[2]/h1[1]/field[1]",
+                "occurrenceIndex": 1,
+                "sourcePosition": 38
+              },
+              {
+                "widgetId": "field.name.occ.d185b8cbc2315be5",
+                "widgetType": "input",
+                "fieldCode": "name",
+                "label": "名称",
+                "span": 12,
+                "componentKey": "sc.input.text",
+                "capabilities": [],
+                "componentConfig": {
+                  "invisible": false,
+                  "readonly": false,
+                  "required": true,
+                  "native_locator": "/form[1]/sheet[1]/div[2]/h1[1]/field[2]",
+                  "occurrence_index": 1,
+                  "source_position": 39,
+                  "fieldType": "char",
+                  "nativeWidget": "text",
+                  "widgetOptions": {
+                    "line_breaks": false
+                  }
+                },
+                "fieldDescriptor": {
+                  "name": "name",
+                  "readonly": false,
+                  "required": true,
+                  "source_required": true,
+                  "string": "名称",
+                  "type": "char",
+                  "label": "名称",
+                  "colspan": 1,
+                  "context": {},
+                  "domain": [],
+                  "help": "",
+                  "invisible": false,
+                  "sc_ui_usage": "fact",
+                  "selection": [],
+                  "widget": "text",
+                  "widget_options": {
+                    "line_breaks": false
+                  },
+                  "native_locator": "/form[1]/sheet[1]/div[2]/h1[1]/field[2]",
+                  "occurrence_index": 1,
+                  "source_position": 39
+                },
+                "ownerContainerId": "field.name.occ.d185b8cbc2315be5",
+                "nativeLocator": "/form[1]/sheet[1]/div[2]/h1[1]/field[2]",
+                "occurrenceIndex": 1,
+                "sourcePosition": 39
+              }
+            ],
+            "zone": "detail_zone",
+            "columns": 2,
+            "nativeLocator": "/form[1]/sheet[1]/div[2]/h1[1]",
+            "occurrenceIndex": 1,
+            "styleToken": "d-flex flex-row",
+            "span": 24
+          }
+        }
+      ],
+      "identityFacts": [
+        {
+          "path": "/statusContract/globalStatus/effectiveRenderProfile",
+          "value": "readonly"
+        },
+        {
+          "path": "/dataContract/mainData/name",
+          "value": "城东片区安置房二期工程（归档阶段）"
+        },
+        {
+          "path": "/dataContract/mainData/display_name",
+          "value": "城东片区安置房二期工程（归档阶段）"
+        },
+        {
+          "path": "/dataContract/mainData/is_favorite",
+          "value": false
+        },
+        {
+          "path": "/dataContract/dataMeta/sourceContext/renderProfile",
+          "value": "readonly"
+        }
+      ],
+      "status_readback": {
+        "time": "2026-10-28T12:52:02.789335+00:00",
+        "http_status": 200,
+        "application_ok": true,
+        "globalStatus": {
+          "pageVisible": true,
+          "pageAuth": "read",
+          "modelRights": {
+            "read": true,
+            "write": true,
+            "create": true,
+            "unlink": true,
+            "duplicate": true
+          },
+          "recordRights": {
+            "read": true,
+            "write": true,
+            "create": true,
+            "unlink": true,
+            "duplicate": true
+          },
+          "viewCapabilities": {
+            "read": true,
+            "write": true,
+            "create": true,
+            "unlink": true,
+            "duplicate": true
+          },
+          "entryCapabilities": {
+            "read": true,
+            "write": true,
+            "create": true,
+            "unlink": true,
+            "duplicate": true
+          },
+          "effectiveRecordCapabilities": {
+            "read": true,
+            "write": true,
+            "create": true,
+            "unlink": true,
+            "duplicate": true
+          },
+          "effectiveRenderProfile": "readonly",
+          "workflowPhase": "closed",
+          "approvalPhase": "none"
+        },
+        "selected_widget_states": [
+          {
+            "path": "/statusContract/widgetStatus/10",
+            "state": {
+              "widgetId": "field.is_favorite.occ.b4aa99b580fdaa34",
+              "visible": true,
+              "readonly": false,
+              "required": false,
+              "disabled": false,
+              "auth": "edit"
+            }
+          },
+          {
+            "path": "/statusContract/widgetStatus/11",
+            "state": {
+              "widgetId": "field.name.occ.d185b8cbc2315be5",
+              "visible": true,
+              "readonly": false,
+              "required": true,
+              "disabled": false,
+              "auth": "edit"
+            }
+          }
+        ]
+      },
+      "request_projection_note": "Client capability list omitted from saved request; inherited from actual browser request unchanged.",
+      "page_identity_declarations": [
+        {
+          "path": "/pageInfo",
+          "declaration": {},
+          "ancestors": [
+            {}
+          ],
+          "properties": [
+            "pageId",
+            "sceneKey",
+            "pageName",
+            "model",
+            "viewType",
+            "layoutType",
+            "renderMode",
+            "contractVersion",
+            "clientType",
+            "deliveryProfile"
+          ],
+          "child_structure": []
+        },
+        {
+          "path": "/formStructureContract/navigation",
+          "declaration": {
+            "title": "业务办理"
+          },
+          "ancestors": [
+            {},
+            {
+              "source": "ui.contract.v2.form_structure_contract",
+              "mode": "native_structured_form"
+            }
+          ],
+          "properties": [
+            "title"
+          ],
+          "child_structure": []
+        }
+      ],
+      "titleSubtrees_note": "Complete selected h1 subtree from effective layoutContract; other layout nodes omitted. Not full raw XML or full API response."
+    },
+    {
+      "time": "2026-10-28T12:51:33.670Z",
+      "origin": "explicit_readonly_contract_request_edit_profile_no_navigation",
+      "request": {
+        "intent": "ui.contract.v2",
+        "params": {
+          "op": "model",
+          "model": "project.project",
+          "view_type": "form",
+          "record_id": 15,
+          "render_profile": "edit",
+          "contract_surface": "user",
+          "source_mode": "governance_pipeline",
+          "context": {
+            "company_id": 1
+          },
+          "delivery_profile": "full",
+          "client_type": "web_pc",
+          "accepted_contract_versions": [
+            "2.0.x",
+            "2.1.x",
+            "2.2.x"
+          ]
+        },
+        "context": {
+          "company_id": 1
+        }
+      },
+      "http_status": 200,
+      "application_ok": true,
+      "response_sha256": "dc1ffc19a1308933c11a10a8b613f72ba8e57c9b52d7279cc1a879521501c931",
+      "titleSubtrees": [
+        {
+          "path": "/layoutContract/containerTree/3/children/5/children/0",
+          "node": {
+            "attributes": {
+              "class": "d-flex flex-row"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "class": "me-2",
+                  "name": "is_favorite",
+                  "nolabel": "1",
+                  "widget": "boolean_favorite"
+                },
+                "fieldInfo": {
+                  "colspan": 1,
+                  "context": {},
+                  "domain": [],
+                  "help": "",
+                  "invisible": false,
+                  "label": "在仪表板上显示项目",
+                  "name": "is_favorite",
+                  "readonly": false,
+                  "required": false,
+                  "sc_ui_usage": "fact",
+                  "selection": [],
+                  "type": "boolean",
+                  "widget": "boolean_favorite"
+                },
+                "label": "在仪表板上显示项目",
+                "name": "is_favorite",
+                "nolabel": true,
+                "type": "field",
+                "string": "在仪表板上显示项目",
+                "readonly": false,
+                "required": false,
+                "widget": "checkbox",
+                "componentKey": "sc.input.boolean",
+                "componentConfig": {
+                  "invisible": false,
+                  "readonly": false,
+                  "required": false,
+                  "native_locator": "/form[1]/sheet[1]/div[2]/h1[1]/field[1]",
+                  "occurrence_index": 1,
+                  "source_position": 38,
+                  "fieldType": "boolean",
+                  "nativeWidget": "boolean_favorite"
+                },
+                "widgetId": "field.is_favorite.occ.b4aa99b580fdaa34",
+                "nativeLocator": "/form[1]/sheet[1]/div[2]/h1[1]/field[1]",
+                "occurrenceIndex": 1,
+                "sourcePosition": 38,
+                "containerId": "field.is_favorite.occ.b4aa99b580fdaa34",
+                "children": [],
+                "widgetList": [],
+                "zone": "detail_zone",
+                "containerType": "field",
+                "title": "在仪表板上显示项目",
+                "styleToken": "",
+                "span": 12
+              },
+              {
+                "attributes": {
+                  "class": "o_text_overflow",
+                  "name": "name",
+                  "on_change": "1",
+                  "options": "{'line_breaks': False}",
+                  "placeholder": "例如，办公场所",
+                  "widget": "text"
+                },
+                "fieldInfo": {
+                  "colspan": 1,
+                  "context": {},
+                  "domain": [],
+                  "help": "",
+                  "invisible": false,
+                  "label": "名称",
+                  "name": "name",
+                  "readonly": false,
+                  "required": true,
+                  "sc_ui_usage": "fact",
+                  "selection": [],
+                  "type": "char",
+                  "widget": "text",
+                  "widget_options": {
+                    "line_breaks": false
+                  }
+                },
+                "label": "名称",
+                "name": "name",
+                "nolabel": false,
+                "required": true,
+                "type": "field",
+                "string": "名称",
+                "readonly": false,
+                "widget": "input",
+                "componentKey": "sc.input.text",
+                "componentConfig": {
+                  "invisible": false,
+                  "readonly": false,
+                  "required": true,
+                  "native_locator": "/form[1]/sheet[1]/div[2]/h1[1]/field[2]",
+                  "occurrence_index": 1,
+                  "source_position": 39,
+                  "fieldType": "char",
+                  "nativeWidget": "text",
+                  "widgetOptions": {
+                    "line_breaks": false
+                  }
+                },
+                "widgetId": "field.name.occ.d185b8cbc2315be5",
+                "nativeLocator": "/form[1]/sheet[1]/div[2]/h1[1]/field[2]",
+                "occurrenceIndex": 1,
+                "sourcePosition": 39,
+                "containerId": "field.name.occ.d185b8cbc2315be5",
+                "children": [],
+                "widgetList": [],
+                "zone": "detail_zone",
+                "containerType": "field",
+                "title": "名称",
+                "styleToken": "",
+                "span": 12
+              }
+            ],
+            "type": "h1",
+            "containerId": "h1.native.3.children.5.children.0",
+            "containerType": "h1",
+            "title": "",
+            "label": "",
+            "widgetList": [
+              {
+                "widgetId": "field.is_favorite.occ.b4aa99b580fdaa34",
+                "widgetType": "checkbox",
+                "fieldCode": "is_favorite",
+                "label": "在仪表板上显示项目",
+                "span": 12,
+                "componentKey": "sc.input.boolean",
+                "capabilities": [],
+                "componentConfig": {
+                  "invisible": false,
+                  "readonly": false,
+                  "required": false,
+                  "native_locator": "/form[1]/sheet[1]/div[2]/h1[1]/field[1]",
+                  "occurrence_index": 1,
+                  "source_position": 38,
+                  "fieldType": "boolean",
+                  "nativeWidget": "boolean_favorite"
+                },
+                "fieldDescriptor": {
+                  "name": "is_favorite",
+                  "readonly": false,
+                  "required": false,
+                  "string": "在仪表板上显示项目",
+                  "type": "boolean",
+                  "label": "在仪表板上显示项目",
+                  "colspan": 1,
+                  "context": {},
+                  "domain": [],
+                  "help": "",
+                  "invisible": false,
+                  "sc_ui_usage": "fact",
+                  "selection": [],
+                  "widget": "boolean_favorite",
+                  "native_locator": "/form[1]/sheet[1]/div[2]/h1[1]/field[1]",
+                  "occurrence_index": 1,
+                  "source_position": 38
+                },
+                "ownerContainerId": "field.is_favorite.occ.b4aa99b580fdaa34",
+                "nativeLocator": "/form[1]/sheet[1]/div[2]/h1[1]/field[1]",
+                "occurrenceIndex": 1,
+                "sourcePosition": 38
+              },
+              {
+                "widgetId": "field.name.occ.d185b8cbc2315be5",
+                "widgetType": "input",
+                "fieldCode": "name",
+                "label": "名称",
+                "span": 12,
+                "componentKey": "sc.input.text",
+                "capabilities": [],
+                "componentConfig": {
+                  "invisible": false,
+                  "readonly": false,
+                  "required": true,
+                  "native_locator": "/form[1]/sheet[1]/div[2]/h1[1]/field[2]",
+                  "occurrence_index": 1,
+                  "source_position": 39,
+                  "fieldType": "char",
+                  "nativeWidget": "text",
+                  "widgetOptions": {
+                    "line_breaks": false
+                  }
+                },
+                "fieldDescriptor": {
+                  "name": "name",
+                  "readonly": false,
+                  "required": true,
+                  "source_required": true,
+                  "string": "名称",
+                  "type": "char",
+                  "label": "名称",
+                  "colspan": 1,
+                  "context": {},
+                  "domain": [],
+                  "help": "",
+                  "invisible": false,
+                  "sc_ui_usage": "fact",
+                  "selection": [],
+                  "widget": "text",
+                  "widget_options": {
+                    "line_breaks": false
+                  },
+                  "native_locator": "/form[1]/sheet[1]/div[2]/h1[1]/field[2]",
+                  "occurrence_index": 1,
+                  "source_position": 39
+                },
+                "ownerContainerId": "field.name.occ.d185b8cbc2315be5",
+                "nativeLocator": "/form[1]/sheet[1]/div[2]/h1[1]/field[2]",
+                "occurrenceIndex": 1,
+                "sourcePosition": 39
+              }
+            ],
+            "zone": "detail_zone",
+            "columns": 2,
+            "nativeLocator": "/form[1]/sheet[1]/div[2]/h1[1]",
+            "occurrenceIndex": 1,
+            "styleToken": "d-flex flex-row",
+            "span": 24
+          }
+        }
+      ],
+      "identityFacts": [
+        {
+          "path": "/statusContract/globalStatus/effectiveRenderProfile",
+          "value": "edit"
+        },
+        {
+          "path": "/dataContract/mainData/name",
+          "value": "城东片区安置房二期工程（归档阶段）"
+        },
+        {
+          "path": "/dataContract/mainData/display_name",
+          "value": "城东片区安置房二期工程（归档阶段）"
+        },
+        {
+          "path": "/dataContract/mainData/is_favorite",
+          "value": false
+        },
+        {
+          "path": "/dataContract/dataMeta/sourceContext/renderProfile",
+          "value": "edit"
+        }
+      ],
+      "status_readback": {
+        "time": "2026-10-28T12:52:05.236775+00:00",
+        "http_status": 200,
+        "application_ok": true,
+        "globalStatus": {
+          "pageVisible": true,
+          "pageAuth": "edit",
+          "modelRights": {
+            "read": true,
+            "write": true,
+            "create": true,
+            "unlink": true,
+            "duplicate": true
+          },
+          "recordRights": {
+            "read": true,
+            "write": true,
+            "create": true,
+            "unlink": true,
+            "duplicate": true
+          },
+          "viewCapabilities": {
+            "read": true,
+            "write": true,
+            "create": true,
+            "unlink": true,
+            "duplicate": true
+          },
+          "entryCapabilities": {
+            "read": true,
+            "write": true,
+            "create": true,
+            "unlink": true,
+            "duplicate": true
+          },
+          "effectiveRecordCapabilities": {
+            "read": true,
+            "write": true,
+            "create": true,
+            "unlink": true,
+            "duplicate": true
+          },
+          "effectiveRenderProfile": "edit",
+          "workflowPhase": "closed",
+          "approvalPhase": "none"
+        },
+        "selected_widget_states": [
+          {
+            "path": "/statusContract/widgetStatus/10",
+            "state": {
+              "widgetId": "field.is_favorite.occ.b4aa99b580fdaa34",
+              "visible": true,
+              "readonly": false,
+              "required": false,
+              "disabled": false,
+              "auth": "edit"
+            }
+          },
+          {
+            "path": "/statusContract/widgetStatus/11",
+            "state": {
+              "widgetId": "field.name.occ.d185b8cbc2315be5",
+              "visible": true,
+              "readonly": false,
+              "required": true,
+              "disabled": false,
+              "auth": "edit"
+            }
+          }
+        ]
+      },
+      "request_projection_note": "Client capability list omitted from saved request; inherited from actual browser request unchanged.",
+      "page_identity_declarations": [
+        {
+          "path": "/pageInfo",
+          "declaration": {},
+          "ancestors": [
+            {}
+          ],
+          "properties": [
+            "pageId",
+            "sceneKey",
+            "pageName",
+            "model",
+            "viewType",
+            "layoutType",
+            "renderMode",
+            "contractVersion",
+            "clientType",
+            "deliveryProfile"
+          ],
+          "child_structure": []
+        },
+        {
+          "path": "/formStructureContract/navigation",
+          "declaration": {
+            "title": "业务办理"
+          },
+          "ancestors": [
+            {},
+            {
+              "source": "ui.contract.v2.form_structure_contract",
+              "mode": "native_structured_form"
+            }
+          ],
+          "properties": [
+            "title"
+          ],
+          "child_structure": []
+        }
+      ],
+      "titleSubtrees_note": "Complete selected h1 subtree from effective layoutContract; other layout nodes omitted. Not full raw XML or full API response."
+    }
+  ],
+  "runtime": {
+    "time": "2026-10-28T12:51:18.447Z",
+    "http_status": 200,
+    "body": {
+      "source_revision": "3da65c5c6f3909cb81c0316c85f8a622c952965a",
+      "database": "sc_demo",
+      "environment": "demo",
+      "frontend_build_sha256": "c565398e8482eda9b7a8a17d6742bfb3149b615011cf8cf8faeafc881d46f92f"
+    }
+  },
+  "main": "b918f2a01fbbea01b7665d8c3448ed820050ffae",
+  "limitations": [
+    "No raw inherited XML/view ancestry queried; final effective contract title subtree only.",
+    "Edit is contract-only; no edit/save/favorite click.",
+    "No explicit identity-copy relation found in collected title subtrees; this is not a global absence proof."
+  ]
+}
