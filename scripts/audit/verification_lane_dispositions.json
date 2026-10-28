@@ -1235,11 +1235,6 @@
       "owner": "platform-team",
       "reason": "发布演练运行手册。"
     },
-    "release.rehearsal.fingerprint": {
-      "disposition": "release_runbook",
-      "owner": "platform-team",
-      "reason": "发布演练运行手册。"
-    },
     "scene.export": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
