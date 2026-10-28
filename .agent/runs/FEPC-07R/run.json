@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "branch": "audit/fepc-07r-home-metric-decisions",
+  "baseline_sha": "2fb35361342399cc6404dbde066e346ece91213d",
+  "id": "FEPC-07R",
+  "status": "verification_pending",
+  "scope": [
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-07/home-metric-semantic-decisions.md",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-07/decision-provenance.json",
+    ".agent/goals/FEPC-07R.yaml",
+    ".agent/runs/FEPC-07R/run.json",
+    ".agent/active-runs.json"
+  ],
+  "owned_write_scope": [
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-07/home-metric-semantic-decisions.md",
+    "docs/ops/iterations/fe-presentation-convergence-01/fepc-07/decision-provenance.json",
+    ".agent/goals/FEPC-07R.yaml",
+    ".agent/runs/FEPC-07R/run.json",
+    ".agent/active-runs.json"
+  ],
+  "goal": ".agent/goals/FEPC-07R.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-07/home-metric-semantic-decisions.md",
+  "environment": {
+    "kind": "offline",
+    "authority": "User approved D1-D6 semantics; separate documentation PR only; hold for review, no merge, runtime or product changes"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Publish documentation PR and wait for GPT review; no merge or product implementation",
+  "previous_branch_run": ".agent/runs/FEPC-07/run.json",
+  "previous_branch_run_location": "local preserved evidence, not part of this PR",
+  "validation_plan": {
+    "L0": "exact main/head/branch, isolated docs scope and original evidence hashes",
+    "L1": "links, metadata JSON, decision coverage, git diff --check, make ci.local.iteration",
+    "L2_L4": "not applicable: documentation only; no product, environment or runtime changes",
+    "L5": "documentation PR for GPT review, no merge or deployment"
+  },
+  "observations": {
+    "D1_D6": "accepted by product owner; semantics and admission only",
+    "implementation_authorized": false,
+    "local_iteration": "passed L1; 47 embedded governance tests",
+    "document_checks": "passed: six decisions, twelve original reference hashes, links, metadata and whitespace",
+    "original_draft": "preserved by digest; previous validation not reused for revised text",
+    "independent_review": "pending GPT review after PR creation",
+    "freeze_prepare": "not applicable to this documentation-only Gitee publication; no contract/generated-evidence mutations authorized",
+    "risk": "original runtime evidence remains local; online reviewers must not claim independent runtime verification"
+  }
+}

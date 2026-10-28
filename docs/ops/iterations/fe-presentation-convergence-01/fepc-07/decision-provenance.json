@@ -1,0 +1,95 @@
+{
+  "decision_id": "FEPC-07R",
+  "authority": "Product owner explicit D1-D6 adjudication in this task conversation",
+  "approved_scope": "Semantic boundaries and implementation admission rules only",
+  "implementation_authorized": false,
+  "runtime_source_revision": "3f46dd7eba9f351386fee446151ee9eb545d56a4",
+  "pr_base_sha": "2fb35361342399cc6404dbde066e346ece91213d",
+  "references": [
+    {
+      "task": "FEPC-06",
+      "original_path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-06/home-metric-source-map.json",
+      "sha256": "93218de8c11c9f212f92d2d5d1ed5b9bec42c111d1015916d58cc494579d72ff",
+      "availability": "preserved local evidence; intentionally not published in this documentation PR",
+      "relation": "supporting evidence"
+    },
+    {
+      "task": "FEPC-06",
+      "original_path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-06/source-evidence.json",
+      "sha256": "785d87fd184d72341d45263be088e82cef05ffe9bf2d2c5b905e754de4838687",
+      "availability": "preserved local evidence; intentionally not published in this documentation PR",
+      "relation": "supporting evidence"
+    },
+    {
+      "task": "FEPC-06",
+      "original_path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-06/search-evidence.json",
+      "sha256": "14a5d835e0fcf3878e76a8baf949579d7b45c298d24aca1e5ec0fc2b689069fe",
+      "availability": "preserved local evidence; intentionally not published in this documentation PR",
+      "relation": "supporting evidence"
+    },
+    {
+      "task": "FEPC-06",
+      "original_path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-06/home-projection-ownership.md",
+      "sha256": "10ae68ae285b9d3936e26c952a6eb2b93cc068a0628e4fab35ef3b22759b4862",
+      "availability": "preserved local evidence; intentionally not published in this documentation PR",
+      "relation": "supporting evidence"
+    },
+    {
+      "task": "FEPC-06",
+      "original_path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-06/home-role-semantics.md",
+      "sha256": "880fa5b71a7671648e0cf35c43fa59bd5fcbe706ca3109bbeed54b1ca64f24b8",
+      "availability": "preserved local evidence; intentionally not published in this documentation PR",
+      "relation": "supporting evidence"
+    },
+    {
+      "task": "FEPC-06",
+      "original_path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-06/verdict-candidates.md",
+      "sha256": "07f0981b9476df12b2014d44b8beb6902594d219078dde586a992b6454b83944",
+      "availability": "preserved local evidence; intentionally not published in this documentation PR",
+      "relation": "supporting evidence"
+    },
+    {
+      "task": "FEPC-06",
+      "original_path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-06/validation.json",
+      "sha256": "8ee5913ba93cc1e80d46662b77f678674155e3939cb1eee39dc089c9cb393a27",
+      "availability": "preserved local evidence; intentionally not published in this documentation PR",
+      "relation": "supporting evidence"
+    },
+    {
+      "task": "FEPC-07",
+      "original_path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-07/home-metric-semantic-decisions.md",
+      "sha256": "17b15aa09a4e2bd19fa9309a756f40a6958e0863e7891b13cce9a2f0a47246a6",
+      "availability": "preserved local evidence; intentionally not published in this documentation PR",
+      "relation": "pre-decision draft snapshot"
+    },
+    {
+      "task": "FEPC-07",
+      "original_path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-07/validation.json",
+      "sha256": "92bf58900657a78620c81454becd830c274546a4b49c1e8397d302cf932be8f2",
+      "availability": "preserved local evidence; intentionally not published in this documentation PR",
+      "relation": "supporting evidence"
+    },
+    {
+      "task": "FEPC-API-02R",
+      "original_path": "docs/ops/iterations/fe-presentation-convergence-01/api-evidence-02r/completion-init-1.json",
+      "sha256": "472c2601734345d52424469f5b51312494ca074709b1ab6b4650bfc7250a7b61",
+      "availability": "preserved local evidence; intentionally not published in this documentation PR",
+      "relation": "supporting evidence"
+    },
+    {
+      "task": "FEPC-API-02R",
+      "original_path": "docs/ops/iterations/fe-presentation-convergence-01/api-evidence-02r/completion-work-summary.json",
+      "sha256": "e96bc3c7cb6fc3859e06842038c15523f73aafe889ee6132eef8734ed6817b8f",
+      "availability": "preserved local evidence; intentionally not published in this documentation PR",
+      "relation": "supporting evidence"
+    },
+    {
+      "task": "FEPC-API-02R",
+      "original_path": "docs/ops/iterations/fe-presentation-convergence-01/api-evidence-02r/completion-browser-evidence.json",
+      "sha256": "44d19106408cef945eea2f0ecf4a2cf4dafbc51ff30f053ef161d7097b5f4012",
+      "availability": "preserved local evidence; intentionally not published in this documentation PR",
+      "relation": "supporting evidence"
+    }
+  ],
+  "original_draft_policy": "Original FEPC-07 bytes preserved by SHA256; decision document supersedes proposals only where explicitly resolved. Prior validation covers original draft, not this revised decision."
+}
