@@ -657,6 +657,22 @@ def required_targets(root: Path) -> list[str]:
         source = (root / "make/ci.mk").read_text(encoding="utf-8")
     except OSError as exc:
         raise EvidenceError(f"cannot read the declared quick target list: {exc}") from exc
+    # Make merges prerequisites across files and multi-target rules. The shard
+    # runner reads only the canonical row, so reject declarations it would drop.
+    declarations = []
+    for path in [root / "Makefile", *sorted((root / "make").rglob("*.mk"))]:
+        if not path.is_file():
+            continue
+        logical = path.read_text(encoding="utf-8").replace("\\\n", " ")
+        for number, line in enumerate(logical.splitlines(), 1):
+            if line.startswith("\t") or line.lstrip().startswith("#") or ":" not in line:
+                continue
+            lhs = line.split(":", 1)[0].split()
+            if "ci.local.quick.run" in lhs:
+                declarations.append((path.relative_to(root).as_posix(), number, line))
+    if len(declarations) != 1 or declarations[0][0] != "make/ci.mk" or not declarations[0][2].startswith("ci.local.quick.run:"):
+        locations = [f"{path}:{line}" for path, line, _ in declarations]
+        raise EvidenceError("Quick requires one canonical declaration in make/ci.mk; split/multi-target declarations can be omitted by shards: " + str(locations))
     rows = [line for line in source.splitlines() if line.startswith("ci.local.quick.run:")]
     if len(rows) != 1:
         raise EvidenceError("ci.local.quick.run must be declared exactly once")
@@ -1123,7 +1139,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "mode",
-        choices=("run", "verify", "shard", "compose", "prune", "bookkeeping-delta"),
+        choices=("run", "verify", "shard", "compose", "prune", "bookkeeping-delta", "preflight"),
     )
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--expected-head")
@@ -1136,6 +1152,16 @@ def main() -> int:
     parser.add_argument("--keep", type=int)
     args = parser.parse_args()
     try:
+        if args.mode == "preflight":
+            if (any(value is not None for value in (args.expected_head, args.base, args.shards,
+                                                     args.shard_index, args.jobs, args.keep))
+                    or args.defer_clean_check or args.diagnostic):
+                raise EvidenceError("preflight accepts only --root")
+            root = repository_root(args.root)
+            targets = required_targets(root)
+            assert_quick_recipe_covered(root)
+            print(f"[local_quick_evidence] PREFLIGHT PASS targets={len(targets)} receipt=none")
+            return 0
         if args.mode == "bookkeeping-delta":
             if args.base is None or args.expected_head is None:
                 raise EvidenceError("bookkeeping-delta requires --base and --expected-head")

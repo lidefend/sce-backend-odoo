@@ -99,6 +99,13 @@ MAKE_TARGET_REQUIREMENTS = {
     ),
 }
 
+EARLY_INTEGRATION_COMMANDS = (
+    "python3 scripts/ops/local_quick_evidence.py preflight",
+    "$(MAKE) --no-print-directory audit.verification.lane_coverage.check",
+    "python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py",
+    "python3 scripts/verify/frontend_page_contract_boundary_guard.py --check-only",
+)
+
 ITERATION_TARGET = "ci.local.iteration"
 ITERATION_REQUIRED = (
     "guard.prod.forbid",
@@ -222,6 +229,12 @@ def validate(root: Path) -> list[str]:
                     errors.append(
                         f"make/ci.mk: {ITERATION_TARGET} missing lightweight contract {fragment!r}"
                     )
+            lines = block.splitlines()
+            boundary = "\t@python3 scripts/verify/frontend_dev_incremental.py --plan-worktree"
+            for command in EARLY_INTEGRATION_COMMANDS:
+                exact = "\t@" + command
+                if lines.count(exact) != 1 or boundary not in lines or lines.index(exact) >= lines.index(boundary):
+                    errors.append(f"make/ci.mk: early integration check must execute once before planning without suppression: {command}")
             for fragment in ITERATION_FORBIDDEN:
                 if fragment in block:
                     errors.append(

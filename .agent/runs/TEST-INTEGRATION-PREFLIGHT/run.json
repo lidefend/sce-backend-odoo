@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "id": "TEST-INTEGRATION-PREFLIGHT",
+  "branch": "fix/test-integration-preflight",
+  "baseline_sha": "4853b1b441837aa814049b2b9e31e9bdaa827767",
+  "status": "verification_pending",
+  "scope": [
+    ".agent/",
+    "make/ci.mk",
+    "scripts/ops/local_quick_evidence.py",
+    "scripts/verify/baseline_iteration_execution_policy_guard.py",
+    "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+    "scripts/verify/test_local_quick_evidence.py",
+    "scripts/verify/construction_core_extension_intent_handlers_split_guard.py",
+    "scripts/verify/frontend_page_contract_boundary_guard.py",
+    "docs/ops/iterations/test-integration-preflight.md",
+    "docs/engineering_convergence/",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs"
+  ],
+  "goal": ".agent/goals/TEST-INTEGRATION-PREFLIGHT.yaml",
+  "record": "docs/ops/iterations/test-integration-preflight.md",
+  "environment": {
+    "kind": "offline"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Freeze generated evidence, commit exact candidate, Quick, publish Draft and wait latest remote gates; no merge/deploy",
+  "layer": {
+    "formal_product_layer": "P4",
+    "target": "early test integration verification",
+    "module": "CI and verification tools",
+    "standard_vs_user_specific": "standard engineering mechanism",
+    "why_here": "test wiring and evidence boundary only",
+    "why_not_elsewhere": "no business semantics, runtime or permission changes",
+    "blast_radius": "iteration preflight and Quick dependency validation"
+  },
+  "results": {
+    "iteration": "passed; four checks executed before planner",
+    "policy_tests": 19,
+    "quick_receipt_tests": 66,
+    "incremental_receipt_tests": 14,
+    "lane_coverage_tests": 73,
+    "branch_guard_tests": 23,
+    "runtime_tests": "not_applicable: P4-only; no environment changes",
+    "quick": "pending final HEAD",
+    "failures": "negative fixtures are expected rejections, not successful receipt claims",
+    "main_sync": {
+      "status": "passed",
+      "old_head": "153abbe97ccd455b54cf85638e7b5adcdd1da012",
+      "merge_head": "01a33d7a91b95a99ebdb9ac3d1319576143011a2",
+      "main": "4853b1b441837aa814049b2b9e31e9bdaa827767",
+      "log": ".runtime/integration-preflight-main-sync.log"
+    },
+    "sync_targeted": {
+      "status": "passed",
+      "iteration": "four early checks passed",
+      "merge_readiness_tests": 22,
+      "log": ".runtime/integration-preflight-sync-targeted.log"
+    },
+    "attachment_boundary": {
+      "status": "passed",
+      "classification": "validation_tool_defect",
+      "scope": "P4 test loader only; actual weighted relation SFC; no runtime changes",
+      "validation": "existing professional_relation_field target and iteration; no database/browser changes needed",
+      "boundary_assertions": 5,
+      "mounted_assertions": 38,
+      "log": ".runtime/integration-attachment-final-targeted.log"
+    }
+  }
+}

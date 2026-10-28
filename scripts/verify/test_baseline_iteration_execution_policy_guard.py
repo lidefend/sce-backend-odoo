@@ -6,6 +6,10 @@ import unittest
 from pathlib import Path
 
 import baseline_iteration_execution_policy_guard as guard
+import construction_core_extension_intent_handlers_split_guard as handler_guard
+import frontend_page_contract_boundary_guard as page_guard
+from unittest import mock
+import sys
 
 
 class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
@@ -29,6 +33,7 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
                     item for item in guard.ITERATION_REQUIRED if " " not in item
                 )
                 text += "\n\t@git diff --check"
+                text += "".join("\n\t@" + command for command in guard.EARLY_INTEGRATION_COMMANDS)
                 text += "\n\t@python3 scripts/verify/frontend_dev_incremental.py --plan-worktree"
                 text += "\n\t@git status --porcelain=v1 --untracked-files=all"
                 text += "\n" + guard.QUICK_TARGET + ": " + " ".join(guard.QUICK_DIRECT_REQUIRED)
@@ -53,6 +58,50 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
             root = Path(directory)
             self.fixture(root)
             self.assertEqual(guard.validate(root), [])
+
+    def test_early_checks_cannot_be_missing_commented_ignored_or_delayed(self) -> None:
+        for command in guard.EARLY_INTEGRATION_COMMANDS:
+            for mutation in ("missing", "comment", "ignore", "shell_success", "duplicate", "late"):
+                with self.subTest(command=command, mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory)
+                    self.fixture(root)
+                    path = root / "make/ci.mk"
+                    text = path.read_text()
+                    line = "\t@" + command
+                    replacement = {"missing": "", "comment": "#" + line,
+                                   "ignore": "\t-@" + command, "shell_success": line + " || true",
+                                   "duplicate": line + "\n" + line, "late": ""}[mutation]
+                    text = text.replace(line, replacement, 1)
+                    if mutation == "late":
+                        marker = "\t@python3 scripts/verify/frontend_dev_incremental.py --plan-worktree"
+                        text = text.replace(marker, marker + "\n" + line, 1)
+                    path.write_text(text)
+                    self.assertTrue(any("early integration check" in error for error in guard.validate(root)))
+
+    def test_handler_import_stub_drift_is_explicit(self) -> None:
+        module, names = next(iter(handler_guard.HANDLER_MODULES.items()))
+        self.assertEqual(handler_guard.validate_handler_stubs(f"from {module} import {names[0]}"), [])
+        for source in ("from odoo.addons.smart_construction_core.handlers.unregistered import NewHandler",
+                       "from .handlers.unregistered import NewHandler",
+                       f"from {module} import UnregisteredHandler"):
+            with self.subTest(source=source):
+                errors = handler_guard.validate_handler_stubs(source)
+                self.assertEqual(len(errors), 1)
+                self.assertIn("standalone handler stub missing", errors[0])
+
+    def test_page_preflight_does_not_write_reports_even_on_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            report = root / "report.md"
+            report.write_text("preserved")
+            with mock.patch.object(sys, "argv", ["guard", "--check-only"]), \
+                 mock.patch.object(page_guard, "REPORT_MD", report), \
+                 mock.patch.object(page_guard, "REPORT_JSON", root / "absent.json"), \
+                 mock.patch.object(page_guard, "_read", return_value=""), \
+                 mock.patch("builtins.print"):
+                self.assertEqual(page_guard.main(), 1)
+            self.assertEqual(report.read_text(), "preserved")
+            self.assertFalse((root / "absent.json").exists())
 
     def test_missing_rule_fails(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
