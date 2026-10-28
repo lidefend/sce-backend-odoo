@@ -1,0 +1,51 @@
+{
+  "collected_at": "2026-10-28T18:07:56.178829+00:00",
+  "candidate_head": "9d5c499a17a1bdc46b49736bded358a33939ac3d",
+  "candidate_dirty": true,
+  "environment": "registered local acceptance",
+  "database": "sc_frontend_acceptance",
+  "principal_xmlid": "smart_construction_acceptance_fixture.fe_user_config_admin",
+  "company_xmlid": "smart_construction_acceptance_fixture.fe_company_a",
+  "inventory": [
+    {
+      "xmlid": "smart_construction_acceptance_fixture.fe_project_a",
+      "readable": true,
+      "record_id": 1,
+      "stage": "draft"
+    },
+    {
+      "xmlid": "smart_construction_acceptance_fixture.fe_project_b",
+      "readable": true,
+      "record_id": 2,
+      "stage": "draft"
+    },
+    {
+      "xmlid": "smart_construction_acceptance_fixture.fe_project_lifecycle",
+      "readable": true,
+      "record_id": 4,
+      "stage": "draft"
+    }
+  ],
+  "status": "blocked_no_authorized_non_draft_carrier",
+  "browser_started": false,
+  "business_writes": false,
+  "scope_limit": "Only three declared carriers; not a full database scan. No claim that all database projects are draft.",
+  "logs": {
+    "review-button-acceptance.log": {
+      "path": ".runtime/fepc-14/review-button-acceptance.log",
+      "sha256": "638c03f8bab38cf7c557a32d8ecb191dea6eab8134d2a8f19ff0da044b42d2ee"
+    },
+    "target-resolution.log": {
+      "path": ".runtime/fepc-14/target-resolution.log",
+      "sha256": "c322a1effa6b8ac20c6641ecd0ae435dff4e266e8a2724338fbd9a6a1e194f22"
+    },
+    "guard-repair-tests.log": {
+      "path": ".runtime/fepc-14/guard-repair-tests.log",
+      "sha256": "8d66f5d704efe2bb3d247bc8477417ac3ebe4e3da387e3feeef2f9d4ac6528ae"
+    },
+    "review-targeted-final.log": {
+      "path": ".runtime/fepc-14/review-targeted-final.log",
+      "sha256": "f3e3b42c7b7cedc91500f86598a27026daa9a8367d17d39cd1694d10e5582b96"
+    }
+  }
+}

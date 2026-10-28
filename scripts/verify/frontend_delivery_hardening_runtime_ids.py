@@ -82,8 +82,27 @@ def resolve_targets(authority):
     if authority != "fixture":
         raise AssertionError("Unknown acceptance record authority")
     if os.environ.get("SC_ACCEPTANCE_RECORD_SCOPE") == "stage_requirements":
-        return {"project": target(PROJECT_MENU_XMLID,
-            "smart_construction_acceptance_fixture.fe_project_a",
+        # Only existing declared carriers, read as the browser principal in company A.
+        # Never create/transition a fixture to make the button visible.
+        user = env.ref("smart_construction_acceptance_fixture.fe_user_config_admin")
+        company = env.ref("smart_construction_acceptance_fixture.fe_company_a")
+        projects = env["project.project"].with_user(user).with_context(allowed_company_ids=[company.id])
+        inventory = []
+        selected = None
+        for suffix in ("fe_project_a", "fe_project_b", "fe_project_lifecycle"):
+            xmlid = "smart_construction_acceptance_fixture." + suffix
+            reference = env.ref(xmlid, raise_if_not_found=False)
+            readable = projects.search([("id", "=", reference.id), ("company_id", "=", company.id)], limit=1) if reference else projects.browse()
+            row = {"xmlid": xmlid, "readable": bool(readable)}
+            if readable:
+                row.update(record_id=readable.id, stage=readable.lifecycle_state)
+                if selected is None and readable.lifecycle_state and readable.lifecycle_state != "draft":
+                    selected = xmlid
+            inventory.append(row)
+        print("STAGE_REQUIREMENTS_SAMPLE_INVENTORY=" + json.dumps(inventory))
+        if selected is None:
+            raise AssertionError("No authorized non-draft project in existing declared acceptance carriers; no data changed")
+        return {"project": target(PROJECT_MENU_XMLID, selected,
             declared_action_xmlid=PROJECT_ACTION_XMLID,
             expect={"stage": lambda record: record.lifecycle_state}),
             "denied_project_id": int(env.ref("smart_construction_acceptance_fixture.fe_project_c").id)}

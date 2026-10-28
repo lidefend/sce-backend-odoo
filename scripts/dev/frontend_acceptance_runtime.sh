@@ -337,8 +337,9 @@ lines = open(sys.argv[1]).read().splitlines()
 rows = [json.loads(x.split('=', 1)[1]) for x in lines if x.startswith('FRONTEND_DELIVERY_HARDENING_TARGETS_JSON=')]
 assert len(rows) == 1
 p = rows[0]['project']
-assert p['record_xmlid'] == 'smart_construction_acceptance_fixture.fe_project_a'
-print(json.dumps([{'key':'stage_requirements', 'stageRequirements':True, 'recordId':p['record_id'], 'deniedProjectId':rows[0]['denied_project_id'],
+assert p['record_xmlid'] in {'smart_construction_acceptance_fixture.fe_project_a', 'smart_construction_acceptance_fixture.fe_project_b', 'smart_construction_acceptance_fixture.fe_project_lifecycle'}
+assert p['stage'] and p['stage'] != 'draft'
+print(json.dumps([{'expectedStage':p['stage'], 'requireStageButton':True, 'key':'stage_requirements', 'stageRequirements':True, 'recordId':p['record_id'], 'deniedProjectId':rows[0]['denied_project_id'],
  'route':f"/r/project.project/{p['record_id']}?action_id={p['action_id']}&menu_id={p['menu_id']}"}]))
 PYTARGET
 )"

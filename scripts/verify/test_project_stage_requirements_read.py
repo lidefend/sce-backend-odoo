@@ -128,4 +128,47 @@ class StageRequirementsReadTest(unittest.TestCase):
         out = module.stage_requirements_navigation(c, {'source_contract': {'model': 'project.project'}})
         self.assertEqual(out['actionContract']['actionRuleList'][0]['target']['url'], '/project-stage-requirements/28')
 
+class ExistingSampleSelectionTest(unittest.TestCase):
+    def resolve(self, states):
+        import json
+        import os
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        source = (ROOT / 'scripts/verify/frontend_delivery_hardening_runtime_ids.py').read_text()
+        node = next(n for n in ast.parse(source).body if isinstance(n, ast.FunctionDef) and n.name == 'resolve_targets')
+        names = ['fe_project_a', 'fe_project_b', 'fe_project_lifecycle']
+        refs = {name: SimpleNamespace(id=i + 1, lifecycle_state=state) for i, (name, state) in enumerate(zip(names, states))}
+        refs.update(fe_user_config_admin=SimpleNamespace(id=41), fe_company_a=SimpleNamespace(id=1), fe_project_c=SimpleNamespace(id=9))
+        projects = Mock()
+        projects.with_user.return_value = projects
+        projects.with_context.return_value = projects
+        projects.search.side_effect = lambda domain, limit: next((r for r in refs.values() if hasattr(r, 'lifecycle_state') and r.id == domain[0][2]), False)
+        env = Mock()
+        env.ref.side_effect = lambda xmlid, **kw: refs.get(xmlid.rsplit('.', 1)[-1], False)
+        class Environment:
+            ref = env.ref
+            def __getitem__(self, key):
+                if key != 'project.project': raise AssertionError(key)
+                return projects
+        ns = {'env': Environment(), 'os': os, 'json': json, 'PROJECT_MENU_XMLID': 'menu', 'PROJECT_ACTION_XMLID': 'action',
+              'target': lambda menu, xmlid, **kw: {'record_xmlid': xmlid}}
+        exec(compile(ast.Module(body=[node], type_ignores=[]), 'sample_selector', 'exec'), ns)
+        with patch.dict(os.environ, {'SC_ACCEPTANCE_RECORD_SCOPE': 'stage_requirements'}), patch('builtins.print'):
+            result = ns['resolve_targets']('fixture')
+        projects.with_user.assert_called_once_with(refs['fe_user_config_admin'])
+        projects.with_context.assert_called_once_with(allowed_company_ids=[1])
+        self.assertEqual(projects.search.call_count, 3)
+        for call in projects.search.call_args_list:
+            self.assertEqual(call.args[0][1], ('company_id', '=', 1))
+            self.assertEqual(call.kwargs['limit'], 1)
+        return result
+
+    def test_existing_non_draft_is_selected_without_state_changes(self):
+        result = self.resolve(['draft', 'done', 'draft'])
+        self.assertTrue(result['project']['record_xmlid'].endswith('.fe_project_b'))
+
+    def test_draft_only_inventory_blocks_instead_of_direct_navigation(self):
+        with self.assertRaisesRegex(AssertionError, 'No authorized non-draft'):
+            self.resolve(['draft', 'draft', 'draft'])
+
 if __name__ == '__main__': unittest.main()

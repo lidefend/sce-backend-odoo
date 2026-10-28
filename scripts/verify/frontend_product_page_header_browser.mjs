@@ -106,6 +106,7 @@ for (const target of targets) {
     const buttons = await page.getByRole('button', { name: '查看阶段要求', exact: true }).count();
     console.log(`[presentation] stage visible buttons=${buttons}`);
     await page.screenshot({ path: path.join(path.dirname(output), 'before-stage.png'), fullPage: false });
+    if (target.requireStageButton) check(buttons === 1, 'required real stage button is not visible; direct navigation is not acceptance');
     if (!buttons) {
       const source = await page.locator('[data-semantic-component]').count();
       console.log(`[presentation] no visible entry; direct read observation only; nodes=${source}`);
@@ -119,6 +120,7 @@ for (const target of targets) {
     check(response.status() === 200 && body.ok !== false, `stage read failed HTTP ${response.status()}`);
     const data = body.data;
     check(data?.project?.id === target.recordId, 'wrong project in stage response');
+    if (target.expectedStage) check(data.stage?.value === target.expectedStage, 'wrong stage in stage response');
     const surface = page.locator('[data-semantic-component="ProjectStageRequirementsView"]');
     await surface.getByRole('heading', { name: data.title, exact: true }).waitFor();
     check((await surface.innerText()).includes(data.project.name), 'project identity missing');
