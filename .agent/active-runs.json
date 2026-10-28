@@ -50,6 +50,7 @@
     "fix/verification-efficiency-01": ".agent/runs/VERIFY-EFFICIENCY-01/run.json",
     "fix/fepc-11-relation-empty-titles": ".agent/runs/FEPC-11/run.json",
     "fix/fepc-12-follower-density": ".agent/runs/FEPC-12/run.json",
-    "audit/fepc-13d-title-contract": ".agent/runs/FEPC-13D/run.json"
+    "audit/fepc-13d-title-contract": ".agent/runs/FEPC-13D/run.json",
+    "audit/fepc-13i-00-readiness": ".agent/runs/FEPC-13I-00/run.json"
   }
 }

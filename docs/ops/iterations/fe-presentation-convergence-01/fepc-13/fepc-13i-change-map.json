@@ -1,0 +1,169 @@
+{
+  "task": "FEPC-13I-00",
+  "status": "readiness_audit_only",
+  "baseline": "44e7e8447a77ff347ac2cdaf25d8c28b759e61ff",
+  "implementation_authorized": false,
+  "protocol_identifiers_formally_added": false,
+  "changes": [
+    {
+      "stage": "I1a",
+      "area": "published_definition",
+      "path": "addons/smart_core/model/ui_business_config_contract.py",
+      "source_sha256": "fdd4efff82bde3214ff4c6d64e2a18bd294bdb7a388a87c0ab83c4f72367a965",
+      "observed": "Existing view/company/role/version/hash/publish carrier; relation validation absent",
+      "minimal_future_change": "Extend approved definition validation in existing carrier; no new model or Demo config",
+      "implemented": false
+    },
+    {
+      "stage": "I1a",
+      "area": "occurrence_compiler",
+      "path": "addons/smart_core/core/form_configuration_compiler.py",
+      "source_sha256": "3a71d1ce03a5feaf83729c4a799607a8b208b7bee2fe892d4b430659599af9a5",
+      "observed": "Unique locator + expected type/name/occurrence and conflict checks; no identity relation or bound-layout digest check",
+      "minimal_future_change": "Add explicit relation validation and exact current-widget resolution, never visible/name fallback",
+      "implemented": false
+    },
+    {
+      "stage": "I1a",
+      "area": "formal_schema",
+      "path": "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+      "source_sha256": "fc72fb4cc30d6c064a2fd8a501d060665d4df54fb6d5e04ecbb909e2c6f1cfd1",
+      "observed": "Current formal strict schema",
+      "minimal_future_change": "Versioned schema support after separate approval; retain old formats for validation",
+      "implemented": false
+    },
+    {
+      "stage": "I1b",
+      "area": "delivery_entry",
+      "path": "addons/smart_core/handlers/ui_contract_v2.py",
+      "source_sha256": "7a542c79fd6296c9b5c821869ccb60a00eadc97ed2fa69969ad7230369c9b914",
+      "observed": "Normal, scene and assembled-cache returns; current per-request node capability check",
+      "minimal_future_change": "One fail-closed finalization guarantee across all paths before final serialization",
+      "implemented": false
+    },
+    {
+      "stage": "I1b",
+      "area": "client_projection",
+      "path": "addons/smart_core/core/unified_page_contract_v2_client.py",
+      "source_sha256": "45be75e6f519e316619d4e1701fbfe8d6c735856d9fb708c64e65b0fcf8ed1a7",
+      "observed": "Device/profile/size trimming, not demonstrated version downgrade",
+      "minimal_future_change": "Separate protocol negotiation and safe old projection from device trimming",
+      "implemented": false
+    },
+    {
+      "stage": "I1b",
+      "area": "capability_gate",
+      "path": "addons/smart_core/core/node_component_capabilities.py",
+      "source_sha256": "e73ad2b37d8b0b0bf738d9a93318800bde6aa2eaa7c1a3543c8a67faa1902f23",
+      "observed": "Node capability rejection exists; not title relation negotiation",
+      "minimal_future_change": "Reuse request-local boundary, distinguish invalid definition from unsupported-client safe legacy delivery",
+      "implemented": false
+    },
+    {
+      "stage": "I1b",
+      "area": "runtime_seal",
+      "path": "addons/smart_core/handlers/ui_contract_v2_authority.py",
+      "source_sha256": "7564355219ca7dca81ffee6486bf2dab6ac45952c6d27a3acadeda3ee292a901",
+      "observed": "Runtime seal shared by source/assembled paths",
+      "minimal_future_change": "Seal negotiated final content, preserve source authority; no post-seal structural mutation",
+      "implemented": false
+    },
+    {
+      "stage": "I1b",
+      "area": "lifecycle",
+      "path": "addons/smart_core/core/contract_lifecycle.py",
+      "source_sha256": "d85a5f3a940f4d553ff3cc393da9834b6ed21b19217625cb012390bfa92719fb",
+      "observed": "Fixed current schema metadata and integrity digest; not target schema validation",
+      "minimal_future_change": "Version-specific schema metadata and validation integration; verify final response integrity",
+      "implemented": false
+    },
+    {
+      "stage": "I1b",
+      "area": "cache",
+      "path": "addons/smart_core/utils/load_contract_response_cache.py",
+      "source_sha256": "c3457dd831448eba51c4332d8d6c4dc41ad694a9403ea382ce6928645efc4212",
+      "observed": "Params already hashed; record-independent base removes record ids; source tokens and assembled gate exist",
+      "minimal_future_change": "Preserve base/record split; isolate definition/layout/negotiated output and test all cache returns",
+      "implemented": false
+    },
+    {
+      "stage": "I1b",
+      "area": "patch",
+      "path": "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+      "source_sha256": "b7090addcdb3ee1170f9d86ae2b5ddf5f8039ad7f9a1ef0ceffc96a76ebb7ca0",
+      "observed": "assemble_unified_page_patch_v2 hashes patch itself, no proven binding base",
+      "minimal_future_change": "For new relation use full refresh unless base/layout/binding proof separately implemented",
+      "implemented": false
+    },
+    {
+      "stage": "I2",
+      "area": "strict_decoder",
+      "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "source_sha256": "145ecc63b428fd5b1157f573d15ae4d8e7e60bf808b7b70e0dd48171989de4b4",
+      "observed": "Real strict decoder, old version and navigation allowlists",
+      "minimal_future_change": "After I1 review add approved versioned type validation; preserve old-decoder oracle",
+      "implemented": false
+    },
+    {
+      "stage": "I2",
+      "area": "client_advertisement",
+      "path": "frontend/apps/web/src/app/contracts/v2/clientCapabilities.ts",
+      "source_sha256": "c4a90e2f7800e6a1273312cbd00cdecc91287a89b588c89523bae33c79fff66c",
+      "observed": "Current capability list has no title projection",
+      "minimal_future_change": "Advertise only after end-to-end consumer support, never merely type support",
+      "implemented": false
+    },
+    {
+      "stage": "I2",
+      "area": "client_versions",
+      "path": "frontend/apps/web/src/app/contracts/v2/client.ts",
+      "source_sha256": "f1e9e9d5735e01e02c1fee5f11417d01b45abb5e7f2cf082a45cc19b6262b808",
+      "observed": "Accepted 2.0/2.1/2.2",
+      "minimal_future_change": "Add approved version only with decoder/consumer readiness",
+      "implemented": false
+    },
+    {
+      "stage": "I2",
+      "area": "render_state",
+      "path": "frontend/apps/web/src/pages/contractForm/canonicalFormRenderState.ts",
+      "source_sha256": "51ea5bca271d30dd08be313f62c37993bd53cf9fa0309b6c0023b0765a1510fe",
+      "observed": "Supplies mode and wraps presenter errors",
+      "minimal_future_change": "Reuse one final model; no second permission computation",
+      "implemented": false
+    },
+    {
+      "stage": "I2",
+      "area": "presenter",
+      "path": "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+      "source_sha256": "c00b886326882c2fd4386d7e9dae29113263cc6d85760b34a7938e3c44257471",
+      "observed": "Final CanonicalFormField mode/readonly and shell title",
+      "minimal_future_change": "Bind declared identity and exact occurrence; preserve field/action semantics",
+      "implemented": false
+    },
+    {
+      "stage": "I2",
+      "area": "native_renderer",
+      "path": "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+      "source_sha256": "259fd2ba97cabb135956f763c21e047f1129d0edb1f033f456995a9b3c93a79c",
+      "observed": "Text/editor/favorite share native title area",
+      "minimal_future_change": "Only declared readonly text leaf; retain native container, input, favorite and assistive references",
+      "implemented": false
+    }
+  ],
+  "old_decoder": {
+    "commit": "44e7e8447a77ff347ac2cdaf25d8c28b759e61ff",
+    "entry": "decodeContractV2Snapshot",
+    "schema_blob": "e7a15c6dd66cee05eed4ad09d08c3d968a424099",
+    "pin_scope": "complete repo dependency graph and workspace lock, not schema.ts alone",
+    "existing_tests": "two Make targets passed; not future downgrade validation"
+  },
+  "runtime_evidence": "FEPC-13R reused; no new Demo identity readback",
+  "hard_gates": [
+    "I1 implementation authorization and protocol identity approval",
+    "strict old decoder accepts generated legacy delivery on every return path",
+    "invalid source definitions never silently downgraded",
+    "new relation has no unproven patch path",
+    "no publication to unsupported clients",
+    "I3 isolated end-to-end and rollback before separate deployment decision"
+  ]
+}
