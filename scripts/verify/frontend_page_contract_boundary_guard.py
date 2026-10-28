@@ -57,6 +57,7 @@ def main() -> int:
         "PasswordRecoveryView.vue",
         "PlatformDutyView.vue",
         "ReleaseOperatorView.vue",
+        "ProjectStageRequirementsView.vue",
         "SceneContractBlockGridView.vue",
         "SceneHealthView.vue",
         "ScenePackagesView.vue",
@@ -134,6 +135,8 @@ def main() -> int:
         "ActionViewShell.vue",
         "MyWorkView.vue",
         "PlatformDutyView.vue",
+        # Dedicated read contract: strict decoder and server-owned labels below.
+        "ProjectStageRequirementsView.vue",
     }
 
     # A view may keep its extracted parts in a companion module directory of the
@@ -173,6 +176,12 @@ def main() -> int:
             _check_forbidden(text, ["listRecords("], rel, errors)
 
     per_view_required = {
+        "ProjectStageRequirementsView.vue": [
+            "readProjectStageRequirements(Number(route.params.projectId))",
+            "data.title", "data.project.name", "data.stage.label",
+            "data.labels.back", "data.labels.empty", "data.items",
+            "usePublishedPageIdentity(", "StatusPanel",
+        ],
         "PlatformDutyView.vue": [
             "import PlatformDutyPanel from '../components/platform-duty/PlatformDutyPanel.vue';",
             "<PlatformDutyPanel />",

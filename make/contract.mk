@@ -303,7 +303,7 @@ verify.daily.runtime.entry.identity.readonly: guard.prod.forbid
 .PHONY: verify.project.stage_requirements.unit
 # This target bundles Web sources: wire it to frontend lanes and local Quick,
 # never to the backend-only architecture suite without Node dependencies.
-ci.local.quick.run verify.frontend.pr.unit verify.frontend.release.unit: verify.project.stage_requirements.unit
+verify.frontend.pr.unit verify.frontend.release.unit: verify.project.stage_requirements.unit
 verify.project.stage_requirements.unit: guard.prod.forbid
 	@python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py
 	@python3 -m unittest scripts.verify.test_project_stage_requirements_read

@@ -20,7 +20,9 @@
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
-    "scripts/verify/construction_core_extension_intent_handlers_split_guard.py"
+    "scripts/verify/construction_core_extension_intent_handlers_split_guard.py",
+    "scripts/verify/frontend_page_contract_boundary_guard.py",
+    "docs/audit/frontend_page_contract_boundary_report.md"
   ],
   "goal": ".agent/goals/FEPC-14.yaml",
   "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-14/review.md",
@@ -138,7 +140,8 @@
       "freeze_prepare": "passed; generated evidence reviewed (counts, file sizes and declaration/consumer hashes only)",
       "first_quick": "7b146d5510071343b5bc2228dd7165e28afd82c0: 7/8 shards passed; shard8 lane coverage rejected unreferenced new test target. Fixed by wiring existing target to local Quick and frontend PR/release lanes; no baseline relaxation.",
       "revalidation": "Only Make wiring and documentation changed; targeted test + lane coverage then regenerate/freeze. Product/probe hashes unchanged, browser reused.",
-      "second_quick": "d4e7ac13fbb1c5f32a7957cbfc123436d8434fc7: import contribution split guard failed: new relative import incompatible with standalone stub loader and missing new stub. Followed existing absolute-import convention, registered new stub and explicitly asserted its intent; targeted entry now invokes this guard."
+      "second_quick": "d4e7ac13fbb1c5f32a7957cbfc123436d8434fc7: import contribution split guard failed: new relative import incompatible with standalone stub loader and missing new stub. Followed existing absolute-import convention, registered new stub and explicitly asserted its intent; targeted entry now invokes this guard.",
+      "third_quick": "Failed page boundary registration for new dedicated read-contract view; registered explicit server-owned consumer requirements. Sharded Quick only consumes canonical prerequisite row: moved unit dependency there. Changed worktree invalidated running receipt; no success claimed."
     }
   }
 }
