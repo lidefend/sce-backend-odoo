@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FEPC-10",
   "branch": "fix/fepc-10-message-author-body",
-  "baseline_sha": "27de8c2769d4c02a6e1076ad3f60fb9aa9f77e17",
+  "baseline_sha": "d733dbb25f973e5a0d1087df6d88717ee0762f27",
   "status": "verification_pending",
   "scope": [
     "frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts",
@@ -24,7 +24,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Freeze candidate, exact-head Quick, publish independent draft PR for GPT review; no merge/deploy",
+  "next_exact_step": "Validate synchronized candidate, collect required list_surface_structure evidence through governed existing acceptance preview, verify current CI, Squash PR760; no deployment",
   "layer": {
     "formal_product_layer": "P0",
     "target": "frontend renderer / collaboration message consumer",
@@ -99,6 +99,15 @@
       "status": "passed",
       "command": "make audit.verification.lane_coverage.check",
       "log": ".runtime/fepc10-lane.log"
+    },
+    "integration": {
+      "authorization": "User explicitly selected recommended Squash merge for PR759 and PR760",
+      "audit_pr": "759 merged as d733dbb25f973e5a0d1087df6d88717ee0762f27",
+      "source_before_sync": "7385a52ae1c1fae64ae6ba58ce6d0e358d2a17b3",
+      "sync_head": "8bd06ee9b1913c4dd4344ca4e77e2faaa3358ecd",
+      "merge_blocker": "list_surface_structure evidence missing; old inputs mismatch; managed backend belongs to merged PR741 worktree",
+      "next_scope": "Existing isolated acceptance carrier only; no Demo data/config/code change",
+      "external_preview": "Explicit workspace permission requested for registered sce-offrepo artifact path"
     }
   }
 }
