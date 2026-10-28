@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -48,6 +49,12 @@ FAST_GATES: tuple[Gate, ...] = (
 
 SUCCESS_STATES = {"SUCCESS", "PASS", "SKIPPED", "NEUTRAL"}
 FAILURE_STATES = {"FAILURE", "ERROR", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED"}
+# Existing GitHub merge requirements (configure_github_mirror_ruleset.sh).
+REQUIRED_MERGE_CHECKS = {"frontend_release_gate", "merge_policy_gate",
+                         "professional_quality_gate", "public_guard"}
+ACTION_JOB_URL = re.compile(
+    r"https://github\.com/([^/]+/[^/]+)/actions/runs/([1-9][0-9]*)/job/([1-9][0-9]*)\Z"
+)
 
 
 def utc_now() -> str:
@@ -289,11 +296,49 @@ def quick_status(root: Path) -> tuple[int, dict]:
     return 2, {"status": "stopped_without_receipt", **payload}
 
 
-def checks_ready(rows: Iterable[dict]) -> tuple[bool, list[str], list[str]]:
+def checks_ready(rows: Iterable[dict], *, required_names: Iterable[str] = ()) -> tuple[bool, list[str], list[str]]:
+    """Select latest Actions execution, never the latest successful execution.
+
+    Workflow/name is the check identity; run ID orders executions and job ID
+    orders retries within a run. Completion time and API array order do not:
+    an obsolete run can finish after its replacement. Missing/ambiguous
+    identity fails closed. Non-Actions statuses keep their previous treatment.
+    """
     failed: list[str] = []
     pending: list[str] = []
+    groups: dict[tuple[str, str], list[tuple[str, int, int, dict]]] = {}
+    selected: list[dict] = []
     for row in rows:
         name = str(row.get("name") or row.get("context") or "unknown")
+        if row.get("__typename") != "CheckRun":
+            selected.append(row)
+            continue
+        workflow = row.get("workflowName")
+        match = ACTION_JOB_URL.fullmatch(str(row.get("detailsUrl") or ""))
+        if not isinstance(workflow, str) or not workflow.strip() or not match:
+            pending.append(f"{name}: unresolved execution identity")
+            continue
+        repo, run, job = match.groups()
+        groups.setdefault((workflow, name), []).append((repo, int(run), int(job), row))
+    for (_, name), executions in groups.items():
+        if len({item[0] for item in executions}) != 1:
+            pending.append(f"{name}: ambiguous repository identity")
+            continue
+        latest = max((item[1], item[2]) for item in executions)
+        winners = [item[3] for item in executions if (item[1], item[2]) == latest]
+        if any(row != winners[0] for row in winners[1:]):
+            pending.append(f"{name}: conflicting execution identity")
+            continue
+        selected.append(winners[0])
+    present = {str(row.get("name") or row.get("context") or "unknown") for row in selected}
+    pending.extend(f"{name}: missing" for name in sorted(set(required_names) - present))
+    if not selected and not pending:
+        pending.append("checks: missing")
+    for row in selected:
+        name = str(row.get("name") or row.get("context") or "unknown")
+        if row.get("status") and row["status"] != "COMPLETED":
+            pending.append(name)
+            continue
         state = str(row.get("conclusion") or row.get("state") or "").upper()
         if state in FAILURE_STATES:
             failed.append(name)
@@ -321,7 +366,9 @@ def merge_readiness(root: Path, pr: int, allow_no_quick: bool = False) -> tuple[
         return 2, {"status": "error", "reason": result.stderr.strip() or "gh pr view failed"}
     payload = json.loads(result.stdout)
     head = git(root, "rev-parse", "HEAD")
-    ready_checks, failed, pending = checks_ready(payload.get("statusCheckRollup") or [])
+    ready_checks, failed, pending = checks_ready(
+        payload.get("statusCheckRollup") or [], required_names=REQUIRED_MERGE_CHECKS
+    )
     quick_verified = _receipt_verified(root, head)
     ready = (
         payload.get("state") == "OPEN"

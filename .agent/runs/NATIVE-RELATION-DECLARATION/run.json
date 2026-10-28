@@ -10,7 +10,9 @@
     "frontend/apps/web/scripts/native_modifier_test.ts",
     "docs/ops/iterations/native-relation-helper-declaration.md",
     "docs/engineering_convergence/",
-    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "scripts/ops/integration_cycle.py",
+    "scripts/ops/test_integration_cycle.py"
   ],
   "goal": ".agent/goals/NATIVE-RELATION-DECLARATION.yaml",
   "record": "docs/ops/iterations/native-relation-helper-declaration.md",
@@ -19,10 +21,10 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Targeted tests, freeze and publish independent baseline fix",
+  "next_exact_step": "Freeze authorized P4 preflight correction, exact-head Quick and remote checks; new-head independent review before merge",
   "layer": {
     "formal_product_layer": "P0/P4",
-    "target": "declaration-only pure relation identity helper",
+    "target": "declaration-only pure relation identity helper; P4 exact-head check-run selection",
     "module": "web native modifier",
     "standard_vs_user_specific": "standard generic helper",
     "why_here": "comply with existing module-load boundary without weakening guard",
@@ -37,6 +39,13 @@
     "native_actions": "15 tests",
     "canonical_presenter": "passed existing suite",
     "browser": "not_applicable: no rendered behavior change; FEPC14 real click remains independently blocked",
-    "quick": "pending exact final HEAD"
+    "quick": "pending new exact HEAD",
+    "merge_preflight_regression": {
+      "target": "verify.integration.cycle.unit",
+      "tests": 16,
+      "status": "passed",
+      "before": "9 failures/15 tests",
+      "log": ".runtime/native-helper-preflight-targeted.log"
+    }
   }
 }

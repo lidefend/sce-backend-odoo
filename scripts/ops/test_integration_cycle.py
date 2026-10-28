@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from scripts.ops import integration_cycle as cycle
 
@@ -34,6 +36,82 @@ class SnapshotTests(unittest.TestCase):
 
 
 class GateTests(unittest.TestCase):
+    @staticmethod
+    def check(run, job, state, workflow="gate", name="check"):
+        return {"__typename": "CheckRun", "workflowName": workflow, "name": name,
+                "detailsUrl": f"https://github.com/owner/repo/actions/runs/{run}/job/{job}",
+                "status": "IN_PROGRESS" if state == "PENDING" else "COMPLETED",
+                "conclusion": "" if state == "PENDING" else state}
+
+    def test_new_success_supersedes_old_failure_in_either_api_order(self):
+        rows = [self.check(10, 100, "FAILURE"), self.check(11, 101, "SUCCESS")]
+        for ordered in (rows, rows[::-1]):
+            self.assertEqual(cycle.checks_ready(ordered), (True, [], []))
+
+    def test_latest_failure_cancel_or_pending_cannot_reuse_old_success(self):
+        for state in ("FAILURE", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED", "PENDING"):
+            with self.subTest(state=state):
+                self.assertFalse(cycle.checks_ready([
+                    self.check(10, 100, "SUCCESS"), self.check(11, 101, state)])[0])
+
+    def test_same_run_retry_uses_new_job_identity(self):
+        self.assertTrue(cycle.checks_ready([
+            self.check(10, 100, "CANCELLED"), self.check(10, 101, "SUCCESS")])[0])
+
+    def test_late_finishing_old_run_does_not_override_new_run(self):
+        old = self.check(10, 100, "FAILURE")
+        old["completedAt"] = "2026-10-29T12:00:00Z"
+        new = self.check(11, 101, "SUCCESS")
+        new["completedAt"] = "2026-10-29T11:00:00Z"
+        self.assertTrue(cycle.checks_ready([old, new])[0])
+
+    def test_same_name_in_different_workflows_is_not_collapsed(self):
+        self.assertFalse(cycle.checks_ready([
+            self.check(10, 100, "FAILURE", workflow="one"),
+            self.check(11, 101, "SUCCESS", workflow="two")])[0])
+
+    def test_ambiguous_identity_never_selects_a_success(self):
+        for changes in ({"workflowName": ""}, {"detailsUrl": "invalid"},
+                        {"detailsUrl": "https://example.com/owner/repo/actions/runs/11/job/101"},
+                        {"detailsUrl": "https://github.com/other/repo/actions/runs/11/job/101"}):
+            old = self.check(10, 100, "SUCCESS")
+            new = self.check(11, 101, "SUCCESS")
+            old.update(changes)
+            with self.subTest(changes=changes):
+                self.assertFalse(cycle.checks_ready([old, new])[0])
+
+    def test_conflicting_duplicate_job_identity_blocks(self):
+        self.assertFalse(cycle.checks_ready([
+            self.check(10, 100, "FAILURE"), self.check(10, 100, "SUCCESS")])[0])
+
+    def test_nonterminal_status_cannot_use_stale_success_conclusion(self):
+        row = self.check(10, 100, "SUCCESS")
+        row["status"] = "IN_PROGRESS"
+        self.assertFalse(cycle.checks_ready([row])[0])
+
+    def test_empty_checks_and_missing_required_check_block(self):
+        self.assertFalse(cycle.checks_ready([])[0])
+        self.assertFalse(cycle.checks_ready([self.check(10, 100, "SUCCESS")],
+                                          required_names={"required"})[0])
+
+    def test_merge_readiness_preserves_head_quick_and_platform_boundaries(self):
+        head = "a" * 40
+        rows = [self.check(10, 100, "SUCCESS", workflow=name, name=name)
+                for name in cycle.REQUIRED_MERGE_CHECKS]
+        base = {"state": "OPEN", "headRefOid": head, "mergeable": "MERGEABLE",
+                "mergeStateStatus": "CLEAN", "statusCheckRollup": rows}
+        for delta, quick, expected in (({}, True, 0), ({"headRefOid": "b" * 40}, True, 1),
+                                     ({}, False, 1), ({"mergeStateStatus": "BLOCKED"}, True, 1),
+                                     ({"state": "CLOSED"}, True, 1),
+                                     ({"statusCheckRollup": rows[:-1]}, True, 1)):
+            with self.subTest(delta=delta, quick=quick), \
+                    patch.object(cycle, "git", return_value=head), \
+                    patch.object(cycle, "_receipt_verified", return_value=quick), \
+                    patch.object(cycle.subprocess, "run", return_value=subprocess.CompletedProcess(
+                        [], 0, stdout=json.dumps({**base, **delta}), stderr="")):
+                code, _ = cycle.merge_readiness(Path("/unused"), 769)
+                self.assertEqual(code, expected)
+
     def test_fast_gates_aggregates_independent_failures(self):
         def fake_runner(command, **kwargs):
             code = 1 if "verify.frontend.lint.src" in command else 0
