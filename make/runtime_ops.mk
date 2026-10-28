@@ -1817,3 +1817,14 @@ daily.personnel_views: guard.prod.forbid verify.daily.personnel_views.unit
 verify.path_namespace.acceptance.unit: guard.prod.forbid
 	@python3 -m unittest scripts/ops/test_path_ns_c_acceptance.py -v
 	@python3 -m unittest scripts/verify/test_path_ns_c_s4_browser_probe_credentials.py -v
+
+# Offline P4 entry. Runtime driver registration is deliberately absent.
+.PHONY: verify.candidate.view_adapter.unit candidate.view.plan candidate.view.apply
+verify.candidate.view_adapter.unit: guard.prod.forbid
+	@python3 -m unittest scripts.ops.test_candidate_view_adapter -v
+
+candidate.view.plan: guard.prod.forbid
+	@python3 scripts/ops/candidate_view_adapter.py plan --request "$(CANDIDATE_VIEW_REQUEST)"
+
+candidate.view.apply: guard.prod.forbid
+	@python3 scripts/ops/candidate_view_adapter.py apply --request "$(CANDIDATE_VIEW_REQUEST)"

@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: PAYMENT-LIST-CREATE-07
+  title: Isolated candidate view loader admission
+  status: active
+  formal_product_layer: P4

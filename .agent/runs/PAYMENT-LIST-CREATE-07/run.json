@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "id": "PAYMENT-LIST-CREATE-07",
+  "branch": "fix/payment-candidate-view-adapter",
+  "baseline_sha": "4853b1b441837aa814049b2b9e31e9bdaa827767",
+  "status": "verification_pending",
+  "scope": [
+    ".agent/",
+    "scripts/ops/candidate_view_adapter.py",
+    "scripts/ops/test_candidate_view_adapter.py",
+    "make/runtime_ops.mk",
+    "make/ci.mk",
+    "docs/ops/iterations/fe-presentation-convergence-01/payment-list-create/",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/engineering_convergence/complexity_budget_report.md"
+  ],
+  "goal": ".agent/goals/PAYMENT-LIST-CREATE-07.yaml",
+  "record": "docs/ops/iterations/fe-presentation-convergence-01/payment-list-create/payment-list-create-07-adapter-design.md",
+  "environment": {
+    "kind": "offline"
+  },
+  "checks": {
+    "focused": {
+      "target": "verify.candidate.view_adapter.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/candidate_view_adapter.py",
+        "scripts/ops/test_candidate_view_adapter.py",
+        "make/runtime_ops.mk",
+        "make/ci.mk",
+        "docs/ops/iterations/fe-presentation-convergence-01/payment-list-create/payment-list-create-07-scope-contract.json"
+      ]
+    }
+  },
+  "blockers": [
+    "Real runtime/recovery provider not implemented; no clone registration; write readiness remains blocked"
+  ],
+  "next_exact_step": "Run P4 publication checks, submit independent Draft PR; no runtime execution",
+  "layer": {
+    "formal_product_layer": "P4",
+    "target": "candidate view preparation",
+    "module": "ops",
+    "reason": "independent admission tooling; no product declarations or authorization changes"
+  },
+  "observations": {
+    "focused": "28/28 passed; memory driver is not ORM evidence",
+    "runtime": "not_run; no trusted driver exists; public apply fails closed",
+    "product_candidate": "PR770 unchanged",
+    "generated_inventory": "freeze.prepare regenerated new test registration; no product files",
+    "iteration": "passed L1",
+    "docs": "failed: 62 existing historical .runtime/artifact links absent in reused worktree; not adapter docs",
+    "freeze_prepare": "passed; inventory and complexity reports regenerated"
+  }
+}
