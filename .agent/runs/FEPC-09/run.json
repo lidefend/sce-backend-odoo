@@ -11,21 +11,31 @@
     ".agent/runs/FEPC-09/run.json",
     ".agent/goals/FEPC-08.yaml",
     ".agent/runs/FEPC-08/run.json",
-    ".agent/active-runs.json"
+    ".agent/active-runs.json",
+    "scripts/verify/product_release_version_guard.py",
+    "scripts/release/test_product_release.py",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/github_remote_execution_plan.md",
+    "docs/engineering_convergence/github_remote_execute.sh",
+    "docs/engineering_convergence/module_dependency_map.md",
+    "docs/engineering_convergence/e2e_journey_matrix.md"
   ],
   "goal": ".agent/goals/FEPC-09.yaml",
   "record": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/findings.md",
   "environment": {
-    "kind": "runtime",
-    "authority": "Existing Demo project15 user41 company1, reuse API01/02R evidence; read-only UI observation if needed; F1 investigation paused"
+    "kind": "offline",
+    "authority": "User explicitly approved P4 version-guard correction and evidence compaction; original evidence immutable at commit1214b9ce88c42875436a71340f7dd6d2eea3a126; no new runtime capture"
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Publish separate GitHub audit PR and wait for GPT review; no product implementation, merge, deploy or further F1 reproduction",
+  "next_exact_step": "Frozen audit correction: run exact-head Quick, publish PR759, verify required CI; FEPC10 only in independent branch from main",
   "validation_plan": {
     "L0": "latest GitHub main, dirty docs/P4 probe scope, runtime identity",
     "L1": "JSON/link/source references and make ci.local.iteration",
-    "L2_L4": "no product changes; actual bounded browser evidence validates probe, no business writes or repeated data collection",
+    "L2_L4": "Affected nonzero release guard unit tests; no ORM/runtime writes; existing runtime evidence reused",
     "L5": "audit draft PR; GPT review pending; no merge/deploy"
   },
   "layer": {
@@ -33,7 +43,7 @@
     "target": "audit evidence",
     "why_here": "documentation and observation only",
     "why_not_elsewhere": "no product semantics or UI implementation",
-    "blast_radius": "audit artifacts only"
+    "blast_radius": "P4 evidence packaging and release-version observation validation only"
   },
   "observations": {
     "local_iteration": "passed L1; product L2 not applicable",
@@ -41,6 +51,14 @@
     "runtime": "5 initial DOM samples, 1 supplemental sample, 4 message author projections",
     "F1": "user explicitly paused, unresolved",
     "findings": "4 visual_defect candidates; others expected_behavior or verification_pending",
-    "independent_review": "pending GPT after draft PR"
+    "independent_review": "pending GPT after draft PR",
+    "ci_correction": {
+      "failure_owner": "P4 version observation classification",
+      "approved_scope": "exact identity registration and evidence compaction",
+      "release_guard_tests": "17 product release tests and10 package preflight tests passed",
+      "archive": "47 original files copied and hash verified against immutable original commit",
+      "original_audit_claims": "unchanged, no new runtime collection"
+    },
+    "freeze_prepare": "passed; no generated product artifacts changed"
   }
 }

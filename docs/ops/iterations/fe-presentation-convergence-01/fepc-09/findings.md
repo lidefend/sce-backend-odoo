@@ -6,7 +6,7 @@
 
 GitHub最新main核对结果及本轮HEAD基线为 `27de8c2769d4c02a6e1076ad3f60fb9aa9f77e17`，PR758已进入主线。分支 `audit/fepc-09-project-detail-review`。仅P4审计文档、脱敏证据、只读探针及任务元数据；无产品、契约、配置、数据库修改。
 
-服务 `/t/demo`、sc_demo，运行时声明 `3f46dd7eba9f351386fee446151ee9eb545d56a4`、版本1.0.0-rc.20，构建指纹见 [观测](presentation-observations.json)。项目15、用户41、business_full、当前公司1；并非全角色/全公司/全项目验收。此次浏览器Linux Chromium147、1440×1000、DPR1；不代替Windows及窄屏体验验收。
+服务 `/t/demo`、sc_demo，运行时声明 `3f46dd7eba9f351386fee446151ee9eb545d56a4`、版本见[历史身份投影](runtime-identity.json)，构建指纹见 [观测](presentation-observations.json)。项目15、用户41、business_full、当前公司1；并非全角色/全公司/全项目验收。此次浏览器Linux Chromium147、1440×1000、DPR1；不代替Windows及窄屏体验验收。
 
 复用API01已确认日期/关系/契约和API02R身份上下文，不重新采集首页指标或执行付款点击。新浏览器只补可见展示/布局，自动初始化的API只保存请求状态，不重复落盘业务响应。唯一补充业务投影为既有4条消息的作者/正文（历史证据已裁剪，无法判定作者映射），不扩展项目、分页或权限范围。
 
@@ -38,7 +38,7 @@ GitHub最新main核对结果及本轮HEAD基线为 `27de8c2769d4c02a6e1076ad3f60
 ## 优先证据
 
 1. **消息映射**：[实际API补证](message-author-evidence.json) 中m-672的author_name是“项目审批岗”，正文以“项目初始化已完成：”开头；[真实展示](06-timeline-content.png) 把这个前缀放在作者位置。运行时同版本 `professionalCollaborationModel.ts:235–252` 用正则拆正文，而没有读取message.author_name。其余消息在作者位置显示“备注”。属于消费者映射错误候选，不应修改演示消息或作者数据。
-2. **无名关系空态**：[截图](04-collaborators.png) 两个相同空块；[DOM](supplement-presentation-observations.json) 识别为task_ids和collaborator_ids，均field--label-free。父FormSection转移标题职责，而X2ManyRelationRenderer只在非空分支输出标题。历史契约确认合作者label；task_ids标签及hideLabel还须在实施前对齐声明，不可硬编码名称。
+2. **无名关系空态**：[截图](04-collaborators.png) 两个相同空块；[DOM](presentation-observations.json) 识别为task_ids和collaborator_ids，均field--label-free。父FormSection转移标题职责，而X2ManyRelationRenderer只在非空分支输出标题。历史契约确认合作者label；task_ids标签及hideLabel还须在实施前对齐声明，不可硬编码名称。
 3. **关注者占位**：[截图](05-timeline.png) 和DOM确认关注者19、高914px，时间线被推到视口以下。是阅读层次候选；不能把19当成应删人数，不能擅定折叠阈值。
 4. **重复标题**：[首屏](01-basic.png) 同名标题两次，分别来自页头和原生标题投影。最小设计需要决定标题/收藏/编辑职责，不能未经裁定删除原生结构。
 
@@ -57,3 +57,9 @@ date_start/date的安排日期范围，与start_date/end_date计划范围不是�
 F1以 [正式暂停记录](../fepc-08/f1-reproduction.md) 随审计交接保留：待核实、暂不修复、不标记解决。原始探针和测量不删除。本轮没有再次打开帮助或测试滚动浮层。
 
 批次：事实整理完成，等待审查。主线：未集成。部署：未执行。用户验收：未通过，需GPT裁定。回退只涉及本审计文档，不需要产品或数据回滚。下一步是GPT选择独立最小修复任务或DATA-01业务定义；不自动进入实施。
+
+## PR复审后证据范围收敛
+
+原始提交 `1214b9ce88c42875436a71340f7dd6d2eea3a126` 的47个证据文件均已逐个校验SHA256并复制至本地恢复归档；固定GitHub提交仍提供完整原件。最终树移出重复探针、认证摘要、重复截图及中间测量，保留最终选择性投影、原始失败、72帧、关键截图和[原件索引](original-evidence-index.json)。没有把投影称为完整响应，也没有重新运行F1或业务采集。
+
+版本唯一性失败由审计记录的历史版本值触发。最终只有一个历史运行身份投影包含该值；版本守卫精确绑定路径和完整内容SHA256，包括观测时间、运行源码SHA与原件摘要。不是目录豁免，也不更改VERSION。任何修改、追加版本声明、复制到其他路径或缺失原件均不能沿用登记。新增5项反例/来源测试，验证结果见[CI修复记录](ci-closeout.md)。

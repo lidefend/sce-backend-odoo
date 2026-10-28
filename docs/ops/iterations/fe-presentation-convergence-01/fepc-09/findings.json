@@ -21,7 +21,7 @@
       "classification": "visual_defect",
       "priority": "medium",
       "observed": "task_ids与collaborator_ids都仅显示“暂无可展示记录”，没有可见关系名称，用户无法分辨两块空状态。",
-      "evidence": "04-collaborators.png;supplement-presentation-observations.json#relation_labels",
+      "evidence": "04-collaborators.png;presentation-observations.json#relation_labels",
       "source": "FormSection.vue:141,763；X2ManyRelationRenderer.vue:71–76,192",
       "interpretation": "父层将标题归属交给关系控件；子层只在有记录时输出标题，空分支仅通用提示。",
       "unknown": "task_ids原始字段label未在历史裁剪响应中保留；合作者label已保留。修复前仍需核实hideLabel声明。",

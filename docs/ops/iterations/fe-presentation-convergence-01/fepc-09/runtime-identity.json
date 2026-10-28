@@ -1,0 +1,27 @@
+{
+  "kind": "historical_runtime_identity_projection",
+  "observed_at": "2026-10-28T09:08:17.035Z",
+  "request": {
+    "method": "GET",
+    "path": "/t/demo/api/runtime-version"
+  },
+  "http_status": 200,
+  "response_projection": {
+    "product_version": "1.0.0-rc.20",
+    "source_revision": "3f46dd7eba9f351386fee446151ee9eb545d56a4",
+    "git_sha": "3f46dd7eba9f351386fee446151ee9eb545d56a4",
+    "database": "sc_demo",
+    "environment": "demo",
+    "frontend_build_sha256": "5690cde92298c32cb9e5e2c578380fe17e07bd7af21944bf72a42dbe577b027a",
+    "namespace_id": "ns_000000000002",
+    "namespace_alias": "demo",
+    "audience": "tenant"
+  },
+  "provenance": {
+    "original_commit": "1214b9ce88c42875436a71340f7dd6d2eea3a126",
+    "original_path": "docs/ops/iterations/fe-presentation-convergence-01/fepc-09/presentation-observations.json",
+    "original_sha256": "afa7a5594b3acc61a28c5f3e98b15e5250c48927260ffe8687fa786e148312b8",
+    "json_pointer": "/runtime_after",
+    "scope": "historical observation, not a current release declaration"
+  }
+}

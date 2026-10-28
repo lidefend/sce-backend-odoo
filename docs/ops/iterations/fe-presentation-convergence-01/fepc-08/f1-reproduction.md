@@ -4,7 +4,7 @@
 
 ## 身份与范围
 
-GitHub main / 本地基线 `27de8c2769d4c02a6e1076ad3f60fb9aa9f77e17`（PR758 后），审计分支 `audit/fepc-08-help-popover-diagnosis`。运行时声明 `3f46dd7eba9f351386fee446151ee9eb545d56a4`，版本 `1.0.0-rc.20`，构建 SHA256 `5690cde92298c32cb9e5e2c578380fe17e07bd7af21944bf72a42dbe577b027a`。两种身份分别记录，不推断部署错误。
+GitHub main / 本地基线 `27de8c2769d4c02a6e1076ad3f60fb9aa9f77e17`（PR758 后），审计分支 `audit/fepc-08-help-popover-diagnosis`。运行时声明 `3f46dd7eba9f351386fee446151ee9eb545d56a4`，版本见[历史身份投影](../fepc-09/runtime-identity.json)，构建 SHA256 `5690cde92298c32cb9e5e2c578380fe17e07bd7af21944bf72a42dbe577b027a`。两种身份分别记录，不推断部署错误。
 
 目标 `/t/demo/r/project.project/15`，sc_demo，既有账号用户41 / business_full / 公司1。Linux headless Chromium147.0.7727.15，1440×1000，DPR1，visualViewport.scale1。没有 Windows 仿真；Windows 浏览器版本、缩放、显示缩放和具体字段尚未确认。
 
@@ -27,7 +27,7 @@ GitHub main / 本地基线 `27de8c2769d4c02a6e1076ad3f60fb9aa9f77e17`（PR758 �
 
 ## 证据和执行限制
 
-入口 [f1-measurements.json](f1-measurements.json) 索引5次探针原始脱敏输出与哈希；[source-identity.json](source-identity.json) 绑定运行时SHA源码。每个attempt配套实际探针和认证状态摘要。密码通过隐藏输入、token通过进程管道使用，不保存凭据、会话、完整HTML或业务响应。
+入口 [f1-measurements.json](f1-measurements.json) 保留5次尝试状态、失败记录、关键坐标及连续72帧；完整原件由[原始证据索引](../fepc-09/original-evidence-index.json)提供固定提交链接和哈希；[source-identity.json](source-identity.json) 绑定运行时SHA源码。各attempt实际探针和认证摘要均已归档到索引指向的不可变提交及本地恢复目录，未删除唯一原件。密码通过隐藏输入、token通过进程管道使用，不保存凭据、会话、完整HTML或业务响应。
 
 attempt1在其他帮助选择器超时；attempt2其他帮助/页签未实际执行；attempt3“计划与责任”不存在而超时；attempt4改用DOM真实页签完成剩余交互；attempt5按人工补充追加连续滚轮，之后停止。失败原样保留，不算产品失败，不伪装通过。
 
