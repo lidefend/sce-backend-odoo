@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "candidate_contract_receipt_v1.schema.json",
+  "title": "Isolated candidate backend contract receipt",
+  "type": "object",
+  "required": [
+    "schema",
+    "candidate_sha",
+    "database_uuid",
+    "served_identity",
+    "target_action",
+    "target_view",
+    "effective_capabilities",
+    "form_binding",
+    "defaults"
+  ],
+  "properties": {
+    "schema": {
+      "const": "candidate_contract_receipt.v1"
+    },
+    "candidate_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "database_uuid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "served_identity": {
+      "type": "object",
+      "required": ["served_sha", "frontend_build_sha256", "database"],
+      "properties": {
+        "served_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "frontend_build_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "database": {"type": "string", "minLength": 1}
+      }
+    },
+    "target_action": {
+      "type": "object",
+      "required": ["xmlid"],
+      "properties": {
+        "xmlid": {"type": "string", "minLength": 1}
+      }
+    },
+    "target_view": {
+      "type": "object",
+      "required": ["xmlid", "model"],
+      "properties": {
+        "xmlid": {"type": "string", "minLength": 1},
+        "model": {"type": "string", "minLength": 1}
+      }
+    },
+    "effective_capabilities": {
+      "type": "object",
+      "required": ["create", "edit", "delete"],
+      "properties": {
+        "create": {"type": "boolean"},
+        "edit": {"type": "boolean"},
+        "delete": {"type": "boolean"}
+      }
+    },
+    "form_binding": {
+      "type": "object",
+      "required": ["view_mode", "form_xmlid"],
+      "properties": {
+        "view_mode": {"type": "string", "minLength": 1},
+        "form_xmlid": {"type": "string", "minLength": 1}
+      }
+    },
+    "defaults": {
+      "type": "object",
+      "required": ["default_type", "default_business_category_code"],
+      "properties": {
+        "default_type": {"type": "string"},
+        "default_business_category_code": {"type": "string"}
+      }
+    },
+    "collected_at": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

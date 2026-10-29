@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "candidate_resource_registration_v1.schema.json",
+  "title": "Isolated candidate acceptance resource registration receipt",
+  "type": "object",
+  "required": [
+    "schema",
+    "owner",
+    "host",
+    "compose_project",
+    "database",
+    "database_filter",
+    "volumes",
+    "network",
+    "ports",
+    "lease",
+    "cleanup_scope"
+  ],
+  "properties": {
+    "schema": {
+      "const": "candidate_resource_registration.v1"
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "host": {
+      "type": "string",
+      "minLength": 1
+    },
+    "compose_project": {
+      "type": "string",
+      "pattern": "^sc-fe-candidate-[0-9a-z-]+$"
+    },
+    "database": {
+      "type": "string",
+      "minLength": 1
+    },
+    "database_filter": {
+      "type": "string",
+      "minLength": 1
+    },
+    "volumes": {
+      "type": "object",
+      "required": ["database", "redis", "odoo"],
+      "properties": {
+        "database": {"type": "string", "minLength": 1},
+        "redis": {"type": "string", "minLength": 1},
+        "odoo": {"type": "string", "minLength": 1}
+      }
+    },
+    "network": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ports": {
+      "type": "object",
+      "required": ["compose_backend_port", "backend_port", "frontend_port"],
+      "properties": {
+        "compose_backend_port": {"type": "integer", "minimum": 1},
+        "backend_port": {"type": "integer", "minimum": 1},
+        "frontend_port": {"type": "integer", "minimum": 1}
+      }
+    },
+    "lease": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cleanup_scope": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "candidate_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    }
+  },
+  "additionalProperties": false
+}

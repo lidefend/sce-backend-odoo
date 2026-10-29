@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4976`
+- Scanned files: `4978`
 - Files requiring split plan: `72`
 - Files above warning threshold: `144`
 
@@ -103,8 +103,8 @@ Generated from repository source files. This report is informational during the 
 | 1398 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1395 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
+| 1387 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
-| 1352 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1331 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1329 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
@@ -140,6 +140,7 @@ Generated from repository source files. This report is informational during the 
 | 1129 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1128 | Python source | `addons/smart_core/handlers/ui_contract_v2_projection.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
+| 1121 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1117 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 1096 | JavaScript source | `scripts/verify/local_dev_project_create_contract_driver_probe.mjs` |
@@ -152,7 +153,6 @@ Generated from repository source files. This report is informational during the 
 | 1090 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1087 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
 | 1049 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
-| 1049 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |

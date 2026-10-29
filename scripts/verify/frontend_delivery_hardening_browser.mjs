@@ -731,8 +731,12 @@ async function main() {
 
     if (process.env.DELIVERY_HARDENING_A11Y_PROBE === '1') {
       await open(page, listRoute(TARGETS.payment_request));
-      await openPaymentCreateFromList(page, TARGETS.payment_request, 'a11y_payment_create');
-      accessibility.scans.push(await axe(page, 'payment-form'));
+      const paymentCreate = await openPaymentCreateFromList(page, TARGETS.payment_request, 'a11y_payment_create');
+      if (paymentCreate.status === 'created') {
+        accessibility.scans.push(await axe(page, 'payment-form'));
+      } else {
+        accessibility.scans.push(await axe(page, 'payment-list-create-disabled'));
+      }
       const removeProbe = await interceptNextBusiness(page, (route) => route.abort('failed'), TARGETS.payment_request);
       await page.goto(`${BASE_URL}${recordRoute(TARGETS.payment_request)}`, { waitUntil: 'domcontentloaded' });
       await declaredErrorSurface(page, 0);
@@ -961,7 +965,11 @@ async function main() {
             ? waitForRecordContractResponse(page, TARGETS.journey_request).then(response => normalizedSubmitEvidence(response, surface.name)) : null;
           await page.goto(`${BASE_URL}${surface.route}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
           if (surface.mode === 'form') {
-            await openPaymentCreateFromList(page, TARGETS.payment_request, `responsive_payment_create_${viewport.width}`);
+            const createResult = await openPaymentCreateFromList(page, TARGETS.payment_request, `responsive_payment_create_${viewport.width}`);
+            if (createResult.status === 'skipped_create_disabled') {
+              responsive.pages.push({ name: surface.name, role: surface.role || 'anonymous', viewport, pass: true, createSkipped: true });
+              continue;
+            }
           } else if (surface.mode === 'dialog') {
             await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
             const submitAction = await canonicalSubmitAction(page, `${surface.name}-${viewport.width}`, dialogContract);
@@ -1130,14 +1138,19 @@ async function main() {
       }
       const formSamples = [];
       await navigateSpa(page, listRoute(TARGETS.payment_request), READY_ACTION_LIST_SELECTOR);
-      await openPaymentCreateFromList(page, TARGETS.payment_request, 'form_open_warmup');
-      for (let i = 0; i < PERF_RUNS; i += 1) {
-        await navigateSpa(page, listRoute(TARGETS.payment_request), READY_ACTION_LIST_SELECTOR);
-        formSamples.push(await time(async () => {
-          await openPaymentCreateFromList(page, TARGETS.payment_request, `form_open_${i + 1}`);
-        }));
+      const formWarmup = await openPaymentCreateFromList(page, TARGETS.payment_request, 'form_open_warmup');
+      if (formWarmup.status === 'skipped_create_disabled') {
+        performanceReport.skipped_scenarios = performanceReport.skipped_scenarios || {};
+        performanceReport.skipped_scenarios.form_open = 'effective create capability is false';
+      } else {
+        for (let i = 0; i < PERF_RUNS; i += 1) {
+          await navigateSpa(page, listRoute(TARGETS.payment_request), READY_ACTION_LIST_SELECTOR);
+          formSamples.push(await time(async () => {
+            await openPaymentCreateFromList(page, TARGETS.payment_request, `form_open_${i + 1}`);
+          }));
+        }
+        performanceReport.scenarios.form_open = stats(formSamples);
       }
-      performanceReport.scenarios.form_open = stats(formSamples);
       const switchSamples = [];
       const companySwitchWarmupRuns = Number(performanceBudgets.company_switch_warmup_runs);
       check(
@@ -1298,7 +1311,28 @@ async function openPaymentCreateFromList(page, target, label) {
   );
   await actionViewSurface.waitFor({ state: 'visible', timeout: 45000 });
   check(await actionViewSurface.count() === 1, `${label}: active payment action view identity is not unique`);
+  await page.waitForFunction(
+    (selector) => {
+      const node = document.querySelector(selector);
+      const state = node && node.getAttribute('data-collection-state');
+      return Boolean(node && state && state !== 'idle' && state !== 'loading');
+    },
+    '[data-product-page-mode="list"][data-semantic-component="ActionView"]',
+    { timeout: 45000 },
+  );
+  const canCreate = await actionViewSurface.getAttribute('data-can-create');
+  check(
+    canCreate === 'true' || canCreate === 'false',
+    `${label}: payment create capability is unknown: ${String(canCreate)}`,
+  );
   const create = actionViewSurface.getByRole('button', { name: '新建', exact: true });
+  if (canCreate === 'false') {
+    check(
+      await create.count() === 0,
+      `${label}: create button must not render when the effective create capability is false`,
+    );
+    return { status: 'skipped_create_disabled', canCreate: false };
+  }
   await create.waitFor({ state: 'visible', timeout: 45000 });
   check(await create.count() === 1, `${label}: create payment action identity is not unique`);
   check(await create.isEnabled(), `${label}: create payment action is disabled`);
@@ -1347,6 +1381,7 @@ async function openPaymentCreateFromList(page, target, label) {
       + ` cause=${error instanceof Error ? error.message : String(error)}`,
     );
   }
+  return { status: 'created', canCreate: true };
 }
 
 main().catch((error) => { console.error(`[verify.frontend.delivery_hardening.browser] FAIL ${error.stack || error.message}`); process.exitCode = 1; });

@@ -384,6 +384,78 @@ class TestGlobAndPlan(unittest.TestCase):
                 path,
             )
 
+    def test_frontend_acceptance_schema_changes_do_not_require_runtime_evidence(self):
+        for path in (
+            "config/frontend/acceptance_evidence_contract_v1.schema.json",
+            "config/frontend/acceptance_fixture_manifest_v1.schema.json",
+            "config/frontend/candidate_contract_receipt_v1.schema.json",
+            "config/frontend/candidate_resource_registration_v1.schema.json",
+        ):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+            self.assertEqual(plan["status"], "PASS", path)
+            self.assertEqual(plan["matched_rules"][path], "frontend-acceptance-schema", path)
+            self.assertEqual(plan["required_suites"], ["frontend_contract"], path)
+            self.assertEqual(plan["required_evidence_suites"], [], path)
+
+    def test_frontend_acceptance_harness_config_does_not_require_runtime_evidence(self):
+        for path in (
+            "config/frontend/acceptance_environments_v1.json",
+            "config/frontend/acceptance_tool_matrix_v1.json",
+        ):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+            self.assertEqual(plan["status"], "PASS", path)
+            self.assertEqual(plan["matched_rules"][path], "frontend-acceptance-harness", path)
+            self.assertEqual(plan["required_suites"], ["frontend_contract"], path)
+            self.assertEqual(plan["required_evidence_suites"], [], path)
+
+    def test_frontend_runtime_facing_config_still_requires_list_surface_evidence(self):
+        for path in (
+            "config/frontend/authoritative_navigation.json",
+            "config/frontend/product_stable_baseline_v1.json",
+            "config/frontend/role_surface_exposure_declarations_v1.json",
+            "config/frontend/release_performance_budgets_v1.json",
+        ):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+            self.assertEqual(plan["status"], "PASS", path)
+            self.assertEqual(plan["matched_rules"][path], "frontend-acceptance-config", path)
+            self.assertEqual(
+                plan["required_suites"],
+                ["frontend_contract", "list_surface_structure"],
+                path,
+            )
+            self.assertEqual(
+                plan["required_evidence_suites"],
+                ["list_surface_structure"],
+                path,
+            )
+
+    def test_mixed_schema_and_runtime_frontend_keeps_list_surface_evidence(self):
+        plan = guard.build_plan(
+            self.registry,
+            [
+                "config/frontend/acceptance_fixture_manifest_v1.schema.json",
+                "frontend/apps/web/src/api/businessConfig.ts",
+            ],
+            "base",
+            HEAD,
+        )
+        self.assertEqual(plan["status"], "PASS")
+        self.assertIn("list_surface_structure", plan["required_evidence_suites"])
+
+    def test_unknown_frontend_config_path_fails_closed_to_list_surface(self):
+        plan = guard.build_plan(
+            self.registry,
+            ["config/frontend/new_unclassified_acceptance_config.json"],
+            "base",
+            HEAD,
+        )
+        self.assertEqual(plan["status"], "PASS")
+        self.assertEqual(
+            plan["matched_rules"]["config/frontend/new_unclassified_acceptance_config.json"],
+            "frontend-acceptance-config",
+        )
+        self.assertIn("list_surface_structure", plan["required_evidence_suites"])
+
     def test_presentation_lane_is_wired_into_the_frontend_quick_gate(self):
         makefile = (ROOT / "make" / "frontend.mk").read_text(encoding="utf-8")
         self.assertIn(
