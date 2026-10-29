@@ -930,6 +930,11 @@ verify.acceptance.runtime.baseline_rebuild.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_acceptance_baseline_rebuild scripts.verify.test_frontend_acceptance_runtime_profile scripts.verify.test_frontend_release_ci_identity scripts.verify.test_frontend_acceptance_carrier_discard
 	@python3 scripts/verify/frontend_acceptance_environment_source_guard.py
 
+.PHONY: verify.candidate.acceptance.profile.unit
+verify.candidate.acceptance.profile.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/candidate_acceptance_profile.py scripts/verify/test_candidate_acceptance_profile.py
+	@python3 -m unittest scripts.verify.test_candidate_acceptance_profile
+
 # P4 environment entries for the managed local acceptance carrier
 # (project sc-fe-r2-p1-01). discard removes only the three declared volumes;
 # provision rebuilds the declared empty infrastructure and delegates the

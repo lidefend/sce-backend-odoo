@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "acceptance_fixture_manifest_v1.schema.json",
+  "title": "Isolated candidate acceptance fixture paired artifact manifest",
+  "type": "object",
+  "required": [
+    "schema",
+    "fixture_module",
+    "fixture_version",
+    "source_database_uuid",
+    "database_artifact_sha256",
+    "filestore_artifact_sha256",
+    "pair_stable_during_capture",
+    "recovery_expectations"
+  ],
+  "properties": {
+    "schema": {
+      "const": "acceptance_fixture_manifest.v1"
+    },
+    "fixture_module": {
+      "const": "smart_construction_acceptance_fixture"
+    },
+    "fixture_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_database_uuid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "database_artifact_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "filestore_artifact_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "pair_stable_during_capture": {
+      "const": true
+    },
+    "recovery_expectations": {
+      "type": "object",
+      "required": ["table_count_ranges"],
+      "properties": {
+        "table_count_ranges": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "object",
+            "required": ["minimum", "maximum"],
+            "properties": {
+              "minimum": {"type": "integer", "minimum": 0},
+              "maximum": {"type": "integer", "minimum": 0}
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}
