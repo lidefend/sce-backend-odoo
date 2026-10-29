@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -85,6 +87,27 @@ def resolve_candidate_profile(
     if services.get("frontend_port") == 5175 or services.get("backend_port") == 18082:
         raise CandidateProfileError("candidate ports must not collide with the shared acceptance carrier")
 
+    declared_database = profile.get("database")
+    if declared_database is not None and str(declared_database) != database:
+        raise CandidateProfileError("candidate profile database must match resource_contract.database")
+    declared_url = profile.get("base_url")
+    expected_url = f"http://127.0.0.1:{services.get('frontend_port')}"
+    if declared_url is not None and str(declared_url) != expected_url:
+        raise CandidateProfileError("candidate profile base_url must match the managed frontend port")
+
+    managed = profile.get("managed_runtime")
+    if managed is not None:
+        if str(managed.get("compose_project") or "") != project:
+            raise CandidateProfileError("managed_runtime compose_project must match resource_contract")
+        if str(managed.get("database_filter") or "") != dbfilter:
+            raise CandidateProfileError("managed_runtime database_filter must match resource_contract")
+        managed_volumes = managed.get("volumes") or {}
+        if any(str(managed_volumes.get(k) or "") != str(volumes.get(k) or "") for k in ("database", "redis", "odoo")):
+            raise CandidateProfileError("managed_runtime volumes must match resource_contract")
+        managed_services = managed.get("services") or {}
+        if any(managed_services.get(k) != services.get(k) for k in ("compose_backend_port", "backend_port", "frontend_port")):
+            raise CandidateProfileError("managed_runtime services must match resource_contract")
+
     guard = profile.get("isolation_guard") or {}
     never_target = guard.get("never_target")
     if not isinstance(never_target, list) or not all(isinstance(x, str) for x in never_target):
@@ -133,6 +156,19 @@ def provision_plan(sha: str) -> dict:
     }
 
 
+def _git_head() -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True
+        ).strip()
+    except subprocess.CalledProcessError as exc:
+        raise CandidateProfileError("unable to resolve local HEAD") from exc
+
+
+def carrier_provision_command() -> list[str]:
+    return ["make", "acceptance.runtime.carrier.provision"]
+
+
 def provision_apply(sha: str, confirm: str, registration: Path | None) -> dict:
     if confirm != CONFIRMATION:
         raise CandidateProfileError(
@@ -142,13 +178,24 @@ def provision_apply(sha: str, confirm: str, registration: Path | None) -> dict:
         raise CandidateProfileError(
             "a registered isolated-resource receipt is required before provisioning"
         )
-    plan = provision_plan(sha)
-    # Phase C implementation attaches the real carrier provisioning here; until
-    # then the entry refuses any actual resource mutation.
-    raise CandidateProfileError(
-        "isolated candidate provisioning is not implemented until the Phase-C "
-        "resource authority is granted; no resources were created"
-    )
+    resolved = resolve_candidate_profile()
+    if _git_head() != sha:
+        raise CandidateProfileError("local HEAD does not match the candidate SHA")
+    env = {
+        **os.environ,
+        "SC_ACCEPTANCE_RUNTIME_PROFILE": "candidate",
+        "CONFIRM_ACCEPTANCE_CARRIER_PROVISION": "PROVISION_MANAGED_ACCEPTANCE_CARRIER",
+    }
+    result = subprocess.run(carrier_provision_command(), cwd=ROOT, env=env, check=False)
+    if result.returncode:
+        raise CandidateProfileError("isolated candidate carrier provision failed")
+    return {
+        "mode": "apply",
+        "profile": resolved["profile"],
+        "candidate_sha": sha,
+        "resource_contract": resolved["resource_contract"],
+        "provisioned": True,
+    }
 
 
 def main(argv: list[str] | None = None) -> int:

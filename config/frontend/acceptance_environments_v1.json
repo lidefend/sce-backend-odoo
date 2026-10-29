@@ -76,7 +76,9 @@
     "candidate": {
       "environment": "dev",
       "target_mode": "external",
+      "base_url": "http://127.0.0.1:5178",
       "base_url_required": true,
+      "database": "sc_frontend_acceptance_candidate",
       "database_required": true,
       "expected_sha_required": true,
       "target_identity_required": true,
@@ -106,9 +108,28 @@
           "odoo": "sc_fe_candidate_770_odoo"
         },
         "services": {
-          "compose_backend_port": 19085,
-          "backend_port": 18084,
-          "frontend_port": 5176
+          "compose_backend_port": 19088,
+          "backend_port": 18088,
+          "frontend_port": 5178
+        }
+      },
+      "managed_runtime": {
+        "base_env_file": ".env.dev",
+        "compose_project": "sc-fe-candidate-770",
+        "credential_container": "sc-fe-candidate-770-odoo-1",
+        "database_filter": "^sc_frontend_acceptance_candidate$",
+        "volumes": {
+          "database": "sc_fe_candidate_770_db",
+          "redis": "sc_fe_candidate_770_redis",
+          "odoo": "sc_fe_candidate_770_odoo"
+        },
+        "services": {
+          "compose_backend_port": 19088,
+          "backend_container": "sc-backend-odoo-candidate-770",
+          "backend_port": 18088,
+          "frontend_port": 5178,
+          "frontend_pidfile": "/tmp/sc-frontend-candidate-770.pid",
+          "frontend_logfile": "/tmp/sc-frontend-candidate-770.log"
         }
       },
       "isolation_guard": {

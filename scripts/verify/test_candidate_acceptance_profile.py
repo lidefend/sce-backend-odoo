@@ -10,6 +10,7 @@ from scripts.ops.candidate_acceptance_profile import (
     ENVIRONMENTS,
     TOOL_MATRIX,
     CandidateProfileError,
+    carrier_provision_command,
     provision_apply,
     provision_plan,
     resolve_candidate_profile,
@@ -91,12 +92,36 @@ class CandidateProfileTest(unittest.TestCase):
         with self.assertRaises(CandidateProfileError):
             provision_apply(SHA, "PROVISION_ISOLATED_CANDIDATE_ACCEPTANCE", None)
 
-    def test_apply_refuses_until_phase_c_authority(self):
+    def test_apply_refuses_on_head_mismatch(self):
         with tempfile.NamedTemporaryFile("w", suffix=".json") as handle:
             json.dump({"registered": True}, handle)
             handle.flush()
             with self.assertRaises(CandidateProfileError):
                 provision_apply(SHA, "PROVISION_ISOLATED_CANDIDATE_ACCEPTANCE", Path(handle.name))
+
+    def test_rejects_managed_runtime_mismatch(self):
+        data = copy.deepcopy(json.loads(ENVIRONMENTS.read_text()))
+        data["profiles"]["candidate"]["managed_runtime"]["compose_project"] = "sc-fe-r2-p1-01"
+        with tempfile.NamedTemporaryFile("w", suffix=".json") as handle:
+            json.dump(data, handle)
+            handle.flush()
+            with self.assertRaises(CandidateProfileError):
+                resolve_candidate_profile(environments_path=Path(handle.name), tool_matrix_path=TOOL_MATRIX)
+
+    def test_rejects_base_url_mismatch(self):
+        data = copy.deepcopy(json.loads(ENVIRONMENTS.read_text()))
+        data["profiles"]["candidate"]["base_url"] = "http://127.0.0.1:5175"
+        with tempfile.NamedTemporaryFile("w", suffix=".json") as handle:
+            json.dump(data, handle)
+            handle.flush()
+            with self.assertRaises(CandidateProfileError):
+                resolve_candidate_profile(environments_path=Path(handle.name), tool_matrix_path=TOOL_MATRIX)
+
+    def test_carrier_provision_command(self):
+        self.assertEqual(
+            carrier_provision_command(),
+            ["make", "acceptance.runtime.carrier.provision"],
+        )
 
 
 if __name__ == "__main__":
