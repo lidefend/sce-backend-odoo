@@ -152,6 +152,7 @@ Generated from repository source files. This report is informational during the 
 | 1090 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1087 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
 | 1049 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
+| 1049 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
@@ -167,7 +168,6 @@ Generated from repository source files. This report is informational during the 
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 992 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 991 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
-| 988 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
 | 963 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
