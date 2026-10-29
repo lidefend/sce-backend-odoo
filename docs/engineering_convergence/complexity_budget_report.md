@@ -103,8 +103,8 @@ Generated from repository source files. This report is informational during the 
 | 1398 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1395 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
+| 1386 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
-| 1352 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1331 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1329 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
