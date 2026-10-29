@@ -73,6 +73,75 @@
         "config_admin": "fixture_role_config_admin"
       }
     },
+    "candidate": {
+      "environment": "dev",
+      "target_mode": "external",
+      "base_url": "http://127.0.0.1:5178",
+      "base_url_required": true,
+      "database": "sc_frontend_acceptance_candidate",
+      "database_required": true,
+      "expected_sha_required": true,
+      "target_identity_required": true,
+      "allowed_operations": [
+        "readonly"
+      ],
+      "credential_env": {
+        "login": "E2E_LOGIN",
+        "password": "SC_ACCEPTANCE_FIXTURE_PASSWORD"
+      },
+      "role_bindings": {
+        "finance": "fixture_role_finance",
+        "project_member": "fixture_role_project_a_member",
+        "project_manager": "fixture_role_pm",
+        "owner": "fixture_role_owner",
+        "contract_operator": "fixture_role_contract_operator",
+        "config_admin": "fixture_role_config_admin"
+      },
+      "runtime_identity_path": "/api/runtime-version",
+      "resource_contract": {
+        "compose_project": "sc-fe-candidate-770",
+        "database": "sc_frontend_acceptance_candidate",
+        "database_filter": "^sc_frontend_acceptance_candidate$",
+        "volumes": {
+          "database": "sc_fe_candidate_770_db",
+          "redis": "sc_fe_candidate_770_redis",
+          "odoo": "sc_fe_candidate_770_odoo"
+        },
+        "services": {
+          "compose_backend_port": 19088,
+          "backend_port": 18088,
+          "frontend_port": 5178
+        }
+      },
+      "managed_runtime": {
+        "base_env_file": ".env.dev",
+        "compose_project": "sc-fe-candidate-770",
+        "credential_container": "sc-fe-candidate-770-odoo-1",
+        "database_filter": "^sc_frontend_acceptance_candidate$",
+        "volumes": {
+          "database": "sc_fe_candidate_770_db",
+          "redis": "sc_fe_candidate_770_redis",
+          "odoo": "sc_fe_candidate_770_odoo"
+        },
+        "services": {
+          "compose_backend_port": 19088,
+          "backend_container": "sc-backend-odoo-candidate-770",
+          "backend_port": 18088,
+          "frontend_port": 5178,
+          "frontend_pidfile": "/tmp/sc-frontend-candidate-770.pid",
+          "frontend_logfile": "/tmp/sc-frontend-candidate-770.log"
+        }
+      },
+      "isolation_guard": {
+        "never_target": [
+          "sc_frontend_acceptance",
+          "sc-fe-r2-p1-01",
+          "sc_fe_r2_p1_01_db",
+          "sc_fe_r2_p1_01_redis",
+          "sc_fe_r2_p1_01_odoo"
+        ]
+      }
+    },
     "daily": {
       "environment": "dev",
       "served_environment_aliases": [

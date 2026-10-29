@@ -41,7 +41,7 @@ INVENTORY_PATH = (
     ROOT / "docs" / "planning" / "custom-frontend-integration" / "G1_CAPABILITY_INVENTORY.md"
 )
 
-EXPECTED_PROFILES = {"local", "test", "daily", "production"}
+EXPECTED_PROFILES = {"local", "test", "daily", "production", "candidate"}
 
 # Mandatory browser evidence fields from README section 12 (contract freeze).
 MANDATORY_BROWSER_EVIDENCE_FIELDS = {
@@ -200,7 +200,7 @@ def _validate_profiles_against_config(evidence: dict, errors: list[str]) -> None
         )
     recorded = set((evidence.get("environment_assets") or {}).get("profiles_present") or [])
     if recorded != EXPECTED_PROFILES:
-        errors.append("evidence profiles_present does not match the four-environment contract")
+        errors.append("evidence profiles_present does not match the governed acceptance-profile contract")
 
 
 def _validate_schema_selfcheck(errors: list[str]) -> None:
@@ -224,7 +224,7 @@ def write_evidence(baseline_sha: str | None) -> dict:
             "capability_inventory_path": "docs/planning/custom-frontend-integration/G1_CAPABILITY_INVENTORY.md",
         },
         "environment_assets": {
-            "profiles_present": ["daily", "local", "production", "test"],
+            "profiles_present": ["candidate", "daily", "local", "production", "test"],
             "assets": [
                 {
                     "path": "config/frontend/acceptance_environments_v1.json",
@@ -316,7 +316,7 @@ def main() -> int:
 
     print("[g1_acceptance_baseline_guard] PASS")
     print(
-        f"- four-environment profiles configured: local/test/daily/production "
+        f"- governed acceptance profiles configured: candidate/daily/local/production/test "
         f"(fingerprints verified for {len((evidence['environment_assets'] or {}).get('assets') or [])} assets)"
     )
     print(f"- baseline evidence reproducible at baseline_sha {baseline_sha[:12]}")

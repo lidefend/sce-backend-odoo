@@ -7,6 +7,7 @@
   },
   "environment_assets": {
     "profiles_present": [
+      "candidate",
       "daily",
       "local",
       "production",
@@ -15,11 +16,11 @@
     "assets": [
       {
         "path": "config/frontend/acceptance_environments_v1.json",
-        "sha256": "a2f0b2154212187ad0e737feb908433dc3eefc1955283caecc7dcbe9922d3104"
+        "sha256": "193c3bf959bd404e430b7b4e94ba65f4ebe1d0b445dbaf834438a7448f96c3b7"
       },
       {
         "path": "config/frontend/acceptance_tool_matrix_v1.json",
-        "sha256": "3a0a8269089d3034782ad87a8a62547536c1dc75aece934b56d0661bdcf8a4fe"
+        "sha256": "5397a0a09327ff3d227a448d0acd75855dddd8f038af9e2b4594fc1a7d8d6325"
       },
       {
         "path": "config/frontend/acceptance_evidence_contract_v1.schema.json",
@@ -31,7 +32,7 @@
     "python": "3.12.3",
     "git": "2.43.0"
   },
-  "collected_at": "2026-10-22T08:37:18Z",
+  "collected_at": "2026-10-29T02:37:01Z",
   "browser_evidence_contract": {
     "required_fields": [
       "browser_full_version",

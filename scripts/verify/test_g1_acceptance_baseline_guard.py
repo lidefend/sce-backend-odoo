@@ -27,7 +27,7 @@ def _valid_evidence() -> dict:
             "capability_inventory_path": "docs/planning/custom-frontend-integration/G1_CAPABILITY_INVENTORY.md",
         },
         "environment_assets": {
-            "profiles_present": ["daily", "local", "production", "test"],
+            "profiles_present": ["candidate", "daily", "local", "production", "test"],
             "assets": [
                 {"path": "config/frontend/acceptance_environments_v1.json", "sha256": "a" * 64},
             ],

@@ -924,11 +924,16 @@ acceptance.runtime.login_probe.internal: guard.prod.forbid
 acceptance.runtime.infrastructure.restore: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh infrastructure-restore
 
-.PHONY: acceptance.runtime.baseline_recovery.audit acceptance.runtime.baseline_rebuild acceptance.runtime.carrier.discard acceptance.runtime.carrier.provision verify.acceptance.runtime.baseline_rebuild.unit
-verify.acceptance.runtime.baseline_rebuild.unit: guard.prod.forbid
+.PHONY: acceptance.runtime.baseline_recovery.audit acceptance.runtime.baseline_rebuild acceptance.runtime.carrier.discard acceptance.runtime.carrier.provision verify.acceptance.runtime.baseline_rebuild.unit verify.candidate.profile.unit
+verify.acceptance.runtime.baseline_rebuild.unit: guard.prod.forbid verify.candidate.profile.unit
 	@bash -n scripts/dev/frontend_acceptance_baseline_rebuild.sh scripts/dev/frontend_acceptance_runtime.sh scripts/dev/frontend_acceptance_operation_entry.sh scripts/dev/frontend_acceptance_carrier_common.sh scripts/dev/frontend_acceptance_carrier_discard.sh scripts/dev/frontend_acceptance_carrier_provision.sh
 	@python3 -m unittest scripts.verify.test_frontend_acceptance_baseline_rebuild scripts.verify.test_frontend_acceptance_runtime_profile scripts.verify.test_frontend_release_ci_identity scripts.verify.test_frontend_acceptance_carrier_discard
 	@python3 scripts/verify/frontend_acceptance_environment_source_guard.py
+
+.PHONY: verify.candidate.profile.unit
+verify.candidate.profile.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/candidate_acceptance_profile.py scripts/verify/test_candidate_acceptance_profile.py
+	@python3 -m unittest scripts.verify.test_candidate_acceptance_profile
 
 # P4 environment entries for the managed local acceptance carrier
 # (project sc-fe-r2-p1-01). discard removes only the three declared volumes;
