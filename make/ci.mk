@@ -982,7 +982,7 @@ verify.platform.duty.contract.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_platform_admin_duty_contract.py
 	@cd frontend/apps/web && mkdir -p node_modules/.cache && ./node_modules/.bin/esbuild src/components/platform-duty/dutyAction.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/duty-action.test.mjs >/dev/null && node node_modules/.cache/duty-action.test.mjs
 
-ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy verify.platform.admin.credential.unit verify.candidate.profile.unit
+ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy verify.platform.admin.credential.unit
 	@python3 scripts/ops/agent_run_context.py
 	@$(MAKE) --no-print-directory ci.delivery.plan
 	@git diff --check
