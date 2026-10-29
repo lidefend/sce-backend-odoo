@@ -466,7 +466,7 @@ try {
             return { contents: `import {h,defineComponent} from 'vue';export default defineComponent({setup:(_, {attrs,slots})=>()=>h('${tag}',{...attrs},Object.values(slots).map(slot=>slot()))});`, loader: 'js', resolveDir: path.dirname(args.path) };
           }
           if (kind === 'attachment') {
-            assert.ok(/\/(ScButton|ScDisclosure|ScEmptyState|ScFileField|ScIcon|ScInput|ScInlineState|ScPopover|ScTable|ProfessionalManyToManySelect|One2ManyCellEditor)\.vue$/.test(args.path), `unexpected attachment stub ${args.path}`);
+            assert.ok(/\/(ScButton|ScDisclosure|ScEmptyState|ScFileField|ScIcon|ScInput|ScInlineState|ScPopover|ScTable|ProfessionalManyToManySelect|One2ManyCellEditor|NativeWeightedRelationDisplay)\.vue$/.test(args.path), `unexpected attachment stub ${args.path}`);
             const tag = args.path.endsWith('/ScButton.vue') ? 'test-button' : args.path.endsWith('/ScInlineState.vue') ? 'test-state' : 'test-presentation';
             return { contents: `import {h,defineComponent} from 'vue';export default defineComponent({props:['label'],setup:(props,{attrs,slots})=>()=>h('${tag}',{...attrs,...props},slots.default?.())});`, loader: 'js', resolveDir: path.dirname(args.path) };
           }
