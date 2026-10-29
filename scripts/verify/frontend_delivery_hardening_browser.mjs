@@ -1140,7 +1140,8 @@ async function main() {
       await navigateSpa(page, listRoute(TARGETS.payment_request), READY_ACTION_LIST_SELECTOR);
       const formWarmup = await openPaymentCreateFromList(page, TARGETS.payment_request, 'form_open_warmup');
       if (formWarmup.status === 'skipped_create_disabled') {
-        performanceReport.scenarios.form_open = { status: 'skipped_create_disabled', reason: 'effective create capability is false' };
+        performanceReport.skipped_scenarios = performanceReport.skipped_scenarios || {};
+        performanceReport.skipped_scenarios.form_open = 'effective create capability is false';
       } else {
         for (let i = 0; i < PERF_RUNS; i += 1) {
           await navigateSpa(page, listRoute(TARGETS.payment_request), READY_ACTION_LIST_SELECTOR);
