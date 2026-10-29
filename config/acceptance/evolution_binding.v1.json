@@ -357,6 +357,16 @@
       ]
     },
     {
+      "id": "frontend-acceptance-carrier-lifecycle",
+      "paths": [
+        "scripts/dev/frontend_acceptance_carrier*"
+      ],
+      "suites": [
+        "governance_static",
+        "path_namespace_identity"
+      ]
+    },
+    {
       "id": "isolated-acceptance-entry-identity",
       "paths": [
         "config/acceptance/**",

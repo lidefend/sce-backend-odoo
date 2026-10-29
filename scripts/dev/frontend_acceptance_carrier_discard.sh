@@ -24,7 +24,7 @@ require_no_foreign_mounter() {
     project="$(docker inspect "$cid" --format '{{index .Config.Labels "com.docker.compose.project"}}')"
     service="$(docker inspect "$cid" --format '{{index .Config.Labels "com.docker.compose.service"}}')"
     oneoff="$(docker inspect "$cid" --format '{{index .Config.Labels "com.docker.compose.oneoff"}}')"
-    [[ "$project" == "$EXPECTED_PROJECT" ]] || carrier_deny "volume $volume has foreign mounter project=$project"
+    [[ "$project" == "$COMPOSE_PROJECT_NAME" ]] || carrier_deny "volume $volume has foreign mounter project=$project"
     [[ "$service" == "db" || "$service" == "redis" || "$service" == "odoo" ]] || carrier_deny "volume $volume has undeclared service=$service"
     [[ "$oneoff" != "True" && "$oneoff" != "true" ]] || carrier_deny "volume $volume has undeclared one-off mounter service=$service"
   done <<<"$consumers"
@@ -33,7 +33,7 @@ require_no_foreign_mounter() {
 
 carrier_absent() {
   carrier_all_volumes_present && return 1
-  [[ -z "$(docker ps -aq --filter "label=com.docker.compose.project=$EXPECTED_PROJECT")" ]] || return 1
+  [[ -z "$(docker ps -aq --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME")" ]] || return 1
   return 0
 }
 
@@ -44,7 +44,7 @@ main() {
   carrier_carriers_stopped
 
   if carrier_absent; then
-    echo "$CARRIER_LOG_PREFIX discard PASS already_absent=true project=$EXPECTED_PROJECT"
+    echo "$CARRIER_LOG_PREFIX discard PASS already_absent=true project=$COMPOSE_PROJECT_NAME"
     return 0
   fi
 
@@ -54,7 +54,7 @@ main() {
   done
 
   carrier_source_compose
-  echo "$CARRIER_LOG_PREFIX discard remove only project=$EXPECTED_PROJECT db=$EXPECTED_DATABASE"
+  echo "$CARRIER_LOG_PREFIX discard remove only project=$COMPOSE_PROJECT_NAME db=$DB_NAME"
   compose_dev down --remove-orphans
 
   for volume in "$DB_DATA" "$REDIS_DATA" "$ODOO_DATA"; do
@@ -65,10 +65,10 @@ main() {
   done
 
   local remaining
-  remaining="$(docker ps -aq --filter "label=com.docker.compose.project=$EXPECTED_PROJECT")"
-  [[ -z "$remaining" ]] || carrier_fail "containers remain for project=$EXPECTED_PROJECT"
+  remaining="$(docker ps -aq --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME")"
+  [[ -z "$remaining" ]] || carrier_fail "containers remain for project=$COMPOSE_PROJECT_NAME"
 
-  echo "$CARRIER_LOG_PREFIX discard PASS project=$EXPECTED_PROJECT volumes_removed=3"
+  echo "$CARRIER_LOG_PREFIX discard PASS project=$COMPOSE_PROJECT_NAME volumes_removed=3"
   echo "$CARRIER_LOG_PREFIX RECREATE via make acceptance.runtime.carrier.provision"
 }
 

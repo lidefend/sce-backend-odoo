@@ -499,6 +499,31 @@ class TestGlobAndPlan(unittest.TestCase):
             self.assertIn("path_namespace_identity", plan["required_suites"], path)
             self.assertIn("path_namespace_identity", plan["required_evidence_suites"], path)
 
+    def test_frontend_acceptance_carrier_lifecycle_skips_list_surface_evidence(self):
+        for path in (
+            "scripts/dev/frontend_acceptance_carrier_common.sh",
+            "scripts/dev/frontend_acceptance_carrier_provision.sh",
+            "scripts/dev/frontend_acceptance_carrier_discard.sh",
+        ):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+            self.assertEqual(plan["status"], "PASS", path)
+            self.assertEqual(plan["matched_rules"][path], "frontend-acceptance-carrier-lifecycle", path)
+            self.assertIn("governance_static", plan["required_suites"], path)
+            self.assertNotIn("list_surface_structure", plan["required_suites"], path)
+            merge = guard.plan_for_stage(self.registry, plan, "merge")
+            self.assertEqual(merge["required_evidence_suites"], [], path)
+
+    def test_frontend_acceptance_runtime_entries_still_require_list_surface(self):
+        plan = guard.build_plan(
+            self.registry,
+            ["scripts/dev/frontend_acceptance_up.sh"],
+            "base",
+            HEAD,
+        )
+        self.assertEqual(plan["matched_rules"]["scripts/dev/frontend_acceptance_up.sh"],
+                         "isolated-acceptance-entry-identity")
+        self.assertIn("list_surface_structure", plan["required_suites"])
+
     def test_exact_governance_tools_do_not_require_runtime(self):
         paths = ['scripts/ops/agent_run_context.py', 'scripts/ops/evidence_scope.py',
                  'scripts/ops/test_evidence_scope.py', 'scripts/ops/validation_delivery_plan.py',

@@ -279,16 +279,20 @@ class CarrierDiscardMounterTests(unittest.TestCase):
 
 class CarrierDiscardSourceGuards(unittest.TestCase):
     def test_common_declares_exact_managed_identity(self) -> None:
-        for marker in (
-            'EXPECTED_PROJECT="sc-fe-r2-p1-01"',
-            'EXPECTED_DATABASE="sc_frontend_acceptance"',
-            "EXPECTED_FILTER='^sc_frontend_acceptance$'",
-            'EXPECTED_DB_VOLUME="sc_fe_r2_p1_01_db"',
-            'EXPECTED_REDIS_VOLUME="sc_fe_r2_p1_01_redis"',
-            'EXPECTED_ODOO_VOLUME="sc_fe_r2_p1_01_odoo"',
+        # The authoritative identity is derived from the profile resolver, not
+        # re-declared inline, so the two managed carriers cannot drift.
+        self.assertIn("frontend_acceptance_runtime_profile.py", COMMON)
+        self.assertIn("local|candidate)", COMMON)
+        for key in (
+            "COMPOSE_PROJECT_NAME",
+            "DB_NAME",
+            "ODOO_DBFILTER",
+            "DB_DATA",
+            "REDIS_DATA",
+            "ODOO_DATA",
         ):
-            with self.subTest(marker=marker):
-                self.assertIn(marker, COMMON)
+            with self.subTest(key=key):
+                self.assertIn(f'--get {key}', COMMON)
 
     def test_entry_consumes_the_shared_identity(self) -> None:
         self.assertIn(
