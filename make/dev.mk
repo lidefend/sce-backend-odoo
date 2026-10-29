@@ -930,8 +930,8 @@ verify.acceptance.runtime.baseline_rebuild.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_acceptance_baseline_rebuild scripts.verify.test_frontend_acceptance_runtime_profile scripts.verify.test_frontend_release_ci_identity scripts.verify.test_frontend_acceptance_carrier_discard
 	@python3 scripts/verify/frontend_acceptance_environment_source_guard.py
 
-.PHONY: verify.candidate.acceptance.profile.unit
-verify.candidate.acceptance.profile.unit: guard.prod.forbid
+.PHONY: verify.candidate.profile.unit
+verify.candidate.profile.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/candidate_acceptance_profile.py scripts/verify/test_candidate_acceptance_profile.py
 	@python3 -m unittest scripts.verify.test_candidate_acceptance_profile
 
