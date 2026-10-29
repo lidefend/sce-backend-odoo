@@ -2,17 +2,11 @@
 # Shared identity declaration and guards for the managed local acceptance
 # carrier lifecycle entries (discard / provision).
 #
-# This file is sourced, never executed. It declares the single authoritative
-# carrier identity so that the lifecycle entries cannot drift apart.
+# This file is sourced, never executed. The authoritative identity for each
+# managed profile comes from scripts/dev/frontend_acceptance_runtime_profile.py
+# (config/frontend/acceptance_environments_v1.json), so the lifecycle entries
+# cannot drift from the declared profile contract.
 
-readonly EXPECTED_PROFILE="local"
-readonly EXPECTED_PROJECT="sc-fe-r2-p1-01"
-readonly EXPECTED_DATABASE="sc_frontend_acceptance"
-readonly EXPECTED_FILTER='^sc_frontend_acceptance$'
-readonly EXPECTED_DB_VOLUME="sc_fe_r2_p1_01_db"
-readonly EXPECTED_REDIS_VOLUME="sc_fe_r2_p1_01_redis"
-readonly EXPECTED_ODOO_VOLUME="sc_fe_r2_p1_01_odoo"
-readonly EXPECTED_BACKEND_CONTAINER="sc-backend-odoo-acceptance"
 readonly CARRIER_LOG_PREFIX="[acceptance.carrier]"
 
 carrier_deny() {
@@ -29,8 +23,11 @@ carrier_resolve_profile_identity() {
   local resolver="$ROOT_DIR/scripts/dev/frontend_acceptance_runtime_profile.py"
   [[ -f "$resolver" ]] || carrier_deny "missing profile resolver"
 
-  local profile="${SC_ACCEPTANCE_RUNTIME_PROFILE:-$EXPECTED_PROFILE}"
-  [[ "$profile" == "$EXPECTED_PROFILE" ]] || carrier_deny "only the $EXPECTED_PROFILE profile is managed (got $profile)"
+  local profile="${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}"
+  case "$profile" in
+    local|candidate) ;;
+    *) carrier_deny "unsupported managed carrier profile: $profile" ;;
+  esac
 
   local base_env
   base_env="$(python3 "$resolver" --profile "$profile" --get SC_ACCEPTANCE_BASE_ENV_FILE)"
@@ -47,12 +44,21 @@ carrier_resolve_profile_identity() {
 }
 
 carrier_require_exact_identity() {
-  [[ "${COMPOSE_PROJECT_NAME:-}" == "$EXPECTED_PROJECT" ]] || carrier_deny "compose project mismatch: ${COMPOSE_PROJECT_NAME:-<empty>}"
-  [[ "${DB_NAME:-}" == "$EXPECTED_DATABASE" ]] || carrier_deny "database mismatch: ${DB_NAME:-<empty>}"
-  [[ "${ODOO_DBFILTER:-}" == "$EXPECTED_FILTER" ]] || carrier_deny "dbfilter mismatch: ${ODOO_DBFILTER:-<empty>}"
-  [[ "${DB_DATA:-}" == "$EXPECTED_DB_VOLUME" ]] || carrier_deny "database volume mismatch: ${DB_DATA:-<empty>}"
-  [[ "${REDIS_DATA:-}" == "$EXPECTED_REDIS_VOLUME" ]] || carrier_deny "session volume mismatch: ${REDIS_DATA:-<empty>}"
-  [[ "${ODOO_DATA:-}" == "$EXPECTED_ODOO_VOLUME" ]] || carrier_deny "filestore volume mismatch: ${ODOO_DATA:-<empty>}"
+  local resolver="$ROOT_DIR/scripts/dev/frontend_acceptance_runtime_profile.py"
+  local profile="${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}"
+  local expected
+  expected="$(python3 "$resolver" --profile "$profile" --get COMPOSE_PROJECT_NAME)"
+  [[ "${COMPOSE_PROJECT_NAME:-}" == "$expected" ]] || carrier_deny "compose project mismatch: ${COMPOSE_PROJECT_NAME:-<empty>}"
+  expected="$(python3 "$resolver" --profile "$profile" --get DB_NAME)"
+  [[ "${DB_NAME:-}" == "$expected" ]] || carrier_deny "database mismatch: ${DB_NAME:-<empty>}"
+  expected="$(python3 "$resolver" --profile "$profile" --get ODOO_DBFILTER)"
+  [[ "${ODOO_DBFILTER:-}" == "$expected" ]] || carrier_deny "dbfilter mismatch: ${ODOO_DBFILTER:-<empty>}"
+  expected="$(python3 "$resolver" --profile "$profile" --get DB_DATA)"
+  [[ "${DB_DATA:-}" == "$expected" ]] || carrier_deny "database volume mismatch: ${DB_DATA:-<empty>}"
+  expected="$(python3 "$resolver" --profile "$profile" --get REDIS_DATA)"
+  [[ "${REDIS_DATA:-}" == "$expected" ]] || carrier_deny "session volume mismatch: ${REDIS_DATA:-<empty>}"
+  expected="$(python3 "$resolver" --profile "$profile" --get ODOO_DATA)"
+  [[ "${ODOO_DATA:-}" == "$expected" ]] || carrier_deny "filestore volume mismatch: ${ODOO_DATA:-<empty>}"
   [[ "${SC_ENVIRONMENT:-}" == "acceptance" ]] || carrier_deny "SC_ENVIRONMENT must be acceptance"
   [[ "${SC_ALLOW_DEMO_DATA:-}" == "1" ]] || carrier_deny "SC_ALLOW_DEMO_DATA must be 1"
 }
@@ -77,7 +83,7 @@ carrier_carriers_stopped() {
   if (exec 3<>"/dev/tcp/127.0.0.1/${port}") >/dev/null 2>&1; then
     carrier_deny "frontend carrier port $port is serving; run make frontend.acceptance.down first"
   fi
-  docker inspect "${BACKEND_ACCEPTANCE_NAME:-$EXPECTED_BACKEND_CONTAINER}" >/dev/null 2>&1 && {
+  docker inspect "${BACKEND_ACCEPTANCE_NAME:-sc-backend-odoo-acceptance}" >/dev/null 2>&1 && {
     carrier_deny "managed backend container present; run make backend.acceptance.down first"
   }
   return 0

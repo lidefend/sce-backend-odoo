@@ -24,7 +24,7 @@ carrier_operational() {
   carrier_all_volumes_present || return 1
   carrier_all_containers_present || return 1
   docker exec "${COMPOSE_PROJECT_NAME}-db-1" psql -U "$DB_USER" -d postgres -Atc \
-    "SELECT 1 FROM pg_database WHERE datname = '$EXPECTED_DATABASE'" 2>/dev/null | grep -qx 1
+    "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" 2>/dev/null | grep -qx 1
 }
 
 render_odoo_conf() {
@@ -40,11 +40,11 @@ main() {
   carrier_source_compose
 
   if carrier_operational; then
-    echo "$CARRIER_LOG_PREFIX provision PASS already_operational=true project=$EXPECTED_PROJECT"
+    echo "$CARRIER_LOG_PREFIX provision PASS already_operational=true project=$COMPOSE_PROJECT_NAME"
     return 0
   fi
 
-  echo "$CARRIER_LOG_PREFIX provision rebuild declared empty infrastructure project=$EXPECTED_PROJECT db=$EXPECTED_DATABASE"
+  echo "$CARRIER_LOG_PREFIX provision rebuild declared empty infrastructure project=$COMPOSE_PROJECT_NAME db=$DB_NAME"
   compose_dev up -d --wait db redis
   compose_dev create odoo
   render_odoo_conf
@@ -56,10 +56,10 @@ main() {
   carrier_all_volumes_present || carrier_fail "declared volume set is incomplete"
   carrier_all_containers_present || carrier_fail "declared container set is incomplete"
   docker exec "${COMPOSE_PROJECT_NAME}-db-1" psql -U "$DB_USER" -d postgres -Atc \
-    "SELECT 1 FROM pg_database WHERE datname = '$EXPECTED_DATABASE'" | grep -qx 1 \
+    "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -qx 1 \
     || carrier_fail "managed database is absent"
 
-  echo "$CARRIER_LOG_PREFIX provision PASS project=$EXPECTED_PROJECT database=$EXPECTED_DATABASE source_sha=$(git -C "$ROOT_DIR" rev-parse HEAD)"
+  echo "$CARRIER_LOG_PREFIX provision PASS project=$COMPOSE_PROJECT_NAME database=$DB_NAME source_sha=$(git -C "$ROOT_DIR" rev-parse HEAD)"
   echo "$CARRIER_LOG_PREFIX NEXT seed fixtures with make acceptance.frontend.fixture"
 }
 
