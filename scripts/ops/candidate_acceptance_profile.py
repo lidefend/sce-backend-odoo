@@ -23,6 +23,9 @@ ENVIRONMENTS = ROOT / "config/frontend/acceptance_environments_v1.json"
 TOOL_MATRIX = ROOT / "config/frontend/acceptance_tool_matrix_v1.json"
 CONFIRMATION = "PROVISION_ISOLATED_CANDIDATE_ACCEPTANCE"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+REGISTRATION_SCHEMA = "candidate_resource_registration.v1"
+SHARED_PROJECTS = ("sc-fe-r2-p1-01",)
+SHARED_DATABASES = ("sc_frontend_acceptance",)
 
 
 class CandidateProfileError(RuntimeError):
@@ -137,6 +140,58 @@ def validate_candidate_sha(value: str) -> str:
     return value
 
 
+def validate_registration(payload: object, resource_contract: dict, sha: str) -> dict:
+    """Fail-closed validation of the isolated resource registration receipt."""
+    if not isinstance(payload, dict):
+        raise CandidateProfileError("registration receipt must be a JSON object")
+    if payload.get("schema") != REGISTRATION_SCHEMA:
+        raise CandidateProfileError("registration receipt schema mismatch")
+    required = (
+        "owner", "host", "compose_project", "database", "database_filter",
+        "volumes", "network", "ports", "lease", "cleanup_scope",
+    )
+    for key in required:
+        value = payload.get(key)
+        if value in (None, "", [], {}):
+            raise CandidateProfileError(f"registration receipt missing or empty field: {key}")
+
+    if payload.get("compose_project") != resource_contract.get("compose_project"):
+        raise CandidateProfileError("registration compose_project does not match the candidate contract")
+    if payload.get("database") != resource_contract.get("database"):
+        raise CandidateProfileError("registration database does not match the candidate contract")
+    if payload.get("database_filter") != resource_contract.get("database_filter"):
+        raise CandidateProfileError("registration database_filter does not match the candidate contract")
+
+    volumes = payload.get("volumes")
+    expected_volumes = resource_contract.get("volumes") or {}
+    if not isinstance(volumes, dict):
+        raise CandidateProfileError("registration volumes must be an object")
+    for key in ("database", "redis", "odoo"):
+        if volumes.get(key) != expected_volumes.get(key):
+            raise CandidateProfileError(f"registration volume mismatch: {key}")
+
+    ports = payload.get("ports")
+    expected_ports = resource_contract.get("services") or {}
+    if not isinstance(ports, dict):
+        raise CandidateProfileError("registration ports must be an object")
+    for key in ("compose_backend_port", "backend_port", "frontend_port"):
+        if ports.get(key) != expected_ports.get(key):
+            raise CandidateProfileError(f"registration port mismatch: {key}")
+
+    if payload.get("compose_project") in SHARED_PROJECTS:
+        raise CandidateProfileError("registration targets a shared acceptance compose project")
+    if payload.get("database") in SHARED_DATABASES:
+        raise CandidateProfileError("registration targets the shared acceptance database")
+    for name in volumes.values():
+        if str(name).startswith("sc_fe_r2_p1_01_"):
+            raise CandidateProfileError("registration targets a shared acceptance volume")
+
+    declared_sha = payload.get("candidate_sha")
+    if declared_sha is not None and declared_sha != sha:
+        raise CandidateProfileError("registration candidate_sha does not match the candidate")
+    return payload
+
+
 def provision_plan(sha: str) -> dict:
     validate_candidate_sha(sha)
     resolved = resolve_candidate_profile()
@@ -181,6 +236,11 @@ def provision_apply(sha: str, confirm: str, registration: Path | None) -> dict:
     resolved = resolve_candidate_profile()
     if _git_head() != sha:
         raise CandidateProfileError("local HEAD does not match the candidate SHA")
+    try:
+        payload = json.loads(registration.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise CandidateProfileError("registration receipt is unreadable") from exc
+    validate_registration(payload, resolved["resource_contract"], sha)
     env = {
         **os.environ,
         "SC_ACCEPTANCE_RUNTIME_PROFILE": "candidate",
