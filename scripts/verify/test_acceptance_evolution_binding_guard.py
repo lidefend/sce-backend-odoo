@@ -323,6 +323,48 @@ class TestGlobAndPlan(unittest.TestCase):
             ["frontend_contract", "list_surface_structure"],
         )
 
+    def test_frontend_test_tool_changes_do_not_require_runtime_evidence(self):
+        for path in (
+            "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+            "frontend/apps/web/src/components/platform-duty/dutyAction.test.ts",
+            "frontend/apps/web/src/components/template/weightedRelationDisplay.spec.ts",
+        ):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+            self.assertEqual(plan["status"], "PASS", path)
+            self.assertEqual(plan["matched_rules"][path], "frontend-test-tools", path)
+            self.assertEqual(plan["required_suites"], ["frontend_contract"], path)
+            self.assertEqual(plan["required_evidence_suites"], [], path)
+
+    def test_frontend_runtime_changes_still_require_runtime_evidence(self):
+        for path in (
+            "frontend/apps/web/src/api/businessConfig.ts",
+            "frontend/apps/web/src/components/template/NativeWeightedRelationDisplay.vue",
+        ):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+            self.assertEqual(plan["matched_rules"][path], "frontend-runtime", path)
+            self.assertEqual(
+                plan["required_suites"],
+                ["frontend_contract", "list_surface_structure"],
+                path,
+            )
+            self.assertEqual(
+                plan["required_evidence_suites"],
+                ["list_surface_structure"],
+                path,
+            )
+
+    def test_frontend_test_tool_changes_keep_static_contract_requirement(self):
+        plan = guard.build_plan(
+            self.registry,
+            ["frontend/apps/web/scripts/readonly_block_component_test.mjs"],
+            "base",
+            HEAD,
+        )
+        merge = guard.plan_for_stage(self.registry, plan, "merge")
+        self.assertIn("frontend_contract", merge["required_suites"])
+        self.assertEqual(merge["required_evidence_suites"], [])
+        self.assertNotIn("frontend_contract", merge["required_evidence_suites"])
+
     def test_presentation_lane_is_wired_into_the_frontend_quick_gate(self):
         makefile = (ROOT / "make" / "frontend.mk").read_text(encoding="utf-8")
         self.assertIn(

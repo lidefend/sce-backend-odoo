@@ -437,6 +437,18 @@
       ]
     },
     {
+      "id": "frontend-test-tools",
+      "paths": [
+        "frontend/apps/web/scripts/**",
+        "frontend/apps/web/src/**/*.test.*",
+        "frontend/apps/web/src/**/*_test.*",
+        "frontend/apps/web/src/**/*.spec.*"
+      ],
+      "suites": [
+        "frontend_contract"
+      ]
+    },
+    {
       "id": "frontend-runtime",
       "paths": [
         "frontend/**"
