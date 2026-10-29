@@ -439,7 +439,9 @@
     {
       "id": "frontend-test-tools",
       "paths": [
-        "frontend/apps/web/scripts/**",
+        "frontend/apps/web/scripts/**/*_test.*",
+        "frontend/apps/web/scripts/**/*.test.*",
+        "frontend/apps/web/scripts/**/*.spec.*",
         "frontend/apps/web/src/**/*.test.*",
         "frontend/apps/web/src/**/*_test.*",
         "frontend/apps/web/src/**/*.spec.*"

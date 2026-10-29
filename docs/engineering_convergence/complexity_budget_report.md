@@ -152,10 +152,10 @@ Generated from repository source files. This report is informational during the 
 | 1090 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1087 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
 | 1049 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
+| 1049 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
-| 1030 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1024 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1018 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
 | 1016 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |

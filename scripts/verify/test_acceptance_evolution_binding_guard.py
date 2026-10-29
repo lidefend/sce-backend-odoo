@@ -365,6 +365,25 @@ class TestGlobAndPlan(unittest.TestCase):
         self.assertEqual(merge["required_evidence_suites"], [])
         self.assertNotIn("frontend_contract", merge["required_evidence_suites"])
 
+    def test_frontend_build_and_acceptance_scripts_still_require_runtime_evidence(self):
+        for path in (
+            "frontend/apps/web/scripts/bootstrap_inventory_policy.mjs",
+            "frontend/apps/web/scripts/business_form_frontend_full_walk_acceptance.mjs",
+            "frontend/apps/web/scripts/designer_draft_ownership.mjs",
+        ):
+            plan = guard.build_plan(self.registry, [path], "base", HEAD)
+            self.assertEqual(plan["matched_rules"][path], "frontend-runtime", path)
+            self.assertEqual(
+                plan["required_suites"],
+                ["frontend_contract", "list_surface_structure"],
+                path,
+            )
+            self.assertEqual(
+                plan["required_evidence_suites"],
+                ["list_surface_structure"],
+                path,
+            )
+
     def test_presentation_lane_is_wired_into_the_frontend_quick_gate(self):
         makefile = (ROOT / "make" / "frontend.mk").read_text(encoding="utf-8")
         self.assertIn(
