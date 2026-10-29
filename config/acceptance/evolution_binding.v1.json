@@ -412,6 +412,25 @@
       ]
     },
     {
+      "id": "frontend-acceptance-schema",
+      "paths": [
+        "config/frontend/*.schema.json"
+      ],
+      "suites": [
+        "frontend_contract"
+      ]
+    },
+    {
+      "id": "frontend-acceptance-harness",
+      "paths": [
+        "config/frontend/acceptance_environments_v1.json",
+        "config/frontend/acceptance_tool_matrix_v1.json"
+      ],
+      "suites": [
+        "frontend_contract"
+      ]
+    },
+    {
       "id": "frontend-acceptance-config",
       "paths": [
         "config/frontend/**"
