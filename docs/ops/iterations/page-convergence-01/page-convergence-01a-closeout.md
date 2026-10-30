@@ -1,11 +1,25 @@
 # PAGE-CONVERGENCE-01A · 收口
 
-本轮把项目详情页从「字段与功能集合」收敛为专业项目工作空间：
+状态：P1–P6 全部完成，候选已冻结，等待独立复审。
 
-- 契约层：lifecycle_state 水合修复、合同卡片权限隔离、隐藏 fact 有界水合（已提交）。
-- 配置层：六组基本信息、四卡统一结构（数据暂不可用过渡态）、责任矩阵/协作标签。
-- 功能层：阶段要求只读入口，不再创建临时向导。
+## 交付物索引
 
-结果 B（条件子树契约裁剪缺陷）保持独立冻结。FEPC-13、F1 保持暂停。
+- 最终验收：`page-convergence-01a-final-acceptance.md`
+- 最终证据：`.runtime/page-convergence-01/p6/page-convergence-01a-final-evidence.json`
+- 四视口截图：`.runtime/page-convergence-01/p6/p6-{1440,1024,768,390}.png`
+- P1–P5 分阶段文档与证据：见 `docs/ops/iterations/page-convergence-01/` 与本目录 `.runtime/`
 
-剩余：有权限账号场景、B3 前端点击回放、截图记录标识修正后，即可形成独立 PR 待复审。
+## 候选身份
+
+- 分支：`feature/page-convergence-01`
+- HEAD：`78c943790f8c3ce3031d49eaf75e474e7ffcef43`
+
+## 待独立复审事项
+
+- 候选代码与 P1–P6 证据一致性。
+- 结果 B 独立冻结状态。
+- P1-R7 独立登记状态。
+
+## 下一步
+
+- PC-01 独立 PR 复审；通过后进入 PC-02 合同详情页，复用本轮沉淀的页面设计与组件标准。

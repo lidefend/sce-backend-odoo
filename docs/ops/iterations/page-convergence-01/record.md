@@ -138,3 +138,16 @@
 - 交付：`p5-stage-requirements-implementation.md`、`p5-stage-requirements-acceptance.md` +
   `.runtime/page-convergence-01/p5-probe/` 证据。
 - 下一步 P6：整体产品验收（责任矩阵/协作者填充态、四卡与基本信息视觉衔接、四视口整页回归）。
+
+## P6 整体产品验收（完成，批次收口）
+
+- 四视口整页回归：无横向溢出、控制台错误 0、h1 唯一、四卡/六组/责任协作/关注者/评论/活动
+  全部呈现、无伪造数值、经营方式全页 1 次。
+- 真实填充态：责任矩阵（`project_responsibility` 0 行）与协作者（`project_collaborator` 0 行）
+  无样本，记 NOT_VERIFIABLE；关注者 20、评论 9、活动 2 有真实数据，记 PASS；附件为空态。
+- 角色：pm1 全链路正常；合同读取正向场景 NOT_VERIFIABLE（无合法账号）。
+- 质量：`git diff --check` 干净；相关定向测试 PASS；既有
+  `native_form_structure_responsibility.unit` 失败为独立历史问题。
+- 交付：`page-convergence-01a-final-acceptance.md`、`page-convergence-01a-closeout.md` +
+  `.runtime/page-convergence-01/p6/` 证据。
+- 候选冻结：`78c943790`，待独立 PR 复审；不自动合并、不部署。
