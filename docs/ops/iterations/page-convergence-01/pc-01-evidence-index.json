@@ -1,0 +1,37 @@
+{
+  "schema": "page-convergence-01.pc01.evidence-index.v1",
+  "branch": "feature/page-convergence-01",
+  "head": "2b397ad511aa4eaec0ed4d765114d61c107b9925",
+  "product_code_checkpoint": "78c943790f8c3ce3031d49eaf75e474e7ffcef43",
+  "pr": {
+    "number": 781,
+    "url": "https://github.com/lidefend/sce-backend-odoo/pull/781",
+    "state": "OPEN",
+    "draft": true,
+    "base_ref": "main",
+    "base_sha": "1640a7e1b19349be6490f6055c26955b4a468853"
+  },
+  "local_main": "1640a7e1b19349be6490f6055c26955b4a468853",
+  "database": "sc_dev_demo",
+  "db_uuid": "551b2b2e-cba4-11f1-82d4-2ae01a997ff0",
+  "phases": {
+    "P1": {"status": "passed", "evidence": "docs/ops/iterations/page-convergence-01/p1-r6-acceptance.md"},
+    "P2": {"status": "passed", "evidence": "docs/ops/iterations/page-convergence-01/p2-information-layout-design.md"},
+    "P3": {"status": "passed", "evidence": "docs/ops/iterations/page-convergence-01/p3-overview-cards-design.md"},
+    "P4": {"status": "passed", "evidence": "docs/ops/iterations/page-convergence-01/p4-collaboration-design.md"},
+    "P5": {"status": "passed", "evidence": "docs/ops/iterations/page-convergence-01/p5-stage-requirements-acceptance.md"},
+    "P6": {"status": "passed", "evidence": "docs/ops/iterations/page-convergence-01/page-convergence-01a-final-acceptance.md"}
+  },
+  "not_verifiable": [
+    "责任矩阵填充态：project_responsibility 全库 0 行",
+    "协作者多人填充态：project_collaborator 全库 0 行",
+    "附件填充态：project 21 附件 0",
+    "合同正向权限场景：无合法授权账号"
+  ],
+  "frozen_or_pending": {
+    "结果B契约计数字段裁剪": "frozen",
+    "P1-R7页头nolabel只读facts标签重复": "pending",
+    "native_form_structure_responsibility.unit断言失败": "pre-existing"
+  },
+  "publication": "PR781 draft pending review; not merged; not deployed"
+}

@@ -1,0 +1,88 @@
+{
+  "schema": "page-convergence-01.p1-r5.asset-request-correlation.v1",
+  "branch": "feature/page-convergence-01",
+  "head": "d363c01ee0f71cae686da42dbc574bdfbf4d8028",
+  "database": "sc_dev_demo",
+  "diagnosis_scope": "read_only",
+  "request_identity": {
+    "model": "project.project",
+    "record_id": 21,
+    "action_id": 590,
+    "menu_id": 382,
+    "login": "pm1",
+    "user_id": 8,
+    "role_code": "uid:8:groups:b59e40575e41513d",
+    "company_id": 1,
+    "form_view_id": 1769
+  },
+  "assets": [
+    {
+      "id": 2288,
+      "contract_kind": "runtime_source",
+      "scene_key": "ui.contract.v2:27545fba91a3cb82a86690685198762aa0b6292ae6e1df30b79ec1adf12bc5cf",
+      "role_code": "uid:8:groups:b59e40575e41513d",
+      "company_id": 1,
+      "scope_hash": "5bdb83f6dd6776043178ad91b8cad12e1443d5f7",
+      "source_ref": "ui.contract.v2:project.project",
+      "payload_model": "project.project",
+      "payload_view_id": 1769,
+      "status": "active",
+      "asset_version": "031fb9091abc1029d4cb85de59bcbc3e4b5831ec861e2507bad17562b98f2a4b",
+      "asset_hash": "e15cb06505a707be1341a90c7e306f48aff02331583b1daf265e21ceaf3a113b",
+      "generated_at": "2026-10-30T07:39:30Z",
+      "write_date": "2026-10-30T07:39:29.398131Z",
+      "header_stale_markers": {
+        "sc-project-title": true,
+        "header_name_field": true,
+        "header_operation_strategy": true
+      }
+    },
+    {
+      "id": 2290,
+      "contract_kind": "runtime_source",
+      "scene_key": "ui.contract.v2:21df3e45df47c2e50e3c92a7ebd2b537ffbc17e34db8a5a743940f7cc3a32b6b",
+      "role_code": "uid:8:groups:b59e40575e41513d",
+      "company_id": 1,
+      "scope_hash": "356b8c028ddccd9e998ac156100bdfe5887ccd1c",
+      "source_ref": "ui.contract.v2:project.collaborator",
+      "payload_model": "project.collaborator",
+      "payload_view_id": null,
+      "status": "active",
+      "asset_version": "1079e43671b06b51a8b911e480b11a2ed5eb704381d6e7d03191b9e052e598b8",
+      "asset_hash": "b589a941cfed95ba74e130ec71bd648640411fc28088b9a30178cf26e9427ab1",
+      "generated_at": "2026-10-30T07:39:32Z",
+      "write_date": "2026-10-30T07:39:31.532063Z"
+    }
+  ],
+  "sibling_relation_assets": [
+    {"id": 2289, "source_ref": "ui.contract.v2:project.tags", "generated_at": "2026-10-30T07:39:32Z"},
+    {"id": 2291, "source_ref": "ui.contract.v2:project.responsibility", "generated_at": "2026-10-30T07:39:32Z"}
+  ],
+  "view_1769_state": {
+    "name": "project.project.form.sc.overview",
+    "model": "project.project",
+    "write_date": "2026-10-30T07:37:33.690663Z",
+    "arch_has_sc_project_title": false,
+    "arch_header_fields": ["project_code", "business_nature"],
+    "arch_header_excludes": ["name", "operation_strategy"],
+    "inheriting_view_count": 0
+  },
+  "source_token_comparison": {
+    "asset_2288_persisted_token": "031fb9091abc1029d4cb85de59bcbc3e4b5831ec861e2507bad17562b98f2a4b",
+    "current_token_pm1_action590": "5f599729541b500d7f884b2c9f755f52e656179c0956bd1bd173ffcebe01216b",
+    "match": false,
+    "lookup_2288_with_current_token": "miss"
+  },
+  "process_timeline": {
+    "commit_d363c01ee_at": "2026-10-30T07:35:56Z",
+    "view_write_date": "2026-10-30T07:37:33.690663Z",
+    "asset_2288_generated_at": "2026-10-30T07:39:30Z",
+    "serving_process_restarted_at": "2026-10-30T07:57:32Z"
+  },
+  "conclusion": {
+    "q1_why_different_cache_keys": "different models: project.project vs project.collaborator",
+    "q2_which_asset_hit": 2288,
+    "q3_matching_or_invalidation_issue": "neither; asset layer correct, stale content persisted by pre-restart serving process",
+    "next_step": "P1-R6: re-assemble and browser-verify page header with the restarted process"
+  }
+}

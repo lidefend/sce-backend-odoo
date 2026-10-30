@@ -34,7 +34,12 @@ const contentTypes = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascr
 
 createServer((req, res) => {
   const requestPath = (req.url || '').split('?')[0]
-  const isBackendRoute = requestPath.startsWith('/api/') || requestPath === '/web' || requestPath.startsWith('/web/')
+  const isBackendRoute = (
+    requestPath.startsWith('/api/')
+    || requestPath === '/web'
+    || requestPath.startsWith('/web/')
+    || /^\/t\/[^/]+\/(api|web)(\/|$)/.test(requestPath)
+  )
   if (isBackendRoute) {
     const upstream = httpRequest({ hostname: proxy.hostname, port: proxy.port, method: req.method, path: req.url, headers: { ...proxyHeaders(req.headers), host: proxy.host } }, (up) => {
       res.writeHead(up.statusCode || 502, up.headers)

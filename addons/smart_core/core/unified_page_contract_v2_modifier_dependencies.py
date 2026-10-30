@@ -135,6 +135,60 @@ def collect_visible_layout_hydration_fields(contract_v2: Any) -> list[str]:
     return (priority + ordinary)[:FORM_VISIBLE_LAYOUT_HYDRATION_BUDGET]
 
 
+def collect_fact_hydration_fields(contract_v2: Any) -> list[str]:
+    """Return a bounded, stable closure of hidden fact fields.
+
+    Native HTML blocks can consume fields that are declared in the form but are
+    not part of the visible layout closure (for example ``invisible="1"`` fact
+    fields that feed overview-card conditions).  Those fields are selected only
+    when the delivered layout marks them ``sc_ui_usage == "fact"``; unrelated
+    hidden fields are never expanded.
+    """
+
+    if not isinstance(contract_v2, dict):
+        return []
+    layout = contract_v2.get("layoutContract")
+    tree = layout.get("containerTree") if isinstance(layout, dict) else []
+    names: list[str] = []
+
+    def fact_name(descriptor: Any) -> str:
+        if not isinstance(descriptor, dict):
+            return ""
+        if str(descriptor.get("sc_ui_usage") or "").strip() != "fact":
+            return ""
+        return str(descriptor.get("name") or descriptor.get("fieldCode") or "").strip()
+
+    def scan(descriptor: Any) -> None:
+        name = fact_name(descriptor)
+        if name and name not in names:
+            names.append(name)
+        if not isinstance(descriptor, dict):
+            return
+        subview = descriptor.get("subview")
+        if not isinstance(subview, dict):
+            return
+        for field_descriptor in subview.get("fields") or []:
+            name = fact_name(field_descriptor)
+            if name and name not in names:
+                names.append(name)
+
+    def visit(node: Any) -> None:
+        if isinstance(node, list):
+            for item in node:
+                visit(item)
+            return
+        if not isinstance(node, dict):
+            return
+        scan(node.get("fieldInfo"))
+        for widget in node.get("widgetList") or []:
+            scan(widget.get("fieldDescriptor") if isinstance(widget, dict) else None)
+        for child in node.get("children") or []:
+            visit(child)
+
+    visit(tree)
+    return names[:FORM_VISIBLE_LAYOUT_HYDRATION_BUDGET]
+
+
 def _relation_seed_shape(value: Any) -> Any:
     """Compare native commands with their JSON transport shape, not display rows."""
     if isinstance(value, IntEnum):
@@ -288,10 +342,11 @@ def hydrate_final_modifier_dependencies(
         return
     dependencies = collect_modifier_dependency_fields(contract_v2, known_fields=fields_map)
     visible_layout_fields = collect_visible_layout_hydration_fields(contract_v2)
+    fact_fields = collect_fact_hydration_fields(contract_v2)
     missing = []
     # Modifier/action dependencies are correctness inputs and therefore remain
     # outside the opportunistic layout budget. Both closures share one read.
-    for field_name in dependencies + visible_layout_fields:
+    for field_name in dependencies + visible_layout_fields + fact_fields:
         if field_name in main_data:
             continue
         if field_name in missing:
@@ -310,21 +365,32 @@ def hydrate_final_modifier_dependencies(
         record = Model.browse(record_id_int).exists()
         if not record:
             return
-        rows = record.read(missing)
-        if rows and isinstance(rows[0], dict):
-            for field_name in missing:
-                if field_name in rows[0]:
-                    value = rows[0][field_name]
-                    if fields_map[field_name].type in {"one2many", "many2many"}:
-                        # Only actual ORM identities establish relation truth.
-                        # Denied or malformed values must remain missing.
-                        if not isinstance(value, (list, tuple)) or not all(
-                            isinstance(item, int) and not isinstance(item, bool)
-                            and 0 < item <= 9007199254740991 for item in value
-                        ):
-                            continue
-                        value = list(value)
-                    main_data[field_name] = value
+        for field_name in missing:
+            try:
+                rows = record.read([field_name])
+                if not rows or not isinstance(rows[0], dict) or field_name not in rows[0]:
+                    continue
+                value = rows[0][field_name]
+                if fields_map[field_name].type in {"one2many", "many2many"}:
+                    # Only actual ORM identities establish relation truth.
+                    # Denied or malformed values must remain missing.
+                    if not isinstance(value, (list, tuple)) or not all(
+                        isinstance(item, int) and not isinstance(item, bool)
+                        and 0 < item <= 9007199254740991 for item in value
+                    ):
+                        continue
+                    value = list(value)
+                main_data[field_name] = value
+            except Exception:
+                # One denied field fails closed for itself only; readable
+                # sibling dependencies must still hydrate.
+                if logger is not None:
+                    logger.debug(
+                        "ui.contract.v2 final modifier dependency field skipped: %s.%s",
+                        model,
+                        field_name,
+                        exc_info=True,
+                    )
     except Exception:
         # Missing values leave modifier evaluation fail-closed. Never sudo or
         # manufacture permission truth to make an action visible.

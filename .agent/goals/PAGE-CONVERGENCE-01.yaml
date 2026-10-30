@@ -1,0 +1,31 @@
+schema_version: 1
+goal:
+  id: PAGE-CONVERGENCE-01
+  status: active
+  title: 项目详情页专业化收敛（项目台账记录页样板）
+  formal_product_layer: P1
+  layer_target: smart_construction_core 项目概览表单 + 通用前端契约渲染
+  module: smart_construction_core / frontend
+  standard_vs_user_specific: construction_industry_standard
+  objective: >
+    以日常开发服务器真实部署（main 1640a7e1b19349be6490f6055c26955b4a468853）为基线，
+    收敛项目详情页（action_sc_project_list -> view_project_overview_form）的信息层级、
+    概览卡片、基本信息/计划责任布局、责任矩阵与协作记录，并修复“查看阶段要求”误创建临时向导的 403。
+  why_here: >
+    页面表达属于建筑行业标准产品面；基础结构来自原生视图，布局/分组由 smart_construction_core 视图与
+    通用前端契约渲染承担，不新建第二套渲染协议。
+  why_not_elsewhere:
+    - 不在前端写死产品语义或字段顺序（违反契约驱动最高职责界限）。
+    - 不修改 ACL、record rule、角色或业务数据。
+    - 不修改后端财务/进度计算口径与字段语义。
+    - 不复活已暂停的 FEPC-13 / F1。
+  scope: [addons/smart_construction_core/, frontend/apps/web/, docs/, .agent/]
+  exclusions: [ACL/record rule, 业务数据, 财务与进度计算字段, 部署与合并授权]
+  acceptance:
+    - 项目身份/状态/主体在真实页面中层级清晰
+    - 概览四卡片有统一标题/数值/币种口径与合法空态
+    - 基本信息与计划责任按业务分层、两列布局、阅读顺序明确
+    - 责任矩阵与协作记录各模块职责清楚，不合并人员关系
+    - “查看阶段要求”只读查看不再创建临时向导且不产生业务记录
+    - 1440/1024/768/390 视口无横向溢出，只读/编辑语义不变
+

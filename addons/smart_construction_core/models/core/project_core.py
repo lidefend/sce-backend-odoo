@@ -1719,18 +1719,18 @@ class ProjectProject(models.Model):
             project.lifecycle_advisory = "；".join(suggestions) if suggestions else ""
 
     def action_view_stage_requirements(self):
-        """Open stage requirements wizard."""
+        """Open stage requirements read-only; never create a transient wizard."""
         self.ensure_one()
-        wizard = self.env["sc.project.stage.requirement.wizard"].create(
-            {"project_id": self.id, "lifecycle_state": self.lifecycle_state}
-        )
+        view = self.env.ref("smart_construction_core.view_sc_project_stage_requirement_item_tree")
         return {
             "name": "阶段要求",
             "type": "ir.actions.act_window",
-            "res_model": "sc.project.stage.requirement.wizard",
-            "view_mode": "form",
-            "target": "new",
-            "res_id": wizard.id,
+            "res_model": "sc.project.stage.requirement.item",
+            "view_mode": "tree",
+            "view_id": view.id,
+            "domain": [("active", "=", True), ("lifecycle_state", "=", self.lifecycle_state)],
+            "target": "current",
+            "context": {"create": False, "edit": False, "delete": False},
         }
 
     def _validate_lifecycle_transition(self, target_state):

@@ -34,6 +34,14 @@ HISTORICAL_VERSION_LINE = re.compile(
 HISTORICAL_IDENTITY_OBSERVATIONS = {
     Path("docs/ops/iterations/fe-presentation-convergence-01/fepc-09/runtime-identity.json"):
         "2f84cbd776c4b83b9afe4a9d541fc5c377db36ee82d1aaf8ac92c3864aad8d4a",
+    # PC-01 historical runtime/baseline evidence: the product version appears
+    # only as a run-time observation, not as a second current release source.
+    Path(".agent/runs/PAGE-CONVERGENCE-01/run.json"):
+        "72635c3fa75b746f7971a824a5bfda96d081c4825c46e96fa27435ae65d16494",
+    Path("docs/ops/iterations/page-convergence-01/baseline.json"):
+        "582dc9d85cd6ea0b081b537c155107470fa21f893e283502dca850f17874169e",
+    Path("docs/ops/iterations/page-convergence-01/baseline.md"):
+        "235beabc52a7ff144e22e488af7fc4ef8a8674dcca3592b48add4f8c5baad5d2",
 }
 
 

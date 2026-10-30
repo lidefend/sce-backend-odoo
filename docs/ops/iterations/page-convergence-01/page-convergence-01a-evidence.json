@@ -1,0 +1,33 @@
+{
+  "schema": "page-convergence-01a.evidence.v1",
+  "branch": "feature/page-convergence-01",
+  "head": "55712a6888491d8a37b858912ff19dc6b704a03b",
+  "database": "sc_dev_demo",
+  "snapshot": "artifacts/local-dev/snapshots/20261030T070532Z",
+  "b3_action": {
+    "res_model": "sc.project.stage.requirement.item",
+    "view_mode": "tree",
+    "create_edit_delete": false,
+    "wizard_count": 0
+  },
+  "screenshots": [
+    ".runtime/page-convergence-01/acceptance/screenshots/project-21-1440x900.png",
+    ".runtime/page-convergence-01/acceptance/screenshots/project-21-1024x768.png",
+    ".runtime/page-convergence-01/acceptance/screenshots/project-21-768x1024.png",
+    ".runtime/page-convergence-01/acceptance/screenshots/project-21-390x844.png"
+  ],
+  "viewport_overflow": {"1440": false, "1024": false, "768": false, "390": false},
+  "b3_frontend_click": {
+    "clicked": true,
+    "target_model": "sc.project.stage.requirement.item",
+    "stage_filter": "lifecycle_state=in_progress",
+    "create_edit_delete": false,
+    "returned": true,
+    "wizard_created": false,
+    "item_tree_rendered": true,
+    "list_route": "/a/822",
+    "http_400": false,
+    "note": "target=current renders read-only list; only pre-existing sc_stage_required_total gap remains on detail page"
+  },
+  "contract_count_forward_scenario": "NOT_VERIFIABLE_WITH_EXISTING_AUTHORIZED_IDENTITIES"
+}

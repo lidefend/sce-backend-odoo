@@ -1,0 +1,45 @@
+{
+  "schema": "page-convergence-01a.upgrade.readiness.v1",
+  "candidate": "feature/page-convergence-01",
+  "target_module": "smart_construction_core",
+  "changed_files": [
+    "addons/smart_construction_core/models/core/project_core.py",
+    "addons/smart_construction_core/views/core/project_overview_views.xml"
+  ],
+  "impact": {
+    "schema_migration": false,
+    "data_write": false,
+    "acl_record_rule_change": false,
+    "cron_queue_cache_external": false,
+    "view_arch_rewrite": true,
+    "python_method_change": true
+  },
+  "recovery": {
+    "database": "sc_dev_demo",
+    "compose_project": "sc-local-dev",
+    "snapshot_entry": "make local.dev.snapshot",
+    "restore_verified": "pending",
+    "upgrade_allowed": false
+  },
+  "final_execution_receipt": {
+    "schema": "page-convergence-01a.upgrade.execution-receipt.v1",
+    "supersedes_initial_readiness": true,
+    "snapshot": {
+      "snapshot_id": "20261030T070532Z",
+      "verified": true,
+      "evidence": "docs/ops/iterations/page-convergence-01/page-convergence-01-upgrade-snapshot.json"
+    },
+    "module_upgrade": {
+      "command": "make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1",
+      "result": "77 modules loaded; demo authority PASS"
+    },
+    "process_reload": {
+      "command": "make local.dev.restart",
+      "result": "odoo service recreated and healthy; new code loaded"
+    },
+    "runtime_acceptance": {
+      "result": "P1-P6 four-viewport DOM acceptance passed",
+      "evidence": "docs/ops/iterations/page-convergence-01/page-convergence-01a-final-acceptance.md"
+    }
+  }
+}

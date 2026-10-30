@@ -2,6 +2,7 @@
 
 verify.product.release.version: guard.prod.forbid
 	python3 scripts/release/test_product_release.py
+	python3 scripts/verify/test_product_release_version_guard.py
 	python3 scripts/verify/product_release_version_guard.py
 	python3 scripts/release/test_customer_package_preflight.py
 

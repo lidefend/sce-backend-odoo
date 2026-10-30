@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "PAGE-CONVERGENCE-01",
+  "branch": "feature/page-convergence-01",
+  "baseline_sha": "1640a7e1b19349be6490f6055c26955b4a468853",
+  "status": "completed",
+  "goal": ".agent/goals/PAGE-CONVERGENCE-01.yaml",
+  "record": "docs/ops/iterations/page-convergence-01/record.md",
+  "scope": [
+    "addons/smart_construction_core/views/core/project_overview_views.xml",
+    "addons/smart_construction_core/models/core/project_core.py",
+    "addons/smart_construction_core/static/src/js/stage_requirements/",
+    "frontend/apps/web/src/",
+    "docs/ops/iterations/page-convergence-01/",
+    ".agent/goals/PAGE-CONVERGENCE-01.yaml",
+    ".agent/runs/PAGE-CONVERGENCE-01/run.json",
+    ".agent/active-runs.json"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "remote daily development server; read-only browser capture with demo business account pm1",
+    "base_url": "http://1.95.85.92:18081/t/demo",
+    "database": "sc_demo",
+    "deployed_sha": "1640a7e1b19349be6490f6055c26955b4a468853",
+    "frontend_build_sha256": "8f7cc076e0d9510feb2ea8b713cf45ea9aee0941c73cb46feea243bcb81d0012",
+    "product_version": "1.0.0-rc.20",
+    "business_login": "pm1"
+  },
+  "checks": {
+    "L1_modifier_dependency_isolated_hydration": {
+      "target": "verify.node_component_validation.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/tests/test_node_component_validation.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_load_contract_response_cache.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "P6 整体产品验收完成，PAGE-CONVERGENCE-01A 批次收口。候选 HEAD 2b397ad51 已发布为 GitHub PR #781（Draft，base main 1640a7e1b），待复审；不自动合并/部署。后续新批次：PC-02 合同详情页；P1-R7 独立登记。"
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "page-convergence-01a.upgrade.snapshot.v1",
+  "snapshot_id": "20261030T070532Z",
+  "compose_project": "sc-local-dev",
+  "database": "sc_dev_demo",
+  "dbfilter": "^sc_dev_demo$",
+  "environment_id": "local-persistent-development",
+  "tenant_id": "platform-local-feature-demo",
+  "source_sha": "6244f271e49b74fb81376570745435b695035933",
+  "database_dump": "artifacts/local-dev/snapshots/20261030T070532Z/sc_dev_demo.dump",
+  "database_sha256": "7974874503b5f1c443b05f25181429275c0863879ebccd7b10b9deae1e02bb0e",
+  "filestore": "artifacts/local-dev/snapshots/20261030T070532Z/sc_dev_demo-filestore.tar.gz",
+  "filestore_sha256": "a64c815c36a2d3d8007c430c1105e102968f3c90cc515474dbf3098061904cb8",
+  "pg_restore_list": {
+    "readable": true,
+    "dbname": "sc_dev_demo",
+    "toc_entries": 22679,
+    "dump_version": "1.14-0"
+  },
+  "verified": true,
+  "upgrade_allowed": true
+}

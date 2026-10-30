@@ -828,6 +828,7 @@ import { ErrorCodes } from '../app/error_codes';
 import { evaluateCapabilityPolicy } from '../app/capabilityPolicy';
 import { useStatus } from '../composables/useStatus';
 import { parseContractContextRaw, resolveContractAccessPolicy, resolveContractReadRight, resolveContractViewMode } from '../app/contractActionRuntime';
+import { contextOperationAllowed } from '../app/actionViewContextPolicy';
 import { resolveStandardPageTypeFromStore, type StandardPageTypeDecision } from '../app/presentation/standardPageType';
 import { detectObjectMethodFromActionKey, normalizeActionKind, toPositiveInt } from '../app/contractRuntime';
 import { grantButtonNavigationAuthority } from '../app/buttonNavigationAuthority';
@@ -1511,6 +1512,10 @@ const {
   showMoreContractActions,
 });
 
+function routeContextOperationAllowed(operation: string): boolean {
+  return contextOperationAllowed(routeQueryMap.value.context_raw, operation);
+}
+
 function resolveCreateRight(contract: ActionViewRuntimeContract | null): boolean {
   const capabilities = resolveContractV2EffectiveFormCapabilities(contract);
   if (capabilities) return capabilities.create;
@@ -1529,13 +1534,13 @@ function resolveWriteRight(contract: ActionViewRuntimeContract | null): boolean 
   return resolveCollectionWriteAuthority({ modelRights: globalStatus?.modelRights });
 }
 
-const canEditRecord = computed(() => resolveWriteRight(actionContract.value));
+const canEditRecord = computed(() => resolveWriteRight(actionContract.value) && routeContextOperationAllowed('edit'));
 
 const canCreateRecord = computed(() => {
   const targetModel = (resolvedModelRef.value || model.value || '').trim();
   if (!targetModel || !actionId.value) return false;
   if (status.value === 'loading') return false;
-  return resolveCreateRight(actionContract.value);
+  return resolveCreateRight(actionContract.value) && routeContextOperationAllowed('create');
 });
 const standardListOperationsInCard = computed(() => vm.value.content.kind === 'list' && surfaceRendererDescriptor.value.outlet === 'standard' && !renderErrorMessage.value);
 const isKanbanContent = computed(() => vm.value.content.kind === 'kanban');
