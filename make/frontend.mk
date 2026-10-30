@@ -1281,6 +1281,10 @@ PRESENTATION_ENTRY ?= project
 verify.frontend.presentation.local.browser: guard.prod.forbid acceptance.runtime.contract_receipt
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" PRESENTATION_ENTRY="$(PRESENTATION_ENTRY)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-presentation-browser
 
+.PHONY: verify.frontend.contract_form_presentation.browser
+verify.frontend.contract_form_presentation.browser: guard.prod.forbid acceptance.runtime.contract_receipt
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-contract-form-presentation
+
 .PHONY: verify.frontend.presentation.browser
 verify.frontend.presentation.browser: guard.prod.forbid verify.daily.demo_credential.confirmation
 	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
