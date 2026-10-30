@@ -12,7 +12,10 @@ const output = path.resolve(process.env.CONTRACT_FORM_PRESENTATION_OUTPUT || 'ar
 function check(value, message) { if (!value) throw new Error(message); }
 
 check(target && typeof target.route === 'string' && target.route.startsWith('/'), 'target route is required');
-check(target.model === 'construction.contract', 'target model must be construction.contract');
+check(
+  ['construction.contract', 'construction.contract.income', 'construction.contract.expense'].includes(target.model),
+  'target model must be a construction contract model',
+);
 check(acceptance.login && acceptance.password, 'governed acceptance credentials are required');
 fs.mkdirSync(path.dirname(output), { recursive: true });
 

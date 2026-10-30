@@ -1282,8 +1282,9 @@ verify.frontend.presentation.local.browser: guard.prod.forbid acceptance.runtime
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" PRESENTATION_ENTRY="$(PRESENTATION_ENTRY)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-presentation-browser
 
 .PHONY: verify.frontend.contract_form_presentation.browser
+CONTRACT_FORM_ENTRY ?= construction_contract
 verify.frontend.contract_form_presentation.browser: guard.prod.forbid acceptance.runtime.contract_receipt
-	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-contract-form-presentation
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" CONTRACT_FORM_ENTRY="$(CONTRACT_FORM_ENTRY)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-contract-form-presentation
 
 .PHONY: verify.frontend.presentation.browser
 verify.frontend.presentation.browser: guard.prod.forbid verify.daily.demo_credential.confirmation

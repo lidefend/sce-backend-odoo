@@ -577,14 +577,15 @@ PYPRESENTATION
         [[ -z "$(git -C "$ROOT_DIR" status --porcelain)" ]] || { echo "DENY: contract form presentation requires frozen candidate" >&2; exit 2; }
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
         expected_sha="$(git -C "$ROOT_DIR" rev-parse HEAD)"
-        target_json="$(EXPECTED_SHA="$expected_sha" python3 - <<'PYCONTRACTFORM'
+        target_json="$(EXPECTED_SHA="$expected_sha" CONTRACT_FORM_ENTRY="${CONTRACT_FORM_ENTRY:-construction_contract}" python3 - <<'PYCONTRACTFORM'
 import json, os
 from pathlib import Path
 resolution = json.loads(Path('artifacts/backend/acceptance_record_identity.json').read_text())
 assert resolution['schema'] == 'acceptance.record_identity_resolution.v1'
 assert resolution['expected_sha'] == os.environ['EXPECTED_SHA']
-resolved = resolution['targets']['construction_contract']
-assert resolved['model'] == 'construction.contract'
+entry = os.environ['CONTRACT_FORM_ENTRY']
+resolved = resolution['targets'][entry]
+assert resolved['model'] in ('construction.contract', 'construction.contract.income', 'construction.contract.expense')
 for key in ('record_id', 'action_id', 'menu_id'):
     assert type(resolved[key]) is int and resolved[key] > 0
 target = {
