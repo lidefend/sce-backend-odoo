@@ -1,0 +1,24 @@
+{
+  "schema": "page-convergence-01a.upgrade.readiness.v1",
+  "candidate": "feature/page-convergence-01",
+  "target_module": "smart_construction_core",
+  "changed_files": [
+    "addons/smart_construction_core/models/core/project_core.py",
+    "addons/smart_construction_core/views/core/project_overview_views.xml"
+  ],
+  "impact": {
+    "schema_migration": false,
+    "data_write": false,
+    "acl_record_rule_change": false,
+    "cron_queue_cache_external": false,
+    "view_arch_rewrite": true,
+    "python_method_change": true
+  },
+  "recovery": {
+    "database": "sc_dev_demo",
+    "compose_project": "sc-local-dev",
+    "snapshot_entry": "make local.dev.snapshot",
+    "restore_verified": "pending",
+    "upgrade_allowed": false
+  }
+}
