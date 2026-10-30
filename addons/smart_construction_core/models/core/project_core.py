@@ -1729,7 +1729,7 @@ class ProjectProject(models.Model):
             "view_mode": "tree",
             "view_id": view.id,
             "domain": [("active", "=", True), ("lifecycle_state", "=", self.lifecycle_state)],
-            "target": "new",
+            "target": "current",
             "context": {"create": False, "edit": False, "delete": False},
         }
 
