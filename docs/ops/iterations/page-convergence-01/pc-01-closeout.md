@@ -5,8 +5,8 @@
 ## 候选身份
 
 - 分支：`feature/page-convergence-01`
-- 当前 HEAD：`ec46a18e1`（含 P6 验收文档与 SHA 订正）
-- 产品代码检查点：`78c943790`（P1–P5 产品代码 + 分阶段文档止于此）
+- 当前 HEAD：`2b397ad511aa4eaec0ed4d765114d61c107b9925`（PC-01 最终候选，PR #781）
+- 历史检查点：`78c943790`（P1–P5 产品代码）、`ec46a18e1`（P6 验收订正前）
 - 本地主线基线：`1640a7e1b19349be6490f6055c26955b4a468853`
 - 运行库：`sc_dev_demo`，DB UUID `551b2b2e-cba4-11f1-82d4-2ae01a997ff0`
 
@@ -22,7 +22,11 @@
 
 上述未验证场景不升级为 PASS。
 
-## PR 准备
+## PR
+
+- PR：#781（https://github.com/lidefend/sce-backend-odoo/pull/781）
+- 状态：OPEN / Draft / review pending
+- head：`2b397ad51...`，base：`1640a7e1b...`（GitHub main）
 
 - 工作树干净；`git diff --check` 干净。
 - 分支差异仅属于 PAGE-CONVERGENCE-01A（产品代码 + 分阶段证据文档；另含分支早前
