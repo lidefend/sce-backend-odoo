@@ -115,12 +115,7 @@
                                     <div class="card h-100">
                                         <div class="card-body">
                                             <div class="fw-bold">成本</div>
-                                            <div class="text-muted" invisible="sc_overview_cost_count != 0">
-                                                尚未录入成本
-                                            </div>
-                                            <div class="text-muted" invisible="sc_overview_cost_count == 0">
-                                                已录入 <field name="sc_overview_cost_count" readonly="1" nolabel="1"/> 条
-                                            </div>
+                                            <div class="text-muted">数据暂不可用</div>
                                             <button type="action" name="%(smart_construction_core.action_project_cost_ledger_my)d" string="查看成本" class="btn btn-link px-0" />
                                         </div>
                                     </div>
@@ -129,12 +124,7 @@
                                     <div class="card h-100">
                                         <div class="card-body">
                                             <div class="fw-bold">财务</div>
-                                            <div class="text-muted" invisible="sc_overview_payment_pending_count == 0">
-                                                ⚠ 有待审批付款 <field name="sc_overview_payment_pending_count" readonly="1" nolabel="1"/> 笔
-                                            </div>
-                                            <div class="text-muted" invisible="sc_overview_payment_pending_count != 0">
-                                                当前无待审批付款
-                                            </div>
+                                            <div class="text-muted">数据暂不可用</div>
                                             <button type="action" name="%(smart_construction_core.action_payment_request_my)d" string="查看财务" class="btn btn-link px-0" />
                                         </div>
                                     </div>
@@ -143,12 +133,7 @@
                                     <div class="card h-100">
                                         <div class="card-body">
                                             <div class="fw-bold">项目任务</div>
-                                            <div class="text-muted" invisible="sc_overview_task_in_progress_count == 0">
-                                                进行中任务 <field name="sc_overview_task_in_progress_count" readonly="1" nolabel="1"/> 项
-                                            </div>
-                                            <div class="text-muted" invisible="sc_overview_task_in_progress_count != 0">
-                                                当前无进行中任务
-                                            </div>
+                                            <div class="text-muted">数据暂不可用</div>
                                             <button type="object" name="action_view_my_tasks" string="查看任务" class="btn btn-link px-0" />
                                         </div>
                                     </div>
