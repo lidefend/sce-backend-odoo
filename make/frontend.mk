@@ -628,6 +628,10 @@ verify.frontend.native_text_presentation.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_text_presentation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-text-presentation-test.mjs >/dev/null
 	@node /tmp/native-text-presentation-test.mjs
 
+verify.frontend.action_view_context_policy.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/action_view_context_policy_test.ts --bundle --platform=node --format=esm --outfile=/tmp/action-view-context-policy-test.mjs >/dev/null
+	@node /tmp/action-view-context-policy-test.mjs
+
 verify.frontend.native_form_action_presentation.browser: guard.prod.forbid
 	@node scripts/verify/frontend_native_form_action_presentation_browser.mjs
 

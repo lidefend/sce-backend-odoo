@@ -828,6 +828,7 @@ import { ErrorCodes } from '../app/error_codes';
 import { evaluateCapabilityPolicy } from '../app/capabilityPolicy';
 import { useStatus } from '../composables/useStatus';
 import { parseContractContextRaw, resolveContractAccessPolicy, resolveContractReadRight, resolveContractViewMode } from '../app/contractActionRuntime';
+import { contextOperationAllowed } from '../app/actionViewContextPolicy';
 import { resolveStandardPageTypeFromStore, type StandardPageTypeDecision } from '../app/presentation/standardPageType';
 import { detectObjectMethodFromActionKey, normalizeActionKind, toPositiveInt } from '../app/contractRuntime';
 import { grantButtonNavigationAuthority } from '../app/buttonNavigationAuthority';
@@ -1511,30 +1512,8 @@ const {
   showMoreContractActions,
 });
 
-function parseOdooDictLiteral(raw: unknown): Record<string, unknown> {
-  const text = String(raw || '').trim();
-  if (!text) return {};
-  try {
-    let json = text
-      .replace(/\bNone\b/g, 'null')
-      .replace(/\bTrue\b/g, 'true')
-      .replace(/\bFalse\b/g, 'false');
-    json = json.replace(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, '"$1"');
-    const parsed = JSON.parse(json);
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? parsed as Record<string, unknown>
-      : {};
-  } catch {
-    return {};
-  }
-}
-
 function routeContextOperationAllowed(operation: string): boolean {
-  const context = parseOdooDictLiteral(routeQueryMap.value.context_raw);
-  if (!(operation in context)) return true;
-  const value = context[operation];
-  if (value === false || value === 0 || value === '0' || value === 'false' || value === 'False') return false;
-  return true;
+  return contextOperationAllowed(routeQueryMap.value.context_raw, operation);
 }
 
 function resolveCreateRight(contract: ActionViewRuntimeContract | null): boolean {
