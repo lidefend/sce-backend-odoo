@@ -101,18 +101,18 @@
                         <field name="can_review" invisible="1"/>
                     </header>
                     <sheet>
-                        <group string="合同基本信息">
+                        <group name="sc_general_contract_identity" string="合同身份" col="4" data-sc-anchor="general-contract-identity">
                             <group>
-                                <field name="contract_name" readonly="state == 'legacy_confirmed'"/>
-                                <field name="contract_no" readonly="1"/>
-                                <field name="contract_type" readonly="state == 'legacy_confirmed'"/>
-                                <field name="contract_direction" readonly="state == 'legacy_confirmed'"/>
+                                <field name="contract_name" string="合同名称" readonly="state == 'legacy_confirmed'"/>
+                                <field name="contract_no" string="合同编号" readonly="1"/>
+                                <field name="contract_direction" string="合同方向" readonly="state == 'legacy_confirmed'"/>
+                                <field name="contract_type" string="合同类型" readonly="state == 'legacy_confirmed'"/>
                             </group>
                             <group>
-                                <field name="project_id" readonly="state == 'legacy_confirmed'"/>
+                                <field name="name" string="登记单号" readonly="1"/>
+                                <field name="project_id" string="关联项目" readonly="state == 'legacy_confirmed'"/>
                                 <field name="operation_strategy" readonly="1"/>
                                 <field name="company_id" readonly="1"/>
-                                <field name="name" readonly="1"/>
                             </group>
                         </group>
                         <group string="合同方">
@@ -130,19 +130,27 @@
                                 <field name="signing_place" readonly="state == 'legacy_confirmed'"/>
                             </group>
                         </group>
-                        <group string="金额与条款">
-                            <group>
-                                <field name="amount_total" readonly="state == 'legacy_confirmed'"/>
-                                <field name="tax_id" readonly="state == 'legacy_confirmed'"/>
+                        <group name="sc_general_contract_amount" string="合同金额" col="4" data-sc-anchor="general-contract-amount">
+                            <group string="原始合同金额">
+                                <field name="amount_untaxed" string="不含税金额" readonly="state == 'legacy_confirmed'"/>
+                                <field name="tax_id" string="税率" readonly="state == 'legacy_confirmed'"/>
                                 <field name="tax_rate" invisible="1"/>
-                                <field name="amount_untaxed" readonly="state == 'legacy_confirmed'"/>
+                                <field name="amount_total" string="含税金额（最终执行金额）" readonly="state == 'legacy_confirmed'"/>
                                 <field name="currency_id"/>
                             </group>
+                            <group string="合同变更">
+                                <field name="change_amount_total" string="累计变更金额" readonly="1"/>
+                                <field name="change_rate" string="变更率(%)" readonly="1"/>
+                            </group>
+                        </group>
+                        <group string="合同条款" col="4">
                             <group>
                                 <field name="payment_terms" readonly="state == 'legacy_confirmed'"/>
                                 <field name="special_condition" readonly="state == 'legacy_confirmed'"/>
-                                <field name="prepayment_amount" readonly="state == 'legacy_confirmed'"/>
-                                <field name="warranty_deposit" readonly="state == 'legacy_confirmed'"/>
+                            </group>
+                            <group>
+                                <field name="prepayment_amount" string="预付款" readonly="state == 'legacy_confirmed'"/>
+                                <field name="warranty_deposit" string="质保金" readonly="state == 'legacy_confirmed'"/>
                             </group>
                         </group>
                         <group string="签署与履约">
@@ -174,16 +182,16 @@
                                 <field name="attachment_ids" widget="many2many_binary"/>
                             </page>
                             <page string="执行与历史">
-                                <group string="执行金额">
-                                    <field name="settlement_amount" readonly="1"/>
-                                    <field name="invoice_amount" readonly="1"/>
-                                    <field name="uninvoiced_amount" readonly="1"/>
-                                    <field name="received_amount" readonly="1"/>
-                                    <field name="unreceived_amount" readonly="1"/>
-                                    <field name="paid_amount" readonly="1"/>
-                                    <field name="unpaid_amount" readonly="1"/>
-                                    <field name="change_amount_total" readonly="1"/>
-                                    <field name="change_rate" readonly="1"/>
+                                <group string="合同结算">
+                                    <field name="settlement_amount" string="已结算金额" readonly="1"/>
+                                </group>
+                                <group string="资金履约">
+                                    <field name="invoice_amount" string="开票金额" readonly="1" invisible="contract_direction == 'expense'"/>
+                                    <field name="uninvoiced_amount" string="未开票金额" readonly="1" invisible="contract_direction == 'expense'"/>
+                                    <field name="received_amount" string="收款金额" readonly="1" invisible="contract_direction == 'expense'"/>
+                                    <field name="unreceived_amount" string="未收款金额" readonly="1" invisible="contract_direction == 'expense'"/>
+                                    <field name="paid_amount" string="付款金额" readonly="1" invisible="contract_direction == 'income'"/>
+                                    <field name="unpaid_amount" string="未付款金额" readonly="1" invisible="contract_direction == 'income'"/>
                                 </group>
                                 <group string="历史信息">
                                     <field name="document_no" readonly="1"/>
