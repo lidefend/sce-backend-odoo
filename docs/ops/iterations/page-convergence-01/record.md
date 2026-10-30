@@ -49,3 +49,10 @@
 - 遗留（进入 TASK-05.2 处理）：`owner_id`（仅存在于概览身份头块，不在标准布局水合闭包）、
   `sc_overview_contract_count`、`sc_project_contract_entry_available` 对 pm1 仍缺失，
   需在四卡收敛时按其权限与空态一并处理。
+
+## 职责边界纠偏（2026-10-30）
+
+- 保留：TASK-05.1、`f334f112` 合同卡片权限隔离、`79fd6010e` 隐藏 fact 字段有界水合。
+- 暂停：通用条件子树保留策略与组装器修改。
+- 独立诊断：`docs/ops/iterations/page-convergence-01/contract-field-fact-diagnosis.md`。
+- 恢复配置驱动收敛：四卡视觉、六组基本信息、计划责任、责任协作、四视口；配置不生成业务事实。
