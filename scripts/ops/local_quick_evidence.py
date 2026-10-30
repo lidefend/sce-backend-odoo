@@ -152,8 +152,11 @@ def require_exact_clean_head(root: Path, expected_head: str) -> tuple[Path, str]
 
 
 def evidence_path(root: Path, head: str) -> Path:
-    raw = Path(git(root, "rev-parse", "--git-path", f"codex/evidence/{SUITE}/{head}.json"))
-    return raw if raw.is_absolute() else root / raw
+    # Evidence belongs to the candidate commit, not to a temporary worktree.
+    # Resolve the shared common git dir once so every worktree reads/writes the
+    # same receipt store; deleting a linked worktree must not delete evidence.
+    common = Path(git(root, "rev-parse", "--path-format=absolute", "--git-common-dir"))
+    return common / "codex" / "evidence" / SUITE / f"{head}.json"
 
 
 def _write_receipt_after_success(root: Path, expected_head: str, coverage: dict,

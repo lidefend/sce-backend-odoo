@@ -33,6 +33,10 @@
 证据绑定 `candidate_sha / base_sha / input_sha256 / verified_at / worktree_identity / suite /
 result / evidence_digest`，存共享证据目录；删除临时 worktree 后仍可追溯（绑定 head，不绑定目录）。
 
+实现：共享证据根 = `git rev-parse --path-format=absolute --git-common-dir` + `codex/evidence/`。
+该路径由 git 统一解析（单一权威来源），落在主仓库 `.git/` 下，所有 worktree 读写同一位置，
+删除 linked worktree 不删除证据；复用仍由 candidate/base/input/digest 校验把关。
+
 ## 不适用验证
 
 沿用现有路径分类器：文档变更静态检查；前端工具变更静态契约验证；前端运行时变更浏览器验收；
