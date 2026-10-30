@@ -37,6 +37,8 @@ _PREVIEW_ROOT = _preview_workspace_root()
 # profile-resolved frontend port and API proxy target plus a distinct artifact
 # directory so a candidate build can never overwrite shared acceptance evidence.
 _PROFILE = os.environ.get('SC_ACCEPTANCE_RUNTIME_PROFILE') or 'local'
+if _PROFILE not in ('local', 'candidate'):
+    raise RuntimeError(f'unknown acceptance runtime profile: {_PROFILE}')
 if _PROFILE == 'candidate':
     PREVIEW_PORT = os.environ.get('FRONTEND_ACCEPTANCE_PORT') or '5178'
     API_PROXY_TARGET = os.environ.get('VITE_API_PROXY_TARGET') or 'http://127.0.0.1:18088'

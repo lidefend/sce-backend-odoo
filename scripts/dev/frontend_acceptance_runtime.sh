@@ -343,7 +343,9 @@ standard_expected_db() {
 # Fail closed unless the served backend revision, database identity and the
 # profile-scoped preview contract all match the candidate being accepted.
 candidate_identity_guard() {
-  standard_profile_is_candidate || return 0
+  local profile
+  profile="$(standard_profile_name)" || return 2
+  [[ "$profile" == candidate ]] || return 0
   local expected_sha served_sha served_db
   expected_sha="$(git -C "$ROOT_DIR" rev-parse HEAD)"
   served_sha="$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_REVISION)"
@@ -352,12 +354,12 @@ candidate_identity_guard() {
     return 2
   }
   served_db="$(container_env_value "$BACKEND_ACCEPTANCE_NAME" DB_NAME)"
-  [[ "$served_db" == "$(standard_expected_db)" ]] || {
-    echo "DENY: candidate backend database $served_db != $(standard_expected_db)" >&2
-    return 2
-  }
   [[ "$served_db" != "sc_frontend_acceptance" ]] || {
     echo "DENY: candidate backend must not target the shared acceptance database" >&2
+    return 2
+  }
+  [[ "$served_db" == "$(standard_expected_db)" ]] || {
+    echo "DENY: candidate backend database $served_db != $(standard_expected_db)" >&2
     return 2
   }
   [[ "${COMPOSE_PROJECT_NAME:-}" != "sc-fe-r2-p1-01" ]] || {
@@ -370,7 +372,9 @@ candidate_identity_guard() {
 # Candidate-only: live database namespace UUID must equal the recorded runtime
 # identity receipt, so a rebuilt candidate database cannot be silently accepted.
 candidate_db_uuid_guard() {
-  standard_profile_is_candidate || return 0
+  local profile
+  profile="$(standard_profile_name)" || return 2
+  [[ "$profile" == candidate ]] || return 0
   local receipt expected_ns actual_ns
   receipt="${CANDIDATE_RUNTIME_IDENTITY_RECEIPT:-.runtime/candidate-acceptance/candidate-runtime-identity.json}"
   [[ -f "$receipt" ]] || { echo "DENY: candidate runtime identity receipt missing: $receipt" >&2; return 2; }
