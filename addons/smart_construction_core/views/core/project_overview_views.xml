@@ -97,11 +97,13 @@
                                     <div class="card h-100">
                                         <div class="card-body">
                                             <div class="fw-bold">合同</div>
-                                            <div class="text-muted" invisible="sc_overview_contract_count != 0">
-                                                尚未建立合同
-                                            </div>
-                                            <div class="text-muted" invisible="sc_overview_contract_count == 0">
-                                                已有 <field name="sc_overview_contract_count" readonly="1" nolabel="1"/> 份合同
+                                            <div invisible="not sc_project_contract_entry_available">
+                                                <div class="text-muted" invisible="sc_overview_contract_count != 0">
+                                                    尚未建立合同
+                                                </div>
+                                                <div class="text-muted" invisible="sc_overview_contract_count == 0">
+                                                    已有 <field name="sc_overview_contract_count" readonly="1" nolabel="1"/> 份合同
+                                                </div>
                                             </div>
                                             <field name="sc_project_contract_entry_available" invisible="1"/>
                                             <button type="object" name="action_open_project_contracts" string="查看合同" groups="smart_construction_core.group_sc_cap_contract_read" invisible="not sc_project_contract_entry_available" class="btn btn-link px-0" />
