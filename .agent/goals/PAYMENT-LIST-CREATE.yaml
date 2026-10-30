@@ -1,0 +1,6 @@
+schema_version: 1
+goal:
+  id: PAYMENT-LIST-CREATE
+  title: Enable creation through formal payment list authority
+  status: active
+  formal_product_layer: P1
