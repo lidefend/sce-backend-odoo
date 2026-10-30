@@ -114,29 +114,33 @@
                     <field name="can_review" invisible="1" />
                 </header>
                 <sheet>
-                    <group>
-                        <group>
-                            <field name="name" />
-                            <field name="document_status" />
-                            <field name="subject" />
-                            <field name="type" required="1" />
-                            <field name="business_category_id" options="{'no_create': True}" />
-                            <field name="is_locked" invisible="1" />
-                            <field name="original_contract_id" modifiers="{&quot;readonly&quot;:[&quot;|&quot;,[&quot;state&quot;,&quot;!=&quot;,&quot;draft&quot;],[&quot;is_locked&quot;,&quot;=&quot;,true]]}" />
-                            <field name="project_id" required="1" />
-                            <field name="operation_strategy" readonly="1" />
-                            <field name="partner_id" required="1" />
+                    <group name="sc_contract_information_identity" string="合同身份" col="4" data-sc-anchor="contract-identity">
+                        <field name="subject" string="合同名称"/>
+                        <field name="name" string="平台合同编号" readonly="1"/>
+                        <field name="type" string="合同方向" required="1"/>
+                        <field name="document_status" string="单据状态"/>
+                        <field name="business_category_id" string="业务分类" options="{'no_create': True}"/>
+                        <field name="is_locked" invisible="1"/>
+                        <field name="original_contract_id" modifiers="{&quot;readonly&quot;:[&quot;|&quot;,[&quot;state&quot;,&quot;!=&quot;,&quot;draft&quot;],[&quot;is_locked&quot;,&quot;=&quot;,true]]}" />
+                    </group>
+                    <group name="sc_contract_information_entity" string="主体与关联项目" col="2" data-sc-anchor="contract-entity">
+                        <field name="partner_id" string="合同相对方" required="1"/>
+                        <field name="project_id" string="关联项目" required="1"/>
+                        <field name="operation_strategy" readonly="1"/>
+                        <field name="affiliated_person"/>
+                    </group>
+                    <group col="2">
+                        <group string="合同基本信息">
                             <field name="category_id" />
                             <field name="contract_type_id" />
                             <field name="engineering_address" />
                             <field name="engineering_category_text" />
-                            <field name="affiliated_person" />
                             <field name="engineering_content" />
                             <field name="contract_duration_text" />
                             <field name="contract_payment_method_text" />
                             <field name="attachment_text" />
                         </group>
-                        <group>
+                        <group string="合同系统信息">
                             <field name="company_id" readonly="1" />
                             <field name="reject_reason" readonly="1" modifiers="{&quot;invisible&quot;: [[&quot;reject_reason&quot;,&quot;=&quot;,false]]}" />
                             <field name="currency_id" invisible="1" />
