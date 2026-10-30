@@ -183,9 +183,9 @@
                     <group name="sc_project_information_responsibility" string="责任矩阵" col="1" data-sc-anchor="project-responsibility-matrix">
                         <field name="responsibility_ids" nolabel="1" groups="smart_construction_core.group_sc_cap_project_read">
                             <tree editable="bottom">
-                                <field name="role_key"/>
-                                <field name="user_id"/>
-                                <field name="note"/>
+                                <field name="role_key" string="责任岗位"/>
+                                <field name="user_id" string="责任人"/>
+                                <field name="note" string="说明"/>
                             </tree>
                         </field>
                     </group>
@@ -193,8 +193,8 @@
                         <field name="description" nolabel="1" options="{'resizable': false}" />
                     </group>
                     <group name="sc_project_information_collaboration" string="协作资料" col="4" data-sc-anchor="project-collaboration" data-sc-navigation-role="subordinate">
-                        <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}" />
-                        <field name="collaborator_ids"/>
+                        <field name="tag_ids" string="项目标签" widget="many2many_tags" options="{'color_field': 'color'}" />
+                        <field name="collaborator_ids" string="协作者"/>
                     </group>
                     <group name="sc_project_information_trace" string="系统追溯" col="4" data-sc-anchor="project-system-trace" data-sc-navigation-role="subordinate" data-sc-collapsible="1" data-sc-collapsed-by-default="1">
                         <field name="analytic_account_id" readonly="1"/>

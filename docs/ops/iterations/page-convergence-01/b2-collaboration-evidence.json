@@ -1,0 +1,11 @@
+{
+  "schema": "page-convergence-01a.b2.v1",
+  "stage": "config_done_runtime_pending",
+  "changed_file": "addons/smart_construction_core/views/core/project_overview_views.xml",
+  "changes": [
+    "tag_ids string=项目标签",
+    "collaborator_ids string=协作者",
+    "responsibility tree role_key/user_id/note string labels"
+  ],
+  "runtime_verification": "pending"
+}
