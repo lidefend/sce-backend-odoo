@@ -157,7 +157,7 @@ verify.frontend.standard_page_type.browser: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-page-browser
 verify.frontend.standard_preview.unit: guard.prod.forbid
 	@node --test frontend/apps/web/scripts/standard_project_save_scope_test.mjs
-	@python3 -m unittest scripts.verify.test_frontend_standard_preview
+	@python3 -m unittest scripts.verify.test_frontend_standard_preview scripts.verify.test_frontend_standard_preview_candidate
 	@bash -n scripts/dev/frontend_acceptance_runtime.sh
 
 verify.business_config.safe_open_acceptance: guard.prod.forbid

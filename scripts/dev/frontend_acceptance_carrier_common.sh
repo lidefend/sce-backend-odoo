@@ -41,6 +41,13 @@ carrier_resolve_profile_identity() {
     printf -v "$key" '%s' "$value"
     export "$key"
   done < <(python3 "$resolver" --profile "$profile")
+  # The primary-worktree .env file declares ENV_FILE as a bare filename; after
+  # sourcing it from any worktree, re-anchor both ENV and ENV_FILE to the
+  # resolved absolute base env path so downstream env.sh resolves it regardless
+  # of the invoking worktree (mirrors load_profile in frontend_acceptance_runtime.sh).
+  ENV=dev
+  ENV_FILE="$base_env"
+  export ENV ENV_FILE
 }
 
 carrier_require_exact_identity() {

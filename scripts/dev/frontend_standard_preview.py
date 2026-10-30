@@ -32,9 +32,27 @@ def _preview_workspace_root() -> Path:
 
 
 _PREVIEW_ROOT = _preview_workspace_root()
-OUTPUT = _PREVIEW_ROOT / 'sce-offrepo/artifacts/config05-20260929'
+# The static preview is profile-scoped: the shared acceptance carrier keeps its
+# existing 5180/18082 identities, while the isolated candidate carrier uses the
+# profile-resolved frontend port and API proxy target plus a distinct artifact
+# directory so a candidate build can never overwrite shared acceptance evidence.
+_PROFILE = os.environ.get('SC_ACCEPTANCE_RUNTIME_PROFILE') or 'local'
+if _PROFILE not in ('local', 'candidate'):
+    raise RuntimeError(f'unknown acceptance runtime profile: {_PROFILE}')
+if _PROFILE == 'candidate':
+    PREVIEW_PORT = os.environ.get('FRONTEND_ACCEPTANCE_PORT') or '5178'
+    API_PROXY_TARGET = os.environ.get('VITE_API_PROXY_TARGET') or 'http://127.0.0.1:18088'
+    OUTPUT = _PREVIEW_ROOT / 'sce-offrepo/artifacts/config05-20260929-candidate'
+else:
+    PREVIEW_PORT = '5180'
+    API_PROXY_TARGET = 'http://127.0.0.1:18082'
+    OUTPUT = _PREVIEW_ROOT / 'sce-offrepo/artifacts/config05-20260929'
 DIST = OUTPUT / 'dist'
-PREVIOUS = _PREVIEW_ROOT / 'sce-offrepo/artifacts/config04-20260929-r2/dist'
+PREVIOUS = (
+    _PREVIEW_ROOT / 'sce-offrepo/artifacts/config04-20260929-r2/dist'
+    if _PROFILE != 'candidate'
+    else OUTPUT / 'previous-dist'
+)
 INPUTS = ['frontend', ':!frontend/apps/web/scripts']
 
 
@@ -67,7 +85,7 @@ def validate_listener(environment, command, owner, current_only=False):
         raise RuntimeError('preview belongs to a different candidate')
     if current_only and environment.get('STATIC_ROOT') != str(DIST):
         raise RuntimeError('browser requires the current candidate')
-    if environment.get('STATIC_PORT') != '5180' or environment.get('API_PROXY_TARGET') != 'http://127.0.0.1:18082':
+    if environment.get('STATIC_PORT') != PREVIEW_PORT or environment.get('API_PROXY_TARGET') != API_PROXY_TARGET:
         raise RuntimeError('preview port/proxy mismatch')
     return environment['STATIC_ROOT']
 
@@ -126,7 +144,7 @@ def build_candidate():
         staged_dist = stage / 'dist'
         base = git('rev-parse', 'HEAD').decode().strip()
         before = inputs(base)
-        build_env = dict(os.environ, FRONTEND_DIST_DIR=str(staged_dist), VITE_ODOO_DB='sc_frontend_acceptance', VITE_ODOO_DB_LOCKED='1', VITE_APP_ENV='acceptance')
+        build_env = dict(os.environ, FRONTEND_DIST_DIR=str(staged_dist), VITE_ODOO_DB=os.environ.get('FRONTEND_ACCEPTANCE_DB') or 'sc_frontend_acceptance', VITE_ODOO_DB_LOCKED='1', VITE_APP_ENV='acceptance')
         subprocess.run(['bash', str(ROOT / 'scripts/dev/frontend_static_build.sh')], env=build_env, check=True)
         if inputs(base) != before:
             raise RuntimeError('source changed during build')
@@ -145,7 +163,7 @@ def run_operation(operation):
         build_candidate()
     elif operation == 'up':
         identity()
-        result = subprocess.check_output(['ss', '-ltnp', 'sport = :5180']).decode()
+        result = subprocess.check_output(['ss', '-ltnp', f'sport = :{PREVIEW_PORT}']).decode()
         pids = re.findall(r'pid=(\d+)', result)
         previous = None
         if pids:
@@ -155,16 +173,16 @@ def run_operation(operation):
             environment = dict(item.split('=', 1) for item in (proc / 'environ').read_text().split('\0') if '=' in item)
             previous = validate_listener(environment, (proc / 'cmdline').read_text(), proc.stat().st_uid)
             if previous == str(DIST):
-                print('[standard.preview] REUSED current 5180 listener')
+                print(f'[standard.preview] REUSED current {PREVIEW_PORT} listener')
                 return
             os.kill(int(pids[0]), signal.SIGTERM)
             for _ in range(50):
-                if not re.search(r'pid=\d+', subprocess.check_output(['ss', '-ltnp', 'sport = :5180']).decode()):
+                if not re.search(r'pid=\d+', subprocess.check_output(['ss', '-ltnp', f'sport = :{PREVIEW_PORT}']).decode()):
                     break
                 time.sleep(0.1)
             else:
-                raise RuntimeError('previous preview did not release 5180')
-        runtime_env = dict(os.environ, FRONTEND_ACCEPTANCE_PORT='5180', FRONTEND_ACCEPTANCE_MODE='production',
+                raise RuntimeError(f'previous preview did not release {PREVIEW_PORT}')
+        runtime_env = dict(os.environ, FRONTEND_ACCEPTANCE_PORT=PREVIEW_PORT, FRONTEND_ACCEPTANCE_MODE='production',
                            FRONTEND_ACCEPTANCE_STATIC_DIST=str(DIST), FRONTEND_ACCEPTANCE_PIDFILE=str(OUTPUT / 'preview.pid'),
                            FRONTEND_ACCEPTANCE_LOGFILE=str(OUTPUT / 'preview.log'))
         command = ['bash', str(ROOT / 'scripts/dev/frontend_acceptance_up.sh')]
@@ -176,7 +194,7 @@ def run_operation(operation):
                 subprocess.run(command, env=runtime_env, check=True)
             raise
     elif operation in {'identity', 'observed-identity'}:
-        pids = re.findall(r'pid=(\d+)', subprocess.check_output(['ss', '-ltnp', 'sport = :5180']).decode())
+        pids = re.findall(r'pid=(\d+)', subprocess.check_output(['ss', '-ltnp', f'sport = :{PREVIEW_PORT}']).decode())
         if len(pids) != 1:
             raise RuntimeError('browser requires one live preview listener')
         proc = Path('/proc') / pids[0]
@@ -190,7 +208,9 @@ def run_operation(operation):
 def main():
     if os.environ.get('SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY') != 'operation_entry_v1':
         raise RuntimeError('use the governed Make entry')
-    if os.environ.get('DB_NAME') != 'sc_frontend_acceptance' or os.environ.get('COMPOSE_PROJECT_NAME') != 'sc-fe-r2-p1-01':
+    expected_db = 'sc_frontend_acceptance_candidate' if _PROFILE == 'candidate' else 'sc_frontend_acceptance'
+    expected_project = 'sc-fe-candidate-770' if _PROFILE == 'candidate' else 'sc-fe-r2-p1-01'
+    if os.environ.get('DB_NAME') != expected_db or os.environ.get('COMPOSE_PROJECT_NAME') != expected_project:
         raise RuntimeError('managed profile mismatch')
     OUTPUT.mkdir(parents=True, exist_ok=True)
     with (OUTPUT / '.preview.lock').open('a') as lock:
