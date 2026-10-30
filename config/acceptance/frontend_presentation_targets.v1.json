@@ -10,6 +10,14 @@
       "renderProfile": "readonly",
       "pagePattern": "workspace-form",
       "requireProfessionalBaseField": false
+    },
+    {
+      "key": "contract-form",
+      "entryObjectModel": "construction.contract",
+      "presentationMode": "workspace",
+      "renderProfile": "readonly",
+      "pagePattern": "workspace-form",
+      "requireProfessionalBaseField": false
     }
   ]
 }

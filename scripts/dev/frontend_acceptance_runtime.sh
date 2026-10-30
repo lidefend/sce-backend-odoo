@@ -546,17 +546,18 @@ resolution = json.loads(Path('artifacts/backend/acceptance_record_identity.json'
 assert resolution['schema'] == 'acceptance.record_identity_resolution.v1'
 assert resolution['producer'] == 'scripts/verify/frontend_delivery_hardening_runtime_ids.py'
 assert resolution['expected_sha'] == os.environ['EXPECTED_SHA']
-project = resolution['targets']['project']
-assert project['model'] == 'project.project'
-assert project['record_xmlid'] == 'smart_construction_acceptance_fixture.fe_project_a'
+entry = os.environ.get('PRESENTATION_ENTRY', 'project')
+resolved = resolution['targets'][entry]
+model = resolved['model']
 for key in ('record_id', 'action_id', 'menu_id'):
-    assert type(project[key]) is int and project[key] > 0
+    assert type(resolved[key]) is int and resolved[key] > 0
 # Same presentation assertions as daily; only the fixture-owned route differs.
 targets = json.loads(Path('config/acceptance/frontend_presentation_targets.v1.json').read_text())['targets']
-assert len(targets) == 1 and targets[0]['entryObjectModel'] == 'project.project'
-target = dict(targets[0])
+matching = [t for t in targets if t['entryObjectModel'] == model]
+assert len(matching) == 1
+target = dict(matching[0])
 del target['entryObjectModel']
-target['route'] = f"/r/project.project/{project['record_id']}?action_id={project['action_id']}&menu_id={project['menu_id']}"
+target['route'] = f"/r/{model}/{resolved['record_id']}?action_id={resolved['action_id']}&menu_id={resolved['menu_id']}"
 print(json.dumps([target], separators=(',', ':')))
 PYPRESENTATION
 )"
