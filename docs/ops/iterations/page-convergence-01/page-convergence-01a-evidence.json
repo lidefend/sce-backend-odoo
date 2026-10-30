@@ -1,0 +1,21 @@
+{
+  "schema": "page-convergence-01a.evidence.v1",
+  "branch": "feature/page-convergence-01",
+  "head": "55712a6888491d8a37b858912ff19dc6b704a03b",
+  "database": "sc_dev_demo",
+  "snapshot": "artifacts/local-dev/snapshots/20261030T070532Z",
+  "b3_action": {
+    "res_model": "sc.project.stage.requirement.item",
+    "view_mode": "tree",
+    "create_edit_delete": false,
+    "wizard_count": 0
+  },
+  "screenshots": [
+    ".runtime/page-convergence-01/acceptance/screenshots/project-10-1440x900.png",
+    ".runtime/page-convergence-01/acceptance/screenshots/project-10-1024x768.png",
+    ".runtime/page-convergence-01/acceptance/screenshots/project-10-768x1024.png",
+    ".runtime/page-convergence-01/acceptance/screenshots/project-10-390x844.png"
+  ],
+  "viewport_overflow": {"1440": false, "1024": false, "768": false, "390": false},
+  "pending": ["contract_read_account_scenario", "b3_browser_click_replay", "screenshot_record_id_label"]
+}
