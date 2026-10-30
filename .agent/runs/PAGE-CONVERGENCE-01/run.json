@@ -28,12 +28,15 @@
   },
   "checks": {
     "L1_modifier_dependency_isolated_hydration": {
-      "command": "PYTHONDONTWRITEBYTECODE=1 python3 addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
-      "status": "passed",
-      "test_count": 159,
-      "stage_identity": "feature/page-convergence-01 @ 1640a7e1b19349be6490f6055c26955b4a468853 + dirty hydration fix"
+      "target": "verify.node_component_validation.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/tests/test_node_component_validation.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_load_contract_response_cache.py"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "local.dev 升级 smart_core（CODEX_NEED_UPGRADE=1）并起候选前端，浏览器验证 lifecycle_state 与合同概览卡片恢复；随后进入 TASK-05.2 四卡收敛。"
+  "next_exact_step": "P2 六组基本信息专业化布局核心完成（col 4→2，四视口通过）。下一步 P3：四卡视觉收敛与空态统一；另单列跟进页头 nolabel 只读 facts 标签重复。"
 }

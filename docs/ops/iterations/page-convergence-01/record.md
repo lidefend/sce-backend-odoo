@@ -61,3 +61,39 @@
 
 - 方向记录：`docs/ops/iterations/page-convergence-01/platform-driven-productization-charter.md`。
 - 后续迭代以真实业务页面为中心、以现有配置能力为首选、以用户实际体验为验收终点。
+
+## P1-R5 持久化资产与真实请求关联（完成，只读）
+
+- 结论：2288 与 2290 是不同模型（`project.project` vs `project.collaborator`）的运行时契约
+  资产，不是同一页面的旧/新版本；项目详情请求命中 2288。
+- 2288 持久化 token `031fb909…` 与当前重算 token `5f599729…` 不一致，`get_runtime_source_asset`
+  用当前 token 查询 2288 返回 miss；资产匹配与失效机制正常。
+- 陈旧内容来源：升级前启动、未随 `local.dev.upgrade` 重启的长驻服务进程，其
+  `contract_code_fingerprint()` 按进程缓存，以陈旧指纹/ORM 缓存组装并持久化了旧页头契约。
+- 交付：`p1-r5-asset-request-correlation.md`、`p1-r5-asset-request-correlation.json`。
+- 下一步 P1-R6：用已重启进程重新组装并三视口浏览器验收，确认页头去重生效。
+
+## P1-R6 三视口 DOM 验收（通过，P1 关闭）
+
+- 后端新契约：`sc-project-overview__header` 字段仅 `project_code / business_nature / user_id /
+  manager_id / owner_id / project_type_id / write_date / location`，无 name、无 operation_strategy、
+  无 sc-project-title。
+- 浏览器三视口（1440/1024/390）：h1 唯一（项目名主标题）；页头无名称/经营方式字段；「项目名称」
+  仅项目身份组出现 1 次；「经营方式」仅业务主体与项目属性组出现 1 次；三视口均无横向溢出；控制台
+  错误 0。
+- 交付：`p1-r6-acceptance.md` + `.runtime/page-convergence-01/p1-r6/` 证据。
+- 固化工程标准：模块升级后的运行时验收顺序（升级前快照 → 受管升级 → 确认 DB 视图 → 确认进程加载
+  新代码 → 重读运行时指纹/契约身份 → 浏览器验收）。
+- 下一步 P2：六组基本信息专业化布局。
+
+## P2 六组基本信息专业化布局（核心完成）
+
+- 实施：六个基本信息 group 的原生列数 `col="4"` → `col="2"`（仅布局声明，字段/分组/权限/顺序不变）。
+- 验证链路：`make local.dev.upgrade MODULE=smart_construction_core`（77 模块加载）→
+  `make local.dev.restart`（服务进程 09:48:38Z 重启）→ 契约按 `columns=2 / span=12` 输出。
+- 四视口（1440/1024/768/390）DOM 验收：六组 2 字段/行（390 单列）；标签宽 137px → 274px（1440）；
+  无横向溢出；控制台错误 0；h1 唯一；经营方式=1、项目名称=1。
+- 遗留（单列跟进，非六组范围）：页头「项目编号」「· 经营性质」静态文本与只读 facts 字段标签重复
+  （`nolabel="1"` 未在只读 facts 路径生效）。
+- 交付：`p2-information-layout-design.md` + `.runtime/page-convergence-01/p2/` 证据。
+- 下一步 P3：四卡视觉收敛与空态统一。
