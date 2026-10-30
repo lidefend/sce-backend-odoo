@@ -124,3 +124,17 @@
 - 交付：`p4-responsibility-design.md`、`p4-collaboration-design.md`、
   `p4-collaboration-implementation.md` + `.runtime/page-convergence-01/p4/` 证据。
 - 下一步 P5：阶段要求只读前端呈现最终验收。
+
+## P5 阶段要求只读前端呈现（完成）
+
+- 根因：tree-only 只读 act_window 已正确路由 `/a/822`，但 `context={create:false,
+  edit:false, delete:false}` 未投射到列表操作入口，导致「新建」误显。
+- 修复：仅改 `ActionView.vue`——解析路由 `context_raw`，`canCreateRecord`/`canEditRecord`
+  消费 create/edit 显式关闭声明。不新增渲染器、不硬编码模型、不改后端/ACL/组装器/解析器。
+- 验证：真实点击后 `data-can-create=false`、`data-can-edit=false`，「新建」消失；5 条记录
+  全部 `lifecycle_state=in_progress`；无 400、无向导、控制台错误 0。
+- 定向测试：`verify.frontend.collection_action_toolbar.unit` PASS（31 cases + 11 tests）；
+  付款申请新建入口不受影响（上下文未声明 create:false）。
+- 交付：`p5-stage-requirements-implementation.md`、`p5-stage-requirements-acceptance.md` +
+  `.runtime/page-convergence-01/p5-probe/` 证据。
+- 下一步 P6：整体产品验收（责任矩阵/协作者填充态、四卡与基本信息视觉衔接、四视口整页回归）。
