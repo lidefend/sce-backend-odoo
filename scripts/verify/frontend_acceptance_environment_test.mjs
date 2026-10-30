@@ -32,7 +32,7 @@ let localHeaders = null;
 assert.equal((await verifyServedIdentity(localRelation, SHA, async (url, options = {}) => {
   assert.equal(url, `${localRelation.apiUrl}/api/runtime-version`);
   localHeaders = options.headers || null;
-  return { ok: true, json: async () => ({ git_sha: SHA, database: localRelation.database, environment: 'dev', namespace_id: 'acceptance' }) };
+  return { ok: true, json: async () => ({ git_sha: SHA, database: localRelation.database, environment: 'dev', namespace_alias: 'acceptance' }) };
 })).skipped, false);
 assert.deepEqual(localHeaders, {
   'x-sc-namespace': 'acceptance',
@@ -139,7 +139,7 @@ try {
   let capturedHeaders = null;
   const candidateIdentity = await verifyServedIdentity(candidateRelation, SHA, async (url, options = {}) => {
     capturedHeaders = options.headers || null;
-    return { ok: true, json: async () => ({ git_sha: SHA, database: 'sc_frontend_acceptance_candidate', environment: 'dev', namespace_id: 'acceptance' }) };
+    return { ok: true, json: async () => ({ git_sha: SHA, database: 'sc_frontend_acceptance_candidate', environment: 'dev', namespace_alias: 'acceptance' }) };
   });
   assert.deepEqual(capturedHeaders, {
     'x-sc-namespace': 'acceptance',
@@ -151,7 +151,7 @@ try {
 
   await assert.rejects(() => verifyServedIdentity(candidateRelation, SHA, async () => ({
     ok: true,
-    json: async () => ({ git_sha: SHA, database: 'sc_frontend_acceptance_candidate', environment: 'dev', namespace_id: 'wrong-namespace' }),
+    json: async () => ({ git_sha: SHA, database: 'sc_frontend_acceptance_candidate', environment: 'dev', namespace_alias: 'wrong-namespace' }),
   })), /served namespace/);
 
   await assert.rejects(() => verifyServedIdentity(candidateRelation, SHA, async () => ({

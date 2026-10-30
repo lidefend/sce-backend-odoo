@@ -262,7 +262,7 @@ export async function verifyServedIdentity(environment, expectedSha = environmen
   const servedSha = requiredText(payload.git_sha || payload.sha || payload.source_revision || payload.source_sha, 'served runtime SHA');
   const servedDatabase = text(payload.database || payload.db_name || payload.db);
   const servedProfile = text(payload.profile || payload.environment || payload.env);
-  const servedNamespace = text(payload.namespace_id || payload.namespace || payload.entry_namespace);
+  const servedNamespace = text(payload.namespace_alias || payload.namespace || payload.entry_namespace);
   if (expectedSha && servedSha !== expectedSha) throw new Error(`served SHA ${servedSha} does not match ${expectedSha}`);
   if (servedDatabase && servedDatabase !== environment.database) throw new Error(`served database ${servedDatabase} does not match ${environment.database}`);
   const acceptedProfiles = [environment.profile, environment.environment,
@@ -275,6 +275,7 @@ export async function verifyServedIdentity(environment, expectedSha = environmen
     throw new Error(`served namespace ${servedNamespace} does not match ${declaredNamespace}`);
   }
   return { skipped: false, servedSha, servedDatabase, servedProfile, servedNamespace,
+    servedNamespaceId: text(payload.namespace_id),
     frontendBuildSha256: text(payload.frontend_build_sha256) };
 }
 
