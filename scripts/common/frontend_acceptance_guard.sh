@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly FRONTEND_ACCEPTANCE_DB_NAME="sc_frontend_acceptance"
+resolve_frontend_acceptance_db_name() {
+  local root="${ROOT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+  local resolver="$root/scripts/dev/frontend_acceptance_runtime_profile.py"
+  python3 "$resolver" --profile "${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}" --get DB_NAME \
+    2>/dev/null || echo "sc_frontend_acceptance"
+}
+
+FRONTEND_ACCEPTANCE_DB_NAME="$(resolve_frontend_acceptance_db_name)"
 
 guard_frontend_acceptance_scope() {
   if [[ "${DB_NAME:-}" != "$FRONTEND_ACCEPTANCE_DB_NAME" ]]; then

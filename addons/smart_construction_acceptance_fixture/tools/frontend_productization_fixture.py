@@ -16,6 +16,7 @@ from typing import Any, Dict
 MODULE = "smart_construction_acceptance_fixture"
 DATA_SPACE_TENANT_KEY = "frontend-productization-fixture"
 FRONTEND_ACCEPTANCE_DB = "sc_frontend_acceptance"
+CANDIDATE_ACCEPTANCE_DB = "sc_frontend_acceptance_candidate"
 DAILY_DEV_DB = "sc_demo"
 
 # Declared fixture scopes. The default stays the isolated acceptance database,
@@ -27,6 +28,7 @@ DAILY_DEV_DB = "sc_demo"
 FIXTURE_SCOPES = {
     "acceptance": {"database": FRONTEND_ACCEPTANCE_DB, "environment": "acceptance"},
     "daily_dev": {"database": DAILY_DEV_DB, "environment": "dev"},
+    "candidate": {"database": CANDIDATE_ACCEPTANCE_DB, "environment": "acceptance"},
 }
 FIXTURE_SCOPE_ENV = "SC_ACCEPTANCE_FIXTURE_SCOPE"
 

@@ -20,7 +20,10 @@ frontend_acceptance_make() {
     echo "[acceptance.make] DENY LIST_DB alias must remain false" >&2
     return 2
   }
-  [[ "$DB_NAME" == "sc_frontend_acceptance" \
+  local expected_db
+  expected_db="$(python3 "$ROOT_DIR/scripts/dev/frontend_acceptance_runtime_profile.py" \
+    --profile "${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}" --get DB_NAME 2>/dev/null || echo sc_frontend_acceptance)"
+  [[ "$DB_NAME" == "$expected_db" \
     && "$ODOO_DBFILTER" == "^${DB_NAME}$" \
     && "$SC_ENVIRONMENT" == "acceptance" \
     && "$SC_ALLOW_DEMO_DATA" == "1" ]] || {
