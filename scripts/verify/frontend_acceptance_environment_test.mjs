@@ -99,6 +99,67 @@ await assert.rejects(() => verifyServedIdentity(confirmed, SHA, async () => ({
   json: async () => ({ git_sha: SHA, database: 'sc_demo', environment: 'tenant_prod' }),
 })), /does not match/);
 
+// Candidate external targets stamp the isolated entry identity on the probe and
+// verify the served namespace instead of trusting the request headers alone.
+const candidateEntry = {
+  SC_ENTRY_NAMESPACE: 'acceptance',
+  SC_ENTRY_AUDIENCE: 'tenant',
+  SC_ENTRY_SHARED_SECRET: 'sc-acceptance-entry-local-v1',
+  SC_ENTRY_ROUTE_VERSION: 'acceptance-route-v1',
+};
+const previousEntry = {};
+for (const key of Object.keys(candidateEntry)) {
+  previousEntry[key] = process.env[key];
+  process.env[key] = candidateEntry[key];
+}
+try {
+  const candidateRelation = resolveAcceptanceEnvironment({ tool: 'relation-roundtrip', env: {
+    SC_ACCEPTANCE_PROFILE: 'candidate',
+    SC_ACCEPTANCE_FIXTURE_PASSWORD: 'candidate-secret',
+    SC_ACCEPTANCE_EXPECTED_SHA: SHA,
+    SC_ACCEPTANCE_FRONTEND_URL: 'http://127.0.0.1:5178',
+    SC_ACCEPTANCE_API_URL: 'http://127.0.0.1:18088',
+    SC_ACCEPTANCE_DATABASE: 'sc_frontend_acceptance_candidate',
+  } });
+  assert.equal(candidateRelation.target.mode, 'external');
+  let capturedHeaders = null;
+  const candidateIdentity = await verifyServedIdentity(candidateRelation, SHA, async (url, options = {}) => {
+    capturedHeaders = options.headers || null;
+    return { ok: true, json: async () => ({ git_sha: SHA, database: 'sc_frontend_acceptance_candidate', environment: 'dev', namespace_id: 'acceptance' }) };
+  });
+  assert.deepEqual(capturedHeaders, {
+    'x-sc-namespace': 'acceptance',
+    'x-sc-audience': 'tenant',
+    'x-sc-entry-secret': 'sc-acceptance-entry-local-v1',
+    'x-sc-route-version': 'acceptance-route-v1',
+  });
+  assert.equal(candidateIdentity.servedNamespace, 'acceptance');
+
+  await assert.rejects(() => verifyServedIdentity(candidateRelation, SHA, async () => ({
+    ok: true,
+    json: async () => ({ git_sha: SHA, database: 'sc_frontend_acceptance_candidate', environment: 'dev', namespace_id: 'wrong-namespace' }),
+  })), /served namespace/);
+
+  await assert.rejects(() => verifyServedIdentity(candidateRelation, SHA, async () => ({
+    ok: false, status: 401, json: async () => ({}),
+  })), /HTTP 401/);
+
+  const savedSecret = process.env.SC_ENTRY_SHARED_SECRET;
+  delete process.env.SC_ENTRY_SHARED_SECRET;
+  try {
+    await assert.rejects(() => verifyServedIdentity(candidateRelation, SHA, async () => {
+      throw new Error('must not fetch without the entry secret');
+    }), /external acceptance identity requires/);
+  } finally {
+    process.env.SC_ENTRY_SHARED_SECRET = savedSecret;
+  }
+} finally {
+  for (const key of Object.keys(candidateEntry)) {
+    if (previousEntry[key] === undefined) delete process.env[key];
+    else process.env[key] = previousEntry[key];
+  }
+}
+
 const formalSources = [
   'scripts/verify/frontend_full_product_audit.mjs',
   'scripts/verify/frontend_form_system_audit.mjs',

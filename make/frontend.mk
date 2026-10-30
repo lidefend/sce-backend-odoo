@@ -1221,8 +1221,15 @@ verify.contract.form_field_policy.unit: guard.prod.forbid
 # This target uses the registered preview, not exported .env.dev defaults.
 # Validate invocation origins before replacing defaults. DB origins were captured
 # by Makefile before the env include; never wash an explicit conflicting input.
-SC_LIST_PREVIEW_URL_KEYS := SC_ACCEPTANCE_FRONTEND_URL FRONTEND_URL ACCEPTANCE_BASE_URL BASE_URL SC_ACCEPTANCE_API_URL
+SC_LIST_PREVIEW_FRONTEND_URL_KEYS := SC_ACCEPTANCE_FRONTEND_URL FRONTEND_URL ACCEPTANCE_BASE_URL BASE_URL
+SC_LIST_PREVIEW_API_URL_KEYS := SC_ACCEPTANCE_API_URL
 SC_LIST_PREVIEW_DB_KEYS := SC_ACCEPTANCE_DATABASE E2E_DB FRONTEND_ACCEPTANCE_DB
+SC_LIST_PREVIEW_FRONTEND_URL := $(if $(filter candidate,$(SC_ACCEPTANCE_RUNTIME_PROFILE)),http://127.0.0.1:5178,http://127.0.0.1:5180)
+SC_LIST_PREVIEW_API_URL := $(if $(filter candidate,$(SC_ACCEPTANCE_RUNTIME_PROFILE)),http://127.0.0.1:18088,http://127.0.0.1:18082)
+SC_LIST_PREVIEW_DB := $(if $(filter candidate,$(SC_ACCEPTANCE_RUNTIME_PROFILE)),sc_frontend_acceptance_candidate,sc_frontend_acceptance)
+ifeq ($(filter local candidate,$(SC_ACCEPTANCE_RUNTIME_PROFILE)),)
+$(error DENY standard list surface profile: SC_ACCEPTANCE_RUNTIME_PROFILE must be local or candidate)
+endif
 # Arguments: diagnostic name, origin, value, exact registered value.
 define sc_list_preview_explicit_input
 $(if $(filter command line environment override,$(2)),$(if $(strip $(3)),$(if $(filter-out $(4),$(strip $(3))),$(error DENY standard list explicit $(1) mismatch),$(if $(filter-out 1,$(words $(3))),$(error DENY standard list explicit $(1) mismatch)))))
@@ -1247,10 +1254,11 @@ verify.frontend.relation_roundtrip.browser: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" SC_ACCEPTANCE_RELATION_LOGIN="$(SC_ACCEPTANCE_RELATION_LOGIN)" RELATION_RESOLUTION_KEY="$(or $(RELATION_RESOLUTION_KEY),project)" RELATION_FIELD="$(RELATION_FIELD)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-relation-roundtrip-browser
 
 verify.frontend.list_surface_structure.browser: guard.prod.forbid verify.frontend.list_surface_search_contract.unit
-	$(foreach key,$(SC_LIST_PREVIEW_URL_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),http://127.0.0.1:5180))
-	$(foreach key,$(SC_LIST_PREVIEW_DB_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),sc_frontend_acceptance))
-	$(foreach key,DB_NAME DB BD,$(call sc_list_preview_explicit_input,$(key),$(REQUESTED_$(key)_ORIGIN),$(REQUESTED_$(key)),sc_frontend_acceptance))
-	@$(foreach key,$(SC_LIST_PREVIEW_URL_KEYS),$(key)=http://127.0.0.1:5180) $(foreach key,$(SC_LIST_PREVIEW_DB_KEYS) DB_NAME DB BD,$(key)=sc_frontend_acceptance) SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" SC_ACCEPTANCE_REQUIRE_CONTRACT=1 SC_ACCEPTANCE_EXPECTED_SHA="$(SC_ACCEPTANCE_REQUIRED_SHA)" SC_ACCEPTANCE_CONTRACT_RECEIPT="$(SC_ACCEPTANCE_CONTRACT_RECEIPT)" SC_ACCEPTANCE_CONTRACT_DECLARATION="$(SC_ACCEPTANCE_CONTRACT_DECLARATION)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-list-surface-browser
+	$(foreach key,$(SC_LIST_PREVIEW_FRONTEND_URL_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),$(SC_LIST_PREVIEW_FRONTEND_URL)))
+	$(foreach key,$(SC_LIST_PREVIEW_API_URL_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),$(SC_LIST_PREVIEW_API_URL)))
+	$(foreach key,$(SC_LIST_PREVIEW_DB_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),$(SC_LIST_PREVIEW_DB)))
+	$(foreach key,DB_NAME DB BD,$(call sc_list_preview_explicit_input,$(key),$(REQUESTED_$(key)_ORIGIN),$(REQUESTED_$(key)),$(SC_LIST_PREVIEW_DB)))
+	@$(foreach key,$(SC_LIST_PREVIEW_FRONTEND_URL_KEYS),$(key)=$(SC_LIST_PREVIEW_FRONTEND_URL)) $(foreach key,$(SC_LIST_PREVIEW_API_URL_KEYS),$(key)=$(SC_LIST_PREVIEW_API_URL)) $(foreach key,$(SC_LIST_PREVIEW_DB_KEYS) DB_NAME DB BD,$(key)=$(SC_LIST_PREVIEW_DB)) SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" SC_ACCEPTANCE_REQUIRE_CONTRACT=1 SC_ACCEPTANCE_EXPECTED_SHA="$(SC_ACCEPTANCE_REQUIRED_SHA)" SC_ACCEPTANCE_CONTRACT_RECEIPT="$(SC_ACCEPTANCE_CONTRACT_RECEIPT)" SC_ACCEPTANCE_CONTRACT_DECLARATION="$(SC_ACCEPTANCE_CONTRACT_DECLARATION)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-list-surface-browser
 
 .PHONY: verify.daily_dev.list_surface.readonly.browser
 # The declared instance receipt names one exact runtime (config/acceptance/

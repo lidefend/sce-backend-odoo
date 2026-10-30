@@ -251,13 +251,18 @@ export async function verifyServedIdentity(environment, expectedSha = environmen
     if (environment.target.identityRequired) throw new Error(`target identity endpoint is required`);
     return { skipped: true };
   }
-  const response = await fetchImpl(`${environment.target.apiUrl}${environment.target.identityPath}`, { redirect: 'error' });
+  const entryHeaders = externalIdentityHeaders(environment);
+  const response = await fetchImpl(`${environment.target.apiUrl}${environment.target.identityPath}`, {
+    redirect: 'error',
+    ...(entryHeaders ? { headers: entryHeaders } : {}),
+  });
   if (!response.ok) throw new Error(`runtime identity probe failed: HTTP ${response.status}`);
   const raw = await response.json();
   const payload = raw?.data || raw?.result || raw;
   const servedSha = requiredText(payload.git_sha || payload.sha || payload.source_revision || payload.source_sha, 'served runtime SHA');
   const servedDatabase = text(payload.database || payload.db_name || payload.db);
   const servedProfile = text(payload.profile || payload.environment || payload.env);
+  const servedNamespace = text(payload.namespace_id || payload.namespace || payload.entry_namespace);
   if (expectedSha && servedSha !== expectedSha) throw new Error(`served SHA ${servedSha} does not match ${expectedSha}`);
   if (servedDatabase && servedDatabase !== environment.database) throw new Error(`served database ${servedDatabase} does not match ${environment.database}`);
   const acceptedProfiles = [environment.profile, environment.environment,
@@ -265,5 +270,24 @@ export async function verifyServedIdentity(environment, expectedSha = environmen
   if (servedProfile && !acceptedProfiles.includes(servedProfile)) {
     throw new Error(`served profile ${servedProfile} does not match ${environment.profile} (accepted: ${acceptedProfiles.join(', ')})`);
   }
-  return { skipped: false, servedSha, servedDatabase, servedProfile, frontendBuildSha256: text(payload.frontend_build_sha256) };
+  const declaredNamespace = text(process.env.SC_ENTRY_NAMESPACE);
+  if (entryHeaders && declaredNamespace && servedNamespace && servedNamespace !== declaredNamespace) {
+    throw new Error(`served namespace ${servedNamespace} does not match ${declaredNamespace}`);
+  }
+  return { skipped: false, servedSha, servedDatabase, servedProfile, servedNamespace,
+    frontendBuildSha256: text(payload.frontend_build_sha256) };
+}
+
+function externalIdentityHeaders(environment) {
+  if (environment.profile !== 'candidate') return null;
+  const headers = {
+    'x-sc-namespace': text(process.env.SC_ENTRY_NAMESPACE),
+    'x-sc-audience': text(process.env.SC_ENTRY_AUDIENCE),
+    'x-sc-entry-secret': text(process.env.SC_ENTRY_SHARED_SECRET),
+    'x-sc-route-version': text(process.env.SC_ENTRY_ROUTE_VERSION),
+  };
+  if (Object.values(headers).some((value) => !value)) {
+    throw new Error('external acceptance identity requires SC_ENTRY_NAMESPACE/AUDIENCE/SHARED_SECRET/ROUTE_VERSION');
+  }
+  return headers;
 }

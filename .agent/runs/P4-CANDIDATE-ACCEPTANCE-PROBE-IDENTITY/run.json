@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "P4-CANDIDATE-ACCEPTANCE-PROBE-IDENTITY",
+  "branch": "fix/candidate-acceptance-probe-identity",
+  "baseline_sha": "29d34c171304c09d4e02b69f70d547bc49379c73",
+  "status": "active",
+  "goal": ".agent/goals/P4-CANDIDATE-ACCEPTANCE-PROBE-IDENTITY.yaml",
+  "record": "docs/ops/iterations/p4_candidate_acceptance_probe_identity.md",
+  "scope": [
+    "scripts/verify/lib/frontend_acceptance_environment.mjs",
+    "scripts/verify/frontend_acceptance_environment_test.mjs",
+    "make/frontend.mk",
+    "scripts/verify/test_frontend_standard_preview.py",
+    ".agent/goals/P4-CANDIDATE-ACCEPTANCE-PROBE-IDENTITY.yaml",
+    ".agent/runs/P4-CANDIDATE-ACCEPTANCE-PROBE-IDENTITY/run.json",
+    "docs/ops/iterations/p4_candidate_acceptance_probe_identity.md"
+  ],
+  "environment": {
+    "kind": "offline"
+  },
+  "checks": {
+    "acceptance_environment_guard": {
+      "target": "verify.frontend.acceptance.environment.guard",
+      "inputs": [
+        "scripts/verify/lib/frontend_acceptance_environment.mjs",
+        "scripts/verify/frontend_acceptance_environment_test.mjs",
+        "config/frontend/acceptance_environments_v1.json",
+        "config/frontend/acceptance_tool_matrix_v1.json"
+      ],
+      "kind": "offline"
+    },
+    "standard_preview_unit": {
+      "target": "verify.frontend.standard_preview.unit",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "scripts/verify/test_frontend_standard_preview_candidate.py",
+        "scripts/dev/frontend_acceptance_runtime.sh"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the two P4 fixes, run local Quick, then publish a dedicated P4 Draft PR."
+}
