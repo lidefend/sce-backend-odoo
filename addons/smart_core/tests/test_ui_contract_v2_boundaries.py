@@ -1383,6 +1383,58 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(record.read_fields[0][0], "late_summary")
         self.assertIn("late_summary", contract["dataContract"]["mainData"])
 
+    def test_hidden_fact_field_hydrates_but_unreferenced_hidden_field_does_not(self):
+        read_calls = []
+
+        class _Field:
+            def __init__(self, field_type):
+                self.type = field_type
+
+        class _Record:
+            def exists(self):
+                return self
+
+            def read(self, fields):
+                read_calls.append(list(fields))
+                if fields == ["fact_count"]:
+                    return [{"fact_count": 4}]
+                raise AssertionError("unexpected fields: %r" % (fields,))
+
+        record = _Record()
+
+        class _Model:
+            _fields = {
+                "fact_count": _Field("integer"),
+                "hidden_note": _Field("char"),
+            }
+
+            def browse(self, _record_id):
+                return record
+
+        handler = self.module.UiContractV2Handler(env={"project.project": _Model()})
+        contract = {
+            "layoutContract": {"containerTree": [
+                {"fieldInfo": {"name": "fact_count", "sc_ui_usage": "fact"}},
+                {"fieldInfo": {"name": "hidden_note", "sc_ui_usage": "display"}},
+            ]},
+            "formStructureContract": {"fieldRoles": {}},
+            "statusContract": {"widgetStatus": []},
+            "actionContract": {"actionRuleList": []},
+            "dataContract": {"mainData": {}},
+        }
+
+        self.module.hydrate_final_modifier_dependencies(
+            handler.env,
+            contract,
+            model="project.project",
+            record_id=42,
+            view_type="form",
+        )
+
+        self.assertEqual(read_calls, [["fact_count"]])
+        self.assertEqual(contract["dataContract"]["mainData"]["fact_count"], 4)
+        self.assertNotIn("hidden_note", contract["dataContract"]["mainData"])
+
     def test_visible_layout_hydration_fails_closed_on_read_denial(self):
         class _Record:
             def exists(self):
