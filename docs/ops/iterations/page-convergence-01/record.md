@@ -97,3 +97,17 @@
   （`nolabel="1"` 未在只读 facts 路径生效）。
 - 交付：`p2-information-layout-design.md` + `.runtime/page-convergence-01/p2/` 证据。
 - 下一步 P3：四卡视觉收敛与空态统一。
+
+## P3 四张概览卡片专业化收敛（完成）
+
+- 实施：四卡改为语义 token（`sc-project-card__*`）+ 渲染器 scoped 样式；修正
+  `hasRenderableDescendant` 使纯文本权限空态可渲染（合同卡不再被误判为空壳隐藏）。
+- 数据边界：合同卡按 `sc_project_contract_entry_available` 呈现权限空态；成本/财务/任务保持
+  「数据暂不可用」；无伪造 0；结果 B / 组装器 / 解析器 / ACL / 计算口径未改。
+- 四视口（1440/1024/768/390）：4/行、4/行、2×2、单列；无横向溢出；控制台错误 0。
+- 定向测试：`verify.frontend.native_text_presentation.unit` PASS（21 cases）；
+  `verify.frontend.native_form_structure_responsibility.unit` 为既有失败（`activePageIndex` 断言过期），
+  与本轮无关，记为 pre-existing。
+- 交付：`p3-overview-cards-design.md`、`p3-overview-cards-implementation.md` +
+  `.runtime/page-convergence-01/p3/` 证据。
+- 下一步 P4：责任矩阵与协作区域。
