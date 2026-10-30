@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "id": "PAGE-CONVERGENCE-01",
+  "branch": "feature/page-convergence-01",
+  "baseline_sha": "1640a7e1b19349be6490f6055c26955b4a468853",
+  "status": "active",
+  "goal": ".agent/goals/PAGE-CONVERGENCE-01.yaml",
+  "record": "docs/ops/iterations/page-convergence-01/record.md",
+  "scope": [
+    "addons/smart_construction_core/views/core/project_overview_views.xml",
+    "addons/smart_construction_core/models/core/project_core.py",
+    "addons/smart_construction_core/static/src/js/stage_requirements/",
+    "frontend/apps/web/src/",
+    "docs/ops/iterations/page-convergence-01/",
+    ".agent/goals/PAGE-CONVERGENCE-01.yaml",
+    ".agent/runs/PAGE-CONVERGENCE-01/run.json",
+    ".agent/active-runs.json"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "remote daily development server; read-only browser capture with demo business account pm1",
+    "base_url": "http://1.95.85.92:18081/t/demo",
+    "database": "sc_demo",
+    "deployed_sha": "1640a7e1b19349be6490f6055c26955b4a468853",
+    "frontend_build_sha256": "8f7cc076e0d9510feb2ea8b713cf45ea9aee0941c73cb46feea243bcb81d0012",
+    "product_version": "1.0.0-rc.20",
+    "business_login": "pm1"
+  },
+  "checks": {
+    "L1_modifier_dependency_isolated_hydration": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+      "status": "passed",
+      "test_count": 159,
+      "stage_identity": "feature/page-convergence-01 @ 1640a7e1b19349be6490f6055c26955b4a468853 + dirty hydration fix"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "local.dev 升级 smart_core（CODEX_NEED_UPGRADE=1）并起候选前端，浏览器验证 lifecycle_state 与合同概览卡片恢复；随后进入 TASK-05.2 四卡收敛。"
+}

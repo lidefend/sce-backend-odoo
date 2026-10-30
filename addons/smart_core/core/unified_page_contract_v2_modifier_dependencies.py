@@ -310,21 +310,32 @@ def hydrate_final_modifier_dependencies(
         record = Model.browse(record_id_int).exists()
         if not record:
             return
-        rows = record.read(missing)
-        if rows and isinstance(rows[0], dict):
-            for field_name in missing:
-                if field_name in rows[0]:
-                    value = rows[0][field_name]
-                    if fields_map[field_name].type in {"one2many", "many2many"}:
-                        # Only actual ORM identities establish relation truth.
-                        # Denied or malformed values must remain missing.
-                        if not isinstance(value, (list, tuple)) or not all(
-                            isinstance(item, int) and not isinstance(item, bool)
-                            and 0 < item <= 9007199254740991 for item in value
-                        ):
-                            continue
-                        value = list(value)
-                    main_data[field_name] = value
+        for field_name in missing:
+            try:
+                rows = record.read([field_name])
+                if not rows or not isinstance(rows[0], dict) or field_name not in rows[0]:
+                    continue
+                value = rows[0][field_name]
+                if fields_map[field_name].type in {"one2many", "many2many"}:
+                    # Only actual ORM identities establish relation truth.
+                    # Denied or malformed values must remain missing.
+                    if not isinstance(value, (list, tuple)) or not all(
+                        isinstance(item, int) and not isinstance(item, bool)
+                        and 0 < item <= 9007199254740991 for item in value
+                    ):
+                        continue
+                    value = list(value)
+                main_data[field_name] = value
+            except Exception:
+                # One denied field fails closed for itself only; readable
+                # sibling dependencies must still hydrate.
+                if logger is not None:
+                    logger.debug(
+                        "ui.contract.v2 final modifier dependency field skipped: %s.%s",
+                        model,
+                        field_name,
+                        exc_info=True,
+                    )
     except Exception:
         # Missing values leave modifier evaluation fail-closed. Never sudo or
         # manufacture permission truth to make an action visible.

@@ -1177,6 +1177,65 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         self.assertNotIn("restricted_state", contract["dataContract"]["mainData"])
 
+    def test_final_modifier_hydration_isolates_one_denied_dependency_field(self):
+        class _Record:
+            def exists(self):
+                return self
+
+            def read(self, fields):
+                if fields == ["restricted_state"]:
+                    raise PermissionError("denied")
+                if fields == ["lifecycle_state"]:
+                    return [{"lifecycle_state": "in_progress"}]
+                raise AssertionError("unexpected fields: %r" % (fields,))
+
+        class _Model:
+            _fields = {
+                "restricted_state": type("Field", (), {"type": "selection"})(),
+                "lifecycle_state": type("Field", (), {"type": "selection"})(),
+            }
+
+            def browse(self, _record_id):
+                return _Record()
+
+        handler = self.module.UiContractV2Handler(env={"x.document": _Model()})
+        contract = {
+            "actionContract": {"actionRuleList": [
+                {
+                    "modifiers": {
+                        "invisible": {
+                            "kind": "field_compare",
+                            "field": "restricted_state",
+                            "operator": "!=",
+                            "value": "ready",
+                        },
+                    },
+                },
+                {
+                    "modifiers": {
+                        "invisible": {
+                            "kind": "field_compare",
+                            "field": "lifecycle_state",
+                            "operator": "!=",
+                            "value": "draft",
+                        },
+                    },
+                },
+            ]},
+            "dataContract": {"mainData": {}},
+        }
+
+        self.module.hydrate_final_modifier_dependencies(
+            handler.env,
+            contract,
+            model="x.document",
+            record_id=42,
+            view_type="form",
+        )
+
+        self.assertEqual(contract["dataContract"]["mainData"]["lifecycle_state"], "in_progress")
+        self.assertNotIn("restricted_state", contract["dataContract"]["mainData"])
+
     def test_real_project_form_contract_uses_the_same_visible_hydration_closure(self):
         root = Path(__file__).resolve().parents[3]
         fixture_path = root / "docs/architecture/unified_page_contract_v2/examples/form_project.json"
@@ -1223,8 +1282,10 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             contract["dataContract"]["mainData"],
             {"name": "Bridge Project", "stage_id": (7, "Started")},
         )
-        self.assertEqual(len(model.record.read_fields), 1)
-        self.assertEqual(model.record.read_fields[0], ["name", "stage_id"])
+        self.assertEqual(
+            sorted(field for call in model.record.read_fields for field in call),
+            ["name", "stage_id"],
+        )
 
     def test_hidden_and_subordinate_fields_do_not_expand_visible_hydration(self):
         class _Model:
@@ -1317,8 +1378,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             view_type="form",
         )
 
-        self.assertEqual(len(record.read_fields), 1)
-        self.assertEqual(len(record.read_fields[0]), 24)
+        self.assertEqual(len(record.read_fields), 24)
+        self.assertTrue(all(len(call) == 1 for call in record.read_fields))
         self.assertEqual(record.read_fields[0][0], "late_summary")
         self.assertIn("late_summary", contract["dataContract"]["mainData"])
 

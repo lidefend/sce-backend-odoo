@@ -1,0 +1,78 @@
+{
+  "schema": "page-convergence-01.baseline.v1",
+  "generated_at": "2026-10-30T00:00:00+08:00",
+  "runtime": {
+    "daily_dev_server": {
+      "url": "http://1.95.85.92:18081/t/demo",
+      "source_revision": "1640a7e1b19349be6490f6055c26955b4a468853",
+      "database": "sc_demo",
+      "duty": "demo",
+      "namespace_id": "ns_000000000002",
+      "environment": "demo",
+      "product_version": "1.0.0-rc.20",
+      "frontend_build_sha256": "8f7cc076e0d9510feb2ea8b713cf45ea9aee0941c73cb46feea243bcb81d0012",
+      "frontend_assets": ["index-AXoDMlz5.js", "index-B2rA5hp_.css"],
+      "business_login": "pm1",
+      "business_login_uid": 10
+    },
+    "local": {
+      "branch": "feature/page-convergence-01",
+      "base_branch": "main",
+      "local_main_head": "1640a7e1b19349be6490f6055c26955b4a468853",
+      "local_dev_sha": "63fb6ecb946b6fe6466f4cb340119491a5d9bd2f",
+      "worktree": "clean-at-baseline"
+    }
+  },
+  "page": {
+    "model": "project.project",
+    "menu": "smart_construction_core.menu_sc_project_project",
+    "menu_res_id": 382,
+    "action": "smart_construction_core.action_sc_project_list",
+    "action_res_id": 588,
+    "form_view": "smart_construction_core.view_project_overview_form",
+    "route": "/r/project.project/10?action_id=588&menu_id=382",
+    "record_id": 10,
+    "record_name": "城北新区安置房项目（在建阶段）",
+    "lifecycle_state": "in_progress",
+    "sc_approval_state": "approved"
+  },
+  "record_fields_as_pm1": {
+    "project_code": "DEMO-PJ-STAGE-RUN",
+    "operation_strategy": "direct",
+    "business_nature": false,
+    "user_id": [10, "张建国"],
+    "manager_id": [10, "张建国"],
+    "owner_id": [72, "德阳市城市某某建设投资集团有限公司"],
+    "partner_id": [72, "德阳市城市某某建设投资集团有限公司"],
+    "project_type_id": [19, "基础项目类型"],
+    "date_start": false,
+    "date": false,
+    "start_date": "2026-10-28",
+    "end_date": false,
+    "cost_manager_id": [17, "刘晓东"],
+    "doc_manager_id": [10, "张建国"],
+    "owner_contact": false,
+    "contract_no": false,
+    "company_id": [1, "四川智汇某某建设集团有限公司"],
+    "analytic_account_id": false,
+    "sc_overview_contract_count": 4,
+    "sc_overview_cost_count": 6,
+    "sc_overview_payment_pending_count": 0,
+    "sc_overview_task_in_progress_count": 0,
+    "sc_project_contract_entry_available": false
+  },
+  "observed": {
+    "contract_gap": "ContractGapError: 原生条件契约不可求值：dependency.lifecycle_state",
+    "missing_overview_card": "合同（对 pm1 未渲染，sc_project_contract_entry_available=false）",
+    "rendered_overview_cards": ["成本", "财务", "项目任务"],
+    "field_value_render_mismatch": ["start_date", "manager_id", "user_id", "owner_id", "project_type_id"],
+    "header_actions": ["返回", "更多操作"],
+    "breadcrumb": [],
+    "viewport_overflow": {"1440": false, "1024": false, "768": false, "390": false}
+  },
+  "evidence": {
+    "screenshots_dir": ".runtime/page-convergence-01/baseline/screenshots/",
+    "dom_dir": ".runtime/page-convergence-01/baseline/screenshots/",
+    "summary": ".runtime/page-convergence-01/baseline/capture-summary.json"
+  }
+}
