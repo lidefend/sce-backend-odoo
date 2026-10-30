@@ -92,10 +92,11 @@ check(await page.locator('[data-status]').count() >= 1, 'state lifecycle status 
 for (const vp of viewports) {
   await page.setViewportSize({ width: vp.width, height: vp.height });
   await page.waitForTimeout(250);
-  const geometry = await page.evaluate(() => {
+  const titleSelector = `[data-field-name="${identity.title}"]`;
+  const geometry = await page.evaluate((selector) => {
     const doc = document.documentElement;
     const body = document.body;
-    const title = document.querySelector(`[data-field-name="${identity.title}"]`);
+    const title = document.querySelector(selector);
     return {
       scrollWidth: Math.max(doc.scrollWidth, body ? body.scrollWidth : 0),
       clientWidth: doc.clientWidth,
@@ -103,7 +104,7 @@ for (const vp of viewports) {
       bandRect: title ? { x: title.getBoundingClientRect().x, width: title.getBoundingClientRect().width } : null,
       titleRect: title ? { width: title.getBoundingClientRect().width, height: title.getBoundingClientRect().height } : null,
     };
-  });
+  }, titleSelector);
   evidence.viewports.push({ key: vp.key, width: vp.width, ...geometry });
   const shot = path.join(path.dirname(output), `viewport-${vp.key}.png`);
   await page.screenshot({ path: shot, fullPage: true });
