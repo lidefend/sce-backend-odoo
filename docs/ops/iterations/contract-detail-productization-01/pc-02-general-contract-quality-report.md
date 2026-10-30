@@ -46,6 +46,18 @@
 - 结算金额是否允许超过最终合同价：NOT_VERIFIED
 - 历史付款与新系统付款边界：NOT_VERIFIED
 
-## 6. 待运行时验收
+## 6. 运行时验收（已完成）
 
-需在 candidate 环境按权威 Action 完成视图加载 + 四视口 + 真实字段值 + 履约方向验收；尚未执行。
+候选 `71cf327cb5d5f25bc971d2edbdba7dbc6e60adc1`，candidate 隔离环境
+`sc-fe-candidate-770` / `sc_frontend_acceptance_candidate`，namespace
+`ns_0af74d2911bf`。
+
+| 方向 | 记录 | route | 四视口 | 结果 |
+| --- | --- | --- | --- | --- |
+| 收入合同 | `fe_general_contract_a`（GC2600001） | `/r/sc.general.contract/2` | 1440/1024/768/390 | PASS |
+| 支出合同 | `fe_general_contract_b`（GC2600002） | `/r/sc.general.contract/3` | 1440/1024/768/390 | PASS |
+
+两方向均无横向溢出、无控制台错误、无 pageerror、无 5xx；身份带与
+`state`/`validation_status` 独立性断言通过。详细证据见
+`pc-02-general-contract-runtime-acceptance.md` 与
+`pc-02-general-contract-runtime-evidence.json`。

@@ -35,9 +35,22 @@ Product target: `sc.general.contract` via the released contract-center entry
 
 ## Runtime acceptance (TASK-03.5)
 
-Status and evidence are recorded here as the run proceeds. Income evidence was
-first produced at `142efc0ea`; the final frozen candidate binds both directions to
-one exact HEAD after the P4 output-path separation and expense target are committed.
+Frozen candidate `71cf327cb5d5f25bc971d2edbdba7dbc6e60adc1` on the candidate
+profile (`sc-fe-candidate-770` / `sc_frontend_acceptance_candidate`).
+
+- Income `contract` (`fe_general_contract_a`, GC2600001): PASS, 4 viewports, no
+  overflow / console error / pageerror / 5xx.
+- Expense `general_contract_expense` (`fe_general_contract_b`, GC2600002): PASS,
+  4 viewports, no overflow / console error / pageerror / 5xx.
+
+Evidence: `pc-02-general-contract-runtime-acceptance.md`,
+`pc-02-general-contract-runtime-evidence.json`, and the per-direction summary and
+screenshots under `.runtime/final-acceptance/contract-form-presentation/`.
+
+The earlier income evidence at `142efc0ea` is preserved under
+`.runtime/final-acceptance/contract-form-presentation/legacy-142efc0ea/`; the
+final frozen candidate re-collected both directions at one HEAD because the
+candidate identity changed when the P4 output-path separation was committed.
 
 Exclusions: no amount compute, ACL, record rule, approval, navigation or business
 data changes. No push, merge, or deployment.

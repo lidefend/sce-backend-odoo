@@ -3,7 +3,7 @@
   "id": "PC02-CONTRACT-DETAIL-PRODUCTIZATION",
   "branch": "feature/contract-detail-productization-01",
   "baseline_sha": "29d34c171304c09d4e02b69f70d547bc49379c73",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/PC02-CONTRACT-DETAIL-PRODUCTIZATION.yaml",
   "record": "docs/ops/iterations/contract-detail-productization-01/pc-02-batch-record.md",
   "scope": [
@@ -50,5 +50,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the P4 output-path separation and expense target, rebuild candidate backend, then run income and expense contract form presentation at the same frozen HEAD."
+  "next_exact_step": "Runtime acceptance is complete at 71cf327cb. Await explicit publication authorization before running affected targeted tests, local Quick, or creating the PC-02 PR; do not merge or deploy."
 }
