@@ -25,6 +25,8 @@
   `pm1/ct1/sc_contract_read` 的 `sc_project_contract_entry_available` 均为 false；后端
   `sc_overview_contract_count=4` 计算正常）。环境覆盖限制，非产品缺陷。
 - B3 前端点击：已真实点击，目标模型/阶段过滤/禁用/返回均正确，无向导；但只读 item 树
-  未完整渲染（前端路由到 `/f/.../new` 并返回 400），需进一步确认前端 act_window 树视图呈现。
+  未完整渲染（前端路由到 `/f/.../new` 并返回 400）；随后将只读 tree 动作改为 `target=current`，
+  真实点击后进入列表路由 `/a/822`（view_id=1936，domain/context 保留，create/edit/delete=false），
+  400 消失，返回详情正常，无临时向导。B3 前端点击判定为 PASS。
 - 截图已重命名 `project-10` → `project-21`，SHA256 前后一致。
 

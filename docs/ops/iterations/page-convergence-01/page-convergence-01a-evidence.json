@@ -24,8 +24,10 @@
     "create_edit_delete": false,
     "returned": true,
     "wizard_created": false,
-    "item_tree_rendered": false,
-    "note": "routed to /f/.../new with HTTP 400 instead of read-only tree"
+    "item_tree_rendered": true,
+    "list_route": "/a/822",
+    "http_400": false,
+    "note": "target=current renders read-only list; only pre-existing sc_stage_required_total gap remains on detail page"
   },
   "contract_count_forward_scenario": "NOT_VERIFIABLE_WITH_EXISTING_AUTHORIZED_IDENTITIES"
 }
